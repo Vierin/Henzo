@@ -1,6 +1,71 @@
+'use client';
+
+import { useEffect, useState } from 'react';
+import { supabase } from '@/lib/supabase';
+import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 
 export default function Home() {
+	const [loading, setLoading] = useState(true);
+	const [user, setUser] = useState<any>(null);
+	const router = useRouter();
+
+	useEffect(() => {
+		const checkUser = async () => {
+			try {
+				const {
+					data: { session },
+				} = await supabase.auth.getSession();
+
+				if (!session) {
+					router.push('/login');
+					return;
+				}
+
+				// Check if email is verified
+				if (!session.user.email_confirmed_at) {
+					router.push('/verify');
+					return;
+				}
+
+				setUser(session.user);
+			} catch (error) {
+				console.error('Error checking user:', error);
+				router.push('/register');
+			} finally {
+				setLoading(false);
+			}
+		};
+
+		checkUser();
+
+		// Listen for auth changes
+		const {
+			data: { subscription },
+		} = supabase.auth.onAuthStateChange((event, session) => {
+			if (event === 'SIGNED_OUT' || !session) {
+				router.push('/login');
+			} else if (session && !session.user.email_confirmed_at) {
+				router.push('/verify');
+			} else if (session && session.user.email_confirmed_at) {
+				setUser(session.user);
+			}
+		});
+
+		return () => subscription.unsubscribe();
+	}, [router]);
+
+	if (loading) {
+		return (
+			<div className="min-h-screen bg-[#fff7f6] flex items-center justify-center">
+				<div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#ff5b5b]"></div>
+			</div>
+		);
+	}
+
+	if (!user) {
+		return null; // Will redirect
+	}
 	return (
 		<div className="min-h-screen bg-[#fff7f6] text-[#1b1b1b]">
 			<header className="sticky top-0 z-10 bg-white/80 backdrop-blur border-b border-[#f1d9d7]">
@@ -34,6 +99,15 @@ export default function Home() {
 							🔔
 						</button>
 						<div className="h-9 w-9 rounded-full bg-[#ffd6d2]" />
+						<button
+							onClick={async () => {
+								await supabase.auth.signOut();
+								router.push('/login');
+							}}
+							className="text-sm text-[#6b6b6b] hover:text-black"
+						>
+							Logout
+						</button>
 					</div>
 				</div>
 			</header>
