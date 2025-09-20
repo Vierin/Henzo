@@ -33,43 +33,96 @@ export default function BookingModal({
 	const [isStaffDropdownOpen, setIsStaffDropdownOpen] = useState(false);
 	const [currentDateIndex, setCurrentDateIndex] = useState(0);
 	const [staffMembers, setStaffMembers] = useState<Staff[]>([]);
+	const [salonWorkingHours, setSalonWorkingHours] = useState<any>(null);
 	const [loading, setLoading] = useState(false);
 
-	// Load staff members when modal opens
+	// Load staff members and salon data when modal opens
 	useEffect(() => {
 		if (isOpen) {
 			fetchStaffMembers();
+			fetchSalonData();
 		}
 	}, [isOpen]);
 
 	const fetchStaffMembers = async () => {
 		try {
-			setLoading(true);
 			const response = await fetch('/api/staff');
 			if (!response.ok) throw new Error('Failed to fetch staff');
 			const data = await response.json();
 			setStaffMembers(data.staff || []);
 		} catch (error) {
 			console.error('Error fetching staff:', error);
-		} finally {
-			setLoading(false);
 		}
 	};
 
-	// Generate time slots based on salon working hours (9 AM - 6 PM for now)
+	const fetchSalonData = async () => {
+		try {
+			const response = await fetch('/api/salon');
+			if (!response.ok) throw new Error('Failed to fetch salon data');
+			const data = await response.json();
+			if (data.salon && data.salon.workingHours) {
+				setSalonWorkingHours(data.salon.workingHours);
+			}
+		} catch (error) {
+			console.error('Error fetching salon data:', error);
+		}
+	};
+
+	// Generate time slots based on salon working hours
 	const generateTimeSlots = () => {
 		const slots = [];
-		const startHour = 9;
-		const endHour = 18;
+		
+		// Get today's day of week (0 = Sunday, 1 = Monday, etc.)
+		const today = new Date();
+		const dayOfWeek = today.getDay();
+		const dayNames = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+		const todayName = dayNames[dayOfWeek];
+		
+		// Default hours if no working hours are set
+		let startHour = 9;
+		let endHour = 18;
+		
+		// Get working hours for today if available
+		if (salonWorkingHours && salonWorkingHours[todayName] && !salonWorkingHours[todayName].closed) {
+			const openTime = salonWorkingHours[todayName].open;
+			const closeTime = salonWorkingHours[todayName].close;
+			
+			// Parse time strings (assuming format like "9:00 AM" or "09:00")
+			if (openTime && closeTime) {
+				const openHour = parseInt(openTime.split(':')[0]);
+				const closeHour = parseInt(closeTime.split(':')[0]);
+				
+				// Convert to 24-hour format if needed
+				if (openTime.includes('AM') && openHour === 12) {
+					startHour = 0;
+				} else if (openTime.includes('PM') && openHour !== 12) {
+					startHour = openHour + 12;
+				} else {
+					startHour = openHour;
+				}
+				
+				if (closeTime.includes('AM') && closeHour === 12) {
+					endHour = 0;
+				} else if (closeTime.includes('PM') && closeHour !== 12) {
+					endHour = closeHour + 12;
+				} else {
+					endHour = closeHour;
+				}
+			}
+		}
 
+		// Generate time slots
 		for (let hour = startHour; hour < endHour; hour++) {
-			slots.push(`${hour}:00 AM`);
 			if (hour < 12) {
-				slots.push(`${hour}:30 AM`);
+				slots.push(`${hour === 0 ? 12 : hour}:00 ${hour === 0 ? 'AM' : hour < 12 ? 'AM' : 'PM'}`);
+				slots.push(`${hour === 0 ? 12 : hour}:30 ${hour === 0 ? 'AM' : hour < 12 ? 'AM' : 'PM'}`);
 			} else if (hour === 12) {
+				slots.push('12:00 PM');
 				slots.push('12:30 PM');
 			} else {
-				slots.push(`${hour - 12}:30 PM`);
+				const displayHour = hour - 12;
+				slots.push(`${displayHour}:00 PM`);
+				slots.push(`${displayHour}:30 PM`);
 			}
 		}
 		return slots;
