@@ -1,12 +1,16 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
+import { useRouter } from 'next/navigation';
+import { supabase } from '@/lib/supabase';
 import Link from 'next/link';
 
 export default function PublicHeader() {
 	const [isLanguageDropdownOpen, setIsLanguageDropdownOpen] = useState(false);
 	const [selectedLanguage, setSelectedLanguage] = useState('EN');
+	const [isCheckingAuth, setIsCheckingAuth] = useState(false);
 	const dropdownRef = useRef<HTMLDivElement>(null);
+	const router = useRouter();
 
 	const languages = [
 		{ code: 'EN', name: 'English', flag: '🇺🇸' },
@@ -17,6 +21,31 @@ export default function PublicHeader() {
 	const handleLanguageSelect = (language: (typeof languages)[0]) => {
 		setSelectedLanguage(language.code);
 		setIsLanguageDropdownOpen(false);
+	};
+
+	const handleBusinessClick = async (e: React.MouseEvent) => {
+		e.preventDefault();
+		setIsCheckingAuth(true);
+
+		try {
+			const {
+				data: { session },
+			} = await supabase.auth.getSession();
+
+			if (session?.user) {
+				// User is logged in, redirect to owner dashboard
+				router.push('/owner');
+			} else {
+				// User is not logged in, redirect to login
+				router.push('/login');
+			}
+		} catch (error) {
+			console.error('Error checking auth:', error);
+			// On error, redirect to login
+			router.push('/login');
+		} finally {
+			setIsCheckingAuth(false);
+		}
 	};
 
 	// Close dropdown when clicking outside
@@ -108,12 +137,13 @@ export default function PublicHeader() {
 					</div>
 
 					{/* Login Buttons */}
-					<Link
-						href="/login"
-						className="text-sm text-gray-700 hover:text-[#8B4513] font-medium transition-colors"
+					<button
+						onClick={handleBusinessClick}
+						disabled={isCheckingAuth}
+						className="text-sm text-gray-700 hover:text-[#8B4513] font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
 					>
-						For Business
-					</Link>
+						{isCheckingAuth ? 'Checking...' : 'For Business'}
+					</button>
 					<Link
 						href="/client/login"
 						className="bg-[#ff5b5b] text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-[#e04a4a] transition-colors"

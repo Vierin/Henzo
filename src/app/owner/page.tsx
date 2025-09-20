@@ -68,11 +68,17 @@ export default function OwnerDashboardPage() {
 						<a className="text-gray-800 hover:text-black font-medium" href="#">
 							Calendar
 						</a>
-						<a className="text-gray-800 hover:text-black font-medium" href="#">
-							Customers
+						<a
+							className="text-gray-800 hover:text-black font-medium"
+							href="/owner/services"
+						>
+							Services
 						</a>
-						<a className="text-gray-800 hover:text-black font-medium" href="#">
-							Reports
+						<a
+							className="text-gray-800 hover:text-black font-medium"
+							href="/owner/staff"
+						>
+							Staff
 						</a>
 						<a className="text-gray-800 hover:text-black font-medium" href="#">
 							Marketing

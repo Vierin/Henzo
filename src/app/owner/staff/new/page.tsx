@@ -58,8 +58,8 @@ export default function NewStaffPage() {
 				throw new Error(errorData.error || 'Failed to create staff member');
 			}
 
-			// Redirect to staff page or dashboard
-			router.push('/');
+			// Redirect to staff page
+			router.push('/owner/staff');
 		} catch (err: any) {
 			setError(err.message);
 		} finally {

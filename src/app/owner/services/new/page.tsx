@@ -58,8 +58,8 @@ export default function NewServicePage() {
 				throw new Error(errorData.error || 'Failed to create service');
 			}
 
-			// Redirect to services page or dashboard
-			router.push('/');
+			// Redirect to services page
+			router.push('/owner/services');
 		} catch (err: any) {
 			setError(err.message);
 		} finally {
