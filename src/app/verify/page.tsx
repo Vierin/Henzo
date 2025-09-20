@@ -31,12 +31,12 @@ export default function VerifyPage() {
 				if (data.user) {
 					setStatus('success');
 					setMessage(
-						'Email verified successfully! Redirecting to dashboard...'
+						'Email verified successfully! Redirecting to business dashboard...'
 					);
 
-					// Redirect to dashboard after 2 seconds
+					// Redirect to owner dashboard after 2 seconds
 					setTimeout(() => {
-						router.push('/');
+						router.push('/owner');
 					}, 2000);
 				}
 			} catch (err) {

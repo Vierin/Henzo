@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation';
 export default function NewStaffPage() {
 	const [formData, setFormData] = useState({
 		name: '',
-		role: '',
+		accessLevel: 'EMPLOYEE',
 		email: '',
 		phone: '',
 	});
@@ -34,7 +34,7 @@ export default function NewStaffPage() {
 		setError('');
 
 		// Validate form
-		if (!formData.name || !formData.role) {
+		if (!formData.name) {
 			setError('Please fill in all required fields');
 			setLoading(false);
 			return;
@@ -236,27 +236,25 @@ export default function NewStaffPage() {
 
 						<div>
 							<label className="block text-sm font-medium text-gray-700 mb-2">
-								Role/Position *
+								Access Level *
 							</label>
 							<select
 								required
-								value={formData.role}
+								value={formData.accessLevel}
 								onChange={(e) =>
-									setFormData({ ...formData, role: e.target.value })
+									setFormData({ ...formData, accessLevel: e.target.value })
 								}
 								className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#ff5b5b] focus:border-[#ff5b5b] text-gray-900"
 							>
-								<option value="">Select a role</option>
-								<option value="Hair Stylist">Hair Stylist</option>
-								<option value="Barber">Barber</option>
-								<option value="Esthetician">Esthetician</option>
-								<option value="Nail Technician">Nail Technician</option>
-								<option value="Massage Therapist">Massage Therapist</option>
-								<option value="Makeup Artist">Makeup Artist</option>
-								<option value="Receptionist">Receptionist</option>
-								<option value="Manager">Manager</option>
-								<option value="Other">Other</option>
+								<option value="EMPLOYEE">Employee - Limited access</option>
+								<option value="ADMIN">
+									Admin - Full access to salon management
+								</option>
 							</select>
+							<p className="text-xs text-gray-500 mt-1">
+								Admins can manage staff, services, and appointments. Employees
+								have limited access.
+							</p>
 						</div>
 
 						<div className="grid grid-cols-1 md:grid-cols-2 gap-6">

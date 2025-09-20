@@ -59,26 +59,29 @@ export default function OwnerDashboardPage() {
 						<span className="text-xl font-semibold">Henzo</span>
 					</div>
 					<nav className="hidden md:flex items-center gap-8 text-[15px]">
-						<a className="text-[#6b6b6b] hover:text-black" href="/owner">
+						<a
+							className="text-gray-800 hover:text-black font-medium"
+							href="/owner"
+						>
 							Dashboard
 						</a>
-						<a className="text-[#6b6b6b] hover:text-black" href="#">
+						<a className="text-gray-800 hover:text-black font-medium" href="#">
 							Calendar
 						</a>
-						<a className="text-[#6b6b6b] hover:text-black" href="#">
+						<a className="text-gray-800 hover:text-black font-medium" href="#">
 							Customers
 						</a>
-						<a className="text-[#6b6b6b] hover:text-black" href="#">
+						<a className="text-gray-800 hover:text-black font-medium" href="#">
 							Reports
 						</a>
-						<a className="text-[#6b6b6b] hover:text-black" href="#">
+						<a className="text-gray-800 hover:text-black font-medium" href="#">
 							Marketing
 						</a>
 					</nav>
 					<div className="flex items-center gap-4">
 						<button
 							aria-label="notifications"
-							className="h-9 w-9 rounded-full border border-[#ead2d0] grid place-items-center text-[#6b6b6b]"
+							className="h-9 w-9 rounded-full border border-[#ead2d0] grid place-items-center text-gray-700"
 						>
 							🔔
 						</button>
@@ -88,7 +91,7 @@ export default function OwnerDashboardPage() {
 								await supabase.auth.signOut();
 								router.push('/login');
 							}}
-							className="text-sm text-[#6b6b6b] hover:text-black"
+							className="text-sm text-gray-800 hover:text-black font-medium"
 						>
 							Logout
 						</button>
@@ -98,10 +101,8 @@ export default function OwnerDashboardPage() {
 
 			<main className="mx-auto max-w-7xl px-6 py-8">
 				<div className="mb-8">
-					<h1 className="text-3xl font-bold text-gray-900 mb-2">
-						Appointments
-					</h1>
-					<p className="text-gray-600">
+					<h1 className="text-3xl font-bold text-black mb-2">Appointments</h1>
+					<p className="text-gray-800">
 						Manage your salon appointments and bookings
 					</p>
 				</div>
@@ -112,8 +113,10 @@ export default function OwnerDashboardPage() {
 							Upcoming
 							<span className="absolute -bottom-px left-0 right-0 h-[3px] rounded-full bg-[#ea4b4b]" />
 						</button>
-						<button className="text-[#8a8a8a] pb-3">Past</button>
-						<button className="text-[#8a8a8a] pb-3">Cancelled</button>
+						<button className="text-gray-600 pb-3 font-medium">Past</button>
+						<button className="text-gray-600 pb-3 font-medium">
+							Cancelled
+						</button>
 					</div>
 					<a
 						href="/owner/appointments/new"
@@ -126,7 +129,7 @@ export default function OwnerDashboardPage() {
 
 				<div className="mt-6 grid grid-cols-1 lg:grid-cols-[1fr_360px] gap-6">
 					<section className="rounded-xl overflow-hidden border border-[#f1d9d7] bg-white">
-						<div className="grid grid-cols-6 px-6 py-3 text-[13px] text-[#7a7a7a] bg-[#fff2f1]">
+						<div className="grid grid-cols-6 px-6 py-3 text-[13px] text-gray-700 bg-[#fff2f1] font-semibold">
 							<div>Client</div>
 							<div>Service</div>
 							<div>Staff</div>
@@ -136,8 +139,8 @@ export default function OwnerDashboardPage() {
 						</div>
 						<div className="divide-y divide-[#f1d9d7]">
 							{/* Sample booking rows */}
-							<div className="grid grid-cols-6 px-6 py-4 text-[15px]">
-								<div className="font-medium">Sarah Johnson</div>
+							<div className="grid grid-cols-6 px-6 py-4 text-[15px] text-gray-800">
+								<div className="font-semibold">Sarah Johnson</div>
 								<div>Haircut</div>
 								<div>Emily Carter</div>
 								<div>Dec 15, 2024</div>
@@ -148,8 +151,8 @@ export default function OwnerDashboardPage() {
 									</span>
 								</div>
 							</div>
-							<div className="grid grid-cols-6 px-6 py-4 text-[15px]">
-								<div className="font-medium">Mike Wilson</div>
+							<div className="grid grid-cols-6 px-6 py-4 text-[15px] text-gray-800">
+								<div className="font-semibold">Mike Wilson</div>
 								<div>Manicure</div>
 								<div>Ava Thompson</div>
 								<div>Dec 15, 2024</div>
@@ -160,8 +163,8 @@ export default function OwnerDashboardPage() {
 									</span>
 								</div>
 							</div>
-							<div className="grid grid-cols-6 px-6 py-4 text-[15px]">
-								<div className="font-medium">Lisa Brown</div>
+							<div className="grid grid-cols-6 px-6 py-4 text-[15px] text-gray-800">
+								<div className="font-semibold">Lisa Brown</div>
 								<div>Facial</div>
 								<div>Chloe Davis</div>
 								<div>Dec 16, 2024</div>
@@ -176,32 +179,34 @@ export default function OwnerDashboardPage() {
 					</section>
 
 					<aside className="rounded-xl border border-[#f1d9d7] bg-white p-6">
-						<h3 className="text-[18px] font-semibold">Quick Actions</h3>
+						<h3 className="text-[18px] font-semibold text-black">
+							Quick Actions
+						</h3>
 						<ul className="mt-4 space-y-3 text-[15px]">
 							<li>
 								<a
 									href="/owner/services/new"
-									className="flex items-center justify-between rounded-lg border border-[#f6e7e6] px-4 py-3 hover:bg-[#fff7f6] transition-colors"
+									className="flex items-center justify-between rounded-lg border border-[#f6e7e6] px-4 py-3 hover:bg-[#fff7f6] transition-colors text-gray-800"
 								>
-									<span>Add New Services</span>
+									<span className="font-medium">Add New Services</span>
 									<span className="text-xl">＋</span>
 								</a>
 							</li>
 							<li>
 								<a
 									href="/owner/staff/new"
-									className="flex items-center justify-between rounded-lg border border-[#f6e7e6] px-4 py-3 hover:bg-[#fff7f6] transition-colors"
+									className="flex items-center justify-between rounded-lg border border-[#f6e7e6] px-4 py-3 hover:bg-[#fff7f6] transition-colors text-gray-800"
 								>
-									<span>Add New Staff</span>
+									<span className="font-medium">Add New Staff</span>
 									<span className="text-xl">＋</span>
 								</a>
 							</li>
 							<li>
 								<a
 									href="/owner/salon-info"
-									className="flex items-center justify-between rounded-lg border border-[#f6e7e6] px-4 py-3 hover:bg-[#fff7f6] transition-colors"
+									className="flex items-center justify-between rounded-lg border border-[#f6e7e6] px-4 py-3 hover:bg-[#fff7f6] transition-colors text-gray-800"
 								>
-									<span>Salon Information</span>
+									<span className="font-medium">Salon Information</span>
 									<span>⚙️</span>
 								</a>
 							</li>

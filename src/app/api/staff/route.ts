@@ -23,7 +23,7 @@ export async function GET() {
 // POST /api/staff - Create new staff member
 export async function POST(request: NextRequest) {
 	try {
-		const { name, role, email, phone, salonId } = await request.json();
+		const { name, accessLevel, email, phone, salonId } = await request.json();
 
 		// Validate required fields
 		if (!name || !salonId) {
@@ -33,11 +33,19 @@ export async function POST(request: NextRequest) {
 			);
 		}
 
+		// Validate access level
+		if (accessLevel && !['ADMIN', 'EMPLOYEE'].includes(accessLevel)) {
+			return NextResponse.json(
+				{ error: 'Invalid access level. Must be ADMIN or EMPLOYEE' },
+				{ status: 400 }
+			);
+		}
+
 		// Create staff member
 		const staff = await prisma.staff.create({
 			data: {
 				name,
-				role: role || '',
+				accessLevel: accessLevel || 'EMPLOYEE',
 				email: email || '',
 				phone: phone || '',
 				salonId,
