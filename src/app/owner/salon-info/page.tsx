@@ -164,7 +164,7 @@ export default function SalonInfoPage() {
 	];
 
 	return (
-		<div className="min-h-screen bg-white">
+		<div className="min-h-screen bg-[#fff7f6]">
 			{/* Header */}
 			<header className="sticky top-0 z-10 bg-white/80 backdrop-blur border-b border-[#f1d9d7]">
 				<div className="mx-auto max-w-7xl px-6 py-4 flex items-center justify-between">
@@ -173,39 +173,47 @@ export default function SalonInfoPage() {
 						<span className="text-xl font-semibold">Henzo</span>
 					</div>
 					<nav className="hidden md:flex items-center gap-8 text-[15px]">
-						<a className="text-[#6b6b6b] hover:text-black" href="/">
+						<a
+							className="text-gray-800 hover:text-black font-medium"
+							href="/owner"
+						>
 							Dashboard
 						</a>
-						<a className="text-[#6b6b6b] hover:text-black" href="#">
+						<a className="text-gray-800 hover:text-black font-medium" href="#">
 							Calendar
 						</a>
-						<a className="text-[#6b6b6b] hover:text-black" href="#">
-							Customers
+						<a
+							className="text-gray-800 hover:text-black font-medium"
+							href="/owner/services"
+						>
+							Services
 						</a>
-						<a className="text-[#6b6b6b] hover:text-black" href="#">
-							Reports
+						<a
+							className="text-gray-800 hover:text-black font-medium"
+							href="/owner/staff"
+						>
+							Staff
 						</a>
-						<a className="text-[#6b6b6b] hover:text-black" href="#">
+						<a className="text-gray-800 hover:text-black font-medium" href="#">
 							Marketing
 						</a>
 					</nav>
 					<div className="flex items-center gap-4">
 						<button
 							aria-label="notifications"
-							className="h-9 w-9 rounded-full border border-[#ead2d0] grid place-items-center text-[#6b6b6b]"
+							className="h-9 w-9 rounded-full border border-[#ead2d0] grid place-items-center text-gray-700"
 						>
 							🔔
 						</button>
-						<div className="h-9 w-9 rounded-full bg-[#ffd6d2]" />
-						<button
-							onClick={async () => {
-								// Add logout functionality if needed
-								window.location.href = '/login';
-							}}
-							className="text-sm text-[#6b6b6b] hover:text-black"
-						>
-							Logout
-						</button>
+						<div className="flex items-center gap-3">
+							<div className="text-right">
+								<div className="text-sm font-medium text-gray-800">
+									Salon Owner
+								</div>
+								<div className="text-xs text-gray-500">Business Account</div>
+							</div>
+							<div className="h-9 w-9 rounded-full bg-gray-200" />
+						</div>
 					</div>
 				</div>
 			</header>
