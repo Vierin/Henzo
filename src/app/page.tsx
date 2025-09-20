@@ -1,223 +1,161 @@
-'use client';
+import PublicHeader from '../components/PublicHeader';
 
-import { useEffect, useState } from 'react';
-import { supabase } from '@/lib/supabase';
-import { useRouter } from 'next/navigation';
-import Image from 'next/image';
-
-export default function Home() {
-	const [loading, setLoading] = useState(true);
-	const [user, setUser] = useState<any>(null);
-	const router = useRouter();
-
-	useEffect(() => {
-		const checkUser = async () => {
-			try {
-				const {
-					data: { session },
-				} = await supabase.auth.getSession();
-
-				if (!session) {
-					router.push('/login');
-					return;
-				}
-
-				// Check if email is verified
-				if (!session.user.email_confirmed_at) {
-					router.push('/verify');
-					return;
-				}
-
-				setUser(session.user);
-			} catch (error) {
-				console.error('Error checking user:', error);
-				router.push('/register');
-			} finally {
-				setLoading(false);
-			}
-		};
-
-		checkUser();
-
-		// Listen for auth changes
-		const {
-			data: { subscription },
-		} = supabase.auth.onAuthStateChange((event, session) => {
-			if (event === 'SIGNED_OUT' || !session) {
-				router.push('/login');
-			} else if (session && !session.user.email_confirmed_at) {
-				router.push('/verify');
-			} else if (session && session.user.email_confirmed_at) {
-				setUser(session.user);
-			}
-		});
-
-		return () => subscription.unsubscribe();
-	}, [router]);
-
-	if (loading) {
-		return (
-			<div className="min-h-screen bg-[#fff7f6] flex items-center justify-center">
-				<div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#ff5b5b]"></div>
-			</div>
-		);
-	}
-
-	if (!user) {
-		return null; // Will redirect
-	}
+export default function HomePage() {
 	return (
-		<div className="min-h-screen bg-[#fff7f6] text-[#1b1b1b]">
-			<header className="sticky top-0 z-10 bg-white/80 backdrop-blur border-b border-[#f1d9d7]">
-				<div className="mx-auto max-w-7xl px-6 py-4 flex items-center justify-between">
-					<div className="flex items-center gap-3">
-						<div className="h-8 w-8 rounded-full bg-[#ff5b5b]" />
-						<span className="text-xl font-semibold">Henzo</span>
-					</div>
-					<nav className="hidden md:flex items-center gap-8 text-[15px]">
-						<a className="text-[#6b6b6b] hover:text-black" href="#">
-							Dashboard
-						</a>
-						<a className="text-[#6b6b6b] hover:text-black" href="#">
-							Calendar
-						</a>
-						<a className="text-[#6b6b6b] hover:text-black" href="#">
-							Customers
-						</a>
-						<a className="text-[#6b6b6b] hover:text-black" href="#">
-							Reports
-						</a>
-						<a className="text-[#6b6b6b] hover:text-black" href="#">
-							Marketing
-						</a>
-					</nav>
-					<div className="flex items-center gap-4">
-						<button
-							aria-label="notifications"
-							className="h-9 w-9 rounded-full border border-[#ead2d0] grid place-items-center text-[#6b6b6b]"
-						>
-							🔔
-						</button>
-						<div className="h-9 w-9 rounded-full bg-[#ffd6d2]" />
-						<button
-							onClick={async () => {
-								await supabase.auth.signOut();
-								router.push('/login');
-							}}
-							className="text-sm text-[#6b6b6b] hover:text-black"
-						>
-							Logout
-						</button>
-					</div>
-				</div>
-			</header>
+		<div className="min-h-screen bg-[#F8F5F2]">
+			<PublicHeader />
 
-			<main className="mx-auto max-w-7xl px-6 py-8">
-				<h1 className="text-[34px] font-semibold tracking-[-0.02em]">
-					Appointments
-				</h1>
-
-				<div className="mt-6 flex items-center justify-between">
-					<div className="flex items-center gap-8 text-[15px]">
-						<button className="relative pb-3 text-black font-medium">
-							Upcoming
-							<span className="absolute -bottom-px left-0 right-0 h-[3px] rounded-full bg-[#ea4b4b]" />
-						</button>
-						<button className="text-[#8a8a8a] pb-3">Past</button>
-						<button className="text-[#8a8a8a] pb-3">Cancelled</button>
-					</div>
-					<button className="inline-flex items-center gap-2 rounded-full bg-[#ea4b4b] text-white px-4 py-2 text-sm shadow-sm hover:opacity-95">
-						<span className="text-lg leading-none">＋</span>
-						New Appointment
-					</button>
-				</div>
-
-				<div className="mt-6 grid grid-cols-1 lg:grid-cols-[1fr_360px] gap-6">
-					<section className="rounded-xl overflow-hidden border border-[#f1d9d7] bg-white">
-						<div className="grid grid-cols-6 px-6 py-3 text-[13px] text-[#7a7a7a] bg-[#fff2f1]">
-							<div>Customer</div>
-							<div>Service</div>
-							<div>Staff</div>
-							<div>Date</div>
-							<div>Time</div>
-							<div>Status</div>
+			<main>
+				{/* Hero Section */}
+				<section className="py-16 px-6">
+					<div className="mx-auto max-w-6xl">
+						<div className="bg-gradient-to-r from-gray-100 to-gray-200 rounded-2xl p-12 text-center">
+							<h1 className="text-4xl font-bold text-gray-900 mb-4">
+								Find Your Perfect Beauty Salon
+							</h1>
+							<p className="text-lg text-gray-700 mb-8 max-w-2xl mx-auto">
+								Discover the best beauty salons, barbershops, and spas in your
+								city. Book your visit online in seconds.
+							</p>
+							<div className="flex max-w-2xl mx-auto">
+								<div className="flex-1 relative">
+									<input
+										type="text"
+										placeholder="Search for services, salons, or specialists"
+										className="w-full px-4 py-4 pl-12 pr-4 bg-white rounded-l-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#8B4513] focus:border-transparent"
+									/>
+									<svg
+										className="absolute left-4 top-4 h-6 w-6 text-gray-400"
+										fill="none"
+										stroke="currentColor"
+										viewBox="0 0 24 24"
+									>
+										<path
+											strokeLinecap="round"
+											strokeLinejoin="round"
+											strokeWidth={2}
+											d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+										/>
+									</svg>
+								</div>
+								<button className="bg-[#ff5b5b] text-white px-8 py-4 rounded-r-xl font-medium hover:bg-[#e04a4a] transition-colors">
+									Search
+								</button>
+							</div>
 						</div>
-						<ul className="divide-y divide-[#f3e3e1]">
-							{[
-								{
-									c: 'Sophia Bennett',
-									s: 'Haircut',
-									st: 'Emily Carter',
-									d: 'Jul 15, 2024',
-									t: '10:00 AM',
-								},
-								{
-									c: 'Olivia Harper',
-									s: 'Manicure',
-									st: 'Ava Thompson',
-									d: 'Jul 15, 2024',
-									t: '11:30 AM',
-								},
-								{
-									c: 'Isabella Clark',
-									s: 'Facial',
-									st: 'Chloe Davis',
-									d: 'Jul 16, 2024',
-									t: '2:00 PM',
-								},
-								{
-									c: 'Mia Wilson',
-									s: 'Massage',
-									st: 'Grace Evans',
-									d: 'Jul 17, 2024',
-									t: '3:30 PM',
-								},
-								{
-									c: 'Amelia Turner',
-									s: 'Hair Color',
-									st: 'Lily Foster',
-									d: 'Jul 18, 2024',
-									t: '1:00 PM',
-								},
-							].map((row, idx) => (
-								<li
-									key={idx}
-									className="grid grid-cols-6 px-6 py-4 text-[15px]"
-								>
-									<div className="truncate pr-4">{row.c}</div>
-									<div className="truncate pr-4 text-[#5b5b5b]">{row.s}</div>
-									<div className="truncate pr-4 text-[#5b5b5b]">{row.st}</div>
-									<div className="truncate pr-4 text-[#5b5b5b]">{row.d}</div>
-									<div className="truncate pr-4 text-[#5b5b5b]">{row.t}</div>
-									<div>
-										<span className="inline-flex items-center rounded-full bg-[#e8faee] text-[#2b8a3e] px-3 py-1 text-[12px] font-medium">
-											Confirmed
-										</span>
-									</div>
-								</li>
-							))}
-						</ul>
-					</section>
+					</div>
+				</section>
 
-					<aside className="rounded-xl border border-[#f1d9d7] bg-white p-6">
-						<h3 className="text-[18px] font-semibold">Quick Actions</h3>
-						<ul className="mt-4 space-y-3 text-[15px]">
-							<li className="flex items-center justify-between rounded-lg border border-[#f6e7e6] px-4 py-3 hover:bg-[#fff7f6]">
-								<span>Add New Services</span>
-								<span className="text-xl">＋</span>
-							</li>
-							<li className="flex items-center justify-between rounded-lg border border-[#f6e7e6] px-4 py-3 hover:bg-[#fff7f6]">
-								<span>Add New Staff</span>
-								<span className="text-xl">＋</span>
-							</li>
-							<li className="flex items-center justify-between rounded-lg border border-[#f6e7e6] px-4 py-3 hover:bg-[#fff7f6]">
-								<span>Account Settings</span>
-								<span>⚙️</span>
-							</li>
-						</ul>
-					</aside>
-				</div>
+				{/* Popular Services Section */}
+				<section className="py-16 px-6">
+					<div className="mx-auto max-w-6xl">
+						<h2 className="text-3xl font-bold text-gray-900 mb-8">
+							Popular Services
+						</h2>
+						<div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+							<div className="bg-white rounded-xl p-6 text-center hover:shadow-lg transition-shadow">
+								<div className="w-20 h-20 bg-gray-100 rounded-xl mx-auto mb-4 flex items-center justify-center">
+									<span className="text-3xl">💇‍♀️</span>
+								</div>
+								<h3 className="text-lg font-semibold text-gray-900">Haircut</h3>
+							</div>
+							<div className="bg-white rounded-xl p-6 text-center hover:shadow-lg transition-shadow">
+								<div className="w-20 h-20 bg-gray-100 rounded-xl mx-auto mb-4 flex items-center justify-center">
+									<span className="text-3xl">💅</span>
+								</div>
+								<h3 className="text-lg font-semibold text-gray-900">
+									Manicure
+								</h3>
+							</div>
+							<div className="bg-white rounded-xl p-6 text-center hover:shadow-lg transition-shadow">
+								<div className="w-20 h-20 bg-gray-100 rounded-xl mx-auto mb-4 flex items-center justify-center">
+									<span className="text-3xl">✨</span>
+								</div>
+								<h3 className="text-lg font-semibold text-gray-900">Facial</h3>
+							</div>
+							<div className="bg-white rounded-xl p-6 text-center hover:shadow-lg transition-shadow">
+								<div className="w-20 h-20 bg-gray-100 rounded-xl mx-auto mb-4 flex items-center justify-center">
+									<span className="text-3xl">🧘‍♀️</span>
+								</div>
+								<h3 className="text-lg font-semibold text-gray-900">Massage</h3>
+							</div>
+						</div>
+					</div>
+				</section>
+
+				{/* Recommended Salons Section */}
+				<section className="py-16 px-6 bg-white">
+					<div className="mx-auto max-w-6xl">
+						<h2 className="text-3xl font-bold text-gray-900 mb-8">
+							Recommended Salons
+						</h2>
+						<div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+							<div className="bg-white rounded-xl overflow-hidden shadow-lg hover:shadow-xl transition-shadow">
+								<div className="h-48 bg-gradient-to-br from-teal-100 to-teal-200 flex items-center justify-center">
+									<span className="text-6xl">💇‍♀️</span>
+								</div>
+								<div className="p-6">
+									<h3 className="text-xl font-bold text-gray-900 mb-2">
+										"Orchid" Beauty Salon
+									</h3>
+									<p className="text-[#ff5b5b] text-sm">12 Lenin St, Moscow</p>
+								</div>
+							</div>
+							<div className="bg-white rounded-xl overflow-hidden shadow-lg hover:shadow-xl transition-shadow">
+								<div className="h-48 bg-gradient-to-br from-amber-100 to-amber-200 flex items-center justify-center">
+									<span className="text-6xl">✂️</span>
+								</div>
+								<div className="p-6">
+									<h3 className="text-xl font-bold text-gray-900 mb-2">
+										"Style" Barbershop
+									</h3>
+									<p className="text-[#ff5b5b] text-sm">
+										34 Pushkin St, Moscow
+									</p>
+								</div>
+							</div>
+							<div className="bg-white rounded-xl overflow-hidden shadow-lg hover:shadow-xl transition-shadow">
+								<div className="h-48 bg-gradient-to-br from-green-100 to-green-200 flex items-center justify-center">
+									<span className="text-6xl">🧘‍♀️</span>
+								</div>
+								<div className="p-6">
+									<h3 className="text-xl font-bold text-gray-900 mb-2">
+										"Relax" Spa Center
+									</h3>
+									<p className="text-[#ff5b5b] text-sm">
+										56 Turgenev St, Moscow
+									</p>
+								</div>
+							</div>
+						</div>
+					</div>
+				</section>
 			</main>
+
+			{/* Footer */}
+			<footer className="bg-[#F8F5F2] py-12 px-6">
+				<div className="mx-auto max-w-6xl">
+					<div className="flex flex-col md:flex-row justify-between items-center">
+						<div className="flex gap-8 mb-4 md:mb-0">
+							<a href="#" className="text-gray-700 hover:text-[#8B4513]">
+								About Us
+							</a>
+							<a href="#" className="text-gray-700 hover:text-[#8B4513]">
+								Contact
+							</a>
+							<a href="#" className="text-gray-700 hover:text-[#8B4513]">
+								Privacy Policy
+							</a>
+							<a href="#" className="text-gray-700 hover:text-[#8B4513]">
+								Terms of Use
+							</a>
+						</div>
+						<div className="text-gray-500 text-sm">
+							© 2023 Henzo. All rights reserved.
+						</div>
+					</div>
+				</div>
+			</footer>
 		</div>
 	);
 }

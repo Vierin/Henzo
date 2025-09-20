@@ -32,8 +32,8 @@ export default function LoginPage() {
 				return;
 			}
 
-			// Redirect to dashboard
-			router.push('/');
+			// Redirect to owner dashboard
+			router.push('/owner');
 		} catch (err: any) {
 			setError(err.message);
 		} finally {
