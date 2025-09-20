@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import EditStaffModal from '../../../components/EditStaffModal';
 
 interface Staff {
 	id: string;
@@ -16,6 +17,8 @@ export default function StaffPage() {
 	const [staff, setStaff] = useState<Staff[]>([]);
 	const [loading, setLoading] = useState(true);
 	const [error, setError] = useState('');
+	const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+	const [selectedStaff, setSelectedStaff] = useState<Staff | null>(null);
 	const router = useRouter();
 
 	useEffect(() => {
@@ -33,6 +36,39 @@ export default function StaffPage() {
 		} finally {
 			setLoading(false);
 		}
+	};
+
+	const handleEditStaff = (staffMember: Staff) => {
+		setSelectedStaff(staffMember);
+		setIsEditModalOpen(true);
+	};
+
+	const handleDeleteStaff = async (staffId: string) => {
+		if (!confirm('Are you sure you want to delete this staff member?')) return;
+
+		try {
+			const response = await fetch(`/api/staff/${staffId}`, {
+				method: 'DELETE',
+			});
+
+			if (!response.ok) {
+				const errorData = await response.json();
+				throw new Error(errorData.error || 'Failed to delete staff member');
+			}
+
+			// Remove staff member from local state
+			setStaff(staff.filter((member) => member.id !== staffId));
+		} catch (err: any) {
+			setError(err.message);
+		}
+	};
+
+	const handleSaveStaff = (updatedStaff: Staff) => {
+		setStaff(
+			staff.map((member) =>
+				member.id === updatedStaff.id ? updatedStaff : member
+			)
+		);
 	};
 
 	const getAccessLevelBadge = (accessLevel: string) => {
@@ -185,11 +221,17 @@ export default function StaffPage() {
 										{member.phone || 'No phone'}
 									</div>
 									<div className="flex gap-2">
-										<button className="text-[#ff5b5b] hover:text-[#e04a4a] text-sm font-medium">
+										<button
+											onClick={() => handleEditStaff(member)}
+											className="text-[#ff5b5b] hover:text-[#e04a4a] text-sm font-medium"
+										>
 											Edit
 										</button>
-										<button className="text-red-600 hover:text-red-700 text-sm font-medium">
-											Remove
+										<button
+											onClick={() => handleDeleteStaff(member.id)}
+											className="text-red-600 hover:text-red-700 text-sm font-medium"
+										>
+											Delete
 										</button>
 									</div>
 								</div>
@@ -198,6 +240,17 @@ export default function StaffPage() {
 					</div>
 				)}
 			</main>
+
+			{/* Edit Staff Modal */}
+			<EditStaffModal
+				isOpen={isEditModalOpen}
+				onClose={() => {
+					setIsEditModalOpen(false);
+					setSelectedStaff(null);
+				}}
+				staff={selectedStaff}
+				onSave={handleSaveStaff}
+			/>
 		</div>
 	);
 }

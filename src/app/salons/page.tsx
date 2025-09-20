@@ -1,14 +1,32 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import BookingModal from '../../components/BookingModal';
 import PublicHeader from '../../components/PublicHeader';
+
+interface Service {
+	id: string;
+	name: string;
+	description: string;
+	duration: number;
+	price: number;
+}
+
+interface Salon {
+	id: string;
+	name: string;
+	address: string;
+	phone: string;
+	services: Service[];
+}
 
 export default function SalonsPage() {
 	const [searchQuery, setSearchQuery] = useState('Nail salons in Moscow');
 	const [activeFilter, setActiveFilter] = useState('Nail salons');
 	const [isBookingModalOpen, setIsBookingModalOpen] = useState(false);
-	const [selectedService, setSelectedService] = useState(null);
+	const [selectedService, setSelectedService] = useState<Service | null>(null);
+	const [salons, setSalons] = useState<Salon[]>([]);
+	const [loading, setLoading] = useState(true);
 
 	const filters = [
 		'Nail salons',

@@ -1,16 +1,25 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+
+interface Service {
+	id: string;
+	name: string;
+	description: string;
+	duration: number;
+	price: number;
+}
+
+interface Staff {
+	id: string;
+	name: string;
+	accessLevel: 'ADMIN' | 'EMPLOYEE';
+}
 
 interface BookingModalProps {
 	isOpen: boolean;
 	onClose: () => void;
-	service?: {
-		name: string;
-		description: string;
-		duration: string;
-		price: string;
-	};
+	service?: Service;
 }
 
 export default function BookingModal({
@@ -18,11 +27,53 @@ export default function BookingModal({
 	onClose,
 	service,
 }: BookingModalProps) {
-	const [selectedDate, setSelectedDate] = useState('Wed 16');
-	const [selectedTime, setSelectedTime] = useState('12:00 PM');
+	const [selectedDate, setSelectedDate] = useState('');
+	const [selectedTime, setSelectedTime] = useState('');
 	const [selectedStaff, setSelectedStaff] = useState('Any Staff');
 	const [isStaffDropdownOpen, setIsStaffDropdownOpen] = useState(false);
-	const [currentDateIndex, setCurrentDateIndex] = useState(0); // Start from the beginning
+	const [currentDateIndex, setCurrentDateIndex] = useState(0);
+	const [staffMembers, setStaffMembers] = useState<Staff[]>([]);
+	const [loading, setLoading] = useState(false);
+
+	// Load staff members when modal opens
+	useEffect(() => {
+		if (isOpen) {
+			fetchStaffMembers();
+		}
+	}, [isOpen]);
+
+	const fetchStaffMembers = async () => {
+		try {
+			setLoading(true);
+			const response = await fetch('/api/staff');
+			if (!response.ok) throw new Error('Failed to fetch staff');
+			const data = await response.json();
+			setStaffMembers(data.staff || []);
+		} catch (error) {
+			console.error('Error fetching staff:', error);
+		} finally {
+			setLoading(false);
+		}
+	};
+
+	// Generate time slots based on salon working hours (9 AM - 6 PM for now)
+	const generateTimeSlots = () => {
+		const slots = [];
+		const startHour = 9;
+		const endHour = 18;
+
+		for (let hour = startHour; hour < endHour; hour++) {
+			slots.push(`${hour}:00 AM`);
+			if (hour < 12) {
+				slots.push(`${hour}:30 AM`);
+			} else if (hour === 12) {
+				slots.push('12:30 PM');
+			} else {
+				slots.push(`${hour - 12}:30 PM`);
+			}
+		}
+		return slots;
+	};
 
 	// Generate dates dynamically for 2 months ahead
 	const generateDates = () => {
@@ -49,18 +100,12 @@ export default function BookingModal({
 	};
 
 	const dates = generateDates();
-	const timeSlots = [
-		'10:00 AM',
-		'11:00 AM',
-		'12:00 PM',
-		'1:00 PM',
-		'2:00 PM',
-		'3:00 PM',
-	];
-	const staffMembers = [
-		{ id: 'any', name: 'Any Staff', icon: '👥' },
-		{ id: 'emily', name: 'Emily Carter', avatar: '👩‍🦱' },
-		{ id: 'sophia', name: 'Sophia Bennett', avatar: '👩‍🦳' },
+	const timeSlots = generateTimeSlots();
+
+	// Add "Any Staff" option to the beginning of staff list
+	const allStaffMembers = [
+		{ id: 'any', name: 'Any Staff', accessLevel: 'EMPLOYEE' as const },
+		...staffMembers,
 	];
 
 	const handleDateNavigation = (direction: 'prev' | 'next') => {
@@ -151,23 +196,22 @@ export default function BookingModal({
 						{/* Service Details */}
 						<div className="mb-8">
 							<h2 className="text-2xl font-bold text-gray-900 mb-2">
-								{service?.name || 'Lychee Peel Facial'}
+								{service?.name || 'Select a service'}
 							</h2>
 							<p className="text-gray-700 mb-4">
-								{service?.description ||
-									'A rejuvenating facial treatment using natural lychee extracts to exfoliate and brighten the skin.'}
+								{service?.description || 'Please select a service to book'}
 							</p>
 							<div className="flex items-center gap-6">
 								<div className="flex items-center gap-2">
 									<span className="text-gray-500">🕒</span>
 									<span className="text-sm text-gray-600">
-										{service?.duration || '60 min'}
+										{service?.duration ? `${service.duration} min` : 'Duration'}
 									</span>
 								</div>
 								<div className="flex items-center gap-2">
 									<span className="text-gray-500">$</span>
 									<span className="text-lg font-bold text-[#8B4513]">
-										{service?.price || '$120'}
+										{service?.price ? `$${service.price}` : 'Price'}
 									</span>
 								</div>
 							</div>
@@ -276,10 +320,7 @@ export default function BookingModal({
 									<div className="flex items-center gap-3">
 										<div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center">
 											<span className="text-lg">
-												{staffMembers.find((s) => s.name === selectedStaff)
-													?.icon ||
-													staffMembers.find((s) => s.name === selectedStaff)
-														?.avatar}
+												{selectedStaff === 'Any Staff' ? '👥' : '👤'}
 											</span>
 										</div>
 										<span className="font-medium text-gray-900">
@@ -305,7 +346,7 @@ export default function BookingModal({
 
 								{isStaffDropdownOpen && (
 									<div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-10">
-										{staffMembers.map((staff) => (
+										{allStaffMembers.map((staff) => (
 											<button
 												key={staff.id}
 												onClick={() => {
@@ -316,7 +357,7 @@ export default function BookingModal({
 											>
 												<div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center">
 													<span className="text-lg">
-														{staff.icon || staff.avatar}
+														{staff.id === 'any' ? '👥' : '👤'}
 													</span>
 												</div>
 												<span className="font-medium text-gray-900">
@@ -334,7 +375,8 @@ export default function BookingModal({
 							onClick={handleBooking}
 							className="w-full bg-[#ff5b5b] text-white py-4 rounded-lg font-semibold text-lg hover:bg-[#e04a4a] transition-colors"
 						>
-							Book Appointment - {service?.price || '$120'}
+							Book Appointment -{' '}
+							{service?.price ? `$${service.price}` : 'Select service'}
 						</button>
 
 						{/* Close Button */}

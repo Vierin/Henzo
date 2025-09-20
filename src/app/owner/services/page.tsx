@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import EditServiceModal from '../../../components/EditServiceModal';
 
 interface Service {
 	id: string;
@@ -16,6 +17,8 @@ export default function ServicesPage() {
 	const [services, setServices] = useState<Service[]>([]);
 	const [loading, setLoading] = useState(true);
 	const [error, setError] = useState('');
+	const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+	const [selectedService, setSelectedService] = useState<Service | null>(null);
 	const router = useRouter();
 
 	useEffect(() => {
@@ -33,6 +36,39 @@ export default function ServicesPage() {
 		} finally {
 			setLoading(false);
 		}
+	};
+
+	const handleEditService = (service: Service) => {
+		setSelectedService(service);
+		setIsEditModalOpen(true);
+	};
+
+	const handleDeleteService = async (serviceId: string) => {
+		if (!confirm('Are you sure you want to delete this service?')) return;
+
+		try {
+			const response = await fetch(`/api/services/${serviceId}`, {
+				method: 'DELETE',
+			});
+
+			if (!response.ok) {
+				const errorData = await response.json();
+				throw new Error(errorData.error || 'Failed to delete service');
+			}
+
+			// Remove service from local state
+			setServices(services.filter((service) => service.id !== serviceId));
+		} catch (err: any) {
+			setError(err.message);
+		}
+	};
+
+	const handleSaveService = (updatedService: Service) => {
+		setServices(
+			services.map((service) =>
+				service.id === updatedService.id ? updatedService : service
+			)
+		);
 	};
 
 	const formatPrice = (price: number) => {
@@ -164,17 +200,18 @@ export default function ServicesPage() {
 					</div>
 				) : (
 					<div className="bg-white rounded-xl border border-[#f1d9d7] overflow-hidden">
-						<div className="grid grid-cols-4 px-6 py-3 text-[13px] text-gray-700 bg-[#fff2f1] font-semibold">
+						<div className="grid grid-cols-5 px-6 py-3 text-[13px] text-gray-700 bg-[#fff2f1] font-semibold">
 							<div>Service Name</div>
 							<div>Description</div>
 							<div>Duration</div>
 							<div>Price</div>
+							<div>Actions</div>
 						</div>
 						<div className="divide-y divide-[#f1d9d7]">
 							{services.map((service) => (
 								<div
 									key={service.id}
-									className="grid grid-cols-4 px-6 py-4 text-[15px] text-gray-800"
+									className="grid grid-cols-5 px-6 py-4 text-[15px] text-gray-800"
 								>
 									<div className="font-semibold">{service.name}</div>
 									<div className="text-gray-600">
@@ -184,12 +221,37 @@ export default function ServicesPage() {
 									<div className="font-semibold text-[#ff5b5b]">
 										{formatPrice(service.price)}
 									</div>
+									<div className="flex gap-2">
+										<button
+											onClick={() => handleEditService(service)}
+											className="text-[#ff5b5b] hover:text-[#e04a4a] text-sm font-medium"
+										>
+											Edit
+										</button>
+										<button
+											onClick={() => handleDeleteService(service.id)}
+											className="text-red-600 hover:text-red-700 text-sm font-medium"
+										>
+											Delete
+										</button>
+									</div>
 								</div>
 							))}
 						</div>
 					</div>
 				)}
 			</main>
+
+			{/* Edit Service Modal */}
+			<EditServiceModal
+				isOpen={isEditModalOpen}
+				onClose={() => {
+					setIsEditModalOpen(false);
+					setSelectedService(null);
+				}}
+				service={selectedService}
+				onSave={handleSaveService}
+			/>
 		</div>
 	);
 }
