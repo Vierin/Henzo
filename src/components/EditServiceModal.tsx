@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import toast from 'react-hot-toast';
 
 interface Service {
 	id: string;
@@ -48,6 +49,8 @@ export default function EditServiceModal({
 		setLoading(true);
 		setError('');
 
+		const updateToast = toast.loading('Updating service...');
+
 		try {
 			if (!service) return;
 
@@ -66,9 +69,13 @@ export default function EditServiceModal({
 
 			const updatedService = await response.json();
 			onSave(updatedService.service);
+			toast.success('Service updated successfully!', { id: updateToast });
 			onClose();
 		} catch (err: any) {
 			setError(err.message);
+			toast.error(err.message || 'Failed to update service', {
+				id: updateToast,
+			});
 		} finally {
 			setLoading(false);
 		}

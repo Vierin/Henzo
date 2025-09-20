@@ -16,13 +16,7 @@ export async function GET() {
 			return NextResponse.json({ salon: null });
 		}
 
-		// Parse workingHours JSON if it exists
-		const salonWithParsedHours = {
-			...salon,
-			workingHours: salon.workingHours ? JSON.parse(salon.workingHours as string) : null,
-		};
-
-		return NextResponse.json({ salon: salonWithParsedHours });
+		return NextResponse.json({ salon });
 	} catch (error: any) {
 		console.error('Error fetching salon:', error);
 		return NextResponse.json(
@@ -51,7 +45,7 @@ export async function PUT(request: NextRequest) {
 				address: address || salon.address,
 				phone: phone || salon.phone,
 				logo: logo || salon.logo,
-				workingHours: workingHours ? JSON.stringify(workingHours) : salon.workingHours,
+				workingHours: workingHours || salon.workingHours,
 			},
 		});
 

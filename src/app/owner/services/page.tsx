@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import toast from 'react-hot-toast';
 import EditServiceModal from '../../../components/EditServiceModal';
 
 interface Service {
@@ -46,6 +47,8 @@ export default function ServicesPage() {
 	const handleDeleteService = async (serviceId: string) => {
 		if (!confirm('Are you sure you want to delete this service?')) return;
 
+		const deleteToast = toast.loading('Deleting service...');
+
 		try {
 			const response = await fetch(`/api/services/${serviceId}`, {
 				method: 'DELETE',
@@ -58,8 +61,12 @@ export default function ServicesPage() {
 
 			// Remove service from local state
 			setServices(services.filter((service) => service.id !== serviceId));
+			toast.success('Service deleted successfully!', { id: deleteToast });
 		} catch (err: any) {
 			setError(err.message);
+			toast.error(err.message || 'Failed to delete service', {
+				id: deleteToast,
+			});
 		}
 	};
 
@@ -69,6 +76,7 @@ export default function ServicesPage() {
 				service.id === updatedService.id ? updatedService : service
 			)
 		);
+		toast.success('Service updated successfully!');
 	};
 
 	const formatPrice = (price: number) => {

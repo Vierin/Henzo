@@ -2,6 +2,9 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import toast from 'react-hot-toast';
+import AddressAutocomplete from '../../../components/AddressAutocomplete';
+import MapComponent from '../../../components/MapComponent';
 
 export default function SalonInfoPage() {
 	const [formData, setFormData] = useState({
@@ -72,6 +75,8 @@ export default function SalonInfoPage() {
 		setLoading(true);
 		setError('');
 
+		const saveToast = toast.loading('Saving salon information...');
+
 		try {
 			const response = await fetch('/api/salon', {
 				method: 'PUT',
@@ -92,10 +97,17 @@ export default function SalonInfoPage() {
 				throw new Error(errorData.error || 'Failed to save salon information');
 			}
 
-			// Redirect to dashboard
-			router.push('/owner');
+			toast.success('Salon information saved successfully!', { id: saveToast });
+
+			// Small delay before redirect to show the success message
+			setTimeout(() => {
+				router.push('/owner');
+			}, 1000);
 		} catch (err: any) {
 			setError(err.message);
+			toast.error(err.message || 'Failed to save salon information', {
+				id: saveToast,
+			});
 		} finally {
 			setLoading(false);
 		}
@@ -295,15 +307,24 @@ export default function SalonInfoPage() {
 										<label className="block text-sm font-medium text-gray-700 mb-2">
 											Address
 										</label>
-										<input
-											type="text"
+										<AddressAutocomplete
 											value={formData.address}
-											onChange={(e) =>
-												setFormData({ ...formData, address: e.target.value })
+											onChange={(address) =>
+												setFormData({ ...formData, address })
 											}
-											className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#ff5b5b] focus:border-[#ff5b5b] text-gray-900"
 											placeholder="Enter salon address"
 										/>
+										{formData.address && (
+											<div className="mt-3">
+												<label className="block text-sm font-medium text-gray-700 mb-2">
+													Location Preview
+												</label>
+												<MapComponent
+													address={formData.address}
+													height="200px"
+												/>
+											</div>
+										)}
 									</div>
 
 									<div className="grid grid-cols-1 md:grid-cols-2 gap-6">

@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import toast from 'react-hot-toast';
 import EditStaffModal from '../../../components/EditStaffModal';
 
 interface Staff {
@@ -46,6 +47,8 @@ export default function StaffPage() {
 	const handleDeleteStaff = async (staffId: string) => {
 		if (!confirm('Are you sure you want to delete this staff member?')) return;
 
+		const deleteToast = toast.loading('Deleting staff member...');
+
 		try {
 			const response = await fetch(`/api/staff/${staffId}`, {
 				method: 'DELETE',
@@ -58,8 +61,12 @@ export default function StaffPage() {
 
 			// Remove staff member from local state
 			setStaff(staff.filter((member) => member.id !== staffId));
+			toast.success('Staff member deleted successfully!', { id: deleteToast });
 		} catch (err: any) {
 			setError(err.message);
+			toast.error(err.message || 'Failed to delete staff member', {
+				id: deleteToast,
+			});
 		}
 	};
 
@@ -69,6 +76,7 @@ export default function StaffPage() {
 				member.id === updatedStaff.id ? updatedStaff : member
 			)
 		);
+		toast.success('Staff member updated successfully!');
 	};
 
 	const getAccessLevelBadge = (accessLevel: string) => {

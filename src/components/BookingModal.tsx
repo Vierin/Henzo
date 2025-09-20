@@ -71,27 +71,39 @@ export default function BookingModal({
 	// Generate time slots based on salon working hours
 	const generateTimeSlots = () => {
 		const slots = [];
-		
+
 		// Get today's day of week (0 = Sunday, 1 = Monday, etc.)
 		const today = new Date();
 		const dayOfWeek = today.getDay();
-		const dayNames = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+		const dayNames = [
+			'sunday',
+			'monday',
+			'tuesday',
+			'wednesday',
+			'thursday',
+			'friday',
+			'saturday',
+		];
 		const todayName = dayNames[dayOfWeek];
-		
+
 		// Default hours if no working hours are set
 		let startHour = 9;
 		let endHour = 18;
-		
+
 		// Get working hours for today if available
-		if (salonWorkingHours && salonWorkingHours[todayName] && !salonWorkingHours[todayName].closed) {
+		if (
+			salonWorkingHours &&
+			salonWorkingHours[todayName] &&
+			!salonWorkingHours[todayName].closed
+		) {
 			const openTime = salonWorkingHours[todayName].open;
 			const closeTime = salonWorkingHours[todayName].close;
-			
+
 			// Parse time strings (assuming format like "9:00 AM" or "09:00")
 			if (openTime && closeTime) {
 				const openHour = parseInt(openTime.split(':')[0]);
 				const closeHour = parseInt(closeTime.split(':')[0]);
-				
+
 				// Convert to 24-hour format if needed
 				if (openTime.includes('AM') && openHour === 12) {
 					startHour = 0;
@@ -100,7 +112,7 @@ export default function BookingModal({
 				} else {
 					startHour = openHour;
 				}
-				
+
 				if (closeTime.includes('AM') && closeHour === 12) {
 					endHour = 0;
 				} else if (closeTime.includes('PM') && closeHour !== 12) {
@@ -114,8 +126,12 @@ export default function BookingModal({
 		// Generate time slots
 		for (let hour = startHour; hour < endHour; hour++) {
 			if (hour < 12) {
-				slots.push(`${hour === 0 ? 12 : hour}:00 ${hour === 0 ? 'AM' : hour < 12 ? 'AM' : 'PM'}`);
-				slots.push(`${hour === 0 ? 12 : hour}:30 ${hour === 0 ? 'AM' : hour < 12 ? 'AM' : 'PM'}`);
+				slots.push(
+					`${hour === 0 ? 12 : hour}:00 ${hour === 0 ? 'AM' : hour < 12 ? 'AM' : 'PM'}`
+				);
+				slots.push(
+					`${hour === 0 ? 12 : hour}:30 ${hour === 0 ? 'AM' : hour < 12 ? 'AM' : 'PM'}`
+				);
 			} else if (hour === 12) {
 				slots.push('12:00 PM');
 				slots.push('12:30 PM');

@@ -22,13 +22,7 @@ export async function GET() {
 			},
 		});
 
-		// Parse workingHours JSON for each salon
-		const salonsWithParsedHours = salons.map(salon => ({
-			...salon,
-			workingHours: salon.workingHours ? JSON.parse(salon.workingHours as string) : null,
-		}));
-
-		return NextResponse.json({ salons: salonsWithParsedHours });
+		return NextResponse.json({ salons });
 	} catch (error: any) {
 		console.error('Error fetching salons with services:', error);
 		return NextResponse.json(
