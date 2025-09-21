@@ -36,54 +36,6 @@ export default function SalonsPage() {
 		'Spa',
 	];
 
-	const salons = [
-		{
-			id: 1,
-			name: 'Nail Studio "Glamour Nails"',
-			address: 'Tverskaya St, 1, Moscow',
-			rating: 4.8,
-			reviews: 120,
-			description:
-				'Professional nail care services with modern equipment and experienced specialists. We offer a wide range of nail art and design services.',
-			image: '💅',
-			services: [
-				{ name: 'Classic Manicure', price: '$40' },
-				{ name: 'Gel Pedicure', price: '$65' },
-				{ name: 'Nail Art Design', price: '$25+' },
-			],
-		},
-		{
-			id: 2,
-			name: 'Nail Bar "Chic Nails"',
-			address: 'Arbat St, 15, Moscow',
-			rating: 4.7,
-			reviews: 95,
-			description:
-				'Elegant nail salon with a cozy atmosphere. Our specialists provide high-quality nail care services using premium products.',
-			image: '✨',
-			services: [
-				{ name: 'Express Manicure', price: '$30' },
-				{ name: 'French Manicure', price: '$50' },
-				{ name: 'Spa Pedicure', price: '$75' },
-			],
-		},
-		{
-			id: 3,
-			name: 'Nail Salon "Elegant Touch"',
-			address: 'Kuznetsky Most, 20, Moscow',
-			rating: 4.9,
-			reviews: 150,
-			description:
-				'Luxury nail salon offering personalized nail care services. We specialize in intricate nail art and premium treatments.',
-			image: '💎',
-			services: [
-				{ name: 'Classic Manicure', price: '$45' },
-				{ name: 'Paraffin Therapy', price: '$35' },
-				{ name: 'Nail Repair', price: '$15' },
-			],
-		},
-	];
-
 	const handleBookService = (service) => {
 		setSelectedService(service);
 		setIsBookingModalOpen(true);

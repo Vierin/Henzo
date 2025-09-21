@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { prisma } from '@/../../packages/db/client';
+import { prisma } from '@db/client';
 
 // GET /api/salons/with-services - Get all salons with their services
 export async function GET() {
