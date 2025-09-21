@@ -16,12 +16,14 @@ export default function NewAppointmentPage() {
 	});
 	const [loading, setLoading] = useState(false);
 	const [error, setError] = useState('');
-	const [services, setServices] = useState([]);
-	const [staff, setStaff] = useState([]);
+	const [services, setServices] = useState<any[]>([]);
+	const [staff, setStaff] = useState<any[]>([]);
 	const [dataLoading, setDataLoading] = useState(true);
 	const [selectedDate, setSelectedDate] = useState(new Date());
 	const [currentMonth, setCurrentMonth] = useState(new Date());
-	const [availableSlots, setAvailableSlots] = useState([]);
+	const [availableSlots, setAvailableSlots] = useState<
+		{ value: string; display: string; available: boolean }[]
+	>([]);
 	const router = useRouter();
 
 	// Fetch services and staff from database
@@ -60,8 +62,10 @@ export default function NewAppointmentPage() {
 	}, [selectedDate]);
 
 	// Generate available time slots for selected date
-	const generateTimeSlots = (date: Date) => {
-		const slots = [];
+	const generateTimeSlots = (
+		date: Date
+	): { value: string; display: string; available: boolean }[] => {
+		const slots: { value: string; display: string; available: boolean }[] = [];
 		const startHour = 9; // 9 AM
 		const endHour = 18; // 6 PM
 		const slotDuration = 60; // 60 minutes
@@ -123,7 +127,9 @@ export default function NewAppointmentPage() {
 
 	// Handle date selection
 	const handleDateSelect = (date: Date) => {
-		if (date < new Date().setHours(0, 0, 0, 0)) return; // Don't allow past dates
+		const today = new Date();
+		today.setHours(0, 0, 0, 0);
+		if (date < today) return; // Don't allow past dates
 
 		setSelectedDate(date);
 		setFormData({ ...formData, date: date.toISOString().split('T')[0] });

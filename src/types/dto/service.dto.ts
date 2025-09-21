@@ -49,7 +49,7 @@ export class ServiceResponseDto {
 	description?: string;
 	duration: number;
 	price: number;
-	salonId: string;
+	salonId?: string;
 }
 
 export class ServiceWithStaffDto extends ServiceResponseDto {
