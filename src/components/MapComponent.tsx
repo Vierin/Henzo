@@ -3,6 +3,7 @@
 import { useEffect, useRef } from 'react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
+import '@/styles/map.css';
 
 // Fix for default markers in Leaflet with Next.js
 delete (L.Icon.Default.prototype as any)._getIconUrl;
@@ -19,12 +20,14 @@ interface MapComponentProps {
 	address?: string;
 	className?: string;
 	height?: string;
+	showPopup?: boolean;
 }
 
 export default function MapComponent({
 	address,
 	className = '',
 	height = '300px',
+	showPopup = true,
 }: MapComponentProps) {
 	const mapRef = useRef<HTMLDivElement>(null);
 	const mapInstanceRef = useRef<L.Map | null>(null);
@@ -37,9 +40,11 @@ export default function MapComponent({
 		if (!mapInstanceRef.current) {
 			const map = L.map(mapRef.current).setView([21.0285, 105.8542], 13); // Default to Hanoi, Vietnam
 
+			// Use grayscale tile layer
 			L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
 				attribution: '© OpenStreetMap contributors',
 				maxZoom: 19,
+				className: 'grayscale-map', // Add CSS class for grayscale effect
 			}).addTo(map);
 
 			mapInstanceRef.current = map;
@@ -97,9 +102,32 @@ export default function MapComponent({
 					mapInstanceRef.current?.removeLayer(markerRef.current);
 				}
 
-				// Add new marker
-				markerRef.current = L.marker(latLng).addTo(mapInstanceRef.current!);
-				markerRef.current.bindPopup(`<b>${address}</b>`).openPopup();
+				// Create red marker icon
+				const redMarker = L.divIcon({
+					html: `<div style="
+						background-color: #ff5b5b;
+						width: 20px;
+						height: 20px;
+						border-radius: 50%;
+						border: 3px solid white;
+						box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+						position: relative;
+					"></div>`,
+					iconSize: [20, 20],
+					iconAnchor: [10, 10],
+					popupAnchor: [0, -10],
+					className: 'custom-red-marker',
+				});
+
+				// Add new marker with red icon
+				markerRef.current = L.marker(latLng, { icon: redMarker }).addTo(
+					mapInstanceRef.current!
+				);
+
+				// Only show popup if showPopup is true
+				if (showPopup) {
+					markerRef.current.bindPopup(`<b>${address}</b>`).openPopup();
+				}
 			} else {
 				console.warn('No location found for address:', address);
 				// Keep the default view if geocoding fails

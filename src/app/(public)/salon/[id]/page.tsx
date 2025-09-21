@@ -6,6 +6,7 @@ import BookingModal from '../../../../components/BookingModal';
 import PublicHeader from '../../../../components/PublicHeader';
 import LoadingSpinner from '../../../../components/LoadingSpinner';
 import ErrorDisplay from '../../../../components/ErrorDisplay';
+import MapComponent from '../../../../components/MapComponent';
 import { useSalon } from '@/hooks/useSalon';
 import { Service } from '@/types';
 
@@ -354,9 +355,21 @@ export default function SalonDetailPage() {
 							</h2>
 
 							<p className="text-gray-700 leading-relaxed mb-6">
-								Your one-stop destination for beauty and relaxation. We offer a
-								wide range of services to make you look and feel your best.
+								{salon.description ||
+									'Your one-stop destination for beauty and relaxation. We offer a wide range of services to make you look and feel your best.'}
 							</p>
+
+							{/* Mini Map */}
+							{salon.address && (
+								<div className="mb-6">
+									<h3 className="text-lg font-semibold text-gray-900 mb-3">
+										Location
+									</h3>
+									<div className="h-48 w-full rounded-lg overflow-hidden border border-gray-200">
+										<MapComponent address={salon.address} showPopup={false} />
+									</div>
+								</div>
+							)}
 
 							<div className="space-y-4">
 								{salon.address && (
