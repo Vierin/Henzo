@@ -1,6 +1,48 @@
+'use client';
+
+import { useState, useEffect } from 'react';
 import PublicHeader from '../components/PublicHeader';
 
+interface Service {
+	id: string;
+	name: string;
+	description: string;
+	duration: number;
+	price: number;
+}
+
+interface Salon {
+	id: string;
+	name: string;
+	address: string;
+	phone: string;
+	logo?: string;
+	services: Service[];
+}
+
 export default function HomePage() {
+	const [salons, setSalons] = useState<Salon[]>([]);
+	const [loading, setLoading] = useState(true);
+
+	// Load salons data from database
+	useEffect(() => {
+		const fetchSalons = async () => {
+			try {
+				setLoading(true);
+				const response = await fetch('/api/salons/with-services');
+				if (!response.ok) throw new Error('Failed to fetch salons');
+				const data = await response.json();
+				setSalons(data.salons || []);
+			} catch (error) {
+				console.error('Error fetching salons:', error);
+				setSalons([]);
+			} finally {
+				setLoading(false);
+			}
+		};
+
+		fetchSalons();
+	}, []);
 	return (
 		<div className="min-h-screen bg-[#F8F5F2]">
 			<PublicHeader />
@@ -22,7 +64,7 @@ export default function HomePage() {
 									<input
 										type="text"
 										placeholder="Search for services, salons, or specialists"
-										className="w-full px-4 py-4 pl-12 pr-4 bg-white rounded-l-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#8B4513] focus:border-transparent"
+										className="w-full px-4 py-4 pl-12 pr-4 bg-white rounded-l-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#8B4513] focus:border-transparent text-gray-900"
 									/>
 									<svg
 										className="absolute left-4 top-4 h-6 w-6 text-gray-400"
@@ -89,45 +131,82 @@ export default function HomePage() {
 						<h2 className="text-3xl font-bold text-gray-900 mb-8">
 							Recommended Salons
 						</h2>
-						<div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-							<div className="bg-white rounded-xl overflow-hidden shadow-lg hover:shadow-xl transition-shadow">
-								<div className="h-48 bg-gradient-to-br from-teal-100 to-teal-200 flex items-center justify-center">
-									<span className="text-6xl">💇‍♀️</span>
-								</div>
-								<div className="p-6">
-									<h3 className="text-xl font-bold text-gray-900 mb-2">
-										"Orchid" Beauty Salon
-									</h3>
-									<p className="text-[#ff5b5b] text-sm">12 Lenin St, Moscow</p>
-								</div>
+
+						{loading ? (
+							<div className="text-center py-12">
+								<div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#ff5b5b] mx-auto mb-4"></div>
+								<p className="text-gray-600">Loading salons...</p>
 							</div>
-							<div className="bg-white rounded-xl overflow-hidden shadow-lg hover:shadow-xl transition-shadow">
-								<div className="h-48 bg-gradient-to-br from-amber-100 to-amber-200 flex items-center justify-center">
-									<span className="text-6xl">✂️</span>
+						) : salons.length === 0 ? (
+							<div className="text-center py-12">
+								<div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+									<span className="text-2xl">🏪</span>
 								</div>
-								<div className="p-6">
-									<h3 className="text-xl font-bold text-gray-900 mb-2">
-										"Style" Barbershop
-									</h3>
-									<p className="text-[#ff5b5b] text-sm">
-										34 Pushkin St, Moscow
-									</p>
-								</div>
+								<h3 className="text-xl font-semibold text-gray-900 mb-2">
+									No salons available
+								</h3>
+								<p className="text-gray-600">
+									Check back later for available salons.
+								</p>
 							</div>
-							<div className="bg-white rounded-xl overflow-hidden shadow-lg hover:shadow-xl transition-shadow">
-								<div className="h-48 bg-gradient-to-br from-green-100 to-green-200 flex items-center justify-center">
-									<span className="text-6xl">🧘‍♀️</span>
-								</div>
-								<div className="p-6">
-									<h3 className="text-xl font-bold text-gray-900 mb-2">
-										"Relax" Spa Center
-									</h3>
-									<p className="text-[#ff5b5b] text-sm">
-										56 Turgenev St, Moscow
-									</p>
-								</div>
+						) : (
+							<div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+								{salons.slice(0, 3).map((salon) => (
+									<div
+										key={salon.id}
+										className="bg-white rounded-xl overflow-hidden shadow-lg hover:shadow-xl transition-shadow"
+									>
+										<div className="h-48 bg-gradient-to-br from-pink-100 to-pink-200 flex items-center justify-center">
+											{salon.logo ? (
+												<img
+													src={salon.logo}
+													alt={salon.name}
+													className="w-full h-full object-cover"
+												/>
+											) : (
+												<span className="text-6xl">💇‍♀️</span>
+											)}
+										</div>
+										<div className="p-6">
+											<h3 className="text-xl font-bold text-gray-900 mb-2">
+												{salon.name}
+											</h3>
+											<p className="text-[#ff5b5b] text-sm mb-2">
+												{salon.address}
+											</p>
+											{salon.phone && (
+												<p className="text-gray-500 text-xs mb-3">
+													📞 {salon.phone}
+												</p>
+											)}
+											{salon.services && salon.services.length > 0 && (
+												<div className="flex flex-wrap gap-1 mb-4">
+													{salon.services.slice(0, 2).map((service, index) => (
+														<span
+															key={service.id || index}
+															className="px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-full"
+														>
+															{service.name}
+														</span>
+													))}
+													{salon.services.length > 2 && (
+														<span className="px-2 py-1 bg-gray-100 text-gray-600 text-xs rounded-full">
+															+{salon.services.length - 2} more
+														</span>
+													)}
+												</div>
+											)}
+											<a
+												href={`/salon/${salon.id}`}
+												className="block w-full bg-[#ff5b5b] text-white py-2 rounded-lg hover:bg-[#e04a4a] transition-colors text-center text-sm font-medium"
+											>
+												View Details
+											</a>
+										</div>
+									</div>
+								))}
 							</div>
-						</div>
+						)}
 					</div>
 				</section>
 			</main>

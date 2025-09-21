@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import PublicHeader from '../../../components/PublicHeader';
+import { supabase } from '@/lib/supabase';
 
 export default function ClientLoginPage() {
 	const [formData, setFormData] = useState({
@@ -19,10 +20,45 @@ export default function ClientLoginPage() {
 		setError('');
 
 		try {
-			// Handle client login logic here
-			console.log('Client login:', formData);
+			// Sign in with Supabase
+			const { data, error } = await supabase.auth.signInWithPassword({
+				email: formData.email,
+				password: formData.password,
+			});
 
-			// For now, just redirect to client page
+			if (error) {
+				throw new Error(error.message);
+			}
+
+			if (!data.user) {
+				throw new Error('Login failed');
+			}
+
+			// Check if user email is confirmed
+			if (!data.user.email_confirmed_at) {
+				setError(
+					'Please check your email and click the verification link before signing in.'
+				);
+				return;
+			}
+
+			// Get user data to check role
+			const userResponse = await fetch('/api/user');
+			const userResult = await userResponse.json();
+
+			if (!userResponse.ok) {
+				throw new Error('Failed to get user data');
+			}
+
+			// Check if user is a client
+			if (userResult.user.role !== 'CLIENT') {
+				setError(
+					'This account is not a client account. Please use the business login.'
+				);
+				return;
+			}
+
+			// Redirect to client dashboard
 			router.push('/client');
 		} catch (err: any) {
 			setError(err.message);

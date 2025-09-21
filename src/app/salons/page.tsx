@@ -17,29 +17,114 @@ interface Salon {
 	name: string;
 	address: string;
 	phone: string;
+	logo?: string;
 	services: Service[];
 }
 
 export default function SalonsPage() {
-	const [searchQuery, setSearchQuery] = useState('Nail salons in Moscow');
-	const [activeFilter, setActiveFilter] = useState('Nail salons');
+	const [searchQuery, setSearchQuery] = useState('');
+	const [activeFilter, setActiveFilter] = useState('All');
+	const [sortBy, setSortBy] = useState('name');
 	const [isBookingModalOpen, setIsBookingModalOpen] = useState(false);
 	const [selectedService, setSelectedService] = useState<Service | null>(null);
 	const [salons, setSalons] = useState<Salon[]>([]);
+	const [filteredSalons, setFilteredSalons] = useState<Salon[]>([]);
 	const [loading, setLoading] = useState(true);
 
 	const filters = [
-		'Nail salons',
+		'All',
 		'Hair salons',
+		'Nail salons',
 		'Barbershops',
 		'Massage',
 		'Spa',
+	];
+
+	const sortOptions = [
+		{ value: 'name', label: 'Name A-Z' },
+		{ value: 'name-desc', label: 'Name Z-A' },
+		{ value: 'services', label: 'Most Services' },
+		{ value: 'rating', label: 'Highest Rated' },
 	];
 
 	const handleBookService = (service) => {
 		setSelectedService(service);
 		setIsBookingModalOpen(true);
 	};
+
+	// Filter and sort salons
+	const filterAndSortSalons = () => {
+		let filtered = [...salons];
+
+		// Filter by search query
+		if (searchQuery.trim()) {
+			filtered = filtered.filter(
+				(salon) =>
+					salon.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+					salon.address.toLowerCase().includes(searchQuery.toLowerCase()) ||
+					salon.services.some((service) =>
+						service.name.toLowerCase().includes(searchQuery.toLowerCase())
+					)
+			);
+		}
+
+		// Filter by category
+		if (activeFilter !== 'All') {
+			filtered = filtered.filter((salon) => {
+				const serviceNames = salon.services.map((s) => s.name.toLowerCase());
+				const filterLower = activeFilter.toLowerCase();
+				return serviceNames.some((name) =>
+					name.includes(filterLower.replace(' salons', '').replace('shops', ''))
+				);
+			});
+		}
+
+		// Sort salons
+		filtered.sort((a, b) => {
+			switch (sortBy) {
+				case 'name':
+					return a.name.localeCompare(b.name);
+				case 'name-desc':
+					return b.name.localeCompare(a.name);
+				case 'services':
+					return b.services.length - a.services.length;
+				case 'rating':
+					// For now, just sort by name since we don't have ratings
+					return a.name.localeCompare(b.name);
+				default:
+					return 0;
+			}
+		});
+
+		setFilteredSalons(filtered);
+	};
+
+	// Load salons data from database
+	useEffect(() => {
+		const fetchSalons = async () => {
+			try {
+				setLoading(true);
+				const response = await fetch('/api/salons/with-services');
+				if (!response.ok) throw new Error('Failed to fetch salons');
+				const data = await response.json();
+				setSalons(data.salons || []);
+				setFilteredSalons(data.salons || []);
+			} catch (error) {
+				console.error('Error fetching salons:', error);
+				setSalons([]); // Set empty array on error
+				setFilteredSalons([]);
+			} finally {
+				setLoading(false);
+			}
+		};
+
+		fetchSalons();
+	}, []);
+
+	// Filter and sort when search, filter, or sort changes
+	useEffect(() => {
+		filterAndSortSalons();
+	}, [searchQuery, activeFilter, sortBy, salons]);
 
 	return (
 		<div className="min-h-screen bg-[#F8F5F2]">
@@ -54,7 +139,7 @@ export default function SalonsPage() {
 								type="text"
 								value={searchQuery}
 								onChange={(e) => setSearchQuery(e.target.value)}
-								className="w-full px-6 py-4 pl-12 pr-12 bg-white rounded-2xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#8B4513] focus:border-transparent text-lg"
+								className="w-full px-6 py-4 pl-12 pr-12 bg-white rounded-2xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#8B4513] focus:border-transparent text-lg text-gray-900"
 								placeholder="Search for salons, services, or locations"
 							/>
 							<svg
@@ -81,9 +166,9 @@ export default function SalonsPage() {
 						</div>
 					</div>
 
-					{/* Category Filters */}
+					{/* Category Filters and Sort */}
 					<div className="mb-8">
-						<div className="flex flex-wrap gap-3 justify-center">
+						<div className="flex flex-wrap gap-3 justify-center mb-4">
 							{filters.map((filter) => (
 								<button
 									key={filter}
@@ -103,25 +188,25 @@ export default function SalonsPage() {
 					{/* Results Header */}
 					<div className="flex items-center justify-between mb-8">
 						<h1 className="text-2xl font-bold text-gray-900">
-							Results ({salons.length})
+							Results ({filteredSalons.length})
 						</h1>
 						<div className="flex items-center gap-4">
-							<button className="flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50">
-								<svg
-									className="w-4 h-4"
-									fill="none"
-									stroke="currentColor"
-									viewBox="0 0 24 24"
-								>
-									<path
-										strokeLinecap="round"
-										strokeLinejoin="round"
-										strokeWidth={2}
-										d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4"
-									/>
-								</svg>
-								Sort
-							</button>
+							{/* Sort Dropdown */}
+							<div className="flex justify-center">
+								<div className="relative">
+									<select
+										value={sortBy}
+										onChange={(e) => setSortBy(e.target.value)}
+										className="px-4 py-2 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#ff5b5b] focus:border-transparent text-gray-900"
+									>
+										{sortOptions.map((option) => (
+											<option key={option.value} value={option.value}>
+												{option.label}
+											</option>
+										))}
+									</select>
+								</div>
+							</div>
 							<button className="flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50">
 								<svg
 									className="w-4 h-4"
@@ -143,54 +228,94 @@ export default function SalonsPage() {
 
 					{/* Salon Cards */}
 					<div className="space-y-6">
-						{salons.map((salon) => (
-							<div
-								key={salon.id}
-								className="bg-white rounded-2xl p-6 shadow-lg hover:shadow-xl transition-shadow"
-							>
-								<div className="flex gap-6">
-									{/* Salon Image */}
-									<div className="w-48 h-48 bg-gradient-to-br from-pink-100 to-pink-200 rounded-xl flex items-center justify-center flex-shrink-0">
-										<span className="text-6xl">{salon.image}</span>
-									</div>
-
-									{/* Salon Info */}
-									<div className="flex-1">
-										<h2 className="text-xl font-bold text-gray-900 mb-2">
-											{salon.name}
-										</h2>
-										<p className="text-gray-600 text-sm mb-2">
-											{salon.address}
-										</p>
-										<div className="flex items-center gap-2 mb-3">
-											<div className="flex text-yellow-400">
-												{'★'.repeat(Math.floor(salon.rating))}
-											</div>
-											<span className="text-sm text-gray-600">
-												{salon.rating} ({salon.reviews} reviews)
-											</span>
+						{loading ? (
+							// Loading state
+							<div className="text-center py-12">
+								<div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#ff5b5b] mx-auto mb-4"></div>
+								<p className="text-gray-600">Loading salons...</p>
+							</div>
+						) : filteredSalons.length === 0 ? (
+							// No salons found
+							<div className="text-center py-12">
+								<div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+									<span className="text-2xl">🏪</span>
+								</div>
+								<h3 className="text-xl font-semibold text-gray-900 mb-2">
+									No salons found
+								</h3>
+								<p className="text-gray-600">
+									Try adjusting your search criteria or check back later.
+								</p>
+							</div>
+						) : (
+							// Display salons
+							filteredSalons.map((salon) => (
+								<div
+									key={salon.id}
+									className="bg-white rounded-2xl p-6 shadow-lg hover:shadow-xl transition-shadow"
+								>
+									<div className="flex gap-6">
+										{/* Salon Image */}
+										<div className="w-48 h-48 bg-gradient-to-br from-pink-100 to-pink-200 rounded-xl flex items-center justify-center flex-shrink-0">
+											{salon.logo ? (
+												<img
+													src={salon.logo}
+													alt={salon.name}
+													className="w-full h-full object-cover rounded-xl"
+												/>
+											) : (
+												<span className="text-6xl">💇‍♀️</span>
+											)}
 										</div>
-										<p className="text-gray-700 text-sm mb-4 leading-relaxed">
-											{salon.description}
-										</p>
 
-										{/* Services */}
-										<div className="space-y-3">
+										{/* Salon Info */}
+										<div className="flex-1">
+											<h2 className="text-xl font-bold text-gray-900 mb-2">
+												{salon.name}
+											</h2>
+											<p className="text-gray-600 text-sm mb-2">
+												{salon.address}
+											</p>
+											{salon.phone && (
+												<p className="text-gray-500 text-sm mb-3">
+													📞 {salon.phone}
+												</p>
+											)}
+										</div>
+									</div>
+									{/* Services */}
+									{salon.services && salon.services.length > 0 ? (
+										<div className="flex justify-between gap-5">
 											{salon.services.map((service, index) => (
 												<div
-													key={index}
-													className="flex items-center justify-between py-2 border-b border-gray-100 last:border-b-0"
+													key={service.id || index}
+													className="flex w-full items-center justify-between py-2 border-b border-gray-100 last:border-b-0"
 												>
 													<div className="flex items-center gap-3">
-														<span className="text-sm text-gray-700">
-															{service.name}
-														</span>
+														<div>
+															<span className="text-sm font-medium text-gray-900">
+																{service.name}
+															</span>
+															{service.description && (
+																<p className="text-xs text-gray-500 mt-1">
+																	{service.description}
+																</p>
+															)}
+															<p className="text-xs text-gray-500">
+																⏱️ {service.duration} min
+															</p>
+														</div>
 														<span className="text-sm font-semibold text-[#ff5b5b]">
-															{service.price}
+															${service.price}
 														</span>
 													</div>
 													<button
-														onClick={() => handleBookService(service)}
+														onClick={() =>
+															handleBookService({
+																...service,
+																salonId: salon.id,
+															})
+														}
 														className="bg-[#ff5b5b] text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-[#e04a4a] transition-colors"
 													>
 														Book Now
@@ -198,10 +323,16 @@ export default function SalonsPage() {
 												</div>
 											))}
 										</div>
-									</div>
+									) : (
+										<div className="text-center py-4">
+											<p className="text-gray-500 text-sm">
+												No services available
+											</p>
+										</div>
+									)}
 								</div>
-							</div>
-						))}
+							))
+						)}
 					</div>
 
 					{/* Load More Button */}

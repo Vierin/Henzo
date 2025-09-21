@@ -61,6 +61,7 @@ export default function RegisterPage() {
 						userId: authData.user.id,
 						email: formData.email,
 						name: formData.name,
+						phone: '', // Add phone field for business owners
 					}),
 				});
 

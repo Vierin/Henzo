@@ -1,14 +1,48 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@db/client';
+import { prisma } from '@/lib/prisma';
+import { supabase } from '@/lib/supabase';
 
 // GET /api/salon - Get salon data for the current user
 export async function GET() {
 	try {
-		// For now, we'll get the first salon. In a real app, you'd get the salon for the current user
+		// Get session from Supabase
+		const {
+			data: { session },
+			error: sessionError,
+		} = await supabase.auth.getSession();
+
+		if (sessionError || !session?.user) {
+			return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+		}
+
+		// Get user from database
+		const user = await prisma.user.findUnique({
+			where: { id: session.user.id },
+		});
+
+		if (!user) {
+			return NextResponse.json({ error: 'User not found' }, { status: 404 });
+		}
+
+		// Only owners and admins can access salon data
+		if (user.role !== 'OWNER' && user.role !== 'ADMIN') {
+			return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+		}
+
+		// Get salon for the current user
 		const salon = await prisma.salon.findFirst({
+			where: { ownerId: user.id },
 			include: {
 				services: true,
 				staff: true,
+				bookings: {
+					include: {
+						user: true,
+						client: true,
+						service: true,
+						staff: true,
+					},
+				},
 			},
 		});
 
@@ -29,10 +63,36 @@ export async function GET() {
 // PUT /api/salon - Update salon data
 export async function PUT(request: NextRequest) {
 	try {
+		// Get session from Supabase
+		const {
+			data: { session },
+			error: sessionError,
+		} = await supabase.auth.getSession();
+
+		if (sessionError || !session?.user) {
+			return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+		}
+
+		// Get user from database
+		const user = await prisma.user.findUnique({
+			where: { id: session.user.id },
+		});
+
+		if (!user) {
+			return NextResponse.json({ error: 'User not found' }, { status: 404 });
+		}
+
+		// Only owners and admins can update salon data
+		if (user.role !== 'OWNER' && user.role !== 'ADMIN') {
+			return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+		}
+
 		const { name, address, phone, logo, workingHours } = await request.json();
 
-		// For now, we'll update the first salon. In a real app, you'd update the salon for the current user
-		const salon = await prisma.salon.findFirst();
+		// Get salon for the current user
+		const salon = await prisma.salon.findFirst({
+			where: { ownerId: user.id },
+		});
 
 		if (!salon) {
 			return NextResponse.json({ error: 'No salon found' }, { status: 404 });

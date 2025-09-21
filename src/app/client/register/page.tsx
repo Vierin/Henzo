@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import PublicHeader from '../../../components/PublicHeader';
+import { supabase } from '@/lib/supabase';
 
 export default function ClientRegisterPage() {
 	const [formData, setFormData] = useState({
@@ -36,8 +37,39 @@ export default function ClientRegisterPage() {
 		}
 
 		try {
-			// Handle client registration logic here
-			console.log('Client registration:', formData);
+			// 1. Register user with Supabase Auth
+			const { data: authData, error: authError } = await supabase.auth.signUp({
+				email: formData.email,
+				password: formData.password,
+			});
+
+			if (authError) {
+				throw new Error(authError.message);
+			}
+
+			if (!authData.user) {
+				throw new Error('Registration failed');
+			}
+
+			// 2. Create client profile in database
+			const response = await fetch('/api/auth/register-client', {
+				method: 'POST',
+				headers: {
+					'Content-Type': 'application/json',
+				},
+				body: JSON.stringify({
+					userId: authData.user.id,
+					email: formData.email,
+					name: formData.name,
+					phone: formData.phone,
+				}),
+			});
+
+			const result = await response.json();
+
+			if (!response.ok) {
+				throw new Error(result.error || 'Failed to create client profile');
+			}
 
 			// Show success message
 			setSuccess(true);
@@ -75,15 +107,24 @@ export default function ClientRegisterPage() {
 								Registration Successful!
 							</h1>
 							<p className="text-gray-600 mb-6">
-								Your client account has been created successfully. You can now
-								book appointments and manage your profile.
+								Please check your email and click the verification link to
+								activate your account. Once verified, you can book appointments
+								and manage your profile.
 							</p>
-							<button
-								onClick={() => router.push('/client')}
-								className="bg-[#8B4513] text-white px-6 py-3 rounded-lg font-semibold hover:bg-[#6B3410] transition-colors"
-							>
-								Continue to Client Portal
-							</button>
+							<div className="space-y-3">
+								<button
+									onClick={() => router.push('/client/login')}
+									className="w-full bg-[#8B4513] text-white px-6 py-3 rounded-lg font-semibold hover:bg-[#6B3410] transition-colors"
+								>
+									Go to Login
+								</button>
+								<button
+									onClick={() => router.push('/')}
+									className="w-full bg-gray-200 text-gray-700 px-6 py-3 rounded-lg font-semibold hover:bg-gray-300 transition-colors"
+								>
+									Back to Home
+								</button>
+							</div>
 						</div>
 					</div>
 				</main>

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@db/client';
+import { prisma } from '@/lib/prisma';
 
 // PUT /api/services/[id] - Update service
 export async function PUT(

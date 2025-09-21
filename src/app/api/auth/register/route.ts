@@ -1,16 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@db/client';
+import { prisma } from '@/lib/prisma';
 
 export async function POST(request: NextRequest) {
 	try {
-		const { userId, email, name } = await request.json();
+		const { userId, email, name, phone } = await request.json();
 
-		// Create user profile
+		// Create business owner user profile
 		const user = await prisma.user.create({
 			data: {
 				id: userId,
 				email,
 				name,
+				phone,
 				role: 'OWNER',
 			},
 		});

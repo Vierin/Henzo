@@ -1,10 +1,41 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@db/client';
+import { prisma } from '@/lib/prisma';
+import { supabase } from '@/lib/supabase';
 
-// GET /api/services - Get all services
-export async function GET() {
+// GET /api/services - Get services for current user's salon
+export async function GET(request: NextRequest) {
 	try {
+		// Get session from Supabase
+		const {
+			data: { session },
+			error: sessionError,
+		} = await supabase.auth.getSession();
+
+		if (sessionError || !session?.user) {
+			return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+		}
+
+		// Get user from database
+		const user = await prisma.user.findUnique({
+			where: { id: session.user.id },
+		});
+
+		if (!user) {
+			return NextResponse.json({ error: 'User not found' }, { status: 404 });
+		}
+
+		// Only owners and admins can access services
+		if (user.role !== 'OWNER' && user.role !== 'ADMIN') {
+			return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+		}
+
+		// Get services for user's salon
 		const services = await prisma.service.findMany({
+			where: {
+				salon: {
+					ownerId: user.id,
+				},
+			},
 			orderBy: {
 				name: 'asc',
 			},
@@ -23,14 +54,49 @@ export async function GET() {
 // POST /api/services - Create new service
 export async function POST(request: NextRequest) {
 	try {
-		const { name, description, duration, price, salonId } =
-			await request.json();
+		// Get session from Supabase
+		const {
+			data: { session },
+			error: sessionError,
+		} = await supabase.auth.getSession();
+
+		if (sessionError || !session?.user) {
+			return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+		}
+
+		// Get user from database
+		const user = await prisma.user.findUnique({
+			where: { id: session.user.id },
+		});
+
+		if (!user) {
+			return NextResponse.json({ error: 'User not found' }, { status: 404 });
+		}
+
+		// Only owners and admins can create services
+		if (user.role !== 'OWNER' && user.role !== 'ADMIN') {
+			return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+		}
+
+		const { name, description, duration, price } = await request.json();
 
 		// Validate required fields
-		if (!name || !duration || !price || !salonId) {
+		if (!name || !duration || !price) {
 			return NextResponse.json(
-				{ error: 'Name, duration, price, and salonId are required' },
+				{ error: 'Name, duration, and price are required' },
 				{ status: 400 }
+			);
+		}
+
+		// Get user's salon
+		const salon = await prisma.salon.findFirst({
+			where: { ownerId: user.id },
+		});
+
+		if (!salon) {
+			return NextResponse.json(
+				{ error: 'No salon found for user' },
+				{ status: 404 }
 			);
 		}
 
@@ -41,7 +107,7 @@ export async function POST(request: NextRequest) {
 				description: description || '',
 				duration: parseInt(duration),
 				price: parseFloat(price),
-				salonId,
+				salonId: salon.id,
 			},
 		});
 

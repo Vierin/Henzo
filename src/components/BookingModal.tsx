@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { supabase } from '@/lib/supabase';
 
 interface Service {
 	id: string;
@@ -8,6 +9,7 @@ interface Service {
 	description: string;
 	duration: number;
 	price: number;
+	salonId?: string;
 }
 
 interface Staff {
@@ -197,15 +199,66 @@ export default function BookingModal({
 		setSelectedDate(todayString);
 	}, []);
 
-	const handleBooking = () => {
-		// Handle booking logic here
-		console.log('Booking:', {
-			service,
-			selectedDate,
-			selectedTime,
-			selectedStaff,
-		});
-		onClose();
+	const handleBooking = async () => {
+		if (!service || !selectedDate || !selectedTime || !selectedStaff) {
+			alert('Please fill in all fields');
+			return;
+		}
+
+		setLoading(true);
+
+		try {
+			// Check if user is authenticated
+			const {
+				data: { session },
+			} = await supabase.auth.getSession();
+
+			if (!session) {
+				// Redirect to client login if not authenticated
+				window.location.href = '/client/login';
+				return;
+			}
+
+			// Find the selected staff member
+			const staffMember = staffMembers.find(
+				(staff) => staff.name === selectedStaff
+			);
+			const staffId = staffMember?.id || 'any';
+
+			// Create booking
+			const response = await fetch('/api/appointments', {
+				method: 'POST',
+				headers: {
+					'Content-Type': 'application/json',
+				},
+				body: JSON.stringify({
+					serviceId: service.id,
+					staffId: staffId,
+					date: selectedDate,
+					time: selectedTime,
+					salonId: service.salonId || '1', // Default salon ID
+					notes: `Booking for ${service.name}`,
+				}),
+			});
+
+			const result = await response.json();
+
+			if (!response.ok) {
+				throw new Error(result.error || 'Failed to create booking');
+			}
+
+			// Show success message
+			alert('Appointment booked successfully!');
+			onClose();
+
+			// Refresh the page to show updated bookings
+			window.location.reload();
+		} catch (error: any) {
+			console.error('Booking error:', error);
+			alert(error.message || 'Failed to book appointment');
+		} finally {
+			setLoading(false);
+		}
 	};
 
 	// Close dropdown when clicking outside
@@ -227,7 +280,7 @@ export default function BookingModal({
 
 	return (
 		<div
-			className="fixed inset-0 bg-[#F8F5F2] bg-opacity-80 flex items-center justify-center z-50 p-4"
+			className="fixed inset-0 bg-[#F8F5F2CC] bg-opacity-80 flex items-center justify-center z-50 p-4"
 			onClick={handleClickOutside}
 		>
 			<div
@@ -442,10 +495,12 @@ export default function BookingModal({
 						{/* Book Appointment Button */}
 						<button
 							onClick={handleBooking}
-							className="w-full bg-[#ff5b5b] text-white py-4 rounded-lg font-semibold text-lg hover:bg-[#e04a4a] transition-colors"
+							disabled={loading}
+							className="w-full bg-[#ff5b5b] text-white py-4 rounded-lg font-semibold text-lg hover:bg-[#e04a4a] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
 						>
-							Book Appointment -{' '}
-							{service?.price ? `$${service.price}` : 'Select service'}
+							{loading
+								? 'Booking...'
+								: `Book Appointment - ${service?.price ? `$${service.price}` : 'Select service'}`}
 						</button>
 
 						{/* Close Button */}
