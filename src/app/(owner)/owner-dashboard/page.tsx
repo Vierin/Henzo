@@ -100,31 +100,31 @@ export default function OwnerDashboardPage() {
 					</h3>
 					<ul className="mt-4 space-y-3 text-[15px]">
 						<li>
-							<a
-								href="/services/new"
-								className="flex items-center justify-between rounded-lg border border-[#f6e7e6] px-4 py-3 hover:bg-[#fff7f6] transition-colors text-gray-800"
+							<button
+								onClick={() => router.push('/services/new')}
+								className="w-full flex items-center justify-between rounded-lg border border-[#f6e7e6] px-4 py-3 hover:bg-[#fff7f6] transition-colors text-gray-800"
 							>
 								<span className="font-medium">Add New Services</span>
 								<span className="text-xl">＋</span>
-							</a>
+							</button>
 						</li>
 						<li>
-							<a
-								href="/staff/new"
-								className="flex items-center justify-between rounded-lg border border-[#f6e7e6] px-4 py-3 hover:bg-[#fff7f6] transition-colors text-gray-800"
+							<button
+								onClick={() => router.push('/staff/new')}
+								className="w-full flex items-center justify-between rounded-lg border border-[#f6e7e6] px-4 py-3 hover:bg-[#fff7f6] transition-colors text-gray-800"
 							>
 								<span className="font-medium">Add New Staff</span>
 								<span className="text-xl">＋</span>
-							</a>
+							</button>
 						</li>
 						<li>
-							<a
-								href="/salon-info"
-								className="flex items-center justify-between rounded-lg border border-[#f6e7e6] px-4 py-3 hover:bg-[#fff7f6] transition-colors text-gray-800"
+							<button
+								onClick={() => router.push('/salon-info')}
+								className="w-full flex items-center justify-between rounded-lg border border-[#f6e7e6] px-4 py-3 hover:bg-[#fff7f6] transition-colors text-gray-800"
 							>
 								<span className="font-medium">Salon Information</span>
 								<span>⚙️</span>
-							</a>
+							</button>
 						</li>
 					</ul>
 				</aside>

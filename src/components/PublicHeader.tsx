@@ -2,17 +2,8 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-import { supabase } from '@/lib/supabase';
 import Link from 'next/link';
 import { useAuthStore } from '@/stores/authStore';
-
-interface User {
-	id: string;
-	email: string;
-	name?: string;
-	phone?: string;
-	role: string;
-}
 
 export default function PublicHeader() {
 	const [isLanguageDropdownOpen, setIsLanguageDropdownOpen] = useState(false);
@@ -21,7 +12,8 @@ export default function PublicHeader() {
 	const router = useRouter();
 
 	// Используем Zustand store для аутентификации
-	const { user, isLoading, isClient, logout } = useAuthStore();
+	const { user, isLoading, isClient, isOwner, isAdmin, logout } =
+		useAuthStore();
 
 	const languages = [
 		{ code: 'EN', name: 'English', flag: '🇺🇸' },
@@ -34,24 +26,15 @@ export default function PublicHeader() {
 		setIsLanguageDropdownOpen(false);
 	};
 
-	const handleBusinessClick = async (e: React.MouseEvent) => {
+	const handleBusinessClick = (e: React.MouseEvent) => {
 		e.preventDefault();
 
-		try {
-			const {
-				data: { session },
-			} = await supabase.auth.getSession();
-
-			if (session?.user) {
-				// User is logged in, redirect to owner dashboard
-				router.push('/owner');
-			} else {
-				// User is not logged in, redirect to login
-				router.push('/login');
-			}
-		} catch (error) {
-			console.error('Error checking auth:', error);
-			// On error, redirect to login
+		// Проверяем, авторизован ли пользователь как владелец
+		if (user && (isOwner || isAdmin)) {
+			// Пользователь уже авторизован как владелец, переходим в панель
+			router.push('/owner-dashboard');
+		} else {
+			// Пользователь не авторизован или не владелец, переходим на страницу логина для бизнеса
 			router.push('/login');
 		}
 	};
@@ -146,10 +129,16 @@ export default function PublicHeader() {
 					{/* User Info or Login Buttons */}
 					{isLoading ? (
 						<div className="w-8 h-8 bg-gray-200 rounded-full animate-pulse"></div>
-					) : user && isClient ? (
+					) : user ? (
 						<div className="flex items-center gap-3">
 							<button
-								onClick={() => router.push('/client')}
+								onClick={() => {
+									if (isClient) {
+										router.push('/client');
+									} else if (isOwner || isAdmin) {
+										router.push('/owner-dashboard');
+									}
+								}}
 								className="flex items-center gap-2 text-sm text-gray-700 font-medium hover:text-[#8B4513] transition-colors"
 							>
 								<svg

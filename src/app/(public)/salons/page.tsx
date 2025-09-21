@@ -1,268 +1,335 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useState, useMemo } from 'react';
+import { useRouter } from 'next/navigation';
+import BookingModal from '../../../components/BookingModal';
+import PublicHeader from '../../../components/PublicHeader';
+import LoadingSpinner from '../../../components/LoadingSpinner';
+import ErrorDisplay from '../../../components/ErrorDisplay';
 import { useSalonsWithServices } from '@/hooks/useSalons';
-import LoadingSpinner from '@/components/LoadingSpinner';
-import BookingModal from '@/components/BookingModal';
-
-interface Service {
-	id: string;
-	name: string;
-	description?: string;
-	duration: number;
-	price: number;
-}
-
-interface Salon {
-	id: string;
-	name: string;
-	address?: string;
-	phone?: string;
-	logo?: string;
-	services?: Service[];
-}
+import { ServiceResponseDto } from '@/types/dto/service.dto';
+import { Salon, Service } from '@/types';
 
 export default function SalonsPage() {
-	const [searchQuery, setSearchQuery] = useState('');
-	const [selectedSalon, setSelectedSalon] = useState<Salon | null>(null);
-	const [isBookingModalOpen, setIsBookingModalOpen] = useState(false);
-	const [filteredSalons, setFilteredSalons] = useState<Salon[]>([]);
 	const router = useRouter();
-	const searchParams = useSearchParams();
+	const [searchQuery, setSearchQuery] = useState('');
+	const [activeFilter, setActiveFilter] = useState('All');
+	const [sortBy, setSortBy] = useState('name');
+	const [isBookingModalOpen, setIsBookingModalOpen] = useState(false);
+	const [selectedService, setSelectedService] =
+		useState<ServiceResponseDto | null>(null);
 
-	const { data: salons = [], isLoading } = useSalonsWithServices();
+	const {
+		data: salons = [],
+		isLoading: loading,
+		error,
+		refetch,
+	} = useSalonsWithServices();
 
-	// Handle search from URL params
-	useEffect(() => {
-		const searchParam = searchParams.get('search');
-		if (searchParam) {
-			setSearchQuery(searchParam);
-		}
-	}, [searchParams]);
+	const filters = [
+		'All',
+		'Hair salons',
+		'Nail salons',
+		'Barbershops',
+		'Massage',
+		'Spa',
+	];
 
-	// Filter salons based on search query
-	useEffect(() => {
-		if (!searchQuery.trim()) {
-			setFilteredSalons(salons);
-		} else {
-			const filtered = salons.filter(
-				(salon) =>
-					salon.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-					salon.address?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-					salon.services?.some((service) =>
-						service.name.toLowerCase().includes(searchQuery.toLowerCase())
-					)
-			);
-			setFilteredSalons(filtered);
-		}
-	}, [salons, searchQuery]);
+	const sortOptions = [
+		{ value: 'name', label: 'Name A-Z' },
+		{ value: 'name-desc', label: 'Name Z-A' },
+		{ value: 'services', label: 'Most Services' },
+		{ value: 'rating', label: 'Highest Rated' },
+	];
+
+	const handleBookService = (
+		service: ServiceResponseDto,
+		salonId: string,
+		salonName: string
+	) => {
+		setSelectedService({
+			...service,
+			salonId,
+			salonName,
+		} as ServiceResponseDto & {
+			salonId: string;
+			salonName: string;
+		});
+		setIsBookingModalOpen(true);
+	};
 
 	const handleSalonClick = (salonId: string) => {
 		router.push(`/salon/${salonId}`);
 	};
 
-	const handleBookService = (salon: Salon) => {
-		setSelectedSalon(salon);
-		setIsBookingModalOpen(true);
-	};
+	// Filter and sort salons using useMemo for better performance
+	const filteredSalons = useMemo(() => {
+		let filtered = [...salons];
 
-	const handleSearch = (e: React.FormEvent) => {
-		e.preventDefault();
-		// Search is handled by useEffect when searchQuery changes
-	};
+		// Filter by search query
+		if (searchQuery.trim()) {
+			filtered = filtered.filter(
+				(salon) =>
+					salon.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+					salon.address?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+					salon.services.some((service: Service) =>
+						service.name.toLowerCase().includes(searchQuery.toLowerCase())
+					)
+			);
+		}
 
-	const clearSearch = () => {
-		setSearchQuery('');
-	};
+		// Filter by category
+		if (activeFilter !== 'All') {
+			filtered = filtered.filter((salon) => {
+				const serviceNames = salon.services.map((s: Service) =>
+					s.name.toLowerCase()
+				);
+				const filterLower = activeFilter.toLowerCase();
+				return serviceNames.some((name: string) =>
+					name.includes(filterLower.replace(' salons', '').replace('shops', ''))
+				);
+			});
+		}
+
+		// Sort salons
+		filtered.sort((a, b) => {
+			switch (sortBy) {
+				case 'name':
+					return a.name.localeCompare(b.name);
+				case 'name-desc':
+					return b.name.localeCompare(a.name);
+				case 'services':
+					return b.services.length - a.services.length;
+				case 'rating':
+					// For now, just sort by name since we don't have ratings
+					return a.name.localeCompare(b.name);
+				default:
+					return 0;
+			}
+		});
+
+		return filtered;
+	}, [salons, searchQuery, activeFilter, sortBy]);
 
 	return (
-		<div className="py-8">
-			<div className="mx-auto max-w-7xl px-6">
-				{/* Header */}
-				<div className="mb-8">
-					<h1 className="text-3xl font-bold text-gray-900 mb-4">All Salons</h1>
-					<p className="text-gray-600">
-						Discover and book appointments at salons in your area
-					</p>
-				</div>
-
-				{/* Search Bar */}
-				<form onSubmit={handleSearch} className="mb-8">
-					<div className="max-w-2xl flex gap-4">
-						<div className="flex-1 relative">
+		<div className="min-h-screen bg-[#F8F5F2]">
+			<main className="py-8 px-6">
+				<div className="mx-auto max-w-6xl">
+					{/* Search Bar */}
+					<div className="mb-8">
+						<div className="relative max-w-2xl mx-auto">
 							<input
 								type="text"
-								placeholder="Search for salons, services, or locations..."
 								value={searchQuery}
 								onChange={(e) => setSearchQuery(e.target.value)}
-								className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#ff5b5b] focus:border-[#ff5b5b] text-gray-900"
+								className="w-full px-6 py-4 pl-12 pr-12 bg-white rounded-2xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#8B4513] focus:border-transparent text-lg text-gray-900"
+								placeholder="Search for salons, services, or locations"
 							/>
+							<svg
+								className="absolute left-4 top-4 h-6 w-6 text-gray-400"
+								fill="none"
+								stroke="currentColor"
+								viewBox="0 0 24 24"
+							>
+								<path
+									strokeLinecap="round"
+									strokeLinejoin="round"
+									strokeWidth={2}
+									d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+								/>
+							</svg>
 							{searchQuery && (
 								<button
-									type="button"
-									onClick={clearSearch}
-									className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+									onClick={() => setSearchQuery('')}
+									className="absolute right-4 top-4 h-6 w-6 text-gray-400 hover:text-gray-600"
 								>
-									<svg
-										className="w-5 h-5"
-										fill="none"
-										stroke="currentColor"
-										viewBox="0 0 24 24"
-									>
-										<path
-											strokeLinecap="round"
-											strokeLinejoin="round"
-											strokeWidth={2}
-											d="M6 18L18 6M6 6l12 12"
-										/>
-									</svg>
+									✕
 								</button>
 							)}
 						</div>
-						<button
-							type="submit"
-							className="bg-[#ff5b5b] text-white px-6 py-3 rounded-lg font-medium hover:bg-[#e04a4a] transition-colors"
-						>
-							Search
-						</button>
 					</div>
-				</form>
 
-				{/* Results */}
-				{isLoading ? (
-					<div className="flex justify-center py-12">
-						<LoadingSpinner size="lg" />
-					</div>
-				) : filteredSalons.length === 0 ? (
-					<div className="text-center py-12">
-						<div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-							<span className="text-2xl">🔍</span>
+					{/* Category Filters and Sort */}
+					<div className="mb-8">
+						<div className="flex flex-wrap gap-3 justify-center mb-4">
+							{filters.map((filter) => (
+								<button
+									key={filter}
+									onClick={() => setActiveFilter(filter)}
+									className={`px-6 py-3 rounded-full text-sm font-medium transition-colors ${
+										activeFilter === filter
+											? 'bg-[#ff5b5b] text-white'
+											: 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+									}`}
+								>
+									{filter}
+								</button>
+							))}
 						</div>
-						<h3 className="text-xl font-semibold text-gray-900 mb-2">
-							{searchQuery ? 'No salons found' : 'No salons available'}
-						</h3>
-						<p className="text-gray-600">
-							{searchQuery
-								? 'Try adjusting your search terms or browse all salons'
-								: 'Check back later for new salon listings'}
-						</p>
-						{searchQuery && (
-							<button
-								onClick={clearSearch}
-								className="mt-4 bg-[#ff5b5b] text-white px-6 py-2 rounded-lg font-medium hover:bg-[#e04a4a] transition-colors"
-							>
-								Clear Search
-							</button>
-						)}
 					</div>
-				) : (
-					<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-						{filteredSalons.map((salon) => (
-							<div
-								key={salon.id}
-								className="bg-white rounded-xl shadow-lg hover:shadow-xl transition-shadow cursor-pointer"
-								onClick={() => handleSalonClick(salon.id)}
-							>
-								{/* Salon Logo/Image */}
-								<div className="h-48 bg-gradient-to-br from-pink-100 to-pink-200 rounded-t-xl flex items-center justify-center">
-									{salon.logo ? (
-										<img
-											src={salon.logo}
-											alt={salon.name}
-											className="w-full h-full object-cover rounded-t-xl"
-										/>
-									) : (
-										<span className="text-4xl">💇‍♀️</span>
-									)}
-								</div>
 
-								{/* Salon Info */}
-								<div className="p-6">
-									<h3 className="text-xl font-semibold text-gray-900 mb-2">
-										{salon.name}
-									</h3>
-									{salon.address && (
-										<p className="text-gray-600 text-sm mb-2">
-											📍 {salon.address}
-										</p>
-									)}
-									{salon.phone && (
-										<p className="text-gray-600 text-sm mb-4">
-											📞 {salon.phone}
-										</p>
-									)}
-
-									{/* Services */}
-									{salon.services && salon.services.length > 0 && (
-										<div className="mb-4">
-											<p className="text-sm font-medium text-gray-700 mb-2">
-												Services:
-											</p>
-											<div className="flex flex-wrap gap-1">
-												{salon.services.slice(0, 3).map((service) => (
-													<span
-														key={service.id}
-														className="inline-block px-2 py-1 text-xs bg-gray-100 text-gray-600 rounded"
-													>
-														{service.name}
-													</span>
-												))}
-												{salon.services.length > 3 && (
-													<span className="inline-block px-2 py-1 text-xs bg-gray-100 text-gray-600 rounded">
-														+{salon.services.length - 3} more
-													</span>
-												)}
-											</div>
-										</div>
-									)}
-
-									{/* Action Buttons */}
-									<div className="flex gap-3">
-										<button
-											onClick={(e) => {
-												e.stopPropagation();
-												handleSalonClick(salon.id);
-											}}
-											className="flex-1 bg-gray-100 text-gray-700 px-4 py-2 rounded-lg font-medium hover:bg-gray-200 transition-colors"
-										>
-											View Details
-										</button>
-										<button
-											onClick={(e) => {
-												e.stopPropagation();
-												handleBookService(salon);
-											}}
-											className="flex-1 bg-[#ff5b5b] text-white px-4 py-2 rounded-lg font-medium hover:bg-[#e04a4a] transition-colors"
-										>
-											Book Now
-										</button>
-									</div>
+					{/* Results Header */}
+					<div className="flex items-center justify-between mb-8">
+						<h1 className="text-2xl font-bold text-gray-900">
+							Results ({filteredSalons.length})
+						</h1>
+						<div className="flex items-center gap-4">
+							{/* Sort Dropdown */}
+							<div className="flex justify-center">
+								<div className="relative">
+									<select
+										value={sortBy}
+										onChange={(e) => setSortBy(e.target.value)}
+										className="px-4 py-2 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#ff5b5b] focus:border-transparent text-gray-900"
+									>
+										{sortOptions.map((option) => (
+											<option key={option.value} value={option.value}>
+												{option.label}
+											</option>
+										))}
+									</select>
 								</div>
 							</div>
-						))}
+						</div>
 					</div>
-				)}
 
-				{/* Results Count */}
-				{filteredSalons.length > 0 && (
-					<div className="mt-8 text-center text-gray-600">
-						Showing {filteredSalons.length} salon
-						{filteredSalons.length !== 1 ? 's' : ''}
-						{searchQuery && ` for "${searchQuery}"`}
+					{/* Salon Cards */}
+					<div className="space-y-6">
+						{loading ? (
+							<LoadingSpinner message="Loading salons..." />
+						) : error ? (
+							<ErrorDisplay
+								error={error}
+								message="Failed to load salons"
+								onRetry={() => refetch()}
+							/>
+						) : filteredSalons.length === 0 ? (
+							// No salons found
+							<div className="text-center py-12">
+								<div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+									<span className="text-2xl">🏪</span>
+								</div>
+								<h3 className="text-xl font-semibold text-gray-900 mb-2">
+									No salons found
+								</h3>
+								<p className="text-gray-600">
+									Try adjusting your search criteria or check back later.
+								</p>
+							</div>
+						) : (
+							// Display salons
+							filteredSalons.map((salon) => (
+								<div
+									key={salon.id}
+									onClick={() => handleSalonClick(salon.id)}
+									className="bg-white rounded-2xl p-6 shadow-lg hover:shadow-xl transition-shadow cursor-pointer"
+								>
+									<div className="flex gap-6">
+										{/* Salon Image */}
+										<div className="w-48 h-48 bg-gradient-to-br from-pink-100 to-pink-200 rounded-xl flex items-center justify-center flex-shrink-0">
+											{salon.logo ? (
+												<img
+													src={salon.logo}
+													alt={salon.name}
+													className="w-full h-full object-cover rounded-xl"
+												/>
+											) : (
+												<span className="text-6xl">💇‍♀️</span>
+											)}
+										</div>
+
+										{/* Salon Info */}
+										<div className="flex-1">
+											<h2 className="text-xl font-bold text-gray-900 mb-2">
+												{salon.name}
+											</h2>
+											<p className="text-gray-600 text-sm mb-2">
+												{salon.address}
+											</p>
+											{salon.phone && (
+												<p className="text-gray-500 text-sm mb-3">
+													📞 {salon.phone}
+												</p>
+											)}
+										</div>
+									</div>
+									{/* Services */}
+									{salon.services && salon.services.length > 0 ? (
+										<div className="flex justify-between gap-5">
+											{salon.services.map((service: Service, index: number) => (
+												<div
+													key={service.id || index}
+													className="flex w-full items-center justify-between py-2"
+												>
+													<div className="flex items-center gap-3">
+														<div>
+															<span className="text-sm font-medium text-gray-900">
+																{service.name}
+															</span>
+															{service.description && (
+																<p className="text-xs text-gray-500 mt-1">
+																	{service.description}
+																</p>
+															)}
+															<p className="text-xs text-gray-500">
+																⏱️ {service.duration} min
+															</p>
+														</div>
+														<span className="text-sm font-semibold text-[#ff5b5b]">
+															${service.price}
+														</span>
+													</div>
+													<button
+														onClick={(e) => {
+															e.stopPropagation();
+															handleBookService(service, salon.id, salon.name);
+														}}
+														className="bg-[#ff5b5b] text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-[#e04a4a] transition-colors"
+													>
+														Book Now
+													</button>
+												</div>
+											))}
+										</div>
+									) : (
+										<div className="text-center py-4">
+											<p className="text-gray-500 text-sm">
+												No services available
+											</p>
+										</div>
+									)}
+								</div>
+							))
+						)}
 					</div>
-				)}
-			</div>
+
+					{/* Load More Button */}
+					<div className="text-center mt-12">
+						<button className="bg-[#ff5b5b] text-white px-8 py-4 rounded-2xl font-medium hover:bg-[#e04a4a] transition-colors">
+							Load more
+						</button>
+					</div>
+				</div>
+			</main>
+
+			{/* Footer */}
+			<footer className="bg-[#F8F5F2] py-8 px-6 mt-16">
+				<div className="mx-auto max-w-6xl text-center">
+					<p className="text-gray-500 text-sm">
+						© 2024 Henzo. All rights reserved.
+					</p>
+				</div>
+			</footer>
 
 			{/* Booking Modal */}
 			<BookingModal
 				isOpen={isBookingModalOpen}
 				onClose={() => {
 					setIsBookingModalOpen(false);
-					setSelectedSalon(null);
+					setSelectedService(null);
 				}}
-				salonId={selectedSalon?.id}
-				salonName={selectedSalon?.name}
+				salonId={selectedService?.salonId}
+				salonName={selectedService?.salonName}
 				showServiceSelector={true}
 			/>
 		</div>

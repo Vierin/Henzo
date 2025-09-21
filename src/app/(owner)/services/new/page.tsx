@@ -90,7 +90,8 @@ export default function NewServicePage() {
 					Add New Service
 				</h1>
 				<p className="text-gray-600">
-					Create a new service for your salon with pricing and duration details.
+					Create a new service for your salon with pricing and duration
+					details.
 				</p>
 			</div>
 

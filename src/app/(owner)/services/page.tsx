@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import toast from 'react-hot-toast';
 import EditServiceModal from '@/components/EditServiceModal';
 import { useServices, useDeleteService } from '@/hooks/useServices';
 import LoadingSpinner from '@/components/LoadingSpinner';
@@ -48,156 +49,137 @@ export default function ServicesPage() {
 	};
 
 	const formatDuration = (minutes: number) => {
-		if (minutes < 60) {
-			return `${minutes}m`;
-		}
 		const hours = Math.floor(minutes / 60);
-		const remainingMinutes = minutes % 60;
-		return remainingMinutes > 0
-			? `${hours}h ${remainingMinutes}m`
-			: `${hours}h`;
+		const mins = minutes % 60;
+		if (hours > 0) {
+			return `${hours}h ${mins}m`;
+		}
+		return `${mins}m`;
 	};
 
 	if (loading) {
 		return (
-			<div className="flex items-center justify-center min-h-[400px]">
-				<LoadingSpinner size="lg" />
+			<div className="min-h-screen bg-[#fff7f6] flex items-center justify-center">
+				<LoadingSpinner />
 			</div>
 		);
 	}
 
 	if (error) {
-		return <ErrorDisplay error={error} onRetry={refetch} />;
+		return (
+			<div className="min-h-screen bg-[#fff7f6] flex items-center justify-center">
+			<ErrorDisplay
+				error={error instanceof Error ? error : new Error('An error occurred')}
+				onRetry={refetch}
+			/>
+			</div>
+		);
 	}
 
 	return (
 		<div>
-			<div className="flex items-center justify-between mb-8">
-				<div>
-					<h1 className="text-3xl font-bold text-gray-900 mb-2">Services</h1>
-					<p className="text-gray-600">
-						Manage your salon services, pricing, and availability
-					</p>
-				</div>
-				<button
-					onClick={() => router.push('/services/new')}
-					className="bg-[#ff5b5b] text-white px-6 py-3 rounded-lg font-medium hover:bg-[#e04a4a] transition-colors"
-				>
-					Add New Service
-				</button>
-			</div>
-
-			{services.length === 0 ? (
-				<div className="text-center py-12">
-					<div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-						<span className="text-2xl">💇‍♀️</span>
-					</div>
-					<h3 className="text-xl font-semibold text-gray-900 mb-2">
-						No services yet
-					</h3>
-					<p className="text-gray-600 mb-6">
-						Get started by adding your first service to your salon
-					</p>
-					<button
-						onClick={() => router.push('/services/new')}
-						className="bg-[#ff5b5b] text-white px-6 py-3 rounded-lg font-medium hover:bg-[#e04a4a] transition-colors"
-					>
-						Add Your First Service
-					</button>
-				</div>
-			) : (
-				<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-					{services.map((service) => (
-						<div
-							key={service.id}
-							className="bg-white rounded-xl border border-gray-200 p-6 hover:shadow-md transition-shadow"
-						>
-							<div className="flex items-start justify-between mb-4">
-								<div>
-									<h3 className="text-lg font-semibold text-gray-900 mb-1">
-										{service.name}
-									</h3>
-									{service.category && (
-										<span className="inline-block px-2 py-1 text-xs font-medium bg-gray-100 text-gray-600 rounded-full">
-											{service.category.name}
-										</span>
-									)}
-								</div>
-								<div className="flex gap-2">
-									<button
-										onClick={() => handleEditService(service)}
-										className="text-gray-400 hover:text-gray-600 transition-colors"
-										title="Edit service"
-									>
-										<svg
-											className="w-4 h-4"
-											fill="none"
-											stroke="currentColor"
-											viewBox="0 0 24 24"
-										>
-											<path
-												strokeLinecap="round"
-												strokeLinejoin="round"
-												strokeWidth={2}
-												d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
-											/>
-										</svg>
-									</button>
-									<button
-										onClick={() => handleDeleteService(service.id)}
-										className="text-gray-400 hover:text-red-600 transition-colors"
-										title="Delete service"
-									>
-										<svg
-											className="w-4 h-4"
-											fill="none"
-											stroke="currentColor"
-											viewBox="0 0 24 24"
-										>
-											<path
-												strokeLinecap="round"
-												strokeLinejoin="round"
-												strokeWidth={2}
-												d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
-											/>
-										</svg>
-									</button>
-								</div>
-							</div>
-
-							{service.description && (
-								<p className="text-gray-600 text-sm mb-4 line-clamp-2">
-									{service.description}
-								</p>
-							)}
-
-							<div className="flex items-center justify-between text-sm">
-								<div className="flex items-center gap-4">
-									<span className="text-gray-500">
-										⏱️ {formatDuration(service.duration)}
-									</span>
-								</div>
-								<span className="font-semibold text-gray-900">
-									{formatPrice(service.price)}
-								</span>
-							</div>
+				<div className="mb-8">
+					<div className="flex items-center justify-between">
+						<div>
+							<h1 className="text-3xl font-bold text-black mb-2">Services</h1>
+							<p className="text-gray-800">
+								Manage your salon services and pricing
+							</p>
 						</div>
-					))}
+						<button
+							onClick={() => router.push('/services/new')}
+							className="inline-flex items-center gap-2 rounded-full bg-[#ff5b5b] text-white px-4 py-2 text-sm shadow-sm hover:opacity-95"
+						>
+							<span className="text-lg leading-none">＋</span>
+							Add New Service
+						</button>
+					</div>
 				</div>
-			)}
+
+				{services.length === 0 ? (
+					<div className="bg-white rounded-xl border border-[#f1d9d7] p-12 text-center">
+						<div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+							<svg
+								className="w-8 h-8 text-gray-400"
+								fill="none"
+								stroke="currentColor"
+								viewBox="0 0 24 24"
+							>
+								<path
+									strokeLinecap="round"
+									strokeLinejoin="round"
+									strokeWidth={2}
+									d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"
+								/>
+							</svg>
+						</div>
+						<h3 className="text-lg font-semibold text-gray-900 mb-2">
+							No services yet
+						</h3>
+						<p className="text-gray-600 mb-6">
+							Start by adding your first service to your salon
+						</p>
+						<button
+							onClick={() => router.push('/services/new')}
+							className="inline-flex items-center gap-2 bg-[#ff5b5b] text-white px-6 py-3 rounded-lg font-medium hover:bg-[#e04a4a] transition-colors"
+						>
+							<span className="text-lg">＋</span>
+							Add Your First Service
+						</button>
+					</div>
+				) : (
+					<div className="bg-white rounded-xl border border-[#f1d9d7] overflow-hidden">
+						<div className="grid grid-cols-5 px-6 py-3 text-[13px] text-gray-700 bg-[#fff2f1] font-semibold">
+							<div>Service Name</div>
+							<div>Description</div>
+							<div>Duration</div>
+							<div>Price</div>
+							<div>Actions</div>
+						</div>
+						<div className="divide-y divide-[#f1d9d7]">
+							{services.map((service) => (
+								<div
+									key={service.id}
+									className="grid grid-cols-5 px-6 py-4 text-[15px] text-gray-800"
+								>
+									<div className="font-semibold">{service.name}</div>
+									<div className="text-gray-600">
+										{service.description || 'No description'}
+									</div>
+									<div>{formatDuration(service.duration)}</div>
+									<div className="font-semibold text-[#ff5b5b]">
+										{formatPrice(service.price)}
+									</div>
+									<div className="flex gap-2">
+										<button
+											onClick={() => handleEditService(service)}
+											className="text-[#ff5b5b] hover:text-[#e04a4a] text-sm font-medium"
+										>
+											Edit
+										</button>
+										<button
+											onClick={() => handleDeleteService(service.id)}
+											className="text-red-600 hover:text-red-700 text-sm font-medium"
+										>
+											Delete
+										</button>
+									</div>
+								</div>
+							))}
+						</div>
+					</div>
+				)}
 
 			{/* Edit Service Modal */}
-			{selectedService && (
-				<EditServiceModal
-					isOpen={isEditModalOpen}
-					onClose={() => {
-						setIsEditModalOpen(false);
-						setSelectedService(null);
-					}}
-					service={selectedService}
-					onSuccess={handleSaveService}
-				/>
-			)}
+			<EditServiceModal
+				isOpen={isEditModalOpen}
+				onClose={() => {
+					setIsEditModalOpen(false);
+					setSelectedService(null);
+				}}
+				service={selectedService}
+				onSave={handleSaveService}
+			/>
 		</div>
 	);
 }
