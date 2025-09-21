@@ -16,25 +16,29 @@ export const serviceKeys = {
 	details: () => [...serviceKeys.all, 'detail'] as const,
 	detail: (id: string) => [...serviceKeys.details(), id] as const,
 	public: () => [...serviceKeys.all, 'public'] as const,
+	bySalon: (salonId: string) => [...serviceKeys.all, 'salon', salonId] as const,
 };
 
 // Get all services for current user's salon
-export const useServices = (filters?: { search?: string; sortBy?: string }) => {
+export const useServices = (
+	salonId: string,
+	filters?: { search?: string; sortBy?: string }
+) => {
 	return useQuery({
-		queryKey: serviceKeys.list(filters || {}),
+		queryKey: serviceKeys.list({ salonId, ...filters }),
 		queryFn: async (): Promise<ServiceResponseDto[]> => {
 			const params = new URLSearchParams();
+			params.append('salonId', salonId);
 			if (filters?.search) params.append('search', filters.search);
 			if (filters?.sortBy) params.append('sortBy', filters.sortBy);
 
 			const queryString = params.toString();
-			const endpoint = queryString ? `/services?${queryString}` : '/services';
+			const endpoint = `/services?${queryString}`;
 
-			const response = await apiClient.get<{ services: ServiceResponseDto[] }>(
-				endpoint
-			);
-			return response.services || [];
+			const response = await apiClient.get<ServiceResponseDto[]>(endpoint);
+			return response || [];
 		},
+		enabled: !!salonId,
 		staleTime: 5 * 60 * 1000, // 5 minutes
 	});
 };
@@ -44,10 +48,9 @@ export const usePublicServices = () => {
 	return useQuery({
 		queryKey: serviceKeys.public(),
 		queryFn: async (): Promise<ServiceResponseDto[]> => {
-			const response = await apiClient.get<{ services: ServiceResponseDto[] }>(
-				'/services/public'
-			);
-			return response.services || [];
+			const response =
+				await apiClient.get<ServiceResponseDto[]>('/services/public');
+			return response || [];
 		},
 		staleTime: 5 * 60 * 1000, // 5 minutes
 	});
@@ -58,10 +61,7 @@ export const useService = (id: string) => {
 	return useQuery({
 		queryKey: serviceKeys.detail(id),
 		queryFn: async (): Promise<ServiceResponseDto> => {
-			const response = await apiClient.get<{ service: ServiceResponseDto }>(
-				`/services/${id}`
-			);
-			return response.service;
+			return apiClient.get<ServiceResponseDto>(`/services/${id}`);
 		},
 		enabled: !!id,
 		staleTime: 5 * 60 * 1000, // 5 minutes
@@ -74,15 +74,13 @@ export const useCreateService = () => {
 
 	return useMutation({
 		mutationFn: async (data: CreateServiceDto): Promise<ServiceResponseDto> => {
-			const response = await apiClient.post<{ service: ServiceResponseDto }>(
-				'/services',
-				data
-			);
-			return response.service;
+			return apiClient.post<ServiceResponseDto>('/services', data);
 		},
-		onSuccess: () => {
+		onSuccess: (data) => {
 			// Invalidate and refetch services
-			queryClient.invalidateQueries({ queryKey: serviceKeys.lists() });
+			queryClient.invalidateQueries({
+				queryKey: serviceKeys.bySalon(data.salonId),
+			});
 			toast.success('Service created successfully!');
 		},
 		onError: (error: Error) => {

@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import PublicHeader from '../../../components/PublicHeader';
-import { supabase } from '@/lib/supabase';
+import { useAuthStore } from '@/stores/authStore';
 
 export default function ClientRegisterPage() {
 	const [formData, setFormData] = useState({
@@ -13,62 +13,39 @@ export default function ClientRegisterPage() {
 		password: '',
 		confirmPassword: '',
 	});
-	const [loading, setLoading] = useState(false);
 	const [error, setError] = useState('');
 	const [success, setSuccess] = useState(false);
 	const router = useRouter();
+	const { registerClient, isLoading } = useAuthStore();
 
 	const handleSubmit = async (e: React.FormEvent) => {
 		e.preventDefault();
-		setLoading(true);
+		// Loading handled by Zustand store
 		setError('');
 
 		// Validate form
 		if (formData.password !== formData.confirmPassword) {
 			setError('Passwords do not match');
-			setLoading(false);
+			// Loading handled by Zustand store
 			return;
 		}
 
 		if (formData.password.length < 6) {
 			setError('Password must be at least 6 characters');
-			setLoading(false);
+			// Loading handled by Zustand store
 			return;
 		}
 
 		try {
-			// 1. Register user with Supabase Auth
-			const { data: authData, error: authError } = await supabase.auth.signUp({
+			const result = await registerClient({
 				email: formData.email,
 				password: formData.password,
+				name: formData.name,
+				phone: formData.phone,
 			});
 
-			if (authError) {
-				throw new Error(authError.message);
-			}
-
-			if (!authData.user) {
-				throw new Error('Registration failed');
-			}
-
-			// 2. Create client profile in database
-			const response = await fetch('/api/auth/register-client', {
-				method: 'POST',
-				headers: {
-					'Content-Type': 'application/json',
-				},
-				body: JSON.stringify({
-					userId: authData.user.id,
-					email: formData.email,
-					name: formData.name,
-					phone: formData.phone,
-				}),
-			});
-
-			const result = await response.json();
-
-			if (!response.ok) {
-				throw new Error(result.error || 'Failed to create client profile');
+			if (!result.success) {
+				throw new Error(result.error || 'Registration failed');
 			}
 
 			// Show success message
@@ -76,7 +53,7 @@ export default function ClientRegisterPage() {
 		} catch (err: any) {
 			setError(err.message);
 		} finally {
-			setLoading(false);
+			// Loading handled by Zustand store
 		}
 	};
 
@@ -240,10 +217,10 @@ export default function ClientRegisterPage() {
 
 							<button
 								type="submit"
-								disabled={loading}
+								disabled={isLoading}
 								className="w-full bg-[#8B4513] text-white py-3 rounded-lg font-semibold hover:bg-[#6B3410] focus:outline-none focus:ring-2 focus:ring-[#8B4513] focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
 							>
-								{loading ? 'Creating Account...' : 'Create Account'}
+								{isLoading ? 'Creating Account...' : 'Create Account'}
 							</button>
 						</form>
 

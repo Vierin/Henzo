@@ -1,43 +1,31 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import toast from 'react-hot-toast';
 import EditServiceModal from '../../../components/EditServiceModal';
-
-interface Service {
-	id: string;
-	name: string;
-	description: string;
-	duration: number;
-	price: number;
-	createdAt: string;
-}
+import { useServices, useDeleteService } from '@/hooks/useServices';
+import LoadingSpinner from '@/components/LoadingSpinner';
+import ErrorDisplay from '@/components/ErrorDisplay';
+import { Service } from '@/types';
 
 export default function ServicesPage() {
-	const [services, setServices] = useState<Service[]>([]);
-	const [loading, setLoading] = useState(true);
-	const [error, setError] = useState('');
 	const [isEditModalOpen, setIsEditModalOpen] = useState(false);
 	const [selectedService, setSelectedService] = useState<Service | null>(null);
 	const router = useRouter();
 
-	useEffect(() => {
-		fetchServices();
-	}, []);
+	// Временное решение - используем salonId = "1" для тестирования
+	// В реальном приложении это должно браться из контекста пользователя
+	const salonId = '1';
 
-	const fetchServices = async () => {
-		try {
-			const response = await fetch('/api/services');
-			if (!response.ok) throw new Error('Failed to fetch services');
-			const data = await response.json();
-			setServices(data.services || []);
-		} catch (err: any) {
-			setError(err.message);
-		} finally {
-			setLoading(false);
-		}
-	};
+	const {
+		data: services = [],
+		isLoading: loading,
+		error,
+		refetch,
+	} = useServices(salonId);
+
+	const deleteServiceMutation = useDeleteService();
 
 	const handleEditService = (service: Service) => {
 		setSelectedService(service);
@@ -46,37 +34,11 @@ export default function ServicesPage() {
 
 	const handleDeleteService = async (serviceId: string) => {
 		if (!confirm('Are you sure you want to delete this service?')) return;
-
-		const deleteToast = toast.loading('Deleting service...');
-
-		try {
-			const response = await fetch(`/api/services/${serviceId}`, {
-				method: 'DELETE',
-			});
-
-			if (!response.ok) {
-				const errorData = await response.json();
-				throw new Error(errorData.error || 'Failed to delete service');
-			}
-
-			// Remove service from local state
-			setServices(services.filter((service) => service.id !== serviceId));
-			toast.success('Service deleted successfully!', { id: deleteToast });
-		} catch (err: any) {
-			setError(err.message);
-			toast.error(err.message || 'Failed to delete service', {
-				id: deleteToast,
-			});
-		}
+		deleteServiceMutation.mutate(serviceId);
 	};
 
 	const handleSaveService = (updatedService: Service) => {
-		setServices(
-			services.map((service) =>
-				service.id === updatedService.id ? updatedService : service
-			)
-		);
-		toast.success('Service updated successfully!');
+		refetch(); // Обновляем данные после изменения
 	};
 
 	const formatPrice = (price: number) => {
@@ -98,10 +60,18 @@ export default function ServicesPage() {
 	if (loading) {
 		return (
 			<div className="min-h-screen bg-[#fff7f6] flex items-center justify-center">
-				<div className="text-center">
-					<div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#ff5b5b] mx-auto mb-4"></div>
-					<p className="text-gray-600">Loading services...</p>
-				</div>
+				<LoadingSpinner />
+			</div>
+		);
+	}
+
+	if (error) {
+		return (
+			<div className="min-h-screen bg-[#fff7f6] flex items-center justify-center">
+				<ErrorDisplay
+					error={error instanceof Error ? error.message : 'An error occurred'}
+					onRetry={refetch}
+				/>
 			</div>
 		);
 	}
@@ -168,12 +138,6 @@ export default function ServicesPage() {
 						</a>
 					</div>
 				</div>
-
-				{error && (
-					<div className="mb-6 text-red-600 text-center bg-red-50 border border-red-200 rounded-md p-3">
-						{error}
-					</div>
-				)}
 
 				{services.length === 0 ? (
 					<div className="bg-white rounded-xl border border-[#f1d9d7] p-12 text-center">

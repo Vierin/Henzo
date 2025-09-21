@@ -2,6 +2,8 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { useServices } from '@/hooks/useServices';
+import { useStaffBySalon } from '@/hooks/useStaff';
 
 export default function NewAppointmentPage() {
 	const [formData, setFormData] = useState({
@@ -16,41 +18,27 @@ export default function NewAppointmentPage() {
 	});
 	const [loading, setLoading] = useState(false);
 	const [error, setError] = useState('');
-	const [services, setServices] = useState([]);
-	const [staff, setStaff] = useState([]);
-	const [dataLoading, setDataLoading] = useState(true);
+	// Временное решение - используем salonId = "1" для тестирования
+	const salonId = '1';
 	const [selectedDate, setSelectedDate] = useState(new Date());
 	const [currentMonth, setCurrentMonth] = useState(new Date());
 	const [availableSlots, setAvailableSlots] = useState([]);
 	const router = useRouter();
 
-	// Fetch services and staff from database
-	useEffect(() => {
-		const fetchData = async () => {
-			try {
-				const [servicesResponse, staffResponse] = await Promise.all([
-					fetch('/api/services'),
-					fetch('/api/staff'),
-				]);
+	// Используем новые хуки для получения данных
+	const {
+		data: services = [],
+		isLoading: servicesLoading,
+		error: servicesError,
+	} = useServices(salonId);
 
-				if (servicesResponse.ok) {
-					const servicesData = await servicesResponse.json();
-					setServices(servicesData.services || []);
-				}
+	const {
+		data: staff = [],
+		isLoading: staffLoading,
+		error: staffError,
+	} = useStaffBySalon(salonId);
 
-				if (staffResponse.ok) {
-					const staffData = await staffResponse.json();
-					setStaff(staffData.staff || []);
-				}
-			} catch (error) {
-				console.error('Error fetching data:', error);
-			} finally {
-				setDataLoading(false);
-			}
-		};
-
-		fetchData();
-	}, []);
+	const dataLoading = servicesLoading || staffLoading;
 
 	// Initialize available slots for today
 	useEffect(() => {

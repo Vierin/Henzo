@@ -28,6 +28,16 @@ export interface Service {
 	duration: number;
 	price: number;
 	salonId?: string;
+	categoryId?: string;
+	category?: Category;
+}
+
+export interface Category {
+	id: string;
+	name: string;
+	salonId: string;
+	createdAt: string;
+	services?: Service[];
 }
 
 export interface Staff {

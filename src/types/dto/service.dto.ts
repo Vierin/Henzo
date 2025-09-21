@@ -21,6 +21,10 @@ export class CreateServiceDto {
 	@IsNumber()
 	@IsPositive()
 	price: number;
+
+	@IsOptional()
+	@IsString()
+	categoryId?: string;
 }
 
 export class UpdateServiceDto {
@@ -41,6 +45,10 @@ export class UpdateServiceDto {
 	@IsNumber()
 	@IsPositive()
 	price?: number;
+
+	@IsOptional()
+	@IsString()
+	categoryId?: string;
 }
 
 export class ServiceResponseDto {
@@ -50,6 +58,7 @@ export class ServiceResponseDto {
 	duration: number;
 	price: number;
 	salonId?: string;
+	categoryId?: string;
 }
 
 export class ServiceWithStaffDto extends ServiceResponseDto {

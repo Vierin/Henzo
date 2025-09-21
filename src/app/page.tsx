@@ -1,5 +1,6 @@
 'use client';
 
+import { useRouter } from 'next/navigation';
 import PublicHeader from '../components/PublicHeader';
 import LoadingSpinner from '../components/LoadingSpinner';
 import ErrorDisplay from '../components/ErrorDisplay';
@@ -7,12 +8,18 @@ import { useSalonsWithServices } from '@/hooks/useSalons';
 import { Salon, Service } from '@/types';
 
 export default function HomePage() {
+	const router = useRouter();
 	const {
 		data: salons = [],
 		isLoading: loading,
 		error,
 		refetch,
 	} = useSalonsWithServices();
+
+	const handleSalonClick = (salonId: string) => {
+		router.push(`/salon/${salonId}`);
+	};
+
 	return (
 		<div className="min-h-screen bg-[#F8F5F2]">
 			<PublicHeader />
@@ -127,7 +134,8 @@ export default function HomePage() {
 								{salons.slice(0, 3).map((salon: Salon) => (
 									<div
 										key={salon.id}
-										className="bg-white rounded-xl overflow-hidden shadow-lg hover:shadow-xl transition-shadow"
+										onClick={() => handleSalonClick(salon.id)}
+										className="bg-white rounded-xl overflow-hidden shadow-lg hover:shadow-xl transition-shadow cursor-pointer"
 									>
 										<div className="h-48 bg-gradient-to-br from-pink-100 to-pink-200 flex items-center justify-center">
 											{salon.logo ? (

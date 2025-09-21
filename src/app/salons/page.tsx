@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useMemo } from 'react';
+import { useRouter } from 'next/navigation';
 import BookingModal from '../../components/BookingModal';
 import PublicHeader from '../../components/PublicHeader';
 import LoadingSpinner from '../../components/LoadingSpinner';
@@ -10,6 +11,7 @@ import { ServiceResponseDto } from '@/types/dto/service.dto';
 import { Salon, Service } from '@/types';
 
 export default function SalonsPage() {
+	const router = useRouter();
 	const [searchQuery, setSearchQuery] = useState('');
 	const [activeFilter, setActiveFilter] = useState('All');
 	const [sortBy, setSortBy] = useState('name');
@@ -45,6 +47,10 @@ export default function SalonsPage() {
 			salonId: string;
 		});
 		setIsBookingModalOpen(true);
+	};
+
+	const handleSalonClick = (salonId: string) => {
+		router.push(`/salon/${salonId}`);
 	};
 
 	// Filter and sort salons using useMemo for better performance
@@ -177,22 +183,6 @@ export default function SalonsPage() {
 									</select>
 								</div>
 							</div>
-							<button className="flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50">
-								<svg
-									className="w-4 h-4"
-									fill="none"
-									stroke="currentColor"
-									viewBox="0 0 24 24"
-								>
-									<path
-										strokeLinecap="round"
-										strokeLinejoin="round"
-										strokeWidth={2}
-										d="M4 6h16M4 12h16M4 18h16"
-									/>
-								</svg>
-								Filters
-							</button>
 						</div>
 					</div>
 
@@ -224,7 +214,8 @@ export default function SalonsPage() {
 							filteredSalons.map((salon) => (
 								<div
 									key={salon.id}
-									className="bg-white rounded-2xl p-6 shadow-lg hover:shadow-xl transition-shadow"
+									onClick={() => handleSalonClick(salon.id)}
+									className="bg-white rounded-2xl p-6 shadow-lg hover:shadow-xl transition-shadow cursor-pointer"
 								>
 									<div className="flex gap-6">
 										{/* Salon Image */}
@@ -258,41 +249,40 @@ export default function SalonsPage() {
 									{/* Services */}
 									{salon.services && salon.services.length > 0 ? (
 										<div className="flex justify-between gap-5">
-											{salon.services.map(
-												(service: Service, index: number) => (
-													<div
-														key={service.id || index}
-														className="flex w-full items-center justify-between py-2 border-b border-gray-100 last:border-b-0"
-													>
-														<div className="flex items-center gap-3">
-															<div>
-																<span className="text-sm font-medium text-gray-900">
-																	{service.name}
-																</span>
-																{service.description && (
-																	<p className="text-xs text-gray-500 mt-1">
-																		{service.description}
-																	</p>
-																)}
-																<p className="text-xs text-gray-500">
-																	⏱️ {service.duration} min
-																</p>
-															</div>
-															<span className="text-sm font-semibold text-[#ff5b5b]">
-																${service.price}
+											{salon.services.map((service: Service, index: number) => (
+												<div
+													key={service.id || index}
+													className="flex w-full items-center justify-between py-2"
+												>
+													<div className="flex items-center gap-3">
+														<div>
+															<span className="text-sm font-medium text-gray-900">
+																{service.name}
 															</span>
+															{service.description && (
+																<p className="text-xs text-gray-500 mt-1">
+																	{service.description}
+																</p>
+															)}
+															<p className="text-xs text-gray-500">
+																⏱️ {service.duration} min
+															</p>
 														</div>
-														<button
-															onClick={() =>
-																handleBookService(service, salon.id)
-															}
-															className="bg-[#ff5b5b] text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-[#e04a4a] transition-colors"
-														>
-															Book Now
-														</button>
+														<span className="text-sm font-semibold text-[#ff5b5b]">
+															${service.price}
+														</span>
 													</div>
-												)
-											)}
+													<button
+														onClick={(e) => {
+															e.stopPropagation();
+															handleBookService(service, salon.id);
+														}}
+														className="bg-[#ff5b5b] text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-[#e04a4a] transition-colors"
+													>
+														Book Now
+													</button>
+												</div>
+											))}
 										</div>
 									) : (
 										<div className="text-center py-4">

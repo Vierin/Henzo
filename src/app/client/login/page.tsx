@@ -3,67 +3,32 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import PublicHeader from '../../../components/PublicHeader';
-import { supabase } from '@/lib/supabase';
+import { useAuthStore } from '@/stores/authStore';
 
 export default function ClientLoginPage() {
 	const [formData, setFormData] = useState({
 		email: '',
 		password: '',
 	});
-	const [loading, setLoading] = useState(false);
 	const [error, setError] = useState('');
 	const router = useRouter();
+	const { login, isLoading } = useAuthStore();
 
 	const handleSubmit = async (e: React.FormEvent) => {
 		e.preventDefault();
-		setLoading(true);
 		setError('');
 
 		try {
-			// Sign in with Supabase
-			const { data, error } = await supabase.auth.signInWithPassword({
-				email: formData.email,
-				password: formData.password,
-			});
+			const result = await login(formData.email, formData.password);
 
-			if (error) {
-				throw new Error(error.message);
-			}
-
-			if (!data.user) {
-				throw new Error('Login failed');
-			}
-
-			// Check if user email is confirmed
-			if (!data.user.email_confirmed_at) {
-				setError(
-					'Please check your email and click the verification link before signing in.'
-				);
-				return;
-			}
-
-			// Get user data to check role
-			const userResponse = await fetch('/api/user');
-			const userResult = await userResponse.json();
-
-			if (!userResponse.ok) {
-				throw new Error('Failed to get user data');
-			}
-
-			// Check if user is a client
-			if (userResult.user.role !== 'CLIENT') {
-				setError(
-					'This account is not a client account. Please use the business login.'
-				);
-				return;
+			if (!result.success) {
+				throw new Error(result.error || 'Login failed');
 			}
 
 			// Redirect to client dashboard
 			router.push('/client');
 		} catch (err: any) {
 			setError(err.message);
-		} finally {
-			setLoading(false);
 		}
 	};
 
@@ -124,10 +89,10 @@ export default function ClientLoginPage() {
 
 							<button
 								type="submit"
-								disabled={loading}
+								disabled={isLoading}
 								className="w-full bg-[#8B4513] text-white py-3 rounded-lg font-semibold hover:bg-[#6B3410] focus:outline-none focus:ring-2 focus:ring-[#8B4513] focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
 							>
-								{loading ? 'Signing in...' : 'Sign In'}
+								{isLoading ? 'Signing in...' : 'Sign In'}
 							</button>
 						</form>
 

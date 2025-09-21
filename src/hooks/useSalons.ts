@@ -31,10 +31,8 @@ export const useSalons = (filters?: { search?: string; category?: string }) => {
 			const queryString = params.toString();
 			const endpoint = queryString ? `/salons?${queryString}` : '/salons';
 
-			const response = await apiClient.get<{ salons: SalonResponseDto[] }>(
-				endpoint
-			);
-			return response.salons || [];
+			const response = await apiClient.get<SalonResponseDto[]>(endpoint);
+			return response || [];
 		},
 		staleTime: 5 * 60 * 1000, // 5 minutes
 	});
@@ -45,10 +43,10 @@ export const useSalonsWithServices = () => {
 	return useQuery({
 		queryKey: salonKeys.withServices(),
 		queryFn: async (): Promise<SalonWithDetailsResponseDto[]> => {
-			const response = await apiClient.get<{
-				salons: SalonWithDetailsResponseDto[];
-			}>('/salons/with-services');
-			return response.salons || [];
+			const response = await apiClient.get<SalonWithDetailsResponseDto[]>(
+				'/salons/with-services'
+			);
+			return response || [];
 		},
 		staleTime: 5 * 60 * 1000, // 5 minutes
 	});

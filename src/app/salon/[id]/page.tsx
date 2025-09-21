@@ -4,14 +4,10 @@ import { useState } from 'react';
 import { useParams } from 'next/navigation';
 import BookingModal from '../../../components/BookingModal';
 import PublicHeader from '../../../components/PublicHeader';
+import LoadingSpinner from '../../../components/LoadingSpinner';
+import ErrorDisplay from '../../../components/ErrorDisplay';
+import { useSalon } from '@/hooks/useSalon';
 import { Service } from '@/types';
-
-interface SalonService {
-	name: string;
-	duration: string;
-	description: string;
-	price: string;
-}
 
 export default function SalonDetailPage() {
 	const params = useParams();
@@ -19,91 +15,123 @@ export default function SalonDetailPage() {
 	const [isBookingModalOpen, setIsBookingModalOpen] = useState(false);
 	const [selectedService, setSelectedService] = useState<Service | null>(null);
 
-	const salon = {
-		id: params.id,
-		name: 'The Glamour Studio',
-		address: '123 Beauty Lane, Glamour City, 12345',
-		rating: 4.9,
-		reviews: 245,
-		description:
-			'Your one-stop destination for beauty and relaxation. We offer a wide range of services to make you look and feel your best.',
-		openingHours: {
-			weekdays: 'Mon-Fri: 9am - 7pm',
-			weekend: 'Sat: 10am - 5pm',
-		},
-		image: '💇‍♀️',
-		services: {
-			'Hair Services': [
-				{
-					name: "Women's Haircut",
-					duration: '1h',
-					description: 'Includes wash and style',
-					price: '$65',
-				},
-				{
-					name: "Men's Haircut",
-					duration: '45m',
-					description: 'Precision cut and styling',
-					price: '$40',
-				},
-				{
-					name: 'Full Color',
-					duration: '2h 30m',
-					description: 'Root to tip color application',
-					price: '$120',
-				},
-				{
-					name: 'Balayage',
-					duration: '3h',
-					description: 'Hand-painted highlights',
-					price: '$180',
-				},
-			],
-			'Nail Care': [
-				{
-					name: 'Classic Manicure',
-					duration: '45m',
-					description: 'Shaping, cuticle care, and polish',
-					price: '$35',
-				},
-				{
-					name: 'Gel Pedicure',
-					duration: '1h 15m',
-					description: 'Long-lasting gel polish',
-					price: '$55',
-				},
-			],
-			Skincare: [
-				{
-					name: 'Signature Facial',
-					duration: '1h',
-					description: 'Customized for your skin type',
-					price: '$90',
-				},
-				{
-					name: 'Eyebrow Waxing',
-					duration: '15m',
-					description: 'Shaping and grooming',
-					price: '$20',
-				},
-			],
-		},
-	};
+	const salonId = params.id as string;
+	const { data: salon, isLoading, error } = useSalon(salonId);
 
-	const tabs = ['Services', 'Reviews'];
+	// Loading and error states
+	if (isLoading) {
+		return (
+			<div className="min-h-screen bg-[#F8F5F2]">
+				<PublicHeader />
+				<div className="container mx-auto px-4 py-8">
+					<LoadingSpinner />
+				</div>
+			</div>
+		);
+	}
 
-	const handleBookService = (service: SalonService) => {
-		// Convert SalonService to Service format for the modal
-		const serviceForModal: Service = {
-			id: Math.random().toString(),
-			name: service.name,
-			description: service.description,
-			duration: parseInt(service.duration.replace(/\D/g, '')),
-			price: parseInt(service.price.replace(/\D/g, ''))
-		};
-		setSelectedService(serviceForModal);
+	if (error || !salon) {
+		return (
+			<div className="min-h-screen bg-[#F8F5F2]">
+				<PublicHeader />
+				<div className="container mx-auto px-4 py-8">
+					<ErrorDisplay
+						message="Failed to load salon details"
+						error={error || new Error('Unknown error')}
+					/>
+				</div>
+			</div>
+		);
+	}
+
+	const tabs = ['Services', 'Reviews', 'Contacts'];
+
+	const handleBookService = (service: Service) => {
+		setSelectedService(service);
 		setIsBookingModalOpen(true);
 	};
+
+	const renderStars = (rating: number) => {
+		return Array.from({ length: 5 }, (_, i) => (
+			<span
+				key={i}
+				className={`text-lg ${
+					i < Math.floor(rating) ? 'text-yellow-400' : 'text-gray-300'
+				}`}
+			>
+				★
+			</span>
+		));
+	};
+
+	const formatWorkingHours = (workingHours: any) => {
+		if (!workingHours) return 'Hours not specified';
+
+		const days = [
+			'monday',
+			'tuesday',
+			'wednesday',
+			'thursday',
+			'friday',
+			'saturday',
+			'sunday',
+		];
+		const dayNames = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+
+		return days
+			.map((day, index) => {
+				const hours = workingHours[day];
+				if (!hours || hours.closed) {
+					return `${dayNames[index]}: Closed`;
+				}
+				return `${dayNames[index]}: ${hours.open} - ${hours.close}`;
+			})
+			.join('\n');
+	};
+
+	// Group services by category for better display
+	const groupServicesByCategory = (services: Service[]) => {
+		const categories: { [key: string]: Service[] } = {};
+
+		services.forEach((service) => {
+			// Simple categorization based on service name
+			let category = 'Other Services';
+			const serviceName = service.name.toLowerCase();
+
+			if (
+				serviceName.includes('hair') ||
+				serviceName.includes('cut') ||
+				serviceName.includes('color') ||
+				serviceName.includes('styling')
+			) {
+				category = 'Hair Services';
+			} else if (
+				serviceName.includes('nail') ||
+				serviceName.includes('manicure') ||
+				serviceName.includes('pedicure')
+			) {
+				category = 'Nail Care';
+			} else if (
+				serviceName.includes('facial') ||
+				serviceName.includes('skin') ||
+				serviceName.includes('massage') ||
+				serviceName.includes('wax')
+			) {
+				category = 'Skincare';
+			}
+
+			if (!categories[category]) {
+				categories[category] = [];
+			}
+			categories[category].push(service);
+		});
+
+		return categories;
+	};
+
+	const serviceCategories = salon.services
+		? groupServicesByCategory(salon.services)
+		: {};
 
 	return (
 		<div className="min-h-screen bg-[#F8F5F2]">
@@ -112,126 +140,210 @@ export default function SalonDetailPage() {
 			<main className="py-8 px-6">
 				<div className="mx-auto max-w-6xl">
 					{/* Salon Title */}
-					<h1 className="text-3xl font-bold text-gray-900 mb-6">
+					<h1 className="text-4xl font-bold text-gray-900 mb-8">
 						{salon.name}
 					</h1>
 
-					{/* Navigation Tabs */}
-					<div className="flex gap-8 mb-8 border-b border-gray-200">
-						{tabs.map((tab) => (
-							<button
-								key={tab}
-								onClick={() => setActiveTab(tab)}
-								className={`pb-3 text-lg font-medium transition-colors ${
-									activeTab === tab
-										? 'text-[#8B4513] border-b-2 border-[#8B4513]'
-										: 'text-gray-600 hover:text-gray-900'
-								}`}
-							>
-								{tab}
-							</button>
-						))}
-					</div>
-
 					<div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-						{/* Main Content - Left Side */}
+						{/* Left Column - Main Content */}
 						<div className="lg:col-span-2">
-							{/* Salon Image */}
-							<div className="w-full h-64 bg-gradient-to-br from-pink-100 to-pink-200 rounded-2xl mb-8 flex items-center justify-center">
-								<span className="text-8xl">{salon.image}</span>
+							{/* Hero Image */}
+							<div className="mb-8">
+								<div className="w-full h-80 bg-gradient-to-br from-pink-100 to-pink-200 rounded-xl flex items-center justify-center overflow-hidden">
+									{salon.logo ? (
+										<img
+											src={salon.logo}
+											alt={salon.name}
+											className="w-full h-full object-cover rounded-xl"
+											onError={(e) => {
+												e.currentTarget.style.display = 'none';
+												const nextSibling = e.currentTarget
+													.nextElementSibling as HTMLElement;
+												if (nextSibling) {
+													nextSibling.style.display = 'flex';
+												}
+											}}
+										/>
+									) : null}
+									<div
+										className="w-full h-full bg-gradient-to-br from-pink-100 to-pink-200 rounded-xl flex items-center justify-center"
+										style={{ display: salon.logo ? 'none' : 'flex' }}
+									>
+										<span className="text-6xl">💇‍♀️</span>
+									</div>
+								</div>
+							</div>
+							{/* Navigation Tabs */}
+							<div className="flex gap-8 mb-8 border-b border-gray-200">
+								{tabs.map((tab) => (
+									<button
+										key={tab}
+										onClick={() => setActiveTab(tab)}
+										className={`pb-4 px-1 text-lg font-medium transition-colors ${
+											activeTab === tab
+												? 'text-[#ff5b5b] border-b-2 border-[#ff5b5b]'
+												: 'text-gray-600 hover:text-gray-900'
+										}`}
+									>
+										{tab}
+									</button>
+								))}
 							</div>
 
-							{/* Services Tab Content */}
+							{/* Tab Content */}
 							{activeTab === 'Services' && (
-								<div className="space-y-8">
-									{Object.entries(salon.services).map(
-										([category, services]) => (
-											<div key={category}>
-												<h3 className="text-xl font-semibold text-gray-900 mb-4">
-													{category}
-												</h3>
-												<div className="space-y-4">
-													{services.map((service, index) => (
-														<div
-															key={index}
-															className="bg-white rounded-xl p-6 shadow-sm border border-gray-100 hover:shadow-md transition-shadow"
-														>
-															<div className="flex items-center justify-between">
-																<div className="flex-1">
-																	<div className="flex items-center gap-4 mb-2">
-																		<h4 className="text-lg font-semibold text-gray-900">
+								<div>
+									{Object.keys(serviceCategories).length > 0 ? (
+										Object.entries(serviceCategories).map(
+											([category, services]) => (
+												<div key={category} className="mb-12">
+													<h2 className="text-2xl font-bold text-gray-900 mb-6">
+														{category}
+													</h2>
+													<div className="space-y-4">
+														{services.map((service) => (
+															<div
+																key={service.id}
+																className="bg-white rounded-lg p-6 hover:shadow-md transition-shadow"
+															>
+																<div className="flex justify-between items-start">
+																	<div className="flex-1">
+																		<h3 className="text-xl font-semibold text-gray-900 mb-2">
 																			{service.name}
-																		</h4>
-																		<span className="text-sm text-gray-500">
-																			{service.duration}
-																		</span>
+																		</h3>
+																		{service.description && (
+																			<p className="text-gray-600 mb-3">
+																				{service.description}
+																			</p>
+																		)}
+																		<div className="flex items-center gap-4 text-sm text-gray-500">
+																			<span>⏱️ {service.duration} min</span>
+																			<span className="text-[#ff5b5b] font-semibold">
+																				${service.price}
+																			</span>
+																		</div>
 																	</div>
-																	<p className="text-gray-600 text-sm mb-3">
-																		{service.description}
-																	</p>
-																</div>
-																<div className="flex items-center gap-4">
-																	<span className="text-lg font-bold text-[#8B4513]">
-																		{service.price}
-																	</span>
 																	<button
 																		onClick={() => handleBookService(service)}
-																		className="bg-[#ff5b5b] text-white px-6 py-2 rounded-lg font-medium hover:bg-[#e04a4a] transition-colors"
+																		className="ml-4 bg-[#ff5b5b] text-white px-6 py-2 rounded-lg font-medium hover:bg-[#e04a4a] transition-colors"
 																	>
 																		Book Now
 																	</button>
 																</div>
 															</div>
-														</div>
-													))}
+														))}
+													</div>
 												</div>
-											</div>
+											)
 										)
+									) : (
+										<div className="text-center py-12">
+											<div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+												<span className="text-2xl">💇‍♀️</span>
+											</div>
+											<h3 className="text-xl font-semibold text-gray-900 mb-2">
+												No services available
+											</h3>
+											<p className="text-gray-600">
+												This salon hasn't added any services yet.
+											</p>
+										</div>
 									)}
 								</div>
 							)}
 
-							{/* Reviews Tab Content */}
 							{activeTab === 'Reviews' && (
-								<div className="space-y-6">
-									<div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
-										<h3 className="text-lg font-semibold text-gray-900 mb-4">
-											Customer Reviews
-										</h3>
-										<div className="space-y-4">
-											<div className="border-b border-gray-100 pb-4">
-												<div className="flex items-center gap-2 mb-2">
-													<div className="flex text-yellow-400">
-														{'★'.repeat(5)}
-													</div>
-													<span className="text-sm font-medium text-gray-900">
-														Sarah M.
-													</span>
-													<span className="text-sm text-gray-500">
-														2 days ago
-													</span>
-												</div>
-												<p className="text-gray-700">
-													Amazing experience! The staff was professional and the
-													results exceeded my expectations. Highly recommend!
-												</p>
+								<div>
+									<h2 className="text-2xl font-bold text-gray-900 mb-6">
+										Customer Reviews
+									</h2>
+
+									{/* Mock reviews - would come from reviews API */}
+									<div className="space-y-6">
+										<div className="border-b border-gray-200 pb-6">
+											<div className="flex items-center gap-2 mb-2">
+												{renderStars(5)}
+												<span className="font-medium text-gray-900">
+													Sarah M.
+												</span>
+												<span className="text-gray-500 text-sm">
+													2 days ago
+												</span>
 											</div>
-											<div className="border-b border-gray-100 pb-4">
-												<div className="flex items-center gap-2 mb-2">
-													<div className="flex text-yellow-400">
-														{'★'.repeat(5)}
+											<p className="text-gray-700">
+												Amazing experience! The staff was professional and the
+												service was top-notch. I'll definitely be coming back.
+											</p>
+										</div>
+
+										<div className="border-b border-gray-200 pb-6">
+											<div className="flex items-center gap-2 mb-2">
+												{renderStars(4)}
+												<span className="font-medium text-gray-900">
+													John D.
+												</span>
+												<span className="text-gray-500 text-sm">
+													1 week ago
+												</span>
+											</div>
+											<p className="text-gray-700">
+												Great salon with excellent service. The only minor issue
+												was the wait time, but the quality made up for it.
+											</p>
+										</div>
+
+										<div className="border-b border-gray-200 pb-6">
+											<div className="flex items-center gap-2 mb-2">
+												{renderStars(5)}
+												<span className="font-medium text-gray-900">
+													Emma L.
+												</span>
+												<span className="text-gray-500 text-sm">
+													2 weeks ago
+												</span>
+											</div>
+											<p className="text-gray-700">
+												Perfect haircut and styling! The stylist really
+												understood what I wanted and delivered beyond my
+												expectations.
+											</p>
+										</div>
+									</div>
+
+									<div className="mt-6 text-center">
+										<button className="text-[#ff5b5b] hover:text-[#e04a4a] font-medium transition-colors">
+											View All Reviews
+										</button>
+									</div>
+								</div>
+							)}
+
+							{activeTab === 'Contacts' && (
+								<div>
+									<h2 className="text-2xl font-bold text-gray-900 mb-6">
+										Contact Information
+									</h2>
+
+									<div className="space-y-6">
+										<div className="bg-white rounded-lg p-6 shadow-sm">
+											<h3 className="text-lg font-semibold text-gray-900 mb-4">
+												Get in Touch
+											</h3>
+											<div className="space-y-3">
+												{salon.phone && (
+													<div className="flex items-center gap-3">
+														<span className="text-gray-600">📞</span>
+														<span className="text-gray-700">{salon.phone}</span>
 													</div>
-													<span className="text-sm font-medium text-gray-900">
-														Jessica L.
-													</span>
-													<span className="text-sm text-gray-500">
-														1 week ago
-													</span>
-												</div>
-												<p className="text-gray-700">
-													Great service and beautiful salon. The balayage turned
-													out perfect!
-												</p>
+												)}
+												{salon.address && (
+													<div className="flex items-center gap-3">
+														<span className="text-gray-600">📍</span>
+														<span className="text-gray-700">
+															{salon.address}
+														</span>
+													</div>
+												)}
 											</div>
 										</div>
 									</div>
@@ -239,95 +351,76 @@ export default function SalonDetailPage() {
 							)}
 						</div>
 
-						{/* Sidebar - Right Side */}
-						<div className="lg:col-span-1">
-							<div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 sticky top-8">
-								<h2 className="text-xl font-semibold text-gray-900 mb-4">
-									{salon.name}
-								</h2>
-								{/* Mini Map */}
-								<div className="mt-6">
-									<div className="w-full h-48 bg-gray-100 rounded-lg border border-gray-200 relative overflow-hidden">
-										{/* Map placeholder with marker */}
-										<div className="absolute inset-0 bg-gradient-to-br from-blue-50 to-blue-100 flex items-center justify-center">
-											<div className="text-center">
-												<div className="w-16 h-16 bg-[#ff5b5b] rounded-full flex items-center justify-center mb-2 mx-auto shadow-lg">
-													<span className="text-white text-xl">📍</span>
-												</div>
-												<p className="text-sm text-gray-600 font-medium">
-													{salon.address}
-												</p>
-											</div>
+						{/* Right Column - Sidebar */}
+						<div className="bg-white rounded-xl p-6 h-fit shadow-sm">
+							<h2 className="text-xl font-bold text-gray-900 mb-4">
+								About {salon.name}
+							</h2>
+
+							<p className="text-gray-700 leading-relaxed mb-6">
+								Your one-stop destination for beauty and relaxation. We offer a
+								wide range of services to make you look and feel your best.
+							</p>
+
+							<div className="space-y-4">
+								{salon.address && (
+									<div>
+										<div className="flex items-center gap-2 mb-1">
+											<span className="text-gray-600">📍</span>
+											<span className="font-medium text-gray-900">Address</span>
 										</div>
-										{/* Map overlay pattern */}
-										<div className="absolute inset-0 opacity-10">
-											<svg
-												className="w-full h-full"
-												viewBox="0 0 100 100"
-												fill="none"
-											>
-												<defs>
-													<pattern
-														id="grid"
-														width="10"
-														height="10"
-														patternUnits="userSpaceOnUse"
-													>
-														<path
-															d="M 10 0 L 0 0 0 10"
-															fill="none"
-															stroke="#8B4513"
-															strokeWidth="0.5"
-														/>
-													</pattern>
-												</defs>
-												<rect width="100" height="100" fill="url(#grid)" />
-											</svg>
-										</div>
+										<p className="text-gray-600 text-sm ml-6">
+											{salon.address}
+										</p>
+									</div>
+								)}
+
+								<div>
+									<div className="flex items-center gap-2 mb-1">
+										<span className="text-gray-600">🕒</span>
+										<span className="font-medium text-gray-900">
+											Opening Hours
+										</span>
+									</div>
+									<div className="text-gray-600 text-sm ml-6">
+										<pre className="whitespace-pre-line text-xs">
+											{formatWorkingHours((salon as any).workingHours)}
+										</pre>
 									</div>
 								</div>
-								<p className="text-gray-700 mb-6 leading-relaxed">
-									{salon.description}
-								</p>
 
-								<div className="space-y-4">
-									<div className="flex items-start gap-3">
-										<span className="text-[#8B4513] mt-1">📍</span>
-										<div>
-											<p className="text-sm font-medium text-gray-900">
-												Address
-											</p>
-											<p className="text-sm text-gray-600">{salon.address}</p>
-										</div>
+								<div>
+									<div className="flex items-center gap-2 mb-1">
+										<span className="text-gray-600">⭐</span>
+										<span className="font-medium text-gray-900">Rating</span>
 									</div>
-
-									<div className="flex items-start gap-3">
-										<span className="text-[#8B4513] mt-1">🕒</span>
-										<div>
-											<p className="text-sm font-medium text-gray-900">
-												Opening Hours
-											</p>
-											<p className="text-sm text-gray-600">
-												{salon.openingHours.weekdays}
-											</p>
-											<p className="text-sm text-gray-600">
-												{salon.openingHours.weekend}
-											</p>
-										</div>
-									</div>
-
-									<div className="flex items-start gap-3">
-										<span className="text-[#8B4513] mt-1">⭐</span>
-										<div>
-											<p className="text-sm font-medium text-gray-900">
-												Rating
-											</p>
-											<p className="text-sm text-gray-600">
-												{salon.rating} ({salon.reviews} reviews)
-											</p>
-										</div>
+									<div className="flex items-center gap-2 ml-6">
+										{renderStars(4.9)}
+										<span className="text-gray-600 text-sm">
+											4.9 (245 reviews)
+										</span>
 									</div>
 								</div>
+							</div>
+
+							{/* Action Buttons */}
+							<div className="mt-6 space-y-3">
+								<button
+									onClick={() => setIsBookingModalOpen(true)}
+									className="w-full bg-[#ff5b5b] text-white py-3 px-6 rounded-lg font-medium hover:bg-[#e04a4a] transition-colors"
+								>
+									Book Appointment
+								</button>
+
+								{salon.phone && (
+									<button className="w-full border border-gray-300 text-gray-700 py-3 px-6 rounded-lg font-medium hover:bg-gray-50 transition-colors">
+										Call Now
+									</button>
+								)}
+
+								<button className="w-full border border-gray-300 text-gray-700 py-3 px-6 rounded-lg font-medium hover:bg-gray-50 transition-colors">
+									Get Directions
+								</button>
 							</div>
 						</div>
 					</div>
@@ -335,8 +428,8 @@ export default function SalonDetailPage() {
 			</main>
 
 			{/* Footer */}
-			<footer className="bg-[#F8F5F2] py-8 px-6 mt-16">
-				<div className="mx-auto max-w-6xl text-center">
+			<footer className="bg-white border-t border-gray-200 py-6">
+				<div className="container mx-auto px-6 text-center">
 					<p className="text-gray-500 text-sm">
 						© 2024 Henzo. All rights reserved.
 					</p>
@@ -346,8 +439,13 @@ export default function SalonDetailPage() {
 			{/* Booking Modal */}
 			<BookingModal
 				isOpen={isBookingModalOpen}
-				onClose={() => setIsBookingModalOpen(false)}
+				onClose={() => {
+					setIsBookingModalOpen(false);
+					setSelectedService(null);
+				}}
+				salonId={salonId}
 				service={selectedService || undefined}
+				salonName={salon.name}
 			/>
 		</div>
 	);

@@ -3,10 +3,14 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
+import BookingModal from '../../components/BookingModal';
+import { Service } from '@/types';
 
 export default function OwnerDashboardPage() {
 	const [user, setUser] = useState(null);
 	const [loading, setLoading] = useState(true);
+	const [isBookingModalOpen, setIsBookingModalOpen] = useState(false);
+	const [selectedService, setSelectedService] = useState<Service | undefined>();
 	const router = useRouter();
 
 	useEffect(() => {
@@ -37,6 +41,12 @@ export default function OwnerDashboardPage() {
 
 		return () => subscription.unsubscribe();
 	}, [router]);
+
+	const handleNewAppointment = () => {
+		// Открываем модальное окно без предварительно выбранного сервиса
+		setSelectedService(undefined);
+		setIsBookingModalOpen(true);
+	};
 
 	if (loading) {
 		return (
@@ -124,13 +134,13 @@ export default function OwnerDashboardPage() {
 							Cancelled
 						</button>
 					</div>
-					<a
-						href="/owner/appointments/new"
+					<button
+						onClick={handleNewAppointment}
 						className="inline-flex items-center gap-2 rounded-full bg-[#ea4b4b] text-white px-4 py-2 text-sm shadow-sm hover:opacity-95"
 					>
 						<span className="text-lg leading-none">＋</span>
 						New Appointment
-					</a>
+					</button>
 				</div>
 
 				<div className="mt-6 grid grid-cols-1 lg:grid-cols-[1fr_360px] gap-6">
@@ -220,6 +230,14 @@ export default function OwnerDashboardPage() {
 					</aside>
 				</div>
 			</main>
+
+			{/* Booking Modal */}
+			<BookingModal
+				isOpen={isBookingModalOpen}
+				onClose={() => setIsBookingModalOpen(false)}
+				service={selectedService}
+				showServiceSelector={true}
+			/>
 		</div>
 	);
 }

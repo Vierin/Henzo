@@ -1,43 +1,31 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import toast from 'react-hot-toast';
 import EditStaffModal from '../../../components/EditStaffModal';
-
-interface Staff {
-	id: string;
-	name: string;
-	accessLevel: 'ADMIN' | 'EMPLOYEE';
-	email: string;
-	phone: string;
-	createdAt: string;
-}
+import { useStaffBySalon, useDeleteStaff } from '@/hooks/useStaff';
+import LoadingSpinner from '@/components/LoadingSpinner';
+import ErrorDisplay from '@/components/ErrorDisplay';
+import { Staff } from '@/types';
 
 export default function StaffPage() {
-	const [staff, setStaff] = useState<Staff[]>([]);
-	const [loading, setLoading] = useState(true);
-	const [error, setError] = useState('');
 	const [isEditModalOpen, setIsEditModalOpen] = useState(false);
 	const [selectedStaff, setSelectedStaff] = useState<Staff | null>(null);
 	const router = useRouter();
 
-	useEffect(() => {
-		fetchStaff();
-	}, []);
+	// Временное решение - используем salonId = "1" для тестирования
+	// В реальном приложении это должно браться из контекста пользователя
+	const salonId = '1';
 
-	const fetchStaff = async () => {
-		try {
-			const response = await fetch('/api/staff');
-			if (!response.ok) throw new Error('Failed to fetch staff');
-			const data = await response.json();
-			setStaff(data.staff || []);
-		} catch (err: any) {
-			setError(err.message);
-		} finally {
-			setLoading(false);
-		}
-	};
+	const {
+		data: staff = [],
+		isLoading: loading,
+		error,
+		refetch,
+	} = useStaffBySalon(salonId);
+
+	const deleteStaffMutation = useDeleteStaff();
 
 	const handleEditStaff = (staffMember: Staff) => {
 		setSelectedStaff(staffMember);
@@ -46,37 +34,11 @@ export default function StaffPage() {
 
 	const handleDeleteStaff = async (staffId: string) => {
 		if (!confirm('Are you sure you want to delete this staff member?')) return;
-
-		const deleteToast = toast.loading('Deleting staff member...');
-
-		try {
-			const response = await fetch(`/api/staff/${staffId}`, {
-				method: 'DELETE',
-			});
-
-			if (!response.ok) {
-				const errorData = await response.json();
-				throw new Error(errorData.error || 'Failed to delete staff member');
-			}
-
-			// Remove staff member from local state
-			setStaff(staff.filter((member) => member.id !== staffId));
-			toast.success('Staff member deleted successfully!', { id: deleteToast });
-		} catch (err: any) {
-			setError(err.message);
-			toast.error(err.message || 'Failed to delete staff member', {
-				id: deleteToast,
-			});
-		}
+		deleteStaffMutation.mutate(staffId);
 	};
 
 	const handleSaveStaff = (updatedStaff: Staff) => {
-		setStaff(
-			staff.map((member) =>
-				member.id === updatedStaff.id ? updatedStaff : member
-			)
-		);
-		toast.success('Staff member updated successfully!');
+		refetch(); // Обновляем данные после изменения
 	};
 
 	const getAccessLevelBadge = (accessLevel: string) => {
@@ -97,10 +59,18 @@ export default function StaffPage() {
 	if (loading) {
 		return (
 			<div className="min-h-screen bg-[#fff7f6] flex items-center justify-center">
-				<div className="text-center">
-					<div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#ff5b5b] mx-auto mb-4"></div>
-					<p className="text-gray-600">Loading staff...</p>
-				</div>
+				<LoadingSpinner />
+			</div>
+		);
+	}
+
+	if (error) {
+		return (
+			<div className="min-h-screen bg-[#fff7f6] flex items-center justify-center">
+				<ErrorDisplay
+					error={error instanceof Error ? error.message : 'An error occurred'}
+					onRetry={refetch}
+				/>
 			</div>
 		);
 	}
@@ -167,12 +137,6 @@ export default function StaffPage() {
 						</a>
 					</div>
 				</div>
-
-				{error && (
-					<div className="mb-6 text-red-600 text-center bg-red-50 border border-red-200 rounded-md p-3">
-						{error}
-					</div>
-				)}
 
 				{staff.length === 0 ? (
 					<div className="bg-white rounded-xl border border-[#f1d9d7] p-12 text-center">

@@ -3,43 +3,101 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 import { Service, Staff } from '@/types';
+import { useStaffBySalon } from '@/hooks/useStaff';
+import { useServices } from '@/hooks/useServices';
+import { useAuthStore } from '@/stores/authStore';
 
 interface BookingModalProps {
 	isOpen: boolean;
 	onClose: () => void;
 	service?: Service;
+	showServiceSelector?: boolean; // Новый пропс для показа выпадающего списка услуг
+	salonId?: string; // ID салона для загрузки услуг и персонала
+	salonName?: string; // Название салона для отображения
 }
 
 export default function BookingModal({
 	isOpen,
 	onClose,
 	service,
+	showServiceSelector = false,
+	salonId,
+	salonName,
 }: BookingModalProps) {
 	const [selectedDate, setSelectedDate] = useState('');
 	const [selectedTime, setSelectedTime] = useState('');
 	const [selectedStaff, setSelectedStaff] = useState('Any Staff');
 	const [isStaffDropdownOpen, setIsStaffDropdownOpen] = useState(false);
 	const [currentDateIndex, setCurrentDateIndex] = useState(0);
-	const [staffMembers, setStaffMembers] = useState<Staff[]>([]);
 	const [salonWorkingHours, setSalonWorkingHours] = useState<any>(null);
 	const [loading, setLoading] = useState(false);
+	const [selectedService, setSelectedService] = useState<Service | null>(null);
+	const [isServiceDropdownOpen, setIsServiceDropdownOpen] = useState(false);
+	const [showLoginModal, setShowLoginModal] = useState(false);
+	const [loginData, setLoginData] = useState({ email: '', password: '' });
+	const [isLoggingIn, setIsLoggingIn] = useState(false);
 
-	// Load staff members and salon data when modal opens
+	// Используем Zustand store для аутентификации
+	const { user, isClient, login, refreshUser } = useAuthStore();
+
+	// Используем переданный salonId или fallback на '1'
+	const currentSalonId = salonId || '1';
+
+	// Используем новые хуки для получения данных
+	const {
+		data: staffMembers = [],
+		isLoading: staffLoading,
+		error: staffError,
+	} = useStaffBySalon(currentSalonId);
+
+	const {
+		data: services = [],
+		isLoading: servicesLoading,
+		error: servicesError,
+	} = useServices(currentSalonId);
+
+	// Load salon data when modal opens
 	useEffect(() => {
 		if (isOpen) {
-			fetchStaffMembers();
 			fetchSalonData();
 		}
 	}, [isOpen]);
 
-	const fetchStaffMembers = async () => {
+	// Initialize selected service
+	useEffect(() => {
+		if (service) {
+			setSelectedService(service);
+		} else if (showServiceSelector && services.length > 0) {
+			// Если показываем селектор услуг и есть услуги, выбираем первую
+			setSelectedService(services[0]);
+		}
+	}, [service, showServiceSelector, services]);
+
+	// Функция для проверки авторизации клиента
+	const checkClientAuth = () => {
+		return isClient;
+	};
+
+	const handleLogin = async (e: React.FormEvent) => {
+		e.preventDefault();
+		setIsLoggingIn(true);
+
 		try {
-			const response = await fetch('/api/staff');
-			if (!response.ok) throw new Error('Failed to fetch staff');
-			const data = await response.json();
-			setStaffMembers(data.staff || []);
-		} catch (error) {
-			console.error('Error fetching staff:', error);
+			const result = await login(loginData.email, loginData.password);
+
+			if (!result.success) {
+				throw new Error(result.error || 'Login failed');
+			}
+
+			setShowLoginModal(false);
+			setLoginData({ email: '', password: '' });
+
+			// После успешного логина продолжаем с созданием резервации
+			await createBooking();
+		} catch (error: any) {
+			alert(error.message || 'Login failed');
+		} finally {
+			setIsLoggingIn(false);
 		}
 	};
 
@@ -186,23 +244,29 @@ export default function BookingModal({
 	}, []);
 
 	const handleBooking = async () => {
-		if (!service || !selectedDate || !selectedTime || !selectedStaff) {
+		if (!selectedService || !selectedDate || !selectedTime) {
 			alert('Please fill in all fields');
 			return;
 		}
 
+		// Проверяем авторизацию клиента
+		if (!checkClientAuth()) {
+			// Показываем модальное окно логина
+			setShowLoginModal(true);
+			return;
+		}
+
+		// Если пользователь авторизован, продолжаем с созданием резервации
+		await createBooking();
+	};
+
+	const createBooking = async () => {
 		setLoading(true);
 
 		try {
-			// Check if user is authenticated
-			const {
-				data: { session },
-			} = await supabase.auth.getSession();
-
-			if (!session) {
-				// Redirect to client login if not authenticated
-				window.location.href = '/client/login';
-				return;
+			// Проверяем, что пользователь авторизован
+			if (!user) {
+				throw new Error('User not authenticated');
 			}
 
 			// Find the selected staff member
@@ -211,19 +275,24 @@ export default function BookingModal({
 			);
 			const staffId = staffMember?.id || 'any';
 
-			// Create booking
+			// Create booking with user data
 			const response = await fetch('/api/appointments', {
 				method: 'POST',
 				headers: {
 					'Content-Type': 'application/json',
 				},
 				body: JSON.stringify({
-					serviceId: service.id,
+					serviceId: selectedService?.id,
 					staffId: staffId,
 					date: selectedDate,
 					time: selectedTime,
-					salonId: service.salonId || '1', // Default salon ID
-					notes: `Booking for ${service.name}`,
+					salonId: currentSalonId,
+					notes: `Booking for ${selectedService?.name}`,
+					// User data from authenticated session
+					userId: user.id,
+					clientName: user.name || 'Client',
+					clientEmail: user.email,
+					clientPhone: user.phone || '',
 				}),
 			});
 
@@ -303,26 +372,105 @@ export default function BookingModal({
 
 						{/* Service Details */}
 						<div className="mb-8">
-							<h2 className="text-2xl font-bold text-gray-900 mb-2">
-								{service?.name || 'Select a service'}
-							</h2>
-							<p className="text-gray-700 mb-4">
-								{service?.description || 'Please select a service to book'}
-							</p>
-							<div className="flex items-center gap-6">
-								<div className="flex items-center gap-2">
-									<span className="text-gray-500">🕒</span>
-									<span className="text-sm text-gray-600">
-										{service?.duration ? `${service.duration} min` : 'Duration'}
-									</span>
+							{showServiceSelector ? (
+								<div>
+									{/* Service Selector Dropdown */}
+									<div className="relative mb-4">
+										<button
+											type="button"
+											onClick={() =>
+												setIsServiceDropdownOpen(!isServiceDropdownOpen)
+											}
+											className="w-full flex items-center justify-between p-4 border border-gray-300 rounded-lg bg-white text-left focus:outline-none focus:ring-2 focus:ring-[#ea4b4b] focus:border-transparent"
+										>
+											<div>
+												<div className="text-lg font-semibold text-gray-900">
+													{selectedService?.name || 'Select a service'}
+												</div>
+												<div className="text-sm text-gray-600">
+													{selectedService?.description ||
+														'Choose from available services'}
+												</div>
+											</div>
+											<span className="text-gray-400">
+												{isServiceDropdownOpen ? '▲' : '▼'}
+											</span>
+										</button>
+
+										{isServiceDropdownOpen && (
+											<div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-auto">
+												{services.map((serviceOption) => (
+													<button
+														key={serviceOption.id}
+														type="button"
+														onClick={() => {
+															setSelectedService(serviceOption);
+															setIsServiceDropdownOpen(false);
+														}}
+														className="w-full text-left px-4 py-3 hover:bg-gray-50 border-b border-gray-100 last:border-b-0"
+													>
+														<div className="font-medium text-gray-900">
+															{serviceOption.name}
+														</div>
+														<div className="text-sm text-gray-600">
+															{serviceOption.description}
+														</div>
+														<div className="text-sm text-gray-500 mt-1">
+															{serviceOption.duration} min • $
+															{serviceOption.price}
+														</div>
+													</button>
+												))}
+											</div>
+										)}
+									</div>
+
+									{/* Service Details */}
+									{selectedService && (
+										<div className="flex items-center gap-6">
+											<div className="flex items-center gap-2">
+												<span className="text-gray-500">🕒</span>
+												<span className="text-sm text-gray-600">
+													{selectedService.duration} min
+												</span>
+											</div>
+											<div className="flex items-center gap-2">
+												<span className="text-lg font-bold text-[#8B4513]">
+													${selectedService.price}
+												</span>
+											</div>
+										</div>
+									)}
 								</div>
-								<div className="flex items-center gap-2">
-									<span className="text-gray-500">$</span>
-									<span className="text-lg font-bold text-[#8B4513]">
-										{service?.price ? `$${service.price}` : 'Price'}
-									</span>
+							) : (
+								<div>
+									<h2 className="text-2xl font-bold text-gray-900 mb-2">
+										{selectedService?.name || 'Select a service'}
+									</h2>
+									<p className="text-gray-700 mb-4">
+										{selectedService?.description ||
+											'Please select a service to book'}
+									</p>
+									<div className="flex items-center gap-6">
+										<div className="flex items-center gap-2">
+											<span className="text-gray-500">🕒</span>
+											<span className="text-sm text-gray-600">
+												{selectedService?.duration
+													? `${selectedService.duration} min`
+													: 'Duration'}
+											</span>
+										</div>
+										<div className="flex items-center gap-2">
+											<span className="text-gray-500">$</span>
+											<span className="text-lg font-bold text-[#8B4513]">
+												{selectedService?.price
+													? `$${selectedService.price}`
+													: 'Price'}
+											</span>
+										</div>
+									</div>
 								</div>
-							</div>
+							)}
 						</div>
 
 						{/* Select Date */}
@@ -484,9 +632,7 @@ export default function BookingModal({
 							disabled={loading}
 							className="w-full bg-[#ff5b5b] text-white py-4 rounded-lg font-semibold text-lg hover:bg-[#e04a4a] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
 						>
-							{loading
-								? 'Booking...'
-								: `Book Appointment - ${service?.price ? `$${service.price}` : 'Select service'}`}
+							{loading ? 'Booking...' : `Book Appointment`}
 						</button>
 
 						{/* Close Button */}
@@ -499,6 +645,90 @@ export default function BookingModal({
 					</div>
 				</div>
 			</div>
+
+			{/* Login Modal */}
+			{showLoginModal && (
+				<div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+					<div className="bg-white rounded-lg p-6 w-full max-w-md mx-4">
+						<h3 className="text-xl font-bold text-gray-900 mb-4">
+							Client Login Required
+						</h3>
+						<p className="text-gray-600 mb-6">
+							Please log in with your client account to book an appointment.
+						</p>
+
+						<form onSubmit={handleLogin} className="space-y-4">
+							<div>
+								<label
+									htmlFor="email"
+									className="block text-sm font-medium text-gray-700 mb-1"
+								>
+									Email
+								</label>
+								<input
+									type="email"
+									id="email"
+									value={loginData.email}
+									onChange={(e) =>
+										setLoginData({ ...loginData, email: e.target.value })
+									}
+									className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#ea4b4b] focus:border-transparent"
+									required
+								/>
+							</div>
+
+							<div>
+								<label
+									htmlFor="password"
+									className="block text-sm font-medium text-gray-700 mb-1"
+								>
+									Password
+								</label>
+								<input
+									type="password"
+									id="password"
+									value={loginData.password}
+									onChange={(e) =>
+										setLoginData({ ...loginData, password: e.target.value })
+									}
+									className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#ea4b4b] focus:border-transparent"
+									required
+								/>
+							</div>
+
+							<div className="flex gap-3 pt-4">
+								<button
+									type="submit"
+									disabled={isLoggingIn}
+									className="flex-1 bg-[#ea4b4b] text-white py-2 px-4 rounded-lg font-medium hover:bg-[#d73a3a] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+								>
+									{isLoggingIn ? 'Logging in...' : 'Login'}
+								</button>
+
+								<button
+									type="button"
+									onClick={() => setShowLoginModal(false)}
+									className="flex-1 bg-gray-200 text-gray-800 py-2 px-4 rounded-lg font-medium hover:bg-gray-300 transition-colors"
+								>
+									Cancel
+								</button>
+							</div>
+						</form>
+
+						<div className="mt-4 text-center">
+							<p className="text-sm text-gray-600">
+								Don't have an account?{' '}
+								<a
+									href="/client/register"
+									className="text-[#ea4b4b] hover:underline"
+								>
+									Register here
+								</a>
+							</p>
+						</div>
+					</div>
+				</div>
+			)}
 		</div>
 	);
 }
