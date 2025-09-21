@@ -1,48 +1,17 @@
 'use client';
 
-import { useState, useEffect } from 'react';
 import PublicHeader from '../components/PublicHeader';
-
-interface Service {
-	id: string;
-	name: string;
-	description: string;
-	duration: number;
-	price: number;
-}
-
-interface Salon {
-	id: string;
-	name: string;
-	address: string;
-	phone: string;
-	logo?: string;
-	services: Service[];
-}
+import LoadingSpinner from '../components/LoadingSpinner';
+import ErrorDisplay from '../components/ErrorDisplay';
+import { useSalonsWithServices } from '@/hooks/useSalons';
 
 export default function HomePage() {
-	const [salons, setSalons] = useState<Salon[]>([]);
-	const [loading, setLoading] = useState(true);
-
-	// Load salons data from database
-	useEffect(() => {
-		const fetchSalons = async () => {
-			try {
-				setLoading(true);
-				const response = await fetch('/api/salons/with-services');
-				if (!response.ok) throw new Error('Failed to fetch salons');
-				const data = await response.json();
-				setSalons(data.salons || []);
-			} catch (error) {
-				console.error('Error fetching salons:', error);
-				setSalons([]);
-			} finally {
-				setLoading(false);
-			}
-		};
-
-		fetchSalons();
-	}, []);
+	const {
+		data: salons = [],
+		isLoading: loading,
+		error,
+		refetch,
+	} = useSalonsWithServices();
 	return (
 		<div className="min-h-screen bg-[#F8F5F2]">
 			<PublicHeader />
@@ -133,10 +102,13 @@ export default function HomePage() {
 						</h2>
 
 						{loading ? (
-							<div className="text-center py-12">
-								<div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#ff5b5b] mx-auto mb-4"></div>
-								<p className="text-gray-600">Loading salons...</p>
-							</div>
+							<LoadingSpinner message="Loading salons..." />
+						) : error ? (
+							<ErrorDisplay
+								error={error}
+								message="Failed to load salons"
+								onRetry={() => refetch()}
+							/>
 						) : salons.length === 0 ? (
 							<div className="text-center py-12">
 								<div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
@@ -151,7 +123,7 @@ export default function HomePage() {
 							</div>
 						) : (
 							<div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-								{salons.slice(0, 3).map((salon) => (
+								{salons.slice(0, 3).map((salon: any) => (
 									<div
 										key={salon.id}
 										className="bg-white rounded-xl overflow-hidden shadow-lg hover:shadow-xl transition-shadow"
@@ -181,14 +153,16 @@ export default function HomePage() {
 											)}
 											{salon.services && salon.services.length > 0 && (
 												<div className="flex flex-wrap gap-1 mb-4">
-													{salon.services.slice(0, 2).map((service, index) => (
-														<span
-															key={service.id || index}
-															className="px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-full"
-														>
-															{service.name}
-														</span>
-													))}
+													{salon.services
+														.slice(0, 2)
+														.map((service: any, index: number) => (
+															<span
+																key={service.id || index}
+																className="px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-full"
+															>
+																{service.name}
+															</span>
+														))}
 													{salon.services.length > 2 && (
 														<span className="px-2 py-1 bg-gray-100 text-gray-600 text-xs rounded-full">
 															+{salon.services.length - 2} more

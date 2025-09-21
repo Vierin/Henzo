@@ -1,35 +1,27 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useMemo } from 'react';
 import BookingModal from '../../components/BookingModal';
 import PublicHeader from '../../components/PublicHeader';
-
-interface Service {
-	id: string;
-	name: string;
-	description: string;
-	duration: number;
-	price: number;
-}
-
-interface Salon {
-	id: string;
-	name: string;
-	address: string;
-	phone: string;
-	logo?: string;
-	services: Service[];
-}
+import LoadingSpinner from '../../components/LoadingSpinner';
+import ErrorDisplay from '../../components/ErrorDisplay';
+import { useSalonsWithServices } from '@/hooks/useSalons';
+import { ServiceResponseDto } from '@/types/dto/service.dto';
 
 export default function SalonsPage() {
 	const [searchQuery, setSearchQuery] = useState('');
 	const [activeFilter, setActiveFilter] = useState('All');
 	const [sortBy, setSortBy] = useState('name');
 	const [isBookingModalOpen, setIsBookingModalOpen] = useState(false);
-	const [selectedService, setSelectedService] = useState<Service | null>(null);
-	const [salons, setSalons] = useState<Salon[]>([]);
-	const [filteredSalons, setFilteredSalons] = useState<Salon[]>([]);
-	const [loading, setLoading] = useState(true);
+	const [selectedService, setSelectedService] =
+		useState<ServiceResponseDto | null>(null);
+
+	const {
+		data: salons = [],
+		isLoading: loading,
+		error,
+		refetch,
+	} = useSalonsWithServices();
 
 	const filters = [
 		'All',
@@ -47,13 +39,15 @@ export default function SalonsPage() {
 		{ value: 'rating', label: 'Highest Rated' },
 	];
 
-	const handleBookService = (service) => {
-		setSelectedService(service);
+	const handleBookService = (service: ServiceResponseDto, salonId: string) => {
+		setSelectedService({ ...service, salonId } as ServiceResponseDto & {
+			salonId: string;
+		});
 		setIsBookingModalOpen(true);
 	};
 
-	// Filter and sort salons
-	const filterAndSortSalons = () => {
+	// Filter and sort salons using useMemo for better performance
+	const filteredSalons = useMemo(() => {
 		let filtered = [...salons];
 
 		// Filter by search query
@@ -61,8 +55,8 @@ export default function SalonsPage() {
 			filtered = filtered.filter(
 				(salon) =>
 					salon.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-					salon.address.toLowerCase().includes(searchQuery.toLowerCase()) ||
-					salon.services.some((service) =>
+					salon.address?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+					salon.services.some((service: ServiceResponseDto) =>
 						service.name.toLowerCase().includes(searchQuery.toLowerCase())
 					)
 			);
@@ -71,9 +65,11 @@ export default function SalonsPage() {
 		// Filter by category
 		if (activeFilter !== 'All') {
 			filtered = filtered.filter((salon) => {
-				const serviceNames = salon.services.map((s) => s.name.toLowerCase());
+				const serviceNames = salon.services.map((s: ServiceResponseDto) =>
+					s.name.toLowerCase()
+				);
 				const filterLower = activeFilter.toLowerCase();
-				return serviceNames.some((name) =>
+				return serviceNames.some((name: string) =>
 					name.includes(filterLower.replace(' salons', '').replace('shops', ''))
 				);
 			});
@@ -96,35 +92,8 @@ export default function SalonsPage() {
 			}
 		});
 
-		setFilteredSalons(filtered);
-	};
-
-	// Load salons data from database
-	useEffect(() => {
-		const fetchSalons = async () => {
-			try {
-				setLoading(true);
-				const response = await fetch('/api/salons/with-services');
-				if (!response.ok) throw new Error('Failed to fetch salons');
-				const data = await response.json();
-				setSalons(data.salons || []);
-				setFilteredSalons(data.salons || []);
-			} catch (error) {
-				console.error('Error fetching salons:', error);
-				setSalons([]); // Set empty array on error
-				setFilteredSalons([]);
-			} finally {
-				setLoading(false);
-			}
-		};
-
-		fetchSalons();
-	}, []);
-
-	// Filter and sort when search, filter, or sort changes
-	useEffect(() => {
-		filterAndSortSalons();
-	}, [searchQuery, activeFilter, sortBy, salons]);
+		return filtered;
+	}, [salons, searchQuery, activeFilter, sortBy]);
 
 	return (
 		<div className="min-h-screen bg-[#F8F5F2]">
@@ -229,11 +198,13 @@ export default function SalonsPage() {
 					{/* Salon Cards */}
 					<div className="space-y-6">
 						{loading ? (
-							// Loading state
-							<div className="text-center py-12">
-								<div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#ff5b5b] mx-auto mb-4"></div>
-								<p className="text-gray-600">Loading salons...</p>
-							</div>
+							<LoadingSpinner message="Loading salons..." />
+						) : error ? (
+							<ErrorDisplay
+								error={error}
+								message="Failed to load salons"
+								onRetry={() => refetch()}
+							/>
 						) : filteredSalons.length === 0 ? (
 							// No salons found
 							<div className="text-center py-12">
@@ -286,42 +257,41 @@ export default function SalonsPage() {
 									{/* Services */}
 									{salon.services && salon.services.length > 0 ? (
 										<div className="flex justify-between gap-5">
-											{salon.services.map((service, index) => (
-												<div
-													key={service.id || index}
-													className="flex w-full items-center justify-between py-2 border-b border-gray-100 last:border-b-0"
-												>
-													<div className="flex items-center gap-3">
-														<div>
-															<span className="text-sm font-medium text-gray-900">
-																{service.name}
-															</span>
-															{service.description && (
-																<p className="text-xs text-gray-500 mt-1">
-																	{service.description}
-																</p>
-															)}
-															<p className="text-xs text-gray-500">
-																⏱️ {service.duration} min
-															</p>
-														</div>
-														<span className="text-sm font-semibold text-[#ff5b5b]">
-															${service.price}
-														</span>
-													</div>
-													<button
-														onClick={() =>
-															handleBookService({
-																...service,
-																salonId: salon.id,
-															})
-														}
-														className="bg-[#ff5b5b] text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-[#e04a4a] transition-colors"
+											{salon.services.map(
+												(service: ServiceResponseDto, index: number) => (
+													<div
+														key={service.id || index}
+														className="flex w-full items-center justify-between py-2 border-b border-gray-100 last:border-b-0"
 													>
-														Book Now
-													</button>
-												</div>
-											))}
+														<div className="flex items-center gap-3">
+															<div>
+																<span className="text-sm font-medium text-gray-900">
+																	{service.name}
+																</span>
+																{service.description && (
+																	<p className="text-xs text-gray-500 mt-1">
+																		{service.description}
+																	</p>
+																)}
+																<p className="text-xs text-gray-500">
+																	⏱️ {service.duration} min
+																</p>
+															</div>
+															<span className="text-sm font-semibold text-[#ff5b5b]">
+																${service.price}
+															</span>
+														</div>
+														<button
+															onClick={() =>
+																handleBookService(service, salon.id)
+															}
+															className="bg-[#ff5b5b] text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-[#e04a4a] transition-colors"
+														>
+															Book Now
+														</button>
+													</div>
+												)
+											)}
 										</div>
 									) : (
 										<div className="text-center py-4">
@@ -357,7 +327,7 @@ export default function SalonsPage() {
 			<BookingModal
 				isOpen={isBookingModalOpen}
 				onClose={() => setIsBookingModalOpen(false)}
-				service={selectedService}
+				service={selectedService as any}
 			/>
 		</div>
 	);

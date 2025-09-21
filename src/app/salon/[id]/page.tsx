@@ -84,7 +84,7 @@ export default function SalonDetailPage() {
 
 	const tabs = ['Services', 'Reviews'];
 
-	const handleBookService = (service) => {
+	const handleBookService = (service: any) => {
 		setSelectedService(service);
 		setIsBookingModalOpen(true);
 	};
@@ -331,7 +331,7 @@ export default function SalonDetailPage() {
 			<BookingModal
 				isOpen={isBookingModalOpen}
 				onClose={() => setIsBookingModalOpen(false)}
-				service={selectedService}
+				service={selectedService as any}
 			/>
 		</div>
 	);
