@@ -7,6 +7,8 @@ import AddressAutocomplete from '@/components/AddressAutocomplete';
 import MapComponent from '@/components/MapComponent';
 import LoadingSpinner from '@/components/LoadingSpinner';
 import ErrorDisplay from '@/components/ErrorDisplay';
+import FileUpload from '@/components/FileUpload';
+import PhotoUpload from '@/components/PhotoUpload';
 import { apiClient } from '@/lib/api-client';
 
 // Кастомный компонент для выбора времени в 24-часовом формате
@@ -70,6 +72,7 @@ export default function SalonInfoPage() {
 		website: '',
 		instagram: '',
 		logo: '',
+		photos: [] as string[],
 		operatingHours: {
 			monday: { open: '09:00', close: '18:00', closed: false },
 			tuesday: { open: '09:00', close: '18:00', closed: false },
@@ -104,6 +107,7 @@ export default function SalonInfoPage() {
 					website?: string;
 					instagram?: string;
 					logo?: string;
+					photos?: string[];
 					workingHours?: any;
 				} | null;
 			}>('/salons/current');
@@ -119,6 +123,7 @@ export default function SalonInfoPage() {
 					website: salonData.salon.website || '',
 					instagram: salonData.salon.instagram || '',
 					logo: salonData.salon.logo || '',
+					photos: salonData.salon.photos || [],
 					operatingHours:
 						salonData.salon.workingHours || formData.operatingHours,
 				});
@@ -163,6 +168,7 @@ export default function SalonInfoPage() {
 				website: formData.website,
 				instagram: formData.instagram,
 				logo: formData.logo,
+				photos: formData.photos,
 				workingHours: formData.operatingHours,
 			};
 
@@ -401,29 +407,39 @@ export default function SalonInfoPage() {
 
 					<div>
 						<label className="block text-sm font-medium text-gray-700 mb-2">
-							Logo URL
+							Salon Logo
 						</label>
-						<input
-							type="url"
-							value={formData.logo}
-							onChange={(e) =>
-								setFormData({ ...formData, logo: e.target.value })
+						<FileUpload
+							onUpload={(filePath) =>
+								setFormData({ ...formData, logo: filePath })
 							}
-							className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#ff5b5b] focus:border-[#ff5b5b] text-gray-900"
-							placeholder="https://example.com/logo.png"
+							onRemove={() => setFormData({ ...formData, logo: '' })}
+							currentFile={formData.logo}
+							accept="image/*"
+							maxSize={2}
+							placeholder="Click or drag and drop logo here"
+							disabled={loading}
 						/>
-						{formData.logo && (
-							<div className="mt-4">
-								<img
-									src={formData.logo}
-									alt="Salon Logo"
-									className="w-32 h-32 object-cover rounded-lg border border-gray-200"
-									onError={(e) => {
-										e.currentTarget.style.display = 'none';
-									}}
-								/>
-							</div>
-						)}
+					</div>
+				</div>
+
+				{/* Salon Photos Section */}
+				<div className="bg-white border border-gray-200 rounded-lg p-6">
+					<h2 className="text-2xl font-semibold text-gray-900 mb-6">
+						Salon Photos
+					</h2>
+
+					<div>
+						<label className="block text-sm font-medium text-gray-700 mb-2">
+							Upload up to 3 photos of your salon
+						</label>
+						<PhotoUpload
+							photos={formData.photos}
+							onPhotosChange={(photos) => setFormData({ ...formData, photos })}
+							maxPhotos={3}
+							maxSize={2}
+							disabled={loading}
+						/>
 					</div>
 				</div>
 

@@ -20,6 +20,7 @@ export interface Salon {
 	website?: string;
 	instagram?: string;
 	logo?: string;
+	photos?: string[];
 	ownerId: string;
 	createdAt: string;
 	services?: Service[];

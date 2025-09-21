@@ -5,6 +5,7 @@ import {
 	IsEmail,
 	IsUrl,
 	ValidateNested,
+	IsArray,
 } from 'class-validator';
 import { Type } from 'class-transformer';
 
@@ -64,6 +65,11 @@ export class CreateSalonDto {
 	logo?: string;
 
 	@IsOptional()
+	@IsArray()
+	@IsString({ each: true })
+	photos?: string[];
+
+	@IsOptional()
 	@ValidateNested()
 	@Type(() => WorkingHoursDto)
 	workingHours?: WorkingHoursDto;
@@ -103,6 +109,11 @@ export class UpdateSalonDto {
 	logo?: string;
 
 	@IsOptional()
+	@IsArray()
+	@IsString({ each: true })
+	photos?: string[];
+
+	@IsOptional()
 	@ValidateNested()
 	@Type(() => WorkingHoursDto)
 	workingHours?: WorkingHoursDto;
@@ -118,6 +129,7 @@ export class SalonResponseDto {
 	website?: string;
 	instagram?: string;
 	logo?: string;
+	photos?: string[];
 	workingHours?: WorkingHoursDto;
 	ownerId: string;
 	createdAt: string;
