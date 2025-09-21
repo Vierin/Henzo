@@ -196,9 +196,6 @@ export default function NewAppointmentPage() {
 							Dashboard
 						</Link>
 						<a className="text-[#6b6b6b] hover:text-black" href="#">
-							Calendar
-						</a>
-						<a className="text-[#6b6b6b] hover:text-black" href="#">
 							Customers
 						</a>
 						<a className="text-[#6b6b6b] hover:text-black" href="#">

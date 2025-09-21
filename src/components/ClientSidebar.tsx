@@ -27,7 +27,7 @@ export default function ClientSidebar({
 				{/* Navigation */}
 				<nav className="space-y-2">
 					<Link
-						href="/client/history"
+						href="/dashboard"
 						className={`flex items-center gap-3 px-3 py-2 rounded-lg transition-colors ${
 							activeTab === 'history'
 								? 'bg-white text-[#ff5b5b] border-r-4 border-[#ff5b5b]'
@@ -51,7 +51,7 @@ export default function ClientSidebar({
 					</Link>
 
 					<Link
-						href="/client/reviews"
+						href="/reviews"
 						className={`flex items-center gap-3 px-3 py-2 rounded-lg transition-colors ${
 							activeTab === 'reviews'
 								? 'bg-white text-[#ff5b5b] border-r-4 border-[#ff5b5b]'
@@ -75,7 +75,7 @@ export default function ClientSidebar({
 					</Link>
 
 					<Link
-						href="/client/settings"
+						href="/settings"
 						className={`flex items-center gap-3 px-3 py-2 rounded-lg transition-colors ${
 							activeTab === 'settings'
 								? 'bg-white text-[#ff5b5b] border-r-4 border-[#ff5b5b]'

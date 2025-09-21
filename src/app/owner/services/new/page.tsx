@@ -2,6 +2,10 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { useCreateService } from '@/hooks/useServices';
+import { useCategoriesBySalon } from '@/hooks/useCategories';
+import CreateCategoryModal from '@/components/CreateCategoryModal';
+import { Category } from '@/types';
 
 export default function NewServicePage() {
 	const [formData, setFormData] = useState({
@@ -9,62 +13,55 @@ export default function NewServicePage() {
 		description: '',
 		duration: '',
 		price: '',
+		categoryId: '',
 	});
-	const [loading, setLoading] = useState(false);
-	const [error, setError] = useState('');
+	const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false);
 	const router = useRouter();
+
+	// Временное решение - используем salonId = "1" для тестирования
+	const salonId = '1';
+
+	const { data: categories = [] } = useCategoriesBySalon(salonId);
+	const createServiceMutation = useCreateService();
 
 	const handleSubmit = async (e: React.FormEvent) => {
 		e.preventDefault();
-		setLoading(true);
-		setError('');
 
 		// Validate form
 		if (!formData.name || !formData.duration || !formData.price) {
-			setError('Please fill in all required fields');
-			setLoading(false);
 			return;
 		}
 
 		if (isNaN(Number(formData.duration)) || Number(formData.duration) <= 0) {
-			setError('Duration must be a positive number');
-			setLoading(false);
 			return;
 		}
 
 		if (isNaN(Number(formData.price)) || Number(formData.price) <= 0) {
-			setError('Price must be a positive number');
-			setLoading(false);
 			return;
 		}
 
 		try {
-			// Save service to database
-			const response = await fetch('/api/services', {
-				method: 'POST',
-				headers: {
-					'Content-Type': 'application/json',
-				},
-				body: JSON.stringify({
-					...formData,
-					duration: Number(formData.duration),
-					price: Number(formData.price),
-					salonId: '1', // TODO: Get from user context
-				}),
+			await createServiceMutation.mutateAsync({
+				name: formData.name.trim(),
+				description: formData.description.trim() || undefined,
+				duration: Number(formData.duration),
+				price: Number(formData.price),
+				salonId,
+				categoryId: formData.categoryId || undefined,
 			});
-
-			if (!response.ok) {
-				const errorData = await response.json();
-				throw new Error(errorData.error || 'Failed to create service');
-			}
 
 			// Redirect to services page
 			router.push('/owner/services');
 		} catch (err: any) {
-			setError(err.message);
-		} finally {
-			setLoading(false);
+			console.error('Failed to create service:', err);
 		}
+	};
+
+	const handleCategoryCreated = (newCategory: Category) => {
+		setFormData((prev) => ({
+			...prev,
+			categoryId: newCategory.id,
+		}));
 	};
 
 	return (
@@ -168,6 +165,39 @@ export default function NewServicePage() {
 							/>
 						</div>
 
+						<div>
+							<label className="block text-sm font-medium text-gray-700 mb-2">
+								Category
+							</label>
+							<div className="flex gap-2">
+								<select
+									value={formData.categoryId}
+									onChange={(e) =>
+										setFormData({ ...formData, categoryId: e.target.value })
+									}
+									className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#ff5b5b] focus:border-[#ff5b5b] text-gray-900"
+								>
+									<option value="">Select a category</option>
+									{categories.map((category) => (
+										<option key={category.id} value={category.id}>
+											{category.name}
+										</option>
+									))}
+								</select>
+								<button
+									type="button"
+									onClick={() => setIsCategoryModalOpen(true)}
+									className="px-3 py-2 bg-[#ff5b5b] text-white rounded-md hover:bg-[#e04a4a] transition-colors"
+									title="Add new category"
+								>
+									+
+								</button>
+							</div>
+							<p className="text-xs text-gray-500 mt-1">
+								Choose a category to organize your services
+							</p>
+						</div>
+
 						<div className="grid grid-cols-1 md:grid-cols-2 gap-6">
 							<div>
 								<label className="block text-sm font-medium text-gray-700 mb-2">
@@ -211,12 +241,6 @@ export default function NewServicePage() {
 							</div>
 						</div>
 
-						{error && (
-							<div className="text-red-600 text-sm text-center bg-red-50 border border-red-200 rounded-md p-3">
-								{error}
-							</div>
-						)}
-
 						<div className="flex gap-4 pt-4">
 							<button
 								type="button"
@@ -227,15 +251,25 @@ export default function NewServicePage() {
 							</button>
 							<button
 								type="submit"
-								disabled={loading}
+								disabled={createServiceMutation.isPending}
 								className="flex-1 bg-[#ff5b5b] text-white px-4 py-2 rounded-md hover:bg-[#e04a4a] focus:outline-none focus:ring-2 focus:ring-[#ff5b5b] focus:ring-offset-2 disabled:opacity-50"
 							>
-								{loading ? 'Creating...' : 'Create Service'}
+								{createServiceMutation.isPending
+									? 'Creating...'
+									: 'Create Service'}
 							</button>
 						</div>
 					</form>
 				</div>
 			</main>
+
+			{/* Create Category Modal */}
+			<CreateCategoryModal
+				isOpen={isCategoryModalOpen}
+				onClose={() => setIsCategoryModalOpen(false)}
+				salonId={salonId}
+				onSuccess={handleCategoryCreated}
+			/>
 		</div>
 	);
 }
