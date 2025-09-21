@@ -4,12 +4,20 @@ import { useState } from 'react';
 import { useParams } from 'next/navigation';
 import BookingModal from '../../../components/BookingModal';
 import PublicHeader from '../../../components/PublicHeader';
+import { Service } from '@/types';
+
+interface SalonService {
+	name: string;
+	duration: string;
+	description: string;
+	price: string;
+}
 
 export default function SalonDetailPage() {
 	const params = useParams();
 	const [activeTab, setActiveTab] = useState('Services');
 	const [isBookingModalOpen, setIsBookingModalOpen] = useState(false);
-	const [selectedService, setSelectedService] = useState(null);
+	const [selectedService, setSelectedService] = useState<Service | null>(null);
 
 	const salon = {
 		id: params.id,
@@ -84,8 +92,16 @@ export default function SalonDetailPage() {
 
 	const tabs = ['Services', 'Reviews'];
 
-	const handleBookService = (service: any) => {
-		setSelectedService(service);
+	const handleBookService = (service: SalonService) => {
+		// Convert SalonService to Service format for the modal
+		const serviceForModal: Service = {
+			id: Math.random().toString(),
+			name: service.name,
+			description: service.description,
+			duration: parseInt(service.duration.replace(/\D/g, '')),
+			price: parseInt(service.price.replace(/\D/g, ''))
+		};
+		setSelectedService(serviceForModal);
 		setIsBookingModalOpen(true);
 	};
 
@@ -331,7 +347,7 @@ export default function SalonDetailPage() {
 			<BookingModal
 				isOpen={isBookingModalOpen}
 				onClose={() => setIsBookingModalOpen(false)}
-				service={selectedService as any}
+				service={selectedService || undefined}
 			/>
 		</div>
 	);

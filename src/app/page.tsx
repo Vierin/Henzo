@@ -4,6 +4,7 @@ import PublicHeader from '../components/PublicHeader';
 import LoadingSpinner from '../components/LoadingSpinner';
 import ErrorDisplay from '../components/ErrorDisplay';
 import { useSalonsWithServices } from '@/hooks/useSalons';
+import { Salon, Service } from '@/types';
 
 export default function HomePage() {
 	const {
@@ -123,7 +124,7 @@ export default function HomePage() {
 							</div>
 						) : (
 							<div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-								{salons.slice(0, 3).map((salon: any) => (
+								{salons.slice(0, 3).map((salon: Salon) => (
 									<div
 										key={salon.id}
 										className="bg-white rounded-xl overflow-hidden shadow-lg hover:shadow-xl transition-shadow"
@@ -155,7 +156,7 @@ export default function HomePage() {
 												<div className="flex flex-wrap gap-1 mb-4">
 													{salon.services
 														.slice(0, 2)
-														.map((service: any, index: number) => (
+														.map((service: Service, index: number) => (
 															<span
 																key={service.id || index}
 																className="px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-full"

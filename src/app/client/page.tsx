@@ -4,11 +4,12 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import PublicHeader from '../../components/PublicHeader';
 import { supabase } from '@/lib/supabase';
+import { User, Salon } from '@/types';
 
 export default function ClientPage() {
-	const [user, setUser] = useState(null);
+	const [user, setUser] = useState<User | null>(null);
 	const [loading, setLoading] = useState(true);
-	const [salons, setSalons] = useState([]);
+	const [salons, setSalons] = useState<Salon[]>([]);
 	const [salonsLoading, setSalonsLoading] = useState(true);
 	const router = useRouter();
 
@@ -235,10 +236,10 @@ export default function ClientPage() {
 										<div className="flex justify-between items-start">
 											<div>
 												<h3 className="font-semibold text-gray-900">
-													{booking.service.name}
+													{booking.service?.name || 'Service'}
 												</h3>
 												<p className="text-sm text-gray-600">
-													{booking.salon.name}
+													{booking.salon?.name || 'Salon'}
 												</p>
 												<p className="text-sm text-gray-500">
 													{new Date(booking.time).toLocaleDateString()} at{' '}

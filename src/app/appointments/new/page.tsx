@@ -2,9 +2,11 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
+import { Service, Staff, FormData, TimeSlot } from '@/types';
 
 export default function NewAppointmentPage() {
-	const [formData, setFormData] = useState({
+	const [formData, setFormData] = useState<FormData>({
 		clientName: '',
 		clientPhone: '',
 		clientEmail: '',
@@ -16,14 +18,12 @@ export default function NewAppointmentPage() {
 	});
 	const [loading, setLoading] = useState(false);
 	const [error, setError] = useState('');
-	const [services, setServices] = useState<any[]>([]);
-	const [staff, setStaff] = useState<any[]>([]);
+	const [services, setServices] = useState<Service[]>([]);
+	const [staff, setStaff] = useState<Staff[]>([]);
 	const [dataLoading, setDataLoading] = useState(true);
 	const [selectedDate, setSelectedDate] = useState(new Date());
 	const [currentMonth, setCurrentMonth] = useState(new Date());
-	const [availableSlots, setAvailableSlots] = useState<
-		{ value: string; display: string; available: boolean }[]
-	>([]);
+	const [availableSlots, setAvailableSlots] = useState<TimeSlot[]>([]);
 	const router = useRouter();
 
 	// Fetch services and staff from database
@@ -62,22 +62,19 @@ export default function NewAppointmentPage() {
 	}, [selectedDate]);
 
 	// Generate available time slots for selected date
-	const generateTimeSlots = (
-		date: Date
-	): { value: string; display: string; available: boolean }[] => {
-		const slots: { value: string; display: string; available: boolean }[] = [];
+	const generateTimeSlots = (_date: Date): TimeSlot[] => {
+		const slots: TimeSlot[] = [];
 		const startHour = 9; // 9 AM
 		const endHour = 18; // 6 PM
-		const slotDuration = 60; // 60 minutes
 
 		for (let hour = startHour; hour < endHour; hour++) {
 			const timeString = `${hour.toString().padStart(2, '0')}:00`;
 			const displayTime = new Date(2000, 0, 1, hour).toLocaleTimeString(
 				'en-US',
 				{
-					hour: 'numeric',
+					hour: '2-digit',
 					minute: '2-digit',
-					hour12: true,
+					hour12: false,
 				}
 			);
 
@@ -96,7 +93,6 @@ export default function NewAppointmentPage() {
 		const year = currentMonth.getFullYear();
 		const month = currentMonth.getMonth();
 		const firstDay = new Date(year, month, 1);
-		const lastDay = new Date(year, month + 1, 0);
 		const startDate = new Date(firstDay);
 		startDate.setDate(startDate.getDate() - firstDay.getDay());
 
@@ -191,8 +187,8 @@ export default function NewAppointmentPage() {
 
 			// Redirect to appointments page or dashboard
 			router.push('/');
-		} catch (err: any) {
-			setError(err.message);
+		} catch (err: unknown) {
+			setError(err instanceof Error ? err.message : 'An error occurred');
 		} finally {
 			setLoading(false);
 		}
@@ -208,9 +204,9 @@ export default function NewAppointmentPage() {
 						<span className="text-xl font-semibold">Henzo</span>
 					</div>
 					<nav className="hidden md:flex items-center gap-8 text-[15px]">
-						<a className="text-[#6b6b6b] hover:text-black" href="/">
+						<Link className="text-[#6b6b6b] hover:text-black" href="/">
 							Dashboard
-						</a>
+						</Link>
 						<a className="text-[#6b6b6b] hover:text-black" href="#">
 							Calendar
 						</a>

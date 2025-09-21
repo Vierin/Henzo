@@ -2,21 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
-
-interface Service {
-	id: string;
-	name: string;
-	description: string;
-	duration: number;
-	price: number;
-	salonId?: string;
-}
-
-interface Staff {
-	id: string;
-	name: string;
-	accessLevel: 'ADMIN' | 'EMPLOYEE';
-}
+import { Service, Staff } from '@/types';
 
 interface BookingModalProps {
 	isOpen: boolean;

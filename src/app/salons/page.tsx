@@ -7,6 +7,7 @@ import LoadingSpinner from '../../components/LoadingSpinner';
 import ErrorDisplay from '../../components/ErrorDisplay';
 import { useSalonsWithServices } from '@/hooks/useSalons';
 import { ServiceResponseDto } from '@/types/dto/service.dto';
+import { Salon, Service } from '@/types';
 
 export default function SalonsPage() {
 	const [searchQuery, setSearchQuery] = useState('');
@@ -56,7 +57,7 @@ export default function SalonsPage() {
 				(salon) =>
 					salon.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
 					salon.address?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-					salon.services.some((service: ServiceResponseDto) =>
+					salon.services.some((service: Service) =>
 						service.name.toLowerCase().includes(searchQuery.toLowerCase())
 					)
 			);
@@ -65,7 +66,7 @@ export default function SalonsPage() {
 		// Filter by category
 		if (activeFilter !== 'All') {
 			filtered = filtered.filter((salon) => {
-				const serviceNames = salon.services.map((s: ServiceResponseDto) =>
+				const serviceNames = salon.services.map((s: Service) =>
 					s.name.toLowerCase()
 				);
 				const filterLower = activeFilter.toLowerCase();
@@ -258,7 +259,7 @@ export default function SalonsPage() {
 									{salon.services && salon.services.length > 0 ? (
 										<div className="flex justify-between gap-5">
 											{salon.services.map(
-												(service: ServiceResponseDto, index: number) => (
+												(service: Service, index: number) => (
 													<div
 														key={service.id || index}
 														className="flex w-full items-center justify-between py-2 border-b border-gray-100 last:border-b-0"

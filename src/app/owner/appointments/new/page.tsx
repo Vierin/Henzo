@@ -71,9 +71,9 @@ export default function NewAppointmentPage() {
 			const displayTime = new Date(2000, 0, 1, hour).toLocaleTimeString(
 				'en-US',
 				{
-					hour: 'numeric',
+					hour: '2-digit',
 					minute: '2-digit',
-					hour12: true,
+					hour12: false,
 				}
 			);
 
