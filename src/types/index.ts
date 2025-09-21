@@ -13,8 +13,12 @@ export interface User {
 export interface Salon {
 	id: string;
 	name: string;
+	description?: string;
 	address?: string;
 	phone?: string;
+	email?: string;
+	website?: string;
+	instagram?: string;
 	logo?: string;
 	ownerId: string;
 	createdAt: string;

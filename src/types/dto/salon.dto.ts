@@ -2,6 +2,8 @@ import {
 	IsString,
 	IsOptional,
 	IsObject,
+	IsEmail,
+	IsUrl,
 	ValidateNested,
 } from 'class-validator';
 import { Type } from 'class-transformer';
@@ -35,11 +37,27 @@ export class CreateSalonDto {
 
 	@IsOptional()
 	@IsString()
+	description?: string;
+
+	@IsOptional()
+	@IsString()
 	address?: string;
 
 	@IsOptional()
 	@IsString()
 	phone?: string;
+
+	@IsOptional()
+	@IsEmail()
+	email?: string;
+
+	@IsOptional()
+	@IsUrl()
+	website?: string;
+
+	@IsOptional()
+	@IsString()
+	instagram?: string;
 
 	@IsOptional()
 	@IsString()
@@ -58,11 +76,27 @@ export class UpdateSalonDto {
 
 	@IsOptional()
 	@IsString()
+	description?: string;
+
+	@IsOptional()
+	@IsString()
 	address?: string;
 
 	@IsOptional()
 	@IsString()
 	phone?: string;
+
+	@IsOptional()
+	@IsEmail()
+	email?: string;
+
+	@IsOptional()
+	@IsUrl()
+	website?: string;
+
+	@IsOptional()
+	@IsString()
+	instagram?: string;
 
 	@IsOptional()
 	@IsString()
@@ -77,8 +111,12 @@ export class UpdateSalonDto {
 export class SalonResponseDto {
 	id: string;
 	name: string;
+	description?: string;
 	address?: string;
 	phone?: string;
+	email?: string;
+	website?: string;
+	instagram?: string;
 	logo?: string;
 	workingHours?: WorkingHoursDto;
 	ownerId: string;

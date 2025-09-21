@@ -13,7 +13,6 @@ export default function RegisterPage() {
 	});
 	const [loading, setLoading] = useState(false);
 	const [error, setError] = useState('');
-	const [success, setSuccess] = useState(false);
 	const router = useRouter();
 
 	const handleSubmit = async (e: React.FormEvent) => {
@@ -37,6 +36,7 @@ export default function RegisterPage() {
 
 		try {
 			// 1. Register user with Supabase Auth
+			console.log('Starting registration for:', formData.email);
 			const { data: authData, error: authError } = await supabase.auth.signUp({
 				email: formData.email,
 				password: formData.password,
@@ -48,11 +48,20 @@ export default function RegisterPage() {
 				},
 			});
 
-			if (authError) throw authError;
+			if (authError) {
+				console.error('Supabase auth error:', authError);
+				throw authError;
+			}
+
+			console.log('Supabase signup successful:', {
+				userId: authData.user?.id,
+				emailConfirmed: authData.user?.email_confirmed_at,
+				confirmationSent: authData.user?.confirmation_sent_at,
+			});
 
 			// 2. Create user profile in our database
 			if (authData.user) {
-				const response = await fetch('/api/auth/register', {
+				const response = await fetch('http://localhost:3001/auth/register', {
 					method: 'POST',
 					headers: {
 						'Content-Type': 'application/json',
@@ -71,17 +80,9 @@ export default function RegisterPage() {
 				}
 			}
 
-			// 3. Show success message instead of redirecting
-			setError('');
-			setSuccess(true);
-
-			// Reset form
-			setFormData({
-				email: '',
-				password: '',
-				confirmPassword: '',
-				name: '',
-			});
+			// 3. Redirect to dashboard immediately (skip email verification)
+			console.log('Registration successful, redirecting to dashboard...');
+			router.push('/owner-dashboard');
 		} catch (err: any) {
 			setError(err.message);
 		} finally {
@@ -97,17 +98,14 @@ export default function RegisterPage() {
 						<span className="text-white text-xl font-bold">H</span>
 					</div>
 					<h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
-						{success ? 'Registration Successful!' : 'Create Account'}
+						Create Account
 					</h2>
 					<p className="mt-2 text-center text-sm text-gray-600">
-						{success
-							? 'Please check your email and click the verification link to activate your account.'
-							: 'Register as a beauty salon owner'}
+						Register as a beauty salon owner
 					</p>
 				</div>
 
-				{!success && (
-					<form className="mt-8 space-y-6" onSubmit={handleSubmit}>
+				<form className="mt-8 space-y-6" onSubmit={handleSubmit}>
 						<div className="space-y-4">
 							<div>
 								<label
@@ -223,47 +221,6 @@ export default function RegisterPage() {
 							</span>
 						</div>
 					</form>
-				)}
-
-				{success && (
-					<div className="mt-8 text-center">
-						<div className="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-green-100 mb-4">
-							<svg
-								className="h-8 w-8 text-green-600"
-								fill="none"
-								viewBox="0 0 24 24"
-								stroke="currentColor"
-							>
-								<path
-									strokeLinecap="round"
-									strokeLinejoin="round"
-									strokeWidth={2}
-									d="M5 13l4 4L19 7"
-								/>
-							</svg>
-						</div>
-						<p className="text-lg font-medium text-gray-900 mb-2">
-							Registration Successful!
-						</p>
-						<p className="text-sm text-gray-600 mb-6">
-							Please check your email and click the verification link to
-							activate your account.
-						</p>
-						<button
-							onClick={() => {
-								setSuccess(false);
-								setFormData({
-									email: '',
-									password: '',
-									confirmPassword: '',
-									name: '',
-								});
-							}}
-							className="text-sm text-[#ff5b5b] hover:text-[#e04a4a] font-medium"
-						>
-							Register Another Account
-						</button>
-					</div>
 				)}
 			</div>
 		</div>

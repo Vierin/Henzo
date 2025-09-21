@@ -7,6 +7,58 @@ import AddressAutocomplete from '@/components/AddressAutocomplete';
 import MapComponent from '@/components/MapComponent';
 import LoadingSpinner from '@/components/LoadingSpinner';
 import ErrorDisplay from '@/components/ErrorDisplay';
+import { apiClient } from '@/lib/api-client';
+
+// Кастомный компонент для выбора времени в 24-часовом формате
+const TimePicker24h = ({
+	value,
+	onChange,
+	className = '',
+}: {
+	value: string;
+	onChange: (value: string) => void;
+	className?: string;
+}) => {
+	const [hours, minutes] = value.split(':').map(Number);
+
+	const handleHoursChange = (newHours: number) => {
+		const formattedHours = newHours.toString().padStart(2, '0');
+		onChange(`${formattedHours}:${minutes.toString().padStart(2, '0')}`);
+	};
+
+	const handleMinutesChange = (newMinutes: number) => {
+		const formattedMinutes = newMinutes.toString().padStart(2, '0');
+		onChange(`${hours.toString().padStart(2, '0')}:${formattedMinutes}`);
+	};
+
+	return (
+		<div className={`flex items-center space-x-1 ${className}`}>
+			<select
+				value={hours}
+				onChange={(e) => handleHoursChange(Number(e.target.value))}
+				className="px-2 py-1 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-[#ff5b5b] focus:border-[#ff5b5b] text-sm bg-white"
+			>
+				{Array.from({ length: 24 }, (_, i) => (
+					<option key={i} value={i}>
+						{i.toString().padStart(2, '0')}
+					</option>
+				))}
+			</select>
+			<span className="text-gray-500">:</span>
+			<select
+				value={minutes}
+				onChange={(e) => handleMinutesChange(Number(e.target.value))}
+				className="px-2 py-1 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-[#ff5b5b] focus:border-[#ff5b5b] text-sm bg-white"
+			>
+				{Array.from({ length: 60 }, (_, i) => (
+					<option key={i} value={i}>
+						{i.toString().padStart(2, '0')}
+					</option>
+				))}
+			</select>
+		</div>
+	);
+};
 
 export default function SalonInfoPage() {
 	const [formData, setFormData] = useState({
@@ -19,12 +71,12 @@ export default function SalonInfoPage() {
 		instagram: '',
 		logo: '',
 		operatingHours: {
-			monday: { open: '9:00 AM', close: '6:00 PM', closed: false },
-			tuesday: { open: '9:00 AM', close: '6:00 PM', closed: false },
-			wednesday: { open: '9:00 AM', close: '6:00 PM', closed: false },
-			thursday: { open: '9:00 AM', close: '6:00 PM', closed: false },
-			friday: { open: '9:00 AM', close: '7:00 PM', closed: false },
-			saturday: { open: '10:00 AM', close: '5:00 PM', closed: false },
+			monday: { open: '09:00', close: '18:00', closed: false },
+			tuesday: { open: '09:00', close: '18:00', closed: false },
+			wednesday: { open: '09:00', close: '18:00', closed: false },
+			thursday: { open: '09:00', close: '18:00', closed: false },
+			friday: { open: '09:00', close: '19:00', closed: false },
+			saturday: { open: '10:00', close: '17:00', closed: false },
 			sunday: { open: '', close: '', closed: true },
 		},
 	});
@@ -40,44 +92,39 @@ export default function SalonInfoPage() {
 
 	const fetchSalonData = async () => {
 		try {
-			// Временное решение - используем моковые данные
-			// В реальном приложении здесь будет запрос к API
-			const mockSalon = {
-				name: 'Chic & Sleek Salon',
-				description: 'Premium salon services in the heart of the city',
-				address: '123 Main Street, New York, NY 10001',
-				phone: '+1 (555) 123-4567',
-				email: 'info@chicsalon.com',
-				website: 'https://chicsalon.com',
-				instagram: '@chicsalon',
-				logo: '',
-				workingHours: {
-					monday: { open: '9:00 AM', close: '6:00 PM', closed: false },
-					tuesday: { open: '9:00 AM', close: '6:00 PM', closed: false },
-					wednesday: { open: '9:00 AM', close: '6:00 PM', closed: false },
-					thursday: { open: '9:00 AM', close: '6:00 PM', closed: false },
-					friday: { open: '9:00 AM', close: '7:00 PM', closed: false },
-					saturday: { open: '10:00 AM', close: '5:00 PM', closed: false },
-					sunday: { open: '', close: '', closed: true },
-				},
-			};
+			// Запрос к NestJS API для получения данных салона
+			const salonData = await apiClient.get<{
+				salon: {
+					name: string;
+					description?: string;
+					address?: string;
+					phone?: string;
+					email?: string;
+					website?: string;
+					instagram?: string;
+					logo?: string;
+					workingHours?: any;
+				} | null;
+			}>('/salons/current');
 
-			// Имитируем задержку загрузки
-			await new Promise((resolve) => setTimeout(resolve, 500));
-
-			setFormData({
-				salonName: mockSalon.name || '',
-				description: mockSalon.description || '',
-				address: mockSalon.address || '',
-				phone: mockSalon.phone || '',
-				email: mockSalon.email || '',
-				website: mockSalon.website || '',
-				instagram: mockSalon.instagram || '',
-				logo: mockSalon.logo || '',
-				operatingHours: mockSalon.workingHours || formData.operatingHours,
-			});
+			if (salonData && salonData.salon) {
+				setFormData({
+					salonName: salonData.salon.name || '',
+					description: salonData.salon.description || '',
+					address: salonData.salon.address || '',
+					phone: salonData.salon.phone || '',
+					email: salonData.salon.email || '',
+					website: salonData.salon.website || '',
+					instagram: salonData.salon.instagram || '',
+					logo: salonData.salon.logo || '',
+					operatingHours:
+						salonData.salon.workingHours || formData.operatingHours,
+				});
+			}
+			// Если нет данных в API - оставляем поля пустыми
 		} catch (err: any) {
 			console.error('Error fetching salon data:', err);
+			// При ошибке API - оставляем поля пустыми
 		} finally {
 			setInitialLoading(false);
 		}
@@ -91,30 +138,33 @@ export default function SalonInfoPage() {
 		const saveToast = toast.loading('Saving salon information...');
 
 		try {
-			const response = await fetch('/api/salon', {
-				method: 'PUT',
-				headers: {
-					'Content-Type': 'application/json',
-				},
-				body: JSON.stringify({
-					name: formData.salonName,
-					address: formData.address,
-					phone: formData.phone,
-					logo: formData.logo,
-					workingHours: formData.operatingHours,
-				}),
-			});
-
-			if (!response.ok) {
-				const errorData = await response.json();
-				throw new Error(errorData.error || 'Failed to save salon information');
+			// Валидация данных
+			if (!formData.salonName.trim()) {
+				throw new Error('Salon name is required');
 			}
+
+			if (!formData.address.trim()) {
+				throw new Error('Address is required');
+			}
+
+			// Запрос к NestJS API для сохранения данных салона
+			await apiClient.put('/salons/current', {
+				name: formData.salonName,
+				description: formData.description,
+				address: formData.address,
+				phone: formData.phone,
+				email: formData.email,
+				website: formData.website,
+				instagram: formData.instagram,
+				logo: formData.logo,
+				workingHours: formData.operatingHours,
+			});
 
 			toast.success('Salon information saved successfully!', { id: saveToast });
 
 			// Small delay before redirect to show the success message
 			setTimeout(() => {
-				router.push('/dashboard');
+				router.push('/owner-dashboard');
 			}, 1000);
 		} catch (err: any) {
 			setError(err.message);
@@ -155,11 +205,11 @@ export default function SalonInfoPage() {
 							.closed,
 					open: prev.operatingHours[day as keyof typeof prev.operatingHours]
 						.closed
-						? '9:00 AM'
+						? '09:00'
 						: '',
 					close: prev.operatingHours[day as keyof typeof prev.operatingHours]
 						.closed
-						? '6:00 PM'
+						? '18:00'
 						: '',
 				},
 			},
@@ -364,65 +414,111 @@ export default function SalonInfoPage() {
 				{/* Operating Hours Section */}
 				<div className="bg-white border border-gray-200 rounded-lg p-6">
 					<h2 className="text-2xl font-semibold text-gray-900 mb-6">
-						Operating Hours
+						🕒 Operating Hours
 					</h2>
 
-					<div className="space-y-4">
+					<div className="space-y-3">
 						{days.map((day) => {
 							const dayData =
 								formData.operatingHours[
 									day.key as keyof typeof formData.operatingHours
 								];
 							return (
-								<div key={day.key} className="flex items-center space-x-4">
-									<div className="w-24">
-										<label className="flex items-center space-x-2">
+								<div
+									key={day.key}
+									className={`flex items-center justify-between p-4 rounded-lg border transition-all duration-200 ${
+										dayData.closed
+											? 'bg-gray-50 border-gray-200'
+											: 'bg-green-50 border-green-200 hover:bg-green-100'
+									}`}
+								>
+									<div className="flex items-center space-x-3">
+										<label className="flex items-center space-x-3 cursor-pointer">
 											<input
 												type="checkbox"
 												checked={!dayData.closed}
 												onChange={() => toggleDayClosed(day.key)}
-												className="rounded border-gray-300 text-[#ff5b5b] focus:ring-[#ff5b5b]"
+												className="w-4 h-4 rounded border-gray-300 text-[#ff5b5b] focus:ring-[#ff5b5b] focus:ring-2"
 											/>
-											<span className="text-sm font-medium text-gray-700">
+											<span className="text-base font-medium text-gray-800">
 												{day.label}
 											</span>
 										</label>
 									</div>
 
-									{!dayData.closed && (
-										<>
-											<div className="flex-1">
-												<input
-													type="time"
+									{!dayData.closed ? (
+										<div className="flex items-center space-x-3">
+											<div className="flex items-center space-x-2">
+												<span className="text-sm text-gray-600">Open:</span>
+												<TimePicker24h
 													value={dayData.open}
-													onChange={(e) =>
-														handleTimeChange(day.key, 'open', e.target.value)
+													onChange={(value) =>
+														handleTimeChange(day.key, 'open', value)
 													}
-													className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#ff5b5b] focus:border-[#ff5b5b] text-gray-900"
 												/>
 											</div>
-											<span className="text-gray-500">to</span>
-											<div className="flex-1">
-												<input
-													type="time"
+											<span className="text-gray-400">—</span>
+											<div className="flex items-center space-x-2">
+												<span className="text-sm text-gray-600">Close:</span>
+												<TimePicker24h
 													value={dayData.close}
-													onChange={(e) =>
-														handleTimeChange(day.key, 'close', e.target.value)
+													onChange={(value) =>
+														handleTimeChange(day.key, 'close', value)
 													}
-													className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#ff5b5b] focus:border-[#ff5b5b] text-gray-900"
 												/>
 											</div>
-										</>
-									)}
-
-									{dayData.closed && (
-										<div className="flex-1 text-center text-gray-500">
-											Closed
+										</div>
+									) : (
+										<div className="flex items-center space-x-2 text-gray-500">
+											<span className="text-sm">🚫</span>
+											<span className="text-sm font-medium">Closed</span>
 										</div>
 									)}
 								</div>
 							);
 						})}
+					</div>
+
+					{/* Quick Actions */}
+					<div className="mt-6 pt-4 border-t border-gray-200">
+						<div className="flex gap-2">
+							<button
+								type="button"
+								onClick={() => {
+									// Set all days to open with default hours
+									const newHours = { ...formData.operatingHours };
+									Object.keys(newHours).forEach((day) => {
+										newHours[day as keyof typeof newHours] = {
+											open: '09:00',
+											close: '18:00',
+											closed: false,
+										};
+									});
+									setFormData({ ...formData, operatingHours: newHours });
+								}}
+								className="px-3 py-1 text-xs bg-blue-100 text-blue-700 rounded-md hover:bg-blue-200 transition-colors"
+							>
+								Set All Open
+							</button>
+							<button
+								type="button"
+								onClick={() => {
+									// Set all days to closed
+									const newHours = { ...formData.operatingHours };
+									Object.keys(newHours).forEach((day) => {
+										newHours[day as keyof typeof newHours] = {
+											open: '',
+											close: '',
+											closed: true,
+										};
+									});
+									setFormData({ ...formData, operatingHours: newHours });
+								}}
+								className="px-3 py-1 text-xs bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 transition-colors"
+							>
+								Set All Closed
+							</button>
+						</div>
 					</div>
 				</div>
 

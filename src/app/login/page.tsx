@@ -24,18 +24,20 @@ export default function LoginPage() {
 				password: formData.password,
 			});
 
-			if (error) throw error;
-
-			// Check if email is verified
-			if (data.user && !data.user.email_confirmed_at) {
-				router.push('/verify');
+			if (error) {
+				// Показываем ошибку и НЕ перенаправляем пользователя
+				setError(error.message || 'Invalid email or password');
 				return;
 			}
 
-			// Redirect to owner dashboard
-			router.push('/owner');
+			// Skip email verification for development
+			console.log('User logged in:', data.user?.email, 'Email confirmed:', data.user?.email_confirmed_at);
+
+			// Только при успешном логине перенаправляем пользователя
+			router.push('/owner-dashboard');
 		} catch (err: any) {
-			setError(err.message);
+			// Показываем ошибку и НЕ перенаправляем пользователя
+			setError(err.message || 'An error occurred during login');
 		} finally {
 			setLoading(false);
 		}
@@ -102,7 +104,9 @@ export default function LoginPage() {
 					</div>
 
 					{error && (
-						<div className="text-red-600 text-sm text-center">{error}</div>
+						<div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-md text-sm text-center">
+							{error}
+						</div>
 					)}
 
 					<div>

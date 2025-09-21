@@ -36,7 +36,7 @@ export default function VerifyPage() {
 
 					// Redirect to owner dashboard after 2 seconds
 					setTimeout(() => {
-						router.push('/owner');
+						router.push('/owner-dashboard');
 					}, 2000);
 				}
 			} catch (err) {

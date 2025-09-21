@@ -67,14 +67,25 @@ export default function MapComponent({
 
 	const geocodeAddress = async (address: string) => {
 		try {
+			// Add user agent header to avoid CORS issues
 			const response = await fetch(
 				`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(
 					address
-				)}&limit=1`
+				)}&limit=1`,
+				{
+					headers: {
+						'User-Agent': 'Henzo Salon Booking App',
+					},
+				}
 			);
+
+			if (!response.ok) {
+				throw new Error(`HTTP error! status: ${response.status}`);
+			}
+
 			const data = await response.json();
 
-			if (data.length > 0) {
+			if (data && data.length > 0) {
 				const { lat, lon } = data[0];
 				const latLng: [number, number] = [parseFloat(lat), parseFloat(lon)];
 
@@ -89,9 +100,14 @@ export default function MapComponent({
 				// Add new marker
 				markerRef.current = L.marker(latLng).addTo(mapInstanceRef.current!);
 				markerRef.current.bindPopup(`<b>${address}</b>`).openPopup();
+			} else {
+				console.warn('No location found for address:', address);
+				// Keep the default view if geocoding fails
 			}
 		} catch (error) {
 			console.error('Error geocoding address:', error);
+			// Keep the default view if geocoding fails
+			// The map will still show with the default location
 		}
 	};
 

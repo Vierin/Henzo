@@ -3,7 +3,6 @@
 import { useState, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import BookingModal from '../../../components/BookingModal';
-import PublicHeader from '../../../components/PublicHeader';
 import LoadingSpinner from '../../../components/LoadingSpinner';
 import ErrorDisplay from '../../../components/ErrorDisplay';
 import { useSalonsWithServices } from '@/hooks/useSalons';

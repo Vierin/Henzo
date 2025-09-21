@@ -20,7 +20,7 @@ export default function OwnerHeader() {
 
 				<nav className="hidden md:flex items-center gap-8 text-[15px]">
 					<Link
-						href="/dashboard"
+						href="/owner-dashboard"
 						className="text-gray-800 hover:text-black font-medium"
 					>
 						Dashboard
