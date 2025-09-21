@@ -36,7 +36,7 @@ export default function RegisterPage() {
 		}
 
 		try {
-			// 1. Register user with Supabase Auth
+			// 1. Register user with Supabase Auth (with email verification)
 			const { data: authData, error: authError } = await supabase.auth.signUp({
 				email: formData.email,
 				password: formData.password,
@@ -45,6 +45,7 @@ export default function RegisterPage() {
 						name: formData.name,
 						role: 'OWNER',
 					},
+					emailRedirectTo: `${window.location.origin}/verify?redirect_to=/salon-info`,
 				},
 			});
 
@@ -71,7 +72,7 @@ export default function RegisterPage() {
 				}
 			}
 
-			// 3. Show success message instead of redirecting
+			// 3. Show success message
 			setError('');
 			setSuccess(true);
 
@@ -245,7 +246,8 @@ export default function RegisterPage() {
 						</p>
 						<p className="text-sm text-gray-600 mb-6">
 							Please check your email and click the verification link to
-							activate your account.
+							activate your account. You will be redirected to setup your salon
+							information.
 						</p>
 						<button
 							onClick={() => {

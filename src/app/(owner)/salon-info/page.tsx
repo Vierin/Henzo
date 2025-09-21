@@ -83,6 +83,7 @@ export default function SalonInfoPage() {
 	const [loading, setLoading] = useState(false);
 	const [error, setError] = useState('');
 	const [initialLoading, setInitialLoading] = useState(true);
+	const [hasExistingSalon, setHasExistingSalon] = useState(false);
 	const router = useRouter();
 
 	// Загружаем данные салона при монтировании компонента
@@ -108,6 +109,7 @@ export default function SalonInfoPage() {
 			}>('/salons/current');
 
 			if (salonData && salonData.salon) {
+				setHasExistingSalon(true);
 				setFormData({
 					salonName: salonData.salon.name || '',
 					description: salonData.salon.description || '',
@@ -120,6 +122,8 @@ export default function SalonInfoPage() {
 					operatingHours:
 						salonData.salon.workingHours || formData.operatingHours,
 				});
+			} else {
+				setHasExistingSalon(false);
 			}
 			// Если нет данных в API - оставляем поля пустыми
 		} catch (err: any) {
@@ -135,7 +139,10 @@ export default function SalonInfoPage() {
 		setLoading(true);
 		setError('');
 
-		const saveToast = toast.loading('Saving salon information...');
+		const actionText = hasExistingSalon
+			? 'Updating salon information...'
+			: 'Creating salon...';
+		const saveToast = toast.loading(actionText);
 
 		try {
 			// Валидация данных
@@ -147,8 +154,7 @@ export default function SalonInfoPage() {
 				throw new Error('Address is required');
 			}
 
-			// Запрос к NestJS API для сохранения данных салона
-			await apiClient.put('/salons/current', {
+			const salonData = {
 				name: formData.salonName,
 				description: formData.description,
 				address: formData.address,
@@ -158,9 +164,19 @@ export default function SalonInfoPage() {
 				instagram: formData.instagram,
 				logo: formData.logo,
 				workingHours: formData.operatingHours,
-			});
+			};
 
-			toast.success('Salon information saved successfully!', { id: saveToast });
+			// Выбираем метод запроса в зависимости от того, есть ли уже салон
+			if (hasExistingSalon) {
+				await apiClient.put('/salons/current', salonData);
+				toast.success('Salon information updated successfully!', {
+					id: saveToast,
+				});
+			} else {
+				await apiClient.post('/salons/current', salonData);
+				setHasExistingSalon(true); // После создания салон существует
+				toast.success('Salon created successfully!', { id: saveToast });
+			}
 
 			// Small delay before redirect to show the success message
 			setTimeout(() => {
@@ -557,7 +573,13 @@ export default function SalonInfoPage() {
 						disabled={loading}
 						className="bg-[#ff5b5b] text-white px-8 py-3 rounded-lg font-medium hover:bg-[#e04a4a] focus:outline-none focus:ring-2 focus:ring-[#ff5b5b] focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
 					>
-						{loading ? 'Saving...' : 'Save Salon Information'}
+						{loading
+							? hasExistingSalon
+								? 'Updating...'
+								: 'Creating...'
+							: hasExistingSalon
+								? 'Update Salon Information'
+								: 'Add Salon'}
 					</button>
 				</div>
 			</form>
