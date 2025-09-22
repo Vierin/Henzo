@@ -57,8 +57,10 @@ export default function NewServicePage() {
 				categoryId: formData.categoryId || undefined,
 			});
 
-			// Redirect to services page
-			router.push('/services');
+			// Wait a bit for cache invalidation, then redirect
+			setTimeout(() => {
+				router.push('/services');
+			}, 100);
 		} catch (err: any) {
 			console.error('Failed to create service:', err);
 		}

@@ -77,9 +77,15 @@ export const useCreateService = () => {
 			return apiClient.post<ServiceResponseDto>('/services', data);
 		},
 		onSuccess: (data) => {
-			// Invalidate and refetch services
+			// Invalidate and refetch services for the salon
+			if (data.salonId) {
+				queryClient.invalidateQueries({
+					queryKey: serviceKeys.bySalon(data.salonId),
+				});
+			}
+			// Also invalidate all service lists to be safe
 			queryClient.invalidateQueries({
-				queryKey: serviceKeys.bySalon(data.salonId),
+				queryKey: serviceKeys.lists(),
 			});
 			toast.success('Service created successfully!');
 		},
