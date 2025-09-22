@@ -10,6 +10,7 @@ import MapComponent from '../../../../components/MapComponent';
 import { useSalon } from '@/hooks/useSalon';
 import { Service } from '@/types';
 import { supabase } from '@/lib/supabase';
+import SalonPhotoSlider from '../../../../components/SalonPhotoSlider';
 
 export default function SalonDetailPage() {
 	const params = useParams();
@@ -44,7 +45,7 @@ export default function SalonDetailPage() {
 		);
 	}
 
-	const tabs = ['Services', 'Reviews', 'Contacts'];
+	const tabs = ['Services', 'Reviews'];
 
 	const handleBookService = (service: Service) => {
 		setSelectedService(service);
@@ -152,47 +153,13 @@ export default function SalonDetailPage() {
 					<div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
 						{/* Left Column - Main Content */}
 						<div className="lg:col-span-2">
-							{/* Hero Image */}
+							{/* Photo Slider */}
 							<div className="mb-8">
-								<div className="w-full h-80 bg-gradient-to-br from-pink-100 to-pink-200 rounded-xl flex items-center justify-center overflow-hidden">
-									{salon.logo ? (
-										<img
-											src={salon.logo}
-											alt={salon.name}
-											className="w-full h-full object-cover rounded-xl"
-											onError={(e) => {
-												e.currentTarget.style.display = 'none';
-												const nextSibling = e.currentTarget
-													.nextElementSibling as HTMLElement;
-												if (nextSibling) {
-													nextSibling.style.display = 'flex';
-												}
-											}}
-										/>
-									) : null}
-									<div
-										className="w-full h-full bg-gradient-to-br from-pink-100 to-pink-200 rounded-xl flex items-center justify-center"
-										style={{ display: salon.logo ? 'none' : 'flex' }}
-									>
-										{/* Salon Photos Gallery */}
-										{salon.photos && salon.photos.length > 0 && (
-											<div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-												{salon.photos.map((photo, index) => (
-													<div
-														key={index}
-														className="relative overflow-hidden rounded-lg shadow-md hover:shadow-lg transition-shadow"
-													>
-														<img
-															src={getPublicUrl(photo)}
-															alt={`${salon.name} photo ${index + 1}`}
-															className="w-full h-48 object-cover"
-														/>
-													</div>
-												))}
-											</div>
-										)}
-									</div>
-								</div>
+								<SalonPhotoSlider
+									photos={salon.photos || []}
+									logo={salon.logo}
+									salonName={salon.name}
+								/>
 							</div>
 							{/* Navigation Tabs */}
 							<div className="flex gap-8 mb-8 border-b border-gray-200">
@@ -338,38 +305,6 @@ export default function SalonDetailPage() {
 									</div>
 								</div>
 							)}
-
-							{activeTab === 'Contacts' && (
-								<div>
-									<h2 className="text-2xl font-bold text-gray-900 mb-6">
-										Contact Information
-									</h2>
-
-									<div className="space-y-6">
-										<div className="bg-white rounded-lg p-6 shadow-sm">
-											<h3 className="text-lg font-semibold text-gray-900 mb-4">
-												Get in Touch
-											</h3>
-											<div className="space-y-3">
-												{salon.phone && (
-													<div className="flex items-center gap-3">
-														<span className="text-gray-600">📞</span>
-														<span className="text-gray-700">{salon.phone}</span>
-													</div>
-												)}
-												{salon.address && (
-													<div className="flex items-center gap-3">
-														<span className="text-gray-600">📍</span>
-														<span className="text-gray-700">
-															{salon.address}
-														</span>
-													</div>
-												)}
-											</div>
-										</div>
-									</div>
-								</div>
-							)}
 						</div>
 
 						{/* Right Column - Sidebar */}
@@ -390,8 +325,26 @@ export default function SalonDetailPage() {
 										Location
 									</h3>
 									<div className="h-48 w-full rounded-lg overflow-hidden border border-gray-200">
-										<MapComponent address={salon.address} showPopup={false} />
+										<MapComponent
+											address={salon.address}
+											showPopup={false}
+											interactive={false}
+										/>
 									</div>
+									<button
+										onClick={() => {
+											if (salon.address) {
+												const encodedAddress = encodeURIComponent(
+													salon.address
+												);
+												const googleMapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodedAddress}`;
+												window.open(googleMapsUrl, '_blank');
+											}
+										}}
+										className="w-full mt-3 border border-gray-300 text-gray-700 py-3 px-6 rounded-lg font-medium hover:bg-gray-50 transition-colors"
+									>
+										Get Directions
+									</button>
 								</div>
 							)}
 
@@ -434,26 +387,6 @@ export default function SalonDetailPage() {
 										</span>
 									</div>
 								</div>
-							</div>
-
-							{/* Action Buttons */}
-							<div className="mt-6 space-y-3">
-								<button
-									onClick={() => setIsBookingModalOpen(true)}
-									className="w-full bg-[#ff5b5b] text-white py-3 px-6 rounded-lg font-medium hover:bg-[#e04a4a] transition-colors"
-								>
-									Book Appointment
-								</button>
-
-								{salon.phone && (
-									<button className="w-full border border-gray-300 text-gray-700 py-3 px-6 rounded-lg font-medium hover:bg-gray-50 transition-colors">
-										Call Now
-									</button>
-								)}
-
-								<button className="w-full border border-gray-300 text-gray-700 py-3 px-6 rounded-lg font-medium hover:bg-gray-50 transition-colors">
-									Get Directions
-								</button>
 							</div>
 						</div>
 					</div>

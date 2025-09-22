@@ -21,6 +21,7 @@ interface MapComponentProps {
 	className?: string;
 	height?: string;
 	showPopup?: boolean;
+	interactive?: boolean;
 }
 
 export default function MapComponent({
@@ -28,6 +29,7 @@ export default function MapComponent({
 	className = '',
 	height = '300px',
 	showPopup = true,
+	interactive = true,
 }: MapComponentProps) {
 	const mapRef = useRef<HTMLDivElement>(null);
 	const mapInstanceRef = useRef<L.Map | null>(null);
@@ -38,7 +40,21 @@ export default function MapComponent({
 
 		// Initialize map if not already created
 		if (!mapInstanceRef.current) {
-			const map = L.map(mapRef.current).setView([21.0285, 105.8542], 13); // Default to Hanoi, Vietnam
+			const mapOptions: L.MapOptions = {
+				zoomControl: interactive, // Show zoom controls only if interactive
+				dragging: interactive, // Allow dragging only if interactive
+				touchZoom: interactive, // Allow touch zoom only if interactive
+				doubleClickZoom: interactive, // Allow double-click zoom only if interactive
+				scrollWheelZoom: interactive, // Allow scroll wheel zoom only if interactive
+				boxZoom: interactive, // Allow box zoom only if interactive
+				keyboard: interactive, // Allow keyboard navigation only if interactive
+				attributionControl: false, // Hide attribution for cleaner look
+			};
+
+			const map = L.map(mapRef.current, mapOptions).setView(
+				[21.0285, 105.8542],
+				13
+			); // Default to Hanoi, Vietnam
 
 			// Use grayscale tile layer
 			L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
