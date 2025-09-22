@@ -63,7 +63,11 @@ export default function PublicHeader() {
 			<div className="mx-auto max-w-7xl px-6 py-4 flex items-center justify-between">
 				{/* Logo */}
 				<Link href="/" className="flex items-center gap-3">
-					<div className="h-8 w-8 rounded-full bg-[#ff5b5b]" />
+					<img
+						src="/logo.png"
+						alt="Henzo Logo"
+						className="h-8 w-[22%] object-contain"
+					/>
 					<span className="text-xl font-semibold text-[#8B4513]">Henzo</span>
 				</Link>
 

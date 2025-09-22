@@ -2,6 +2,9 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { apiClient } from '@/lib/api-client';
+import { useSalonId } from '@/hooks/useSalon';
+import toast from 'react-hot-toast';
 
 export default function NewStaffPage() {
 	const [formData, setFormData] = useState({
@@ -15,6 +18,15 @@ export default function NewStaffPage() {
 	const [loading, setLoading] = useState(false);
 	const [error, setError] = useState('');
 	const router = useRouter();
+
+	// Используем оптимизированный хук для получения данных салона
+	const { salonId, isLoading: salonLoading, hasSalon } = useSalonId();
+
+	// Перенаправляем на создание салона, если салон не найден
+	if (!salonLoading && !hasSalon) {
+		router.push('/salon-info');
+		return null;
+	}
 
 	const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
 		const file = e.target.files?.[0];
@@ -34,34 +46,29 @@ export default function NewStaffPage() {
 		setError('');
 
 		// Validate form
-		if (!formData.name) {
+		if (!formData.name || !salonId) {
 			setError('Please fill in all required fields');
 			setLoading(false);
 			return;
 		}
 
 		try {
-			// Save staff member to database
-			const response = await fetch('/api/staff', {
-				method: 'POST',
-				headers: {
-					'Content-Type': 'application/json',
-				},
-				body: JSON.stringify({
-					...formData,
-					salonId: '1', // TODO: Get from user context
-				}),
-			});
+			// Save staff member to database using apiClient
+			const staffData = {
+				...formData,
+				salonId,
+			};
 
-			if (!response.ok) {
-				const errorData = await response.json();
-				throw new Error(errorData.error || 'Failed to create staff member');
-			}
+			await apiClient.post('/staff', staffData);
+
+			toast.success('Staff member created successfully!');
 
 			// Redirect to staff page
 			router.push('/staff');
 		} catch (err: any) {
-			setError(err.message);
+			const errorMessage = err.message || 'Failed to create staff member';
+			setError(errorMessage);
+			toast.error(errorMessage);
 		} finally {
 			setLoading(false);
 		}
@@ -71,6 +78,23 @@ export default function NewStaffPage() {
 		setPhoto(null);
 		setPhotoPreview(null);
 	};
+
+	// Показываем загрузку пока не получили salonId
+	if (salonLoading) {
+		return (
+			<div className="flex items-center justify-center min-h-screen">
+				<div className="text-center">
+					<div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#ff5b5b] mx-auto mb-4"></div>
+					<p className="text-gray-600">Loading...</p>
+				</div>
+			</div>
+		);
+	}
+
+	// Если salonId не получен, не показываем форму
+	if (!salonId) {
+		return null;
+	}
 
 	return (
 		<div>

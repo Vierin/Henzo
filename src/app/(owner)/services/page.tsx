@@ -14,6 +14,10 @@ import { Service } from '@/types';
 export default function ServicesPage() {
 	const [isEditModalOpen, setIsEditModalOpen] = useState(false);
 	const [selectedService, setSelectedService] = useState<Service | null>(null);
+	const [searchQuery, setSearchQuery] = useState('');
+	const [sortBy, setSortBy] = useState<'name' | 'price' | 'duration'>('name');
+	const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
+	const [selectedCategory, setSelectedCategory] = useState<string>('');
 	const router = useRouter();
 
 	// Используем оптимизированный хук для получения данных салона
@@ -24,7 +28,10 @@ export default function ServicesPage() {
 		isLoading: servicesLoading,
 		error,
 		refetch,
-	} = useServices(salonId || '');
+	} = useServices(salonId || '', {
+		search: searchQuery,
+		sortBy: `${sortBy}_${sortOrder}`,
+	});
 
 	const { data: categories = [] } = useCategoriesBySalon(salonId || '');
 	const deleteServiceMutation = useDeleteService();
@@ -63,6 +70,61 @@ export default function ServicesPage() {
 		if (!categoryId) return null;
 		const category = categories.find((cat) => cat.id === categoryId);
 		return category?.name || null;
+	};
+
+	// Фильтрация и сортировка сервисов
+	const filteredServices = services
+		.filter((service) => {
+			// Фильтр по поиску
+			if (searchQuery) {
+				const matchesSearch = service.name
+					.toLowerCase()
+					.includes(searchQuery.toLowerCase());
+				if (!matchesSearch) return false;
+			}
+
+			// Фильтр по категории
+			if (selectedCategory) {
+				if (service.categoryId !== selectedCategory) return false;
+			}
+
+			return true;
+		})
+		.sort((a, b) => {
+			let comparison = 0;
+
+			switch (sortBy) {
+				case 'name':
+					comparison = a.name.localeCompare(b.name);
+					break;
+				case 'price':
+					comparison = a.price - b.price;
+					break;
+				case 'duration':
+					comparison = a.duration - b.duration;
+					break;
+				default:
+					comparison = 0;
+			}
+
+			return sortOrder === 'asc' ? comparison : -comparison;
+		});
+
+	// Функции для управления фильтрами
+	const handleSortChange = (newSortBy: 'name' | 'price' | 'duration') => {
+		if (sortBy === newSortBy) {
+			setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
+		} else {
+			setSortBy(newSortBy);
+			setSortOrder('asc');
+		}
+	};
+
+	const clearFilters = () => {
+		setSearchQuery('');
+		setSelectedCategory('');
+		setSortBy('name');
+		setSortOrder('asc');
 	};
 
 	if (salonLoading || servicesLoading) {
@@ -106,7 +168,123 @@ export default function ServicesPage() {
 				</div>
 			</div>
 
-			{services.length === 0 ? (
+			{/* Фильтры и сортировка */}
+			<div className="mb-6 bg-white rounded-xl border border-[#f1d9d7] p-6">
+				<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+					{/* Поиск */}
+					<div>
+						<label className="block text-sm font-medium text-black mb-2">
+							Search Services
+						</label>
+						<input
+							type="text"
+							placeholder="Search by name..."
+							value={searchQuery}
+							onChange={(e) => setSearchQuery(e.target.value)}
+							className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#ff5b5b] focus:border-transparent text-black placeholder-gray-500"
+						/>
+					</div>
+
+					{/* Фильтр по категории */}
+					<div>
+						<label className="block text-sm font-medium text-black mb-2">
+							Category
+						</label>
+						<select
+							value={selectedCategory}
+							onChange={(e) => setSelectedCategory(e.target.value)}
+							className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#ff5b5b] focus:border-transparent text-black"
+						>
+							<option value="">All Categories</option>
+							{categories.map((category) => (
+								<option key={category.id} value={category.id}>
+									{category.name}
+								</option>
+							))}
+						</select>
+					</div>
+
+					{/* Сортировка */}
+					<div>
+						<label className="block text-sm font-medium text-black mb-2">
+							Sort By
+						</label>
+						<select
+							value={`${sortBy}-${sortOrder}`}
+							onChange={(e) => {
+								const [newSortBy, newSortOrder] = e.target.value.split('-') as [
+									typeof sortBy,
+									typeof sortOrder,
+								];
+								setSortBy(newSortBy);
+								setSortOrder(newSortOrder);
+							}}
+							className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#ff5b5b] focus:border-transparent text-black"
+						>
+							<option value="name-asc">Name (A-Z)</option>
+							<option value="name-desc">Name (Z-A)</option>
+							<option value="price-asc">Price (Low to High)</option>
+							<option value="price-desc">Price (High to Low)</option>
+							<option value="duration-asc">Duration (Short to Long)</option>
+							<option value="duration-desc">Duration (Long to Short)</option>
+						</select>
+					</div>
+
+					{/* Кнопка сброса фильтров */}
+					<div className="flex items-end">
+						<button
+							onClick={clearFilters}
+							className="w-full px-4 py-2 text-sm font-medium text-black bg-gray-100 border border-gray-300 rounded-lg hover:bg-gray-200 focus:ring-2 focus:ring-[#ff5b5b] focus:border-transparent transition-colors"
+						>
+							Clear Filters
+						</button>
+					</div>
+				</div>
+
+				{/* Информация о результатах */}
+				{(searchQuery || selectedCategory) && (
+					<div className="mt-4 pt-4 border-t border-gray-200">
+						<p className="text-sm text-black">
+							Showing {filteredServices.length} of {services.length} services
+							{searchQuery && ` matching "${searchQuery}"`}
+							{selectedCategory &&
+								` in "${getCategoryName(selectedCategory) || 'Unknown'}" category`}
+						</p>
+					</div>
+				)}
+			</div>
+
+			{filteredServices.length === 0 && (searchQuery || selectedCategory) ? (
+				<div className="bg-white rounded-xl border border-[#f1d9d7] p-12 text-center">
+					<div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+						<svg
+							className="w-8 h-8 text-gray-400"
+							fill="none"
+							stroke="currentColor"
+							viewBox="0 0 24 24"
+						>
+							<path
+								strokeLinecap="round"
+								strokeLinejoin="round"
+								strokeWidth={2}
+								d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+							/>
+						</svg>
+					</div>
+					<h3 className="text-lg font-medium text-gray-900 mb-2">
+						No services found
+					</h3>
+					<p className="text-gray-500 mb-4">
+						Try adjusting your search or filter criteria
+					</p>
+					<button
+						onClick={clearFilters}
+						className="inline-flex items-center gap-2 rounded-full bg-[#ff5b5b] text-white px-4 py-2 text-sm shadow-sm hover:opacity-95"
+					>
+						Clear Filters
+					</button>
+				</div>
+			) : services.length === 0 ? (
 				<div className="bg-white rounded-xl border border-[#f1d9d7] p-12 text-center">
 					<div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
 						<svg
@@ -140,14 +318,44 @@ export default function ServicesPage() {
 			) : (
 				<div className="bg-white rounded-xl border border-[#f1d9d7] overflow-hidden">
 					<div className="grid grid-cols-5 px-6 py-3 text-[13px] text-gray-700 bg-[#fff2f1] font-semibold">
-						<div>Service Name</div>
+						<div
+							className="flex items-center gap-1 cursor-pointer hover:text-[#ff5b5b] transition-colors select-none"
+							onClick={() => handleSortChange('name')}
+						>
+							Service Name
+							{sortBy === 'name' && (
+								<span className="text-[#ff5b5b]">
+									{sortOrder === 'asc' ? '↑' : '↓'}
+								</span>
+							)}
+						</div>
 						<div>Category</div>
-						<div>Duration</div>
-						<div>Price</div>
+						<div
+							className="flex items-center gap-1 cursor-pointer hover:text-[#ff5b5b] transition-colors select-none"
+							onClick={() => handleSortChange('duration')}
+						>
+							Duration
+							{sortBy === 'duration' && (
+								<span className="text-[#ff5b5b]">
+									{sortOrder === 'asc' ? '↑' : '↓'}
+								</span>
+							)}
+						</div>
+						<div
+							className="flex items-center gap-1 cursor-pointer hover:text-[#ff5b5b] transition-colors select-none"
+							onClick={() => handleSortChange('price')}
+						>
+							Price
+							{sortBy === 'price' && (
+								<span className="text-[#ff5b5b]">
+									{sortOrder === 'asc' ? '↑' : '↓'}
+								</span>
+							)}
+						</div>
 						<div>Actions</div>
 					</div>
 					<div className="divide-y divide-[#f1d9d7]">
-						{services.map((service) => (
+						{filteredServices.map((service) => (
 							<div
 								key={service.id}
 								className="grid grid-cols-5 px-6 py-4 text-[15px] text-gray-800"
