@@ -5,6 +5,7 @@ import PublicHeader from '../components/PublicHeader';
 import LoadingSpinner from '../components/LoadingSpinner';
 import ErrorDisplay from '../components/ErrorDisplay';
 import { useSalonsWithServices } from '@/hooks/useSalons';
+import { supabase } from '@/lib/supabase';
 import { Salon, Service } from '@/types';
 
 export default function HomePage() {
@@ -18,6 +19,26 @@ export default function HomePage() {
 
 	const handleSalonClick = (salonId: string) => {
 		router.push(`/salon/${salonId}`);
+	};
+
+	const getPublicUrl = (filePath: string) => {
+		const { data } = supabase.storage
+			.from('salon-files')
+			.getPublicUrl(filePath);
+		return data.publicUrl;
+	};
+
+	const getSalonImage = (salon: Salon): string | undefined => {
+		// If salon has photos, use the first photo
+		if (salon.photos && salon.photos.length > 0) {
+			return getPublicUrl(salon.photos[0]);
+		}
+		// If no photos but has logo, use logo
+		if (salon.logo) {
+			return getPublicUrl(salon.logo);
+		}
+		// No images available
+		return undefined;
 	};
 
 	return (
@@ -138,9 +159,9 @@ export default function HomePage() {
 										className="bg-white rounded-xl overflow-hidden shadow-lg hover:shadow-xl transition-shadow cursor-pointer"
 									>
 										<div className="h-48 bg-gradient-to-br from-pink-100 to-pink-200 flex items-center justify-center">
-											{salon.logo ? (
+											{getSalonImage(salon) ? (
 												<img
-													src={salon.logo}
+													src={getSalonImage(salon)}
 													alt={salon.name}
 													className="w-full h-full object-cover"
 												/>

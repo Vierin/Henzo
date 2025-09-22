@@ -9,6 +9,7 @@ import ErrorDisplay from '../../../../components/ErrorDisplay';
 import MapComponent from '../../../../components/MapComponent';
 import { useSalon } from '@/hooks/useSalon';
 import { Service } from '@/types';
+import { supabase } from '@/lib/supabase';
 
 export default function SalonDetailPage() {
 	const params = useParams();
@@ -132,6 +133,13 @@ export default function SalonDetailPage() {
 		? groupServicesByCategory(salon.services)
 		: {};
 
+	const getPublicUrl = (filePath: string) => {
+		const { data } = supabase.storage
+			.from('salon-files')
+			.getPublicUrl(filePath);
+		return data.publicUrl;
+	};
+
 	return (
 		<div className="min-h-screen bg-[#F8F5F2]">
 			<main className="py-8 px-6">
@@ -140,6 +148,29 @@ export default function SalonDetailPage() {
 					<h1 className="text-4xl font-bold text-gray-900 mb-8">
 						{salon.name}
 					</h1>
+
+					{/* Salon Photos Gallery */}
+					{salon.photos && salon.photos.length > 0 && (
+						<div className="mb-8">
+							<h2 className="text-2xl font-semibold text-gray-900 mb-4">
+								Salon Photos
+							</h2>
+							<div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+								{salon.photos.map((photo, index) => (
+									<div
+										key={index}
+										className="relative overflow-hidden rounded-lg shadow-md hover:shadow-lg transition-shadow"
+									>
+										<img
+											src={getPublicUrl(photo)}
+											alt={`${salon.name} photo ${index + 1}`}
+											className="w-full h-48 object-cover"
+										/>
+									</div>
+								))}
+							</div>
+						</div>
+					)}
 
 					<div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
 						{/* Left Column - Main Content */}

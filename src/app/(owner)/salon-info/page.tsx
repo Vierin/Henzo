@@ -184,10 +184,7 @@ export default function SalonInfoPage() {
 				toast.success('Salon created successfully!', { id: saveToast });
 			}
 
-			// Small delay before redirect to show the success message
-			setTimeout(() => {
-				router.push('/owner-dashboard');
-			}, 1000);
+			// Stay on the page after successful save
 		} catch (err: any) {
 			setError(err.message);
 			toast.error(err.message || 'Failed to save salon information', {
