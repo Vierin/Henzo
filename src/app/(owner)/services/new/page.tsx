@@ -1,11 +1,12 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useCreateService } from '@/hooks/useServices';
 import { useCategoriesBySalon } from '@/hooks/useCategories';
 import CreateCategoryModal from '@/components/CreateCategoryModal';
 import { Category } from '@/types';
+import { apiClient } from '@/lib/api-client';
 
 export default function NewServicePage() {
 	const [formData, setFormData] = useState({
@@ -16,19 +17,43 @@ export default function NewServicePage() {
 		categoryId: '',
 	});
 	const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false);
+	const [salonId, setSalonId] = useState<string | null>(null);
+	const [loading, setLoading] = useState(true);
 	const router = useRouter();
 
-	// Временное решение - используем salonId = "1" для тестирования
-	const salonId = '1';
-
-	const { data: categories = [] } = useCategoriesBySalon(salonId);
+	const { data: categories = [] } = useCategoriesBySalon(salonId || '');
 	const createServiceMutation = useCreateService();
+
+	// Получаем ID салона текущего пользователя
+	useEffect(() => {
+		const fetchSalonId = async () => {
+			try {
+				const salon = await apiClient.get<{ id: string }>('/salons/current');
+				if (salon && salon.id) {
+					setSalonId(salon.id);
+				} else {
+					// Если салона нет, перенаправляем на создание салона
+					router.push('/salon-info');
+					return;
+				}
+			} catch (error) {
+				console.error('Failed to fetch salon:', error);
+				// Если ошибка, перенаправляем на создание салона
+				router.push('/salon-info');
+				return;
+			} finally {
+				setLoading(false);
+			}
+		};
+
+		fetchSalonId();
+	}, [router]);
 
 	const handleSubmit = async (e: React.FormEvent) => {
 		e.preventDefault();
 
 		// Validate form
-		if (!formData.name || !formData.duration || !formData.price) {
+		if (!formData.name || !formData.duration || !formData.price || !salonId) {
 			return;
 		}
 
@@ -64,6 +89,23 @@ export default function NewServicePage() {
 		}));
 	};
 
+	// Показываем загрузку пока не получили salonId
+	if (loading) {
+		return (
+			<div className="flex items-center justify-center min-h-screen">
+				<div className="text-center">
+					<div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#ff5b5b] mx-auto mb-4"></div>
+					<p className="text-gray-600">Loading...</p>
+				</div>
+			</div>
+		);
+	}
+
+	// Если salonId не получен, не показываем форму
+	if (!salonId) {
+		return null;
+	}
+
 	return (
 		<div>
 			<div className="mb-8">
@@ -90,8 +132,7 @@ export default function NewServicePage() {
 					Add New Service
 				</h1>
 				<p className="text-gray-600">
-					Create a new service for your salon with pricing and duration
-					details.
+					Create a new service for your salon with pricing and duration details.
 				</p>
 			</div>
 
@@ -229,7 +270,7 @@ export default function NewServicePage() {
 			<CreateCategoryModal
 				isOpen={isCategoryModalOpen}
 				onClose={() => setIsCategoryModalOpen(false)}
-				salonId={salonId}
+				salonId={salonId || ''}
 				onSuccess={handleCategoryCreated}
 			/>
 		</div>

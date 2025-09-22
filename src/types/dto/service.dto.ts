@@ -22,6 +22,9 @@ export class CreateServiceDto {
 	@IsPositive()
 	price: number;
 
+	@IsString()
+	salonId: string;
+
 	@IsOptional()
 	@IsString()
 	categoryId?: string;

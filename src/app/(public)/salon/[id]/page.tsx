@@ -149,29 +149,6 @@ export default function SalonDetailPage() {
 						{salon.name}
 					</h1>
 
-					{/* Salon Photos Gallery */}
-					{salon.photos && salon.photos.length > 0 && (
-						<div className="mb-8">
-							<h2 className="text-2xl font-semibold text-gray-900 mb-4">
-								Salon Photos
-							</h2>
-							<div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-								{salon.photos.map((photo, index) => (
-									<div
-										key={index}
-										className="relative overflow-hidden rounded-lg shadow-md hover:shadow-lg transition-shadow"
-									>
-										<img
-											src={getPublicUrl(photo)}
-											alt={`${salon.name} photo ${index + 1}`}
-											className="w-full h-48 object-cover"
-										/>
-									</div>
-								))}
-							</div>
-						</div>
-					)}
-
 					<div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
 						{/* Left Column - Main Content */}
 						<div className="lg:col-span-2">
@@ -197,7 +174,23 @@ export default function SalonDetailPage() {
 										className="w-full h-full bg-gradient-to-br from-pink-100 to-pink-200 rounded-xl flex items-center justify-center"
 										style={{ display: salon.logo ? 'none' : 'flex' }}
 									>
-										<span className="text-6xl">💇‍♀️</span>
+										{/* Salon Photos Gallery */}
+										{salon.photos && salon.photos.length > 0 && (
+											<div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+												{salon.photos.map((photo, index) => (
+													<div
+														key={index}
+														className="relative overflow-hidden rounded-lg shadow-md hover:shadow-lg transition-shadow"
+													>
+														<img
+															src={getPublicUrl(photo)}
+															alt={`${salon.name} photo ${index + 1}`}
+															className="w-full h-48 object-cover"
+														/>
+													</div>
+												))}
+											</div>
+										)}
 									</div>
 								</div>
 							</div>
@@ -382,7 +375,7 @@ export default function SalonDetailPage() {
 						{/* Right Column - Sidebar */}
 						<div className="bg-white rounded-xl p-6 h-fit shadow-sm">
 							<h2 className="text-xl font-bold text-gray-900 mb-4">
-								About {salon.name}
+								{salon.name}
 							</h2>
 
 							<p className="text-gray-700 leading-relaxed mb-6">
