@@ -120,12 +120,12 @@ export default function SalonsPage() {
 
 	// Check if there are more salons to load
 	const hasMoreSalons = filteredSalons.length > visibleSalonsCount;
-	
+
 	// Debug logging
 	console.log('Debug pagination:', {
 		filteredSalonsLength: filteredSalons.length,
 		visibleSalonsCount,
-		hasMoreSalons
+		hasMoreSalons,
 	});
 
 	// Reset pagination when search or filters change
@@ -348,11 +348,12 @@ export default function SalonsPage() {
 					{/* Load More Button */}
 					{hasMoreSalons && (
 						<div className="text-center mt-12">
-							<button 
+							<button
 								onClick={handleLoadMore}
 								className="bg-[#ff5b5b] text-white px-8 py-4 rounded-2xl font-medium hover:bg-[#e04a4a] transition-colors"
 							>
-								Load more ({filteredSalons.length - visibleSalonsCount} remaining)
+								Load more ({filteredSalons.length - visibleSalonsCount}{' '}
+								remaining)
 							</button>
 						</div>
 					)}
