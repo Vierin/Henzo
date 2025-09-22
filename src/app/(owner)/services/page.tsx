@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import toast from 'react-hot-toast';
 import EditServiceModal from '@/components/EditServiceModal';
@@ -15,6 +15,8 @@ export default function ServicesPage() {
 	const [isEditModalOpen, setIsEditModalOpen] = useState(false);
 	const [selectedService, setSelectedService] = useState<Service | null>(null);
 	const [searchQuery, setSearchQuery] = useState('');
+	const [debouncedSearchQuery, setDebouncedSearchQuery] = useState('');
+	const [isSearching, setIsSearching] = useState(false);
 	const [sortBy, setSortBy] = useState<'name' | 'price' | 'duration'>('name');
 	const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
 	const [selectedCategory, setSelectedCategory] = useState<string>('');
@@ -29,12 +31,26 @@ export default function ServicesPage() {
 		error,
 		refetch,
 	} = useServices(salonId || '', {
-		search: searchQuery,
-		sortBy: `${sortBy}_${sortOrder}`,
+		// Убираем серверную фильтрацию - делаем всё на клиенте
 	});
 
 	const { data: categories = [] } = useCategoriesBySalon(salonId || '');
 	const deleteServiceMutation = useDeleteService();
+
+	// Дебаунс для поиска - задержка 600мс
+	useEffect(() => {
+		setIsSearching(true);
+
+		const timer = setTimeout(() => {
+			setDebouncedSearchQuery(searchQuery);
+			setIsSearching(false);
+		}, 600);
+
+		return () => {
+			clearTimeout(timer);
+			setIsSearching(false);
+		};
+	}, [searchQuery]);
 
 	const handleEditService = (service: Service) => {
 		setSelectedService(service);
@@ -73,42 +89,44 @@ export default function ServicesPage() {
 	};
 
 	// Фильтрация и сортировка сервисов
-	const filteredServices = services
-		.filter((service) => {
-			// Фильтр по поиску
-			if (searchQuery) {
-				const matchesSearch = service.name
-					.toLowerCase()
-					.includes(searchQuery.toLowerCase());
-				if (!matchesSearch) return false;
-			}
+	const filteredServices = useMemo(() => {
+		return services
+			.filter((service) => {
+				// Фильтр по поиску (только если больше 2 символов или пустой)
+				if (debouncedSearchQuery && debouncedSearchQuery.length > 2) {
+					const matchesSearch = service.name
+						.toLowerCase()
+						.includes(debouncedSearchQuery.toLowerCase());
+					if (!matchesSearch) return false;
+				}
 
-			// Фильтр по категории
-			if (selectedCategory) {
-				if (service.categoryId !== selectedCategory) return false;
-			}
+				// Фильтр по категории
+				if (selectedCategory) {
+					if (service.categoryId !== selectedCategory) return false;
+				}
 
-			return true;
-		})
-		.sort((a, b) => {
-			let comparison = 0;
+				return true;
+			})
+			.sort((a, b) => {
+				let comparison = 0;
 
-			switch (sortBy) {
-				case 'name':
-					comparison = a.name.localeCompare(b.name);
-					break;
-				case 'price':
-					comparison = a.price - b.price;
-					break;
-				case 'duration':
-					comparison = a.duration - b.duration;
-					break;
-				default:
-					comparison = 0;
-			}
+				switch (sortBy) {
+					case 'name':
+						comparison = a.name.localeCompare(b.name);
+						break;
+					case 'price':
+						comparison = a.price - b.price;
+						break;
+					case 'duration':
+						comparison = a.duration - b.duration;
+						break;
+					default:
+						comparison = 0;
+				}
 
-			return sortOrder === 'asc' ? comparison : -comparison;
-		});
+				return sortOrder === 'asc' ? comparison : -comparison;
+			});
+	}, [services, debouncedSearchQuery, selectedCategory, sortBy, sortOrder]);
 
 	// Функции для управления фильтрами
 	const handleSortChange = (newSortBy: 'name' | 'price' | 'duration') => {
@@ -176,13 +194,21 @@ export default function ServicesPage() {
 						<label className="block text-sm font-medium text-black mb-2">
 							Search Services
 						</label>
-						<input
-							type="text"
-							placeholder="Search by name..."
-							value={searchQuery}
-							onChange={(e) => setSearchQuery(e.target.value)}
-							className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#ff5b5b] focus:border-transparent text-black placeholder-gray-500"
-						/>
+						<div className="relative">
+							<input
+								type="text"
+								placeholder="Search by name..."
+								value={searchQuery}
+								onChange={(e) => setSearchQuery(e.target.value)}
+								className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#ff5b5b] focus:border-transparent text-black placeholder-gray-500"
+							/>
+							{/* Индикатор поиска */}
+							{isSearching && (
+								<div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+									<div className="animate-spin rounded-full h-4 w-4 border-b-2 border-[#ff5b5b]"></div>
+								</div>
+							)}
+						</div>
 					</div>
 
 					{/* Фильтр по категории */}
@@ -242,11 +268,13 @@ export default function ServicesPage() {
 				</div>
 
 				{/* Информация о результатах */}
-				{(searchQuery || selectedCategory) && (
+				{(debouncedSearchQuery || selectedCategory) && (
 					<div className="mt-4 pt-4 border-t border-gray-200">
 						<p className="text-sm text-black">
 							Showing {filteredServices.length} of {services.length} services
-							{searchQuery && ` matching "${searchQuery}"`}
+							{debouncedSearchQuery &&
+								debouncedSearchQuery.length > 2 &&
+								` matching "${debouncedSearchQuery}"`}
 							{selectedCategory &&
 								` in "${getCategoryName(selectedCategory) || 'Unknown'}" category`}
 						</p>
@@ -254,7 +282,8 @@ export default function ServicesPage() {
 				)}
 			</div>
 
-			{filteredServices.length === 0 && (searchQuery || selectedCategory) ? (
+			{filteredServices.length === 0 &&
+			(debouncedSearchQuery || selectedCategory) ? (
 				<div className="bg-white rounded-xl border border-[#f1d9d7] p-12 text-center">
 					<div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
 						<svg
@@ -316,80 +345,93 @@ export default function ServicesPage() {
 					</button>
 				</div>
 			) : (
-				<div className="bg-white rounded-xl border border-[#f1d9d7] overflow-hidden">
-					<div className="grid grid-cols-5 px-6 py-3 text-[13px] text-gray-700 bg-[#fff2f1] font-semibold">
-						<div
-							className="flex items-center gap-1 cursor-pointer hover:text-[#ff5b5b] transition-colors select-none"
-							onClick={() => handleSortChange('name')}
-						>
-							Service Name
-							{sortBy === 'name' && (
-								<span className="text-[#ff5b5b]">
-									{sortOrder === 'asc' ? '↑' : '↓'}
-								</span>
-							)}
-						</div>
-						<div>Category</div>
-						<div
-							className="flex items-center gap-1 cursor-pointer hover:text-[#ff5b5b] transition-colors select-none"
-							onClick={() => handleSortChange('duration')}
-						>
-							Duration
-							{sortBy === 'duration' && (
-								<span className="text-[#ff5b5b]">
-									{sortOrder === 'asc' ? '↑' : '↓'}
-								</span>
-							)}
-						</div>
-						<div
-							className="flex items-center gap-1 cursor-pointer hover:text-[#ff5b5b] transition-colors select-none"
-							onClick={() => handleSortChange('price')}
-						>
-							Price
-							{sortBy === 'price' && (
-								<span className="text-[#ff5b5b]">
-									{sortOrder === 'asc' ? '↑' : '↓'}
-								</span>
-							)}
-						</div>
-						<div>Actions</div>
-					</div>
-					<div className="divide-y divide-[#f1d9d7]">
-						{filteredServices.map((service) => (
-							<div
-								key={service.id}
-								className="grid grid-cols-5 px-6 py-4 text-[15px] text-gray-800"
-							>
-								<div className="font-semibold">{service.name}</div>
-								<div className="text-gray-600">
-									{getCategoryName(service.categoryId) ? (
-										<span className="inline-flex items-center px-2 py-1 text-xs font-medium bg-gray-100 text-gray-700 rounded-full">
-											{getCategoryName(service.categoryId)}
-										</span>
-									) : (
-										<span className="text-gray-400 italic">No category</span>
-									)}
-								</div>
-								<div>{formatDuration(service.duration)}</div>
-								<div className="font-semibold text-[#ff5b5b]">
-									{formatPrice(service.price)}
-								</div>
-								<div className="flex gap-2">
-									<button
-										onClick={() => handleEditService(service)}
-										className="text-[#ff5b5b] hover:text-[#e04a4a] text-sm font-medium"
-									>
-										Edit
-									</button>
-									<button
-										onClick={() => handleDeleteService(service.id)}
-										className="text-red-600 hover:text-red-700 text-sm font-medium"
-									>
-										Delete
-									</button>
-								</div>
+				<div className="space-y-4">
+					{/* Индикатор локального обновления */}
+					{(isSearching ||
+						(searchQuery && searchQuery !== debouncedSearchQuery)) && (
+						<div className="flex items-center justify-center py-2">
+							<div className="flex items-center gap-2 text-sm text-gray-600">
+								<div className="animate-spin rounded-full h-4 w-4 border-b-2 border-[#ff5b5b]"></div>
+								<span>Filtering services...</span>
 							</div>
-						))}
+						</div>
+					)}
+
+					<div className="bg-white rounded-xl border border-[#f1d9d7] overflow-hidden">
+						<div className="grid grid-cols-5 px-6 py-3 text-[13px] text-gray-700 bg-[#fff2f1] font-semibold">
+							<div
+								className="flex items-center gap-1 cursor-pointer hover:text-[#ff5b5b] transition-colors select-none"
+								onClick={() => handleSortChange('name')}
+							>
+								Service Name
+								{sortBy === 'name' && (
+									<span className="text-[#ff5b5b]">
+										{sortOrder === 'asc' ? '↑' : '↓'}
+									</span>
+								)}
+							</div>
+							<div>Category</div>
+							<div
+								className="flex items-center gap-1 cursor-pointer hover:text-[#ff5b5b] transition-colors select-none"
+								onClick={() => handleSortChange('duration')}
+							>
+								Duration
+								{sortBy === 'duration' && (
+									<span className="text-[#ff5b5b]">
+										{sortOrder === 'asc' ? '↑' : '↓'}
+									</span>
+								)}
+							</div>
+							<div
+								className="flex items-center gap-1 cursor-pointer hover:text-[#ff5b5b] transition-colors select-none"
+								onClick={() => handleSortChange('price')}
+							>
+								Price
+								{sortBy === 'price' && (
+									<span className="text-[#ff5b5b]">
+										{sortOrder === 'asc' ? '↑' : '↓'}
+									</span>
+								)}
+							</div>
+							<div>Actions</div>
+						</div>
+						<div className="divide-y divide-[#f1d9d7]">
+							{filteredServices.map((service) => (
+								<div
+									key={service.id}
+									className="grid grid-cols-5 px-6 py-4 text-[15px] text-gray-800"
+								>
+									<div className="font-semibold">{service.name}</div>
+									<div className="text-gray-600">
+										{getCategoryName(service.categoryId) ? (
+											<span className="inline-flex items-center px-2 py-1 text-xs font-medium bg-gray-100 text-gray-700 rounded-full">
+												{getCategoryName(service.categoryId)}
+											</span>
+										) : (
+											<span className="text-gray-400 italic">No category</span>
+										)}
+									</div>
+									<div>{formatDuration(service.duration)}</div>
+									<div className="font-semibold text-[#ff5b5b]">
+										{formatPrice(service.price)}
+									</div>
+									<div className="flex gap-2">
+										<button
+											onClick={() => handleEditService(service)}
+											className="text-[#ff5b5b] hover:text-[#e04a4a] text-sm font-medium"
+										>
+											Edit
+										</button>
+										<button
+											onClick={() => handleDeleteService(service.id)}
+											className="text-red-600 hover:text-red-700 text-sm font-medium"
+										>
+											Delete
+										</button>
+									</div>
+								</div>
+							))}
+						</div>
 					</div>
 				</div>
 			)}
