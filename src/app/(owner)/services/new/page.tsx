@@ -1,12 +1,12 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useCreateService } from '@/hooks/useServices';
 import { useCategoriesBySalon } from '@/hooks/useCategories';
+import { useSalonId } from '@/hooks/useSalon';
 import CreateCategoryModal from '@/components/CreateCategoryModal';
 import { Category } from '@/types';
-import { apiClient } from '@/lib/api-client';
 
 export default function NewServicePage() {
 	const [formData, setFormData] = useState({
@@ -17,37 +17,19 @@ export default function NewServicePage() {
 		categoryId: '',
 	});
 	const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false);
-	const [salonId, setSalonId] = useState<string | null>(null);
-	const [loading, setLoading] = useState(true);
 	const router = useRouter();
+
+	// Используем оптимизированный хук для получения данных салона
+	const { salonId, isLoading: salonLoading, hasSalon } = useSalonId();
+
+	// Перенаправляем на создание салона, если салон не найден
+	if (!salonLoading && !hasSalon) {
+		router.push('/salon-info');
+		return null;
+	}
 
 	const { data: categories = [] } = useCategoriesBySalon(salonId || '');
 	const createServiceMutation = useCreateService();
-
-	// Получаем ID салона текущего пользователя
-	useEffect(() => {
-		const fetchSalonId = async () => {
-			try {
-				const salon = await apiClient.get<{ id: string }>('/salons/current');
-				if (salon && salon.id) {
-					setSalonId(salon.id);
-				} else {
-					// Если салона нет, перенаправляем на создание салона
-					router.push('/salon-info');
-					return;
-				}
-			} catch (error) {
-				console.error('Failed to fetch salon:', error);
-				// Если ошибка, перенаправляем на создание салона
-				router.push('/salon-info');
-				return;
-			} finally {
-				setLoading(false);
-			}
-		};
-
-		fetchSalonId();
-	}, [router]);
 
 	const handleSubmit = async (e: React.FormEvent) => {
 		e.preventDefault();
@@ -90,7 +72,7 @@ export default function NewServicePage() {
 	};
 
 	// Показываем загрузку пока не получили salonId
-	if (loading) {
+	if (salonLoading) {
 		return (
 			<div className="flex items-center justify-center min-h-screen">
 				<div className="text-center">

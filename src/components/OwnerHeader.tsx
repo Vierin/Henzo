@@ -25,9 +25,6 @@ export default function OwnerHeader() {
 					>
 						Dashboard
 					</Link>
-					<Link className="text-gray-800 hover:text-black font-medium" href="#">
-						Calendar
-					</Link>
 					<Link
 						href="/services"
 						className="text-gray-800 hover:text-black font-medium"
@@ -39,12 +36,6 @@ export default function OwnerHeader() {
 						className="text-gray-800 hover:text-black font-medium"
 					>
 						Staff
-					</Link>
-					<Link
-						href="/salon-info"
-						className="text-gray-800 hover:text-black font-medium"
-					>
-						Salon Info
 					</Link>
 				</nav>
 

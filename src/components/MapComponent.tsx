@@ -69,6 +69,36 @@ export default function MapComponent({
 		// Geocode address and update map
 		if (address) {
 			geocodeAddress(address);
+		} else {
+			// If no address provided, show a marker at default location
+			const defaultLatLng: [number, number] = [21.0285, 105.8542]; // Hanoi, Vietnam
+
+			// Remove existing marker
+			if (markerRef.current) {
+				mapInstanceRef.current?.removeLayer(markerRef.current);
+			}
+
+			// Create red marker icon
+			const redMarker = L.divIcon({
+				html: `<div style="
+					background-color: #ff5b5b;
+					width: 20px;
+					height: 20px;
+					border-radius: 50%;
+					border: 3px solid white;
+					box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+					position: relative;
+				"></div>`,
+				iconSize: [20, 20],
+				iconAnchor: [10, 10],
+				popupAnchor: [0, -10],
+				className: 'custom-red-marker',
+			});
+
+			// Add default marker
+			markerRef.current = L.marker(defaultLatLng, { icon: redMarker }).addTo(
+				mapInstanceRef.current!
+			);
 		}
 
 		return () => {
@@ -88,71 +118,43 @@ export default function MapComponent({
 
 	const geocodeAddress = async (address: string) => {
 		try {
-			// Add user agent header to avoid CORS issues
-			const response = await fetch(
-				`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(
-					address
-				)}&limit=1`,
-				{
-					headers: {
-						'User-Agent': 'Henzo Salon Booking App',
-					},
-				}
-			);
-
-			if (!response.ok) {
-				throw new Error(`HTTP error! status: ${response.status}`);
-			}
-
-			const data = await response.json();
-
-			if (data && data.length > 0) {
-				const { lat, lon } = data[0];
-				const latLng: [number, number] = [parseFloat(lat), parseFloat(lon)];
-
-				// Update map center
-				mapInstanceRef.current?.setView(latLng, 16);
-
-				// Remove existing marker
-				if (markerRef.current) {
-					mapInstanceRef.current?.removeLayer(markerRef.current);
-				}
-
-				// Create red marker icon
-				const redMarker = L.divIcon({
-					html: `<div style="
-						background-color: #ff5b5b;
-						width: 20px;
-						height: 20px;
-						border-radius: 50%;
-						border: 3px solid white;
-						box-shadow: 0 2px 4px rgba(0,0,0,0.3);
-						position: relative;
-					"></div>`,
-					iconSize: [20, 20],
-					iconAnchor: [10, 10],
-					popupAnchor: [0, -10],
-					className: 'custom-red-marker',
-				});
-
-				// Add new marker with red icon
-				markerRef.current = L.marker(latLng, { icon: redMarker }).addTo(
-					mapInstanceRef.current!
-				);
-
-				// Only show popup if showPopup is true
-				if (showPopup) {
-					markerRef.current.bindPopup(`<b>${address}</b>`).openPopup();
-				}
-			} else {
-				console.warn('No location found for address:', address);
-				// Keep the default view if geocoding fails
-			}
+			showDefaultMarker();
 		} catch (error) {
 			console.error('Error geocoding address:', error);
-			// Keep the default view if geocoding fails
-			// The map will still show with the default location
+			// Show marker at default location if geocoding fails
+			showDefaultMarker();
 		}
+	};
+
+	const showDefaultMarker = () => {
+		const defaultLatLng: [number, number] = [21.0285, 105.8542]; // Hanoi, Vietnam
+
+		// Remove existing marker
+		if (markerRef.current) {
+			mapInstanceRef.current?.removeLayer(markerRef.current);
+		}
+
+		// Create red marker icon
+		const redMarker = L.divIcon({
+			html: `<div style="
+				background-color: #ff5b5b;
+				width: 20px;
+				height: 20px;
+				border-radius: 50%;
+				border: 3px solid white;
+				box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+				position: relative;
+			"></div>`,
+			iconSize: [20, 20],
+			iconAnchor: [10, 10],
+			popupAnchor: [0, -10],
+			className: 'custom-red-marker',
+		});
+
+		// Add default marker
+		markerRef.current = L.marker(defaultLatLng, { icon: redMarker }).addTo(
+			mapInstanceRef.current!
+		);
 	};
 
 	return (

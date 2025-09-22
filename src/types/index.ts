@@ -21,6 +21,7 @@ export interface Salon {
 	instagram?: string;
 	logo?: string;
 	photos?: string[];
+	workingHours?: any;
 	ownerId: string;
 	createdAt: string;
 	services?: Service[];

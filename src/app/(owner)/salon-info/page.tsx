@@ -9,6 +9,7 @@ import LoadingSpinner from '@/components/LoadingSpinner';
 import ErrorDisplay from '@/components/ErrorDisplay';
 import FileUpload from '@/components/FileUpload';
 import PhotoUpload from '@/components/PhotoUpload';
+import { useSalon, useSalonId } from '@/hooks/useSalon';
 import { apiClient } from '@/lib/api-client';
 
 // Кастомный компонент для выбора времени в 24-часовом формате
@@ -85,59 +86,33 @@ export default function SalonInfoPage() {
 	});
 	const [loading, setLoading] = useState(false);
 	const [error, setError] = useState('');
-	const [initialLoading, setInitialLoading] = useState(true);
-	const [hasExistingSalon, setHasExistingSalon] = useState(false);
 	const router = useRouter();
 
-	// Загружаем данные салона при монтировании компонента
+	// Используем оптимизированный хук для получения данных салона
+	const {
+		data: salon,
+		isLoading: initialLoading,
+		error: salonError,
+	} = useSalon();
+	const hasExistingSalon = !!salon?.id;
+
+	// Заполняем форму данными из кэша
 	useEffect(() => {
-		fetchSalonData();
-	}, []);
-
-	const fetchSalonData = async () => {
-		try {
-			// Запрос к NestJS API для получения данных салона
-			const salonData = await apiClient.get<{
-				salon: {
-					name: string;
-					description?: string;
-					address?: string;
-					phone?: string;
-					email?: string;
-					website?: string;
-					instagram?: string;
-					logo?: string;
-					photos?: string[];
-					workingHours?: any;
-				} | null;
-			}>('/salons/current');
-
-			if (salonData && salonData.salon) {
-				setHasExistingSalon(true);
-				setFormData({
-					salonName: salonData.salon.name || '',
-					description: salonData.salon.description || '',
-					address: salonData.salon.address || '',
-					phone: salonData.salon.phone || '',
-					email: salonData.salon.email || '',
-					website: salonData.salon.website || '',
-					instagram: salonData.salon.instagram || '',
-					logo: salonData.salon.logo || '',
-					photos: salonData.salon.photos || [],
-					operatingHours:
-						salonData.salon.workingHours || formData.operatingHours,
-				});
-			} else {
-				setHasExistingSalon(false);
-			}
-			// Если нет данных в API - оставляем поля пустыми
-		} catch (err: any) {
-			console.error('Error fetching salon data:', err);
-			// При ошибке API - оставляем поля пустыми
-		} finally {
-			setInitialLoading(false);
+		if (salon) {
+			setFormData({
+				salonName: salon.name || '',
+				description: salon.description || '',
+				address: salon.address || '',
+				phone: salon.phone || '',
+				email: salon.email || '',
+				website: salon.website || '',
+				instagram: salon.instagram || '',
+				logo: salon.logo || '',
+				photos: salon.photos || [],
+				operatingHours: salon.workingHours || formData.operatingHours,
+			});
 		}
-	};
+	}, [salon]);
 
 	const handleSubmit = async (e: React.FormEvent) => {
 		e.preventDefault();
@@ -180,7 +155,6 @@ export default function SalonInfoPage() {
 				});
 			} else {
 				await apiClient.post('/salons/current', salonData);
-				setHasExistingSalon(true); // После создания салон существует
 				toast.success('Salon created successfully!', { id: saveToast });
 			}
 

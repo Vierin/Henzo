@@ -324,7 +324,7 @@ export default function SalonDetailPage() {
 									<h3 className="text-lg font-semibold text-gray-900 mb-3">
 										Location
 									</h3>
-									<div className="h-48 w-full rounded-lg overflow-hidden border border-gray-200">
+									<div className="w-full rounded-lg overflow-hidden border border-gray-200">
 										<MapComponent
 											address={salon.address}
 											showPopup={false}

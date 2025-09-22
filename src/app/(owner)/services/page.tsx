@@ -1,22 +1,23 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import toast from 'react-hot-toast';
 import EditServiceModal from '@/components/EditServiceModal';
 import { useServices, useDeleteService } from '@/hooks/useServices';
 import { useCategoriesBySalon } from '@/hooks/useCategories';
+import { useSalonId } from '@/hooks/useSalon';
 import LoadingSpinner from '@/components/LoadingSpinner';
 import ErrorDisplay from '@/components/ErrorDisplay';
 import { Service } from '@/types';
-import { apiClient } from '@/lib/api-client';
 
 export default function ServicesPage() {
 	const [isEditModalOpen, setIsEditModalOpen] = useState(false);
 	const [selectedService, setSelectedService] = useState<Service | null>(null);
-	const [salonId, setSalonId] = useState<string | null>(null);
-	const [loading, setLoading] = useState(true);
 	const router = useRouter();
+
+	// Используем оптимизированный хук для получения данных салона
+	const { salonId, isLoading: salonLoading, error: salonError } = useSalonId();
 
 	const {
 		data: services = [],
@@ -26,31 +27,6 @@ export default function ServicesPage() {
 	} = useServices(salonId || '');
 
 	const { data: categories = [] } = useCategoriesBySalon(salonId || '');
-
-	// Получаем ID салона текущего пользователя
-	useEffect(() => {
-		const fetchSalonId = async () => {
-			try {
-				const salon = await apiClient.get<{ id: string }>('/salons/current');
-				if (salon && salon.id) {
-					setSalonId(salon.id);
-				} else {
-					// Если салона нет, перенаправляем на создание салона
-					router.push('/salon-info');
-					return;
-				}
-			} catch (error) {
-				console.error('Failed to fetch salon:', error);
-				// Если ошибка, перенаправляем на создание салона
-				router.push('/salon-info');
-				return;
-			} finally {
-				setLoading(false);
-			}
-		};
-
-		fetchSalonId();
-	}, [router]);
 	const deleteServiceMutation = useDeleteService();
 
 	const handleEditService = (service: Service) => {
@@ -89,16 +65,12 @@ export default function ServicesPage() {
 		return category?.name || null;
 	};
 
-	if (loading || servicesLoading) {
+	if (salonLoading || servicesLoading) {
 		return (
 			<div className="min-h-screen bg-[#fff7f6] flex items-center justify-center">
 				<LoadingSpinner />
 			</div>
 		);
-	}
-
-	if (!salonId) {
-		return null;
 	}
 
 	if (error) {
