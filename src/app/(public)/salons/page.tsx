@@ -121,13 +121,6 @@ export default function SalonsPage() {
 	// Check if there are more salons to load
 	const hasMoreSalons = filteredSalons.length > visibleSalonsCount;
 
-	// Debug logging
-	console.log('Debug pagination:', {
-		filteredSalonsLength: filteredSalons.length,
-		visibleSalonsCount,
-		hasMoreSalons,
-	});
-
 	// Reset pagination when search or filters change
 	useEffect(() => {
 		setVisibleSalonsCount(15);

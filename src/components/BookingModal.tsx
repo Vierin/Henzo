@@ -461,7 +461,6 @@ export default function BookingModal({
 											</span>
 										</div>
 										<div className="flex items-center gap-2">
-											<span className="text-gray-500">$</span>
 											<span className="text-lg font-bold text-[#8B4513]">
 												{selectedService?.price
 													? `$${selectedService.price}`
