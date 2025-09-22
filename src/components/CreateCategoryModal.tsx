@@ -32,11 +32,6 @@ export default function CreateCategoryModal({
 		}
 
 		try {
-			console.log('Creating category with data:', {
-				name: categoryName.trim(),
-				salonId,
-			});
-
 			const newCategory = await createCategoryMutation.mutateAsync({
 				name: categoryName.trim(),
 				salonId,
