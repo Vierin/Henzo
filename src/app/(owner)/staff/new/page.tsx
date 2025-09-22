@@ -2,8 +2,8 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { apiClient } from '@/lib/api-client';
 import { useSalonId } from '@/hooks/useSalon';
+import { useCreateStaff } from '@/hooks/useStaff';
 import toast from 'react-hot-toast';
 
 export default function NewStaffPage() {
@@ -15,12 +15,14 @@ export default function NewStaffPage() {
 	});
 	const [photo, setPhoto] = useState<File | null>(null);
 	const [photoPreview, setPhotoPreview] = useState<string | null>(null);
-	const [loading, setLoading] = useState(false);
 	const [error, setError] = useState('');
 	const router = useRouter();
 
 	// Используем оптимизированный хук для получения данных салона
 	const { salonId, isLoading: salonLoading, hasSalon } = useSalonId();
+
+	// Хук для создания работника
+	const createStaffMutation = useCreateStaff();
 
 	// Перенаправляем на создание салона, если салон не найден
 	if (!salonLoading && !hasSalon) {
@@ -42,35 +44,28 @@ export default function NewStaffPage() {
 
 	const handleSubmit = async (e: React.FormEvent) => {
 		e.preventDefault();
-		setLoading(true);
 		setError('');
 
 		// Validate form
 		if (!formData.name || !salonId) {
 			setError('Please fill in all required fields');
-			setLoading(false);
 			return;
 		}
 
 		try {
-			// Save staff member to database using apiClient
-			const staffData = {
+			// Create staff member using mutation
+			await createStaffMutation.mutateAsync({
 				...formData,
 				salonId,
-			};
+			});
 
-			await apiClient.post('/staff', staffData);
-
-			toast.success('Staff member created successfully!');
-
-			// Redirect to staff page
-			router.push('/staff');
+			// Redirect to staff page after successful creation
+			setTimeout(() => {
+				router.push('/staff');
+			}, 100);
 		} catch (err: any) {
 			const errorMessage = err.message || 'Failed to create staff member';
 			setError(errorMessage);
-			toast.error(errorMessage);
-		} finally {
-			setLoading(false);
 		}
 	};
 
@@ -79,8 +74,8 @@ export default function NewStaffPage() {
 		setPhotoPreview(null);
 	};
 
-	// Показываем загрузку пока не получили salonId
-	if (salonLoading) {
+	// Показываем загрузку пока не получили salonId или идет создание
+	if (salonLoading || createStaffMutation.isPending) {
 		return (
 			<div className="flex items-center justify-center min-h-screen">
 				<div className="text-center">
@@ -292,10 +287,10 @@ export default function NewStaffPage() {
 						</button>
 						<button
 							type="submit"
-							disabled={loading}
+							disabled={createStaffMutation.isPending}
 							className="flex-1 bg-[#ff5b5b] text-white px-4 py-2 rounded-md hover:bg-[#e04a4a] focus:outline-none focus:ring-2 focus:ring-[#ff5b5b] focus:ring-offset-2 disabled:opacity-50"
 						>
-							{loading ? 'Adding...' : 'Add Staff Member'}
+							{createStaffMutation.isPending ? 'Adding...' : 'Add Staff Member'}
 						</button>
 					</div>
 				</form>

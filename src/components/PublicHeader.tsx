@@ -60,15 +60,14 @@ export default function PublicHeader() {
 
 	return (
 		<header className="bg-white">
-			<div className="mx-auto max-w-7xl px-6 py-4 flex items-center justify-between">
+			<div className="h-[5rem] mx-auto max-w-7xl px-6 py-4 flex items-center justify-between">
 				{/* Logo */}
-				<Link href="/" className="flex items-center gap-3">
+				<Link href="/" className="flex h-full items-center gap-3">
 					<img
 						src="/logo.png"
 						alt="Henzo Logo"
-						className="h-8 w-[22%] object-contain"
+						className="h-full object-contain"
 					/>
-					<span className="text-xl font-semibold text-[#8B4513]">Henzo</span>
 				</Link>
 
 				{/* Navigation */}

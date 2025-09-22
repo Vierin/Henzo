@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import BookingModal from '../../../components/BookingModal';
 import LoadingSpinner from '../../../components/LoadingSpinner';
@@ -14,9 +14,11 @@ export default function SalonsPage() {
 	const [searchQuery, setSearchQuery] = useState('');
 	const [activeFilter, setActiveFilter] = useState('All');
 	const [sortBy, setSortBy] = useState('name');
+	const [visibleSalonsCount, setVisibleSalonsCount] = useState(15);
 	const [isBookingModalOpen, setIsBookingModalOpen] = useState(false);
-	const [selectedService, setSelectedService] =
-		useState<ServiceResponseDto | null>(null);
+	const [selectedService, setSelectedService] = useState<
+		(ServiceResponseDto & { salonId: string; salonName: string }) | null
+	>(null);
 
 	const {
 		data: salons = [],
@@ -50,15 +52,16 @@ export default function SalonsPage() {
 			...service,
 			salonId,
 			salonName,
-		} as ServiceResponseDto & {
-			salonId: string;
-			salonName: string;
 		});
 		setIsBookingModalOpen(true);
 	};
 
 	const handleSalonClick = (salonId: string) => {
 		router.push(`/salon/${salonId}`);
+	};
+
+	const handleLoadMore = () => {
+		setVisibleSalonsCount((prev) => prev + 15);
 	};
 
 	// Filter and sort salons using useMemo for better performance
@@ -109,6 +112,26 @@ export default function SalonsPage() {
 
 		return filtered;
 	}, [salons, searchQuery, activeFilter, sortBy]);
+
+	// Get visible salons based on pagination
+	const visibleSalons = useMemo(() => {
+		return filteredSalons.slice(0, visibleSalonsCount);
+	}, [filteredSalons, visibleSalonsCount]);
+
+	// Check if there are more salons to load
+	const hasMoreSalons = filteredSalons.length > visibleSalonsCount;
+	
+	// Debug logging
+	console.log('Debug pagination:', {
+		filteredSalonsLength: filteredSalons.length,
+		visibleSalonsCount,
+		hasMoreSalons
+	});
+
+	// Reset pagination when search or filters change
+	useEffect(() => {
+		setVisibleSalonsCount(15);
+	}, [searchQuery, activeFilter, sortBy]);
 
 	return (
 		<div className="min-h-screen bg-[#F8F5F2]">
@@ -170,7 +193,11 @@ export default function SalonsPage() {
 					{/* Results Header */}
 					<div className="flex items-center justify-between mb-8">
 						<h1 className="text-2xl font-bold text-gray-900">
-							Results ({filteredSalons.length})
+							Results ({visibleSalons.length}
+							{filteredSalons.length !== visibleSalons.length
+								? ` of ${filteredSalons.length}`
+								: ''}
+							)
 						</h1>
 						<div className="flex items-center gap-4">
 							{/* Sort Dropdown */}
@@ -217,7 +244,7 @@ export default function SalonsPage() {
 							</div>
 						) : (
 							// Display salons
-							filteredSalons.map((salon) => (
+							visibleSalons.map((salon) => (
 								<div
 									key={salon.id}
 									onClick={() => handleSalonClick(salon.id)}
@@ -254,47 +281,63 @@ export default function SalonsPage() {
 									</div>
 									{/* Services */}
 									{salon.services && salon.services.length > 0 ? (
-										<div className="flex justify-between gap-5">
-											{salon.services.map((service: Service, index: number) => (
-												<div
-													key={service.id || index}
-													className="flex w-full items-center justify-between py-2"
-												>
-													<div className="flex items-center gap-3">
-														<div>
-															<span className="text-sm font-medium text-gray-900">
-																{service.name}
-															</span>
-															{service.description && (
-																<p className="text-xs text-gray-500 mt-1">
-																	{service.description}
-																</p>
-															)}
-															<p className="text-xs text-gray-500">
-																⏱️ {service.duration} min
-															</p>
+										<div className="mt-4">
+											<div className="space-y-2 flex justify-between gap-3">
+												{salon.services
+													.slice(0, 3)
+													.map((service: Service, index: number) => (
+														<div
+															key={service.id || index}
+															className="flex items-center w-full justify-between py-2 px-3 bg-gray-50 rounded-lg"
+														>
+															<div className="flex-1">
+																<span className="text-sm font-medium text-gray-900">
+																	{service.name}
+																</span>
+																<div className="flex items-center gap-4 mt-1">
+																	<span className="text-xs text-gray-500">
+																		⏱️ {service.duration} min
+																	</span>
+																	<span className="text-sm font-semibold text-[#ff5b5b]">
+																		${service.price}
+																	</span>
+																</div>
+															</div>
+															<button
+																onClick={(e) => {
+																	e.stopPropagation();
+																	handleBookService(
+																		service,
+																		salon.id,
+																		salon.name
+																	);
+																}}
+																className="bg-[#ff5b5b] text-white px-3 py-1 rounded-md text-xs font-medium hover:bg-[#e04a4a] transition-colors"
+															>
+																Book
+															</button>
 														</div>
-														<span className="text-sm font-semibold text-[#ff5b5b]">
-															${service.price}
-														</span>
-													</div>
-													<button
-														onClick={(e) => {
-															e.stopPropagation();
-															handleBookService(service, salon.id, salon.name);
-														}}
-														className="bg-[#ff5b5b] text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-[#e04a4a] transition-colors"
-													>
-														Book Now
-													</button>
-												</div>
-											))}
+													))}
+											</div>
 										</div>
 									) : (
-										<div className="text-center py-4">
+										<div className="mt-4 text-center py-4">
 											<p className="text-gray-500 text-sm">
 												No services available
 											</p>
+										</div>
+									)}
+									{salon.services.length > 3 && (
+										<div className="text-center py-2">
+											<button
+												onClick={(e) => {
+													e.stopPropagation();
+													handleSalonClick(salon.id);
+												}}
+												className="text-[#ff5b5b] text-sm font-medium hover:text-[#e04a4a] transition-colors"
+											>
+												View all {salon.services.length} services →
+											</button>
 										</div>
 									)}
 								</div>
@@ -303,11 +346,16 @@ export default function SalonsPage() {
 					</div>
 
 					{/* Load More Button */}
-					<div className="text-center mt-12">
-						<button className="bg-[#ff5b5b] text-white px-8 py-4 rounded-2xl font-medium hover:bg-[#e04a4a] transition-colors">
-							Load more
-						</button>
-					</div>
+					{hasMoreSalons && (
+						<div className="text-center mt-12">
+							<button 
+								onClick={handleLoadMore}
+								className="bg-[#ff5b5b] text-white px-8 py-4 rounded-2xl font-medium hover:bg-[#e04a4a] transition-colors"
+							>
+								Load more ({filteredSalons.length - visibleSalonsCount} remaining)
+							</button>
+						</div>
+					)}
 				</div>
 			</main>
 

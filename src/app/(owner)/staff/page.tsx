@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import toast from 'react-hot-toast';
 import EditStaffModal from '@/components/EditStaffModal';
 import { useStaffBySalon, useDeleteStaff } from '@/hooks/useStaff';
+import { useSalonId } from '@/hooks/useSalon';
 import LoadingSpinner from '@/components/LoadingSpinner';
 import ErrorDisplay from '@/components/ErrorDisplay';
 import { Staff } from '@/types';
@@ -14,18 +15,23 @@ export default function StaffPage() {
 	const [selectedStaff, setSelectedStaff] = useState<Staff | null>(null);
 	const router = useRouter();
 
-	// Временное решение - используем salonId = "1" для тестирования
-	// В реальном приложении это должно браться из контекста пользователя
-	const salonId = '1';
+	// Используем оптимизированный хук для получения данных салона
+	const { salonId, isLoading: salonLoading, hasSalon } = useSalonId();
 
 	const {
 		data: staff = [],
 		isLoading: loading,
 		error,
 		refetch,
-	} = useStaffBySalon(salonId);
+	} = useStaffBySalon(salonId || '');
 
 	const deleteStaffMutation = useDeleteStaff();
+
+	// Перенаправляем на создание салона, если салон не найден
+	if (!salonLoading && !hasSalon) {
+		router.push('/salon-info');
+		return null;
+	}
 
 	const handleEditStaff = (staffMember: Staff) => {
 		setSelectedStaff(staffMember);
@@ -56,7 +62,7 @@ export default function StaffPage() {
 		);
 	};
 
-	if (loading) {
+	if (salonLoading || loading) {
 		return (
 			<div className="flex items-center justify-center min-h-[400px]">
 				<LoadingSpinner size="lg" />
@@ -68,7 +74,9 @@ export default function StaffPage() {
 		return (
 			<div className="flex items-center justify-center min-h-[400px]">
 				<ErrorDisplay
-					error={error instanceof Error ? error : new Error('An error occurred')}
+					error={
+						error instanceof Error ? error : new Error('An error occurred')
+					}
 					onRetry={refetch}
 				/>
 			</div>
