@@ -7,6 +7,7 @@ import {
 	useUpdateService,
 } from '@/hooks/useServices';
 import { useCategoriesBySalon, useCreateCategory } from '@/hooks/useCategories';
+import { useSalonId } from '@/hooks/useSalon';
 import CreateCategoryModal from './CreateCategoryModal';
 import { Service, Category } from '@/types';
 
@@ -32,8 +33,8 @@ export default function EditServiceModal({
 	});
 	const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false);
 
-	// Временное решение - используем salonId = "1" для тестирования
-	const salonId = '1';
+	// Используем оптимизированный хук для получения данных салона
+	const { salonId } = useSalonId();
 
 	const { data: categories = [] } = useCategoriesBySalon(salonId);
 	const createServiceMutation = useCreateService();

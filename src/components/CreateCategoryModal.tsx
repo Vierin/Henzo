@@ -26,7 +26,17 @@ export default function CreateCategoryModal({
 			return;
 		}
 
+		if (!salonId) {
+			console.error('No salon ID provided');
+			return;
+		}
+
 		try {
+			console.log('Creating category with data:', {
+				name: categoryName.trim(),
+				salonId,
+			});
+
 			const newCategory = await createCategoryMutation.mutateAsync({
 				name: categoryName.trim(),
 				salonId,
@@ -82,12 +92,16 @@ export default function CreateCategoryModal({
 							type="submit"
 							className="px-4 py-2 bg-[#ff5b5b] text-white rounded-lg font-medium hover:bg-[#e04a4a] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
 							disabled={
-								createCategoryMutation.isPending || !categoryName.trim()
+								createCategoryMutation.isPending ||
+								!categoryName.trim() ||
+								!salonId
 							}
 						>
 							{createCategoryMutation.isPending
 								? 'Creating...'
-								: 'Create Category'}
+								: !salonId
+									? 'Loading...'
+									: 'Create Category'}
 						</button>
 					</div>
 				</form>
