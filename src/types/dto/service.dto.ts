@@ -1,60 +1,23 @@
-import {
-	IsString,
-	IsOptional,
-	IsNumber,
-	IsPositive,
-	IsArray,
-} from 'class-validator';
+// Simple TypeScript interfaces for service data transfer
 
-export class CreateServiceDto {
-	@IsString()
+export interface CreateServiceDto {
 	name: string;
-
-	@IsOptional()
-	@IsString()
 	description?: string;
-
-	@IsNumber()
-	@IsPositive()
 	duration: number;
-
-	@IsNumber()
-	@IsPositive()
 	price: number;
-
-	@IsString()
 	salonId: string;
-
-	@IsOptional()
-	@IsString()
 	categoryId?: string;
 }
 
-export class UpdateServiceDto {
-	@IsOptional()
-	@IsString()
+export interface UpdateServiceDto {
 	name?: string;
-
-	@IsOptional()
-	@IsString()
 	description?: string;
-
-	@IsOptional()
-	@IsNumber()
-	@IsPositive()
 	duration?: number;
-
-	@IsOptional()
-	@IsNumber()
-	@IsPositive()
 	price?: number;
-
-	@IsOptional()
-	@IsString()
 	categoryId?: string;
 }
 
-export class ServiceResponseDto {
+export interface ServiceResponseDto {
 	id: string;
 	name: string;
 	description?: string;
@@ -64,11 +27,11 @@ export class ServiceResponseDto {
 	categoryId?: string;
 }
 
-export class ServiceWithStaffDto extends ServiceResponseDto {
+export interface ServiceWithStaffDto extends ServiceResponseDto {
 	staff: StaffResponseDto[];
 }
 
-// Import from staff DTO (will be created next)
+// Import from staff DTO
 interface StaffResponseDto {
 	id: string;
 	name: string;

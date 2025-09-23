@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
-import { Service, Staff } from '@/types';
+import { Service, Staff, WorkingHours } from '@/types';
 import { useStaffBySalon } from '@/hooks/useStaff';
 import { useServices } from '@/hooks/useServices';
 import { useAuthStore } from '@/stores/authStore';
@@ -29,7 +29,7 @@ export default function BookingModal({
 	const [selectedStaff, setSelectedStaff] = useState('Any Staff');
 	const [isStaffDropdownOpen, setIsStaffDropdownOpen] = useState(false);
 	const [currentDateIndex, setCurrentDateIndex] = useState(0);
-	const [salonWorkingHours, setSalonWorkingHours] = useState<any>(null);
+	const [salonWorkingHours, setSalonWorkingHours] = useState<WorkingHours | null>(null);
 	const [loading, setLoading] = useState(false);
 	const [selectedService, setSelectedService] = useState<Service | null>(null);
 	const [isServiceDropdownOpen, setIsServiceDropdownOpen] = useState(false);
@@ -94,8 +94,8 @@ export default function BookingModal({
 
 			// После успешного логина продолжаем с созданием резервации
 			await createBooking();
-		} catch (error: any) {
-			alert(error.message || 'Login failed');
+		} catch (error: unknown) {
+			alert(error instanceof Error ? error.message : 'Login failed');
 		} finally {
 			setIsLoggingIn(false);
 		}
@@ -121,7 +121,7 @@ export default function BookingModal({
 		// Get today's day of week (0 = Sunday, 1 = Monday, etc.)
 		const today = new Date();
 		const dayOfWeek = today.getDay();
-		const dayNames = [
+		const dayNames: (keyof WorkingHours)[] = [
 			'sunday',
 			'monday',
 			'tuesday',
@@ -308,9 +308,9 @@ export default function BookingModal({
 
 			// Refresh the page to show updated bookings
 			window.location.reload();
-		} catch (error: any) {
+		} catch (error: unknown) {
 			console.error('Booking error:', error);
-			alert(error.message || 'Failed to book appointment');
+			alert(error instanceof Error ? error.message : 'Failed to book appointment');
 		} finally {
 			setLoading(false);
 		}

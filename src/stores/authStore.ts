@@ -114,9 +114,11 @@ export const useAuthStore = create<AuthState>()(
 					get().setUser(result.user);
 
 					return { success: true };
-				} catch (error: any) {
+				} catch (error: unknown) {
 					get().clearUser();
-					return { success: false, error: error.message };
+					const errorMessage =
+						error instanceof Error ? error.message : 'Unknown error occurred';
+					return { success: false, error: errorMessage };
 				} finally {
 					set({ isLoading: false });
 				}
@@ -154,9 +156,11 @@ export const useAuthStore = create<AuthState>()(
 					get().setUser(result.user);
 
 					return { success: true };
-				} catch (error: any) {
+				} catch (error: unknown) {
 					get().clearUser();
-					return { success: false, error: error.message };
+					const errorMessage =
+						error instanceof Error ? error.message : 'Unknown error occurred';
+					return { success: false, error: errorMessage };
 				} finally {
 					set({ isLoading: false });
 				}

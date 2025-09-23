@@ -6,10 +6,9 @@ import toast from 'react-hot-toast';
 import AddressAutocomplete from '@/components/AddressAutocomplete';
 import MapComponent from '@/components/MapComponent';
 import LoadingSpinner from '@/components/LoadingSpinner';
-import ErrorDisplay from '@/components/ErrorDisplay';
 import FileUpload from '@/components/FileUpload';
 import PhotoUpload from '@/components/PhotoUpload';
-import { useSalon, useSalonId } from '@/hooks/useSalon';
+import { useSalon } from '@/hooks/useSalon';
 import { apiClient } from '@/lib/api-client';
 
 // Кастомный компонент для выбора времени в 24-часовом формате
@@ -109,7 +108,45 @@ export default function SalonInfoPage() {
 				instagram: salon.instagram || '',
 				logo: salon.logo || '',
 				photos: salon.photos || [],
-				operatingHours: salon.workingHours || formData.operatingHours,
+				operatingHours: salon.workingHours
+					? {
+							monday: {
+								open: salon.workingHours.monday?.open || '09:00',
+								close: salon.workingHours.monday?.close || '18:00',
+								closed: salon.workingHours.monday?.closed ?? false,
+							},
+							tuesday: {
+								open: salon.workingHours.tuesday?.open || '09:00',
+								close: salon.workingHours.tuesday?.close || '18:00',
+								closed: salon.workingHours.tuesday?.closed ?? false,
+							},
+							wednesday: {
+								open: salon.workingHours.wednesday?.open || '09:00',
+								close: salon.workingHours.wednesday?.close || '18:00',
+								closed: salon.workingHours.wednesday?.closed ?? false,
+							},
+							thursday: {
+								open: salon.workingHours.thursday?.open || '09:00',
+								close: salon.workingHours.thursday?.close || '18:00',
+								closed: salon.workingHours.thursday?.closed ?? false,
+							},
+							friday: {
+								open: salon.workingHours.friday?.open || '09:00',
+								close: salon.workingHours.friday?.close || '18:00',
+								closed: salon.workingHours.friday?.closed ?? false,
+							},
+							saturday: {
+								open: salon.workingHours.saturday?.open || '09:00',
+								close: salon.workingHours.saturday?.close || '18:00',
+								closed: salon.workingHours.saturday?.closed ?? false,
+							},
+							sunday: {
+								open: salon.workingHours.sunday?.open || '09:00',
+								close: salon.workingHours.sunday?.close || '18:00',
+								closed: salon.workingHours.sunday?.closed ?? false,
+							},
+						}
+					: formData.operatingHours,
 			});
 		}
 	}, [salon]);
@@ -159,9 +196,11 @@ export default function SalonInfoPage() {
 			}
 
 			// Stay on the page after successful save
-		} catch (err: any) {
-			setError(err.message);
-			toast.error(err.message || 'Failed to save salon information', {
+		} catch (err: unknown) {
+			const errorMessage =
+				err instanceof Error ? err.message : 'Failed to save salon information';
+			setError(errorMessage);
+			toast.error(errorMessage, {
 				id: saveToast,
 			});
 		} finally {

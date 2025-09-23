@@ -12,12 +12,12 @@ import { toast } from 'react-hot-toast';
 export const bookingKeys = {
 	all: ['bookings'] as const,
 	lists: () => [...bookingKeys.all, 'list'] as const,
-	list: (filters: Record<string, any>) =>
+	list: (filters: Record<string, unknown>) =>
 		[...bookingKeys.lists(), filters] as const,
 	details: () => [...bookingKeys.all, 'detail'] as const,
 	detail: (id: string) => [...bookingKeys.details(), id] as const,
 	user: () => [...bookingKeys.all, 'user'] as const,
-	userList: (filters: Record<string, any>) =>
+	userList: (filters: Record<string, unknown>) =>
 		[...bookingKeys.user(), 'list', filters] as const,
 };
 

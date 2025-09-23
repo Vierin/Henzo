@@ -6,7 +6,7 @@ export const useSalon = () => {
 	return useQuery<Salon>({
 		queryKey: ['salon', 'current'],
 		queryFn: async () => {
-			const response = await apiClient.get<any>('/salons/current');
+			const response = await apiClient.get<{ salon: Salon }>('/salons/current');
 			// API возвращает { salon: {...} }, извлекаем салон
 			return response.salon || response;
 		},
@@ -27,4 +27,19 @@ export const useSalonId = () => {
 		error,
 		hasSalon: !!(salon as Salon)?.id,
 	};
+};
+
+export const useSalonById = (id: string) => {
+	return useQuery<Salon>({
+		queryKey: ['salon', id],
+		queryFn: async () => {
+			const response = await apiClient.get<{ salon: Salon }>(`/salons/${id}`);
+			return response.salon || response;
+		},
+		staleTime: 5 * 60 * 1000,
+		gcTime: 10 * 60 * 1000,
+		retry: 2,
+		retryDelay: 1000,
+		enabled: !!id,
+	});
 };

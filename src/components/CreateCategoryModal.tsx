@@ -2,12 +2,13 @@
 
 import React, { useState } from 'react';
 import { useCreateCategory } from '@/hooks/useCategories';
+import { Category } from '@/types';
 
 interface CreateCategoryModalProps {
 	isOpen: boolean;
 	onClose: () => void;
 	salonId: string;
-	onSuccess?: (category: any) => void;
+	onSuccess?: (category: Category) => void;
 }
 
 export default function CreateCategoryModal({

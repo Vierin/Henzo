@@ -50,8 +50,8 @@ export default function ClientRegisterPage() {
 
 			// Show success message
 			setSuccess(true);
-		} catch (err: any) {
-			setError(err.message);
+		} catch (err: unknown) {
+			setError(err instanceof Error ? err.message : 'Registration failed');
 		} finally {
 			// Loading handled by Zustand store
 		}

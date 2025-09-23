@@ -1,5 +1,4 @@
-import { IsEmail, IsString, IsOptional, IsEnum } from 'class-validator';
-import { Transform } from 'class-transformer';
+// Simple TypeScript interfaces for user data transfer
 
 export enum UserRole {
 	OWNER = 'OWNER',
@@ -7,36 +6,20 @@ export enum UserRole {
 	CLIENT = 'CLIENT',
 }
 
-export class CreateUserDto {
-	@IsString()
+export interface CreateUserDto {
 	userId: string;
-
-	@IsEmail()
 	email: string;
-
-	@IsString()
 	name: string;
-
-	@IsOptional()
-	@IsString()
 	phone?: string;
-
-	@IsOptional()
-	@IsEnum(UserRole)
-	role?: UserRole = UserRole.OWNER;
+	role?: UserRole;
 }
 
-export class UpdateUserDto {
-	@IsOptional()
-	@IsString()
+export interface UpdateUserDto {
 	name?: string;
-
-	@IsOptional()
-	@IsString()
 	phone?: string;
 }
 
-export class UserResponseDto {
+export interface UserResponseDto {
 	id: string;
 	email: string;
 	name?: string;

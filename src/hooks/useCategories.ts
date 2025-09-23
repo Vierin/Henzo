@@ -1,20 +1,21 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '@/lib/api-client';
 import { toast } from 'react-hot-toast';
+import { Service } from '@/types';
 
 export interface Category {
 	id: string;
 	name: string;
 	salonId: string;
 	createdAt: string;
-	services?: any[];
+	services?: Service[];
 }
 
 // Query keys
 export const categoryKeys = {
 	all: ['categories'] as const,
 	lists: () => [...categoryKeys.all, 'list'] as const,
-	list: (filters: Record<string, any>) =>
+	list: (filters: Record<string, unknown>) =>
 		[...categoryKeys.lists(), filters] as const,
 	details: () => [...categoryKeys.all, 'detail'] as const,
 	detail: (id: string) => [...categoryKeys.details(), id] as const,

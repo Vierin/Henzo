@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useAuthStore } from '@/stores/authStore';
 import { useSalon } from '@/hooks/useSalon';
 import { supabase } from '@/lib/supabase';
+import Image from 'next/image';
 
 export default function OwnerHeader() {
 	const { user, logout } = useAuthStore();
@@ -29,7 +30,7 @@ export default function OwnerHeader() {
 					href="/"
 					className="flex h-full items-center gap-3 hover:opacity-80 transition-opacity"
 				>
-					<img
+					<Image
 						src="/logo.png"
 						alt="Henzo Logo"
 						className="h-full object-contain"
@@ -67,7 +68,7 @@ export default function OwnerHeader() {
 					{/* Логотип салона в кружочке профиля */}
 					<div className="h-9 w-9 rounded-full border border-[#ffd6d2] overflow-hidden flex items-center justify-center">
 						{salon?.logo ? (
-							<img
+							<Image
 								src={getSalonLogoUrl(salon.logo) || ''}
 								alt={salon.name || 'Salon logo'}
 								className="w-full h-full object-cover"

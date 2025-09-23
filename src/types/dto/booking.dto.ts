@@ -1,10 +1,4 @@
-import {
-	IsString,
-	IsOptional,
-	IsEnum,
-	IsDateString,
-	IsArray,
-} from 'class-validator';
+// Simple TypeScript interfaces for booking data transfer
 
 export enum BookingStatus {
 	PENDING = 'PENDING',
@@ -12,48 +6,23 @@ export enum BookingStatus {
 	CANCELED = 'CANCELED',
 }
 
-export class CreateBookingDto {
-	@IsString()
+export interface CreateBookingDto {
 	salonId: string;
-
-	@IsString()
 	serviceId: string;
-
-	@IsOptional()
-	@IsString()
 	staffId?: string;
-
-	@IsDateString()
 	time: string;
-
-	@IsOptional()
-	@IsString()
 	notes?: string;
 }
 
-export class UpdateBookingDto {
-	@IsOptional()
-	@IsString()
+export interface UpdateBookingDto {
 	serviceId?: string;
-
-	@IsOptional()
-	@IsString()
 	staffId?: string;
-
-	@IsOptional()
-	@IsDateString()
 	time?: string;
-
-	@IsOptional()
-	@IsEnum(BookingStatus)
 	status?: BookingStatus;
-
-	@IsOptional()
-	@IsString()
 	notes?: string;
 }
 
-export class BookingResponseDto {
+export interface BookingResponseDto {
 	id: string;
 	salonId: string;
 	userId: string;
@@ -66,7 +35,7 @@ export class BookingResponseDto {
 	createdAt: string;
 }
 
-export class BookingWithDetailsDto extends BookingResponseDto {
+export interface BookingWithDetailsDto extends BookingResponseDto {
 	user: UserResponseDto;
 	client: ClientResponseDto;
 	service: ServiceResponseDto;

@@ -11,7 +11,7 @@ import { toast } from 'react-hot-toast';
 export const serviceKeys = {
 	all: ['services'] as const,
 	lists: () => [...serviceKeys.all, 'list'] as const,
-	list: (filters: Record<string, any>) =>
+	list: (filters: Record<string, unknown>) =>
 		[...serviceKeys.lists(), filters] as const,
 	details: () => [...serviceKeys.all, 'detail'] as const,
 	detail: (id: string) => [...serviceKeys.details(), id] as const,

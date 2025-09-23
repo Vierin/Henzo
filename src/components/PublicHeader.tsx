@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useAuthStore } from '@/stores/authStore';
+import Image from 'next/image';
 
 export default function PublicHeader() {
 	const [isLanguageDropdownOpen, setIsLanguageDropdownOpen] = useState(false);
@@ -63,7 +64,7 @@ export default function PublicHeader() {
 			<div className="h-[5rem] mx-auto max-w-7xl px-6 py-4 flex items-center justify-between">
 				{/* Logo */}
 				<Link href="/" className="flex h-full items-center gap-3">
-					<img
+					<Image
 						src="/logo.png"
 						alt="Henzo Logo"
 						className="h-full object-contain"

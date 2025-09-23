@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
+import Image from 'next/image';
 
 interface SalonPhotoSliderProps {
 	photos: string[];
@@ -25,70 +26,14 @@ export default function SalonPhotoSlider({
 	};
 
 	// Показываем только фотографии салона (без логотипа)
-	const allImages = [];
+	const allImages: Array<{ url: string; type: string }> = [];
 	if (photos && photos.length > 0) {
-		photos.forEach((photo, index) => {
+		photos.forEach((photo) => {
 			allImages.push({ url: getPublicUrl(photo), type: 'photo' });
 		});
 	}
 
-	// Если нет фотографий, показываем логотип или placeholder
-	if (allImages.length === 0) {
-		return (
-			<div className="w-full h-80 bg-gradient-to-br from-pink-100 to-pink-200 rounded-xl flex items-center justify-center overflow-hidden">
-				{logo ? (
-					<img
-						src={getPublicUrl(logo)}
-						alt={salonName}
-						className="w-full h-full object-cover rounded-xl"
-						onError={(e) => {
-							e.currentTarget.style.display = 'none';
-							const nextSibling = e.currentTarget
-								.nextElementSibling as HTMLElement;
-							if (nextSibling) {
-								nextSibling.style.display = 'flex';
-							}
-						}}
-					/>
-				) : null}
-				<div
-					className="w-full h-full bg-gradient-to-br from-pink-100 to-pink-200 rounded-xl flex items-center justify-center"
-					style={{ display: logo ? 'none' : 'flex' }}
-				>
-					<span className="text-6xl">💇‍♀️</span>
-				</div>
-			</div>
-		);
-	}
-
-	// Если только одно изображение, показываем его без слайдера
-	if (allImages.length === 1) {
-		return (
-			<div className="w-full h-80 bg-gradient-to-br from-pink-100 to-pink-200 rounded-xl overflow-hidden">
-				<img
-					src={allImages[0].url}
-					alt={salonName}
-					className="w-full h-full object-cover rounded-xl"
-					onError={(e) => {
-						e.currentTarget.style.display = 'none';
-						const nextSibling = e.currentTarget
-							.nextElementSibling as HTMLElement;
-						if (nextSibling) {
-							nextSibling.style.display = 'flex';
-						}
-					}}
-				/>
-				<div
-					className="w-full h-full bg-gradient-to-br from-pink-100 to-pink-200 rounded-xl flex items-center justify-center"
-					style={{ display: 'none' }}
-				>
-					<span className="text-6xl">💇‍♀️</span>
-				</div>
-			</div>
-		);
-	}
-
-	// Если больше одного изображения, показываем слайдер
+	// Функции навигации
 	const nextSlide = () => {
 		setIsAutoPlaying(false);
 		setCurrentIndex((prevIndex) => (prevIndex + 1) % allImages.length);
@@ -122,7 +67,7 @@ export default function SalonPhotoSlider({
 		return () => {
 			document.removeEventListener('keydown', handleKeyPress);
 		};
-	}, []);
+	}, [allImages.length]);
 
 	// Автопрокрутка (только если больше одного изображения)
 	useEffect(() => {
@@ -135,11 +80,70 @@ export default function SalonPhotoSlider({
 		return () => clearInterval(interval);
 	}, [allImages.length, isAutoPlaying]);
 
+
+	// Если нет фотографий, показываем логотип или placeholder
+	if (allImages.length === 0) {
+		return (
+			<div className="w-full h-80 bg-gradient-to-br from-pink-100 to-pink-200 rounded-xl flex items-center justify-center overflow-hidden">
+				{logo ? (
+					<Image
+						src={getPublicUrl(logo)}
+						alt={salonName}
+						className="w-full h-full object-cover rounded-xl"
+						onError={(e) => {
+							e.currentTarget.style.display = 'none';
+							const nextSibling = e.currentTarget
+								.nextElementSibling as HTMLElement;
+							if (nextSibling) {
+								nextSibling.style.display = 'flex';
+							}
+						}}
+					/>
+				) : null}
+				<div
+					className="w-full h-full bg-gradient-to-br from-pink-100 to-pink-200 rounded-xl flex items-center justify-center"
+					style={{ display: logo ? 'none' : 'flex' }}
+				>
+					<span className="text-6xl">💇‍♀️</span>
+				</div>
+			</div>
+		);
+	}
+
+	// Если только одно изображение, показываем его без слайдера
+	if (allImages.length === 1) {
+		return (
+			<div className="w-full h-80 bg-gradient-to-br from-pink-100 to-pink-200 rounded-xl overflow-hidden">
+				<Image
+					src={allImages[0].url}
+					alt={salonName}
+					className="w-full h-full object-cover rounded-xl"
+					onError={(e) => {
+						e.currentTarget.style.display = 'none';
+						const nextSibling = e.currentTarget
+							.nextElementSibling as HTMLElement;
+						if (nextSibling) {
+							nextSibling.style.display = 'flex';
+						}
+					}}
+				/>
+				<div
+					className="w-full h-full bg-gradient-to-br from-pink-100 to-pink-200 rounded-xl flex items-center justify-center"
+					style={{ display: 'none' }}
+				>
+					<span className="text-6xl">💇‍♀️</span>
+				</div>
+			</div>
+		);
+	}
+
+	// Если больше одного изображения, показываем слайдер
+
 	return (
 		<div className="relative w-full h-80 bg-gradient-to-br from-pink-100 to-pink-200 rounded-xl overflow-hidden group">
 			{/* Main Image */}
 			<div className="relative w-full h-full">
-				<img
+				<Image
 					src={allImages[currentIndex].url}
 					alt={salonName}
 					className="w-full h-full object-cover rounded-xl transition-opacity duration-300"

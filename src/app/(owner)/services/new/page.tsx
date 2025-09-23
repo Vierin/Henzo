@@ -22,14 +22,14 @@ export default function NewServicePage() {
 	// Используем оптимизированный хук для получения данных салона
 	const { salonId, isLoading: salonLoading, hasSalon } = useSalonId();
 
+	const { data: categories = [] } = useCategoriesBySalon(salonId || '');
+	const createServiceMutation = useCreateService();
+
 	// Перенаправляем на создание салона, если салон не найден
 	if (!salonLoading && !hasSalon) {
 		router.push('/salon-info');
 		return null;
 	}
-
-	const { data: categories = [] } = useCategoriesBySalon(salonId || '');
-	const createServiceMutation = useCreateService();
 
 	const handleSubmit = async (e: React.FormEvent) => {
 		e.preventDefault();
@@ -61,7 +61,7 @@ export default function NewServicePage() {
 			setTimeout(() => {
 				router.push('/services');
 			}, 100);
-		} catch (err: any) {
+		} catch (err: unknown) {
 			console.error('Failed to create service:', err);
 		}
 	};

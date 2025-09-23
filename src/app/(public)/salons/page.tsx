@@ -8,6 +8,7 @@ import ErrorDisplay from '../../../components/ErrorDisplay';
 import { useSalonsWithServices } from '@/hooks/useSalons';
 import { ServiceResponseDto } from '@/types/dto/service.dto';
 import { Salon, Service } from '@/types';
+import Image from 'next/image';
 
 export default function SalonsPage() {
 	const router = useRouter();
@@ -247,7 +248,7 @@ export default function SalonsPage() {
 										{/* Salon Image */}
 										<div className="w-48 h-48 bg-gradient-to-br from-pink-100 to-pink-200 rounded-xl flex items-center justify-center flex-shrink-0">
 											{salon.logo ? (
-												<img
+												<Image
 													src={salon.logo}
 													alt={salon.name}
 													className="w-full h-full object-cover rounded-xl"

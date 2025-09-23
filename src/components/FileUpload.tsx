@@ -3,6 +3,7 @@
 import { useState, useRef } from 'react';
 import { supabase } from '@/lib/supabase';
 import toast from 'react-hot-toast';
+import Image from 'next/image';
 
 interface FileUploadProps {
 	onUpload: (filePath: string) => void;
@@ -60,11 +61,14 @@ export default function FileUpload({
 
 			toast.success('File uploaded successfully!', { id: uploadToast });
 			onUpload(filePath); // Pass the file path, not the URL
-		} catch (error: any) {
+		} catch (error: unknown) {
 			console.error('Upload error:', error);
-			toast.error(error.message || 'Failed to upload file', {
-				id: uploadToast,
-			});
+			toast.error(
+				error instanceof Error ? error.message : 'Failed to upload file',
+				{
+					id: uploadToast,
+				}
+			);
 		} finally {
 			setIsUploading(false);
 		}
@@ -87,11 +91,14 @@ export default function FileUpload({
 
 			toast.success('File removed successfully!', { id: removeToast });
 			onRemove?.();
-		} catch (error: any) {
+		} catch (error: unknown) {
 			console.error('Remove error:', error);
-			toast.error(error.message || 'Failed to remove file', {
-				id: removeToast,
-			});
+			toast.error(
+				error instanceof Error ? error.message : 'Failed to remove file',
+				{
+					id: removeToast,
+				}
+			);
 		}
 	};
 
@@ -188,7 +195,7 @@ export default function FileUpload({
 					<div className="flex items-center space-x-4 p-4 bg-gray-50 rounded-lg">
 						<div className="flex-shrink-0">
 							{accept.includes('image') ? (
-								<img
+								<Image
 									src={getPublicUrl(currentFile)}
 									alt="Preview"
 									className="h-16 w-16 object-cover rounded-lg"

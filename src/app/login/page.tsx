@@ -35,9 +35,9 @@ export default function LoginPage() {
 
 			// Только при успешном логине перенаправляем пользователя
 			router.push('/owner-dashboard');
-		} catch (err: any) {
+		} catch (err: unknown) {
 			// Показываем ошибку и НЕ перенаправляем пользователя
-			setError(err.message || 'An error occurred during login');
+			setError(err instanceof Error ? err.message : 'An error occurred during login');
 		} finally {
 			setLoading(false);
 		}

@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useSalonId } from '@/hooks/useSalon';
 import { useCreateStaff } from '@/hooks/useStaff';
-import toast from 'react-hot-toast';
+import Image from 'next/image';
 
 export default function NewStaffPage() {
 	const [formData, setFormData] = useState({
@@ -57,14 +57,16 @@ export default function NewStaffPage() {
 			await createStaffMutation.mutateAsync({
 				...formData,
 				salonId,
+				accessLevel: formData.accessLevel as 'ADMIN' | 'EMPLOYEE',
 			});
 
 			// Redirect to staff page after successful creation
 			setTimeout(() => {
 				router.push('/staff');
 			}, 100);
-		} catch (err: any) {
-			const errorMessage = err.message || 'Failed to create staff member';
+		} catch (err: unknown) {
+			const errorMessage =
+				err instanceof Error ? err.message : 'Failed to create staff member';
 			setError(errorMessage);
 		}
 	};
@@ -133,7 +135,7 @@ export default function NewStaffPage() {
 							<div className="flex-shrink-0">
 								{photoPreview ? (
 									<div className="relative">
-										<img
+										<Image
 											src={photoPreview}
 											alt="Staff preview"
 											className="w-20 h-20 rounded-full object-cover border-2 border-gray-200"

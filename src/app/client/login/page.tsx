@@ -27,8 +27,8 @@ export default function ClientLoginPage() {
 
 			// Redirect to client dashboard
 			router.push('/client');
-		} catch (err: any) {
-			setError(err.message);
+		} catch (err: unknown) {
+			setError(err instanceof Error ? err.message : 'Login failed');
 		}
 	};
 

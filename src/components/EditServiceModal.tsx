@@ -36,7 +36,7 @@ export default function EditServiceModal({
 	// Используем оптимизированный хук для получения данных салона
 	const { salonId } = useSalonId();
 
-	const { data: categories = [] } = useCategoriesBySalon(salonId);
+	const { data: categories = [] } = useCategoriesBySalon(salonId || '');
 	const createServiceMutation = useCreateService();
 	const updateServiceMutation = useUpdateService();
 	const createCategoryMutation = useCreateCategory();
@@ -67,7 +67,8 @@ export default function EditServiceModal({
 		if (
 			!formData.name.trim() ||
 			formData.duration <= 0 ||
-			formData.price <= 0
+			formData.price <= 0 ||
+			!salonId
 		) {
 			return;
 		}
@@ -281,7 +282,7 @@ export default function EditServiceModal({
 			<CreateCategoryModal
 				isOpen={isCategoryModalOpen}
 				onClose={() => setIsCategoryModalOpen(false)}
-				salonId={salonId}
+				salonId={salonId || ''}
 				onSuccess={handleCategoryCreated}
 			/>
 		</>

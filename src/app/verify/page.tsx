@@ -1,11 +1,11 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import LoadingSpinner from '@/components/LoadingSpinner';
 
-export default function VerifyPage() {
+function VerifyForm() {
 	const [status, setStatus] = useState<'loading' | 'success' | 'error'>(
 		'loading'
 	);
@@ -56,10 +56,10 @@ export default function VerifyPage() {
 						throw new Error('No verification token found');
 					}
 				}
-			} catch (error: any) {
+			} catch (error: unknown) {
 				console.error('Email verification error:', error);
 				setStatus('error');
-				setMessage(error.message || 'Failed to verify email');
+				setMessage(error instanceof Error ? error.message : 'Failed to verify email');
 			}
 		};
 
@@ -140,5 +140,13 @@ export default function VerifyPage() {
 				</div>
 			</div>
 		</div>
+	);
+}
+
+export default function VerifyPage() {
+	return (
+		<Suspense fallback={<LoadingSpinner />}>
+			<VerifyForm />
+		</Suspense>
 	);
 }

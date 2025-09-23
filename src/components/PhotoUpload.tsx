@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { supabase } from '@/lib/supabase';
 import toast from 'react-hot-toast';
+import Image from 'next/image';
 
 interface PhotoUploadProps {
 	photos: string[];
@@ -53,11 +54,14 @@ export default function PhotoUpload({
 
 			toast.success('Photo uploaded successfully!', { id: uploadToast });
 			onPhotosChange([...photos, filePath]);
-		} catch (error: any) {
+		} catch (error: unknown) {
 			console.error('Upload error:', error);
-			toast.error(error.message || 'Failed to upload photo', {
-				id: uploadToast,
-			});
+			toast.error(
+				error instanceof Error ? error.message : 'Failed to upload photo',
+				{
+					id: uploadToast,
+				}
+			);
 		} finally {
 			setIsUploading(false);
 		}
@@ -81,11 +85,14 @@ export default function PhotoUpload({
 			const newPhotos = photos.filter((_, i) => i !== index);
 			onPhotosChange(newPhotos);
 			toast.success('Photo removed successfully!', { id: removeToast });
-		} catch (error: any) {
+		} catch (error: unknown) {
 			console.error('Remove error:', error);
-			toast.error(error.message || 'Failed to remove photo', {
-				id: removeToast,
-			});
+			toast.error(
+				error instanceof Error ? error.message : 'Failed to remove photo',
+				{
+					id: removeToast,
+				}
+			);
 		}
 	};
 
@@ -189,7 +196,7 @@ export default function PhotoUpload({
 				<div className="grid grid-cols-3 gap-4">
 					{photos.map((photo, index) => (
 						<div key={index} className="relative group">
-							<img
+							<Image
 								src={getPublicUrl(photo)}
 								alt={`Salon photo ${index + 1}`}
 								className="w-full h-24 object-cover rounded-lg"

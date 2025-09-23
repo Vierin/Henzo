@@ -2,14 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import toast from 'react-hot-toast';
-
-interface Staff {
-	id: string;
-	name: string;
-	accessLevel: 'ADMIN' | 'EMPLOYEE';
-	email: string;
-	phone: string;
-}
+import { Staff } from '@/types';
 
 interface EditStaffModalProps {
 	isOpen: boolean;
@@ -68,12 +61,13 @@ export default function EditStaffModal({
 			}
 
 			const updatedStaff = await response.json();
-			onSave(updatedStaff.staff);
+			onSave(updatedStaff.staff || updatedStaff);
 			toast.success('Staff member updated successfully!', { id: updateToast });
 			onClose();
-		} catch (err: any) {
-			setError(err.message);
-			toast.error(err.message || 'Failed to update staff member', {
+		} catch (err: unknown) {
+			const errorMessage = err instanceof Error ? err.message : 'Failed to update staff member';
+			setError(errorMessage);
+			toast.error(errorMessage, {
 				id: updateToast,
 			});
 		} finally {

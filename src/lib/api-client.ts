@@ -52,14 +52,14 @@ export class ApiClient {
 		return this.request<T>(endpoint, { method: 'GET' });
 	}
 
-	async post<T>(endpoint: string, data?: any): Promise<T> {
+	async post<T>(endpoint: string, data?: unknown): Promise<T> {
 		return this.request<T>(endpoint, {
 			method: 'POST',
 			body: data ? JSON.stringify(data) : undefined,
 		});
 	}
 
-	async put<T>(endpoint: string, data?: any): Promise<T> {
+	async put<T>(endpoint: string, data?: unknown): Promise<T> {
 		return this.request<T>(endpoint, {
 			method: 'PUT',
 			body: data ? JSON.stringify(data) : undefined,
@@ -71,12 +71,12 @@ export class ApiClient {
 	}
 
 	// Utility method to transform response data
-	transformResponse<T>(data: any, DtoClass: new () => T): T {
+	transformResponse<T>(data: unknown, DtoClass: new () => T): T {
 		return plainToClass(DtoClass, data);
 	}
 
 	// Utility method to transform array response data
-	transformArrayResponse<T>(data: any[], DtoClass: new () => T): T[] {
+	transformArrayResponse<T>(data: unknown[], DtoClass: new () => T): T[] {
 		return data.map((item) => plainToClass(DtoClass, item));
 	}
 }

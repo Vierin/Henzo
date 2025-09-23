@@ -1,125 +1,43 @@
-import {
-	IsString,
-	IsOptional,
-	IsObject,
-	IsEmail,
-	IsUrl,
-	ValidateNested,
-	IsArray,
-} from 'class-validator';
-import { Type } from 'class-transformer';
+// Simple TypeScript interfaces for salon data transfer
+// These replace the class-validator DTOs for frontend usage
 
-export class WorkingHoursDto {
-	@IsOptional()
+export interface WorkingHoursDto {
 	monday?: { open: string; close: string; closed?: boolean };
-
-	@IsOptional()
 	tuesday?: { open: string; close: string; closed?: boolean };
-
-	@IsOptional()
 	wednesday?: { open: string; close: string; closed?: boolean };
-
-	@IsOptional()
 	thursday?: { open: string; close: string; closed?: boolean };
-
-	@IsOptional()
 	friday?: { open: string; close: string; closed?: boolean };
-
-	@IsOptional()
 	saturday?: { open: string; close: string; closed?: boolean };
-
-	@IsOptional()
 	sunday?: { open: string; close: string; closed?: boolean };
 }
 
-export class CreateSalonDto {
-	@IsString()
+export interface CreateSalonDto {
 	name: string;
-
-	@IsOptional()
-	@IsString()
 	description?: string;
-
-	@IsOptional()
-	@IsString()
 	address?: string;
-
-	@IsOptional()
-	@IsString()
 	phone?: string;
-
-	@IsOptional()
-	@IsEmail()
 	email?: string;
-
-	@IsOptional()
-	@IsUrl()
 	website?: string;
-
-	@IsOptional()
-	@IsString()
 	instagram?: string;
-
-	@IsOptional()
-	@IsString()
 	logo?: string;
-
-	@IsOptional()
-	@IsArray()
-	@IsString({ each: true })
 	photos?: string[];
-
-	@IsOptional()
-	@ValidateNested()
-	@Type(() => WorkingHoursDto)
 	workingHours?: WorkingHoursDto;
 }
 
-export class UpdateSalonDto {
-	@IsOptional()
-	@IsString()
+export interface UpdateSalonDto {
 	name?: string;
-
-	@IsOptional()
-	@IsString()
 	description?: string;
-
-	@IsOptional()
-	@IsString()
 	address?: string;
-
-	@IsOptional()
-	@IsString()
 	phone?: string;
-
-	@IsOptional()
-	@IsEmail()
 	email?: string;
-
-	@IsOptional()
-	@IsUrl()
 	website?: string;
-
-	@IsOptional()
-	@IsString()
 	instagram?: string;
-
-	@IsOptional()
-	@IsString()
 	logo?: string;
-
-	@IsOptional()
-	@IsArray()
-	@IsString({ each: true })
 	photos?: string[];
-
-	@IsOptional()
-	@ValidateNested()
-	@Type(() => WorkingHoursDto)
 	workingHours?: WorkingHoursDto;
 }
 
-export class SalonResponseDto {
+export interface SalonResponseDto {
 	id: string;
 	name: string;
 	description?: string;
@@ -135,12 +53,12 @@ export class SalonResponseDto {
 	createdAt: string;
 }
 
-export class SalonWithDetailsResponseDto extends SalonResponseDto {
+export interface SalonWithDetailsResponseDto extends SalonResponseDto {
 	services: ServiceResponseDto[];
 	staff: StaffResponseDto[];
 }
 
-// Import these from their respective DTOs (will be created next)
+// Import these from their respective DTOs
 interface ServiceResponseDto {
 	id: string;
 	name: string;

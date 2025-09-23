@@ -7,8 +7,8 @@ import PublicHeader from '../../../../components/PublicHeader';
 import LoadingSpinner from '../../../../components/LoadingSpinner';
 import ErrorDisplay from '../../../../components/ErrorDisplay';
 import MapComponent from '../../../../components/MapComponent';
-import { useSalon } from '@/hooks/useSalon';
-import { Service } from '@/types';
+import { useSalonById } from '@/hooks/useSalon';
+import { Service, WorkingHours } from '@/types';
 import { supabase } from '@/lib/supabase';
 import SalonPhotoSlider from '../../../../components/SalonPhotoSlider';
 
@@ -19,7 +19,7 @@ export default function SalonDetailPage() {
 	const [selectedService, setSelectedService] = useState<Service | null>(null);
 
 	const salonId = params.id as string;
-	const { data: salon, isLoading, error } = useSalon(salonId);
+	const { data: salon, isLoading, error } = useSalonById(salonId);
 
 	// Loading and error states
 	if (isLoading) {
@@ -65,10 +65,10 @@ export default function SalonDetailPage() {
 		));
 	};
 
-	const formatWorkingHours = (workingHours: any) => {
+	const formatWorkingHours = (workingHours: WorkingHours | undefined) => {
 		if (!workingHours) return 'Hours not specified';
 
-		const days = [
+		const days: (keyof WorkingHours)[] = [
 			'monday',
 			'tuesday',
 			'wednesday',
@@ -233,7 +233,7 @@ export default function SalonDetailPage() {
 												No services available
 											</h3>
 											<p className="text-gray-600">
-												This salon hasn't added any services yet.
+												This salon hasn&apos;t added any services yet.
 											</p>
 										</div>
 									)}
@@ -260,7 +260,8 @@ export default function SalonDetailPage() {
 											</div>
 											<p className="text-gray-700">
 												Amazing experience! The staff was professional and the
-												service was top-notch. I'll definitely be coming back.
+												service was top-notch. I&apos;ll definitely be coming
+												back.
 											</p>
 										</div>
 
@@ -370,7 +371,7 @@ export default function SalonDetailPage() {
 									</div>
 									<div className="text-gray-600 text-sm ml-6">
 										<pre className="whitespace-pre-line text-xs">
-											{formatWorkingHours((salon as any).workingHours)}
+											{formatWorkingHours(salon.workingHours)}
 										</pre>
 									</div>
 								</div>

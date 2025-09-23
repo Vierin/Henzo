@@ -7,7 +7,7 @@ import { toast } from 'react-hot-toast';
 export const staffKeys = {
 	all: ['staff'] as const,
 	lists: () => [...staffKeys.all, 'list'] as const,
-	list: (filters: Record<string, any>) =>
+	list: (filters: Record<string, unknown>) =>
 		[...staffKeys.lists(), filters] as const,
 	details: () => [...staffKeys.all, 'detail'] as const,
 	detail: (id: string) => [...staffKeys.details(), id] as const,

@@ -12,7 +12,7 @@ import { toast } from 'react-hot-toast';
 export const salonKeys = {
 	all: ['salons'] as const,
 	lists: () => [...salonKeys.all, 'list'] as const,
-	list: (filters: Record<string, any>) =>
+	list: (filters: Record<string, unknown>) =>
 		[...salonKeys.lists(), filters] as const,
 	details: () => [...salonKeys.all, 'detail'] as const,
 	detail: (id: string) => [...salonKeys.details(), id] as const,

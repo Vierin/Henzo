@@ -1,7 +1,6 @@
 'use client';
 
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
 import VisitHistoryCard from '@/components/VisitHistoryCard';
 
 interface VisitHistory {
@@ -13,8 +12,6 @@ interface VisitHistory {
 }
 
 export default function ClientDashboard() {
-	const router = useRouter();
-
 	// Mock data for visit history - in real app this would come from API
 	const [visitHistory] = useState<VisitHistory[]>([
 		{

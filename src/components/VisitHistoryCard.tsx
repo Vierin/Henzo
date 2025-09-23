@@ -1,5 +1,7 @@
 'use client';
 
+import Image from 'next/image';
+
 interface VisitHistory {
 	id: string;
 	salonName: string;
@@ -26,7 +28,7 @@ export default function VisitHistoryCard({
 			<div className="flex items-center gap-4">
 				{/* Service Image */}
 				<div className="w-20 h-20 bg-gradient-to-br from-pink-100 to-pink-200 rounded-lg flex items-center justify-center flex-shrink-0">
-					<img
+					<Image
 						src={visit.image}
 						alt={visit.serviceName}
 						className="w-full h-full object-cover rounded-lg"

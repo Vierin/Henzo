@@ -7,6 +7,7 @@ import ErrorDisplay from '../components/ErrorDisplay';
 import { useSalonsWithServices } from '@/hooks/useSalons';
 import { supabase } from '@/lib/supabase';
 import { Salon, Service } from '@/types';
+import Image from 'next/image';
 
 export default function HomePage() {
 	const router = useRouter();
@@ -159,15 +160,18 @@ export default function HomePage() {
 										className="bg-white rounded-xl overflow-hidden shadow-lg hover:shadow-xl transition-shadow cursor-pointer"
 									>
 										<div className="h-48 bg-gradient-to-br from-pink-100 to-pink-200 flex items-center justify-center">
-											{getSalonImage(salon) ? (
-												<img
-													src={getSalonImage(salon)}
-													alt={salon.name}
-													className="w-full h-full object-cover"
-												/>
-											) : (
-												<span className="text-6xl">💇‍♀️</span>
-											)}
+											{(() => {
+												const imageUrl = getSalonImage(salon);
+												return imageUrl ? (
+													<Image
+														src={imageUrl}
+														alt={salon.name}
+														className="w-full h-full object-cover"
+													/>
+												) : (
+													<span className="text-6xl">💇‍♀️</span>
+												);
+											})()}
 										</div>
 										<div className="p-6">
 											<h3 className="text-xl font-bold text-gray-900 mb-2">
