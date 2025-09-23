@@ -33,6 +33,8 @@ export default function OwnerHeader() {
 					<Image
 						src="/logo.png"
 						alt="Henzo Logo"
+						width={88}
+						height={40}
 						className="h-full object-contain"
 					/>
 				</Link>
@@ -71,6 +73,8 @@ export default function OwnerHeader() {
 							<Image
 								src={getSalonLogoUrl(salon.logo) || ''}
 								alt={salon.name || 'Salon logo'}
+								width={40}
+								height={40}
 								className="w-full h-full object-cover"
 								onError={(e) => {
 									// Если изображение не загрузилось, показываем инициалы

@@ -89,6 +89,8 @@ export default function SalonPhotoSlider({
 					<Image
 						src={getPublicUrl(logo)}
 						alt={salonName}
+						width={400}
+						height={320}
 						className="w-full h-full object-cover rounded-xl"
 						onError={(e) => {
 							e.currentTarget.style.display = 'none';
@@ -117,6 +119,8 @@ export default function SalonPhotoSlider({
 				<Image
 					src={allImages[0].url}
 					alt={salonName}
+					width={400}
+					height={320}
 					className="w-full h-full object-cover rounded-xl"
 					onError={(e) => {
 						e.currentTarget.style.display = 'none';
@@ -146,6 +150,8 @@ export default function SalonPhotoSlider({
 				<Image
 					src={allImages[currentIndex].url}
 					alt={salonName}
+					width={400}
+					height={320}
 					className="w-full h-full object-cover rounded-xl transition-opacity duration-300"
 					onError={(e) => {
 						e.currentTarget.style.display = 'none';

@@ -198,6 +198,8 @@ export default function FileUpload({
 								<Image
 									src={getPublicUrl(currentFile)}
 									alt="Preview"
+									width={64}
+									height={64}
 									className="h-16 w-16 object-cover rounded-lg"
 								/>
 							) : (

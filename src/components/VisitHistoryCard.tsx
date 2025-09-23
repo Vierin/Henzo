@@ -31,6 +31,8 @@ export default function VisitHistoryCard({
 					<Image
 						src={visit.image}
 						alt={visit.serviceName}
+						width={80}
+						height={80}
 						className="w-full h-full object-cover rounded-lg"
 						onError={(e) => {
 							e.currentTarget.style.display = 'none';

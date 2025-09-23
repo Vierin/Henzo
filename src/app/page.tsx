@@ -166,6 +166,8 @@ export default function HomePage() {
 													<Image
 														src={imageUrl}
 														alt={salon.name}
+														width={400}
+														height={192}
 														className="w-full h-full object-cover"
 													/>
 												) : (

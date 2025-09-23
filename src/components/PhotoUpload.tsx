@@ -199,6 +199,8 @@ export default function PhotoUpload({
 							<Image
 								src={getPublicUrl(photo)}
 								alt={`Salon photo ${index + 1}`}
+								width={100}
+								height={96}
 								className="w-full h-24 object-cover rounded-lg"
 							/>
 							{!disabled && (

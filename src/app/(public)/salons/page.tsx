@@ -251,6 +251,8 @@ export default function SalonsPage() {
 												<Image
 													src={salon.logo}
 													alt={salon.name}
+													width={400}
+													height={320}
 													className="w-full h-full object-cover rounded-xl"
 												/>
 											) : (

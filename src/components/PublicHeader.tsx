@@ -67,6 +67,8 @@ export default function PublicHeader() {
 					<Image
 						src="/logo.png"
 						alt="Henzo Logo"
+						width={88}
+						height={40}
 						className="h-full object-contain"
 					/>
 				</Link>
