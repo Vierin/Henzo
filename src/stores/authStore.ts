@@ -87,16 +87,15 @@ export const useAuthStore = create<AuthState>()(
 				try {
 					set({ isLoading: true });
 
-					const response = await fetch(
-						'http://localhost:3001/auth/login-client',
-						{
-							method: 'POST',
-							headers: {
-								'Content-Type': 'application/json',
-							},
-							body: JSON.stringify({ email, password }),
-						}
-					);
+					const API_BASE_URL =
+						process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+					const response = await fetch(`${API_BASE_URL}/auth/login-client`, {
+						method: 'POST',
+						headers: {
+							'Content-Type': 'application/json',
+						},
+						body: JSON.stringify({ email, password }),
+					});
 
 					const result = await response.json();
 
@@ -129,16 +128,15 @@ export const useAuthStore = create<AuthState>()(
 				try {
 					set({ isLoading: true });
 
-					const response = await fetch(
-						'http://localhost:3001/auth/register-client',
-						{
-							method: 'POST',
-							headers: {
-								'Content-Type': 'application/json',
-							},
-							body: JSON.stringify(data),
-						}
-					);
+					const API_BASE_URL =
+						process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+					const response = await fetch(`${API_BASE_URL}/auth/register-client`, {
+						method: 'POST',
+						headers: {
+							'Content-Type': 'application/json',
+						},
+						body: JSON.stringify(data),
+					});
 
 					const result = await response.json();
 
@@ -190,7 +188,9 @@ export const useAuthStore = create<AuthState>()(
 						return;
 					}
 
-					const response = await fetch('http://localhost:3001/auth/user', {
+					const API_BASE_URL =
+						process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+					const response = await fetch(`${API_BASE_URL}/auth/user`, {
 						headers: {
 							Authorization: `Bearer ${session.access_token}`,
 						},
@@ -224,7 +224,9 @@ export const useAuthStore = create<AuthState>()(
 					}
 
 					// Get user data from API
-					const response = await fetch('http://localhost:3001/auth/user', {
+					const API_BASE_URL =
+						process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+					const response = await fetch(`${API_BASE_URL}/auth/user`, {
 						headers: {
 							Authorization: `Bearer ${session.access_token}`,
 						},

@@ -53,7 +53,9 @@ export default function RegisterPage() {
 
 			// 2. Create user profile in our database
 			if (authData.user) {
-				const response = await fetch('http://localhost:3001/auth/register', {
+				const API_BASE_URL =
+					process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+				const response = await fetch(`${API_BASE_URL}/auth/register`, {
 					method: 'POST',
 					headers: {
 						'Content-Type': 'application/json',

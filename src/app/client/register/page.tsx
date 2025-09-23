@@ -40,8 +40,8 @@ export default function ClientRegisterPage() {
 			const result = await registerClient({
 				email: formData.email,
 				password: formData.password,
-				name: formData.name,
-				phone: formData.phone,
+				name: formData.name || undefined,
+				phone: formData.phone || undefined,
 			});
 
 			if (!result.success) {
