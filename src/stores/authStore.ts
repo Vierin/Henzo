@@ -226,6 +226,7 @@ export const useAuthStore = create<AuthState>()(
 					// Get user data from API
 					const API_BASE_URL =
 						process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+
 					const response = await fetch(`${API_BASE_URL}/auth/user`, {
 						headers: {
 							Authorization: `Bearer ${session.access_token}`,

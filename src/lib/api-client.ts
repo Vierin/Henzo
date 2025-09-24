@@ -1,4 +1,5 @@
 import { plainToClass } from 'class-transformer';
+import { supabase } from './supabase';
 
 export interface ApiResponse<T> {
 	data?: T;
@@ -26,11 +27,21 @@ export class ApiClient {
 	): Promise<T> {
 		const url = `${this.baseUrl}${endpoint}`;
 
+		// Get current session and add authorization header
+		const {
+			data: { session },
+		} = await supabase.auth.getSession();
+		const headers: Record<string, string> = {
+			'Content-Type': 'application/json',
+			...options.headers,
+		};
+
+		if (session?.access_token) {
+			headers['Authorization'] = `Bearer ${session.access_token}`;
+		}
+
 		const config: RequestInit = {
-			headers: {
-				'Content-Type': 'application/json',
-				...options.headers,
-			},
+			headers,
 			...options,
 		};
 

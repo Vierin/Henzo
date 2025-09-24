@@ -69,10 +69,9 @@ export const useCurrentUserSalon = () => {
 	return useQuery({
 		queryKey: [...salonKeys.all, 'current'],
 		queryFn: async (): Promise<SalonWithDetailsResponseDto | null> => {
-			const response = await apiClient.get<{
-				salon: SalonWithDetailsResponseDto | null;
-			}>('/salons/current');
-			return response.salon;
+			return apiClient.get<SalonWithDetailsResponseDto | null>(
+				'/salons/current'
+			);
 		},
 		staleTime: 5 * 60 * 1000, // 5 minutes
 	});
@@ -84,11 +83,7 @@ export const useCreateSalon = () => {
 
 	return useMutation({
 		mutationFn: async (data: CreateSalonDto): Promise<SalonResponseDto> => {
-			const response = await apiClient.post<{ salon: SalonResponseDto }>(
-				'/salons',
-				data
-			);
-			return response.salon;
+			return apiClient.post<SalonResponseDto>('/salons/current', data);
 		},
 		onSuccess: () => {
 			// Invalidate and refetch salons
@@ -106,23 +101,14 @@ export const useUpdateSalon = () => {
 	const queryClient = useQueryClient();
 
 	return useMutation({
-		mutationFn: async ({
-			id,
-			data,
-		}: {
-			id: string;
-			data: UpdateSalonDto;
-		}): Promise<SalonResponseDto> => {
-			const response = await apiClient.put<{ salon: SalonResponseDto }>(
-				`/salons/${id}`,
-				data
-			);
-			return response.salon;
+		mutationFn: async (data: UpdateSalonDto): Promise<SalonResponseDto> => {
+			return apiClient.put<SalonResponseDto>('/salons/current', data);
 		},
-		onSuccess: (data, variables) => {
-			// Update the specific salon in cache
-			queryClient.setQueryData(salonKeys.detail(variables.id), data);
-			// Invalidate lists
+		onSuccess: () => {
+			// Invalidate current user salon and lists
+			queryClient.invalidateQueries({
+				queryKey: [...salonKeys.all, 'current'],
+			});
 			queryClient.invalidateQueries({ queryKey: salonKeys.lists() });
 			toast.success('Salon updated successfully!');
 		},
