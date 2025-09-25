@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useSalonsWithServices } from '@/hooks/useSalons';
 import LoadingSpinner from '@/components/LoadingSpinner';
 import BookingModal from '@/components/BookingModal';
+import SalonImage from '@/components/SalonImage';
 import Image from 'next/image';
 
 interface Service {
@@ -123,19 +124,13 @@ export default function HomePage() {
 									onClick={() => handleSalonClick(salon.id)}
 								>
 									{/* Salon Logo/Image */}
-									<div className="h-48 bg-gradient-to-br from-pink-100 to-pink-200 rounded-t-xl flex items-center justify-center">
-										{salon.logo ? (
-											<Image
-												src={salon.logo}
-												alt={salon.name}
-												width={400}
-												height={192}
-												className="w-full h-full object-cover rounded-t-xl"
-											/>
-										) : (
-											<span className="text-4xl">💇‍♀️</span>
-										)}
-									</div>
+									<SalonImage
+										src={salon.logo}
+										alt={salon.name}
+										width={400}
+										height={192}
+										className="h-48 w-full object-cover rounded-t-xl"
+									/>
 
 									{/* Salon Info */}
 									<div className="p-6">

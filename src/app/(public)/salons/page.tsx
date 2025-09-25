@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import BookingModal from '../../../components/BookingModal';
 import LoadingSpinner from '../../../components/LoadingSpinner';
 import ErrorDisplay from '../../../components/ErrorDisplay';
+import SalonImage from '../../../components/SalonImage';
 import { useSalonsWithServices } from '@/hooks/useSalons';
 import { ServiceResponseDto } from '@/types/dto/service.dto';
 import { Salon, Service } from '@/types';
@@ -246,19 +247,13 @@ export default function SalonsPage() {
 								>
 									<div className="flex gap-6">
 										{/* Salon Image */}
-										<div className="w-48 h-48 bg-gradient-to-br from-pink-100 to-pink-200 rounded-xl flex items-center justify-center flex-shrink-0">
-											{salon.logo ? (
-												<Image
-													src={salon.logo}
-													alt={salon.name}
-													width={400}
-													height={320}
-													className="w-full h-full object-cover rounded-xl"
-												/>
-											) : (
-												<span className="text-6xl">💇‍♀️</span>
-											)}
-										</div>
+										<SalonImage
+											src={salon.logo}
+											alt={salon.name}
+											width={400}
+											height={320}
+											className="w-48 h-48 object-cover rounded-xl flex-shrink-0"
+										/>
 
 										{/* Salon Info */}
 										<div className="flex-1">

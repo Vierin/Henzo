@@ -80,34 +80,41 @@ export default function SalonPhotoSlider({
 		return () => clearInterval(interval);
 	}, [allImages.length, isAutoPlaying]);
 
-
 	// Если нет фотографий, показываем логотип или placeholder
 	if (allImages.length === 0) {
 		return (
 			<div className="w-full h-80 bg-gradient-to-br from-pink-100 to-pink-200 rounded-xl flex items-center justify-center overflow-hidden">
 				{logo ? (
-					<Image
-						src={getPublicUrl(logo)}
-						alt={salonName}
-						width={400}
-						height={320}
-						className="w-full h-full object-cover rounded-xl"
-						onError={(e) => {
-							e.currentTarget.style.display = 'none';
-							const nextSibling = e.currentTarget
-								.nextElementSibling as HTMLElement;
-							if (nextSibling) {
-								nextSibling.style.display = 'flex';
-							}
-						}}
-					/>
-				) : null}
-				<div
-					className="w-full h-full bg-gradient-to-br from-pink-100 to-pink-200 rounded-xl flex items-center justify-center"
-					style={{ display: logo ? 'none' : 'flex' }}
-				>
-					<span className="text-6xl">💇‍♀️</span>
-				</div>
+					<>
+						<Image
+							src={getPublicUrl(logo)}
+							alt={salonName}
+							width={400}
+							height={320}
+							className="w-full h-full object-cover rounded-xl"
+							onError={(e) => {
+								e.currentTarget.style.display = 'none';
+								const placeholder =
+									e.currentTarget.parentElement?.querySelector(
+										'.placeholder'
+									) as HTMLElement;
+								if (placeholder) {
+									placeholder.style.display = 'flex';
+								}
+							}}
+						/>
+						<div
+							className="placeholder w-full h-full bg-gradient-to-br from-pink-100 to-pink-200 rounded-xl flex items-center justify-center"
+							style={{ display: 'none' }}
+						>
+							<span className="text-6xl">💇‍♀️</span>
+						</div>
+					</>
+				) : (
+					<div className="w-full h-full bg-gradient-to-br from-pink-100 to-pink-200 rounded-xl flex items-center justify-center">
+						<span className="text-6xl">💇‍♀️</span>
+					</div>
+				)}
 			</div>
 		);
 	}

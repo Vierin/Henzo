@@ -7,7 +7,6 @@ export default function ClientSettingsPage() {
 		name: 'John Doe',
 		email: 'john.doe@example.com',
 		phone: '+1 (555) 123-4567',
-		address: '123 Main St, New York, NY 10001',
 	});
 
 	const [loading, setLoading] = useState(false);
@@ -95,24 +94,6 @@ export default function ClientSettingsPage() {
 								id="phone"
 								name="phone"
 								value={formData.phone}
-								onChange={handleInputChange}
-								className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#ff5b5b] focus:border-transparent text-gray-900"
-							/>
-						</div>
-
-						{/* Address */}
-						<div>
-							<label
-								htmlFor="address"
-								className="block text-sm font-medium text-gray-700 mb-2"
-							>
-								Address
-							</label>
-							<input
-								type="text"
-								id="address"
-								name="address"
-								value={formData.address}
 								onChange={handleInputChange}
 								className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#ff5b5b] focus:border-transparent text-gray-900"
 							/>
