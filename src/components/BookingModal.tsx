@@ -6,6 +6,7 @@ import { Service, Staff, WorkingHours } from '@/types';
 import { useStaffBySalon } from '@/hooks/useStaff';
 import { useServices } from '@/hooks/useServices';
 import { useAuthStore } from '@/stores/authStore';
+import toast from 'react-hot-toast';
 
 interface BookingModalProps {
 	isOpen: boolean;
@@ -29,7 +30,8 @@ export default function BookingModal({
 	const [selectedStaff, setSelectedStaff] = useState('Any Staff');
 	const [isStaffDropdownOpen, setIsStaffDropdownOpen] = useState(false);
 	const [currentDateIndex, setCurrentDateIndex] = useState(0);
-	const [salonWorkingHours, setSalonWorkingHours] = useState<WorkingHours | null>(null);
+	const [salonWorkingHours, setSalonWorkingHours] =
+		useState<WorkingHours | null>(null);
 	const [loading, setLoading] = useState(false);
 	const [selectedService, setSelectedService] = useState<Service | null>(null);
 	const [isServiceDropdownOpen, setIsServiceDropdownOpen] = useState(false);
@@ -42,6 +44,13 @@ export default function BookingModal({
 
 	// Используем переданный salonId или fallback на '1'
 	const currentSalonId = salonId || '1';
+
+	console.log('🏢 BookingModal initialized with:', {
+		salonId,
+		currentSalonId,
+		salonName,
+		showServiceSelector,
+	});
 
 	// Используем новые хуки для получения данных
 	const {
@@ -95,7 +104,7 @@ export default function BookingModal({
 			// После успешного логина продолжаем с созданием резервации
 			await createBooking();
 		} catch (error: unknown) {
-			alert(error instanceof Error ? error.message : 'Login failed');
+			toast.error(error instanceof Error ? error.message : 'Login failed');
 		} finally {
 			setIsLoggingIn(false);
 		}
@@ -145,47 +154,17 @@ export default function BookingModal({
 			const openTime = salonWorkingHours[todayName].open;
 			const closeTime = salonWorkingHours[todayName].close;
 
-			// Parse time strings (assuming format like "9:00 AM" or "09:00")
+			// Parse time strings (assuming 24-hour format like "09:00")
 			if (openTime && closeTime) {
-				const openHour = parseInt(openTime.split(':')[0]);
-				const closeHour = parseInt(closeTime.split(':')[0]);
-
-				// Convert to 24-hour format if needed
-				if (openTime.includes('AM') && openHour === 12) {
-					startHour = 0;
-				} else if (openTime.includes('PM') && openHour !== 12) {
-					startHour = openHour + 12;
-				} else {
-					startHour = openHour;
-				}
-
-				if (closeTime.includes('AM') && closeHour === 12) {
-					endHour = 0;
-				} else if (closeTime.includes('PM') && closeHour !== 12) {
-					endHour = closeHour + 12;
-				} else {
-					endHour = closeHour;
-				}
+				startHour = parseInt(openTime.split(':')[0]);
+				endHour = parseInt(closeTime.split(':')[0]);
 			}
 		}
 
-		// Generate time slots
+		// Generate time slots in 24-hour format
 		for (let hour = startHour; hour < endHour; hour++) {
-			if (hour < 12) {
-				slots.push(
-					`${hour === 0 ? 12 : hour}:00 ${hour === 0 ? 'AM' : hour < 12 ? 'AM' : 'PM'}`
-				);
-				slots.push(
-					`${hour === 0 ? 12 : hour}:30 ${hour === 0 ? 'AM' : hour < 12 ? 'AM' : 'PM'}`
-				);
-			} else if (hour === 12) {
-				slots.push('12:00 PM');
-				slots.push('12:30 PM');
-			} else {
-				const displayHour = hour - 12;
-				slots.push(`${displayHour}:00 PM`);
-				slots.push(`${displayHour}:30 PM`);
-			}
+			slots.push(`${hour.toString().padStart(2, '0')}:00`);
+			slots.push(`${hour.toString().padStart(2, '0')}:30`);
 		}
 		return slots;
 	};
@@ -217,6 +196,35 @@ export default function BookingModal({
 	const dates = generateDates();
 	const timeSlots = generateTimeSlots();
 
+	// Test date creation function after dates are available
+	const testDateCreation = () => {
+		console.log('🧪 Testing date creation...');
+		console.log(
+			'📅 Available dates:',
+			dates.map((d) => d.display)
+		);
+		try {
+			// Test with first available date
+			const firstDate = dates[0];
+			if (firstDate) {
+				const testDate = createBookingDateTime(firstDate.display, '09:00');
+				console.log(
+					'✅ Test date created successfully:',
+					testDate.toISOString()
+				);
+			}
+		} catch (error) {
+			console.error('❌ Test date creation failed:', error);
+		}
+	};
+
+	// Run test when component mounts and dates are available
+	React.useEffect(() => {
+		if (dates.length > 0) {
+			testDateCreation();
+		}
+	}, [dates]);
+
 	// Add "Any Staff" option to the beginning of staff list
 	const allStaffMembers = [
 		{ id: 'any', name: 'Any Staff', accessLevel: 'EMPLOYEE' as const },
@@ -243,9 +251,49 @@ export default function BookingModal({
 		setSelectedDate(todayString);
 	}, []);
 
+	// Helper function to create a proper DateTime from date and time selections
+	const createBookingDateTime = (dateStr: string, timeStr: string): Date => {
+		console.log('🕐 Creating booking date time:', { dateStr, timeStr });
+		console.log(
+			'📅 Available dates:',
+			dates.map((d) => d.display)
+		);
+
+		// Find the selected date from the dates array
+		const selectedDateObj = dates.find((date) => date.display === dateStr);
+
+		if (!selectedDateObj) {
+			console.error('❌ Selected date not found in dates array:', dateStr);
+			throw new Error(`Selected date not found: ${dateStr}`);
+		}
+
+		console.log('✅ Found selected date object:', selectedDateObj);
+
+		// Create a new date object from the selected date
+		const targetDate = new Date(selectedDateObj.date);
+
+		if (isNaN(targetDate.getTime())) {
+			console.error('❌ Invalid date object:', selectedDateObj.date);
+			throw new Error('Invalid date object');
+		}
+
+		// Set the time
+		const [hours, minutes] = timeStr.split(':').map(Number);
+
+		if (isNaN(hours) || isNaN(minutes)) {
+			console.error('❌ Invalid time format:', timeStr);
+			throw new Error(`Invalid time format: ${timeStr}`);
+		}
+
+		targetDate.setHours(hours, minutes, 0, 0);
+
+		console.log('✅ Final booking date time:', targetDate.toISOString());
+		return targetDate;
+	};
+
 	const handleBooking = async () => {
 		if (!selectedService || !selectedDate || !selectedTime) {
-			alert('Please fill in all fields');
+			toast.error('Please fill in all fields');
 			return;
 		}
 
@@ -275,24 +323,46 @@ export default function BookingModal({
 			);
 			const staffId = staffMember?.id || 'any';
 
+			// Get current session for access token
+			const {
+				data: { session },
+			} = await supabase.auth.getSession();
+
+			if (!session?.access_token) {
+				throw new Error('No valid session found');
+			}
+
 			// Create booking with user data
-			const response = await fetch('/api/appointments', {
+			const API_BASE_URL =
+				process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+
+			let bookingDateTime: string;
+			try {
+				const dateTime = createBookingDateTime(selectedDate, selectedTime);
+				bookingDateTime = dateTime.toISOString();
+				console.log(
+					'✅ Booking date time created successfully:',
+					bookingDateTime
+				);
+			} catch (dateError) {
+				console.error('❌ Error creating booking date time:', dateError);
+				throw new Error(
+					`Invalid date/time selection: ${dateError instanceof Error ? dateError.message : 'Unknown error'}`
+				);
+			}
+
+			const response = await fetch(`${API_BASE_URL}/bookings`, {
 				method: 'POST',
 				headers: {
 					'Content-Type': 'application/json',
+					Authorization: `Bearer ${session.access_token}`,
 				},
 				body: JSON.stringify({
 					serviceId: selectedService?.id,
-					staffId: staffId,
-					date: selectedDate,
-					time: selectedTime,
+					staffId: staffId === 'any' ? undefined : staffId,
+					time: bookingDateTime,
 					salonId: currentSalonId,
 					notes: `Booking for ${selectedService?.name}`,
-					// User data from authenticated session
-					userId: user.id,
-					clientName: user.name || 'Client',
-					clientEmail: user.email,
-					clientPhone: user.phone || '',
 				}),
 			});
 
@@ -303,14 +373,16 @@ export default function BookingModal({
 			}
 
 			// Show success message
-			alert('Appointment booked successfully!');
+			toast.success('Appointment booked successfully!');
 			onClose();
 
 			// Refresh the page to show updated bookings
 			window.location.reload();
 		} catch (error: unknown) {
 			console.error('Booking error:', error);
-			alert(error instanceof Error ? error.message : 'Failed to book appointment');
+			toast.error(
+				error instanceof Error ? error.message : 'Failed to book appointment'
+			);
 		} finally {
 			setLoading(false);
 		}
