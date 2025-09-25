@@ -120,6 +120,7 @@ export default function ClientDashboard() {
 									day: 'numeric',
 									hour: '2-digit',
 									minute: '2-digit',
+									hour12: false,
 								}),
 								image: booking.salon.logo || '',
 								time: booking.time,

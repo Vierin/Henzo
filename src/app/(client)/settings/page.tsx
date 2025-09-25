@@ -8,7 +8,8 @@ import { apiClient } from '@/lib/api-client';
 import toast from 'react-hot-toast';
 
 export default function ClientSettingsPage() {
-	const { user, isClient, isLoading, isInitialized, refreshUser } = useAuthStore();
+	const { user, isClient, isLoading, isInitialized, refreshUser } =
+		useAuthStore();
 	const router = useRouter();
 
 	const [formData, setFormData] = useState({
