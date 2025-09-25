@@ -1,4 +1,4 @@
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '@/lib/api-client';
 
 // Types for client data
@@ -60,9 +60,8 @@ export function useUserBookings() {
 		queryFn: async (): Promise<ClientBooking[]> => {
 			try {
 				const response = await apiClient.get('/bookings/user');
-				return (response as any).data || [];
+				return (response as any) || [];
 			} catch (error) {
-				console.error('Error fetching user bookings:', error);
 				return [];
 			}
 		},
@@ -77,9 +76,8 @@ export function useUserReviews() {
 		queryFn: async (): Promise<ClientReview[]> => {
 			try {
 				const response = await apiClient.get('/reviews/user');
-				return (response as any).data || [];
+				return (response as any) || [];
 			} catch (error) {
-				console.error('Error fetching user reviews:', error);
 				return [];
 			}
 		},
@@ -94,9 +92,8 @@ export function useUpcomingBookings() {
 		queryFn: async (): Promise<ClientBooking[]> => {
 			try {
 				const response = await apiClient.get('/bookings/user/upcoming');
-				return (response as any).data || [];
+				return (response as any) || [];
 			} catch (error) {
-				console.error('Error fetching upcoming bookings:', error);
 				return [];
 			}
 		},
@@ -111,12 +108,29 @@ export function useCompletedBookings() {
 		queryFn: async (): Promise<ClientBooking[]> => {
 			try {
 				const response = await apiClient.get('/bookings/user/completed');
-				return (response as any).data || [];
+				return (response as any) || [];
 			} catch (error) {
-				console.error('Error fetching completed bookings:', error);
 				return [];
 			}
 		},
 		staleTime: 5 * 60 * 1000, // 5 minutes
+	});
+}
+
+// Hook to cancel a booking
+export function useCancelBooking() {
+	const queryClient = useQueryClient();
+
+	return useMutation({
+		mutationFn: async (bookingId: string) => {
+			const response = await apiClient.put(`/bookings/${bookingId}/cancel`);
+			return response;
+		},
+		onSuccess: () => {
+			// Invalidate and refetch bookings
+			queryClient.invalidateQueries({ queryKey: ['user-bookings'] });
+			queryClient.invalidateQueries({ queryKey: ['upcoming-bookings'] });
+			queryClient.invalidateQueries({ queryKey: ['completed-bookings'] });
+		},
 	});
 }

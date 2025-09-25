@@ -140,7 +140,7 @@ export default function PublicHeader() {
 							<button
 								onClick={() => {
 									if (isClient) {
-										router.push('/client');
+										router.push('/dashboard');
 									} else if (isOwner || isAdmin) {
 										router.push('/owner-dashboard');
 									}

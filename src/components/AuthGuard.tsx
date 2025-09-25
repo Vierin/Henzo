@@ -4,6 +4,7 @@ import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuthStore } from '@/stores/authStore';
 import LoadingSpinner from './LoadingSpinner';
+import { useAuthInit } from '@/hooks/useAuthInit';
 
 interface AuthGuardProps {
 	children: React.ReactNode;
@@ -16,12 +17,22 @@ export default function AuthGuard({
 	requiredRole,
 	redirectTo = '/',
 }: AuthGuardProps) {
-	const { user, isAuthenticated, isLoading, isClient, isOwner, isAdmin } =
-		useAuthStore();
+	const {
+		user,
+		isAuthenticated,
+		isLoading,
+		isInitialized,
+		isClient,
+		isOwner,
+		isAdmin,
+	} = useAuthStore();
 	const router = useRouter();
 
+	// Initialize auth only once
+	useAuthInit();
+
 	useEffect(() => {
-		if (isLoading) return; // Ждем загрузки
+		if (!isInitialized || isLoading) return; // Ждем инициализации и загрузки
 
 		if (!isAuthenticated) {
 			// Пользователь не авторизован
@@ -45,6 +56,7 @@ export default function AuthGuard({
 	}, [
 		isAuthenticated,
 		isLoading,
+		isInitialized,
 		isClient,
 		isOwner,
 		isAdmin,
@@ -54,7 +66,7 @@ export default function AuthGuard({
 	]);
 
 	// Показываем загрузку пока проверяем авторизацию
-	if (isLoading) {
+	if (!isInitialized || isLoading) {
 		return (
 			<div className="min-h-screen flex items-center justify-center bg-[#fff7f6]">
 				<LoadingSpinner size="lg" />

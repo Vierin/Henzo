@@ -15,6 +15,7 @@ interface AuthState {
 	user: User | null;
 	isLoading: boolean;
 	isAuthenticated: boolean;
+	isInitialized: boolean;
 
 	// Role-based flags
 	isClient: boolean;
@@ -47,8 +48,9 @@ export const useAuthStore = create<AuthState>()(
 		(set, get) => ({
 			// Initial state
 			user: null,
-			isLoading: true,
+			isLoading: false,
 			isAuthenticated: false,
+			isInitialized: false,
 			isClient: false,
 			isOwner: false,
 			isAdmin: false,
@@ -66,6 +68,7 @@ export const useAuthStore = create<AuthState>()(
 					isOwner,
 					isAdmin,
 					isLoading: false,
+					isInitialized: true,
 				});
 			},
 
@@ -79,6 +82,7 @@ export const useAuthStore = create<AuthState>()(
 					isOwner: false,
 					isAdmin: false,
 					isLoading: false,
+					isInitialized: true,
 				});
 			},
 
@@ -209,8 +213,13 @@ export const useAuthStore = create<AuthState>()(
 				}
 			},
 
-			// Check authentication on app start
+			// Check authentication on app start (only if not initialized)
 			checkAuth: async () => {
+				const state = get();
+				if (state.isInitialized) {
+					return; // Already initialized, no need to check again
+				}
+
 				try {
 					set({ isLoading: true });
 
@@ -256,6 +265,7 @@ export const useAuthStore = create<AuthState>()(
 				isClient: state.isClient,
 				isOwner: state.isOwner,
 				isAdmin: state.isAdmin,
+				isInitialized: state.isInitialized,
 			}),
 		}
 	)

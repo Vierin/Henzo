@@ -1,28 +1,58 @@
 'use client';
 
-import { useUpcomingBookings } from '@/hooks/useClient';
+import { useUpcomingBookings, useCancelBooking } from '@/hooks/useClient';
 import VisitHistoryCard from '@/components/VisitHistoryCard';
+import ReBookModal from '@/components/ReBookModal';
 import { useAuthStore } from '@/stores/authStore';
 import { useRouter } from 'next/navigation';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
+import toast from 'react-hot-toast';
 
 export default function ClientDashboard() {
 	const router = useRouter();
-	const { user, isClient, checkAuth } = useAuthStore();
+	const { user, isClient, isInitialized } = useAuthStore();
 	const { data: upcomingBookings, isLoading, error } = useUpcomingBookings();
+	const cancelBookingMutation = useCancelBooking();
 
+	const [isReBookModalOpen, setIsReBookModalOpen] = useState(false);
+	const [selectedBooking, setSelectedBooking] = useState<any>(null);
+
+	// Redirect if not authenticated (only after initialization)
 	useEffect(() => {
-		checkAuth().then(() => {
-			if (!isClient) {
-				router.push('/client/login');
-			}
-		});
-	}, [isClient, router, checkAuth]);
+		if (isInitialized && !isClient) {
+			router.push('/client/login');
+		}
+	}, [isInitialized, isClient, router]);
 
 	const handleBookAgain = (booking: any) => {
-		// Navigate to booking page or open booking modal
-		console.log('Book again:', booking);
+		setSelectedBooking(booking);
+		setIsReBookModalOpen(true);
 	};
+
+	const handleCancel = async (booking: any) => {
+		if (confirm('Are you sure you want to cancel this appointment?')) {
+			try {
+				await cancelBookingMutation.mutateAsync(booking.id);
+				toast.success('Appointment canceled successfully');
+			} catch (error) {
+				toast.error('Failed to cancel appointment');
+			}
+		}
+	};
+
+	const handleReBookSuccess = () => {
+		setIsReBookModalOpen(false);
+		setSelectedBooking(null);
+		toast.success('New appointment booked successfully!');
+	};
+
+	if (!isInitialized) {
+		return (
+			<div className="flex items-center justify-center py-12">
+				<div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#ff5b5b]"></div>
+			</div>
+		);
+	}
 
 	if (!isClient) {
 		return null; // Will redirect to login
@@ -92,11 +122,31 @@ export default function ClientDashboard() {
 									minute: '2-digit',
 								}),
 								image: booking.salon.logo || '',
+								time: booking.time,
+								status: booking.status,
+								salonId: booking.salon.id,
+								serviceId: booking.service.id,
 							}}
 							onBookAgain={handleBookAgain}
+							onCancel={handleCancel}
+							isUpcoming={true}
 						/>
 					))}
 				</div>
+			)}
+
+			{/* ReBook Modal */}
+			{selectedBooking && (
+				<ReBookModal
+					isOpen={isReBookModalOpen}
+					onClose={() => {
+						setIsReBookModalOpen(false);
+						setSelectedBooking(null);
+					}}
+					salon={selectedBooking.salon}
+					service={selectedBooking.service}
+					onSuccess={handleReBookSuccess}
+				/>
 			)}
 		</div>
 	);
