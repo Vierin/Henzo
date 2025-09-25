@@ -1,6 +1,6 @@
 'use client';
 
-import Image from 'next/image';
+import SalonImage from '@/components/SalonImage';
 
 interface VisitHistory {
 	id: string;
@@ -27,25 +27,15 @@ export default function VisitHistoryCard({
 		<div className="bg-white rounded-xl p-6 shadow-sm hover:shadow-md transition-shadow">
 			<div className="flex items-center gap-4">
 				{/* Service Image */}
-				<div className="w-20 h-20 bg-gradient-to-br from-pink-100 to-pink-200 rounded-lg flex items-center justify-center flex-shrink-0">
-					<Image
+				<div className="w-20 h-20 rounded-lg flex-shrink-0">
+					<SalonImage
 						src={visit.image}
-						alt={visit.serviceName}
+						alt={visit.salonName}
 						width={80}
 						height={80}
 						className="w-full h-full object-cover rounded-lg"
-						onError={(e) => {
-							e.currentTarget.style.display = 'none';
-							const nextSibling = e.currentTarget
-								.nextElementSibling as HTMLElement;
-							if (nextSibling) {
-								nextSibling.style.display = 'flex';
-							}
-						}}
+						placeholder="💇‍♀️"
 					/>
-					<div className="w-full h-full bg-gradient-to-br from-pink-100 to-pink-200 rounded-lg flex items-center justify-center hidden">
-						<span className="text-2xl">💇‍♀️</span>
-					</div>
 				</div>
 
 				{/* Service Info */}

@@ -1,77 +1,82 @@
 'use client';
 
-import { useState } from 'react';
+import { useUpcomingBookings } from '@/hooks/useClient';
 import VisitHistoryCard from '@/components/VisitHistoryCard';
-
-interface VisitHistory {
-	id: string;
-	salonName: string;
-	serviceName: string;
-	date: string;
-	image: string;
-}
+import SalonImage from '@/components/SalonImage';
 
 export default function ClientDashboard() {
-	// Mock data for visit history - in real app this would come from API
-	const [visitHistory] = useState<VisitHistory[]>([
-		{
-			id: '1',
-			salonName: 'Chic & Sleek Salon',
-			serviceName: 'Haircut & Styling',
-			date: 'March 15, 2024',
-			image: '/api/placeholder/80/80',
-		},
-		{
-			id: '2',
-			salonName: 'Nail Nirvana',
-			serviceName: 'Manicure',
-			date: 'March 10, 2024',
-			image: '/api/placeholder/80/80',
-		},
-		{
-			id: '3',
-			salonName: 'The Glow Up Studio',
-			serviceName: 'Facial Treatment',
-			date: 'February 28, 2024',
-			image: '/api/placeholder/80/80',
-		},
-		{
-			id: '4',
-			salonName: 'Chic & Sleek Salon',
-			serviceName: 'Coloring',
-			date: 'April 05, 2024',
-			image: '/api/placeholder/80/80',
-		},
-	]);
+	const { data: upcomingBookings, isLoading, error } = useUpcomingBookings();
 
-	const handleBookAgain = (visit: VisitHistory) => {
+	const handleBookAgain = (booking: any) => {
 		// Navigate to booking page or open booking modal
-		console.log('Book again:', visit);
+		console.log('Book again:', booking);
 	};
+
+	if (isLoading) {
+		return (
+			<div className="flex items-center justify-center py-12">
+				<div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#ff5b5b]"></div>
+			</div>
+		);
+	}
+
+	if (error) {
+		return (
+			<div className="text-center py-12">
+				<div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+					<span className="text-2xl">⚠️</span>
+				</div>
+				<h3 className="text-xl font-semibold text-gray-900 mb-2">
+					Error loading bookings
+				</h3>
+				<p className="text-gray-600">
+					There was an error loading your upcoming bookings. Please try again
+					later.
+				</p>
+			</div>
+		);
+	}
+
+	const upcomingBookingsList = upcomingBookings || [];
 
 	return (
 		<div>
-			<h1 className="text-3xl font-bold text-gray-900 mb-8">Visit History</h1>
+			<h1 className="text-3xl font-bold text-gray-900 mb-8">
+				Upcoming Appointments
+			</h1>
 
-			{visitHistory.length === 0 ? (
+			{upcomingBookingsList.length === 0 ? (
 				<div className="text-center py-12">
 					<div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
 						<span className="text-2xl">📅</span>
 					</div>
 					<h3 className="text-xl font-semibold text-gray-900 mb-2">
-						No visits yet
+						No upcoming appointments
 					</h3>
 					<p className="text-gray-600">
-						Your appointment history will appear here once you start booking
+						Your upcoming appointments will appear here once you start booking
 						services.
 					</p>
 				</div>
 			) : (
 				<div className="space-y-4">
-					{visitHistory.map((visit) => (
+					{upcomingBookingsList.map((booking) => (
 						<VisitHistoryCard
-							key={visit.id}
-							visit={visit}
+							key={booking.id}
+							visit={{
+								id: booking.id,
+								salonName: booking.salon.name,
+								serviceName: booking.service.name,
+								date: new Date(booking.time).toLocaleDateString('en-US', {
+									weekday: 'long',
+									year: 'numeric',
+									month: 'long',
+									day: 'numeric',
+									hour: '2-digit',
+									minute: '2-digit',
+								}),
+								image: booking.salon.logo || '',
+							}}
 							onBookAgain={handleBookAgain}
 						/>
 					))}
