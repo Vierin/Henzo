@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import toast from 'react-hot-toast';
 import AddressAutocomplete from '@/components/AddressAutocomplete';
-import MapComponent from '@/components/MapComponent';
+import MapComponentWithCoords from '@/components/MapComponentWithCoords';
 import LoadingSpinner from '@/components/LoadingSpinner';
 import FileUpload from '@/components/FileUpload';
 import PhotoUpload from '@/components/PhotoUpload';
@@ -85,6 +85,10 @@ export default function SalonInfoPage() {
 	});
 	const [loading, setLoading] = useState(false);
 	const [error, setError] = useState('');
+	const [selectedCoords, setSelectedCoords] = useState<{
+		lat: number;
+		lon: number;
+	} | null>(null);
 	const router = useRouter();
 
 	// Используем оптимизированный хук для получения данных салона
@@ -183,6 +187,8 @@ export default function SalonInfoPage() {
 				photos: formData.photos,
 				workingHours: formData.operatingHours,
 			};
+
+			console.log('📤 Sending salon data:', JSON.stringify(salonData, null, 2));
 
 			// Выбираем метод запроса в зависимости от того, есть ли уже салон
 			if (hasExistingSalon) {
@@ -325,6 +331,12 @@ export default function SalonInfoPage() {
 							<AddressAutocomplete
 								value={formData.address}
 								onChange={(address) => setFormData({ ...formData, address })}
+								onAddressSelect={(address, lat, lon) => {
+									// Update form data and coordinates
+									setFormData({ ...formData, address });
+									setSelectedCoords({ lat, lon });
+									console.log('📍 Address selected:', { address, lat, lon });
+								}}
 							/>
 						</div>
 					</div>
@@ -336,7 +348,11 @@ export default function SalonInfoPage() {
 						<h2 className="text-2xl font-semibold text-gray-900 mb-6">
 							Location Preview
 						</h2>
-						<MapComponent address={formData.address} />
+						<MapComponentWithCoords
+							lat={selectedCoords?.lat}
+							lon={selectedCoords?.lon}
+							address={formData.address}
+						/>
 					</div>
 				)}
 

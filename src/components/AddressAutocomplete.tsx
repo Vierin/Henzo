@@ -13,6 +13,7 @@ interface AddressSuggestion {
 interface AddressAutocompleteProps {
 	value: string;
 	onChange: (address: string) => void;
+	onAddressSelect?: (address: string, lat: number, lon: number) => void;
 	placeholder?: string;
 	className?: string;
 }
@@ -20,6 +21,7 @@ interface AddressAutocompleteProps {
 export default function AddressAutocomplete({
 	value,
 	onChange,
+	onAddressSelect,
 	placeholder = 'Enter address',
 	className = '',
 }: AddressAutocompleteProps) {
@@ -29,7 +31,7 @@ export default function AddressAutocomplete({
 	const inputRef = useRef<HTMLInputElement>(null);
 	const suggestionsRef = useRef<HTMLDivElement>(null);
 
-	// Fetch address suggestions from Nominatim (OpenStreetMap)
+	// Fetch address suggestions from our backend API
 	const fetchSuggestions = async (query: string) => {
 		if (query.length < 3) {
 			setSuggestions([]);
@@ -38,13 +40,24 @@ export default function AddressAutocomplete({
 
 		setLoading(true);
 		try {
+			const API_BASE_URL =
+				process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 			const response = await fetch(
-				`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(
-					query
-				)}&limit=5&addressdetails=1`
+				`${API_BASE_URL}/geocoding/search?address=${encodeURIComponent(query)}`
 			);
-			const data = await response.json();
-			setSuggestions(data);
+
+			if (!response.ok) {
+				throw new Error(`HTTP error! status: ${response.status}`);
+			}
+
+			const result = await response.json();
+
+			if (result.success && result.data) {
+				// Wrap single result in array for consistency
+				setSuggestions([result.data]);
+			} else {
+				setSuggestions([]);
+			}
 		} catch (error) {
 			console.error('Error fetching address suggestions:', error);
 			setSuggestions([]);
@@ -92,6 +105,15 @@ export default function AddressAutocomplete({
 	const handleSuggestionClick = (suggestion: AddressSuggestion) => {
 		onChange(suggestion.display_name);
 		setShowSuggestions(false);
+
+		// Call the callback with coordinates if provided
+		if (onAddressSelect) {
+			onAddressSelect(
+				suggestion.display_name,
+				parseFloat(suggestion.lat),
+				parseFloat(suggestion.lon)
+			);
+		}
 	};
 
 	const handleInputFocus = () => {

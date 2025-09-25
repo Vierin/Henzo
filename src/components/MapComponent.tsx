@@ -6,7 +6,8 @@ import 'leaflet/dist/leaflet.css';
 import '@/styles/map.css';
 
 // Fix for default markers in Leaflet with Next.js
-delete (L.Icon.Default.prototype as unknown as Record<string, unknown>)._getIconUrl;
+delete (L.Icon.Default.prototype as unknown as Record<string, unknown>)
+	._getIconUrl;
 L.Icon.Default.mergeOptions({
 	iconRetinaUrl:
 		'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon-2x.png',
@@ -118,9 +119,73 @@ export default function MapComponent({
 
 	const geocodeAddress = async (address: string) => {
 		try {
-			showDefaultMarker();
+			console.log('🔍 Geocoding address:', address);
+
+			// Use our backend API for geocoding
+			const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+			const response = await fetch(`${API_BASE_URL}/geocoding/search?address=${encodeURIComponent(address)}`);
+
+			if (!response.ok) {
+				throw new Error(`HTTP error! status: ${response.status}`);
+			}
+
+			const result = await response.json();
+
+			if (result.success && result.data) {
+				const { lat, lon, display_name } = result.data;
+
+				console.log('✅ Geocoding successful:', {
+					lat,
+					lon,
+					display_name,
+				});
+
+				// Update map center and zoom
+				if (mapInstanceRef.current) {
+					mapInstanceRef.current.setView([lat, lon], 15);
+
+					// Remove existing marker
+					if (markerRef.current) {
+						mapInstanceRef.current.removeLayer(markerRef.current);
+					}
+
+					// Create red marker icon
+					const redMarker = L.divIcon({
+						html: `<div style="
+							background-color: #ff5b5b;
+							width: 20px;
+							height: 20px;
+							border-radius: 50%;
+							border: 3px solid white;
+							box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+							position: relative;
+						"></div>`,
+						iconSize: [20, 20],
+						iconAnchor: [10, 10],
+						popupAnchor: [0, -10],
+						className: 'custom-red-marker',
+					});
+
+					// Add marker at geocoded location
+					markerRef.current = L.marker([lat, lon], { icon: redMarker }).addTo(
+						mapInstanceRef.current
+					);
+
+					// Add popup if enabled
+					if (showPopup) {
+						markerRef.current
+							.bindPopup(
+								`<div class="text-sm"><strong>${address}</strong></div>`
+							)
+							.openPopup();
+					}
+				}
+			} else {
+				console.warn('⚠️ No geocoding results found for:', address);
+				showDefaultMarker();
+			}
 		} catch (error) {
-			console.error('Error geocoding address:', error);
+			console.error('❌ Error geocoding address:', error);
 			// Show marker at default location if geocoding fails
 			showDefaultMarker();
 		}
