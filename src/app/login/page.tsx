@@ -232,16 +232,27 @@ export default function LoginPage() {
 						</button>
 					</div>
 
-					<div className="text-center">
+					<div className="text-center space-y-4">
 						<p className="text-sm text-gray-600">
 							Don't have an account?{' '}
 							<a
 								href="/register"
 								className="font-medium text-[#ff5b5b] hover:text-[#ff5b5b]"
 							>
-								Sign up
+								Sign up as client
 							</a>
 						</p>
+						<div className="border-t border-gray-200 pt-4">
+							<p className="text-sm text-gray-600 mb-2">
+								Are you a salon owner?
+							</p>
+							<a
+								href="/business/register"
+								className="text-sm font-medium text-orange-600 hover:text-orange-700"
+							>
+								Register your business account →
+							</a>
+						</div>
 					</div>
 				</form>
 			</div>

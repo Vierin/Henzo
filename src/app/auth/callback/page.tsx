@@ -31,6 +31,8 @@ export default function AuthCallbackPage() {
 						router.push('/reset-password');
 					} else {
 						// Regular auth callback (including Google OAuth)
+						// Check if this is a business registration
+						const isBusinessRegistration = type === 'business';
 						// Get user role from backend
 						try {
 							const API_BASE_URL =
@@ -65,11 +67,13 @@ export default function AuthCallbackPage() {
 										break;
 								}
 							} else {
-								// If user doesn't exist in backend, create as CLIENT
-								// Update user metadata with CLIENT role
+								// If user doesn't exist in backend, create based on registration type
+								const defaultRole = isBusinessRegistration ? 'OWNER' : 'CLIENT';
+
+								// Update user metadata with appropriate role
 								const { error: updateError } = await supabase.auth.updateUser({
 									data: {
-										role: 'CLIENT',
+										role: defaultRole,
 										name:
 											data.session.user.user_metadata?.name ||
 											data.session.user.user_metadata?.full_name,
@@ -94,7 +98,12 @@ export default function AuthCallbackPage() {
 									// Update auth store
 									setUser(userData.user);
 									setSession(data.session);
-									router.push('/dashboard');
+									// Redirect based on role
+									if (defaultRole === 'OWNER') {
+										router.push('/owner-dashboard');
+									} else {
+										router.push('/dashboard');
+									}
 								} else {
 									// If still fails, create a temporary user object and redirect
 									const tempUser = {
@@ -104,11 +113,16 @@ export default function AuthCallbackPage() {
 											data.session.user.user_metadata?.name ||
 											data.session.user.user_metadata?.full_name,
 										phone: data.session.user.user_metadata?.phone,
-										role: 'CLIENT' as const,
+										role: defaultRole as 'ADMIN' | 'OWNER' | 'CLIENT',
 									};
 									setUser(tempUser);
 									setSession(data.session);
-									router.push('/dashboard');
+									// Redirect based on role
+									if (defaultRole === 'OWNER') {
+										router.push('/owner-dashboard');
+									} else {
+										router.push('/dashboard');
+									}
 								}
 							}
 						} catch (roleError) {

@@ -13,7 +13,6 @@ export default function RegisterPage() {
 		confirmPassword: '',
 		name: '',
 		phone: '',
-		role: 'CLIENT' as 'CLIENT' | 'OWNER',
 	});
 	const [loading, setLoading] = useState(false);
 	const router = useRouter();
@@ -38,7 +37,7 @@ export default function RegisterPage() {
 					data: {
 						name: formData.name,
 						phone: formData.phone,
-						role: formData.role,
+						role: 'CLIENT',
 					},
 				},
 			});
@@ -103,34 +102,14 @@ export default function RegisterPage() {
 						<span className="text-3xl">💇‍♀️</span>
 					</div>
 					<h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
-						Create your account
+						Create your client account
 					</h2>
 					<p className="mt-2 text-center text-sm text-gray-600">
-						Join as a client or salon owner
+						Join as a client to book salon services
 					</p>
 				</div>
 				<form className="mt-8 space-y-6" onSubmit={handleSubmit}>
 					<div className="space-y-4">
-						{/* Role Selection */}
-						<div>
-							<label
-								htmlFor="role"
-								className="block text-sm font-medium text-gray-700"
-							>
-								Account Type
-							</label>
-							<select
-								id="role"
-								name="role"
-								value={formData.role}
-								onChange={handleInputChange}
-								className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-[#ff5b5b] focus:border-[#ff5b5b] sm:text-sm"
-							>
-								<option value="CLIENT">Client - Book salon services</option>
-								<option value="OWNER">Salon Owner - Manage your salon</option>
-							</select>
-						</div>
-
 						{/* Name */}
 						<div>
 							<label
@@ -290,7 +269,7 @@ export default function RegisterPage() {
 						</button>
 					</div>
 
-					<div className="text-center">
+					<div className="text-center space-y-4">
 						<p className="text-sm text-gray-600">
 							Already have an account?{' '}
 							<a
@@ -300,6 +279,17 @@ export default function RegisterPage() {
 								Sign in
 							</a>
 						</p>
+						<div className="border-t border-gray-200 pt-4">
+							<p className="text-sm text-gray-600 mb-2">
+								Are you a salon owner?
+							</p>
+							<a
+								href="/business/register"
+								className="text-sm font-medium text-orange-600 hover:text-orange-700"
+							>
+								Register your business account →
+							</a>
+						</div>
 					</div>
 				</form>
 			</div>
