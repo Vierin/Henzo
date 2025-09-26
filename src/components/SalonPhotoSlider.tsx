@@ -18,18 +18,32 @@ export default function SalonPhotoSlider({
 	const [currentIndex, setCurrentIndex] = useState(0);
 	const [isAutoPlaying, setIsAutoPlaying] = useState(true);
 
-	const getPublicUrl = (filePath: string) => {
+	const getImageSrc = (imageSrc: string) => {
+		// If it's a URL, return it directly
+		if (imageSrc.startsWith('http')) {
+			return imageSrc;
+		}
+		// If it's a file path, get the public URL from Supabase
 		const { data } = supabase.storage
 			.from('salon-files')
-			.getPublicUrl(filePath);
+			.getPublicUrl(imageSrc);
 		return data.publicUrl;
 	};
 
+	const isExternalUrl = (imageSrc: string) => {
+		return imageSrc.startsWith('http');
+	};
+
 	// Показываем только фотографии салона (без логотипа)
-	const allImages: Array<{ url: string; type: string }> = [];
+	const allImages: Array<{ url: string; type: string; isExternal: boolean }> =
+		[];
 	if (photos && photos.length > 0) {
 		photos.forEach((photo) => {
-			allImages.push({ url: getPublicUrl(photo), type: 'photo' });
+			allImages.push({
+				url: getImageSrc(photo),
+				type: 'photo',
+				isExternal: isExternalUrl(photo),
+			});
 		});
 	}
 
@@ -87,11 +101,12 @@ export default function SalonPhotoSlider({
 				{logo ? (
 					<>
 						<Image
-							src={getPublicUrl(logo)}
+							src={getImageSrc(logo)}
 							alt={salonName}
 							width={400}
 							height={320}
 							className="w-full h-full object-cover rounded-xl"
+							unoptimized={isExternalUrl(logo)}
 							onError={(e) => {
 								e.currentTarget.style.display = 'none';
 								const placeholder =
@@ -129,6 +144,7 @@ export default function SalonPhotoSlider({
 					width={400}
 					height={320}
 					className="w-full h-full object-cover rounded-xl"
+					unoptimized={allImages[0].isExternal}
 					onError={(e) => {
 						e.currentTarget.style.display = 'none';
 						const nextSibling = e.currentTarget
@@ -160,6 +176,7 @@ export default function SalonPhotoSlider({
 					width={400}
 					height={320}
 					className="w-full h-full object-cover rounded-xl transition-opacity duration-300"
+					unoptimized={allImages[currentIndex].isExternal}
 					onError={(e) => {
 						e.currentTarget.style.display = 'none';
 						const nextSibling = e.currentTarget

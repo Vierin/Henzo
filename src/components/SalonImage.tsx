@@ -34,21 +34,31 @@ export default function SalonImage({
 		);
 	}
 
-	const getPublicUrl = (filePath: string) => {
+	const getImageSrc = (imageSrc: string) => {
+		// If it's a URL, return it directly
+		if (imageSrc.startsWith('http')) {
+			return imageSrc;
+		}
+		// If it's a file path, get the public URL from Supabase
 		const { data } = supabase.storage
 			.from('salon-files')
-			.getPublicUrl(filePath);
+			.getPublicUrl(imageSrc);
 		return data.publicUrl;
+	};
+
+	const isExternalUrl = (imageSrc: string) => {
+		return imageSrc.startsWith('http');
 	};
 
 	return (
 		<Image
-			src={getPublicUrl(src)}
+			src={getImageSrc(src)}
 			alt={alt}
 			width={width}
 			height={height}
 			className={className}
 			onError={() => setImageError(true)}
+			unoptimized={isExternalUrl(src)} // Don't optimize external URLs
 		/>
 	);
 }

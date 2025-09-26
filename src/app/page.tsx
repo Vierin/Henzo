@@ -221,6 +221,10 @@ export default function HomePage() {
 		router.push(`/salons?${params.toString()}`);
 	};
 
+	const handleCategoryClick = (categorySlug: string) => {
+		router.push(`/category/${categorySlug}`);
+	};
+
 	const handleClearSearch = () => {
 		setSearchQuery('');
 	};
@@ -234,24 +238,41 @@ export default function HomePage() {
 		setSelectedDateTime('');
 	};
 
-	const getPublicUrl = (filePath: string) => {
+	const getImageSrc = (imageSrc: string) => {
+		// If it's a URL, return it directly
+		if (imageSrc.startsWith('http')) {
+			return imageSrc;
+		}
+		// If it's a file path, get the public URL from Supabase
 		const { data } = supabase.storage
 			.from('salon-files')
-			.getPublicUrl(filePath);
+			.getPublicUrl(imageSrc);
 		return data.publicUrl;
 	};
 
-	const getSalonImage = (salon: Salon): string | undefined => {
+	const isExternalUrl = (imageSrc: string) => {
+		return imageSrc.startsWith('http');
+	};
+
+	const getSalonImage = (
+		salon: Salon
+	): { url: string | undefined; isExternal: boolean } => {
 		// If salon has photos, use the first photo
 		if (salon.photos && salon.photos.length > 0) {
-			return getPublicUrl(salon.photos[0]);
+			return {
+				url: getImageSrc(salon.photos[0]),
+				isExternal: isExternalUrl(salon.photos[0]),
+			};
 		}
 		// If no photos but has logo, use logo
 		if (salon.logo) {
-			return getPublicUrl(salon.logo);
+			return {
+				url: getImageSrc(salon.logo),
+				isExternal: isExternalUrl(salon.logo),
+			};
 		}
 		// No images available
-		return undefined;
+		return { url: undefined, isExternal: false };
 	};
 
 	return (
@@ -726,14 +747,15 @@ export default function HomePage() {
 									>
 										<div className="h-48 bg-gradient-to-br from-pink-100 to-pink-200 flex items-center justify-center">
 											{(() => {
-												const imageUrl = getSalonImage(salon);
-												return imageUrl ? (
+												const imageData = getSalonImage(salon);
+												return imageData.url ? (
 													<Image
-														src={imageUrl}
+														src={imageData.url}
 														alt={salon.name}
 														width={400}
 														height={192}
 														className="w-full h-full object-cover"
+														unoptimized={imageData.isExternal}
 													/>
 												) : (
 													<span className="text-6xl">💇‍♀️</span>

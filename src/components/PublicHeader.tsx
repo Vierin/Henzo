@@ -187,7 +187,7 @@ export default function PublicHeader() {
 							{STATIC_CATEGORIES.map((category) => (
 								<Link
 									key={category.id}
-									href={`/salons?category=${encodeURIComponent(category.name)}`}
+									href={`/category/${category.slug}`}
 									className="text-sm font-medium text-gray-700 hover:text-[#ff5b5b] transition-colors"
 								>
 									{category.name}

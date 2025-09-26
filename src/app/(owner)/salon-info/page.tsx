@@ -6,8 +6,8 @@ import toast from 'react-hot-toast';
 import AddressAutocomplete from '@/components/AddressAutocomplete';
 import MapComponentWithCoords from '@/components/MapComponentWithCoords';
 import LoadingSpinner from '@/components/LoadingSpinner';
-import FileUpload from '@/components/FileUpload';
-import PhotoUpload from '@/components/PhotoUpload';
+import EnhancedFileUpload from '@/components/EnhancedFileUpload';
+import EnhancedPhotoUpload from '@/components/EnhancedPhotoUpload';
 import { useSalon } from '@/hooks/useSalon';
 import { apiClient } from '@/lib/api-client';
 
@@ -495,7 +495,7 @@ export default function SalonInfoPage() {
 						<label className="block text-sm font-medium text-gray-700 mb-2">
 							Salon Logo
 						</label>
-						<FileUpload
+						<EnhancedFileUpload
 							onUpload={(filePath) =>
 								setFormData({ ...formData, logo: filePath })
 							}
@@ -519,7 +519,7 @@ export default function SalonInfoPage() {
 						<label className="block text-sm font-medium text-gray-700 mb-2">
 							Upload up to 3 photos of your salon
 						</label>
-						<PhotoUpload
+						<EnhancedPhotoUpload
 							photos={formData.photos}
 							onPhotosChange={(photos) => setFormData({ ...formData, photos })}
 							maxPhotos={3}
