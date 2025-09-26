@@ -153,8 +153,8 @@ export default function AdminLayout({
 						<div className="absolute bottom-0 w-64 px-4 py-4">
 							<button
 								onClick={async () => {
-									const { signOut } = useAuthStore.getState();
-									await signOut();
+									const { logout } = useAuthStore.getState();
+									await logout();
 								}}
 								className="flex items-center w-full px-4 py-2 text-sm font-medium text-gray-600 hover:bg-gray-50 rounded-lg transition-colors"
 							>

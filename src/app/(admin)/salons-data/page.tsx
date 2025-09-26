@@ -89,11 +89,11 @@ export default function AdminSalons() {
 								<div className="flex items-center justify-between">
 									<div className="flex items-center">
 										<div className="flex-shrink-0">
-											<SalonLogo
-												logo={salon.logo}
-												name={salon.name}
-												className="h-12 w-12"
-											/>
+											<div
+												className={`w-16 h-16 rounded-lg bg-gray-200 flex items-center justify-center`}
+											>
+												<span className="text-gray-400 text-lg">🏢</span>
+											</div>
 										</div>
 										<div className="ml-4">
 											<div className="flex items-center">

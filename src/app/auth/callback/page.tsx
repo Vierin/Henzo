@@ -28,8 +28,44 @@ export default function AuthCallbackPage() {
 						// This is a password reset, redirect to reset password page
 						router.push('/reset-password');
 					} else {
-						// Regular auth callback, redirect to appropriate dashboard
-						router.push('/');
+						// Regular auth callback (including Google OAuth)
+						// Get user role from backend
+						try {
+							const API_BASE_URL =
+								process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+							const response = await fetch(`${API_BASE_URL}/auth/user`, {
+								headers: {
+									Authorization: `Bearer ${data.session.access_token}`,
+									'Content-Type': 'application/json',
+								},
+							});
+
+							if (response.ok) {
+								const userData = await response.json();
+
+								// Redirect based on role
+								switch (userData.user.role) {
+									case 'ADMIN':
+										router.push('/admin-panel');
+										break;
+									case 'OWNER':
+										router.push('/owner-dashboard');
+										break;
+									case 'CLIENT':
+										router.push('/dashboard');
+										break;
+									default:
+										router.push('/dashboard');
+										break;
+								}
+							} else {
+								// If user doesn't exist in backend, redirect to role selection
+								router.push('/select-role');
+							}
+						} catch (roleError) {
+							console.error('Error getting user role:', roleError);
+							router.push('/select-role');
+						}
 					}
 				} else {
 					// No session, redirect to login

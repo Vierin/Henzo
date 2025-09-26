@@ -187,10 +187,18 @@ export const useAuthStore = create<AuthState>()(
 				try {
 					await supabase.auth.signOut();
 					get().clearUser();
+					// Redirect to home page after logout
+					if (typeof window !== 'undefined') {
+						window.location.href = '/';
+					}
 				} catch (error) {
 					console.error('Logout error:', error);
 					// Clear user even if logout fails
 					get().clearUser();
+					// Still redirect even if logout fails
+					if (typeof window !== 'undefined') {
+						window.location.href = '/';
+					}
 				}
 			},
 

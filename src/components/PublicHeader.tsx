@@ -26,23 +26,6 @@ export default function PublicHeader() {
 		setIsLanguageDropdownOpen(false);
 	};
 
-	const handleBusinessClick = (e: React.MouseEvent) => {
-		e.preventDefault();
-
-		// Проверяем, авторизован ли пользователь как владелец
-		if (user && (isOwner || isAdmin)) {
-			// Пользователь уже авторизован как владелец, переходим в панель
-			if (isAdmin) {
-				router.push('/admin-panel');
-			} else {
-				router.push('/owner/dashboard');
-			}
-		} else {
-			// Пользователь не авторизован или не владелец, переходим на единую страницу логина
-			router.push('/login');
-		}
-	};
-
 	// Check user auth on component mount
 
 	// Close dropdown when clicking outside
@@ -189,12 +172,12 @@ export default function PublicHeader() {
 						</div>
 					) : (
 						<>
-							<button
-								onClick={handleBusinessClick}
+							<Link
+								href={'/register'}
 								className="text-sm text-gray-700 hover:text-[#8B4513] font-medium transition-colors"
 							>
-								For Business
-							</button>
+								Create Business Account
+							</Link>
 							<Link
 								href="/login"
 								className="bg-[#ff5b5b] text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-[#e04a4a] transition-colors"
