@@ -130,7 +130,7 @@ export default function PublicHeader() {
 									} else if (isAdmin) {
 										router.push('/admin-panel');
 									} else if (isOwner) {
-										router.push('/owner/dashboard');
+										router.push('/owner-dashboard');
 									}
 								}}
 								className="flex items-center gap-2 text-sm text-gray-700 font-medium hover:text-[#8B4513] transition-colors"

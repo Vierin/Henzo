@@ -17,7 +17,7 @@ export interface PaginatedResponse<T> {
 export class ApiClient {
 	private baseUrl: string;
 
-	constructor(baseUrl: string = '') {
+	constructor(baseUrl: string = 'http://localhost:3001') {
 		this.baseUrl = baseUrl;
 	}
 

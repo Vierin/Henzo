@@ -241,6 +241,170 @@ export default function BusinessLandingPage() {
 				</div>
 			</section>
 
+			{/* Pricing Plans section */}
+			<section className="py-20 bg-white">
+				<div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+					<div className="text-center mb-16">
+						<h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-6">
+							Choose the right plan for your business
+						</h2>
+						<p className="text-xl text-gray-600 max-w-3xl mx-auto">
+							Henzo offers flexible pricing to fit the needs of salons and
+							professionals at any stage.
+						</p>
+					</div>
+
+					<div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto">
+						{/* Basic Plan */}
+						<div className="bg-white rounded-2xl p-8 shadow-lg border-2 border-orange-500 relative">
+							{/* Best Value Badge */}
+							<div className="absolute -top-3 right-6">
+								<div className="bg-orange-500 text-white px-4 py-1 rounded-full text-sm font-semibold">
+									BEST VALUE
+								</div>
+							</div>
+
+							<div className="text-center">
+								<h3 className="text-2xl font-bold text-gray-900 mb-4">Basic</h3>
+								<div className="mb-6">
+									<span className="text-4xl font-bold text-gray-900">$10</span>
+									<span className="text-gray-600">/month</span>
+								</div>
+								<p className="text-gray-600 mb-8">
+									Perfect for individual stylists and small salons getting
+									started.
+								</p>
+
+								{/* Features */}
+								<div className="space-y-4 mb-8 text-left">
+									<div className="flex items-center">
+										<svg
+											className="w-5 h-5 text-red-500 mr-3 flex-shrink-0"
+											fill="currentColor"
+											viewBox="0 0 20 20"
+										>
+											<path
+												fillRule="evenodd"
+												d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+												clipRule="evenodd"
+											/>
+										</svg>
+										<span className="text-gray-700">Unlimited bookings</span>
+									</div>
+									<div className="flex items-center">
+										<svg
+											className="w-5 h-5 text-red-500 mr-3 flex-shrink-0"
+											fill="currentColor"
+											viewBox="0 0 20 20"
+										>
+											<path
+												fillRule="evenodd"
+												d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+												clipRule="evenodd"
+											/>
+										</svg>
+										<span className="text-gray-700">Customer support</span>
+									</div>
+									<div className="flex items-center">
+										<svg
+											className="w-5 h-5 text-red-500 mr-3 flex-shrink-0"
+											fill="currentColor"
+											viewBox="0 0 20 20"
+										>
+											<path
+												fillRule="evenodd"
+												d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+												clipRule="evenodd"
+											/>
+										</svg>
+										<span className="text-gray-700">Analytics dashboard</span>
+									</div>
+								</div>
+
+								<Link
+									href="/business/register"
+									className="w-full bg-orange-400 text-white px-6 py-3 rounded-lg font-semibold hover:bg-orange-500 transition-colors block text-center"
+								>
+									Choose plan
+								</Link>
+							</div>
+						</div>
+
+						{/* Enterprise Plan */}
+						<div className="bg-white rounded-2xl p-8 shadow-lg border border-gray-200">
+							<div className="text-center">
+								<h3 className="text-2xl font-bold text-gray-900 mb-4">
+									Enterprise
+								</h3>
+								<div className="mb-6">
+									<span className="text-4xl font-bold text-gray-900">
+										Contact Us
+									</span>
+								</div>
+								<p className="text-gray-600 mb-8">
+									For large businesses with custom needs and high volume.
+								</p>
+
+								{/* Features */}
+								<div className="space-y-4 mb-8 text-left">
+									<div className="flex items-center">
+										<svg
+											className="w-5 h-5 text-red-500 mr-3 flex-shrink-0"
+											fill="currentColor"
+											viewBox="0 0 20 20"
+										>
+											<path
+												fillRule="evenodd"
+												d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+												clipRule="evenodd"
+											/>
+										</svg>
+										<span className="text-gray-700">Customizable features</span>
+									</div>
+									<div className="flex items-center">
+										<svg
+											className="w-5 h-5 text-red-500 mr-3 flex-shrink-0"
+											fill="currentColor"
+											viewBox="0 0 20 20"
+										>
+											<path
+												fillRule="evenodd"
+												d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+												clipRule="evenodd"
+											/>
+										</svg>
+										<span className="text-gray-700">
+											Dedicated account manager
+										</span>
+									</div>
+									<div className="flex items-center">
+										<svg
+											className="w-5 h-5 text-red-500 mr-3 flex-shrink-0"
+											fill="currentColor"
+											viewBox="0 0 20 20"
+										>
+											<path
+												fillRule="evenodd"
+												d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+												clipRule="evenodd"
+											/>
+										</svg>
+										<span className="text-gray-700">Advanced reporting</span>
+									</div>
+								</div>
+
+								<Link
+									href="/contact"
+									className="w-full bg-orange-500 text-white px-6 py-3 rounded-lg font-semibold hover:bg-orange-600 transition-colors block text-center"
+								>
+									Contact sales
+								</Link>
+							</div>
+						</div>
+					</div>
+				</div>
+			</section>
+
 			{/* Testimonials section */}
 			<section className="py-20 bg-white">
 				<div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -364,34 +528,6 @@ export default function BusinessLandingPage() {
 					</div>
 				</div>
 			</section>
-
-			{/* Footer */}
-			<footer className="bg-gray-900 text-white py-12">
-				<div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-					<div className="flex flex-col md:flex-row justify-between items-center">
-						<div className="mb-4 md:mb-0">
-							<div className="text-2xl font-bold mb-2">Henzo</div>
-							<p className="text-gray-400">
-								© 2024 Henzo. All rights reserved.
-							</p>
-						</div>
-						<div className="flex space-x-6">
-							<Link
-								href="/terms"
-								className="text-gray-400 hover:text-white transition-colors"
-							>
-								Terms of Service
-							</Link>
-							<Link
-								href="/privacy"
-								className="text-gray-400 hover:text-white transition-colors"
-							>
-								Privacy Policy
-							</Link>
-						</div>
-					</div>
-				</div>
-			</footer>
 		</div>
 	);
 }

@@ -351,15 +351,6 @@ export default function SalonsPage() {
 				</div>
 			</main>
 
-			{/* Footer */}
-			<footer className="bg-[#F8F5F2] py-8 px-6 mt-16">
-				<div className="mx-auto max-w-6xl text-center">
-					<p className="text-gray-500 text-sm">
-						© 2024 Henzo. All rights reserved.
-					</p>
-				</div>
-			</footer>
-
 			{/* Booking Modal */}
 			<BookingModal
 				isOpen={isBookingModalOpen}

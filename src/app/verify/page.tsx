@@ -19,13 +19,138 @@ function VerifyForm() {
 	useEffect(() => {
 		const handleEmailVerification = async () => {
 			try {
+				console.log('🔍 Email verification started');
+				console.log('📍 Current URL:', window.location.href);
+				console.log(
+					'📍 URL search params:',
+					Object.fromEntries(searchParams.entries())
+				);
+				console.log('📍 URL hash:', window.location.hash);
+
 				// Получаем параметры из URL
 				const token = searchParams.get('token');
 				const type = searchParams.get('type');
-				const redirectTo = searchParams.get('redirect_to') || '/dashboard';
+				const accessToken = searchParams.get('access_token');
+				const refreshToken = searchParams.get('refresh_token');
 
-				if (type === 'signup' && token) {
-					// Подтверждаем email
+				// Также проверяем hash фрагмент URL (альтернативный способ передачи токенов)
+				const hashParams = new URLSearchParams(
+					window.location.hash.substring(1)
+				);
+				const hashAccessToken = hashParams.get('access_token');
+				const hashRefreshToken = hashParams.get('refresh_token');
+
+				console.log('🔑 Tokens found:', {
+					token,
+					type,
+					accessToken: !!accessToken,
+					refreshToken: !!refreshToken,
+					hashAccessToken: !!hashAccessToken,
+					hashRefreshToken: !!hashRefreshToken,
+				});
+
+				// Проверяем, есть ли токены в URL (новый формат Supabase)
+				const finalAccessToken = accessToken || hashAccessToken;
+				const finalRefreshToken = refreshToken || hashRefreshToken;
+
+				if (finalAccessToken && finalRefreshToken) {
+					// Устанавливаем сессию с токенами из URL
+					const { data, error } = await supabase.auth.setSession({
+						access_token: finalAccessToken,
+						refresh_token: finalRefreshToken,
+					});
+
+					if (error) {
+						throw error;
+					}
+
+					setStatus('success');
+					setMessage('Email verified successfully! Redirecting...');
+
+					// Обновляем auth store
+					if (data.session) {
+						console.log('✅ Session received:', data.session);
+						setSession(data.session);
+
+						// Получаем данные пользователя с бэкенда для определения роли
+						try {
+							console.log('🔄 Fetching user data from backend...');
+							// Небольшая задержка, чтобы сессия успела установиться
+							await new Promise((resolve) => setTimeout(resolve, 500));
+							const userResponse = await apiClient.get('/auth/user');
+							const userData = (userResponse as any).data;
+							console.log('👤 User data received:', userData);
+							setUser(userData);
+
+							// Определяем куда перенаправлять на основе роли
+							let finalRedirect = '/dashboard'; // по умолчанию для клиентов
+
+							if (userData.role === 'OWNER') {
+								finalRedirect = '/owner-dashboard';
+							} else if (userData.role === 'ADMIN') {
+								finalRedirect = '/admin-panel';
+							}
+
+							console.log('🎯 Redirecting to:', finalRedirect);
+
+							// Перенаправляем пользователя
+							setTimeout(() => {
+								router.push(finalRedirect);
+							}, 2000);
+						} catch (error) {
+							console.error('❌ Error fetching user data:', error);
+							console.log('🔄 Fallback: using Supabase metadata');
+
+							// Fallback - используем данные из Supabase metadata
+							const supabaseUser = data.session.user;
+							if (supabaseUser) {
+								const fallbackUser = {
+									id: supabaseUser.id,
+									email: supabaseUser.email || '',
+									name:
+										supabaseUser.user_metadata?.name ||
+										supabaseUser.user_metadata?.ownerName ||
+										'',
+									phone: supabaseUser.user_metadata?.phone || '',
+									role: (supabaseUser.user_metadata?.role || 'CLIENT') as
+										| 'OWNER'
+										| 'ADMIN'
+										| 'CLIENT',
+								};
+
+								console.log('👤 Using fallback user data:', fallbackUser);
+								setUser(fallbackUser);
+
+								// Определяем куда перенаправлять на основе роли
+								let finalRedirect = '/dashboard'; // по умолчанию для клиентов
+
+								if (fallbackUser.role === 'OWNER') {
+									finalRedirect = '/owner-dashboard';
+								} else if (fallbackUser.role === 'ADMIN') {
+									finalRedirect = '/admin-panel';
+								}
+
+								console.log('🎯 Fallback redirecting to:', finalRedirect);
+								setTimeout(() => {
+									router.push(finalRedirect);
+								}, 2000);
+							} else {
+								console.log('🔄 Final fallback: redirecting to /dashboard');
+								// Final fallback - перенаправляем на dashboard по умолчанию
+								setTimeout(() => {
+									router.push('/dashboard');
+								}, 2000);
+							}
+						}
+					} else {
+						console.log('❌ No session received, redirecting to login');
+						// Если нет сессии, перенаправляем на логин
+						setTimeout(() => {
+							router.push('/login');
+						}, 2000);
+					}
+				} else if (type === 'signup' && token) {
+					// Подтверждаем email (старый формат)
 					const { error } = await supabase.auth.verifyOtp({
 						token_hash: token,
 						type: 'email',

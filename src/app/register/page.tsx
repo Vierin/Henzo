@@ -39,6 +39,7 @@ export default function RegisterPage() {
 						phone: formData.phone,
 						role: 'CLIENT',
 					},
+					emailRedirectTo: `${window.location.origin}/verify`,
 				},
 			});
 

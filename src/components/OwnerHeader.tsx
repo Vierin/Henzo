@@ -58,6 +58,12 @@ export default function OwnerHeader() {
 					>
 						Staff
 					</Link>
+					<Link
+						href="/prices"
+						className="text-gray-800 hover:text-black font-medium"
+					>
+						Prices
+					</Link>
 				</nav>
 
 				<div className="flex items-center gap-4">

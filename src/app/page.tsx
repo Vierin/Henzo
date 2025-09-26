@@ -8,9 +8,17 @@ import { useSalonsWithServices } from '@/hooks/useSalons';
 import { supabase } from '@/lib/supabase';
 import { Salon, Service } from '@/types';
 import Image from 'next/image';
+import { apiClient } from '@/lib/api-client';
+import { useEffect, useState } from 'react';
+interface SalonCategory {
+	id: number;
+	name: string;
+}
 
 export default function HomePage() {
 	const router = useRouter();
+	const [categories, setCategories] = useState<SalonCategory[]>([]);
+	const [categoriesLoading, setCategoriesLoading] = useState(true);
 	const {
 		data: salons = [],
 		isLoading: loading,
@@ -21,6 +29,58 @@ export default function HomePage() {
 	const handleSalonClick = (salonId: string) => {
 		router.push(`/salon/${salonId}`);
 	};
+
+	// Загружаем категории салонов
+	useEffect(() => {
+		const fetchCategories = async (retryCount = 0) => {
+			try {
+				const response = await apiClient.get('/salons/categories');
+
+				// Проверяем, что response - это массив или объект с data
+				let categoriesData: any[] = [];
+				if (Array.isArray(response)) {
+					categoriesData = response;
+				} else if (
+					response &&
+					typeof response === 'object' &&
+					(response as any).data
+				) {
+					categoriesData = (response as any).data;
+				} else if (response && typeof response === 'object') {
+					// Возможно, response уже содержит данные напрямую
+					categoriesData = response as any[];
+				}
+
+				if (Array.isArray(categoriesData) && categoriesData.length > 0) {
+					setCategories(categoriesData);
+					setCategoriesLoading(false);
+				} else {
+					throw new Error('No categories data received or empty array');
+				}
+			} catch (error) {
+				// Retry logic - попробуем еще раз через 1 секунду
+				if (retryCount < 2) {
+					setTimeout(() => fetchCategories(retryCount + 1), 1000);
+					return;
+				}
+
+				// Fallback к статическим категориям если API недоступен
+				const fallbackCategories = [
+					{ id: 1, name: 'Hair and Barber' },
+					{ id: 2, name: 'Tattoo and Piercing' },
+					{ id: 3, name: 'Massage and Spa' },
+					{ id: 4, name: 'Manicure and Pedicure' },
+					{ id: 5, name: 'Cosmetic Medicine' },
+					{ id: 6, name: 'Other Services' },
+				];
+				setCategories(fallbackCategories);
+				setCategoriesLoading(false);
+			}
+		};
+
+		// Небольшая задержка перед первым запросом
+		setTimeout(() => fetchCategories(), 500);
+	}, []);
 
 	const getPublicUrl = (filePath: string) => {
 		const { data } = supabase.storage
@@ -40,6 +100,20 @@ export default function HomePage() {
 		}
 		// No images available
 		return undefined;
+	};
+
+	const getCategoryIcon = (categoryName: string) => {
+		const name = categoryName.toLowerCase();
+		if (name.includes('hair') || name.includes('barber')) return '💇‍♀️';
+		if (name.includes('tattoo') || name.includes('piercing')) return '🎨';
+		if (name.includes('massage') || name.includes('spa')) return '🧘‍♀️';
+		if (name.includes('manicure') || name.includes('pedicure')) return '💅';
+		if (name.includes('cosmetic') || name.includes('medicine')) return '💉';
+		return '✨';
+	};
+
+	const handleCategoryClick = (categoryName: string) => {
+		router.push(`/salons?category=${encodeURIComponent(categoryName)}`);
 	};
 
 	return (
@@ -87,40 +161,46 @@ export default function HomePage() {
 					</div>
 				</section>
 
-				{/* Popular Services Section */}
-				<section className="py-16 px-6">
-					<div className="mx-auto max-w-6xl">
-						<h2 className="text-3xl font-bold text-gray-900 mb-8">
-							Popular Services
-						</h2>
-						<div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-							<div className="bg-white rounded-xl p-6 text-center hover:shadow-lg transition-shadow">
-								<div className="w-20 h-20 bg-gray-100 rounded-xl mx-auto mb-4 flex items-center justify-center">
-									<span className="text-3xl">💇‍♀️</span>
-								</div>
-								<h3 className="text-lg font-semibold text-gray-900">Haircut</h3>
-							</div>
-							<div className="bg-white rounded-xl p-6 text-center hover:shadow-lg transition-shadow">
-								<div className="w-20 h-20 bg-gray-100 rounded-xl mx-auto mb-4 flex items-center justify-center">
-									<span className="text-3xl">💅</span>
-								</div>
-								<h3 className="text-lg font-semibold text-gray-900">
-									Manicure
-								</h3>
-							</div>
-							<div className="bg-white rounded-xl p-6 text-center hover:shadow-lg transition-shadow">
-								<div className="w-20 h-20 bg-gray-100 rounded-xl mx-auto mb-4 flex items-center justify-center">
-									<span className="text-3xl">✨</span>
-								</div>
-								<h3 className="text-lg font-semibold text-gray-900">Facial</h3>
-							</div>
-							<div className="bg-white rounded-xl p-6 text-center hover:shadow-lg transition-shadow">
-								<div className="w-20 h-20 bg-gray-100 rounded-xl mx-auto mb-4 flex items-center justify-center">
-									<span className="text-3xl">🧘‍♀️</span>
-								</div>
-								<h3 className="text-lg font-semibold text-gray-900">Massage</h3>
-							</div>
+				{/* Popular Services */}
+				<section className="py-16 bg-gray-50">
+					<div className="mx-auto max-w-7xl px-6">
+						<div className="text-center mb-12">
+							<h2 className="text-3xl font-bold text-gray-900 mb-4">
+								Popular Services
+							</h2>
+							<p className="text-gray-600">
+								Explore our wide range of salon categories
+							</p>
 						</div>
+
+						{(() => {
+							return categoriesLoading ? (
+								<div className="flex justify-center">
+									<div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#ff5b5b]"></div>
+								</div>
+							) : categories.length === 0 ? (
+								<div className="text-center py-8">
+									<p className="text-gray-500">No categories available</p>
+								</div>
+							) : (
+								<div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-6">
+									{categories.map((category) => (
+										<div
+											key={category.id}
+											className="bg-white rounded-xl p-6 text-center hover:shadow-lg transition-shadow cursor-pointer group"
+											onClick={() => handleCategoryClick(category.name)}
+										>
+											<div className="text-4xl mb-3 group-hover:scale-110 transition-transform">
+												{getCategoryIcon(category.name)}
+											</div>
+											<h3 className="text-sm font-medium text-gray-900 group-hover:text-[#ff5b5b] transition-colors">
+												{category.name}
+											</h3>
+										</div>
+									))}
+								</div>
+							);
+						})()}
 					</div>
 				</section>
 
@@ -220,31 +300,6 @@ export default function HomePage() {
 					</div>
 				</section>
 			</main>
-
-			{/* Footer */}
-			<footer className="bg-[#F8F5F2] py-12 px-6">
-				<div className="mx-auto max-w-6xl">
-					<div className="flex flex-col md:flex-row justify-between items-center">
-						<div className="flex gap-8 mb-4 md:mb-0">
-							<a href="#" className="text-gray-700 hover:text-[#8B4513]">
-								About Us
-							</a>
-							<a href="#" className="text-gray-700 hover:text-[#8B4513]">
-								Contact
-							</a>
-							<a href="#" className="text-gray-700 hover:text-[#8B4513]">
-								Privacy Policy
-							</a>
-							<a href="#" className="text-gray-700 hover:text-[#8B4513]">
-								Terms of Use
-							</a>
-						</div>
-						<div className="text-gray-500 text-sm">
-							© 2023 Henzo. All rights reserved.
-						</div>
-					</div>
-				</div>
-			</footer>
 		</div>
 	);
 }

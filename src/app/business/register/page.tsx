@@ -41,6 +41,7 @@ export default function BusinessRegisterPage() {
 						role: 'OWNER',
 						salonName: formData.salonName,
 					},
+					emailRedirectTo: `${window.location.origin}/verify`,
 				},
 			});
 
