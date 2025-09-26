@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useAuthStore } from '@/stores/authStore';
 import Image from 'next/image';
+import { STATIC_CATEGORIES } from '@/constants/categories';
 
 export default function PublicHeader() {
 	const [isLanguageDropdownOpen, setIsLanguageDropdownOpen] = useState(false);
@@ -46,7 +47,8 @@ export default function PublicHeader() {
 	}, []);
 
 	return (
-		<header className="bg-white">
+		<header className="bg-white shadow-sm">
+			{/* Top Bar */}
 			<div className="h-[5rem] mx-auto max-w-7xl px-6 py-4 flex items-center justify-between">
 				{/* Logo */}
 				<Link href="/" className="flex h-full items-center gap-3">
@@ -58,19 +60,6 @@ export default function PublicHeader() {
 						className="h-full object-contain"
 					/>
 				</Link>
-
-				{/* Navigation */}
-				<nav className="hidden md:flex items-center gap-8 text-[15px]">
-					<Link className="text-gray-700 hover:text-[#8B4513]" href="/services">
-						Services
-					</Link>
-					<Link className="text-gray-700 hover:text-[#8B4513]" href="/salons">
-						Salons
-					</Link>
-					<Link className="text-gray-700 hover:text-[#8B4513]" href="/about">
-						About us
-					</Link>
-				</nav>
 
 				{/* Language Dropdown and User Info/Login Buttons */}
 				<div className="flex items-center gap-4">
@@ -188,6 +177,26 @@ export default function PublicHeader() {
 					)}
 				</div>
 			</div>
+
+			{/* Navigation Bar with Categories */}
+			<nav className="border-t border-gray-100">
+				<div className="mx-auto max-w-7xl px-6">
+					<div className="flex items-center justify-center h-14">
+						{/* Categories Navigation */}
+						<div className="flex items-center space-x-8">
+							{STATIC_CATEGORIES.map((category) => (
+								<Link
+									key={category.id}
+									href={`/salons?category=${encodeURIComponent(category.name)}`}
+									className="text-sm font-medium text-gray-700 hover:text-[#ff5b5b] transition-colors"
+								>
+									{category.name}
+								</Link>
+							))}
+						</div>
+					</div>
+				</div>
+			</nav>
 		</header>
 	);
 }
