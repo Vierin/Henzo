@@ -3,9 +3,11 @@
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
+import { useAuthStore } from '@/stores/authStore';
 
 export default function AuthCallbackPage() {
 	const router = useRouter();
+	const { setUser, setSession } = useAuthStore();
 
 	useEffect(() => {
 		const handleAuthCallback = async () => {
@@ -43,6 +45,10 @@ export default function AuthCallbackPage() {
 							if (response.ok) {
 								const userData = await response.json();
 
+								// Update auth store
+								setUser(userData.user);
+								setSession(data.session);
+
 								// Redirect based on role
 								switch (userData.user.role) {
 									case 'ADMIN':
@@ -59,12 +65,67 @@ export default function AuthCallbackPage() {
 										break;
 								}
 							} else {
-								// If user doesn't exist in backend, redirect to role selection
-								router.push('/select-role');
+								// If user doesn't exist in backend, create as CLIENT
+								// Update user metadata with CLIENT role
+								const { error: updateError } = await supabase.auth.updateUser({
+									data: {
+										role: 'CLIENT',
+										name:
+											data.session.user.user_metadata?.name ||
+											data.session.user.user_metadata?.full_name,
+										phone: data.session.user.user_metadata?.phone,
+									},
+								});
+
+								if (updateError) {
+									console.error('Error updating user metadata:', updateError);
+								}
+
+								// Try to create user in backend again
+								const retryResponse = await fetch(`${API_BASE_URL}/auth/user`, {
+									headers: {
+										Authorization: `Bearer ${data.session.access_token}`,
+										'Content-Type': 'application/json',
+									},
+								});
+
+								if (retryResponse.ok) {
+									const userData = await retryResponse.json();
+									// Update auth store
+									setUser(userData.user);
+									setSession(data.session);
+									router.push('/dashboard');
+								} else {
+									// If still fails, create a temporary user object and redirect
+									const tempUser = {
+										id: data.session.user.id,
+										email: data.session.user.email || '',
+										name:
+											data.session.user.user_metadata?.name ||
+											data.session.user.user_metadata?.full_name,
+										phone: data.session.user.user_metadata?.phone,
+										role: 'CLIENT' as const,
+									};
+									setUser(tempUser);
+									setSession(data.session);
+									router.push('/dashboard');
+								}
 							}
 						} catch (roleError) {
 							console.error('Error getting user role:', roleError);
-							router.push('/select-role');
+							// Create a temporary user object and redirect to client dashboard
+							const tempUser = {
+								id: data.session.user.id,
+								email: data.session.user.email || '',
+								name:
+									data.session.user.user_metadata?.name ||
+									data.session.user.user_metadata?.full_name,
+								phone: data.session.user.user_metadata?.phone,
+								role: 'CLIENT' as const,
+							};
+							setUser(tempUser);
+							setSession(data.session);
+							router.push('/dashboard');
 						}
 					}
 				} else {

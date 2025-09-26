@@ -83,6 +83,10 @@ export default function LoginPage() {
 				provider: 'google',
 				options: {
 					redirectTo: `${window.location.origin}/auth/callback`,
+					queryParams: {
+						access_type: 'offline',
+						prompt: 'consent',
+					},
 				},
 			});
 
@@ -238,45 +242,6 @@ export default function LoginPage() {
 								Sign up
 							</a>
 						</p>
-					</div>
-
-					{/* Quick access buttons for demo */}
-					<div className="mt-6 border-t border-gray-200 pt-6">
-						<p className="text-xs text-gray-500 text-center mb-4">
-							Quick access for testing:
-						</p>
-						<div className="grid grid-cols-3 gap-2">
-							<button
-								type="button"
-								onClick={() => {
-									setEmail('admin@henzo.com');
-									toast.success('Admin email filled');
-								}}
-								className="text-xs py-1 px-2 bg-blue-100 text-blue-700 rounded hover:bg-blue-200 transition-colors"
-							>
-								Admin
-							</button>
-							<button
-								type="button"
-								onClick={() => {
-									setEmail('owner@example.com');
-									toast.success('Owner email filled');
-								}}
-								className="text-xs py-1 px-2 bg-green-100 text-green-700 rounded hover:bg-green-200 transition-colors"
-							>
-								Owner
-							</button>
-							<button
-								type="button"
-								onClick={() => {
-									setEmail('client@example.com');
-									toast.success('Client email filled');
-								}}
-								className="text-xs py-1 px-2 bg-purple-100 text-purple-700 rounded hover:bg-purple-200 transition-colors"
-							>
-								Client
-							</button>
-						</div>
 					</div>
 				</form>
 			</div>

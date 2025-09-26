@@ -173,10 +173,10 @@ export default function PublicHeader() {
 					) : (
 						<>
 							<Link
-								href={'/register'}
+								href={'/business'}
 								className="text-sm text-gray-700 hover:text-[#8B4513] font-medium transition-colors"
 							>
-								Create Business Account
+								For Business
 							</Link>
 							<Link
 								href="/login"
