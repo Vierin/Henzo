@@ -6,18 +6,14 @@ import ClientSidebar from './ClientSidebar';
 
 interface ClientLayoutProps {
 	children: ReactNode;
-	activeTab?: 'history' | 'reviews' | 'settings';
 }
 
-export default function ClientLayout({
-	children,
-	activeTab = 'history',
-}: ClientLayoutProps) {
+export default function ClientLayout({ children }: ClientLayoutProps) {
 	return (
 		<div className="min-h-screen bg-[#fff7f6]">
 			<PublicHeader />
 			<div className="flex">
-				<ClientSidebar activeTab={activeTab} />
+				<ClientSidebar />
 				<main className="flex-1 p-8">{children}</main>
 			</div>
 		</div>

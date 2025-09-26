@@ -1,15 +1,11 @@
 'use client';
 
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import { useAuthStore } from '@/stores/authStore';
 
-interface ClientSidebarProps {
-	activeTab?: 'history' | 'reviews' | 'settings';
-}
-
-export default function ClientSidebar({
-	activeTab = 'history',
-}: ClientSidebarProps) {
+export default function ClientSidebar() {
+	const pathname = usePathname();
 	const { logout } = useAuthStore();
 
 	const handleLogout = async () => {
@@ -29,9 +25,9 @@ export default function ClientSidebar({
 					<Link
 						href="/dashboard"
 						className={`flex items-center gap-3 px-3 py-2 rounded-lg transition-colors ${
-							activeTab === 'history'
-								? 'bg-white text-[#ff5b5b] border-r-4 border-[#ff5b5b]'
-								: 'text-gray-600 hover:bg-gray-50'
+							pathname === '/dashboard'
+								? 'bg-orange-50 text-orange-600 border-r-2 border-orange-500'
+								: 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
 						}`}
 					>
 						<svg
@@ -53,9 +49,9 @@ export default function ClientSidebar({
 					<Link
 						href="/reviews"
 						className={`flex items-center gap-3 px-3 py-2 rounded-lg transition-colors ${
-							activeTab === 'reviews'
-								? 'bg-white text-[#ff5b5b] border-r-4 border-[#ff5b5b]'
-								: 'text-gray-600 hover:bg-gray-50'
+							pathname === '/reviews'
+								? 'bg-orange-50 text-orange-600 border-r-2 border-orange-500'
+								: 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
 						}`}
 					>
 						<svg
@@ -77,9 +73,9 @@ export default function ClientSidebar({
 					<Link
 						href="/settings"
 						className={`flex items-center gap-3 px-3 py-2 rounded-lg transition-colors ${
-							activeTab === 'settings'
-								? 'bg-white text-[#ff5b5b] border-r-4 border-[#ff5b5b]'
-								: 'text-gray-600 hover:bg-gray-50'
+							pathname === '/settings'
+								? 'bg-orange-50 text-orange-600 border-r-2 border-orange-500'
+								: 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
 						}`}
 					>
 						<svg
