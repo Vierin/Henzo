@@ -29,15 +29,6 @@ export default function SalonsPage() {
 		refetch,
 	} = useSalonsWithServices();
 
-	const filters = [
-		'All',
-		'Hair salons',
-		'Nail salons',
-		'Barbershops',
-		'Massage',
-		'Spa',
-	];
-
 	const sortOptions = [
 		{ value: 'name', label: 'Name A-Z' },
 		{ value: 'name-desc', label: 'Name Z-A' },
@@ -132,59 +123,6 @@ export default function SalonsPage() {
 		<div className="min-h-screen bg-[#F8F5F2]">
 			<main className="py-8 px-6">
 				<div className="mx-auto max-w-6xl">
-					{/* Search Bar */}
-					<div className="mb-8">
-						<div className="relative max-w-2xl mx-auto">
-							<input
-								type="text"
-								value={searchQuery}
-								onChange={(e) => setSearchQuery(e.target.value)}
-								className="w-full px-6 py-4 pl-12 pr-12 bg-white rounded-2xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#8B4513] focus:border-transparent text-lg text-gray-900"
-								placeholder="Search for salons, services, or locations"
-							/>
-							<svg
-								className="absolute left-4 top-4 h-6 w-6 text-gray-400"
-								fill="none"
-								stroke="currentColor"
-								viewBox="0 0 24 24"
-							>
-								<path
-									strokeLinecap="round"
-									strokeLinejoin="round"
-									strokeWidth={2}
-									d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-								/>
-							</svg>
-							{searchQuery && (
-								<button
-									onClick={() => setSearchQuery('')}
-									className="absolute right-4 top-4 h-6 w-6 text-gray-400 hover:text-gray-600"
-								>
-									✕
-								</button>
-							)}
-						</div>
-					</div>
-
-					{/* Category Filters and Sort */}
-					<div className="mb-8">
-						<div className="flex flex-wrap gap-3 justify-center mb-4">
-							{filters.map((filter) => (
-								<button
-									key={filter}
-									onClick={() => setActiveFilter(filter)}
-									className={`px-6 py-3 rounded-full text-sm font-medium transition-colors ${
-										activeFilter === filter
-											? 'bg-[#ff5b5b] text-white'
-											: 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-									}`}
-								>
-									{filter}
-								</button>
-							))}
-						</div>
-					</div>
-
 					{/* Results Header */}
 					<div className="flex items-center justify-between mb-8">
 						<h1 className="text-2xl font-bold text-gray-900">

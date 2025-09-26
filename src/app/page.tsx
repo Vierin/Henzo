@@ -6,22 +6,53 @@ import LoadingSpinner from '../components/LoadingSpinner';
 import ErrorDisplay from '../components/ErrorDisplay';
 import { useSalonsWithServices } from '@/hooks/useSalons';
 import { STATIC_CATEGORIES } from '@/constants/categories';
+import AddressAutocomplete from '@/components/AddressAutocomplete';
 import { supabase } from '@/lib/supabase';
 import { Salon, Service } from '@/types';
 import Image from 'next/image';
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 
 export default function HomePage() {
 	const router = useRouter();
 	const [activeTab, setActiveTab] = useState<'treatments' | 'salon'>(
 		'treatments'
 	);
-	const [selectedCategory, setSelectedCategory] = useState<number | null>(null);
 	const [searchQuery, setSearchQuery] = useState('');
-	const [location, setLocation] = useState('');
-	const [date, setDate] = useState('');
+	const [selectedLocation, setSelectedLocation] = useState('');
+	const [isLocationDropdownOpen, setIsLocationDropdownOpen] = useState(false);
+	const [showCurrentLocation, setShowCurrentLocation] = useState(true);
+	const [selectedDateTime, setSelectedDateTime] = useState('');
+	const [isDateTimePickerOpen, setIsDateTimePickerOpen] = useState(false);
+	const [currentMonth, setCurrentMonth] = useState(new Date());
 
 	const categories = STATIC_CATEGORIES;
+
+	// Time slots for booking
+	const timeSlots = [
+		'09:00',
+		'09:30',
+		'10:00',
+		'10:30',
+		'11:00',
+		'11:30',
+		'12:00',
+		'12:30',
+		'13:00',
+		'13:30',
+		'14:00',
+		'14:30',
+		'15:00',
+		'15:30',
+		'16:00',
+		'16:30',
+		'17:00',
+		'17:30',
+		'18:00',
+		'18:30',
+		'19:00',
+		'19:30',
+		'20:00',
+	];
 	const {
 		data: salons = [],
 		isLoading: loading,
@@ -33,30 +64,155 @@ export default function HomePage() {
 		router.push(`/salon/${salonId}`);
 	};
 
+	const handleCurrentLocation = () => {
+		if (navigator.geolocation) {
+			navigator.geolocation.getCurrentPosition(
+				(position) => {
+					const { latitude, longitude } = position.coords;
+					// Use the same API as AddressAutocomplete for consistency
+					const API_BASE_URL =
+						process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+					fetch(
+						`${API_BASE_URL}/geocoding/reverse?lat=${latitude}&lon=${longitude}`
+					)
+						.then((response) => response.json())
+						.then((data) => {
+							if (data.success && data.data && data.data.display_name) {
+								setSelectedLocation(data.data.display_name);
+								setShowCurrentLocation(false);
+							} else {
+								// Fallback to coordinates if no address found
+								setSelectedLocation(
+									`Location: ${latitude.toFixed(4)}, ${longitude.toFixed(4)}`
+								);
+								setShowCurrentLocation(false);
+							}
+						})
+						.catch((error) => {
+							console.error('Error getting address:', error);
+							// Fallback to coordinates if API fails
+							setSelectedLocation(
+								`Location: ${latitude.toFixed(4)}, ${longitude.toFixed(4)}`
+							);
+							setShowCurrentLocation(false);
+						});
+				},
+				(error) => {
+					console.error('Error getting location:', error);
+					
+					// Handle different geolocation errors
+					let errorMessage = 'Current Location';
+					switch (error.code) {
+						case 1: // PERMISSION_DENIED
+							errorMessage = 'Location access denied';
+							break;
+						case 2: // POSITION_UNAVAILABLE
+							errorMessage = 'Location unavailable';
+							break;
+						case 3: // TIMEOUT
+							errorMessage = 'Location request timeout';
+							break;
+						default:
+							errorMessage = 'Current Location';
+					}
+					
+					setSelectedLocation(errorMessage);
+					setShowCurrentLocation(false);
+					
+					// Show user-friendly message
+					if (error.code === 1) {
+						alert('Please allow location access to use current location feature.');
+					}
+				}
+			);
+		} else {
+			setSelectedLocation('Current Location');
+			setShowCurrentLocation(false);
+		}
+	};
+
+	// Calendar functions
+	const getDaysInMonth = (date: Date) => {
+		const year = date.getFullYear();
+		const month = date.getMonth();
+		const firstDay = new Date(year, month, 1);
+		const lastDay = new Date(year, month + 1, 0);
+		const daysInMonth = lastDay.getDate();
+		const startingDayOfWeek = firstDay.getDay();
+
+		const days = [];
+
+		// Add empty cells for days before the first day of the month
+		for (let i = 0; i < startingDayOfWeek; i++) {
+			days.push(null);
+		}
+
+		// Add days of the month
+		for (let day = 1; day <= daysInMonth; day++) {
+			days.push(new Date(year, month, day));
+		}
+
+		return days;
+	};
+
+	const formatDate = (date: Date) => {
+		return date.toISOString().split('T')[0];
+	};
+
+	const isToday = (date: Date) => {
+		const today = new Date();
+		return date.toDateString() === today.toDateString();
+	};
+
+	const isPastDate = (date: Date) => {
+		const today = new Date();
+		today.setHours(0, 0, 0, 0);
+		return date < today;
+	};
+
+	const isSelectedDate = (date: Date) => {
+		const selectedDate = selectedDateTime.split(' ')[0];
+		return formatDate(date) === selectedDate;
+	};
+
+	const handleDateSelect = (date: Date) => {
+		if (isPastDate(date)) return;
+
+		const selectedTime = selectedDateTime.split(' ')[1] || '';
+		setSelectedDateTime(
+			selectedTime ? `${formatDate(date)} ${selectedTime}` : formatDate(date)
+		);
+	};
+
+	const navigateMonth = (direction: 'prev' | 'next') => {
+		setCurrentMonth((prev) => {
+			const newMonth = new Date(prev);
+			if (direction === 'prev') {
+				newMonth.setMonth(prev.getMonth() - 1);
+			} else {
+				newMonth.setMonth(prev.getMonth() + 1);
+			}
+			return newMonth;
+		});
+	};
+
 	const handleSearch = () => {
 		const params = new URLSearchParams();
 
 		if (activeTab === 'treatments') {
-			if (selectedCategory) {
-				const category = categories.find((cat) => cat.id === selectedCategory);
-				if (category) {
-					params.set('category', category.name);
-				}
-			}
 			if (searchQuery) {
 				params.set('search', searchQuery);
+			}
+			if (selectedLocation) {
+				params.set('location', selectedLocation);
+			}
+			if (selectedDateTime) {
+				params.set('datetime', selectedDateTime);
 			}
 		} else {
 			if (searchQuery) {
 				params.set('salon', searchQuery);
 			}
-		}
-
-		if (location) {
-			params.set('location', location);
-		}
-		if (date) {
-			params.set('date', date);
 		}
 
 		router.push(`/salons?${params.toString()}`);
@@ -139,102 +295,17 @@ export default function HomePage() {
 								<div className="space-y-4">
 									{/* Search by treatment or salon */}
 									<div className="relative">
-										{activeTab === 'treatments' ? (
-											<div className="relative">
-												<input
-													type="text"
-													placeholder="Search for treatments"
-													value={searchQuery}
-													onChange={(e) => setSearchQuery(e.target.value)}
-													className="w-full px-4 py-4 pl-12 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent text-gray-900"
-												/>
-												<svg
-													className="absolute left-4 top-4 h-6 w-6 text-gray-400"
-													fill="none"
-													stroke="currentColor"
-													viewBox="0 0 24 24"
-												>
-													<path
-														strokeLinecap="round"
-														strokeLinejoin="round"
-														strokeWidth={2}
-														d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-													/>
-												</svg>
-												{/* Category Dropdown */}
-												<div className="mt-2">
-													<details className="group">
-														<summary className="flex items-center justify-between w-full px-4 py-2 bg-gray-50 border border-gray-300 rounded-lg cursor-pointer hover:bg-gray-100">
-															<span className="text-sm text-gray-700">
-																{selectedCategory
-																	? categories.find(
-																			(cat) => cat.id === selectedCategory
-																		)?.name || 'Select category'
-																	: 'Select category'}
-															</span>
-															<svg
-																className="w-4 h-4 text-gray-500 group-open:rotate-180 transition-transform"
-																fill="none"
-																stroke="currentColor"
-																viewBox="0 0 24 24"
-															>
-																<path
-																	strokeLinecap="round"
-																	strokeLinejoin="round"
-																	strokeWidth={2}
-																	d="M19 9l-7 7-7-7"
-																/>
-															</svg>
-														</summary>
-														<div className="mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-48 overflow-y-auto">
-															<div className="p-2">
-																<label className="flex items-center p-2 hover:bg-gray-50 cursor-pointer">
-																	<input
-																		type="radio"
-																		name="category"
-																		value=""
-																		checked={selectedCategory === null}
-																		onChange={() => setSelectedCategory(null)}
-																		className="mr-3"
-																	/>
-																	<span className="text-sm">
-																		All categories
-																	</span>
-																</label>
-																{categories.map((category) => (
-																	<label
-																		key={category.id}
-																		className="flex items-center p-2 hover:bg-gray-50 cursor-pointer"
-																	>
-																		<input
-																			type="radio"
-																			name="category"
-																			value={category.id}
-																			checked={selectedCategory === category.id}
-																			onChange={() =>
-																				setSelectedCategory(category.id)
-																			}
-																			className="mr-3"
-																		/>
-																		<span className="text-sm">
-																			{category.name}
-																		</span>
-																	</label>
-																))}
-															</div>
-														</div>
-													</details>
-												</div>
-											</div>
-										) : (
-											<input
-												type="text"
-												placeholder="Search for salon name"
-												value={searchQuery}
-												onChange={(e) => setSearchQuery(e.target.value)}
-												className="w-full px-4 py-4 pl-12 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent text-gray-900"
-											/>
-										)}
+										<input
+											type="text"
+											placeholder={
+												activeTab === 'treatments'
+													? 'Search for treatments'
+													: 'Search for salon name'
+											}
+											value={searchQuery}
+											onChange={(e) => setSearchQuery(e.target.value)}
+											className="w-full px-4 py-4 pl-12 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent text-gray-900"
+										/>
 										<svg
 											className="absolute left-4 top-4 h-6 w-6 text-gray-400"
 											fill="none"
@@ -250,59 +321,264 @@ export default function HomePage() {
 										</svg>
 									</div>
 
-									{/* Location */}
-									<div className="relative">
-										<input
-											type="text"
-											placeholder="Postal code or area"
-											value={location}
-											onChange={(e) => setLocation(e.target.value)}
-											className="w-full px-4 py-4 pl-12 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent text-gray-900"
-										/>
-										<svg
-											className="absolute left-4 top-4 h-6 w-6 text-gray-400"
-											fill="none"
-											stroke="currentColor"
-											viewBox="0 0 24 24"
-										>
-											<path
-												strokeLinecap="round"
-												strokeLinejoin="round"
-												strokeWidth={2}
-												d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"
-											/>
-											<path
-												strokeLinecap="round"
-												strokeLinejoin="round"
-												strokeWidth={2}
-												d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"
-											/>
-										</svg>
-									</div>
+									{/* Location Input - только для Treatments */}
+									{activeTab === 'treatments' && (
+										<div className="relative">
+											{/* Current Location Button */}
+											{showCurrentLocation && (
+												<button
+													onClick={handleCurrentLocation}
+													className="w-full mb-2 px-4 py-2 bg-blue-50 border border-blue-200 rounded-lg text-blue-700 hover:bg-blue-100 transition-colors flex items-center justify-center space-x-2"
+												>
+													<svg
+														className="w-4 h-4"
+														fill="none"
+														stroke="currentColor"
+														viewBox="0 0 24 24"
+													>
+														<path
+															strokeLinecap="round"
+															strokeLinejoin="round"
+															strokeWidth={2}
+															d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"
+														/>
+														<path
+															strokeLinecap="round"
+															strokeLinejoin="round"
+															strokeWidth={2}
+															d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"
+														/>
+													</svg>
+													<span className="text-sm font-medium">
+														Use Current Location
+													</span>
+												</button>
+											)}
 
-									{/* Date */}
-									<div className="relative">
-										<input
-											type="text"
-											placeholder="Any date"
-											value={date}
-											onChange={(e) => setDate(e.target.value)}
-											className="w-full px-4 py-4 pl-12 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent text-gray-900"
-										/>
-										<svg
-											className="absolute left-4 top-4 h-6 w-6 text-gray-400"
-											fill="none"
-											stroke="currentColor"
-											viewBox="0 0 24 24"
-										>
-											<path
-												strokeLinecap="round"
-												strokeLinejoin="round"
-												strokeWidth={2}
-												d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
-											/>
-										</svg>
-									</div>
+											{/* Address Autocomplete */}
+											<div className="relative">
+												<AddressAutocomplete
+													value={selectedLocation}
+													onChange={(address) => {
+														setSelectedLocation(address);
+														setShowCurrentLocation(false);
+													}}
+													placeholder="Enter address or postal code"
+													className="w-full px-4 py-4 pl-12 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent text-gray-900"
+												/>
+												<svg
+													className="absolute left-4 top-4 h-6 w-6 text-gray-400"
+													fill="none"
+													stroke="currentColor"
+													viewBox="0 0 24 24"
+												>
+													<path
+														strokeLinecap="round"
+														strokeLinejoin="round"
+														strokeWidth={2}
+														d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"
+													/>
+													<path
+														strokeLinecap="round"
+														strokeLinejoin="round"
+														strokeWidth={2}
+														d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"
+													/>
+												</svg>
+											</div>
+										</div>
+									)}
+
+									{/* Date & Time Picker - только для Treatments */}
+									{activeTab === 'treatments' && (
+										<div className="relative">
+											<button
+												onClick={() =>
+													setIsDateTimePickerOpen(!isDateTimePickerOpen)
+												}
+												className="w-full px-4 py-4 pl-12 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent text-gray-900 text-left flex items-center justify-between"
+											>
+												<span
+													className={
+														selectedDateTime ? 'text-gray-900' : 'text-gray-500'
+													}
+												>
+													{selectedDateTime || 'Select date & time'}
+												</span>
+												<svg
+													className={`w-5 h-5 text-gray-400 transition-transform ${
+														isDateTimePickerOpen ? 'rotate-180' : ''
+													}`}
+													fill="none"
+													stroke="currentColor"
+													viewBox="0 0 24 24"
+												>
+													<path
+														strokeLinecap="round"
+														strokeLinejoin="round"
+														strokeWidth={2}
+														d="M19 9l-7 7-7-7"
+													/>
+												</svg>
+											</button>
+											<svg
+												className="absolute left-4 top-4 h-6 w-6 text-gray-400"
+												fill="none"
+												stroke="currentColor"
+												viewBox="0 0 24 24"
+											>
+												<path
+													strokeLinecap="round"
+													strokeLinejoin="round"
+													strokeWidth={2}
+													d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
+												/>
+											</svg>
+
+											{/* Date & Time Picker */}
+											{isDateTimePickerOpen && (
+												<div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-300 rounded-lg shadow-lg z-50 p-4">
+													{/* Custom Calendar */}
+													<div className="mb-4">
+														<label className="block text-sm font-medium text-gray-700 mb-3">
+															Select Date
+														</label>
+
+														{/* Calendar Header */}
+														<div className="flex items-center justify-between mb-3">
+															<button
+																onClick={() => navigateMonth('prev')}
+																className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+															>
+																<svg
+																	className="w-4 h-4"
+																	fill="none"
+																	stroke="currentColor"
+																	viewBox="0 0 24 24"
+																>
+																	<path
+																		strokeLinecap="round"
+																		strokeLinejoin="round"
+																		strokeWidth={2}
+																		d="M15 19l-7-7 7-7"
+																	/>
+																</svg>
+															</button>
+															<h3 className="text-lg font-semibold text-gray-900">
+																{currentMonth.toLocaleDateString('en-US', {
+																	month: 'long',
+																	year: 'numeric',
+																})}
+															</h3>
+															<button
+																onClick={() => navigateMonth('next')}
+																className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+															>
+																<svg
+																	className="w-4 h-4"
+																	fill="none"
+																	stroke="currentColor"
+																	viewBox="0 0 24 24"
+																>
+																	<path
+																		strokeLinecap="round"
+																		strokeLinejoin="round"
+																		strokeWidth={2}
+																		d="M9 5l7 7-7 7"
+																	/>
+																</svg>
+															</button>
+														</div>
+
+														{/* Calendar Grid */}
+														<div className="grid grid-cols-7 gap-1 mb-2">
+															{[
+																'Sun',
+																'Mon',
+																'Tue',
+																'Wed',
+																'Thu',
+																'Fri',
+																'Sat',
+															].map((day) => (
+																<div
+																	key={day}
+																	className="p-2 text-center text-xs font-medium text-gray-500"
+																>
+																	{day}
+																</div>
+															))}
+														</div>
+
+														<div className="grid grid-cols-7 gap-1">
+															{getDaysInMonth(currentMonth).map(
+																(day, index) => (
+																	<div key={index} className="aspect-square">
+																		{day ? (
+																			<button
+																				onClick={() => handleDateSelect(day)}
+																				disabled={isPastDate(day)}
+																				className={`w-full h-full rounded-lg text-sm font-medium transition-colors ${
+																					isSelectedDate(day)
+																						? 'bg-red-500 text-white'
+																						: isToday(day)
+																							? 'bg-red-100 text-red-600 font-semibold'
+																							: isPastDate(day)
+																								? 'text-gray-300 cursor-not-allowed'
+																								: 'text-gray-700 hover:bg-gray-100'
+																				}`}
+																			>
+																				{day.getDate()}
+																			</button>
+																		) : (
+																			<div></div>
+																		)}
+																	</div>
+																)
+															)}
+														</div>
+													</div>
+
+													{/* Time Selection */}
+													<div>
+														<label className="block text-sm font-medium text-gray-700 mb-2">
+															Select Time
+														</label>
+														<div className="grid grid-cols-4 gap-2 max-h-40 overflow-y-auto">
+															{timeSlots.map((time) => (
+																<button
+																	key={time}
+																	onClick={() => {
+																		const date =
+																			selectedDateTime.split(' ')[0] ||
+																			new Date().toISOString().split('T')[0];
+																		setSelectedDateTime(`${date} ${time}`);
+																	}}
+																	className={`px-3 py-2 text-sm rounded-lg border transition-colors ${
+																		selectedDateTime.includes(time)
+																			? 'bg-red-500 text-white border-red-500'
+																			: 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
+																	}`}
+																>
+																	{time}
+																</button>
+															))}
+														</div>
+													</div>
+
+													{/* Close Button */}
+													<div className="mt-4 pt-4 border-t border-gray-200">
+														<button
+															onClick={() => setIsDateTimePickerOpen(false)}
+															className="w-full bg-red-500 text-white py-2 rounded-lg hover:bg-red-600 transition-colors"
+														>
+															Done
+														</button>
+													</div>
+												</div>
+											)}
+										</div>
+									)}
 								</div>
 
 								{/* Search Button */}
