@@ -50,7 +50,9 @@ export default function RegisterPage() {
 				toast.success(
 					'Registration successful! Please check your email to verify your account.'
 				);
-				router.push('/login');
+				router.push(
+					`/check-email?email=${encodeURIComponent(formData.email)}&type=client`
+				);
 			}
 		} catch (error: any) {
 			console.error('Registration error:', error);
@@ -123,7 +125,7 @@ export default function RegisterPage() {
 								name="name"
 								type="text"
 								required
-								className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-[#ff5b5b] focus:border-[#ff5b5b] sm:text-sm"
+								className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-[#ff5b5b] focus:border-[#ff5b5b] sm:text-sm text-gray-900"
 								placeholder="Enter your full name"
 								value={formData.name}
 								onChange={handleInputChange}
@@ -144,7 +146,7 @@ export default function RegisterPage() {
 								type="email"
 								autoComplete="email"
 								required
-								className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-[#ff5b5b] focus:border-[#ff5b5b] sm:text-sm"
+								className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-[#ff5b5b] focus:border-[#ff5b5b] sm:text-sm text-gray-900"
 								placeholder="Enter your email"
 								value={formData.email}
 								onChange={handleInputChange}
@@ -163,7 +165,7 @@ export default function RegisterPage() {
 								id="phone"
 								name="phone"
 								type="tel"
-								className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-[#ff5b5b] focus:border-[#ff5b5b] sm:text-sm"
+								className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-[#ff5b5b] focus:border-[#ff5b5b] sm:text-sm text-gray-900"
 								placeholder="Enter your phone number"
 								value={formData.phone}
 								onChange={handleInputChange}
@@ -184,7 +186,7 @@ export default function RegisterPage() {
 								type="password"
 								autoComplete="new-password"
 								required
-								className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-[#ff5b5b] focus:border-[#ff5b5b] sm:text-sm"
+								className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-[#ff5b5b] focus:border-[#ff5b5b] sm:text-sm text-gray-900"
 								placeholder="Create a password"
 								value={formData.password}
 								onChange={handleInputChange}
@@ -205,7 +207,7 @@ export default function RegisterPage() {
 								type="password"
 								autoComplete="new-password"
 								required
-								className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-[#ff5b5b] focus:border-[#ff5b5b] sm:text-sm"
+								className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-[#ff5b5b] focus:border-[#ff5b5b] sm:text-sm text-gray-900"
 								placeholder="Confirm your password"
 								value={formData.confirmPassword}
 								onChange={handleInputChange}

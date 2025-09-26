@@ -4,6 +4,8 @@ import { useEffect, useState, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import LoadingSpinner from '@/components/LoadingSpinner';
+import { useAuthStore } from '@/stores/authStore';
+import { apiClient } from '@/lib/api-client';
 
 function VerifyForm() {
 	const [status, setStatus] = useState<'loading' | 'success' | 'error'>(
@@ -12,6 +14,7 @@ function VerifyForm() {
 	const [message, setMessage] = useState('');
 	const router = useRouter();
 	const searchParams = useSearchParams();
+	const { setUser, setSession } = useAuthStore();
 
 	useEffect(() => {
 		const handleEmailVerification = async () => {
@@ -19,8 +22,7 @@ function VerifyForm() {
 				// Получаем параметры из URL
 				const token = searchParams.get('token');
 				const type = searchParams.get('type');
-				const redirectTo =
-					searchParams.get('redirect_to') || '/owner-dashboard';
+				const redirectTo = searchParams.get('redirect_to') || '/dashboard';
 
 				if (type === 'signup' && token) {
 					// Подтверждаем email
@@ -36,10 +38,47 @@ function VerifyForm() {
 					setStatus('success');
 					setMessage('Email verified successfully! Redirecting...');
 
-					// Перенаправляем пользователя
-					setTimeout(() => {
-						router.push(redirectTo);
-					}, 2000);
+					// Получаем обновленную сессию после подтверждения
+					const {
+						data: { session },
+					} = await supabase.auth.getSession();
+
+					if (session) {
+						// Обновляем auth store
+						setSession(session);
+
+						// Получаем данные пользователя с бэкенда для определения роли
+						try {
+							const userResponse = await apiClient.get('/auth/user');
+							const userData = (userResponse as any).data;
+							setUser(userData);
+
+							// Определяем куда перенаправлять на основе роли
+							let finalRedirect = '/dashboard'; // по умолчанию для клиентов
+
+							if (userData.role === 'OWNER') {
+								finalRedirect = '/owner-dashboard';
+							} else if (userData.role === 'ADMIN') {
+								finalRedirect = '/admin-panel';
+							}
+
+							// Перенаправляем пользователя
+							setTimeout(() => {
+								router.push(finalRedirect);
+							}, 2000);
+						} catch (error) {
+							console.error('Error fetching user data:', error);
+							// Fallback - перенаправляем на dashboard по умолчанию
+							setTimeout(() => {
+								router.push('/dashboard');
+							}, 2000);
+						}
+					} else {
+						// Если нет сессии, перенаправляем на логин
+						setTimeout(() => {
+							router.push('/login');
+						}, 2000);
+					}
 				} else {
 					// Если нет токена, проверяем текущую сессию
 					const {
@@ -49,9 +88,35 @@ function VerifyForm() {
 					if (session?.user?.email_confirmed_at) {
 						setStatus('success');
 						setMessage('Email already verified! Redirecting...');
-						setTimeout(() => {
-							router.push(redirectTo);
-						}, 2000);
+
+						// Обновляем auth store
+						setSession(session);
+
+						// Получаем данные пользователя с бэкенда для определения роли
+						try {
+							const userResponse = await apiClient.get('/auth/user');
+							const userData = (userResponse as any).data;
+							setUser(userData);
+
+							// Определяем куда перенаправлять на основе роли
+							let finalRedirect = '/dashboard'; // по умолчанию для клиентов
+
+							if (userData.role === 'OWNER') {
+								finalRedirect = '/owner-dashboard';
+							} else if (userData.role === 'ADMIN') {
+								finalRedirect = '/admin-panel';
+							}
+
+							setTimeout(() => {
+								router.push(finalRedirect);
+							}, 2000);
+						} catch (error) {
+							console.error('Error fetching user data:', error);
+							// Fallback - перенаправляем на dashboard по умолчанию
+							setTimeout(() => {
+								router.push('/dashboard');
+							}, 2000);
+						}
 					} else {
 						throw new Error('No verification token found');
 					}
@@ -59,7 +124,9 @@ function VerifyForm() {
 			} catch (error: unknown) {
 				console.error('Email verification error:', error);
 				setStatus('error');
-				setMessage(error instanceof Error ? error.message : 'Failed to verify email');
+				setMessage(
+					error instanceof Error ? error.message : 'Failed to verify email'
+				);
 			}
 		};
 

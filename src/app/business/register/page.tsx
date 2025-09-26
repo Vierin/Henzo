@@ -52,7 +52,9 @@ export default function BusinessRegisterPage() {
 				toast.success(
 					'Business registration successful! Please check your email to verify your account.'
 				);
-				router.push('/login');
+				router.push(
+					`/check-email?email=${encodeURIComponent(formData.email)}&type=business`
+				);
 			}
 		} catch (error: any) {
 			console.error('Business registration error:', error);

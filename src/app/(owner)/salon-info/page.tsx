@@ -11,6 +11,16 @@ import PhotoUpload from '@/components/PhotoUpload';
 import { useSalon } from '@/hooks/useSalon';
 import { apiClient } from '@/lib/api-client';
 
+// Salon categories
+const SALON_CATEGORIES = [
+	{ id: 1, name: 'Hair and Barber' },
+	{ id: 2, name: 'Tattoo and Piercing' },
+	{ id: 3, name: 'Massage and Spa' },
+	{ id: 4, name: 'Manicure and Pedicure' },
+	{ id: 5, name: 'Cosmetic Medicine' },
+	{ id: 6, name: 'Other Services' },
+] as const;
+
 // Кастомный компонент для выбора времени в 24-часовом формате
 const TimePicker24h = ({
 	value,
@@ -73,6 +83,7 @@ export default function SalonInfoPage() {
 		instagram: '',
 		logo: '',
 		photos: [] as string[],
+		salonCategories: [] as number[],
 		operatingHours: {
 			monday: { open: '09:00', close: '18:00', closed: false },
 			tuesday: { open: '09:00', close: '18:00', closed: false },
@@ -112,6 +123,8 @@ export default function SalonInfoPage() {
 				instagram: salon.instagram || '',
 				logo: salon.logo || '',
 				photos: salon.photos || [],
+				salonCategories:
+					(salon as any).salonCategories?.map((cat: any) => cat.id) || [],
 				operatingHours: salon.workingHours
 					? {
 							monday: {
@@ -175,6 +188,10 @@ export default function SalonInfoPage() {
 				throw new Error('Address is required');
 			}
 
+			if (formData.salonCategories.length === 0) {
+				throw new Error('Please select at least one salon category');
+			}
+
 			const salonData = {
 				name: formData.salonName,
 				description: formData.description,
@@ -185,6 +202,7 @@ export default function SalonInfoPage() {
 				instagram: formData.instagram,
 				logo: formData.logo,
 				photos: formData.photos,
+				salonCategories: formData.salonCategories,
 				workingHours: formData.operatingHours,
 			};
 
@@ -251,6 +269,15 @@ export default function SalonInfoPage() {
 						: '',
 				},
 			},
+		}));
+	};
+
+	const handleCategoryToggle = (categoryId: number) => {
+		setFormData((prev) => ({
+			...prev,
+			salonCategories: prev.salonCategories.includes(categoryId)
+				? prev.salonCategories.filter((cat) => cat !== categoryId)
+				: [...prev.salonCategories, categoryId],
 		}));
 	};
 
@@ -322,6 +349,39 @@ export default function SalonInfoPage() {
 								className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#ff5b5b] focus:border-[#ff5b5b] text-gray-900"
 								placeholder="Describe your salon..."
 							/>
+						</div>
+
+						<div>
+							<label className="block text-sm font-medium text-gray-700 mb-2">
+								Salon Categories <span className="text-red-500">*</span>
+							</label>
+							<p className="text-sm text-gray-600 mb-3">
+								Select at least one category that best describes your salon
+								services
+							</p>
+							<div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+								{SALON_CATEGORIES.map((category) => (
+									<label
+										key={category.id}
+										className="flex items-center space-x-3 p-3 border border-gray-300 rounded-lg hover:bg-gray-50 cursor-pointer transition-colors"
+									>
+										<input
+											type="checkbox"
+											checked={formData.salonCategories.includes(category.id)}
+											onChange={() => handleCategoryToggle(category.id)}
+											className="w-4 h-4 text-[#ff5b5b] border-gray-300 rounded focus:ring-[#ff5b5b] focus:ring-2"
+										/>
+										<span className="text-sm font-medium text-gray-900">
+											{category.name}
+										</span>
+									</label>
+								))}
+							</div>
+							{formData.salonCategories.length === 0 && (
+								<p className="text-red-500 text-sm mt-2">
+									Please select at least one category
+								</p>
+							)}
 						</div>
 
 						<div>
