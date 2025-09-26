@@ -1,31 +1,42 @@
 'use client';
 
 import { useEffect } from 'react';
+import { usePathname } from 'next/navigation';
 import { useAuthStore } from '@/stores/authStore';
-import { supabase } from '@/lib/supabase';
 
-export function AuthProvider({ children }: { children: React.ReactNode }) {
-	const { checkAuth, setUser, clearUser } = useAuthStore();
+export default function AuthProvider({
+	children,
+}: {
+	children: React.ReactNode;
+}) {
+	const { initializeForPublicRoute } = useAuthStore();
+	const pathname = usePathname();
+
+	// Публичные маршруты, которые не требуют проверки аутентификации
+	const publicRoutes = [
+		'/',
+		'/login',
+		'/register',
+		'/salons',
+		'/salon',
+		'/about',
+		'/contact',
+		'/forgot-password',
+		'/reset-password',
+		'/verify',
+	];
 
 	useEffect(() => {
-		// Check auth on mount
-		checkAuth();
+		// Проверяем, является ли текущий маршрут публичным
+		const isPublicRoute = publicRoutes.some((route) =>
+			pathname.startsWith(route)
+		);
 
-		// Listen for auth state changes
-		const {
-			data: { subscription },
-		} = supabase.auth.onAuthStateChange((event, session) => {
-			if (event === 'SIGNED_IN' && session) {
-				// User signed in, refresh user data
-				checkAuth();
-			} else if (event === 'SIGNED_OUT') {
-				// User signed out, clear user data
-				clearUser();
-			}
-		});
-
-		return () => subscription.unsubscribe();
-	}, [checkAuth, clearUser]);
+		// Для публичных страниц просто инициализируем без проверки
+		if (isPublicRoute) {
+			initializeForPublicRoute();
+		}
+	}, [pathname, initializeForPublicRoute]);
 
 	return <>{children}</>;
 }

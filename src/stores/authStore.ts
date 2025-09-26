@@ -39,8 +39,10 @@ interface AuthState {
 
 	// Internal actions
 	setUser: (user: User | null) => void;
+	setSession: (session: any) => void;
 	setLoading: (loading: boolean) => void;
 	clearUser: () => void;
+	initializeForPublicRoute: () => void;
 }
 
 export const useAuthStore = create<AuthState>()(
@@ -74,6 +76,11 @@ export const useAuthStore = create<AuthState>()(
 
 			setLoading: (isLoading) => set({ isLoading }),
 
+			setSession: (session) => {
+				// This method is used by the unified login page
+				// The session is handled by Supabase directly
+			},
+
 			clearUser: () => {
 				set({
 					user: null,
@@ -81,6 +88,13 @@ export const useAuthStore = create<AuthState>()(
 					isClient: false,
 					isOwner: false,
 					isAdmin: false,
+					isLoading: false,
+					isInitialized: true,
+				});
+			},
+
+			initializeForPublicRoute: () => {
+				set({
 					isLoading: false,
 					isInitialized: true,
 				});
@@ -243,7 +257,9 @@ export const useAuthStore = create<AuthState>()(
 					});
 
 					if (!response.ok) {
-						get().clearUser();
+						// Если API недоступен, не очищаем пользователя
+						console.warn('API not available, keeping current auth state');
+						set({ isLoading: false, isInitialized: true });
 						return;
 					}
 
@@ -251,9 +267,8 @@ export const useAuthStore = create<AuthState>()(
 					get().setUser(result.user);
 				} catch (error) {
 					console.error('Auth check error:', error);
-					get().clearUser();
-				} finally {
-					set({ isLoading: false });
+					// Не очищаем пользователя при ошибке сети
+					set({ isLoading: false, isInitialized: true });
 				}
 			},
 		}),

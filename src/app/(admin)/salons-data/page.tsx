@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { apiClient } from '@/lib/api-client';
+import SalonLogo from '@/components/admin/SalonLogo';
 
 interface Salon {
 	id: string;
@@ -37,7 +38,7 @@ export default function AdminSalons() {
 	useEffect(() => {
 		const fetchSalons = async () => {
 			try {
-				const data = await apiClient.get('/admin/salons');
+				const data = await apiClient.get<Salon[]>('/admin/salons');
 				setSalons(data);
 			} catch (err) {
 				setError(err instanceof Error ? err.message : 'Failed to load salons');
@@ -87,18 +88,12 @@ export default function AdminSalons() {
 							<div className="px-4 py-4 sm:px-6">
 								<div className="flex items-center justify-between">
 									<div className="flex items-center">
-										<div className="flex-shrink-0 h-12 w-12">
-											{salon.logo ? (
-												<img
-													className="h-12 w-12 rounded-lg object-cover"
-													src={salon.logo}
-													alt={salon.name}
-												/>
-											) : (
-												<div className="h-12 w-12 rounded-lg bg-gray-200 flex items-center justify-center">
-													<span className="text-gray-400 text-lg">🏢</span>
-												</div>
-											)}
+										<div className="flex-shrink-0">
+											<SalonLogo
+												logo={salon.logo}
+												name={salon.name}
+												className="h-12 w-12"
+											/>
 										</div>
 										<div className="ml-4">
 											<div className="flex items-center">
@@ -130,7 +125,7 @@ export default function AdminSalons() {
 										<div className="text-sm text-gray-500">
 											<div>
 												Created:{' '}
-												{new Date(salon.createdAt).toLocaleDateString()}
+												{new Date(salon.createdAt).toLocaleDateString('en-GB')}
 											</div>
 										</div>
 										<div className="flex space-x-2">

@@ -19,7 +19,6 @@ export default function PublicHeader() {
 	const languages = [
 		{ code: 'EN', name: 'English', flag: '🇺🇸' },
 		{ code: 'VI', name: 'Tiếng Việt', flag: '🇻🇳' },
-		{ code: 'RU', name: 'Русский', flag: '🇷🇺' },
 	];
 
 	const handleLanguageSelect = (language: (typeof languages)[0]) => {
@@ -33,9 +32,13 @@ export default function PublicHeader() {
 		// Проверяем, авторизован ли пользователь как владелец
 		if (user && (isOwner || isAdmin)) {
 			// Пользователь уже авторизован как владелец, переходим в панель
-			router.push('/owner-dashboard');
+			if (isAdmin) {
+				router.push('/admin-panel');
+			} else {
+				router.push('/owner/dashboard');
+			}
 		} else {
-			// Пользователь не авторизован или не владелец, переходим на страницу логина для бизнеса
+			// Пользователь не авторизован или не владелец, переходим на единую страницу логина
 			router.push('/login');
 		}
 	};
@@ -141,8 +144,10 @@ export default function PublicHeader() {
 								onClick={() => {
 									if (isClient) {
 										router.push('/dashboard');
-									} else if (isOwner || isAdmin) {
-										router.push('/owner-dashboard');
+									} else if (isAdmin) {
+										router.push('/admin-panel');
+									} else if (isOwner) {
+										router.push('/owner/dashboard');
 									}
 								}}
 								className="flex items-center gap-2 text-sm text-gray-700 font-medium hover:text-[#8B4513] transition-colors"
@@ -191,10 +196,10 @@ export default function PublicHeader() {
 								For Business
 							</button>
 							<Link
-								href="/client/login"
+								href="/login"
 								className="bg-[#ff5b5b] text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-[#e04a4a] transition-colors"
 							>
-								For Clients
+								Sign In
 							</Link>
 						</>
 					)}

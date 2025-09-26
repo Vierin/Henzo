@@ -14,12 +14,29 @@ function ResetPasswordForm() {
 	const searchParams = useSearchParams();
 
 	useEffect(() => {
-		// Check if we have the necessary tokens
-		const accessToken = searchParams.get('access_token');
-		const refreshToken = searchParams.get('refresh_token');
+		// Check if we have the necessary tokens from URL hash or search params
+		const hashParams = new URLSearchParams(window.location.hash.substring(1));
+		const accessToken =
+			searchParams.get('access_token') || hashParams.get('access_token');
+		const refreshToken =
+			searchParams.get('refresh_token') || hashParams.get('refresh_token');
 
 		if (!accessToken || !refreshToken) {
+			console.log('No tokens found, redirecting to login');
 			router.push('/login');
+		} else {
+			// Set the session with the tokens
+			supabase.auth
+				.setSession({
+					access_token: accessToken,
+					refresh_token: refreshToken,
+				})
+				.then(({ error }) => {
+					if (error) {
+						console.error('Error setting session:', error);
+						router.push('/login');
+					}
+				});
 		}
 	}, [searchParams, router]);
 
@@ -43,6 +60,18 @@ function ResetPasswordForm() {
 		}
 
 		try {
+			// Check if we have a valid session
+			const {
+				data: { session },
+				error: sessionError,
+			} = await supabase.auth.getSession();
+
+			if (sessionError || !session) {
+				throw new Error(
+					'Invalid or expired reset link. Please request a new password reset.'
+				);
+			}
+
 			const { error } = await supabase.auth.updateUser({
 				password: password,
 			});
@@ -51,9 +80,9 @@ function ResetPasswordForm() {
 
 			setSuccess(true);
 
-			// Redirect to dashboard after 2 seconds
+			// Redirect to login after 2 seconds
 			setTimeout(() => {
-				router.push('/');
+				router.push('/login');
 			}, 2000);
 		} catch (err: unknown) {
 			setError(err instanceof Error ? err.message : 'Failed to reset password');

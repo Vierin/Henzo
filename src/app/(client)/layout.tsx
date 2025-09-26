@@ -1,6 +1,6 @@
 'use client';
 
-import AuthGuard from '@/components/AuthGuard';
+import ProtectedRoute from '@/components/ProtectedRoute';
 import ClientLayout from '@/components/ClientLayout';
 
 export default function ClientGroupLayout({
@@ -9,8 +9,8 @@ export default function ClientGroupLayout({
 	children: React.ReactNode;
 }) {
 	return (
-		<AuthGuard requiredRole="CLIENT">
+		<ProtectedRoute allowedRoles={['CLIENT']}>
 			<ClientLayout>{children}</ClientLayout>
-		</AuthGuard>
+		</ProtectedRoute>
 	);
 }
