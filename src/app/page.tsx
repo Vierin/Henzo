@@ -7,6 +7,7 @@ import ErrorDisplay from '../components/ErrorDisplay';
 import { useSalonsWithServices } from '@/hooks/useSalons';
 import { STATIC_CATEGORIES } from '@/constants/categories';
 import AddressAutocomplete from '@/components/AddressAutocomplete';
+import ServiceAutocomplete from '@/components/ServiceAutocomplete';
 import { supabase } from '@/lib/supabase';
 import { Salon, Service } from '@/types';
 import Image from 'next/image';
@@ -99,7 +100,7 @@ export default function HomePage() {
 				},
 				(error) => {
 					console.error('Error getting location:', error);
-					
+
 					// Handle different geolocation errors
 					let errorMessage = 'Current Location';
 					switch (error.code) {
@@ -115,13 +116,15 @@ export default function HomePage() {
 						default:
 							errorMessage = 'Current Location';
 					}
-					
+
 					setSelectedLocation(errorMessage);
 					setShowCurrentLocation(false);
-					
+
 					// Show user-friendly message
 					if (error.code === 1) {
-						alert('Please allow location access to use current location feature.');
+						alert(
+							'Please allow location access to use current location feature.'
+						);
 					}
 				}
 			);
@@ -218,6 +221,19 @@ export default function HomePage() {
 		router.push(`/salons?${params.toString()}`);
 	};
 
+	const handleClearSearch = () => {
+		setSearchQuery('');
+	};
+
+	const handleClearLocation = () => {
+		setSelectedLocation('');
+		setShowCurrentLocation(true);
+	};
+
+	const handleClearDateTime = () => {
+		setSelectedDateTime('');
+	};
+
 	const getPublicUrl = (filePath: string) => {
 		const { data } = supabase.storage
 			.from('salon-files')
@@ -295,30 +311,59 @@ export default function HomePage() {
 								<div className="space-y-4">
 									{/* Search by treatment or salon */}
 									<div className="relative">
-										<input
-											type="text"
-											placeholder={
-												activeTab === 'treatments'
-													? 'Search for treatments'
-													: 'Search for salon name'
-											}
-											value={searchQuery}
-											onChange={(e) => setSearchQuery(e.target.value)}
-											className="w-full px-4 py-4 pl-12 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent text-gray-900"
-										/>
-										<svg
-											className="absolute left-4 top-4 h-6 w-6 text-gray-400"
-											fill="none"
-											stroke="currentColor"
-											viewBox="0 0 24 24"
-										>
-											<path
-												strokeLinecap="round"
-												strokeLinejoin="round"
-												strokeWidth={2}
-												d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+										{activeTab === 'treatments' ? (
+											<ServiceAutocomplete
+												value={searchQuery}
+												onChange={setSearchQuery}
+												placeholder="Search for treatments"
+												className="w-full"
 											/>
-										</svg>
+										) : (
+											<>
+												<input
+													type="text"
+													placeholder="Search for salon name"
+													value={searchQuery}
+													onChange={(e) => setSearchQuery(e.target.value)}
+													className="w-full px-4 py-4 pl-12 pr-12 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent text-gray-900"
+												/>
+												<svg
+													className="absolute left-4 top-4 h-6 w-6 text-gray-400"
+													fill="none"
+													stroke="currentColor"
+													viewBox="0 0 24 24"
+												>
+													<path
+														strokeLinecap="round"
+														strokeLinejoin="round"
+														strokeWidth={2}
+														d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+													/>
+												</svg>
+												{/* Clear button for salon search */}
+												{searchQuery && (
+													<button
+														onClick={handleClearSearch}
+														className="absolute right-3 top-1/2 transform -translate-y-1/2 p-1 hover:bg-gray-100 rounded-full transition-colors"
+														type="button"
+													>
+														<svg
+															className="w-4 h-4 text-gray-400 hover:text-gray-600"
+															fill="none"
+															stroke="currentColor"
+															viewBox="0 0 24 24"
+														>
+															<path
+																strokeLinecap="round"
+																strokeLinejoin="round"
+																strokeWidth={2}
+																d="M6 18L18 6M6 6l12 12"
+															/>
+														</svg>
+													</button>
+												)}
+											</>
+										)}
 									</div>
 
 									{/* Location Input - только для Treatments */}
@@ -364,7 +409,7 @@ export default function HomePage() {
 														setShowCurrentLocation(false);
 													}}
 													placeholder="Enter address or postal code"
-													className="w-full px-4 py-4 pl-12 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent text-gray-900"
+													className="w-full px-4 py-4 pl-12 pr-12 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent text-gray-900"
 												/>
 												<svg
 													className="absolute left-4 top-4 h-6 w-6 text-gray-400"
@@ -396,7 +441,7 @@ export default function HomePage() {
 												onClick={() =>
 													setIsDateTimePickerOpen(!isDateTimePickerOpen)
 												}
-												className="w-full px-4 py-4 pl-12 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent text-gray-900 text-left flex items-center justify-between"
+												className="w-full px-4 py-4 pl-12 pr-12 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent text-gray-900 text-left flex items-center justify-between"
 											>
 												<span
 													className={
@@ -405,21 +450,48 @@ export default function HomePage() {
 												>
 													{selectedDateTime || 'Select date & time'}
 												</span>
-												<svg
-													className={`w-5 h-5 text-gray-400 transition-transform ${
-														isDateTimePickerOpen ? 'rotate-180' : ''
-													}`}
-													fill="none"
-													stroke="currentColor"
-													viewBox="0 0 24 24"
-												>
-													<path
-														strokeLinecap="round"
-														strokeLinejoin="round"
-														strokeWidth={2}
-														d="M19 9l-7 7-7-7"
-													/>
-												</svg>
+												<div className="flex items-center space-x-2">
+													{/* Clear button for date/time */}
+													{selectedDateTime && (
+														<button
+															onClick={(e) => {
+																e.stopPropagation();
+																handleClearDateTime();
+															}}
+															className="p-1 hover:bg-gray-100 rounded-full transition-colors"
+															type="button"
+														>
+															<svg
+																className="w-4 h-4 text-gray-400 hover:text-gray-600"
+																fill="none"
+																stroke="currentColor"
+																viewBox="0 0 24 24"
+															>
+																<path
+																	strokeLinecap="round"
+																	strokeLinejoin="round"
+																	strokeWidth={2}
+																	d="M6 18L18 6M6 6l12 12"
+																/>
+															</svg>
+														</button>
+													)}
+													<svg
+														className={`w-5 h-5 text-gray-400 transition-transform ${
+															isDateTimePickerOpen ? 'rotate-180' : ''
+														}`}
+														fill="none"
+														stroke="currentColor"
+														viewBox="0 0 24 24"
+													>
+														<path
+															strokeLinecap="round"
+															strokeLinejoin="round"
+															strokeWidth={2}
+															d="M19 9l-7 7-7-7"
+														/>
+													</svg>
+												</div>
 											</button>
 											<svg
 												className="absolute left-4 top-4 h-6 w-6 text-gray-400"
