@@ -3,6 +3,7 @@
 import { useEffect, useRef } from 'react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
+import { cleanAddressFromCountry } from '@/constants/locations';
 import '@/styles/map.css';
 
 // Fix for default markers in Leaflet with Next.js
@@ -137,12 +138,6 @@ export default function MapComponent({
 			if (result.success && result.data) {
 				const { lat, lon, display_name } = result.data;
 
-				console.log('✅ Geocoding successful:', {
-					lat,
-					lon,
-					display_name,
-				});
-
 				// Update map center and zoom
 				if (mapInstanceRef.current) {
 					mapInstanceRef.current.setView([lat, lon], 15);
@@ -227,19 +222,7 @@ export default function MapComponent({
 			const lon = parseFloat(result.lon);
 
 			// Remove country name from the end of the address
-			let cleanAddress = result.display_name;
-
-			// Remove various Vietnam country indicators
-			cleanAddress = cleanAddress
-				.replace(/,\s*Vietnam$/i, '')
-				.replace(/,\s*Việt Nam$/i, '')
-				.replace(/,\s*VN$/i, '')
-				.replace(/,\s*Viet Nam$/i, '')
-				.replace(/\s*Vietnam$/i, '')
-				.replace(/\s*Việt Nam$/i, '')
-				.replace(/\s*VN$/i, '')
-				.replace(/\s*Viet Nam$/i, '')
-				.trim();
+			const cleanAddress = cleanAddressFromCountry(result.display_name);
 
 			console.log('✅ Fallback geocoding successful:', {
 				lat,

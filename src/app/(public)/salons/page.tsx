@@ -9,49 +9,8 @@ import SalonImage from '../../../components/SalonImage';
 import { useSalonsWithServices } from '@/hooks/useSalons';
 import { ServiceResponseDto } from '@/types/dto/service.dto';
 import { Salon, Service } from '@/types';
+import { checkLocationMatch } from '@/constants/locations';
 import Image from 'next/image';
-
-// Helper function to check location matches
-const checkLocationMatch = (salonAddress: string, searchLocation: string): boolean => {
-	// Common Vietnamese location mappings
-	const locationMappings: { [key: string]: string[] } = {
-		'hanoi': ['hà nội', 'ha noi', 'hanoi'],
-		'hồ chí minh': ['ho chi minh', 'hcm', 'saigon', 'sài gòn'],
-		'danang': ['đà nẵng', 'da nang'],
-		'cantho': ['cần thơ', 'can tho'],
-		'haiphong': ['hải phòng', 'hai phong'],
-		'binhduong': ['bình dương', 'binh duong'],
-		'dongnai': ['đồng nai', 'dong nai'],
-		'longan': ['long an', 'longan'],
-		'thaibinh': ['thái bình', 'thai binh'],
-		'quangninh': ['quảng ninh', 'quang ninh'],
-	};
-
-	// Normalize search location
-	const normalizedSearch = searchLocation
-		.replace(/[àáạảãâầấậẩẫăằắặẳẵ]/g, 'a')
-		.replace(/[èéẹẻẽêềếệểễ]/g, 'e')
-		.replace(/[ìíịỉĩ]/g, 'i')
-		.replace(/[òóọỏõôồốộổỗơờớợởỡ]/g, 'o')
-		.replace(/[ùúụủũưừứựửữ]/g, 'u')
-		.replace(/[ỳýỵỷỹ]/g, 'y')
-		.replace(/[đ]/g, 'd')
-		.toLowerCase();
-
-	// Check if any mapping matches
-	for (const [key, variations] of Object.entries(locationMappings)) {
-		if (variations.some(variation => normalizedSearch.includes(variation))) {
-			// Check if salon address contains any of these variations
-			return variations.some(variation => 
-				salonAddress.includes(variation) || salonAddress.includes(key)
-			);
-		}
-	}
-
-	// Fallback: check for district/ward matches
-	const searchParts = searchLocation.split(' ').filter(part => part.length > 2);
-	return searchParts.some(part => salonAddress.includes(part));
-};
 
 export default function SalonsPage() {
 	const router = useRouter();
@@ -138,14 +97,16 @@ export default function SalonsPage() {
 		if (selectedLocation.trim()) {
 			filtered = filtered.filter((salon) => {
 				if (!salon.address) return false;
-				
+
 				const salonAddress = salon.address.toLowerCase();
 				const searchLocation = selectedLocation.toLowerCase();
-				
+
 				// Check for exact matches or partial matches
-				return salonAddress.includes(searchLocation) || 
-					   searchLocation.includes(salonAddress.split(',')[0]) ||
-					   checkLocationMatch(salonAddress, searchLocation);
+				return (
+					salonAddress.includes(searchLocation) ||
+					searchLocation.includes(salonAddress.split(',')[0]) ||
+					checkLocationMatch(salonAddress, searchLocation)
+				);
 			});
 		}
 

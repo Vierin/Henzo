@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
+import { cleanAddressFromCountry } from '@/constants/locations';
 
 interface AddressSuggestion {
 	display_name: string;
@@ -51,19 +52,9 @@ export default function AddressAutocomplete({
 				const result = await response.json();
 				if (result.success && result.data) {
 					// Clean the address from country name
-					let cleanAddress = result.data.display_name || result.data.address;
-
-					// Remove various Vietnam country indicators
-					cleanAddress = cleanAddress
-						.replace(/,\s*Vietnam$/i, '')
-						.replace(/,\s*Việt Nam$/i, '')
-						.replace(/,\s*VN$/i, '')
-						.replace(/,\s*Viet Nam$/i, '')
-						.replace(/\s*Vietnam$/i, '')
-						.replace(/\s*Việt Nam$/i, '')
-						.replace(/\s*VN$/i, '')
-						.replace(/\s*Viet Nam$/i, '')
-						.trim();
+					const cleanAddress = cleanAddressFromCountry(
+						result.data.display_name || result.data.address
+					);
 
 					const cleanedData = {
 						...result.data,
@@ -112,12 +103,15 @@ export default function AddressAutocomplete({
 		const data = await response.json();
 
 		if (data && data.length > 0) {
-			const suggestions = data.map((item: any) => ({
-				lat: parseFloat(item.lat),
-				lon: parseFloat(item.lon),
-				display_name: item.display_name,
-				address: item.display_name,
-			}));
+			const suggestions = data.map((item: any) => {
+				const cleanAddress = cleanAddressFromCountry(item.display_name);
+				return {
+					lat: parseFloat(item.lat),
+					lon: parseFloat(item.lon),
+					display_name: cleanAddress,
+					address: cleanAddress,
+				};
+			});
 			setSuggestions(suggestions);
 		} else {
 			setSuggestions([]);
