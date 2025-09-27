@@ -50,8 +50,29 @@ export default function AddressAutocomplete({
 			if (response.ok) {
 				const result = await response.json();
 				if (result.success && result.data) {
+					// Clean the address from country name
+					let cleanAddress = result.data.display_name || result.data.address;
+
+					// Remove various Vietnam country indicators
+					cleanAddress = cleanAddress
+						.replace(/,\s*Vietnam$/i, '')
+						.replace(/,\s*Việt Nam$/i, '')
+						.replace(/,\s*VN$/i, '')
+						.replace(/,\s*Viet Nam$/i, '')
+						.replace(/\s*Vietnam$/i, '')
+						.replace(/\s*Việt Nam$/i, '')
+						.replace(/\s*VN$/i, '')
+						.replace(/\s*Viet Nam$/i, '')
+						.trim();
+
+					const cleanedData = {
+						...result.data,
+						display_name: cleanAddress,
+						address: cleanAddress,
+					};
+
 					// Wrap single result in array for consistency
-					setSuggestions([result.data]);
+					setSuggestions([cleanedData]);
 					return;
 				}
 			}
@@ -219,11 +240,7 @@ export default function AddressAutocomplete({
 							onClick={() => handleSuggestionClick(suggestion)}
 							className="w-full px-3 py-2 text-left hover:bg-gray-50 border-b border-gray-100 last:border-b-0 text-sm text-gray-700"
 						>
-							<div className="font-medium">{suggestion.display_name}</div>
-							<div className="text-xs text-gray-500">
-								Lat: {parseFloat(suggestion.lat).toFixed(4)}, Lon:{' '}
-								{parseFloat(suggestion.lon).toFixed(4)}
-							</div>
+							<div className="font-large">{suggestion.display_name}</div>
 						</button>
 					))}
 				</div>

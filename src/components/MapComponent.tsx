@@ -225,12 +225,26 @@ export default function MapComponent({
 			const result = data[0];
 			const lat = parseFloat(result.lat);
 			const lon = parseFloat(result.lon);
-			const display_name = result.display_name;
+
+			// Remove country name from the end of the address
+			let cleanAddress = result.display_name;
+
+			// Remove various Vietnam country indicators
+			cleanAddress = cleanAddress
+				.replace(/,\s*Vietnam$/i, '')
+				.replace(/,\s*Việt Nam$/i, '')
+				.replace(/,\s*VN$/i, '')
+				.replace(/,\s*Viet Nam$/i, '')
+				.replace(/\s*Vietnam$/i, '')
+				.replace(/\s*Việt Nam$/i, '')
+				.replace(/\s*VN$/i, '')
+				.replace(/\s*Viet Nam$/i, '')
+				.trim();
 
 			console.log('✅ Fallback geocoding successful:', {
 				lat,
 				lon,
-				display_name,
+				display_name: cleanAddress,
 			});
 
 			// Update map center and zoom
@@ -267,7 +281,9 @@ export default function MapComponent({
 				// Add popup if enabled
 				if (showPopup) {
 					markerRef.current
-						.bindPopup(`<div class="text-sm"><strong>${address}</strong></div>`)
+						.bindPopup(
+							`<div class="text-sm"><strong>${cleanAddress}</strong></div>`
+						)
 						.openPopup();
 				}
 			}

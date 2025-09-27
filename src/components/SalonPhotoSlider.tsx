@@ -16,7 +16,6 @@ export default function SalonPhotoSlider({
 	salonName,
 }: SalonPhotoSliderProps) {
 	const [currentIndex, setCurrentIndex] = useState(0);
-	const [isAutoPlaying, setIsAutoPlaying] = useState(true);
 
 	const getImageSrc = (imageSrc: string) => {
 		// If it's a URL, return it directly
@@ -49,30 +48,25 @@ export default function SalonPhotoSlider({
 
 	// Функции навигации
 	const nextSlide = () => {
-		setIsAutoPlaying(false);
 		setCurrentIndex((prevIndex) => (prevIndex + 1) % allImages.length);
 	};
 
 	const prevSlide = () => {
-		setIsAutoPlaying(false);
 		setCurrentIndex((prevIndex) =>
 			prevIndex === 0 ? allImages.length - 1 : prevIndex - 1
 		);
 	};
 
 	const goToSlide = (index: number) => {
-		setIsAutoPlaying(false);
 		setCurrentIndex(index);
 	};
 
-	// Добавляем клавиатурную навигацию и автопрокрутку
+	// Добавляем клавиатурную навигацию
 	useEffect(() => {
 		const handleKeyPress = (event: KeyboardEvent) => {
 			if (event.key === 'ArrowLeft') {
-				setIsAutoPlaying(false);
 				prevSlide();
 			} else if (event.key === 'ArrowRight') {
-				setIsAutoPlaying(false);
 				nextSlide();
 			}
 		};
@@ -82,17 +76,6 @@ export default function SalonPhotoSlider({
 			document.removeEventListener('keydown', handleKeyPress);
 		};
 	}, [allImages.length]);
-
-	// Автопрокрутка (только если больше одного изображения)
-	useEffect(() => {
-		if (allImages.length <= 1 || !isAutoPlaying) return;
-
-		const interval = setInterval(() => {
-			setCurrentIndex((prevIndex) => (prevIndex + 1) % allImages.length);
-		}, 4000); // Меняем слайд каждые 4 секунды
-
-		return () => clearInterval(interval);
-	}, [allImages.length, isAutoPlaying]);
 
 	// Если нет фотографий, показываем логотип или placeholder
 	if (allImages.length === 0) {
@@ -249,30 +232,6 @@ export default function SalonPhotoSlider({
 						aria-label={`Go to image ${index + 1}`}
 					/>
 				))}
-			</div>
-
-			{/* Image Counter and Auto-play Toggle */}
-			<div className="absolute top-4 right-4 flex items-center gap-2">
-				{allImages.length > 1 && (
-					<button
-						onClick={() => setIsAutoPlaying(!isAutoPlaying)}
-						className="bg-black bg-opacity-50 hover:bg-opacity-70 text-white p-2 rounded-full transition-opacity duration-200"
-						aria-label={isAutoPlaying ? 'Pause slideshow' : 'Play slideshow'}
-					>
-						{isAutoPlaying ? (
-							<svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
-								<path d="M6 4h4v16H6V4zm8 0h4v16h-4V4z" />
-							</svg>
-						) : (
-							<svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
-								<path d="M8 5v14l11-7z" />
-							</svg>
-						)}
-					</button>
-				)}
-				<div className="bg-black bg-opacity-50 text-white px-3 py-1 rounded-full text-sm">
-					{currentIndex + 1} / {allImages.length}
-				</div>
 			</div>
 		</div>
 	);
