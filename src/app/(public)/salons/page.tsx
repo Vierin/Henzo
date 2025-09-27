@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useMemo, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import BookingModal from '../../../components/BookingModal';
 import LoadingSpinner from '../../../components/LoadingSpinner';
 import ErrorDisplay from '../../../components/ErrorDisplay';
@@ -13,7 +13,9 @@ import Image from 'next/image';
 
 export default function SalonsPage() {
 	const router = useRouter();
+	const searchParams = useSearchParams();
 	const [searchQuery, setSearchQuery] = useState('');
+	const [selectedLocation, setSelectedLocation] = useState('');
 	const [activeFilter, setActiveFilter] = useState('All');
 	const [sortBy, setSortBy] = useState('name');
 	const [visibleSalonsCount, setVisibleSalonsCount] = useState(15);
@@ -28,6 +30,23 @@ export default function SalonsPage() {
 		error,
 		refetch,
 	} = useSalonsWithServices();
+
+	// Get search parameters from URL
+	useEffect(() => {
+		const search = searchParams.get('search');
+		const location = searchParams.get('location');
+		const salon = searchParams.get('salon');
+
+		if (search) {
+			setSearchQuery(search);
+		}
+		if (location) {
+			setSelectedLocation(location);
+		}
+		if (salon) {
+			setSearchQuery(salon);
+		}
+	}, [searchParams]);
 
 	const sortOptions = [
 		{ value: 'name', label: 'Name A-Z' },
@@ -126,11 +145,39 @@ export default function SalonsPage() {
 					{/* Results Header */}
 					<div className="flex items-center justify-between mb-8">
 						<h1 className="text-2xl font-bold text-gray-900">
-							Results ({visibleSalons.length}
-							{filteredSalons.length !== visibleSalons.length
-								? ` of ${filteredSalons.length}`
-								: ''}
-							)
+							{searchQuery && selectedLocation ? (
+								<>
+									{searchQuery} in {selectedLocation} ({visibleSalons.length}
+									{filteredSalons.length !== visibleSalons.length
+										? ` of ${filteredSalons.length}`
+										: ''}
+									)
+								</>
+							) : searchQuery ? (
+								<>
+									{searchQuery} ({visibleSalons.length}
+									{filteredSalons.length !== visibleSalons.length
+										? ` of ${filteredSalons.length}`
+										: ''}
+									)
+								</>
+							) : selectedLocation ? (
+								<>
+									Salons in {selectedLocation} ({visibleSalons.length}
+									{filteredSalons.length !== visibleSalons.length
+										? ` of ${filteredSalons.length}`
+										: ''}
+									)
+								</>
+							) : (
+								<>
+									Results ({visibleSalons.length}
+									{filteredSalons.length !== visibleSalons.length
+										? ` of ${filteredSalons.length}`
+										: ''}
+									)
+								</>
+							)}
 						</h1>
 						<div className="flex items-center gap-4">
 							{/* Sort Dropdown */}

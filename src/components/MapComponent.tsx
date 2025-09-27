@@ -122,8 +122,11 @@ export default function MapComponent({
 			console.log('🔍 Geocoding address:', address);
 
 			// Use our backend API for geocoding
-			const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
-			const response = await fetch(`${API_BASE_URL}/geocoding/search?address=${encodeURIComponent(address)}`);
+			const API_BASE_URL =
+				process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+			const response = await fetch(
+				`${API_BASE_URL}/geocoding/search?address=${encodeURIComponent(address)}`
+			);
 
 			if (!response.ok) {
 				throw new Error(`HTTP error! status: ${response.status}`);
@@ -186,8 +189,90 @@ export default function MapComponent({
 			}
 		} catch (error) {
 			console.error('❌ Error geocoding address:', error);
-			// Show marker at default location if geocoding fails
-			showDefaultMarker();
+			// Try fallback to Nominatim with Vietnam-only search
+			try {
+				await fallbackGeocode(address);
+			} catch (fallbackError) {
+				console.error('❌ Fallback geocoding also failed:', fallbackError);
+				// Show marker at default location if both fail
+				showDefaultMarker();
+			}
+		}
+	};
+
+	// Fallback function to search Nominatim with Vietnam-only results
+	const fallbackGeocode = async (address: string) => {
+		console.log('🔄 Trying Nominatim fallback for:', address);
+
+		const nominatimUrl = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(address)}&limit=1&addressdetails=1&countrycodes=vn`;
+
+		const response = await fetch(nominatimUrl, {
+			method: 'GET',
+			headers: {
+				'User-Agent': 'Henzo Salon Booking App (contact@henzo.com)',
+				Accept: 'application/json',
+			},
+			signal: AbortSignal.timeout(10000), // 10 second timeout
+		});
+
+		if (!response.ok) {
+			throw new Error(`Nominatim API error: ${response.status}`);
+		}
+
+		const data = await response.json();
+
+		if (data && data.length > 0) {
+			const result = data[0];
+			const lat = parseFloat(result.lat);
+			const lon = parseFloat(result.lon);
+			const display_name = result.display_name;
+
+			console.log('✅ Fallback geocoding successful:', {
+				lat,
+				lon,
+				display_name,
+			});
+
+			// Update map center and zoom
+			if (mapInstanceRef.current) {
+				mapInstanceRef.current.setView([lat, lon], 15);
+
+				// Remove existing marker
+				if (markerRef.current) {
+					mapInstanceRef.current.removeLayer(markerRef.current);
+				}
+
+				// Create red marker icon
+				const redMarker = L.divIcon({
+					html: `<div style="
+						background-color: #ff5b5b;
+						width: 20px;
+						height: 20px;
+						border-radius: 50%;
+						border: 3px solid white;
+						box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+						position: relative;
+					"></div>`,
+					iconSize: [20, 20],
+					iconAnchor: [10, 10],
+					popupAnchor: [0, -10],
+					className: 'custom-red-marker',
+				});
+
+				// Add marker at geocoded location
+				markerRef.current = L.marker([lat, lon], { icon: redMarker }).addTo(
+					mapInstanceRef.current
+				);
+
+				// Add popup if enabled
+				if (showPopup) {
+					markerRef.current
+						.bindPopup(`<div class="text-sm"><strong>${address}</strong></div>`)
+						.openPopup();
+				}
+			}
+		} else {
+			throw new Error('No results found in Vietnam');
 		}
 	};
 

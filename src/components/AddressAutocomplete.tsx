@@ -31,7 +31,7 @@ export default function AddressAutocomplete({
 	const inputRef = useRef<HTMLInputElement>(null);
 	const suggestionsRef = useRef<HTMLDivElement>(null);
 
-	// Fetch address suggestions from our backend API
+	// Fetch address suggestions from our backend API with fallback to Nominatim
 	const fetchSuggestions = async (query: string) => {
 		if (query.length < 3) {
 			setSuggestions([]);
@@ -40,29 +40,66 @@ export default function AddressAutocomplete({
 
 		setLoading(true);
 		try {
+			// Try our backend API first
 			const API_BASE_URL =
 				process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 			const response = await fetch(
 				`${API_BASE_URL}/geocoding/search?address=${encodeURIComponent(query)}`
 			);
 
-			if (!response.ok) {
-				throw new Error(`HTTP error! status: ${response.status}`);
+			if (response.ok) {
+				const result = await response.json();
+				if (result.success && result.data) {
+					// Wrap single result in array for consistency
+					setSuggestions([result.data]);
+					return;
+				}
 			}
 
-			const result = await response.json();
-
-			if (result.success && result.data) {
-				// Wrap single result in array for consistency
-				setSuggestions([result.data]);
-			} else {
-				setSuggestions([]);
-			}
+			// Fallback to Nominatim with Vietnam-only search
+			await fetchNominatimSuggestions(query);
 		} catch (error) {
 			console.error('Error fetching address suggestions:', error);
-			setSuggestions([]);
+			// Try Nominatim fallback
+			try {
+				await fetchNominatimSuggestions(query);
+			} catch (fallbackError) {
+				console.error('Nominatim fallback also failed:', fallbackError);
+				setSuggestions([]);
+			}
 		} finally {
 			setLoading(false);
+		}
+	};
+
+	// Fallback function to search Nominatim with Vietnam-only results
+	const fetchNominatimSuggestions = async (query: string) => {
+		const nominatimUrl = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=5&addressdetails=1&countrycodes=vn`;
+
+		const response = await fetch(nominatimUrl, {
+			method: 'GET',
+			headers: {
+				'User-Agent': 'Henzo Salon Booking App (contact@henzo.com)',
+				Accept: 'application/json',
+			},
+		});
+
+		if (!response.ok) {
+			throw new Error(`Nominatim API error: ${response.status}`);
+		}
+
+		const data = await response.json();
+
+		if (data && data.length > 0) {
+			const suggestions = data.map((item: any) => ({
+				lat: parseFloat(item.lat),
+				lon: parseFloat(item.lon),
+				display_name: item.display_name,
+				address: item.display_name,
+			}));
+			setSuggestions(suggestions);
+		} else {
+			setSuggestions([]);
 		}
 	};
 

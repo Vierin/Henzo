@@ -17,7 +17,6 @@ import Head from 'next/head';
 export default function CategoryPage() {
 	const params = useParams();
 	const slug = params.slug as string;
-	const [searchQuery, setSearchQuery] = useState('');
 	const [sortBy, setSortBy] = useState('name');
 	const [isBookingModalOpen, setIsBookingModalOpen] = useState(false);
 	const [selectedService, setSelectedService] = useState<
@@ -87,17 +86,6 @@ export default function CategoryPage() {
 					salon.description?.toLowerCase().includes(keyword)
 			);
 		})
-		.filter((salon: Salon) => {
-			// Additional search filter
-			if (!searchQuery.trim()) return true;
-			return (
-				salon.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-				salon.address?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-				salon.services?.some((service: Service) =>
-					service.name.toLowerCase().includes(searchQuery.toLowerCase())
-				)
-			);
-		})
 		.sort((a: Salon, b: Salon) => {
 			switch (sortBy) {
 				case 'name':
@@ -153,34 +141,13 @@ export default function CategoryPage() {
 			<div className="min-h-screen bg-[#F8F5F2]">
 				<main className="py-8 px-6">
 					<div className="mx-auto max-w-6xl">
-						{/* Category Header */}
-						<div className="text-center mb-8">
-							<div className="text-6xl mb-4">{category.icon}</div>
-							<h1 className="text-4xl font-bold text-gray-900 mb-4">
-								{category.name}
-							</h1>
-							{category.description && (
-								<p className="text-xl text-gray-600 max-w-2xl mx-auto">
-									{category.description}
-								</p>
-							)}
-						</div>
-
-						{/* Search and Filter Section */}
-						<div className="flex flex-col md:flex-row gap-4 mb-8">
-							{/* Search Input */}
-							<div className="flex-1">
-								<input
-									type="text"
-									placeholder={`Search ${category.name} salons...`}
-									value={searchQuery}
-									onChange={(e) => setSearchQuery(e.target.value)}
-									className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#ff5b5b] focus:border-transparent text-gray-900"
-								/>
-							</div>
-
+						{/* Category Header with Sort */}
+						<div className="flex items-center justify-between mb-8">
+							<h2 className="text-2xl font-bold text-gray-900">
+								{category.name} ({filteredSalons.length})
+							</h2>
 							{/* Sort Dropdown */}
-							<div className="md:w-48">
+							<div className="w-48">
 								<select
 									value={sortBy}
 									onChange={(e) => setSortBy(e.target.value)}
@@ -193,13 +160,6 @@ export default function CategoryPage() {
 									))}
 								</select>
 							</div>
-						</div>
-
-						{/* Results Header */}
-						<div className="flex items-center justify-between mb-8">
-							<h2 className="text-2xl font-bold text-gray-900">
-								Results ({filteredSalons.length})
-							</h2>
 						</div>
 
 						{/* Salon Cards */}
@@ -222,19 +182,9 @@ export default function CategoryPage() {
 										No salons found
 									</h3>
 									<p className="text-gray-600 mb-8">
-										{searchQuery
-											? `We couldn't find any salons matching "${searchQuery}" in the ${category.name} category.`
-											: `We couldn't find any salons in the ${category.name} category.`}
+										We couldn't find any salons in the {category.name} category.
 									</p>
 									<div className="flex flex-col sm:flex-row gap-4 justify-center">
-										{searchQuery && (
-											<button
-												onClick={() => setSearchQuery('')}
-												className="inline-flex items-center px-6 py-3 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors"
-											>
-												Clear Search
-											</button>
-										)}
 										<Link
 											href="/salons"
 											className="inline-flex items-center px-6 py-3 bg-[#ff5b5b] text-white rounded-lg hover:bg-[#e04a4a] transition-colors"

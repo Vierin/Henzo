@@ -429,7 +429,7 @@ export default function HomePage() {
 														setSelectedLocation(address);
 														setShowCurrentLocation(false);
 													}}
-													placeholder="Enter address or postal code"
+													placeholder="Enter address in Vietnam"
 													className="w-full px-4 py-4 pl-12 pr-12 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent text-gray-900"
 												/>
 												<svg
@@ -533,10 +533,6 @@ export default function HomePage() {
 												<div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-300 rounded-lg shadow-lg z-50 p-4">
 													{/* Custom Calendar */}
 													<div className="mb-4">
-														<label className="block text-sm font-medium text-gray-700 mb-3">
-															Select Date
-														</label>
-
 														{/* Calendar Header */}
 														<div className="flex items-center justify-between mb-3">
 															<button
