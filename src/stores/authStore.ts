@@ -13,6 +13,7 @@ export interface User {
 interface AuthState {
 	// User data
 	user: User | null;
+	session: any | null;
 	isLoading: boolean;
 	isAuthenticated: boolean;
 	isInitialized: boolean;
@@ -50,6 +51,7 @@ export const useAuthStore = create<AuthState>()(
 		(set, get) => ({
 			// Initial state
 			user: null,
+			session: null,
 			isLoading: false,
 			isAuthenticated: false,
 			isInitialized: false,
@@ -59,6 +61,12 @@ export const useAuthStore = create<AuthState>()(
 
 			// Set user and update role flags
 			setUser: (user) => {
+				console.log('AuthStore setUser called with:', {
+					user: user
+						? { id: user.id, email: user.email, role: user.role }
+						: null,
+				});
+
 				const isClient = user?.role === 'CLIENT';
 				const isOwner = user?.role === 'OWNER';
 				const isAdmin = user?.role === 'ADMIN';
@@ -72,18 +80,28 @@ export const useAuthStore = create<AuthState>()(
 					isLoading: false,
 					isInitialized: true,
 				});
+
+				console.log('AuthStore updated with flags:', {
+					isAuthenticated: !!user,
+					isClient,
+					isOwner,
+					isAdmin,
+				});
 			},
 
 			setLoading: (isLoading) => set({ isLoading }),
 
 			setSession: (session) => {
-				// This method is used by the unified login page
-				// The session is handled by Supabase directly
+				console.log('AuthStore setSession called with:', {
+					session: session ? 'present' : 'missing',
+				});
+				set({ session });
 			},
 
 			clearUser: () => {
 				set({
 					user: null,
+					session: null,
 					isAuthenticated: false,
 					isClient: false,
 					isOwner: false,
@@ -284,6 +302,7 @@ export const useAuthStore = create<AuthState>()(
 			name: 'auth-storage',
 			partialize: (state) => ({
 				user: state.user,
+				session: state.session,
 				isAuthenticated: state.isAuthenticated,
 				isClient: state.isClient,
 				isOwner: state.isOwner,

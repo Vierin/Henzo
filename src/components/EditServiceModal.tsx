@@ -6,7 +6,7 @@ import {
 	useCreateService,
 	useUpdateService,
 } from '@/hooks/useServices';
-import { useCategoriesBySalon, useCreateCategory } from '@/hooks/useCategories';
+import { useCategories } from '@/hooks/useCategories';
 import { useSalonId } from '@/hooks/useSalon';
 import CreateCategoryModal from './CreateCategoryModal';
 import { Service, Category } from '@/types';
@@ -36,10 +36,9 @@ export default function EditServiceModal({
 	// Используем оптимизированный хук для получения данных салона
 	const { salonId } = useSalonId();
 
-	const { data: categories = [] } = useCategoriesBySalon(salonId || '');
+	const { data: categories = [] } = useCategories();
 	const createServiceMutation = useCreateService();
 	const updateServiceMutation = useUpdateService();
-	const createCategoryMutation = useCreateCategory();
 
 	useEffect(() => {
 		if (service) {

@@ -32,7 +32,23 @@ export default function AuthCallbackPage() {
 					} else {
 						// Regular auth callback (including Google OAuth)
 						// Check if this is a business registration
-						const isBusinessRegistration = type === 'business';
+						// Try URL param first, then localStorage and sessionStorage as fallback
+						const urlType = type;
+						const localStorageType = localStorage.getItem('registrationType');
+						const sessionStorageType =
+							sessionStorage.getItem('registrationType');
+						const isBusinessRegistration =
+							urlType === 'business' ||
+							localStorageType === 'business' ||
+							sessionStorageType === 'business';
+
+						// Clean up storage after use
+						if (localStorageType) {
+							localStorage.removeItem('registrationType');
+						}
+						if (sessionStorageType) {
+							sessionStorage.removeItem('registrationType');
+						}
 						// Get user role from backend
 						try {
 							const API_BASE_URL =
@@ -45,11 +61,63 @@ export default function AuthCallbackPage() {
 							});
 
 							if (response.ok) {
-								const userData = await response.json();
+								let userData = await response.json();
+								// Check if this is a business registration but user has CLIENT role
+								if (isBusinessRegistration && userData.user.role === 'CLIENT') {
+									// Update user role in backend
+									try {
+										const updateResponse = await fetch(
+											`${API_BASE_URL}/auth/user-role`,
+											{
+												method: 'PATCH',
+												headers: {
+													Authorization: `Bearer ${data.session.access_token}`,
+													'Content-Type': 'application/json',
+												},
+												body: JSON.stringify({ role: 'OWNER' }),
+											}
+										);
+
+										if (updateResponse.ok) {
+											// Get updated user data from backend
+											const updatedUserResponse = await fetch(
+												`${API_BASE_URL}/auth/user`,
+												{
+													headers: {
+														Authorization: `Bearer ${data.session.access_token}`,
+														'Content-Type': 'application/json',
+													},
+												}
+											);
+
+											if (updatedUserResponse.ok) {
+												const updatedUserData =
+													await updatedUserResponse.json();
+												userData = updatedUserData;
+											} else {
+												// Fallback: update role locally
+												userData.user.role = 'OWNER';
+											}
+										}
+									} catch (updateError) {
+										console.error('Error updating user role:', updateError);
+									}
+								}
 
 								// Update auth store
+								console.log('Updating auth store with:', {
+									user: userData.user,
+									session: data.session ? 'present' : 'missing',
+								});
 								setUser(userData.user);
 								setSession(data.session);
+
+								// Debug: log final user data
+								console.log('Final user data before redirect:', {
+									role: userData.user.role,
+									email: userData.user.email,
+									isBusinessRegistration,
+								});
 
 								// Redirect based on role
 								switch (userData.user.role) {
@@ -57,7 +125,9 @@ export default function AuthCallbackPage() {
 										router.push('/admin-panel');
 										break;
 									case 'OWNER':
-										router.push('/owner-dashboard');
+										// For OWNER users, always go to complete-setup first
+										// The complete-setup page will redirect to dashboard if salon already exists
+										router.push('/business/complete-setup');
 										break;
 									case 'CLIENT':
 										router.push('/dashboard');
@@ -100,7 +170,7 @@ export default function AuthCallbackPage() {
 									setSession(data.session);
 									// Redirect based on role
 									if (defaultRole === 'OWNER') {
-										router.push('/owner-dashboard');
+										router.push('/business/complete-setup');
 									} else {
 										router.push('/dashboard');
 									}
@@ -119,7 +189,7 @@ export default function AuthCallbackPage() {
 									setSession(data.session);
 									// Redirect based on role
 									if (defaultRole === 'OWNER') {
-										router.push('/owner-dashboard');
+										router.push('/business/complete-setup');
 									} else {
 										router.push('/dashboard');
 									}
@@ -127,7 +197,8 @@ export default function AuthCallbackPage() {
 							}
 						} catch (roleError) {
 							console.error('Error getting user role:', roleError);
-							// Create a temporary user object and redirect to client dashboard
+							// Create a temporary user object and redirect based on registration type
+							const defaultRole = isBusinessRegistration ? 'OWNER' : 'CLIENT';
 							const tempUser = {
 								id: data.session.user.id,
 								email: data.session.user.email || '',
@@ -135,11 +206,17 @@ export default function AuthCallbackPage() {
 									data.session.user.user_metadata?.name ||
 									data.session.user.user_metadata?.full_name,
 								phone: data.session.user.user_metadata?.phone,
-								role: 'CLIENT' as const,
+								role: defaultRole as 'ADMIN' | 'OWNER' | 'CLIENT',
 							};
 							setUser(tempUser);
 							setSession(data.session);
-							router.push('/dashboard');
+
+							// Redirect based on registration type
+							if (isBusinessRegistration) {
+								router.push('/business/complete-setup');
+							} else {
+								router.push('/dashboard');
+							}
 						}
 					}
 				} else {

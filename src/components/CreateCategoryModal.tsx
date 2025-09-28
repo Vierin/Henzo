@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { useCreateCategory } from '@/hooks/useCategories';
+import { apiClient } from '@/lib/api-client';
 import { Category } from '@/types';
 
 interface CreateCategoryModalProps {
@@ -18,7 +18,7 @@ export default function CreateCategoryModal({
 	onSuccess,
 }: CreateCategoryModalProps) {
 	const [categoryName, setCategoryName] = useState('');
-	const createCategoryMutation = useCreateCategory();
+	const [loading, setLoading] = useState(false);
 
 	const handleSubmit = async (e: React.FormEvent) => {
 		e.preventDefault();
@@ -32,8 +32,9 @@ export default function CreateCategoryModal({
 			return;
 		}
 
+		setLoading(true);
 		try {
-			const newCategory = await createCategoryMutation.mutateAsync({
+			const newCategory = await apiClient.post('/salons/categories', {
 				name: categoryName.trim(),
 				salonId,
 			});
@@ -43,6 +44,8 @@ export default function CreateCategoryModal({
 			onClose();
 		} catch (error) {
 			console.error('Failed to create category:', error);
+		} finally {
+			setLoading(false);
 		}
 	};
 
@@ -80,20 +83,16 @@ export default function CreateCategoryModal({
 							type="button"
 							onClick={onClose}
 							className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors"
-							disabled={createCategoryMutation.isPending}
+							disabled={loading}
 						>
 							Cancel
 						</button>
 						<button
 							type="submit"
 							className="px-4 py-2 bg-[#ff5b5b] text-white rounded-lg font-medium hover:bg-[#e04a4a] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-							disabled={
-								createCategoryMutation.isPending ||
-								!categoryName.trim() ||
-								!salonId
-							}
+							disabled={loading || !categoryName.trim() || !salonId}
 						>
-							{createCategoryMutation.isPending
+							{loading
 								? 'Creating...'
 								: !salonId
 									? 'Loading...'

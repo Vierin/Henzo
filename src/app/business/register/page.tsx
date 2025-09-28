@@ -68,6 +68,10 @@ export default function BusinessRegisterPage() {
 	const handleGoogleRegister = async () => {
 		setLoading(true);
 		try {
+			// Store registration type in both localStorage and sessionStorage before OAuth
+			localStorage.setItem('registrationType', 'business');
+			sessionStorage.setItem('registrationType', 'business');
+
 			const { data, error } = await supabase.auth.signInWithOAuth({
 				provider: 'google',
 				options: {

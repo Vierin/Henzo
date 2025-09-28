@@ -54,8 +54,18 @@ export class ApiClient {
 			);
 		}
 
-		const data = await response.json();
-		return data;
+		// Check if response has content
+		const contentType = response.headers.get('content-type');
+		if (contentType && contentType.includes('application/json')) {
+			const text = await response.text();
+			if (text.trim() === '') {
+				return null; // Return null for empty responses
+			}
+			return JSON.parse(text);
+		}
+
+		// For non-JSON responses, return the text
+		return await response.text();
 	}
 
 	// Generic CRUD operations

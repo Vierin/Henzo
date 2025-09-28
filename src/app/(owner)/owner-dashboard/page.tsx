@@ -35,8 +35,43 @@ export default function OwnerDashboardPage() {
 	};
 
 	useEffect(() => {
-		fetchBookings();
-	}, []);
+		// Check if user has completed salon setup
+		const checkSalonSetup = async () => {
+			try {
+				console.log('Checking salon setup...');
+				const salonResponse = await apiClient.get('/salons/current');
+				console.log('Salon response:', salonResponse);
+				if (!salonResponse) {
+					// User hasn't completed salon setup, redirect to setup page
+					console.log('No salon found, redirecting to setup');
+					router.push('/business/complete-setup');
+					return;
+				}
+				// If salon exists, fetch bookings
+				console.log('Salon found, fetching bookings');
+				fetchBookings();
+			} catch (error) {
+				// If salon doesn't exist, redirect to setup page
+				console.log('Error checking salon, redirecting to setup:', error);
+				console.log('Error details:', {
+					message: error instanceof Error ? error.message : 'Unknown error',
+					stack: error instanceof Error ? error.stack : undefined,
+				});
+
+				// Only redirect if this is not a 404 error (which means salon doesn't exist)
+				if (error instanceof Error && error.message.includes('404')) {
+					console.log('Salon not found (404), redirecting to setup');
+					router.push('/business/complete-setup');
+				} else {
+					console.log('Other error occurred, showing error state');
+					setError('Failed to load salon data');
+					setLoading(false);
+				}
+			}
+		};
+
+		checkSalonSetup();
+	}, [router]);
 
 	const handleNewAppointment = () => {
 		// Открываем модальное окно без предварительно выбранного сервиса
@@ -245,7 +280,7 @@ export default function OwnerDashboardPage() {
 									className="grid grid-cols-7 px-6 py-4 text-[15px] text-gray-800"
 								>
 									<div className="font-semibold">
-										{booking.user?.name || 'Unknown Client'}
+										Client ID: {booking.clientId}
 									</div>
 									<div>{booking.service?.name || 'Unknown Service'}</div>
 									<div>{booking.staff?.name || 'Unassigned'}</div>

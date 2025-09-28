@@ -113,6 +113,13 @@ export default function SalonInfoPage() {
 	// Заполняем форму данными из кэша
 	useEffect(() => {
 		if (salon) {
+			console.log('🏢 Salon data received:', salon);
+			console.log('🏢 Salon categoryIds:', (salon as any).categoryIds);
+			console.log('🏢 Salon categories:', (salon as any).categories);
+			console.log(
+				'🏢 Mapped salon categories:',
+				(salon as any).categories?.map((cat: any) => cat.id)
+			);
 			setFormData({
 				salonName: salon.name || '',
 				description: salon.description || '',
@@ -124,7 +131,7 @@ export default function SalonInfoPage() {
 				logo: salon.logo || '',
 				photos: salon.photos || [],
 				salonCategories:
-					(salon as any).salonCategories?.map((cat: any) => cat.id) || [],
+					(salon as any).categories?.map((cat: any) => parseInt(cat.id)) || [],
 				operatingHours: salon.workingHours
 					? {
 							monday: {
@@ -202,7 +209,7 @@ export default function SalonInfoPage() {
 				instagram: formData.instagram,
 				logo: formData.logo,
 				photos: formData.photos,
-				salonCategories: formData.salonCategories,
+				categoryIds: formData.salonCategories.map((id) => id.toString()),
 				workingHours: formData.operatingHours,
 			};
 
