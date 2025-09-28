@@ -24,6 +24,8 @@ export default function OwnerDashboardPage() {
 	const [currentYear, setCurrentYear] = useState(new Date().getFullYear());
 	const [selectedDate, setSelectedDate] = useState<Date | null>(null);
 	const [showDaySchedule, setShowDaySchedule] = useState(false);
+	const [currentPage, setCurrentPage] = useState(1);
+	const [itemsPerPage] = useState(20);
 	const router = useRouter();
 
 	const fetchBookings = async () => {
@@ -205,6 +207,30 @@ export default function OwnerDashboardPage() {
 
 			return statusMatch && dateMatch;
 		});
+	};
+
+	// Get paginated bookings for list view
+	const getPaginatedBookings = () => {
+		const filteredBookings = getFilteredBookings();
+		const startIndex = (currentPage - 1) * itemsPerPage;
+		const endIndex = startIndex + itemsPerPage;
+		return filteredBookings.slice(startIndex, endIndex);
+	};
+
+	// Get total pages for pagination
+	const getTotalPages = () => {
+		const filteredBookings = getFilteredBookings();
+		return Math.ceil(filteredBookings.length / itemsPerPage);
+	};
+
+	// Reset to first page when filters change
+	const handleFilterChange = (filterType: 'status' | 'date', value: string) => {
+		setCurrentPage(1); // Reset to first page
+		if (filterType === 'status') {
+			setStatusFilter(value);
+		} else if (filterType === 'date') {
+			setDateFilter(value);
+		}
 	};
 
 	const getTodaysAppointments = () => {
@@ -427,6 +453,7 @@ export default function OwnerDashboardPage() {
 								onClick={() => {
 									setViewMode('list');
 									setShowDaySchedule(false); // Hide day schedule when switching to list
+									setCurrentPage(1); // Reset to first page
 								}}
 								className={`px-3 py-2 text-sm font-medium flex items-center gap-2 ${
 									viewMode === 'list'
@@ -451,6 +478,7 @@ export default function OwnerDashboardPage() {
 								onClick={() => {
 									setViewMode('calendar');
 									setShowDaySchedule(false); // Hide day schedule when switching to calendar
+									setCurrentPage(1); // Reset to first page
 								}}
 								className={`px-3 py-2 text-sm font-medium flex items-center gap-2 ${
 									viewMode === 'calendar'
@@ -497,7 +525,9 @@ export default function OwnerDashboardPage() {
 												</label>
 												<select
 													value={statusFilter}
-													onChange={(e) => setStatusFilter(e.target.value)}
+													onChange={(e) =>
+														handleFilterChange('status', e.target.value)
+													}
 													className="px-3 py-1 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-[#ea4b4b] focus:border-[#ea4b4b] text-gray-900"
 												>
 													<option value="all">All</option>
@@ -514,7 +544,9 @@ export default function OwnerDashboardPage() {
 												</label>
 												<select
 													value={dateFilter}
-													onChange={(e) => setDateFilter(e.target.value)}
+													onChange={(e) =>
+														handleFilterChange('date', e.target.value)
+													}
 													className="px-3 py-1 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-[#ea4b4b] focus:border-[#ea4b4b] text-gray-900"
 												>
 													<option value="all">All</option>
@@ -564,7 +596,7 @@ export default function OwnerDashboardPage() {
 													</p>
 												</div>
 											) : (
-												getFilteredBookings().map((booking) => (
+												getPaginatedBookings().map((booking) => (
 													<div
 														key={booking.id}
 														className="grid grid-cols-7 px-6 py-4 text-[15px] text-gray-800"
@@ -630,6 +662,62 @@ export default function OwnerDashboardPage() {
 												))
 											)}
 										</div>
+
+										{/* Pagination */}
+										{getTotalPages() > 1 && (
+											<div className="flex items-center justify-between mt-6 px-6 py-4 border-t border-gray-200">
+												<div className="text-sm text-gray-700">
+													Showing{' '}
+													{Math.min(
+														(currentPage - 1) * itemsPerPage + 1,
+														getFilteredBookings().length
+													)}{' '}
+													to{' '}
+													{Math.min(
+														currentPage * itemsPerPage,
+														getFilteredBookings().length
+													)}{' '}
+													of {getFilteredBookings().length} results
+												</div>
+
+												<div className="flex items-center gap-2">
+													<button
+														onClick={() => setCurrentPage(currentPage - 1)}
+														disabled={currentPage === 1}
+														className="px-3 py-1 text-sm text-gray-900 border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+													>
+														Previous
+													</button>
+
+													<div className="flex items-center gap-1">
+														{Array.from(
+															{ length: getTotalPages() },
+															(_, i) => i + 1
+														).map((page) => (
+															<button
+																key={page}
+																onClick={() => setCurrentPage(page)}
+																className={`px-3 py-1 text-sm border rounded-md ${
+																	page === currentPage
+																		? 'bg-[#ea4b4b] text-white border-[#ea4b4b]'
+																		: 'text-gray-900 border-gray-300 hover:bg-gray-50'
+																}`}
+															>
+																{page}
+															</button>
+														))}
+													</div>
+
+													<button
+														onClick={() => setCurrentPage(currentPage + 1)}
+														disabled={currentPage === getTotalPages()}
+														className="px-3 py-1 text-sm text-gray-900 border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+													>
+														Next
+													</button>
+												</div>
+											</div>
+										)}
 									</section>
 								</div>
 							) : (
@@ -945,7 +1033,7 @@ export default function OwnerDashboardPage() {
 
 			<div className="rounded-xl border border-[#f1d9d7] bg-white p-6 h-[fit-content] min-w-[340px]">
 				<h3 className="text-lg font-semibold text-gray-900 mb-4">
-					Today's Appointments
+					Today's Appointments ({getTodaysAppointments().length})
 				</h3>
 
 				{loading ? (
@@ -1031,7 +1119,10 @@ export default function OwnerDashboardPage() {
 
 				<div className="mt-4 pt-4 border-t border-[#f1d9d7] text-center">
 					<button
-						onClick={() => setViewMode('list')}
+						onClick={() => {
+							setViewMode('list');
+							setCurrentPage(1); // Reset to first page
+						}}
 						className="text-[#ea4b4b] hover:text-[#d43d3d] text-sm font-medium"
 					>
 						View all appointments
