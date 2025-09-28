@@ -12,6 +12,8 @@ const DATA_WIDTH = '50px';
 export default function OwnerDashboardPage() {
 	const [isBookingModalOpen, setIsBookingModalOpen] = useState(false);
 	const [selectedService, setSelectedService] = useState<Service | undefined>();
+	const [editingBooking, setEditingBooking] = useState<Booking | null>(null);
+	const [salonId, setSalonId] = useState<string | null>(null);
 	const [bookings, setBookings] = useState<Booking[]>([]);
 	const [loading, setLoading] = useState(true);
 	const [error, setError] = useState<string | null>(null);
@@ -31,7 +33,15 @@ export default function OwnerDashboardPage() {
 
 			// Загружаем бронирования для текущего салона владельца
 			const data = await apiClient.get<Booking[]>('/bookings/owner');
-			setBookings(data);
+
+			// Получаем ID салона из первого бронирования
+			if (data && data.length > 0 && data[0].salonId) {
+				setSalonId(data[0].salonId);
+			}
+
+			// Автоматически обновляем статусы завершенных бронирований
+			const updatedBookings = await updateCompletedBookings(data);
+			setBookings(updatedBookings);
 		} catch (err) {
 			console.error('Error fetching bookings:', err);
 			setError(err instanceof Error ? err.message : 'Failed to load bookings');
@@ -41,53 +51,101 @@ export default function OwnerDashboardPage() {
 		}
 	};
 
-	useEffect(() => {
-		// Check if user has completed salon setup
-		const checkSalonSetup = async () => {
-			try {
-				console.log('Checking salon setup...');
-				const salonResponse = await apiClient.get('/salons/current');
-				console.log('Salon response:', salonResponse);
-				if (!salonResponse) {
-					// User hasn't completed salon setup, redirect to setup page
-					console.log('No salon found, redirecting to setup');
-					router.push('/business/complete-setup');
-					return;
-				}
-				// If salon exists, fetch bookings
-				console.log('Salon found, fetching bookings');
-				fetchBookings();
-			} catch (error) {
-				// If salon doesn't exist, redirect to setup page
-				console.log('Error checking salon, redirecting to setup:', error);
-				console.log('Error details:', {
-					message: error instanceof Error ? error.message : 'Unknown error',
-					stack: error instanceof Error ? error.stack : undefined,
-				});
+	const updateCompletedBookings = async (
+		bookings: Booking[]
+	): Promise<Booking[]> => {
+		const now = new Date();
+		const bookingsToUpdate: string[] = [];
 
-				// Only redirect if this is not a 404 error (which means salon doesn't exist)
-				if (error instanceof Error && error.message.includes('404')) {
-					console.log('Salon not found (404), redirecting to setup');
+		// Находим бронирования, которые должны быть завершены
+		bookings.forEach((booking) => {
+			if (booking.status === 'CONFIRMED') {
+				const bookingTime = new Date(booking.time);
+				const serviceDuration = booking.service?.duration || 60; // Default 60 minutes
+				const endTime = new Date(
+					bookingTime.getTime() + serviceDuration * 60000
+				);
+
+				// Если время окончания услуги прошло, помечаем для обновления
+				if (endTime < now) {
+					bookingsToUpdate.push(booking.id);
+				}
+			}
+		});
+
+		// Обновляем статусы в базе данных
+		if (bookingsToUpdate.length > 0) {
+			try {
+				await apiClient.put('/bookings/update-completed', {
+					bookingIds: bookingsToUpdate,
+				});
+				console.log(`Updated ${bookingsToUpdate.length} completed bookings`);
+			} catch (error) {
+				console.error('Error updating completed bookings:', error);
+			}
+		}
+
+		// Обновляем локальные данные
+		return bookings.map((booking) => {
+			if (bookingsToUpdate.includes(booking.id)) {
+				return { ...booking, status: 'PASSED' as const };
+			}
+			return booking;
+		});
+	};
+
+	useEffect(() => {
+		// Fetch bookings directly - if user is on owner dashboard, they should have a salon
+		const initializeDashboard = async () => {
+			try {
+				console.log('Initializing dashboard...');
+				// Try to fetch bookings - if this fails, we'll handle it gracefully
+				await fetchBookings();
+			} catch (error) {
+				console.log('Error initializing dashboard:', error);
+
+				// Only redirect to setup if this is specifically a salon not found error
+				if (
+					error instanceof Error &&
+					(error.message.includes('404') ||
+						error.message.includes('Salon not found') ||
+						error.message.includes('No salon found'))
+				) {
+					console.log('Salon not found, redirecting to setup');
 					router.push('/business/complete-setup');
 				} else {
 					console.log('Other error occurred, showing error state');
-					setError('Failed to load salon data');
+					setError('Failed to load dashboard data');
 					setLoading(false);
 				}
 			}
 		};
 
-		checkSalonSetup();
+		initializeDashboard();
 	}, [router]);
 
 	const handleNewAppointment = () => {
 		// Открываем модальное окно без предварительно выбранного сервиса
 		setSelectedService(undefined);
+		setEditingBooking(null);
 		setIsBookingModalOpen(true);
+	};
+
+	const handleEditBooking = (booking: Booking) => {
+		// Открываем модальное окно с данными редактируемого бронирования
+		setEditingBooking(booking);
+		setSelectedService(undefined);
+		setIsBookingModalOpen(true);
+	};
+
+	const handleBookingUpdated = () => {
+		// Обновляем список бронирований после редактирования
+		fetchBookings();
 	};
 
 	const handleBookingModalClose = () => {
 		setIsBookingModalOpen(false);
+		setEditingBooking(null);
 		// Обновляем данные после закрытия модального окна
 		fetchBookings();
 	};
@@ -338,7 +396,7 @@ export default function OwnerDashboardPage() {
 			case 'PASSED':
 				return (
 					<span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-						Passed
+						Completed
 					</span>
 				);
 			case 'CANCELED':
@@ -444,7 +502,7 @@ export default function OwnerDashboardPage() {
 												>
 													<option value="all">All</option>
 													<option value="CONFIRMED">Confirmed</option>
-													<option value="PASSED">Passed</option>
+													<option value="PASSED">Completed</option>
 													<option value="CANCELED">Cancelled</option>
 												</select>
 											</div>
@@ -522,16 +580,50 @@ export default function OwnerDashboardPage() {
 														<div>{formatDate(booking.time)}</div>
 														<div>{formatTime(booking.time)}</div>
 														<div>{getStatusBadge(booking.status)}</div>
-														<div>
+														<div className="flex gap-2">
 															{booking.status === 'CONFIRMED' && (
-																<button
-																	onClick={() =>
-																		handleCancelBooking(booking.id)
-																	}
-																	className="text-red-600 hover:text-red-800 text-sm font-medium"
-																>
-																	Cancel
-																</button>
+																<>
+																	<button
+																		onClick={() => handleEditBooking(booking)}
+																		className="p-1 text-[#ff5b5b] hover:text-[#e04a4a] hover:bg-red-50 rounded transition-colors"
+																		title="Edit booking"
+																	>
+																		<svg
+																			className="w-4 h-4"
+																			fill="none"
+																			stroke="currentColor"
+																			viewBox="0 0 24 24"
+																		>
+																			<path
+																				strokeLinecap="round"
+																				strokeLinejoin="round"
+																				strokeWidth={2}
+																				d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
+																			/>
+																		</svg>
+																	</button>
+																	<button
+																		onClick={() =>
+																			handleCancelBooking(booking.id)
+																		}
+																		className="p-1 text-red-600 hover:text-red-800 hover:bg-red-50 rounded transition-colors"
+																		title="Cancel booking"
+																	>
+																		<svg
+																			className="w-4 h-4"
+																			fill="none"
+																			stroke="currentColor"
+																			viewBox="0 0 24 24"
+																		>
+																			<path
+																				strokeLinecap="round"
+																				strokeLinejoin="round"
+																				strokeWidth={2}
+																				d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+																			/>
+																		</svg>
+																	</button>
+																</>
 															)}
 														</div>
 													</div>
@@ -891,36 +983,45 @@ export default function OwnerDashboardPage() {
 										</div>
 									</div>
 									<div className="flex items-center gap-1">
-										<button className="p-1 hover:bg-gray-100 rounded">
-											<svg
-												className="w-4 h-4 text-gray-500"
-												fill="currentColor"
-												viewBox="0 0 20 20"
-											>
-												<path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" />
-											</svg>
-										</button>
-										<button
-											onClick={() => handleCancelBooking(booking.id)}
-											className="p-1 hover:bg-gray-100 rounded"
-										>
-											<svg
-												className="w-4 h-4 text-gray-500"
-												fill="currentColor"
-												viewBox="0 0 20 20"
-											>
-												<path
-													fillRule="evenodd"
-													d="M9 2a1 1 0 000 2h2a1 1 0 100-2H9z"
-													clipRule="evenodd"
-												/>
-												<path
-													fillRule="evenodd"
-													d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
-													clipRule="evenodd"
-												/>
-											</svg>
-										</button>
+										{booking.status === 'CONFIRMED' && (
+											<>
+												<button
+													onClick={() => handleEditBooking(booking)}
+													className="p-1 hover:bg-gray-100 rounded"
+													title="Edit booking"
+												>
+													<svg
+														className="w-4 h-4 text-gray-500"
+														fill="currentColor"
+														viewBox="0 0 20 20"
+													>
+														<path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" />
+													</svg>
+												</button>
+												<button
+													onClick={() => handleCancelBooking(booking.id)}
+													className="p-1 hover:bg-gray-100 rounded"
+													title="Cancel booking"
+												>
+													<svg
+														className="w-4 h-4 text-gray-500"
+														fill="currentColor"
+														viewBox="0 0 20 20"
+													>
+														<path
+															fillRule="evenodd"
+															d="M9 2a1 1 0 000 2h2a1 1 0 100-2H9z"
+															clipRule="evenodd"
+														/>
+														<path
+															fillRule="evenodd"
+															d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
+															clipRule="evenodd"
+														/>
+													</svg>
+												</button>
+											</>
+										)}
 									</div>
 								</div>
 							</div>
@@ -944,6 +1045,9 @@ export default function OwnerDashboardPage() {
 				onClose={handleBookingModalClose}
 				service={selectedService}
 				showServiceSelector={true}
+				salonId={salonId || undefined}
+				editingBooking={editingBooking}
+				onBookingUpdated={handleBookingUpdated}
 			/>
 		</div>
 	);

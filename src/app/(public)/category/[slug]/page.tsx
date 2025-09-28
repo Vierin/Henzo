@@ -75,7 +75,7 @@ export default function CategoryPage() {
 		.filter((salon: Salon) => {
 			// Filter by categoryIds if available, otherwise fallback to keyword matching
 			if (salon.categoryIds && salon.categoryIds.length > 0) {
-				return salon.categoryIds.includes(category.id);
+				return salon.categoryIds.includes(category.id.toString());
 			}
 
 			// Fallback: filter by salon name containing category keywords

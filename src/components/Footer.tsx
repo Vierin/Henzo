@@ -18,11 +18,14 @@ export default function Footer() {
 						>
 							Contact
 						</Link>
-						<Link href="/terms" className="text-gray-700 hover:text-[#8B4513]">
+						<Link
+							href="/terms-of-service"
+							className="text-gray-700 hover:text-[#8B4513]"
+						>
 							Terms of Service
 						</Link>
 						<Link
-							href="/privacy"
+							href="/privacy-policy"
 							className="text-gray-700 hover:text-[#8B4513]"
 						>
 							Privacy Policy

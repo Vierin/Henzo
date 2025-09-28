@@ -36,6 +36,7 @@ export default function OwnerHeader() {
 						width={88}
 						height={40}
 						className="h-full object-contain"
+						style={{ width: 'auto', height: 'auto' }}
 					/>
 				</Link>
 

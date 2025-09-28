@@ -12,6 +12,7 @@ import { supabase } from '@/lib/supabase';
 import { Salon, Service } from '@/types';
 import Image from 'next/image';
 import { useState, useEffect, useRef } from 'react';
+import Footer from '@/components/Footer';
 
 export default function HomePage() {
 	const router = useRouter();

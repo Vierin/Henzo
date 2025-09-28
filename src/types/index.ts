@@ -22,8 +22,8 @@ export interface Salon {
 	logo?: string;
 	photos?: string[];
 	workingHours?: WorkingHours;
-	categoryIds?: number[];
-	categories?: { id: number; name: string }[];
+	categoryIds?: string[];
+	categories?: { id: string; name: string }[];
 	ownerId: string;
 	createdAt: string;
 	services?: Service[];
@@ -66,7 +66,7 @@ export interface Booking {
 	serviceId: string;
 	staffId?: string;
 	time: string;
-	status: 'PENDING' | 'CONFIRMED' | 'CANCELED';
+	status: 'PENDING' | 'CONFIRMED' | 'CANCELED' | 'PASSED';
 	notes?: string;
 	createdAt: string;
 	service?: Service;

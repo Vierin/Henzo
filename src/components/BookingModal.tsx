@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { supabase } from '@/lib/supabase';
 import { Service, Staff, WorkingHours } from '@/types';
 import { useStaffBySalon } from '@/hooks/useStaff';
@@ -15,6 +15,8 @@ interface BookingModalProps {
 	showServiceSelector?: boolean; // Новый пропс для показа выпадающего списка услуг
 	salonId?: string; // ID салона для загрузки услуг и персонала
 	salonName?: string; // Название салона для отображения
+	editingBooking?: any; // Данные редактируемого бронирования
+	onBookingUpdated?: () => void; // Callback для обновления списка бронирований
 }
 
 export default function BookingModal({
@@ -24,6 +26,8 @@ export default function BookingModal({
 	showServiceSelector = false,
 	salonId,
 	salonName,
+	editingBooking,
+	onBookingUpdated,
 }: BookingModalProps) {
 	const [selectedDate, setSelectedDate] = useState('');
 	const [selectedTime, setSelectedTime] = useState('');
@@ -38,39 +42,33 @@ export default function BookingModal({
 	const [showLoginModal, setShowLoginModal] = useState(false);
 	const [loginData, setLoginData] = useState({ email: '', password: '' });
 	const [isLoggingIn, setIsLoggingIn] = useState(false);
+	const [isInitialized, setIsInitialized] = useState(false);
 
 	// Используем Zustand store для аутентификации
 	const { user, isClient, login, refreshUser } = useAuthStore();
 
-	// Используем переданный salonId или fallback на '1'
-	const currentSalonId = salonId || '1';
+	// Используем переданный salonId
+	const currentSalonId = salonId;
 
-	console.log('🏢 BookingModal initialized with:', {
-		salonId,
-		currentSalonId,
-		salonName,
-		showServiceSelector,
-	});
-
-	// Используем новые хуки для получения данных
+	// Используем новые хуки для получения данных (только если salonId передан)
 	const {
 		data: staffMembers = [],
 		isLoading: staffLoading,
 		error: staffError,
-	} = useStaffBySalon(currentSalonId);
+	} = useStaffBySalon(currentSalonId || '');
 
 	const {
 		data: services = [],
 		isLoading: servicesLoading,
 		error: servicesError,
-	} = useServices(currentSalonId);
+	} = useServices(currentSalonId || '');
 
 	// Load salon data when modal opens
 	useEffect(() => {
-		if (isOpen) {
+		if (isOpen && currentSalonId) {
 			fetchSalonData();
 		}
-	}, [isOpen]);
+	}, [isOpen, currentSalonId]);
 
 	// Initialize selected service
 	useEffect(() => {
@@ -112,11 +110,31 @@ export default function BookingModal({
 
 	const fetchSalonData = async () => {
 		try {
-			const response = await fetch('/api/salon');
-			if (!response.ok) throw new Error('Failed to fetch salon data');
+			const API_BASE_URL =
+				process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+			const {
+				data: { session },
+			} = await supabase.auth.getSession();
+
+			if (!session?.access_token) {
+				console.warn('No session found for fetching salon data');
+				return;
+			}
+
+			const response = await fetch(`${API_BASE_URL}/salons/current`, {
+				headers: {
+					Authorization: `Bearer ${session.access_token}`,
+				},
+			});
+
+			if (!response.ok) {
+				console.warn('Could not fetch salon data, using defaults');
+				return;
+			}
+
 			const data = await response.json();
-			if (data.salon && data.salon.workingHours) {
-				setSalonWorkingHours(data.salon.workingHours);
+			if (data && data.workingHours) {
+				setSalonWorkingHours(data.workingHours);
 			}
 		} catch (error) {
 			console.error('Error fetching salon data:', error);
@@ -161,10 +179,12 @@ export default function BookingModal({
 			}
 		}
 
-		// Generate time slots in 24-hour format
+		// Generate time slots in 24-hour format (every 15 minutes)
 		for (let hour = startHour; hour < endHour; hour++) {
 			slots.push(`${hour.toString().padStart(2, '0')}:00`);
+			slots.push(`${hour.toString().padStart(2, '0')}:15`);
 			slots.push(`${hour.toString().padStart(2, '0')}:30`);
+			slots.push(`${hour.toString().padStart(2, '0')}:45`);
 		}
 		return slots;
 	};
@@ -193,8 +213,92 @@ export default function BookingModal({
 		return dates;
 	};
 
-	const dates = generateDates();
-	const timeSlots = generateTimeSlots();
+	const dates = useMemo(() => generateDates(), []);
+	const timeSlots = useMemo(() => generateTimeSlots(), [salonWorkingHours]);
+
+	// Pre-fill form data when editing booking
+	useEffect(() => {
+		if (
+			editingBooking &&
+			isOpen &&
+			dates.length > 0 &&
+			timeSlots.length > 0 &&
+			!isInitialized
+		) {
+			const bookingDate = new Date(editingBooking.time);
+			const timeString = bookingDate.toTimeString().slice(0, 5);
+
+			// Find the matching date in the dates array
+			const matchingDate = dates.find((date) => {
+				const dateStr = date.date.toDateString();
+				const bookingDateStr = bookingDate.toDateString();
+				return dateStr === bookingDateStr;
+			});
+
+			if (matchingDate) {
+				setSelectedDate(matchingDate.display);
+
+				// Navigate to the correct date range if needed
+				const dateIndex = dates.findIndex(
+					(date) => date.display === matchingDate.display
+				);
+				if (dateIndex !== -1) {
+					// Calculate the correct index to show this date in the visible range
+					const targetIndex = Math.max(
+						0,
+						Math.min(dateIndex - 2, dates.length - 5)
+					);
+					setCurrentDateIndex(targetIndex);
+				}
+			}
+
+			// Find the closest available time slot
+			const [bookingHour, bookingMinute] = timeString.split(':').map(Number);
+			let closestTime = timeSlots[0]; // Default to first available slot
+
+			for (const slot of timeSlots) {
+				const [slotHour, slotMinute] = slot.split(':').map(Number);
+				const bookingMinutes = bookingHour * 60 + bookingMinute;
+				const slotMinutes = slotHour * 60 + slotMinute;
+
+				// If this slot is closer to the booking time, use it
+				if (
+					Math.abs(slotMinutes - bookingMinutes) <
+					Math.abs(
+						parseInt(closestTime.split(':')[0]) * 60 +
+							parseInt(closestTime.split(':')[1]) -
+							bookingMinutes
+					)
+				) {
+					closestTime = slot;
+				}
+			}
+
+			setSelectedTime(closestTime);
+
+			// Set selected service
+			if (editingBooking.service) {
+				setSelectedService(editingBooking.service);
+			}
+
+			// Set selected staff
+			if (editingBooking.staff) {
+				setSelectedStaff(editingBooking.staff.name);
+			} else {
+				setSelectedStaff('Any Staff');
+			}
+
+			// Mark as initialized
+			setIsInitialized(true);
+		}
+	}, [editingBooking, isOpen, isInitialized]);
+
+	// Reset initialization flag when modal closes
+	useEffect(() => {
+		if (!isOpen) {
+			setIsInitialized(false);
+		}
+	}, [isOpen]);
 
 	// Test date creation function after dates are available
 	const testDateCreation = () => {
@@ -232,15 +336,17 @@ export default function BookingModal({
 
 	const visibleDates = dates.slice(currentDateIndex, currentDateIndex + 5);
 
-	// Set initial selected date to today
+	// Set initial selected date to today (only for new bookings)
 	React.useEffect(() => {
-		const today = new Date();
-		const todayString = today.toLocaleDateString('en-US', {
-			weekday: 'short',
-			day: 'numeric',
-		});
-		setSelectedDate(todayString);
-	}, []);
+		if (!editingBooking && isOpen && !selectedDate) {
+			const today = new Date();
+			const todayString = today.toLocaleDateString('en-US', {
+				weekday: 'short',
+				day: 'numeric',
+			});
+			setSelectedDate(todayString);
+		}
+	}, [isOpen, editingBooking, selectedDate]);
 
 	// Helper function to create a proper DateTime from date and time selections
 	const createBookingDateTime = (dateStr: string, timeStr: string): Date => {
@@ -276,15 +382,22 @@ export default function BookingModal({
 			return;
 		}
 
-		// Проверяем авторизацию клиента
-		if (!checkClientAuth()) {
-			// Показываем модальное окно логина
-			setShowLoginModal(true);
-			return;
+		// If editing existing booking, skip client auth check (owner can edit)
+		if (!editingBooking) {
+			// Проверяем авторизацию клиента только для новых бронирований
+			if (!checkClientAuth()) {
+				// Показываем модальное окно логина
+				setShowLoginModal(true);
+				return;
+			}
 		}
 
-		// Если пользователь авторизован, продолжаем с созданием резервации
-		await createBooking();
+		// Если редактируем существующее бронирование или пользователь авторизован
+		if (editingBooking) {
+			await updateBooking();
+		} else {
+			await createBooking();
+		}
 	};
 
 	const createBooking = async () => {
@@ -363,6 +476,85 @@ export default function BookingModal({
 		}
 	};
 
+	const updateBooking = async () => {
+		setLoading(true);
+
+		try {
+			if (!editingBooking) {
+				throw new Error('No booking to update');
+			}
+
+			// Find the selected staff member
+			const staffMember = staffMembers.find(
+				(staff) => staff.name === selectedStaff
+			);
+			const staffId = staffMember?.id || 'any';
+
+			// Get current session for access token
+			const {
+				data: { session },
+			} = await supabase.auth.getSession();
+
+			if (!session?.access_token) {
+				throw new Error('No valid session found');
+			}
+
+			// Create booking datetime
+			const API_BASE_URL =
+				process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+
+			let bookingDateTime: string;
+			try {
+				const dateTime = createBookingDateTime(selectedDate, selectedTime);
+				bookingDateTime = dateTime.toISOString();
+			} catch (dateError) {
+				console.error('❌ Error creating booking date time:', dateError);
+				throw new Error(
+					`Invalid date/time selection: ${dateError instanceof Error ? dateError.message : 'Unknown error'}`
+				);
+			}
+
+			const response = await fetch(
+				`${API_BASE_URL}/bookings/${editingBooking.id}`,
+				{
+					method: 'PUT',
+					headers: {
+						'Content-Type': 'application/json',
+						Authorization: `Bearer ${session.access_token}`,
+					},
+					body: JSON.stringify({
+						serviceId: selectedService?.id,
+						staffId: staffId === 'any' ? undefined : staffId,
+						time: bookingDateTime,
+						notes: `Updated booking for ${selectedService?.name}`,
+					}),
+				}
+			);
+
+			const result = await response.json();
+
+			if (!response.ok) {
+				throw new Error(result.error || 'Failed to update booking');
+			}
+
+			// Show success message
+			toast.success('Appointment updated successfully!');
+			onClose();
+
+			// Call callback to refresh bookings list
+			if (onBookingUpdated) {
+				onBookingUpdated();
+			}
+		} catch (error: unknown) {
+			console.error('Update booking error:', error);
+			toast.error(
+				error instanceof Error ? error.message : 'Failed to update appointment'
+			);
+		} finally {
+			setLoading(false);
+		}
+	};
+
 	// Close dropdown when clicking outside
 	const handleClickOutside = (e: React.MouseEvent) => {
 		const target = e.target as HTMLElement;
@@ -382,7 +574,7 @@ export default function BookingModal({
 
 	return (
 		<div
-			className="fixed inset-0 bg-[#F8F5F2CC] bg-opacity-80 flex items-center justify-center z-50 p-4"
+			className="fixed inset-0 bg-[#F8F5F2CC] bg-opacity-80 flex items-center justify-center z-[999] p-4"
 			onClick={handleClickOutside}
 		>
 			<div
@@ -678,7 +870,13 @@ export default function BookingModal({
 							disabled={loading}
 							className="w-full bg-[#ff5b5b] text-white py-4 rounded-lg font-semibold text-lg hover:bg-[#e04a4a] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
 						>
-							{loading ? 'Booking...' : `Book Appointment`}
+							{loading
+								? editingBooking
+									? 'Updating...'
+									: 'Booking...'
+								: editingBooking
+									? 'Update Appointment'
+									: 'Book Appointment'}
 						</button>
 
 						{/* Close Button */}
