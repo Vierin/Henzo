@@ -198,20 +198,11 @@ export default function BookingModal({
 
 	// Test date creation function after dates are available
 	const testDateCreation = () => {
-		console.log('🧪 Testing date creation...');
-		console.log(
-			'📅 Available dates:',
-			dates.map((d) => d.display)
-		);
 		try {
 			// Test with first available date
 			const firstDate = dates[0];
 			if (firstDate) {
 				const testDate = createBookingDateTime(firstDate.display, '09:00');
-				console.log(
-					'✅ Test date created successfully:',
-					testDate.toISOString()
-				);
 			}
 		} catch (error) {
 			console.error('❌ Test date creation failed:', error);
@@ -253,27 +244,17 @@ export default function BookingModal({
 
 	// Helper function to create a proper DateTime from date and time selections
 	const createBookingDateTime = (dateStr: string, timeStr: string): Date => {
-		console.log('🕐 Creating booking date time:', { dateStr, timeStr });
-		console.log(
-			'📅 Available dates:',
-			dates.map((d) => d.display)
-		);
-
 		// Find the selected date from the dates array
 		const selectedDateObj = dates.find((date) => date.display === dateStr);
 
 		if (!selectedDateObj) {
-			console.error('❌ Selected date not found in dates array:', dateStr);
 			throw new Error(`Selected date not found: ${dateStr}`);
 		}
-
-		console.log('✅ Found selected date object:', selectedDateObj);
 
 		// Create a new date object from the selected date
 		const targetDate = new Date(selectedDateObj.date);
 
 		if (isNaN(targetDate.getTime())) {
-			console.error('❌ Invalid date object:', selectedDateObj.date);
 			throw new Error('Invalid date object');
 		}
 
@@ -281,13 +262,11 @@ export default function BookingModal({
 		const [hours, minutes] = timeStr.split(':').map(Number);
 
 		if (isNaN(hours) || isNaN(minutes)) {
-			console.error('❌ Invalid time format:', timeStr);
 			throw new Error(`Invalid time format: ${timeStr}`);
 		}
 
 		targetDate.setHours(hours, minutes, 0, 0);
 
-		console.log('✅ Final booking date time:', targetDate.toISOString());
 		return targetDate;
 	};
 
@@ -340,10 +319,6 @@ export default function BookingModal({
 			try {
 				const dateTime = createBookingDateTime(selectedDate, selectedTime);
 				bookingDateTime = dateTime.toISOString();
-				console.log(
-					'✅ Booking date time created successfully:',
-					bookingDateTime
-				);
 			} catch (dateError) {
 				console.error('❌ Error creating booking date time:', dateError);
 				throw new Error(

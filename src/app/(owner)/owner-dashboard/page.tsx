@@ -7,6 +7,8 @@ import { Service, Booking } from '@/types';
 import { apiClient } from '@/lib/api-client';
 import toast from 'react-hot-toast';
 
+const DATA_WIDTH = '50px';
+
 export default function OwnerDashboardPage() {
 	const [isBookingModalOpen, setIsBookingModalOpen] = useState(false);
 	const [selectedService, setSelectedService] = useState<Service | undefined>();
@@ -15,6 +17,11 @@ export default function OwnerDashboardPage() {
 	const [error, setError] = useState<string | null>(null);
 	const [statusFilter, setStatusFilter] = useState<string>('all');
 	const [dateFilter, setDateFilter] = useState<string>('all');
+	const [viewMode, setViewMode] = useState<'list' | 'calendar'>('calendar');
+	const [currentMonth, setCurrentMonth] = useState(new Date().getMonth());
+	const [currentYear, setCurrentYear] = useState(new Date().getFullYear());
+	const [selectedDate, setSelectedDate] = useState<Date | null>(null);
+	const [showDaySchedule, setShowDaySchedule] = useState(false);
 	const router = useRouter();
 
 	const fetchBookings = async () => {
@@ -142,6 +149,168 @@ export default function OwnerDashboardPage() {
 		});
 	};
 
+	const getTodaysAppointments = () => {
+		const today = new Date();
+		return bookings
+			.filter((booking) => {
+				const bookingDate = new Date(booking.time);
+				return bookingDate.toDateString() === today.toDateString();
+			})
+			.sort((a, b) => new Date(a.time).getTime() - new Date(b.time).getTime());
+	};
+
+	const goToPreviousMonth = () => {
+		if (currentMonth === 0) {
+			setCurrentMonth(11);
+			setCurrentYear(currentYear - 1);
+		} else {
+			setCurrentMonth(currentMonth - 1);
+		}
+	};
+
+	const goToNextMonth = () => {
+		if (currentMonth === 11) {
+			setCurrentMonth(0);
+			setCurrentYear(currentYear + 1);
+		} else {
+			setCurrentMonth(currentMonth + 1);
+		}
+	};
+
+	const getMonthName = (month: number, year: number) => {
+		return new Date(year, month).toLocaleDateString('en-US', {
+			month: 'long',
+			year: 'numeric',
+		});
+	};
+
+	const handleDateClick = (day: number) => {
+		const clickedDate = new Date(currentYear, currentMonth, day);
+		const today = new Date();
+
+		// Only allow clicking on future dates or today
+		if (
+			clickedDate >=
+			new Date(today.getFullYear(), today.getMonth(), today.getDate())
+		) {
+			setSelectedDate(clickedDate);
+			setShowDaySchedule(true);
+		}
+	};
+
+	const getBookingsForDate = (date: Date) => {
+		return bookings.filter((booking) => {
+			const bookingDate = new Date(booking.time);
+			return bookingDate.toDateString() === date.toDateString();
+		});
+	};
+
+	const getStaffMembers = () => {
+		// Get unique staff members from bookings
+		const staffSet = new Set();
+		bookings.forEach((booking) => {
+			if (booking.staff) {
+				staffSet.add(
+					JSON.stringify({
+						id: booking.staff.id,
+						name: booking.staff.name,
+						role: 'Staff Member', // Default role, could be enhanced
+					})
+				);
+			}
+		});
+
+		// Convert Set back to array
+		return Array.from(staffSet).map((staff) => JSON.parse(staff as string));
+	};
+
+	const getTimeSlots = () => {
+		// Generate hourly time slots from 8 AM to 8 PM
+		const slots = [];
+		for (let hour = 8; hour <= 20; hour++) {
+			slots.push({
+				time: `${hour.toString().padStart(2, '0')}:00`,
+				hour: hour,
+				displayTime: `${hour.toString().padStart(2, '0')}:00`,
+			});
+		}
+		return slots;
+	};
+
+	const getAppointmentsForStaffAndTime = (
+		staffId: string,
+		timeSlotHour: number
+	) => {
+		if (!selectedDate) return null;
+
+		const dayBookings = getBookingsForDate(selectedDate);
+		return dayBookings.find((booking) => {
+			if (!booking.staff || booking.staff.id !== staffId) return false;
+
+			const bookingTime = new Date(booking.time);
+			const bookingHour = bookingTime.getHours();
+			const bookingMinute = bookingTime.getMinutes();
+			const duration = booking.service?.duration || 60; // Default 60 minutes
+
+			const bookingStartMinutes = bookingHour * 60 + bookingMinute;
+			const bookingEndMinutes = bookingStartMinutes + duration;
+			const slotStartMinutes = timeSlotHour * 60; // Start of the hour
+			const slotEndMinutes = (timeSlotHour + 1) * 60; // End of the hour
+
+			// Check if appointment overlaps with this hour slot
+			return (
+				bookingStartMinutes < slotEndMinutes &&
+				bookingEndMinutes > slotStartMinutes
+			);
+		});
+	};
+
+	const getAppointmentStartingAtTime = (
+		staffId: string,
+		timeSlotHour: number
+	) => {
+		if (!selectedDate) return null;
+
+		const dayBookings = getBookingsForDate(selectedDate);
+		return dayBookings.find((booking) => {
+			if (!booking.staff || booking.staff.id !== staffId) return false;
+
+			const bookingTime = new Date(booking.time);
+			const bookingHour = bookingTime.getHours();
+
+			// Check if appointment starts at this hour slot
+			return bookingHour === timeSlotHour;
+		});
+	};
+
+	const getAppointmentPosition = (appointment: any, timeSlotHour: number) => {
+		if (!appointment) return null;
+
+		const bookingTime = new Date(appointment.time);
+		const bookingHour = bookingTime.getHours();
+		const bookingMinute = bookingTime.getMinutes();
+		const duration = appointment.service?.duration || 60;
+
+		// Calculate position within the hour block (0-100%)
+		const topOffset = (bookingMinute / 60) * 100; // Convert minutes to percentage
+
+		// Calculate height based on duration
+		const heightPercentage = (duration / 60) * 100; // Convert minutes to percentage
+
+		return {
+			top: `${topOffset}%`,
+			height: `${heightPercentage}%`,
+			duration: duration,
+		};
+	};
+
+	const hasAppointmentsOnDate = (date: Date) => {
+		return bookings.some((booking) => {
+			const bookingDate = new Date(booking.time);
+			return bookingDate.toDateString() === date.toDateString();
+		});
+	};
+
 	const formatDate = (dateString: string) => {
 		return new Date(dateString).toLocaleDateString('en-US', {
 			month: 'short',
@@ -188,155 +357,585 @@ export default function OwnerDashboardPage() {
 	};
 
 	return (
-		<div>
-			<div className="mb-8">
-				<h1 className="text-3xl font-bold text-black mb-2">Appointments</h1>
-				<p className="text-gray-800">
-					Manage your salon appointments and bookings
-				</p>
-			</div>
+		<div className="flex gap-6">
+			<div className="w-full">
+				<div className="mb-8 flex items-center justify-between">
+					<h1 className="text-3xl font-bold text-black mb-2">Appointments</h1>
 
-			<div className="flex items-center justify-between mb-6">
-				<div className="flex gap-4">
-					{/* Status Filter */}
 					<div className="flex items-center gap-2">
-						<label className="text-sm font-medium text-gray-700">Status:</label>
-						<select
-							value={statusFilter}
-							onChange={(e) => setStatusFilter(e.target.value)}
-							className="px-3 py-1 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-[#ea4b4b] focus:border-[#ea4b4b] text-gray-900"
-						>
-							<option value="all">All</option>
-							<option value="CONFIRMED">Confirmed</option>
-							<option value="PASSED">Passed</option>
-							<option value="CANCELED">Cancelled</option>
-						</select>
-					</div>
+						{/* View Mode Toggle */}
+						<div className="flex border border-gray-300 rounded-lg overflow-hidden">
+							<button
+								onClick={() => {
+									setViewMode('list');
+									setShowDaySchedule(false); // Hide day schedule when switching to list
+								}}
+								className={`px-3 py-2 text-sm font-medium flex items-center gap-2 ${
+									viewMode === 'list'
+										? 'bg-[#ea4b4b] text-white'
+										: 'bg-white text-gray-700 hover:bg-gray-50'
+								}`}
+							>
+								<svg
+									className="w-4 h-4"
+									fill="currentColor"
+									viewBox="0 0 20 20"
+								>
+									<path
+										fillRule="evenodd"
+										d="M3 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z"
+										clipRule="evenodd"
+									/>
+								</svg>
+								List
+							</button>
+							<button
+								onClick={() => {
+									setViewMode('calendar');
+									setShowDaySchedule(false); // Hide day schedule when switching to calendar
+								}}
+								className={`px-3 py-2 text-sm font-medium flex items-center gap-2 ${
+									viewMode === 'calendar'
+										? 'bg-[#ea4b4b] text-white'
+										: 'bg-white text-gray-700 hover:bg-gray-50'
+								}`}
+							>
+								<svg
+									className="w-4 h-4"
+									fill="currentColor"
+									viewBox="0 0 20 20"
+								>
+									<path
+										fillRule="evenodd"
+										d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z"
+										clipRule="evenodd"
+									/>
+								</svg>
+								Calendar
+							</button>
+						</div>
 
-					{/* Date Filter */}
-					<div className="flex items-center gap-2">
-						<label className="text-sm font-medium text-gray-700">Date:</label>
-						<select
-							value={dateFilter}
-							onChange={(e) => setDateFilter(e.target.value)}
-							className="px-3 py-1 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-[#ea4b4b] focus:border-[#ea4b4b] text-gray-900"
+						<button
+							onClick={handleNewAppointment}
+							className="inline-flex items-center gap-2 rounded-full bg-[#ea4b4b] text-white px-4 py-2 text-sm shadow-sm hover:opacity-95"
 						>
-							<option value="all">All</option>
-							<option value="today">Today</option>
-							<option value="this_week">This Week</option>
-							<option value="upcoming">Upcoming</option>
-							<option value="past">Past</option>
-						</select>
+							<span className="text-lg leading-none">＋</span>
+							New Appointment
+						</button>
 					</div>
 				</div>
-				<button
-					onClick={handleNewAppointment}
-					className="inline-flex items-center gap-2 rounded-full bg-[#ea4b4b] text-white px-4 py-2 text-sm shadow-sm hover:opacity-95"
-				>
-					<span className="text-lg leading-none">＋</span>
-					New Appointment
-				</button>
-			</div>
 
-			<div className="mt-6 grid grid-cols-1 lg:grid-cols-[1fr_360px] gap-6">
-				<section className="rounded-xl overflow-hidden border border-[#f1d9d7] bg-white">
-					<div className="grid grid-cols-7 px-6 py-3 text-[13px] text-gray-700 bg-[#fff2f1] font-semibold">
-						<div>Client</div>
-						<div>Service</div>
-						<div>Staff</div>
-						<div>Date</div>
-						<div>Time</div>
-						<div>Status</div>
-						<div>Actions</div>
-					</div>
-					<div className="divide-y divide-[#f1d9d7]">
-						{loading ? (
-							<div className="px-6 py-8 text-center">
-								<div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#ea4b4b] mx-auto"></div>
-								<p className="mt-2 text-gray-600">Loading bookings...</p>
-							</div>
-						) : error ? (
-							<div className="px-6 py-8 text-center">
-								<div className="text-red-500 mb-2">⚠️</div>
-								<p className="text-gray-600 mb-4">{error}</p>
-								<button
-									onClick={fetchBookings}
-									className="text-[#ea4b4b] hover:text-[#d43d3d] font-medium"
-								>
-									Try again
-								</button>
-							</div>
-						) : getFilteredBookings().length === 0 ? (
-							<div className="px-6 py-8 text-center">
-								<div className="text-gray-400 mb-2">📅</div>
-								<p className="text-gray-600">
-									No bookings found with current filters
-								</p>
-							</div>
-						) : (
-							getFilteredBookings().map((booking) => (
-								<div
-									key={booking.id}
-									className="grid grid-cols-7 px-6 py-4 text-[15px] text-gray-800"
-								>
-									<div className="font-semibold">
-										Client ID: {booking.clientId}
+				<div className="flex justify-between gap-6">
+					{!showDaySchedule && (
+						<>
+							{viewMode === 'list' ? (
+								<div className="mt-6 w-full">
+									<div className="flex items-center justify-between mb-6">
+										<div className="flex gap-4">
+											{/* Status Filter */}
+											<div className="flex items-center gap-2">
+												<label className="text-sm font-medium text-gray-700">
+													Status:
+												</label>
+												<select
+													value={statusFilter}
+													onChange={(e) => setStatusFilter(e.target.value)}
+													className="px-3 py-1 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-[#ea4b4b] focus:border-[#ea4b4b] text-gray-900"
+												>
+													<option value="all">All</option>
+													<option value="CONFIRMED">Confirmed</option>
+													<option value="PASSED">Passed</option>
+													<option value="CANCELED">Cancelled</option>
+												</select>
+											</div>
+
+											{/* Date Filter */}
+											<div className="flex items-center gap-2">
+												<label className="text-sm font-medium text-gray-700">
+													Date:
+												</label>
+												<select
+													value={dateFilter}
+													onChange={(e) => setDateFilter(e.target.value)}
+													className="px-3 py-1 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-[#ea4b4b] focus:border-[#ea4b4b] text-gray-900"
+												>
+													<option value="all">All</option>
+													<option value="today">Today</option>
+													<option value="this_week">This Week</option>
+													<option value="upcoming">Upcoming</option>
+													<option value="past">Past</option>
+												</select>
+											</div>
+										</div>
 									</div>
-									<div>{booking.service?.name || 'Unknown Service'}</div>
-									<div>{booking.staff?.name || 'Unassigned'}</div>
-									<div>{formatDate(booking.time)}</div>
-									<div>{formatTime(booking.time)}</div>
-									<div>{getStatusBadge(booking.status)}</div>
-									<div>
-										{booking.status === 'CONFIRMED' && (
-											<button
-												onClick={() => handleCancelBooking(booking.id)}
-												className="text-red-600 hover:text-red-800 text-sm font-medium"
-											>
-												Cancel
-											</button>
-										)}
+
+									<section className="rounded-xl overflow-hidden border border-[#f1d9d7] bg-white">
+										<div className="grid grid-cols-7 px-6 py-3 text-[13px] text-gray-700 bg-[#fff2f1] font-semibold">
+											<div>Client</div>
+											<div>Service</div>
+											<div>Staff</div>
+											<div>Date</div>
+											<div>Time</div>
+											<div>Status</div>
+											<div>Actions</div>
+										</div>
+										<div className="divide-y divide-[#f1d9d7]">
+											{loading ? (
+												<div className="px-6 py-8 text-center">
+													<div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#ea4b4b] mx-auto"></div>
+													<p className="mt-2 text-gray-600">
+														Loading bookings...
+													</p>
+												</div>
+											) : error ? (
+												<div className="px-6 py-8 text-center">
+													<div className="text-red-500 mb-2">⚠️</div>
+													<p className="text-gray-600 mb-4">{error}</p>
+													<button
+														onClick={fetchBookings}
+														className="text-[#ea4b4b] hover:text-[#d43d3d] font-medium"
+													>
+														Try again
+													</button>
+												</div>
+											) : getFilteredBookings().length === 0 ? (
+												<div className="px-6 py-8 text-center">
+													<div className="text-gray-400 mb-2">📅</div>
+													<p className="text-gray-600">
+														No bookings found with current filters
+													</p>
+												</div>
+											) : (
+												getFilteredBookings().map((booking) => (
+													<div
+														key={booking.id}
+														className="grid grid-cols-7 px-6 py-4 text-[15px] text-gray-800"
+													>
+														<div className="font-semibold">
+															{booking.user?.name ||
+																`Client ID: ${booking.userId}`}
+														</div>
+														<div>
+															{booking.service?.name || 'Unknown Service'}
+														</div>
+														<div>{booking.staff?.name || 'Unassigned'}</div>
+														<div>{formatDate(booking.time)}</div>
+														<div>{formatTime(booking.time)}</div>
+														<div>{getStatusBadge(booking.status)}</div>
+														<div>
+															{booking.status === 'CONFIRMED' && (
+																<button
+																	onClick={() =>
+																		handleCancelBooking(booking.id)
+																	}
+																	className="text-red-600 hover:text-red-800 text-sm font-medium"
+																>
+																	Cancel
+																</button>
+															)}
+														</div>
+													</div>
+												))
+											)}
+										</div>
+									</section>
+								</div>
+							) : (
+								<div className="mt-6 w-full">
+									{/* Calendar */}
+									<div className="rounded-xl border border-[#f1d9d7] bg-white p-6">
+										<div className="flex items-center justify-between mb-6">
+											<h3 className="text-lg font-semibold text-gray-900">
+												{getMonthName(currentMonth, currentYear)}
+											</h3>
+											<div className="flex items-center gap-2">
+												<button
+													onClick={goToPreviousMonth}
+													className="p-1 hover:bg-gray-100 rounded transition-colors"
+												>
+													<svg
+														className="w-5 h-5 text-gray-800"
+														fill="currentColor"
+														viewBox="0 0 20 20"
+													>
+														<path
+															fillRule="evenodd"
+															d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z"
+															clipRule="evenodd"
+														/>
+													</svg>
+												</button>
+												<button
+													onClick={goToNextMonth}
+													className="p-1 hover:bg-gray-100 rounded transition-colors"
+												>
+													<svg
+														className="w-5 h-5 text-gray-800"
+														fill="currentColor"
+														viewBox="0 0 20 20"
+													>
+														<path
+															fillRule="evenodd"
+															d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z"
+															clipRule="evenodd"
+														/>
+													</svg>
+												</button>
+												<span className="text-sm text-[#ea4b4b] ml-2">
+													Today
+												</span>
+											</div>
+										</div>
+
+										{/* Calendar Grid */}
+										<div className="grid grid-cols-7 gap-1 mb-2">
+											{['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(
+												(day) => (
+													<div
+														key={day}
+														className="p-2 text-center text-sm font-medium text-gray-500"
+													>
+														{day}
+													</div>
+												)
+											)}
+										</div>
+
+										<div className="grid grid-cols-7 gap-1">
+											{/* Calendar days - dynamic based on selected month/year */}
+											{(() => {
+												const today = new Date();
+
+												// Get first day of selected month and number of days
+												const firstDay = new Date(currentYear, currentMonth, 1);
+												const lastDay = new Date(
+													currentYear,
+													currentMonth + 1,
+													0
+												);
+												const daysInMonth = lastDay.getDate();
+												const startDay = firstDay.getDay(); // 0 = Sunday, 1 = Monday, etc.
+
+												// Generate calendar grid (6 weeks = 42 days)
+												const calendarDays = [];
+
+												// Previous month days (empty cells)
+												for (let i = 0; i < startDay; i++) {
+													calendarDays.push(null);
+												}
+
+												// Current month days
+												for (let day = 1; day <= daysInMonth; day++) {
+													calendarDays.push(day);
+												}
+
+												// Fill remaining cells to complete 6 weeks
+												while (calendarDays.length < 42) {
+													calendarDays.push(null);
+												}
+
+												return calendarDays.map((day, i) => {
+													if (day === null) {
+														return <div key={i} className="p-2"></div>;
+													}
+
+													const currentDate = new Date(
+														currentYear,
+														currentMonth,
+														day
+													);
+													const isToday =
+														day === today.getDate() &&
+														currentMonth === today.getMonth() &&
+														currentYear === today.getFullYear();
+													const isPast =
+														currentDate <
+														new Date(
+															today.getFullYear(),
+															today.getMonth(),
+															today.getDate()
+														);
+													const isFuture =
+														currentDate >
+														new Date(
+															today.getFullYear(),
+															today.getMonth(),
+															today.getDate()
+														);
+
+													// Check if this day has appointments (dynamic based on real bookings)
+													const hasAppointment =
+														hasAppointmentsOnDate(currentDate);
+
+													return (
+														<button
+															key={i}
+															disabled={isPast}
+															onClick={() => handleDateClick(day)}
+															className={`p-2 text-center text-sm relative rounded transition-colors ${
+																isToday
+																	? 'bg-[#ea4b4b] text-white font-semibold'
+																	: isPast
+																		? 'text-gray-400 cursor-not-allowed'
+																		: isFuture
+																			? 'text-gray-900 hover:bg-gray-100 cursor-pointer'
+																			: 'text-gray-700 hover:bg-gray-100 cursor-pointer'
+															}`}
+														>
+															{day}
+															{hasAppointment && !isToday && (
+																<div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 w-1 h-1 bg-[#ea4b4b] rounded-full"></div>
+															)}
+														</button>
+													);
+												});
+											})()}
+										</div>
 									</div>
 								</div>
-							))
-						)}
-					</div>
-				</section>
+							)}
+						</>
+					)}
 
-				<aside className="rounded-xl border border-[#f1d9d7] bg-white p-6">
-					<h3 className="text-[18px] font-semibold text-black">
-						Quick Actions
-					</h3>
-					<ul className="mt-4 space-y-3 text-[15px]">
-						<li>
-							<button
-								onClick={() => router.push('/services/new')}
-								className="w-full flex items-center justify-between rounded-lg border border-[#f6e7e6] px-4 py-3 hover:bg-[#fff7f6] transition-colors text-gray-800"
+					{/* Day Schedule View */}
+					{showDaySchedule && selectedDate && (
+						<div className="mt-6 w-full">
+							<div className="rounded-xl border border-[#f1d9d7] bg-white p-6">
+								{/* Header */}
+								<div className="flex items-center justify-between mb-6">
+									<h3 className="text-lg font-semibold text-gray-900">
+										{selectedDate.toLocaleDateString('en-US', {
+											weekday: 'long',
+											month: 'long',
+											day: 'numeric',
+										})}
+									</h3>
+									<div className="flex items-center gap-2">
+										<button
+											onClick={() => setShowDaySchedule(false)}
+											className="px-3 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors flex items-center gap-2"
+										>
+											<svg
+												className="w-4 h-4"
+												fill="currentColor"
+												viewBox="0 0 20 20"
+											>
+												<path
+													fillRule="evenodd"
+													d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z"
+													clipRule="evenodd"
+												/>
+											</svg>
+											Back to Month
+										</button>
+									</div>
+								</div>
+
+								{/* Schedule Grid */}
+								<div className="overflow-x-auto">
+									<div className="min-w-[800px]">
+										{/* Staff Headers - Sticky */}
+										<div className="sticky top-0 bg-white z-20 border-b border-gray-200 mb-0">
+											<div
+												className="grid gap-4 py-3 px-1"
+												style={{
+													gridTemplateColumns: `${DATA_WIDTH} repeat(${getStaffMembers().length}, 1fr)`,
+												}}
+											>
+												<div className="text-sm font-medium text-gray-500">
+													Time
+												</div>
+												{getStaffMembers().map((staff) => (
+													<div key={staff.id} className="text-center">
+														<div className="text-sm font-semibold text-gray-900">
+															{staff.name}
+														</div>
+													</div>
+												))}
+											</div>
+										</div>
+
+										{/* Time Slots and Appointments */}
+										<div className="space-y-0">
+											{getTimeSlots().map((timeSlot, index) => (
+												<div
+													key={timeSlot.time}
+													className="grid min-h-[64px] border-b border-gray-200 px-1"
+													style={{
+														gridTemplateColumns: `${DATA_WIDTH} repeat(${getStaffMembers().length}, 1fr)`,
+													}}
+												>
+													{/* Time Label */}
+													<div className="flex items-center text-sm text-gray-600 h-16 border-r border-dotted border-gray-200 font-medium">
+														{timeSlot.time}
+													</div>
+
+													{/* Staff Columns */}
+													{getStaffMembers().map((staff) => {
+														const appointment = getAppointmentsForStaffAndTime(
+															staff.id,
+															timeSlot.hour
+														);
+
+														// Check if this is the starting hour of the appointment
+														const startingAppointment =
+															getAppointmentStartingAtTime(
+																staff.id,
+																timeSlot.hour
+															);
+
+														// Get position data for the appointment
+														const position = getAppointmentPosition(
+															startingAppointment,
+															timeSlot.hour
+														);
+
+														return (
+															<div
+																key={`${staff.id}-${timeSlot.time}`}
+																className="relative h-16 border-r border-dotted border-gray-200"
+															>
+																{startingAppointment && position ? (
+																	<div
+																		className="absolute inset-x-0 bg-red-50 border border-red-200 rounded-lg p-1 mx-1 z-10"
+																		style={{
+																			top: position.top,
+																			height: position.height,
+																			minHeight: '24px', // Minimum height for readability
+																		}}
+																	>
+																		{position.duration < 40 ? (
+																			// Short appointment - single line layout
+																			<div className="text-xs text-red-800 font-medium leading-tight flex gap-2">
+																				<div className="truncate text-red-600">
+																					{startingAppointment.user?.name ||
+																						`Client ID: ${startingAppointment.userId}`}{' '}
+																					- {startingAppointment.service?.name}
+																				</div>
+																			</div>
+																		) : (
+																			// Long appointment - multi-line layout
+																			<div className="text-xs leading-tight">
+																				<div className="font-medium text-red-800 truncate">
+																					{startingAppointment.service?.name} -{' '}
+																					{startingAppointment.user?.name ||
+																						`Client ID: ${startingAppointment.userId}`}
+																				</div>
+																				<div className="text-red-500 truncate">
+																					{formatTime(startingAppointment.time)}{' '}
+																					-{' '}
+																					{formatTime(
+																						new Date(
+																							new Date(
+																								startingAppointment.time
+																							).getTime() +
+																								position.duration * 60000
+																						).toISOString()
+																					)}
+																				</div>
+																			</div>
+																		)}
+																	</div>
+																) : null}
+															</div>
+														);
+													})}
+												</div>
+											))}
+										</div>
+									</div>
+								</div>
+							</div>
+						</div>
+					)}
+				</div>
+			</div>
+
+			<div className="rounded-xl border border-[#f1d9d7] bg-white p-6 h-[fit-content] min-w-[340px]">
+				<h3 className="text-lg font-semibold text-gray-900 mb-4">
+					Today's Appointments
+				</h3>
+
+				{loading ? (
+					<div className="text-center py-4">
+						<div className="animate-spin rounded-full h-6 w-6 border-b-2 border-[#ea4b4b] mx-auto"></div>
+					</div>
+				) : getTodaysAppointments().length === 0 ? (
+					<div className="text-center py-8">
+						<div className="text-gray-400 mb-2">📅</div>
+						<p className="text-gray-500 text-sm">No appointments today</p>
+					</div>
+				) : (
+					<div className="space-y-3">
+						{getTodaysAppointments().map((booking) => (
+							<div
+								key={booking.id}
+								className="border border-[#f6e7e6] rounded-lg p-3"
 							>
-								<span className="font-medium">Add New Services</span>
-								<span className="text-xl">＋</span>
-							</button>
-						</li>
-						<li>
-							<button
-								onClick={() => router.push('/staff/new')}
-								className="w-full flex items-center justify-between rounded-lg border border-[#f6e7e6] px-4 py-3 hover:bg-[#fff7f6] transition-colors text-gray-800"
-							>
-								<span className="font-medium">Add New Staff</span>
-								<span className="text-xl">＋</span>
-							</button>
-						</li>
-						<li>
-							<button
-								onClick={() => router.push('/salon-info')}
-								className="w-full flex items-center justify-between rounded-lg border border-[#f6e7e6] px-4 py-3 hover:bg-[#fff7f6] transition-colors text-gray-800"
-							>
-								<span className="font-medium">Salon Information</span>
-								<span>⚙️</span>
-							</button>
-						</li>
-					</ul>
-				</aside>
+								<div className="flex items-start justify-between">
+									<div className="flex-1">
+										<div className="flex items-center gap-2 mb-1">
+											<span className="text-sm font-medium text-[#ea4b4b]">
+												{formatTime(booking.time)}
+											</span>
+											<span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded-full">
+												{booking.status}
+											</span>
+										</div>
+										<div className="text-sm font-medium text-gray-900">
+											{booking.user?.name || `Client ID: ${booking.userId}`}
+										</div>
+										<div className="text-xs text-gray-500">
+											{booking.service?.name} with{' '}
+											{booking.staff?.name || 'Unassigned'}
+										</div>
+									</div>
+									<div className="flex items-center gap-1">
+										<button className="p-1 hover:bg-gray-100 rounded">
+											<svg
+												className="w-4 h-4 text-gray-500"
+												fill="currentColor"
+												viewBox="0 0 20 20"
+											>
+												<path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" />
+											</svg>
+										</button>
+										<button
+											onClick={() => handleCancelBooking(booking.id)}
+											className="p-1 hover:bg-gray-100 rounded"
+										>
+											<svg
+												className="w-4 h-4 text-gray-500"
+												fill="currentColor"
+												viewBox="0 0 20 20"
+											>
+												<path
+													fillRule="evenodd"
+													d="M9 2a1 1 0 000 2h2a1 1 0 100-2H9z"
+													clipRule="evenodd"
+												/>
+												<path
+													fillRule="evenodd"
+													d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
+													clipRule="evenodd"
+												/>
+											</svg>
+										</button>
+									</div>
+								</div>
+							</div>
+						))}
+					</div>
+				)}
+
+				<div className="mt-4 pt-4 border-t border-[#f1d9d7] text-center">
+					<button
+						onClick={() => setViewMode('list')}
+						className="text-[#ea4b4b] hover:text-[#d43d3d] text-sm font-medium"
+					>
+						View all appointments
+					</button>
+				</div>
 			</div>
 
 			{/* Booking Modal */}

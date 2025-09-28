@@ -72,6 +72,7 @@ export interface Booking {
 	service?: Service;
 	salon?: Salon;
 	staff?: Staff;
+	user?: User;
 }
 
 export interface Client {

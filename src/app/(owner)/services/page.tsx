@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import toast from 'react-hot-toast';
 import EditServiceModal from '@/components/EditServiceModal';
 import { useServices, useDeleteService } from '@/hooks/useServices';
-import { useCategoriesBySalon } from '@/hooks/useCategories';
+import { useCategories } from '@/hooks/useCategories';
 import { useSalonId } from '@/hooks/useSalon';
 import LoadingSpinner from '@/components/LoadingSpinner';
 import ErrorDisplay from '@/components/ErrorDisplay';
@@ -34,7 +34,7 @@ export default function ServicesPage() {
 		// Убираем серверную фильтрацию - делаем всё на клиенте
 	});
 
-	const { data: categories = [] } = useCategoriesBySalon(salonId || '');
+	const { data: categories = [] } = useCategories();
 	const deleteServiceMutation = useDeleteService();
 
 	// Дебаунс для поиска - задержка 600мс

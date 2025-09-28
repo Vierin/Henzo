@@ -59,20 +59,14 @@ export default function OwnerHeader() {
 						Staff
 					</Link>
 					<Link
-						href="/prices"
+						href="/salon-info"
 						className="text-gray-800 hover:text-black font-medium"
 					>
-						Prices
+						Settings
 					</Link>
 				</nav>
 
 				<div className="flex items-center gap-4">
-					<button
-						aria-label="notifications"
-						className="h-9 w-9 rounded-full border border-[#ead2d0] grid place-items-center text-gray-700"
-					>
-						🔔
-					</button>
 					{/* Логотип салона в кружочке профиля */}
 					<div className="h-9 w-9 rounded-full border border-[#ffd6d2] overflow-hidden flex items-center justify-center">
 						{salon?.logo ? (
