@@ -16,7 +16,7 @@ export default function NotFound() {
 			<div className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
 				<div className="text-center max-w-md mx-auto">
 					{/* Title */}
-					<h1 className="text-4xl font-bold text-gray-900 mb-4">Lost?</h1>
+					<h1 className="text-7xl font-bold text-gray-900 mb-4">Lost?</h1>
 
 					{/* Subtitle */}
 					<h2 className="text-2xl font-semibold text-[#ea4b4b] mb-4">

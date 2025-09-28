@@ -13,6 +13,9 @@ export default function OwnerDashboardPage() {
 	const [isBookingModalOpen, setIsBookingModalOpen] = useState(false);
 	const [selectedService, setSelectedService] = useState<Service | undefined>();
 	const [editingBooking, setEditingBooking] = useState<Booking | null>(null);
+	const [viewingBooking, setViewingBooking] = useState<Booking | null>(null);
+	const [isBookingDetailsModalOpen, setIsBookingDetailsModalOpen] =
+		useState(false);
 	const [salonId, setSalonId] = useState<string | null>(null);
 	const [bookings, setBookings] = useState<Booking[]>([]);
 	const [loading, setLoading] = useState(true);
@@ -150,6 +153,24 @@ export default function OwnerDashboardPage() {
 		setEditingBooking(null);
 		// Обновляем данные после закрытия модального окна
 		fetchBookings();
+	};
+
+	const handleViewBookingDetails = (booking: Booking) => {
+		setViewingBooking(booking);
+		setIsBookingDetailsModalOpen(true);
+	};
+
+	const handleBookingDetailsModalClose = () => {
+		setIsBookingDetailsModalOpen(false);
+		setViewingBooking(null);
+	};
+
+	const handleEditFromDetails = (booking: Booking) => {
+		setViewingBooking(null);
+		setIsBookingDetailsModalOpen(false);
+		setEditingBooking(booking);
+		setSelectedService(undefined);
+		setIsBookingModalOpen(true);
 	};
 
 	const handleCancelBooking = async (bookingId: string) => {
@@ -329,6 +350,9 @@ export default function OwnerDashboardPage() {
 
 		const dayBookings = getBookingsForDate(selectedDate);
 		return dayBookings.find((booking) => {
+			// Don't show canceled bookings
+			if (booking.status === 'CANCELED') return false;
+
 			if (!booking.staff || booking.staff.id !== staffId) return false;
 
 			const bookingTime = new Date(booking.time);
@@ -357,6 +381,9 @@ export default function OwnerDashboardPage() {
 
 		const dayBookings = getBookingsForDate(selectedDate);
 		return dayBookings.find((booking) => {
+			// Don't show canceled bookings
+			if (booking.status === 'CANCELED') return false;
+
 			if (!booking.staff || booking.staff.id !== staffId) return false;
 
 			const bookingTime = new Date(booking.time);
@@ -386,6 +413,50 @@ export default function OwnerDashboardPage() {
 			height: `${heightPercentage}%`,
 			duration: duration,
 		};
+	};
+
+	// Get booking block styles based on status
+	const getBookingBlockStyles = (booking: any) => {
+		const now = new Date();
+		const bookingTime = new Date(booking.time);
+		const serviceDuration = booking.service?.duration || 60;
+		const endTime = new Date(bookingTime.getTime() + serviceDuration * 60000);
+		const isPast = endTime < now;
+
+		if (isPast) {
+			// Past bookings - gray and not clickable
+			return {
+				className:
+					'absolute inset-x-0 bg-gray-100 border border-gray-300 rounded-lg p-1 mx-1 z-10 cursor-not-allowed opacity-60',
+				textClassName: 'text-gray-600',
+				textSecondaryClassName: 'text-gray-500',
+			};
+		} else if (booking.status === 'CONFIRMED') {
+			// Confirmed bookings - green
+			return {
+				className:
+					'absolute inset-x-0 bg-green-50 border border-green-200 rounded-lg p-1 mx-1 z-10 cursor-pointer hover:bg-green-100 transition-colors',
+				textClassName: 'text-green-800',
+				textSecondaryClassName: 'text-green-600',
+			};
+		} else {
+			// Other statuses (like PASSED) - default red
+			return {
+				className:
+					'absolute inset-x-0 bg-red-50 border border-red-200 rounded-lg p-1 mx-1 z-10 cursor-pointer hover:bg-red-100 transition-colors',
+				textClassName: 'text-red-800',
+				textSecondaryClassName: 'text-red-600',
+			};
+		}
+	};
+
+	// Check if booking is clickable
+	const isBookingClickable = (booking: any) => {
+		const now = new Date();
+		const bookingTime = new Date(booking.time);
+		const serviceDuration = booking.service?.duration || 60;
+		const endTime = new Date(bookingTime.getTime() + serviceDuration * 60000);
+		return endTime >= now;
 	};
 
 	const hasAppointmentsOnDate = (date: Date) => {
@@ -854,7 +925,7 @@ export default function OwnerDashboardPage() {
 															onClick={() => handleDateClick(day)}
 															className={`p-2 text-center text-sm relative rounded transition-colors ${
 																isToday
-																	? 'bg-[#ea4b4b] text-white font-semibold'
+																	? 'bg-white text-gray-900 border-2 border-[#ea4b4b] font-semibold'
 																	: isPast
 																		? 'text-gray-400 cursor-not-allowed'
 																		: isFuture
@@ -975,48 +1046,87 @@ export default function OwnerDashboardPage() {
 																key={`${staff.id}-${timeSlot.time}`}
 																className="relative h-16 border-r border-dotted border-gray-200"
 															>
-																{startingAppointment && position ? (
-																	<div
-																		className="absolute inset-x-0 bg-red-50 border border-red-200 rounded-lg p-1 mx-1 z-10"
-																		style={{
-																			top: position.top,
-																			height: position.height,
-																			minHeight: '24px', // Minimum height for readability
-																		}}
-																	>
-																		{position.duration < 40 ? (
-																			// Short appointment - single line layout
-																			<div className="text-xs text-red-800 font-medium leading-tight flex gap-2">
-																				<div className="truncate text-red-600">
-																					{startingAppointment.user?.name ||
-																						`Client ID: ${startingAppointment.userId}`}{' '}
-																					- {startingAppointment.service?.name}
-																				</div>
-																			</div>
-																		) : (
-																			// Long appointment - multi-line layout
-																			<div className="text-xs leading-tight">
-																				<div className="font-medium text-red-800 truncate">
-																					{startingAppointment.service?.name} -{' '}
-																					{startingAppointment.user?.name ||
-																						`Client ID: ${startingAppointment.userId}`}
-																				</div>
-																				<div className="text-red-500 truncate">
-																					{formatTime(startingAppointment.time)}{' '}
-																					-{' '}
-																					{formatTime(
-																						new Date(
-																							new Date(
-																								startingAppointment.time
-																							).getTime() +
-																								position.duration * 60000
-																						).toISOString()
+																{startingAppointment && position
+																	? (() => {
+																			const styles =
+																				getBookingBlockStyles(
+																					startingAppointment
+																				);
+																			const clickable =
+																				isBookingClickable(startingAppointment);
+
+																			return (
+																				<div
+																					className={styles.className}
+																					style={{
+																						top: position.top,
+																						height: position.height,
+																						minHeight: '24px', // Minimum height for readability
+																					}}
+																					onClick={
+																						clickable
+																							? () =>
+																									handleViewBookingDetails(
+																										startingAppointment
+																									)
+																							: undefined
+																					}
+																				>
+																					{position.duration < 40 ? (
+																						// Short appointment - single line layout
+																						<div
+																							className={`text-xs ${styles.textClassName} font-medium leading-tight flex gap-2`}
+																						>
+																							<div
+																								className={`truncate ${styles.textSecondaryClassName}`}
+																							>
+																								{startingAppointment.user
+																									?.name ||
+																									`Client ID: ${startingAppointment.userId}`}{' '}
+																								-{' '}
+																								{
+																									startingAppointment.service
+																										?.name
+																								}
+																							</div>
+																						</div>
+																					) : (
+																						// Long appointment - multi-line layout
+																						<div className="text-xs leading-tight">
+																							<div
+																								className={`font-medium ${styles.textClassName} truncate`}
+																							>
+																								{
+																									startingAppointment.service
+																										?.name
+																								}{' '}
+																								-{' '}
+																								{startingAppointment.user
+																									?.name ||
+																									`Client ID: ${startingAppointment.userId}`}
+																							</div>
+																							<div
+																								className={`${styles.textSecondaryClassName} truncate`}
+																							>
+																								{formatTime(
+																									startingAppointment.time
+																								)}{' '}
+																								-{' '}
+																								{formatTime(
+																									new Date(
+																										new Date(
+																											startingAppointment.time
+																										).getTime() +
+																											position.duration * 60000
+																									).toISOString()
+																								)}
+																							</div>
+																						</div>
 																					)}
 																				</div>
-																			</div>
-																		)}
-																	</div>
-																) : null}
+																			);
+																		})()
+																	: null}
 															</div>
 														);
 													})}
@@ -1031,7 +1141,7 @@ export default function OwnerDashboardPage() {
 				</div>
 			</div>
 
-			<div className="rounded-xl border border-[#f1d9d7] bg-white p-6 h-[fit-content] min-w-[340px]">
+			<div className="rounded-xl border border-[#f1d9d7] bg-white p-6 h-[fit-content] min-w-[340px] sticky top-22">
 				<h3 className="text-lg font-semibold text-gray-900 mb-4">
 					Today's Appointments ({getTodaysAppointments().length})
 				</h3>
@@ -1047,87 +1157,92 @@ export default function OwnerDashboardPage() {
 					</div>
 				) : (
 					<div className="space-y-3">
-						{getTodaysAppointments().map((booking) => (
-							<div
-								key={booking.id}
-								className="border border-[#f6e7e6] rounded-lg p-3"
-							>
-								<div className="flex items-start justify-between">
-									<div className="flex-1">
-										<div className="flex items-center gap-2 mb-1">
-											<span className="text-sm font-medium text-[#ea4b4b]">
-												{formatTime(booking.time)}
-											</span>
-											<span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded-full">
-												{booking.status}
-											</span>
+						{getTodaysAppointments()
+							.slice(0, 3)
+							.map((booking) => (
+								<div
+									key={booking.id}
+									className="border border-[#f6e7e6] rounded-lg p-3"
+								>
+									<div className="flex items-start justify-between">
+										<div className="flex-1">
+											<div className="flex items-center gap-2 mb-1">
+												<span className="text-sm font-medium text-[#ea4b4b]">
+													{formatTime(booking.time)}
+												</span>
+												<span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded-full">
+													{booking.status}
+												</span>
+											</div>
+											<div className="text-sm font-medium text-gray-900">
+												{booking.user?.name || `Client ID: ${booking.userId}`}
+											</div>
+											<div className="text-xs text-gray-500">
+												{booking.service?.name} with{' '}
+												{booking.staff?.name || 'Unassigned'}
+											</div>
 										</div>
-										<div className="text-sm font-medium text-gray-900">
-											{booking.user?.name || `Client ID: ${booking.userId}`}
-										</div>
-										<div className="text-xs text-gray-500">
-											{booking.service?.name} with{' '}
-											{booking.staff?.name || 'Unassigned'}
-										</div>
-									</div>
-									<div className="flex items-center gap-1">
-										{booking.status === 'CONFIRMED' && (
-											<>
-												<button
-													onClick={() => handleEditBooking(booking)}
-													className="p-1 hover:bg-gray-100 rounded"
-													title="Edit booking"
-												>
-													<svg
-														className="w-4 h-4 text-gray-500"
-														fill="currentColor"
-														viewBox="0 0 20 20"
+										<div className="flex items-center gap-1">
+											{booking.status === 'CONFIRMED' && (
+												<>
+													<button
+														onClick={() => handleEditBooking(booking)}
+														className="p-1 hover:bg-gray-100 rounded"
+														title="Edit booking"
 													>
-														<path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" />
-													</svg>
-												</button>
-												<button
-													onClick={() => handleCancelBooking(booking.id)}
-													className="p-1 hover:bg-gray-100 rounded"
-													title="Cancel booking"
-												>
-													<svg
-														className="w-4 h-4 text-gray-500"
-														fill="currentColor"
-														viewBox="0 0 20 20"
+														<svg
+															className="w-4 h-4 text-gray-500"
+															fill="currentColor"
+															viewBox="0 0 20 20"
+														>
+															<path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" />
+														</svg>
+													</button>
+													<button
+														onClick={() => handleCancelBooking(booking.id)}
+														className="p-1 hover:bg-gray-100 rounded"
+														title="Cancel booking"
 													>
-														<path
-															fillRule="evenodd"
-															d="M9 2a1 1 0 000 2h2a1 1 0 100-2H9z"
-															clipRule="evenodd"
-														/>
-														<path
-															fillRule="evenodd"
-															d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
-															clipRule="evenodd"
-														/>
-													</svg>
-												</button>
-											</>
-										)}
+														<svg
+															className="w-4 h-4 text-gray-500"
+															fill="currentColor"
+															viewBox="0 0 20 20"
+														>
+															<path
+																fillRule="evenodd"
+																d="M9 2a1 1 0 000 2h2a1 1 0 100-2H9z"
+																clipRule="evenodd"
+															/>
+															<path
+																fillRule="evenodd"
+																d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
+																clipRule="evenodd"
+															/>
+														</svg>
+													</button>
+												</>
+											)}
+										</div>
 									</div>
 								</div>
+							))}
+
+						{/* Show "View all appointments" button if there are more than 3 appointments */}
+						{getTodaysAppointments().length > 3 && (
+							<div className="pt-2 border-t border-gray-200">
+								<button
+									onClick={() => {
+										setViewMode('list');
+										setCurrentPage(1);
+									}}
+									className="w-full text-[#ea4b4b] hover:text-[#d43d3d] text-sm font-medium py-2 hover:bg-gray-50 rounded-lg transition-colors"
+								>
+									View all appointments ({getTodaysAppointments().length})
+								</button>
 							</div>
-						))}
+						)}
 					</div>
 				)}
-
-				<div className="mt-4 pt-4 border-t border-[#f1d9d7] text-center">
-					<button
-						onClick={() => {
-							setViewMode('list');
-							setCurrentPage(1); // Reset to first page
-						}}
-						className="text-[#ea4b4b] hover:text-[#d43d3d] text-sm font-medium"
-					>
-						View all appointments
-					</button>
-				</div>
 			</div>
 
 			{/* Booking Modal */}
@@ -1140,6 +1255,188 @@ export default function OwnerDashboardPage() {
 				editingBooking={editingBooking}
 				onBookingUpdated={handleBookingUpdated}
 			/>
+
+			{/* Reservation Details Modal */}
+			{isBookingDetailsModalOpen && viewingBooking && (
+				<div className="fixed inset-0 bg-black/50 bg-opacity-50 flex items-center justify-center z-50 p-4">
+					<div className="bg-white rounded-xl max-w-md w-full max-h-[90vh] overflow-y-auto">
+						{/* Header */}
+						<div className="flex items-center justify-between py-3 px-6 border-b border-gray-200">
+							<h2 className="text-xl font-semibold text-gray-900">
+								Reservation Details
+							</h2>
+							<button
+								onClick={handleBookingDetailsModalClose}
+								className="text-gray-400 hover:text-gray-600 transition-colors"
+							>
+								<svg
+									className="w-6 h-6"
+									fill="none"
+									stroke="currentColor"
+									viewBox="0 0 24 24"
+								>
+									<path
+										strokeLinecap="round"
+										strokeLinejoin="round"
+										strokeWidth={2}
+										d="M6 18L18 6M6 6l12 12"
+									/>
+								</svg>
+							</button>
+						</div>
+
+						{/* Content */}
+						<div className="py-2 space-y-3 px-6">
+							{/* Client Info */}
+							<div className="border-b border-gray-200 pb-2">
+								<div className="flex items-center justify-between gap-2">
+									<h3 className="text-sm font-bold text-gray-700 mb-2">
+										Client
+									</h3>
+									<p className="text-gray-900">
+										{viewingBooking.user?.name ||
+											`Client ID: ${viewingBooking.userId}`}
+									</p>
+								</div>
+
+								<div className="flex items-center justify-between gap-2">
+									{viewingBooking.user?.email && (
+										<p className="text-sm text-gray-600">
+											{viewingBooking.user.email}
+										</p>
+									)}
+									{viewingBooking.user?.phone && (
+										<p className="text-sm text-gray-600">
+											{viewingBooking.user.phone}
+										</p>
+									)}
+								</div>
+							</div>
+
+							{/* Service Info */}
+							<div className="border-b border-gray-200 pb-2">
+								<div className="flex items-center justify-between gap-2">
+									<h3 className="text-sm font-bold text-gray-700 mb-1">
+										Service
+									</h3>
+									<p className="text-gray-900">
+										{viewingBooking.service?.name || 'Unknown Service'}
+									</p>
+								</div>
+
+								{viewingBooking.service?.description && (
+									<p className="text-sm text-gray-600 mt-1">
+										{viewingBooking.service.description}
+									</p>
+								)}
+								<div className="flex items-center justify-between gap-2">
+									{viewingBooking.service?.duration && (
+										<p className="text-sm text-gray-600">
+											Duration: {viewingBooking.service.duration} minutes
+										</p>
+									)}
+								</div>
+							</div>
+
+							{/* Staff Info */}
+							<div className="flex items-center justify-between gap-2 border-b border-gray-200 pb-2">
+								<h3 className="text-sm font-bold text-gray-700 mb-2">Staff</h3>
+								<p className="text-gray-900">
+									{viewingBooking.staff?.name || 'Unassigned'}
+								</p>
+							</div>
+
+							{/* Date & Time */}
+							<div className="flex items-center justify-between gap-2 border-b border-gray-200 pb-2">
+								<h3 className="text-sm font-bold text-gray-700 mb-2">
+									Date & Time
+								</h3>
+								<div className="flex items-center gap-2">
+									<p className="text-gray-900">
+										{formatDate(viewingBooking.time)}
+									</p>
+									<p className="text-gray-900">
+										{formatTime(viewingBooking.time)}
+									</p>
+								</div>
+							</div>
+
+							{/* Status */}
+							<div className="flex items-center justify-between gap-2 border-b border-gray-200 pb-2">
+								<h3 className="text-sm font-bold text-gray-700">Status</h3>
+								{getStatusBadge(viewingBooking.status)}
+							</div>
+
+							{/* Notes */}
+							{viewingBooking.notes && (
+								<div>
+									<h3 className="text-sm font-bold text-gray-700 mb-2">
+										Notes
+									</h3>
+									<p className="text-gray-900 bg-gray-50 p-3 rounded-lg">
+										{viewingBooking.notes}
+									</p>
+								</div>
+							)}
+						</div>
+
+						{/* Actions */}
+						<div className="flex items-center justify-end gap-3 px-6 py-3 border-t border-gray-200">
+							<button
+								onClick={handleBookingDetailsModalClose}
+								className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+							>
+								Close
+							</button>
+							{viewingBooking.status === 'CONFIRMED' && (
+								<>
+									<button
+										onClick={() => handleEditFromDetails(viewingBooking)}
+										className="px-4 py-2 text-sm font-medium text-white bg-[#ea4b4b] rounded-lg hover:bg-[#d43d3d] transition-colors flex items-center gap-2"
+									>
+										<svg
+											className="w-4 h-4"
+											fill="none"
+											stroke="currentColor"
+											viewBox="0 0 24 24"
+										>
+											<path
+												strokeLinecap="round"
+												strokeLinejoin="round"
+												strokeWidth={2}
+												d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
+											/>
+										</svg>
+										Edit
+									</button>
+									<button
+										onClick={() => {
+											handleCancelBooking(viewingBooking.id);
+											handleBookingDetailsModalClose();
+										}}
+										className="px-4 py-2 text-sm font-medium text-red-700 bg-red-50 border border-red-200 rounded-lg hover:bg-red-100 transition-colors flex items-center gap-2"
+									>
+										<svg
+											className="w-4 h-4"
+											fill="none"
+											stroke="currentColor"
+											viewBox="0 0 24 24"
+										>
+											<path
+												strokeLinecap="round"
+												strokeLinejoin="round"
+												strokeWidth={2}
+												d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+											/>
+										</svg>
+										Cancel
+									</button>
+								</>
+							)}
+						</div>
+					</div>
+				</div>
+			)}
 		</div>
 	);
 }

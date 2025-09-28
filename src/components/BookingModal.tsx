@@ -43,6 +43,7 @@ export default function BookingModal({
 	const [loginData, setLoginData] = useState({ email: '', password: '' });
 	const [isLoggingIn, setIsLoggingIn] = useState(false);
 	const [isInitialized, setIsInitialized] = useState(false);
+	const [currentMonth, setCurrentMonth] = useState(new Date());
 
 	// Используем Zustand store для аутентификации
 	const { user, isClient, login, refreshUser } = useAuthStore();
@@ -216,41 +217,95 @@ export default function BookingModal({
 	const dates = useMemo(() => generateDates(), []);
 	const timeSlots = useMemo(() => generateTimeSlots(), [salonWorkingHours]);
 
+	// Calendar functions
+	const getDaysInMonth = (date: Date) => {
+		return new Date(date.getFullYear(), date.getMonth() + 1, 0).getDate();
+	};
+
+	const getFirstDayOfMonth = (date: Date) => {
+		return new Date(date.getFullYear(), date.getMonth(), 1).getDay();
+	};
+
+	const goToPreviousMonth = () => {
+		setCurrentMonth(
+			(prev) => new Date(prev.getFullYear(), prev.getMonth() - 1, 1)
+		);
+	};
+
+	const goToNextMonth = () => {
+		setCurrentMonth(
+			(prev) => new Date(prev.getFullYear(), prev.getMonth() + 1, 1)
+		);
+	};
+
+	const getMonthName = (date: Date) => {
+		return date.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+	};
+
+	const handleCalendarDateClick = (day: number) => {
+		const clickedDate = new Date(
+			currentMonth.getFullYear(),
+			currentMonth.getMonth(),
+			day
+		);
+		const today = new Date();
+
+		// Only allow clicking on today or future dates
+		if (
+			clickedDate >=
+			new Date(today.getFullYear(), today.getMonth(), today.getDate())
+		) {
+			const dateString = clickedDate.toISOString().split('T')[0];
+			setSelectedDate(dateString);
+		}
+	};
+
+	const isDateSelected = (day: number) => {
+		const date = new Date(
+			currentMonth.getFullYear(),
+			currentMonth.getMonth(),
+			day
+		);
+		const dateString = date.toISOString().split('T')[0];
+		return selectedDate === dateString;
+	};
+
+	const isDateToday = (day: number) => {
+		const date = new Date(
+			currentMonth.getFullYear(),
+			currentMonth.getMonth(),
+			day
+		);
+		const today = new Date();
+		return date.toDateString() === today.toDateString();
+	};
+
+	const isDateDisabled = (day: number) => {
+		const date = new Date(
+			currentMonth.getFullYear(),
+			currentMonth.getMonth(),
+			day
+		);
+		const today = new Date();
+		return (
+			date < new Date(today.getFullYear(), today.getMonth(), today.getDate())
+		);
+	};
+
 	// Pre-fill form data when editing booking
 	useEffect(() => {
-		if (
-			editingBooking &&
-			isOpen &&
-			dates.length > 0 &&
-			timeSlots.length > 0 &&
-			!isInitialized
-		) {
+		if (editingBooking && isOpen && timeSlots.length > 0 && !isInitialized) {
 			const bookingDate = new Date(editingBooking.time);
 			const timeString = bookingDate.toTimeString().slice(0, 5);
 
-			// Find the matching date in the dates array
-			const matchingDate = dates.find((date) => {
-				const dateStr = date.date.toDateString();
-				const bookingDateStr = bookingDate.toDateString();
-				return dateStr === bookingDateStr;
-			});
+			// Set the selected date in YYYY-MM-DD format
+			const dateString = bookingDate.toISOString().split('T')[0];
+			setSelectedDate(dateString);
 
-			if (matchingDate) {
-				setSelectedDate(matchingDate.display);
-
-				// Navigate to the correct date range if needed
-				const dateIndex = dates.findIndex(
-					(date) => date.display === matchingDate.display
-				);
-				if (dateIndex !== -1) {
-					// Calculate the correct index to show this date in the visible range
-					const targetIndex = Math.max(
-						0,
-						Math.min(dateIndex - 2, dates.length - 5)
-					);
-					setCurrentDateIndex(targetIndex);
-				}
-			}
+			// Set the current month to show the booking date
+			setCurrentMonth(
+				new Date(bookingDate.getFullYear(), bookingDate.getMonth(), 1)
+			);
 
 			// Find the closest available time slot
 			const [bookingHour, bookingMinute] = timeString.split(':').map(Number);
@@ -326,54 +381,57 @@ export default function BookingModal({
 		...staffMembers,
 	];
 
-	const handleDateNavigation = (direction: 'prev' | 'next') => {
-		if (direction === 'prev' && currentDateIndex > 0) {
-			setCurrentDateIndex(currentDateIndex - 1);
-		} else if (direction === 'next' && currentDateIndex < dates.length - 5) {
-			setCurrentDateIndex(currentDateIndex + 1);
+	// Block body scroll when modal is open
+	React.useEffect(() => {
+		if (isOpen) {
+			// Prevent body scroll
+			document.body.style.overflow = 'hidden';
+		} else {
+			// Restore body scroll
+			document.body.style.overflow = 'unset';
 		}
-	};
 
-	const visibleDates = dates.slice(currentDateIndex, currentDateIndex + 5);
+		// Cleanup function to restore scroll when component unmounts
+		return () => {
+			document.body.style.overflow = 'unset';
+		};
+	}, [isOpen]);
 
 	// Set initial selected date to today (only for new bookings)
 	React.useEffect(() => {
 		if (!editingBooking && isOpen && !selectedDate) {
 			const today = new Date();
-			const todayString = today.toLocaleDateString('en-US', {
-				weekday: 'short',
-				day: 'numeric',
-			});
+			const todayString = today.toISOString().split('T')[0];
 			setSelectedDate(todayString);
 		}
 	}, [isOpen, editingBooking, selectedDate]);
 
 	// Helper function to create a proper DateTime from date and time selections
 	const createBookingDateTime = (dateStr: string, timeStr: string): Date => {
-		// Find the selected date from the dates array
-		const selectedDateObj = dates.find((date) => date.display === dateStr);
-
-		if (!selectedDateObj) {
-			throw new Error(`Selected date not found: ${dateStr}`);
-		}
-
-		// Create a new date object from the selected date
-		const targetDate = new Date(selectedDateObj.date);
-
-		if (isNaN(targetDate.getTime())) {
-			throw new Error('Invalid date object');
-		}
-
-		// Set the time
+		// Parse the date string (YYYY-MM-DD format)
+		const [year, month, day] = dateStr.split('-').map(Number);
 		const [hours, minutes] = timeStr.split(':').map(Number);
+
+		if (isNaN(year) || isNaN(month) || isNaN(day)) {
+			throw new Error(`Invalid date format: ${dateStr}`);
+		}
 
 		if (isNaN(hours) || isNaN(minutes)) {
 			throw new Error(`Invalid time format: ${timeStr}`);
 		}
 
-		targetDate.setHours(hours, minutes, 0, 0);
+		// Create a new Date object using the selected date and time
+		const bookingDateTime = new Date(
+			year,
+			month - 1,
+			day,
+			hours,
+			minutes,
+			0,
+			0
+		);
 
-		return targetDate;
+		return bookingDateTime;
 	};
 
 	const handleBooking = async () => {
@@ -578,7 +636,7 @@ export default function BookingModal({
 			onClick={handleClickOutside}
 		>
 			<div
-				className="bg-white rounded-2xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto relative"
+				className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-hidden relative"
 				onClick={(e) => e.stopPropagation()}
 			>
 				{/* Close button */}
@@ -600,15 +658,9 @@ export default function BookingModal({
 						/>
 					</svg>
 				</button>
-				<div className="flex">
+				<div className="flex overflow-x-auto">
 					{/* Left Section - Service Details, Date, and Time Selection */}
-					<div className="flex-1 p-8">
-						{/* Header */}
-						<div className="flex items-center gap-3 mb-6">
-							<div className="h-8 w-8 rounded-full bg-[#ff5b5b]" />
-							<span className="text-xl font-semibold text-gray-900">Henzo</span>
-						</div>
-
+					<div className="flex-1 min-w-[500px] p-8 max-h-[90vh] overflow-y-auto">
 						{/* Service Details */}
 						<div className="mb-8">
 							{showServiceSelector ? (
@@ -716,63 +768,104 @@ export default function BookingModal({
 							<h3 className="text-lg font-bold text-gray-900 mb-4">
 								Select Date
 							</h3>
-							<div className="flex items-center gap-2">
-								<button
-									onClick={() => handleDateNavigation('prev')}
-									disabled={currentDateIndex === 0}
-									className="p-2 hover:bg-gray-100 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed"
-								>
-									<svg
-										className="w-5 h-5"
-										fill="none"
-										stroke="currentColor"
-										viewBox="0 0 24 24"
-									>
-										<path
-											strokeLinecap="round"
-											strokeLinejoin="round"
-											strokeWidth={2}
-											d="M15 19l-7-7 7-7"
-										/>
-									</svg>
-								</button>
-								<div className="flex gap-2 flex-1">
-									{visibleDates.map((dateObj) => (
+							<div className="bg-white border border-gray-200 rounded-lg p-4">
+								{/* Calendar Header */}
+								<div className="flex items-center justify-between mb-4">
+									<h4 className="text-lg font-semibold text-gray-900">
+										{getMonthName(currentMonth)}
+									</h4>
+									<div className="flex items-center gap-2">
 										<button
-											key={dateObj.display}
-											onClick={() => setSelectedDate(dateObj.display)}
-											className={`px-4 py-3 rounded-lg text-sm font-medium transition-colors ${
-												selectedDate === dateObj.display
-													? 'bg-[#ff5b5b] text-white'
-													: dateObj.isToday
-														? 'bg-[#8B4513] text-white border-2 border-[#6B3410]'
-														: 'bg-white text-gray-900 border border-gray-200 hover:bg-gray-50'
-											}`}
-											title={dateObj.full}
+											onClick={goToPreviousMonth}
+											className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
 										>
-											{dateObj.display}
+											<svg
+												className="w-5 h-5 text-gray-700"
+												fill="none"
+												stroke="currentColor"
+												viewBox="0 0 24 24"
+											>
+												<path
+													strokeLinecap="round"
+													strokeLinejoin="round"
+													strokeWidth={2}
+													d="M15 19l-7-7 7-7"
+												/>
+											</svg>
 										</button>
-									))}
+										<button
+											onClick={goToNextMonth}
+											className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+										>
+											<svg
+												className="w-5 h-5 text-gray-700"
+												fill="none"
+												stroke="currentColor"
+												viewBox="0 0 24 24"
+											>
+												<path
+													strokeLinecap="round"
+													strokeLinejoin="round"
+													strokeWidth={2}
+													d="M9 5l7 7-7 7"
+												/>
+											</svg>
+										</button>
+									</div>
 								</div>
-								<button
-									onClick={() => handleDateNavigation('next')}
-									disabled={currentDateIndex >= dates.length - 5}
-									className="p-2 hover:bg-gray-100 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed"
-								>
-									<svg
-										className="w-5 h-5"
-										fill="none"
-										stroke="currentColor"
-										viewBox="0 0 24 24"
-									>
-										<path
-											strokeLinecap="round"
-											strokeLinejoin="round"
-											strokeWidth={2}
-											d="M9 5l7 7-7 7"
-										/>
-									</svg>
-								</button>
+
+								{/* Calendar Grid */}
+								<div className="grid grid-cols-7 gap-1 mb-2">
+									{['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(
+										(day) => (
+											<div
+												key={day}
+												className="text-center text-sm font-medium text-gray-500 py-2"
+											>
+												{day}
+											</div>
+										)
+									)}
+								</div>
+
+								<div className="grid grid-cols-7 gap-1">
+									{/* Empty cells for days before the first day of the month */}
+									{Array.from({ length: getFirstDayOfMonth(currentMonth) }).map(
+										(_, index) => (
+											<div key={`empty-${index}`} className="h-10"></div>
+										)
+									)}
+
+									{/* Days of the month */}
+									{Array.from(
+										{ length: getDaysInMonth(currentMonth) },
+										(_, index) => {
+											const day = index + 1;
+											const isSelected = isDateSelected(day);
+											const isToday = isDateToday(day);
+											const isDisabled = isDateDisabled(day);
+
+											return (
+												<button
+													key={day}
+													onClick={() => handleCalendarDateClick(day)}
+													disabled={isDisabled}
+													className={`h-10 rounded-lg text-sm font-medium transition-colors ${
+														isSelected
+															? 'bg-[#ff5b5b] text-white'
+															: isToday
+																? 'bg-white text-gray-900 border-2 border-[#ff5b5b]'
+																: isDisabled
+																	? 'text-gray-300 cursor-not-allowed'
+																	: 'text-gray-900 hover:bg-gray-100'
+													}`}
+												>
+													{day}
+												</button>
+											);
+										}
+									)}
+								</div>
 							</div>
 						</div>
 
@@ -781,26 +874,31 @@ export default function BookingModal({
 							<h3 className="text-lg font-bold text-gray-900 mb-4">
 								Select a Time
 							</h3>
-							<div className="grid grid-cols-3 gap-3">
-								{timeSlots.map((time) => (
-									<button
-										key={time}
-										onClick={() => setSelectedTime(time)}
-										className={`px-4 py-3 rounded-lg text-sm font-medium transition-colors ${
-											selectedTime === time
-												? 'bg-[#ff5b5b] text-white'
-												: 'bg-white text-gray-900 border border-gray-200 hover:bg-gray-50'
-										}`}
-									>
-										{time}
-									</button>
-								))}
+							<div className="overflow-x-auto">
+								<div
+									className="flex gap-3 pb-2"
+									style={{ minWidth: 'max-content' }}
+								>
+									{timeSlots.map((time) => (
+										<button
+											key={time}
+											onClick={() => setSelectedTime(time)}
+											className={`flex-shrink-0 px-4 py-3 rounded-lg text-sm font-medium transition-colors ${
+												selectedTime === time
+													? 'bg-[#ff5b5b] text-white'
+													: 'bg-white text-gray-900 border border-gray-200 hover:bg-gray-50'
+											}`}
+										>
+											{time}
+										</button>
+									))}
+								</div>
 							</div>
 						</div>
 					</div>
 
 					{/* Right Section - Staff Selection and Booking Button */}
-					<div className="w-80 bg-gray-50 p-8 rounded-r-2xl">
+					<div className="w-80 flex-shrink-0 bg-gray-50 p-8 rounded-r-2xl max-h-[90vh] overflow-y-auto">
 						{/* Select Staff Member */}
 						<div className="mb-8">
 							<h3 className="text-lg font-bold text-gray-900 mb-4">
