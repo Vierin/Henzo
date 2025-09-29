@@ -190,31 +190,6 @@ export default function BookingModal({
 		return slots;
 	};
 
-	// Generate dates dynamically for 2 months ahead
-	const generateDates = () => {
-		const dates = [];
-		const today = new Date();
-		const twoMonthsFromNow = new Date(today);
-		twoMonthsFromNow.setMonth(today.getMonth() + 2);
-
-		for (let i = 0; i < 60; i++) {
-			// 60 days = ~2 months
-			const date = new Date(today);
-			date.setDate(today.getDate() + i);
-			const dayName = date.toLocaleDateString('en-US', { weekday: 'short' });
-			const dayNumber = date.getDate();
-			const monthName = date.toLocaleDateString('en-US', { month: 'short' });
-			dates.push({
-				display: `${dayName} ${dayNumber}`,
-				full: `${dayName} ${dayNumber} ${monthName}`,
-				date: new Date(date),
-				isToday: date.toDateString() === today.toDateString(),
-			});
-		}
-		return dates;
-	};
-
-	const dates = useMemo(() => generateDates(), []);
 	const timeSlots = useMemo(() => generateTimeSlots(), [salonWorkingHours]);
 
 	// Calendar functions
@@ -358,22 +333,19 @@ export default function BookingModal({
 	// Test date creation function after dates are available
 	const testDateCreation = () => {
 		try {
-			// Test with first available date
-			const firstDate = dates[0];
-			if (firstDate) {
-				const testDate = createBookingDateTime(firstDate.display, '09:00');
-			}
+			// Test with today's date in YYYY-MM-DD format
+			const today = new Date();
+			const todayString = today.toISOString().split('T')[0];
+			const testDate = createBookingDateTime(todayString, '09:00');
 		} catch (error) {
 			console.error('❌ Test date creation failed:', error);
 		}
 	};
 
-	// Run test when component mounts and dates are available
+	// Run test when component mounts
 	React.useEffect(() => {
-		if (dates.length > 0) {
-			testDateCreation();
-		}
-	}, [dates]);
+		testDateCreation();
+	}, []);
 
 	// Add "Any Staff" option to the beginning of staff list
 	const allStaffMembers = [

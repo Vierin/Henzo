@@ -1259,9 +1259,9 @@ export default function OwnerDashboardPage() {
 			{/* Reservation Details Modal */}
 			{isBookingDetailsModalOpen && viewingBooking && (
 				<div className="fixed inset-0 bg-black/50 bg-opacity-50 flex items-center justify-center z-50 p-4">
-					<div className="bg-white rounded-xl max-w-md w-full max-h-[90vh] overflow-y-auto">
+					<div className="bg-white rounded-xl max-w-md w-full max-h-[75vh] mt-20 flex flex-col">
 						{/* Header */}
-						<div className="flex items-center justify-between py-3 px-6 border-b border-gray-200">
+						<div className="flex items-center justify-between py-3 px-6 border-b border-gray-200 flex-shrink-0">
 							<h2 className="text-xl font-semibold text-gray-900">
 								Reservation Details
 							</h2>
@@ -1286,7 +1286,7 @@ export default function OwnerDashboardPage() {
 						</div>
 
 						{/* Content */}
-						<div className="py-2 space-y-3 px-6">
+						<div className="py-2 space-y-3 px-6 overflow-y-auto flex-1">
 							{/* Client Info */}
 							<div className="border-b border-gray-200 pb-2">
 								<div className="flex items-center justify-between gap-2">
@@ -1381,7 +1381,7 @@ export default function OwnerDashboardPage() {
 						</div>
 
 						{/* Actions */}
-						<div className="flex items-center justify-end gap-3 px-6 py-3 border-t border-gray-200">
+						<div className="flex items-center justify-end gap-3 px-6 py-3 border-t border-gray-200 flex-shrink-0">
 							<button
 								onClick={handleBookingDetailsModalClose}
 								className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
