@@ -832,9 +832,6 @@ export default function OwnerDashboardPage() {
 														/>
 													</svg>
 												</button>
-												<span className="text-sm text-[#ea4b4b] ml-2">
-													Today
-												</span>
 											</div>
 										</div>
 

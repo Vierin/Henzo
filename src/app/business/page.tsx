@@ -241,12 +241,36 @@ export default function BusinessLandingPage() {
 				</div>
 			</section>
 
-			{/* Pricing Plans section */}
+			{/* Beta Program Section */}
 			<section className="py-20 bg-white">
+				<div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+					{/* Beta Badge */}
+					<div className="inline-block bg-orange-100 text-orange-600 px-4 py-2 rounded-lg text-sm font-medium mb-6 shadow-sm">
+						Special Beta Program ✨
+					</div>
+
+					{/* Main Beta Heading */}
+					<h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-6">
+						Join Our Free Beta Test!
+					</h2>
+
+					{/* Beta Description */}
+					<p className="text-lg text-gray-600 leading-relaxed max-w-3xl mx-auto mb-16">
+						We're excited to offer a free beta testing period for our app until{' '}
+						<strong>June 1, 2026</strong>. As an early adopter, you'll have the
+						opportunity to transition to our paid plans with exclusive, greatly
+						improved conditions once the beta period concludes. Help us shape
+						the future of Henzo!
+					</p>
+				</div>
+			</section>
+
+			{/* Pricing Plans section */}
+			<section className="pb-20 bg-white">
 				<div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
 					<div className="text-center mb-16">
 						<h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-6">
-							Choose the right plan for your business
+							Our Future Plans
 						</h2>
 						<p className="text-xl text-gray-600 max-w-3xl mx-auto">
 							Henzo offers flexible pricing to fit the needs of salons and
@@ -256,19 +280,12 @@ export default function BusinessLandingPage() {
 
 					<div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto">
 						{/* Basic Plan */}
-						<div className="bg-white rounded-2xl p-8 shadow-lg border-2 border-orange-500 relative">
-							{/* Best Value Badge */}
-							<div className="absolute -top-3 right-6">
-								<div className="bg-orange-500 text-white px-4 py-1 rounded-full text-sm font-semibold">
-									BEST VALUE
-								</div>
-							</div>
-
+						<div className="bg-white rounded-2xl p-8 shadow-lg border border-gray-200">
 							<div className="text-center">
 								<h3 className="text-2xl font-bold text-gray-900 mb-4">Basic</h3>
 								<div className="mb-6">
-									<span className="text-4xl font-bold text-gray-900">$10</span>
-									<span className="text-gray-600">/month</span>
+									<span className="text-5xl font-bold text-gray-900">$10</span>
+									<span className="text-gray-600 text-lg">/month</span>
 								</div>
 								<p className="text-gray-600 mb-8">
 									Perfect for individual stylists and small salons getting
@@ -323,7 +340,7 @@ export default function BusinessLandingPage() {
 
 								<Link
 									href="/business/register"
-									className="w-full bg-orange-400 text-white px-6 py-3 rounded-lg font-semibold hover:bg-orange-500 transition-colors block text-center"
+									className="w-full bg-orange-100 text-orange-700 px-6 py-3 rounded-lg font-semibold hover:bg-orange-200 transition-colors block text-center"
 								>
 									Choose plan
 								</Link>
@@ -331,13 +348,20 @@ export default function BusinessLandingPage() {
 						</div>
 
 						{/* Enterprise Plan */}
-						<div className="bg-white rounded-2xl p-8 shadow-lg border border-gray-200">
+						<div className="bg-white rounded-2xl p-8 shadow-lg border border-gray-200 relative">
+							{/* Best Value Badge */}
+							<div className="absolute -top-3 left-1/2 transform -translate-x-1/2">
+								<div className="bg-orange-500 text-white px-4 py-1 rounded-lg text-sm font-semibold">
+									BEST VALUE
+								</div>
+							</div>
+
 							<div className="text-center">
 								<h3 className="text-2xl font-bold text-gray-900 mb-4">
 									Enterprise
 								</h3>
 								<div className="mb-6">
-									<span className="text-4xl font-bold text-gray-900">
+									<span className="text-5xl font-bold text-gray-900">
 										Contact Us
 									</span>
 								</div>
