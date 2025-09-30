@@ -125,9 +125,45 @@ export default function AuthCallbackPage() {
 										router.push('/admin-panel');
 										break;
 									case 'OWNER':
-										// For OWNER users, always go to complete-setup first
-										// The complete-setup page will redirect to dashboard if salon already exists
-										router.push('/business/complete-setup');
+										// For OWNER users, check if they have a salon first
+										try {
+											const salonResponse = await fetch(
+												`${API_BASE_URL}/salons/current`,
+												{
+													headers: {
+														Authorization: `Bearer ${data.session.access_token}`,
+														'Content-Type': 'application/json',
+													},
+												}
+											);
+
+											if (salonResponse.ok) {
+												const salonData = await salonResponse.json();
+												if (salonData) {
+													// User has a salon, go directly to dashboard
+													console.log(
+														'Owner has existing salon, redirecting to dashboard'
+													);
+													router.push('/owner-dashboard');
+												} else {
+													// User doesn't have a salon, go to complete-setup
+													console.log(
+														'Owner has no salon, redirecting to complete-setup'
+													);
+													router.push('/business/complete-setup');
+												}
+											} else {
+												// Error checking salon, go to complete-setup as fallback
+												console.log(
+													'Error checking salon, redirecting to complete-setup'
+												);
+												router.push('/business/complete-setup');
+											}
+										} catch (error) {
+											console.error('Error checking salon:', error);
+											// Error checking salon, go to complete-setup as fallback
+											router.push('/business/complete-setup');
+										}
 										break;
 									case 'CLIENT':
 										router.push('/dashboard');
@@ -170,6 +206,7 @@ export default function AuthCallbackPage() {
 									setSession(data.session);
 									// Redirect based on role
 									if (defaultRole === 'OWNER') {
+										// For new OWNER users, always go to complete-setup
 										router.push('/business/complete-setup');
 									} else {
 										router.push('/dashboard');
@@ -189,6 +226,7 @@ export default function AuthCallbackPage() {
 									setSession(data.session);
 									// Redirect based on role
 									if (defaultRole === 'OWNER') {
+										// For new OWNER users, always go to complete-setup
 										router.push('/business/complete-setup');
 									} else {
 										router.push('/dashboard');
@@ -213,6 +251,7 @@ export default function AuthCallbackPage() {
 
 							// Redirect based on registration type
 							if (isBusinessRegistration) {
+								// For business registration, always go to complete-setup
 								router.push('/business/complete-setup');
 							} else {
 								router.push('/dashboard');

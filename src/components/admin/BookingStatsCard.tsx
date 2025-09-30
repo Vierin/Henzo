@@ -8,6 +8,7 @@ interface BookingStatsCardProps {
 		date: string;
 		count: number;
 	}>;
+	period?: string;
 }
 
 export default function BookingStatsCard({
@@ -15,6 +16,7 @@ export default function BookingStatsCard({
 	totalBookings,
 	changePercent,
 	trends,
+	period = '30d',
 }: BookingStatsCardProps) {
 	return (
 		<div className="bg-white rounded-lg shadow p-6">
@@ -44,7 +46,7 @@ export default function BookingStatsCard({
 				<h4 className="text-sm font-medium text-gray-700 mb-3">
 					Booking Trends
 				</h4>
-				<BookingTrendsChart data={trends} />
+				<BookingTrendsChart data={trends} period={period} />
 			</div>
 		</div>
 	);

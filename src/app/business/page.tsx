@@ -338,12 +338,12 @@ export default function BusinessLandingPage() {
 									</div>
 								</div>
 
-								<Link
-									href="/business/register"
-									className="w-full bg-orange-100 text-orange-700 px-6 py-3 rounded-lg font-semibold hover:bg-orange-200 transition-colors block text-center"
+								<button
+									disabled
+									className="w-full bg-gray-100 text-gray-400 px-6 py-3 rounded-lg font-semibold cursor-not-allowed"
 								>
 									Choose plan
-								</Link>
+								</button>
 							</div>
 						</div>
 
@@ -417,14 +417,27 @@ export default function BusinessLandingPage() {
 									</div>
 								</div>
 
-								<Link
-									href="/contact"
-									className="w-full bg-orange-500 text-white px-6 py-3 rounded-lg font-semibold hover:bg-orange-600 transition-colors block text-center"
+								<button
+									disabled
+									className="w-full bg-gray-100 text-gray-400 px-6 py-3 rounded-lg font-semibold cursor-not-allowed"
 								>
 									Contact sales
-								</Link>
+								</button>
 							</div>
 						</div>
+					</div>
+
+					{/* Contact Information */}
+					<div className="text-center mt-12">
+						<p className="text-gray-600 mb-4">
+							Want to learn more about our pricing plans?
+						</p>
+						<Link
+							href="/contact"
+							className="inline-block bg-orange-500 text-white px-6 py-3 rounded-lg font-semibold hover:bg-orange-600 transition-colors"
+						>
+							Contact Us
+						</Link>
 					</div>
 				</div>
 			</section>

@@ -60,6 +60,12 @@ export default function OwnerHeader() {
 						Staff
 					</Link>
 					<Link
+						href="/marketing"
+						className="text-gray-800 hover:text-black font-medium"
+					>
+						Marketing
+					</Link>
+					<Link
 						href="/salon-info"
 						className="text-gray-800 hover:text-black font-medium"
 					>
