@@ -1,17 +1,20 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
 import { useAuthStore } from '@/stores/authStore';
 import Image from 'next/image';
 import { STATIC_CATEGORIES } from '@/constants/categories';
+import BooksySearch from './BooksySearch';
 
 export default function PublicHeader() {
 	const [isLanguageDropdownOpen, setIsLanguageDropdownOpen] = useState(false);
 	const [selectedLanguage, setSelectedLanguage] = useState('EN');
+	const [isScrolled, setIsScrolled] = useState(false);
 	const dropdownRef = useRef<HTMLDivElement>(null);
 	const router = useRouter();
+	const pathname = usePathname();
 
 	// Используем Zustand store для аутентификации
 	const { user, isLoading, isClient, isOwner, isAdmin, logout } =
@@ -28,6 +31,22 @@ export default function PublicHeader() {
 	};
 
 	// Check user auth on component mount
+
+	// Check if we should show search (only on category pages, filter results, and salon pages)
+	const shouldShowSearch =
+		pathname.startsWith('/category/') ||
+		pathname.startsWith('/salons') ||
+		pathname.startsWith('/salon/');
+
+	// Handle scroll for fixed header
+	useEffect(() => {
+		const handleScroll = () => {
+			setIsScrolled(window.scrollY > 50);
+		};
+
+		window.addEventListener('scroll', handleScroll);
+		return () => window.removeEventListener('scroll', handleScroll);
+	}, []);
 
 	// Close dropdown when clicking outside
 	useEffect(() => {
@@ -47,156 +66,170 @@ export default function PublicHeader() {
 	}, []);
 
 	return (
-		<header className="bg-white shadow-sm">
-			{/* Top Bar */}
-			<div className="h-[5rem] mx-auto max-w-7xl px-6 py-4 flex items-center justify-between">
-				{/* Logo */}
-				<Link href="/" className="flex h-full items-center gap-3">
-					<Image
-						src="/logo.png"
-						alt="Henzo Logo"
-						width={88}
-						height={40}
-						className="h-full object-contain"
-					/>
-				</Link>
+		<>
+			{/* Top Bar - Always visible, not fixed */}
+			<header className="bg-white shadow-sm">
+				<div className="mx-auto max-w-7xl px-6 py-4">
+					<div className="flex items-center justify-between">
+						{/* Logo */}
+						<Link href="/" className="flex h-12 items-center gap-3">
+							<Image
+								src="/logo.png"
+								alt="Henzo Logo"
+								width={88}
+								height={40}
+								className="h-full object-contain"
+							/>
+						</Link>
 
-				{/* Language Dropdown and User Info/Login Buttons */}
-				<div className="flex items-center gap-4">
-					{/* Language Dropdown */}
-					<div className="relative" ref={dropdownRef}>
-						<button
-							onClick={() => setIsLanguageDropdownOpen(!isLanguageDropdownOpen)}
-							className="flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:text-[#8B4513] font-medium transition-colors border border-gray-200 rounded-lg hover:border-[#8B4513]"
-						>
-							<span>{selectedLanguage}</span>
-							<svg
-								className={`w-4 h-4 transition-transform ${
-									isLanguageDropdownOpen ? 'rotate-180' : ''
-								}`}
-								fill="none"
-								stroke="currentColor"
-								viewBox="0 0 24 24"
-							>
-								<path
-									strokeLinecap="round"
-									strokeLinejoin="round"
-									strokeWidth={2}
-									d="M19 9l-7 7-7-7"
-								/>
-							</svg>
-						</button>
-
-						{isLanguageDropdownOpen && (
-							<div className="absolute top-full right-0 mt-1 w-48 bg-white border border-gray-200 rounded-lg shadow-lg z-50">
-								{languages.map((language) => (
-									<button
-										key={language.code}
-										onClick={() => handleLanguageSelect(language)}
-										className={`w-full px-4 py-3 text-left hover:bg-gray-50 transition-colors flex items-center gap-3 first:rounded-t-lg last:rounded-b-lg ${
-											selectedLanguage === language.code
-												? 'bg-[#8B4513] text-white'
-												: 'text-gray-700'
-										}`}
+						<div className="flex items-center justify-center h-14">
+							{/* Categories Navigation */}
+							<div className="flex items-center space-x-8">
+								{STATIC_CATEGORIES.map((category) => (
+									<Link
+										key={category.id}
+										href={`/category/${category.slug}`}
+										className="text-sm font-medium text-gray-700 hover:text-[#ff5b5b] transition-colors"
 									>
-										<span className="text-lg">{language.flag}</span>
-										<span className="font-medium">{language.name}</span>
-									</button>
+										{category.name}
+									</Link>
 								))}
 							</div>
-						)}
-					</div>
+						</div>
 
-					{/* User Info or Login Buttons */}
-					{isLoading ? (
-						<div className="w-8 h-8 bg-gray-200 rounded-full animate-pulse"></div>
-					) : user ? (
-						<div className="flex items-center gap-3">
-							<button
-								onClick={() => {
-									if (isClient) {
-										router.push('/dashboard');
-									} else if (isAdmin) {
-										router.push('/admin-panel');
-									} else if (isOwner) {
-										router.push('/owner-dashboard');
+						{/* Language Dropdown and User Info/Login Buttons */}
+						<div className="flex items-center gap-4">
+							{/* Language Dropdown */}
+							<div className="relative" ref={dropdownRef}>
+								<button
+									onClick={() =>
+										setIsLanguageDropdownOpen(!isLanguageDropdownOpen)
 									}
-								}}
-								className="flex items-center gap-2 text-sm text-gray-700 font-medium hover:text-[#8B4513] transition-colors"
-							>
-								<svg
-									className="w-5 h-5"
-									fill="none"
-									stroke="currentColor"
-									viewBox="0 0 24 24"
+									className="flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:text-[#8B4513] font-medium transition-colors border border-gray-200 rounded-lg hover:border-[#8B4513]"
 								>
-									<path
-										strokeLinecap="round"
-										strokeLinejoin="round"
-										strokeWidth={2}
-										d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
-									/>
-								</svg>
-								<span>{user.name || user.email}</span>
-							</button>
-							<button
-								onClick={logout}
-								className="text-sm text-gray-500 hover:text-red-600 transition-colors"
-								title="Logout"
-							>
-								<svg
-									className="w-5 h-5"
-									fill="none"
-									stroke="currentColor"
-									viewBox="0 0 24 24"
-								>
-									<path
-										strokeLinecap="round"
-										strokeLinejoin="round"
-										strokeWidth={2}
-										d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"
-									/>
-								</svg>
-							</button>
-						</div>
-					) : (
-						<>
-							<Link
-								href={'/business'}
-								className="text-sm text-gray-700 hover:text-[#8B4513] font-medium transition-colors"
-							>
-								For Business
-							</Link>
-							<Link
-								href="/login"
-								className="bg-[#ff5b5b] text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-[#e04a4a] transition-colors"
-							>
-								Sign In
-							</Link>
-						</>
-					)}
-				</div>
-			</div>
+									<span>{selectedLanguage}</span>
+									<svg
+										className={`w-4 h-4 transition-transform ${
+											isLanguageDropdownOpen ? 'rotate-180' : ''
+										}`}
+										fill="none"
+										stroke="currentColor"
+										viewBox="0 0 24 24"
+									>
+										<path
+											strokeLinecap="round"
+											strokeLinejoin="round"
+											strokeWidth={2}
+											d="M19 9l-7 7-7-7"
+										/>
+									</svg>
+								</button>
 
-			{/* Navigation Bar with Categories */}
-			<nav className="border-t border-gray-100">
-				<div className="mx-auto max-w-7xl px-6">
-					<div className="flex items-center justify-center h-14">
-						{/* Categories Navigation */}
-						<div className="flex items-center space-x-8">
-							{STATIC_CATEGORIES.map((category) => (
-								<Link
-									key={category.id}
-									href={`/category/${category.slug}`}
-									className="text-sm font-medium text-gray-700 hover:text-[#ff5b5b] transition-colors"
-								>
-									{category.name}
-								</Link>
-							))}
+								{isLanguageDropdownOpen && (
+									<div className="absolute top-full right-0 mt-1 w-48 bg-white border border-gray-200 rounded-lg shadow-lg z-50">
+										{languages.map((language) => (
+											<button
+												key={language.code}
+												onClick={() => handleLanguageSelect(language)}
+												className={`w-full px-4 py-3 text-left hover:bg-gray-50 transition-colors flex items-center gap-3 first:rounded-t-lg last:rounded-b-lg ${
+													selectedLanguage === language.code
+														? 'bg-[#8B4513] text-white'
+														: 'text-gray-700'
+												}`}
+											>
+												<span className="text-lg">{language.flag}</span>
+												<span className="font-medium">{language.name}</span>
+											</button>
+										))}
+									</div>
+								)}
+							</div>
+
+							{/* User Info or Login Buttons */}
+							{isLoading ? (
+								<div className="w-8 h-8 bg-gray-200 rounded-full animate-pulse"></div>
+							) : user ? (
+								<div className="flex items-center gap-3">
+									<button
+										onClick={() => {
+											if (isClient) {
+												router.push('/dashboard');
+											} else if (isAdmin) {
+												router.push('/admin-panel');
+											} else if (isOwner) {
+												router.push('/owner-dashboard');
+											}
+										}}
+										className="flex items-center gap-2 text-sm text-gray-700 font-medium hover:text-[#8B4513] transition-colors"
+									>
+										<svg
+											className="w-5 h-5"
+											fill="none"
+											stroke="currentColor"
+											viewBox="0 0 24 24"
+										>
+											<path
+												strokeLinecap="round"
+												strokeLinejoin="round"
+												strokeWidth={2}
+												d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
+											/>
+										</svg>
+										<span>{user.name || user.email}</span>
+									</button>
+									<button
+										onClick={logout}
+										className="text-sm text-gray-500 hover:text-red-600 transition-colors"
+										title="Logout"
+									>
+										<svg
+											className="w-5 h-5"
+											fill="none"
+											stroke="currentColor"
+											viewBox="0 0 24 24"
+										>
+											<path
+												strokeLinecap="round"
+												strokeLinejoin="round"
+												strokeWidth={2}
+												d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"
+											/>
+										</svg>
+									</button>
+								</div>
+							) : (
+								<>
+									<Link
+										href={'/business'}
+										className="text-sm text-gray-700 hover:text-[#8B4513] font-medium transition-colors"
+									>
+										For Business
+									</Link>
+									<Link
+										href="/login"
+										className="bg-[#ff5b5b] text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-[#e04a4a] transition-colors"
+									>
+										Sign In
+									</Link>
+								</>
+							)}
 						</div>
 					</div>
 				</div>
-			</nav>
-		</header>
+			</header>
+
+			{/* Booksy Search Section - Fixed on scroll */}
+			{shouldShowSearch && (
+				<div
+					className={`bg-white shadow-sm transition-all duration-300 ${
+						isScrolled ? 'fixed top-0 left-0 right-0 z-[999]' : ''
+					}`}
+				>
+					<div className="mx-auto max-w-7xl px-6 py-4">
+						<BooksySearch />
+					</div>
+				</div>
+			)}
+		</>
 	);
 }

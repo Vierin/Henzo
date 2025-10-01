@@ -23,37 +23,22 @@ export default function HomePage() {
 	const [selectedLocation, setSelectedLocation] = useState('');
 	const [isLocationDropdownOpen, setIsLocationDropdownOpen] = useState(false);
 	const [showCurrentLocation, setShowCurrentLocation] = useState(true);
-	const [selectedDateTime, setSelectedDateTime] = useState('');
-	const [isDateTimePickerOpen, setIsDateTimePickerOpen] = useState(false);
+	const [selectedDate, setSelectedDate] = useState('');
+	const [selectedTimeInterval, setSelectedTimeInterval] = useState('');
+	const [isDatePickerOpen, setIsDatePickerOpen] = useState(false);
+	const [isTimePickerOpen, setIsTimePickerOpen] = useState(false);
 	const [currentMonth, setCurrentMonth] = useState(new Date());
+	const datePickerRef = useRef<HTMLDivElement>(null);
+	const timePickerRef = useRef<HTMLDivElement>(null);
 
 	const categories = STATIC_CATEGORIES;
 
-	// Time slots for booking
-	const timeSlots = [
-		'09:00',
-		'09:30',
-		'10:00',
-		'10:30',
-		'11:00',
-		'11:30',
-		'12:00',
-		'12:30',
-		'13:00',
-		'13:30',
-		'14:00',
-		'14:30',
-		'15:00',
-		'15:30',
-		'16:00',
-		'16:30',
-		'17:00',
-		'17:30',
-		'18:00',
-		'18:30',
-		'19:00',
-		'19:30',
-		'20:00',
+	// Time intervals for booking
+	const TIME_INTERVALS = [
+		{ value: 'any', label: 'Any time' },
+		{ value: 'morning', label: 'Morning (6:00 - 12:00)' },
+		{ value: 'afternoon', label: 'Afternoon (12:00 - 18:00)' },
+		{ value: 'evening', label: 'Evening (18:00 - 24:00)' },
 	];
 	const {
 		data: salons = [],
@@ -61,6 +46,29 @@ export default function HomePage() {
 		error,
 		refetch,
 	} = useSalonsWithServices();
+
+	// Close modals when clicking outside
+	useEffect(() => {
+		const handleClickOutside = (event: MouseEvent) => {
+			if (
+				datePickerRef.current &&
+				!datePickerRef.current.contains(event.target as Node)
+			) {
+				setIsDatePickerOpen(false);
+			}
+			if (
+				timePickerRef.current &&
+				!timePickerRef.current.contains(event.target as Node)
+			) {
+				setIsTimePickerOpen(false);
+			}
+		};
+
+		document.addEventListener('mousedown', handleClickOutside);
+		return () => {
+			document.removeEventListener('mousedown', handleClickOutside);
+		};
+	}, []);
 
 	const handleSalonClick = (salonId: string) => {
 		router.push(`/salon/${salonId}`);
@@ -175,17 +183,33 @@ export default function HomePage() {
 	};
 
 	const isSelectedDate = (date: Date) => {
-		const selectedDate = selectedDateTime.split(' ')[0];
 		return formatDate(date) === selectedDate;
 	};
 
 	const handleDateSelect = (date: Date) => {
 		if (isPastDate(date)) return;
+		setSelectedDate(formatDate(date));
+		setIsDatePickerOpen(false);
+	};
 
-		const selectedTime = selectedDateTime.split(' ')[1] || '';
-		setSelectedDateTime(
-			selectedTime ? `${formatDate(date)} ${selectedTime}` : formatDate(date)
-		);
+	const handleTimeIntervalSelect = (interval: string) => {
+		setSelectedTimeInterval(interval);
+		setIsTimePickerOpen(false);
+	};
+
+	const formatDateDisplay = (dateString: string) => {
+		if (!dateString) return 'Select date';
+		const date = new Date(dateString);
+		return date.toLocaleDateString('en-US', {
+			day: 'numeric',
+			month: 'long',
+			year: 'numeric',
+		});
+	};
+
+	const getTimeIntervalLabel = (interval: string) => {
+		const timeInterval = TIME_INTERVALS.find((ti) => ti.value === interval);
+		return timeInterval ? timeInterval.label : 'Select time';
 	};
 
 	const navigateMonth = (direction: 'prev' | 'next') => {
@@ -210,8 +234,11 @@ export default function HomePage() {
 			if (selectedLocation) {
 				params.set('location', selectedLocation);
 			}
-			if (selectedDateTime) {
-				params.set('datetime', selectedDateTime);
+			if (selectedDate) {
+				params.set('date', selectedDate);
+			}
+			if (selectedTimeInterval) {
+				params.set('time', selectedTimeInterval);
 			}
 		} else {
 			if (searchQuery) {
@@ -235,8 +262,12 @@ export default function HomePage() {
 		setShowCurrentLocation(true);
 	};
 
-	const handleClearDateTime = () => {
-		setSelectedDateTime('');
+	const handleClearDate = () => {
+		setSelectedDate('');
+	};
+
+	const handleClearTime = () => {
+		setSelectedTimeInterval('');
 	};
 
 	const getImageSrc = (imageSrc: string) => {
@@ -282,23 +313,23 @@ export default function HomePage() {
 
 			<main>
 				{/* Hero Section */}
-				<section className="py-16 px-6 bg-[#F8F5F2]">
+				<section className="py-12 px-6 bg-[#F8F5F2]">
 					<div className="mx-auto max-w-7xl">
-						<div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+						<div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
 							{/* Left Panel - Search/Booking Form */}
-							<div className="bg-white rounded-2xl p-8 shadow-lg">
+							<div className="bg-white rounded-xl p-6 shadow-lg">
 								{/* Tabs */}
-								<div className="flex mb-6">
+								<div className="flex mb-4">
 									<button
 										onClick={() => setActiveTab('treatments')}
-										className={`flex items-center space-x-2 px-4 py-2 font-medium transition-colors ${
+										className={`flex items-center space-x-2 px-3 py-2 text-sm font-medium transition-colors ${
 											activeTab === 'treatments'
 												? 'border-b-2 border-red-500 text-red-500'
 												: 'text-gray-600 hover:text-gray-800'
 										}`}
 									>
 										<svg
-											className="w-5 h-5"
+											className="w-4 h-4"
 											fill="currentColor"
 											viewBox="0 0 20 20"
 										>
@@ -308,14 +339,14 @@ export default function HomePage() {
 									</button>
 									<button
 										onClick={() => setActiveTab('salon')}
-										className={`flex items-center space-x-2 px-4 py-2 font-medium transition-colors ${
+										className={`flex items-center space-x-2 px-3 py-2 text-sm font-medium transition-colors ${
 											activeTab === 'salon'
 												? 'border-b-2 border-red-500 text-red-500'
 												: 'text-gray-600 hover:text-gray-800'
 										}`}
 									>
 										<svg
-											className="w-5 h-5"
+											className="w-4 h-4"
 											fill="currentColor"
 											viewBox="0 0 20 20"
 										>
@@ -330,7 +361,7 @@ export default function HomePage() {
 								</div>
 
 								{/* Input Fields */}
-								<div className="space-y-4">
+								<div className="space-y-3">
 									{/* Search by treatment or salon */}
 									<div className="relative">
 										{activeTab === 'treatments' ? (
@@ -338,7 +369,7 @@ export default function HomePage() {
 												value={searchQuery}
 												onChange={setSearchQuery}
 												placeholder="Search for treatments"
-												className="w-full"
+												className="w-full text-sm py-3"
 											/>
 										) : (
 											<>
@@ -347,10 +378,10 @@ export default function HomePage() {
 													placeholder="Search for salon name"
 													value={searchQuery}
 													onChange={(e) => setSearchQuery(e.target.value)}
-													className="w-full px-4 py-4 pl-12 pr-12 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent text-gray-900"
+													className="w-full px-4 py-3 pl-12 pr-12 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent text-gray-900 text-sm"
 												/>
 												<svg
-													className="absolute left-4 top-4 h-6 w-6 text-gray-400"
+													className="absolute left-4 top-3.5 h-5 w-5 text-gray-400"
 													fill="none"
 													stroke="currentColor"
 													viewBox="0 0 24 24"
@@ -395,7 +426,7 @@ export default function HomePage() {
 											{showCurrentLocation && (
 												<button
 													onClick={handleCurrentLocation}
-													className="w-full mb-2 px-4 py-2 bg-blue-50 border border-blue-200 rounded-lg text-blue-700 hover:bg-blue-100 transition-colors flex items-center justify-center space-x-2"
+													className="w-full mb-2 px-3 py-2 bg-blue-50 border border-blue-200 rounded-lg text-blue-700 hover:bg-blue-100 transition-colors flex items-center justify-center space-x-2 text-sm"
 												>
 													<svg
 														className="w-4 h-4"
@@ -416,7 +447,7 @@ export default function HomePage() {
 															d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"
 														/>
 													</svg>
-													<span className="text-sm font-medium">
+													<span className="text-xs font-medium">
 														Use Current Location
 													</span>
 												</button>
@@ -431,10 +462,10 @@ export default function HomePage() {
 														setShowCurrentLocation(false);
 													}}
 													placeholder="Enter address"
-													className="w-full px-4 py-4 pl-12 pr-12 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent text-gray-900"
+													className="w-full px-4 py-3 pl-12 pr-12 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent text-gray-900 text-sm"
 												/>
 												<svg
-													className="absolute left-4 top-4 h-6 w-6 text-gray-400"
+													className="absolute left-4 top-3.5 h-5 w-5 text-gray-400"
 													fill="none"
 													stroke="currentColor"
 													viewBox="0 0 24 24"
@@ -456,29 +487,27 @@ export default function HomePage() {
 										</div>
 									)}
 
-									{/* Date & Time Picker - только для Treatments */}
+									{/* Date Picker - только для Treatments */}
 									{activeTab === 'treatments' && (
-										<div className="relative">
+										<div className="relative" ref={datePickerRef}>
 											<button
-												onClick={() =>
-													setIsDateTimePickerOpen(!isDateTimePickerOpen)
-												}
-												className="w-full px-4 py-4 pl-12 pr-12 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent text-gray-900 text-left flex items-center justify-between"
+												onClick={() => setIsDatePickerOpen(!isDatePickerOpen)}
+												className="w-full px-4 py-3 pl-12 pr-12 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent text-gray-900 text-left flex items-center justify-between text-sm"
 											>
 												<span
 													className={
-														selectedDateTime ? 'text-gray-900' : 'text-gray-500'
+														selectedDate ? 'text-gray-900' : 'text-gray-500'
 													}
 												>
-													{selectedDateTime || 'Select date & time'}
+													{formatDateDisplay(selectedDate)}
 												</span>
 												<div className="flex items-center space-x-2">
-													{/* Clear button for date/time */}
-													{selectedDateTime && (
+													{/* Clear button for date */}
+													{selectedDate && (
 														<button
 															onClick={(e) => {
 																e.stopPropagation();
-																handleClearDateTime();
+																handleClearDate();
 															}}
 															className="p-1 hover:bg-gray-100 rounded-full transition-colors"
 															type="button"
@@ -500,7 +529,7 @@ export default function HomePage() {
 													)}
 													<svg
 														className={`w-5 h-5 text-gray-400 transition-transform ${
-															isDateTimePickerOpen ? 'rotate-180' : ''
+															isDatePickerOpen ? 'rotate-180' : ''
 														}`}
 														fill="none"
 														stroke="currentColor"
@@ -516,7 +545,7 @@ export default function HomePage() {
 												</div>
 											</button>
 											<svg
-												className="absolute left-4 top-4 h-6 w-6 text-gray-400"
+												className="absolute left-4 top-3.5 h-5 w-5 text-gray-400"
 												fill="none"
 												stroke="currentColor"
 												viewBox="0 0 24 24"
@@ -529,141 +558,202 @@ export default function HomePage() {
 												/>
 											</svg>
 
-											{/* Date & Time Picker */}
-											{isDateTimePickerOpen && (
+											{/* Date Picker Calendar */}
+											{isDatePickerOpen && (
 												<div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-300 rounded-lg shadow-lg z-50 p-4">
-													{/* Custom Calendar */}
-													<div className="mb-4">
-														{/* Calendar Header */}
-														<div className="flex items-center justify-between mb-3">
-															<button
-																onClick={() => navigateMonth('prev')}
-																className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-															>
-																<svg
-																	className="w-4 h-4"
-																	fill="none"
-																	stroke="currentColor"
-																	viewBox="0 0 24 24"
-																>
-																	<path
-																		strokeLinecap="round"
-																		strokeLinejoin="round"
-																		strokeWidth={2}
-																		d="M15 19l-7-7 7-7"
-																	/>
-																</svg>
-															</button>
-															<h3 className="text-lg font-semibold text-gray-900">
-																{currentMonth.toLocaleDateString('en-US', {
-																	month: 'long',
-																	year: 'numeric',
-																})}
-															</h3>
-															<button
-																onClick={() => navigateMonth('next')}
-																className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-															>
-																<svg
-																	className="w-4 h-4"
-																	fill="none"
-																	stroke="currentColor"
-																	viewBox="0 0 24 24"
-																>
-																	<path
-																		strokeLinecap="round"
-																		strokeLinejoin="round"
-																		strokeWidth={2}
-																		d="M9 5l7 7-7 7"
-																	/>
-																</svg>
-															</button>
-														</div>
-
-														{/* Calendar Grid */}
-														<div className="grid grid-cols-7 gap-1 mb-2">
-															{[
-																'Sun',
-																'Mon',
-																'Tue',
-																'Wed',
-																'Thu',
-																'Fri',
-																'Sat',
-															].map((day) => (
-																<div
-																	key={day}
-																	className="p-2 text-center text-xs font-medium text-gray-500"
-																>
-																	{day}
-																</div>
-															))}
-														</div>
-
-														<div className="grid grid-cols-7 gap-1">
-															{getDaysInMonth(currentMonth).map(
-																(day, index) => (
-																	<div key={index} className="aspect-square">
-																		{day ? (
-																			<button
-																				onClick={() => handleDateSelect(day)}
-																				disabled={isPastDate(day)}
-																				className={`w-full h-full rounded-lg text-sm font-medium transition-colors ${
-																					isSelectedDate(day)
-																						? 'bg-red-500 text-white'
-																						: isToday(day)
-																							? 'bg-red-100 text-red-600 font-semibold'
-																							: isPastDate(day)
-																								? 'text-gray-300 cursor-not-allowed'
-																								: 'text-gray-700 hover:bg-gray-100'
-																				}`}
-																			>
-																				{day.getDate()}
-																			</button>
-																		) : (
-																			<div></div>
-																		)}
-																	</div>
-																)
-															)}
-														</div>
-													</div>
-
-													{/* Time Selection */}
-													<div>
-														<label className="block text-sm font-medium text-gray-700 mb-2">
-															Select Time
-														</label>
-														<div className="grid grid-cols-4 gap-2 max-h-40 overflow-y-auto">
-															{timeSlots.map((time) => (
-																<button
-																	key={time}
-																	onClick={() => {
-																		const date =
-																			selectedDateTime.split(' ')[0] ||
-																			new Date().toISOString().split('T')[0];
-																		setSelectedDateTime(`${date} ${time}`);
-																	}}
-																	className={`px-3 py-2 text-sm rounded-lg border transition-colors ${
-																		selectedDateTime.includes(time)
-																			? 'bg-red-500 text-white border-red-500'
-																			: 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
-																	}`}
-																>
-																	{time}
-																</button>
-															))}
-														</div>
-													</div>
-
-													{/* Close Button */}
-													<div className="mt-4 pt-4 border-t border-gray-200">
+													{/* Calendar Header */}
+													<div className="flex items-center justify-between mb-3">
 														<button
-															onClick={() => setIsDateTimePickerOpen(false)}
-															className="w-full bg-red-500 text-white py-2 rounded-lg hover:bg-red-600 transition-colors"
+															onClick={() => navigateMonth('prev')}
+															className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
 														>
-															Done
+															<svg
+																className="w-4 h-4 text-gray-700"
+																fill="none"
+																stroke="currentColor"
+																viewBox="0 0 24 24"
+															>
+																<path
+																	strokeLinecap="round"
+																	strokeLinejoin="round"
+																	strokeWidth={2}
+																	d="M15 19l-7-7 7-7"
+																/>
+															</svg>
 														</button>
+														<h3 className="text-lg font-semibold text-gray-900">
+															{currentMonth.toLocaleDateString('en-US', {
+																month: 'long',
+																year: 'numeric',
+															})}
+														</h3>
+														<button
+															onClick={() => navigateMonth('next')}
+															className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+														>
+															<svg
+																className="w-4 h-4 text-gray-700"
+																fill="none"
+																stroke="currentColor"
+																viewBox="0 0 24 24"
+															>
+																<path
+																	strokeLinecap="round"
+																	strokeLinejoin="round"
+																	strokeWidth={2}
+																	d="M9 5l7 7-7 7"
+																/>
+															</svg>
+														</button>
+													</div>
+
+													{/* Calendar Grid */}
+													<div className="grid grid-cols-7 gap-1 mb-2">
+														{[
+															'Mon',
+															'Tue',
+															'Wed',
+															'Thu',
+															'Fri',
+															'Sat',
+															'Sun',
+														].map((day) => (
+															<div
+																key={day}
+																className="h-10 flex items-center justify-center text-sm font-medium text-gray-500"
+															>
+																{day}
+															</div>
+														))}
+													</div>
+
+													<div className="grid grid-cols-7 gap-1">
+														{getDaysInMonth(currentMonth).map((day, index) => (
+															<div key={index} className="aspect-square">
+																{day ? (
+																	<button
+																		onClick={() => handleDateSelect(day)}
+																		disabled={isPastDate(day)}
+																		className={`w-full h-full rounded-lg text-sm font-medium transition-colors ${
+																			isSelectedDate(day)
+																				? 'bg-[#ff5b5b] text-white'
+																				: isToday(day)
+																					? 'bg-white text-gray-900 border-2 border-[#ff5b5b]'
+																					: isPastDate(day)
+																						? 'text-gray-300 cursor-not-allowed'
+																						: 'text-gray-900 hover:bg-gray-100'
+																		}`}
+																	>
+																		{day.getDate()}
+																	</button>
+																) : (
+																	<div></div>
+																)}
+															</div>
+														))}
+													</div>
+												</div>
+											)}
+										</div>
+									)}
+
+									{/* Time Interval Picker - только для Treatments */}
+									{activeTab === 'treatments' && (
+										<div className="relative" ref={timePickerRef}>
+											<button
+												onClick={() => setIsTimePickerOpen(!isTimePickerOpen)}
+												className="w-full px-4 py-3 pl-12 pr-12 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent text-gray-900 text-left flex items-center justify-between text-sm"
+											>
+												<span
+													className={
+														selectedTimeInterval
+															? 'text-gray-900'
+															: 'text-gray-500'
+													}
+												>
+													{getTimeIntervalLabel(selectedTimeInterval)}
+												</span>
+												<div className="flex items-center space-x-2">
+													{/* Clear button for time */}
+													{selectedTimeInterval && (
+														<button
+															onClick={(e) => {
+																e.stopPropagation();
+																handleClearTime();
+															}}
+															className="p-1 hover:bg-gray-100 rounded-full transition-colors"
+															type="button"
+														>
+															<svg
+																className="w-4 h-4 text-gray-400 hover:text-gray-600"
+																fill="none"
+																stroke="currentColor"
+																viewBox="0 0 24 24"
+															>
+																<path
+																	strokeLinecap="round"
+																	strokeLinejoin="round"
+																	strokeWidth={2}
+																	d="M6 18L18 6M6 6l12 12"
+																/>
+															</svg>
+														</button>
+													)}
+													<svg
+														className={`w-5 h-5 text-gray-400 transition-transform ${
+															isTimePickerOpen ? 'rotate-180' : ''
+														}`}
+														fill="none"
+														stroke="currentColor"
+														viewBox="0 0 24 24"
+													>
+														<path
+															strokeLinecap="round"
+															strokeLinejoin="round"
+															strokeWidth={2}
+															d="M19 9l-7 7-7-7"
+														/>
+													</svg>
+												</div>
+											</button>
+											<svg
+												className="absolute left-4 top-3.5 h-5 w-5 text-gray-400"
+												fill="none"
+												stroke="currentColor"
+												viewBox="0 0 24 24"
+											>
+												<path
+													strokeLinecap="round"
+													strokeLinejoin="round"
+													strokeWidth={2}
+													d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+												/>
+											</svg>
+
+											{/* Time Interval Picker */}
+											{isTimePickerOpen && (
+												<div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-300 rounded-lg shadow-lg z-50 p-4">
+													<div className="text-center mb-3">
+														<h3 className="text-lg font-semibold text-gray-900">
+															Time
+														</h3>
+													</div>
+													<div className="space-y-2">
+														{TIME_INTERVALS.map((interval) => (
+															<button
+																key={interval.value}
+																onClick={() =>
+																	handleTimeIntervalSelect(interval.value)
+																}
+																className={`w-full px-4 py-3 text-left rounded-lg border transition-colors ${
+																	selectedTimeInterval === interval.value
+																		? 'bg-[#ff5b5b] text-white border-[#ff5b5b]'
+																		: 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
+																}`}
+															>
+																{interval.label}
+															</button>
+														))}
 													</div>
 												</div>
 											)}
@@ -674,7 +764,7 @@ export default function HomePage() {
 								{/* Search Button */}
 								<button
 									onClick={handleSearch}
-									className="w-full bg-red-500 text-white py-4 rounded-lg font-medium hover:bg-red-600 transition-colors mt-6"
+									className="w-full bg-red-500 text-white py-3 rounded-lg font-medium hover:bg-red-600 transition-colors mt-4 text-sm"
 								>
 									Search
 								</button>
@@ -801,6 +891,99 @@ export default function HomePage() {
 								))}
 							</div>
 						)}
+					</div>
+				</section>
+
+				{/* Why Choose Henzo Section */}
+				<section className="py-16 px-6 bg-[#FBF7F5]">
+					<div className="mx-auto max-w-6xl">
+						{/* Heading */}
+						<div className="text-center mb-12">
+							<h2 className="text-3xl font-bold text-gray-900 mb-4">
+								Why Choose Henzo?
+							</h2>
+							<p className="text-lg text-gray-700">
+								Henzo makes booking your next beauty appointment simple and convenient.
+							</p>
+						</div>
+
+						{/* Feature Cards */}
+						<div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+							{/* Easy Booking Card */}
+							<div className="bg-white rounded-xl p-8 shadow-lg text-center">
+								<div className="w-16 h-16 bg-[#ff5b5b] rounded-lg flex items-center justify-center mx-auto mb-6">
+									<svg
+										className="w-8 h-8 text-white"
+										fill="none"
+										stroke="currentColor"
+										viewBox="0 0 24 24"
+									>
+										<path
+											strokeLinecap="round"
+											strokeLinejoin="round"
+											strokeWidth={2}
+											d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+										/>
+									</svg>
+								</div>
+								<h3 className="text-xl font-bold text-gray-900 mb-4">
+									Easy Booking
+								</h3>
+								<p className="text-gray-700">
+									Book appointments in just a few taps.
+								</p>
+							</div>
+
+							{/* Flexible Scheduling Card */}
+							<div className="bg-white rounded-xl p-8 shadow-lg text-center">
+								<div className="w-16 h-16 bg-[#ff5b5b] rounded-lg flex items-center justify-center mx-auto mb-6">
+									<svg
+										className="w-8 h-8 text-white"
+										fill="none"
+										stroke="currentColor"
+										viewBox="0 0 24 24"
+									>
+										<path
+											strokeLinecap="round"
+											strokeLinejoin="round"
+											strokeWidth={2}
+											d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+										/>
+									</svg>
+								</div>
+								<h3 className="text-xl font-bold text-gray-900 mb-4">
+									Flexible Scheduling
+								</h3>
+								<p className="text-gray-700">
+									Find a time that works for you, even last minute.
+								</p>
+							</div>
+
+							{/* Trusted Reviews Card */}
+							<div className="bg-white rounded-xl p-8 shadow-lg text-center">
+								<div className="w-16 h-16 bg-[#ff5b5b] rounded-lg flex items-center justify-center mx-auto mb-6">
+									<svg
+										className="w-8 h-8 text-white"
+										fill="none"
+										stroke="currentColor"
+										viewBox="0 0 24 24"
+									>
+										<path
+											strokeLinecap="round"
+											strokeLinejoin="round"
+											strokeWidth={2}
+											d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z"
+										/>
+									</svg>
+								</div>
+								<h3 className="text-xl font-bold text-gray-900 mb-4">
+									Trusted Reviews
+								</h3>
+								<p className="text-gray-700">
+									Read reviews from other clients to find the best salon.
+								</p>
+							</div>
+						</div>
 					</div>
 				</section>
 			</main>

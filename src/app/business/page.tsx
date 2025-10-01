@@ -27,7 +27,7 @@ export default function BusinessLandingPage() {
 									href="/business/register"
 									className="bg-orange-500 text-white px-8 py-4 rounded-lg text-lg font-semibold hover:bg-orange-600 transition-colors text-center"
 								>
-									Get 2 months free
+									Start your free trial
 								</Link>
 								<Link
 									href="/login"
@@ -284,7 +284,7 @@ export default function BusinessLandingPage() {
 							<div className="text-center">
 								<h3 className="text-2xl font-bold text-gray-900 mb-4">Basic</h3>
 								<div className="mb-6">
-									<span className="text-5xl font-bold text-gray-900">$10</span>
+									<span className="text-5xl font-bold text-gray-900">$15</span>
 									<span className="text-gray-600 text-lg">/month</span>
 								</div>
 								<p className="text-gray-600 mb-8">

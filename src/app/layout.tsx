@@ -5,6 +5,7 @@ import Toaster from '@/components/Toaster';
 import QueryProvider from '@/components/QueryProvider';
 import AuthProvider from '@/components/AuthProvider';
 import Footer from '@/components/Footer';
+import ErrorBoundary from '@/components/ErrorBoundary';
 
 const geistSans = Geist({
 	variable: '--font-geist-sans',
@@ -30,6 +31,7 @@ export default function RootLayout({
 		<html lang="en">
 			<body
 				className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+				suppressHydrationWarning={true}
 			>
 				<QueryProvider>
 					{children}
