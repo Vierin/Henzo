@@ -6,6 +6,13 @@ import BookingModal from '@/components/BookingModal';
 import { Service, Booking } from '@/types';
 import { apiClient } from '@/lib/api-client';
 import toast from 'react-hot-toast';
+import {
+	safeParseDate,
+	formatDateSafe,
+	formatTimeSafe,
+	isToday,
+	getDatePart,
+} from '@/utils/date';
 
 const DATA_WIDTH = '50px';
 
@@ -65,7 +72,9 @@ export default function OwnerDashboardPage() {
 		// Находим бронирования, которые должны быть завершены
 		bookings.forEach((booking) => {
 			if (booking.status === 'CONFIRMED') {
-				const bookingTime = new Date(booking.time);
+				const bookingTime = safeParseDate(booking.time);
+				if (!bookingTime) return;
+
 				const serviceDuration = booking.service?.duration || 60; // Default 60 minutes
 				const endTime = new Date(
 					bookingTime.getTime() + serviceDuration * 60000
@@ -193,8 +202,10 @@ export default function OwnerDashboardPage() {
 		const now = new Date();
 
 		return bookings.filter((booking) => {
-			const bookingDate = new Date(booking.time);
-			const isToday = bookingDate.toDateString() === now.toDateString();
+			const bookingDate = safeParseDate(booking.time);
+			if (!bookingDate) return false;
+
+			const isTodayBooking = isToday(booking.time);
 			const isThisWeek =
 				bookingDate >= new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000) &&
 				bookingDate <= now;
@@ -212,7 +223,7 @@ export default function OwnerDashboardPage() {
 			if (dateFilter !== 'all') {
 				switch (dateFilter) {
 					case 'today':
-						dateMatch = isToday;
+						dateMatch = isTodayBooking;
 						break;
 					case 'this_week':
 						dateMatch = isThisWeek;
@@ -258,10 +269,14 @@ export default function OwnerDashboardPage() {
 		const today = new Date();
 		return bookings
 			.filter((booking) => {
-				const bookingDate = new Date(booking.time);
-				return bookingDate.toDateString() === today.toDateString();
+				return isToday(booking.time);
 			})
-			.sort((a, b) => new Date(a.time).getTime() - new Date(b.time).getTime());
+			.sort((a, b) => {
+				const timeA = safeParseDate(a.time);
+				const timeB = safeParseDate(b.time);
+				if (!timeA || !timeB) return 0;
+				return timeA.getTime() - timeB.getTime();
+			});
 	};
 
 	const goToPreviousMonth = () => {
@@ -305,7 +320,8 @@ export default function OwnerDashboardPage() {
 
 	const getBookingsForDate = (date: Date) => {
 		return bookings.filter((booking) => {
-			const bookingDate = new Date(booking.time);
+			const bookingDate = safeParseDate(booking.time);
+			if (!bookingDate) return false;
 			return bookingDate.toDateString() === date.toDateString();
 		});
 	};
@@ -355,7 +371,9 @@ export default function OwnerDashboardPage() {
 
 			if (!booking.staff || booking.staff.id !== staffId) return false;
 
-			const bookingTime = new Date(booking.time);
+			const bookingTime = safeParseDate(booking.time);
+			if (!bookingTime) return false;
+
 			const bookingHour = bookingTime.getHours();
 			const bookingMinute = bookingTime.getMinutes();
 			const duration = booking.service?.duration || 60; // Default 60 minutes
@@ -386,7 +404,9 @@ export default function OwnerDashboardPage() {
 
 			if (!booking.staff || booking.staff.id !== staffId) return false;
 
-			const bookingTime = new Date(booking.time);
+			const bookingTime = safeParseDate(booking.time);
+			if (!bookingTime) return false;
+
 			const bookingHour = bookingTime.getHours();
 
 			// Check if appointment starts at this hour slot
@@ -418,7 +438,9 @@ export default function OwnerDashboardPage() {
 	// Get booking block styles based on status
 	const getBookingBlockStyles = (booking: any) => {
 		const now = new Date();
-		const bookingTime = new Date(booking.time);
+		const bookingTime = safeParseDate(booking.time);
+		if (!bookingTime) return {};
+
 		const serviceDuration = booking.service?.duration || 60;
 		const endTime = new Date(bookingTime.getTime() + serviceDuration * 60000);
 		const isPast = endTime < now;
@@ -453,7 +475,9 @@ export default function OwnerDashboardPage() {
 	// Check if booking is clickable
 	const isBookingClickable = (booking: any) => {
 		const now = new Date();
-		const bookingTime = new Date(booking.time);
+		const bookingTime = safeParseDate(booking.time);
+		if (!bookingTime) return false;
+
 		const serviceDuration = booking.service?.duration || 60;
 		const endTime = new Date(bookingTime.getTime() + serviceDuration * 60000);
 		return endTime >= now;
@@ -461,13 +485,17 @@ export default function OwnerDashboardPage() {
 
 	const hasAppointmentsOnDate = (date: Date) => {
 		return bookings.some((booking) => {
-			const bookingDate = new Date(booking.time);
+			const bookingDate = safeParseDate(booking.time);
+			if (!bookingDate) return false;
 			return bookingDate.toDateString() === date.toDateString();
 		});
 	};
 
 	const formatDate = (dateString: string) => {
-		return new Date(dateString).toLocaleDateString('en-US', {
+		const date = safeParseDate(dateString);
+		if (!date) return 'Invalid Date';
+
+		return date.toLocaleDateString('en-US', {
 			month: 'short',
 			day: 'numeric',
 			year: 'numeric',
@@ -475,11 +503,7 @@ export default function OwnerDashboardPage() {
 	};
 
 	const formatTime = (dateString: string) => {
-		return new Date(dateString).toLocaleTimeString('en-US', {
-			hour: '2-digit',
-			minute: '2-digit',
-			hour12: false,
-		});
+		return formatTimeSafe(dateString, 'Invalid Time');
 	};
 
 	const getStatusBadge = (status: string) => {

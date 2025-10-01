@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { apiClient } from '@/lib/api-client';
+import { formatDateSafe, formatTimeSafe } from '@/utils/date';
 
 interface Booking {
 	id: string;
@@ -148,14 +149,8 @@ export default function AdminBookings() {
 										</td>
 										<td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
 											<div>
-												<div>{new Date(booking.time).toLocaleDateString()}</div>
-												<div>
-													{new Date(booking.time).toLocaleTimeString('en-US', {
-														hour: '2-digit',
-														minute: '2-digit',
-														hour12: false,
-													})}
-												</div>
+												<div>{formatDateSafe(booking.time)}</div>
+												<div>{formatTimeSafe(booking.time)}</div>
 											</div>
 										</td>
 										<td className="px-6 py-4 whitespace-nowrap">

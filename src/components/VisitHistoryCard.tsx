@@ -1,6 +1,7 @@
 'use client';
 
 import SalonImage from '@/components/SalonImage';
+import { isPastDate } from '@/utils/date';
 
 interface VisitHistory {
 	id: string;
@@ -36,7 +37,7 @@ export default function VisitHistoryCard({
 	};
 
 	// Check if appointment time has passed
-	const isPast = visit.time ? new Date(visit.time) < new Date() : false;
+	const isPast = isPastDate(visit.time);
 
 	return (
 		<div className="bg-white rounded-xl p-6 shadow-sm hover:shadow-md transition-shadow">

@@ -3,6 +3,7 @@
 import { useUpcomingBookings } from '@/hooks/useClient';
 import VisitHistoryCard from '@/components/VisitHistoryCard';
 import SalonImage from '@/components/SalonImage';
+import { formatDateTimeSafe } from '@/utils/date';
 
 export default function ClientDashboard() {
 	const { data: upcomingBookings, isLoading, error } = useUpcomingBookings();
@@ -67,15 +68,7 @@ export default function ClientDashboard() {
 								id: booking.id,
 								salonName: booking.salon.name,
 								serviceName: booking.service.name,
-								date: new Date(booking.time).toLocaleDateString('en-US', {
-									weekday: 'long',
-									year: 'numeric',
-									month: 'long',
-									day: 'numeric',
-									hour: '2-digit',
-									minute: '2-digit',
-									hour12: false,
-								}),
+								date: formatDateTimeSafe(booking.time),
 								image: booking.salon.logo || '',
 							}}
 							onBookAgain={handleBookAgain}

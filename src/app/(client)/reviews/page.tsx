@@ -4,6 +4,7 @@ import { useState } from 'react';
 import ReviewCard from '@/components/ReviewCard';
 import ReviewModal from '@/components/ReviewModal';
 import { useUserReviews, useCompletedBookings } from '@/hooks/useClient';
+import { getDatePart } from '@/utils/date';
 
 export default function ClientReviews() {
 	const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
@@ -126,9 +127,7 @@ export default function ClientReviews() {
 								review={{
 									id: review.id,
 									salonName: review.salon.name,
-									visitDate: review.booking?.time
-										? new Date(review.booking.time).toISOString().split('T')[0]
-										: '',
+									visitDate: getDatePart(review.booking?.time),
 									service: review.booking?.service?.name || 'Service',
 									rating: review.rating,
 									comment: review.comment || '',

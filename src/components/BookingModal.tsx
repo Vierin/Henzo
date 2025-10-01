@@ -7,6 +7,7 @@ import { useStaffBySalon } from '@/hooks/useStaff';
 import { useServices } from '@/hooks/useServices';
 import { useAuthStore } from '@/stores/authStore';
 import toast from 'react-hot-toast';
+import { safeParseDate } from '@/utils/date';
 
 interface BookingModalProps {
 	isOpen: boolean;
@@ -194,6 +195,7 @@ export default function BookingModal({
 
 			if (response.ok) {
 				const bookings = await response.json();
+				console.log('Fetched existing bookings:', bookings);
 				setExistingBookings(bookings);
 				setBookingsLoaded(true);
 			} else if (response.status === 401) {
@@ -240,9 +242,58 @@ export default function BookingModal({
 		const slotStartMinutes = slotHour * 60 + slotMinute;
 		const slotEndMinutes = slotStartMinutes + serviceDuration;
 
-		// Check if any existing booking conflicts with this time slot
-		return !existingBookings.some((booking) => {
-			const bookingDateTime = new Date(booking.dateTime);
+		// Debug logging
+		console.log('Checking time slot availability:', {
+			timeSlot,
+			selectedStaffId,
+			serviceDuration,
+			slotStartMinutes,
+			slotEndMinutes,
+			existingBookingsCount: existingBookings.length,
+		});
+
+		// If specific staff is selected, check only that staff's conflicts
+		if (selectedStaffId && selectedStaffId !== 'Any Staff') {
+			const hasConflict = existingBookings.some((booking) => {
+				// Use safeParseDate to handle timezone issues
+				const bookingDateTime = safeParseDate(booking.time || booking.dateTime);
+				if (!bookingDateTime) return false; // Skip invalid dates
+
+				const bookingStartMinutes =
+					bookingDateTime.getHours() * 60 + bookingDateTime.getMinutes();
+				const bookingEndMinutes =
+					bookingStartMinutes + (booking.service?.duration || 60);
+
+				// Check if time slots overlap
+				const timeConflict =
+					slotStartMinutes < bookingEndMinutes &&
+					slotEndMinutes > bookingStartMinutes;
+
+				// Only block if it's the same staff AND time conflicts
+				const staffConflict = booking.staffId === selectedStaffId;
+				const shouldBlock = staffConflict && timeConflict;
+
+				console.log('Staff-specific check:', {
+					bookingId: booking.id,
+					bookingStaffId: booking.staffId,
+					selectedStaffId,
+					staffConflict,
+					timeConflict,
+					shouldBlock,
+				});
+
+				return shouldBlock;
+			});
+
+			return !hasConflict;
+		}
+
+		// If "Any Staff" is selected, check if ALL staff members are busy
+		// The slot is available if at least one staff member is free
+		const conflictingBookings = existingBookings.filter((booking) => {
+			const bookingDateTime = safeParseDate(booking.time || booking.dateTime);
+			if (!bookingDateTime) return false;
+
 			const bookingStartMinutes =
 				bookingDateTime.getHours() * 60 + bookingDateTime.getMinutes();
 			const bookingEndMinutes =
@@ -253,16 +304,36 @@ export default function BookingModal({
 				slotStartMinutes < bookingEndMinutes &&
 				slotEndMinutes > bookingStartMinutes;
 
-			// If specific staff is selected, check staff conflict
-			if (selectedStaffId && selectedStaffId !== 'Any Staff') {
-				const staffConflict = booking.staffId === selectedStaffId;
-				return staffConflict && timeConflict;
-			}
+			console.log('Any staff check - booking:', {
+				bookingId: booking.id,
+				bookingStaffId: booking.staffId,
+				timeConflict,
+			});
 
-			// If no specific staff selected, check if any staff is available
-			// For now, we'll allow booking if there's no time conflict
 			return timeConflict;
 		});
+
+		// Get all staff IDs that are busy during this time slot
+		const busyStaffIds = new Set(
+			conflictingBookings.map((booking) => booking.staffId).filter(Boolean)
+		);
+
+		// Get all available staff IDs
+		const allStaffIds = new Set(staffMembers.map((staff) => staff.id));
+
+		// Check if there are any free staff members
+		const hasFreeStaff = Array.from(allStaffIds).some(
+			(staffId) => !busyStaffIds.has(staffId)
+		);
+
+		console.log('Any staff availability check:', {
+			busyStaffIds: Array.from(busyStaffIds),
+			allStaffIds: Array.from(allStaffIds),
+			hasFreeStaff,
+			conflictingBookingsCount: conflictingBookings.length,
+		});
+
+		return hasFreeStaff;
 	};
 
 	// Generate time slots based on salon working hours for selected date
@@ -336,12 +407,29 @@ export default function BookingModal({
 
 			// Add time slots with availability info
 			timeSlots.forEach((timeSlot) => {
+				// Determine staff ID for availability check
+				let staffIdForCheck: string | undefined;
+				if (selectedStaff && selectedStaff !== 'Any Staff') {
+					// Find the staff member by name to get their ID
+					const staffMember = staffMembers.find(
+						(staff) => staff.name === selectedStaff
+					);
+					staffIdForCheck = staffMember?.id;
+
+					console.log('Staff selection debug:', {
+						selectedStaff,
+						staffMember,
+						staffIdForCheck,
+						allStaffMembers: staffMembers.map((s) => ({
+							id: s.id,
+							name: s.name,
+						})),
+					});
+				}
+
 				slots.push({
 					time: timeSlot,
-					available: isTimeSlotAvailable(
-						timeSlot,
-						selectedStaff !== 'Any Staff' ? selectedStaff : undefined
-					),
+					available: isTimeSlotAvailable(timeSlot, staffIdForCheck),
 				});
 			});
 		}
@@ -356,6 +444,7 @@ export default function BookingModal({
 			selectedService,
 			selectedStaff,
 			existingBookings,
+			staffMembers,
 		]
 	);
 
@@ -589,6 +678,7 @@ export default function BookingModal({
 		}
 
 		// Create a new Date object using the selected date and time
+		// This creates a local date/time
 		const bookingDateTime = new Date(
 			year,
 			month - 1,
@@ -600,6 +690,35 @@ export default function BookingModal({
 		);
 
 		return bookingDateTime;
+	};
+
+	// Helper function to create a UTC DateTime string for API
+	const createBookingDateTimeUTC = (
+		dateStr: string,
+		timeStr: string
+	): string => {
+		const [year, month, day] = dateStr.split('-').map(Number);
+		const [hours, minutes] = timeStr.split(':').map(Number);
+
+		if (isNaN(year) || isNaN(month) || isNaN(day)) {
+			throw new Error(`Invalid date format: ${dateStr}`);
+		}
+
+		if (isNaN(hours) || isNaN(minutes)) {
+			throw new Error(`Invalid time format: ${timeStr}`);
+		}
+
+		// Create UTC date string directly to avoid timezone conversion issues
+		const utcDateString = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}T${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:00.000Z`;
+
+		console.log('Creating UTC date string:', {
+			dateStr,
+			timeStr,
+			utcDateString,
+			localDate: new Date(year, month - 1, day, hours, minutes).toISOString(),
+		});
+
+		return utcDateString;
 	};
 
 	const handleBooking = async () => {
@@ -656,8 +775,7 @@ export default function BookingModal({
 
 			let bookingDateTime: string;
 			try {
-				const dateTime = createBookingDateTime(selectedDate, selectedTime);
-				bookingDateTime = dateTime.toISOString();
+				bookingDateTime = createBookingDateTimeUTC(selectedDate, selectedTime);
 			} catch (dateError) {
 				console.error('❌ Error creating booking date time:', dateError);
 				throw new Error(
@@ -731,8 +849,7 @@ export default function BookingModal({
 
 			let bookingDateTime: string;
 			try {
-				const dateTime = createBookingDateTime(selectedDate, selectedTime);
-				bookingDateTime = dateTime.toISOString();
+				bookingDateTime = createBookingDateTimeUTC(selectedDate, selectedTime);
 			} catch (dateError) {
 				console.error('❌ Error creating booking date time:', dateError);
 				throw new Error(
