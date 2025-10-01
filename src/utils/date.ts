@@ -105,3 +105,43 @@ export function getDatePart(dateString: string | null | undefined): string {
 
 	return `${year}-${month}-${day}`;
 }
+
+/**
+ * Parse a UTC date string and extract time components without timezone conversion
+ * This ensures that 10:00 UTC is treated as 10:00 local time
+ */
+export function parseBookingTimeAsLocal(
+	dateString: string | null | undefined
+): Date | null {
+	if (!dateString) return null;
+
+	try {
+		// If it's a UTC string like "2024-01-15T10:00:00.000Z"
+		if (dateString.includes('Z')) {
+			// Extract the date and time parts
+			const [datePart, timePart] = dateString.split('T');
+			const [year, month, day] = datePart.split('-').map(Number);
+			const [time, ms] = timePart.split('.');
+			const [hours, minutes, seconds] = time.split(':').map(Number);
+
+			// Create a local date with the same time components
+			const localDate = new Date(
+				year,
+				month - 1,
+				day,
+				hours,
+				minutes,
+				seconds || 0,
+				0
+			);
+			return isNaN(localDate.getTime()) ? null : localDate;
+		}
+
+		// Fallback to regular parsing
+		const date = new Date(dateString);
+		return isNaN(date.getTime()) ? null : date;
+	} catch (error) {
+		console.error('Error parsing booking time as local:', error, dateString);
+		return null;
+	}
+}

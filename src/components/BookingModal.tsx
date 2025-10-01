@@ -7,7 +7,7 @@ import { useStaffBySalon } from '@/hooks/useStaff';
 import { useServices } from '@/hooks/useServices';
 import { useAuthStore } from '@/stores/authStore';
 import toast from 'react-hot-toast';
-import { safeParseDate } from '@/utils/date';
+import { safeParseDate, parseBookingTimeAsLocal } from '@/utils/date';
 
 interface BookingModalProps {
 	isOpen: boolean;
@@ -255,8 +255,10 @@ export default function BookingModal({
 		// If specific staff is selected, check only that staff's conflicts
 		if (selectedStaffId && selectedStaffId !== 'Any Staff') {
 			const hasConflict = existingBookings.some((booking) => {
-				// Use safeParseDate to handle timezone issues
-				const bookingDateTime = safeParseDate(booking.time || booking.dateTime);
+				// Use parseBookingTimeAsLocal to avoid timezone conversion issues
+				const bookingDateTime = parseBookingTimeAsLocal(
+					booking.time || booking.dateTime
+				);
 				if (!bookingDateTime) return false; // Skip invalid dates
 
 				const bookingStartMinutes =
@@ -291,7 +293,9 @@ export default function BookingModal({
 		// If "Any Staff" is selected, check if ALL staff members are busy
 		// The slot is available if at least one staff member is free
 		const conflictingBookings = existingBookings.filter((booking) => {
-			const bookingDateTime = safeParseDate(booking.time || booking.dateTime);
+			const bookingDateTime = parseBookingTimeAsLocal(
+				booking.time || booking.dateTime
+			);
 			if (!bookingDateTime) return false;
 
 			const bookingStartMinutes =
