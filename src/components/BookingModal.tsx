@@ -44,6 +44,8 @@ export default function BookingModal({
 	const [isLoggingIn, setIsLoggingIn] = useState(false);
 	const [isInitialized, setIsInitialized] = useState(false);
 	const [currentMonth, setCurrentMonth] = useState(new Date());
+	const [existingBookings, setExistingBookings] = useState<any[]>([]);
+	const [bookingsLoaded, setBookingsLoaded] = useState(false);
 
 	// Используем Zustand store для аутентификации
 	const { user, isClient, login, refreshUser } = useAuthStore();
@@ -70,6 +72,13 @@ export default function BookingModal({
 			fetchSalonData();
 		}
 	}, [isOpen, currentSalonId]);
+
+	// Load existing bookings when date changes
+	useEffect(() => {
+		if (selectedDate && currentSalonId) {
+			fetchExistingBookings(selectedDate);
+		}
+	}, [selectedDate, currentSalonId]);
 
 	// Initialize selected service
 	useEffect(() => {
@@ -113,84 +122,242 @@ export default function BookingModal({
 		try {
 			const API_BASE_URL =
 				process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
-			const {
-				data: { session },
-			} = await supabase.auth.getSession();
 
-			if (!session?.access_token) {
-				console.warn('No session found for fetching salon data');
-				return;
-			}
+			// If salonId is provided, use it; otherwise try to get current user's salon
+			if (salonId) {
+				const response = await fetch(`${API_BASE_URL}/salons/${salonId}`);
+				if (response.ok) {
+					const data = await response.json();
+					if (data && data.workingHours) {
+						setSalonWorkingHours(data.workingHours);
+					}
+				}
+			} else {
+				// Fallback to current user's salon
+				const {
+					data: { session },
+				} = await supabase.auth.getSession();
 
-			const response = await fetch(`${API_BASE_URL}/salons/current`, {
-				headers: {
-					Authorization: `Bearer ${session.access_token}`,
-				},
-			});
+				if (!session?.access_token) {
+					console.warn('No session found for fetching salon data');
+					return;
+				}
 
-			if (!response.ok) {
-				console.warn('Could not fetch salon data, using defaults');
-				return;
-			}
+				const response = await fetch(`${API_BASE_URL}/salons/current`, {
+					headers: {
+						Authorization: `Bearer ${session.access_token}`,
+					},
+				});
 
-			const data = await response.json();
-			if (data && data.workingHours) {
-				setSalonWorkingHours(data.workingHours);
+				if (!response.ok) {
+					console.warn('Could not fetch salon data, using defaults');
+					return;
+				}
+
+				const data = await response.json();
+				if (data && data.workingHours) {
+					setSalonWorkingHours(data.workingHours);
+				}
 			}
 		} catch (error) {
 			console.error('Error fetching salon data:', error);
 		}
 	};
 
-	// Generate time slots based on salon working hours
-	const generateTimeSlots = () => {
-		const slots = [];
+	// Load existing bookings for the selected date
+	const fetchExistingBookings = async (date: string) => {
+		if (!salonId || !date) return;
 
-		// Get today's day of week (0 = Sunday, 1 = Monday, etc.)
-		const today = new Date();
-		const dayOfWeek = today.getDay();
+		try {
+			const API_BASE_URL =
+				process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+
+			// Get session for authorization
+			const { data: session } = await supabase.auth.getSession();
+
+			const headers: HeadersInit = {
+				'Content-Type': 'application/json',
+			};
+
+			// Add authorization header if session exists
+			if (session?.session?.access_token) {
+				headers.Authorization = `Bearer ${session.session.access_token}`;
+			}
+
+			const response = await fetch(
+				`${API_BASE_URL}/bookings?salonId=${salonId}&date=${date}`,
+				{
+					method: 'GET',
+					headers,
+				}
+			);
+
+			if (response.ok) {
+				const bookings = await response.json();
+				setExistingBookings(bookings);
+				setBookingsLoaded(true);
+			} else if (response.status === 401) {
+				// If unauthorized, try without auth (for public bookings)
+				console.warn('Unauthorized, trying to fetch public bookings...');
+				const publicResponse = await fetch(
+					`${API_BASE_URL}/bookings/public?salonId=${salonId}&date=${date}`
+				);
+
+				if (publicResponse.ok) {
+					const bookings = await publicResponse.json();
+					setExistingBookings(bookings);
+					setBookingsLoaded(true);
+				} else {
+					console.warn('Could not fetch public bookings either');
+					setExistingBookings([]);
+					setBookingsLoaded(false);
+				}
+			} else {
+				console.warn('Could not fetch existing bookings:', response.status);
+				// Set empty array if we can't fetch bookings
+				setExistingBookings([]);
+				setBookingsLoaded(false);
+			}
+		} catch (error) {
+			console.error('Error fetching existing bookings:', error);
+			// Set empty array on error to prevent blocking
+			setExistingBookings([]);
+			setBookingsLoaded(false);
+		}
+	};
+
+	// Check if a time slot is available
+	const isTimeSlotAvailable = (timeSlot: string, selectedStaffId?: string) => {
+		if (!selectedService) return true;
+
+		// If bookings couldn't be loaded, show all slots as available but with warning
+		if (!bookingsLoaded) {
+			return true;
+		}
+
+		const serviceDuration = selectedService.duration;
+		const [slotHour, slotMinute] = timeSlot.split(':').map(Number);
+		const slotStartMinutes = slotHour * 60 + slotMinute;
+		const slotEndMinutes = slotStartMinutes + serviceDuration;
+
+		// Check if any existing booking conflicts with this time slot
+		return !existingBookings.some((booking) => {
+			const bookingDateTime = new Date(booking.dateTime);
+			const bookingStartMinutes =
+				bookingDateTime.getHours() * 60 + bookingDateTime.getMinutes();
+			const bookingEndMinutes =
+				bookingStartMinutes + (booking.service?.duration || 60);
+
+			// Check if time slots overlap
+			const timeConflict =
+				slotStartMinutes < bookingEndMinutes &&
+				slotEndMinutes > bookingStartMinutes;
+
+			// If specific staff is selected, check staff conflict
+			if (selectedStaffId && selectedStaffId !== 'Any Staff') {
+				const staffConflict = booking.staffId === selectedStaffId;
+				return staffConflict && timeConflict;
+			}
+
+			// If no specific staff selected, check if any staff is available
+			// For now, we'll allow booking if there's no time conflict
+			return timeConflict;
+		});
+	};
+
+	// Generate time slots based on salon working hours for selected date
+	const generateTimeSlots = (
+		date?: string
+	): Array<{ time: string; available: boolean }> => {
+		const slots: Array<{ time: string; available: boolean }> = [];
+
+		// Use selected date or today
+		let targetDate: Date;
+		if (date) {
+			// Parse date string correctly to avoid timezone issues
+			const [year, month, day] = date.split('-').map(Number);
+			targetDate = new Date(year, month - 1, day); // month is 0-indexed
+		} else {
+			targetDate = new Date();
+		}
+
+		const dayOfWeek = targetDate.getDay();
 		const dayNames: (keyof WorkingHours)[] = [
-			'sunday',
-			'monday',
-			'tuesday',
-			'wednesday',
-			'thursday',
-			'friday',
-			'saturday',
+			'sunday', // 0 - JavaScript getDay() still returns 0 for Sunday
+			'monday', // 1
+			'tuesday', // 2
+			'wednesday', // 3
+			'thursday', // 4
+			'friday', // 5
+			'saturday', // 6
 		];
-		const todayName = dayNames[dayOfWeek];
+		const dayName = dayNames[dayOfWeek];
+
+		// Debug logging
+		console.log('Date generation debug:', {
+			inputDate: date,
+			targetDate: targetDate.toDateString(),
+			dayOfWeek,
+			dayName,
+			workingHours: salonWorkingHours?.[dayName],
+		});
 
 		// Default hours if no working hours are set
 		let startHour = 9;
 		let endHour = 18;
 
-		// Get working hours for today if available
+		// Get working hours for the selected day if available
 		if (
 			salonWorkingHours &&
-			salonWorkingHours[todayName] &&
-			!salonWorkingHours[todayName].closed
+			salonWorkingHours[dayName] &&
+			!salonWorkingHours[dayName].closed
 		) {
-			const openTime = salonWorkingHours[todayName].open;
-			const closeTime = salonWorkingHours[todayName].close;
+			const openTime = salonWorkingHours[dayName].open;
+			const closeTime = salonWorkingHours[dayName].close;
 
 			// Parse time strings (assuming 24-hour format like "09:00")
 			if (openTime && closeTime) {
 				startHour = parseInt(openTime.split(':')[0]);
 				endHour = parseInt(closeTime.split(':')[0]);
 			}
+		} else if (salonWorkingHours && salonWorkingHours[dayName]?.closed) {
+			// Salon is closed on this day
+			return [];
 		}
 
 		// Generate time slots in 24-hour format (every 15 minutes)
 		for (let hour = startHour; hour < endHour; hour++) {
-			slots.push(`${hour.toString().padStart(2, '0')}:00`);
-			slots.push(`${hour.toString().padStart(2, '0')}:15`);
-			slots.push(`${hour.toString().padStart(2, '0')}:30`);
-			slots.push(`${hour.toString().padStart(2, '0')}:45`);
+			const timeSlots = [
+				`${hour.toString().padStart(2, '0')}:00`,
+				`${hour.toString().padStart(2, '0')}:15`,
+				`${hour.toString().padStart(2, '0')}:30`,
+				`${hour.toString().padStart(2, '0')}:45`,
+			];
+
+			// Add time slots with availability info
+			timeSlots.forEach((timeSlot) => {
+				slots.push({
+					time: timeSlot,
+					available: isTimeSlotAvailable(
+						timeSlot,
+						selectedStaff !== 'Any Staff' ? selectedStaff : undefined
+					),
+				});
+			});
 		}
 		return slots;
 	};
 
-	const timeSlots = useMemo(() => generateTimeSlots(), [salonWorkingHours]);
+	const timeSlots = useMemo(
+		() => generateTimeSlots(selectedDate),
+		[
+			salonWorkingHours,
+			selectedDate,
+			selectedService,
+			selectedStaff,
+			existingBookings,
+		]
+	);
 
 	// Calendar functions
 	const getDaysInMonth = (date: Date) => {
@@ -198,7 +365,9 @@ export default function BookingModal({
 	};
 
 	const getFirstDayOfMonth = (date: Date) => {
-		return new Date(date.getFullYear(), date.getMonth(), 1).getDay();
+		const firstDay = new Date(date.getFullYear(), date.getMonth(), 1).getDay();
+		// Convert Sunday (0) to 7, and shift Monday (1) to 0
+		return firstDay === 0 ? 6 : firstDay - 1;
 	};
 
 	const goToPreviousMonth = () => {
@@ -230,7 +399,18 @@ export default function BookingModal({
 			clickedDate >=
 			new Date(today.getFullYear(), today.getMonth(), today.getDate())
 		) {
-			const dateString = clickedDate.toISOString().split('T')[0];
+			// Format date as YYYY-MM-DD without timezone conversion
+			const year = clickedDate.getFullYear();
+			const month = String(clickedDate.getMonth() + 1).padStart(2, '0');
+			const dayStr = String(clickedDate.getDate()).padStart(2, '0');
+			const dateString = `${year}-${month}-${dayStr}`;
+
+			console.log('Date click debug:', {
+				clickedDate: clickedDate.toDateString(),
+				dayOfWeek: clickedDate.getDay(),
+				formattedDate: dateString,
+			});
+
 			setSelectedDate(dateString);
 		}
 	};
@@ -241,7 +421,11 @@ export default function BookingModal({
 			currentMonth.getMonth(),
 			day
 		);
-		const dateString = date.toISOString().split('T')[0];
+		// Format date as YYYY-MM-DD without timezone conversion
+		const year = date.getFullYear();
+		const month = String(date.getMonth() + 1).padStart(2, '0');
+		const dayStr = String(date.getDate()).padStart(2, '0');
+		const dateString = `${year}-${month}-${dayStr}`;
 		return selectedDate === dateString;
 	};
 
@@ -274,7 +458,10 @@ export default function BookingModal({
 			const timeString = bookingDate.toTimeString().slice(0, 5);
 
 			// Set the selected date in YYYY-MM-DD format
-			const dateString = bookingDate.toISOString().split('T')[0];
+			const year = bookingDate.getFullYear();
+			const month = String(bookingDate.getMonth() + 1).padStart(2, '0');
+			const day = String(bookingDate.getDate()).padStart(2, '0');
+			const dateString = `${year}-${month}-${day}`;
 			setSelectedDate(dateString);
 
 			// Set the current month to show the booking date
@@ -284,27 +471,32 @@ export default function BookingModal({
 
 			// Find the closest available time slot
 			const [bookingHour, bookingMinute] = timeString.split(':').map(Number);
-			let closestTime = timeSlots[0]; // Default to first available slot
+			let closestTime = timeSlots[0]?.time || timeSlots[0]; // Default to first available slot
 
 			for (const slot of timeSlots) {
-				const [slotHour, slotMinute] = slot.split(':').map(Number);
+				const slotTime = typeof slot === 'string' ? slot : slot.time;
+				const [slotHour, slotMinute] = slotTime.split(':').map(Number);
 				const bookingMinutes = bookingHour * 60 + bookingMinute;
 				const slotMinutes = slotHour * 60 + slotMinute;
 
 				// If this slot is closer to the booking time, use it
+				const closestTimeStr =
+					typeof closestTime === 'string' ? closestTime : closestTime.time;
 				if (
 					Math.abs(slotMinutes - bookingMinutes) <
 					Math.abs(
-						parseInt(closestTime.split(':')[0]) * 60 +
-							parseInt(closestTime.split(':')[1]) -
+						parseInt(closestTimeStr.split(':')[0]) * 60 +
+							parseInt(closestTimeStr.split(':')[1]) -
 							bookingMinutes
 					)
 				) {
-					closestTime = slot;
+					closestTime = slotTime;
 				}
 			}
 
-			setSelectedTime(closestTime);
+			setSelectedTime(
+				typeof closestTime === 'string' ? closestTime : closestTime.time
+			);
 
 			// Set selected service
 			if (editingBooking.service) {
@@ -373,7 +565,11 @@ export default function BookingModal({
 	React.useEffect(() => {
 		if (!editingBooking && isOpen && !selectedDate) {
 			const today = new Date();
-			const todayString = today.toISOString().split('T')[0];
+			// Format date as YYYY-MM-DD without timezone conversion
+			const year = today.getFullYear();
+			const month = String(today.getMonth() + 1).padStart(2, '0');
+			const day = String(today.getDate()).padStart(2, '0');
+			const todayString = `${year}-${month}-${day}`;
 			setSelectedDate(todayString);
 		}
 	}, [isOpen, editingBooking, selectedDate]);
@@ -788,7 +984,7 @@ export default function BookingModal({
 
 								{/* Calendar Grid */}
 								<div className="grid grid-cols-7 gap-1 mb-2">
-									{['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(
+									{['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map(
 										(day) => (
 											<div
 												key={day}
@@ -846,24 +1042,42 @@ export default function BookingModal({
 							<h3 className="text-lg font-bold text-gray-900 mb-4">
 								Select a Time
 							</h3>
+							{!bookingsLoaded && selectedDate && (
+								<div className="mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+									<p className="text-sm text-yellow-800">
+										⚠️ Unable to load existing bookings. All time slots are
+										shown as available.
+									</p>
+								</div>
+							)}
 							<div className="overflow-x-auto">
 								<div
 									className="flex gap-3 pb-2"
 									style={{ minWidth: 'max-content' }}
 								>
-									{timeSlots.map((time) => (
-										<button
-											key={time}
-											onClick={() => setSelectedTime(time)}
-											className={`flex-shrink-0 px-4 py-3 rounded-lg text-sm font-medium transition-colors ${
-												selectedTime === time
-													? 'bg-[#ff5b5b] text-white'
-													: 'bg-white text-gray-900 border border-gray-200 hover:bg-gray-50'
-											}`}
-										>
-											{time}
-										</button>
-									))}
+									{timeSlots.map((timeSlot) => {
+										const time =
+											typeof timeSlot === 'string' ? timeSlot : timeSlot.time;
+										const available =
+											typeof timeSlot === 'object' ? timeSlot.available : true;
+
+										return (
+											<button
+												key={time}
+												onClick={() => available && setSelectedTime(time)}
+												disabled={!available}
+												className={`flex-shrink-0 px-4 py-3 rounded-lg text-sm font-medium transition-colors ${
+													!available
+														? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+														: selectedTime === time
+															? 'bg-[#ff5b5b] text-white'
+															: 'bg-white text-gray-900 border border-gray-200 hover:bg-gray-50'
+												}`}
+											>
+												{time}
+											</button>
+										);
+									})}
 								</div>
 							</div>
 						</div>
