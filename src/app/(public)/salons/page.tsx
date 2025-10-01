@@ -7,6 +7,7 @@ import LoadingSpinner from '../../../components/LoadingSpinner';
 import ErrorDisplay from '../../../components/ErrorDisplay';
 import SalonImage from '../../../components/SalonImage';
 import { useSalonsWithServices } from '@/hooks/useSalons';
+import { useSalonSlug } from '@/hooks/useSalonSlug';
 import { ServiceResponseDto } from '@/types/dto/service.dto';
 import { Salon, Service } from '@/types';
 import { checkLocationMatch } from '@/constants/locations';
@@ -14,6 +15,7 @@ import Image from 'next/image';
 
 export default function SalonsPage() {
 	const router = useRouter();
+	const { getSalonUrl } = useSalonSlug();
 	const searchParams = useSearchParams();
 	const [searchQuery, setSearchQuery] = useState('');
 	const [selectedLocation, setSelectedLocation] = useState('');
@@ -69,8 +71,8 @@ export default function SalonsPage() {
 		setIsBookingModalOpen(true);
 	};
 
-	const handleSalonClick = (salonId: string) => {
-		router.push(`/salon/${salonId}`);
+	const handleSalonClick = (salon: Salon) => {
+		router.push(getSalonUrl(salon));
 	};
 
 	const handleLoadMore = () => {
@@ -245,7 +247,7 @@ export default function SalonsPage() {
 							visibleSalons.map((salon) => (
 								<div
 									key={salon.id}
-									onClick={() => handleSalonClick(salon.id)}
+									onClick={() => handleSalonClick(salon)}
 									className="bg-white rounded-2xl p-6 shadow-lg hover:shadow-xl transition-shadow cursor-pointer"
 								>
 									<div className="flex gap-6">
@@ -326,7 +328,7 @@ export default function SalonsPage() {
 											<button
 												onClick={(e) => {
 													e.stopPropagation();
-													handleSalonClick(salon.id);
+													handleSalonClick(salon);
 												}}
 												className="text-[#ff5b5b] text-sm font-medium hover:text-[#e04a4a] transition-colors"
 											>

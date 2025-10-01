@@ -13,6 +13,7 @@ export async function middleware(req: NextRequest) {
 		'/login',
 		'/register',
 		'/salons',
+		'/category',
 		'/salon',
 		'/about',
 		'/contact',

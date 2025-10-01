@@ -1,25 +1,54 @@
 'use client';
 
-import { useState } from 'react';
-import { useParams } from 'next/navigation';
+import { useState, useEffect } from 'react';
+import { useParams, useRouter } from 'next/navigation';
 import BookingModal from '../../../../components/BookingModal';
 import PublicHeader from '../../../../components/PublicHeader';
 import LoadingSpinner from '../../../../components/LoadingSpinner';
 import ErrorDisplay from '../../../../components/ErrorDisplay';
 import MapComponent from '../../../../components/MapComponent';
 import { useSalonById } from '@/hooks/useSalon';
+import { useSalonSlug } from '@/hooks/useSalonSlug';
 import { Service, WorkingHours } from '@/types';
 import { supabase } from '@/lib/supabase';
 import SalonPhotoSlider from '../../../../components/SalonPhotoSlider';
 
 export default function SalonDetailPage() {
 	const params = useParams();
+	const router = useRouter();
 	const [activeTab, setActiveTab] = useState('Services');
 	const [isBookingModalOpen, setIsBookingModalOpen] = useState(false);
 	const [selectedService, setSelectedService] = useState<Service | null>(null);
 
-	const salonId = params.id as string;
-	const { data: salon, isLoading, error } = useSalonById(salonId);
+	const { getSalonIdFromSlug, isSlugValid, getSalonUrl } = useSalonSlug();
+	const slug = params.slug as string;
+
+	// Проверяем, является ли это старым ID (UUID) или новым slug
+	const isOldId = /^[a-f0-9-]{36}$/.test(slug);
+	const salonId = isOldId ? slug : getSalonIdFromSlug(slug);
+	const { data: salon, isLoading, error } = useSalonById(salonId || '');
+
+	// Если это старый ID, редиректим на новый URL с slug
+	useEffect(() => {
+		if (isOldId && salon) {
+			const newUrl = getSalonUrl(salon);
+			router.replace(newUrl);
+		}
+	}, [isOldId, salon, getSalonUrl, router]);
+
+	// Проверяем валидность slug (только для новых URL)
+	if (!isOldId && (!isSlugValid(slug) || !salonId)) {
+		return (
+			<div className="min-h-screen bg-[#F8F5F2]">
+				<div className="container mx-auto px-4 py-8">
+					<ErrorDisplay
+						message="Invalid salon URL"
+						error={new Error('The salon URL is not valid')}
+					/>
+				</div>
+			</div>
+		);
+	}
 
 	// Loading and error states
 	if (isLoading) {
@@ -401,7 +430,7 @@ export default function SalonDetailPage() {
 					setIsBookingModalOpen(false);
 					setSelectedService(null);
 				}}
-				salonId={salonId}
+				salonId={salonId || ''}
 				service={selectedService || undefined}
 				salonName={salon.name}
 			/>

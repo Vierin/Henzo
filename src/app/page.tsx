@@ -5,6 +5,7 @@ import PublicHeader from '../components/PublicHeader';
 import LoadingSpinner from '../components/LoadingSpinner';
 import ErrorDisplay from '../components/ErrorDisplay';
 import { useSalonsWithServices } from '@/hooks/useSalons';
+import { useSalonSlug } from '@/hooks/useSalonSlug';
 import { STATIC_CATEGORIES } from '@/constants/categories';
 import AddressAutocomplete from '@/components/AddressAutocomplete';
 import ServiceAutocomplete from '@/components/ServiceAutocomplete';
@@ -16,6 +17,7 @@ import Footer from '@/components/Footer';
 
 export default function HomePage() {
 	const router = useRouter();
+	const { getSalonUrl } = useSalonSlug();
 	const [activeTab, setActiveTab] = useState<'treatments' | 'salon'>(
 		'treatments'
 	);
@@ -70,8 +72,8 @@ export default function HomePage() {
 		};
 	}, []);
 
-	const handleSalonClick = (salonId: string) => {
-		router.push(`/salon/${salonId}`);
+	const handleSalonClick = (salon: Salon) => {
+		router.push(getSalonUrl(salon));
 	};
 
 	const handleCurrentLocation = () => {
@@ -829,7 +831,7 @@ export default function HomePage() {
 								{salons.slice(0, 3).map((salon: Salon) => (
 									<div
 										key={salon.id}
-										onClick={() => handleSalonClick(salon.id)}
+										onClick={() => handleSalonClick(salon)}
 										className="bg-white rounded-xl overflow-hidden shadow-lg hover:shadow-xl transition-shadow cursor-pointer"
 									>
 										<div className="h-48 bg-gradient-to-br from-pink-100 to-pink-200 flex items-center justify-center">
@@ -903,7 +905,8 @@ export default function HomePage() {
 								Why Choose Henzo?
 							</h2>
 							<p className="text-lg text-gray-700">
-								Henzo makes booking your next beauty appointment simple and convenient.
+								Henzo makes booking your next beauty appointment simple and
+								convenient.
 							</p>
 						</div>
 

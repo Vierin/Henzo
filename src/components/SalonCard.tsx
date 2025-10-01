@@ -1,6 +1,7 @@
 import { useRouter } from 'next/navigation';
 import { Salon, Service } from '@/types';
 import { ServiceResponseDto } from '@/types/dto/service.dto';
+import { useSalonSlug } from '@/hooks/useSalonSlug';
 import SalonImage from './SalonImage';
 
 interface SalonCardProps {
@@ -19,9 +20,10 @@ export default function SalonCard({
 	className = '',
 }: SalonCardProps) {
 	const router = useRouter();
+	const { getSalonUrl } = useSalonSlug();
 
 	const handleSalonClick = () => {
-		router.push(`/salon/${salon.id}`);
+		router.push(getSalonUrl(salon));
 	};
 
 	const handleBookService = (e: React.MouseEvent, service: Service) => {

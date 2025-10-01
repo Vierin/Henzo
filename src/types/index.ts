@@ -27,6 +27,8 @@ export interface Salon {
 	ownerId: string;
 	createdAt: string;
 	services?: Service[];
+	// Метод для генерации slug (не сохраняется в БД)
+	getSlug?(): string;
 }
 
 export interface Service {
