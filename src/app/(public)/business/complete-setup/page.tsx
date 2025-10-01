@@ -160,7 +160,7 @@ export default function BusinessCompleteSetupPage() {
 			const salonData = {
 				name: formData.name.trim(),
 				description: formData.description.trim() || null,
-				categoryIds: formData.categories.map((id) => id.toString()),
+				categoryIds: formData.categories, // Keep as numbers, don't convert to strings
 				address: formData.address.trim(),
 				email: formData.email.trim(),
 				website: formData.website.trim() || null,

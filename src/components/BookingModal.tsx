@@ -368,15 +368,6 @@ export default function BookingModal({
 		];
 		const dayName = dayNames[dayOfWeek];
 
-		// Debug logging
-		console.log('Date generation debug:', {
-			inputDate: date,
-			targetDate: targetDate.toDateString(),
-			dayOfWeek,
-			dayName,
-			workingHours: salonWorkingHours?.[dayName],
-		});
-
 		// Default hours if no working hours are set
 		let startHour = 9;
 		let endHour = 18;

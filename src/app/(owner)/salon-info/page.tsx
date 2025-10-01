@@ -83,7 +83,7 @@ export default function SalonInfoPage() {
 		instagram: '',
 		logo: '',
 		photos: [] as string[],
-		salonCategories: [] as string[],
+		salonCategories: [] as number[],
 		operatingHours: {
 			monday: { open: '09:00', close: '18:00', closed: false },
 			tuesday: { open: '09:00', close: '18:00', closed: false },
@@ -123,8 +123,7 @@ export default function SalonInfoPage() {
 				instagram: salon.instagram || '',
 				logo: salon.logo || '',
 				photos: salon.photos || [],
-				salonCategories:
-					(salon as any).categories?.map((cat: any) => cat.id) || [],
+				salonCategories: salon.categoryIds || [],
 				operatingHours: salon.workingHours
 					? {
 							monday: {
@@ -202,7 +201,7 @@ export default function SalonInfoPage() {
 				instagram: formData.instagram,
 				logo: formData.logo,
 				photos: formData.photos,
-				categoryIds: formData.salonCategories, // Already strings
+				categoryIds: formData.salonCategories, // Already numbers
 				workingHours: formData.operatingHours,
 			};
 
@@ -272,7 +271,7 @@ export default function SalonInfoPage() {
 		}));
 	};
 
-	const handleCategoryToggle = (categoryId: string) => {
+	const handleCategoryToggle = (categoryId: number) => {
 		setFormData((prev) => ({
 			...prev,
 			salonCategories: prev.salonCategories.includes(categoryId)
@@ -367,12 +366,8 @@ export default function SalonInfoPage() {
 									>
 										<input
 											type="checkbox"
-											checked={formData.salonCategories.includes(
-												category.id.toString()
-											)}
-											onChange={() =>
-												handleCategoryToggle(category.id.toString())
-											}
+											checked={formData.salonCategories.includes(category.id)}
+											onChange={() => handleCategoryToggle(category.id)}
 											className="w-4 h-4 text-[#ff5b5b] border-gray-300 rounded focus:ring-[#ff5b5b] focus:ring-2"
 										/>
 										<span className="text-sm font-medium text-gray-900">
