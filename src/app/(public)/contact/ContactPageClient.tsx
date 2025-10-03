@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import toast from 'react-hot-toast';
 import FAQSection from '@/components/FAQSection';
 
 export default function ContactPageClient() {
@@ -9,6 +10,8 @@ export default function ContactPageClient() {
 		email: '',
 		message: '',
 	});
+
+	const [isSubmitting, setIsSubmitting] = useState(false);
 
 	const handleInputChange = (
 		e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
@@ -20,17 +23,9 @@ export default function ContactPageClient() {
 		}));
 	};
 
-	const [isSubmitting, setIsSubmitting] = useState(false);
-	const [submitStatus, setSubmitStatus] = useState<
-		'idle' | 'success' | 'error'
-	>('idle');
-	const [errorMessage, setErrorMessage] = useState<string>('');
-
 	const handleSubmit = async (e: React.FormEvent) => {
 		e.preventDefault();
 		setIsSubmitting(true);
-		setSubmitStatus('idle');
-		setErrorMessage('');
 
 		try {
 			const backendUrl =
@@ -46,18 +41,19 @@ export default function ContactPageClient() {
 			const result = await response.json();
 
 			if (response.ok) {
-				setSubmitStatus('success');
+				toast.success(
+					"Your message has been sent successfully! We'll get back to you soon."
+				);
 				setFormData({ name: '', email: '', message: '' });
 			} else {
-				setSubmitStatus('error');
 				// Handle validation errors from backend
 				if (result.errors && Array.isArray(result.errors)) {
 					const errorMessages = result.errors
 						.map((err: any) => Object.values(err.constraints || {}).join(', '))
 						.join('; ');
-					setErrorMessage(errorMessages);
+					toast.error(errorMessages);
 				} else {
-					setErrorMessage(
+					toast.error(
 						result.message || 'Failed to send message. Please try again.'
 					);
 				}
@@ -65,10 +61,7 @@ export default function ContactPageClient() {
 			}
 		} catch (error) {
 			console.error('Network error:', error);
-			setSubmitStatus('error');
-			setErrorMessage(
-				'Network error. Please check your connection and try again.'
-			);
+			toast.error('Network error. Please check your connection and try again.');
 		} finally {
 			setIsSubmitting(false);
 		}
@@ -106,24 +99,6 @@ export default function ContactPageClient() {
 									<p className="text-gray-600 mb-8">
 										Fill out the form and we'll get back to you.
 									</p>
-									{/* Status Messages */}
-									{submitStatus === 'success' && (
-										<div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-lg">
-											<p className="text-green-800">
-												✅ Your message has been sent successfully! We'll get
-												back to you soon.
-											</p>
-										</div>
-									)}
-									{submitStatus === 'error' && (
-										<div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
-											<p className="text-red-800">
-												❌{' '}
-												{errorMessage ||
-													'There was an error sending your message. Please try again.'}
-											</p>
-										</div>
-									)}
 
 									<form onSubmit={handleSubmit} className="space-y-6">
 										<div>
