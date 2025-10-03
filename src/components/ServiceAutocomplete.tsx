@@ -31,7 +31,7 @@ export default function ServiceAutocomplete({
 	const inputRef = useRef<HTMLInputElement>(null);
 	const suggestionsRef = useRef<HTMLDivElement>(null);
 
-	// Fetch service category suggestions from our backend API
+	// Fetch service suggestions from our backend API
 	const fetchSuggestions = async (query: string) => {
 		if (query.length < 2) {
 			setSuggestions([]);
@@ -42,24 +42,56 @@ export default function ServiceAutocomplete({
 		try {
 			const API_BASE_URL =
 				process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:3001';
-			const response = await fetch(
-				`${API_BASE_URL}/search/categories?q=${encodeURIComponent(query)}`
+
+			// First try to search for services
+			const servicesResponse = await fetch(
+				`${API_BASE_URL}/search/services?q=${encodeURIComponent(query)}&lang=en`
 			);
 
-			if (!response.ok) {
-				throw new Error(`HTTP error! status: ${response.status}`);
+			if (servicesResponse.ok) {
+				const servicesResult = await servicesResponse.json();
+				if (
+					servicesResult.success &&
+					servicesResult.data &&
+					servicesResult.data.length > 0
+				) {
+					// Transform services data to match our interface
+					const transformedSuggestions = servicesResult.data.map(
+						(service: any) => ({
+							id: service.id,
+							name: service.name,
+							category: service.serviceCategory
+								? {
+										name: service.serviceCategory.nameEn,
+									}
+								: undefined,
+						})
+					);
+					setSuggestions(transformedSuggestions);
+					return;
+				}
 			}
 
-			const result = await response.json();
+			// Fallback to categories if no services found
+			const categoriesResponse = await fetch(
+				`${API_BASE_URL}/search/categories?q=${encodeURIComponent(query)}&lang=en`
+			);
 
-			if (result.success && result.data) {
-				// Transform the data to match our interface
-				const transformedSuggestions = result.data.map((category: any) => ({
-					id: category.id,
-					name: category.nameEn,
-					category: { name: category.nameVn },
-				}));
-				setSuggestions(transformedSuggestions);
+			if (categoriesResponse.ok) {
+				const categoriesResult = await categoriesResponse.json();
+				if (categoriesResult.success && categoriesResult.data) {
+					// Transform the data to match our interface
+					const transformedSuggestions = categoriesResult.data.map(
+						(category: any) => ({
+							id: category.id,
+							name: category.nameEn,
+							category: { name: category.nameVn },
+						})
+					);
+					setSuggestions(transformedSuggestions);
+				} else {
+					setSuggestions([]);
+				}
 			} else {
 				setSuggestions([]);
 			}
@@ -132,7 +164,7 @@ export default function ServiceAutocomplete({
 	};
 
 	return (
-		<div className="relative">
+		<div className="relative h-full">
 			<input
 				ref={inputRef}
 				type="text"
@@ -140,12 +172,12 @@ export default function ServiceAutocomplete({
 				onChange={handleInputChange}
 				onFocus={handleInputFocus}
 				placeholder={placeholder}
-				className={`w-full px-4 py-4 pl-12 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#ff5b5b] focus:border-transparent text-gray-900 ${className}`}
+				className={`w-full h-13 px-4 py-3 pl-12 bg-white placeholder:text-gray-900 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#ff5b5b] focus:border-transparent text-gray-900 ${className}`}
 			/>
 
 			{/* Search Icon */}
 			<svg
-				className="absolute left-4 top-4 h-6 w-6 text-gray-400"
+				className="absolute left-4 top-3.5 h-6 w-6 text-gray-400"
 				fill="none"
 				stroke="currentColor"
 				viewBox="0 0 24 24"

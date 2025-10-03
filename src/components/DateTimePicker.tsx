@@ -136,14 +136,14 @@ export default function DateTimePicker({
 
 	return (
 		<div className={`relative ${className}`}>
-			<div className="relative">
-				<Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+			<div className="relative h-full">
+				<Calendar className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 w-6 h-6" />
 				<button
 					type="button"
 					onClick={() => !disabled && setShowCalendar(!showCalendar)}
 					disabled={disabled}
-					className={`w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#ff5b5b] focus:border-transparent text-left text-gray-900 hover:bg-gray-50 ${
-						disabled ? 'bg-gray-50 text-gray-500 cursor-not-allowed' : ''
+					className={`w-full h-full pl-12 pr-4 py-3 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#ff5b5b] focus:border-transparent text-left text-gray-900 hover:bg-gray-50 ${
+						disabled ? 'bg-gray-50 text-gray-500  cursor-not-allowed' : ''
 					}`}
 				>
 					{displayText()}

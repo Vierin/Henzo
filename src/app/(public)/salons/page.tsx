@@ -174,11 +174,6 @@ export default function SalonsPage() {
 		<div className="min-h-screen bg-[#F8F5F2]">
 			<main className="py-8 px-6">
 				<div className="mx-auto max-w-6xl">
-					{/* Search Form */}
-					<div className="mb-8">
-						<BooksySearch className="bg-white rounded-xl p-6 shadow-lg" />
-					</div>
-
 					{/* Results Header */}
 					<div className="flex items-center justify-between mb-8">
 						<h1 className="text-2xl font-bold text-gray-900">
