@@ -1,22 +1,11 @@
-'use client';
-
 import React from 'react';
-import Head from 'next/head';
-import PublicHeader from '@/components/PublicHeader';
-import Footer from '@/components/Footer';
+import { seoConfig } from '@/constants/seoConfig';
+
+export const metadata = seoConfig.about;
 
 export default function AboutPage() {
 	return (
 		<>
-			<Head>
-				<title>About Us - Henzo</title>
-				<meta
-					name="description"
-					content="Discover the story behind Henzo, our mission, and the values that drive us to connect you with the best beauty and wellness experiences."
-				/>
-				<meta name="viewport" content="width=device-width, initial-scale=1" />
-			</Head>
-
 			<div className="min-h-screen flex flex-col">
 				<main className="flex-1 bg-white">
 					{/* Hero Section */}

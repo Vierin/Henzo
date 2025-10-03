@@ -25,30 +25,9 @@ export async function generateMetadata({
 	const title = `${category.name} Salons & Services | Henzo`;
 	const description = `Find the best ${category.name.toLowerCase()} salons near you. ${category.description || `Professional ${category.name.toLowerCase()} services and treatments.`} Book appointments online with trusted reviews and flexible scheduling.`;
 
-	const keywords = [
-		category.name.toLowerCase(),
-		`${category.name.toLowerCase()} salon`,
-		`${category.name.toLowerCase()} services`,
-		`${category.name.toLowerCase()} appointments`,
-		`${category.name.toLowerCase()} booking`,
-		'beauty salon',
-		'wellness services',
-		'salon near me',
-		'beauty treatments',
-		'online booking',
-		...category.name
-			.toLowerCase()
-			.split(' & ')
-			.map((word) => word.trim()),
-	];
-
 	return {
 		title,
 		description,
-		keywords,
-		authors: [{ name: 'Henzo' }],
-		creator: 'Henzo',
-		publisher: 'Henzo',
 		alternates: {
 			canonical: `/category/${slug}`,
 		},
@@ -74,19 +53,6 @@ export async function generateMetadata({
 			description,
 			images: ['/og-image.jpg'],
 			creator: '@henzo',
-		},
-		robots: {
-			index: true,
-			follow: true,
-			nocache: false,
-			googleBot: {
-				index: true,
-				follow: true,
-				noimageindex: false,
-				'max-video-preview': -1,
-				'max-image-preview': 'large',
-				'max-snippet': -1,
-			},
 		},
 	};
 }
