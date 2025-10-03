@@ -3,17 +3,11 @@
 import { useState, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Calendar, MapPin, Search, Clock } from 'lucide-react';
+import { TIME_INTERVALS } from '@/constants/timeIntervals';
 
 interface BooksySearchProps {
 	className?: string;
 }
-
-const TIME_INTERVALS = [
-	{ value: 'any', label: 'Any time' },
-	{ value: 'morning', label: 'Morning (6:00 - 12:00)' },
-	{ value: 'afternoon', label: 'Afternoon (12:00 - 18:00)' },
-	{ value: 'evening', label: 'Evening (18:00 - 24:00)' },
-];
 
 export default function BooksySearch({ className = '' }: BooksySearchProps) {
 	const router = useRouter();

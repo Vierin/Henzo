@@ -11,6 +11,7 @@ interface SalonImageProps {
 	height: number;
 	className?: string;
 	placeholder?: string;
+	style?: React.CSSProperties;
 }
 
 export default function SalonImage({
@@ -20,6 +21,7 @@ export default function SalonImage({
 	height,
 	className = '',
 	placeholder = '💇‍♀️',
+	style,
 }: SalonImageProps) {
 	const [imageError, setImageError] = useState(false);
 
@@ -57,6 +59,7 @@ export default function SalonImage({
 			width={width}
 			height={height}
 			className={className}
+			style={style}
 			onError={() => setImageError(true)}
 			unoptimized={isExternalUrl(src)} // Don't optimize external URLs
 		/>

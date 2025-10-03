@@ -5,14 +5,11 @@ import { useAuthStore } from '@/stores/authStore';
 import { useSalon } from '@/hooks/useSalon';
 import { supabase } from '@/lib/supabase';
 import Image from 'next/image';
+import { User } from 'lucide-react';
 
 export default function OwnerHeader() {
-	const { user, logout } = useAuthStore();
+	const { user } = useAuthStore();
 	const { data: salon } = useSalon();
-
-	const handleLogout = async () => {
-		await logout();
-	};
 
 	// Функция для получения URL логотипа салона
 	const getSalonLogoUrl = (logoPath?: string) => {
@@ -83,6 +80,7 @@ export default function OwnerHeader() {
 								width={40}
 								height={40}
 								className="w-full h-full object-cover"
+								style={{ width: 'auto', height: 'auto' }}
 								onError={(e) => {
 									// Если изображение не загрузилось, показываем инициалы
 									const target = e.target as HTMLImageElement;
@@ -101,11 +99,11 @@ export default function OwnerHeader() {
 							{salon?.name ? salon.name.charAt(0).toUpperCase() : 'S'}
 						</div>
 					</div>
-					<button
-						onClick={handleLogout}
-						className="text-sm text-gray-800 hover:text-black font-medium"
-					>
-						Logout
+					<button className="flex items-center gap-2 text-sm text-gray-700 font-medium hover:text-gray-900 transition-colors">
+						<div className="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center">
+							<User className="w-4 h-4 text-gray-600" />
+						</div>
+						<span>Profile</span>
 					</button>
 				</div>
 			</div>

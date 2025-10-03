@@ -1,19 +1,19 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { useRouter, usePathname } from 'next/navigation';
+import { usePathname } from 'next/navigation';
 import Link from 'next/link';
 import { useAuthStore } from '@/stores/authStore';
 import Image from 'next/image';
 import { STATIC_CATEGORIES } from '@/constants/categories';
 import BooksySearch from './BooksySearch';
+import { User } from 'lucide-react';
 
 export default function PublicHeader() {
 	const [isLanguageDropdownOpen, setIsLanguageDropdownOpen] = useState(false);
 	const [selectedLanguage, setSelectedLanguage] = useState('EN');
 	const [isScrolled, setIsScrolled] = useState(false);
 	const dropdownRef = useRef<HTMLDivElement>(null);
-	const router = useRouter();
 	const pathname = usePathname();
 
 	// Используем Zustand store для аутентификации
@@ -79,6 +79,7 @@ export default function PublicHeader() {
 								width={88}
 								height={40}
 								className="h-full object-contain"
+								style={{ width: 'auto', height: 'auto' }}
 							/>
 						</Link>
 
@@ -149,54 +150,23 @@ export default function PublicHeader() {
 							{isLoading ? (
 								<div className="w-8 h-8 bg-gray-200 rounded-full animate-pulse"></div>
 							) : user ? (
-								<div className="flex items-center gap-3">
-									<button
-										onClick={() => {
-											if (isClient) {
-												router.push('/dashboard');
-											} else if (isAdmin) {
-												router.push('/admin-panel');
-											} else if (isOwner) {
-												router.push('/owner-dashboard');
-											}
-										}}
-										className="flex items-center gap-2 text-sm text-gray-700 font-medium hover:text-[#8B4513] transition-colors"
-									>
-										<svg
-											className="w-5 h-5"
-											fill="none"
-											stroke="currentColor"
-											viewBox="0 0 24 24"
-										>
-											<path
-												strokeLinecap="round"
-												strokeLinejoin="round"
-												strokeWidth={2}
-												d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
-											/>
-										</svg>
-										<span>{user.name || user.email}</span>
-									</button>
-									<button
-										onClick={logout}
-										className="text-sm text-gray-500 hover:text-red-600 transition-colors"
-										title="Logout"
-									>
-										<svg
-											className="w-5 h-5"
-											fill="none"
-											stroke="currentColor"
-											viewBox="0 0 24 24"
-										>
-											<path
-												strokeLinecap="round"
-												strokeLinejoin="round"
-												strokeWidth={2}
-												d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"
-											/>
-										</svg>
-									</button>
-								</div>
+								<Link
+									href={
+										isClient
+											? '/dashboard'
+											: isAdmin
+												? '/admin-panel'
+												: isOwner
+													? '/owner-dashboard'
+													: '/dashboard'
+									}
+									className="flex items-center gap-2 text-sm text-gray-700 font-medium hover:text-[#8B4513] transition-colors"
+								>
+									<div className="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center">
+										<User className="w-4 h-4 text-gray-600" />
+									</div>
+									<span>Profile</span>
+								</Link>
 							) : (
 								<>
 									<Link
