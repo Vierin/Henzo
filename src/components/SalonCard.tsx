@@ -62,7 +62,7 @@ export default function SalonCard({
 			{/* Services */}
 			{salon.services && salon.services.length > 0 ? (
 				<div className="mt-4">
-					<div className="space-y-2 flex justify-between gap-3">
+					<div className="flex justify-between gap-3">
 						{salon.services
 							.slice(0, 3)
 							.map((service: Service, index: number) => (

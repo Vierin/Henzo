@@ -101,31 +101,6 @@ export default function CategoryList({ category }: CategoryListProps) {
 		<div className="min-h-screen bg-[#F8F5F2]">
 			<main className="py-8 px-6">
 				<div className="mx-auto max-w-6xl">
-					{/* Breadcrumbs */}
-					<nav className="mb-6" aria-label="Breadcrumb">
-						<ol className="flex items-center space-x-2 text-sm text-gray-600">
-							<li>
-								<Link
-									href="/"
-									className="hover:text-[#ff5b5b] transition-colors"
-								>
-									Home
-								</Link>
-							</li>
-							<li>/</li>
-							<li>
-								<Link
-									href="/salons"
-									className="hover:text-[#ff5b5b] transition-colors"
-								>
-									Salons
-								</Link>
-							</li>
-							<li>/</li>
-							<li className="text-gray-900 font-medium">{category.name}</li>
-						</ol>
-					</nav>
-
 					{/* Category Header with Sort */}
 					<div className="flex items-center justify-between mb-8">
 						<h1 className="text-2xl font-bold text-gray-900">

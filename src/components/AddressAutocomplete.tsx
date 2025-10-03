@@ -29,8 +29,24 @@ export default function AddressAutocomplete({
 	const [suggestions, setSuggestions] = useState<AddressSuggestion[]>([]);
 	const [showSuggestions, setShowSuggestions] = useState(false);
 	const [loading, setLoading] = useState(false);
+	const [isTyping, setIsTyping] = useState(false);
+	const [isGettingLocation, setIsGettingLocation] = useState(false);
 	const inputRef = useRef<HTMLInputElement>(null);
 	const suggestionsRef = useRef<HTMLDivElement>(null);
+
+	// Предустановленные подсказки для Вьетнама
+	const defaultSuggestions: AddressSuggestion[] = [
+		{
+			display_name: 'Use Current Location',
+			lat: '0',
+			lon: '0',
+		},
+		{
+			display_name: 'Da Nang, Vietnam',
+			lat: '16.0544',
+			lon: '108.2022',
+		},
+	];
 
 	// Fetch address suggestions from our backend API with fallback to Nominatim
 	const fetchSuggestions = async (query: string) => {
@@ -121,15 +137,16 @@ export default function AddressAutocomplete({
 	// Debounce the search
 	useEffect(() => {
 		const timeoutId = setTimeout(() => {
-			if (value) {
+			if (value && isTyping) {
 				fetchSuggestions(value);
-			} else {
+			} else if (!value) {
 				setSuggestions([]);
+				setIsTyping(false);
 			}
 		}, 300);
 
 		return () => clearTimeout(timeoutId);
-	}, [value]);
+	}, [value, isTyping]);
 
 	// Close suggestions when clicking outside
 	useEffect(() => {
@@ -151,12 +168,27 @@ export default function AddressAutocomplete({
 	const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
 		const newValue = e.target.value;
 		onChange(newValue);
-		setShowSuggestions(true);
+
+		// Если пользователь начал печатать, переключаемся на режим поиска
+		if (newValue.length > 0) {
+			setIsTyping(true);
+			setShowSuggestions(true);
+		} else {
+			setIsTyping(false);
+			setShowSuggestions(false);
+		}
 	};
 
 	const handleSuggestionClick = (suggestion: AddressSuggestion) => {
+		// Специальная обработка для "Use Current Location"
+		if (suggestion.display_name === 'Use Current Location') {
+			handleCurrentLocation();
+			return;
+		}
+
 		onChange(suggestion.display_name);
 		setShowSuggestions(false);
+		setIsTyping(false);
 
 		// Call the callback with coordinates if provided
 		if (onAddressSelect) {
@@ -169,14 +201,103 @@ export default function AddressAutocomplete({
 	};
 
 	const handleInputFocus = () => {
-		if (suggestions.length > 0) {
+		// При фокусе показываем предустановленные подсказки, если пользователь не печатает
+		if (!isTyping) {
+			setSuggestions(defaultSuggestions);
 			setShowSuggestions(true);
+		} else if (suggestions.length > 0) {
+			setShowSuggestions(true);
+		}
+	};
+
+	const handleCurrentLocation = () => {
+		if (navigator.geolocation) {
+			setIsGettingLocation(true);
+			setShowSuggestions(false);
+
+			navigator.geolocation.getCurrentPosition(
+				(position) => {
+					const { latitude, longitude } = position.coords;
+					// Получаем детальный адрес по координатам
+					fetch(
+						`https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&addressdetails=1&zoom=18`
+					)
+						.then((response) => response.json())
+						.then((data) => {
+							// Формируем адрес из доступных компонентов
+							const address = data.address;
+							let formattedAddress = '';
+
+							// Собираем адрес из компонентов (улица, город, район)
+							if (address) {
+								const parts = [];
+
+								// Добавляем улицу/дорогу
+								if (address.road) parts.push(address.road);
+								if (address.house_number) parts.push(address.house_number);
+
+								// Добавляем район/квартал
+								if (address.suburb) parts.push(address.suburb);
+								else if (address.neighbourhood)
+									parts.push(address.neighbourhood);
+
+								// Добавляем город
+								if (address.city) parts.push(address.city);
+								else if (address.town) parts.push(address.town);
+								else if (address.village) parts.push(address.village);
+
+								// Добавляем район/провинцию
+								if (address.state) parts.push(address.state);
+
+								formattedAddress = parts.join(', ');
+
+								// Если не удалось собрать адрес из компонентов, используем display_name
+								if (!formattedAddress || formattedAddress.trim() === '') {
+									formattedAddress = cleanAddressFromCountry(data.display_name);
+								}
+							} else {
+								// Fallback - используем display_name
+								formattedAddress = cleanAddressFromCountry(data.display_name);
+							}
+
+							onChange(formattedAddress);
+							if (onAddressSelect) {
+								onAddressSelect(formattedAddress, latitude, longitude);
+							}
+						})
+						.catch((error) => {
+							console.error('Error getting address from coordinates:', error);
+							// Fallback - используем координаты
+							const address = `${latitude.toFixed(4)}, ${longitude.toFixed(4)}`;
+							onChange(address);
+							if (onAddressSelect) {
+								onAddressSelect(address, latitude, longitude);
+							}
+						})
+						.finally(() => {
+							setIsGettingLocation(false);
+							setIsTyping(false);
+						});
+				},
+				(error) => {
+					console.error('Error getting location:', error);
+					// Fallback - используем Дананг
+					const address = 'Da Nang, Vietnam';
+					onChange(address);
+					if (onAddressSelect) {
+						onAddressSelect(address, 16.0544, 108.2022);
+					}
+					setIsGettingLocation(false);
+					setIsTyping(false);
+				}
+			);
 		}
 	};
 
 	const handleClear = () => {
 		onChange('');
 		setShowSuggestions(false);
+		setIsTyping(false);
 		if (inputRef.current) {
 			inputRef.current.focus();
 		}
@@ -187,15 +308,18 @@ export default function AddressAutocomplete({
 			<input
 				ref={inputRef}
 				type="text"
-				value={value}
+				value={isGettingLocation ? 'Getting your location...' : value}
 				onChange={handleInputChange}
 				onFocus={handleInputFocus}
-				placeholder={placeholder}
-				className={`w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#ff5b5b] focus:border-[#ff5b5b] text-gray-900 ${className}`}
+				placeholder={
+					isGettingLocation ? 'Getting your location...' : placeholder
+				}
+				disabled={isGettingLocation}
+				className={`w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#ff5b5b] focus:border-[#ff5b5b] text-gray-900 ${isGettingLocation ? 'bg-gray-50 text-gray-500' : ''} ${className}`}
 			/>
 
 			{/* Clear button */}
-			{value && !loading && (
+			{value && !loading && !isGettingLocation && (
 				<button
 					onClick={handleClear}
 					className="absolute right-3 top-1/2 transform -translate-y-1/2 p-1 hover:bg-gray-100 rounded-full transition-colors"
@@ -217,9 +341,16 @@ export default function AddressAutocomplete({
 				</button>
 			)}
 
+			{/* Loading indicators */}
 			{loading && (
 				<div className="absolute right-3 top-1/2 transform -translate-y-1/2">
 					<div className="animate-spin rounded-full h-4 w-4 border-b-2 border-[#ff5b5b]"></div>
+				</div>
+			)}
+
+			{isGettingLocation && (
+				<div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+					<div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-500"></div>
 				</div>
 			)}
 
@@ -228,15 +359,84 @@ export default function AddressAutocomplete({
 					ref={suggestionsRef}
 					className="absolute z-50 w-full mt-1 bg-white border border-gray-200 rounded-md shadow-lg max-h-60 overflow-y-auto"
 				>
-					{suggestions.map((suggestion, index) => (
-						<button
-							key={index}
-							onClick={() => handleSuggestionClick(suggestion)}
-							className="w-full px-3 py-2 text-left hover:bg-gray-50 border-b border-gray-100 last:border-b-0 text-sm text-gray-700"
-						>
-							<div className="font-large">{suggestion.display_name}</div>
-						</button>
-					))}
+					{suggestions.map((suggestion, index) => {
+						const isDefaultSuggestion =
+							suggestion.display_name === 'Use Current Location' ||
+							suggestion.display_name === 'Da Nang, Vietnam';
+
+						return (
+							<button
+								key={index}
+								onClick={() => handleSuggestionClick(suggestion)}
+								className={`w-full px-3 py-2 text-left hover:bg-gray-50 border-b border-gray-100 last:border-b-0 text-sm flex items-center space-x-2 ${
+									isDefaultSuggestion ? 'text-blue-600' : 'text-gray-700'
+								}`}
+							>
+								{isDefaultSuggestion &&
+									suggestion.display_name === 'Use Current Location' && (
+										<svg
+											className="w-4 h-4 text-blue-500"
+											fill="none"
+											stroke="currentColor"
+											viewBox="0 0 24 24"
+										>
+											<path
+												strokeLinecap="round"
+												strokeLinejoin="round"
+												strokeWidth={2}
+												d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"
+											/>
+											<path
+												strokeLinecap="round"
+												strokeLinejoin="round"
+												strokeWidth={2}
+												d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"
+											/>
+										</svg>
+									)}
+								{isDefaultSuggestion &&
+									suggestion.display_name === 'Da Nang, Vietnam' && (
+										<svg
+											className="w-4 h-4 text-blue-500"
+											fill="none"
+											stroke="currentColor"
+											viewBox="0 0 24 24"
+										>
+											<path
+												strokeLinecap="round"
+												strokeLinejoin="round"
+												strokeWidth={2}
+												d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"
+											/>
+											<path
+												strokeLinecap="round"
+												strokeLinejoin="round"
+												strokeWidth={2}
+												d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"
+											/>
+										</svg>
+									)}
+								{!isDefaultSuggestion && (
+									<svg
+										className="w-4 h-4 text-gray-400"
+										fill="none"
+										stroke="currentColor"
+										viewBox="0 0 24 24"
+									>
+										<path
+											strokeLinecap="round"
+											strokeLinejoin="round"
+											strokeWidth={2}
+											d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+										/>
+									</svg>
+								)}
+								<span className={isDefaultSuggestion ? 'font-medium' : ''}>
+									{suggestion.display_name}
+								</span>
+							</button>
+						);
+					})}
 				</div>
 			)}
 		</div>

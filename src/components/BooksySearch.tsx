@@ -2,7 +2,8 @@
 
 import { useState, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { Calendar, MapPin, Search, Clock } from 'lucide-react';
+import { MapPin, Search, Clock } from 'lucide-react';
+import DatePicker from './DatePicker';
 import { TIME_INTERVALS } from '@/constants/timeIntervals';
 
 interface BooksySearchProps {
@@ -14,21 +15,19 @@ export default function BooksySearch({ className = '' }: BooksySearchProps) {
 	const [searchData, setSearchData] = useState({
 		service: '',
 		location: '',
-		date: '',
+		date: null as Date | null,
 		timeInterval: 'any',
 	});
-	const [showCalendar, setShowCalendar] = useState(false);
 	const [showTimeIntervals, setShowTimeIntervals] = useState(false);
-	const calendarRef = useRef<HTMLDivElement>(null);
+	const timeIntervalsRef = useRef<HTMLDivElement>(null);
 
-	// Close calendar when clicking outside
+	// Close time intervals when clicking outside
 	useEffect(() => {
 		const handleClickOutside = (event: MouseEvent) => {
 			if (
-				calendarRef.current &&
-				!calendarRef.current.contains(event.target as Node)
+				timeIntervalsRef.current &&
+				!timeIntervalsRef.current.contains(event.target as Node)
 			) {
-				setShowCalendar(false);
 				setShowTimeIntervals(false);
 			}
 		};
@@ -46,13 +45,14 @@ export default function BooksySearch({ className = '' }: BooksySearchProps) {
 		}));
 	};
 
-	const handleDateSelect = (date: string) => {
+	const handleDateSelect = (date: Date | null) => {
 		setSearchData((prev) => ({
 			...prev,
 			date,
 		}));
-		setShowCalendar(false);
-		setShowTimeIntervals(true);
+		if (date) {
+			setShowTimeIntervals(true);
+		}
 	};
 
 	const handleTimeIntervalSelect = (interval: string) => {
@@ -68,70 +68,15 @@ export default function BooksySearch({ className = '' }: BooksySearchProps) {
 
 		if (searchData.service) params.set('service', searchData.service);
 		if (searchData.location) params.set('location', searchData.location);
-		if (searchData.date) params.set('date', searchData.date);
+		if (searchData.date) {
+			const dateString = searchData.date.toISOString().split('T')[0];
+			params.set('date', dateString);
+		}
 		if (searchData.timeInterval && searchData.timeInterval !== 'any') {
 			params.set('time', searchData.timeInterval);
 		}
 
 		router.push(`/salons?${params.toString()}`);
-	};
-
-	const formatDate = (dateString: string) => {
-		if (!dateString) return 'Select date';
-		const date = new Date(dateString);
-		return date.toLocaleDateString('en-US', {
-			day: 'numeric',
-			month: 'long',
-			year: 'numeric',
-		});
-	};
-
-	const generateCalendarDays = () => {
-		const today = new Date();
-		const currentMonth = today.getMonth();
-		const currentYear = today.getFullYear();
-		const firstDay = new Date(currentYear, currentMonth, 1);
-		const lastDay = new Date(currentYear, currentMonth + 1, 0);
-		const daysInMonth = lastDay.getDate();
-		const startingDayOfWeek = firstDay.getDay();
-
-		const days = [];
-
-		// Add empty cells for days before the first day of the month
-		for (let i = 0; i < startingDayOfWeek; i++) {
-			days.push(<div key={`empty-${i}`} className="h-10"></div>);
-		}
-
-		// Add days of the month
-		for (let day = 1; day <= daysInMonth; day++) {
-			const dateString = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-			const isToday = day === today.getDate();
-			const isSelected = searchData.date === dateString;
-			const isPast =
-				new Date(dateString) <
-				new Date(today.getFullYear(), today.getMonth(), today.getDate());
-
-			days.push(
-				<button
-					key={day}
-					onClick={() => !isPast && handleDateSelect(dateString)}
-					disabled={isPast}
-					className={`h-10 w-10 rounded-full text-sm font-medium transition-colors ${
-						isSelected
-							? 'bg-[#ff5b5b] text-white'
-							: isToday
-								? 'bg-gray-100 text-gray-900'
-								: isPast
-									? 'text-gray-300 cursor-not-allowed'
-									: 'text-gray-700 hover:bg-gray-100'
-					}`}
-				>
-					{day}
-				</button>
-			);
-		}
-
-		return days;
 	};
 
 	return (
@@ -167,53 +112,17 @@ export default function BooksySearch({ className = '' }: BooksySearchProps) {
 
 				{/* Date Input */}
 				<div className="flex-1 relative">
-					<div className="relative">
-						<Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-						<button
-							type="button"
-							onClick={() => setShowCalendar(!showCalendar)}
-							className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#ff5b5b] focus:border-transparent text-left text-gray-900 hover:bg-gray-50"
-						>
-							{formatDate(searchData.date)}
-						</button>
-					</div>
-
-					{/* Calendar Modal */}
-					{showCalendar && (
-						<div
-							ref={calendarRef}
-							className="absolute top-full left-0 mt-2 bg-white border border-gray-200 rounded-lg shadow-lg p-4 z-50 min-w-[300px]"
-						>
-							<div className="text-center mb-4">
-								<h3 className="text-lg font-semibold text-gray-900">
-									{new Date().toLocaleDateString('en-US', {
-										month: 'long',
-										year: 'numeric',
-									})}
-								</h3>
-							</div>
-							<div className="grid grid-cols-7 gap-1 mb-2">
-								{['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map(
-									(day) => (
-										<div
-											key={day}
-											className="h-10 flex items-center justify-center text-sm font-medium text-gray-500"
-										>
-											{day}
-										</div>
-									)
-								)}
-							</div>
-							<div className="grid grid-cols-7 gap-1">
-								{generateCalendarDays()}
-							</div>
-						</div>
-					)}
+					<DatePicker
+						value={searchData.date}
+						onChange={handleDateSelect}
+						placeholder="Select date"
+						className="w-full"
+					/>
 
 					{/* Time Intervals Modal */}
 					{showTimeIntervals && (
 						<div
-							ref={calendarRef}
+							ref={timeIntervalsRef}
 							className="absolute top-full left-0 mt-2 bg-white border border-gray-200 rounded-lg shadow-lg p-4 z-50 min-w-[250px]"
 						>
 							<div className="text-center mb-3">
