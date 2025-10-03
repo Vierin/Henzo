@@ -1,19 +1,20 @@
 import { useQuery } from '@tanstack/react-query';
 import { apiClient } from '@/lib/api-client';
 
-interface SalonCategory {
+interface ServiceCategory {
 	id: number;
-	name: string;
+	nameEn: string;
+	nameVn: string;
 }
 
-export function useCategories() {
-	return useQuery<SalonCategory[]>({
-		queryKey: ['salon-categories'],
-		queryFn: async (): Promise<SalonCategory[]> => {
-			const response = await apiClient.get('/salons/categories');
+export function useServiceCategories() {
+	return useQuery<ServiceCategory[]>({
+		queryKey: ['service-categories'],
+		queryFn: async (): Promise<ServiceCategory[]> => {
+			const response = await apiClient.get('/search/categories?lang=en');
 
 			// Проверяем, что response - это массив или объект с data
-			let categoriesData: SalonCategory[] = [];
+			let categoriesData: ServiceCategory[] = [];
 			if (Array.isArray(response)) {
 				categoriesData = response;
 			} else if (
@@ -23,7 +24,7 @@ export function useCategories() {
 			) {
 				categoriesData = (response as any).data;
 			} else if (response && typeof response === 'object') {
-				categoriesData = response as SalonCategory[];
+				categoriesData = response as ServiceCategory[];
 			}
 
 			return categoriesData;
@@ -31,13 +32,39 @@ export function useCategories() {
 		staleTime: 5 * 60 * 1000, // 5 minutes
 		cacheTime: 10 * 60 * 1000, // 10 minutes
 		retry: 2,
-		fallbackData: [
-			{ id: 1, name: 'Hair and Barber' },
-			{ id: 2, name: 'Tattoo and Piercing' },
-			{ id: 3, name: 'Massage and Spa' },
-			{ id: 4, name: 'Manicure and Pedicure' },
-			{ id: 5, name: 'Cosmetic Medicine' },
-			{ id: 6, name: 'Other Services' },
-		],
+	});
+}
+
+// Хук для получения категорий конкретного салона (теперь использует ServiceCategory)
+export function useCategoriesBySalon(salonId: string) {
+	return useQuery<{ id: number; name: string }[]>({
+		queryKey: ['service-categories', salonId],
+		queryFn: async (): Promise<{ id: number; name: string }[]> => {
+			if (!salonId) {
+				return [];
+			}
+
+			try {
+				// Получаем эталонные категории услуг из нашей новой системы
+				const response = await apiClient.get('/search/categories?q=&lang=en');
+
+				// Преобразуем в формат, ожидаемый компонентом
+				if (response && Array.isArray(response)) {
+					return response.map((cat: any) => ({
+						id: cat.id,
+						name: cat.nameEn,
+					}));
+				}
+
+				return [];
+			} catch (error) {
+				console.error('Error fetching service categories:', error);
+				return [];
+			}
+		},
+		enabled: !!salonId,
+		staleTime: 5 * 60 * 1000, // 5 minutes
+		cacheTime: 10 * 60 * 1000, // 10 minutes
+		retry: 2,
 	});
 }

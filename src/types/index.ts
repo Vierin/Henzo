@@ -40,6 +40,14 @@ export interface Service {
 	salonId?: string;
 	categoryId?: string;
 	category?: Category;
+	serviceCategoryId?: number;
+	serviceCategory?: ServiceCategory;
+}
+
+export interface ServiceCategory {
+	id: number;
+	nameEn: string;
+	nameVn: string;
 }
 
 export interface Category {

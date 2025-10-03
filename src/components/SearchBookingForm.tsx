@@ -60,7 +60,7 @@ export default function SearchBookingForm({
 					onClick={() => setActiveTab('treatments')}
 					className={`flex items-center space-x-2 px-3 py-2 text-sm font-medium transition-colors ${
 						activeTab === 'treatments'
-							? 'border-b-2 border-red-500 text-red-500'
+							? 'border-b-2 border-[#ff5b5b] text-[#ff5b5b]'
 							: 'text-gray-600 hover:text-gray-800'
 					}`}
 				>
@@ -73,7 +73,7 @@ export default function SearchBookingForm({
 					onClick={() => setActiveTab('salon')}
 					className={`flex items-center space-x-2 px-3 py-2 text-sm font-medium transition-colors ${
 						activeTab === 'salon'
-							? 'border-b-2 border-red-500 text-red-500'
+							? 'border-b-2 border-[#ff5b5b] text-[#ff5b5b]'
 							: 'text-gray-600 hover:text-gray-800'
 					}`}
 				>
@@ -106,7 +106,7 @@ export default function SearchBookingForm({
 								placeholder="Search for salon name"
 								value={searchQuery}
 								onChange={(e) => setSearchQuery(e.target.value)}
-								className="w-full px-4 py-3 pl-12 pr-12 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent text-gray-900 text-sm"
+								className="w-full px-4 py-3 pl-12 pr-12 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#ff5b5b] focus:border-transparent text-gray-900 text-sm"
 							/>
 							<svg
 								className="absolute left-4 top-3.5 h-5 w-5 text-gray-400"
@@ -157,7 +157,7 @@ export default function SearchBookingForm({
 								setSelectedLocation(address);
 							}}
 							placeholder="Enter address"
-							className="w-full px-4 py-3 pl-12 pr-12 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent text-gray-900 text-sm"
+							className="w-full px-4 py-3 pl-12 pr-12 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#ff5b5b] focus:border-transparent text-gray-900 text-sm"
 						/>
 						<svg
 							className="absolute left-4 top-3.5 h-5 w-5 text-gray-400"
@@ -197,7 +197,7 @@ export default function SearchBookingForm({
 			{/* Search Button */}
 			<button
 				onClick={handleSearch}
-				className="w-full bg-red-500 text-white py-3 rounded-lg font-medium hover:bg-red-600 transition-colors mt-4 text-sm"
+				className="w-full bg-[#ff5b5b] text-white py-3 rounded-lg font-medium hover:bg-[#e04a4a] transition-colors mt-4 text-sm"
 			>
 				Search
 			</button>

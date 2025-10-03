@@ -100,7 +100,7 @@ export default function RecommendedSalons() {
 								href={getSalonUrl(salon)}
 								className="bg-white rounded-xl overflow-hidden shadow-lg hover:shadow-xl transition-shadow block"
 							>
-								<div className="h-48 bg-gradient-to-br from-pink-100 to-pink-200 flex items-center justify-center">
+								<div className="h-[15rem] bg-gradient-to-br from-pink-100 to-pink-200 flex items-center justify-center">
 									{(() => {
 										const imageData = getSalonImage(salon);
 										return imageData.url ? (
@@ -109,8 +109,11 @@ export default function RecommendedSalons() {
 												alt={salon.name}
 												width={400}
 												height={192}
-												className="w-full h-full object-cover"
-												style={{ width: 'auto', height: 'auto' }}
+												style={{
+													width: '100%',
+													height: '100%',
+													objectFit: 'cover',
+												}}
 												unoptimized={imageData.isExternal}
 											/>
 										) : (
@@ -140,17 +143,11 @@ export default function RecommendedSalons() {
 														{service.name}
 													</span>
 												))}
-											{salon.services.length > 2 && (
-												<span className="px-2 py-1 bg-gray-100 text-gray-600 text-xs rounded-full">
-													+{salon.services.length - 2} more
-												</span>
-											)}
 										</div>
 									)}
-									<div className="flex items-center justify-between">
-										<span className="text-sm text-gray-500">View Details</span>
-										<span className="text-[#ff5b5b] text-sm font-medium">
-											→
+									<div className="flex items-center justify-center">
+										<span className="bg-[#ff5b5b] text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-[#e04a4a] transition-colors">
+											View Details
 										</span>
 									</div>
 								</div>

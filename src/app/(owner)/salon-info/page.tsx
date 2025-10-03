@@ -100,6 +100,8 @@ export default function SalonInfoPage() {
 		lat: number;
 		lon: number;
 	} | null>(null);
+	const [showDeleteModal, setShowDeleteModal] = useState(false);
+	const [deleteLoading, setDeleteLoading] = useState(false);
 	const router = useRouter();
 
 	// Используем оптимизированный хук для получения данных салона
@@ -228,6 +230,30 @@ export default function SalonInfoPage() {
 			});
 		} finally {
 			setLoading(false);
+		}
+	};
+
+	const handleDeleteAccount = async () => {
+		setDeleteLoading(true);
+		try {
+			// Вызываем API для удаления аккаунта
+			await apiClient.delete('/auth/account');
+
+			toast.success(
+				'Account and salon deleted successfully. You will be redirected to the home page.'
+			);
+
+			// Перенаправляем на главную страницу
+			setTimeout(() => {
+				window.location.href = '/';
+			}, 2000);
+		} catch (error: any) {
+			console.error('Error deleting account:', error);
+			toast.error(
+				error.message || 'Failed to delete account. Please try again.'
+			);
+		} finally {
+			setDeleteLoading(false);
 		}
 	};
 
@@ -684,6 +710,107 @@ export default function SalonInfoPage() {
 					</button>
 				</div>
 			</form>
+
+			{/* Account Deletion Section */}
+			<div className="mt-12 bg-red-50 border border-red-200 rounded-lg p-6">
+				<div className="flex items-start">
+					<div className="flex-shrink-0">
+						<svg
+							className="h-6 w-6 text-red-400"
+							fill="none"
+							stroke="currentColor"
+							viewBox="0 0 24 24"
+						>
+							<path
+								strokeLinecap="round"
+								strokeLinejoin="round"
+								strokeWidth={2}
+								d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"
+							/>
+						</svg>
+					</div>
+					<div className="ml-3 flex-1">
+						<h3 className="text-lg font-medium text-red-800">Delete Account</h3>
+						<div className="mt-2 text-sm text-red-700">
+							<p className="mb-3">
+								Once you delete your account, there is no going back. This
+								action will:
+							</p>
+							<ul className="list-disc list-inside space-y-1 mb-4">
+								<li>Permanently delete all your salon information</li>
+								<li>Remove all your bookings and customer data</li>
+								<li>Delete all photos and documents</li>
+								<li>Cancel all future appointments</li>
+								<li>Remove your salon from search results</li>
+							</ul>
+							<p className="font-medium">
+								This process is irreversible and will result in the complete
+								loss of all your data.
+							</p>
+						</div>
+						<div className="mt-4">
+							<button
+								type="button"
+								onClick={() => setShowDeleteModal(true)}
+								className="bg-red-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 transition-colors"
+							>
+								Delete My Account
+							</button>
+						</div>
+					</div>
+				</div>
+			</div>
+
+			{/* Delete Confirmation Modal */}
+			{showDeleteModal && (
+				<div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+					<div className="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+						<div className="mt-3 text-center">
+							<div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-100">
+								<svg
+									className="h-6 w-6 text-red-600"
+									fill="none"
+									stroke="currentColor"
+									viewBox="0 0 24 24"
+								>
+									<path
+										strokeLinecap="round"
+										strokeLinejoin="round"
+										strokeWidth={2}
+										d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"
+									/>
+								</svg>
+							</div>
+							<h3 className="text-lg font-medium text-gray-900 mt-4">
+								Are you absolutely sure?
+							</h3>
+							<div className="mt-2 px-7 py-3">
+								<p className="text-sm text-gray-500">
+									This action cannot be undone. This will permanently delete
+									your account and remove all data from our servers.
+								</p>
+							</div>
+							<div className="flex justify-center space-x-4 mt-6">
+								<button
+									type="button"
+									onClick={() => setShowDeleteModal(false)}
+									className="bg-gray-300 text-gray-700 px-4 py-2 rounded-md text-sm font-medium hover:bg-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 transition-colors"
+								>
+									Cancel
+								</button>
+								<button
+									type="button"
+									onClick={handleDeleteAccount}
+									disabled={deleteLoading}
+									className="bg-red-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+								>
+									{deleteLoading ? 'Deleting...' : 'Yes, delete my account'}
+								</button>
+							</div>
+						</div>
+					</div>
+				</div>
+			)}
 		</div>
 	);
 }

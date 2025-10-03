@@ -6,7 +6,7 @@ export interface CreateServiceDto {
 	duration: number;
 	price: number;
 	salonId: string;
-	categoryId?: string;
+	serviceCategoryId?: number;
 }
 
 export interface UpdateServiceDto {
@@ -14,7 +14,7 @@ export interface UpdateServiceDto {
 	description?: string;
 	duration?: number;
 	price?: number;
-	categoryId?: string;
+	serviceCategoryId?: number;
 }
 
 export interface ServiceResponseDto {
@@ -24,7 +24,7 @@ export interface ServiceResponseDto {
 	duration: number;
 	price: number;
 	salonId?: string;
-	categoryId?: string;
+	serviceCategoryId?: number;
 }
 
 export interface ServiceWithStaffDto extends ServiceResponseDto {

@@ -6,9 +6,7 @@ import {
 	useCreateService,
 	useUpdateService,
 } from '@/hooks/useServices';
-import { useCategories } from '@/hooks/useCategories';
 import { useSalonId } from '@/hooks/useSalon';
-import CreateCategoryModal from './CreateCategoryModal';
 import { Service, Category } from '@/types';
 
 interface EditServiceModalProps {
@@ -277,13 +275,6 @@ export default function EditServiceModal({
 					</form>
 				</div>
 			</div>
-
-			<CreateCategoryModal
-				isOpen={isCategoryModalOpen}
-				onClose={() => setIsCategoryModalOpen(false)}
-				salonId={salonId || ''}
-				onSuccess={handleCategoryCreated}
-			/>
 		</>
 	);
 }

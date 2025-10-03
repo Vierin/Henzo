@@ -17,8 +17,10 @@ export default function HomePageClient() {
 				>
 					<div className="mx-auto max-w-7xl">
 						<div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
-							{/* Left Panel - Search/Booking Form */}
-							<SearchBookingForm />
+							<div>
+								{/* Left Panel - Search/Booking Form */}
+								<SearchBookingForm />
+							</div>
 
 							{/* Right Section - Image and Slogan */}
 							<div className="relative">
@@ -33,16 +35,6 @@ export default function HomePageClient() {
 										Find and book the best beauty and wellness services near
 										you. Hair salons, spas, massage, nails and more.
 									</p>
-								</div>
-
-								{/* Image */}
-								<div className="relative">
-									<div className="w-full h-96 lg:h-[500px] bg-gradient-to-br from-pink-200 to-purple-200 rounded-2xl overflow-hidden">
-										{/* Placeholder for person image */}
-										<div className="w-full h-full flex items-center justify-center">
-											<div className="text-8xl">💅</div>
-										</div>
-									</div>
 								</div>
 							</div>
 						</div>

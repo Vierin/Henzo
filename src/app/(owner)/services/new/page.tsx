@@ -5,8 +5,6 @@ import { useRouter } from 'next/navigation';
 import { useCreateService } from '@/hooks/useServices';
 import { useCategoriesBySalon } from '@/hooks/useCategories';
 import { useSalonId } from '@/hooks/useSalon';
-import CreateCategoryModal from '@/components/CreateCategoryModal';
-import { Category } from '@/types';
 
 export default function NewServicePage() {
 	const [formData, setFormData] = useState({
@@ -14,9 +12,8 @@ export default function NewServicePage() {
 		description: '',
 		duration: '',
 		price: '',
-		categoryId: '',
+		serviceCategoryId: '',
 	});
-	const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false);
 	const router = useRouter();
 
 	// Используем оптимизированный хук для получения данных салона
@@ -54,7 +51,9 @@ export default function NewServicePage() {
 				duration: Number(formData.duration),
 				price: Number(formData.price),
 				salonId,
-				categoryId: formData.categoryId || undefined,
+				serviceCategoryId: formData.serviceCategoryId
+					? Number(formData.serviceCategoryId)
+					: undefined,
 			});
 
 			// Wait a bit for cache invalidation, then redirect
@@ -64,13 +63,6 @@ export default function NewServicePage() {
 		} catch (err: unknown) {
 			console.error('Failed to create service:', err);
 		}
-	};
-
-	const handleCategoryCreated = (newCategory: Category) => {
-		setFormData((prev) => ({
-			...prev,
-			categoryId: newCategory.id,
-		}));
 	};
 
 	// Показываем загрузку пока не получили salonId
@@ -157,30 +149,23 @@ export default function NewServicePage() {
 						<label className="block text-sm font-medium text-gray-700 mb-2">
 							Category
 						</label>
-						<div className="flex gap-2">
-							<select
-								value={formData.categoryId}
-								onChange={(e) =>
-									setFormData({ ...formData, categoryId: e.target.value })
-								}
-								className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#ff5b5b] focus:border-[#ff5b5b] text-gray-900"
-							>
-								<option value="">Select a category</option>
-								{categories.map((category) => (
-									<option key={category.id} value={category.id}>
-										{category.name}
-									</option>
-								))}
-							</select>
-							<button
-								type="button"
-								onClick={() => setIsCategoryModalOpen(true)}
-								className="px-3 py-2 bg-[#ff5b5b] text-white rounded-md hover:bg-[#e04a4a] transition-colors"
-								title="Add new category"
-							>
-								+
-							</button>
-						</div>
+						<select
+							value={formData.serviceCategoryId}
+							onChange={(e) =>
+								setFormData({
+									...formData,
+									serviceCategoryId: e.target.value,
+								})
+							}
+							className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#ff5b5b] focus:border-[#ff5b5b] text-gray-900"
+						>
+							<option value="">Select a category</option>
+							{categories.map((category) => (
+								<option key={category.id} value={category.id}>
+									{category.name}
+								</option>
+							))}
+						</select>
 						<p className="text-xs text-gray-500 mt-1">
 							Choose a category to organize your services
 						</p>
@@ -249,14 +234,6 @@ export default function NewServicePage() {
 					</div>
 				</form>
 			</div>
-
-			{/* Create Category Modal */}
-			<CreateCategoryModal
-				isOpen={isCategoryModalOpen}
-				onClose={() => setIsCategoryModalOpen(false)}
-				salonId={salonId || ''}
-				onSuccess={handleCategoryCreated}
-			/>
 		</div>
 	);
 }

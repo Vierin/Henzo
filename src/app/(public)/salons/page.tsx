@@ -39,6 +39,7 @@ export default function SalonsPage() {
 		const search = searchParams.get('search');
 		const location = searchParams.get('location');
 		const salon = searchParams.get('salon');
+		const service = searchParams.get('service');
 
 		if (search) {
 			setSearchQuery(search);
@@ -48,6 +49,9 @@ export default function SalonsPage() {
 		}
 		if (salon) {
 			setSearchQuery(salon);
+		}
+		if (service) {
+			setSearchQuery(service);
 		}
 	}, [searchParams]);
 
@@ -89,8 +93,15 @@ export default function SalonsPage() {
 				(salon) =>
 					salon.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
 					salon.address?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-					salon.services.some((service: Service) =>
-						service.name.toLowerCase().includes(searchQuery.toLowerCase())
+					salon.services.some(
+						(service: Service) =>
+							service.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+							service.serviceCategory?.nameEn
+								.toLowerCase()
+								.includes(searchQuery.toLowerCase()) ||
+							service.serviceCategory?.nameVn
+								.toLowerCase()
+								.includes(searchQuery.toLowerCase())
 					)
 			);
 		}

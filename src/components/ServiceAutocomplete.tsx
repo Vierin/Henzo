@@ -31,9 +31,9 @@ export default function ServiceAutocomplete({
 	const inputRef = useRef<HTMLInputElement>(null);
 	const suggestionsRef = useRef<HTMLDivElement>(null);
 
-	// Fetch service suggestions from our backend API
+	// Fetch service category suggestions from our backend API
 	const fetchSuggestions = async (query: string) => {
-		if (query.length < 3) {
+		if (query.length < 2) {
 			setSuggestions([]);
 			return;
 		}
@@ -41,9 +41,9 @@ export default function ServiceAutocomplete({
 		setLoading(true);
 		try {
 			const API_BASE_URL =
-				process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+				process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:3001';
 			const response = await fetch(
-				`${API_BASE_URL}/services/search?q=${encodeURIComponent(query)}`
+				`${API_BASE_URL}/search/categories?q=${encodeURIComponent(query)}`
 			);
 
 			if (!response.ok) {
@@ -53,7 +53,13 @@ export default function ServiceAutocomplete({
 			const result = await response.json();
 
 			if (result.success && result.data) {
-				setSuggestions(result.data);
+				// Transform the data to match our interface
+				const transformedSuggestions = result.data.map((category: any) => ({
+					id: category.id,
+					name: category.nameEn,
+					category: { name: category.nameVn },
+				}));
+				setSuggestions(transformedSuggestions);
 			} else {
 				setSuggestions([]);
 			}
@@ -134,7 +140,7 @@ export default function ServiceAutocomplete({
 				onChange={handleInputChange}
 				onFocus={handleInputFocus}
 				placeholder={placeholder}
-				className={`w-full px-4 py-4 pl-12 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent text-gray-900 ${className}`}
+				className={`w-full px-4 py-4 pl-12 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#ff5b5b] focus:border-transparent text-gray-900 ${className}`}
 			/>
 
 			{/* Search Icon */}
@@ -177,7 +183,7 @@ export default function ServiceAutocomplete({
 
 			{loading && (
 				<div className="absolute right-3 top-1/2 transform -translate-y-1/2">
-					<div className="animate-spin rounded-full h-4 w-4 border-b-2 border-red-500"></div>
+					<div className="animate-spin rounded-full h-4 w-4 border-b-2 border-[#ff5b5b]"></div>
 				</div>
 			)}
 
