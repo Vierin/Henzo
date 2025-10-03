@@ -91,7 +91,7 @@ export default function AddressAutocomplete({
 		const response = await fetch(nominatimUrl, {
 			method: 'GET',
 			headers: {
-				'User-Agent': 'Henzo Salon Booking App (contact@henzo.com)',
+				'User-Agent': 'Henzo Salon Booking App (hello@henzo.app)',
 				Accept: 'application/json',
 			},
 		});

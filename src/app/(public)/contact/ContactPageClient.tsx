@@ -1,8 +1,6 @@
 'use client';
 
 import React, { useState } from 'react';
-import PublicHeader from '@/components/PublicHeader';
-import Footer from '@/components/Footer';
 import FAQSection from '@/components/FAQSection';
 
 export default function ContactPageClient() {
@@ -22,10 +20,58 @@ export default function ContactPageClient() {
 		}));
 	};
 
-	const handleSubmit = (e: React.FormEvent) => {
+	const [isSubmitting, setIsSubmitting] = useState(false);
+	const [submitStatus, setSubmitStatus] = useState<
+		'idle' | 'success' | 'error'
+	>('idle');
+	const [errorMessage, setErrorMessage] = useState<string>('');
+
+	const handleSubmit = async (e: React.FormEvent) => {
 		e.preventDefault();
-		// Handle form submission
-		console.log('Form submitted:', formData);
+		setIsSubmitting(true);
+		setSubmitStatus('idle');
+		setErrorMessage('');
+
+		try {
+			const backendUrl =
+				process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:3001';
+			const response = await fetch(`${backendUrl}/contact/send-message`, {
+				method: 'POST',
+				headers: {
+					'Content-Type': 'application/json',
+				},
+				body: JSON.stringify(formData),
+			});
+
+			const result = await response.json();
+
+			if (response.ok) {
+				setSubmitStatus('success');
+				setFormData({ name: '', email: '', message: '' });
+			} else {
+				setSubmitStatus('error');
+				// Handle validation errors from backend
+				if (result.errors && Array.isArray(result.errors)) {
+					const errorMessages = result.errors
+						.map((err: any) => Object.values(err.constraints || {}).join(', '))
+						.join('; ');
+					setErrorMessage(errorMessages);
+				} else {
+					setErrorMessage(
+						result.message || 'Failed to send message. Please try again.'
+					);
+				}
+				console.error('Backend error:', result);
+			}
+		} catch (error) {
+			console.error('Network error:', error);
+			setSubmitStatus('error');
+			setErrorMessage(
+				'Network error. Please check your connection and try again.'
+			);
+		} finally {
+			setIsSubmitting(false);
+		}
 	};
 
 	return (
@@ -60,6 +106,25 @@ export default function ContactPageClient() {
 									<p className="text-gray-600 mb-8">
 										Fill out the form and we'll get back to you.
 									</p>
+									{/* Status Messages */}
+									{submitStatus === 'success' && (
+										<div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-lg">
+											<p className="text-green-800">
+												✅ Your message has been sent successfully! We'll get
+												back to you soon.
+											</p>
+										</div>
+									)}
+									{submitStatus === 'error' && (
+										<div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
+											<p className="text-red-800">
+												❌{' '}
+												{errorMessage ||
+													'There was an error sending your message. Please try again.'}
+											</p>
+										</div>
+									)}
+
 									<form onSubmit={handleSubmit} className="space-y-6">
 										<div>
 											<input
@@ -71,6 +136,7 @@ export default function ContactPageClient() {
 												placeholder="Your name"
 												className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent text-gray-500"
 												required
+												disabled={isSubmitting}
 											/>
 										</div>
 										<div>
@@ -83,6 +149,7 @@ export default function ContactPageClient() {
 												placeholder="Your email"
 												className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent text-gray-500"
 												required
+												disabled={isSubmitting}
 											/>
 										</div>
 										<div>
@@ -95,13 +162,15 @@ export default function ContactPageClient() {
 												placeholder="Your message"
 												className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent text-gray-500 resize-none"
 												required
+												disabled={isSubmitting}
 											></textarea>
 										</div>
 										<button
 											type="submit"
-											className="w-full bg-orange-600 text-white py-3 px-6 rounded-lg font-semibold hover:bg-orange-700 transition-colors"
+											disabled={isSubmitting}
+											className="w-full bg-orange-600 text-white py-3 px-6 rounded-lg font-semibold hover:bg-orange-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
 										>
-											Send Message
+											{isSubmitting ? 'Sending...' : 'Send Message'}
 										</button>
 									</form>
 								</div>
@@ -140,67 +209,7 @@ export default function ContactPageClient() {
 													For general inquiries
 												</p>
 												<p className="text-orange-600 font-medium">
-													support@henzo.com
-												</p>
-											</div>
-										</div>
-
-										{/* Phone */}
-										<div className="flex items-start space-x-4">
-											<div className="w-8 h-8 bg-orange-100 rounded-full flex items-center justify-center flex-shrink-0 mt-1">
-												<svg
-													className="w-4 h-4 text-orange-600"
-													fill="none"
-													stroke="currentColor"
-													viewBox="0 0 24 24"
-												>
-													<path
-														strokeLinecap="round"
-														strokeLinejoin="round"
-														strokeWidth={2}
-														d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"
-													/>
-												</svg>
-											</div>
-											<div>
-												<h3 className="text-lg font-semibold text-black mb-1">
-													Phone
-												</h3>
-												<p className="text-gray-600 mb-1">
-													Talk to our support team
-												</p>
-												<p className="text-orange-600 font-medium">
-													+1 (555) 123-4567
-												</p>
-											</div>
-										</div>
-
-										{/* Sales */}
-										<div className="flex items-start space-x-4">
-											<div className="w-8 h-8 bg-orange-100 rounded-full flex items-center justify-center flex-shrink-0 mt-1">
-												<svg
-													className="w-4 h-4 text-orange-600"
-													fill="none"
-													stroke="currentColor"
-													viewBox="0 0 24 24"
-												>
-													<path
-														strokeLinecap="round"
-														strokeLinejoin="round"
-														strokeWidth={2}
-														d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"
-													/>
-												</svg>
-											</div>
-											<div>
-												<h3 className="text-lg font-semibold text-black mb-1">
-													Sales
-												</h3>
-												<p className="text-gray-600 mb-1">
-													For business inquiries
-												</p>
-												<p className="text-orange-600 font-medium">
-													sales@henzo.com
+													hello@henzo.app
 												</p>
 											</div>
 										</div>

@@ -121,10 +121,10 @@ export default function PrivacyPolicy() {
 									If you have any questions or concerns about this Privacy
 									Policy, please contact us at{' '}
 									<a
-										href="mailto:privacy@henzo.com"
+										href="mailto:hello@henzo.app"
 										className="text-[#ea4b4b] hover:text-[#d43d3d] font-medium transition-colors"
 									>
-										privacy@henzo.com
+										hello@henzo.app
 									</a>
 								</p>
 							</div>
