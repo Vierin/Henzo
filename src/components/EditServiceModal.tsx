@@ -7,7 +7,7 @@ import {
 	useUpdateService,
 } from '@/hooks/useServices';
 import { useSalonId } from '@/hooks/useSalon';
-import { useServiceCategories } from '@/hooks/useCategories';
+import { STATIC_CATEGORIES } from '@/constants/categories';
 import { Service } from '@/types';
 
 interface EditServiceModalProps {
@@ -35,9 +35,7 @@ export default function EditServiceModal({
 	// Используем оптимизированный хук для получения данных салона
 	const { salonId } = useSalonId();
 
-	const { data: categories = [] } = useServiceCategories() as {
-		data: { id: number; nameEn: string; nameVn: string }[];
-	};
+	const categories = STATIC_CATEGORIES;
 	const createServiceMutation = useCreateService();
 	const updateServiceMutation = useUpdateService();
 
@@ -191,7 +189,7 @@ export default function EditServiceModal({
 									<option value="">Select a category</option>
 									{categories.map((category) => (
 										<option key={category.id} value={category.id}>
-											{category.nameEn}
+											{category.name}
 										</option>
 									))}
 								</select>

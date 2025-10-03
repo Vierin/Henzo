@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import toast from 'react-hot-toast';
 import EditServiceModal from '@/components/EditServiceModal';
 import { useServices, useDeleteService } from '@/hooks/useServices';
-import { useServiceCategories } from '@/hooks/useCategories';
+import { STATIC_CATEGORIES } from '@/constants/categories';
 import { useSalonId } from '@/hooks/useSalon';
 import LoadingSpinner from '@/components/LoadingSpinner';
 import ErrorDisplay from '@/components/ErrorDisplay';
@@ -34,7 +34,7 @@ export default function ServicesPage() {
 		// Убираем серверную фильтрацию - делаем всё на клиенте
 	});
 
-	const { data: categories = [] } = useServiceCategories();
+	const categories = STATIC_CATEGORIES;
 	const deleteServiceMutation = useDeleteService();
 
 	// Дебаунс для поиска - задержка 600мс
@@ -82,7 +82,7 @@ export default function ServicesPage() {
 		return `${mins}m`;
 	};
 
-	const getCategoryName = (categoryId?: string) => {
+	const getCategoryName = (categoryId?: number) => {
 		if (!categoryId) return null;
 		const category = categories.find((cat) => cat.id === categoryId);
 		return category?.name || null;
@@ -102,7 +102,7 @@ export default function ServicesPage() {
 
 				// Фильтр по категории
 				if (selectedCategory) {
-					if (service.categoryId !== selectedCategory) return false;
+					if (service.serviceCategoryId !== selectedCategory) return false;
 				}
 
 				return true;
@@ -403,9 +403,9 @@ export default function ServicesPage() {
 								>
 									<div className="font-semibold">{service.name}</div>
 									<div className="text-gray-600">
-										{getCategoryName(service.categoryId) ? (
+										{getCategoryName(service.serviceCategoryId) ? (
 											<span className="inline-flex items-center px-2 py-1 text-xs font-medium bg-gray-100 text-gray-700 rounded-full">
-												{getCategoryName(service.categoryId)}
+												{getCategoryName(service.serviceCategoryId)}
 											</span>
 										) : (
 											<span className="text-gray-400 italic">No category</span>

@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useCreateService } from '@/hooks/useServices';
-import { useCategoriesBySalon } from '@/hooks/useCategories';
+import { STATIC_CATEGORIES } from '@/constants/categories';
 import { useSalonId } from '@/hooks/useSalon';
 
 export default function NewServicePage() {
@@ -19,7 +19,7 @@ export default function NewServicePage() {
 	// Используем оптимизированный хук для получения данных салона
 	const { salonId, isLoading: salonLoading, hasSalon } = useSalonId();
 
-	const { data: categories = [] } = useCategoriesBySalon(salonId || '');
+	const categories = STATIC_CATEGORIES;
 	const createServiceMutation = useCreateService();
 
 	// Перенаправляем на создание салона, если салон не найден
