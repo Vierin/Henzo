@@ -56,11 +56,15 @@ export function SalonProvider({ children }: SalonProviderProps) {
 			setLoading(true);
 			setError(null);
 
-			const salonData = await apiClient.get<Salon>('/salons/current');
+			const response = await apiClient.get<{
+				success: boolean;
+				data?: Salon;
+				message?: string;
+			}>('/salons/current');
 
-			if (salonData && salonData.id) {
-				setSalon(salonData);
-				setSalonId(salonData.id);
+			if (response.success && response.data && response.data.id) {
+				setSalon(response.data);
+				setSalonId(response.data.id);
 			} else {
 				setSalon(null);
 				setSalonId(null);

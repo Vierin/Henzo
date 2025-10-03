@@ -138,8 +138,8 @@ export default function AuthCallbackPage() {
 											);
 
 											if (salonResponse.ok) {
-												const salonData = await salonResponse.json();
-												if (salonData) {
+												const responseData = await salonResponse.json();
+												if (responseData.success && responseData.data) {
 													// User has a salon, go directly to dashboard
 													console.log(
 														'Owner has existing salon, redirecting to dashboard'

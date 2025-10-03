@@ -59,8 +59,8 @@ export default function BusinessCompleteSetupPage() {
 				});
 
 				if (response.ok) {
-					const salonData = await response.json();
-					if (salonData) {
+					const responseData = await response.json();
+					if (responseData.success && responseData.data) {
 						console.log('User already has a salon, redirecting to dashboard');
 						// User already has a salon, redirect to dashboard immediately
 						router.replace('/owner-dashboard');

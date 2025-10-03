@@ -6,9 +6,16 @@ export const useSalon = () => {
 	return useQuery<Salon>({
 		queryKey: ['salon', 'current'],
 		queryFn: async () => {
-			const response = await apiClient.get<{ salon: Salon }>('/salons/current');
-			// API возвращает { salon: {...} }, извлекаем салон
-			return response.salon || response;
+			const response = await apiClient.get<{
+				success: boolean;
+				data?: Salon;
+				message?: string;
+			}>('/salons/current');
+			// API возвращает { success: true, data: {...} }, извлекаем салон
+			if (response.success && response.data) {
+				return response.data;
+			}
+			throw new Error(response.message || 'No salon found');
 		},
 		staleTime: 5 * 60 * 1000, // 5 минут
 		gcTime: 10 * 60 * 1000, // 10 минут (gcTime вместо cacheTime)

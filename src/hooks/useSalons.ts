@@ -69,9 +69,15 @@ export const useCurrentUserSalon = () => {
 	return useQuery({
 		queryKey: [...salonKeys.all, 'current'],
 		queryFn: async (): Promise<SalonWithDetailsResponseDto | null> => {
-			return apiClient.get<SalonWithDetailsResponseDto | null>(
-				'/salons/current'
-			);
+			const response = await apiClient.get<{
+				success: boolean;
+				data?: SalonWithDetailsResponseDto;
+				message?: string;
+			}>('/salons/current');
+			if (response.success && response.data) {
+				return response.data;
+			}
+			return null;
 		},
 		staleTime: 5 * 60 * 1000, // 5 minutes
 	});

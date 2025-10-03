@@ -155,9 +155,13 @@ export default function BookingModal({
 					return;
 				}
 
-				const data = await response.json();
-				if (data && data.workingHours) {
-					setSalonWorkingHours(data.workingHours);
+				const responseData = await response.json();
+				if (
+					responseData.success &&
+					responseData.data &&
+					responseData.data.workingHours
+				) {
+					setSalonWorkingHours(responseData.data.workingHours);
 				}
 			}
 		} catch (error) {

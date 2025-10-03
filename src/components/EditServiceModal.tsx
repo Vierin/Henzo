@@ -7,7 +7,8 @@ import {
 	useUpdateService,
 } from '@/hooks/useServices';
 import { useSalonId } from '@/hooks/useSalon';
-import { Service, Category } from '@/types';
+import { useServiceCategories } from '@/hooks/useCategories';
+import { Service } from '@/types';
 
 interface EditServiceModalProps {
 	isOpen: boolean;
@@ -27,14 +28,16 @@ export default function EditServiceModal({
 		description: '',
 		duration: 0,
 		price: 0,
-		categoryId: '',
+		serviceCategoryId: 0,
 	});
 	const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false);
 
 	// Используем оптимизированный хук для получения данных салона
 	const { salonId } = useSalonId();
 
-	const { data: categories = [] } = useCategories();
+	const { data: categories = [] } = useServiceCategories() as {
+		data: { id: number; nameEn: string; nameVn: string }[];
+	};
 	const createServiceMutation = useCreateService();
 	const updateServiceMutation = useUpdateService();
 
@@ -45,7 +48,7 @@ export default function EditServiceModal({
 				description: service.description || '',
 				duration: service.duration,
 				price: service.price,
-				categoryId: service.categoryId || '',
+				serviceCategoryId: service.serviceCategoryId || 0,
 			});
 		} else {
 			setFormData({
@@ -53,7 +56,7 @@ export default function EditServiceModal({
 				description: '',
 				duration: 0,
 				price: 0,
-				categoryId: '',
+				serviceCategoryId: 0,
 			});
 		}
 	}, [service]);
@@ -77,7 +80,10 @@ export default function EditServiceModal({
 				duration: formData.duration,
 				price: formData.price,
 				salonId,
-				categoryId: formData.categoryId || undefined,
+				serviceCategoryId:
+					formData.serviceCategoryId > 0
+						? formData.serviceCategoryId
+						: undefined,
 			};
 
 			if (service) {
@@ -99,10 +105,14 @@ export default function EditServiceModal({
 		}
 	};
 
-	const handleCategoryCreated = (newCategory: Category) => {
+	const handleCategoryCreated = (newCategory: {
+		id: number;
+		nameEn: string;
+		nameVn: string;
+	}) => {
 		setFormData((prev) => ({
 			...prev,
-			categoryId: newCategory.id,
+			serviceCategoryId: newCategory.id,
 		}));
 	};
 
@@ -169,11 +179,11 @@ export default function EditServiceModal({
 							<div className="flex gap-2">
 								<select
 									id="category"
-									value={formData.categoryId}
+									value={formData.serviceCategoryId}
 									onChange={(e) =>
 										setFormData((prev) => ({
 											...prev,
-											categoryId: e.target.value,
+											serviceCategoryId: Number(e.target.value),
 										}))
 									}
 									className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#ff5b5b] focus:border-transparent text-gray-900"
@@ -181,7 +191,7 @@ export default function EditServiceModal({
 									<option value="">Select a category</option>
 									{categories.map((category) => (
 										<option key={category.id} value={category.id}>
-											{category.name}
+											{category.nameEn}
 										</option>
 									))}
 								</select>
