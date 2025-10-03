@@ -5,6 +5,8 @@ import { useRouter } from 'next/navigation';
 import { MapPin, Search, Clock } from 'lucide-react';
 import DatePicker from './DatePicker';
 import { TIME_INTERVALS } from '@/constants/timeIntervals';
+import ServiceAutocomplete from './ServiceAutocomplete';
+import AddressAutocomplete from './AddressAutocomplete';
 
 interface BooksySearchProps {
 	className?: string;
@@ -84,29 +86,47 @@ export default function BooksySearch({ className = '' }: BooksySearchProps) {
 			<div className="flex flex-col lg:flex-row gap-4">
 				{/* Service Input */}
 				<div className="flex-1">
-					<div className="relative">
-						<Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-						<input
-							type="text"
-							placeholder="Service name"
-							value={searchData.service}
-							onChange={(e) => handleInputChange('service', e.target.value)}
-							className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#ff5b5b] focus:border-transparent text-gray-900"
-						/>
-					</div>
+					<ServiceAutocomplete
+						value={searchData.service}
+						onChange={(e: any) => handleInputChange('service', e.target.value)}
+						placeholder="Service name"
+						className="w-full text-sm py-3"
+					/>
 				</div>
 
 				{/* Location Input */}
 				<div className="flex-1">
 					<div className="relative">
-						<MapPin className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-						<input
-							type="text"
-							placeholder="Location"
+						<AddressAutocomplete
 							value={searchData.location}
-							onChange={(e) => handleInputChange('location', e.target.value)}
-							className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#ff5b5b] focus:border-transparent text-gray-900"
+							onChange={(address: string) =>
+								handleInputChange('location', address)
+							}
+							onAddressSelect={(address: string, lat: number, lon: number) => {
+								handleInputChange('location', address);
+							}}
+							placeholder="Enter address"
+							className="w-full px-4 py-3 pl-12 pr-12 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#ff5b5b] focus:border-transparent text-gray-900 text-sm"
 						/>
+						<svg
+							className="absolute left-4 top-3.5 h-5 w-5 text-gray-400"
+							fill="none"
+							stroke="currentColor"
+							viewBox="0 0 24 24"
+						>
+							<path
+								strokeLinecap="round"
+								strokeLinejoin="round"
+								strokeWidth={2}
+								d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"
+							/>
+							<path
+								strokeLinecap="round"
+								strokeLinejoin="round"
+								strokeWidth={2}
+								d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"
+							/>
+						</svg>
 					</div>
 				</div>
 

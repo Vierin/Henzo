@@ -5,7 +5,6 @@ import { useRouter } from 'next/navigation';
 import AddressAutocomplete from './AddressAutocomplete';
 import ServiceAutocomplete from './ServiceAutocomplete';
 import DateTimePicker from './DateTimePicker';
-import { TIME_INTERVALS } from '@/constants/timeIntervals';
 
 interface SearchBookingFormProps {
 	className?: string;
@@ -41,11 +40,6 @@ export default function SearchBookingForm({
 
 	const handleClearSearch = () => {
 		setSearchQuery('');
-	};
-
-	const handleClearDate = () => {
-		setSelectedDate(null);
-		setSelectedTimeInterval(''); // Also clear time when clearing date
 	};
 
 	return (
