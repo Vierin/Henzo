@@ -209,4 +209,103 @@ export const seoConfig = {
 			creator: '@henzo',
 		},
 	} as Metadata,
+	clientDashboard: {
+		title: 'Client Dashboard - Henzo | Your Appointments & Bookings',
+		description:
+			'Manage your beauty appointments and bookings with Henzo. View upcoming appointments, booking history, and easily book new services.',
+		metadataBase: new URL(baseUrl),
+		alternates: {
+			canonical: '/dashboard',
+		},
+		openGraph: {
+			title: 'Client Dashboard - Henzo',
+			description:
+				'Manage your beauty appointments and bookings. View upcoming appointments and booking history.',
+			url: '/dashboard',
+			siteName: 'Henzo',
+			images: [
+				{
+					url: '/og-dashboard.jpg',
+					width: 1200,
+					height: 630,
+					alt: 'Henzo Client Dashboard',
+				},
+			],
+			locale: 'en_US',
+			type: 'website',
+		},
+		twitter: {
+			card: 'summary_large_image',
+			title: 'Client Dashboard - Henzo',
+			description: 'Manage your beauty appointments and bookings with ease.',
+			images: ['/og-dashboard.jpg'],
+			creator: '@henzo',
+		},
+	} as Metadata,
+	clientReviews: {
+		title: 'Your Reviews - Henzo | Beauty Service Reviews & Feedback',
+		description:
+			'View and manage your beauty service reviews on Henzo. Leave feedback for completed appointments and help others make informed decisions.',
+		metadataBase: new URL(baseUrl),
+		alternates: {
+			canonical: '/reviews',
+		},
+		openGraph: {
+			title: 'Your Reviews - Henzo',
+			description:
+				'View and manage your beauty service reviews. Leave feedback for completed appointments.',
+			url: '/reviews',
+			siteName: 'Henzo',
+			images: [
+				{
+					url: '/og-reviews.jpg',
+					width: 1200,
+					height: 630,
+					alt: 'Henzo Reviews',
+				},
+			],
+			locale: 'en_US',
+			type: 'website',
+		},
+		twitter: {
+			card: 'summary_large_image',
+			title: 'Your Reviews - Henzo',
+			description: 'View and manage your beauty service reviews and feedback.',
+			images: ['/og-reviews.jpg'],
+			creator: '@henzo',
+		},
+	} as Metadata,
+	clientSettings: {
+		title: 'Account Settings - Henzo | Manage Your Profile & Preferences',
+		description:
+			'Manage your Henzo account settings, update personal information, change password, and control your privacy preferences.',
+		metadataBase: new URL(baseUrl),
+		alternates: {
+			canonical: '/settings',
+		},
+		openGraph: {
+			title: 'Account Settings - Henzo',
+			description:
+				'Manage your account settings, update personal information, and control your preferences.',
+			url: '/settings',
+			siteName: 'Henzo',
+			images: [
+				{
+					url: '/og-settings.jpg',
+					width: 1200,
+					height: 630,
+					alt: 'Henzo Account Settings',
+				},
+			],
+			locale: 'en_US',
+			type: 'website',
+		},
+		twitter: {
+			card: 'summary_large_image',
+			title: 'Account Settings - Henzo',
+			description: 'Manage your account settings and personal information.',
+			images: ['/og-settings.jpg'],
+			creator: '@henzo',
+		},
+	} as Metadata,
 };

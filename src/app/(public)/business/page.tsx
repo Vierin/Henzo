@@ -6,561 +6,680 @@ export const metadata = seoConfig.business;
 export default function BusinessLandingPage() {
 	return (
 		<div className="min-h-screen bg-white">
-			<section className="bg-gradient-to-br from-orange-50 to-pink-50 py-20">
-				<div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-					<div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
-						{/* Left Content */}
-						<div className="space-y-8">
-							<h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-gray-900 leading-tight">
-								The all-in-one platform for your beauty business.
-							</h1>
-							<p className="text-xl text-gray-600 leading-relaxed">
-								Manage appointments, clients, and payments all in one place.
-								Henzo helps you grow your business and keep clients coming back.
-							</p>
-							<div className="flex flex-col sm:flex-row gap-4">
-								<Link
-									href="/business/register"
-									className="bg-orange-500 text-white px-8 py-4 rounded-lg text-lg font-semibold hover:bg-orange-600 transition-colors text-center"
+			<main role="main">
+				<section
+					className="bg-gradient-to-br from-orange-50 to-pink-50 py-20"
+					aria-labelledby="hero-heading"
+				>
+					<div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+						<div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+							{/* Left Content */}
+							<div className="space-y-8">
+								<h1
+									id="hero-heading"
+									className="text-4xl md:text-5xl lg:text-6xl font-bold text-gray-900 leading-tight"
 								>
-									Start your free trial
-								</Link>
-								<Link
-									href="/login"
-									className="bg-orange-100 text-orange-700 px-8 py-4 rounded-lg text-lg font-semibold hover:bg-orange-200 transition-colors text-center"
-								>
-									Already with us? Login
-								</Link>
-							</div>
-						</div>
-
-						{/* Right Illustration */}
-						<div className="relative">
-							<div className="bg-gradient-to-br from-orange-200 to-pink-200 rounded-3xl p-8 transform rotate-3 shadow-2xl">
-								<div className="bg-white rounded-2xl p-6 transform -rotate-3">
-									{/* Salon Illustration */}
-									<div className="space-y-4">
-										{/* Salon counter with products */}
-										<div className="flex items-end justify-between bg-gray-100 rounded-lg p-4">
-											<div className="flex space-x-2">
-												<div className="w-3 h-3 bg-orange-300 rounded-full"></div>
-												<div className="w-3 h-3 bg-pink-300 rounded-full"></div>
-												<div className="w-3 h-3 bg-purple-300 rounded-full"></div>
-											</div>
-											<div className="w-8 h-8 bg-orange-200 rounded-full"></div>
-										</div>
-
-										{/* People in salon */}
-										<div className="grid grid-cols-2 gap-4">
-											{/* Client at counter */}
-											<div className="flex items-center space-x-2">
-												<div className="w-8 h-8 bg-orange-200 rounded-full"></div>
-												<div className="w-16 h-2 bg-gray-200 rounded"></div>
-											</div>
-
-											{/* Stylist working */}
-											<div className="flex items-center space-x-2">
-												<div className="w-8 h-8 bg-pink-200 rounded-full"></div>
-												<div className="w-12 h-2 bg-gray-200 rounded"></div>
-											</div>
-
-											{/* Client in chair */}
-											<div className="flex items-center space-x-2">
-												<div className="w-8 h-8 bg-purple-200 rounded-full"></div>
-												<div className="w-14 h-2 bg-gray-200 rounded"></div>
-											</div>
-
-											{/* Another client */}
-											<div className="flex items-center space-x-2">
-												<div className="w-8 h-8 bg-orange-200 rounded-full"></div>
-												<div className="w-10 h-2 bg-gray-200 rounded"></div>
-											</div>
-										</div>
-
-										{/* Mirrors */}
-										<div className="flex justify-center space-x-4">
-											<div className="w-12 h-8 bg-gray-300 rounded border-2 border-gray-400"></div>
-											<div className="w-12 h-8 bg-gray-300 rounded border-2 border-gray-400"></div>
-										</div>
-									</div>
-								</div>
-							</div>
-						</div>
-					</div>
-				</div>
-			</section>
-
-			{/* Run your business section */}
-			<section id="features" className="py-20 bg-white">
-				<div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-					<div className="text-center mb-16">
-						<h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-6">
-							Run your business, your way.
-						</h2>
-						<p className="text-xl text-gray-600 max-w-3xl mx-auto">
-							Henzo gives you the tools to manage your business, your way. From
-							scheduling to payments, we've got you covered.
-						</p>
-					</div>
-
-					<div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-						{/* Flexible scheduling */}
-						<div className="bg-gray-50 rounded-2xl p-8 text-center">
-							<div className="w-16 h-16 bg-orange-100 rounded-full flex items-center justify-center mx-auto mb-6">
-								<svg
-									className="w-8 h-8 text-orange-500"
-									fill="currentColor"
-									viewBox="0 0 20 20"
-								>
-									<path
-										fillRule="evenodd"
-										d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z"
-										clipRule="evenodd"
-									/>
-								</svg>
-							</div>
-							<h3 className="text-xl font-semibold text-gray-900 mb-4">
-								Flexible scheduling
-							</h3>
-							<p className="text-gray-600">
-								Let clients book online, manage your calendar, and send
-								automated reminders.
-							</p>
-						</div>
-
-						{/* Client management */}
-						<div className="bg-gray-50 rounded-2xl p-8 text-center">
-							<div className="w-16 h-16 bg-orange-100 rounded-full flex items-center justify-center mx-auto mb-6">
-								<svg
-									className="w-8 h-8 text-orange-500"
-									fill="currentColor"
-									viewBox="0 0 20 20"
-								>
-									<path d="M13 6a3 3 0 11-6 0 3 3 0 016 0zM18 8a2 2 0 11-4 0 2 2 0 014 0zM14 15a4 4 0 00-8 0v3h8v-3zM6 8a2 2 0 11-4 0 2 2 0 014 0zM16 18v-3a5.972 5.972 0 00-.75-2.906A3.005 3.005 0 0119 15v3h-3zM4.75 12.094A5.973 5.973 0 004 15v3H1v-3a3 3 0 013.75-2.906z" />
-								</svg>
-							</div>
-							<h3 className="text-xl font-semibold text-gray-900 mb-4">
-								Client management
-							</h3>
-							<p className="text-gray-600">
-								Keep track of client preferences, history, and contact
-								information.
-							</p>
-						</div>
-
-						{/* Seamless payments */}
-						<div className="bg-gray-50 rounded-2xl p-8 text-center">
-							<div className="w-16 h-16 bg-orange-100 rounded-full flex items-center justify-center mx-auto mb-6">
-								<svg
-									className="w-8 h-8 text-orange-500"
-									fill="currentColor"
-									viewBox="0 0 20 20"
-								>
-									<path d="M4 4a2 2 0 00-2 2v1h16V6a2 2 0 00-2-2H4zM18 9H2v5a2 2 0 002 2h12a2 2 0 002-2V9zM4 13a1 1 0 011-1h1a1 1 0 110 2H5a1 1 0 01-1-1zm5-1a1 1 0 100 2h1a1 1 0 100-2H9z" />
-								</svg>
-							</div>
-							<h3 className="text-xl font-semibold text-gray-900 mb-4">
-								Seamless payments
-							</h3>
-							<p className="text-gray-600">
-								Accept payments online or in person, and get paid fast with
-								secure processing.
-							</p>
-						</div>
-					</div>
-				</div>
-			</section>
-
-			{/* Access from anywhere section */}
-			<section className="py-20 bg-gray-50">
-				<div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-					<div className="text-center mb-16">
-						<h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-6">
-							Access your business from anywhere.
-						</h2>
-						<p className="text-xl text-gray-600 max-w-3xl mx-auto">
-							Henzo is available on any device, so you can manage your business
-							from anywhere. Whether you're at the salon, at home, or on the go,
-							you'll always have access to your business.
-						</p>
-					</div>
-
-					<div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-						{/* Mobile app */}
-						<div className="bg-white rounded-2xl p-8 text-center">
-							<div className="bg-gradient-to-br from-orange-200 to-pink-200 rounded-2xl p-6 mb-6">
-								<div className="w-16 h-24 bg-white rounded-lg mx-auto shadow-lg flex items-center justify-center">
-									<div className="w-8 h-12 bg-gray-200 rounded"></div>
-								</div>
-							</div>
-							<h3 className="text-xl font-semibold text-gray-900 mb-4">
-								Mobile app
-							</h3>
-							<p className="text-gray-600">
-								Manage your business on the go with our mobile app for iOS and
-								Android.
-							</p>
-						</div>
-
-						{/* Tablet app */}
-						<div className="bg-white rounded-2xl p-8 text-center">
-							<div className="bg-gradient-to-br from-orange-200 to-pink-200 rounded-2xl p-6 mb-6">
-								<div className="w-20 h-16 bg-white rounded-lg mx-auto shadow-lg flex items-center justify-center">
-									<div className="w-12 h-8 bg-gray-200 rounded"></div>
-								</div>
-							</div>
-							<h3 className="text-xl font-semibold text-gray-900 mb-4">
-								Tablet app
-							</h3>
-							<p className="text-gray-600">
-								Use our tablet app for a larger screen experience at your front
-								desk.
-							</p>
-						</div>
-
-						{/* Web app */}
-						<div className="bg-white rounded-2xl p-8 text-center">
-							<div className="bg-gradient-to-br from-orange-200 to-pink-200 rounded-2xl p-6 mb-6">
-								<div className="w-20 h-12 bg-white rounded-lg mx-auto shadow-lg flex items-center justify-center">
-									<div className="w-16 h-6 bg-gray-200 rounded"></div>
-								</div>
-							</div>
-							<h3 className="text-xl font-semibold text-gray-900 mb-4">
-								Web app
-							</h3>
-							<p className="text-gray-600">
-								Access your business from any web browser with our full-featured
-								web app.
-							</p>
-						</div>
-					</div>
-				</div>
-			</section>
-
-			{/* Beta Program Section */}
-			<section className="py-20 bg-white">
-				<div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-					{/* Beta Badge */}
-					<div className="inline-block bg-orange-100 text-orange-600 px-4 py-2 rounded-lg text-sm font-medium mb-6 shadow-sm">
-						Special Beta Program ✨
-					</div>
-
-					{/* Main Beta Heading */}
-					<h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-6">
-						Join Our Free Beta Test!
-					</h2>
-
-					{/* Beta Description */}
-					<p className="text-lg text-gray-600 leading-relaxed max-w-3xl mx-auto mb-16">
-						We're excited to offer a free beta testing period for our app until{' '}
-						<strong>June 1, 2026</strong>. As an early adopter, you'll have the
-						opportunity to transition to our paid plans with exclusive, greatly
-						improved conditions once the beta period concludes. Help us shape
-						the future of Henzo!
-					</p>
-				</div>
-			</section>
-
-			{/* Pricing Plans section */}
-			<section className="pb-20 bg-white">
-				<div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-					<div className="text-center mb-16">
-						<h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-6">
-							Our Future Plans
-						</h2>
-						<p className="text-xl text-gray-600 max-w-3xl mx-auto">
-							Henzo offers flexible pricing to fit the needs of salons and
-							professionals at any stage.
-						</p>
-					</div>
-
-					<div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto">
-						{/* Basic Plan */}
-						<div className="bg-white rounded-2xl p-8 shadow-lg border border-gray-200">
-							<div className="text-center">
-								<h3 className="text-2xl font-bold text-gray-900 mb-4">Basic</h3>
-								<div className="mb-6">
-									<span className="text-5xl font-bold text-gray-900">$15</span>
-									<span className="text-gray-600 text-lg">/month</span>
-								</div>
-								<p className="text-gray-600 mb-8">
-									Perfect for individual stylists and small salons getting
-									started.
+									The all-in-one platform for your beauty business.
+								</h1>
+								<p className="text-xl text-gray-600 leading-relaxed">
+									Manage appointments, clients, and payments all in one place.
+									Henzo helps you grow your business and keep clients coming
+									back.
 								</p>
+								<div
+									className="flex flex-col sm:flex-row gap-4"
+									role="group"
+									aria-label="Action buttons"
+								>
+									<Link
+										href="/business/register"
+										className="bg-orange-500 text-white px-8 py-4 rounded-lg text-lg font-semibold hover:bg-orange-600 transition-colors text-center"
+										aria-label="Start your free trial - Register for Henzo business account"
+									>
+										Start your free trial
+									</Link>
+									<Link
+										href="/login"
+										className="bg-orange-100 text-orange-700 px-8 py-4 rounded-lg text-lg font-semibold hover:bg-orange-200 transition-colors text-center"
+										aria-label="Already have an account? Login to your Henzo account"
+									>
+										Already with us? Login
+									</Link>
+								</div>
+							</div>
 
-								{/* Features */}
-								<div className="space-y-4 mb-8 text-left">
-									<div className="flex items-center">
-										<svg
-											className="w-5 h-5 text-red-500 mr-3 flex-shrink-0"
-											fill="currentColor"
-											viewBox="0 0 20 20"
+							{/* Right Illustration */}
+							<div className="relative" aria-hidden="true">
+								<div className="bg-gradient-to-br from-orange-200 to-pink-200 rounded-3xl p-8 transform rotate-3 shadow-2xl">
+									<div className="bg-white rounded-2xl p-6 transform -rotate-3">
+										{/* Salon Illustration */}
+										<div
+											className="space-y-4"
+											role="img"
+											aria-label="Salon illustration showing business management features"
 										>
-											<path
-												fillRule="evenodd"
-												d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-												clipRule="evenodd"
-											/>
-										</svg>
-										<span className="text-gray-700">Unlimited bookings</span>
-									</div>
-									<div className="flex items-center">
-										<svg
-											className="w-5 h-5 text-red-500 mr-3 flex-shrink-0"
-											fill="currentColor"
-											viewBox="0 0 20 20"
-										>
-											<path
-												fillRule="evenodd"
-												d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-												clipRule="evenodd"
-											/>
-										</svg>
-										<span className="text-gray-700">Customer support</span>
-									</div>
-									<div className="flex items-center">
-										<svg
-											className="w-5 h-5 text-red-500 mr-3 flex-shrink-0"
-											fill="currentColor"
-											viewBox="0 0 20 20"
-										>
-											<path
-												fillRule="evenodd"
-												d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-												clipRule="evenodd"
-											/>
-										</svg>
-										<span className="text-gray-700">Analytics dashboard</span>
+											{/* Salon counter with products */}
+											<div className="flex items-end justify-between bg-gray-100 rounded-lg p-4">
+												<div className="flex space-x-2">
+													<div className="w-3 h-3 bg-orange-300 rounded-full"></div>
+													<div className="w-3 h-3 bg-pink-300 rounded-full"></div>
+													<div className="w-3 h-3 bg-purple-300 rounded-full"></div>
+												</div>
+												<div className="w-8 h-8 bg-orange-200 rounded-full"></div>
+											</div>
+
+											{/* People in salon */}
+											<div className="grid grid-cols-2 gap-4">
+												{/* Client at counter */}
+												<div className="flex items-center space-x-2">
+													<div className="w-8 h-8 bg-orange-200 rounded-full"></div>
+													<div className="w-16 h-2 bg-gray-200 rounded"></div>
+												</div>
+
+												{/* Stylist working */}
+												<div className="flex items-center space-x-2">
+													<div className="w-8 h-8 bg-pink-200 rounded-full"></div>
+													<div className="w-12 h-2 bg-gray-200 rounded"></div>
+												</div>
+
+												{/* Client in chair */}
+												<div className="flex items-center space-x-2">
+													<div className="w-8 h-8 bg-purple-200 rounded-full"></div>
+													<div className="w-14 h-2 bg-gray-200 rounded"></div>
+												</div>
+
+												{/* Another client */}
+												<div className="flex items-center space-x-2">
+													<div className="w-8 h-8 bg-orange-200 rounded-full"></div>
+													<div className="w-10 h-2 bg-gray-200 rounded"></div>
+												</div>
+											</div>
+
+											{/* Mirrors */}
+											<div className="flex justify-center space-x-4">
+												<div className="w-12 h-8 bg-gray-300 rounded border-2 border-gray-400"></div>
+												<div className="w-12 h-8 bg-gray-300 rounded border-2 border-gray-400"></div>
+											</div>
+										</div>
 									</div>
 								</div>
-
-								<button
-									disabled
-									className="w-full bg-gray-100 text-gray-400 px-6 py-3 rounded-lg font-semibold cursor-not-allowed"
-								>
-									Choose plan
-								</button>
 							</div>
 						</div>
+					</div>
+				</section>
 
-						{/* Enterprise Plan */}
-						<div className="bg-white rounded-2xl p-8 shadow-lg border border-gray-200 relative">
-							{/* Best Value Badge */}
-							<div className="absolute -top-3 left-1/2 transform -translate-x-1/2">
-								<div className="bg-orange-500 text-white px-4 py-1 rounded-lg text-sm font-semibold">
-									BEST VALUE
+				{/* Run your business section */}
+				<section
+					id="features"
+					className="py-20 bg-white"
+					aria-labelledby="features-heading"
+				>
+					<div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+						<div className="text-center mb-16">
+							<h2
+								id="features-heading"
+								className="text-4xl md:text-5xl font-bold text-gray-900 mb-6"
+							>
+								Run your business, your way.
+							</h2>
+							<p className="text-xl text-gray-600 max-w-3xl mx-auto">
+								Henzo gives you the tools to manage your business, your way.
+								From scheduling to payments, we've got you covered.
+							</p>
+						</div>
+
+						<div
+							className="grid grid-cols-1 md:grid-cols-3 gap-8"
+							role="list"
+							aria-label="Business features"
+						>
+							{/* Flexible scheduling */}
+							<div
+								className="bg-gray-50 rounded-2xl p-8 text-center"
+								role="listitem"
+							>
+								<div
+									className="w-16 h-16 bg-orange-100 rounded-full flex items-center justify-center mx-auto mb-6"
+									aria-hidden="true"
+								>
+									<svg
+										className="w-8 h-8 text-orange-500"
+										fill="currentColor"
+										viewBox="0 0 20 20"
+										aria-hidden="true"
+									>
+										<path
+											fillRule="evenodd"
+											d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z"
+											clipRule="evenodd"
+										/>
+									</svg>
 								</div>
-							</div>
-
-							<div className="text-center">
-								<h3 className="text-2xl font-bold text-gray-900 mb-4">
-									Enterprise
+								<h3 className="text-xl font-semibold text-gray-900 mb-4">
+									Flexible scheduling
 								</h3>
-								<div className="mb-6">
-									<span className="text-5xl font-bold text-gray-900">
-										Contact Us
-									</span>
-								</div>
-								<p className="text-gray-600 mb-8">
-									For large businesses with custom needs and high volume.
+								<p className="text-gray-600">
+									Let clients book online, manage your calendar, and send
+									automated reminders.
 								</p>
+							</div>
 
-								{/* Features */}
-								<div className="space-y-4 mb-8 text-left">
-									<div className="flex items-center">
-										<svg
-											className="w-5 h-5 text-red-500 mr-3 flex-shrink-0"
-											fill="currentColor"
-											viewBox="0 0 20 20"
-										>
-											<path
-												fillRule="evenodd"
-												d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-												clipRule="evenodd"
-											/>
-										</svg>
-										<span className="text-gray-700">Customizable features</span>
+							{/* Client management */}
+							<div
+								className="bg-gray-50 rounded-2xl p-8 text-center"
+								role="listitem"
+							>
+								<div
+									className="w-16 h-16 bg-orange-100 rounded-full flex items-center justify-center mx-auto mb-6"
+									aria-hidden="true"
+								>
+									<svg
+										className="w-8 h-8 text-orange-500"
+										fill="currentColor"
+										viewBox="0 0 20 20"
+										aria-hidden="true"
+									>
+										<path d="M13 6a3 3 0 11-6 0 3 3 0 016 0zM18 8a2 2 0 11-4 0 2 2 0 014 0zM14 15a4 4 0 00-8 0v3h8v-3zM6 8a2 2 0 11-4 0 2 2 0 014 0zM16 18v-3a5.972 5.972 0 00-.75-2.906A3.005 3.005 0 0119 15v3h-3zM4.75 12.094A5.973 5.973 0 004 15v3H1v-3a3 3 0 013.75-2.906z" />
+									</svg>
+								</div>
+								<h3 className="text-xl font-semibold text-gray-900 mb-4">
+									Client management
+								</h3>
+								<p className="text-gray-600">
+									Keep track of client preferences, history, and contact
+									information.
+								</p>
+							</div>
+
+							{/* Seamless payments */}
+							<div
+								className="bg-gray-50 rounded-2xl p-8 text-center"
+								role="listitem"
+							>
+								<div
+									className="w-16 h-16 bg-orange-100 rounded-full flex items-center justify-center mx-auto mb-6"
+									aria-hidden="true"
+								>
+									<svg
+										className="w-8 h-8 text-orange-500"
+										fill="currentColor"
+										viewBox="0 0 20 20"
+										aria-hidden="true"
+									>
+										<path d="M4 4a2 2 0 00-2 2v1h16V6a2 2 0 00-2-2H4zM18 9H2v5a2 2 0 002 2h12a2 2 0 002-2V9zM4 13a1 1 0 011-1h1a1 1 0 110 2H5a1 1 0 01-1-1zm5-1a1 1 0 100 2h1a1 1 0 100-2H9z" />
+									</svg>
+								</div>
+								<h3 className="text-xl font-semibold text-gray-900 mb-4">
+									Seamless payments
+								</h3>
+								<p className="text-gray-600">
+									Accept payments online or in person, and get paid fast with
+									secure processing.
+								</p>
+							</div>
+						</div>
+					</div>
+				</section>
+
+				{/* Access from anywhere section */}
+				<section className="py-20 bg-gray-50">
+					<div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+						<div className="text-center mb-16">
+							<h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-6">
+								Access your business from anywhere.
+							</h2>
+							<p className="text-xl text-gray-600 max-w-3xl mx-auto">
+								Henzo is available on any device, so you can manage your
+								business from anywhere. Whether you're at the salon, at home, or
+								on the go, you'll always have access to your business.
+							</p>
+						</div>
+
+						<div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+							{/* Mobile app */}
+							<div className="bg-white rounded-2xl p-8 text-center">
+								<div className="bg-gradient-to-br from-orange-200 to-pink-200 rounded-2xl p-6 mb-6">
+									<div className="w-16 h-24 bg-white rounded-lg mx-auto shadow-lg flex items-center justify-center">
+										<div className="w-8 h-12 bg-gray-200 rounded"></div>
 									</div>
-									<div className="flex items-center">
-										<svg
-											className="w-5 h-5 text-red-500 mr-3 flex-shrink-0"
-											fill="currentColor"
-											viewBox="0 0 20 20"
-										>
-											<path
-												fillRule="evenodd"
-												d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-												clipRule="evenodd"
-											/>
-										</svg>
-										<span className="text-gray-700">
-											Dedicated account manager
+								</div>
+								<h3 className="text-xl font-semibold text-gray-900 mb-4">
+									Mobile app
+								</h3>
+								<p className="text-gray-600">
+									Manage your business on the go with our mobile app for iOS and
+									Android.
+								</p>
+							</div>
+
+							{/* Tablet app */}
+							<div className="bg-white rounded-2xl p-8 text-center">
+								<div className="bg-gradient-to-br from-orange-200 to-pink-200 rounded-2xl p-6 mb-6">
+									<div className="w-20 h-16 bg-white rounded-lg mx-auto shadow-lg flex items-center justify-center">
+										<div className="w-12 h-8 bg-gray-200 rounded"></div>
+									</div>
+								</div>
+								<h3 className="text-xl font-semibold text-gray-900 mb-4">
+									Tablet app
+								</h3>
+								<p className="text-gray-600">
+									Use our tablet app for a larger screen experience at your
+									front desk.
+								</p>
+							</div>
+
+							{/* Web app */}
+							<div className="bg-white rounded-2xl p-8 text-center">
+								<div className="bg-gradient-to-br from-orange-200 to-pink-200 rounded-2xl p-6 mb-6">
+									<div className="w-20 h-12 bg-white rounded-lg mx-auto shadow-lg flex items-center justify-center">
+										<div className="w-16 h-6 bg-gray-200 rounded"></div>
+									</div>
+								</div>
+								<h3 className="text-xl font-semibold text-gray-900 mb-4">
+									Web app
+								</h3>
+								<p className="text-gray-600">
+									Access your business from any web browser with our
+									full-featured web app.
+								</p>
+							</div>
+						</div>
+					</div>
+				</section>
+
+				{/* Beta Program Section */}
+				<section className="py-20 bg-white">
+					<div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+						{/* Beta Badge */}
+						<div className="inline-block bg-orange-100 text-orange-600 px-4 py-2 rounded-lg text-sm font-medium mb-6 shadow-sm">
+							Special Beta Program ✨
+						</div>
+
+						{/* Main Beta Heading */}
+						<h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-6">
+							Join Our Free Beta Test!
+						</h2>
+
+						{/* Beta Description */}
+						<p className="text-lg text-gray-600 leading-relaxed max-w-3xl mx-auto mb-16">
+							We're excited to offer a free beta testing period for our app
+							until <strong>June 1, 2026</strong>. As an early adopter, you'll
+							have the opportunity to transition to our paid plans with
+							exclusive, greatly improved conditions once the beta period
+							concludes. Help us shape the future of Henzo!
+						</p>
+					</div>
+				</section>
+
+				{/* Pricing Plans section */}
+				<section className="pb-20 bg-white">
+					<div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+						<div className="text-center mb-16">
+							<h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-6">
+								Our Future Plans
+							</h2>
+							<p className="text-xl text-gray-600 max-w-3xl mx-auto">
+								Henzo offers flexible pricing to fit the needs of salons and
+								professionals at any stage.
+							</p>
+						</div>
+
+						<div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto">
+							{/* Basic Plan */}
+							<div className="bg-white rounded-2xl p-8 shadow-lg border border-gray-200">
+								<div className="text-center">
+									<h3 className="text-2xl font-bold text-gray-900 mb-4">
+										Basic
+									</h3>
+									<div className="mb-6">
+										<span className="text-5xl font-bold text-gray-900">
+											$15
+										</span>
+										<span className="text-gray-600 text-lg">/month</span>
+									</div>
+									<p className="text-gray-600 mb-8">
+										Perfect for individual stylists and small salons getting
+										started.
+									</p>
+
+									{/* Features */}
+									<div className="space-y-4 mb-8 text-left">
+										<div className="flex items-center">
+											<svg
+												className="w-5 h-5 text-red-500 mr-3 flex-shrink-0"
+												fill="currentColor"
+												viewBox="0 0 20 20"
+											>
+												<path
+													fillRule="evenodd"
+													d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+													clipRule="evenodd"
+												/>
+											</svg>
+											<span className="text-gray-700">Unlimited bookings</span>
+										</div>
+										<div className="flex items-center">
+											<svg
+												className="w-5 h-5 text-red-500 mr-3 flex-shrink-0"
+												fill="currentColor"
+												viewBox="0 0 20 20"
+											>
+												<path
+													fillRule="evenodd"
+													d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+													clipRule="evenodd"
+												/>
+											</svg>
+											<span className="text-gray-700">Customer support</span>
+										</div>
+										<div className="flex items-center">
+											<svg
+												className="w-5 h-5 text-red-500 mr-3 flex-shrink-0"
+												fill="currentColor"
+												viewBox="0 0 20 20"
+											>
+												<path
+													fillRule="evenodd"
+													d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+													clipRule="evenodd"
+												/>
+											</svg>
+											<span className="text-gray-700">Analytics dashboard</span>
+										</div>
+									</div>
+
+									<button
+										disabled
+										className="w-full bg-gray-100 text-gray-400 px-6 py-3 rounded-lg font-semibold cursor-not-allowed"
+									>
+										Choose plan
+									</button>
+								</div>
+							</div>
+
+							{/* Enterprise Plan */}
+							<div className="bg-white rounded-2xl p-8 shadow-lg border border-gray-200 relative">
+								{/* Best Value Badge */}
+								<div className="absolute -top-3 left-1/2 transform -translate-x-1/2">
+									<div className="bg-orange-500 text-white px-4 py-1 rounded-lg text-sm font-semibold">
+										BEST VALUE
+									</div>
+								</div>
+
+								<div className="text-center">
+									<h3 className="text-2xl font-bold text-gray-900 mb-4">
+										Enterprise
+									</h3>
+									<div className="mb-6">
+										<span className="text-5xl font-bold text-gray-900">
+											Contact Us
 										</span>
 									</div>
-									<div className="flex items-center">
-										<svg
-											className="w-5 h-5 text-red-500 mr-3 flex-shrink-0"
-											fill="currentColor"
-											viewBox="0 0 20 20"
-										>
-											<path
-												fillRule="evenodd"
-												d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-												clipRule="evenodd"
-											/>
-										</svg>
-										<span className="text-gray-700">Advanced reporting</span>
+									<p className="text-gray-600 mb-8">
+										For large businesses with custom needs and high volume.
+									</p>
+
+									{/* Features */}
+									<div className="space-y-4 mb-8 text-left">
+										<div className="flex items-center">
+											<svg
+												className="w-5 h-5 text-red-500 mr-3 flex-shrink-0"
+												fill="currentColor"
+												viewBox="0 0 20 20"
+											>
+												<path
+													fillRule="evenodd"
+													d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+													clipRule="evenodd"
+												/>
+											</svg>
+											<span className="text-gray-700">
+												Customizable features
+											</span>
+										</div>
+										<div className="flex items-center">
+											<svg
+												className="w-5 h-5 text-red-500 mr-3 flex-shrink-0"
+												fill="currentColor"
+												viewBox="0 0 20 20"
+											>
+												<path
+													fillRule="evenodd"
+													d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+													clipRule="evenodd"
+												/>
+											</svg>
+											<span className="text-gray-700">
+												Dedicated account manager
+											</span>
+										</div>
+										<div className="flex items-center">
+											<svg
+												className="w-5 h-5 text-red-500 mr-3 flex-shrink-0"
+												fill="currentColor"
+												viewBox="0 0 20 20"
+											>
+												<path
+													fillRule="evenodd"
+													d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+													clipRule="evenodd"
+												/>
+											</svg>
+											<span className="text-gray-700">Advanced reporting</span>
+										</div>
+									</div>
+
+									<button
+										disabled
+										className="w-full bg-gray-100 text-gray-400 px-6 py-3 rounded-lg font-semibold cursor-not-allowed"
+									>
+										Contact sales
+									</button>
+								</div>
+							</div>
+						</div>
+
+						{/* Contact Information */}
+						<div className="text-center mt-12">
+							<p className="text-gray-600 mb-4">
+								Want to learn more about our pricing plans?
+							</p>
+							<Link
+								href="/contact"
+								className="inline-block bg-orange-500 text-white px-6 py-3 rounded-lg font-semibold hover:bg-orange-600 transition-colors"
+							>
+								Contact Us
+							</Link>
+						</div>
+					</div>
+				</section>
+
+				{/* Testimonials section */}
+				<section className="py-20 bg-white">
+					<div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+						<div className="text-center mb-16">
+							<h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-6">
+								What our clients say.
+							</h2>
+							<p className="text-xl text-gray-600 max-w-3xl mx-auto">
+								Hear from beauty professionals who have transformed their
+								businesses with Henzo.
+							</p>
+						</div>
+
+						<div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+							{/* Testimonial 1 */}
+							<div className="bg-gray-50 rounded-2xl p-8">
+								<div className="mb-6">
+									<div className="flex text-orange-400 mb-4">
+										{[...Array(5)].map((_, i) => (
+											<svg
+												key={i}
+												className="w-5 h-5 fill-current"
+												viewBox="0 0 20 20"
+											>
+												<path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+											</svg>
+										))}
+									</div>
+									<blockquote className="text-gray-700 text-lg leading-relaxed">
+										"Henzo has completely revolutionized how I manage my salon.
+										The scheduling is so intuitive, and client communication has
+										never been easier!"
+									</blockquote>
+								</div>
+								<div className="border-t border-gray-200 pt-6">
+									<div className="font-semibold text-gray-900">Sarah Chen</div>
+									<div className="text-gray-600">
+										Owner, Glow & Go Aesthetics
 									</div>
 								</div>
+							</div>
 
-								<button
-									disabled
-									className="w-full bg-gray-100 text-gray-400 px-6 py-3 rounded-lg font-semibold cursor-not-allowed"
-								>
-									Contact sales
-								</button>
+							{/* Testimonial 2 */}
+							<div className="bg-gray-50 rounded-2xl p-8">
+								<div className="mb-6">
+									<div className="flex text-orange-400 mb-4">
+										{[...Array(5)].map((_, i) => (
+											<svg
+												key={i}
+												className="w-5 h-5 fill-current"
+												viewBox="0 0 20 20"
+											>
+												<path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+											</svg>
+										))}
+									</div>
+									<blockquote className="text-gray-700 text-lg leading-relaxed">
+										"As a freelance stylist, Henzo keeps me organized and
+										professional. The payment processing is seamless, and my
+										clients love the online booking."
+									</blockquote>
+								</div>
+								<div className="border-t border-gray-200 pt-6">
+									<div className="font-semibold text-gray-900">Mark Rivera</div>
+									<div className="text-gray-600">Freelance Stylist</div>
+								</div>
+							</div>
+
+							{/* Testimonial 3 */}
+							<div className="bg-gray-50 rounded-2xl p-8">
+								<div className="mb-6">
+									<div className="flex text-orange-400 mb-4">
+										{[...Array(5)].map((_, i) => (
+											<svg
+												key={i}
+												className="w-5 h-5 fill-current"
+												viewBox="0 0 20 20"
+											>
+												<path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+											</svg>
+										))}
+									</div>
+									<blockquote className="text-gray-700 text-lg leading-relaxed">
+										"The client management features are a lifesaver! I can
+										easily access notes and history, making every client feel
+										special and understood."
+									</blockquote>
+								</div>
+								<div className="border-t border-gray-200 pt-6">
+									<div className="font-semibold text-gray-900">
+										Emily Carter
+									</div>
+									<div className="text-gray-600">
+										Nail Technician, The Polished Look
+									</div>
+								</div>
 							</div>
 						</div>
 					</div>
+				</section>
 
-					{/* Contact Information */}
-					<div className="text-center mt-12">
-						<p className="text-gray-600 mb-4">
-							Want to learn more about our pricing plans?
-						</p>
-						<Link
-							href="/contact"
-							className="inline-block bg-orange-500 text-white px-6 py-3 rounded-lg font-semibold hover:bg-orange-600 transition-colors"
-						>
-							Contact Us
-						</Link>
-					</div>
-				</div>
-			</section>
-
-			{/* Testimonials section */}
-			<section className="py-20 bg-white">
-				<div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-					<div className="text-center mb-16">
-						<h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-6">
-							What our clients say.
+				{/* CTA Section */}
+				<section className="py-20 bg-gradient-to-r from-orange-500 to-pink-500">
+					<div className="max-w-4xl mx-auto text-center px-4 sm:px-6 lg:px-8">
+						<h2 className="text-4xl md:text-5xl font-bold text-white mb-6">
+							Ready to transform your business?
 						</h2>
-						<p className="text-xl text-gray-600 max-w-3xl mx-auto">
-							Hear from beauty professionals who have transformed their
-							businesses with Henzo.
+						<p className="text-xl text-orange-100 mb-8">
+							Join thousands of beauty professionals who trust Henzo to manage
+							their business.
 						</p>
-					</div>
-
-					<div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-						{/* Testimonial 1 */}
-						<div className="bg-gray-50 rounded-2xl p-8">
-							<div className="mb-6">
-								<div className="flex text-orange-400 mb-4">
-									{[...Array(5)].map((_, i) => (
-										<svg
-											key={i}
-											className="w-5 h-5 fill-current"
-											viewBox="0 0 20 20"
-										>
-											<path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-										</svg>
-									))}
-								</div>
-								<blockquote className="text-gray-700 text-lg leading-relaxed">
-									"Henzo has completely revolutionized how I manage my salon.
-									The scheduling is so intuitive, and client communication has
-									never been easier!"
-								</blockquote>
-							</div>
-							<div className="border-t border-gray-200 pt-6">
-								<div className="font-semibold text-gray-900">Sarah Chen</div>
-								<div className="text-gray-600">Owner, Glow & Go Aesthetics</div>
-							</div>
-						</div>
-
-						{/* Testimonial 2 */}
-						<div className="bg-gray-50 rounded-2xl p-8">
-							<div className="mb-6">
-								<div className="flex text-orange-400 mb-4">
-									{[...Array(5)].map((_, i) => (
-										<svg
-											key={i}
-											className="w-5 h-5 fill-current"
-											viewBox="0 0 20 20"
-										>
-											<path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-										</svg>
-									))}
-								</div>
-								<blockquote className="text-gray-700 text-lg leading-relaxed">
-									"As a freelance stylist, Henzo keeps me organized and
-									professional. The payment processing is seamless, and my
-									clients love the online booking."
-								</blockquote>
-							</div>
-							<div className="border-t border-gray-200 pt-6">
-								<div className="font-semibold text-gray-900">Mark Rivera</div>
-								<div className="text-gray-600">Freelance Stylist</div>
-							</div>
-						</div>
-
-						{/* Testimonial 3 */}
-						<div className="bg-gray-50 rounded-2xl p-8">
-							<div className="mb-6">
-								<div className="flex text-orange-400 mb-4">
-									{[...Array(5)].map((_, i) => (
-										<svg
-											key={i}
-											className="w-5 h-5 fill-current"
-											viewBox="0 0 20 20"
-										>
-											<path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-										</svg>
-									))}
-								</div>
-								<blockquote className="text-gray-700 text-lg leading-relaxed">
-									"The client management features are a lifesaver! I can easily
-									access notes and history, making every client feel special and
-									understood."
-								</blockquote>
-							</div>
-							<div className="border-t border-gray-200 pt-6">
-								<div className="font-semibold text-gray-900">Emily Carter</div>
-								<div className="text-gray-600">
-									Nail Technician, The Polished Look
-								</div>
-							</div>
+						<div className="flex flex-col sm:flex-row gap-4 justify-center">
+							<Link
+								href="/business/register"
+								className="bg-white text-orange-500 px-8 py-4 rounded-lg text-lg font-semibold hover:bg-gray-100 transition-colors"
+							>
+								Start your free trial
+							</Link>
+							<Link
+								href="/login"
+								className="border-2 border-white text-white px-8 py-4 rounded-lg text-lg font-semibold hover:bg-white hover:text-orange-500 transition-colors"
+							>
+								Already have an account?
+							</Link>
 						</div>
 					</div>
-				</div>
-			</section>
-
-			{/* CTA Section */}
-			<section className="py-20 bg-gradient-to-r from-orange-500 to-pink-500">
-				<div className="max-w-4xl mx-auto text-center px-4 sm:px-6 lg:px-8">
-					<h2 className="text-4xl md:text-5xl font-bold text-white mb-6">
-						Ready to transform your business?
-					</h2>
-					<p className="text-xl text-orange-100 mb-8">
-						Join thousands of beauty professionals who trust Henzo to manage
-						their business.
-					</p>
-					<div className="flex flex-col sm:flex-row gap-4 justify-center">
-						<Link
-							href="/business/register"
-							className="bg-white text-orange-500 px-8 py-4 rounded-lg text-lg font-semibold hover:bg-gray-100 transition-colors"
-						>
-							Start your free trial
-						</Link>
-						<Link
-							href="/login"
-							className="border-2 border-white text-white px-8 py-4 rounded-lg text-lg font-semibold hover:bg-white hover:text-orange-500 transition-colors"
-						>
-							Already have an account?
-						</Link>
-					</div>
-				</div>
-			</section>
+				</section>
+			</main>
+			<script
+				type="application/ld+json"
+				dangerouslySetInnerHTML={{
+					__html: JSON.stringify({
+						'@context': 'https://schema.org',
+						'@type': 'SoftwareApplication',
+						name: 'Henzo for Business',
+						description:
+							'The all-in-one platform for your beauty business. Manage appointments, clients, and payments all in one place.',
+						url: '/business',
+						applicationCategory: 'BusinessApplication',
+						operatingSystem: 'Web',
+						offers: {
+							'@type': 'Offer',
+							price: '0',
+							priceCurrency: 'USD',
+							description: 'Free beta testing period until June 1, 2026',
+						},
+						featureList: [
+							'Flexible scheduling',
+							'Client management',
+							'Seamless payments',
+							'Online booking',
+							'Analytics dashboard',
+							'Mobile app',
+							'Tablet app',
+							'Web app',
+						],
+						author: {
+							'@type': 'Organization',
+							name: 'Henzo',
+							url: 'https://henzo.app',
+						},
+						publisher: {
+							'@type': 'Organization',
+							name: 'Henzo',
+							url: 'https://henzo.app',
+						},
+						breadcrumb: {
+							'@type': 'BreadcrumbList',
+							itemListElement: [
+								{
+									'@type': 'ListItem',
+									position: 1,
+									name: 'Home',
+									item: '/',
+								},
+								{
+									'@type': 'ListItem',
+									position: 2,
+									name: 'Business',
+									item: '/business',
+								},
+							],
+						},
+					}),
+				}}
+			/>
 		</div>
 	);
 }

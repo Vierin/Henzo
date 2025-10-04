@@ -1,6 +1,22 @@
-'use client';
+import React from 'react';
+import { Metadata } from 'next';
+import NewServiceClient from './NewServiceClient';
 
-import { useState } from 'react';
+// Private page - should not be indexed
+export const metadata: Metadata = {
+	title: 'Add New Service - Henzo',
+	description: 'Create a new service for your salon',
+	robots: {
+		index: false,
+		follow: false,
+		noarchive: true,
+		nosnippet: true,
+	},
+};
+
+export default function NewServicePage() {
+	return <NewServiceClient />;
+}
 import { useRouter } from 'next/navigation';
 import { useCreateService } from '@/hooks/useServices';
 import { STATIC_CATEGORIES } from '@/constants/categories';

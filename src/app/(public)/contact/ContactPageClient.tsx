@@ -70,14 +70,20 @@ export default function ContactPageClient() {
 	return (
 		<>
 			<div className="min-h-screen flex flex-col">
-				<main className="flex-1 bg-white">
+				<main className="flex-1 bg-white" role="main">
 					{/* Hero Section */}
-					<section className="py-16 px-6">
+					<section
+						className="py-16 px-6"
+						aria-labelledby="contact-hero-heading"
+					>
 						<div className="max-w-4xl mx-auto text-center">
 							<p className="text-orange-600 text-sm font-semibold uppercase tracking-wide mb-4">
 								CONTACT US
 							</p>
-							<h1 className="text-4xl md:text-5xl font-bold text-black mb-6">
+							<h1
+								id="contact-hero-heading"
+								className="text-4xl md:text-5xl font-bold text-black mb-6"
+							>
 								We're here to help
 							</h1>
 							<p className="text-xl text-gray-600 mb-12">
@@ -88,20 +94,34 @@ export default function ContactPageClient() {
 					</section>
 
 					{/* Contact Form & Contact Info */}
-					<section className="py-16 px-6">
+					<section
+						className="py-16 px-6"
+						aria-labelledby="contact-form-heading"
+					>
 						<div className="max-w-6xl mx-auto">
 							<div className="grid grid-cols-1 lg:grid-cols-2 gap-16">
 								{/* Contact Form */}
 								<div>
-									<h2 className="text-2xl font-bold text-black mb-2">
+									<h2
+										id="contact-form-heading"
+										className="text-2xl font-bold text-black mb-2"
+									>
 										Send us a message
 									</h2>
 									<p className="text-gray-600 mb-8">
 										Fill out the form and we'll get back to you.
 									</p>
 
-									<form onSubmit={handleSubmit} className="space-y-6">
+									<form
+										onSubmit={handleSubmit}
+										className="space-y-6"
+										role="form"
+										aria-labelledby="contact-form-heading"
+									>
 										<div>
+											<label htmlFor="name" className="sr-only">
+												Your name
+											</label>
 											<input
 												type="text"
 												id="name"
@@ -112,9 +132,14 @@ export default function ContactPageClient() {
 												className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent text-gray-500"
 												required
 												disabled={isSubmitting}
+												aria-required="true"
+												aria-describedby="name-error"
 											/>
 										</div>
 										<div>
+											<label htmlFor="email" className="sr-only">
+												Your email
+											</label>
 											<input
 												type="email"
 												id="email"
@@ -125,9 +150,14 @@ export default function ContactPageClient() {
 												className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent text-gray-500"
 												required
 												disabled={isSubmitting}
+												aria-required="true"
+												aria-describedby="email-error"
 											/>
 										</div>
 										<div>
+											<label htmlFor="message" className="sr-only">
+												Your message
+											</label>
 											<textarea
 												id="message"
 												name="message"
@@ -138,35 +168,58 @@ export default function ContactPageClient() {
 												className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent text-gray-500 resize-none"
 												required
 												disabled={isSubmitting}
+												aria-required="true"
+												aria-describedby="message-error"
 											></textarea>
 										</div>
 										<button
 											type="submit"
 											disabled={isSubmitting}
 											className="w-full bg-orange-600 text-white py-3 px-6 rounded-lg font-semibold hover:bg-orange-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+											aria-describedby="submit-status"
 										>
 											{isSubmitting ? 'Sending...' : 'Send Message'}
 										</button>
+										<div
+											id="submit-status"
+											aria-live="polite"
+											className="sr-only"
+										>
+											{isSubmitting
+												? 'Sending your message...'
+												: 'Ready to send message'}
+										</div>
 									</form>
 								</div>
 
 								{/* Contact Information */}
 								<div>
-									<h2 className="text-2xl font-bold text-black mb-2">
+									<h2
+										id="contact-info-heading"
+										className="text-2xl font-bold text-black mb-2"
+									>
 										Contact Information
 									</h2>
 									<p className="text-gray-600 mb-8">
 										Reach out to us via email or phone.
 									</p>
-									<div className="space-y-8">
+									<div
+										className="space-y-8"
+										role="region"
+										aria-labelledby="contact-info-heading"
+									>
 										{/* Email */}
 										<div className="flex items-start space-x-4">
-											<div className="w-8 h-8 bg-orange-100 rounded-full flex items-center justify-center flex-shrink-0 mt-1">
+											<div
+												className="w-8 h-8 bg-orange-100 rounded-full flex items-center justify-center flex-shrink-0 mt-1"
+												aria-hidden="true"
+											>
 												<svg
 													className="w-4 h-4 text-orange-600"
 													fill="none"
 													stroke="currentColor"
 													viewBox="0 0 24 24"
+													aria-hidden="true"
 												>
 													<path
 														strokeLinecap="round"
@@ -183,9 +236,13 @@ export default function ContactPageClient() {
 												<p className="text-gray-600 mb-1">
 													For general inquiries
 												</p>
-												<p className="text-orange-600 font-medium">
+												<a
+													href="mailto:hello@henzo.app"
+													className="text-orange-600 font-medium hover:text-orange-700 transition-colors"
+													aria-label="Send email to hello@henzo.app"
+												>
 													hello@henzo.app
-												</p>
+												</a>
 											</div>
 										</div>
 									</div>
@@ -195,10 +252,16 @@ export default function ContactPageClient() {
 					</section>
 
 					{/* FAQ Section */}
-					<section className="py-16 px-6 bg-gray-50">
+					<section
+						className="py-16 px-6 bg-gray-50"
+						aria-labelledby="faq-heading"
+					>
 						<div className="max-w-4xl mx-auto">
 							<div className="text-center mb-12">
-								<h2 className="text-3xl font-bold text-black mb-4">
+								<h2
+									id="faq-heading"
+									className="text-3xl font-bold text-black mb-4"
+								>
 									Frequently Asked Questions
 								</h2>
 								<p className="text-gray-600">

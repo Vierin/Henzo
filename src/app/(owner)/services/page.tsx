@@ -1,6 +1,22 @@
-'use client';
+import React from 'react';
+import { Metadata } from 'next';
+import ServicesClient from './ServicesClient';
 
-import { useState, useEffect, useMemo } from 'react';
+// Private page - should not be indexed
+export const metadata: Metadata = {
+	title: 'Services Management - Henzo',
+	description: 'Manage your salon services and pricing',
+	robots: {
+		index: false,
+		follow: false,
+		noarchive: true,
+		nosnippet: true,
+	},
+};
+
+export default function ServicesPage() {
+	return <ServicesClient />;
+}
 import { useRouter } from 'next/navigation';
 import toast from 'react-hot-toast';
 import EditServiceModal from '@/components/EditServiceModal';
