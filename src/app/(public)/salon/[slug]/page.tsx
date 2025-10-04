@@ -1,439 +1,116 @@
-'use client';
+import { Metadata } from 'next';
+import { notFound } from 'next/navigation';
+import { apiClient } from '@/lib/api-client';
+import { Salon } from '@/types';
+import SalonDetailClient from './salonDetailClient';
+import {
+	generateSalonSlug,
+	extractSalonIdFromSlug,
+	isValidSalonSlug,
+} from '@/utils/slug';
 
-import { useState, useEffect } from 'react';
-import { useParams, useRouter } from 'next/navigation';
-import BookingModal from '../../../../components/BookingModal';
-import PublicHeader from '../../../../components/PublicHeader';
-import LoadingSpinner from '../../../../components/LoadingSpinner';
-import ErrorDisplay from '../../../../components/ErrorDisplay';
-import MapComponent from '../../../../components/MapComponent';
-import { useSalonById } from '@/hooks/useSalon';
-import { useSalonSlug } from '@/hooks/useSalonSlug';
-import { Service, WorkingHours } from '@/types';
-import { supabase } from '@/lib/supabase';
-import SalonPhotoSlider from '../../../../components/SalonPhotoSlider';
+interface SalonDetailPageProps {
+	params: { slug: string };
+}
 
-export default function SalonDetailPage() {
-	const params = useParams();
-	const router = useRouter();
-	const [activeTab, setActiveTab] = useState('Services');
-	const [isBookingModalOpen, setIsBookingModalOpen] = useState(false);
-	const [selectedService, setSelectedService] = useState<Service | null>(null);
+async function getSalonData(slug: string): Promise<Salon | null> {
+	try {
+		// Проверяем, является ли это старым ID (UUID) или новым slug
+		const isOldId = /^[a-f0-9-]{36}$/.test(slug);
+		const salonId = isOldId ? slug : extractSalonIdFromSlug(slug);
 
-	const { getSalonIdFromSlug, isSlugValid, getSalonUrl } = useSalonSlug();
-	const slug = params.slug as string;
-
-	// Проверяем, является ли это старым ID (UUID) или новым slug
-	const isOldId = /^[a-f0-9-]{36}$/.test(slug);
-	const salonId = isOldId ? slug : getSalonIdFromSlug(slug);
-	const { data: salon, isLoading, error } = useSalonById(salonId || '');
-
-	// Если это старый ID, редиректим на новый URL с slug
-	useEffect(() => {
-		if (isOldId && salon) {
-			const newUrl = getSalonUrl(salon);
-			router.replace(newUrl);
+		if (!salonId) {
+			return null;
 		}
-	}, [isOldId, salon, getSalonUrl, router]);
 
-	// Проверяем валидность slug (только для новых URL)
-	if (!isOldId && (!isSlugValid(slug) || !salonId)) {
+		// Валидация slug для новых URL
+		if (!isOldId && !isValidSalonSlug(slug)) {
+			return null;
+		}
+
+		const response = await apiClient.get<{ salon: Salon }>(
+			`/salons/${salonId}`
+		);
+		return response.salon || response;
+	} catch (error) {
+		console.error('Error fetching salon:', error);
+		return null;
+	}
+}
+
+export async function generateMetadata({
+	params,
+}: SalonDetailPageProps): Promise<Metadata> {
+	const salon = await getSalonData(params.slug);
+
+	if (!salon) {
+		return {
+			title: 'Salon Not Found',
+			description: 'The requested salon could not be found.',
+		};
+	}
+
+	const title = `${salon.name} - Beauty Salon`;
+	const description =
+		salon.description ||
+		`Professional beauty services at ${salon.name}. Book your appointment today!`;
+
+	return {
+		title,
+		description,
+		keywords: [
+			'beauty salon',
+			'hair salon',
+			'nail salon',
+			'spa services',
+			salon.name,
+			salon.address || '',
+		].filter(Boolean),
+		openGraph: {
+			title,
+			description,
+			type: 'website',
+			url: `/salon/${params.slug}`,
+			images:
+				salon.photos && salon.photos.length > 0 ? salon.photos : undefined,
+		},
+		twitter: {
+			card: 'summary_large_image',
+			title,
+			description,
+			images:
+				salon.photos && salon.photos.length > 0 ? salon.photos : undefined,
+		},
+		alternates: {
+			canonical: `/salon/${params.slug}`,
+		},
+	};
+}
+
+export default async function SalonDetailPage({
+	params,
+}: SalonDetailPageProps) {
+	const salon = await getSalonData(params.slug);
+
+	if (!salon) {
+		notFound();
+	}
+
+	// Проверяем, нужно ли редиректить со старого ID на новый slug
+	const isOldId = /^[a-f0-9-]{36}$/.test(params.slug);
+	if (isOldId) {
+		const newSlug = generateSalonSlug(salon.name, salon.address, salon.id);
 		return (
-			<div className="min-h-screen bg-[#F8F5F2]">
-				<div className="container mx-auto px-4 py-8">
-					<ErrorDisplay
-						message="Invalid salon URL"
-						error={new Error('The salon URL is not valid')}
-					/>
+			<div className="min-h-screen bg-[#F8F5F2] flex items-center justify-center">
+				<div className="text-center">
+					<p className="text-gray-600 mb-4">
+						Redirecting to updated salon page...
+					</p>
+					<meta httpEquiv="refresh" content={`0; url=/salon/${newSlug}`} />
 				</div>
 			</div>
 		);
 	}
 
-	// Loading and error states
-	if (isLoading) {
-		return (
-			<div className="min-h-screen bg-[#F8F5F2]">
-				<div className="container mx-auto px-4 py-8">
-					<LoadingSpinner />
-				</div>
-			</div>
-		);
-	}
-
-	if (error || !salon) {
-		return (
-			<div className="min-h-screen bg-[#F8F5F2]">
-				<div className="container mx-auto px-4 py-8">
-					<ErrorDisplay
-						message="Failed to load salon details"
-						error={error || new Error('Unknown error')}
-					/>
-				</div>
-			</div>
-		);
-	}
-
-	const tabs = ['Services', 'Reviews'];
-
-	const handleBookService = (service: Service) => {
-		setSelectedService(service);
-		setIsBookingModalOpen(true);
-	};
-
-	const renderStars = (rating: number) => {
-		return Array.from({ length: 5 }, (_, i) => (
-			<span
-				key={i}
-				className={`text-lg ${
-					i < Math.floor(rating) ? 'text-yellow-400' : 'text-gray-300'
-				}`}
-			>
-				★
-			</span>
-		));
-	};
-
-	const formatWorkingHours = (workingHours: WorkingHours | undefined) => {
-		if (!workingHours) return 'Hours not specified';
-
-		const days: (keyof WorkingHours)[] = [
-			'monday',
-			'tuesday',
-			'wednesday',
-			'thursday',
-			'friday',
-			'saturday',
-			'sunday',
-		];
-		const dayNames = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-
-		return days
-			.map((day, index) => {
-				const hours = workingHours[day];
-				if (!hours || hours.closed) {
-					return `${dayNames[index]}: Closed`;
-				}
-				return `${dayNames[index]}: ${hours.open} - ${hours.close}`;
-			})
-			.join('\n');
-	};
-
-	// Group services by category for better display
-	const groupServicesByCategory = (services: Service[]) => {
-		const categories: { [key: string]: Service[] } = {};
-
-		services.forEach((service) => {
-			// Simple categorization based on service name
-			let category = 'Other Services';
-			const serviceName = service.name.toLowerCase();
-
-			if (
-				serviceName.includes('hair') ||
-				serviceName.includes('cut') ||
-				serviceName.includes('color') ||
-				serviceName.includes('styling')
-			) {
-				category = 'Hair Services';
-			} else if (
-				serviceName.includes('nail') ||
-				serviceName.includes('manicure') ||
-				serviceName.includes('pedicure')
-			) {
-				category = 'Nail Care';
-			} else if (
-				serviceName.includes('facial') ||
-				serviceName.includes('skin') ||
-				serviceName.includes('massage') ||
-				serviceName.includes('wax')
-			) {
-				category = 'Skincare';
-			}
-
-			if (!categories[category]) {
-				categories[category] = [];
-			}
-			categories[category].push(service);
-		});
-
-		return categories;
-	};
-
-	const serviceCategories = salon.services
-		? groupServicesByCategory(salon.services)
-		: {};
-
-	const getPublicUrl = (filePath: string) => {
-		const { data } = supabase.storage
-			.from('salon-files')
-			.getPublicUrl(filePath);
-		return data.publicUrl;
-	};
-
-	return (
-		<div className="min-h-screen bg-[#F8F5F2]">
-			<main className="py-8 px-6">
-				<div className="mx-auto max-w-6xl">
-					{/* Salon Title */}
-					<h1 className="text-4xl font-bold text-gray-900 mb-8">
-						{salon.name}
-					</h1>
-
-					<div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-						{/* Left Column - Main Content */}
-						<div className="lg:col-span-2">
-							{/* Photo Slider */}
-							<div className="mb-8">
-								<SalonPhotoSlider
-									photos={salon.photos || []}
-									logo={salon.logo}
-									salonName={salon.name}
-								/>
-							</div>
-							{/* Navigation Tabs */}
-							<div className="flex gap-8 mb-8 border-b border-gray-200">
-								{tabs.map((tab) => (
-									<button
-										key={tab}
-										onClick={() => setActiveTab(tab)}
-										className={`pb-4 px-1 text-lg font-medium transition-colors ${
-											activeTab === tab
-												? 'text-[#ff5b5b] border-b-2 border-[#ff5b5b]'
-												: 'text-gray-600 hover:text-gray-900'
-										}`}
-									>
-										{tab}
-									</button>
-								))}
-							</div>
-
-							{/* Tab Content */}
-							{activeTab === 'Services' && (
-								<div>
-									{Object.keys(serviceCategories).length > 0 ? (
-										Object.entries(serviceCategories).map(
-											([category, services]) => (
-												<div key={category} className="mb-12">
-													<h2 className="text-2xl font-bold text-gray-900 mb-6">
-														{category}
-													</h2>
-													<div className="space-y-4">
-														{services.map((service) => (
-															<div
-																key={service.id}
-																className="bg-white rounded-lg p-6 hover:shadow-md transition-shadow"
-															>
-																<div className="flex justify-between items-start">
-																	<div className="flex-1">
-																		<h3 className="text-xl font-semibold text-gray-900 mb-2">
-																			{service.name}
-																		</h3>
-																		{service.description && (
-																			<p className="text-gray-600 mb-3">
-																				{service.description}
-																			</p>
-																		)}
-																		<div className="flex items-center gap-4 text-sm text-gray-500">
-																			<span>⏱️ {service.duration} min</span>
-																			<span className="text-[#ff5b5b] font-semibold">
-																				${service.price}
-																			</span>
-																		</div>
-																	</div>
-																	<button
-																		onClick={() => handleBookService(service)}
-																		className="ml-4 bg-[#ff5b5b] text-white px-6 py-2 rounded-lg font-medium hover:bg-[#e04a4a] transition-colors"
-																	>
-																		Book Now
-																	</button>
-																</div>
-															</div>
-														))}
-													</div>
-												</div>
-											)
-										)
-									) : (
-										<div className="text-center py-12">
-											<div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-												<span className="text-2xl">💇‍♀️</span>
-											</div>
-											<h3 className="text-xl font-semibold text-gray-900 mb-2">
-												No services available
-											</h3>
-											<p className="text-gray-600">
-												This salon hasn&apos;t added any services yet.
-											</p>
-										</div>
-									)}
-								</div>
-							)}
-
-							{activeTab === 'Reviews' && (
-								<div>
-									<h2 className="text-2xl font-bold text-gray-900 mb-6">
-										Customer Reviews
-									</h2>
-
-									{/* Mock reviews - would come from reviews API */}
-									<div className="space-y-6">
-										<div className="border-b border-gray-200 pb-6">
-											<div className="flex items-center gap-2 mb-2">
-												{renderStars(5)}
-												<span className="font-medium text-gray-900">
-													Sarah M.
-												</span>
-												<span className="text-gray-500 text-sm">
-													2 days ago
-												</span>
-											</div>
-											<p className="text-gray-700">
-												Amazing experience! The staff was professional and the
-												service was top-notch. I&apos;ll definitely be coming
-												back.
-											</p>
-										</div>
-
-										<div className="border-b border-gray-200 pb-6">
-											<div className="flex items-center gap-2 mb-2">
-												{renderStars(4)}
-												<span className="font-medium text-gray-900">
-													John D.
-												</span>
-												<span className="text-gray-500 text-sm">
-													1 week ago
-												</span>
-											</div>
-											<p className="text-gray-700">
-												Great salon with excellent service. The only minor issue
-												was the wait time, but the quality made up for it.
-											</p>
-										</div>
-
-										<div className="border-b border-gray-200 pb-6">
-											<div className="flex items-center gap-2 mb-2">
-												{renderStars(5)}
-												<span className="font-medium text-gray-900">
-													Emma L.
-												</span>
-												<span className="text-gray-500 text-sm">
-													2 weeks ago
-												</span>
-											</div>
-											<p className="text-gray-700">
-												Perfect haircut and styling! The stylist really
-												understood what I wanted and delivered beyond my
-												expectations.
-											</p>
-										</div>
-									</div>
-
-									<div className="mt-6 text-center">
-										<button className="text-[#ff5b5b] hover:text-[#e04a4a] font-medium transition-colors">
-											View All Reviews
-										</button>
-									</div>
-								</div>
-							)}
-						</div>
-
-						{/* Right Column - Sidebar */}
-						<div className="bg-white rounded-xl p-6 h-fit shadow-sm">
-							<h2 className="text-xl font-bold text-gray-900 mb-4">
-								{salon.name}
-							</h2>
-
-							<p className="text-gray-700 leading-relaxed mb-6">
-								{salon.description ||
-									'Your one-stop destination for beauty and relaxation. We offer a wide range of services to make you look and feel your best.'}
-							</p>
-
-							{/* Mini Map */}
-							{salon.address && (
-								<div className="mb-6">
-									<h3 className="text-lg font-semibold text-gray-900 mb-3">
-										Location
-									</h3>
-									<div className="w-full rounded-lg overflow-hidden border border-gray-200">
-										<MapComponent
-											address={salon.address}
-											showPopup={false}
-											interactive={false}
-										/>
-									</div>
-									<button
-										onClick={() => {
-											if (salon.address) {
-												const encodedAddress = encodeURIComponent(
-													salon.address
-												);
-												const googleMapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodedAddress}`;
-												window.open(googleMapsUrl, '_blank');
-											}
-										}}
-										className="w-full mt-3 border border-gray-300 text-gray-700 py-3 px-6 rounded-lg font-medium hover:bg-gray-50 transition-colors"
-									>
-										Get Directions
-									</button>
-								</div>
-							)}
-
-							<div className="space-y-4">
-								{salon.address && (
-									<div>
-										<div className="flex items-center gap-2 mb-1">
-											<span className="text-gray-600">📍</span>
-											<span className="font-medium text-gray-900">Address</span>
-										</div>
-										<p className="text-gray-600 text-sm ml-6">
-											{salon.address}
-										</p>
-									</div>
-								)}
-
-								<div>
-									<div className="flex items-center gap-2 mb-1">
-										<span className="text-gray-600">🕒</span>
-										<span className="font-medium text-gray-900">
-											Opening Hours
-										</span>
-									</div>
-									<div className="text-gray-600 text-sm ml-6">
-										<pre className="whitespace-pre-line text-xs">
-											{formatWorkingHours(salon.workingHours)}
-										</pre>
-									</div>
-								</div>
-
-								<div>
-									<div className="flex items-center gap-2 mb-1">
-										<span className="text-gray-600">⭐</span>
-										<span className="font-medium text-gray-900">Rating</span>
-									</div>
-									<div className="flex items-center gap-2 ml-6">
-										{renderStars(4.9)}
-										<span className="text-gray-600 text-sm">
-											4.9 (245 reviews)
-										</span>
-									</div>
-								</div>
-							</div>
-						</div>
-					</div>
-				</div>
-			</main>
-
-			{/* Booking Modal */}
-			<BookingModal
-				isOpen={isBookingModalOpen}
-				onClose={() => {
-					setIsBookingModalOpen(false);
-					setSelectedService(null);
-				}}
-				salonId={salonId || ''}
-				service={selectedService || undefined}
-				salonName={salon.name}
-			/>
-		</div>
-	);
+	return <SalonDetailClient salon={salon} />;
 }

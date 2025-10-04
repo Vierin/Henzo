@@ -141,4 +141,72 @@ export const seoConfig = {
 			creator: '@henzo',
 		},
 	} as Metadata,
+	terms: {
+		title: 'Terms of Service - Henzo | Legal Terms & Conditions',
+		description:
+			"Read Henzo's Terms of Service to understand the terms and conditions for using our beauty salon booking platform. Learn about user responsibilities, intellectual property, and liability limitations.",
+		metadataBase: new URL(baseUrl),
+		alternates: {
+			canonical: '/terms-of-service',
+		},
+		openGraph: {
+			title: 'Terms of Service - Henzo',
+			description:
+				"Read Henzo's Terms of Service to understand the terms and conditions for using our beauty salon booking platform.",
+			url: '/terms-of-service',
+			siteName: 'Henzo',
+			images: [
+				{
+					url: '/og-terms.jpg',
+					width: 1200,
+					height: 630,
+					alt: 'Henzo Terms of Service - Legal Terms & Conditions',
+				},
+			],
+			locale: 'en_US',
+			type: 'website',
+		},
+		twitter: {
+			card: 'summary_large_image',
+			title: 'Terms of Service - Henzo',
+			description:
+				"Read Henzo's Terms of Service to understand the terms and conditions for using our beauty salon booking platform.",
+			images: ['/og-terms.jpg'],
+			creator: '@henzo',
+		},
+	} as Metadata,
+	privacy: {
+		title: 'Privacy Policy - Henzo | Data Protection & Privacy',
+		description:
+			'Learn how Henzo collects, uses, and protects your personal information. Read our comprehensive Privacy Policy covering data collection, usage, sharing, and your privacy rights.',
+		metadataBase: new URL(baseUrl),
+		alternates: {
+			canonical: '/privacy-policy',
+		},
+		openGraph: {
+			title: 'Privacy Policy - Henzo',
+			description:
+				'Learn how Henzo collects, uses, and protects your personal information. Read our comprehensive Privacy Policy.',
+			url: '/privacy-policy',
+			siteName: 'Henzo',
+			images: [
+				{
+					url: '/og-privacy.jpg',
+					width: 1200,
+					height: 630,
+					alt: 'Henzo Privacy Policy - Data Protection & Privacy',
+				},
+			],
+			locale: 'en_US',
+			type: 'website',
+		},
+		twitter: {
+			card: 'summary_large_image',
+			title: 'Privacy Policy - Henzo',
+			description:
+				'Learn how Henzo collects, uses, and protects your personal information. Read our comprehensive Privacy Policy.',
+			images: ['/og-privacy.jpg'],
+			creator: '@henzo',
+		},
+	} as Metadata,
 };
