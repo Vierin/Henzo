@@ -5,7 +5,7 @@ import OwnerDashboardClient from './OwnerDashboardClient';
 // Private page - should not be indexed
 export const metadata: Metadata = {
 	title: 'Owner Dashboard - Henzo',
-	description: 'Manage your salon appointments and bookings',
+	description: 'Manage your salon appointments and business operations',
 	robots: {
 		index: false,
 		follow: false,
@@ -14,6 +14,6 @@ export const metadata: Metadata = {
 	},
 };
 
-export default function OwnerDashboard() {
+export default function OwnerDashboardPage() {
 	return <OwnerDashboardClient />;
 }

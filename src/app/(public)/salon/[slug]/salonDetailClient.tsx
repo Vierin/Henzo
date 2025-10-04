@@ -443,6 +443,7 @@ export default function SalonDetailClient({ salon }: SalonDetailClientProps) {
 				salonId={salon.id}
 				service={selectedService || undefined}
 				salonName={salon.name}
+				workingHours={salon.workingHours}
 			/>
 		</main>
 	);

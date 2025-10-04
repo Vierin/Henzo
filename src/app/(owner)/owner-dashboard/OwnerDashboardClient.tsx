@@ -13,8 +13,18 @@ import {
 	isToday,
 	getDatePart,
 } from '@/utils/date';
+import LoadingSpinner from '@/components/LoadingSpinner';
+import ErrorDisplay from '@/components/ErrorDisplay';
+import { useSalonId } from '@/hooks/useSalon';
+import { useCurrentUserSalon } from '@/hooks/useSalons';
 
-const DATA_WIDTH = '50px';
+// Import our new components
+import BookingList from './components/BookingList';
+import CalendarView from './components/CalendarView';
+import TodaysAppointments from './components/TodaysAppointments';
+import BookingDetailsModal from './components/BookingDetailsModal';
+import DaySchedule from './components/DaySchedule';
+import { CalendarDays, List } from 'lucide-react';
 
 export default function OwnerDashboardClient() {
 	const [isBookingModalOpen, setIsBookingModalOpen] = useState(false);
@@ -23,7 +33,6 @@ export default function OwnerDashboardClient() {
 	const [viewingBooking, setViewingBooking] = useState<Booking | null>(null);
 	const [isBookingDetailsModalOpen, setIsBookingDetailsModalOpen] =
 		useState(false);
-	const [salonId, setSalonId] = useState<string | null>(null);
 	const [bookings, setBookings] = useState<Booking[]>([]);
 	const [loading, setLoading] = useState(true);
 	const [error, setError] = useState<string | null>(null);
@@ -38,6 +47,13 @@ export default function OwnerDashboardClient() {
 	const [itemsPerPage] = useState(20);
 	const router = useRouter();
 
+	// Получаем salonId через хук
+	const { salonId, isLoading: salonLoading, hasSalon } = useSalonId();
+
+	// Получаем данные о салоне для рабочих часов
+	const { data: salonData, isLoading: salonDataLoading } =
+		useCurrentUserSalon();
+
 	// Memoized functions for better performance
 	const fetchBookings = useCallback(async () => {
 		try {
@@ -46,11 +62,6 @@ export default function OwnerDashboardClient() {
 
 			// Загружаем бронирования для текущего салона владельца
 			const data = await apiClient.get<Booking[]>('/bookings/owner');
-
-			// Получаем ID салона из первого бронирования
-			if (data && data.length > 0 && data[0].salonId) {
-				setSalonId(data[0].salonId);
-			}
 
 			// Автоматически обновляем статусы завершенных бронирований
 			const updatedBookings = await updateCompletedBookings(data);
@@ -110,7 +121,36 @@ export default function OwnerDashboardClient() {
 		[]
 	);
 
-	// Event handlers with useCallback for performance
+	useEffect(() => {
+		// Fetch bookings only if we have salonId
+		if (!salonLoading && hasSalon && salonId) {
+			const initializeDashboard = async () => {
+				try {
+					await fetchBookings();
+				} catch (error) {
+					// If there's an error and it's about salon not found, redirect to setup
+					if (
+						error instanceof Error &&
+						(error.message.includes('404') ||
+							error.message.includes('Salon not found') ||
+							error.message.includes('No salon found'))
+					) {
+						router.push('/business/complete-setup');
+					} else {
+						setError('Failed to load dashboard data');
+						setLoading(false);
+					}
+				}
+			};
+
+			initializeDashboard();
+		} else if (!salonLoading && !hasSalon) {
+			// Redirect to setup if no salon found
+			router.push('/business/complete-setup');
+		}
+	}, [router, fetchBookings, salonLoading, hasSalon, salonId]);
+
+	// Memoized event handlers
 	const handleNewAppointment = useCallback(() => {
 		setSelectedService(undefined);
 		setEditingBooking(null);
@@ -154,25 +194,21 @@ export default function OwnerDashboardClient() {
 	const handleCancelBooking = useCallback(
 		async (bookingId: string) => {
 			try {
-				console.log('🚫 Cancelling booking:', bookingId);
-				const result = await apiClient.put(`/bookings/${bookingId}/cancel`);
-				console.log('✅ Cancel result:', result);
+				await apiClient.put(`/bookings/${bookingId}/cancel`);
 				toast.success('Booking cancelled successfully');
 				fetchBookings();
-			} catch (error) {
-				console.error('❌ Error cancelling booking:', error);
+			} catch (err) {
 				const errorMessage =
-					error instanceof Error ? error.message : 'Failed to cancel booking';
+					err instanceof Error ? err.message : 'Failed to cancel booking';
 				toast.error(errorMessage);
 			}
 		},
 		[fetchBookings]
 	);
 
-	// Memoized filtered bookings for performance
-	const filteredBookings = useMemo(() => {
+	// Memoized computed values
+	const getFilteredBookings = useMemo(() => {
 		const now = new Date();
-
 		return bookings.filter((booking) => {
 			const bookingDate = safeParseDate(booking.time);
 			if (!bookingDate) return false;
@@ -184,13 +220,11 @@ export default function OwnerDashboardClient() {
 			const isPast = bookingDate < now;
 			const isUpcoming = bookingDate >= now;
 
-			// Фильтр по статусу
 			let statusMatch = true;
 			if (statusFilter !== 'all') {
 				statusMatch = booking.status === statusFilter;
 			}
 
-			// Фильтр по дате
 			let dateMatch = true;
 			if (dateFilter !== 'all') {
 				switch (dateFilter) {
@@ -208,70 +242,17 @@ export default function OwnerDashboardClient() {
 						break;
 				}
 			}
-
 			return statusMatch && dateMatch;
 		});
 	}, [bookings, statusFilter, dateFilter]);
 
-	// Memoized paginated bookings
-	const paginatedBookings = useMemo(() => {
-		const startIndex = (currentPage - 1) * itemsPerPage;
-		const endIndex = startIndex + itemsPerPage;
-		return filteredBookings.slice(startIndex, endIndex);
-	}, [filteredBookings, currentPage, itemsPerPage]);
+	const getTotalPages = useMemo(() => {
+		return Math.ceil(getFilteredBookings.length / itemsPerPage);
+	}, [getFilteredBookings.length, itemsPerPage]);
 
-	// Memoized total pages
-	const totalPages = useMemo(() => {
-		return Math.ceil(filteredBookings.length / itemsPerPage);
-	}, [filteredBookings.length, itemsPerPage]);
-
-	// Memoized today's appointments
-	const todaysAppointments = useMemo(() => {
-		const today = new Date();
-		return bookings
-			.filter((booking) => isToday(booking.time))
-			.sort((a, b) => {
-				const timeA = safeParseDate(a.time);
-				const timeB = safeParseDate(b.time);
-				if (!timeA || !timeB) return 0;
-				return timeA.getTime() - timeB.getTime();
-			});
-	}, [bookings]);
-
-	// Memoized staff members
-	const staffMembers = useMemo(() => {
-		const staffSet = new Set();
-		bookings.forEach((booking) => {
-			if (booking.staff) {
-				staffSet.add(
-					JSON.stringify({
-						id: booking.staff.id,
-						name: booking.staff.name,
-						role: 'Staff Member',
-					})
-				);
-			}
-		});
-		return Array.from(staffSet).map((staff) => JSON.parse(staff as string));
-	}, [bookings]);
-
-	// Memoized time slots
-	const timeSlots = useMemo(() => {
-		const slots = [];
-		for (let hour = 8; hour <= 20; hour++) {
-			slots.push({
-				time: `${hour.toString().padStart(2, '0')}:00`,
-				hour: hour,
-				displayTime: `${hour.toString().padStart(2, '0')}:00`,
-			});
-		}
-		return slots;
-	}, []);
-
-	// Filter change handlers
 	const handleFilterChange = useCallback(
 		(filterType: 'status' | 'date', value: string) => {
-			setCurrentPage(1);
+			setCurrentPage(1); // Reset to first page
 			if (filterType === 'status') {
 				setStatusFilter(value);
 			} else if (filterType === 'date') {
@@ -280,6 +261,10 @@ export default function OwnerDashboardClient() {
 		},
 		[]
 	);
+
+	const handlePageChange = useCallback((page: number) => {
+		setCurrentPage(page);
+	}, []);
 
 	// Calendar navigation handlers
 	const goToPreviousMonth = useCallback(() => {
@@ -317,574 +302,185 @@ export default function OwnerDashboardClient() {
 		[currentYear, currentMonth]
 	);
 
-	// Utility functions
-	const getBookingsForDate = useCallback(
-		(date: Date) => {
-			return bookings.filter((booking) => {
-				const bookingDate = safeParseDate(booking.time);
-				if (!bookingDate) return false;
-				return bookingDate.toDateString() === date.toDateString();
-			});
-		},
-		[bookings]
-	);
-
-	const getAppointmentsForStaffAndTime = useCallback(
-		(staffId: string, timeSlotHour: number) => {
-			if (!selectedDate) return null;
-
-			const dayBookings = getBookingsForDate(selectedDate);
-			return dayBookings.find((booking) => {
-				if (booking.status === 'CANCELED') return false;
-				if (!booking.staff || booking.staff.id !== staffId) return false;
-
-				const bookingTime = safeParseDate(booking.time);
-				if (!bookingTime) return false;
-
-				const bookingHour = bookingTime.getHours();
-				const bookingMinute = bookingTime.getMinutes();
-				const duration = booking.service?.duration || 60;
-
-				const bookingStartMinutes = bookingHour * 60 + bookingMinute;
-				const bookingEndMinutes = bookingStartMinutes + duration;
-				const slotStartMinutes = timeSlotHour * 60;
-				const slotEndMinutes = (timeSlotHour + 1) * 60;
-
-				return (
-					bookingStartMinutes < slotEndMinutes &&
-					bookingEndMinutes > slotStartMinutes
-				);
-			});
-		},
-		[selectedDate, getBookingsForDate]
-	);
-
-	const getAppointmentStartingAtTime = useCallback(
-		(staffId: string, timeSlotHour: number) => {
-			if (!selectedDate) return null;
-
-			const dayBookings = getBookingsForDate(selectedDate);
-			return dayBookings.find((booking) => {
-				if (booking.status === 'CANCELED') return false;
-				if (!booking.staff || booking.staff.id !== staffId) return false;
-
-				const bookingTime = safeParseDate(booking.time);
-				if (!bookingTime) return false;
-
-				const bookingHour = bookingTime.getHours();
-				return bookingHour === timeSlotHour;
-			});
-		},
-		[selectedDate, getBookingsForDate]
-	);
-
-	const getAppointmentPosition = useCallback(
-		(appointment: any, timeSlotHour: number) => {
-			if (!appointment) return null;
-
-			const bookingTime = new Date(appointment.time);
-			const bookingHour = bookingTime.getHours();
-			const bookingMinute = bookingTime.getMinutes();
-			const duration = appointment.service?.duration || 60;
-
-			const topOffset = (bookingMinute / 60) * 100;
-			const heightPercentage = (duration / 60) * 100;
-
-			return {
-				top: `${topOffset}%`,
-				height: `${heightPercentage}%`,
-				duration: duration,
-			};
-		},
-		[]
-	);
-
-	const getBookingBlockStyles = useCallback((booking: any) => {
-		const now = new Date();
-		const bookingTime = safeParseDate(booking.time);
-		if (!bookingTime) return {};
-
-		const serviceDuration = booking.service?.duration || 60;
-		const endTime = new Date(bookingTime.getTime() + serviceDuration * 60000);
-		const isPast = endTime < now;
-
-		if (isPast) {
-			return {
-				className:
-					'absolute inset-x-0 bg-gray-100 border border-gray-300 rounded-lg p-1 mx-1 z-10 cursor-not-allowed opacity-60',
-				textClassName: 'text-gray-600',
-				textSecondaryClassName: 'text-gray-500',
-			};
-		} else if (booking.status === 'CONFIRMED') {
-			return {
-				className:
-					'absolute inset-x-0 bg-green-50 border border-green-200 rounded-lg p-1 mx-1 z-10 cursor-pointer hover:bg-green-100 transition-colors',
-				textClassName: 'text-green-800',
-				textSecondaryClassName: 'text-green-600',
-			};
-		} else {
-			return {
-				className:
-					'absolute inset-x-0 bg-red-50 border border-red-200 rounded-lg p-1 mx-1 z-10 cursor-pointer hover:bg-red-100 transition-colors',
-				textClassName: 'text-red-800',
-				textSecondaryClassName: 'text-red-600',
-			};
-		}
+	const handleViewAllAppointments = useCallback(() => {
+		setViewMode('list');
+		setCurrentPage(1);
 	}, []);
 
-	const isBookingClickable = useCallback((booking: any) => {
-		const now = new Date();
-		const bookingTime = safeParseDate(booking.time);
-		if (!bookingTime) return false;
-
-		const serviceDuration = booking.service?.duration || 60;
-		const endTime = new Date(bookingTime.getTime() + serviceDuration * 60000);
-		return endTime >= now;
+	const handleBackToMonth = useCallback(() => {
+		setShowDaySchedule(false);
+		setSelectedDate(null);
 	}, []);
 
-	const hasAppointmentsOnDate = useCallback(
-		(date: Date) => {
-			return bookings.some((booking) => {
-				const bookingDate = safeParseDate(booking.time);
-				if (!bookingDate) return false;
-				return bookingDate.toDateString() === date.toDateString();
-			});
-		},
-		[bookings]
-	);
-
-	const formatDate = useCallback((dateString: string) => {
-		const date = safeParseDate(dateString);
-		if (!date) return 'Invalid Date';
-
-		return date.toLocaleDateString('en-US', {
-			month: 'short',
-			day: 'numeric',
-			year: 'numeric',
-		});
-	}, []);
-
-	const formatTime = useCallback((dateString: string) => {
-		return formatTimeSafe(dateString, 'Invalid Time');
-	}, []);
-
-	const getStatusBadge = useCallback((status: string) => {
-		switch (status) {
-			case 'CONFIRMED':
-				return (
-					<span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
-						Confirmed
-					</span>
-				);
-			case 'PASSED':
-				return (
-					<span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-						Completed
-					</span>
-				);
-			case 'CANCELED':
-				return (
-					<span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800">
-						Cancelled
-					</span>
-				);
-			default:
-				return (
-					<span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
-						{status}
-					</span>
-				);
-		}
-	}, []);
-
-	const getMonthName = useCallback((month: number, year: number) => {
-		return new Date(year, month).toLocaleDateString('en-US', {
-			month: 'long',
-			year: 'numeric',
-		});
-	}, []);
-
-	// Initialize dashboard
-	useEffect(() => {
-		const initializeDashboard = async () => {
-			try {
-				console.log('Initializing dashboard...');
-				await fetchBookings();
-			} catch (error) {
-				console.log('Error initializing dashboard:', error);
-
-				if (
-					error instanceof Error &&
-					(error.message.includes('404') ||
-						error.message.includes('Salon not found') ||
-						error.message.includes('No salon found'))
-				) {
-					console.log('Salon not found, redirecting to setup');
-					router.push('/business/complete-setup');
-				} else {
-					console.log('Other error occurred, showing error state');
-					setError('Failed to load dashboard data');
-					setLoading(false);
-				}
-			}
-		};
-
-		initializeDashboard();
-	}, [fetchBookings, router]);
-
-	// Loading skeleton component
-	const LoadingSkeleton = () => (
-		<div className="space-y-6" role="status" aria-label="Loading dashboard">
-			<div className="bg-white rounded-xl p-6 shadow-sm animate-pulse">
-				<div className="flex items-center justify-between mb-6">
-					<div className="h-8 bg-gray-200 rounded w-1/3"></div>
-					<div className="flex gap-4">
-						<div className="h-10 bg-gray-200 rounded w-24"></div>
-						<div className="h-10 bg-gray-200 rounded w-32"></div>
-					</div>
-				</div>
-				<div className="grid grid-cols-7 gap-4">
-					{[1, 2, 3, 4, 5, 6, 7].map((i) => (
-						<div key={i} className="h-20 bg-gray-200 rounded"></div>
-					))}
-				</div>
-			</div>
-			<span className="sr-only">Loading dashboard data...</span>
-		</div>
-	);
-
-	// Error display component
-	const ErrorDisplay = () => (
-		<div
-			className="text-center py-12"
-			role="alert"
-			aria-labelledby="error-heading"
-			aria-describedby="error-description"
-		>
+	// Loading and error states
+	if (salonLoading || salonDataLoading || loading) {
+		return (
 			<div
-				className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4"
-				aria-hidden="true"
+				className="flex items-center justify-center py-12"
+				role="status"
+				aria-live="polite"
 			>
-				<span className="text-2xl">⚠️</span>
+				<LoadingSpinner size="lg" />
+				<span className="sr-only">Loading dashboard data...</span>
 			</div>
-			<h3
-				id="error-heading"
-				className="text-xl font-semibold text-gray-900 mb-2"
-			>
-				Error loading dashboard
-			</h3>
-			<p id="error-description" className="text-gray-600 mb-4">
-				{error || 'There was an error loading your dashboard data.'}
-			</p>
-			<button
-				onClick={fetchBookings}
-				className="bg-[#ea4b4b] text-white px-4 py-2 rounded-lg font-medium hover:bg-[#d43d3d] transition-colors focus:outline-none focus:ring-2 focus:ring-[#ea4b4b] focus:ring-offset-2"
-				aria-label="Retry loading dashboard"
-			>
-				Try Again
-			</button>
-		</div>
-	);
+		);
+	}
+
+	if (error) {
+		return (
+			<div className="flex items-center justify-center py-12" role="alert">
+				<ErrorDisplay
+					error={new Error(error)}
+					onRetry={fetchBookings}
+					message="Failed to load dashboard data."
+				/>
+			</div>
+		);
+	}
+
+	// If no salon found, don't render anything (redirect will happen in useEffect)
+	if (!hasSalon) {
+		return null;
+	}
 
 	return (
-		<main role="main" aria-labelledby="dashboard-heading">
-			<header className="mb-8">
-				<h1
-					id="dashboard-heading"
-					className="text-3xl font-bold text-black mb-2"
-				>
-					Appointments
-				</h1>
-				<p className="text-gray-600">
-					Manage your salon appointments and bookings
-				</p>
-			</header>
+		<main
+			className="flex gap-6"
+			role="main"
+			aria-labelledby="dashboard-heading"
+		>
+			<div className="w-full">
+				<div className="mb-8 flex items-center justify-between">
+					<h1
+						id="dashboard-heading"
+						className="text-3xl font-bold text-black mb-2"
+					>
+						Appointments
+					</h1>
 
-			{loading ? (
-				<LoadingSkeleton />
-			) : error ? (
-				<ErrorDisplay />
-			) : (
-				<div className="flex gap-6">
-					<div className="w-full">
-						<div className="mb-8 flex items-center justify-between">
-							<div>
-								<h2 className="text-2xl font-semibold text-gray-900">
-									Appointment Management
-								</h2>
-								<p className="text-gray-600 text-sm">
-									{filteredBookings.length} appointment
-									{filteredBookings.length !== 1 ? 's' : ''} found
-								</p>
-							</div>
-
-							<div className="flex items-center gap-2">
-								{/* View Mode Toggle */}
-								<div
-									className="flex border border-gray-300 rounded-lg overflow-hidden"
-									role="tablist"
-									aria-label="View mode selection"
-								>
-									<button
-										onClick={() => {
-											setViewMode('list');
-											setShowDaySchedule(false);
-											setCurrentPage(1);
-										}}
-										className={`px-3 py-2 text-sm font-medium flex items-center gap-2 ${
-											viewMode === 'list'
-												? 'bg-[#ea4b4b] text-white'
-												: 'bg-white text-gray-700 hover:bg-gray-50'
-										}`}
-										role="tab"
-										aria-selected={viewMode === 'list'}
-										aria-controls="list-view"
-										aria-label="List view"
-									>
-										<svg
-											className="w-4 h-4"
-											fill="currentColor"
-											viewBox="0 0 20 20"
-											aria-hidden="true"
-										>
-											<path
-												fillRule="evenodd"
-												d="M3 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z"
-												clipRule="evenodd"
-											/>
-										</svg>
-										List
-									</button>
-									<button
-										onClick={() => {
-											setViewMode('calendar');
-											setShowDaySchedule(false);
-											setCurrentPage(1);
-										}}
-										className={`px-3 py-2 text-sm font-medium flex items-center gap-2 ${
-											viewMode === 'calendar'
-												? 'bg-[#ea4b4b] text-white'
-												: 'bg-white text-gray-700 hover:bg-gray-50'
-										}`}
-										role="tab"
-										aria-selected={viewMode === 'calendar'}
-										aria-controls="calendar-view"
-										aria-label="Calendar view"
-									>
-										<svg
-											className="w-4 h-4"
-											fill="currentColor"
-											viewBox="0 0 20 20"
-											aria-hidden="true"
-										>
-											<path
-												fillRule="evenodd"
-												d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z"
-												clipRule="evenodd"
-											/>
-										</svg>
-										Calendar
-									</button>
-								</div>
-
-								<button
-									onClick={handleNewAppointment}
-									className="inline-flex items-center gap-2 rounded-full bg-[#ea4b4b] text-white px-4 py-2 text-sm shadow-sm hover:opacity-95 focus:outline-none focus:ring-2 focus:ring-[#ea4b4b] focus:ring-offset-2"
-									aria-label="Create new appointment"
-								>
-									<span className="text-lg leading-none" aria-hidden="true">
-										＋
-									</span>
-									New Appointment
-								</button>
-							</div>
+					<div
+						className="flex items-center gap-2"
+						role="group"
+						aria-label="View mode and new appointment"
+					>
+						<div className="flex border border-gray-300 rounded-lg overflow-hidden">
+							<button
+								onClick={() => {
+									setViewMode('list');
+									setShowDaySchedule(false);
+									setCurrentPage(1);
+								}}
+								className={`px-3 py-2 text-sm font-medium flex items-center gap-2 ${
+									viewMode === 'list'
+										? 'bg-[#ea4b4b] text-white'
+										: 'bg-white text-gray-700 hover:bg-gray-50'
+								}`}
+								aria-pressed={viewMode === 'list'}
+								aria-label="Switch to list view"
+							>
+								<List className="w-4 h-4" />
+								List
+							</button>
+							<button
+								onClick={() => {
+									setViewMode('calendar');
+									setShowDaySchedule(false);
+									setCurrentPage(1);
+								}}
+								className={`px-3 py-2 text-sm font-medium flex items-center gap-2 ${
+									viewMode === 'calendar'
+										? 'bg-[#ea4b4b] text-white'
+										: 'bg-white text-gray-700 hover:bg-gray-50'
+								}`}
+								aria-pressed={viewMode === 'calendar'}
+								aria-label="Switch to calendar view"
+							>
+								<CalendarDays className="w-4 h-4" />
+								Calendar
+							</button>
 						</div>
 
-						{/* Rest of the component remains the same but with accessibility improvements */}
-						{/* ... (keeping the existing JSX structure but adding ARIA attributes) */}
-					</div>
-
-					{/* Today's Appointments Sidebar */}
-					<aside
-						className="rounded-xl border border-[#f1d9d7] bg-white p-6 h-[fit-content] min-w-[340px] sticky top-22"
-						aria-labelledby="today-appointments-heading"
-					>
-						<h3
-							id="today-appointments-heading"
-							className="text-lg font-semibold text-gray-900 mb-4"
+						<button
+							onClick={handleNewAppointment}
+							className="inline-flex items-center gap-2 rounded-full bg-[#ea4b4b] text-white px-4 py-2 text-sm shadow-sm hover:opacity-95 focus:outline-none focus:ring-2 focus:ring-[#ea4b4b] focus:ring-offset-2"
+							aria-label="Add new appointment"
 						>
-							Today's Appointments ({todaysAppointments.length})
-						</h3>
-
-						{todaysAppointments.length === 0 ? (
-							<div
-								className="text-center py-8"
-								role="status"
-								aria-label="No appointments today"
-							>
-								<div className="text-gray-400 mb-2" aria-hidden="true">
-									📅
-								</div>
-								<p className="text-gray-500 text-sm">No appointments today</p>
-							</div>
-						) : (
-							<div
-								className="space-y-3"
-								role="list"
-								aria-label="Today's appointments"
-							>
-								{todaysAppointments.slice(0, 3).map((booking) => (
-									<div
-										key={booking.id}
-										className="border border-[#f6e7e6] rounded-lg p-3"
-										role="listitem"
-									>
-										<div className="flex items-start justify-between">
-											<div className="flex-1">
-												<div className="flex items-center gap-2 mb-1">
-													<span className="text-sm font-medium text-[#ea4b4b]">
-														{formatTime(booking.time)}
-													</span>
-													{getStatusBadge(booking.status)}
-												</div>
-												<div className="text-sm font-medium text-gray-900">
-													{booking.user?.name || `Client ID: ${booking.userId}`}
-												</div>
-												<div className="text-xs text-gray-500">
-													{booking.service?.name} with{' '}
-													{booking.staff?.name || 'Unassigned'}
-												</div>
-											</div>
-											<div className="flex items-center gap-1">
-												{booking.status === 'CONFIRMED' && (
-													<>
-														<button
-															onClick={() => handleEditBooking(booking)}
-															className="p-1 hover:bg-gray-100 rounded focus:outline-none focus:ring-2 focus:ring-[#ea4b4b] focus:ring-offset-2"
-															title="Edit booking"
-															aria-label={`Edit booking for ${booking.user?.name || 'client'}`}
-														>
-															<svg
-																className="w-4 h-4 text-gray-500"
-																fill="currentColor"
-																viewBox="0 0 20 20"
-																aria-hidden="true"
-															>
-																<path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" />
-															</svg>
-														</button>
-														<button
-															onClick={() => handleCancelBooking(booking.id)}
-															className="p-1 hover:bg-gray-100 rounded focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2"
-															title="Cancel booking"
-															aria-label={`Cancel booking for ${booking.user?.name || 'client'}`}
-														>
-															<svg
-																className="w-4 h-4 text-gray-500"
-																fill="currentColor"
-																viewBox="0 0 20 20"
-																aria-hidden="true"
-															>
-																<path
-																	fillRule="evenodd"
-																	d="M9 2a1 1 0 000 2h2a1 1 0 100-2H9z"
-																	clipRule="evenodd"
-																/>
-																<path
-																	fillRule="evenodd"
-																	d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
-																	clipRule="evenodd"
-																/>
-															</svg>
-														</button>
-													</>
-												)}
-											</div>
-										</div>
-									</div>
-								))}
-
-								{todaysAppointments.length > 3 && (
-									<div className="pt-2 border-t border-gray-200">
-										<button
-											onClick={() => {
-												setViewMode('list');
-												setCurrentPage(1);
-											}}
-											className="w-full text-[#ea4b4b] hover:text-[#d43d3d] text-sm font-medium py-2 hover:bg-gray-50 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-[#ea4b4b] focus:ring-offset-2"
-											aria-label={`View all ${todaysAppointments.length} appointments`}
-										>
-											View all appointments ({todaysAppointments.length})
-										</button>
-									</div>
-								)}
-							</div>
-						)}
-					</aside>
+							<span className="text-lg leading-none" aria-hidden="true">
+								＋
+							</span>
+							New Appointment
+						</button>
+					</div>
 				</div>
-			)}
 
-			{/* Booking Modal */}
+				<div className="flex justify-between gap-6">
+					{!showDaySchedule ? (
+						<>
+							{viewMode === 'list' ? (
+								<BookingList
+									bookings={getFilteredBookings}
+									loading={loading}
+									error={error}
+									statusFilter={statusFilter}
+									dateFilter={dateFilter}
+									currentPage={currentPage}
+									itemsPerPage={itemsPerPage}
+									totalPages={getTotalPages}
+									onFilterChange={handleFilterChange}
+									onEditBooking={handleEditBooking}
+									onCancelBooking={handleCancelBooking}
+									onViewBookingDetails={handleViewBookingDetails}
+									onRetry={fetchBookings}
+									onPageChange={handlePageChange}
+								/>
+							) : (
+								<CalendarView
+									currentMonth={currentMonth}
+									currentYear={currentYear}
+									bookings={bookings}
+									workingHours={salonData?.workingHours}
+									onPreviousMonth={goToPreviousMonth}
+									onNextMonth={goToNextMonth}
+									onDateClick={handleDateClick}
+								/>
+							)}
+						</>
+					) : selectedDate ? (
+						<DaySchedule
+							selectedDate={selectedDate}
+							bookings={bookings}
+							onBack={handleBackToMonth}
+							onViewBookingDetails={handleViewBookingDetails}
+						/>
+					) : null}
+				</div>
+			</div>
+
+			<TodaysAppointments
+				bookings={bookings}
+				onEditBooking={handleEditBooking}
+				onCancelBooking={handleCancelBooking}
+				onViewAllAppointments={handleViewAllAppointments}
+			/>
+
 			<BookingModal
 				isOpen={isBookingModalOpen}
 				onClose={handleBookingModalClose}
 				service={selectedService}
 				showServiceSelector={true}
 				salonId={salonId || undefined}
+				workingHours={salonData?.workingHours}
 				editingBooking={editingBooking}
 				onBookingUpdated={handleBookingUpdated}
 			/>
 
-			{/* Booking Details Modal */}
-			{isBookingDetailsModalOpen && viewingBooking && (
-				<div
-					className="fixed inset-0 bg-black/50 bg-opacity-50 flex items-center justify-center z-50 p-4"
-					role="dialog"
-					aria-modal="true"
-					aria-labelledby="booking-details-title"
-					aria-describedby="booking-details-description"
-				>
-					<div className="bg-white rounded-xl max-w-md w-full max-h-[75vh] mt-20 flex flex-col">
-						{/* Modal content remains the same but with ARIA attributes */}
-						<div className="flex items-center justify-between py-3 px-6 border-b border-gray-200 flex-shrink-0">
-							<h2
-								id="booking-details-title"
-								className="text-xl font-semibold text-gray-900"
-							>
-								Reservation Details
-							</h2>
-							<button
-								onClick={handleBookingDetailsModalClose}
-								className="text-gray-400 hover:text-gray-600 transition-colors focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2"
-								aria-label="Close booking details"
-							>
-								<svg
-									className="w-6 h-6"
-									fill="none"
-									stroke="currentColor"
-									viewBox="0 0 24 24"
-									aria-hidden="true"
-								>
-									<path
-										strokeLinecap="round"
-										strokeLinejoin="round"
-										strokeWidth={2}
-										d="M6 18L18 6M6 6l12 12"
-									/>
-								</svg>
-							</button>
-						</div>
-
-						{/* Rest of modal content with proper ARIA labels */}
-						<div
-							id="booking-details-description"
-							className="py-2 space-y-3 px-6 overflow-y-auto flex-1"
-						>
-							{/* Booking details content */}
-						</div>
-					</div>
-				</div>
-			)}
+			<BookingDetailsModal
+				isOpen={isBookingDetailsModalOpen}
+				booking={viewingBooking}
+				onClose={handleBookingDetailsModalClose}
+				onEdit={handleEditFromDetails}
+				onCancel={handleCancelBooking}
+			/>
 		</main>
 	);
 }

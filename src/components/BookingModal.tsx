@@ -16,6 +16,7 @@ interface BookingModalProps {
 	showServiceSelector?: boolean; // Новый пропс для показа выпадающего списка услуг
 	salonId?: string; // ID салона для загрузки услуг и персонала
 	salonName?: string; // Название салона для отображения
+	workingHours?: WorkingHours; // Рабочие часы салона
 	editingBooking?: any; // Данные редактируемого бронирования
 	onBookingUpdated?: () => void; // Callback для обновления списка бронирований
 }
@@ -27,6 +28,7 @@ export default function BookingModal({
 	showServiceSelector = false,
 	salonId,
 	salonName,
+	workingHours,
 	editingBooking,
 	onBookingUpdated,
 }: BookingModalProps) {
@@ -376,21 +378,24 @@ export default function BookingModal({
 		let startHour = 9;
 		let endHour = 18;
 
+		// Use passed workingHours or fallback to salonWorkingHours
+		const currentWorkingHours = workingHours || salonWorkingHours;
+
 		// Get working hours for the selected day if available
 		if (
-			salonWorkingHours &&
-			salonWorkingHours[dayName] &&
-			!salonWorkingHours[dayName].closed
+			currentWorkingHours &&
+			currentWorkingHours[dayName] &&
+			!currentWorkingHours[dayName].closed
 		) {
-			const openTime = salonWorkingHours[dayName].open;
-			const closeTime = salonWorkingHours[dayName].close;
+			const openTime = currentWorkingHours[dayName].open;
+			const closeTime = currentWorkingHours[dayName].close;
 
 			// Parse time strings (assuming 24-hour format like "09:00")
 			if (openTime && closeTime) {
 				startHour = parseInt(openTime.split(':')[0]);
 				endHour = parseInt(closeTime.split(':')[0]);
 			}
-		} else if (salonWorkingHours && salonWorkingHours[dayName]?.closed) {
+		} else if (currentWorkingHours && currentWorkingHours[dayName]?.closed) {
 			// Salon is closed on this day
 			return [];
 		}
@@ -438,6 +443,7 @@ export default function BookingModal({
 	const timeSlots = useMemo(
 		() => generateTimeSlots(selectedDate),
 		[
+			workingHours,
 			salonWorkingHours,
 			selectedDate,
 			selectedService,
@@ -534,9 +540,25 @@ export default function BookingModal({
 			day
 		);
 		const today = new Date();
-		return (
-			date < new Date(today.getFullYear(), today.getMonth(), today.getDate())
-		);
+		const isPast = date < new Date(today.getFullYear(), today.getMonth(), today.getDate());
+		
+		// Check if it's a day off
+		const dayOfWeek = date.getDay();
+		const dayNames: (keyof WorkingHours)[] = [
+			'sunday', // 0
+			'monday', // 1
+			'tuesday', // 2
+			'wednesday', // 3
+			'thursday', // 4
+			'friday', // 5
+			'saturday', // 6
+		];
+		const dayName = dayNames[dayOfWeek];
+		
+		const currentWorkingHours = workingHours || salonWorkingHours;
+		const isDayOff = currentWorkingHours && currentWorkingHours[dayName]?.closed === true;
+		
+		return isPast || !!isDayOff;
 	};
 
 	// Pre-fill form data when editing booking
