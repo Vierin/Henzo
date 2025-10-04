@@ -34,6 +34,23 @@ export function formatDateSafe(
 }
 
 /**
+ * Format a date string in short format (DD.MM.YYYY), with fallback for invalid dates
+ */
+export function formatDateShort(
+	dateString: string | null | undefined,
+	fallback: string = 'Date not available'
+): string {
+	const date = safeParseDate(dateString);
+	if (!date) return fallback;
+
+	return date.toLocaleDateString('ru-RU', {
+		day: '2-digit',
+		month: '2-digit',
+		year: 'numeric',
+	});
+}
+
+/**
  * Format a time string for display, with fallback for invalid dates
  */
 export function formatTimeSafe(

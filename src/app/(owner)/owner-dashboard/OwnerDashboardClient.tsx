@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import BookingModal from '@/components/BookingModal';
 import { Service, Booking } from '@/types';
 import { apiClient } from '@/lib/api-client';
+import { supabase } from '@/lib/supabase';
 import toast from 'react-hot-toast';
 import {
 	safeParseDate,
@@ -17,6 +18,8 @@ import LoadingSpinner from '@/components/LoadingSpinner';
 import ErrorDisplay from '@/components/ErrorDisplay';
 import { useSalonId } from '@/hooks/useSalon';
 import { useCurrentUserSalon } from '@/hooks/useSalons';
+import { useBookings } from '@/hooks/useBookings';
+import { BookingWithDetailsDto } from '@/types/dto/booking.dto';
 
 // Import our new components
 import BookingList from './components/BookingList';
@@ -26,6 +29,60 @@ import BookingDetailsModal from './components/BookingDetailsModal';
 import DaySchedule from './components/DaySchedule';
 import { CalendarDays, List } from 'lucide-react';
 
+// Функция для преобразования BookingWithDetailsDto в Booking
+const convertBookingDtoToBooking = (dto: any): Booking => {
+	return {
+		id: dto.id,
+		salonId: dto.salonId,
+		userId: dto.userId,
+		clientId: dto.clientId || dto.userId, // fallback to userId if clientId is missing
+		serviceId: dto.serviceId,
+		staffId: dto.staffId,
+		time: dto.time || dto.dateTime, // fallback to dateTime if time is missing
+		status: dto.status,
+		notes: dto.notes,
+		createdAt: dto.createdAt,
+		service: dto.service
+			? {
+					id: dto.service.id,
+					name: dto.service.name || '',
+					description: dto.service.description,
+					duration: dto.service.duration,
+					price: dto.service.price,
+					salonId: dto.salonId,
+				}
+			: undefined,
+		salon: dto.salon
+			? {
+					id: dto.salon.id,
+					name: dto.salon.name,
+					address: dto.salon.address,
+					ownerId: '', // DTO не содержит ownerId
+					createdAt: '', // DTO не содержит createdAt
+				}
+			: undefined,
+		staff: dto.staff
+			? {
+					id: dto.staff.id,
+					name: dto.staff.name,
+					role: dto.staff.accessLevel,
+					accessLevel: dto.staff.accessLevel as 'ADMIN' | 'EMPLOYEE',
+					salonId: dto.salonId,
+				}
+			: undefined,
+		user: dto.user
+			? {
+					id: dto.user.id,
+					email: dto.user.email,
+					name: dto.user.name,
+					phone: dto.user.phone,
+					role: 'CLIENT', // DTO не содержит role, используем дефолтное значение
+					createdAt: '', // DTO не содержит createdAt
+				}
+			: undefined,
+	};
+};
+
 export default function OwnerDashboardClient() {
 	const [isBookingModalOpen, setIsBookingModalOpen] = useState(false);
 	const [selectedService, setSelectedService] = useState<Service | undefined>();
@@ -33,9 +90,6 @@ export default function OwnerDashboardClient() {
 	const [viewingBooking, setViewingBooking] = useState<Booking | null>(null);
 	const [isBookingDetailsModalOpen, setIsBookingDetailsModalOpen] =
 		useState(false);
-	const [bookings, setBookings] = useState<Booking[]>([]);
-	const [loading, setLoading] = useState(true);
-	const [error, setError] = useState<string | null>(null);
 	const [statusFilter, setStatusFilter] = useState<string>('all');
 	const [dateFilter, setDateFilter] = useState<string>('all');
 	const [viewMode, setViewMode] = useState<'list' | 'calendar'>('calendar');
@@ -54,26 +108,51 @@ export default function OwnerDashboardClient() {
 	const { data: salonData, isLoading: salonDataLoading } =
 		useCurrentUserSalon();
 
+	// Используем хук для загрузки бронирований
+	const {
+		data: bookingsData = [],
+		isLoading: bookingsLoading,
+		error: bookingsError,
+		refetch: refetchBookings,
+	} = useBookings();
+
+	// Используем данные из хука вместо локального состояния
+	console.log(
+		'OwnerDashboard: Raw bookings data from API:',
+		bookingsData.slice(0, 2)
+	);
+	const bookings = bookingsData.map(convertBookingDtoToBooking);
+	console.log('OwnerDashboard: Converted bookings data:', bookings.slice(0, 2));
+	const loading = bookingsLoading;
+	const error = bookingsError
+		? bookingsError instanceof Error
+			? bookingsError.message
+			: 'Failed to load bookings'
+		: null;
+
 	// Memoized functions for better performance
 	const fetchBookings = useCallback(async () => {
 		try {
-			setLoading(true);
-			setError(null);
+			console.log('OwnerDashboard: Refetching bookings...');
 
-			// Загружаем бронирования для текущего салона владельца
-			const data = await apiClient.get<Booking[]>('/bookings/owner');
+			// Проверяем сессию перед запросом
+			const {
+				data: { session },
+			} = await supabase.auth.getSession();
+			console.log('OwnerDashboard: Current session:', {
+				hasSession: !!session,
+				userEmail: session?.user?.email,
+				userRole: session?.user?.user_metadata?.role,
+			});
 
-			// Автоматически обновляем статусы завершенных бронирований
-			const updatedBookings = await updateCompletedBookings(data);
-			setBookings(updatedBookings);
+			// Используем refetch из хука
+			await refetchBookings();
+			console.log('OwnerDashboard: Bookings refetched successfully');
 		} catch (err) {
-			console.error('Error fetching bookings:', err);
-			setError(err instanceof Error ? err.message : 'Failed to load bookings');
-			toast.error('Failed to load bookings');
-		} finally {
-			setLoading(false);
+			console.error('OwnerDashboard: Error refetching bookings:', err);
+			toast.error('Failed to refresh bookings');
 		}
-	}, []);
+	}, [refetchBookings]);
 
 	const updateCompletedBookings = useCallback(
 		async (bookings: Booking[]): Promise<Booking[]> => {
@@ -122,33 +201,27 @@ export default function OwnerDashboardClient() {
 	);
 
 	useEffect(() => {
-		// Fetch bookings only if we have salonId
-		if (!salonLoading && hasSalon && salonId) {
-			const initializeDashboard = async () => {
-				try {
-					await fetchBookings();
-				} catch (error) {
-					// If there's an error and it's about salon not found, redirect to setup
-					if (
-						error instanceof Error &&
-						(error.message.includes('404') ||
-							error.message.includes('Salon not found') ||
-							error.message.includes('No salon found'))
-					) {
-						router.push('/business/complete-setup');
-					} else {
-						setError('Failed to load dashboard data');
-						setLoading(false);
-					}
-				}
-			};
+		console.log('OwnerDashboard useEffect triggered:', {
+			salonLoading,
+			hasSalon,
+			salonId,
+			bookingsLoading,
+			bookingsCount: bookings.length,
+		});
 
-			initializeDashboard();
-		} else if (!salonLoading && !hasSalon) {
-			// Redirect to setup if no salon found
+		// Redirect to setup if no salon found
+		if (!salonLoading && !hasSalon) {
+			console.log('OwnerDashboard: No salon found, redirecting to setup');
 			router.push('/business/complete-setup');
 		}
-	}, [router, fetchBookings, salonLoading, hasSalon, salonId]);
+	}, [
+		router,
+		salonLoading,
+		hasSalon,
+		salonId,
+		bookingsLoading,
+		bookings.length,
+	]);
 
 	// Memoized event handlers
 	const handleNewAppointment = useCallback(() => {
@@ -312,8 +385,20 @@ export default function OwnerDashboardClient() {
 		setSelectedDate(null);
 	}, []);
 
+	// Debug logging for bookings state
+	console.log('OwnerDashboard render state:', {
+		bookingsCount: bookings.length,
+		bookingsLoading,
+		salonLoading,
+		salonDataLoading,
+		salonId,
+		hasSalon,
+		error,
+		bookingsData: bookings.slice(0, 2), // Show first 2 bookings for debugging
+	});
+
 	// Loading and error states
-	if (salonLoading || salonDataLoading || loading) {
+	if (salonLoading || salonDataLoading || bookingsLoading) {
 		return (
 			<div
 				className="flex items-center justify-center py-12"

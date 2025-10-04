@@ -1,7 +1,7 @@
 'use client';
 
 import { Booking } from '@/types';
-import { formatDateSafe, formatTimeSafe } from '@/utils/date';
+import { formatDateSafe, formatDateShort, formatTimeSafe } from '@/utils/date';
 
 interface BookingListProps {
 	bookings: Booking[];
@@ -191,7 +191,7 @@ export default function BookingList({
 								</div>
 								<div>{booking.service?.name || 'Unknown Service'}</div>
 								<div>{booking.staff?.name || 'Unassigned'}</div>
-								<div>{formatDateSafe(booking.time)}</div>
+								<div>{formatDateShort(booking.time)}</div>
 								<div>{formatTimeSafe(booking.time)}</div>
 								<div>{getStatusBadge(booking.status)}</div>
 								<div

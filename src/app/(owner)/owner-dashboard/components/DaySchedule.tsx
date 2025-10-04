@@ -39,7 +39,10 @@ export default function DaySchedule({
 				);
 			}
 		});
-		return Array.from(staffSet).map((staff) => JSON.parse(staff as string));
+		const staffMembers = Array.from(staffSet).map((staff) =>
+			JSON.parse(staff as string)
+		);
+		return staffMembers;
 	};
 
 	const getTimeSlots = () => {
@@ -59,7 +62,7 @@ export default function DaySchedule({
 		timeSlotHour: number
 	) => {
 		const dayBookings = getBookingsForDate(selectedDate);
-		return dayBookings.find((booking) => {
+		const appointment = dayBookings.find((booking) => {
 			if (booking.status === 'CANCELED') return false;
 			if (!booking.staff || booking.staff.id !== staffId) return false;
 
@@ -69,6 +72,8 @@ export default function DaySchedule({
 			const bookingHour = bookingTime.getHours();
 			return bookingHour === timeSlotHour;
 		});
+
+		return appointment;
 	};
 
 	const getAppointmentPosition = (appointment: any, timeSlotHour: number) => {
@@ -100,21 +105,21 @@ export default function DaySchedule({
 		if (isPast) {
 			return {
 				className:
-					'absolute inset-x-0 bg-gray-100 border border-gray-300 rounded-lg p-1 mx-1 z-10 cursor-not-allowed opacity-60',
+					'absolute left-1 right-1 bg-gray-100 border border-gray-300 rounded-lg p-1 z-10 cursor-not-allowed opacity-60',
 				textClassName: 'text-gray-600',
 				textSecondaryClassName: 'text-gray-500',
 			};
 		} else if (booking.status === 'CONFIRMED') {
 			return {
 				className:
-					'absolute inset-x-0 bg-green-50 border border-green-200 rounded-lg p-1 mx-1 z-10 cursor-pointer hover:bg-green-100 transition-colors',
+					'absolute left-1 right-1 bg-green-50 border border-green-200 rounded-lg p-1 z-10 cursor-pointer hover:bg-green-100 transition-colors',
 				textClassName: 'text-green-800',
 				textSecondaryClassName: 'text-green-600',
 			};
 		} else {
 			return {
 				className:
-					'absolute inset-x-0 bg-red-50 border border-red-200 rounded-lg p-1 mx-1 z-10 cursor-pointer hover:bg-red-100 transition-colors',
+					'absolute left-1 right-1 bg-red-50 border border-red-200 rounded-lg p-1 z-10 cursor-pointer hover:bg-red-100 transition-colors',
 				textClassName: 'text-red-800',
 				textSecondaryClassName: 'text-red-600',
 			};
@@ -185,7 +190,7 @@ export default function DaySchedule({
 							<div
 								className="grid gap-4 py-3 px-1"
 								style={{
-									gridTemplateColumns: `${DATA_WIDTH} repeat(${staffMembers.length}, 1fr)`,
+									gridTemplateColumns: `${DATA_WIDTH} repeat(${staffMembers.length}, minmax(0, 1fr))`,
 								}}
 							>
 								<div
@@ -197,10 +202,10 @@ export default function DaySchedule({
 								{staffMembers.map((staff) => (
 									<div
 										key={staff.id}
-										className="text-center"
+										className="text-center max-w-[25%] min-w-0"
 										role="columnheader"
 									>
-										<div className="text-sm font-semibold text-gray-900">
+										<div className="text-sm font-semibold text-gray-900 truncate">
 											{staff.name}
 										</div>
 									</div>
@@ -214,7 +219,7 @@ export default function DaySchedule({
 									key={timeSlot.time}
 									className="grid min-h-[64px] border-b border-gray-200 px-1"
 									style={{
-										gridTemplateColumns: `${DATA_WIDTH} repeat(${staffMembers.length}, 1fr)`,
+										gridTemplateColumns: `${DATA_WIDTH} repeat(${staffMembers.length}, minmax(0, 1fr))`,
 									}}
 									role="row"
 								>
@@ -238,7 +243,7 @@ export default function DaySchedule({
 										return (
 											<div
 												key={`${staff.id}-${timeSlot.time}`}
-												className="relative h-16 border-r border-dotted border-gray-200"
+												className="relative h-16 border-r border-dotted border-gray-200 max-w-[25%] min-w-0"
 												role="gridcell"
 											>
 												{startingAppointment && position

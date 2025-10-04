@@ -32,13 +32,11 @@ export const useBookings = (filters?: { status?: string; date?: string }) => {
 
 			const queryString = params.toString();
 			const endpoint = queryString
-				? `/appointments?${queryString}`
-				: '/appointments';
+				? `/bookings/owner?${queryString}`
+				: '/bookings/owner';
 
-			const response = await apiClient.get<{
-				appointments: BookingWithDetailsDto[];
-			}>(endpoint);
-			return response.appointments || [];
+			const response = await apiClient.get<BookingWithDetailsDto[]>(endpoint);
+			return response || [];
 		},
 		staleTime: 2 * 60 * 1000, // 2 minutes (bookings change frequently)
 	});
@@ -58,13 +56,11 @@ export const useUserBookings = (filters?: {
 
 			const queryString = params.toString();
 			const endpoint = queryString
-				? `/user/bookings?${queryString}`
-				: '/user/bookings';
+				? `/bookings/user?${queryString}`
+				: '/bookings/user';
 
-			const response = await apiClient.get<{
-				bookings: BookingWithDetailsDto[];
-			}>(endpoint);
-			return response.bookings || [];
+			const response = await apiClient.get<BookingWithDetailsDto[]>(endpoint);
+			return response || [];
 		},
 		staleTime: 2 * 60 * 1000, // 2 minutes
 	});
@@ -75,10 +71,10 @@ export const useBooking = (id: string) => {
 	return useQuery({
 		queryKey: bookingKeys.detail(id),
 		queryFn: async (): Promise<BookingWithDetailsDto> => {
-			const response = await apiClient.get<{ booking: BookingWithDetailsDto }>(
-				`/appointments/${id}`
+			const response = await apiClient.get<BookingWithDetailsDto>(
+				`/bookings/${id}`
 			);
-			return response.booking;
+			return response;
 		},
 		enabled: !!id,
 		staleTime: 2 * 60 * 1000, // 2 minutes

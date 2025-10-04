@@ -540,8 +540,9 @@ export default function BookingModal({
 			day
 		);
 		const today = new Date();
-		const isPast = date < new Date(today.getFullYear(), today.getMonth(), today.getDate());
-		
+		const isPast =
+			date < new Date(today.getFullYear(), today.getMonth(), today.getDate());
+
 		// Check if it's a day off
 		const dayOfWeek = date.getDay();
 		const dayNames: (keyof WorkingHours)[] = [
@@ -554,10 +555,11 @@ export default function BookingModal({
 			'saturday', // 6
 		];
 		const dayName = dayNames[dayOfWeek];
-		
+
 		const currentWorkingHours = workingHours || salonWorkingHours;
-		const isDayOff = currentWorkingHours && currentWorkingHours[dayName]?.closed === true;
-		
+		const isDayOff =
+			currentWorkingHours && currentWorkingHours[dayName]?.closed === true;
+
 		return isPast || !!isDayOff;
 	};
 
