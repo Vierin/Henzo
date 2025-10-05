@@ -22,7 +22,15 @@ async function getSalonData(
 		const isOldId = /^[a-f0-9-]{36}$/.test(slug);
 		const salonId = isOldId ? slug : extractSalonIdFromSlug(slug);
 
+		// Debug log
+		console.log('Slug extraction debug:', {
+			originalSlug: slug,
+			isOldId,
+			extractedSalonId: salonId,
+		});
+
 		if (!salonId) {
+			console.log('❌ No salonId extracted from slug:', slug);
 			return null;
 		}
 
@@ -85,7 +93,7 @@ export async function generateMetadata({
 			title,
 			description,
 			type: 'website',
-			url: `/salon/${params.slug}`,
+			url: `/salon/${slug}`,
 			images:
 				salon.photos && salon.photos.length > 0 ? salon.photos : undefined,
 		},

@@ -61,7 +61,23 @@ export class ApiClient {
 			if (text.trim() === '') {
 				return null; // Return null for empty responses
 			}
-			return JSON.parse(text);
+			const data = JSON.parse(text);
+
+			// Debug log for salon data
+			if (
+				url.includes('/salons/') &&
+				!url.includes('/salons?') &&
+				!url.includes('/salons/with-services')
+			) {
+				console.log('API Client - Salon data received:', {
+					url,
+					data,
+					hasReviews: !!data.reviews,
+					reviewsCount: data.reviews?.length || 0,
+				});
+			}
+
+			return data;
 		}
 
 		// For non-JSON responses, return the text

@@ -337,6 +337,39 @@ export default function SalonDetailClient({ salon }: SalonDetailClientProps) {
 							</div>
 						)}
 
+						<div>
+							{(() => {
+								const rating = calculateAverageRating(salon);
+								const reviewCount = getReviewCount(salon);
+
+								if (rating > 0) {
+									return (
+										<div className="flex items-center gap-2 mb-3">
+											<div
+												className="flex"
+												role="img"
+												aria-label={`${rating} star rating`}
+											>
+												{renderStars(rating)}
+											</div>
+											<span className="text-gray-600 text-sm">
+												{rating}/5 ({reviewCount}{' '}
+												{reviewCount === 1 ? 'review' : 'reviews'})
+											</span>
+										</div>
+									);
+								} else {
+									return (
+										<div className="ml-6">
+											<span className="text-gray-500 text-sm">
+												No reviews yet
+											</span>
+										</div>
+									);
+								}
+							})()}
+						</div>
+
 						<div className="space-y-4">
 							{salon.address && (
 								<div>
@@ -413,57 +446,6 @@ export default function SalonDetailClient({ salon }: SalonDetailClientProps) {
 									</a>
 								</div>
 							)}
-
-							<div>
-								<div className="flex items-center gap-2 mb-1">
-									<span
-										className="text-[#ff5b5b]"
-										role="img"
-										aria-label="Star rating"
-									>
-										<Star size={16} className="text-[#ff5b5b]" />
-									</span>
-								</div>
-								{(() => {
-									const rating = calculateAverageRating(salon);
-									const reviewCount = getReviewCount(salon);
-
-									// Debug log
-									console.log('Salon reviews debug:', {
-										salonId: salon.id,
-										salonName: salon.name,
-										reviews: salon.reviews,
-										rating,
-										reviewCount,
-									});
-
-									if (rating > 0) {
-										return (
-											<div className="flex items-center gap-2 ml-6">
-												<div
-													className="flex"
-													role="img"
-													aria-label={`${rating} star rating`}
-												>
-													{renderStars(rating)}
-												</div>
-												<span className="text-gray-600 text-sm">
-													{rating} ({reviewCount}{' '}
-													{reviewCount === 1 ? 'review' : 'reviews'})
-												</span>
-											</div>
-										);
-									} else {
-										return (
-											<div className="ml-6">
-												<span className="text-gray-500 text-sm">
-													No reviews yet
-												</span>
-											</div>
-										);
-									}
-								})()}
-							</div>
 						</div>
 					</aside>
 				</div>

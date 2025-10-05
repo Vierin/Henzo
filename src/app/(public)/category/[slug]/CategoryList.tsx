@@ -9,6 +9,7 @@ import BookingModal from '@/components/BookingModal';
 import { Salon, Service } from '@/types';
 import { ServiceResponseDto } from '@/types/dto/service.dto';
 import Link from 'next/link';
+import { Map } from 'lucide-react';
 
 interface CategoryListProps {
 	category: {
@@ -106,19 +107,26 @@ export default function CategoryList({ category }: CategoryListProps) {
 						<h1 className="text-2xl font-bold text-gray-900">
 							{category.name} ({filteredSalons.length})
 						</h1>
-						{/* Sort Dropdown */}
-						<div className="w-48">
-							<select
-								value={sortBy}
-								onChange={(e) => setSortBy(e.target.value)}
-								className="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#ff5b5b] focus:border-transparent text-gray-900"
-							>
-								{sortOptions.map((option) => (
-									<option key={option.value} value={option.value}>
-										{option.label}
-									</option>
-								))}
-							</select>
+						<div className="flex gap-3">
+							{/* Sort Dropdown */}
+							<div className="w-48">
+								<select
+									value={sortBy}
+									onChange={(e) => setSortBy(e.target.value)}
+									className="w-full px-4 py-3 h-full bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#ff5b5b] focus:border-transparent text-gray-900"
+								>
+									{sortOptions.map((option) => (
+										<option key={option.value} value={option.value}>
+											{option.label}
+										</option>
+									))}
+								</select>
+							</div>
+
+							{/* map button */}
+							<button className="px-4 py-3 flex gap-1 items-center bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#ff5b5b] focus:border-transparent text-gray-900">
+								<Map className="w-4 h-4" /> Map View
+							</button>
 						</div>
 					</div>
 
