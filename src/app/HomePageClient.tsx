@@ -5,9 +5,11 @@ import { useQueryClient } from '@tanstack/react-query';
 import PublicHeader from '@/components/PublicHeader';
 import SearchBookingForm from '@/components/SearchBookingForm';
 import RecommendedSalons from '@/components/RecommendedSalons';
+import { useTranslation } from '@/contexts/LanguageContext';
 
 export default function HomePageClient() {
 	const queryClient = useQueryClient();
+	const t = useTranslation();
 
 	// Preload critical data for better performance
 	useEffect(() => {
@@ -54,13 +56,10 @@ export default function HomePageClient() {
 								{/* Slogan */}
 								<div className="absolute left-0 top-1/2 transform -translate-y-1/2 z-10">
 									<h1 className="text-4xl lg:text-5xl font-bold text-blue-900 leading-tight">
-										Book your
-										<br />
-										<span className="text-[#ff5b5b]">favorite treatments</span>
+										{t.homepage.heroTitle}
 									</h1>
 									<p className="text-lg text-gray-700 mt-4 max-w-md">
-										Find and book the best beauty and wellness services near
-										you. Hair salons, spas, massage, nails and more.
+										{t.homepage.heroSubtitle}
 									</p>
 								</div>
 							</div>
@@ -77,11 +76,10 @@ export default function HomePageClient() {
 						{/* Heading */}
 						<div className="text-center mb-12">
 							<h2 className="text-3xl font-bold text-gray-900 mb-4">
-								Why Choose Henzo?
+								{t.homepage.howItWorks}
 							</h2>
 							<p className="text-lg text-gray-700">
-								Henzo makes booking your next beauty appointment simple and
-								convenient.
+								{t.homepage.heroSubtitle}
 							</p>
 						</div>
 
@@ -93,11 +91,10 @@ export default function HomePageClient() {
 									<span className="text-2xl text-white">🔍</span>
 								</div>
 								<h3 className="text-xl font-semibold text-gray-900 mb-2">
-									Easy Search
+									{t.homepage.step1Title}
 								</h3>
 								<p className="text-gray-600">
-									Find salons and services near you with our smart search and
-									filtering options.
+									{t.homepage.step1Description}
 								</p>
 							</article>
 
@@ -107,11 +104,10 @@ export default function HomePageClient() {
 									<span className="text-2xl text-white">📅</span>
 								</div>
 								<h3 className="text-xl font-semibold text-gray-900 mb-2">
-									Flexible Booking
+									{t.homepage.step2Title}
 								</h3>
 								<p className="text-gray-600">
-									Book appointments at your convenience with real-time
-									availability and instant confirmation.
+									{t.homepage.step2Description}
 								</p>
 							</article>
 

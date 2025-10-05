@@ -6,6 +6,7 @@ import QueryProvider from '@/components/QueryProvider';
 import AuthProvider from '@/components/AuthProvider';
 import Footer from '@/components/Footer';
 import ConditionalFooter from '../components/ConditionalFooter';
+import { LanguageProvider } from '@/contexts/LanguageContext';
 
 const geistSans = Geist({
 	variable: '--font-geist-sans',
@@ -66,13 +67,15 @@ export default function RootLayout({
 				className={`${geistSans.variable} ${geistMono.variable} antialiased`}
 				suppressHydrationWarning={true}
 			>
-				<QueryProvider>
-					<AuthProvider>
-						{children}
-						<ConditionalFooter />
-						<Toaster />
-					</AuthProvider>
-				</QueryProvider>
+				<LanguageProvider>
+					<QueryProvider>
+						<AuthProvider>
+							{children}
+							<ConditionalFooter />
+							<Toaster />
+						</AuthProvider>
+					</QueryProvider>
+				</LanguageProvider>
 			</body>
 		</html>
 	);

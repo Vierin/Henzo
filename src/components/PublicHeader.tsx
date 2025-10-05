@@ -8,6 +8,7 @@ import Image from 'next/image';
 import { STATIC_CATEGORIES } from '@/constants/categories';
 import BooksySearch from './BooksySearch';
 import { User, LogOut, ChevronDown } from 'lucide-react';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 export default function PublicHeader() {
 	const [isLanguageDropdownOpen, setIsLanguageDropdownOpen] = useState(false);
@@ -21,15 +22,23 @@ export default function PublicHeader() {
 	// Используем новую систему аутентификации
 	const { user, isLoading, isClient, isOwner, isAdmin, logout } = useAuth();
 
+	// Используем контекст языка
+	const { language, setLanguage, t } = useLanguage();
+
 	const languages = [
-		{ code: 'EN', name: 'English', flag: '🇺🇸' },
-		{ code: 'VI', name: 'Tiếng Việt', flag: '🇻🇳' },
+		{ code: 'en', name: 'English', flag: '🇺🇸' },
+		{ code: 'vi', name: 'Tiếng Việt', flag: '🇻🇳' },
 	];
 
-	const handleLanguageSelect = (language: (typeof languages)[0]) => {
-		setSelectedLanguage(language.code);
+	const handleLanguageSelect = (lang: (typeof languages)[0]) => {
+		setLanguage(lang.code as 'vi' | 'en');
 		setIsLanguageDropdownOpen(false);
 	};
+
+	// Синхронизируем selectedLanguage с текущим языком из контекста
+	useEffect(() => {
+		setSelectedLanguage(language.toUpperCase());
+	}, [language]);
 
 	// Check user auth on component mount
 
@@ -135,7 +144,7 @@ export default function PublicHeader() {
 												key={language.code}
 												onClick={() => handleLanguageSelect(language)}
 												className={`w-full px-4 py-3 text-left hover:bg-gray-50 transition-colors flex items-center gap-3 first:rounded-t-lg last:rounded-b-lg ${
-													selectedLanguage === language.code
+													selectedLanguage === language.code.toUpperCase()
 														? 'bg-[#8B4513] text-white'
 														: 'text-gray-700'
 												}`}
@@ -219,13 +228,13 @@ export default function PublicHeader() {
 										href={'/business'}
 										className="text-sm text-gray-700 hover:text-[#8B4513] font-medium transition-colors"
 									>
-										For Business
+										{t.navigation.business}
 									</Link>
 									<Link
 										href="/login"
 										className="bg-[#ff5b5b] text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-[#e04a4a] transition-colors"
 									>
-										Sign In
+										{t.navigation.login}
 									</Link>
 								</>
 							)}
