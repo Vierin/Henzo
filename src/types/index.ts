@@ -28,6 +28,12 @@ export interface Salon {
 	createdAt: string;
 	services?: Service[];
 	reviews?: Review[];
+	// Map coordinates
+	latitude?: number;
+	longitude?: number;
+	// Rating and review count
+	rating?: number;
+	reviewCount?: number;
 	// Метод для генерации slug (не сохраняется в БД)
 	getSlug?(): string;
 }

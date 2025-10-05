@@ -124,9 +124,12 @@ export default function CategoryList({ category }: CategoryListProps) {
 							</div>
 
 							{/* map button */}
-							<button className="px-4 py-3 flex gap-1 items-center bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#ff5b5b] focus:border-transparent text-gray-900">
+							<Link
+								href="/map"
+								className="px-4 py-3 flex gap-1 items-center bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#ff5b5b] focus:border-transparent text-gray-900"
+							>
 								<Map className="w-4 h-4" /> Map View
-							</button>
+							</Link>
 						</div>
 					</div>
 

@@ -5,6 +5,7 @@ import Toaster from '@/components/Toaster';
 import QueryProvider from '@/components/QueryProvider';
 import AuthProvider from '@/components/AuthProvider';
 import Footer from '@/components/Footer';
+import ConditionalFooter from '../components/ConditionalFooter';
 
 const geistSans = Geist({
 	variable: '--font-geist-sans',
@@ -68,7 +69,7 @@ export default function RootLayout({
 				<QueryProvider>
 					<AuthProvider>
 						{children}
-						<Footer />
+						<ConditionalFooter />
 						<Toaster />
 					</AuthProvider>
 				</QueryProvider>

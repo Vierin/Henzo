@@ -19,6 +19,12 @@ const nextConfig: NextConfig = {
 				port: '',
 				pathname: '/ajax/libs/leaflet/**',
 			},
+			{
+				protocol: 'https',
+				hostname: 'images.unsplash.com',
+				port: '',
+				pathname: '/**',
+			},
 		],
 	},
 	webpack: (config) => {

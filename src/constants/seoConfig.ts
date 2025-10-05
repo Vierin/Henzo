@@ -308,4 +308,39 @@ export const seoConfig = {
 			creator: '@henzo',
 		},
 	} as Metadata,
+
+	map: {
+		title: 'Find Salons on Map - Henzo | Interactive Salon Locator',
+		description:
+			'Discover beauty salons, spas, and wellness centers on our interactive map. Find the best-rated salons near you with detailed reviews and easy booking options.',
+		metadataBase: new URL(baseUrl),
+		alternates: {
+			canonical: '/map',
+		},
+		openGraph: {
+			title: 'Find Salons on Map - Henzo',
+			description:
+				'Discover beauty salons and wellness centers on our interactive map. Find the best-rated salons near you.',
+			url: '/map',
+			siteName: 'Henzo',
+			images: [
+				{
+					url: '/og-map.jpg',
+					width: 1200,
+					height: 630,
+					alt: 'Henzo - Salon Map Search',
+				},
+			],
+			locale: 'en_US',
+			type: 'website',
+		},
+		twitter: {
+			card: 'summary_large_image',
+			title: 'Find Salons on Map - Henzo',
+			description:
+				'Discover beauty salons and wellness centers on our interactive map.',
+			images: ['/og-map.jpg'],
+			creator: '@henzo',
+		},
+	} as Metadata,
 };

@@ -1,12 +1,10 @@
 'use client';
 
 import { useEffect } from 'react';
-import { QueryClient, useQueryClient } from '@tanstack/react-query';
+import { useQueryClient } from '@tanstack/react-query';
 import PublicHeader from '@/components/PublicHeader';
 import SearchBookingForm from '@/components/SearchBookingForm';
 import RecommendedSalons from '@/components/RecommendedSalons';
-import { useFeaturedSalons } from '@/hooks/useSalonPreview';
-import { usePopularServices } from '@/hooks/useServiceOptimized';
 
 export default function HomePageClient() {
 	const queryClient = useQueryClient();
