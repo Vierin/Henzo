@@ -43,10 +43,19 @@ export default function SalonsClient() {
 		const salon = searchParams.get('salon');
 		const service = searchParams.get('service');
 
-		if (search) setSearchQuery(search);
-		if (location) setSelectedLocation(location);
-		if (salon) setSearchQuery(salon);
-		if (service) setSearchQuery(service);
+		// Set search query based on service or salon parameter
+		if (service) {
+			setSearchQuery(service);
+		} else if (salon) {
+			setSearchQuery(salon);
+		} else if (search) {
+			setSearchQuery(search);
+		}
+
+		// Set location
+		if (location) {
+			setSelectedLocation(location);
+		}
 	}, [searchParams]);
 
 	// Memoized sort options
@@ -322,7 +331,7 @@ export default function SalonsClient() {
 														.map((service: Service, index: number) => (
 															<div
 																key={service.id || index}
-																className="flex items-center w-full justify-between py-2 px-3 bg-gray-50 rounded-lg"
+																className="flex items-center w-full max-w-[33.33%] justify-between py-2 px-3 bg-gray-50 rounded-lg"
 															>
 																<div className="flex-1">
 																	<span className="text-sm font-medium text-gray-900">

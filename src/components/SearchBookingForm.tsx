@@ -22,7 +22,43 @@ export default function SearchBookingForm({
 	const [selectedDate, setSelectedDate] = useState<Date | null>(null);
 	const [selectedTimeInterval, setSelectedTimeInterval] = useState<string>('');
 
+	// Load search data from localStorage on component mount
+	useEffect(() => {
+		const savedSearchData = localStorage.getItem('searchData');
+		if (savedSearchData) {
+			try {
+				const parsed = JSON.parse(savedSearchData);
+				if (parsed.service) {
+					setSearchQuery(parsed.service);
+					setActiveTab('treatments');
+				}
+				if (parsed.location) {
+					setSelectedLocation(parsed.location);
+				}
+				if (parsed.date) {
+					setSelectedDate(new Date(parsed.date));
+				}
+				if (parsed.timeInterval && parsed.timeInterval !== 'any') {
+					setSelectedTimeInterval(parsed.timeInterval);
+				}
+			} catch (error) {
+				console.error('Error parsing saved search data:', error);
+			}
+		}
+	}, []);
+
 	const handleSearch = () => {
+		// Save search data to localStorage
+		localStorage.setItem(
+			'searchData',
+			JSON.stringify({
+				service: activeTab === 'treatments' ? searchQuery : '',
+				location: selectedLocation,
+				date: selectedDate?.toISOString(),
+				timeInterval: selectedTimeInterval || 'any',
+			})
+		);
+
 		const params = new URLSearchParams();
 
 		if (activeTab === 'treatments') {

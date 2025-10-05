@@ -8,6 +8,8 @@ import { STATIC_CATEGORIES } from '@/constants/categories';
 import { checkLocationMatch } from '@/constants/locations';
 import AddressAutocomplete from '@/components/AddressAutocomplete';
 import WorkingHoursSection from '@/components/WorkingHoursSection';
+import EnhancedFileUpload from '@/components/EnhancedFileUpload';
+import EnhancedPhotoUpload from '@/components/EnhancedPhotoUpload';
 import toast from 'react-hot-toast';
 
 interface SalonSetupData {
@@ -32,8 +34,8 @@ interface SalonSetupData {
 
 	// Step 4: Branding
 	description: string;
-	logo: File | null;
-	photos: File[];
+	logo: string | null;
+	photos: string[];
 	socialMedia: {
 		website: string;
 		instagram: string;
@@ -196,30 +198,24 @@ export default function BusinessCompleteSetupPage() {
 		}
 	};
 
-	const handleLogoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-		const file = e.target.files?.[0];
-		if (file) {
-			setFormData((prev) => ({
-				...prev,
-				logo: file,
-			}));
-		}
-	};
-
-	const handlePhotosChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-		const files = Array.from(e.target.files || []);
-		if (files.length > 0) {
-			setFormData((prev) => ({
-				...prev,
-				photos: [...prev.photos, ...files].slice(0, 3), // Max 3 photos
-			}));
-		}
-	};
-
-	const removePhoto = (index: number) => {
+	const handleLogoChange = (filePath: string) => {
 		setFormData((prev) => ({
 			...prev,
-			photos: prev.photos.filter((_, i) => i !== index),
+			logo: filePath,
+		}));
+	};
+
+	const handleLogoRemove = () => {
+		setFormData((prev) => ({
+			...prev,
+			logo: null,
+		}));
+	};
+
+	const handlePhotosChange = (photos: string[]) => {
+		setFormData((prev) => ({
+			...prev,
+			photos,
 		}));
 	};
 
@@ -282,42 +278,27 @@ export default function BusinessCompleteSetupPage() {
 			const API_BASE_URL =
 				process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
-			// Create FormData for file uploads
-			const formDataToSend = new FormData();
-			
-			// Add basic salon data
-			formDataToSend.append('name', formData.name.trim());
-			if (formData.description.trim()) {
-				formDataToSend.append('description', formData.description.trim());
-			}
-			formDataToSend.append('categoryIds', JSON.stringify(formData.categories));
-			formDataToSend.append('address', formData.address.trim());
-			formDataToSend.append('phone', formData.phone.trim());
-			if (formData.socialMedia.website.trim()) {
-				formDataToSend.append('website', formData.socialMedia.website.trim());
-			}
-			if (formData.socialMedia.instagram.trim()) {
-				formDataToSend.append('instagram', formData.socialMedia.instagram.trim());
-			}
-			formDataToSend.append('workingHours', JSON.stringify(formData.workingHours));
-
-			// Add logo if provided
-			if (formData.logo) {
-				formDataToSend.append('logo', formData.logo);
-			}
-
-			// Add photos if provided
-			formData.photos.forEach((photo, index) => {
-				formDataToSend.append(`photos`, photo);
-			});
+			// Create salon data with file paths
+			const salonData = {
+				name: formData.name.trim(),
+				description: formData.description.trim() || null,
+				categoryIds: formData.categories,
+				address: formData.address.trim(),
+				phone: formData.phone.trim(),
+				website: formData.socialMedia.website.trim() || null,
+				instagram: formData.socialMedia.instagram.trim() || null,
+				workingHours: formData.workingHours,
+				logo: formData.logo || null,
+				photos: formData.photos,
+			};
 
 			const response = await fetch(`${API_BASE_URL}/salons/current`, {
 				method: 'POST',
 				headers: {
 					Authorization: `Bearer ${freshSession.access_token}`,
-					// Don't set Content-Type for FormData, let browser set it with boundary
+					'Content-Type': 'application/json',
 				},
-				body: formDataToSend,
+				body: JSON.stringify(salonData),
 			});
 
 			if (!response.ok) {
@@ -491,11 +472,13 @@ export default function BusinessCompleteSetupPage() {
 							<label className="block text-sm font-medium text-gray-900 mb-2">
 								Logo Upload (Optional)
 							</label>
-							<input
-								type="file"
+							<EnhancedFileUpload
+								onUpload={handleLogoChange}
+								onRemove={handleLogoRemove}
+								currentFile={formData.logo || undefined}
 								accept="image/*"
-								onChange={handleLogoChange}
-								className="w-full px-4 py-3 bg-white border border-gray-600 rounded-lg text-gray-900 file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:text-sm file:font-semibold file:bg-[#ff5b5b] file:text-white hover:file:bg-red-600"
+								maxSize={2}
+								placeholder="Upload salon logo"
 							/>
 						</div>
 
@@ -503,33 +486,12 @@ export default function BusinessCompleteSetupPage() {
 							<label className="block text-sm font-medium text-gray-900 mb-2">
 								Photos (Up to 3, Optional)
 							</label>
-							<input
-								type="file"
-								accept="image/*"
-								multiple
-								onChange={handlePhotosChange}
-								className="w-full px-4 py-3 bg-white border border-gray-600 rounded-lg text-gray-900 file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:text-sm file:font-semibold file:bg-[#ff5b5b] file:text-white hover:file:bg-red-600"
+							<EnhancedPhotoUpload
+								photos={formData.photos}
+								onPhotosChange={handlePhotosChange}
+								maxPhotos={3}
+								maxSize={2}
 							/>
-							{formData.photos.length > 0 && (
-								<div className="mt-4 grid grid-cols-3 gap-4">
-									{formData.photos.map((photo, index) => (
-										<div key={index} className="relative">
-											<img
-												src={URL.createObjectURL(photo)}
-												alt={`Photo ${index + 1}`}
-												className="w-full h-24 object-cover rounded-lg"
-											/>
-											<button
-												type="button"
-												onClick={() => removePhoto(index)}
-												className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm hover:bg-red-600"
-											>
-												×
-											</button>
-										</div>
-									))}
-								</div>
-							)}
 						</div>
 
 						<div className="space-y-4">

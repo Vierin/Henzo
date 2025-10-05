@@ -3,6 +3,7 @@ import { Salon, Service } from '@/types';
 import { ServiceResponseDto } from '@/types/dto/service.dto';
 import { useSalonSlug } from '@/hooks/useSalonSlug';
 import SalonImage from './SalonImage';
+import { Phone } from 'lucide-react';
 
 interface SalonCardProps {
 	salon: Salon;
@@ -54,7 +55,9 @@ export default function SalonCard({
 					<h2 className="text-xl font-bold text-gray-900 mb-2">{salon.name}</h2>
 					<p className="text-gray-600 text-sm mb-2">{salon.address}</p>
 					{salon.phone && (
-						<p className="text-gray-500 text-sm mb-3">📞 {salon.phone}</p>
+						<p className="text-gray-500 text-sm mb-3">
+							<Phone className="w-4 h-4" /> {salon.phone}
+						</p>
 					)}
 				</div>
 			</div>
@@ -68,7 +71,7 @@ export default function SalonCard({
 							.map((service: Service, index: number) => (
 								<div
 									key={service.id || index}
-									className="flex items-center w-full justify-between py-2 px-3 bg-gray-50 rounded-lg"
+									className="flex items-center w-full max-w-[33.33%] justify-between py-2 px-3 bg-gray-50 rounded-lg"
 								>
 									<div className="flex-1">
 										<span className="text-sm font-medium text-gray-900">

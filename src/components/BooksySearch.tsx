@@ -23,6 +23,24 @@ export default function BooksySearch({ className = '' }: BooksySearchProps) {
 	const [showTimeIntervals, setShowTimeIntervals] = useState(false);
 	const timeIntervalsRef = useRef<HTMLDivElement>(null);
 
+	// Load search data from localStorage on component mount
+	useEffect(() => {
+		const savedSearchData = localStorage.getItem('searchData');
+		if (savedSearchData) {
+			try {
+				const parsed = JSON.parse(savedSearchData);
+				setSearchData({
+					service: parsed.service || '',
+					location: parsed.location || '',
+					date: parsed.date ? new Date(parsed.date) : null,
+					timeInterval: parsed.timeInterval || 'any',
+				});
+			} catch (error) {
+				console.error('Error parsing saved search data:', error);
+			}
+		}
+	}, []);
+
 	// Close time intervals when clicking outside
 	useEffect(() => {
 		const handleClickOutside = (event: MouseEvent) => {
@@ -66,6 +84,17 @@ export default function BooksySearch({ className = '' }: BooksySearchProps) {
 	};
 
 	const handleSearch = () => {
+		// Save search data to localStorage
+		localStorage.setItem(
+			'searchData',
+			JSON.stringify({
+				service: searchData.service,
+				location: searchData.location,
+				date: searchData.date?.toISOString(),
+				timeInterval: searchData.timeInterval,
+			})
+		);
+
 		const params = new URLSearchParams();
 
 		if (searchData.service) params.set('service', searchData.service);
