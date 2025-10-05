@@ -1,41 +1,29 @@
-'use client';
-
-interface Review {
-	id: string;
-	salonName: string;
-	visitDate: string;
-	service: string;
-	rating: number;
-	comment: string;
-}
+import { Review } from '@/types';
+import { Star } from 'lucide-react';
 
 interface ReviewCardProps {
 	review: Review;
-	onEdit?: (review: Review) => void;
-	onDelete?: (review: Review) => void;
+	className?: string;
 }
 
 export default function ReviewCard({
 	review,
-	onEdit,
-	onDelete,
+	className = '',
 }: ReviewCardProps) {
 	const renderStars = (rating: number) => {
-		return Array.from({ length: 5 }, (_, i) => (
-			<span
-				key={i}
-				className={`text-lg ${
-					i < rating ? 'text-yellow-400' : 'text-gray-300'
-				}`}
-			>
-				★
-			</span>
+		return Array.from({ length: 5 }, (_, index) => (
+			<Star
+				key={index}
+				size={16}
+				className={
+					index < rating ? 'text-[#ff5b5b] fill-[#ff5b5b]' : 'text-gray-300'
+				}
+			/>
 		));
 	};
 
 	const formatDate = (dateString: string) => {
-		const date = new Date(dateString);
-		return date.toLocaleDateString('en-US', {
+		return new Date(dateString).toLocaleDateString('en-US', {
 			year: 'numeric',
 			month: 'long',
 			day: 'numeric',
@@ -43,38 +31,31 @@ export default function ReviewCard({
 	};
 
 	return (
-		<div className="bg-white rounded-xl p-6 shadow-sm">
-			<div className="flex justify-between items-start mb-4">
-				<div>
-					<h3 className="text-lg font-semibold text-gray-900 mb-1">
-						{review.salonName}
-					</h3>
-					<p className="text-gray-600 text-sm mb-1">{review.service}</p>
-					<p className="text-gray-500 text-xs">
-						{formatDate(review.visitDate)}
-					</p>
+		<div className={`bg-white rounded-lg p-4 shadow-sm border ${className}`}>
+			<div className="flex items-center justify-between mb-2">
+				<div className="flex items-center space-x-2">
+					<div className="w-8 h-8 bg-gray-300 rounded-full flex items-center justify-center">
+						<span className="text-sm font-medium text-gray-600">
+							{review.user?.name?.charAt(0) || 'U'}
+						</span>
+					</div>
+					<div>
+						<p className="text-sm font-medium text-gray-900">
+							{review.user?.name || 'Anonymous'}
+						</p>
+						<div className="flex items-center space-x-1">
+							{renderStars(review.rating)}
+						</div>
+					</div>
 				</div>
-				<div className="flex">{renderStars(review.rating)}</div>
+				<span className="text-xs text-gray-500">
+					{formatDate(review.createdAt)}
+				</span>
 			</div>
 
-			<p className="text-gray-700 text-sm mb-4 leading-relaxed">
-				{review.comment}
-			</p>
-
-			<div className="flex gap-2">
-				<button
-					onClick={() => onEdit?.(review)}
-					className="text-blue-600 hover:text-blue-800 text-sm font-medium transition-colors"
-				>
-					Edit
-				</button>
-				<button
-					onClick={() => onDelete?.(review)}
-					className="text-red-600 hover:text-red-800 text-sm font-medium transition-colors"
-				>
-					Delete
-				</button>
-			</div>
+			{review.comment && (
+				<p className="text-sm text-gray-700 mt-2">{review.comment}</p>
+			)}
 		</div>
 	);
 }

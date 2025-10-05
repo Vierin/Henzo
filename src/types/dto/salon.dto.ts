@@ -56,6 +56,7 @@ export interface SalonResponseDto {
 export interface SalonWithDetailsResponseDto extends SalonResponseDto {
 	services: ServiceResponseDto[];
 	staff: StaffResponseDto[];
+	reviews?: ReviewResponseDto[];
 }
 
 // Import these from their respective DTOs
@@ -73,4 +74,18 @@ interface StaffResponseDto {
 	accessLevel: string;
 	email?: string;
 	phone?: string;
+}
+
+interface ReviewResponseDto {
+	id: string;
+	salonId: string;
+	userId: string;
+	bookingId?: string;
+	rating: number;
+	comment?: string;
+	createdAt: string;
+	user?: {
+		name?: string;
+		email?: string;
+	};
 }

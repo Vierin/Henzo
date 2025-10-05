@@ -16,7 +16,7 @@ export const metadata: Metadata = {
 };
 
 export default function ClientSettings() {
-	return (
+		return (
 		<ClientRouteGuard>
 			<ClientSettingsClient />
 		</ClientRouteGuard>

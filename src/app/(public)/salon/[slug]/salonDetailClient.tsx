@@ -10,12 +10,30 @@ import { Service, WorkingHours, Salon } from '@/types';
 import { supabase } from '@/lib/supabase';
 import SalonPhotoSlider from '../../../../components/SalonPhotoSlider';
 import { generateSalonSlug } from '@/utils/slug';
+import ReviewsSection from '../../../../components/ReviewsSection';
+import {
+	Clock,
+	Clock1,
+	Globe,
+	Instagram,
+	MapPin,
+	Phone,
+	Star,
+} from 'lucide-react';
+import { calculateAverageRating, getReviewCount } from '@/utils/salonUtils';
 
 interface SalonDetailClientProps {
 	salon: Salon;
 }
 
 export default function SalonDetailClient({ salon }: SalonDetailClientProps) {
+	// Debug log for salon data
+	console.log('SalonDetailClient received salon:', {
+		salonId: salon.id,
+		salonName: salon.name,
+		reviews: salon.reviews,
+		reviewsCount: salon.reviews?.length || 0,
+	});
 	const router = useRouter();
 	const [activeTab, setActiveTab] = useState<'Services' | 'Reviews'>(
 		'Services'
@@ -43,15 +61,16 @@ export default function SalonDetailClient({ salon }: SalonDetailClientProps) {
 
 	const renderStars = useCallback((rating: number) => {
 		return Array.from({ length: 5 }, (_, i) => (
-			<span
+			<Star
 				key={i}
-				className={`text-lg ${
-					i < Math.floor(rating) ? 'text-yellow-400' : 'text-gray-300'
-				}`}
+				size={16}
+				className={
+					i < Math.floor(rating)
+						? 'text-[#ff5b5b] fill-[#ff5b5b]'
+						: 'text-gray-300'
+				}
 				aria-hidden="true"
-			>
-				★
-			</span>
+			/>
 		));
 	}, []);
 
@@ -89,35 +108,42 @@ export default function SalonDetailClient({ salon }: SalonDetailClientProps) {
 		const categories: { [key: string]: Service[] } = {};
 
 		salon.services.forEach((service) => {
-			let category = 'Other Services';
-			const serviceName = service.name.toLowerCase();
+			// Use serviceCategory from database if available, otherwise fallback to name-based categorization
+			let categoryName = 'Other Services';
 
-			if (
-				serviceName.includes('hair') ||
-				serviceName.includes('cut') ||
-				serviceName.includes('color') ||
-				serviceName.includes('styling')
-			) {
-				category = 'Hair Services';
-			} else if (
-				serviceName.includes('nail') ||
-				serviceName.includes('manicure') ||
-				serviceName.includes('pedicure')
-			) {
-				category = 'Nail Care';
-			} else if (
-				serviceName.includes('facial') ||
-				serviceName.includes('skin') ||
-				serviceName.includes('massage') ||
-				serviceName.includes('wax')
-			) {
-				category = 'Skincare';
+			if (service.serviceCategory?.nameEn) {
+				categoryName = service.serviceCategory.nameEn;
+			} else {
+				// Fallback to static categorization based on service name
+				const serviceName = service.name.toLowerCase();
+
+				if (
+					serviceName.includes('hair') ||
+					serviceName.includes('cut') ||
+					serviceName.includes('color') ||
+					serviceName.includes('styling')
+				) {
+					categoryName = 'Hair Services';
+				} else if (
+					serviceName.includes('nail') ||
+					serviceName.includes('manicure') ||
+					serviceName.includes('pedicure')
+				) {
+					categoryName = 'Nail Care';
+				} else if (
+					serviceName.includes('facial') ||
+					serviceName.includes('skin') ||
+					serviceName.includes('massage') ||
+					serviceName.includes('wax')
+				) {
+					categoryName = 'Skincare';
+				}
 			}
 
-			if (!categories[category]) {
-				categories[category] = [];
+			if (!categories[categoryName]) {
+				categories[categoryName] = [];
 			}
-			categories[category].push(service);
+			categories[categoryName].push(service);
 		});
 
 		return categories;
@@ -168,7 +194,7 @@ export default function SalonDetailClient({ salon }: SalonDetailClientProps) {
 									aria-controls={`tabpanel-${tab.toLowerCase()}`}
 									id={`tab-${tab.toLowerCase()}`}
 									onClick={() => setActiveTab(tab)}
-									className={`pb-4 px-1 text-lg font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-[#ff5b5b] focus:ring-offset-2 rounded-t ${
+									className={`pb-4 px-1 text-lg font-medium transition-colors rounded-t ${
 										activeTab === tab
 											? 'text-[#ff5b5b] border-b-2 border-[#ff5b5b]'
 											: 'text-gray-600 hover:text-gray-900'
@@ -266,75 +292,10 @@ export default function SalonDetailClient({ salon }: SalonDetailClientProps) {
 								aria-labelledby="tab-reviews"
 								className="min-h-[400px]"
 							>
-								<h2 className="text-2xl font-bold text-gray-900 mb-6">
-									Customer Reviews
-								</h2>
-
-								{/* Mock reviews - would come from reviews API */}
-								<div className="space-y-6">
-									<article className="border-b border-gray-200 pb-6">
-										<div className="flex items-center gap-2 mb-2">
-											<div
-												className="flex"
-												role="img"
-												aria-label="5 star rating"
-											>
-												{renderStars(5)}
-											</div>
-											<span className="font-medium text-gray-900">
-												Sarah M.
-											</span>
-											<span className="text-gray-500 text-sm">2 days ago</span>
-										</div>
-										<p className="text-gray-700">
-											Amazing experience! The staff was professional and the
-											service was top-notch. I&apos;ll definitely be coming
-											back.
-										</p>
-									</article>
-
-									<article className="border-b border-gray-200 pb-6">
-										<div className="flex items-center gap-2 mb-2">
-											<div
-												className="flex"
-												role="img"
-												aria-label="4 star rating"
-											>
-												{renderStars(4)}
-											</div>
-											<span className="font-medium text-gray-900">John D.</span>
-											<span className="text-gray-500 text-sm">1 week ago</span>
-										</div>
-										<p className="text-gray-700">
-											Great salon with excellent service. The only minor issue
-											was the wait time, but the quality made up for it.
-										</p>
-									</article>
-
-									<article className="border-b border-gray-200 pb-6">
-										<div className="flex items-center gap-2 mb-2">
-											<div
-												className="flex"
-												role="img"
-												aria-label="5 star rating"
-											>
-												{renderStars(5)}
-											</div>
-											<span className="font-medium text-gray-900">Emma L.</span>
-											<span className="text-gray-500 text-sm">2 weeks ago</span>
-										</div>
-										<p className="text-gray-700">
-											Perfect haircut and styling! The stylist really understood
-											what I wanted and delivered beyond my expectations.
-										</p>
-									</article>
-								</div>
-
-								<div className="mt-6 text-center">
-									<button className="text-[#ff5b5b] hover:text-[#e04a4a] font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-[#ff5b5b] focus:ring-offset-2 rounded">
-										View All Reviews
-									</button>
-								</div>
+								<ReviewsSection
+									reviews={salon.reviews || []}
+									className="w-full"
+								/>
 							</div>
 						)}
 					</section>
@@ -350,7 +311,7 @@ export default function SalonDetailClient({ salon }: SalonDetailClientProps) {
 
 						<p className="text-gray-700 leading-relaxed mb-6">
 							{salon.description ||
-								'Your one-stop destination for beauty and relaxation. We offer a wide range of services to make you look and feel your best.'}
+								'Professional beauty and wellness services to help you look and feel your best.'}
 						</p>
 
 						{/* Mini Map */}
@@ -379,13 +340,13 @@ export default function SalonDetailClient({ salon }: SalonDetailClientProps) {
 						<div className="space-y-4">
 							{salon.address && (
 								<div>
-									<div className="flex items-center gap-2 mb-1">
+									<div className="flex items-center gap-1.5 mb-1">
 										<span
 											className="text-gray-600"
 											role="img"
 											aria-label="Location"
 										>
-											📍
+											<MapPin className="w-4 h-4" />
 										</span>
 										<span className="font-medium text-gray-900">Address</span>
 									</div>
@@ -396,9 +357,9 @@ export default function SalonDetailClient({ salon }: SalonDetailClientProps) {
 							)}
 
 							<div>
-								<div className="flex items-center gap-2 mb-1">
+								<div className="flex items-center gap-1.5 mb-1">
 									<span className="text-gray-600" role="img" aria-label="Clock">
-										🕒
+										<Clock className="w-4 h-4" />
 									</span>
 									<span className="font-medium text-gray-900">
 										Opening Hours
@@ -411,25 +372,97 @@ export default function SalonDetailClient({ salon }: SalonDetailClientProps) {
 								</div>
 							</div>
 
+							{salon.phone && (
+								<div>
+									<a
+										href={`tel:${salon.phone}`}
+										className="text-gray-600 text-sm hover:text-[#ff5b5b] transition-colors flex gap-1.5"
+									>
+										<Phone className="w-4 h-4" /> {salon.phone}
+									</a>
+								</div>
+							)}
+
+							{salon.website && (
+								<div>
+									<a
+										href={salon.website}
+										target="_blank"
+										rel="noopener noreferrer"
+										className="text-gray-600 text-sm flex gap-1.5 hover:text-[#ff5b5b] transition-colors break-all"
+									>
+										<Globe className="w-4 h-4" /> {salon.website}
+									</a>
+								</div>
+							)}
+
+							{salon.instagram && (
+								<div>
+									<a
+										href={
+											salon.instagram.startsWith('@')
+												? `https://instagram.com/${salon.instagram.substring(1)}`
+												: salon.instagram
+										}
+										target="_blank"
+										rel="noopener noreferrer"
+										className="text-gray-600 text-sm flex gap-1.5 hover:text-[#ff5b5b] transition-colors"
+									>
+										<Instagram className="w-4 h-4" />
+										{salon.instagram}
+									</a>
+								</div>
+							)}
+
 							<div>
 								<div className="flex items-center gap-2 mb-1">
 									<span
-										className="text-gray-600"
+										className="text-[#ff5b5b]"
 										role="img"
 										aria-label="Star rating"
 									>
-										⭐
-									</span>
-									<span className="font-medium text-gray-900">Rating</span>
-								</div>
-								<div className="flex items-center gap-2 ml-6">
-									<div className="flex" role="img" aria-label="4.9 star rating">
-										{renderStars(4.9)}
-									</div>
-									<span className="text-gray-600 text-sm">
-										4.9 (245 reviews)
+										<Star size={16} className="text-[#ff5b5b]" />
 									</span>
 								</div>
+								{(() => {
+									const rating = calculateAverageRating(salon);
+									const reviewCount = getReviewCount(salon);
+
+									// Debug log
+									console.log('Salon reviews debug:', {
+										salonId: salon.id,
+										salonName: salon.name,
+										reviews: salon.reviews,
+										rating,
+										reviewCount,
+									});
+
+									if (rating > 0) {
+										return (
+											<div className="flex items-center gap-2 ml-6">
+												<div
+													className="flex"
+													role="img"
+													aria-label={`${rating} star rating`}
+												>
+													{renderStars(rating)}
+												</div>
+												<span className="text-gray-600 text-sm">
+													{rating} ({reviewCount}{' '}
+													{reviewCount === 1 ? 'review' : 'reviews'})
+												</span>
+											</div>
+										);
+									} else {
+										return (
+											<div className="ml-6">
+												<span className="text-gray-500 text-sm">
+													No reviews yet
+												</span>
+											</div>
+										);
+									}
+								})()}
 							</div>
 						</div>
 					</aside>

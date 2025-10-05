@@ -12,6 +12,13 @@ import { useSalonSlug } from '@/hooks/useSalonSlug';
 import { ServiceResponseDto } from '@/types/dto/service.dto';
 import { Salon, Service } from '@/types';
 import { checkLocationMatch } from '@/constants/locations';
+import {
+	isSalonOpenOnDateTime,
+	calculateAverageRating,
+	getReviewCount,
+	getAvailableTimeSlots,
+} from '@/utils/salonUtils';
+import { Clock8, Phone, Star } from 'lucide-react';
 
 export default function SalonsClient() {
 	const router = useRouter();
@@ -21,6 +28,8 @@ export default function SalonsClient() {
 	// State management
 	const [searchQuery, setSearchQuery] = useState('');
 	const [selectedLocation, setSelectedLocation] = useState('');
+	const [selectedDate, setSelectedDate] = useState<Date | null>(null);
+	const [selectedTimeInterval, setSelectedTimeInterval] = useState<string>('');
 	const [activeFilter, setActiveFilter] = useState('All');
 	const [sortBy, setSortBy] = useState('name');
 	const [visibleSalonsCount, setVisibleSalonsCount] = useState(15);
@@ -42,6 +51,8 @@ export default function SalonsClient() {
 		const location = searchParams.get('location');
 		const salon = searchParams.get('salon');
 		const service = searchParams.get('service');
+		const date = searchParams.get('date');
+		const time = searchParams.get('time');
 
 		// Set search query based on service or salon parameter
 		if (service) {
@@ -55,6 +66,16 @@ export default function SalonsClient() {
 		// Set location
 		if (location) {
 			setSelectedLocation(location);
+		}
+
+		// Set date
+		if (date) {
+			setSelectedDate(new Date(date));
+		}
+
+		// Set time interval
+		if (time) {
+			setSelectedTimeInterval(time);
 		}
 	}, [searchParams]);
 
@@ -145,6 +166,13 @@ export default function SalonsClient() {
 			});
 		}
 
+		// Filter by date and time availability
+		if (selectedDate) {
+			filtered = filtered.filter((salon) => {
+				return isSalonOpenOnDateTime(salon, selectedDate, selectedTimeInterval);
+			});
+		}
+
 		// Filter by category
 		if (activeFilter !== 'All') {
 			const filterLower = activeFilter.toLowerCase();
@@ -168,14 +196,27 @@ export default function SalonsClient() {
 				case 'services':
 					return b.services.length - a.services.length;
 				case 'rating':
-					return a.name.localeCompare(b.name); // Fallback to name sort
+					const ratingA = calculateAverageRating(a);
+					const ratingB = calculateAverageRating(b);
+					if (ratingA === ratingB) {
+						return b.services.length - a.services.length; // Secondary sort by services count
+					}
+					return ratingB - ratingA; // Higher rating first
 				default:
 					return 0;
 			}
 		});
 
 		return filtered;
-	}, [salons, searchQuery, selectedLocation, activeFilter, sortBy]);
+	}, [
+		salons,
+		searchQuery,
+		selectedLocation,
+		selectedDate,
+		selectedTimeInterval,
+		activeFilter,
+		sortBy,
+	]);
 
 	// Get visible salons based on pagination
 	const visibleSalons = useMemo(() => {
@@ -188,21 +229,46 @@ export default function SalonsClient() {
 	// Reset pagination when search or filters change
 	useEffect(() => {
 		setVisibleSalonsCount(15);
-	}, [searchQuery, selectedLocation, activeFilter, sortBy]);
+	}, [
+		searchQuery,
+		selectedLocation,
+		selectedDate,
+		selectedTimeInterval,
+		activeFilter,
+		sortBy,
+	]);
 
 	// Generate results header text
 	const resultsHeaderText = useMemo(() => {
+		let baseText = '';
+
 		if (searchQuery && selectedLocation) {
-			return `${searchQuery} in ${selectedLocation}`;
+			baseText = `${searchQuery} in ${selectedLocation}`;
+		} else if (searchQuery) {
+			baseText = searchQuery;
+		} else if (selectedLocation) {
+			baseText = `Salons in ${selectedLocation}`;
+		} else {
+			baseText = 'All Salons';
 		}
-		if (searchQuery) {
-			return searchQuery;
+
+		// Add date and time information
+		if (selectedDate) {
+			const dateStr = selectedDate.toLocaleDateString('en-US', {
+				weekday: 'long',
+				month: 'long',
+				day: 'numeric',
+			});
+
+			if (selectedTimeInterval && selectedTimeInterval !== 'any') {
+				baseText += ` on ${dateStr} (${selectedTimeInterval})`;
+			} else {
+				baseText += ` on ${dateStr}`;
+			}
 		}
-		if (selectedLocation) {
-			return `Salons in ${selectedLocation}`;
-		}
-		return 'All Salons';
-	}, [searchQuery, selectedLocation]);
+
+		return baseText;
+	}, [searchQuery, selectedLocation, selectedDate, selectedTimeInterval]);
 
 	const resultsCountText = useMemo(() => {
 		const visible = visibleSalons.length;
@@ -304,20 +370,63 @@ export default function SalonsClient() {
 
 											{/* Salon Info */}
 											<div className="flex-1">
-												<h2 className="text-xl font-bold text-gray-900 mb-2">
-													{salon.name}
-												</h2>
+												<div className="flex items-center justify-between mb-2">
+													<h2 className="text-xl font-bold text-gray-900">
+														{salon.name}
+													</h2>
+													{/* Rating */}
+													{(() => {
+														const rating = calculateAverageRating(salon);
+														const reviewCount = getReviewCount(salon);
+
+														if (rating > 0) {
+															return (
+																<div className="flex items-center space-x-1">
+																	<Star className="w-4 h-4 fill-[#ff5b5b] text-[#ff5b5b]" />
+																	<span className="text-sm font-medium text-gray-900">
+																		{rating}
+																	</span>
+																	<span className="text-sm text-gray-500">
+																		({reviewCount})
+																	</span>
+																</div>
+															);
+														}
+														return null;
+													})()}
+												</div>
 												{salon.address && (
 													<address className="text-gray-600 text-sm mb-2 not-italic">
 														{salon.address}
 													</address>
 												)}
 												{salon.phone && (
-													<p className="text-gray-500 text-sm mb-3">
-														<span className="sr-only">Phone: </span>
-														📞 {salon.phone}
+													<p className="text-gray-500 text-sm mb-3 flex gap-1">
+														<Phone className="w-3.5 h-3.5 relative top-0.5" />{' '}
+														{salon.phone}
 													</p>
 												)}
+
+												{/* Available Time Slots */}
+												{selectedDate &&
+													(() => {
+														const availableSlots = getAvailableTimeSlots(
+															salon,
+															selectedDate,
+															selectedTimeInterval
+														);
+														if (availableSlots.length > 0) {
+															return (
+																<div className="flex items-center space-x-1 mb-3">
+																	<span className="text-green-600">🕒</span>
+																	<span className="text-sm text-green-600 font-medium">
+																		Available: {availableSlots.join(', ')}
+																	</span>
+																</div>
+															);
+														}
+														return null;
+													})()}
 											</div>
 										</div>
 
@@ -342,7 +451,8 @@ export default function SalonsClient() {
 																			<span className="sr-only">
 																				Duration:{' '}
 																			</span>
-																			⏱️ {service.duration} min
+																			<Clock8 className="w-3.5 h-3.5 relative top-0.5" />{' '}
+																			{service.duration} min
 																		</span>
 																		<span className="text-sm font-semibold text-[#ff5b5b]">
 																			<span className="sr-only">Price: </span>$

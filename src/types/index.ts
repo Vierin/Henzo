@@ -27,6 +27,7 @@ export interface Salon {
 	ownerId: string;
 	createdAt: string;
 	services?: Service[];
+	reviews?: Review[];
 	// Метод для генерации slug (не сохраняется в БД)
 	getSlug?(): string;
 }
@@ -117,6 +118,20 @@ export interface FormData {
 	date: string;
 	time: string;
 	notes: string;
+}
+
+export interface Review {
+	id: string;
+	salonId: string;
+	userId: string;
+	bookingId?: string;
+	rating: number;
+	comment?: string;
+	createdAt: string;
+	user?: {
+		name?: string;
+		email?: string;
+	};
 }
 
 export interface ApiError {

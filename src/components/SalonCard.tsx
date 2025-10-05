@@ -3,7 +3,12 @@ import { Salon, Service } from '@/types';
 import { ServiceResponseDto } from '@/types/dto/service.dto';
 import { useSalonSlug } from '@/hooks/useSalonSlug';
 import SalonImage from './SalonImage';
-import { Phone } from 'lucide-react';
+import { Phone, Star, Clock, Clock8 } from 'lucide-react';
+import {
+	calculateAverageRating,
+	getReviewCount,
+	getAvailableTimeSlots,
+} from '@/utils/salonUtils';
 
 interface SalonCardProps {
 	salon: Salon;
@@ -13,12 +18,16 @@ interface SalonCardProps {
 		salonName: string
 	) => void;
 	className?: string;
+	selectedDate?: Date | null;
+	selectedTimeInterval?: string;
 }
 
 export default function SalonCard({
 	salon,
 	onBookService,
 	className = '',
+	selectedDate,
+	selectedTimeInterval,
 }: SalonCardProps) {
 	const router = useRouter();
 	const { getSalonUrl } = useSalonSlug();
@@ -52,13 +61,56 @@ export default function SalonCard({
 
 				{/* Salon Info */}
 				<div className="flex-1">
-					<h2 className="text-xl font-bold text-gray-900 mb-2">{salon.name}</h2>
+					<div className="flex items-center justify-between mb-2">
+						<h2 className="text-xl font-bold text-gray-900">{salon.name}</h2>
+						{/* Rating */}
+						{(() => {
+							const rating = calculateAverageRating(salon);
+							const reviewCount = getReviewCount(salon);
+
+							if (rating > 0) {
+								return (
+									<div className="flex items-center space-x-1">
+										<Star className="w-4 h-4 fill-[#ff5b5b] text-[#ff5b5b]" />
+										<span className="text-sm font-medium text-gray-900">
+											{rating}
+										</span>
+										<span className="text-sm text-gray-500">
+											({reviewCount})
+										</span>
+									</div>
+								);
+							}
+							return null;
+						})()}
+					</div>
 					<p className="text-gray-600 text-sm mb-2">{salon.address}</p>
 					{salon.phone && (
-						<p className="text-gray-500 text-sm mb-3">
-							<Phone className="w-4 h-4" /> {salon.phone}
+						<p className="text-gray-500 text-sm mb-3 flex gap-1">
+							<Phone className="w-3.5 h-3.5 relative top-0.5" /> {salon.phone}
 						</p>
 					)}
+
+					{/* Available Time Slots */}
+					{selectedDate &&
+						(() => {
+							const availableSlots = getAvailableTimeSlots(
+								salon,
+								selectedDate,
+								selectedTimeInterval
+							);
+							if (availableSlots.length > 0) {
+								return (
+									<div className="flex items-center space-x-1 mb-3 items-center">
+										<Clock className="w-4 h-4 text-green-600" />
+										<span className="text-sm text-green-600 font-medium">
+											Available: {availableSlots.join(', ')}
+										</span>
+									</div>
+								);
+							}
+							return null;
+						})()}
 				</div>
 			</div>
 
@@ -78,11 +130,12 @@ export default function SalonCard({
 											{service.name}
 										</span>
 										<div className="flex items-center gap-4 mt-1">
-											<span className="text-xs text-gray-500">
-												⏱️ {service.duration} min
+											<span className="text-xs text-gray-500 flex items-center gap-1">
+												<Clock8 className="w-3.5 h-3.5 relative" />{' '}
+												{service.duration} min
 											</span>
 											<span className="text-sm font-semibold text-[#ff5b5b]">
-												${service.price}
+												{service.price} ₫
 											</span>
 										</div>
 									</div>

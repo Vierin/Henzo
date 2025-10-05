@@ -89,6 +89,40 @@ export function formatDateTimeSafe(
 }
 
 /**
+ * Format date and time separately for booking cards
+ */
+export function formatBookingDateTime(dateString: string | null | undefined): {
+	date: string;
+	time: string;
+} {
+	const date = safeParseDate(dateString);
+	if (!date) {
+		return {
+			date: 'Date not available',
+			time: 'Time not available',
+		};
+	}
+
+	const formattedDate = date.toLocaleDateString('en-US', {
+		weekday: 'long',
+		year: 'numeric',
+		month: 'long',
+		day: 'numeric',
+	});
+
+	const formattedTime = date.toLocaleTimeString('en-US', {
+		hour: '2-digit',
+		minute: '2-digit',
+		hour12: false,
+	});
+
+	return {
+		date: formattedDate,
+		time: formattedTime,
+	};
+}
+
+/**
  * Check if a date string represents a past date
  */
 export function isPastDate(dateString: string | null | undefined): boolean {
@@ -107,6 +141,50 @@ export function isToday(dateString: string | null | undefined): boolean {
 
 	const today = new Date();
 	return date.toDateString() === today.toDateString();
+}
+
+/**
+ * Get a relative date badge (Tomorrow, In 3 days, etc.)
+ */
+export function getDateBadge(
+	dateString: string | null | undefined
+): string | null {
+	const date = safeParseDate(dateString);
+	if (!date) return null;
+
+	const today = new Date();
+	const tomorrow = new Date(today);
+	tomorrow.setDate(today.getDate() + 1);
+
+	const dayAfterTomorrow = new Date(today);
+	dayAfterTomorrow.setDate(today.getDate() + 2);
+
+	const in3Days = new Date(today);
+	in3Days.setDate(today.getDate() + 3);
+
+	// Reset time to compare only dates
+	const targetDate = new Date(date);
+	targetDate.setHours(0, 0, 0, 0);
+	const todayDate = new Date(today);
+	todayDate.setHours(0, 0, 0, 0);
+	const tomorrowDate = new Date(tomorrow);
+	tomorrowDate.setHours(0, 0, 0, 0);
+	const dayAfterTomorrowDate = new Date(dayAfterTomorrow);
+	dayAfterTomorrowDate.setHours(0, 0, 0, 0);
+	const in3DaysDate = new Date(in3Days);
+	in3DaysDate.setHours(0, 0, 0, 0);
+
+	if (targetDate.getTime() === todayDate.getTime()) {
+		return 'Today';
+	} else if (targetDate.getTime() === tomorrowDate.getTime()) {
+		return 'Tomorrow';
+	} else if (targetDate.getTime() === dayAfterTomorrowDate.getTime()) {
+		return 'In 2 days';
+	} else if (targetDate.getTime() === in3DaysDate.getTime()) {
+		return 'In 3 days';
+	}
+
+	return null;
 }
 
 /**

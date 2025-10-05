@@ -8,12 +8,15 @@ import {
 	extractSalonIdFromSlug,
 	isValidSalonSlug,
 } from '@/utils/slug';
+import { SalonWithDetailsResponseDto } from '@/types/dto/salon.dto';
 
 interface SalonDetailPageProps {
 	params: { slug: string };
 }
 
-async function getSalonData(slug: string): Promise<Salon | null> {
+async function getSalonData(
+	slug: string
+): Promise<SalonWithDetailsResponseDto | null> {
 	try {
 		// Проверяем, является ли это старым ID (UUID) или новым slug
 		const isOldId = /^[a-f0-9-]{36}$/.test(slug);
@@ -28,10 +31,21 @@ async function getSalonData(slug: string): Promise<Salon | null> {
 			return null;
 		}
 
-		const response = await apiClient.get<{ salon: Salon }>(
+		const response = await apiClient.get<SalonWithDetailsResponseDto>(
 			`/salons/${salonId}`
 		);
-		return response.salon || response;
+		const salon = response;
+
+		// Debug log
+		console.log('Salon data from API:', {
+			salonId,
+			salonName: salon.name,
+			reviews: salon.reviews,
+			reviewsCount: salon.reviews?.length || 0,
+			fullResponse: response,
+		});
+
+		return salon;
 	} catch (error) {
 		console.error('Error fetching salon:', error);
 		return null;
@@ -41,7 +55,8 @@ async function getSalonData(slug: string): Promise<Salon | null> {
 export async function generateMetadata({
 	params,
 }: SalonDetailPageProps): Promise<Metadata> {
-	const salon = await getSalonData(params.slug);
+	const { slug } = await params;
+	const salon = await getSalonData(slug);
 
 	if (!salon) {
 		return {
@@ -82,7 +97,7 @@ export async function generateMetadata({
 				salon.photos && salon.photos.length > 0 ? salon.photos : undefined,
 		},
 		alternates: {
-			canonical: `/salon/${params.slug}`,
+			canonical: `/salon/${slug}`,
 		},
 	};
 }
@@ -90,14 +105,15 @@ export async function generateMetadata({
 export default async function SalonDetailPage({
 	params,
 }: SalonDetailPageProps) {
-	const salon = await getSalonData(params.slug);
+	const { slug } = await params;
+	const salon = await getSalonData(slug);
 
 	if (!salon) {
 		notFound();
 	}
 
 	// Проверяем, нужно ли редиректить со старого ID на новый slug
-	const isOldId = /^[a-f0-9-]{36}$/.test(params.slug);
+	const isOldId = /^[a-f0-9-]{36}$/.test(slug);
 	if (isOldId) {
 		const newSlug = generateSalonSlug(salon.name, salon.address, salon.id);
 		return (
