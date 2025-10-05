@@ -1,10 +1,39 @@
 'use client';
 
+import { useEffect } from 'react';
+import { QueryClient, useQueryClient } from '@tanstack/react-query';
 import PublicHeader from '@/components/PublicHeader';
 import SearchBookingForm from '@/components/SearchBookingForm';
 import RecommendedSalons from '@/components/RecommendedSalons';
+import { useFeaturedSalons } from '@/hooks/useSalonPreview';
+import { usePopularServices } from '@/hooks/useServiceOptimized';
 
 export default function HomePageClient() {
+	const queryClient = useQueryClient();
+
+	// Preload critical data for better performance
+	useEffect(() => {
+		// Prefetch featured salons
+		queryClient.prefetchQuery({
+			queryKey: ['salons', 'featured', 6],
+			queryFn: async () => {
+				const response = await fetch('/api/salons/featured?limit=6');
+				return response.json();
+			},
+			staleTime: 15 * 60 * 1000, // 15 minutes
+		});
+
+		// Prefetch popular services
+		queryClient.prefetchQuery({
+			queryKey: ['services', 'popular', 10],
+			queryFn: async () => {
+				const response = await fetch('/api/services/popular?limit=10');
+				return response.json();
+			},
+			staleTime: 15 * 60 * 1000, // 15 minutes
+		});
+	}, [queryClient]);
+
 	return (
 		<div className="min-h-screen bg-[#F8F5F2]">
 			<PublicHeader />

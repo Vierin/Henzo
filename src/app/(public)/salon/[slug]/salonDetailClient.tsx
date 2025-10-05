@@ -60,18 +60,35 @@ export default function SalonDetailClient({ salon }: SalonDetailClientProps) {
 	}, [salon.address]);
 
 	const renderStars = useCallback((rating: number) => {
-		return Array.from({ length: 5 }, (_, i) => (
-			<Star
-				key={i}
-				size={16}
-				className={
-					i < Math.floor(rating)
-						? 'text-[#ff5b5b] fill-[#ff5b5b]'
-						: 'text-gray-300'
-				}
-				aria-hidden="true"
-			/>
-		));
+		return Array.from({ length: 5 }, (_, i) => {
+			const starIndex = i + 1;
+			let className = 'text-gray-300';
+			let style = {};
+
+			if (starIndex <= Math.floor(rating)) {
+				// Полная звезда
+				className = 'text-[#ff5b5b] fill-[#ff5b5b]';
+			} else if (starIndex - 0.5 <= rating && rating < starIndex) {
+				// Половина звезды - используем градиент
+				className = 'text-gray-300';
+				style = {
+					background: 'linear-gradient(90deg, #ff5b5b 50%, transparent 50%)',
+					WebkitBackgroundClip: 'text',
+					WebkitTextFillColor: 'transparent',
+					backgroundClip: 'text',
+				};
+			}
+
+			return (
+				<Star
+					key={i}
+					size={16}
+					className={className}
+					style={style}
+					aria-hidden="true"
+				/>
+			);
+		});
 	}, []);
 
 	const formatWorkingHours = useCallback(

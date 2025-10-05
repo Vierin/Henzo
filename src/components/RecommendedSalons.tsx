@@ -1,6 +1,6 @@
 'use client';
 
-import { useSalonsWithServices } from '@/hooks/useSalons';
+import { useFeaturedSalons } from '@/hooks/useSalonPreview';
 import { useSalonSlug } from '@/hooks/useSalonSlug';
 import { supabase } from '@/lib/supabase';
 import { Salon, Service } from '@/types';
@@ -16,7 +16,7 @@ export default function RecommendedSalons() {
 		isLoading: loading,
 		error,
 		refetch,
-	} = useSalonsWithServices();
+	} = useFeaturedSalons(3);
 
 	const getImageSrc = (imageSrc: string) => {
 		// If it's a URL, return it directly
@@ -35,7 +35,7 @@ export default function RecommendedSalons() {
 	};
 
 	const getSalonImage = (
-		salon: Salon
+		salon: any
 	): { url: string | undefined; isExternal: boolean } => {
 		// If salon has photos, use the first photo
 		if (salon.photos && salon.photos.length > 0) {
@@ -80,7 +80,7 @@ export default function RecommendedSalons() {
 						message="Failed to load salons"
 						onRetry={() => refetch()}
 					/>
-				) : salons.length === 0 ? (
+				) : (salons as any[]).length === 0 ? (
 					<div className="text-center py-12">
 						<div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
 							<span className="text-2xl">🏪</span>
@@ -94,7 +94,7 @@ export default function RecommendedSalons() {
 					</div>
 				) : (
 					<div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-						{salons.slice(0, 3).map((salon: Salon) => (
+						{(salons as any[]).slice(0, 3).map((salon: any) => (
 							<Link
 								key={salon.id}
 								href={getSalonUrl(salon)}
@@ -131,18 +131,16 @@ export default function RecommendedSalons() {
 											📞 {salon.phone}
 										</p>
 									)}
-									{salon.services && salon.services.length > 0 && (
+									{salon._count && salon._count.services > 0 && (
 										<div className="flex flex-wrap gap-1 mb-4">
-											{salon.services
-												.slice(0, 2)
-												.map((service: Service, index: number) => (
-													<span
-														key={service.id || index}
-														className="px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-full"
-													>
-														{service.name}
-													</span>
-												))}
+											<span className="px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-full">
+												{salon._count.services} services
+											</span>
+											{salon._count.reviews > 0 && (
+												<span className="px-2 py-1 bg-green-100 text-green-800 text-xs rounded-full">
+													{salon._count.reviews} reviews
+												</span>
+											)}
 										</div>
 									)}
 									<div className="flex items-center justify-center">
