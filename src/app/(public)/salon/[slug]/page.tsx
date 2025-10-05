@@ -22,13 +22,6 @@ async function getSalonData(
 		const isOldId = /^[a-f0-9-]{36}$/.test(slug);
 		const salonId = isOldId ? slug : extractSalonIdFromSlug(slug);
 
-		// Debug log
-		console.log('Slug extraction debug:', {
-			originalSlug: slug,
-			isOldId,
-			extractedSalonId: salonId,
-		});
-
 		if (!salonId) {
 			console.log('❌ No salonId extracted from slug:', slug);
 			return null;
@@ -43,15 +36,6 @@ async function getSalonData(
 			`/salons/${salonId}`
 		);
 		const salon = response;
-
-		// Debug log
-		console.log('Salon data from API:', {
-			salonId,
-			salonName: salon.name,
-			reviews: salon.reviews,
-			reviewsCount: salon.reviews?.length || 0,
-			fullResponse: response,
-		});
 
 		return salon;
 	} catch (error) {

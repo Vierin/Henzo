@@ -8,6 +8,7 @@ import ErrorDisplay from '../../../components/ErrorDisplay';
 import SalonImage from '../../../components/SalonImage';
 import BooksySearch from '../../../components/BooksySearch';
 import { useSalonsWithServices } from '@/hooks/useSalons';
+import { useSalonSearch } from '@/hooks/useSalonSearch';
 import { useSalonSlug } from '@/hooks/useSalonSlug';
 import { ServiceResponseDto } from '@/types/dto/service.dto';
 import { Salon, Service } from '@/types';
@@ -30,20 +31,55 @@ export default function SalonsClient() {
 	const [selectedLocation, setSelectedLocation] = useState('');
 	const [selectedDate, setSelectedDate] = useState<Date | null>(null);
 	const [selectedTimeInterval, setSelectedTimeInterval] = useState<string>('');
-	const [activeFilter, setActiveFilter] = useState('All');
+	const [activeFilter, setActiveFilter] = useState('all');
 	const [sortBy, setSortBy] = useState('name');
-	const [visibleSalonsCount, setVisibleSalonsCount] = useState(15);
+	const [currentPage, setCurrentPage] = useState(1);
 	const [isBookingModalOpen, setIsBookingModalOpen] = useState(false);
 	const [selectedService, setSelectedService] = useState<
 		(ServiceResponseDto & { salonId: string; salonName: string }) | null
 	>(null);
 
+	// Use optimized search instead of loading all salons
 	const {
-		data: salons = [],
+		data: searchResult,
 		isLoading: loading,
 		error,
 		refetch,
-	} = useSalonsWithServices();
+	} = useSalonSearch({
+		page: currentPage,
+		limit: 20,
+		search: searchQuery,
+		location: selectedLocation,
+		category: activeFilter,
+		sortBy: sortBy,
+		accumulate: currentPage > 1, // Accumulate results for pagination
+	});
+
+	// Accumulate salon results for pagination
+	const [accumulatedSalons, setAccumulatedSalons] = useState<Salon[]>([]);
+	const [currentPagination, setCurrentPagination] = useState<any>(null);
+
+	useEffect(() => {
+		if (searchResult?.data && searchResult?.pagination) {
+			if (searchResult.pagination.page === 1) {
+				// Reset accumulated results for new search
+				setAccumulatedSalons(searchResult.data);
+			} else {
+				// Append new results for pagination
+				setAccumulatedSalons((prev) => [...prev, ...searchResult.data]);
+			}
+			setCurrentPagination(searchResult.pagination);
+		}
+	}, [searchResult]);
+
+	// Reset accumulated results when search parameters change
+	useEffect(() => {
+		setAccumulatedSalons([]);
+		setCurrentPagination(null);
+	}, [searchQuery, selectedLocation, activeFilter, sortBy]);
+
+	const salons = accumulatedSalons;
+	const pagination = currentPagination;
 
 	// Initialize from URL parameters
 	useEffect(() => {
@@ -116,8 +152,10 @@ export default function SalonsClient() {
 	);
 
 	const handleLoadMore = useCallback(() => {
-		setVisibleSalonsCount((prev) => prev + 15);
-	}, []);
+		if (pagination?.hasNextPage) {
+			setCurrentPage((prev) => prev + 1);
+		}
+	}, [pagination?.hasNextPage]);
 
 	const handleServiceClick = useCallback(
 		(
@@ -132,111 +170,10 @@ export default function SalonsClient() {
 		[handleBookService]
 	);
 
-	// Filter and sort salons with memoization
-	const filteredSalons = useMemo(() => {
-		let filtered = [...salons];
-
-		// Filter by search query
-		if (searchQuery.trim()) {
-			const query = searchQuery.toLowerCase();
-			filtered = filtered.filter(
-				(salon) =>
-					salon.name.toLowerCase().includes(query) ||
-					salon.address?.toLowerCase().includes(query) ||
-					salon.services.some(
-						(service: Service) =>
-							service.name.toLowerCase().includes(query) ||
-							service.serviceCategory?.nameEn?.toLowerCase().includes(query) ||
-							service.serviceCategory?.nameVn?.toLowerCase().includes(query)
-					)
-			);
-		}
-
-		// Filter by location
-		if (selectedLocation.trim()) {
-			const location = selectedLocation.toLowerCase();
-			filtered = filtered.filter((salon) => {
-				if (!salon.address) return false;
-				const salonAddress = salon.address.toLowerCase();
-				return (
-					salonAddress.includes(location) ||
-					location.includes(salonAddress.split(',')[0]) ||
-					checkLocationMatch(salonAddress, location)
-				);
-			});
-		}
-
-		// Filter by date and time availability
-		if (selectedDate) {
-			filtered = filtered.filter((salon) => {
-				return isSalonOpenOnDateTime(salon, selectedDate, selectedTimeInterval);
-			});
-		}
-
-		// Filter by category
-		if (activeFilter !== 'All') {
-			const filterLower = activeFilter.toLowerCase();
-			filtered = filtered.filter((salon) => {
-				const serviceNames = salon.services.map((s: Service) =>
-					s.name.toLowerCase()
-				);
-				return serviceNames.some((name: string) =>
-					name.includes(filterLower.replace(' salons', '').replace('shops', ''))
-				);
-			});
-		}
-
-		// Sort salons
-		filtered.sort((a, b) => {
-			switch (sortBy) {
-				case 'name':
-					return a.name.localeCompare(b.name);
-				case 'name-desc':
-					return b.name.localeCompare(a.name);
-				case 'services':
-					return b.services.length - a.services.length;
-				case 'rating':
-					const ratingA = calculateAverageRating(a);
-					const ratingB = calculateAverageRating(b);
-					if (ratingA === ratingB) {
-						return b.services.length - a.services.length; // Secondary sort by services count
-					}
-					return ratingB - ratingA; // Higher rating first
-				default:
-					return 0;
-			}
-		});
-
-		return filtered;
-	}, [
-		salons,
-		searchQuery,
-		selectedLocation,
-		selectedDate,
-		selectedTimeInterval,
-		activeFilter,
-		sortBy,
-	]);
-
-	// Get visible salons based on pagination
-	const visibleSalons = useMemo(() => {
-		return filteredSalons.slice(0, visibleSalonsCount);
-	}, [filteredSalons, visibleSalonsCount]);
-
-	// Check if there are more salons to load
-	const hasMoreSalons = filteredSalons.length > visibleSalonsCount;
-
-	// Reset pagination when search or filters change
+	// Reset page when search parameters change
 	useEffect(() => {
-		setVisibleSalonsCount(15);
-	}, [
-		searchQuery,
-		selectedLocation,
-		selectedDate,
-		selectedTimeInterval,
-		activeFilter,
-		sortBy,
-	]);
+		setCurrentPage(1);
+	}, [searchQuery, selectedLocation, activeFilter, sortBy]);
 
 	// Generate results header text
 	const resultsHeaderText = useMemo(() => {
@@ -271,10 +208,11 @@ export default function SalonsClient() {
 	}, [searchQuery, selectedLocation, selectedDate, selectedTimeInterval]);
 
 	const resultsCountText = useMemo(() => {
-		const visible = visibleSalons.length;
-		const total = filteredSalons.length;
-		return visible !== total ? `${visible} of ${total}` : `${visible}`;
-	}, [visibleSalons.length, filteredSalons.length]);
+		if (pagination) {
+			return `${pagination.total}`;
+		}
+		return '0';
+	}, [pagination]);
 
 	return (
 		<div className="min-h-screen bg-[#F8F5F2]">
@@ -321,7 +259,7 @@ export default function SalonsClient() {
 									message="Failed to load salons"
 									onRetry={() => refetch()}
 								/>
-							) : filteredSalons.length === 0 ? (
+							) : salons.length === 0 ? (
 								// No salons found
 								<div className="text-center py-12">
 									<div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
@@ -342,7 +280,7 @@ export default function SalonsClient() {
 								</div>
 							) : (
 								// Display salons
-								visibleSalons.map((salon) => (
+								salons.map((salon) => (
 									<article
 										key={salon.id}
 										onClick={() => handleSalonClick(salon)}
@@ -486,7 +424,7 @@ export default function SalonsClient() {
 											</div>
 										)}
 
-										{salon.services.length > 3 && (
+										{salon.services && salon.services.length > 3 && (
 											<div className="text-center py-2">
 												<button
 													onClick={(e) => {
@@ -507,14 +445,15 @@ export default function SalonsClient() {
 					</section>
 
 					{/* Load More Button */}
-					{hasMoreSalons && (
+					{pagination?.hasNextPage && (
 						<div className="text-center mt-12">
 							<button
 								onClick={handleLoadMore}
 								className="bg-[#ff5b5b] text-white px-8 py-4 rounded-2xl font-medium hover:bg-[#e04a4a] transition-colors focus:outline-none focus:ring-2 focus:ring-[#ff5b5b] focus:ring-offset-2"
-								aria-label={`Load ${filteredSalons.length - visibleSalonsCount} more salons`}
+								aria-label={`Load more salons (page ${pagination.page + 1})`}
 							>
-								Load more ({filteredSalons.length - visibleSalonsCount}{' '}
+								Load more (
+								{pagination.total - pagination.page * pagination.limit}{' '}
 								remaining)
 							</button>
 						</div>
