@@ -1,6 +1,7 @@
 import React from 'react';
 import { Metadata } from 'next';
 import ClientSettingsClient from './ClientSettingsClient';
+import { ClientRouteGuard } from '@/components/RouteGuard';
 
 // Private page - should not be indexed
 export const metadata: Metadata = {
@@ -15,5 +16,9 @@ export const metadata: Metadata = {
 };
 
 export default function ClientSettings() {
-	return <ClientSettingsClient />;
+	return (
+		<ClientRouteGuard>
+			<ClientSettingsClient />
+		</ClientRouteGuard>
+	);
 }

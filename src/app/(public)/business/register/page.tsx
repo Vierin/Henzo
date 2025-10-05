@@ -1,10 +1,10 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useRouter } from 'next/navigation';
 import toast from 'react-hot-toast';
-import { useAuthStore } from '@/stores/authStore';
+import { useAuth } from '@/lib/auth-unified';
 
 export default function BusinessRegisterPage() {
 	const [formData, setFormData] = useState({
@@ -12,12 +12,30 @@ export default function BusinessRegisterPage() {
 		password: '',
 		confirmPassword: '',
 		name: '',
-		phone: '',
-		salonName: '',
 	});
 	const [loading, setLoading] = useState(false);
 	const router = useRouter();
-	const { setUser, setSession } = useAuthStore();
+	const { registerOwner, isAuthenticated, user } = useAuth();
+
+	// Редирект если уже авторизован
+	useEffect(() => {
+		if (isAuthenticated && user) {
+			switch (user.role) {
+				case 'ADMIN':
+					router.push('/admin-panel');
+					break;
+				case 'OWNER':
+					router.push('/business/complete-setup');
+					break;
+				case 'CLIENT':
+					router.push('/dashboard');
+					break;
+				default:
+					router.push('/');
+					break;
+			}
+		}
+	}, [isAuthenticated, user, router]);
 
 	const handleSubmit = async (e: React.FormEvent) => {
 		e.preventDefault();
@@ -29,33 +47,28 @@ export default function BusinessRegisterPage() {
 			return;
 		}
 
+		if (formData.password.length < 6) {
+			toast.error('Password must be at least 6 characters');
+			setLoading(false);
+			return;
+		}
+
 		try {
-			// Используем Supabase для регистрации бизнес аккаунта
-			const { data, error } = await supabase.auth.signUp({
+			const result = await registerOwner({
 				email: formData.email,
 				password: formData.password,
-				options: {
-					data: {
-						name: formData.name,
-						phone: formData.phone,
-						role: 'OWNER',
-						salonName: formData.salonName,
-					},
-					emailRedirectTo: `${window.location.origin}/verify`,
-				},
+				name: formData.name,
 			});
 
-			if (error) {
-				throw error;
-			}
-
-			if (data.user) {
+			if (result.success) {
 				toast.success(
 					'Business registration successful! Please check your email to verify your account.'
 				);
 				router.push(
 					`/check-email?email=${encodeURIComponent(formData.email)}&type=business`
 				);
+			} else {
+				toast.error(result.error || 'Failed to register business account');
 			}
 		} catch (error: any) {
 			console.error('Business registration error:', error);
@@ -119,26 +132,6 @@ export default function BusinessRegisterPage() {
 				</div>
 				<form className="mt-8 space-y-6" onSubmit={handleSubmit}>
 					<div className="space-y-4">
-						{/* Salon Name */}
-						<div>
-							<label
-								htmlFor="salonName"
-								className="block text-sm font-medium text-gray-700"
-							>
-								Salon Name
-							</label>
-							<input
-								id="salonName"
-								name="salonName"
-								type="text"
-								required
-								className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-orange-500 focus:border-orange-500 sm:text-sm text-gray-900"
-								placeholder="Enter your salon name"
-								value={formData.salonName}
-								onChange={handleInputChange}
-							/>
-						</div>
-
 						{/* Owner Name */}
 						<div>
 							<label
@@ -176,25 +169,6 @@ export default function BusinessRegisterPage() {
 								className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-orange-500 focus:border-orange-500 sm:text-sm text-gray-900"
 								placeholder="Enter your email"
 								value={formData.email}
-								onChange={handleInputChange}
-							/>
-						</div>
-
-						{/* Phone */}
-						<div>
-							<label
-								htmlFor="phone"
-								className="block text-sm font-medium text-gray-700"
-							>
-								Phone Number
-							</label>
-							<input
-								id="phone"
-								name="phone"
-								type="tel"
-								className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-orange-500 focus:border-orange-500 sm:text-sm text-gray-900"
-								placeholder="Enter your phone number"
-								value={formData.phone}
 								onChange={handleInputChange}
 							/>
 						</div>

@@ -100,10 +100,10 @@ export default function SearchBookingForm({
 								placeholder="Search for salon name"
 								value={searchQuery}
 								onChange={(e) => setSearchQuery(e.target.value)}
-								className="w-full px-4 py-3 pl-12 pr-12 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#ff5b5b] focus:border-transparent text-gray-900 text-sm"
+								className="w-full h-13 px-4 py-3 pl-12 pr-12 placeholder:text-gray-900 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#ff5b5b] focus:border-transparent text-gray-900 text-sm"
 							/>
 							<svg
-								className="absolute left-4 top-3.5 h-5 w-5 text-gray-400"
+								className="absolute left-4 top-3.5 h-6 w-6 text-gray-400"
 								fill="none"
 								stroke="currentColor"
 								viewBox="0 0 24 24"

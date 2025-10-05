@@ -86,7 +86,7 @@ function VerifyForm() {
 							let finalRedirect = '/dashboard'; // по умолчанию для клиентов
 
 							if (userData.role === 'OWNER') {
-								finalRedirect = '/owner-dashboard';
+								finalRedirect = '/business/complete-setup';
 							} else if (userData.role === 'ADMIN') {
 								finalRedirect = '/admin-panel';
 							}
@@ -182,7 +182,7 @@ function VerifyForm() {
 							let finalRedirect = '/dashboard'; // по умолчанию для клиентов
 
 							if (userData.role === 'OWNER') {
-								finalRedirect = '/owner-dashboard';
+								finalRedirect = '/business/complete-setup';
 							} else if (userData.role === 'ADMIN') {
 								finalRedirect = '/admin-panel';
 							}
@@ -227,7 +227,7 @@ function VerifyForm() {
 							let finalRedirect = '/dashboard'; // по умолчанию для клиентов
 
 							if (userData.role === 'OWNER') {
-								finalRedirect = '/owner-dashboard';
+								finalRedirect = '/business/complete-setup';
 							} else if (userData.role === 'ADMIN') {
 								finalRedirect = '/admin-panel';
 							}

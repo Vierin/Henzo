@@ -1,42 +1,22 @@
 'use client';
 
-import { useEffect } from 'react';
-import { usePathname } from 'next/navigation';
-import { useAuthStore } from '@/stores/authStore';
+import { useEffect, useRef } from 'react';
+import { authManager } from '@/lib/auth-unified';
 
-export default function AuthProvider({
-	children,
-}: {
+interface AuthProviderProps {
 	children: React.ReactNode;
-}) {
-	const { initializeForPublicRoute } = useAuthStore();
-	const pathname = usePathname();
+}
 
-	// Публичные маршруты, которые не требуют проверки аутентификации
-	const publicRoutes = [
-		'/',
-		'/login',
-		'/register',
-		'/salons',
-		'/salon',
-		'/about',
-		'/contact',
-		'/forgot-password',
-		'/reset-password',
-		'/verify',
-	];
+export default function AuthProvider({ children }: AuthProviderProps) {
+	const initialized = useRef(false);
 
 	useEffect(() => {
-		// Проверяем, является ли текущий маршрут публичным
-		const isPublicRoute = publicRoutes.some((route) =>
-			pathname.startsWith(route)
-		);
-
-		// Для публичных страниц просто инициализируем без проверки
-		if (isPublicRoute) {
-			initializeForPublicRoute();
+		// Инициализируем аутентификацию только один раз
+		if (!initialized.current) {
+			initialized.current = true;
+			authManager.initialize();
 		}
-	}, [pathname, initializeForPublicRoute]);
+	}, []);
 
 	return <>{children}</>;
 }

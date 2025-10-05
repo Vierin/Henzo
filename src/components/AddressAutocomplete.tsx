@@ -17,6 +17,7 @@ interface AddressAutocompleteProps {
 	onAddressSelect?: (address: string, lat: number, lon: number) => void;
 	placeholder?: string;
 	className?: string;
+	showIcon?: boolean;
 }
 
 export default function AddressAutocomplete({
@@ -25,6 +26,7 @@ export default function AddressAutocomplete({
 	onAddressSelect,
 	placeholder = 'Enter address',
 	className = '',
+	showIcon = true,
 }: AddressAutocompleteProps) {
 	const [suggestions, setSuggestions] = useState<AddressSuggestion[]>([]);
 	const [showSuggestions, setShowSuggestions] = useState(false);
@@ -315,7 +317,7 @@ export default function AddressAutocomplete({
 					isGettingLocation ? 'Getting your location...' : placeholder
 				}
 				disabled={isGettingLocation}
-				className={`w-full h-full px-3 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#ff5b5b] focus:border-[#ff5b5b] placeholder:text-gray-900 text-gray-900 ${isGettingLocation ? 'bg-gray-50 text-gray-500' : ''} ${className}`}
+				className={`w-full h-full ${showIcon ? 'pl-12' : 'pl-3'} pr-10 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#ff5b5b] focus:border-[#ff5b5b] placeholder:text-gray-900 text-gray-900 ${isGettingLocation ? 'bg-gray-50 text-gray-500' : ''} ${className}`}
 			/>
 
 			{/* Clear button */}
@@ -418,25 +420,27 @@ export default function AddressAutocomplete({
 				</div>
 			)}
 
-			<svg
-				className="absolute left-4 top-3.5 h-6 w-6 text-gray-400"
-				fill="none"
-				stroke="currentColor"
-				viewBox="0 0 24 24"
-			>
-				<path
-					strokeLinecap="round"
-					strokeLinejoin="round"
-					strokeWidth={2}
-					d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"
-				/>
-				<path
-					strokeLinecap="round"
-					strokeLinejoin="round"
-					strokeWidth={2}
-					d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"
-				/>
-			</svg>
+			{showIcon && (
+				<svg
+					className="absolute left-4 top-3.5 h-6 w-6 text-gray-400"
+					fill="none"
+					stroke="currentColor"
+					viewBox="0 0 24 24"
+				>
+					<path
+						strokeLinecap="round"
+						strokeLinejoin="round"
+						strokeWidth={2}
+						d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"
+					/>
+					<path
+						strokeLinecap="round"
+						strokeLinejoin="round"
+						strokeWidth={2}
+						d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"
+					/>
+				</svg>
+			)}
 		</div>
 	);
 }

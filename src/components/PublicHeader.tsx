@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { usePathname } from 'next/navigation';
 import Link from 'next/link';
-import { useAuthStore } from '@/stores/authStore';
+import { useAuth } from '@/lib/auth-unified';
 import Image from 'next/image';
 import { STATIC_CATEGORIES } from '@/constants/categories';
 import BooksySearch from './BooksySearch';
@@ -18,9 +18,8 @@ export default function PublicHeader() {
 	const profileDropdownRef = useRef<HTMLDivElement>(null);
 	const pathname = usePathname();
 
-	// Используем Zustand store для аутентификации
-	const { user, isLoading, isClient, isOwner, isAdmin, logout } =
-		useAuthStore();
+	// Используем новую систему аутентификации
+	const { user, isLoading, isClient, isOwner, isAdmin, logout } = useAuth();
 
 	const languages = [
 		{ code: 'EN', name: 'English', flag: '🇺🇸' },
@@ -180,22 +179,22 @@ export default function PublicHeader() {
 											<div className="px-4 py-2 text-sm text-gray-700 border-b border-gray-100">
 												<div className="font-medium">{user.email}</div>
 												<div className="text-xs text-gray-500">
-													{isOwner
+													{isOwner()
 														? 'Owner'
-														: isAdmin
+														: isAdmin()
 															? 'Admin'
-															: isClient
+															: isClient()
 																? 'Client'
 																: 'User'}
 												</div>
 											</div>
 											<Link
 												href={
-													isClient
+													isClient()
 														? '/dashboard'
-														: isAdmin
+														: isAdmin()
 															? '/admin-panel'
-															: isOwner
+															: isOwner()
 																? '/owner-dashboard'
 																: '/dashboard'
 												}

@@ -1,72 +1,50 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useRouter } from 'next/navigation';
 import toast from 'react-hot-toast';
-import { useAuthStore } from '@/stores/authStore';
+import { useAuth } from '@/lib/auth-unified';
 
 export default function LoginPage() {
 	const [email, setEmail] = useState('');
 	const [password, setPassword] = useState('');
 	const [loading, setLoading] = useState(false);
 	const router = useRouter();
-	const { setUser, setSession } = useAuthStore();
+	const { login, isAuthenticated, user } = useAuth();
+
+	// Редирект если уже авторизован
+	useEffect(() => {
+		if (isAuthenticated && user) {
+			switch (user.role) {
+				case 'ADMIN':
+					router.push('/admin-panel');
+					break;
+				case 'OWNER':
+					router.push('/business/complete-setup');
+					break;
+				case 'CLIENT':
+					router.push('/dashboard');
+					break;
+				default:
+					router.push('/');
+					break;
+			}
+		}
+	}, [isAuthenticated, user, router]);
 
 	const handleLogin = async (e: React.FormEvent) => {
 		e.preventDefault();
 		setLoading(true);
 
 		try {
-			const { data, error } = await supabase.auth.signInWithPassword({
-				email,
-				password,
-			});
+			const result = await login(email, password);
 
-			if (error) {
-				throw error;
-			}
-
-			if (data.user && data.session) {
-				// Получаем роль пользователя из бэкенда
-				const API_BASE_URL =
-					process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
-				const response = await fetch(`${API_BASE_URL}/auth/user`, {
-					headers: {
-						Authorization: `Bearer ${data.session.access_token}`,
-						'Content-Type': 'application/json',
-					},
-				});
-
-				if (!response.ok) {
-					throw new Error('Failed to get user role');
-				}
-
-				const userData = await response.json();
-
-				// Обновляем состояние аутентификации
-				setUser(userData.user);
-				setSession(data.session);
-
-				// Перенаправляем в зависимости от роли
-				switch (userData.user.role) {
-					case 'ADMIN':
-						router.push('/admin-panel');
-						toast.success('Welcome, Admin!');
-						break;
-					case 'OWNER':
-						router.push('/owner-dashboard');
-						toast.success('Welcome back!');
-						break;
-					case 'CLIENT':
-						router.push('/dashboard');
-						toast.success('Welcome back!');
-						break;
-					default:
-						router.push('/dashboard');
-						toast.success('Welcome!');
-						break;
-				}
+			if (result.success) {
+				toast.success('Welcome back!');
+				// Редирект будет выполнен в useEffect когда user обновится
+			} else {
+				toast.error(result.error || 'Failed to sign in');
 			}
 		} catch (error: any) {
 			console.error('Login error:', error);

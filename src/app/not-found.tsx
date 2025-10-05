@@ -1,18 +1,14 @@
 import Link from 'next/link';
-import Head from 'next/head';
+import { Metadata } from 'next';
+
+export const metadata: Metadata = {
+	title: 'Page Not Found - Henzo',
+	description: 'The page you are looking for could not be found.',
+};
 
 export default function NotFound() {
 	return (
 		<>
-			<Head>
-				<title>Page Not Found - Henzo</title>
-				<meta
-					name="description"
-					content="The page you are looking for could not be found."
-				/>
-				<meta name="viewport" content="width=device-width, initial-scale=1" />
-			</Head>
-
 			<div className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
 				<div className="text-center max-w-md mx-auto">
 					{/* Title */}

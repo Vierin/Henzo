@@ -2,14 +2,14 @@
 
 import Link from 'next/link';
 import { useState, useRef, useEffect } from 'react';
-import { useAuthStore } from '@/stores/authStore';
+import { useAuth } from '@/lib/auth-unified';
 import { useSalon } from '@/hooks/useSalon';
 import { supabase } from '@/lib/supabase';
 import Image from 'next/image';
 import { User, LogOut, ChevronDown } from 'lucide-react';
 
 export default function OwnerHeader() {
-	const { user, logout } = useAuthStore();
+	const { user, logout } = useAuth();
 	const { data: salon } = useSalon();
 	const [showProfileDropdown, setShowProfileDropdown] = useState(false);
 	const [isLanguageDropdownOpen, setIsLanguageDropdownOpen] = useState(false);
