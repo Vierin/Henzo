@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import toast from 'react-hot-toast';
 import { useAuth } from '@/lib/auth-unified';
 
@@ -11,11 +11,22 @@ export default function LoginPage() {
 	const [password, setPassword] = useState('');
 	const [loading, setLoading] = useState(false);
 	const router = useRouter();
+	const searchParams = useSearchParams();
 	const { login, isAuthenticated, user } = useAuth();
+
+	// Get return URL from query parameters
+	const returnTo = searchParams.get('returnTo');
 
 	// Редирект если уже авторизован
 	useEffect(() => {
 		if (isAuthenticated && user) {
+			// Если есть returnTo URL, используем его для редиректа
+			if (returnTo && user.role === 'CLIENT') {
+				router.push(returnTo);
+				return;
+			}
+
+			// Стандартные редиректы по ролям
 			switch (user.role) {
 				case 'ADMIN':
 					router.push('/admin-panel');
@@ -31,7 +42,7 @@ export default function LoginPage() {
 					break;
 			}
 		}
-	}, [isAuthenticated, user, router]);
+	}, [isAuthenticated, user, router, returnTo]);
 
 	const handleLogin = async (e: React.FormEvent) => {
 		e.preventDefault();

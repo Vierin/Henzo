@@ -6,15 +6,11 @@ import BookingModal from '../../../components/BookingModal';
 import LoadingSpinner from '../../../components/LoadingSpinner';
 import ErrorDisplay from '../../../components/ErrorDisplay';
 import SalonImage from '../../../components/SalonImage';
-import BooksySearch from '../../../components/BooksySearch';
-import { useSalonsWithServices } from '@/hooks/useSalons';
 import { useSalonSearch } from '@/hooks/useSalonSearch';
 import { useSalonSlug } from '@/hooks/useSalonSlug';
 import { ServiceResponseDto } from '@/types/dto/service.dto';
 import { Salon, Service } from '@/types';
-import { checkLocationMatch } from '@/constants/locations';
 import {
-	isSalonOpenOnDateTime,
 	calculateAverageRating,
 	getReviewCount,
 	getAvailableTimeSlots,

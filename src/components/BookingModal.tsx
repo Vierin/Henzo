@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useMemo } from 'react';
+import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import { Service, Staff, WorkingHours } from '@/types';
 import { useStaffBySalon } from '@/hooks/useStaff';
@@ -42,9 +43,6 @@ export default function BookingModal({
 	const [loading, setLoading] = useState(false);
 	const [selectedService, setSelectedService] = useState<Service | null>(null);
 	const [isServiceDropdownOpen, setIsServiceDropdownOpen] = useState(false);
-	const [showLoginModal, setShowLoginModal] = useState(false);
-	const [loginData, setLoginData] = useState({ email: '', password: '' });
-	const [isLoggingIn, setIsLoggingIn] = useState(false);
 	const [isInitialized, setIsInitialized] = useState(false);
 	const [currentMonth, setCurrentMonth] = useState(new Date());
 	const [existingBookings, setExistingBookings] = useState<any[]>([]);
@@ -52,6 +50,7 @@ export default function BookingModal({
 
 	// Используем Zustand store для аутентификации
 	const { user, isClient, login, refreshUser } = useAuthStore();
+	const router = useRouter();
 
 	// Используем переданный salonId
 	const currentSalonId = salonId;
@@ -93,32 +92,66 @@ export default function BookingModal({
 		}
 	}, [service, showServiceSelector, services]);
 
+	// Restore booking state when modal opens and user is authenticated
+	useEffect(() => {
+		if (isOpen && user && isClient) {
+			restoreBookingState();
+		}
+	}, [isOpen, user, isClient]);
+
 	// Функция для проверки авторизации клиента
 	const checkClientAuth = () => {
 		return isClient;
 	};
 
-	const handleLogin = async (e: React.FormEvent) => {
-		e.preventDefault();
-		setIsLoggingIn(true);
+	// Функция для сохранения состояния бронирования
+	const saveBookingState = () => {
+		const bookingState = {
+			service: selectedService,
+			date: selectedDate,
+			time: selectedTime,
+			staff: selectedStaff,
+			salonId: currentSalonId,
+			salonName: salonName,
+			workingHours: salonWorkingHours,
+			timestamp: Date.now(),
+			returnUrl: window.location.href,
+		};
+		localStorage.setItem('pendingBooking', JSON.stringify(bookingState));
+	};
 
-		try {
-			const result = await login(loginData.email, loginData.password);
+	// Функция для восстановления состояния бронирования
+	const restoreBookingState = () => {
+		const pendingBooking = localStorage.getItem('pendingBooking');
+		if (pendingBooking) {
+			try {
+				const bookingData = JSON.parse(pendingBooking);
+				// Проверяем, что данные не старше 1 часа
+				const isExpired = Date.now() - bookingData.timestamp > 60 * 60 * 1000;
 
-			if (!result.success) {
-				throw new Error(result.error || 'Login failed');
+				if (!isExpired && bookingData.salonId === currentSalonId) {
+					setSelectedService(bookingData.service);
+					setSelectedDate(bookingData.date);
+					setSelectedTime(bookingData.time);
+					setSelectedStaff(bookingData.staff);
+					setSalonWorkingHours(bookingData.workingHours);
+
+					// Показываем уведомление о восстановлении
+					toast.success('Booking details restored!');
+
+					// Удаляем сохраненные данные
+					localStorage.removeItem('pendingBooking');
+					return true;
+				} else {
+					// Удаляем устаревшие данные
+					localStorage.removeItem('pendingBooking');
+				}
+			} catch (error) {
+				console.error('Error restoring booking state:', error);
+				localStorage.removeItem('pendingBooking');
 			}
-
-			setShowLoginModal(false);
-			setLoginData({ email: '', password: '' });
-
-			// После успешного логина продолжаем с созданием резервации
-			await createBooking();
-		} catch (error: unknown) {
-			toast.error(error instanceof Error ? error.message : 'Login failed');
-		} finally {
-			setIsLoggingIn(false);
 		}
+		return false;
 	};
 
 	const fetchSalonData = async () => {
@@ -754,8 +787,23 @@ export default function BookingModal({
 		if (!editingBooking) {
 			// Проверяем авторизацию клиента только для новых бронирований
 			if (!checkClientAuth()) {
-				// Показываем модальное окно логина
-				setShowLoginModal(true);
+				// Сохраняем состояние бронирования
+				saveBookingState();
+
+				// Показываем уведомление о необходимости логина
+				const serviceName = selectedService?.name || 'service';
+				const dateStr = selectedDate
+					? new Date(selectedDate).toLocaleDateString()
+					: 'selected date';
+				const timeStr = selectedTime || 'selected time';
+				toast.success(
+					`Login to book: ${serviceName} on ${dateStr} at ${timeStr}`
+				);
+
+				// Редиректим на страницу логина
+				const returnUrl = encodeURIComponent(window.location.href);
+				router.push(`/login?returnTo=${returnUrl}`);
+				onClose();
 				return;
 			}
 		}
@@ -1313,90 +1361,6 @@ export default function BookingModal({
 					</div>
 				</div>
 			</div>
-
-			{/* Login Modal */}
-			{showLoginModal && (
-				<div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-					<div className="bg-white rounded-lg p-6 w-full max-w-md mx-4">
-						<h3 className="text-xl font-bold text-gray-900 mb-4">
-							Client Login Required
-						</h3>
-						<p className="text-gray-600 mb-6">
-							Please log in with your client account to book an appointment.
-						</p>
-
-						<form onSubmit={handleLogin} className="space-y-4">
-							<div>
-								<label
-									htmlFor="email"
-									className="block text-sm font-medium text-gray-700 mb-1"
-								>
-									Email
-								</label>
-								<input
-									type="email"
-									id="email"
-									value={loginData.email}
-									onChange={(e) =>
-										setLoginData({ ...loginData, email: e.target.value })
-									}
-									className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#ea4b4b] focus:border-transparent"
-									required
-								/>
-							</div>
-
-							<div>
-								<label
-									htmlFor="password"
-									className="block text-sm font-medium text-gray-700 mb-1"
-								>
-									Password
-								</label>
-								<input
-									type="password"
-									id="password"
-									value={loginData.password}
-									onChange={(e) =>
-										setLoginData({ ...loginData, password: e.target.value })
-									}
-									className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#ea4b4b] focus:border-transparent"
-									required
-								/>
-							</div>
-
-							<div className="flex gap-3 pt-4">
-								<button
-									type="submit"
-									disabled={isLoggingIn}
-									className="flex-1 bg-[#ea4b4b] text-white py-2 px-4 rounded-lg font-medium hover:bg-[#d73a3a] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-								>
-									{isLoggingIn ? 'Logging in...' : 'Login'}
-								</button>
-
-								<button
-									type="button"
-									onClick={() => setShowLoginModal(false)}
-									className="flex-1 bg-gray-200 text-gray-800 py-2 px-4 rounded-lg font-medium hover:bg-gray-300 transition-colors"
-								>
-									Cancel
-								</button>
-							</div>
-						</form>
-
-						<div className="mt-4 text-center">
-							<p className="text-sm text-gray-600">
-								Don't have an account?{' '}
-								<a
-									href="/client/register"
-									className="text-[#ea4b4b] hover:underline"
-								>
-									Register here
-								</a>
-							</p>
-						</div>
-					</div>
-				</div>
-			)}
 		</div>
 	);
 }
