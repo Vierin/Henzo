@@ -109,6 +109,13 @@ export default function DaySchedule({
 				textClassName: 'text-gray-600',
 				textSecondaryClassName: 'text-gray-500',
 			};
+		} else if (booking.status === 'PENDING') {
+			return {
+				className:
+					'absolute left-1 right-1 bg-yellow-50 border border-yellow-200 rounded-lg p-1 z-10 cursor-pointer hover:bg-yellow-100 transition-colors',
+				textClassName: 'text-yellow-800',
+				textSecondaryClassName: 'text-yellow-600',
+			};
 		} else if (booking.status === 'CONFIRMED') {
 			return {
 				className:

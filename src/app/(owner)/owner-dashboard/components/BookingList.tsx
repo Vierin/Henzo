@@ -38,13 +38,19 @@ export default function BookingList({
 }: BookingListProps) {
 	const getStatusBadge = (status: string) => {
 		switch (status) {
+			case 'PENDING':
+				return (
+					<span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+						Pending
+					</span>
+				);
 			case 'CONFIRMED':
 				return (
 					<span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
 						Confirmed
 					</span>
 				);
-			case 'PASSED':
+			case 'COMPLETED':
 				return (
 					<span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
 						Completed
@@ -98,8 +104,9 @@ export default function BookingList({
 							aria-label="Filter by status"
 						>
 							<option value="all">All</option>
+							<option value="PENDING">Pending</option>
 							<option value="CONFIRMED">Confirmed</option>
-							<option value="PASSED">Completed</option>
+							<option value="COMPLETED">Completed</option>
 							<option value="CANCELED">Cancelled</option>
 						</select>
 					</div>
@@ -199,7 +206,8 @@ export default function BookingList({
 									role="group"
 									aria-label="Booking actions"
 								>
-									{booking.status === 'CONFIRMED' && (
+									{(booking.status === 'CONFIRMED' ||
+										booking.status === 'PENDING') && (
 										<>
 											<button
 												onClick={() => onEditBooking(booking)}
