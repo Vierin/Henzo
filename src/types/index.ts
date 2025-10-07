@@ -83,7 +83,7 @@ export interface Booking {
 	serviceId: string;
 	staffId?: string;
 	time: string;
-	status: 'PENDING' | 'CONFIRMED' | 'CANCELED' | 'PASSED';
+	status: 'PENDING' | 'CONFIRMED' | 'CANCELED' | 'COMPLETED';
 	notes?: string;
 	createdAt: string;
 	service?: Service;

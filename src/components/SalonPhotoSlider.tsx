@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { supabase } from '@/lib/supabase';
 import Image from 'next/image';
 
@@ -34,32 +34,35 @@ export default function SalonPhotoSlider({
 	};
 
 	// Показываем только фотографии салона (без логотипа)
-	const allImages: Array<{ url: string; type: string; isExternal: boolean }> =
-		[];
-	if (photos && photos.length > 0) {
-		photos.forEach((photo) => {
-			allImages.push({
-				url: getImageSrc(photo),
-				type: 'photo',
-				isExternal: isExternalUrl(photo),
+	const allImages = useMemo(() => {
+		const images: Array<{ url: string; type: string; isExternal: boolean }> =
+			[];
+		if (photos && photos.length > 0) {
+			photos.forEach((photo) => {
+				images.push({
+					url: getImageSrc(photo),
+					type: 'photo',
+					isExternal: isExternalUrl(photo),
+				});
 			});
-		});
-	}
+		}
+		return images;
+	}, [photos]);
 
 	// Функции навигации
-	const nextSlide = () => {
+	const nextSlide = useCallback(() => {
 		setCurrentIndex((prevIndex) => (prevIndex + 1) % allImages.length);
-	};
+	}, [allImages.length]);
 
-	const prevSlide = () => {
+	const prevSlide = useCallback(() => {
 		setCurrentIndex((prevIndex) =>
 			prevIndex === 0 ? allImages.length - 1 : prevIndex - 1
 		);
-	};
+	}, [allImages.length]);
 
-	const goToSlide = (index: number) => {
+	const goToSlide = useCallback((index: number) => {
 		setCurrentIndex(index);
-	};
+	}, []);
 
 	// Добавляем клавиатурную навигацию
 	useEffect(() => {
@@ -75,7 +78,7 @@ export default function SalonPhotoSlider({
 		return () => {
 			document.removeEventListener('keydown', handleKeyPress);
 		};
-	}, [allImages.length]);
+	}, [prevSlide, nextSlide]);
 
 	// Если нет фотографий, показываем логотип или placeholder
 	if (allImages.length === 0) {
@@ -177,10 +180,10 @@ export default function SalonPhotoSlider({
 				</div>
 			</div>
 
-			{/* Navigation Arrows */}
+			{/* Navigation Arrows - Always Visible */}
 			<button
 				onClick={prevSlide}
-				className="absolute left-4 top-1/2 transform -translate-y-1/2 bg-black bg-opacity-50 hover:bg-opacity-70 text-white p-2 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200"
+				className="absolute left-4 top-1/2 transform -translate-y-1/2 bg-black bg-opacity-50 hover:bg-opacity-70 text-white p-2 rounded-full transition-all duration-200"
 				aria-label="Previous image"
 			>
 				<svg
@@ -200,7 +203,7 @@ export default function SalonPhotoSlider({
 
 			<button
 				onClick={nextSlide}
-				className="absolute right-4 top-1/2 transform -translate-y-1/2 bg-black bg-opacity-50 hover:bg-opacity-70 text-white p-2 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200"
+				className="absolute right-4 top-1/2 transform -translate-y-1/2 bg-black bg-opacity-50 hover:bg-opacity-70 text-white p-2 rounded-full transition-all duration-200"
 				aria-label="Next image"
 			>
 				<svg
@@ -226,7 +229,7 @@ export default function SalonPhotoSlider({
 						onClick={() => goToSlide(index)}
 						className={`w-3 h-3 rounded-full transition-colors duration-200 ${
 							index === currentIndex
-								? 'bg-white'
+								? 'bg-[#ff5b5b]'
 								: 'bg-white bg-opacity-50 hover:bg-opacity-75'
 						}`}
 						aria-label={`Go to image ${index + 1}`}
