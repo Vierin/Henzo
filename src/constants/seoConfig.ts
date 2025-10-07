@@ -4,18 +4,33 @@ const baseUrl = process.env.NEXT_PUBLIC_FRONTEND_URL || 'https://henzo.app';
 
 export const seoConfig = {
 	home: {
-		title:
-			'Henzo - Book Beauty & Wellness Appointments Online | Hair, Spa, Massage',
+		title: 'Henzo - Đặt Lịch Salon Tóc, Spa, Massage Online | Hà Nội, TP.HCM',
 		description:
-			'Book your next beauty appointment with Henzo. Find and book hair salons, spas, massage therapists, nail salons, and wellness services near you. Easy online booking, trusted reviews, flexible scheduling.',
+			'Đặt lịch hẹn làm đẹp online với Henzo tại Việt Nam. Tìm và đặt salon tóc, spa, massage, nail, làm móng tại Hà Nội, TP.HCM. Đặt lịch dễ dàng, đánh giá tin cậy, giá cả minh bạch.',
 		metadataBase: new URL(baseUrl),
 		alternates: {
 			canonical: '/',
+			languages: {
+				'vi-VN': '/',
+				'en-US': '/en',
+			},
 		},
+		keywords: [
+			'đặt lịch salon',
+			'đặt lịch spa',
+			'salon tóc Hà Nội',
+			'spa TP.HCM',
+			'massage Việt Nam',
+			'làm nail online',
+			'đặt lịch làm đẹp',
+			'beauty booking Vietnam',
+			'salon Hanoi',
+			'spa Ho Chi Minh',
+		],
 		openGraph: {
-			title: 'Henzo - Book Beauty & Wellness Appointments Online',
+			title: 'Henzo - Đặt Lịch Salon, Spa, Massage Online Việt Nam',
 			description:
-				'Find and book the best beauty and wellness services near you. Hair salons, spas, massage, nails and more. Easy online booking with trusted reviews.',
+				'Tìm và đặt lịch các dịch vụ làm đẹp tốt nhất gần bạn tại Việt Nam. Salon tóc, spa, massage, nail. Đặt lịch online dễ dàng với đánh giá tin cậy.',
 			url: '/',
 			siteName: 'Henzo',
 			images: [
@@ -23,34 +38,49 @@ export const seoConfig = {
 					url: '/og-image.jpg',
 					width: 1200,
 					height: 630,
-					alt: 'Henzo - Beauty & Wellness Booking Platform',
+					alt: 'Henzo - Nền tảng đặt lịch làm đẹp Việt Nam',
 				},
 			],
-			locale: 'en_US',
+			locale: 'vi_VN',
 			type: 'website',
 		},
 		twitter: {
 			card: 'summary_large_image',
-			title: 'Henzo - Book Beauty & Wellness Appointments Online',
+			title: 'Henzo - Đặt Lịch Salon, Spa Online Việt Nam',
 			description:
-				'Find and book the best beauty and wellness services near you. Easy online booking with trusted reviews.',
+				'Tìm và đặt lịch dịch vụ làm đẹp tốt nhất gần bạn. Đặt lịch online dễ dàng với đánh giá tin cậy.',
 			images: ['/og-image.jpg'],
 			creator: '@henzo',
 		},
 	} as Metadata,
 	business: {
 		title:
-			'Henzo for Business - Beauty Salon Management Software | Appointment Booking',
+			'Henzo cho Salon - Phần mềm quản lý Salon miễn phí | Đặt lịch Online',
 		description:
-			'Grow your beauty business with Henzo. Complete salon management software with appointment booking, client management, payment processing, and marketing tools. Start your free trial today.',
+			'Phát triển salon của bạn với Henzo. Phần mềm quản lý salon hoàn chỉnh: đặt lịch online, quản lý khách hàng, nhắc hẹn tự động. MIỄN PHÍ đến tháng 6/2026. Dùng thử ngay!',
 		metadataBase: new URL(baseUrl),
 		alternates: {
 			canonical: '/business',
+			languages: {
+				'vi-VN': '/business',
+				'en-US': '/en/business',
+			},
 		},
+		keywords: [
+			'phần mềm quản lý salon',
+			'quản lý salon miễn phí',
+			'đặt lịch online cho salon',
+			'phần mềm salon Việt Nam',
+			'quản lý spa',
+			'salon management Vietnam',
+			'booking system salon',
+			'phần mềm đặt lịch',
+			'quản lý khách hàng salon',
+		],
 		openGraph: {
-			title: 'Henzo for Business - Complete Beauty Salon Management',
+			title: 'Henzo cho Salon - Quản lý Salon chuyên nghiệp, Miễn phí',
 			description:
-				'The all-in-one platform for your beauty business. Manage appointments, clients, and payments all in one place. Start your free trial today.',
+				'Nền tảng tất cả trong một cho salon của bạn. Quản lý lịch hẹn, khách hàng tự động. MIỄN PHÍ đến 6/2026. Dùng thử ngay!',
 			url: '/business',
 			siteName: 'Henzo',
 			images: [
@@ -58,17 +88,17 @@ export const seoConfig = {
 					url: '/og-business.jpg',
 					width: 1200,
 					height: 630,
-					alt: 'Henzo for Business - Beauty Salon Management Software',
+					alt: 'Henzo cho Salon - Phần mềm quản lý Salon Việt Nam',
 				},
 			],
-			locale: 'en_US',
+			locale: 'vi_VN',
 			type: 'website',
 		},
 		twitter: {
 			card: 'summary_large_image',
-			title: 'Henzo for Business - Beauty Salon Management Software',
+			title: 'Henzo cho Salon - Phần mềm quản lý Salon miễn phí',
 			description:
-				'Grow your beauty business with complete salon management tools. Appointment booking, client management, and more.',
+				'Phát triển salon với công cụ quản lý hoàn chỉnh. Đặt lịch, quản lý khách hàng, miễn phí.',
 			images: ['/og-business.jpg'],
 			creator: '@henzo',
 		},

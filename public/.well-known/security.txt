@@ -1,0 +1,4 @@
+Contact: mailto:security@henzo.app
+Preferred-Languages: vi, en
+Canonical: https://henzo.app/.well-known/security.txt
+

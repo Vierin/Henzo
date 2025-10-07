@@ -1,11 +1,81 @@
 import Link from 'next/link';
 import { seoConfig } from '@/constants/seoConfig';
+import { Metadata } from 'next';
 
-export const metadata = seoConfig.business;
+export const metadata: Metadata = {
+	...seoConfig.business,
+	other: {
+		'google-site-verification': 'your-verification-code',
+	},
+};
 
 export default function BusinessLandingPage() {
+	// Structured data for Business page - Vietnamese market
+	const businessStructuredData = {
+		'@context': 'https://schema.org',
+		'@type': 'SoftwareApplication',
+		name: 'Henzo cho Salon',
+		alternateName: 'Henzo for Business',
+		description:
+			'Phần mềm quản lý salon hoàn chỉnh cho Việt Nam. Đặt lịch online, quản lý khách hàng, miễn phí đến 6/2026.',
+		url: '/business',
+		applicationCategory: 'BusinessApplication',
+		operatingSystem: 'Web, iOS, Android',
+		offers: {
+			'@type': 'Offer',
+			price: '0',
+			priceCurrency: 'VND',
+			description: 'Miễn phí đến tháng 6, 2026 - Free beta testing',
+			priceValidUntil: '2026-06-01',
+		},
+		featureList: [
+			'Đặt lịch online tự động',
+			'Quản lý khách hàng',
+			'Nhắc hẹn tự động qua email',
+			'Lịch làm việc linh hoạt',
+			'Báo cáo và thống kê',
+			'Hỗ trợ đa ngôn ngữ',
+		],
+		inLanguage: ['vi', 'en'],
+		availableOnDevice: 'Desktop, Mobile, Tablet',
+		screenshot: '/og-business.jpg',
+	};
+
+	const breadcrumbData = {
+		'@context': 'https://schema.org',
+		'@type': 'BreadcrumbList',
+		itemListElement: [
+			{
+				'@type': 'ListItem',
+				position: 1,
+				name: 'Trang chủ',
+				item: process.env.NEXT_PUBLIC_FRONTEND_URL || 'https://henzo.app',
+			},
+			{
+				'@type': 'ListItem',
+				position: 2,
+				name: 'Dành cho Salon',
+				item: `${process.env.NEXT_PUBLIC_FRONTEND_URL || 'https://henzo.app'}/business`,
+			},
+		],
+	};
+
 	return (
 		<div className="min-h-screen bg-white">
+			{/* Structured Data */}
+			<script
+				type="application/ld+json"
+				dangerouslySetInnerHTML={{
+					__html: JSON.stringify(businessStructuredData),
+				}}
+			/>
+			<script
+				type="application/ld+json"
+				dangerouslySetInnerHTML={{
+					__html: JSON.stringify(breadcrumbData),
+				}}
+			/>
+
 			<main role="main">
 				<section
 					className="bg-gradient-to-br from-orange-50 to-pink-50 py-20"

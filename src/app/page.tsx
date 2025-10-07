@@ -4,14 +4,16 @@ import { seoConfig } from '@/constants/seoConfig';
 export const metadata = seoConfig.home;
 
 export default function HomePage() {
-	// Structured data for SEO
+	// Structured data for SEO - Optimized for Vietnam
 	const structuredData = {
 		'@context': 'https://schema.org',
 		'@type': 'WebSite',
 		name: 'Henzo',
+		alternateName: 'Henzo Vietnam - Đặt lịch làm đẹp',
 		description:
-			'Book beauty and wellness appointments online. Find hair salons, spas, massage therapists, and more.',
+			'Đặt lịch hẹn làm đẹp online tại Việt Nam. Tìm salon tóc, spa, massage, nail tại Hà Nội, TP.HCM.',
 		url: process.env.NEXT_PUBLIC_FRONTEND_URL || 'https://henzo.app',
+		inLanguage: ['vi', 'en'],
 		potentialAction: {
 			'@type': 'SearchAction',
 			target: {
@@ -31,21 +33,47 @@ export default function HomePage() {
 		'@context': 'https://schema.org',
 		'@type': 'Organization',
 		name: 'Henzo',
-		description: 'Leading beauty and wellness appointment booking platform',
+		alternateName: 'Henzo Vietnam',
+		description:
+			'Nền tảng đặt lịch làm đẹp hàng đầu tại Việt Nam - Beauty appointment booking platform',
 		url: process.env.NEXT_PUBLIC_FRONTEND_URL || 'https://henzo.app',
 		logo: `${process.env.NEXT_PUBLIC_FRONTEND_URL || 'https://henzo.app'}/logo.png`,
 		contactPoint: {
 			'@type': 'ContactPoint',
 			contactType: 'customer service',
-			availableLanguage: ['English'],
+			availableLanguage: ['Vietnamese', 'English'],
+			areaServed: 'VN',
 		},
-		areaServed: 'Worldwide',
+		address: {
+			'@type': 'PostalAddress',
+			addressCountry: 'VN',
+			addressRegion: 'Hanoi',
+		},
+		areaServed: [
+			{
+				'@type': 'City',
+				name: 'Hanoi',
+				'@id': 'https://www.wikidata.org/wiki/Q1858',
+			},
+			{
+				'@type': 'City',
+				name: 'Ho Chi Minh City',
+				'@id': 'https://www.wikidata.org/wiki/Q1854',
+			},
+			{
+				'@type': 'Country',
+				name: 'Vietnam',
+				'@id': 'https://www.wikidata.org/wiki/Q881',
+			},
+		],
 		serviceType: [
+			'Đặt lịch salon tóc',
+			'Đặt lịch spa',
+			'Đặt lịch massage',
+			'Đặt lịch nail',
 			'Beauty Services Booking',
 			'Hair Salon Appointments',
 			'Spa Reservations',
-			'Massage Therapy Booking',
-			'Nail Salon Appointments',
 		],
 	};
 

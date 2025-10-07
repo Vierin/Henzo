@@ -48,7 +48,7 @@ const TimePicker24h = ({
 			<select
 				value={hours}
 				onChange={(e) => handleHoursChange(Number(e.target.value))}
-				className="px-2 py-1 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-[#ff5b5b] focus:border-[#ff5b5b] text-sm bg-white"
+				className="px-2 py-1 border border-gray-300 text-gray-500 rounded focus:outline-none focus:ring-2 focus:ring-[#ff5b5b] focus:border-[#ff5b5b] text-sm bg-white"
 			>
 				{Array.from({ length: 24 }, (_, i) => (
 					<option key={i} value={i}>
@@ -60,7 +60,7 @@ const TimePicker24h = ({
 			<select
 				value={minutes}
 				onChange={(e) => handleMinutesChange(Number(e.target.value))}
-				className="px-2 py-1 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-[#ff5b5b] focus:border-[#ff5b5b] text-sm bg-white"
+				className="px-2 py-1 border border-gray-300 text-gray-500 rounded focus:outline-none focus:ring-2 focus:ring-[#ff5b5b] focus:border-[#ff5b5b] text-sm bg-white"
 			>
 				{Array.from({ length: 60 }, (_, i) => (
 					<option key={i} value={i}>
