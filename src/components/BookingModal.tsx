@@ -875,8 +875,19 @@ export default function BookingModal({
 				throw new Error(result.error || 'Failed to create booking');
 			}
 
-			// Show success message
-			toast.success('Appointment booked successfully!');
+			// Show success message based on booking status
+			const bookingStatus = result.booking?.status;
+			if (bookingStatus === 'PENDING') {
+				toast.success(
+					"Booking request sent! The salon will review and confirm your appointment shortly. You will receive an email once it's confirmed.",
+					{
+						duration: 6000,
+						icon: '⏳',
+					}
+				);
+			} else {
+				toast.success('Appointment booked successfully!');
+			}
 			onClose();
 
 			// Refresh the page to show updated bookings
