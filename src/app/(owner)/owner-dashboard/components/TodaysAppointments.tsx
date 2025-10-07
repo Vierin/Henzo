@@ -19,7 +19,13 @@ export default function TodaysAppointments({
 	// Filter today's bookings
 	const todaysBookings = bookings.filter((booking) => {
 		const bookingDate = safeParseDate(booking.time);
-		return bookingDate && isToday(bookingDate);
+		if (!bookingDate) return false;
+		const today = new Date();
+		return (
+			bookingDate.getDate() === today.getDate() &&
+			bookingDate.getMonth() === today.getMonth() &&
+			bookingDate.getFullYear() === today.getFullYear()
+		);
 	});
 
 	// Sort by time
@@ -126,23 +132,23 @@ export default function TodaysAppointments({
 						</div>
 
 						<div className="flex items-center gap-2 ml-4">
-							{booking.status !== 'CANCELED' &&
-								booking.status !== 'COMPLETED' && (
-									<>
-										<button
-											onClick={() => onEditBooking(booking)}
-											className="px-3 py-1 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 transition-colors"
-										>
-											Edit
-										</button>
-										<button
-											onClick={() => onCancelBooking(booking.id)}
-											className="px-3 py-1 text-sm font-medium text-red-600 bg-white border border-red-300 rounded-md hover:bg-red-50 transition-colors"
-										>
-											Cancel
-										</button>
-									</>
-								)}
+							{(booking.status === 'PENDING' ||
+								booking.status === 'CONFIRMED') && (
+								<>
+									<button
+										onClick={() => onEditBooking(booking)}
+										className="px-3 py-1 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 transition-colors"
+									>
+										Edit
+									</button>
+									<button
+										onClick={() => onCancelBooking(booking.id)}
+										className="px-3 py-1 text-sm font-medium text-red-600 bg-white border border-red-300 rounded-md hover:bg-red-50 transition-colors"
+									>
+										Cancel
+									</button>
+								</>
+							)}
 						</div>
 					</div>
 				))}

@@ -24,7 +24,7 @@ export const metadata: Metadata = {
 	description:
 		'Book your next beauty appointment with Henzo. Find and book hair salons, spas, massage therapists, nail salons, and wellness services near you. Easy online booking, trusted reviews, flexible scheduling.',
 	metadataBase: new URL(
-		process.env.NEXT_PUBLIC_FRONTEND_URL || 'https://henzo.com'
+		process.env.NEXT_PUBLIC_FRONTEND_URL || 'https://henzo.app'
 	),
 	alternates: {
 		canonical: '/',

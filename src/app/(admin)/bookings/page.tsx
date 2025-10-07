@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { apiClient } from '@/lib/api-client';
 import { formatDateSafe, formatTimeSafe } from '@/utils/date';
+import { formatVND } from '@/utils/currency';
 
 interface Booking {
 	id: string;
@@ -161,7 +162,7 @@ export default function AdminBookings() {
 											</span>
 										</td>
 										<td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-											${booking.service.price}
+											{formatVND(booking.service.price)}
 										</td>
 									</tr>
 								))}

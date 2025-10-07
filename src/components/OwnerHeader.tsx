@@ -107,12 +107,6 @@ export default function OwnerHeader() {
 						Marketing
 					</Link>
 					<Link
-						href="/billing"
-						className="text-gray-800 hover:text-black font-medium"
-					>
-						Billing
-					</Link>
-					<Link
 						href="/salon-info"
 						className="text-gray-800 hover:text-black font-medium"
 					>

@@ -9,6 +9,7 @@ import {
 	getReviewCount,
 	getAvailableTimeSlots,
 } from '@/utils/salonUtils';
+import { formatVND } from '@/utils/currency';
 
 interface SalonCardProps {
 	salon: Salon;
@@ -135,7 +136,7 @@ export default function SalonCard({
 												{service.duration} min
 											</span>
 											<span className="text-sm font-semibold text-[#ff5b5b]">
-												{service.price} ₫
+												{formatVND(service.price)}
 											</span>
 										</div>
 									</div>

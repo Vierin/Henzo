@@ -232,23 +232,26 @@ export default function EditServiceModal({
 									htmlFor="price"
 									className="block text-sm font-medium text-gray-700 mb-2"
 								>
-									Price ($)
+									Price (₫)
 								</label>
 								<input
-									type="number"
+									type="text"
 									id="price"
 									value={formData.price}
-									onChange={(e) =>
+									onChange={(e) => {
+										const value = e.target.value.replace(/\D/g, '');
 										setFormData((prev) => ({
 											...prev,
-											price: parseFloat(e.target.value) || 0,
-										}))
-									}
+											price: parseInt(value) || 0,
+										}));
+									}}
 									className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#ff5b5b] focus:border-transparent text-gray-900"
-									min="0"
-									step="0.01"
+									placeholder="50000"
 									required
 								/>
+								<p className="text-xs text-gray-500 mt-1">
+									Numbers only (e.g., 50000 for 50K ₫)
+								</p>
 							</div>
 						</div>
 

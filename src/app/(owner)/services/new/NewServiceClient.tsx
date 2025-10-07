@@ -240,24 +240,23 @@ export default function NewServiceClient() {
 								htmlFor="service-price"
 								className="block text-sm font-medium text-gray-700 mb-2"
 							>
-								Price ($) *
+								Price (₫) *
 							</label>
 							<input
 								id="service-price"
-								type="number"
+								type="text"
 								required
-								min="0"
-								step="0.01"
 								value={formData.price}
-								onChange={(e) =>
-									setFormData({ ...formData, price: e.target.value })
-								}
+								onChange={(e) => {
+									const value = e.target.value.replace(/\D/g, '');
+									setFormData({ ...formData, price: value });
+								}}
 								className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#ff5b5b] focus:border-[#ff5b5b] text-gray-900"
-								placeholder="50.00"
+								placeholder="50000"
 								aria-describedby="service-price-help"
 							/>
 							<p id="service-price-help" className="text-xs text-gray-500 mt-1">
-								Enter price in dollars (e.g., 50.00)
+								Enter price in Vietnamese Dong (numbers only, e.g., 50000)
 							</p>
 						</div>
 					</div>

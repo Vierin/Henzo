@@ -21,6 +21,7 @@ import {
 	Star,
 } from 'lucide-react';
 import { calculateAverageRating, getReviewCount } from '@/utils/salonUtils';
+import { formatVND } from '@/utils/currency';
 
 interface SalonDetailClientProps {
 	salon: Salon;
@@ -261,8 +262,8 @@ export default function SalonDetailClient({ salon }: SalonDetailClientProps) {
 																			⏱️ {service.duration} min
 																		</span>
 																		<span className="text-[#ff5b5b] font-semibold">
-																			<span className="sr-only">Price: </span>$
-																			{service.price}
+																			<span className="sr-only">Price: </span>
+																			{formatVND(service.price)}
 																		</span>
 																	</div>
 																</div>

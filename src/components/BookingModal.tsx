@@ -9,6 +9,7 @@ import { useServices } from '@/hooks/useServices';
 import { useAuthStore } from '@/stores/authStore';
 import toast from 'react-hot-toast';
 import { safeParseDate, parseBookingTimeAsLocal } from '@/utils/date';
+import { formatVND } from '@/utils/currency';
 
 interface BookingModalProps {
 	isOpen: boolean;
@@ -1073,10 +1074,9 @@ export default function BookingModal({
 														<div className="text-sm text-gray-600">
 															{serviceOption.description}
 														</div>
-														<div className="text-sm text-gray-500 mt-1">
-															{serviceOption.duration} min • $
-															{serviceOption.price}
-														</div>
+													<div className="text-sm text-gray-500 mt-1">
+														{serviceOption.duration} min • {formatVND(serviceOption.price)}
+													</div>
 													</button>
 												))}
 											</div>
@@ -1094,7 +1094,7 @@ export default function BookingModal({
 											</div>
 											<div className="flex items-center gap-2">
 												<span className="text-lg font-bold text-[#8B4513]">
-													${selectedService.price}
+													{formatVND(selectedService.price)}
 												</span>
 											</div>
 										</div>
@@ -1118,13 +1118,13 @@ export default function BookingModal({
 													: 'Duration'}
 											</span>
 										</div>
-										<div className="flex items-center gap-2">
-											<span className="text-lg font-bold text-[#8B4513]">
-												{selectedService?.price
-													? `$${selectedService.price}`
-													: 'Price'}
-											</span>
-										</div>
+									<div className="flex items-center gap-2">
+										<span className="text-lg font-bold text-[#8B4513]">
+											{selectedService?.price
+												? formatVND(selectedService.price)
+												: 'Price'}
+										</span>
+									</div>
 									</div>
 								</div>
 							)}

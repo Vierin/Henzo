@@ -17,7 +17,7 @@ export default function MarketingPage() {
 	useEffect(() => {
 		if (salon) {
 			const baseUrl =
-				process.env.NEXT_PUBLIC_FRONTEND_URL || 'https://henzo.com';
+				process.env.NEXT_PUBLIC_FRONTEND_URL || 'https://henzo.app';
 			const url = `${baseUrl}${getSalonUrl(salon)}`;
 			setSalonUrl(url);
 

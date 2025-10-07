@@ -11,12 +11,12 @@ export default function HomePage() {
 		name: 'Henzo',
 		description:
 			'Book beauty and wellness appointments online. Find hair salons, spas, massage therapists, and more.',
-		url: process.env.NEXT_PUBLIC_FRONTEND_URL || 'https://henzo.com',
+		url: process.env.NEXT_PUBLIC_FRONTEND_URL || 'https://henzo.app',
 		potentialAction: {
 			'@type': 'SearchAction',
 			target: {
 				'@type': 'EntryPoint',
-				urlTemplate: `${process.env.NEXT_PUBLIC_FRONTEND_URL || 'https://henzo.com'}/salons?search={search_term_string}`,
+				urlTemplate: `${process.env.NEXT_PUBLIC_FRONTEND_URL || 'https://henzo.app'}/salons?search={search_term_string}`,
 			},
 			'query-input': 'required name=search_term_string',
 		},
@@ -32,8 +32,8 @@ export default function HomePage() {
 		'@type': 'Organization',
 		name: 'Henzo',
 		description: 'Leading beauty and wellness appointment booking platform',
-		url: process.env.NEXT_PUBLIC_FRONTEND_URL || 'https://henzo.com',
-		logo: `${process.env.NEXT_PUBLIC_FRONTEND_URL || 'https://henzo.com'}/logo.png`,
+		url: process.env.NEXT_PUBLIC_FRONTEND_URL || 'https://henzo.app',
+		logo: `${process.env.NEXT_PUBLIC_FRONTEND_URL || 'https://henzo.app'}/logo.png`,
 		contactPoint: {
 			'@type': 'ContactPoint',
 			contactType: 'customer service',
