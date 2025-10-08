@@ -11,7 +11,7 @@ import {
 import { SalonWithDetailsResponseDto } from '@/types/dto/salon.dto';
 
 interface SalonDetailPageProps {
-	params: { slug: string };
+	params: Promise<{ slug: string }>;
 }
 
 async function getSalonData(
@@ -107,7 +107,7 @@ export default async function SalonDetailPage({
 	// Проверяем, нужно ли редиректить со старого ID на новый slug
 	const isOldId = /^[a-f0-9-]{36}$/.test(slug);
 	if (isOldId) {
-		const newSlug = generateSalonSlug(salon.name, salon.address, salon.id);
+		const newSlug = generateSalonSlug(salon.name, salon.id, salon.address);
 		return (
 			<div className="min-h-screen bg-[#F8F5F2] flex items-center justify-center">
 				<div className="text-center">

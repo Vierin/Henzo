@@ -48,9 +48,11 @@ export default function ReBookModal({
 			date.setDate(today.getDate() + i);
 
 			// Skip if salon is closed on this day
-			const dayName = date.toLocaleDateString('en-US', {
-				weekday: 'lowercase',
-			});
+			const dayName = date
+				.toLocaleDateString('en-US', {
+					weekday: 'long',
+				})
+				.toLowerCase();
 			const isClosed = salon.workingHours?.[dayName]?.closed;
 
 			if (!isClosed) {
@@ -73,9 +75,11 @@ export default function ReBookModal({
 		if (!dateStr || !salon.workingHours) return [];
 
 		const selectedDate = new Date(dateStr);
-		const dayName = selectedDate.toLocaleDateString('en-US', {
-			weekday: 'lowercase',
-		});
+		const dayName = selectedDate
+			.toLocaleDateString('en-US', {
+				weekday: 'long',
+			})
+			.toLowerCase();
 		const workingDay = salon.workingHours[dayName];
 
 		if (!workingDay || workingDay.closed) return [];

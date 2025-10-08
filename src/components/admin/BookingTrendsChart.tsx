@@ -33,7 +33,10 @@ interface BookingTrendsChartProps {
 	period?: string;
 }
 
-export default function BookingTrendsChart({ data, period = '30d' }: BookingTrendsChartProps) {
+export default function BookingTrendsChart({
+	data,
+	period = '30d',
+}: BookingTrendsChartProps) {
 	// Если нет данных, показываем пустой график
 	if (!data || data.length === 0) {
 		return (
@@ -66,7 +69,7 @@ export default function BookingTrendsChart({ data, period = '30d' }: BookingTren
 	// Функция для форматирования подписей в зависимости от периода
 	const formatLabel = (dateString: string, period: string) => {
 		const date = new Date(dateString);
-		
+
 		switch (period) {
 			case '7d':
 				// Для 7 дней показываем день недели
@@ -79,13 +82,17 @@ export default function BookingTrendsChart({ data, period = '30d' }: BookingTren
 				return `Week ${weekNumber}`;
 			case '3m':
 				// Для 3 месяцев показываем месяцы
-				return date.toLocaleDateString('en-US', { month: 'short' }).toUpperCase();
+				return date
+					.toLocaleDateString('en-US', { month: 'short' })
+					.toUpperCase();
 			case '1y':
 				// Для года показываем кварталы
 				const quarter = Math.ceil((date.getMonth() + 1) / 3);
 				return `Q${quarter}`;
 			default:
-				return date.toLocaleDateString('en-US', { month: 'short' }).toUpperCase();
+				return date
+					.toLocaleDateString('en-US', { month: 'short' })
+					.toUpperCase();
 		}
 	};
 
@@ -142,7 +149,7 @@ export default function BookingTrendsChart({ data, period = '30d' }: BookingTren
 					color: '#6b7280',
 					font: {
 						size: 12,
-						weight: '500' as const,
+						weight: 500,
 					},
 				},
 			},
@@ -156,7 +163,7 @@ export default function BookingTrendsChart({ data, period = '30d' }: BookingTren
 					color: '#6b7280',
 					font: {
 						size: 12,
-						weight: '500' as const,
+						weight: 500,
 					},
 					callback: function (value: any) {
 						return value;

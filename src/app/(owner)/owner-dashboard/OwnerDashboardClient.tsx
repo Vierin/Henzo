@@ -192,7 +192,7 @@ export default function OwnerDashboardClient() {
 			// Обновляем локальные данные
 			return bookings.map((booking) => {
 				if (bookingsToUpdate.includes(booking.id)) {
-					return { ...booking, status: 'PASSED' as const };
+					return { ...booking, status: 'COMPLETED' as const };
 				}
 				return booking;
 			});

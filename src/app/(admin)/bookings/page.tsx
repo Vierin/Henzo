@@ -39,7 +39,7 @@ export default function AdminBookings() {
 	useEffect(() => {
 		const fetchBookings = async () => {
 			try {
-				const data = await apiClient.get('/admin/bookings');
+				const data = await apiClient.get<Booking[]>('/admin/bookings');
 				setBookings(data);
 			} catch (err) {
 				setError(

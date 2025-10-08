@@ -76,7 +76,7 @@ export function isSalonOpenOnDateTime(
 	const dayOfWeek = getDayOfWeek(date);
 	const dayHours = workingHours[dayOfWeek as keyof WorkingHours];
 
-	if (dayHours.closed) {
+	if (!dayHours || dayHours.closed) {
 		return false;
 	}
 
@@ -215,7 +215,7 @@ export function getAvailableTimeSlots(
 	const dayOfWeek = getDayOfWeek(date);
 	const dayHours = workingHours[dayOfWeek as keyof WorkingHours];
 
-	if (dayHours.closed) {
+	if (!dayHours || dayHours.closed) {
 		return [];
 	}
 

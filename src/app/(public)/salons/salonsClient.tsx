@@ -37,7 +37,7 @@ export default function SalonsClient() {
 
 	// Use optimized search instead of loading all salons
 	const {
-		data: searchResult,
+		data: searchData,
 		isLoading: loading,
 		error,
 		refetch,
@@ -56,17 +56,18 @@ export default function SalonsClient() {
 	const [currentPagination, setCurrentPagination] = useState<any>(null);
 
 	useEffect(() => {
-		if (searchResult?.data && searchResult?.pagination) {
-			if (searchResult.pagination.page === 1) {
+		const result = searchData as any;
+		if (result?.data && result?.pagination) {
+			if (result.pagination.page === 1) {
 				// Reset accumulated results for new search
-				setAccumulatedSalons(searchResult.data);
+				setAccumulatedSalons(result.data);
 			} else {
 				// Append new results for pagination
-				setAccumulatedSalons((prev) => [...prev, ...searchResult.data]);
+				setAccumulatedSalons((prev) => [...prev, ...result.data]);
 			}
-			setCurrentPagination(searchResult.pagination);
+			setCurrentPagination(result.pagination);
 		}
-	}, [searchResult]);
+	}, [searchData]);
 
 	// Reset accumulated results when search parameters change
 	useEffect(() => {

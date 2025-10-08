@@ -85,11 +85,11 @@ export default function EnhancedFileUpload({
 
 			// For images, check if URL is valid by trying to load it
 			if (accept.includes('image')) {
-				const img = new Image();
+				const img = document.createElement('img');
 				img.crossOrigin = 'anonymous';
 
 				await new Promise((resolve, reject) => {
-					img.onload = resolve;
+					img.onload = () => resolve(null);
 					img.onerror = () => reject(new Error('Invalid image URL'));
 					img.src = url;
 				});

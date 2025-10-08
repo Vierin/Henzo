@@ -16,7 +16,8 @@ export default function SalonSidebar({
 	selectedSalon,
 }: SalonSidebarProps) {
 	const [sortBy, setSortBy] = useState('recommended');
-	const { data: salons = [], isLoading } = useFeaturedSalons(20);
+	const { data, isLoading } = useFeaturedSalons(20);
+	const salons = (data as unknown as Salon[]) || [];
 
 	// Mock data for demonstration - in production this would come from API
 	const mockSalons: Salon[] = [
@@ -33,6 +34,8 @@ export default function SalonSidebar({
 			photos: [
 				'https://images.unsplash.com/photo-1560066984-138dadb4c035?w=300&h=200&fit=crop',
 			],
+			ownerId: 'mock-owner-1',
+			createdAt: new Date().toISOString(),
 		},
 		{
 			id: '2',
@@ -47,6 +50,8 @@ export default function SalonSidebar({
 			photos: [
 				'https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?w=300&h=200&fit=crop',
 			],
+			ownerId: 'mock-owner-2',
+			createdAt: new Date().toISOString(),
 		},
 		{
 			id: '3',
@@ -61,6 +66,8 @@ export default function SalonSidebar({
 			photos: [
 				'https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?w=300&h=200&fit=crop',
 			],
+			ownerId: 'mock-owner-3',
+			createdAt: new Date().toISOString(),
 		},
 	];
 

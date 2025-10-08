@@ -4,9 +4,9 @@ import CategoryList from './CategoryList';
 import Link from 'next/link';
 
 interface CategoryPageProps {
-	params: {
+	params: Promise<{
 		slug: string;
-	};
+	}>;
 }
 
 export async function generateMetadata({
