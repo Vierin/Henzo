@@ -13,11 +13,13 @@ export default function HomePageClient() {
 
 	// Preload critical data for better performance
 	useEffect(() => {
+		const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+
 		// Prefetch featured salons
 		queryClient.prefetchQuery({
 			queryKey: ['salons', 'featured', 6],
 			queryFn: async () => {
-				const response = await fetch('/api/salons/featured?limit=6');
+				const response = await fetch(`${API_URL}/salons/featured?limit=6`);
 				return response.json();
 			},
 			staleTime: 15 * 60 * 1000, // 15 minutes
@@ -27,7 +29,7 @@ export default function HomePageClient() {
 		queryClient.prefetchQuery({
 			queryKey: ['services', 'popular', 10],
 			queryFn: async () => {
-				const response = await fetch('/api/services/popular?limit=10');
+				const response = await fetch(`${API_URL}/services/popular?limit=10`);
 				return response.json();
 			},
 			staleTime: 15 * 60 * 1000, // 15 minutes
@@ -78,9 +80,7 @@ export default function HomePageClient() {
 							<h2 className="text-3xl font-bold text-gray-900 mb-4">
 								{t.homepage.howItWorks}
 							</h2>
-							<p className="text-lg text-gray-700">
-								{t.homepage.heroSubtitle}
-							</p>
+							<p className="text-lg text-gray-700">{t.homepage.heroSubtitle}</p>
 						</div>
 
 						{/* Features Grid */}
@@ -93,9 +93,7 @@ export default function HomePageClient() {
 								<h3 className="text-xl font-semibold text-gray-900 mb-2">
 									{t.homepage.step1Title}
 								</h3>
-								<p className="text-gray-600">
-									{t.homepage.step1Description}
-								</p>
+								<p className="text-gray-600">{t.homepage.step1Description}</p>
 							</article>
 
 							{/* Feature 2 */}
@@ -106,9 +104,7 @@ export default function HomePageClient() {
 								<h3 className="text-xl font-semibold text-gray-900 mb-2">
 									{t.homepage.step2Title}
 								</h3>
-								<p className="text-gray-600">
-									{t.homepage.step2Description}
-								</p>
+								<p className="text-gray-600">{t.homepage.step2Description}</p>
 							</article>
 
 							{/* Feature 3 */}
