@@ -41,7 +41,7 @@ export default function ServiceAutocomplete({
 		setLoading(true);
 		try {
 			const API_BASE_URL =
-				process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:3001';
+				process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
 			// First try to search for services
 			const servicesResponse = await fetch(

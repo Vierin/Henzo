@@ -51,12 +51,13 @@ export default function BusinessRegisterClient() {
 				return;
 			}
 
-			setValidatingCode(true);
-			try {
-				const response = await fetch(
-					`http://localhost:3001/invite-codes/validate/${formData.inviteCode}`
-				);
-				const result = await response.json();
+		setValidatingCode(true);
+		try {
+			const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+			const response = await fetch(
+				`${API_URL}/invite-codes/validate/${formData.inviteCode}`
+			);
+			const result = await response.json();
 				setCodeValid(result.valid);
 				if (!result.valid) {
 					toast.error(result.error || 'Invalid invite code');

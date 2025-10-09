@@ -29,7 +29,7 @@ export default function ContactPageClient() {
 
 		try {
 			const backendUrl =
-				process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:3001';
+				process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 			const response = await fetch(`${backendUrl}/contact/send-message`, {
 				method: 'POST',
 				headers: {

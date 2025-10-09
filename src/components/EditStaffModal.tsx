@@ -47,7 +47,9 @@ export default function EditStaffModal({
 		try {
 			if (!staff) return;
 
-			const response = await fetch(`/api/staff/${staff.id}`, {
+			const API_URL =
+				process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+			const response = await fetch(`${API_URL}/staff/${staff.id}`, {
 				method: 'PUT',
 				headers: {
 					'Content-Type': 'application/json',
@@ -65,7 +67,8 @@ export default function EditStaffModal({
 			toast.success('Staff member updated successfully!', { id: updateToast });
 			onClose();
 		} catch (err: unknown) {
-			const errorMessage = err instanceof Error ? err.message : 'Failed to update staff member';
+			const errorMessage =
+				err instanceof Error ? err.message : 'Failed to update staff member';
 			setError(errorMessage);
 			toast.error(errorMessage, {
 				id: updateToast,
