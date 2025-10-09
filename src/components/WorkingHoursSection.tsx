@@ -1,8 +1,9 @@
 'use client';
 
-import { useState } from 'react';
+import { TimePicker } from 'rsuite';
+import 'rsuite/dist/rsuite-no-reset.min.css';
 
-// Кастомный компонент для выбора времени в 24-часовом формате
+// Wrapper для rsuite TimePicker
 const TimePicker24h = ({
 	value,
 	onChange,
@@ -12,43 +13,37 @@ const TimePicker24h = ({
 	onChange: (value: string) => void;
 	className?: string;
 }) => {
-	const [hours, minutes] = value.split(':').map(Number);
-
-	const handleHoursChange = (newHours: number) => {
-		const formattedHours = newHours.toString().padStart(2, '0');
-		onChange(`${formattedHours}:${minutes.toString().padStart(2, '0')}`);
+	// Конвертируем строку HH:MM в Date для rsuite
+	const parseTimeToDate = (timeStr: string): Date | null => {
+		if (!timeStr || !timeStr.includes(':')) return null;
+		const [hours, minutes] = timeStr.split(':').map(Number);
+		const date = new Date();
+		date.setHours(hours, minutes, 0, 0);
+		return date;
 	};
 
-	const handleMinutesChange = (newMinutes: number) => {
-		const formattedMinutes = newMinutes.toString().padStart(2, '0');
-		onChange(`${hours.toString().padStart(2, '0')}:${formattedMinutes}`);
+	// Конвертируем Date обратно в строку HH:MM
+	const formatDateToTime = (date: Date | null): string => {
+		if (!date) return '';
+		const hours = date.getHours().toString().padStart(2, '0');
+		const minutes = date.getMinutes().toString().padStart(2, '0');
+		return `${hours}:${minutes}`;
+	};
+
+	const handleChange = (date: Date | null) => {
+		onChange(formatDateToTime(date));
 	};
 
 	return (
-		<div className={`flex items-center space-x-1 ${className}`}>
-			<select
-				value={hours}
-				onChange={(e) => handleHoursChange(Number(e.target.value))}
-				className="px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-[#ff5b5b] focus:border-[#ff5b5b]"
-			>
-				{Array.from({ length: 24 }, (_, i) => (
-					<option key={i} value={i}>
-						{i.toString().padStart(2, '0')}
-					</option>
-				))}
-			</select>
-			<span className="text-gray-500">:</span>
-			<select
-				value={minutes}
-				onChange={(e) => handleMinutesChange(Number(e.target.value))}
-				className="px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-[#ff5b5b] focus:border-[#ff5b5b]"
-			>
-				{Array.from({ length: 60 }, (_, i) => (
-					<option key={i} value={i}>
-						{i.toString().padStart(2, '0')}
-					</option>
-				))}
-			</select>
+		<div className={className}>
+			<TimePicker
+				value={parseTimeToDate(value)}
+				onChange={handleChange}
+				format="HH:mm"
+				cleanable={false}
+				placeholder="09:00"
+				className="custom-time-picker"
+			/>
 		</div>
 	);
 };
@@ -112,115 +107,60 @@ export default function WorkingHoursSection({
 		onChange(newWorkingHours);
 	};
 
-	const setAllOpen = () => {
-		const newWorkingHours = { ...workingHours };
-		Object.keys(newWorkingHours).forEach((day) => {
-			newWorkingHours[day as keyof WorkingHours] = {
-				open: '09:00',
-				close: '18:00',
-				closed: false,
-			};
-		});
-		onChange(newWorkingHours);
-	};
-
-	const setAllClosed = () => {
-		const newWorkingHours = { ...workingHours };
-		Object.keys(newWorkingHours).forEach((day) => {
-			newWorkingHours[day as keyof WorkingHours] = {
-				open: '',
-				close: '',
-				closed: true,
-			};
-		});
-		onChange(newWorkingHours);
-	};
-
 	return (
-		<div className={`space-y-4 ${className}`}>
-			<div>
-				<label className="block text-sm font-medium text-gray-900 mb-4">
-					Set Your Working Hours
-				</label>
-				<div className="space-y-3">
-					{days.map((day) => {
-						const dayData = workingHours[day.key as keyof WorkingHours];
-						return (
-							<div
-								key={day.key}
-								className={`flex items-center justify-between p-4 rounded-lg border transition-all duration-200 ${
-									dayData.closed
-										? 'bg-gray-50 border-gray-200'
-										: 'bg-green-50 border-green-200 hover:bg-green-100'
+		<div className={`space-y-3 ${className}`}>
+			{days.map((day) => {
+				const dayData = workingHours[day.key as keyof WorkingHours];
+				return (
+					<div
+						key={day.key}
+						className="flex items-center justify-between py-4 px-5 bg-orange-50/30 rounded-lg"
+					>
+						{/* Toggle + Day Name */}
+						<div className="flex items-center gap-4 min-w-[140px]">
+							<button
+								type="button"
+								onClick={() => toggleDayClosed(day.key)}
+								className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none ${
+									!dayData.closed ? 'bg-orange-500' : 'bg-gray-300'
 								}`}
 							>
-								<div className="flex items-center space-x-3">
-									<label className="flex items-center space-x-3 cursor-pointer">
-										<input
-											type="checkbox"
-											checked={!dayData.closed}
-											onChange={() => toggleDayClosed(day.key)}
-											className="w-4 h-4 rounded border-gray-300 text-[#ff5b5b] focus:ring-[#ff5b5b] focus:ring-2"
-										/>
-										<span className="text-base font-medium text-gray-800">
-											{day.label}
-										</span>
-									</label>
-								</div>
+								<span
+									className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+										!dayData.closed ? 'translate-x-6' : 'translate-x-1'
+									}`}
+								/>
+							</button>
+							<span className="text-base font-medium text-gray-700">
+								{day.label}
+							</span>
+						</div>
 
-								{!dayData.closed ? (
-									<div className="flex items-center space-x-3">
-										<div className="flex items-center space-x-2">
-											<span className="text-sm text-gray-600">Open:</span>
-											<TimePicker24h
-												value={dayData.open}
-												onChange={(value) =>
-													handleTimeChange(day.key, 'open', value)
-												}
-											/>
-										</div>
-										<span className="text-gray-400">—</span>
-										<div className="flex items-center space-x-2">
-											<span className="text-sm text-gray-600">Close:</span>
-											<TimePicker24h
-												value={dayData.close}
-												onChange={(value) =>
-													handleTimeChange(day.key, 'close', value)
-												}
-											/>
-										</div>
-									</div>
-								) : (
-									<div className="flex items-center space-x-2 text-gray-500">
-										<span className="text-sm">🚫</span>
-										<span className="text-sm font-medium">Closed</span>
-									</div>
-								)}
-							</div>
-						);
-					})}
-				</div>
-			</div>
-
-			{/* Quick Actions */}
-			<div className="pt-4 border-t border-gray-200">
-				<div className="flex gap-2">
-					<button
-						type="button"
-						onClick={setAllOpen}
-						className="px-3 py-1 text-xs bg-blue-100 text-blue-700 rounded-md hover:bg-blue-200 transition-colors"
-					>
-						Set All Open
-					</button>
-					<button
-						type="button"
-						onClick={setAllClosed}
-						className="px-3 py-1 text-xs bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 transition-colors"
-					>
-						Set All Closed
-					</button>
-				</div>
-			</div>
+						{/* Time Pickers or Closed */}
+						<div className="flex items-center gap-4">
+							{!dayData.closed ? (
+								<>
+									<TimePicker24h
+										value={dayData.open}
+										onChange={(value) =>
+											handleTimeChange(day.key, 'open', value)
+										}
+									/>
+									<span className="text-gray-400 font-medium">-</span>
+									<TimePicker24h
+										value={dayData.close}
+										onChange={(value) =>
+											handleTimeChange(day.key, 'close', value)
+										}
+									/>
+								</>
+							) : (
+								<span className="text-orange-500 font-medium">Closed</span>
+							)}
+						</div>
+					</div>
+				);
+			})}
 		</div>
 	);
 }

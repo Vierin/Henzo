@@ -57,7 +57,7 @@ export default function BetaRequestForm() {
 	};
 
 	return (
-		<section className="py-20 bg-gradient-to-br from-orange-50 to-pink-50">
+		<section className="py-20 bg-gradient-to-br from-orange-50 to-pink-50 scroll-mt-20">
 			<div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
 				<div className="text-center mb-12">
 					<h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-6">
@@ -88,7 +88,7 @@ export default function BetaRequestForm() {
 									setFormData({ ...formData, fullName: e.target.value })
 								}
 								placeholder="John Doe"
-								className="block w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-colors"
+								className="block w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 text-gray-500 transition-colors"
 							/>
 						</div>
 
@@ -108,7 +108,7 @@ export default function BetaRequestForm() {
 									setFormData({ ...formData, salonName: e.target.value })
 								}
 								placeholder="Beauty Lounge"
-								className="block w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-colors"
+								className="block w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 text-gray-500 transition-colors"
 							/>
 						</div>
 
@@ -129,7 +129,7 @@ export default function BetaRequestForm() {
 									setFormData({ ...formData, email: e.target.value })
 								}
 								placeholder="john@example.com"
-								className="block w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-colors"
+								className="block w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 text-gray-500 transition-colors"
 							/>
 						</div>
 

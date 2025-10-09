@@ -102,19 +102,19 @@ export default function BusinessLandingPage() {
 									role="group"
 									aria-label="Action buttons"
 								>
-									<Link
-										href="/business/register"
+									<a
+										href="#beta-form"
 										className="bg-orange-500 text-white px-8 py-4 rounded-lg text-lg font-semibold hover:bg-orange-600 transition-colors text-center"
-										aria-label="Start your free trial - Register for Henzo business account"
+										aria-label="Request beta access"
 									>
-										Start your free trial
-									</Link>
+										Request Beta Access
+									</a>
 									<Link
 										href="/login"
 										className="bg-orange-100 text-orange-700 px-8 py-4 rounded-lg text-lg font-semibold hover:bg-orange-200 transition-colors text-center"
 										aria-label="Already have an account? Login to your Henzo account"
 									>
-										Already with us? Login
+										Already have an account? Login
 									</Link>
 								</div>
 							</div>
@@ -667,7 +667,9 @@ export default function BusinessLandingPage() {
 				</section>
 
 				{/* Beta Request Form */}
-				<BetaRequestForm />
+				<div id="beta-form">
+					<BetaRequestForm />
+				</div>
 
 				{/* CTA Section */}
 				<section className="py-20 bg-gradient-to-r from-orange-500 to-pink-500">
@@ -680,12 +682,12 @@ export default function BusinessLandingPage() {
 							their business.
 						</p>
 						<div className="flex flex-col sm:flex-row gap-4 justify-center">
-							<Link
-								href="/business/register"
+							<a
+								href="#beta-form"
 								className="bg-white text-orange-500 px-8 py-4 rounded-lg text-lg font-semibold hover:bg-gray-100 transition-colors"
 							>
-								Start your free trial
-							</Link>
+								Request Beta Access
+							</a>
 							<Link
 								href="/login"
 								className="border-2 border-white text-white px-8 py-4 rounded-lg text-lg font-semibold hover:bg-white hover:text-orange-500 transition-colors"

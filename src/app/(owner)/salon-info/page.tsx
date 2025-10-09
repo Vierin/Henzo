@@ -8,8 +8,10 @@ import MapComponentWithCoords from '@/components/MapComponentWithCoords';
 import LoadingSpinner from '@/components/LoadingSpinner';
 import EnhancedFileUpload from '@/components/EnhancedFileUpload';
 import EnhancedPhotoUpload from '@/components/EnhancedPhotoUpload';
+import WorkingHoursSection from '@/components/WorkingHoursSection';
 import { useSalon } from '@/hooks/useSalon';
 import { apiClient } from '@/lib/api-client';
+import { Clock4 } from 'lucide-react';
 
 // Salon categories
 const SALON_CATEGORIES = [
@@ -20,57 +22,6 @@ const SALON_CATEGORIES = [
 	{ id: 5, name: 'Cosmetic Medicine' },
 	{ id: 6, name: 'Other Services' },
 ] as const;
-
-// Кастомный компонент для выбора времени в 24-часовом формате
-const TimePicker24h = ({
-	value,
-	onChange,
-	className = '',
-}: {
-	value: string;
-	onChange: (value: string) => void;
-	className?: string;
-}) => {
-	const [hours, minutes] = value.split(':').map(Number);
-
-	const handleHoursChange = (newHours: number) => {
-		const formattedHours = newHours.toString().padStart(2, '0');
-		onChange(`${formattedHours}:${minutes.toString().padStart(2, '0')}`);
-	};
-
-	const handleMinutesChange = (newMinutes: number) => {
-		const formattedMinutes = newMinutes.toString().padStart(2, '0');
-		onChange(`${hours.toString().padStart(2, '0')}:${formattedMinutes}`);
-	};
-
-	return (
-		<div className={`flex items-center space-x-1 ${className}`}>
-			<select
-				value={hours}
-				onChange={(e) => handleHoursChange(Number(e.target.value))}
-				className="px-2 py-1 border border-gray-300 text-gray-500 rounded focus:outline-none focus:ring-2 focus:ring-[#ff5b5b] focus:border-[#ff5b5b] text-sm bg-white"
-			>
-				{Array.from({ length: 24 }, (_, i) => (
-					<option key={i} value={i}>
-						{i.toString().padStart(2, '0')}
-					</option>
-				))}
-			</select>
-			<span className="text-gray-500">:</span>
-			<select
-				value={minutes}
-				onChange={(e) => handleMinutesChange(Number(e.target.value))}
-				className="px-2 py-1 border border-gray-300 text-gray-500 rounded focus:outline-none focus:ring-2 focus:ring-[#ff5b5b] focus:border-[#ff5b5b] text-sm bg-white"
-			>
-				{Array.from({ length: 60 }, (_, i) => (
-					<option key={i} value={i}>
-						{i.toString().padStart(2, '0')}
-					</option>
-				))}
-			</select>
-		</div>
-	);
-};
 
 export default function SalonInfoPage() {
 	const [formData, setFormData] = useState({
@@ -257,46 +208,6 @@ export default function SalonInfoPage() {
 		}
 	};
 
-	const handleTimeChange = (
-		day: string,
-		field: 'open' | 'close',
-		value: string
-	) => {
-		setFormData((prev) => ({
-			...prev,
-			operatingHours: {
-				...prev.operatingHours,
-				[day]: {
-					...prev.operatingHours[day as keyof typeof prev.operatingHours],
-					[field]: value,
-				},
-			},
-		}));
-	};
-
-	const toggleDayClosed = (day: string) => {
-		setFormData((prev) => ({
-			...prev,
-			operatingHours: {
-				...prev.operatingHours,
-				[day]: {
-					...prev.operatingHours[day as keyof typeof prev.operatingHours],
-					closed:
-						!prev.operatingHours[day as keyof typeof prev.operatingHours]
-							.closed,
-					open: prev.operatingHours[day as keyof typeof prev.operatingHours]
-						.closed
-						? '09:00'
-						: '',
-					close: prev.operatingHours[day as keyof typeof prev.operatingHours]
-						.closed
-						? '18:00'
-						: '',
-				},
-			},
-		}));
-	};
-
 	const handleCategoryToggle = (categoryId: number) => {
 		setFormData((prev) => ({
 			...prev,
@@ -305,16 +216,6 @@ export default function SalonInfoPage() {
 				: [...prev.salonCategories, categoryId],
 		}));
 	};
-
-	const days = [
-		{ key: 'monday', label: 'Monday' },
-		{ key: 'tuesday', label: 'Tuesday' },
-		{ key: 'wednesday', label: 'Wednesday' },
-		{ key: 'thursday', label: 'Thursday' },
-		{ key: 'friday', label: 'Friday' },
-		{ key: 'saturday', label: 'Saturday' },
-		{ key: 'sunday', label: 'Sunday' },
-	];
 
 	// Показываем загрузку
 	if (initialLoading) {
@@ -556,113 +457,15 @@ export default function SalonInfoPage() {
 
 				{/* Operating Hours Section */}
 				<div className="bg-white border border-gray-200 rounded-lg p-6">
-					<h2 className="text-2xl font-semibold text-gray-900 mb-6">
-						🕒 Operating Hours
+					<h2 className="text-2xl font-semibold text-gray-900 mb-6 flex items-center gap-2">
+						<Clock4 className="w-5 h-5" /> Operating Hours
 					</h2>
-
-					<div className="space-y-3">
-						{days.map((day) => {
-							const dayData =
-								formData.operatingHours[
-									day.key as keyof typeof formData.operatingHours
-								];
-							return (
-								<div
-									key={day.key}
-									className={`flex items-center justify-between p-4 rounded-lg border transition-all duration-200 ${
-										dayData.closed
-											? 'bg-gray-50 border-gray-200'
-											: 'bg-green-50 border-green-200 hover:bg-green-100'
-									}`}
-								>
-									<div className="flex items-center space-x-3">
-										<label className="flex items-center space-x-3 cursor-pointer">
-											<input
-												type="checkbox"
-												checked={!dayData.closed}
-												onChange={() => toggleDayClosed(day.key)}
-												className="w-4 h-4 rounded border-gray-300 text-[#ff5b5b] focus:ring-[#ff5b5b] focus:ring-2"
-											/>
-											<span className="text-base font-medium text-gray-800">
-												{day.label}
-											</span>
-										</label>
-									</div>
-
-									{!dayData.closed ? (
-										<div className="flex items-center space-x-3">
-											<div className="flex items-center space-x-2">
-												<span className="text-sm text-gray-600">Open:</span>
-												<TimePicker24h
-													value={dayData.open}
-													onChange={(value) =>
-														handleTimeChange(day.key, 'open', value)
-													}
-												/>
-											</div>
-											<span className="text-gray-400">—</span>
-											<div className="flex items-center space-x-2">
-												<span className="text-sm text-gray-600">Close:</span>
-												<TimePicker24h
-													value={dayData.close}
-													onChange={(value) =>
-														handleTimeChange(day.key, 'close', value)
-													}
-												/>
-											</div>
-										</div>
-									) : (
-										<div className="flex items-center space-x-2 text-gray-500">
-											<span className="text-sm">🚫</span>
-											<span className="text-sm font-medium">Closed</span>
-										</div>
-									)}
-								</div>
-							);
-						})}
-					</div>
-
-					{/* Quick Actions */}
-					<div className="mt-6 pt-4 border-t border-gray-200">
-						<div className="flex gap-2">
-							<button
-								type="button"
-								onClick={() => {
-									// Set all days to open with default hours
-									const newHours = { ...formData.operatingHours };
-									Object.keys(newHours).forEach((day) => {
-										newHours[day as keyof typeof newHours] = {
-											open: '09:00',
-											close: '18:00',
-											closed: false,
-										};
-									});
-									setFormData({ ...formData, operatingHours: newHours });
-								}}
-								className="px-3 py-1 text-xs bg-blue-100 text-blue-700 rounded-md hover:bg-blue-200 transition-colors"
-							>
-								Set All Open
-							</button>
-							<button
-								type="button"
-								onClick={() => {
-									// Set all days to closed
-									const newHours = { ...formData.operatingHours };
-									Object.keys(newHours).forEach((day) => {
-										newHours[day as keyof typeof newHours] = {
-											open: '',
-											close: '',
-											closed: true,
-										};
-									});
-									setFormData({ ...formData, operatingHours: newHours });
-								}}
-								className="px-3 py-1 text-xs bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 transition-colors"
-							>
-								Set All Closed
-							</button>
-						</div>
-					</div>
+					<WorkingHoursSection
+						workingHours={formData.operatingHours}
+						onChange={(workingHours) =>
+							setFormData({ ...formData, operatingHours: workingHours })
+						}
+					/>
 				</div>
 
 				{error && (

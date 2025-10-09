@@ -280,7 +280,7 @@ class AuthManager {
 	private async fetchUserWithRole(accessToken: string): Promise<User> {
 		try {
 			const response = await fetch(
-				`${process.env.NEXT_PUBLIC_API_URL}/auth/user`,
+				`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/auth/user`,
 				{
 					headers: {
 						Authorization: `Bearer ${accessToken}`,
