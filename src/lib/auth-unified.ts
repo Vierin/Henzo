@@ -154,6 +154,7 @@ class AuthManager {
 		email: string;
 		password: string;
 		name?: string;
+		inviteCode?: string;
 	}): Promise<{ success: boolean; error?: string }> {
 		try {
 			this.setState({ isLoading: true });
@@ -172,14 +173,23 @@ class AuthManager {
 
 			if (error) throw error;
 
-			// 2. Создание пользователя в API
+			// 2. Создание пользователя в API с инвайт-кодом
 			if (authData.user) {
-				await apiClient.post('/auth/register', {
+				const response = await apiClient.post<{
+					user: any;
+					inviteCodeId?: string;
+				}>('/auth/register', {
 					userId: authData.user.id,
 					email: data.email,
+					inviteCode: data.inviteCode,
 					name: data.name,
 					role: 'OWNER',
 				});
+
+				// Сохраняем inviteCodeId для использования при создании салона
+				if (response.inviteCodeId) {
+					sessionStorage.setItem('inviteCodeId', response.inviteCodeId);
+				}
 			}
 
 			this.setState({ isLoading: false });
@@ -393,6 +403,3 @@ export function useAuth() {
 		...methods,
 	};
 }
-
-
-

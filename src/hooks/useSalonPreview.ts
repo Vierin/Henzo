@@ -50,7 +50,7 @@ export function useSalonPreview(params: PreviewParams = {}) {
 			return response;
 		},
 		staleTime: 10 * 60 * 1000, // 10 minutes - preview data changes less frequently
-		cacheTime: 30 * 60 * 1000, // 30 minutes
+		gcTime: 30 * 60 * 1000, // 30 minutes
 	});
 }
 
@@ -64,7 +64,7 @@ export function useFeaturedSalons(limit: number = 6) {
 			return response;
 		},
 		staleTime: 15 * 60 * 1000, // 15 minutes - featured salons change rarely
-		cacheTime: 60 * 60 * 1000, // 1 hour
+		gcTime: 60 * 60 * 1000, // 1 hour
 	});
 }
 
@@ -91,7 +91,7 @@ export function useNearbySalons(params: {
 			return response;
 		},
 		staleTime: 5 * 60 * 1000, // 5 minutes - location-based results
-		cacheTime: 15 * 60 * 1000, // 15 minutes
+		gcTime: 15 * 60 * 1000, // 15 minutes
 		enabled: !!(params.lat && params.lng), // Only run when we have coordinates
 	});
 }

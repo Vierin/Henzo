@@ -154,14 +154,14 @@ function transliterateVietnamese(text: string): string {
 /**
  * Генерирует SEO-дружественный slug из названия салона и ID
  * @param name - название салона
- * @param address - адрес салона (не используется, оставлен для совместимости)
  * @param id - ID салона
+ * @param address - адрес салона (не используется, оставлен для совместимости)
  * @returns сгенерированный slug
  */
 export function generateSalonSlug(
 	name: string,
-	address?: string,
-	id: string
+	id: string,
+	address?: string
 ): string {
 	// Сначала транслитерируем вьетнамские символы
 	const transliteratedName = transliterateVietnamese(name);

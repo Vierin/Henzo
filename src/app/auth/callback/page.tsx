@@ -221,6 +221,7 @@ export default function AuthCallbackPage() {
 											data.session.user.user_metadata?.full_name,
 										phone: data.session.user.user_metadata?.phone,
 										role: defaultRole as 'ADMIN' | 'OWNER' | 'CLIENT',
+										createdAt: new Date().toISOString(),
 									};
 									setUser(tempUser);
 									setSession(data.session);
@@ -245,6 +246,7 @@ export default function AuthCallbackPage() {
 									data.session.user.user_metadata?.full_name,
 								phone: data.session.user.user_metadata?.phone,
 								role: defaultRole as 'ADMIN' | 'OWNER' | 'CLIENT',
+								createdAt: new Date().toISOString(),
 							};
 							setUser(tempUser);
 							setSession(data.session);

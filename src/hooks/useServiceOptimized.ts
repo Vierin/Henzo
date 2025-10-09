@@ -12,7 +12,7 @@ export function usePopularServices(limit: number = 10) {
 			return response;
 		},
 		staleTime: 15 * 60 * 1000, // 15 minutes - popular services change rarely
-		cacheTime: 60 * 60 * 1000, // 1 hour
+		gcTime: 60 * 60 * 1000, // 1 hour
 	});
 }
 
@@ -26,7 +26,7 @@ export function useTrendingServices(limit: number = 8) {
 			return response;
 		},
 		staleTime: 10 * 60 * 1000, // 10 minutes - trending changes more frequently
-		cacheTime: 30 * 60 * 1000, // 30 minutes
+		gcTime: 30 * 60 * 1000, // 30 minutes
 	});
 }
 
@@ -38,6 +38,6 @@ export function useServiceCategories() {
 			return response;
 		},
 		staleTime: 24 * 60 * 60 * 1000, // 24 hours - categories are static
-		cacheTime: 7 * 24 * 60 * 60 * 1000, // 7 days
+		gcTime: 7 * 24 * 60 * 60 * 1000, // 7 days
 	});
 }

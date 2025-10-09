@@ -278,6 +278,9 @@ export default function BusinessCompleteSetupPage() {
 			const API_BASE_URL =
 				process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
+			// Get inviteCodeId from sessionStorage (saved during registration)
+			const inviteCodeId = sessionStorage.getItem('inviteCodeId');
+
 			// Create salon data with file paths
 			const salonData = {
 				name: formData.name.trim(),
@@ -290,6 +293,7 @@ export default function BusinessCompleteSetupPage() {
 				workingHours: formData.workingHours,
 				logo: formData.logo || null,
 				photos: formData.photos,
+				inviteCodeId: inviteCodeId || undefined,
 			};
 
 			const response = await fetch(`${API_BASE_URL}/salons/current`, {
@@ -305,6 +309,9 @@ export default function BusinessCompleteSetupPage() {
 				const errorData = await response.json();
 				throw new Error(errorData.message || 'Failed to create salon');
 			}
+
+			// Clean up inviteCodeId from storage
+			sessionStorage.removeItem('inviteCodeId');
 
 			toast.success('Salon setup completed successfully!');
 			router.push('/owner-dashboard');

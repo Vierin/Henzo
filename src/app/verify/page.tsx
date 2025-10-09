@@ -116,6 +116,7 @@ function VerifyForm() {
 										| 'OWNER'
 										| 'ADMIN'
 										| 'CLIENT',
+									createdAt: new Date().toISOString(),
 								};
 
 								console.log('👤 Using fallback user data:', fallbackUser);

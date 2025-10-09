@@ -13,7 +13,7 @@ export function useSalonSlug() {
 	 * Генерирует slug для салона
 	 */
 	const getSalonSlug = (salon: Salon): string => {
-		return generateSalonSlug(salon.name, salon.address, salon.id);
+		return generateSalonSlug(salon.name, salon.id, salon.address);
 	};
 
 	/**

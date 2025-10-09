@@ -1,14 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { supabase } from '@/lib/supabase';
-
-export interface User {
-	id: string;
-	email: string;
-	name?: string;
-	phone?: string;
-	role: 'OWNER' | 'ADMIN' | 'CLIENT';
-}
+import { User } from '@/types';
 
 interface AuthState {
 	// User data

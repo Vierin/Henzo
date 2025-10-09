@@ -106,7 +106,7 @@ export default async function SalonDetailPage({
 
 	// Проверяем, нужно ли редиректить со старого ID на новый slug
 	const isOldId = /^[a-f0-9-]{36}$/.test(slug);
-	if (isOldId) {
+	if (isOldId && salon.id) {
 		const newSlug = generateSalonSlug(salon.name, salon.id, salon.address);
 		return (
 			<div className="min-h-screen bg-[#F8F5F2] flex items-center justify-center">

@@ -48,8 +48,7 @@ export function useSalonSearch(params: SearchParams) {
 			return response;
 		},
 		staleTime: 5 * 60 * 1000, // 5 minutes
-		cacheTime: 10 * 60 * 1000, // 10 minutes
+		gcTime: 10 * 60 * 1000, // 10 minutes
 		enabled: true, // Always enabled, but we can control this with params
-		keepPreviousData: params.accumulate, // Keep previous data when accumulating
 	});
 }

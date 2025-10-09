@@ -91,7 +91,7 @@ export function useAdminDashboard() {
 		queryKey: ['admin-dashboard'],
 		queryFn: async (): Promise<DashboardData> => {
 			try {
-				const response = await apiClient.get('/admin/dashboard');
+				const response = await apiClient.get<DashboardData>('/admin/dashboard');
 				return response;
 			} catch (error) {
 				console.error('Error fetching admin dashboard:', error);
@@ -108,7 +108,7 @@ export function useAdminSalons() {
 		queryKey: ['admin-salons'],
 		queryFn: async (): Promise<AdminSalon[]> => {
 			try {
-				const response = await apiClient.get('/admin/salons');
+				const response = await apiClient.get<AdminSalon[]>('/admin/salons');
 				return response;
 			} catch (error) {
 				console.error('Error fetching admin salons:', error);
@@ -125,7 +125,7 @@ export function useAdminBookings() {
 		queryKey: ['admin-bookings'],
 		queryFn: async (): Promise<AdminBooking[]> => {
 			try {
-				const response = await apiClient.get('/admin/bookings');
+				const response = await apiClient.get<AdminBooking[]>('/admin/bookings');
 				return response;
 			} catch (error) {
 				console.error('Error fetching admin bookings:', error);
@@ -142,7 +142,7 @@ export function useAdminSubscriptions() {
 		queryKey: ['admin-subscriptions'],
 		queryFn: async () => {
 			try {
-				const response = await apiClient.get('/admin/subscriptions');
+				const response = await apiClient.get<any>('/admin/subscriptions');
 				return response;
 			} catch (error) {
 				console.error('Error fetching admin subscriptions:', error);
@@ -159,7 +159,7 @@ export function useAdminSmsUsage() {
 		queryKey: ['admin-sms-usage'],
 		queryFn: async () => {
 			try {
-				const response = await apiClient.get('/admin/sms-usage');
+				const response = await apiClient.get<any>('/admin/sms-usage');
 				return response;
 			} catch (error) {
 				console.error('Error fetching admin SMS usage:', error);
@@ -176,7 +176,7 @@ export function useAdminCustomers() {
 		queryKey: ['admin-customers'],
 		queryFn: async () => {
 			try {
-				const response = await apiClient.get('/admin/customers');
+				const response = await apiClient.get<any>('/admin/customers');
 				return response;
 			} catch (error) {
 				console.error('Error fetching admin customers:', error);

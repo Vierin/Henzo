@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { seoConfig } from '@/constants/seoConfig';
 import { Metadata } from 'next';
+import BetaRequestForm from './BetaRequestForm';
 
 export const metadata: Metadata = {
 	...seoConfig.business,
@@ -664,6 +665,9 @@ export default function BusinessLandingPage() {
 						</div>
 					</div>
 				</section>
+
+				{/* Beta Request Form */}
+				<BetaRequestForm />
 
 				{/* CTA Section */}
 				<section className="py-20 bg-gradient-to-r from-orange-500 to-pink-500">

@@ -31,13 +31,14 @@ export class ApiClient {
 		const {
 			data: { session },
 		} = await supabase.auth.getSession();
-		const headers: Record<string, string> = {
+		const headers: HeadersInit = {
 			'Content-Type': 'application/json',
-			...options.headers,
+			...(options.headers as Record<string, string>),
 		};
 
 		if (session?.access_token) {
-			headers['Authorization'] = `Bearer ${session.access_token}`;
+			(headers as Record<string, string>)['Authorization'] =
+				`Bearer ${session.access_token}`;
 		}
 
 		const config: RequestInit = {
@@ -59,7 +60,7 @@ export class ApiClient {
 		if (contentType && contentType.includes('application/json')) {
 			const text = await response.text();
 			if (text.trim() === '') {
-				return null; // Return null for empty responses
+				return null as T; // Return null for empty responses
 			}
 			const data = JSON.parse(text);
 
@@ -81,7 +82,7 @@ export class ApiClient {
 		}
 
 		// For non-JSON responses, return the text
-		return await response.text();
+		return (await response.text()) as T;
 	}
 
 	// Generic CRUD operations

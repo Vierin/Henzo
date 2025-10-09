@@ -20,6 +20,6 @@ export function useSalonStats(salonId: string) {
 		},
 		enabled: !!salonId,
 		staleTime: 5 * 60 * 1000, // 5 minutes - stats change moderately
-		cacheTime: 15 * 60 * 1000, // 15 minutes
+		gcTime: 15 * 60 * 1000, // 15 minutes
 	});
 }
