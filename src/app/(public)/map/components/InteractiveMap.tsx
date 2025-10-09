@@ -135,20 +135,6 @@ export default function InteractiveMap({
 	const displaySalons =
 		(salons as any[]).length > 0 ? (salons as any[]) : mockSalons;
 
-	// Debug logs
-	console.log('InteractiveMap Debug:', {
-		leafletLoaded,
-		L: !!L,
-		salonsLength: (salons as any[]).length,
-		displaySalonsLength: displaySalons.length,
-		displaySalons: displaySalons.map((s) => ({
-			id: s.id,
-			name: s.name,
-			lat: s.latitude,
-			lng: s.longitude,
-		})),
-	});
-
 	// Update map center when center prop changes
 	useEffect(() => {
 		if (mapInstance && center) {
