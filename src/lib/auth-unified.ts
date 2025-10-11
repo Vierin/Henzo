@@ -1,6 +1,7 @@
 // Унифицированная система аутентификации для MVP
 import { supabase } from './supabase';
 import { apiClient } from './api-client';
+import { useAuthStore } from '@/stores/authStore';
 
 export interface User {
 	id: string;
@@ -52,6 +53,13 @@ class AuthManager {
 
 		this.authState = nextState;
 		this.notifyListeners();
+
+		// Синхронизируем с authStore
+		if (nextState.user) {
+			useAuthStore.getState().setUser(nextState.user as any);
+		} else {
+			useAuthStore.getState().clearUser();
+		}
 	}
 
 	subscribe(listener: (state: AuthState) => void): () => void {
@@ -160,60 +168,89 @@ class AuthManager {
 		try {
 			this.setState({ isLoading: true });
 
-			// 1. Регистрация через Supabase
-			const { data: authData, error } = await supabase.auth.signUp({
-				email: data.email,
-				password: data.password,
-				options: {
-					data: {
-						name: data.name,
-						role: 'OWNER',
-					},
-				},
-			});
-
-			if (error) throw error;
-
+			let authData: any = null;
 			let emailConfirmed = false;
 
-			// 2. Создание пользователя в API с инвайт-кодом
-			if (authData.user) {
+			// Если регистрация из инвайт-ссылки - backend создаст пользователя через Admin API
+			if (data.fromInviteLink) {
+				// Отправляем запрос напрямую на backend с паролем
 				const response = await apiClient.post<{
 					user: any;
 					inviteCodeId?: string;
 					emailConfirmed?: boolean;
 				}>('/auth/register', {
-					userId: authData.user.id,
+					userId: null, // Backend создаст нового пользователя
 					email: data.email,
+					password: data.password,
 					inviteCode: data.inviteCode,
 					name: data.name,
 					role: 'OWNER',
-					fromInviteLink: data.fromInviteLink,
+					fromInviteLink: true,
 				});
 
-				// Сохраняем inviteCodeId для использования при создании салона
+				// Сохраняем inviteCodeId
 				if (response.inviteCodeId) {
 					sessionStorage.setItem('inviteCodeId', response.inviteCodeId);
 				}
 
 				emailConfirmed = response.emailConfirmed || false;
 
-				// Если email подтвержден, сразу логиним пользователя
-				if (emailConfirmed && authData.session) {
-					// Получаем полную информацию о пользователе
-					const userResponse = await apiClient.get('/auth/user', {
-						headers: {
-							Authorization: `Bearer ${authData.session.access_token}`,
-						},
+				// Логиним пользователя
+				const { data: signInData, error: signInError } =
+					await supabase.auth.signInWithPassword({
+						email: data.email,
+						password: data.password,
 					});
 
+				if (signInError) throw signInError;
+
+				if (signInData.session) {
+					// Используем данные пользователя из ответа backend вместо дополнительного запроса
 					this.setState({
-						user: userResponse.user,
+						user: response.user,
 						isAuthenticated: true,
 						isLoading: false,
 					});
 
-					localStorage.setItem('auth_user', JSON.stringify(userResponse.user));
+					localStorage.setItem('auth_user', JSON.stringify(response.user));
+				}
+			} else {
+				// Обычная регистрация через Supabase signUp
+				const { data: signUpData, error } = await supabase.auth.signUp({
+					email: data.email,
+					password: data.password,
+					options: {
+						data: {
+							name: data.name,
+							role: 'OWNER',
+						},
+						emailRedirectTo: `${window.location.origin}/auth/callback?type=business`,
+					},
+				});
+
+				if (error) throw error;
+
+				authData = signUpData;
+
+				// Создание пользователя в API с инвайт-кодом
+				if (authData.user) {
+					const response = await apiClient.post<{
+						user: any;
+						inviteCodeId?: string;
+						emailConfirmed?: boolean;
+					}>('/auth/register', {
+						userId: authData.user.id,
+						email: data.email,
+						inviteCode: data.inviteCode,
+						name: data.name,
+						role: 'OWNER',
+						fromInviteLink: false,
+					});
+
+					// Сохраняем inviteCodeId для использования при создании салона
+					if (response.inviteCodeId) {
+						sessionStorage.setItem('inviteCodeId', response.inviteCodeId);
+					}
 				}
 			}
 
@@ -221,9 +258,13 @@ class AuthManager {
 			return { success: true, emailConfirmed };
 		} catch (error) {
 			this.setState({ isLoading: false });
+			console.error('❌ Owner registration error:', error);
+			const errorMessage =
+				error instanceof Error ? error.message : 'Registration failed';
+			console.error('❌ Error message to display:', errorMessage);
 			return {
 				success: false,
-				error: error instanceof Error ? error.message : 'Registration failed',
+				error: errorMessage,
 			};
 		}
 	}

@@ -79,7 +79,8 @@ export const useCurrentUserSalon = () => {
 			}
 			return null;
 		},
-		staleTime: 5 * 60 * 1000, // 5 minutes
+		staleTime: 0, // Всегда считать данные устаревшими
+		refetchOnMount: true, // Всегда перезагружать при монтировании
 	});
 };
 

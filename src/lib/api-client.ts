@@ -50,9 +50,13 @@ export class ApiClient {
 
 		if (!response.ok) {
 			const errorData = await response.json().catch(() => ({}));
-			throw new Error(
-				errorData.error || `HTTP error! status: ${response.status}`
-			);
+			// NestJS returns errors as { message: string, statusCode: number }
+			// But some endpoints might return { error: string }
+			const errorMessage =
+				errorData.message ||
+				errorData.error ||
+				`HTTP error! status: ${response.status}`;
+			throw new Error(errorMessage);
 		}
 
 		// Check if response has content

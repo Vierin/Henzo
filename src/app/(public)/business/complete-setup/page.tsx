@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/lib/auth-unified';
+import { useQueryClient } from '@tanstack/react-query';
 import { STATIC_CATEGORIES } from '@/constants/categories';
 import { checkLocationMatch } from '@/constants/locations';
 import AddressAutocomplete from '@/components/AddressAutocomplete';
@@ -54,6 +55,7 @@ const WEEKDAYS = [
 
 export default function BusinessCompleteSetupPage() {
 	const router = useRouter();
+	const queryClient = useQueryClient();
 	const { user, isAuthenticated, isLoading } = useAuth();
 	const [currentStep, setCurrentStep] = useState(1);
 	const [loading, setLoading] = useState(false);
@@ -131,12 +133,17 @@ export default function BusinessCompleteSetupPage() {
 				if (response.ok) {
 					const responseData = await response.json();
 					if (responseData.success && responseData.data) {
-						console.log('User already has a salon, redirecting to dashboard');
+						// Invalidate queries before redirect
+						await queryClient.invalidateQueries({ queryKey: ['salons'] });
+						await queryClient.invalidateQueries({ queryKey: ['salon'] });
+
+						// Small delay to ensure queries are invalidated
+						await new Promise((resolve) => setTimeout(resolve, 100));
+
 						router.replace('/owner-dashboard');
 						return;
 					}
 				}
-				console.log('No existing salon found, staying on setup page');
 			} catch (error) {
 				console.error('Error checking existing salon:', error);
 				// Don't redirect on error, let user continue with setup
@@ -313,7 +320,15 @@ export default function BusinessCompleteSetupPage() {
 			// Clean up inviteCodeId from storage
 			sessionStorage.removeItem('inviteCodeId');
 
+			// Invalidate salon queries to refresh data on owner-dashboard
+			await queryClient.invalidateQueries({ queryKey: ['salons'] });
+			await queryClient.invalidateQueries({ queryKey: ['salon'] });
+
 			toast.success('Salon setup completed successfully!');
+
+			// Small delay to ensure queries are invalidated before navigation
+			await new Promise((resolve) => setTimeout(resolve, 100));
+
 			router.push('/owner-dashboard');
 		} catch (error: any) {
 			console.error('Error completing salon setup:', error);

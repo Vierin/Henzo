@@ -102,7 +102,7 @@ export default function OwnerDashboardClient() {
 	const router = useRouter();
 
 	// Получаем salonId через хук
-	const { salonId, isLoading: salonLoading, hasSalon } = useSalonId();
+	const { salonId, isLoading: salonLoading, hasSalon, salon } = useSalonId();
 
 	// Получаем данные о салоне для рабочих часов
 	const { data: salonData, isLoading: salonDataLoading } =
@@ -385,20 +385,15 @@ export default function OwnerDashboardClient() {
 		setSelectedDate(null);
 	}, []);
 
-	// Debug logging for bookings state
-	console.log('OwnerDashboard render state:', {
-		bookingsCount: bookings.length,
-		bookingsLoading,
-		salonLoading,
-		salonDataLoading,
-		salonId,
-		hasSalon,
-		error,
-		bookingsData: bookings.slice(0, 2), // Show first 2 bookings for debugging
-	});
+	// Redirect to complete-setup if no salon found
+	useEffect(() => {
+		if (!salonLoading && !hasSalon) {
+			router.push('/business/complete-setup');
+		}
+	}, [hasSalon, salonLoading, router]);
 
 	// Loading and error states
-	if (salonLoading || salonDataLoading || bookingsLoading) {
+	if (salonLoading || salonDataLoading) {
 		return (
 			<div
 				className="flex items-center justify-center py-12"
@@ -411,7 +406,36 @@ export default function OwnerDashboardClient() {
 		);
 	}
 
-	if (error) {
+	// If no salon, показываем loading пока происходит редирект
+	if (!hasSalon) {
+		return (
+			<div
+				className="flex items-center justify-center py-12"
+				role="status"
+				aria-live="polite"
+			>
+				<LoadingSpinner size="lg" />
+				<span className="sr-only">Redirecting to salon setup...</span>
+			</div>
+		);
+	}
+
+	// Показываем loading для bookings после того как салон загружен
+	if (bookingsLoading) {
+		return (
+			<div
+				className="flex items-center justify-center py-12"
+				role="status"
+				aria-live="polite"
+			>
+				<LoadingSpinner size="lg" />
+				<span className="sr-only">Loading bookings...</span>
+			</div>
+		);
+	}
+
+	// Показываем ошибку только если есть салон, но не загружаются bookings
+	if (error && hasSalon) {
 		return (
 			<div className="flex items-center justify-center py-12" role="alert">
 				<ErrorDisplay
@@ -421,11 +445,6 @@ export default function OwnerDashboardClient() {
 				/>
 			</div>
 		);
-	}
-
-	// If no salon found, don't render anything (redirect will happen in useEffect)
-	if (!hasSalon) {
-		return null;
 	}
 
 	return (

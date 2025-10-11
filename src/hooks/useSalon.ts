@@ -3,24 +3,31 @@ import { apiClient } from '@/lib/api-client';
 import { Salon } from '@/types';
 
 export const useSalon = () => {
-	return useQuery<Salon>({
+	return useQuery<Salon | null>({
 		queryKey: ['salon', 'current'],
 		queryFn: async () => {
-			const response = await apiClient.get<{
-				success: boolean;
-				data?: Salon;
-				message?: string;
-			}>('/salons/current');
-			// API возвращает { success: true, data: {...} }, извлекаем салон
-			if (response.success && response.data) {
-				return response.data;
+			try {
+				const response = await apiClient.get<{
+					success: boolean;
+					data?: Salon;
+					message?: string;
+				}>('/salons/current');
+				// API возвращает { success: true, data: {...} }, извлекаем салон
+				if (response.success && response.data) {
+					return response.data;
+				}
+				// Если салона нет, возвращаем null вместо ошибки
+				return null;
+			} catch (error) {
+				// Возвращаем null вместо выброса ошибки
+				return null;
 			}
-			throw new Error(response.message || 'No salon found');
 		},
-		staleTime: 5 * 60 * 1000, // 5 минут
+		staleTime: 0, // Всегда считать данные устаревшими
 		gcTime: 10 * 60 * 1000, // 10 минут (gcTime вместо cacheTime)
-		retry: 2,
-		retryDelay: 1000,
+		retry: 1, // Одна попытка вместо двух
+		retryDelay: 500,
+		refetchOnMount: true, // Всегда перезагружать при монтировании
 	});
 };
 
@@ -28,11 +35,11 @@ export const useSalonId = () => {
 	const { data: salon, isLoading, error } = useSalon();
 
 	return {
-		salonId: (salon as Salon)?.id || null,
-		salon: salon as Salon,
+		salonId: salon?.id || null,
+		salon: salon || null,
 		isLoading,
 		error,
-		hasSalon: !!(salon as Salon)?.id,
+		hasSalon: !!salon?.id,
 	};
 };
 

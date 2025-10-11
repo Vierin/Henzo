@@ -54,12 +54,6 @@ export const useAuthStore = create<AuthState>()(
 
 			// Set user and update role flags
 			setUser: (user) => {
-				console.log('AuthStore setUser called with:', {
-					user: user
-						? { id: user.id, email: user.email, role: user.role }
-						: null,
-				});
-
 				const isClient = user?.role === 'CLIENT';
 				const isOwner = user?.role === 'OWNER';
 				const isAdmin = user?.role === 'ADMIN';
@@ -72,13 +66,6 @@ export const useAuthStore = create<AuthState>()(
 					isAdmin,
 					isLoading: false,
 					isInitialized: true,
-				});
-
-				console.log('AuthStore updated with flags:', {
-					isAuthenticated: !!user,
-					isClient,
-					isOwner,
-					isAdmin,
 				});
 			},
 
