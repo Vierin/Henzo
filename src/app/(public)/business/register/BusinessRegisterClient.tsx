@@ -9,9 +9,13 @@ import { useAuth } from '@/lib/auth-unified';
 export default function BusinessRegisterClient() {
 	const searchParams = useSearchParams();
 	const inviteCodeFromUrl = searchParams.get('invite') || '';
+	const emailFromUrl = searchParams.get('email') || '';
+
+	// Check if coming from invite link (both invite code and email present)
+	const isInviteLink = !!(inviteCodeFromUrl && emailFromUrl);
 
 	const [formData, setFormData] = useState({
-		email: '',
+		email: emailFromUrl,
 		password: '',
 		confirmPassword: '',
 		name: '',
@@ -51,13 +55,14 @@ export default function BusinessRegisterClient() {
 				return;
 			}
 
-		setValidatingCode(true);
-		try {
-			const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
-			const response = await fetch(
-				`${API_URL}/invite-codes/validate/${formData.inviteCode}`
-			);
-			const result = await response.json();
+			setValidatingCode(true);
+			try {
+				const API_URL =
+					process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+				const response = await fetch(
+					`${API_URL}/invite-codes/validate/${formData.inviteCode}`
+				);
+				const result = await response.json();
 				setCodeValid(result.valid);
 				if (!result.valid) {
 					toast.error(result.error || 'Invalid invite code');
@@ -109,15 +114,25 @@ export default function BusinessRegisterClient() {
 				password: formData.password,
 				name: formData.name,
 				inviteCode: formData.inviteCode,
+				fromInviteLink: isInviteLink,
 			});
 
 			if (result.success) {
-				toast.success(
-					'Business registration successful! Please check your email to verify your account.'
-				);
-				router.push(
-					`/check-email?email=${encodeURIComponent(formData.email)}&type=business`
-				);
+				// Если email уже подтвержден (регистрация по инвайт-ссылке), редиректим на complete-setup
+				if (result.emailConfirmed) {
+					toast.success(
+						'Business registration successful! Complete your salon setup.'
+					);
+					router.push('/business/complete-setup');
+				} else {
+					// Обычная регистрация - требуется подтверждение email
+					toast.success(
+						'Business registration successful! Please check your email to verify your account.'
+					);
+					router.push(
+						`/check-email?email=${encodeURIComponent(formData.email)}&type=business`
+					);
+				}
 			} else {
 				toast.error(result.error || 'Failed to register business account');
 			}
@@ -228,11 +243,19 @@ export default function BusinessRegisterClient() {
 								type="email"
 								autoComplete="email"
 								required
-								className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-orange-500 focus:border-orange-500 sm:text-sm text-gray-900"
+								readOnly={isInviteLink}
+								className={`mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-orange-500 focus:border-orange-500 sm:text-sm text-gray-900 ${
+									isInviteLink ? 'bg-gray-100 cursor-not-allowed' : ''
+								}`}
 								placeholder="Enter your email"
 								value={formData.email}
 								onChange={handleInputChange}
 							/>
+							{isInviteLink && (
+								<p className="mt-1 text-xs text-gray-500">
+									✓ Email verified via invitation link
+								</p>
+							)}
 						</div>
 
 						{/* Password */}
@@ -291,13 +314,16 @@ export default function BusinessRegisterClient() {
 									name="inviteCode"
 									type="text"
 									required
+									readOnly={isInviteLink}
 									className={`block w-full px-3 py-2 pr-10 border ${
 										codeValid === true
 											? 'border-green-500 focus:ring-green-500 focus:border-green-500'
 											: codeValid === false
 												? 'border-red-500 focus:ring-red-500 focus:border-red-500'
 												: 'border-gray-300 focus:ring-orange-500 focus:border-orange-500'
-									} rounded-md shadow-sm focus:outline-none sm:text-sm text-gray-900`}
+									} rounded-md shadow-sm focus:outline-none sm:text-sm text-gray-900 ${
+										isInviteLink ? 'bg-gray-100 cursor-not-allowed' : ''
+									}`}
 									placeholder="Enter your invite code"
 									value={formData.inviteCode}
 									onChange={handleInputChange}
@@ -336,7 +362,7 @@ export default function BusinessRegisterClient() {
 								</div>
 							</div>
 							<p className="mt-1 text-xs text-gray-500">
-								{inviteCodeFromUrl
+								{isInviteLink
 									? '✓ Invite code applied from registration link'
 									: 'Required for beta testing'}
 							</p>

@@ -299,7 +299,7 @@ export default function SalonsClient() {
 												alt={`${salon.name} salon`}
 												width={400}
 												height={320}
-												className="w-48 h-48 object-cover rounded-xl flex-shrink-0"
+												className="w-48 aspect-[4/3] object-cover rounded-xl flex-shrink-0"
 												style={{ width: 'auto', height: 'auto' }}
 											/>
 

@@ -155,7 +155,8 @@ class AuthManager {
 		password: string;
 		name?: string;
 		inviteCode?: string;
-	}): Promise<{ success: boolean; error?: string }> {
+		fromInviteLink?: boolean;
+	}): Promise<{ success: boolean; error?: string; emailConfirmed?: boolean }> {
 		try {
 			this.setState({ isLoading: true });
 
@@ -173,27 +174,51 @@ class AuthManager {
 
 			if (error) throw error;
 
+			let emailConfirmed = false;
+
 			// 2. Создание пользователя в API с инвайт-кодом
 			if (authData.user) {
 				const response = await apiClient.post<{
 					user: any;
 					inviteCodeId?: string;
+					emailConfirmed?: boolean;
 				}>('/auth/register', {
 					userId: authData.user.id,
 					email: data.email,
 					inviteCode: data.inviteCode,
 					name: data.name,
 					role: 'OWNER',
+					fromInviteLink: data.fromInviteLink,
 				});
 
 				// Сохраняем inviteCodeId для использования при создании салона
 				if (response.inviteCodeId) {
 					sessionStorage.setItem('inviteCodeId', response.inviteCodeId);
 				}
+
+				emailConfirmed = response.emailConfirmed || false;
+
+				// Если email подтвержден, сразу логиним пользователя
+				if (emailConfirmed && authData.session) {
+					// Получаем полную информацию о пользователе
+					const userResponse = await apiClient.get('/auth/user', {
+						headers: {
+							Authorization: `Bearer ${authData.session.access_token}`,
+						},
+					});
+
+					this.setState({
+						user: userResponse.user,
+						isAuthenticated: true,
+						isLoading: false,
+					});
+
+					localStorage.setItem('auth_user', JSON.stringify(userResponse.user));
+				}
 			}
 
 			this.setState({ isLoading: false });
-			return { success: true };
+			return { success: true, emailConfirmed };
 		} catch (error) {
 			this.setState({ isLoading: false });
 			return {

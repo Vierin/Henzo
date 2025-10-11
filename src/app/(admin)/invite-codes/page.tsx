@@ -305,6 +305,7 @@ function GenerateCodeModal({
 	onGenerated: () => void;
 }) {
 	const [formData, setFormData] = useState({
+		ownerEmail: '',
 		source: '',
 		note: '',
 	});
@@ -313,6 +314,12 @@ function GenerateCodeModal({
 
 	const handleGenerate = async (e: React.FormEvent) => {
 		e.preventDefault();
+
+		if (!formData.ownerEmail) {
+			toast.error('Owner email is required');
+			return;
+		}
+
 		setLoading(true);
 
 		try {
@@ -320,12 +327,13 @@ function GenerateCodeModal({
 				'/invite-codes/generate',
 				{
 					maxUses: 1,
+					ownerEmail: formData.ownerEmail,
 					source: formData.source || undefined,
 					note: formData.note || undefined,
 				}
 			);
 			setGeneratedCode(result);
-			toast.success('Invite code generated!');
+			toast.success('Invite code generated and email sent to salon owner!');
 		} catch (error: any) {
 			toast.error(error.message || 'Failed to generate code');
 		} finally {
@@ -348,6 +356,25 @@ function GenerateCodeModal({
 
 					{!generatedCode ? (
 						<form onSubmit={handleGenerate} className="space-y-4">
+							<div>
+								<label className="block text-sm font-medium text-gray-700 mb-2">
+									Salon Owner Email <span className="text-red-500">*</span>
+								</label>
+								<input
+									type="email"
+									required
+									placeholder="owner@example.com"
+									value={formData.ownerEmail}
+									onChange={(e) =>
+										setFormData({ ...formData, ownerEmail: e.target.value })
+									}
+									className="block w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-[#ff5b5b] text-gray-900 focus:border-[#ff5b5b]"
+								/>
+								<p className="text-xs text-gray-500 mt-1">
+									Registration link will be sent to this email
+								</p>
+							</div>
+
 							<div>
 								<label className="block text-sm font-medium text-gray-700 mb-2">
 									Source (Optional)
@@ -381,7 +408,8 @@ function GenerateCodeModal({
 							<div className="p-4 bg-blue-50 border border-blue-200 rounded-md">
 								<p className="text-sm text-blue-800">
 									<strong>Note:</strong> Each code is single-use and has no
-									expiration date.
+									expiration date. An email with the registration link will be
+									sent to the salon owner.
 								</p>
 							</div>
 
@@ -432,6 +460,7 @@ function GenerateCodeModal({
 									onClick={() => {
 										setGeneratedCode(null);
 										setFormData({
+											ownerEmail: '',
 											source: '',
 											note: '',
 										});

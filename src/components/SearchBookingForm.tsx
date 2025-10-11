@@ -1,9 +1,10 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import AddressAutocomplete from './AddressAutocomplete';
 import ServiceAutocomplete from './ServiceAutocomplete';
+import SalonAutocomplete from './SalonAutocomplete';
 import DateTimePicker from './DateTimePicker';
 
 interface SearchBookingFormProps {
@@ -74,10 +75,6 @@ export default function SearchBookingForm({
 		router.push(`/salons${params.toString() ? `?${params.toString()}` : ''}`);
 	};
 
-	const handleClearSearch = () => {
-		setSearchQuery('');
-	};
-
 	return (
 		<div
 			className={`bg-white rounded-xl p-6 shadow-lg ${className}`}
@@ -130,50 +127,12 @@ export default function SearchBookingForm({
 							className="w-full h-full text-sm py-3"
 						/>
 					) : (
-						<>
-							<input
-								type="text"
-								placeholder="Search for salon name"
-								value={searchQuery}
-								onChange={(e) => setSearchQuery(e.target.value)}
-								className="w-full h-13 px-4 py-3 pl-12 pr-12 placeholder:text-gray-900 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#ff5b5b] focus:border-transparent text-gray-900 text-sm"
-							/>
-							<svg
-								className="absolute left-4 top-3.5 h-6 w-6 text-gray-400"
-								fill="none"
-								stroke="currentColor"
-								viewBox="0 0 24 24"
-							>
-								<path
-									strokeLinecap="round"
-									strokeLinejoin="round"
-									strokeWidth={2}
-									d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-								/>
-							</svg>
-							{/* Clear button for salon search */}
-							{searchQuery && (
-								<button
-									onClick={handleClearSearch}
-									className="absolute right-3 top-1/2 transform -translate-y-1/2 p-1 hover:bg-gray-100 rounded-full transition-colors"
-									type="button"
-								>
-									<svg
-										className="w-4 h-4 text-gray-400 hover:text-gray-600"
-										fill="none"
-										stroke="currentColor"
-										viewBox="0 0 24 24"
-									>
-										<path
-											strokeLinecap="round"
-											strokeLinejoin="round"
-											strokeWidth={2}
-											d="M6 18L18 6M6 6l12 12"
-										/>
-									</svg>
-								</button>
-							)}
-						</>
+						<SalonAutocomplete
+							value={searchQuery}
+							onChange={setSearchQuery}
+							placeholder="Search for salon name"
+							className="w-full h-full text-sm py-3"
+						/>
 					)}
 				</div>
 
