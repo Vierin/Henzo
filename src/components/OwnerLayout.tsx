@@ -14,7 +14,7 @@ export default function OwnerLayout({ children }: OwnerLayoutProps) {
 			<OwnerHeader />
 			<div className="flex">
 				<OwnerSidebar />
-				<main className="flex-1 p-8 w-full">{children}</main>
+				<main className="flex-1 p-8 w-full overflow-x-hidden">{children}</main>
 			</div>
 		</div>
 	);

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useRef } from 'react';
 import { Booking } from '@/types';
 import { safeParseDate, formatTimeSafe } from '@/utils/date';
 import { ChevronLeft, ChevronRight, X } from 'lucide-react';
@@ -25,6 +25,10 @@ export default function DaySchedule({
 	onNextDay,
 }: DayScheduleProps) {
 	const [selectedStaffIds, setSelectedStaffIds] = useState<string[]>([]);
+	const scrollContainerRef = useRef<HTMLDivElement>(null);
+	const [isDragging, setIsDragging] = useState(false);
+	const [startX, setStartX] = useState(0);
+	const [scrollLeft, setScrollLeft] = useState(0);
 	const getBookingsForDate = (date: Date) => {
 		return bookings.filter((booking) => {
 			const bookingDate = safeParseDate(booking.time);
@@ -179,6 +183,42 @@ export default function DaySchedule({
 		setSelectedStaffIds([]);
 	};
 
+	// Drag to scroll handlers
+	const handleMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
+		if (!scrollContainerRef.current) return;
+		setIsDragging(true);
+		setStartX(e.pageX - scrollContainerRef.current.offsetLeft);
+		setScrollLeft(scrollContainerRef.current.scrollLeft);
+		scrollContainerRef.current.style.cursor = 'grabbing';
+		scrollContainerRef.current.style.userSelect = 'none';
+	};
+
+	const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+		if (!isDragging || !scrollContainerRef.current) return;
+		e.preventDefault();
+		const x = e.pageX - scrollContainerRef.current.offsetLeft;
+		const walk = (x - startX) * 2; // Scroll speed multiplier
+		scrollContainerRef.current.scrollLeft = scrollLeft - walk;
+	};
+
+	const handleMouseUp = () => {
+		setIsDragging(false);
+		if (scrollContainerRef.current) {
+			scrollContainerRef.current.style.cursor = 'grab';
+			scrollContainerRef.current.style.userSelect = 'auto';
+		}
+	};
+
+	const handleMouseLeave = () => {
+		if (isDragging) {
+			setIsDragging(false);
+			if (scrollContainerRef.current) {
+				scrollContainerRef.current.style.cursor = 'grab';
+				scrollContainerRef.current.style.userSelect = 'auto';
+			}
+		}
+	};
+
 	return (
 		<div
 			className="mt-6 w-full"
@@ -279,30 +319,49 @@ export default function DaySchedule({
 					</div>
 				)}
 
-				<div className="relative">
-					{/* Header with sticky time column */}
-					<div className="flex border-b border-gray-200 bg-white">
-						{/* Sticky Time Header */}
-						<div
-							className="sticky left-0 bg-white z-30 border-r border-gray-200"
-							style={{ width: DATA_WIDTH }}
-						>
+				<div className="flex">
+					{/* Left sticky column - Time labels and header */}
+					<div
+						className="flex-shrink-0 sticky left-0 z-20 bg-white"
+						style={{ width: DATA_WIDTH }}
+					>
+						{/* Time header */}
+						<div className="border-b border-r border-gray-200 bg-white">
 							<div className="py-3 px-2 text-sm font-medium text-gray-500">
 								Time
 							</div>
 						</div>
-
-						{/* Scrollable Staff Headers */}
-						<div className="flex-1 overflow-x-auto">
+						{/* Time cells */}
+						{timeSlots.map((timeSlot) => (
 							<div
-								className="flex"
-								style={{ minWidth: `${staffMembers.length * 150}px` }}
+								key={`time-${timeSlot.time}`}
+								className="flex items-center justify-center text-sm text-gray-600 h-16 border-b border-r border-gray-200 font-medium bg-white"
 							>
+								{timeSlot.time}
+							</div>
+						))}
+					</div>
+
+					{/* Right scrollable area - Staff columns with headers */}
+					<div
+						ref={scrollContainerRef}
+						className="flex-1 overflow-x-auto cursor-grab"
+						onMouseDown={handleMouseDown}
+						onMouseMove={handleMouseMove}
+						onMouseUp={handleMouseUp}
+						onMouseLeave={handleMouseLeave}
+					>
+						<div
+							className="flex flex-col"
+							style={{ minWidth: `${staffMembers.length * 150}px` }}
+						>
+							{/* Staff headers row */}
+							<div className="flex border-b border-gray-200 bg-white">
 								{staffMembers.map((staff) => (
 									<div
 										key={staff.id}
 										className="flex-shrink-0 py-3 px-4 text-center border-r border-gray-200"
-										style={{ minWidth: '150px' }}
+										style={{ width: '150px' }}
 									>
 										<div className="text-sm font-semibold text-gray-900 truncate">
 											{staff.name}
@@ -310,37 +369,14 @@ export default function DaySchedule({
 									</div>
 								))}
 							</div>
-						</div>
-					</div>
 
-					{/* Schedule Grid */}
-					<div className="flex">
-						{/* Sticky Time Column */}
-						<div
-							className="sticky left-0 bg-white z-20"
-							style={{ width: DATA_WIDTH }}
-						>
-							{timeSlots.map((timeSlot) => (
-								<div
-									key={`time-${timeSlot.time}`}
-									className="flex items-center justify-center text-sm text-gray-600 h-16 border-b border-r border-gray-200 font-medium"
-								>
-									{timeSlot.time}
-								</div>
-							))}
-						</div>
-
-						{/* Scrollable Staff Columns */}
-						<div className="flex-1 overflow-x-auto">
-							<div
-								className="flex"
-								style={{ minWidth: `${staffMembers.length * 150}px` }}
-							>
+							{/* Staff columns grid */}
+							<div className="flex">
 								{staffMembers.map((staff) => (
 									<div
 										key={`staff-${staff.id}`}
 										className="flex-shrink-0"
-										style={{ minWidth: '150px' }}
+										style={{ width: '150px' }}
 									>
 										{timeSlots.map((timeSlot) => {
 											const startingAppointment = getAppointmentStartingAtTime(
