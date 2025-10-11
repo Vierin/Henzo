@@ -121,31 +121,13 @@ class AuthManager {
 		try {
 			this.setState({ isLoading: true });
 
-			// 1. Регистрация через Supabase
-			const { data: authData, error } = await supabase.auth.signUp({
+			// Отправляем данные на бэкенд, который создаст пользователя в Supabase и БД
+			await apiClient.post('/auth/register-client', {
 				email: data.email,
 				password: data.password,
-				options: {
-					data: {
-						name: data.name,
-						phone: data.phone,
-						role: 'CLIENT',
-					},
-				},
+				name: data.name,
+				phone: data.phone,
 			});
-
-			if (error) throw error;
-
-			// 2. Создание пользователя в API
-			if (authData.user) {
-				await apiClient.post('/auth/register-client', {
-					userId: authData.user.id,
-					email: data.email,
-					name: data.name,
-					phone: data.phone,
-					role: 'CLIENT',
-				});
-			}
 
 			this.setState({ isLoading: false });
 			return { success: true };

@@ -247,6 +247,36 @@ export default function OwnerDashboardClient() {
 		[refetchBookings]
 	);
 
+	const handleConfirmBooking = useCallback(
+		async (bookingId: string) => {
+			try {
+				await apiClient.put(`/bookings/${bookingId}`, { status: 'CONFIRMED' });
+				toast.success('Booking confirmed successfully');
+				refetchBookings();
+			} catch (err) {
+				const errorMessage =
+					err instanceof Error ? err.message : 'Failed to confirm booking';
+				toast.error(errorMessage);
+			}
+		},
+		[refetchBookings]
+	);
+
+	const handleRejectBooking = useCallback(
+		async (bookingId: string) => {
+			try {
+				await apiClient.put(`/bookings/${bookingId}`, { status: 'CANCELED' });
+				toast.success('Booking rejected successfully');
+				refetchBookings();
+			} catch (err) {
+				const errorMessage =
+					err instanceof Error ? err.message : 'Failed to reject booking';
+				toast.error(errorMessage);
+			}
+		},
+		[refetchBookings]
+	);
+
 	const handleBookingModalClose = useCallback(() => {
 		setIsBookingModalOpen(false);
 		setEditingBooking(null);
@@ -421,6 +451,8 @@ export default function OwnerDashboardClient() {
 				loading={bookingsLoading}
 				onEditBooking={handleEditBooking}
 				onCancelBooking={handleCancelBooking}
+				onConfirmBooking={handleConfirmBooking}
+				onRejectBooking={handleRejectBooking}
 			/>
 
 			{/* Booking Modal */}

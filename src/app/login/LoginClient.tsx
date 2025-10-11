@@ -236,7 +236,7 @@ export default function LoginClient() {
 								Are you a salon owner?
 							</p>
 							<a
-								href="/business/register"
+								href="/business/"
 								className="text-sm font-medium text-orange-600 hover:text-orange-700"
 							>
 								Register your business account →

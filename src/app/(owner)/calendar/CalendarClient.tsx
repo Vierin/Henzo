@@ -241,6 +241,36 @@ export default function CalendarClient() {
 		[fetchBookings]
 	);
 
+	const handleConfirmBooking = useCallback(
+		async (bookingId: string) => {
+			try {
+				await apiClient.put(`/bookings/${bookingId}`, { status: 'CONFIRMED' });
+				toast.success('Booking confirmed successfully');
+				fetchBookings();
+			} catch (err) {
+				const errorMessage =
+					err instanceof Error ? err.message : 'Failed to confirm booking';
+				toast.error(errorMessage);
+			}
+		},
+		[fetchBookings]
+	);
+
+	const handleRejectBooking = useCallback(
+		async (bookingId: string) => {
+			try {
+				await apiClient.put(`/bookings/${bookingId}`, { status: 'CANCELED' });
+				toast.success('Booking rejected successfully');
+				fetchBookings();
+			} catch (err) {
+				const errorMessage =
+					err instanceof Error ? err.message : 'Failed to reject booking';
+				toast.error(errorMessage);
+			}
+		},
+		[fetchBookings]
+	);
+
 	const getFilteredBookings = useMemo(() => {
 		const now = new Date();
 		return bookings.filter((booking) => {
@@ -527,6 +557,8 @@ export default function CalendarClient() {
 									onSearchChange={handleSearchChange}
 									onEditBooking={handleEditBooking}
 									onCancelBooking={handleCancelBooking}
+									onConfirmBooking={handleConfirmBooking}
+									onRejectBooking={handleRejectBooking}
 									onViewBookingDetails={handleViewBookingDetails}
 									onRetry={fetchBookings}
 									onPageChange={handlePageChange}

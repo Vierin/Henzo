@@ -8,6 +8,8 @@ interface UpcomingBookingsListProps {
 	loading: boolean;
 	onEditBooking: (booking: Booking) => void;
 	onCancelBooking: (bookingId: string) => void;
+	onConfirmBooking: (bookingId: string) => void;
+	onRejectBooking: (bookingId: string) => void;
 }
 
 export default function UpcomingBookingsList({
@@ -15,6 +17,8 @@ export default function UpcomingBookingsList({
 	loading,
 	onEditBooking,
 	onCancelBooking,
+	onConfirmBooking,
+	onRejectBooking,
 }: UpcomingBookingsListProps) {
 	const getStatusBadge = (status: string) => {
 		switch (status) {
@@ -114,8 +118,26 @@ export default function UpcomingBookingsList({
 								role="group"
 								aria-label="Booking actions"
 							>
-								{(booking.status === 'CONFIRMED' ||
-									booking.status === 'PENDING') && (
+								{booking.status === 'PENDING' ? (
+									<>
+										<button
+											onClick={() => onConfirmBooking(booking.id)}
+											className="px-3 py-1 text-sm font-medium text-white bg-green-600 hover:bg-green-700 rounded transition-colors focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2"
+											title="Confirm booking"
+											aria-label={`Confirm booking for ${booking.user?.name || 'client'}`}
+										>
+											Confirm
+										</button>
+										<button
+											onClick={() => onRejectBooking(booking.id)}
+											className="px-3 py-1 text-sm font-medium text-white bg-red-600 hover:bg-red-700 rounded transition-colors focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2"
+											title="Reject booking"
+											aria-label={`Reject booking for ${booking.user?.name || 'client'}`}
+										>
+											Reject
+										</button>
+									</>
+								) : booking.status === 'CONFIRMED' ? (
 									<>
 										<button
 											onClick={() => onEditBooking(booking)}
@@ -168,7 +190,7 @@ export default function UpcomingBookingsList({
 											</svg>
 										</button>
 									</>
-								)}
+								) : null}
 							</div>
 						</div>
 					))

@@ -49,6 +49,27 @@ export default function BookingModal({
 	const [existingBookings, setExistingBookings] = useState<any[]>([]);
 	const [bookingsLoaded, setBookingsLoaded] = useState(true);
 	const [bookingsLoadError, setBookingsLoadError] = useState(false);
+	const [showLoginModal, setShowLoginModal] = useState(false);
+	const [pendingBookingData, setPendingBookingData] = useState<{
+		service: Service;
+		date: string;
+		time: string;
+		staff: string;
+		notes?: string;
+	} | null>(null);
+	const [bookingSuccess, setBookingSuccess] = useState<{
+		status: 'PENDING' | 'CONFIRMED';
+		serviceName: string;
+		date: string;
+		time: string;
+	} | null>(null);
+
+	// Drag-to-scroll states for time slots
+	const timeScrollContainerRef = React.useRef<HTMLDivElement>(null);
+	const [isDraggingTime, setIsDraggingTime] = useState(false);
+	const [startXTime, setStartXTime] = useState(0);
+	const [scrollLeftTime, setScrollLeftTime] = useState(0);
+	const wasDraggedTime = React.useRef(false);
 
 	// Используем Zustand store для аутентификации
 	const { user, isClient, login, refreshUser } = useAuthStore();
@@ -669,6 +690,10 @@ export default function BookingModal({
 		if (!isOpen) {
 			setIsInitialized(false);
 			setBookingsLoadError(false);
+			setShowLoginModal(false);
+			setPendingBookingData(null);
+			setIsDraggingTime(false);
+			setBookingSuccess(null);
 		}
 	}, [isOpen]);
 
@@ -782,6 +807,94 @@ export default function BookingModal({
 		return utcDateString;
 	};
 
+	// Drag-to-scroll handlers for time slots
+	const handleMouseDownTime = (e: React.MouseEvent<HTMLDivElement>) => {
+		if (!timeScrollContainerRef.current) return;
+		wasDraggedTime.current = false;
+		setIsDraggingTime(true);
+		setStartXTime(e.pageX - timeScrollContainerRef.current.offsetLeft);
+		setScrollLeftTime(timeScrollContainerRef.current.scrollLeft);
+		timeScrollContainerRef.current.style.cursor = 'grabbing';
+		timeScrollContainerRef.current.style.userSelect = 'none';
+	};
+
+	const handleMouseMoveTime = (e: React.MouseEvent<HTMLDivElement>) => {
+		if (!isDraggingTime || !timeScrollContainerRef.current) return;
+		e.preventDefault();
+		const x = e.pageX - timeScrollContainerRef.current.offsetLeft;
+		const walk = (x - startXTime) * 2; // Scroll speed multiplier
+
+		// If moved more than 5px, consider it a drag
+		if (Math.abs(walk) > 5) {
+			wasDraggedTime.current = true;
+		}
+
+		timeScrollContainerRef.current.scrollLeft = scrollLeftTime - walk;
+	};
+
+	const handleMouseUpTime = () => {
+		setIsDraggingTime(false);
+		if (timeScrollContainerRef.current) {
+			timeScrollContainerRef.current.style.cursor = 'grab';
+			timeScrollContainerRef.current.style.userSelect = 'auto';
+		}
+
+		// Reset drag flag after a short delay to allow onClick to check it
+		setTimeout(() => {
+			wasDraggedTime.current = false;
+		}, 50);
+	};
+
+	const handleMouseLeaveTime = () => {
+		if (isDraggingTime) {
+			setIsDraggingTime(false);
+			if (timeScrollContainerRef.current) {
+				timeScrollContainerRef.current.style.cursor = 'grab';
+				timeScrollContainerRef.current.style.userSelect = 'auto';
+			}
+
+			// Reset drag flag
+			setTimeout(() => {
+				wasDraggedTime.current = false;
+			}, 50);
+		}
+	};
+
+	// Handle login success and complete booking
+	const handleLoginSuccess = async () => {
+		try {
+			setShowLoginModal(false);
+
+			// Refresh user state
+			await refreshUser();
+
+			// Complete the pending booking
+			if (pendingBookingData) {
+				// Restore booking data
+				setSelectedService(pendingBookingData.service);
+				setSelectedDate(pendingBookingData.date);
+				setSelectedTime(pendingBookingData.time);
+				setSelectedStaff(pendingBookingData.staff);
+
+				// Small delay to ensure state propagation
+				await new Promise((resolve) => setTimeout(resolve, 200));
+
+				// Verify user is loaded
+				const currentUser = useAuthStore.getState().user;
+				if (!currentUser) {
+					throw new Error('User not loaded after login');
+				}
+
+				// Create booking
+				await createBooking();
+				setPendingBookingData(null);
+			}
+		} catch (error) {
+			console.error('Failed to complete booking after login:', error);
+			toast.error('Failed to complete booking. Please try again.');
+		}
+	};
+
 	const handleBooking = async () => {
 		if (!selectedService || !selectedDate || !selectedTime) {
 			toast.error('Please fill in all fields');
@@ -792,23 +905,17 @@ export default function BookingModal({
 		if (!editingBooking) {
 			// Проверяем авторизацию клиента только для новых бронирований
 			if (!checkClientAuth()) {
-				// Сохраняем состояние бронирования
-				saveBookingState();
+				// Сохраняем данные бронирования
+				setPendingBookingData({
+					service: selectedService,
+					date: selectedDate,
+					time: selectedTime,
+					staff: selectedStaff,
+					notes: '', // можно добавить notes если будет поле
+				});
 
-				// Показываем уведомление о необходимости логина
-				const serviceName = selectedService?.name || 'service';
-				const dateStr = selectedDate
-					? new Date(selectedDate).toLocaleDateString()
-					: 'selected date';
-				const timeStr = selectedTime || 'selected time';
-				toast.success(
-					`Login to book: ${serviceName} on ${dateStr} at ${timeStr}`
-				);
-
-				// Редиректим на страницу логина
-				const returnUrl = encodeURIComponent(window.location.href);
-				router.push(`/login?returnTo=${returnUrl}`);
-				onClose();
+				// Показываем модальное окно логина
+				setShowLoginModal(true);
 				return;
 			}
 		}
@@ -825,8 +932,9 @@ export default function BookingModal({
 		setLoading(true);
 
 		try {
-			// Проверяем, что пользователь авторизован
-			if (!user) {
+			// Проверяем, что пользователь авторизован (получаем напрямую из store)
+			const currentUser = useAuthStore.getState().user;
+			if (!currentUser) {
 				throw new Error('User not authenticated');
 			}
 
@@ -880,23 +988,14 @@ export default function BookingModal({
 				throw new Error(result.error || 'Failed to create booking');
 			}
 
-			// Show success message based on booking status
-			const bookingStatus = result.booking?.status;
-			if (bookingStatus === 'PENDING') {
-				toast.success(
-					"Thank you for your reservation! Awaiting confirmation from the salon. Usually the salon confirms the booking within 2 hours. You will receive an email once it's confirmed.",
-					{
-						duration: 7000,
-						icon: '⏳',
-					}
-				);
-			} else {
-				toast.success('Appointment booked successfully!');
-			}
-			onClose();
-
-			// Refresh the page to show updated bookings
-			window.location.reload();
+			// Show success message in modal
+			const bookingStatus = result.booking?.status || 'PENDING';
+			setBookingSuccess({
+				status: bookingStatus as 'PENDING' | 'CONFIRMED',
+				serviceName: selectedService?.name || '',
+				date: selectedDate,
+				time: selectedTime,
+			});
 		} catch (error: unknown) {
 			console.error('Booking error:', error);
 			toast.error(
@@ -1030,353 +1129,622 @@ export default function BookingModal({
 						/>
 					</svg>
 				</button>
-				<div className="flex overflow-x-auto">
-					{/* Left Section - Service Details, Date, and Time Selection */}
-					<div className="flex-1 min-w-[500px] p-8 max-h-[90vh] overflow-y-auto">
-						{/* Service Details */}
-						<div className="mb-8">
-							{showServiceSelector ? (
-								<div>
-									{/* Service Selector Dropdown */}
-									<div className="relative mb-4">
-										<button
-											type="button"
-											onClick={() =>
-												setIsServiceDropdownOpen(!isServiceDropdownOpen)
-											}
-											className="w-full flex items-center justify-between p-4 border border-gray-300 rounded-lg bg-white text-left focus:outline-none focus:ring-2 focus:ring-[#ea4b4b] focus:border-transparent"
-										>
-											<div>
-												<div className="text-lg font-semibold text-gray-900">
-													{selectedService?.name || 'Select a service'}
-												</div>
-												<div className="text-sm text-gray-600">
-													{selectedService?.description ||
-														'Choose from available services'}
+
+				{/* Success Message */}
+				{bookingSuccess ? (
+					<div className="p-8 flex flex-col items-center justify-center min-h-[400px]">
+						<div className="text-center max-w-md">
+							{bookingSuccess.status === 'PENDING' ? (
+								<>
+									<div className="mb-6">
+										<div className="w-20 h-20 bg-yellow-100 rounded-full flex items-center justify-center mx-auto mb-4">
+											<svg
+												className="w-10 h-10 text-yellow-600"
+												fill="none"
+												stroke="currentColor"
+												viewBox="0 0 24 24"
+											>
+												<path
+													strokeLinecap="round"
+													strokeLinejoin="round"
+													strokeWidth={2}
+													d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+												/>
+											</svg>
+										</div>
+										<h2 className="text-2xl font-bold text-gray-900 mb-2">
+											Thank You for Your Reservation!
+										</h2>
+										<p className="text-gray-600 text-lg mb-4">
+											Awaiting confirmation from the salon
+										</p>
+									</div>
+
+									<div className="bg-yellow-50 border border-yellow-200 rounded-lg p-6 mb-6">
+										<div className="text-left space-y-3">
+											<div className="flex items-start gap-3">
+												<svg
+													className="w-5 h-5 text-yellow-600 mt-0.5 flex-shrink-0"
+													fill="currentColor"
+													viewBox="0 0 20 20"
+												>
+													<path
+														fillRule="evenodd"
+														d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z"
+														clipRule="evenodd"
+													/>
+												</svg>
+												<div className="text-sm text-gray-700">
+													<strong className="font-semibold">
+														Usually the salon confirms bookings within 2 hours.
+													</strong>
+													<p className="mt-1">
+														You will receive an email once your appointment is
+														confirmed.
+													</p>
 												</div>
 											</div>
-											<span className="text-gray-400">
-												{isServiceDropdownOpen ? '▲' : '▼'}
-											</span>
-										</button>
 
-										{isServiceDropdownOpen && (
-											<div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-auto">
-												{services.map((serviceOption) => (
-													<button
-														key={serviceOption.id}
-														type="button"
-														onClick={() => {
-															setSelectedService(serviceOption);
-															setIsServiceDropdownOpen(false);
-														}}
-														className="w-full text-left px-4 py-3 hover:bg-gray-50 border-b border-gray-100 last:border-b-0"
-													>
-														<div className="font-medium text-gray-900">
-															{serviceOption.name}
-														</div>
-														<div className="text-sm text-gray-600">
-															{serviceOption.description}
-														</div>
-														<div className="text-sm text-gray-500 mt-1">
-															{serviceOption.duration} min •{' '}
-															{formatVND(serviceOption.price)}
-														</div>
-													</button>
-												))}
+											<div className="mt-4 pt-4 border-t border-yellow-200">
+												<p className="text-sm font-medium text-gray-900 mb-2">
+													Booking Details:
+												</p>
+												<ul className="text-sm text-gray-700 space-y-1">
+													<li>
+														<strong>Service:</strong>{' '}
+														{bookingSuccess.serviceName}
+													</li>
+													<li>
+														<strong>Date:</strong>{' '}
+														{new Date(bookingSuccess.date).toLocaleDateString()}
+													</li>
+													<li>
+														<strong>Time:</strong> {bookingSuccess.time}
+													</li>
+												</ul>
+											</div>
+										</div>
+									</div>
+								</>
+							) : (
+								<>
+									<div className="mb-6">
+										<div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+											<svg
+												className="w-10 h-10 text-green-600"
+												fill="none"
+												stroke="currentColor"
+												viewBox="0 0 24 24"
+											>
+												<path
+													strokeLinecap="round"
+													strokeLinejoin="round"
+													strokeWidth={2}
+													d="M5 13l4 4L19 7"
+												/>
+											</svg>
+										</div>
+										<h2 className="text-2xl font-bold text-gray-900 mb-2">
+											Booking Confirmed!
+										</h2>
+										<p className="text-gray-600 text-lg">
+											Your appointment has been successfully booked
+										</p>
+									</div>
+
+									<div className="bg-green-50 border border-green-200 rounded-lg p-6 mb-6">
+										<p className="text-sm font-medium text-gray-900 mb-2">
+											Booking Details:
+										</p>
+										<ul className="text-sm text-gray-700 space-y-1 text-left">
+											<li>
+												<strong>Service:</strong> {bookingSuccess.serviceName}
+											</li>
+											<li>
+												<strong>Date:</strong>{' '}
+												{new Date(bookingSuccess.date).toLocaleDateString()}
+											</li>
+											<li>
+												<strong>Time:</strong> {bookingSuccess.time}
+											</li>
+										</ul>
+									</div>
+								</>
+							)}
+
+							<button
+								onClick={() => {
+									onClose();
+									window.location.reload();
+								}}
+								className="w-full bg-[#ff5b5b] text-white py-3 rounded-lg font-semibold text-lg hover:bg-[#e04a4a] transition-colors"
+							>
+								Done
+							</button>
+						</div>
+					</div>
+				) : (
+					<div className="flex overflow-x-auto">
+						{/* Left Section - Service Details, Date, and Time Selection */}
+						<div className="flex-1 min-w-[500px] p-8 max-h-[90vh] overflow-y-auto">
+							{/* Service Details */}
+							<div className="mb-8">
+								{showServiceSelector ? (
+									<div>
+										{/* Service Selector Dropdown */}
+										<div className="relative mb-4">
+											<button
+												type="button"
+												onClick={() =>
+													setIsServiceDropdownOpen(!isServiceDropdownOpen)
+												}
+												className="w-full flex items-center justify-between p-4 border border-gray-300 rounded-lg bg-white text-left focus:outline-none focus:ring-2 focus:ring-[#ea4b4b] focus:border-transparent"
+											>
+												<div>
+													<div className="text-lg font-semibold text-gray-900">
+														{selectedService?.name || 'Select a service'}
+													</div>
+													<div className="text-sm text-gray-600">
+														{selectedService?.description ||
+															'Choose from available services'}
+													</div>
+												</div>
+												<span className="text-gray-400">
+													{isServiceDropdownOpen ? '▲' : '▼'}
+												</span>
+											</button>
+
+											{isServiceDropdownOpen && (
+												<div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-auto">
+													{services.map((serviceOption) => (
+														<button
+															key={serviceOption.id}
+															type="button"
+															onClick={() => {
+																setSelectedService(serviceOption);
+																setIsServiceDropdownOpen(false);
+															}}
+															className="w-full text-left px-4 py-3 hover:bg-gray-50 border-b border-gray-100 last:border-b-0"
+														>
+															<div className="font-medium text-gray-900">
+																{serviceOption.name}
+															</div>
+															<div className="text-sm text-gray-600">
+																{serviceOption.description}
+															</div>
+															<div className="text-sm text-gray-500 mt-1">
+																{serviceOption.duration} min •{' '}
+																{formatVND(serviceOption.price)}
+															</div>
+														</button>
+													))}
+												</div>
+											)}
+										</div>
+
+										{/* Service Details */}
+										{selectedService && (
+											<div className="flex items-center gap-6">
+												<div className="flex items-center gap-2">
+													<span className="text-gray-500">🕒</span>
+													<span className="text-sm text-gray-600">
+														{selectedService.duration} min
+													</span>
+												</div>
+												<div className="flex items-center gap-2">
+													<span className="text-lg font-bold text-[#8B4513]">
+														{formatVND(selectedService.price)}
+													</span>
+												</div>
 											</div>
 										)}
 									</div>
-
-									{/* Service Details */}
-									{selectedService && (
+								) : (
+									<div>
+										<h2 className="text-2xl font-bold text-gray-900 mb-2">
+											{selectedService?.name || 'Select a service'}
+										</h2>
+										<p className="text-gray-700 mb-4">
+											{selectedService?.description ||
+												'Please select a service to book'}
+										</p>
 										<div className="flex items-center gap-6">
 											<div className="flex items-center gap-2">
 												<span className="text-gray-500">🕒</span>
 												<span className="text-sm text-gray-600">
-													{selectedService.duration} min
+													{selectedService?.duration
+														? `${selectedService.duration} min`
+														: 'Duration'}
 												</span>
 											</div>
 											<div className="flex items-center gap-2">
 												<span className="text-lg font-bold text-[#8B4513]">
-													{formatVND(selectedService.price)}
+													{selectedService?.price
+														? formatVND(selectedService.price)
+														: 'Price'}
 												</span>
 											</div>
 										</div>
-									)}
-								</div>
-							) : (
-								<div>
-									<h2 className="text-2xl font-bold text-gray-900 mb-2">
-										{selectedService?.name || 'Select a service'}
-									</h2>
-									<p className="text-gray-700 mb-4">
-										{selectedService?.description ||
-											'Please select a service to book'}
-									</p>
-									<div className="flex items-center gap-6">
-										<div className="flex items-center gap-2">
-											<span className="text-gray-500">🕒</span>
-											<span className="text-sm text-gray-600">
-												{selectedService?.duration
-													? `${selectedService.duration} min`
-													: 'Duration'}
-											</span>
-										</div>
-										<div className="flex items-center gap-2">
-											<span className="text-lg font-bold text-[#8B4513]">
-												{selectedService?.price
-													? formatVND(selectedService.price)
-													: 'Price'}
-											</span>
-										</div>
-									</div>
-								</div>
-							)}
-						</div>
-
-						{/* Select Date */}
-						<div className="mb-8">
-							<h3 className="text-lg font-bold text-gray-900 mb-4">
-								Select Date
-							</h3>
-							<div className="bg-white border border-gray-200 rounded-lg p-4">
-								{/* Calendar Header */}
-								<div className="flex items-center justify-between mb-4">
-									<h4 className="text-lg font-semibold text-gray-900">
-										{getMonthName(currentMonth)}
-									</h4>
-									<div className="flex items-center gap-2">
-										<button
-											onClick={goToPreviousMonth}
-											className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-										>
-											<svg
-												className="w-5 h-5 text-gray-700"
-												fill="none"
-												stroke="currentColor"
-												viewBox="0 0 24 24"
-											>
-												<path
-													strokeLinecap="round"
-													strokeLinejoin="round"
-													strokeWidth={2}
-													d="M15 19l-7-7 7-7"
-												/>
-											</svg>
-										</button>
-										<button
-											onClick={goToNextMonth}
-											className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-										>
-											<svg
-												className="w-5 h-5 text-gray-700"
-												fill="none"
-												stroke="currentColor"
-												viewBox="0 0 24 24"
-											>
-												<path
-													strokeLinecap="round"
-													strokeLinejoin="round"
-													strokeWidth={2}
-													d="M9 5l7 7-7 7"
-												/>
-											</svg>
-										</button>
-									</div>
-								</div>
-
-								{/* Calendar Grid */}
-								<div className="grid grid-cols-7 gap-1 mb-2">
-									{['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map(
-										(day) => (
-											<div
-												key={day}
-												className="text-center text-sm font-medium text-gray-500 py-2"
-											>
-												{day}
-											</div>
-										)
-									)}
-								</div>
-
-								<div className="grid grid-cols-7 gap-1">
-									{/* Empty cells for days before the first day of the month */}
-									{Array.from({ length: getFirstDayOfMonth(currentMonth) }).map(
-										(_, index) => (
-											<div key={`empty-${index}`} className="h-10"></div>
-										)
-									)}
-
-									{/* Days of the month */}
-									{Array.from(
-										{ length: getDaysInMonth(currentMonth) },
-										(_, index) => {
-											const day = index + 1;
-											const isSelected = isDateSelected(day);
-											const isToday = isDateToday(day);
-											const isDisabled = isDateDisabled(day);
-
-											return (
-												<button
-													key={day}
-													onClick={() => handleCalendarDateClick(day)}
-													disabled={isDisabled}
-													className={`h-10 rounded-lg text-sm font-medium transition-colors ${
-														isSelected
-															? 'bg-[#ff5b5b] text-white'
-															: isToday
-																? 'bg-white text-gray-900 border-2 border-[#ff5b5b]'
-																: isDisabled
-																	? 'text-gray-300 cursor-not-allowed'
-																	: 'text-gray-900 hover:bg-gray-100'
-													}`}
-												>
-													{day}
-												</button>
-											);
-										}
-									)}
-								</div>
-							</div>
-						</div>
-
-						{/* Select Time */}
-						<div className="mb-8">
-							<h3 className="text-lg font-bold text-gray-900 mb-4">
-								Select a Time
-							</h3>
-							{bookingsLoadError && selectedDate && (
-								<div className="mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
-									<p className="text-sm text-yellow-800">
-										⚠️ Unable to load existing bookings. All time slots are
-										shown as available.
-									</p>
-								</div>
-							)}
-							<div className="overflow-x-auto">
-								<div
-									className="flex gap-3 pb-2"
-									style={{ minWidth: 'max-content' }}
-								>
-									{timeSlots.map((timeSlot) => {
-										const time =
-											typeof timeSlot === 'string' ? timeSlot : timeSlot.time;
-										const available =
-											typeof timeSlot === 'object' ? timeSlot.available : true;
-
-										return (
-											<button
-												key={time}
-												onClick={() => available && setSelectedTime(time)}
-												disabled={!available}
-												className={`flex-shrink-0 px-4 py-3 rounded-lg text-sm font-medium transition-colors ${
-													!available
-														? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-														: selectedTime === time
-															? 'bg-[#ff5b5b] text-white'
-															: 'bg-white text-gray-900 border border-gray-200 hover:bg-gray-50'
-												}`}
-											>
-												{time}
-											</button>
-										);
-									})}
-								</div>
-							</div>
-						</div>
-					</div>
-
-					{/* Right Section - Staff Selection and Booking Button */}
-					<div className="w-80 flex-shrink-0 bg-gray-50 p-8 rounded-r-2xl max-h-[90vh] overflow-y-auto">
-						{/* Select Staff Member */}
-						<div className="mb-8">
-							<h3 className="text-lg font-bold text-gray-900 mb-4">
-								Select a Staff Member
-							</h3>
-							<div className="relative staff-dropdown">
-								<button
-									onClick={() => setIsStaffDropdownOpen(!isStaffDropdownOpen)}
-									className="w-full p-4 rounded-lg text-left bg-white border border-gray-200 hover:bg-gray-50 transition-colors flex items-center justify-between"
-								>
-									<div className="flex items-center gap-3">
-										<div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center">
-											<span className="text-lg">
-												{selectedStaff === 'Any Staff' ? '👥' : '👤'}
-											</span>
-										</div>
-										<span className="font-medium text-gray-900">
-											{selectedStaff}
-										</span>
-									</div>
-									<svg
-										className={`w-5 h-5 text-gray-400 transition-transform ${
-											isStaffDropdownOpen ? 'rotate-180' : ''
-										}`}
-										fill="none"
-										stroke="currentColor"
-										viewBox="0 0 24 24"
-									>
-										<path
-											strokeLinecap="round"
-											strokeLinejoin="round"
-											strokeWidth={2}
-											d="M19 9l-7 7-7-7"
-										/>
-									</svg>
-								</button>
-
-								{isStaffDropdownOpen && (
-									<div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-10">
-										{allStaffMembers.map((staff) => (
-											<button
-												key={staff.id}
-												onClick={() => {
-													setSelectedStaff(staff.name);
-													setIsStaffDropdownOpen(false);
-												}}
-												className="w-full p-4 text-left hover:bg-gray-50 transition-colors flex items-center gap-3 first:rounded-t-lg last:rounded-b-lg"
-											>
-												<div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center">
-													<span className="text-lg">
-														{staff.id === 'any' ? '👥' : '👤'}
-													</span>
-												</div>
-												<span className="font-medium text-gray-900">
-													{staff.name}
-												</span>
-											</button>
-										))}
 									</div>
 								)}
 							</div>
+
+							{/* Select Date */}
+							<div className="mb-8">
+								<h3 className="text-lg font-bold text-gray-900 mb-4">
+									Select Date
+								</h3>
+								<div className="bg-white border border-gray-200 rounded-lg p-4">
+									{/* Calendar Header */}
+									<div className="flex items-center justify-between mb-4">
+										<h4 className="text-lg font-semibold text-gray-900">
+											{getMonthName(currentMonth)}
+										</h4>
+										<div className="flex items-center gap-2">
+											<button
+												onClick={goToPreviousMonth}
+												className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+											>
+												<svg
+													className="w-5 h-5 text-gray-700"
+													fill="none"
+													stroke="currentColor"
+													viewBox="0 0 24 24"
+												>
+													<path
+														strokeLinecap="round"
+														strokeLinejoin="round"
+														strokeWidth={2}
+														d="M15 19l-7-7 7-7"
+													/>
+												</svg>
+											</button>
+											<button
+												onClick={goToNextMonth}
+												className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+											>
+												<svg
+													className="w-5 h-5 text-gray-700"
+													fill="none"
+													stroke="currentColor"
+													viewBox="0 0 24 24"
+												>
+													<path
+														strokeLinecap="round"
+														strokeLinejoin="round"
+														strokeWidth={2}
+														d="M9 5l7 7-7 7"
+													/>
+												</svg>
+											</button>
+										</div>
+									</div>
+
+									{/* Calendar Grid */}
+									<div className="grid grid-cols-7 gap-1 mb-2">
+										{['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map(
+											(day) => (
+												<div
+													key={day}
+													className="text-center text-sm font-medium text-gray-500 py-2"
+												>
+													{day}
+												</div>
+											)
+										)}
+									</div>
+
+									<div className="grid grid-cols-7 gap-1">
+										{/* Empty cells for days before the first day of the month */}
+										{Array.from({
+											length: getFirstDayOfMonth(currentMonth),
+										}).map((_, index) => (
+											<div key={`empty-${index}`} className="h-10"></div>
+										))}
+
+										{/* Days of the month */}
+										{Array.from(
+											{ length: getDaysInMonth(currentMonth) },
+											(_, index) => {
+												const day = index + 1;
+												const isSelected = isDateSelected(day);
+												const isToday = isDateToday(day);
+												const isDisabled = isDateDisabled(day);
+
+												return (
+													<button
+														key={day}
+														onClick={() => handleCalendarDateClick(day)}
+														disabled={isDisabled}
+														className={`h-10 rounded-lg text-sm font-medium transition-colors ${
+															isSelected
+																? 'bg-[#ff5b5b] text-white'
+																: isToday
+																	? 'bg-white text-gray-900 border-2 border-[#ff5b5b]'
+																	: isDisabled
+																		? 'text-gray-300 cursor-not-allowed'
+																		: 'text-gray-900 hover:bg-gray-100'
+														}`}
+													>
+														{day}
+													</button>
+												);
+											}
+										)}
+									</div>
+								</div>
+							</div>
+
+							{/* Select Time */}
+							<div className="mb-8">
+								<h3 className="text-lg font-bold text-gray-900 mb-4">
+									Select a Time
+								</h3>
+								{bookingsLoadError && selectedDate && (
+									<div className="mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+										<p className="text-sm text-yellow-800">
+											⚠️ Unable to load existing bookings. All time slots are
+											shown as available.
+										</p>
+									</div>
+								)}
+								<div
+									ref={timeScrollContainerRef}
+									className="overflow-x-auto cursor-grab"
+									onMouseDown={handleMouseDownTime}
+									onMouseMove={handleMouseMoveTime}
+									onMouseUp={handleMouseUpTime}
+									onMouseLeave={handleMouseLeaveTime}
+								>
+									<div
+										className="flex gap-3 pb-2"
+										style={{ minWidth: 'max-content' }}
+									>
+										{timeSlots.map((timeSlot) => {
+											const time =
+												typeof timeSlot === 'string' ? timeSlot : timeSlot.time;
+											const available =
+												typeof timeSlot === 'object'
+													? timeSlot.available
+													: true;
+
+											return (
+												<button
+													key={time}
+													onClick={() => {
+														// Only select time if it wasn't a drag
+														if (available && !wasDraggedTime.current) {
+															setSelectedTime(time);
+														}
+													}}
+													disabled={!available}
+													className={`flex-shrink-0 px-4 py-3 rounded-lg text-sm font-medium transition-colors ${
+														!available
+															? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+															: selectedTime === time
+																? 'bg-[#ff5b5b] text-white'
+																: 'bg-white text-gray-900 border border-gray-200 hover:bg-gray-50'
+													}`}
+												>
+													{time}
+												</button>
+											);
+										})}
+									</div>
+								</div>
+							</div>
 						</div>
 
-						{/* Book Appointment Button */}
-						<button
-							onClick={handleBooking}
-							disabled={loading}
-							className="w-full bg-[#ff5b5b] text-white py-4 rounded-lg font-semibold text-lg hover:bg-[#e04a4a] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-						>
-							{loading
-								? editingBooking
-									? 'Updating...'
-									: 'Booking...'
-								: editingBooking
-									? 'Update Appointment'
-									: 'Book Appointment'}
-						</button>
+						{/* Right Section - Staff Selection and Booking Button */}
+						<div className="w-80 flex-shrink-0 bg-gray-50 p-8 rounded-r-2xl max-h-[90vh] overflow-y-auto">
+							{/* Select Staff Member */}
+							<div className="mb-8">
+								<h3 className="text-lg font-bold text-gray-900 mb-4">
+									Select a Staff Member
+								</h3>
+								<div className="relative staff-dropdown">
+									<button
+										onClick={() => setIsStaffDropdownOpen(!isStaffDropdownOpen)}
+										className="w-full p-4 rounded-lg text-left bg-white border border-gray-200 hover:bg-gray-50 transition-colors flex items-center justify-between"
+									>
+										<div className="flex items-center gap-3">
+											<div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center">
+												<span className="text-lg">
+													{selectedStaff === 'Any Staff' ? '👥' : '👤'}
+												</span>
+											</div>
+											<span className="font-medium text-gray-900">
+												{selectedStaff}
+											</span>
+										</div>
+										<svg
+											className={`w-5 h-5 text-gray-400 transition-transform ${
+												isStaffDropdownOpen ? 'rotate-180' : ''
+											}`}
+											fill="none"
+											stroke="currentColor"
+											viewBox="0 0 24 24"
+										>
+											<path
+												strokeLinecap="round"
+												strokeLinejoin="round"
+												strokeWidth={2}
+												d="M19 9l-7 7-7-7"
+											/>
+										</svg>
+									</button>
 
-						{/* Close Button */}
-						<button
-							onClick={onClose}
-							className="w-full mt-4 text-gray-500 hover:text-gray-700 font-medium"
-						>
-							Cancel
-						</button>
+									{isStaffDropdownOpen && (
+										<div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-10">
+											{allStaffMembers.map((staff) => (
+												<button
+													key={staff.id}
+													onClick={() => {
+														setSelectedStaff(staff.name);
+														setIsStaffDropdownOpen(false);
+													}}
+													className="w-full p-4 text-left hover:bg-gray-50 transition-colors flex items-center gap-3 first:rounded-t-lg last:rounded-b-lg"
+												>
+													<div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center">
+														<span className="text-lg">
+															{staff.id === 'any' ? '👥' : '👤'}
+														</span>
+													</div>
+													<span className="font-medium text-gray-900">
+														{staff.name}
+													</span>
+												</button>
+											))}
+										</div>
+									)}
+								</div>
+							</div>
+
+							{/* Book Appointment Button */}
+							<button
+								onClick={handleBooking}
+								disabled={loading}
+								className="w-full bg-[#ff5b5b] text-white py-4 rounded-lg font-semibold text-lg hover:bg-[#e04a4a] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+							>
+								{loading
+									? editingBooking
+										? 'Updating...'
+										: 'Booking...'
+									: editingBooking
+										? 'Update Appointment'
+										: 'Book Appointment'}
+							</button>
+
+							{/* Close Button */}
+							<button
+								onClick={onClose}
+								className="w-full mt-4 text-gray-500 hover:text-gray-700 font-medium"
+							>
+								Cancel
+							</button>
+						</div>
+					</div>
+				)}
+			</div>
+
+			{/* Login Modal */}
+			{showLoginModal && (
+				<div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[1000] p-4">
+					<div
+						className="bg-white rounded-xl shadow-2xl w-full max-w-md p-6"
+						onClick={(e) => e.stopPropagation()}
+					>
+						<h3 className="text-2xl font-bold text-gray-900 mb-4">
+							Login to Complete Booking
+						</h3>
+						<p className="text-gray-600 mb-6">
+							Please log in to complete your reservation for{' '}
+							<strong>{pendingBookingData?.service?.name}</strong>
+						</p>
+
+						<LoginForm
+							onSuccess={handleLoginSuccess}
+							onCancel={() => setShowLoginModal(false)}
+						/>
 					</div>
 				</div>
-			</div>
+			)}
 		</div>
+	);
+}
+
+// Simple Login Form Component
+function LoginForm({
+	onSuccess,
+	onCancel,
+}: {
+	onSuccess: () => void;
+	onCancel: () => void;
+}) {
+	const [email, setEmail] = useState('');
+	const [password, setPassword] = useState('');
+	const [loading, setLoading] = useState(false);
+	const { login } = useAuthStore();
+
+	const handleSubmit = async (e: React.FormEvent) => {
+		e.preventDefault();
+
+		if (!email || !password) {
+			toast.error('Please fill in all fields');
+			return;
+		}
+
+		setLoading(true);
+
+		try {
+			const result = await login(email, password);
+
+			if (result.success) {
+				toast.success('Login successful!');
+				onSuccess();
+			} else {
+				toast.error(result.error || 'Login failed');
+			}
+		} catch (error) {
+			toast.error('Login failed. Please try again.');
+		} finally {
+			setLoading(false);
+		}
+	};
+
+	return (
+		<form onSubmit={handleSubmit} className="space-y-4">
+			<div>
+				<label className="block text-sm font-medium text-gray-700 mb-1">
+					Email
+				</label>
+				<input
+					type="email"
+					value={email}
+					onChange={(e) => setEmail(e.target.value)}
+					className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#ff5b5b] focus:border-transparent"
+					placeholder="your@email.com"
+					required
+				/>
+			</div>
+
+			<div>
+				<label className="block text-sm font-medium text-gray-700 mb-1">
+					Password
+				</label>
+				<input
+					type="password"
+					value={password}
+					onChange={(e) => setPassword(e.target.value)}
+					className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#ff5b5b] focus:border-transparent"
+					placeholder="••••••••"
+					required
+				/>
+			</div>
+
+			<div className="flex gap-3 mt-6">
+				<button
+					type="button"
+					onClick={onCancel}
+					className="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors"
+				>
+					Cancel
+				</button>
+				<button
+					type="submit"
+					disabled={loading}
+					className="flex-1 px-4 py-2 bg-[#ff5b5b] text-white rounded-lg hover:bg-[#e04a4a] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+				>
+					{loading ? 'Logging in...' : 'Login'}
+				</button>
+			</div>
+
+			<p className="text-sm text-center text-gray-600 mt-4">
+				Don't have an account?{' '}
+				<a href="/register" className="text-[#ff5b5b] hover:underline">
+					Sign up
+				</a>
+			</p>
+		</form>
 	);
 }
