@@ -19,9 +19,16 @@ import {
 	MapPin,
 	Phone,
 	Star,
+	Heart,
 } from 'lucide-react';
 import { calculateAverageRating, getReviewCount } from '@/utils/salonUtils';
 import { formatVND } from '@/utils/currency';
+import {
+	useAddFavorite,
+	useRemoveFavorite,
+	useIsFavorite,
+} from '@/hooks/useFavorites';
+import { useAuthStore } from '@/stores/authStore';
 
 interface SalonDetailClientProps {
 	salon: Salon;
@@ -36,6 +43,11 @@ export default function SalonDetailClient({ salon }: SalonDetailClientProps) {
 		reviewsCount: salon.reviews?.length || 0,
 	});
 	const router = useRouter();
+	const { user } = useAuthStore();
+	const isFavorite = useIsFavorite(salon.id);
+	const addFavoriteMutation = useAddFavorite();
+	const removeFavoriteMutation = useRemoveFavorite();
+
 	const [activeTab, setActiveTab] = useState<'Services' | 'Reviews'>(
 		'Services'
 	);
@@ -51,6 +63,30 @@ export default function SalonDetailClient({ salon }: SalonDetailClientProps) {
 		setIsBookingModalOpen(false);
 		setSelectedService(null);
 	}, []);
+
+	const handleFavoriteClick = useCallback(() => {
+		// Check if user is logged in
+		if (!user) {
+			router.push(
+				`/login?returnTo=${encodeURIComponent(window.location.href)}`
+			);
+			return;
+		}
+
+		// Toggle favorite
+		if (isFavorite) {
+			removeFavoriteMutation.mutate(salon.id);
+		} else {
+			addFavoriteMutation.mutate(salon.id);
+		}
+	}, [
+		user,
+		isFavorite,
+		salon.id,
+		router,
+		addFavoriteMutation,
+		removeFavoriteMutation,
+	]);
 
 	const handleGetDirections = useCallback(() => {
 		if (salon.address) {
@@ -180,10 +216,21 @@ export default function SalonDetailClient({ salon }: SalonDetailClientProps) {
 		<main className="py-8 px-6" role="main">
 			<div className="mx-auto max-w-6xl">
 				{/* Salon Title */}
-				<header>
-					<h1 className="text-4xl font-bold text-gray-900 mb-8">
-						{salon.name}
-					</h1>
+				<header className="flex items-start justify-between mb-8">
+					<h1 className="text-4xl font-bold text-gray-900">{salon.name}</h1>
+					<button
+						onClick={handleFavoriteClick}
+						className={`p-3 rounded-full transition-all hover:bg-gray-100 ${
+							isFavorite ? 'text-[#ff5b5b]' : 'text-gray-400'
+						}`}
+						aria-label={
+							isFavorite ? 'Remove from favorites' : 'Add to favorites'
+						}
+					>
+						<Heart
+							className={`w-6 h-6 ${isFavorite ? 'fill-[#ff5b5b]' : ''}`}
+						/>
+					</button>
 				</header>
 
 				<div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
