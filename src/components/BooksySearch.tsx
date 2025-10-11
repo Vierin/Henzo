@@ -145,6 +145,7 @@ export default function BooksySearch({ className = '' }: BooksySearchProps) {
 						onChange={handleDateSelect}
 						placeholder="Select date"
 						className="w-full"
+						selectedTimeInterval={searchData.timeInterval}
 					/>
 
 					{/* Time Intervals Modal */}

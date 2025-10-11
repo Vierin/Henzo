@@ -9,6 +9,7 @@ interface DatePickerProps {
 	placeholder?: string;
 	className?: string;
 	disabled?: boolean;
+	selectedTimeInterval?: string;
 }
 
 export default function DatePicker({
@@ -17,6 +18,7 @@ export default function DatePicker({
 	placeholder = 'Select date',
 	className = '',
 	disabled = false,
+	selectedTimeInterval,
 }: DatePickerProps) {
 	const [showCalendar, setShowCalendar] = useState(false);
 	const calendarRef = useRef<HTMLDivElement>(null);
@@ -43,13 +45,30 @@ export default function DatePicker({
 		setShowCalendar(false);
 	};
 
+	const getTimeRangeLabel = (interval: string) => {
+		const timeRanges: Record<string, string> = {
+			morning: '6:00 - 12:00',
+			afternoon: '12:00 - 18:00',
+			evening: '18:00 - 24:00',
+		};
+		return timeRanges[interval] || '';
+	};
+
 	const formatDate = (date: Date | null) => {
 		if (!date) return placeholder;
-		return date.toLocaleDateString('en-US', {
+
+		const formattedDate = date.toLocaleDateString('en-US', {
 			day: 'numeric',
 			month: 'long',
 			year: 'numeric',
 		});
+
+		if (selectedTimeInterval && selectedTimeInterval !== 'any') {
+			const timeRange = getTimeRangeLabel(selectedTimeInterval);
+			return `${formattedDate}, ${timeRange}`;
+		}
+
+		return formattedDate;
 	};
 
 	const generateCalendarDays = () => {

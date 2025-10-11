@@ -82,16 +82,16 @@ export default function VisitHistoryCard({
 
 	return (
 		<>
-			<div className="bg-white rounded-xl p-6 shadow-sm hover:shadow-md transition-shadow">
+			<div className="relative bg-white rounded-xl p-6 shadow-sm hover:shadow-md transition-shadow">
 				<div className="flex items-start gap-4">
 					{/* Service Image */}
-					<div className="w-20 h-20 rounded-lg flex-shrink-0">
+					<div className="aspect-square h-30 rounded-lg flex-shrink-0">
 						<SalonImage
 							src={visit.image}
 							alt={visit.salonName}
-							width={80}
-							height={80}
-							className="w-full h-full object-cover rounded-lg"
+							width={120}
+							height={120}
+							className="aspect-square h-full object-cover rounded-lg"
 							style={{ width: 'auto', height: 'auto' }}
 							placeholder="💇‍♀️"
 						/>
@@ -118,25 +118,26 @@ export default function VisitHistoryCard({
 							</p>
 						)}
 
-						<div className="flex items-center gap-4 mb-3">
+						<div className="flex items-center gap-4">
 							<div>
 								<p className="text-gray-500 text-xs">{formattedDate}</p>
 								<p className="text-gray-700 text-sm font-medium">
 									{formattedTime}
 								</p>
 							</div>
-							{statusBadge && (
-								<span
-									className={`text-xs font-medium px-2.5 py-0.5 rounded-full ${statusBadge.className}`}
-								>
-									{statusBadge.text}
-								</span>
-							)}
 						</div>
+
+						{statusBadge && (
+							<span
+								className={`absolute top-6 right-6 text-sm font-medium px-2.5 py-0.5 rounded-full ${statusBadge.className}`}
+							>
+								{statusBadge.text}
+							</span>
+						)}
 					</div>
 
 					{/* Action Buttons */}
-					<div className="flex gap-2 flex-shrink-0">
+					<div className="flex gap-2 flex-shrink-0 mt-auto">
 						{isUpcoming && !isPast ? (
 							<button
 								onClick={handleCancel}
