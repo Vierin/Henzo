@@ -71,7 +71,7 @@ export default function OwnerHeader() {
 
 	return (
 		<header className="sticky top-0 bg-white/80 backdrop-blur border-b border-[#f1d9d7] z-[500]">
-			<div className="h-[5rem] mx-auto max-w-7xl px-6 py-4 flex items-center justify-between">
+			<div className="h-[5rem] px-6 py-4 flex items-center justify-between">
 				<Link
 					href="/"
 					className="flex h-full items-center gap-3 hover:opacity-80 transition-opacity"
@@ -86,40 +86,7 @@ export default function OwnerHeader() {
 					/>
 				</Link>
 
-				<nav className="hidden md:flex items-center gap-8 text-[15px]">
-					<Link
-						href="/owner-dashboard"
-						className="text-gray-800 hover:text-black font-medium"
-					>
-						Dashboard
-					</Link>
-					<Link
-						href="/services"
-						className="text-gray-800 hover:text-black font-medium"
-					>
-						Services
-					</Link>
-					<Link
-						href="/staff"
-						className="text-gray-800 hover:text-black font-medium"
-					>
-						Staff
-					</Link>
-					<Link
-						href="/marketing"
-						className="text-gray-800 hover:text-black font-medium"
-					>
-						Marketing
-					</Link>
-					<Link
-						href="/salon-info"
-						className="text-gray-800 hover:text-black font-medium"
-					>
-						Settings
-					</Link>
-				</nav>
-
-				<div className="flex items-center gap-4">
+				<div className="flex items-center gap-4 ml-auto">
 					{/* Language Dropdown */}
 					<div className="relative" ref={languageDropdownRef}>
 						<button

@@ -176,7 +176,7 @@ export default function ReBookModal({
 				</h2>
 
 				<p className="text-gray-600 mb-4">
-					Service: <strong>{service.name}</strong> (${service.price},{' '}
+					Service: <strong>{service.name}</strong> ({service.price.toLocaleString()}₫,{' '}
 					{service.duration} min)
 				</p>
 

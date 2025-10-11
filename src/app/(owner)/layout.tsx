@@ -1,7 +1,7 @@
 'use client';
 
 import ProtectedRoute from '@/components/ProtectedRoute';
-import OwnerHeader from '@/components/OwnerHeader';
+import OwnerLayout from '@/components/OwnerLayout';
 
 export default function OwnerGroupLayout({
 	children,
@@ -10,10 +10,7 @@ export default function OwnerGroupLayout({
 }) {
 	return (
 		<ProtectedRoute allowedRoles={['OWNER']}>
-			<div className="min-h-screen bg-[#fff7f6]">
-				<OwnerHeader />
-				<main className="mx-auto max-w-7xl px-6 py-8">{children}</main>
-			</div>
+			<OwnerLayout>{children}</OwnerLayout>
 		</ProtectedRoute>
 	);
 }

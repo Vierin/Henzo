@@ -141,7 +141,7 @@ export default function BookingDetailsModal({
 								<span>Duration: {booking.service.duration} min</span>
 							)}
 							{booking.service?.price && (
-								<span>Price: ${booking.service.price}</span>
+								<span>Price: {booking.service.price.toLocaleString()}₫</span>
 							)}
 						</div>
 					</div>
