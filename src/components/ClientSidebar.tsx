@@ -1,16 +1,20 @@
 'use client';
 
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { useAuthStore } from '@/stores/authStore';
 import { Heart } from 'lucide-react';
 
 export default function ClientSidebar() {
 	const pathname = usePathname();
+	const router = useRouter();
 	const { logout } = useAuthStore();
 
 	const handleLogout = async () => {
 		await logout();
+		// Small delay to ensure cookies are cleared
+		await new Promise((resolve) => setTimeout(resolve, 100));
+		router.replace('/');
 	};
 
 	return (

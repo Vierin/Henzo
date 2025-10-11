@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useAuth } from '@/lib/auth-unified';
 import Image from 'next/image';
@@ -18,6 +18,7 @@ export default function PublicHeader() {
 	const dropdownRef = useRef<HTMLDivElement>(null);
 	const profileDropdownRef = useRef<HTMLDivElement>(null);
 	const pathname = usePathname();
+	const router = useRouter();
 
 	// Используем новую систему аутентификации
 	const { user, isLoading, isClient, isOwner, isAdmin, logout } = useAuth();
@@ -84,6 +85,9 @@ export default function PublicHeader() {
 	const handleLogout = async () => {
 		await logout();
 		setShowProfileDropdown(false);
+		// Small delay to ensure cookies are cleared
+		await new Promise((resolve) => setTimeout(resolve, 100));
+		router.replace('/');
 	};
 
 	return (

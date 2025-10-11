@@ -24,8 +24,7 @@ export default function ProtectedRoute({
 		}
 
 		if (!user) {
-			// Пользователь не аутентифицирован
-			router.push(redirectTo);
+			// Пользователь не аутентифицирован - middleware сделает редирект
 			return;
 		}
 
@@ -43,12 +42,11 @@ export default function ProtectedRoute({
 					router.push('/admin-panel');
 					break;
 				default:
-					router.push('/login');
 					break;
 			}
 			return;
 		}
-	}, [user, isInitialized, isLoading, allowedRoles, redirectTo, router]);
+	}, [user, isInitialized, isLoading, allowedRoles, router]);
 
 	// Показываем загрузку пока проверяем аутентификацию
 	if (!isInitialized || isLoading) {

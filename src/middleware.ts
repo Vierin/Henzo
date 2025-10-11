@@ -45,10 +45,8 @@ export async function middleware(req: NextRequest) {
 		} = await supabase.auth.getSession();
 
 		if (!session) {
-			// Перенаправляем на страницу входа
-			const redirectUrl = new URL('/login', req.url);
-			redirectUrl.searchParams.set('redirect', pathname);
-			return NextResponse.redirect(redirectUrl);
+			// Перенаправляем на главную страницу
+			return NextResponse.redirect(new URL('/', req.url));
 		}
 
 		// Проверяем роль пользователя для специфичных маршрутов
@@ -72,8 +70,8 @@ export async function middleware(req: NextRequest) {
 		return res;
 	} catch (error) {
 		console.error('Middleware auth error:', error);
-		// В случае ошибки перенаправляем на страницу входа
-		return NextResponse.redirect(new URL('/login', req.url));
+		// В случае ошибки перенаправляем на главную страницу
+		return NextResponse.redirect(new URL('/', req.url));
 	}
 }
 
@@ -88,4 +86,3 @@ export const config = {
 		'/((?!_next/static|_next/image|favicon.ico).*)',
 	],
 };
-

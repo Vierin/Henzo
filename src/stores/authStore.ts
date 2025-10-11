@@ -196,20 +196,15 @@ export const useAuthStore = create<AuthState>()(
 			// Logout
 			logout: async () => {
 				try {
+					// First sign out from Supabase (this clears cookies)
 					await supabase.auth.signOut();
+
+					// Then clear user from store
 					get().clearUser();
-					// Redirect to home page after logout
-					if (typeof window !== 'undefined') {
-						window.location.href = '/';
-					}
 				} catch (error) {
 					console.error('Logout error:', error);
 					// Clear user even if logout fails
 					get().clearUser();
-					// Still redirect even if logout fails
-					if (typeof window !== 'undefined') {
-						window.location.href = '/';
-					}
 				}
 			},
 

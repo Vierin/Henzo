@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { useState, useRef, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/auth-unified';
 import { useSalon } from '@/hooks/useSalon';
 import { supabase } from '@/lib/supabase';
@@ -9,6 +10,7 @@ import Image from 'next/image';
 import { User, LogOut, ChevronDown } from 'lucide-react';
 
 export default function OwnerHeader() {
+	const router = useRouter();
 	const { user, logout } = useAuth();
 	const { data: salon } = useSalon();
 	const [showProfileDropdown, setShowProfileDropdown] = useState(false);
@@ -62,6 +64,9 @@ export default function OwnerHeader() {
 
 	const handleLogout = async () => {
 		await logout();
+		// Small delay to ensure cookies are cleared
+		await new Promise((resolve) => setTimeout(resolve, 100));
+		router.replace('/');
 	};
 
 	return (
