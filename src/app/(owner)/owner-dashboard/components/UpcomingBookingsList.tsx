@@ -2,135 +2,178 @@
 
 import { Booking } from '@/types';
 import { formatDateShort, formatTimeSafe } from '@/utils/date';
-import { Calendar, Clock, User } from 'lucide-react';
-import Link from 'next/link';
 
 interface UpcomingBookingsListProps {
 	bookings: Booking[];
 	loading: boolean;
+	onEditBooking: (booking: Booking) => void;
+	onCancelBooking: (bookingId: string) => void;
 }
 
 export default function UpcomingBookingsList({
 	bookings,
 	loading,
+	onEditBooking,
+	onCancelBooking,
 }: UpcomingBookingsListProps) {
-	const getStatusColor = (status: string) => {
+	const getStatusBadge = (status: string) => {
 		switch (status) {
 			case 'PENDING':
-				return 'bg-yellow-100 text-yellow-800 border-yellow-200';
+				return (
+					<span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+						Pending
+					</span>
+				);
 			case 'CONFIRMED':
-				return 'bg-green-100 text-green-800 border-green-200';
+				return (
+					<span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+						Confirmed
+					</span>
+				);
 			case 'COMPLETED':
-				return 'bg-blue-100 text-blue-800 border-blue-200';
+				return (
+					<span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+						Completed
+					</span>
+				);
 			case 'CANCELED':
-				return 'bg-red-100 text-red-800 border-red-200';
+				return (
+					<span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800">
+						Cancelled
+					</span>
+				);
 			default:
-				return 'bg-gray-100 text-gray-800 border-gray-200';
+				return (
+					<span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+						{status}
+					</span>
+				);
 		}
 	};
-
-	if (loading) {
-		return (
-			<div className="bg-white rounded-xl border border-[#f1d9d7] p-6">
-				<div className="flex items-center justify-center py-12">
-					<div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#ea4b4b]"></div>
-				</div>
-			</div>
-		);
-	}
-
-	if (bookings.length === 0) {
-		return (
-			<div className="bg-white rounded-xl border border-[#f1d9d7] p-6">
-				<div className="text-center py-12">
-					<Calendar className="w-12 h-12 text-gray-400 mx-auto mb-3" />
-					<p className="text-gray-600">No upcoming bookings</p>
-				</div>
-			</div>
-		);
-	}
 
 	return (
 		<div className="bg-white rounded-xl border border-[#f1d9d7] overflow-hidden">
 			<div className="p-6 border-b border-[#f1d9d7]">
-				<div className="flex items-center justify-between">
-					<h2 className="text-xl font-semibold text-gray-900">
-						Upcoming Bookings
-					</h2>
-					<Link
-						href="/calendar"
-						className="text-sm text-[#ff5b5b] hover:text-[#e04a4a] font-medium"
-					>
-						View Calendar →
-					</Link>
-				</div>
+				<h2 className="text-xl font-semibold text-gray-900">
+					Upcoming Bookings
+				</h2>
 			</div>
 
-			<div className="divide-y divide-[#f1d9d7]">
-				{bookings.slice(0, 7).map((booking) => (
+			{/* Bookings Table */}
+			<div
+				className="grid grid-cols-7 px-6 py-3 text-[13px] text-gray-700 bg-[#fff2f1] font-semibold"
+				role="rowgroup"
+			>
+				<div role="columnheader">Client</div>
+				<div role="columnheader">Service</div>
+				<div role="columnheader">Staff</div>
+				<div role="columnheader">Date</div>
+				<div role="columnheader">Time</div>
+				<div role="columnheader">Status</div>
+				<div role="columnheader">Actions</div>
+			</div>
+
+			<div className="divide-y divide-[#f1d9d7]" role="list">
+				{loading ? (
 					<div
-						key={booking.id}
-						className="p-6 hover:bg-[#fffbfa] transition-colors"
+						className="px-6 py-8 text-center"
+						role="status"
+						aria-live="polite"
 					>
-						<div className="flex items-start justify-between">
-							<div className="flex-1">
-								<div className="flex items-center gap-3 mb-2">
-									<h3 className="font-semibold text-gray-900">
-										{booking.user?.name ||
-											`Client ${booking.userId.slice(0, 8)}`}
-									</h3>
-									<span
-										className={`px-2 py-0.5 text-xs font-medium rounded-full border ${getStatusColor(
-											booking.status
-										)}`}
-									>
-										{booking.status}
-									</span>
-								</div>
-
-								<div className="space-y-1 text-sm text-gray-600">
-									<div className="flex items-center gap-2">
-										<Calendar className="w-4 h-4 text-gray-400" />
-										<span>{formatDateShort(booking.time)}</span>
-										<Clock className="w-4 h-4 text-gray-400 ml-2" />
-										<span>{formatTimeSafe(booking.time)}</span>
-									</div>
-									<div className="flex items-center gap-2">
-										<span className="font-medium text-gray-700">
-											{booking.service?.name || 'Unknown Service'}
-										</span>
-										<span className="text-gray-400">•</span>
-										<span>{booking.service?.duration || 0} min</span>
-										{booking.staff && (
-											<>
-												<span className="text-gray-400">•</span>
-												<span>{booking.staff.name}</span>
-											</>
-										)}
-									</div>
-								</div>
+						<div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#ea4b4b] mx-auto"></div>
+						<p className="mt-2 text-gray-600">Loading bookings...</p>
+					</div>
+				) : bookings.length === 0 ? (
+					<div className="px-6 py-8 text-center" role="status">
+						<div className="text-gray-400 mb-2" aria-hidden="true">
+							📅
+						</div>
+						<p className="text-gray-600">
+							No upcoming bookings in the next 7 days
+						</p>
+					</div>
+				) : (
+					bookings.map((booking, index) => (
+						<div
+							key={booking.id}
+							className="grid grid-cols-7 px-6 py-4 text-[15px] text-gray-800"
+							role="listitem"
+							aria-posinset={index + 1}
+							aria-setsize={bookings.length}
+						>
+							<div className="font-semibold">
+								{booking.user?.name || `Client ID: ${booking.userId}`}
 							</div>
-
-							<div className="text-right">
-								<p className="text-lg font-bold text-gray-900">
-									{(booking.service?.price || 0).toLocaleString()}₫
-								</p>
+							<div>{booking.service?.name || 'Unknown Service'}</div>
+							<div>{booking.staff?.name || 'Unassigned'}</div>
+							<div>{formatDateShort(booking.time)}</div>
+							<div>{formatTimeSafe(booking.time)}</div>
+							<div>{getStatusBadge(booking.status)}</div>
+							<div
+								className="flex gap-2"
+								role="group"
+								aria-label="Booking actions"
+							>
+								{(booking.status === 'CONFIRMED' ||
+									booking.status === 'PENDING') && (
+									<>
+										<button
+											onClick={() => onEditBooking(booking)}
+											className="p-1 text-[#ff5b5b] hover:text-[#e04a4a] hover:bg-red-50 rounded transition-colors focus:outline-none focus:ring-2 focus:ring-[#ff5b5b] focus:ring-offset-2"
+											title="Edit booking"
+											aria-label={`Edit booking for ${booking.user?.name || 'client'}`}
+										>
+											<svg
+												className="w-4 h-4"
+												fill="none"
+												stroke="currentColor"
+												viewBox="0 0 24 24"
+												aria-hidden="true"
+											>
+												<path
+													strokeLinecap="round"
+													strokeLinejoin="round"
+													strokeWidth={2}
+													d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
+												/>
+											</svg>
+										</button>
+										<button
+											onClick={() => {
+												if (
+													confirm(
+														'Are you sure you want to cancel this booking?'
+													)
+												) {
+													onCancelBooking(booking.id);
+												}
+											}}
+											className="p-1 text-red-600 hover:text-red-700 hover:bg-red-50 rounded transition-colors focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2"
+											title="Cancel booking"
+											aria-label={`Cancel booking for ${booking.user?.name || 'client'}`}
+										>
+											<svg
+												className="w-4 h-4"
+												fill="none"
+												stroke="currentColor"
+												viewBox="0 0 24 24"
+												aria-hidden="true"
+											>
+												<path
+													strokeLinecap="round"
+													strokeLinejoin="round"
+													strokeWidth={2}
+													d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+												/>
+											</svg>
+										</button>
+									</>
+								)}
 							</div>
 						</div>
-					</div>
-				))}
+					))
+				)}
 			</div>
-
-			{bookings.length > 7 && (
-				<div className="p-4 bg-[#fff7f6] border-t border-[#f1d9d7]">
-					<Link
-						href="/calendar"
-						className="block text-center text-sm text-[#ff5b5b] hover:text-[#e04a4a] font-medium"
-					>
-						Show all {bookings.length} bookings →
-					</Link>
-				</div>
-			)}
 		</div>
 	);
 }

@@ -338,6 +338,38 @@ export default function CalendarClient() {
 		setSelectedDate(null);
 	}, []);
 
+	const handlePrevDay = useCallback(() => {
+		if (selectedDate) {
+			const prevDay = new Date(selectedDate);
+			prevDay.setDate(prevDay.getDate() - 1);
+			setSelectedDate(prevDay);
+			// Update current month if needed
+			if (
+				prevDay.getMonth() !== currentMonth ||
+				prevDay.getFullYear() !== currentYear
+			) {
+				setCurrentMonth(prevDay.getMonth());
+				setCurrentYear(prevDay.getFullYear());
+			}
+		}
+	}, [selectedDate, currentMonth, currentYear]);
+
+	const handleNextDay = useCallback(() => {
+		if (selectedDate) {
+			const nextDay = new Date(selectedDate);
+			nextDay.setDate(nextDay.getDate() + 1);
+			setSelectedDate(nextDay);
+			// Update current month if needed
+			if (
+				nextDay.getMonth() !== currentMonth ||
+				nextDay.getFullYear() !== currentYear
+			) {
+				setCurrentMonth(nextDay.getMonth());
+				setCurrentYear(nextDay.getFullYear());
+			}
+		}
+	}, [selectedDate, currentMonth, currentYear]);
+
 	useEffect(() => {
 		if (!salonLoading && !hasSalon) {
 			router.push('/business/complete-setup');
@@ -499,6 +531,8 @@ export default function CalendarClient() {
 							bookings={bookings}
 							onBack={handleBackToMonth}
 							onViewBookingDetails={handleViewBookingDetails}
+							onPrevDay={handlePrevDay}
+							onNextDay={handleNextDay}
 						/>
 					) : null}
 				</div>

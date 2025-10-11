@@ -1,13 +1,17 @@
 'use client';
 
+import { useState, useMemo } from 'react';
 import { Booking } from '@/types';
 import { safeParseDate, formatTimeSafe } from '@/utils/date';
+import { ChevronLeft, ChevronRight, X } from 'lucide-react';
 
 interface DayScheduleProps {
 	selectedDate: Date;
 	bookings: Booking[];
 	onBack: () => void;
 	onViewBookingDetails: (booking: Booking) => void;
+	onPrevDay?: () => void;
+	onNextDay?: () => void;
 }
 
 const DATA_WIDTH = '50px';
@@ -17,7 +21,10 @@ export default function DaySchedule({
 	bookings,
 	onBack,
 	onViewBookingDetails,
+	onPrevDay,
+	onNextDay,
 }: DayScheduleProps) {
+	const [selectedStaffIds, setSelectedStaffIds] = useState<string[]>([]);
 	const getBookingsForDate = (date: Date) => {
 		return bookings.filter((booking) => {
 			const bookingDate = safeParseDate(booking.time);
@@ -143,8 +150,34 @@ export default function DaySchedule({
 		return endTime >= now;
 	};
 
-	const staffMembers = getStaffMembers();
+	const allStaffMembers = getStaffMembers();
 	const timeSlots = getTimeSlots();
+
+	// Filtered staff members based on selection
+	const staffMembers = useMemo(() => {
+		if (selectedStaffIds.length === 0) {
+			return allStaffMembers;
+		}
+		return allStaffMembers.filter((staff) =>
+			selectedStaffIds.includes(staff.id)
+		);
+	}, [allStaffMembers, selectedStaffIds]);
+
+	// Toggle staff selection
+	const toggleStaffSelection = (staffId: string) => {
+		setSelectedStaffIds((prev) => {
+			if (prev.includes(staffId)) {
+				return prev.filter((id) => id !== staffId);
+			} else {
+				return [...prev, staffId];
+			}
+		});
+	};
+
+	// Clear all filters
+	const clearAllFilters = () => {
+		setSelectedStaffIds([]);
+	};
 
 	return (
 		<div
@@ -157,14 +190,34 @@ export default function DaySchedule({
 			</h2>
 
 			<div className="rounded-xl border border-[#f1d9d7] bg-white p-6">
-				<div className="flex items-center justify-between mb-6">
-					<h3 className="text-lg font-semibold text-gray-900">
-						{selectedDate.toLocaleDateString('en-US', {
-							weekday: 'long',
-							month: 'long',
-							day: 'numeric',
-						})}
-					</h3>
+				<div className="flex items-center justify-between mb-4">
+					<div className="flex items-center gap-3">
+						<div className="flex items-center gap-1">
+							<button
+								onClick={onPrevDay}
+								className="p-1.5 text-gray-600 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 hover:text-gray-900 transition-colors focus:outline-none focus:ring-2 focus:ring-[#ea4b4b] focus:ring-offset-2"
+								aria-label="Previous day"
+								disabled={!onPrevDay}
+							>
+								<ChevronLeft className="w-4 h-4" />
+							</button>
+							<button
+								onClick={onNextDay}
+								className="p-1.5 text-gray-600 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 hover:text-gray-900 transition-colors focus:outline-none focus:ring-2 focus:ring-[#ea4b4b] focus:ring-offset-2"
+								aria-label="Next day"
+								disabled={!onNextDay}
+							>
+								<ChevronRight className="w-4 h-4" />
+							</button>
+						</div>
+						<h3 className="text-lg font-semibold text-gray-900">
+							{selectedDate.toLocaleDateString('en-US', {
+								weekday: 'long',
+								month: 'long',
+								day: 'numeric',
+							})}
+						</h3>
+					</div>
 					<div className="flex items-center gap-2">
 						<button
 							onClick={onBack}
@@ -188,29 +241,68 @@ export default function DaySchedule({
 					</div>
 				</div>
 
-				<div className="overflow-x-auto">
-					<div className="min-w-[800px]">
-						<div
-							className="sticky top-0 bg-white z-20 border-b border-gray-200 mb-0"
-							role="rowgroup"
-						>
-							<div
-								className="grid gap-4 py-3 px-1"
-								style={{
-									gridTemplateColumns: `${DATA_WIDTH} repeat(${staffMembers.length}, minmax(0, 1fr))`,
-								}}
-							>
-								<div
-									className="text-sm font-medium text-gray-500"
-									role="columnheader"
+				{/* Staff Filter Pills */}
+				{allStaffMembers.length > 0 && (
+					<div className="mb-6 flex items-center gap-2 flex-wrap">
+						<span className="text-sm font-medium text-gray-600">
+							Filter by staff:
+						</span>
+						{allStaffMembers.map((staff) => {
+							const isSelected =
+								selectedStaffIds.length === 0 ||
+								selectedStaffIds.includes(staff.id);
+							return (
+								<button
+									key={staff.id}
+									onClick={() => toggleStaffSelection(staff.id)}
+									className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium transition-all focus:outline-none focus:ring-2 focus:ring-[#ea4b4b] focus:ring-offset-2 ${
+										isSelected
+											? 'bg-[#ff5b5b] text-white hover:bg-[#e04a4a]'
+											: 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+									}`}
 								>
-									Time
-								</div>
+									{staff.name}
+									{isSelected && selectedStaffIds.length > 0 && (
+										<X className="w-3.5 h-3.5" />
+									)}
+								</button>
+							);
+						})}
+						{selectedStaffIds.length > 0 && (
+							<button
+								onClick={clearAllFilters}
+								className="text-sm text-gray-500 hover:text-gray-700 underline ml-2"
+							>
+								Clear all
+							</button>
+						)}
+					</div>
+				)}
+
+				<div className="relative">
+					{/* Header with sticky time column */}
+					<div className="flex border-b border-gray-200 bg-white">
+						{/* Sticky Time Header */}
+						<div
+							className="sticky left-0 bg-white z-30 border-r border-gray-200"
+							style={{ width: DATA_WIDTH }}
+						>
+							<div className="py-3 px-2 text-sm font-medium text-gray-500">
+								Time
+							</div>
+						</div>
+
+						{/* Scrollable Staff Headers */}
+						<div className="flex-1 overflow-x-auto">
+							<div
+								className="flex"
+								style={{ minWidth: `${staffMembers.length * 150}px` }}
+							>
 								{staffMembers.map((staff) => (
 									<div
 										key={staff.id}
-										className="text-center max-w-[25%] min-w-0"
-										role="columnheader"
+										className="flex-shrink-0 py-3 px-4 text-center border-r border-gray-200"
+										style={{ minWidth: '150px' }}
 									>
 										<div className="text-sm font-semibold text-gray-900 truncate">
 											{staff.name}
@@ -219,115 +311,128 @@ export default function DaySchedule({
 								))}
 							</div>
 						</div>
+					</div>
 
-						<div className="space-y-0" role="grid">
-							{timeSlots.map((timeSlot, index) => (
+					{/* Schedule Grid */}
+					<div className="flex">
+						{/* Sticky Time Column */}
+						<div
+							className="sticky left-0 bg-white z-20"
+							style={{ width: DATA_WIDTH }}
+						>
+							{timeSlots.map((timeSlot) => (
 								<div
-									key={timeSlot.time}
-									className="grid min-h-[64px] border-b border-gray-200 px-1"
-									style={{
-										gridTemplateColumns: `${DATA_WIDTH} repeat(${staffMembers.length}, minmax(0, 1fr))`,
-									}}
-									role="row"
+									key={`time-${timeSlot.time}`}
+									className="flex items-center justify-center text-sm text-gray-600 h-16 border-b border-r border-gray-200 font-medium"
 								>
-									<div
-										className="flex items-center text-sm text-gray-600 h-16 border-r border-dotted border-gray-200 font-medium"
-										role="rowheader"
-									>
-										{timeSlot.time}
-									</div>
-
-									{staffMembers.map((staff) => {
-										const startingAppointment = getAppointmentStartingAtTime(
-											staff.id,
-											timeSlot.hour
-										);
-										const position = getAppointmentPosition(
-											startingAppointment,
-											timeSlot.hour
-										);
-
-										return (
-											<div
-												key={`${staff.id}-${timeSlot.time}`}
-												className="relative h-16 border-r border-dotted border-gray-200 max-w-[25%] min-w-0"
-												role="gridcell"
-											>
-												{startingAppointment && position
-													? (() => {
-															const styles =
-																getBookingBlockStyles(startingAppointment);
-															const clickable =
-																isBookingClickable(startingAppointment);
-
-															return (
-																<div
-																	className={styles.className}
-																	style={{
-																		top: position.top,
-																		height: position.height,
-																		minHeight: '24px',
-																	}}
-																	onClick={
-																		clickable
-																			? () =>
-																					onViewBookingDetails(
-																						startingAppointment
-																					)
-																			: undefined
-																	}
-																	role="button"
-																	tabIndex={clickable ? 0 : -1}
-																	aria-label={`View details for appointment: ${startingAppointment.service?.name} with ${startingAppointment.user?.name || `Client ID: ${startingAppointment.userId}`} at ${formatTimeSafe(startingAppointment.time)}`}
-																>
-																	{position.duration < 40 ? (
-																		<div
-																			className={`text-xs ${styles.textClassName} font-medium leading-tight flex gap-2`}
-																		>
-																			<div
-																				className={`truncate ${styles.textSecondaryClassName}`}
-																			>
-																				{startingAppointment.user?.name ||
-																					`Client ID: ${startingAppointment.userId}`}{' '}
-																				- {startingAppointment.service?.name}
-																			</div>
-																		</div>
-																	) : (
-																		<div className="text-xs leading-tight">
-																			<div
-																				className={`font-medium ${styles.textClassName} truncate`}
-																			>
-																				{startingAppointment.service?.name} -{' '}
-																				{startingAppointment.user?.name ||
-																					`Client ID: ${startingAppointment.userId}`}
-																			</div>
-																			<div
-																				className={`${styles.textSecondaryClassName} truncate`}
-																			>
-																				{formatTimeSafe(
-																					startingAppointment.time
-																				)}{' '}
-																				-{' '}
-																				{formatTimeSafe(
-																					new Date(
-																						new Date(
-																							startingAppointment.time
-																						).getTime() +
-																							position.duration * 60000
-																					).toISOString()
-																				)}
-																			</div>
-																		</div>
-																	)}
-																</div>
-															);
-														})()
-													: null}
-											</div>
-										);
-									})}
+									{timeSlot.time}
 								</div>
 							))}
+						</div>
+
+						{/* Scrollable Staff Columns */}
+						<div className="flex-1 overflow-x-auto">
+							<div
+								className="flex"
+								style={{ minWidth: `${staffMembers.length * 150}px` }}
+							>
+								{staffMembers.map((staff) => (
+									<div
+										key={`staff-${staff.id}`}
+										className="flex-shrink-0"
+										style={{ minWidth: '150px' }}
+									>
+										{timeSlots.map((timeSlot) => {
+											const startingAppointment = getAppointmentStartingAtTime(
+												staff.id,
+												timeSlot.hour
+											);
+											const position = getAppointmentPosition(
+												startingAppointment,
+												timeSlot.hour
+											);
+
+											return (
+												<div
+													key={`${staff.id}-${timeSlot.time}`}
+													className="relative h-16 border-b border-r border-gray-200"
+												>
+													{startingAppointment && position
+														? (() => {
+																const styles =
+																	getBookingBlockStyles(startingAppointment);
+																const clickable =
+																	isBookingClickable(startingAppointment);
+
+																return (
+																	<div
+																		className={styles.className}
+																		style={{
+																			top: position.top,
+																			height: position.height,
+																			minHeight: '24px',
+																		}}
+																		onClick={
+																			clickable
+																				? () =>
+																						onViewBookingDetails(
+																							startingAppointment
+																						)
+																				: undefined
+																		}
+																		role="button"
+																		tabIndex={clickable ? 0 : -1}
+																		aria-label={`View details for appointment: ${startingAppointment.service?.name} with ${startingAppointment.user?.name || `Client ID: ${startingAppointment.userId}`} at ${formatTimeSafe(startingAppointment.time)}`}
+																	>
+																		{position.duration < 40 ? (
+																			<div
+																				className={`text-xs ${styles.textClassName} font-medium leading-tight`}
+																			>
+																				<div
+																					className={`truncate ${styles.textSecondaryClassName}`}
+																				>
+																					{startingAppointment.user?.name ||
+																						`Client ID: ${startingAppointment.userId}`}{' '}
+																					- {startingAppointment.service?.name}
+																				</div>
+																			</div>
+																		) : (
+																			<div className="text-xs leading-tight">
+																				<div
+																					className={`font-medium ${styles.textClassName} truncate`}
+																				>
+																					{startingAppointment.service?.name} -{' '}
+																					{startingAppointment.user?.name ||
+																						`Client ID: ${startingAppointment.userId}`}
+																				</div>
+																				<div
+																					className={`${styles.textSecondaryClassName} truncate`}
+																				>
+																					{formatTimeSafe(
+																						startingAppointment.time
+																					)}{' '}
+																					-{' '}
+																					{formatTimeSafe(
+																						new Date(
+																							new Date(
+																								startingAppointment.time
+																							).getTime() +
+																								position.duration * 60000
+																						).toISOString()
+																					)}
+																				</div>
+																			</div>
+																		)}
+																	</div>
+																);
+															})()
+														: null}
+												</div>
+											);
+										})}
+									</div>
+								))}
+							</div>
 						</div>
 					</div>
 				</div>

@@ -1,13 +1,20 @@
 'use client';
 
-import { useMemo, useEffect, useState } from 'react';
+import { useMemo, useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { useBookings } from '@/hooks/useBookings';
 import { useSalonId } from '@/hooks/useSalon';
+import { useCurrentUserSalon } from '@/hooks/useSalons';
 import LoadingSpinner from '@/components/LoadingSpinner';
 import ErrorDisplay from '@/components/ErrorDisplay';
 import StatsCard from './components/StatsCard';
 import UpcomingBookingsList from './components/UpcomingBookingsList';
+import TopServicesCard from './components/TopServicesCard';
+import AdditionalMetrics from './components/AdditionalMetrics';
+import BookingModal from '@/components/BookingModal';
+import { Service, Booking } from '@/types';
+import { apiClient } from '@/lib/api-client';
+import toast from 'react-hot-toast';
 import {
 	DollarSign,
 	Users,
@@ -65,7 +72,12 @@ const convertBookingDtoToBooking = (dto: any) => {
 export default function OwnerDashboardClient() {
 	const router = useRouter();
 	const [period, setPeriod] = useState<'7d' | '30d' | '1y'>('30d');
+	const [isBookingModalOpen, setIsBookingModalOpen] = useState(false);
+	const [selectedService, setSelectedService] = useState<Service | undefined>();
+	const [editingBooking, setEditingBooking] = useState<Booking | null>(null);
+
 	const { salonId, isLoading: salonLoading, hasSalon } = useSalonId();
+	const { data: salonData } = useCurrentUserSalon();
 	const {
 		data: bookingsData = [],
 		isLoading: bookingsLoading,
@@ -213,6 +225,38 @@ export default function OwnerDashboardClient() {
 			});
 	}, [bookings]);
 
+	// Handlers for bookings
+	const handleEditBooking = useCallback((booking: Booking) => {
+		setEditingBooking(booking);
+		setSelectedService(undefined);
+		setIsBookingModalOpen(true);
+	}, []);
+
+	const handleCancelBooking = useCallback(
+		async (bookingId: string) => {
+			try {
+				await apiClient.put(`/bookings/${bookingId}/cancel`);
+				toast.success('Booking cancelled successfully');
+				refetchBookings();
+			} catch (err) {
+				const errorMessage =
+					err instanceof Error ? err.message : 'Failed to cancel booking';
+				toast.error(errorMessage);
+			}
+		},
+		[refetchBookings]
+	);
+
+	const handleBookingModalClose = useCallback(() => {
+		setIsBookingModalOpen(false);
+		setEditingBooking(null);
+		refetchBookings();
+	}, [refetchBookings]);
+
+	const handleBookingUpdated = useCallback(() => {
+		refetchBookings();
+	}, [refetchBookings]);
+
 	if (salonLoading) {
 		return (
 			<div className="flex items-center justify-center py-12">
@@ -267,13 +311,17 @@ export default function OwnerDashboardClient() {
 						<option value="30d">Last 30 days</option>
 						<option value="1y">Last 1 year</option>
 					</select>
-					<Link
-						href="/calendar"
-						className="inline-flex items-center gap-2 rounded-lg bg-[#ea4b4b] text-white px-4 py-2 text-sm shadow-sm hover:opacity-95 transition-opacity"
+					<button
+						onClick={() => {
+							setSelectedService(undefined);
+							setEditingBooking(null);
+							setIsBookingModalOpen(true);
+						}}
+						className="inline-flex items-center gap-2 rounded-full bg-[#ea4b4b] text-white px-4 py-2 text-sm shadow-sm hover:opacity-95 transition-opacity focus:outline-none focus:ring-2 focus:ring-[#ea4b4b] focus:ring-offset-2"
 					>
-						<Calendar className="w-4 h-4" />
-						Calendar
-					</Link>
+						<span className="text-lg leading-none">＋</span>
+						New Appointment
+					</button>
 				</div>
 			</div>
 
@@ -361,16 +409,30 @@ export default function OwnerDashboardClient() {
 				/>
 			</div>
 
-			{/* Period Info */}
-			<div className="text-sm text-gray-500">
-				Comparing with previous{' '}
-				{period === '7d' ? '7 days' : period === '30d' ? '30 days' : 'year'}
+			{/* Two Column Grid for Top Services and Additional Metrics */}
+			<div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+				<TopServicesCard bookings={bookings} />
+				<AdditionalMetrics bookings={bookings} />
 			</div>
 
 			{/* Upcoming Bookings List */}
 			<UpcomingBookingsList
 				bookings={upcomingBookings}
 				loading={bookingsLoading}
+				onEditBooking={handleEditBooking}
+				onCancelBooking={handleCancelBooking}
+			/>
+
+			{/* Booking Modal */}
+			<BookingModal
+				isOpen={isBookingModalOpen}
+				onClose={handleBookingModalClose}
+				service={selectedService}
+				showServiceSelector={true}
+				salonId={salonId || undefined}
+				workingHours={salonData?.workingHours}
+				editingBooking={editingBooking}
+				onBookingUpdated={handleBookingUpdated}
 			/>
 		</main>
 	);

@@ -47,7 +47,8 @@ export default function BookingModal({
 	const [isInitialized, setIsInitialized] = useState(false);
 	const [currentMonth, setCurrentMonth] = useState(new Date());
 	const [existingBookings, setExistingBookings] = useState<any[]>([]);
-	const [bookingsLoaded, setBookingsLoaded] = useState(false);
+	const [bookingsLoaded, setBookingsLoaded] = useState(true);
+	const [bookingsLoadError, setBookingsLoadError] = useState(false);
 
 	// Используем Zustand store для аутентификации
 	const { user, isClient, login, refreshUser } = useAuthStore();
@@ -238,6 +239,7 @@ export default function BookingModal({
 				console.log('Fetched existing bookings:', bookings);
 				setExistingBookings(bookings);
 				setBookingsLoaded(true);
+				setBookingsLoadError(false);
 			} else if (response.status === 401) {
 				// If unauthorized, try without auth (for public bookings)
 				console.warn('Unauthorized, trying to fetch public bookings...');
@@ -249,22 +251,23 @@ export default function BookingModal({
 					const bookings = await publicResponse.json();
 					setExistingBookings(bookings);
 					setBookingsLoaded(true);
+					setBookingsLoadError(false);
 				} else {
 					console.warn('Could not fetch public bookings either');
 					setExistingBookings([]);
-					setBookingsLoaded(false);
+					setBookingsLoadError(true);
 				}
 			} else {
 				console.warn('Could not fetch existing bookings:', response.status);
 				// Set empty array if we can't fetch bookings
 				setExistingBookings([]);
-				setBookingsLoaded(false);
+				setBookingsLoadError(true);
 			}
 		} catch (error) {
 			console.error('Error fetching existing bookings:', error);
 			// Set empty array on error to prevent blocking
 			setExistingBookings([]);
-			setBookingsLoaded(false);
+			setBookingsLoadError(true);
 		}
 	};
 
@@ -272,8 +275,8 @@ export default function BookingModal({
 	const isTimeSlotAvailable = (timeSlot: string, selectedStaffId?: string) => {
 		if (!selectedService) return true;
 
-		// If bookings couldn't be loaded, show all slots as available but with warning
-		if (!bookingsLoaded) {
+		// If bookings couldn't be loaded due to error, show all slots as available but with warning
+		if (bookingsLoadError) {
 			return true;
 		}
 
@@ -661,10 +664,11 @@ export default function BookingModal({
 		}
 	}, [editingBooking, isOpen, isInitialized]);
 
-	// Reset initialization flag when modal closes
+	// Reset initialization flag and error state when modal closes
 	useEffect(() => {
 		if (!isOpen) {
 			setIsInitialized(false);
+			setBookingsLoadError(false);
 		}
 	}, [isOpen]);
 
@@ -1242,7 +1246,7 @@ export default function BookingModal({
 							<h3 className="text-lg font-bold text-gray-900 mb-4">
 								Select a Time
 							</h3>
-							{!bookingsLoaded && selectedDate && (
+							{bookingsLoadError && selectedDate && (
 								<div className="mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
 									<p className="text-sm text-yellow-800">
 										⚠️ Unable to load existing bookings. All time slots are
