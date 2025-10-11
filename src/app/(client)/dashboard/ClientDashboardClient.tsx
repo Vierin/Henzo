@@ -274,13 +274,6 @@ export default function ClientDashboardClient() {
 			<div className="space-y-12">
 				{/* Upcoming Reservations Section */}
 				<section aria-labelledby="upcoming-section-heading">
-					<h2
-						id="upcoming-section-heading"
-						className="text-2xl font-semibold text-gray-900 mb-6"
-					>
-						Your Upcoming Reservations
-					</h2>
-
 					{upcomingBookingsList.length === 0 ? (
 						<UpcomingEmptyState />
 					) : (

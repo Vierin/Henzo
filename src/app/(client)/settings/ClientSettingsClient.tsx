@@ -276,31 +276,6 @@ export default function ClientSettingsClient() {
 						</div>
 					</form>
 				</section>
-
-				{/* Account Information */}
-				<section className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
-					<h2 className="text-xl font-semibold text-gray-900 mb-4">
-						Account Information
-					</h2>
-					<div className="space-y-3 text-sm">
-						<div className="flex justify-between py-2 border-b border-gray-100">
-							<span className="text-gray-600">Account Type:</span>
-							<span className="font-medium text-gray-900">Client</span>
-						</div>
-						<div className="flex justify-between py-2 border-b border-gray-100">
-							<span className="text-gray-600">User ID:</span>
-							<span className="font-mono text-gray-900">{user?.id}</span>
-						</div>
-						<div className="flex justify-between py-2">
-							<span className="text-gray-600">Member Since:</span>
-							<span className="text-gray-900">
-								{user?.createdAt
-									? new Date(user.createdAt).toLocaleDateString()
-									: 'N/A'}
-							</span>
-						</div>
-					</div>
-				</section>
 			</div>
 		</main>
 	);

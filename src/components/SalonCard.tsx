@@ -3,13 +3,19 @@ import { Salon, Service } from '@/types';
 import { ServiceResponseDto } from '@/types/dto/service.dto';
 import { useSalonSlug } from '@/hooks/useSalonSlug';
 import SalonImage from './SalonImage';
-import { Phone, Star, Clock, Clock8 } from 'lucide-react';
+import { Phone, Star, Clock, Clock8, Heart } from 'lucide-react';
 import {
 	calculateAverageRating,
 	getReviewCount,
 	getAvailableTimeSlots,
 } from '@/utils/salonUtils';
 import { formatVND } from '@/utils/currency';
+import {
+	useAddFavorite,
+	useRemoveFavorite,
+	useIsFavorite,
+} from '@/hooks/useFavorites';
+import { useAuthStore } from '@/stores/authStore';
 
 interface SalonCardProps {
 	salon: Salon;
@@ -32,6 +38,10 @@ export default function SalonCard({
 }: SalonCardProps) {
 	const router = useRouter();
 	const { getSalonUrl } = useSalonSlug();
+	const { user } = useAuthStore();
+	const isFavorite = useIsFavorite(salon.id);
+	const addFavoriteMutation = useAddFavorite();
+	const removeFavoriteMutation = useRemoveFavorite();
 
 	const handleSalonClick = () => {
 		router.push(getSalonUrl(salon));
@@ -41,6 +51,25 @@ export default function SalonCard({
 		e.stopPropagation();
 		if (onBookService) {
 			onBookService(service, salon.id, salon.name);
+		}
+	};
+
+	const handleFavoriteClick = (e: React.MouseEvent) => {
+		e.stopPropagation();
+
+		// Check if user is logged in
+		if (!user) {
+			router.push(
+				`/login?returnTo=${encodeURIComponent(window.location.href)}`
+			);
+			return;
+		}
+
+		// Toggle favorite
+		if (isFavorite) {
+			removeFavoriteMutation.mutate(salon.id);
+		} else {
+			addFavoriteMutation.mutate(salon.id);
 		}
 	};
 
@@ -56,7 +85,7 @@ export default function SalonCard({
 					alt={salon.name}
 					width={400}
 					height={320}
-					className="w-48 h-48 object-cover rounded-xl flex-shrink-0"
+					className="w-48 aspect-[4/3] object-cover rounded-xl flex-shrink-0"
 					style={{ width: 'auto', height: 'auto' }}
 				/>
 
@@ -64,26 +93,42 @@ export default function SalonCard({
 				<div className="flex-1">
 					<div className="flex items-center justify-between mb-2">
 						<h2 className="text-xl font-bold text-gray-900">{salon.name}</h2>
-						{/* Rating */}
-						{(() => {
-							const rating = calculateAverageRating(salon);
-							const reviewCount = getReviewCount(salon);
+						<div className="flex items-center gap-3">
+							{/* Rating */}
+							{(() => {
+								const rating = calculateAverageRating(salon);
+								const reviewCount = getReviewCount(salon);
 
-							if (rating > 0) {
-								return (
-									<div className="flex items-center space-x-1">
-										<Star className="w-4 h-4 fill-[#ff5b5b] text-[#ff5b5b]" />
-										<span className="text-sm font-medium text-gray-900">
-											{rating}
-										</span>
-										<span className="text-sm text-gray-500">
-											({reviewCount})
-										</span>
-									</div>
-								);
-							}
-							return null;
-						})()}
+								if (rating > 0) {
+									return (
+										<div className="flex items-center space-x-1">
+											<Star className="w-4 h-4 fill-[#ff5b5b] text-[#ff5b5b]" />
+											<span className="text-sm font-medium text-gray-900">
+												{rating}
+											</span>
+											<span className="text-sm text-gray-500">
+												({reviewCount})
+											</span>
+										</div>
+									);
+								}
+								return null;
+							})()}
+							{/* Favorite Button */}
+							<button
+								onClick={handleFavoriteClick}
+								className={`p-2 rounded-full transition-all hover:bg-gray-100 ${
+									isFavorite ? 'text-[#ff5b5b]' : 'text-gray-400'
+								}`}
+								aria-label={
+									isFavorite ? 'Remove from favorites' : 'Add to favorites'
+								}
+							>
+								<Heart
+									className={`w-5 h-5 ${isFavorite ? 'fill-[#ff5b5b]' : ''}`}
+								/>
+							</button>
+						</div>
 					</div>
 					<p className="text-gray-600 text-sm mb-2">{salon.address}</p>
 					{salon.phone && (

@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useAuthStore } from '@/stores/authStore';
+import { Heart } from 'lucide-react';
 
 export default function ClientSidebar() {
 	const pathname = usePathname();
@@ -44,6 +45,18 @@ export default function ClientSidebar() {
 							/>
 						</svg>
 						<span className="font-medium">Visit History</span>
+					</Link>
+
+					<Link
+						href="/favorites"
+						className={`flex items-center gap-3 px-3 py-2 rounded-lg transition-colors ${
+							pathname === '/favorites'
+								? 'bg-orange-50 text-orange-600 border-r-2 border-orange-500'
+								: 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+						}`}
+					>
+						<Heart className="w-5 h-5" />
+						<span className="font-medium">Favorite Salons</span>
 					</Link>
 
 					<Link

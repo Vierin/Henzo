@@ -880,9 +880,9 @@ export default function BookingModal({
 			const bookingStatus = result.booking?.status;
 			if (bookingStatus === 'PENDING') {
 				toast.success(
-					"Booking request sent! The salon will review and confirm your appointment shortly. You will receive an email once it's confirmed.",
+					"Thank you for your reservation! Awaiting confirmation from the salon. Usually the salon confirms the booking within 2 hours. You will receive an email once it's confirmed.",
 					{
-						duration: 6000,
+						duration: 7000,
 						icon: '⏳',
 					}
 				);
