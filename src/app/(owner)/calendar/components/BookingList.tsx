@@ -2,6 +2,7 @@
 
 import { Booking } from '@/types';
 import { formatDateSafe, formatDateShort, formatTimeSafe } from '@/utils/date';
+import { Search, X } from 'lucide-react';
 
 interface BookingListProps {
 	bookings: Booking[];
@@ -9,10 +10,12 @@ interface BookingListProps {
 	error: string | null;
 	statusFilter: string;
 	dateFilter: string;
+	searchQuery: string;
 	currentPage: number;
 	itemsPerPage: number;
 	totalPages: number;
 	onFilterChange: (filterType: 'status' | 'date', value: string) => void;
+	onSearchChange: (query: string) => void;
 	onEditBooking: (booking: Booking) => void;
 	onCancelBooking: (bookingId: string) => void;
 	onViewBookingDetails: (booking: Booking) => void;
@@ -26,10 +29,12 @@ export default function BookingList({
 	error,
 	statusFilter,
 	dateFilter,
+	searchQuery,
 	currentPage,
 	itemsPerPage,
 	totalPages,
 	onFilterChange,
+	onSearchChange,
 	onEditBooking,
 	onCancelBooking,
 	onViewBookingDetails,
@@ -86,53 +91,79 @@ export default function BookingList({
 			</h2>
 
 			{/* Filters */}
-			<div className="flex items-center justify-between mb-6">
-				<div className="flex gap-4">
-					{/* Status Filter */}
-					<div className="flex items-center gap-2">
-						<label
-							htmlFor="status-filter"
-							className="text-sm font-medium text-gray-700"
-						>
-							Status:
-						</label>
-						<select
-							id="status-filter"
-							value={statusFilter}
-							onChange={(e) => onFilterChange('status', e.target.value)}
-							className="px-3 py-1 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-[#ea4b4b] focus:border-[#ea4b4b] text-gray-900"
-							aria-label="Filter by status"
-						>
-							<option value="all">All</option>
-							<option value="PENDING">Pending</option>
-							<option value="CONFIRMED">Confirmed</option>
-							<option value="COMPLETED">Completed</option>
-							<option value="CANCELED">Cancelled</option>
-						</select>
-					</div>
+			<div className="mb-6  flex items-center justify-between gap-4 flex-wrap">
+				<div className="flex items-center justify-between gap-4 flex-wrap">
+					<div className="flex gap-4">
+						{/* Status Filter */}
+						<div className="flex items-center gap-2">
+							<label
+								htmlFor="status-filter"
+								className="text-sm font-medium text-gray-700"
+							>
+								Status:
+							</label>
+							<select
+								id="status-filter"
+								value={statusFilter}
+								onChange={(e) => onFilterChange('status', e.target.value)}
+								className="px-3 py-1 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-[#ea4b4b] focus:border-[#ea4b4b] text-gray-900"
+								aria-label="Filter by status"
+							>
+								<option value="all">All</option>
+								<option value="PENDING">Pending</option>
+								<option value="CONFIRMED">Confirmed</option>
+								<option value="COMPLETED">Completed</option>
+								<option value="CANCELED">Cancelled</option>
+							</select>
+						</div>
 
-					{/* Date Filter */}
-					<div className="flex items-center gap-2">
-						<label
-							htmlFor="date-filter"
-							className="text-sm font-medium text-gray-700"
-						>
-							Date:
-						</label>
-						<select
-							id="date-filter"
-							value={dateFilter}
-							onChange={(e) => onFilterChange('date', e.target.value)}
-							className="px-3 py-1 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-[#ea4b4b] focus:border-[#ea4b4b] text-gray-900"
-							aria-label="Filter by date"
-						>
-							<option value="all">All</option>
-							<option value="today">Today</option>
-							<option value="this_week">This Week</option>
-							<option value="upcoming">Upcoming</option>
-							<option value="past">Past</option>
-						</select>
+						{/* Date Filter */}
+						<div className="flex items-center gap-2">
+							<label
+								htmlFor="date-filter"
+								className="text-sm font-medium text-gray-700"
+							>
+								Date:
+							</label>
+							<select
+								id="date-filter"
+								value={dateFilter}
+								onChange={(e) => onFilterChange('date', e.target.value)}
+								className="px-3 py-1 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-[#ea4b4b] focus:border-[#ea4b4b] text-gray-900"
+								aria-label="Filter by date"
+							>
+								<option value="all">All</option>
+								<option value="today">Today</option>
+								<option value="this_week">This Week</option>
+								<option value="upcoming">Upcoming</option>
+								<option value="past">Past</option>
+							</select>
+						</div>
 					</div>
+				</div>
+
+				{/* Search Field */}
+				<div className="relative max-w-md min-w-72">
+					<div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+						<Search className="w-4 h-4 text-gray-400" />
+					</div>
+					<input
+						type="text"
+						placeholder="Search by client name or phone..."
+						value={searchQuery}
+						onChange={(e) => onSearchChange(e.target.value)}
+						className="w-full pl-10 pr-10 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#ea4b4b] focus:border-[#ea4b4b] text-gray-900 placeholder-gray-400"
+						aria-label="Search bookings by client name or phone"
+					/>
+					{searchQuery && (
+						<button
+							onClick={() => onSearchChange('')}
+							className="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-400 hover:text-gray-600 transition-colors"
+							aria-label="Clear search"
+						>
+							<X className="w-4 h-4" />
+						</button>
+					)}
 				</div>
 			</div>
 

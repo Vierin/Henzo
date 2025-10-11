@@ -72,28 +72,37 @@ export default function EditServiceModal({
 		}
 
 		try {
-			const serviceData = {
-				name: formData.name.trim(),
-				description: formData.description.trim() || undefined,
-				duration: formData.duration,
-				price: formData.price,
-				salonId,
-				serviceCategoryId:
-					formData.serviceCategoryId > 0
-						? formData.serviceCategoryId
-						: undefined,
-			};
-
 			if (service) {
-				// Update existing service
+				// Update existing service - don't send salonId
+				const updateData = {
+					name: formData.name.trim(),
+					description: formData.description.trim() || undefined,
+					duration: formData.duration,
+					price: formData.price,
+					serviceCategoryId:
+						formData.serviceCategoryId > 0
+							? formData.serviceCategoryId
+							: undefined,
+				};
 				const updatedService = await updateServiceMutation.mutateAsync({
 					id: service.id,
-					data: serviceData,
+					data: updateData,
 				});
 				onSave(updatedService);
 			} else {
-				// Create new service
-				const newService = await createServiceMutation.mutateAsync(serviceData);
+				// Create new service - include salonId
+				const createData = {
+					name: formData.name.trim(),
+					description: formData.description.trim() || undefined,
+					duration: formData.duration,
+					price: formData.price,
+					salonId,
+					serviceCategoryId:
+						formData.serviceCategoryId > 0
+							? formData.serviceCategoryId
+							: undefined,
+				};
+				const newService = await createServiceMutation.mutateAsync(createData);
 				onSave(newService);
 			}
 

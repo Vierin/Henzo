@@ -91,6 +91,7 @@ export default function CalendarClient() {
 		useState(false);
 	const [statusFilter, setStatusFilter] = useState<string>('all');
 	const [dateFilter, setDateFilter] = useState<string>('all');
+	const [searchQuery, setSearchQuery] = useState<string>('');
 	const [viewMode, setViewMode] = useState<'list' | 'calendar'>('calendar');
 	const [currentMonth, setCurrentMonth] = useState(new Date().getMonth());
 	const [currentYear, setCurrentYear] = useState(new Date().getFullYear());
@@ -275,9 +276,19 @@ export default function CalendarClient() {
 						break;
 				}
 			}
-			return statusMatch && dateMatch;
+
+			// Search filter by client name or phone
+			let searchMatch = true;
+			if (searchQuery.trim()) {
+				const query = searchQuery.toLowerCase();
+				const clientName = booking.user?.name?.toLowerCase() || '';
+				const clientPhone = booking.user?.phone?.toLowerCase() || '';
+				searchMatch = clientName.includes(query) || clientPhone.includes(query);
+			}
+
+			return statusMatch && dateMatch && searchMatch;
 		});
-	}, [bookings, statusFilter, dateFilter]);
+	}, [bookings, statusFilter, dateFilter, searchQuery]);
 
 	const getTotalPages = useMemo(() => {
 		return Math.ceil(getFilteredBookings.length / itemsPerPage);
@@ -294,6 +305,11 @@ export default function CalendarClient() {
 		},
 		[]
 	);
+
+	const handleSearchChange = useCallback((query: string) => {
+		setSearchQuery(query);
+		setCurrentPage(1);
+	}, []);
 
 	const handlePageChange = useCallback((page: number) => {
 		setCurrentPage(page);
@@ -503,10 +519,12 @@ export default function CalendarClient() {
 									error={error}
 									statusFilter={statusFilter}
 									dateFilter={dateFilter}
+									searchQuery={searchQuery}
 									currentPage={currentPage}
 									itemsPerPage={itemsPerPage}
 									totalPages={getTotalPages}
 									onFilterChange={handleFilterChange}
+									onSearchChange={handleSearchChange}
 									onEditBooking={handleEditBooking}
 									onCancelBooking={handleCancelBooking}
 									onViewBookingDetails={handleViewBookingDetails}
