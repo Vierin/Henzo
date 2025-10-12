@@ -5,8 +5,8 @@ import { usePathname, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useAuth } from '@/lib/auth-unified';
 import Image from 'next/image';
-import { STATIC_CATEGORIES } from '@/constants/categories';
 import BooksySearch from './BooksySearch';
+import CategoriesNavigation from './CategoriesNavigation';
 import { User, LogOut, ChevronDown } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 
@@ -107,21 +107,6 @@ export default function PublicHeader() {
 								style={{ width: 'auto', height: 'auto' }}
 							/>
 						</Link>
-
-						<div className="flex items-center justify-center h-14">
-							{/* Categories Navigation */}
-							<div className="flex items-center space-x-8">
-								{STATIC_CATEGORIES.map((category) => (
-									<Link
-										key={category.id}
-										href={`/category/${category.slug}`}
-										className="text-sm font-medium text-gray-700 hover:text-[#ff5b5b] transition-colors"
-									>
-										{category.name}
-									</Link>
-								))}
-							</div>
-						</div>
 
 						{/* Language Dropdown and User Info/Login Buttons */}
 						<div className="flex items-center gap-4">

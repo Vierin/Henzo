@@ -113,7 +113,7 @@ export default function SearchBookingForm({
 				onClick={handleSearch}
 				className="w-full bg-[#ff5b5b] text-white py-3 rounded-lg font-medium hover:bg-[#e04a4a] transition-colors mt-4 text-sm"
 			>
-				Search
+				Find salon
 			</button>
 		</div>
 	);

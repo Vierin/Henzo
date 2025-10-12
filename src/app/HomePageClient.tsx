@@ -5,7 +5,9 @@ import { useQueryClient } from '@tanstack/react-query';
 import PublicHeader from '@/components/PublicHeader';
 import SearchBookingForm from '@/components/SearchBookingForm';
 import RecommendedSalons from '@/components/RecommendedSalons';
+import CategoriesNavigation from '@/components/CategoriesNavigation';
 import { useTranslation } from '@/contexts/LanguageContext';
+import Image from 'next/image';
 
 export default function HomePageClient() {
 	const queryClient = useQueryClient();
@@ -43,10 +45,10 @@ export default function HomePageClient() {
 			<main>
 				{/* Hero Section */}
 				<section
-					className="py-12 px-6 bg-[#F8F5F2]"
+					className="py-8 min-h-[75svh] flex items-center justify-around mx-auto relative"
 					aria-label="Book beauty appointments"
 				>
-					<div className="mx-auto max-w-7xl">
+					<div className="mx-auto max-w-7xl w-full relative z-10">
 						<div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
 							<div>
 								{/* Left Panel - Search/Booking Form */}
@@ -57,15 +59,50 @@ export default function HomePageClient() {
 							<div className="relative">
 								{/* Slogan */}
 								<div className="absolute left-0 top-1/2 transform -translate-y-1/2 z-10">
-									<h1 className="text-4xl lg:text-5xl font-bold text-blue-900 leading-tight">
-										{t.homepage.heroTitle}
-									</h1>
-									<p className="text-lg text-gray-700 mt-4 max-w-md">
+									<h1
+										className="text-4xl lg:text-5xl font-bold text-foreground leading-tight"
+										dangerouslySetInnerHTML={{ __html: t.homepage.heroTitle }}
+									/>
+									<p className="text-lg text-muted-foreground mt-4 max-w-md">
 										{t.homepage.heroSubtitle}
 									</p>
+
+									{/* Features Stats */}
+									<div className="flex items-center gap-8 mt-8">
+										<div className="">
+											<p className="text-3xl font-bold text-primary">24/7</p>
+											<p className="text-sm text-muted-foreground">
+												Online Booking
+											</p>
+										</div>
+										<div className="w-px h-10 bg-gray-300"></div>
+										<div className="">
+											<p className="text-3xl font-bold text-primary">
+												5
+												<span className="text-xl relative left-1">minutes</span>
+											</p>
+											<p className="text-sm text-muted-foreground">
+												to book a service
+											</p>
+										</div>
+										<div className="w-px h-10 bg-gray-300"></div>
+										<div className="">
+											<p className="text-3xl font-bold text-primary">Free</p>
+											<p className="text-sm text-muted-foreground">
+												Booking and cancellation
+											</p>
+										</div>
+									</div>
 								</div>
 							</div>
 						</div>
+					</div>
+				</section>
+
+				{/* Categories Navigation Section */}
+				<section className="py-8 px-6 bg-white border-y border-gray-200">
+					<div className="mx-auto max-w-7xl">
+						<CategoriesNavigation />
 					</div>
 				</section>
 

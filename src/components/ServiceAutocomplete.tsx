@@ -5,9 +5,19 @@ import { useState, useEffect, useRef } from 'react';
 interface ServiceSuggestion {
 	id: number;
 	name: string;
+	type: 'service' | 'category' | 'salon';
 	category?: {
 		name: string;
 	};
+	salon?: {
+		name: string;
+	};
+}
+
+interface SuggestionGroup {
+	type: 'service' | 'category' | 'salon';
+	title: string;
+	suggestions: ServiceSuggestion[];
 }
 
 interface ServiceAutocompleteProps {
@@ -25,16 +35,18 @@ export default function ServiceAutocomplete({
 	placeholder = 'Search for treatments',
 	className = '',
 }: ServiceAutocompleteProps) {
-	const [suggestions, setSuggestions] = useState<ServiceSuggestion[]>([]);
+	const [suggestionGroups, setSuggestionGroups] = useState<SuggestionGroup[]>(
+		[]
+	);
 	const [showSuggestions, setShowSuggestions] = useState(false);
 	const [loading, setLoading] = useState(false);
 	const inputRef = useRef<HTMLInputElement>(null);
 	const suggestionsRef = useRef<HTMLDivElement>(null);
 
-	// Fetch service suggestions from our backend API
+	// Fetch suggestions from multiple sources
 	const fetchSuggestions = async (query: string) => {
 		if (query.length < 2) {
-			setSuggestions([]);
+			setSuggestionGroups([]);
 			return;
 		}
 
@@ -43,61 +55,128 @@ export default function ServiceAutocomplete({
 			const API_BASE_URL =
 				process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
-			// First try to search for services
-			const servicesResponse = await fetch(
-				`${API_BASE_URL}/search/services?q=${encodeURIComponent(query)}&lang=en`
-			);
+			// Fetch from all sources in parallel
+			const [servicesResponse, categoriesResponse, salonsResponse] =
+				await Promise.allSettled([
+					fetch(
+						`${API_BASE_URL}/search/services?q=${encodeURIComponent(query)}&lang=en`
+					),
+					fetch(
+						`${API_BASE_URL}/search/categories?q=${encodeURIComponent(query)}&lang=en`
+					),
+					fetch(
+						`${API_BASE_URL}/salons/search?search=${encodeURIComponent(query)}&limit=5`
+					),
+				]);
 
-			if (servicesResponse.ok) {
-				const servicesResult = await servicesResponse.json();
-				if (
-					servicesResult.success &&
-					servicesResult.data &&
-					servicesResult.data.length > 0
-				) {
-					// Transform services data to match our interface
-					const transformedSuggestions = servicesResult.data.map(
-						(service: any) => ({
+			const groups: SuggestionGroup[] = [];
+
+			// Process services
+			if (
+				servicesResponse.status === 'fulfilled' &&
+				servicesResponse.value.ok
+			) {
+				const servicesResult = await servicesResponse.value.json();
+				if (servicesResult.success && servicesResult.data?.length > 0) {
+					groups.push({
+						type: 'service',
+						title: 'Services',
+						suggestions: servicesResult.data.map((service: any) => ({
 							id: service.id,
 							name: service.name,
+							type: 'service' as const,
 							category: service.serviceCategory
 								? {
 										name: service.serviceCategory.nameEn,
 									}
 								: undefined,
-						})
-					);
-					setSuggestions(transformedSuggestions);
-					return;
+						})),
+					});
 				}
 			}
 
-			// Fallback to categories if no services found
+			// Process categories
+			if (
+				categoriesResponse.status === 'fulfilled' &&
+				categoriesResponse.value.ok
+			) {
+				const categoriesResult = await categoriesResponse.value.json();
+				if (categoriesResult.success && categoriesResult.data?.length > 0) {
+					groups.push({
+						type: 'category',
+						title: 'Categories',
+						suggestions: categoriesResult.data.map((category: any) => ({
+							id: category.id,
+							name: category.nameEn,
+							type: 'category' as const,
+							category: { name: category.nameVn },
+						})),
+					});
+				}
+			}
+
+			// Process salons
+			if (salonsResponse.status === 'fulfilled' && salonsResponse.value.ok) {
+				const salonsResult = await salonsResponse.value.json();
+				if (salonsResult.success && salonsResult.data?.length > 0) {
+					groups.push({
+						type: 'salon',
+						title: 'Salons',
+						suggestions: salonsResult.data.map((salon: any) => ({
+							id: salon.id,
+							name: salon.name,
+							type: 'salon' as const,
+							salon: { name: salon.name },
+						})),
+					});
+				}
+			}
+
+			setSuggestionGroups(groups);
+		} catch (error) {
+			console.error('Error fetching suggestions:', error);
+			setSuggestionGroups([]);
+		} finally {
+			setLoading(false);
+		}
+	};
+
+	// Fetch initial suggestions on focus (popular items)
+	const fetchInitialSuggestions = async () => {
+		setLoading(true);
+		try {
+			const API_BASE_URL =
+				process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+
+			// Fetch popular categories
 			const categoriesResponse = await fetch(
-				`${API_BASE_URL}/search/categories?q=${encodeURIComponent(query)}&lang=en`
+				`${API_BASE_URL}/search/categories?q=&lang=en`
 			);
 
 			if (categoriesResponse.ok) {
 				const categoriesResult = await categoriesResponse.json();
-				if (categoriesResult.success && categoriesResult.data) {
-					// Transform the data to match our interface
-					const transformedSuggestions = categoriesResult.data.map(
-						(category: any) => ({
+				if (categoriesResult.success && categoriesResult.data?.length > 0) {
+					// Take first 3 popular categories
+					const popularCategories = categoriesResult.data
+						.slice(0, 3)
+						.map((category: any) => ({
 							id: category.id,
 							name: category.nameEn,
+							type: 'category' as const,
 							category: { name: category.nameVn },
-						})
-					);
-					setSuggestions(transformedSuggestions);
-				} else {
-					setSuggestions([]);
+						}));
+
+					setSuggestionGroups([
+						{
+							type: 'category',
+							title: 'Popular Categories',
+							suggestions: popularCategories,
+						},
+					]);
 				}
-			} else {
-				setSuggestions([]);
 			}
 		} catch (error) {
-			console.error('Error fetching service suggestions:', error);
-			setSuggestions([]);
+			console.error('Error fetching initial suggestions:', error);
 		} finally {
 			setLoading(false);
 		}
@@ -109,7 +188,7 @@ export default function ServiceAutocomplete({
 			if (value) {
 				fetchSuggestions(value);
 			} else {
-				setSuggestions([]);
+				setSuggestionGroups([]);
 			}
 		}, 300);
 
@@ -150,9 +229,11 @@ export default function ServiceAutocomplete({
 	};
 
 	const handleInputFocus = () => {
-		if (suggestions.length > 0) {
-			setShowSuggestions(true);
+		if (value.length === 0) {
+			// Show initial suggestions when focusing on empty input
+			fetchInitialSuggestions();
 		}
+		setShowSuggestions(true);
 	};
 
 	const handleClear = () => {
@@ -219,24 +300,83 @@ export default function ServiceAutocomplete({
 				</div>
 			)}
 
-			{showSuggestions && suggestions.length > 0 && (
+			{showSuggestions && suggestionGroups.length > 0 && (
 				<div
 					ref={suggestionsRef}
-					className="absolute z-50 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-60 overflow-y-auto"
+					className="absolute z-50 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-80 overflow-y-auto"
 				>
-					{suggestions.map((suggestion) => (
-						<button
-							key={suggestion.id}
-							onClick={() => handleSuggestionClick(suggestion)}
-							className="w-full px-3 py-2 text-left hover:bg-gray-50 border-b border-gray-100 last:border-b-0 text-sm text-gray-700"
-						>
-							<div className="font-medium">{suggestion.name}</div>
-							{suggestion.category && (
-								<div className="text-xs text-gray-500">
-									{suggestion.category.name}
+					{suggestionGroups.map((group, groupIndex) => (
+						<div key={`${group.type}-${groupIndex}`}>
+							{/* Group Header */}
+							<div className="px-3 py-2 bg-gray-50 border-b border-gray-100">
+								<div className="flex items-center gap-2">
+									{group.type === 'service' && (
+										<svg
+											className="w-4 h-4 text-primary"
+											fill="none"
+											stroke="currentColor"
+											viewBox="0 0 24 24"
+										>
+											<path
+												strokeLinecap="round"
+												strokeLinejoin="round"
+												strokeWidth={2}
+												d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
+											/>
+										</svg>
+									)}
+									{group.type === 'category' && (
+										<svg
+											className="w-4 h-4 text-primary"
+											fill="none"
+											stroke="currentColor"
+											viewBox="0 0 24 24"
+										>
+											<path
+												strokeLinecap="round"
+												strokeLinejoin="round"
+												strokeWidth={2}
+												d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"
+											/>
+										</svg>
+									)}
+									{group.type === 'salon' && (
+										<svg
+											className="w-4 h-4 text-primary"
+											fill="none"
+											stroke="currentColor"
+											viewBox="0 0 24 24"
+										>
+											<path
+												strokeLinecap="round"
+												strokeLinejoin="round"
+												strokeWidth={2}
+												d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"
+											/>
+										</svg>
+									)}
+									<span className="text-xs font-semibold text-gray-600 uppercase tracking-wide">
+										{group.title}
+									</span>
 								</div>
-							)}
-						</button>
+							</div>
+
+							{/* Group Suggestions */}
+							{group.suggestions.map((suggestion, suggestionIndex) => (
+								<button
+									key={`${suggestion.type}-${suggestion.id}-${suggestionIndex}`}
+									onClick={() => handleSuggestionClick(suggestion)}
+									className="w-full px-3 py-2 text-left hover:bg-gray-50 border-b border-gray-100 last:border-b-0 text-sm text-gray-700"
+								>
+									<div className="font-medium">{suggestion.name}</div>
+									{suggestion.category && (
+										<div className="text-xs text-gray-500">
+											{suggestion.category.name}
+										</div>
+									)}
+								</button>
+							))}
+						</div>
 					))}
 				</div>
 			)}
