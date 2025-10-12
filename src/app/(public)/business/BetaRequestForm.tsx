@@ -57,27 +57,30 @@ export default function BetaRequestForm() {
 	};
 
 	return (
-		<section className="py-20 bg-gradient-to-br from-orange-50 to-pink-50 scroll-mt-20">
-			<div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
-				<div className="text-center mb-12">
-					<h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-6">
+		<section className="py-20 px-4 bg-muted/30 scroll-mt-20">
+			<div className="container mx-auto max-w-3xl">
+				<div className="text-center mb-16">
+					<div className="inline-block px-4 py-2 bg-secondary rounded-full mb-4">
+						<span className="text-primary">Beta Access</span>
+					</div>
+					<h2 className="text-4xl lg:text-5xl tracking-tight mb-4">
 						Request Beta Access
 					</h2>
-					<p className="text-xl text-gray-600">
+					<p className="text-xl text-muted-foreground">
 						Fill out the form below to join our beta testing program and get
 						early access to Henzo.
 					</p>
 				</div>
 
-				<div className="bg-white rounded-2xl shadow-xl p-8 md:p-12">
+				<div className="bg-card rounded-2xl border border-border shadow-lg p-8 md:p-12">
 					<form onSubmit={handleSubmit} className="space-y-6">
 						{/* Full Name */}
 						<div>
 							<label
 								htmlFor="fullName"
-								className="block text-sm font-medium text-gray-700 mb-2"
+								className="block text-sm font-medium text-foreground mb-2"
 							>
-								Full Name <span className="text-red-500">*</span>
+								Full Name <span className="text-destructive">*</span>
 							</label>
 							<input
 								type="text"
@@ -88,7 +91,7 @@ export default function BetaRequestForm() {
 									setFormData({ ...formData, fullName: e.target.value })
 								}
 								placeholder="John Doe"
-								className="block w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 text-gray-500 transition-colors"
+								className="block w-full px-4 py-3 border border-border rounded-lg bg-background text-foreground focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-colors"
 							/>
 						</div>
 
@@ -96,9 +99,10 @@ export default function BetaRequestForm() {
 						<div>
 							<label
 								htmlFor="salonName"
-								className="block text-sm font-medium text-gray-700 mb-2"
+								className="block text-sm font-medium text-foreground mb-2"
 							>
-								Salon Name <span className="text-gray-400">(Optional)</span>
+								Salon Name{' '}
+								<span className="text-muted-foreground">(Optional)</span>
 							</label>
 							<input
 								type="text"
@@ -108,7 +112,7 @@ export default function BetaRequestForm() {
 									setFormData({ ...formData, salonName: e.target.value })
 								}
 								placeholder="Beauty Lounge"
-								className="block w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 text-gray-500 transition-colors"
+								className="block w-full px-4 py-3 border border-border rounded-lg bg-background text-foreground focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-colors"
 							/>
 						</div>
 
@@ -116,9 +120,9 @@ export default function BetaRequestForm() {
 						<div>
 							<label
 								htmlFor="email"
-								className="block text-sm font-medium text-gray-700 mb-2"
+								className="block text-sm font-medium text-foreground mb-2"
 							>
-								Email <span className="text-red-500">*</span>
+								Email <span className="text-destructive">*</span>
 							</label>
 							<input
 								type="email"
@@ -129,7 +133,7 @@ export default function BetaRequestForm() {
 									setFormData({ ...formData, email: e.target.value })
 								}
 								placeholder="john@example.com"
-								className="block w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 text-gray-500 transition-colors"
+								className="block w-full px-4 py-3 border border-border rounded-lg bg-background text-foreground focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-colors"
 							/>
 						</div>
 
@@ -137,12 +141,12 @@ export default function BetaRequestForm() {
 						<button
 							type="submit"
 							disabled={loading}
-							className="w-full bg-orange-500 text-white px-8 py-4 rounded-lg text-lg font-semibold hover:bg-orange-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+							className="w-full bg-primary text-primary-foreground px-8 py-4 rounded-lg text-lg font-medium hover:bg-primary/90 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
 						>
 							{loading ? 'Submitting...' : 'Request Beta Access'}
 						</button>
 
-						<p className="text-sm text-gray-500 text-center">
+						<p className="text-sm text-muted-foreground text-center">
 							By submitting this form, you agree to be contacted about the beta
 							testing program.
 						</p>

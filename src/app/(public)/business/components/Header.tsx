@@ -2,17 +2,14 @@
 
 import Link from 'next/link';
 import { Button } from './ui/button';
-import { Sparkles } from 'lucide-react';
+import Image from 'next/image';
 
 export function Header() {
 	return (
 		<header className="fixed top-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-md border-b border-border">
 			<div className="container mx-auto px-4 py-4 flex items-center justify-between">
 				<Link href="/" className="flex items-center gap-2">
-					<div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center">
-						<Sparkles className="w-5 h-5 text-white" />
-					</div>
-					<span className="text-xl tracking-tight">Henzo</span>
+					<Image src="/logo.png" alt="Henzo Logo" width={88} height={40} />
 				</Link>
 
 				<nav className="hidden md:flex items-center gap-8">
