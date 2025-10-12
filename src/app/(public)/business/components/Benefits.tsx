@@ -32,9 +32,9 @@ export function Benefits() {
 						</div>
 
 						<h2 className="text-4xl lg:text-5xl tracking-tight">
-							Grow Your Business with{' '}
+							Grow Your Business <br />
 							<span className="bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
-								Confidence
+								with Confidence
 							</span>
 						</h2>
 

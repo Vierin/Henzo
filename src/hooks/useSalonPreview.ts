@@ -5,9 +5,12 @@ interface SalonPreview {
 	id: string;
 	name: string;
 	address: string;
-	phone: string;
+	phone?: string;
 	logo: string;
 	photos: string[];
+	avgRating?: number;
+	categories?: string[];
+	priceRange?: string;
 	_count: {
 		reviews: number;
 		services: number;

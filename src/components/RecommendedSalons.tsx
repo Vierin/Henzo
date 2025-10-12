@@ -8,6 +8,7 @@ import LoadingSpinner from './LoadingSpinner';
 import ErrorDisplay from './ErrorDisplay';
 import Image from 'next/image';
 import Link from 'next/link';
+import { Star } from 'lucide-react';
 
 export default function RecommendedSalons() {
 	const { getSalonUrl } = useSalonSlug();
@@ -94,63 +95,84 @@ export default function RecommendedSalons() {
 					</div>
 				) : (
 					<div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-						{(salons as any[]).slice(0, 3).map((salon: any) => (
-							<Link
-								key={salon.id}
-								href={getSalonUrl(salon)}
-								className="bg-white rounded-xl overflow-hidden shadow-lg hover:shadow-xl transition-shadow block"
-							>
-								<div className="h-[15rem] bg-gradient-to-br from-pink-100 to-pink-200 flex items-center justify-center">
-									{(() => {
-										const imageData = getSalonImage(salon);
-										return imageData.url ? (
-											<Image
-												src={imageData.url}
-												alt={salon.name}
-												width={400}
-												height={192}
-												style={{
-													width: '100%',
-													height: '100%',
-													objectFit: 'cover',
-												}}
-												unoptimized={imageData.isExternal}
-											/>
-										) : (
-											<span className="text-6xl">💇‍♀️</span>
-										);
-									})()}
-								</div>
-								<div className="p-6">
-									<h3 className="text-xl font-bold text-gray-900 mb-2">
-										{salon.name}
-									</h3>
-									<p className="text-[#ff5b5b] text-sm mb-2">{salon.address}</p>
-									{salon.phone && (
-										<p className="text-gray-500 text-xs mb-3">
-											📞 {salon.phone}
-										</p>
-									)}
-									{salon._count && salon._count.services > 0 && (
-										<div className="flex flex-wrap gap-1 mb-4">
-											<span className="px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-full">
-												{salon._count.services} services
+						{(salons as any[]).slice(0, 3).map((salon: any) => {
+							// Get all categories joined by commas
+							const categoryText =
+								salon.categories && salon.categories.length > 0
+									? salon.categories.join(', ')
+									: 'Hair & Makeup';
+							const avgRating = salon.avgRating || 0;
+							const reviewCount = salon._count?.reviews || 0;
+							const priceRange = salon.priceRange || '$$';
+
+							return (
+								<Link
+									key={salon.id}
+									href={getSalonUrl(salon)}
+									className="bg-white rounded-2xl overflow-hidden shadow-md hover:shadow-xl transition-all duration-300 block"
+								>
+									<div className="relative h-[15rem] bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center">
+										{(() => {
+											const imageData = getSalonImage(salon);
+											return imageData.url ? (
+												<Image
+													src={imageData.url}
+													alt={salon.name}
+													width={400}
+													height={240}
+													style={{
+														width: '100%',
+														height: '100%',
+														objectFit: 'cover',
+													}}
+													className="grayscale-[30%]"
+													unoptimized={imageData.isExternal}
+												/>
+											) : (
+												<span className="text-6xl">💇‍♀️</span>
+											);
+										})()}
+										{/* Price range badge */}
+										<div className="absolute top-4 right-4 bg-white rounded-full px-3 py-1 shadow-md">
+											<span className="text-sm font-medium text-gray-700">
+												{priceRange}
 											</span>
-											{salon._count.reviews > 0 && (
-												<span className="px-2 py-1 bg-green-100 text-green-800 text-xs rounded-full">
-													{salon._count.reviews} reviews
-												</span>
+										</div>
+									</div>
+									<div className="p-5">
+										{/* Title and Rating */}
+										<div className="flex items-start justify-between mb-2">
+											<h3 className="text-xl font-bold text-gray-900 flex-1">
+												{salon.name}
+											</h3>
+											{avgRating > 0 && (
+												<div className="flex items-center gap-1 ml-2 flex-shrink-0">
+													<span className="text-red-500">
+														<Star className="w-4 h-4 text-[#ff5b5b] fill-[#ff5b5b]" />
+													</span>
+													<span className="text-sm font-semibold text-gray-900">
+														{avgRating.toFixed(1)}
+													</span>
+												</div>
 											)}
 										</div>
-									)}
-									<div className="flex items-center justify-center">
-										<span className="bg-[#ff5b5b] text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-[#e04a4a] transition-colors">
-											View Details
-										</span>
+
+										{/* Category */}
+										<p className="text-gray-500 text-sm mb-8">{categoryText}</p>
+
+										{/* Footer: Reviews and View Details */}
+										<div className="flex items-center justify-between">
+											<span className="text-gray-500 text-sm">
+												{reviewCount} {reviewCount === 1 ? 'review' : 'reviews'}
+											</span>
+											<span className="text-red-500 text-sm font-medium hover:text-red-600 transition-colors">
+												View Details →
+											</span>
+										</div>
 									</div>
-								</div>
-							</Link>
-						))}
+								</Link>
+							);
+						})}
 					</div>
 				)}
 			</div>

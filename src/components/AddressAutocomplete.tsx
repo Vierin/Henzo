@@ -44,7 +44,7 @@ export default function AddressAutocomplete({
 			lon: '0',
 		},
 		{
-			display_name: 'Da Nang, Vietnam',
+			display_name: 'Đà Nẵng',
 			lat: '16.0544',
 			lon: '108.2022',
 		},
@@ -284,7 +284,7 @@ export default function AddressAutocomplete({
 				(error) => {
 					console.error('Error getting location:', error);
 					// Fallback - используем Дананг
-					const address = 'Da Nang, Vietnam';
+					const address = 'Đà Nẵng';
 					onChange(address);
 					if (onAddressSelect) {
 						onAddressSelect(address, 16.0544, 108.2022);
@@ -364,7 +364,7 @@ export default function AddressAutocomplete({
 					{suggestions.map((suggestion, index) => {
 						const isDefaultSuggestion =
 							suggestion.display_name === 'Use Current Location' ||
-							suggestion.display_name === 'Da Nang, Vietnam';
+							suggestion.display_name === 'Đà Nẵng';
 
 						return (
 							<button

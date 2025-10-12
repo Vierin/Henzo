@@ -12,13 +12,13 @@ export function CTA() {
 				<div className="grid lg:grid-cols-2 gap-12 items-center max-w-6xl mx-auto">
 					<div className="space-y-6">
 						<h2 className="text-4xl lg:text-5xl tracking-tight">
-							Ready to Transform Your Salon?
+							Ready to Transform <br /> Your Salon?
 						</h2>
 
-					<p className="text-xl text-muted-foreground">
-						Join Henzo's beta testing program. Completely free during beta,
-						no commitments required.
-					</p>
+						<p className="text-xl text-muted-foreground">
+							Join Henzo's beta testing program. Completely free during beta, no
+							commitments required.
+						</p>
 
 						<div className="flex flex-col sm:flex-row gap-4">
 							<Link href="#beta-form">
