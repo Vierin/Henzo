@@ -14,6 +14,7 @@ export default function PublicGroupLayout({
 		pathname.startsWith('/category/') ||
 		pathname.startsWith('/salons') ||
 		pathname.startsWith('/salon/');
+	const isBusinessPage = pathname === '/business';
 	const [isScrolled, setIsScrolled] = useState(false);
 
 	// Handle scroll to determine if search is fixed
@@ -27,8 +28,8 @@ export default function PublicGroupLayout({
 	}, []);
 
 	return (
-		<div className="min-h-screen bg-[#fff7f6]">
-			<PublicHeader />
+		<div className={`min-h-screen ${!isBusinessPage ? 'bg-[#fff7f6]' : ''}`}>
+			{!isBusinessPage && <PublicHeader />}
 			<main className={shouldShowSearch && isScrolled ? 'pt-20' : ''}>
 				{children}
 			</main>

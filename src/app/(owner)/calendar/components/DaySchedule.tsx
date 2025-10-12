@@ -1,13 +1,14 @@
 'use client';
 
 import { useState, useMemo, useRef } from 'react';
-import { Booking } from '@/types';
+import { Booking, TimeBlock } from '@/types';
 import { safeParseDate, formatTimeSafe } from '@/utils/date';
 import { ChevronLeft, ChevronRight, X } from 'lucide-react';
 
 interface DayScheduleProps {
 	selectedDate: Date;
 	bookings: Booking[];
+	timeBlocks?: TimeBlock[];
 	onBack: () => void;
 	onViewBookingDetails: (booking: Booking) => void;
 	onPrevDay?: () => void;
@@ -19,6 +20,7 @@ const DATA_WIDTH = '50px';
 export default function DaySchedule({
 	selectedDate,
 	bookings,
+	timeBlocks = [],
 	onBack,
 	onViewBookingDetails,
 	onPrevDay,
@@ -29,11 +31,56 @@ export default function DaySchedule({
 	const [isDragging, setIsDragging] = useState(false);
 	const [startX, setStartX] = useState(0);
 	const [scrollLeft, setScrollLeft] = useState(0);
+
 	const getBookingsForDate = (date: Date) => {
 		return bookings.filter((booking) => {
 			const bookingDate = safeParseDate(booking.time);
 			if (!bookingDate) return false;
 			return bookingDate.toDateString() === date.toDateString();
+		});
+	};
+
+	const getTimeBlocksForDate = (date: Date) => {
+		return timeBlocks.filter((block) => {
+			const blockStart = new Date(block.startDate);
+			const blockEnd = new Date(block.endDate);
+
+			// Reset time to compare just dates
+			const dateOnly = new Date(
+				date.getFullYear(),
+				date.getMonth(),
+				date.getDate()
+			);
+			const blockStartDate = new Date(
+				blockStart.getFullYear(),
+				blockStart.getMonth(),
+				blockStart.getDate()
+			);
+			const blockEndDate = new Date(
+				blockEnd.getFullYear(),
+				blockEnd.getMonth(),
+				blockEnd.getDate()
+			);
+
+			return dateOnly >= blockStartDate && dateOnly <= blockEndDate;
+		});
+	};
+
+	const getTimeBlockAtTime = (staffId: string | null, timeSlotHour: number) => {
+		const dayTimeBlocks = getTimeBlocksForDate(selectedDate);
+		return dayTimeBlocks.find((block) => {
+			// Check if block applies to this staff or salon-wide
+			if (staffId !== null && block.staffId && block.staffId !== staffId) {
+				return false;
+			}
+
+			const blockStart = new Date(block.startDate);
+			const blockEnd = new Date(block.endDate);
+			const blockStartHour = blockStart.getHours();
+			const blockEndHour = blockEnd.getHours();
+
+			// Check if time slot overlaps with block
+			return timeSlotHour >= blockStartHour && timeSlotHour < blockEndHour;
 		});
 	};
 
@@ -387,13 +434,36 @@ export default function DaySchedule({
 												startingAppointment,
 												timeSlot.hour
 											);
+											const timeBlock = getTimeBlockAtTime(
+												staff.id,
+												timeSlot.hour
+											);
 
 											return (
 												<div
 													key={`${staff.id}-${timeSlot.time}`}
-													className="relative h-16 border-b border-r border-gray-200"
+													className={`relative h-16 border-b border-r border-gray-200 ${
+														timeBlock ? 'bg-gray-100' : ''
+													}`}
 												>
-													{startingAppointment && position
+													{timeBlock && (
+														<div
+															className="absolute inset-0 bg-gray-300 bg-opacity-50 flex items-center justify-center"
+															style={{
+																backgroundImage:
+																	'repeating-linear-gradient(45deg, transparent, transparent 10px, rgba(0,0,0,0.05) 10px, rgba(0,0,0,0.05) 20px)',
+															}}
+														>
+															<div className="text-xs text-gray-700 font-medium px-2 py-1 bg-white rounded shadow-sm">
+																{timeBlock.type === 'TIME_OFF'
+																	? '🚫 Time Off'
+																	: timeBlock.type === 'BUSY'
+																		? '⏸️ Busy'
+																		: '🔒 Closed'}
+															</div>
+														</div>
+													)}
+													{startingAppointment && position && !timeBlock
 														? (() => {
 																const styles =
 																	getBookingBlockStyles(startingAppointment);

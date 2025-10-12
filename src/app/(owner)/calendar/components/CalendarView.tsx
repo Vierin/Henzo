@@ -1,12 +1,13 @@
 'use client';
 
-import { Booking, WorkingHours } from '@/types';
+import { Booking, WorkingHours, TimeBlock } from '@/types';
 import { safeParseDate } from '@/utils/date';
 
 interface CalendarViewProps {
 	currentMonth: number;
 	currentYear: number;
 	bookings: Booking[];
+	timeBlocks?: TimeBlock[];
 	workingHours?: WorkingHours;
 	onPreviousMonth: () => void;
 	onNextMonth: () => void;
@@ -17,6 +18,7 @@ export default function CalendarView({
 	currentMonth,
 	currentYear,
 	bookings,
+	timeBlocks = [],
 	workingHours,
 	onPreviousMonth,
 	onNextMonth,
@@ -34,6 +36,32 @@ export default function CalendarView({
 			const bookingDate = safeParseDate(booking.time);
 			if (!bookingDate) return false;
 			return bookingDate.toDateString() === date.toDateString();
+		});
+	};
+
+	const hasTimeBlockOnDate = (date: Date) => {
+		return timeBlocks.some((block) => {
+			const blockStart = new Date(block.startDate);
+			const blockEnd = new Date(block.endDate);
+
+			// Reset time to compare just dates
+			const dateOnly = new Date(
+				date.getFullYear(),
+				date.getMonth(),
+				date.getDate()
+			);
+			const blockStartDate = new Date(
+				blockStart.getFullYear(),
+				blockStart.getMonth(),
+				blockStart.getDate()
+			);
+			const blockEndDate = new Date(
+				blockEnd.getFullYear(),
+				blockEnd.getMonth(),
+				blockEnd.getDate()
+			);
+
+			return dateOnly >= blockStartDate && dateOnly <= blockEndDate;
 		});
 	};
 
@@ -181,6 +209,7 @@ export default function CalendarView({
 									today.getDate()
 								);
 							const hasAppointment = hasAppointmentsOnDate(currentDate);
+							const hasTimeBlock = hasTimeBlockOnDate(currentDate);
 							const isDayOffToday = isDayOff(currentDate);
 							const isDisabled = isPast || isDayOffToday;
 
@@ -204,19 +233,31 @@ export default function CalendarView({
 									aria-label={`${day} ${getMonthName(currentMonth, currentYear)} ${
 										isDayOffToday
 											? 'closed day'
-											: hasAppointment
-												? 'has appointments'
-												: 'no appointments'
+											: hasTimeBlock
+												? 'has blocked time'
+												: hasAppointment
+													? 'has appointments'
+													: 'no appointments'
 									}`}
 									aria-current={isToday ? 'date' : undefined}
 								>
 									{day}
-									{hasAppointment && !isToday && !isDayOffToday && (
-										<div
-											className="absolute bottom-0 left-1/2 transform -translate-x-1/2 w-1 h-1 bg-[#ea4b4b] rounded-full"
-											aria-hidden="true"
-										></div>
-									)}
+									<div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 flex gap-0.5">
+										{hasAppointment && !isToday && !isDayOffToday && (
+											<div
+												className="w-1 h-1 bg-[#ea4b4b] rounded-full"
+												aria-hidden="true"
+												title="Has appointments"
+											></div>
+										)}
+										{hasTimeBlock && !isToday && !isDayOffToday && (
+											<div
+												className="w-1 h-1 bg-gray-600 rounded-full"
+												aria-hidden="true"
+												title="Has blocked time"
+											></div>
+										)}
+									</div>
 								</button>
 							);
 						});

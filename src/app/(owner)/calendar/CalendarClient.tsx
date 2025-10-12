@@ -19,6 +19,7 @@ import ErrorDisplay from '@/components/ErrorDisplay';
 import { useSalonId } from '@/hooks/useSalon';
 import { useCurrentUserSalon } from '@/hooks/useSalons';
 import { useBookings } from '@/hooks/useBookings';
+import { useTimeBlocks } from '@/hooks/useTimeBlocks';
 import { BookingWithDetailsDto } from '@/types/dto/booking.dto';
 
 // Import calendar components
@@ -26,7 +27,8 @@ import BookingList from './components/BookingList';
 import CalendarView from './components/CalendarView';
 import BookingDetailsModal from './components/BookingDetailsModal';
 import DaySchedule from './components/DaySchedule';
-import { CalendarDays, List } from 'lucide-react';
+import BlockTimeModal from '@/components/BlockTimeModal';
+import { CalendarDays, List, Ban } from 'lucide-react';
 
 // Функция для преобразования BookingWithDetailsDto в Booking
 const convertBookingDtoToBooking = (dto: any): Booking => {
@@ -89,6 +91,7 @@ export default function CalendarClient() {
 	const [viewingBooking, setViewingBooking] = useState<Booking | null>(null);
 	const [isBookingDetailsModalOpen, setIsBookingDetailsModalOpen] =
 		useState(false);
+	const [isBlockTimeModalOpen, setIsBlockTimeModalOpen] = useState(false);
 	const [statusFilter, setStatusFilter] = useState<string>('all');
 	const [dateFilter, setDateFilter] = useState<string>('all');
 	const [searchQuery, setSearchQuery] = useState<string>('');
@@ -111,6 +114,12 @@ export default function CalendarClient() {
 		error: bookingsError,
 		refetch: refetchBookings,
 	} = useBookings();
+
+	const {
+		data: timeBlocks = [],
+		isLoading: timeBlocksLoading,
+		error: timeBlocksError,
+	} = useTimeBlocks();
 
 	const bookings = bookingsData.map(convertBookingDtoToBooking);
 	const loading = bookingsLoading;
@@ -527,6 +536,15 @@ export default function CalendarClient() {
 						</div>
 
 						<button
+							onClick={() => setIsBlockTimeModalOpen(true)}
+							className="inline-flex items-center gap-2 rounded-lg border-2 border-gray-300 bg-white text-gray-700 px-4 py-2 text-sm shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-400 focus:ring-offset-2 transition-colors"
+							aria-label="Block time"
+						>
+							<Ban className="w-4 h-4" />
+							Block Time
+						</button>
+
+						<button
 							onClick={handleNewAppointment}
 							className="inline-flex items-center gap-2 rounded-full bg-[#ea4b4b] text-white px-4 py-2 text-sm shadow-sm hover:opacity-95 focus:outline-none focus:ring-2 focus:ring-[#ea4b4b] focus:ring-offset-2"
 							aria-label="Add new appointment"
@@ -568,6 +586,7 @@ export default function CalendarClient() {
 									currentMonth={currentMonth}
 									currentYear={currentYear}
 									bookings={bookings}
+									timeBlocks={timeBlocks}
 									workingHours={salonData?.workingHours}
 									onPreviousMonth={goToPreviousMonth}
 									onNextMonth={goToNextMonth}
@@ -579,6 +598,7 @@ export default function CalendarClient() {
 						<DaySchedule
 							selectedDate={selectedDate}
 							bookings={bookings}
+							timeBlocks={timeBlocks}
 							onBack={handleBackToMonth}
 							onViewBookingDetails={handleViewBookingDetails}
 							onPrevDay={handlePrevDay}
@@ -605,6 +625,11 @@ export default function CalendarClient() {
 				onClose={handleBookingDetailsModalClose}
 				onEdit={handleEditFromDetails}
 				onCancel={handleCancelBooking}
+			/>
+
+			<BlockTimeModal
+				isOpen={isBlockTimeModalOpen}
+				onClose={() => setIsBlockTimeModalOpen(false)}
 			/>
 		</main>
 	);

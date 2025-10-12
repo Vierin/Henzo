@@ -144,3 +144,18 @@ export interface ApiError {
 	error: string;
 	message?: string;
 }
+
+export interface TimeBlock {
+	id: string;
+	salonId: string;
+	staffId?: string; // null/undefined = весь салон
+	type: 'TIME_OFF' | 'BUSY' | 'CLOSURE';
+	reason: string;
+	startDate: string; // ISO string
+	endDate: string; // ISO string
+	notes?: string;
+	conflictAction: 'KEEP' | 'CANCEL'; // что делать с existing bookings
+	createdAt: string;
+	staff?: Staff;
+	conflictingBookings?: Booking[]; // bookings that conflict with this block
+}

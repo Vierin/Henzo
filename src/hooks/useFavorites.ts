@@ -83,3 +83,4 @@ export const useIsFavorite = (salonId: string) => {
 	const { data: favorites = [] } = useFavoriteSalons();
 	return favorites.some((salon) => salon.id === salonId);
 };
+
