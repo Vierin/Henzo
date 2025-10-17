@@ -33,7 +33,12 @@ export interface Salon {
 	longitude?: number;
 	// Rating and review count
 	rating?: number;
+	avgRating?: number;
 	reviewCount?: number;
+	_count?: {
+		reviews?: number;
+		services?: number;
+	};
 	// Метод для генерации slug (не сохраняется в БД)
 	getSlug?(): string;
 }

@@ -1,7 +1,6 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
-import { Plus, Minus, Navigation } from 'lucide-react';
+import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { Salon } from '@/types';
 import { useFeaturedSalons } from '@/hooks/useSalonPreview';
 import dynamic from 'next/dynamic';
@@ -29,15 +28,17 @@ const Marker = dynamic(
 	{ ssr: false }
 );
 
-const Popup = dynamic(() => import('react-leaflet').then((mod) => mod.Popup), {
-	ssr: false,
-});
-
 interface InteractiveMapProps {
 	center: { lat: number; lng: number };
 	zoom: number;
 	onMarkerClick: (salon: Salon) => void;
 	selectedSalon: Salon | null;
+	onMapBoundsChange?: (bounds: {
+		north: number;
+		south: number;
+		east: number;
+		west: number;
+	}) => void;
 }
 
 export default function InteractiveMap({
@@ -45,11 +46,14 @@ export default function InteractiveMap({
 	zoom,
 	onMarkerClick,
 	selectedSalon,
+	onMapBoundsChange,
 }: InteractiveMapProps) {
 	const [currentZoom, setCurrentZoom] = useState(zoom);
 	const [mapInstance, setMapInstance] = useState<any>(null);
 	const [leafletLoaded, setLeafletLoaded] = useState(false);
-	const { data: salons = [] } = useFeaturedSalons(20);
+	const { data: salons = [], isLoading: isSalonsLoading } =
+		useFeaturedSalons(20);
+	const lastBoundsRef = useRef<string | null>(null);
 
 	// Initialize Leaflet
 	useEffect(() => {
@@ -73,67 +77,72 @@ export default function InteractiveMap({
 		}
 	}, []);
 
-	// Mock salon data with coordinates (Ho Chi Minh City area)
-	const mockSalons: Salon[] = [
-		{
-			id: '1',
-			name: 'Glamour & Glow Salon',
-			address: '123 Beauty Lane, Luxeville',
-			latitude: 10.7769, // Center of HCMC
-			longitude: 106.7009,
-			rating: 4.2,
-			reviewCount: 124,
-			ownerId: 'mock-owner-1',
-			createdAt: new Date().toISOString(),
-		},
-		{
-			id: '2',
-			name: 'The Modern Mane',
-			address: '456 Style Street, Trendytown',
-			latitude: 10.7869, // North of center
-			longitude: 106.7109,
-			rating: 4.7,
-			reviewCount: 88,
-			ownerId: 'mock-owner-2',
-			createdAt: new Date().toISOString(),
-		},
-		{
-			id: '3',
-			name: 'Serenity Spa & Styles',
-			address: '789 Relax Row, Calm City',
-			latitude: 10.7669, // South of center
-			longitude: 106.6909,
-			rating: 4.9,
-			reviewCount: 210,
-			ownerId: 'mock-owner-3',
-			createdAt: new Date().toISOString(),
-		},
-		{
-			id: '4',
-			name: 'Beauty Haven',
-			address: '321 Style Avenue, Fashion District',
-			latitude: 10.7829, // East of center
-			longitude: 106.7209,
-			rating: 4.5,
-			reviewCount: 156,
-			ownerId: 'mock-owner-4',
-			createdAt: new Date().toISOString(),
-		},
-		{
-			id: '5',
-			name: 'Chic & Elegant',
-			address: '654 Grace Street, Uptown',
-			latitude: 10.7709, // West of center
-			longitude: 106.6809,
-			rating: 4.8,
-			reviewCount: 203,
-			ownerId: 'mock-owner-5',
-			createdAt: new Date().toISOString(),
-		},
-	];
+	// Filter salons that have coordinates (from geocoding cache)
+	const displaySalons = useMemo(
+		() =>
+			(salons as any[]).filter((salon) => salon.latitude && salon.longitude),
+		[salons]
+	);
 
-	const displaySalons =
-		(salons as any[]).length > 0 ? (salons as any[]) : mockSalons;
+	// Create custom pin icon function with useCallback
+	const createCustomIcon = useCallback(
+		(salon: Salon) => {
+			if (!L) {
+				return null;
+			}
+
+			try {
+				const isSelected = selectedSalon?.id === salon.id;
+				const color = isSelected ? '#e04a4a' : '#ff5b5b';
+
+				return L.divIcon({
+					className: 'custom-pin-marker',
+					html: `
+						<svg width="29" height="37" viewBox="0 0 36 46" fill="none" xmlns="http://www.w3.org/2000/svg" style="filter: drop-shadow(0 2px 8px rgba(0,0,0,0.3));">
+							<path d="M18 0C8.059 0 0 8.059 0 18C0 27 18 46 18 46C18 46 36 27 36 18C36 8.059 27.941 0 18 0Z" fill="${color}"/>
+							<circle cx="18" cy="17" r="7" fill="white"/>
+						</svg>
+					`,
+					iconSize: [29, 37],
+					iconAnchor: [14.5, 37],
+					popupAnchor: [0, -37],
+				});
+			} catch (error) {
+				console.error('Error creating custom icon:', error);
+				return null;
+			}
+		},
+		[L, selectedSalon]
+	);
+
+	// Memoize markers to prevent recreating on every render
+	const salonMarkers = useMemo(() => {
+		if (!leafletLoaded || !L) return null;
+
+		return displaySalons.map((salon: any) => {
+			if (!salon.latitude || !salon.longitude) {
+				return null;
+			}
+
+			const customIcon = createCustomIcon(salon);
+			if (!customIcon) {
+				return null;
+			}
+
+			return (
+				<Marker
+					key={salon.id}
+					position={[salon.latitude, salon.longitude]}
+					icon={customIcon}
+					eventHandlers={{
+						click: () => {
+							onMarkerClick(salon);
+						},
+					}}
+				/>
+			);
+		});
+	}, [leafletLoaded, L, displaySalons, onMarkerClick, createCustomIcon]);
 
 	// Update map center when center prop changes
 	useEffect(() => {
@@ -142,86 +151,63 @@ export default function InteractiveMap({
 		}
 	}, [center, zoom, mapInstance]);
 
-	const handleZoomIn = () => {
-		if (mapInstance) {
-			mapInstance.zoomIn();
-		}
-	};
+	// Track map bounds changes
+	const updateBounds = useCallback(() => {
+		if (!mapInstance || !onMapBoundsChange) return;
 
-	const handleZoomOut = () => {
-		if (mapInstance) {
-			mapInstance.zoomOut();
-		}
-	};
+		const bounds = mapInstance.getBounds();
+		const boundsData = {
+			north: bounds.getNorth(),
+			south: bounds.getSouth(),
+			east: bounds.getEast(),
+			west: bounds.getWest(),
+		};
 
-	const handleGeolocation = () => {
-		if (navigator.geolocation) {
-			navigator.geolocation.getCurrentPosition(
-				(position) => {
-					if (mapInstance) {
-						mapInstance.setView(
-							[position.coords.latitude, position.coords.longitude],
-							15
-						);
-					}
-				},
-				(error) => {
-					console.error('Geolocation error:', error);
-				}
-			);
-		}
-	};
+		// Serialize bounds to string for comparison
+		const boundsString = JSON.stringify({
+			north: boundsData.north.toFixed(6),
+			south: boundsData.south.toFixed(6),
+			east: boundsData.east.toFixed(6),
+			west: boundsData.west.toFixed(6),
+		});
 
-	// Custom marker icon
-	const createCustomIcon = (salon: Salon) => {
-		if (!L) {
-			console.log('L is not available');
-			return null;
+		// Only update if bounds actually changed
+		if (lastBoundsRef.current !== boundsString) {
+			lastBoundsRef.current = boundsString;
+			onMapBoundsChange(boundsData);
 		}
+	}, [mapInstance, onMapBoundsChange]);
 
-		try {
-			const isSelected = selectedSalon?.id === salon.id;
-			return L.divIcon({
-				className: 'custom-marker',
-				html: `
-					<div style="
-						width: 32px;
-						height: 32px;
-						background-color: ${isSelected ? '#ea580c' : '#f97316'};
-						border: 2px solid white;
-						border-radius: 50%;
-						display: flex;
-						align-items: center;
-						justify-content: center;
-						box-shadow: 0 2px 8px rgba(0,0,0,0.3);
-						font-size: 12px;
-						font-weight: bold;
-						color: white;
-						cursor: pointer;
-					">
-					</div>
-				`,
-				iconSize: [32, 32],
-				iconAnchor: [16, 16],
-			});
-		} catch (error) {
-			console.error('Error creating custom icon:', error);
-			// Fallback to default marker
-			return L.icon({
-				iconUrl:
-					'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon.png',
-				shadowUrl:
-					'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
-				iconSize: [25, 41],
-				iconAnchor: [12, 41],
-				popupAnchor: [1, -34],
-				shadowSize: [41, 41],
-			});
+	useEffect(() => {
+		if (mapInstance && onMapBoundsChange) {
+			// Update bounds on move and zoom
+			mapInstance.on('moveend', updateBounds);
+			mapInstance.on('zoomend', updateBounds);
+
+			// Initial bounds
+			updateBounds();
+
+			return () => {
+				mapInstance.off('moveend', updateBounds);
+				mapInstance.off('zoomend', updateBounds);
+			};
 		}
-	};
+	}, [mapInstance, onMapBoundsChange, updateBounds]);
 
 	return (
 		<div className="relative w-full h-full">
+			{/* Loading overlay */}
+			{isSalonsLoading && (
+				<div className="absolute inset-0 bg-white/80 backdrop-blur-sm z-50 flex items-center justify-center">
+					<div className="flex flex-col items-center gap-4">
+						<div className="relative">
+							<div className="w-16 h-16 border-4 border-gray-200 border-t-[#ff5b5b] rounded-full animate-spin"></div>
+						</div>
+						<p className="text-gray-600 font-medium">Loading salons...</p>
+					</div>
+				</div>
+			)}
+
 			<MapContainer
 				center={[center.lat, center.lng]}
 				zoom={zoom}
@@ -238,133 +224,8 @@ export default function InteractiveMap({
 				/>
 
 				{/* Salon markers */}
-				{leafletLoaded &&
-					L &&
-					displaySalons.map((salon: any) => {
-						console.log(
-							'Rendering marker for salon:',
-							salon.name,
-							'lat:',
-							salon.latitude,
-							'lng:',
-							salon.longitude
-						);
-
-						if (!salon.latitude || !salon.longitude) {
-							console.log('Salon missing coordinates:', salon.name);
-							return null;
-						}
-
-						const customIcon = createCustomIcon(salon);
-						if (!customIcon) {
-							console.log('Failed to create icon for:', salon.name);
-							return null;
-						}
-
-						console.log(
-							'Creating marker for:',
-							salon.name,
-							'with icon:',
-							!!customIcon
-						);
-
-						return (
-							<Marker
-								key={salon.id}
-								position={[salon.latitude, salon.longitude]}
-								icon={customIcon}
-								eventHandlers={{
-									click: () => {
-										console.log('Marker clicked:', salon.name);
-										onMarkerClick(salon);
-									},
-								}}
-							>
-								<Popup>
-									<div className="p-2 min-w-[200px]">
-										<h3 className="font-bold text-gray-900 mb-1">
-											{salon.name}
-										</h3>
-										<p className="text-sm text-gray-600 mb-2">
-											{salon.address}
-										</p>
-										<div className="flex items-center space-x-2">
-											<div className="flex items-center space-x-1">
-												<span className="text-orange-500">⭐</span>
-												<span className="text-sm font-medium">
-													{salon.rating?.toFixed(1) || '0.0'}
-												</span>
-											</div>
-											<span className="text-sm text-gray-500">
-												({salon.reviewCount || 0} reviews)
-											</span>
-										</div>
-									</div>
-								</Popup>
-							</Marker>
-						);
-					})}
+				{salonMarkers}
 			</MapContainer>
-
-			{/* Map Controls */}
-			<div className="absolute bottom-6 right-6 flex flex-col space-y-2 z-10">
-				{/* Zoom Controls */}
-				<div className="bg-white rounded-lg shadow-md overflow-hidden">
-					<button
-						onClick={handleZoomIn}
-						className="w-10 h-10 flex items-center justify-center hover:bg-gray-50 transition-colors border-b border-gray-200"
-					>
-						<Plus className="h-4 w-4 text-gray-700" />
-					</button>
-					<button
-						onClick={handleZoomOut}
-						className="w-10 h-10 flex items-center justify-center hover:bg-gray-50 transition-colors"
-					>
-						<Minus className="h-4 w-4 text-gray-700" />
-					</button>
-				</div>
-
-				{/* Geolocation Button */}
-				<button
-					onClick={handleGeolocation}
-					className="w-10 h-10 bg-white rounded-lg shadow-md flex items-center justify-center hover:bg-gray-50 transition-colors"
-					title="Find my location"
-				>
-					<Navigation className="h-4 w-4 text-gray-700" />
-				</button>
-			</div>
-
-			{/* Map Info Overlay */}
-			<div className="absolute top-4 left-4 bg-white bg-opacity-90 backdrop-blur-sm rounded-lg p-3 shadow-md z-10">
-				<div className="text-sm text-gray-700">
-					<div className="font-medium">Ho Chi Minh City</div>
-					<div className="text-xs text-gray-500">
-						{(displaySalons as any[]).length} salons in this area
-					</div>
-					<div className="text-xs text-blue-600 mt-1">
-						Leaflet: {leafletLoaded ? '✅' : '❌'} | L: {L ? '✅' : '❌'}
-					</div>
-				</div>
-			</div>
-
-			{/* Selected Salon Info */}
-			{selectedSalon && (
-				<div className="absolute top-4 right-4 bg-white rounded-lg p-4 shadow-md max-w-xs z-10">
-					<h3 className="font-bold text-gray-900 mb-2">{selectedSalon.name}</h3>
-					<p className="text-sm text-gray-600 mb-2">{selectedSalon.address}</p>
-					<div className="flex items-center space-x-2">
-						<div className="flex items-center space-x-1">
-							<span className="text-orange-500">⭐</span>
-							<span className="text-sm font-medium">
-								{selectedSalon.rating?.toFixed(1) || '0.0'}
-							</span>
-						</div>
-						<span className="text-sm text-gray-500">
-							({selectedSalon.reviewCount || 0} reviews)
-						</span>
-					</div>
-				</div>
-			)}
 		</div>
 	);
 }
