@@ -7,6 +7,14 @@ export function safeParseDate(
 	if (!dateString) return null;
 
 	try {
+		// If it's in YYYY-MM-DD format, parse as local date to avoid timezone issues
+		if (/^\d{4}-\d{2}-\d{2}$/.test(dateString)) {
+			const [year, month, day] = dateString.split('-').map(Number);
+			const date = new Date(year, month - 1, day);
+			return isNaN(date.getTime()) ? null : date;
+		}
+
+		// Fallback to regular parsing for other formats
 		const date = new Date(dateString);
 		return isNaN(date.getTime()) ? null : date;
 	} catch (error) {

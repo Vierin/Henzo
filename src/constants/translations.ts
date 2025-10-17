@@ -55,6 +55,7 @@ export interface Translations {
 		featuredSalons: string;
 		popularServices: string;
 		howItWorks: string;
+		howItWorksSubtitle: string;
 		step1: string;
 		step2: string;
 		step3: string;
@@ -197,7 +198,8 @@ export const translations: Record<string, Translations> = {
 
 		// Homepage
 		homepage: {
-			heroTitle: 'Đặt lịch <span class="text-[#ff5b5b]">làm đẹp</span> dễ dàng',
+			heroTitle:
+				'Đặt lịch <span class="text-[#ff5b5b]">làm <br> đẹp</span> dễ dàng',
 			heroSubtitle:
 				'Tìm và đặt lịch tại các salon, spa, massage hàng đầu với chỉ vài cú click',
 			searchPlaceholder: 'Tìm kiếm dịch vụ...',
@@ -207,16 +209,21 @@ export const translations: Record<string, Translations> = {
 			searchButton: 'Tìm kiếm',
 			featuredSalons: 'Salon nổi bật',
 			popularServices: 'Dịch vụ phổ biến',
-			howItWorks: 'Cách hoạt động',
-			step1: 'Bước 1',
-			step2: 'Bước 2',
-			step3: 'Bước 3',
-			step1Title: 'Tìm salon',
-			step2Title: 'Chọn dịch vụ',
-			step3Title: 'Đặt lịch',
-			step1Description: 'Tìm salon phù hợp gần bạn',
-			step2Description: 'Chọn dịch vụ bạn muốn',
-			step3Description: 'Đặt lịch và thanh toán',
+			howItWorks: 'Đặt lịch trong 3 bước đơn giản',
+			howItWorksSubtitle:
+				'Tìm và đặt lịch bệnh viện thẩm mỹ hoàn hảo chưa bao giờ dễ dàng đến thế',
+			step1: '01',
+			step2: '02',
+			step3: '03',
+			step1Title: 'Tìm kiếm & Khám phá',
+			step2Title: 'Chọn & Đặt lịch',
+			step3Title: 'Thư giãn & Tận hưởng',
+			step1Description:
+				'Nhập vị trí của bạn để tìm các salon gần đó với đánh giá đã xác minh và giá cả cạnh tranh.',
+			step2Description:
+				'Chọn dịch vụ, khung giờ và stylist yêu thích. Đặt lịch ngay lập tức chỉ với vài cú nhấp chuột.',
+			step3Description:
+				'Đến cuộc hẹn và tận hưởng trải nghiệm làm đẹp cao cấp. Đánh giá chuyến thăm của bạn sau đó.',
 		},
 
 		// Salon
@@ -350,7 +357,7 @@ export const translations: Record<string, Translations> = {
 		// Homepage
 		homepage: {
 			heroTitle:
-				'Find Your <span class="text-[#ff5b5b]">Perfect Beauty</span> Salon Nearby',
+				'Find Your <span class="text-[#ff5b5b]">Perfect <br> Beauty</span> Salon Nearby',
 			heroSubtitle:
 				'Book appointments at top-rated salons in your area. Compare prices, read reviews, and get pampered today.',
 			searchPlaceholder: 'Search services...',
@@ -360,16 +367,21 @@ export const translations: Record<string, Translations> = {
 			searchButton: 'Search',
 			featuredSalons: 'Featured Salons',
 			popularServices: 'Popular Services',
-			howItWorks: 'How It Works',
-			step1: 'Step 1',
-			step2: 'Step 2',
-			step3: 'Step 3',
-			step1Title: 'Find Salon',
-			step2Title: 'Choose Service',
-			step3Title: 'Book Appointment',
-			step1Description: 'Find the perfect salon near you',
-			step2Description: 'Choose your preferred service',
-			step3Description: 'Book and pay for your appointment',
+			howItWorks: 'Book in 3 Simple Steps',
+			howItWorksSubtitle:
+				'Finding and booking your perfect beauty appointment has never been easier',
+			step1: '01',
+			step2: '02',
+			step3: '03',
+			step1Title: 'Search & Discover',
+			step2Title: 'Choose & Book',
+			step3Title: 'Relax & Enjoy',
+			step1Description:
+				'Enter your location to find nearby salons with verified reviews and competitive pricing.',
+			step2Description:
+				'Select your preferred service, time slot, and stylist. Book instantly with just a few clicks.',
+			step3Description:
+				'Show up at your appointment and enjoy a premium beauty experience. Rate your visit after.',
 		},
 
 		// Salon

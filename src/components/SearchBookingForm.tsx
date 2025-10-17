@@ -32,7 +32,16 @@ export default function SearchBookingForm({
 					setSelectedLocation(parsed.location);
 				}
 				if (parsed.date) {
-					setSelectedDate(new Date(parsed.date));
+					// Parse date string as local date to avoid timezone issues
+					if (
+						typeof parsed.date === 'string' &&
+						/^\d{4}-\d{2}-\d{2}$/.test(parsed.date)
+					) {
+						const [year, month, day] = parsed.date.split('-').map(Number);
+						setSelectedDate(new Date(year, month - 1, day));
+					} else {
+						setSelectedDate(new Date(parsed.date));
+					}
 				}
 				if (parsed.timeInterval && parsed.timeInterval !== 'any') {
 					setSelectedTimeInterval(parsed.timeInterval);
@@ -44,13 +53,32 @@ export default function SearchBookingForm({
 	}, []);
 
 	const handleSearch = () => {
+		console.log('🔍 Search form - selectedDate:', selectedDate);
+		console.log(
+			'🔍 Search form - selectedDate.getDate():',
+			selectedDate?.getDate()
+		);
+		console.log(
+			'🔍 Search form - selectedDate.getMonth():',
+			selectedDate?.getMonth()
+		);
+		console.log(
+			'🔍 Search form - selectedDate.getFullYear():',
+			selectedDate?.getFullYear()
+		);
+
 		// Save search data to localStorage
+		const dateString = selectedDate
+			? `${selectedDate.getFullYear()}-${String(selectedDate.getMonth() + 1).padStart(2, '0')}-${String(selectedDate.getDate()).padStart(2, '0')}`
+			: null;
+		console.log('🔍 Search form - dateString for localStorage:', dateString);
+
 		localStorage.setItem(
 			'searchData',
 			JSON.stringify({
 				search: searchQuery,
 				location: selectedLocation,
-				date: selectedDate?.toISOString(),
+				date: dateString,
 				timeInterval: selectedTimeInterval || 'any',
 			})
 		);
@@ -59,11 +87,20 @@ export default function SearchBookingForm({
 
 		if (searchQuery) params.set('search', searchQuery);
 		if (selectedLocation) params.set('location', selectedLocation);
-		if (selectedDate)
-			params.set('date', selectedDate.toISOString().split('T')[0]);
+		if (selectedDate) {
+			// Format date as YYYY-MM-DD in local timezone to avoid timezone issues
+			const year = selectedDate.getFullYear();
+			const month = String(selectedDate.getMonth() + 1).padStart(2, '0');
+			const day = String(selectedDate.getDate()).padStart(2, '0');
+			const urlDate = `${year}-${month}-${day}`;
+			console.log('🔍 Search form - URL date:', urlDate);
+			params.set('date', urlDate);
+		}
 		if (selectedTimeInterval) params.set('time', selectedTimeInterval);
 
-		router.push(`/salons${params.toString() ? `?${params.toString()}` : ''}`);
+		const finalUrl = `/salons${params.toString() ? `?${params.toString()}` : ''}`;
+		console.log('🔍 Search form - Final URL:', finalUrl);
+		router.push(finalUrl);
 	};
 
 	return (

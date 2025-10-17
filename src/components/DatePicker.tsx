@@ -78,7 +78,8 @@ export default function DatePicker({
 		const firstDay = new Date(currentYear, currentMonth, 1);
 		const lastDay = new Date(currentYear, currentMonth + 1, 0);
 		const daysInMonth = lastDay.getDate();
-		const startingDayOfWeek = firstDay.getDay();
+		// Adjust for Monday start: Sunday (0) becomes 6, Monday (1) becomes 0, etc.
+		const startingDayOfWeek = (firstDay.getDay() + 6) % 7;
 
 		const days = [];
 

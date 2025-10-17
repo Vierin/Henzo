@@ -103,7 +103,24 @@ export default function SalonsClient() {
 
 		// Set date
 		if (date) {
-			setSelectedDate(new Date(date));
+			console.log('📅 SalonsClient - URL date param:', date);
+			// Parse date string as local date to avoid timezone issues
+			const [year, month, day] = date.split('-').map(Number);
+			const parsedDate = new Date(year, month - 1, day);
+			console.log('📅 SalonsClient - parsed date:', parsedDate);
+			console.log(
+				'📅 SalonsClient - parsed date.getDate():',
+				parsedDate.getDate()
+			);
+			console.log(
+				'📅 SalonsClient - parsed date.getMonth():',
+				parsedDate.getMonth()
+			);
+			console.log(
+				'📅 SalonsClient - parsed date.getFullYear():',
+				parsedDate.getFullYear()
+			);
+			setSelectedDate(parsedDate);
 		}
 
 		// Set time interval
