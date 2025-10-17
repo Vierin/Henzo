@@ -44,7 +44,7 @@ export default function SalonDetailClient({ salon }: SalonDetailClientProps) {
 	});
 	const router = useRouter();
 	const { user } = useAuthStore();
-	const isFavorite = useIsFavorite(salon.id);
+	const isFavorite = useIsFavorite(salon.id, !!user);
 	const addFavoriteMutation = useAddFavorite();
 	const removeFavoriteMutation = useRemoveFavorite();
 

@@ -117,6 +117,99 @@ export default function HomePageClient() {
 				{/* Recommended Salons Section */}
 				<RecommendedSalons />
 
+				{/* Why Choose Henzo Section */}
+				<section className="py-16 px-6 bg-[#FBF7F5]">
+					<div className="mx-auto max-w-6xl">
+						{/* Heading */}
+						<div className="text-center mb-12">
+							<h2 className="text-3xl font-bold text-gray-900 mb-4">
+								{t.homepage.whyChooseHenzo}
+							</h2>
+							<p className="text-lg text-gray-600 max-w-2xl mx-auto">
+								{t.homepage.whyChooseSubtitle}
+							</p>
+						</div>
+
+						{/* Features Grid */}
+						<div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+							{/* Easy Booking */}
+							<article className="bg-white rounded-lg p-8 text-center shadow-sm">
+								<div className="w-16 h-16 bg-[#ff5b5b] rounded-full flex items-center justify-center mx-auto mb-6">
+									<svg
+										className="w-8 h-8 text-white"
+										fill="none"
+										stroke="currentColor"
+										viewBox="0 0 24 24"
+									>
+										<path
+											strokeLinecap="round"
+											strokeLinejoin="round"
+											strokeWidth={2}
+											d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+										/>
+									</svg>
+								</div>
+								<h3 className="text-xl font-bold text-gray-900 mb-4">
+									{t.homepage.easyBooking}
+								</h3>
+								<p className="text-gray-600">
+									{t.homepage.easyBookingDescription}
+								</p>
+							</article>
+
+							{/* Flexible Scheduling */}
+							<article className="bg-white rounded-lg p-8 text-center shadow-sm">
+								<div className="w-16 h-16 bg-[#ff5b5b] rounded-full flex items-center justify-center mx-auto mb-6">
+									<svg
+										className="w-8 h-8 text-white"
+										fill="none"
+										stroke="currentColor"
+										viewBox="0 0 24 24"
+									>
+										<path
+											strokeLinecap="round"
+											strokeLinejoin="round"
+											strokeWidth={2}
+											d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+										/>
+									</svg>
+								</div>
+								<h3 className="text-xl font-bold text-gray-900 mb-4">
+									{t.homepage.flexibleScheduling}
+								</h3>
+								<p className="text-gray-600">
+									{t.homepage.flexibleSchedulingDescription}
+								</p>
+							</article>
+
+							{/* Trusted Reviews */}
+							<article className="bg-white rounded-lg p-8 text-center shadow-sm">
+								<div className="w-16 h-16 bg-[#ff5b5b] rounded-full flex items-center justify-center mx-auto mb-6">
+									<svg
+										className="w-8 h-8 text-white"
+										fill="none"
+										stroke="currentColor"
+										viewBox="0 0 24 24"
+									>
+										<path
+											strokeLinecap="round"
+											strokeLinejoin="round"
+											strokeWidth={2}
+											d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z"
+										/>
+									</svg>
+								</div>
+								<h3 className="text-xl font-bold text-gray-900 mb-4">
+									{t.homepage.trustedReviews}
+								</h3>
+								<p className="text-gray-600">
+									{t.homepage.trustedReviewsDescription}
+								</p>
+							</article>
+						</div>
+					</div>
+				</section>
+
 				{/* How It Works Section */}
 				<section className="py-20 px-6 bg-white">
 					<div className="mx-auto max-w-6xl">

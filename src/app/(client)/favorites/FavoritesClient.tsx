@@ -6,9 +6,11 @@ import SalonImage from '@/components/SalonImage';
 import { Heart, Star, MapPin } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { generateSalonSlug } from '@/utils/slug';
+import { useAuthStore } from '@/stores/authStore';
 
 export default function FavoritesClient() {
-	const { data: favorites = [], isLoading, error } = useFavoriteSalons();
+	const { user } = useAuthStore();
+	const { data: favorites = [], isLoading, error } = useFavoriteSalons(!!user);
 	const router = useRouter();
 
 	const handleBookSalon = (salonId: string, salonName: string) => {

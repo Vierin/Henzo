@@ -19,70 +19,8 @@ export default function SearchBookingForm({
 	const [selectedDate, setSelectedDate] = useState<Date | null>(null);
 	const [selectedTimeInterval, setSelectedTimeInterval] = useState<string>('');
 
-	// Load search data from localStorage on component mount
-	useEffect(() => {
-		const savedSearchData = localStorage.getItem('searchData');
-		if (savedSearchData) {
-			try {
-				const parsed = JSON.parse(savedSearchData);
-				if (parsed.service || parsed.search) {
-					setSearchQuery(parsed.service || parsed.search);
-				}
-				if (parsed.location) {
-					setSelectedLocation(parsed.location);
-				}
-				if (parsed.date) {
-					// Parse date string as local date to avoid timezone issues
-					if (
-						typeof parsed.date === 'string' &&
-						/^\d{4}-\d{2}-\d{2}$/.test(parsed.date)
-					) {
-						const [year, month, day] = parsed.date.split('-').map(Number);
-						setSelectedDate(new Date(year, month - 1, day));
-					} else {
-						setSelectedDate(new Date(parsed.date));
-					}
-				}
-				if (parsed.timeInterval && parsed.timeInterval !== 'any') {
-					setSelectedTimeInterval(parsed.timeInterval);
-				}
-			} catch (error) {
-				console.error('Error parsing saved search data:', error);
-			}
-		}
-	}, []);
 
 	const handleSearch = () => {
-		console.log('🔍 Search form - selectedDate:', selectedDate);
-		console.log(
-			'🔍 Search form - selectedDate.getDate():',
-			selectedDate?.getDate()
-		);
-		console.log(
-			'🔍 Search form - selectedDate.getMonth():',
-			selectedDate?.getMonth()
-		);
-		console.log(
-			'🔍 Search form - selectedDate.getFullYear():',
-			selectedDate?.getFullYear()
-		);
-
-		// Save search data to localStorage
-		const dateString = selectedDate
-			? `${selectedDate.getFullYear()}-${String(selectedDate.getMonth() + 1).padStart(2, '0')}-${String(selectedDate.getDate()).padStart(2, '0')}`
-			: null;
-		console.log('🔍 Search form - dateString for localStorage:', dateString);
-
-		localStorage.setItem(
-			'searchData',
-			JSON.stringify({
-				search: searchQuery,
-				location: selectedLocation,
-				date: dateString,
-				timeInterval: selectedTimeInterval || 'any',
-			})
-		);
-
 		const params = new URLSearchParams();
 
 		if (searchQuery) params.set('search', searchQuery);
@@ -93,13 +31,11 @@ export default function SearchBookingForm({
 			const month = String(selectedDate.getMonth() + 1).padStart(2, '0');
 			const day = String(selectedDate.getDate()).padStart(2, '0');
 			const urlDate = `${year}-${month}-${day}`;
-			console.log('🔍 Search form - URL date:', urlDate);
 			params.set('date', urlDate);
 		}
 		if (selectedTimeInterval) params.set('time', selectedTimeInterval);
 
 		const finalUrl = `/salons${params.toString() ? `?${params.toString()}` : ''}`;
-		console.log('🔍 Search form - Final URL:', finalUrl);
 		router.push(finalUrl);
 	};
 

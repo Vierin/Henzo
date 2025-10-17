@@ -116,7 +116,7 @@ export default function PublicHeader() {
 									onClick={() =>
 										setIsLanguageDropdownOpen(!isLanguageDropdownOpen)
 									}
-									className="flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:text-[#8B4513] font-medium transition-colors border border-gray-200 rounded-lg hover:border-[#8B4513]"
+									className="flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:text-[#ff5b5b] font-medium transition-colors border border-gray-200 rounded-lg hover:border-[#ff5b5b] hover:bg-[#fff7f6]"
 								>
 									<span>{selectedLanguage}</span>
 									<ChevronDown
@@ -127,15 +127,15 @@ export default function PublicHeader() {
 								</button>
 
 								{isLanguageDropdownOpen && (
-									<div className="absolute top-full right-0 mt-1 w-48 bg-white border border-gray-200 rounded-lg shadow-lg z-50">
+									<div className="absolute top-full right-0 mt-1 w-48 bg-white border border-gray-200 rounded-lg shadow-lg z-50 overflow-hidden">
 										{languages.map((language) => (
 											<button
 												key={language.code}
 												onClick={() => handleLanguageSelect(language)}
-												className={`w-full px-4 py-3 text-left hover:bg-gray-50 transition-colors flex items-center gap-3 first:rounded-t-lg last:rounded-b-lg ${
+												className={`w-full px-4 py-3 text-left transition-colors flex items-center gap-3 ${
 													selectedLanguage === language.code.toUpperCase()
-														? 'bg-[#8B4513] text-white'
-														: 'text-gray-700'
+														? 'bg-[#ff5b5b] text-white hover:bg-[#e04a4a]'
+														: 'text-gray-700 hover:text-[#ff5b5b] hover:bg-[#fff7f6]'
 												}`}
 											>
 												<span className="text-lg">{language.flag}</span>

@@ -24,7 +24,7 @@ export interface FavoriteSalon {
 }
 
 // Get all favorite salons
-export const useFavoriteSalons = () => {
+export const useFavoriteSalons = (isAuthenticated: boolean = false) => {
 	return useQuery<FavoriteSalon[]>({
 		queryKey: ['favorites'],
 		queryFn: async () => {
@@ -33,6 +33,7 @@ export const useFavoriteSalons = () => {
 			);
 			return response.favorites;
 		},
+		enabled: isAuthenticated, // Only enable when user is authenticated
 	});
 };
 
@@ -79,9 +80,16 @@ export const useRemoveFavorite = () => {
 };
 
 // Check if salon is favorited
-export const useIsFavorite = (salonId: string) => {
-	const { data: favorites = [] } = useFavoriteSalons();
+export const useIsFavorite = (
+	salonId: string,
+	isAuthenticated: boolean = false
+) => {
+	const { data: favorites = [] } = useFavoriteSalons(isAuthenticated);
+
+	// Only check favorites if user is authenticated
+	if (!isAuthenticated) {
+		return false;
+	}
+
 	return favorites.some((salon) => salon.id === salonId);
 };
-
-

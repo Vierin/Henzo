@@ -3,12 +3,11 @@
 import { useFeaturedSalons } from '@/hooks/useSalonPreview';
 import { useSalonSlug } from '@/hooks/useSalonSlug';
 import { supabase } from '@/lib/supabase';
-import { Salon, Service } from '@/types';
 import LoadingSpinner from './LoadingSpinner';
 import ErrorDisplay from './ErrorDisplay';
 import Image from 'next/image';
 import Link from 'next/link';
-import { Star } from 'lucide-react';
+import { ChevronRight, Star } from 'lucide-react';
 
 export default function RecommendedSalons() {
 	const { getSalonUrl } = useSalonSlug();
@@ -165,8 +164,9 @@ export default function RecommendedSalons() {
 											<span className="text-gray-500 text-sm">
 												{reviewCount} {reviewCount === 1 ? 'review' : 'reviews'}
 											</span>
-											<span className="text-red-500 text-sm font-medium hover:text-red-600 transition-colors">
-												View Details →
+											<span className="text-red-500 flex gap-1 items-center text-sm font-medium hover:text-red-600 transition-colors">
+												View Details
+												<ChevronRight className="w-4 h-4" />
 											</span>
 										</div>
 									</div>

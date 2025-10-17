@@ -39,7 +39,7 @@ export default function SalonCard({
 	const router = useRouter();
 	const { getSalonUrl } = useSalonSlug();
 	const { user } = useAuthStore();
-	const isFavorite = useIsFavorite(salon.id);
+	const isFavorite = useIsFavorite(salon.id, !!user);
 	const addFavoriteMutation = useAddFavorite();
 	const removeFavoriteMutation = useRemoveFavorite();
 

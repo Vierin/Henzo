@@ -65,6 +65,14 @@ export interface Translations {
 		step1Description: string;
 		step2Description: string;
 		step3Description: string;
+		whyChooseHenzo: string;
+		whyChooseSubtitle: string;
+		easyBooking: string;
+		easyBookingDescription: string;
+		flexibleScheduling: string;
+		flexibleSchedulingDescription: string;
+		trustedReviews: string;
+		trustedReviewsDescription: string;
 	};
 
 	// Salon
@@ -224,6 +232,17 @@ export const translations: Record<string, Translations> = {
 				'Chọn dịch vụ, khung giờ và stylist yêu thích. Đặt lịch ngay lập tức chỉ với vài cú nhấp chuột.',
 			step3Description:
 				'Đến cuộc hẹn và tận hưởng trải nghiệm làm đẹp cao cấp. Đánh giá chuyến thăm của bạn sau đó.',
+			whyChooseHenzo: 'Tại sao chọn Henzo?',
+			whyChooseSubtitle:
+				'Henzo giúp việc đặt lịch hẹn làm đẹp tiếp theo của bạn trở nên đơn giản và tiện lợi.',
+			easyBooking: 'Đặt lịch dễ dàng',
+			easyBookingDescription: 'Đặt lịch hẹn chỉ với vài cú nhấp chuột.',
+			flexibleScheduling: 'Lịch trình linh hoạt',
+			flexibleSchedulingDescription:
+				'Tìm thời gian phù hợp với bạn, ngay cả phút cuối.',
+			trustedReviews: 'Đánh giá đáng tin cậy',
+			trustedReviewsDescription:
+				'Đọc đánh giá từ các khách hàng khác để tìm salon tốt nhất.',
 		},
 
 		// Salon
@@ -382,6 +401,17 @@ export const translations: Record<string, Translations> = {
 				'Select your preferred service, time slot, and stylist. Book instantly with just a few clicks.',
 			step3Description:
 				'Show up at your appointment and enjoy a premium beauty experience. Rate your visit after.',
+			whyChooseHenzo: 'Why Choose Henzo?',
+			whyChooseSubtitle:
+				'Henzo makes booking your next beauty appointment simple and convenient.',
+			easyBooking: 'Easy Booking',
+			easyBookingDescription: 'Book appointments in just a few taps.',
+			flexibleScheduling: 'Flexible Scheduling',
+			flexibleSchedulingDescription:
+				'Find a time that works for you, even last minute.',
+			trustedReviews: 'Trusted Reviews',
+			trustedReviewsDescription:
+				'Read reviews from other clients to find the best salon.',
 		},
 
 		// Salon
