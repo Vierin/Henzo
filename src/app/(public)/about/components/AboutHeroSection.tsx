@@ -13,18 +13,12 @@ export function AboutHeroSection() {
 						<span className="text-foreground">Our Story</span>
 					</div>
 
-					<h1
-						className="mb-6 text-foreground tracking-tight max-w-4xl mx-auto"
-						style={{ fontSize: '3.5rem', lineHeight: '1.1', fontWeight: '600' }}
-					>
+					<h1 className="mb-6 text-foreground tracking-tight max-w-4xl mx-auto text-4xl md:text-5xl font-semibold leading-[1.1]">
 						Making Beauty <span className="text-primary">Accessible</span> for
 						Everyone
 					</h1>
 
-					<p
-						className="text-muted-foreground max-w-2xl mx-auto"
-						style={{ fontSize: '1.25rem' }}
-					>
+					<p className="text-muted-foreground max-w-2xl mx-auto text-xl">
 						We're on a mission to connect people with the best beauty
 						professionals in their neighborhood, making self-care easy and
 						affordable.
@@ -68,10 +62,7 @@ export function AboutHeroSection() {
 							<div className="w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center mx-auto mb-6">
 								<item.icon className="text-primary" size={32} />
 							</div>
-							<h3
-								className="mb-3 text-foreground"
-								style={{ fontWeight: '600', fontSize: '1.25rem' }}
-							>
+							<h3 className="mb-3 text-foreground font-semibold text-xl">
 								{item.title}
 							</h3>
 							<p className="text-muted-foreground">{item.description}</p>

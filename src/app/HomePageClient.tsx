@@ -8,6 +8,7 @@ import RecommendedSalons from '@/components/RecommendedSalons';
 import CategoriesNavigation from '@/components/CategoriesNavigation';
 import { useTranslation } from '@/contexts/LanguageContext';
 import Image from 'next/image';
+import Link from 'next/link';
 
 export default function HomePageClient() {
 	const queryClient = useQueryClient();
@@ -45,7 +46,7 @@ export default function HomePageClient() {
 			<main>
 				{/* Hero Section */}
 				<section
-					className="py-8 min-h-[75svh] flex items-center justify-around mx-auto relative bg-black"
+					className="py-8 px-4 sm:px-6 min-h-[calc(100vh-110px)] md:min-h-[75svh] flex items-center justify-around mx-auto relative bg-black"
 					aria-label="Book beauty appointments"
 				>
 					<Image
@@ -57,58 +58,64 @@ export default function HomePageClient() {
 					/>
 
 					<div className="mx-auto max-w-7xl w-full relative z-10">
-						<div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
-							<div>
-								{/* Left Panel - Search/Booking Form */}
-								<SearchBookingForm />
-							</div>
-
-							{/* Right Section - Image and Slogan */}
-							<div className="relative">
+						<div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-center justify-items-center lg:justify-items-start">
+							{/* Right Section - Image and Slogan (First on mobile, second on desktop) */}
+							<div className="relative order-1 lg:order-2 w-full max-w-md lg:max-w-none">
 								{/* Slogan */}
-								<div className="absolute left-0 top-1/2 transform -translate-y-1/2 z-10">
+								<div className="lg:absolute lg:left-0 lg:top-1/2 lg:transform lg:-translate-y-1/2 z-10 text-center lg:text-left">
 									<h1
-										className="text-4xl lg:text-5xl font-bold text-white leading-tight"
+										className="text-3xl sm:text-4xl lg:text-5xl font-bold text-white leading-tight"
 										dangerouslySetInnerHTML={{ __html: t.homepage.heroTitle }}
 									/>
-									<p className="text-lg text-muted-foreground mt-4 max-w-md">
+									<p className="text-base sm:text-lg text-muted-foreground mt-4 max-w-md mx-auto lg:mx-0">
 										{t.homepage.heroSubtitle}
 									</p>
 
 									{/* Features Stats */}
-									<div className="flex items-center gap-8 mt-8">
+									<div className="flex flex-wrap items-center justify-center lg:justify-start gap-4 sm:gap-8 mt-6 sm:mt-8">
 										<div className="">
-											<p className="text-3xl font-bold text-primary">24/7</p>
-											<p className="text-sm text-muted-foreground">
+											<p className="text-2xl sm:text-3xl font-bold text-primary">
+												24/7
+											</p>
+											<p className="text-xs sm:text-sm text-muted-foreground">
 												Online Booking
 											</p>
 										</div>
-										<div className="w-px h-10 bg-gray-300"></div>
+										<div className="w-px h-8 sm:h-10 bg-gray-300"></div>
 										<div className="">
-											<p className="text-3xl font-bold text-primary">
+											<p className="text-2xl sm:text-3xl font-bold text-primary">
 												5
-												<span className="text-xl relative left-1">minutes</span>
+												<span className="text-lg sm:text-xl relative left-1">
+													min
+												</span>
 											</p>
-											<p className="text-sm text-muted-foreground">
-												to book a service
+											<p className="text-xs sm:text-sm text-muted-foreground">
+												to book
 											</p>
 										</div>
-										<div className="w-px h-10 bg-gray-300"></div>
+										<div className="w-px h-8 sm:h-10 bg-gray-300"></div>
 										<div className="">
-											<p className="text-3xl font-bold text-primary">Free</p>
-											<p className="text-sm text-muted-foreground">
-												Booking and cancellation
+											<p className="text-2xl sm:text-3xl font-bold text-primary">
+												Free
+											</p>
+											<p className="text-xs sm:text-sm text-muted-foreground">
+												Booking
 											</p>
 										</div>
 									</div>
 								</div>
+							</div>
+
+							{/* Left Panel - Search/Booking Form (Second on mobile, first on desktop) */}
+							<div className="order-2 lg:order-1 w-full max-w-md lg:max-w-none">
+								<SearchBookingForm />
 							</div>
 						</div>
 					</div>
 				</section>
 
 				{/* Categories Navigation Section */}
-				<section className="py-8 px-6 bg-white border-y border-gray-200">
+				<section className="py-4 md:py-8 bg-white border-y border-gray-200">
 					<div className="mx-auto max-w-7xl">
 						<CategoriesNavigation />
 					</div>
@@ -118,20 +125,20 @@ export default function HomePageClient() {
 				<RecommendedSalons />
 
 				{/* Why Choose Henzo Section */}
-				<section className="py-16 px-6 bg-[#FBF7F5]">
+				<section className="py-12 sm:py-16 px-4 sm:px-6 bg-[#FBF7F5]">
 					<div className="mx-auto max-w-6xl">
 						{/* Heading */}
-						<div className="text-center mb-12">
-							<h2 className="text-3xl font-bold text-gray-900 mb-4">
+						<div className="text-center mb-8 sm:mb-12">
+							<h2 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-3 sm:mb-4">
 								{t.homepage.whyChooseHenzo}
 							</h2>
-							<p className="text-lg text-gray-600 max-w-2xl mx-auto">
+							<p className="text-base sm:text-lg text-gray-600 max-w-2xl mx-auto px-4">
 								{t.homepage.whyChooseSubtitle}
 							</p>
 						</div>
 
 						{/* Features Grid */}
-						<div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+						<div className="grid grid-cols-1 md:grid-cols-3 gap-6 sm:gap-8">
 							{/* Easy Booking */}
 							<article className="bg-white rounded-lg p-8 text-center shadow-sm">
 								<div className="w-16 h-16 bg-[#ff5b5b] rounded-full flex items-center justify-center mx-auto mb-6">
@@ -210,15 +217,51 @@ export default function HomePageClient() {
 					</div>
 				</section>
 
-				{/* How It Works Section */}
-				<section className="py-20 px-6 bg-white">
+				{/* Business CTA Section - Mobile Only */}
+				<section className="md:hidden py-12 px-4 bg-gradient-to-br from-[#ff5b5b] to-[#e04a4a]">
+					<div className="mx-auto max-w-md text-center">
+						<div className="bg-white/10 backdrop-blur-sm rounded-2xl p-8 border border-white/20">
+							<div className="w-16 h-16 bg-white rounded-full flex items-center justify-center mx-auto mb-6">
+								<svg
+									className="w-8 h-8 text-[#ff5b5b]"
+									fill="none"
+									stroke="currentColor"
+									viewBox="0 0 24 24"
+								>
+									<path
+										strokeLinecap="round"
+										strokeLinejoin="round"
+										strokeWidth={2}
+										d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"
+									/>
+								</svg>
+							</div>
+							<h2 className="text-2xl font-bold text-white mb-3">
+								{t.homepage.salonOwner || 'Are you a salon owner?'}
+							</h2>
+							<p className="text-white/90 mb-6 text-sm">
+								{t.homepage.salonOwnerSubtitle ||
+									'Join Henzo and grow your business with our booking platform'}
+							</p>
+							<Link
+								href="/business"
+								className="inline-block bg-white text-[#ff5b5b] px-6 py-3 rounded-lg font-semibold hover:bg-gray-50 transition-colors shadow-lg"
+							>
+								{t.homepage.learnMore || 'Learn More'}
+							</Link>
+						</div>
+					</div>
+				</section>
+
+				{/* How It Works Section - Desktop Only */}
+				<section className="hidden md:block py-12 sm:py-20 px-4 sm:px-6 bg-white">
 					<div className="mx-auto max-w-6xl">
 						{/* Heading */}
-						<div className="text-center mb-16">
-							<h2 className="text-4xl font-bold text-gray-900 mb-4">
+						<div className="text-center mb-10 sm:mb-16">
+							<h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-gray-900 mb-3 sm:mb-4">
 								{t.homepage.howItWorks}
 							</h2>
-							<p className="text-lg text-gray-600 max-w-2xl mx-auto">
+							<p className="text-base sm:text-lg text-gray-600 max-w-2xl mx-auto px-4">
 								{t.homepage.howItWorksSubtitle}
 							</p>
 						</div>
@@ -237,12 +280,12 @@ export default function HomePageClient() {
 								</div>
 							</div>
 
-							<div className="grid grid-cols-1 md:grid-cols-3 gap-12">
+							<div className="grid grid-cols-1 md:grid-cols-3 gap-8 sm:gap-12">
 								{/* Step 1 */}
 								<article className="text-center relative">
 									<div className="relative mb-6">
 										{/* Main Icon Circle */}
-										<div className="w-20 h-20 bg-[#ff5b5b] rounded-full flex items-center justify-center mx-auto shadow-lg">
+										<div className="md:w-20 md:h-20 w-12 h-12 bg-[#ff5b5b] rounded-full flex items-center justify-center mx-auto shadow-lg">
 											<svg
 												className="w-8 h-8 text-white"
 												fill="none"
@@ -270,7 +313,7 @@ export default function HomePageClient() {
 								<article className="text-center relative">
 									<div className="relative mb-6">
 										{/* Main Icon Circle */}
-										<div className="w-20 h-20 bg-[#ff5b5b] rounded-full flex items-center justify-center mx-auto shadow-lg">
+										<div className="md:w-20 md:h-20 w-12 h-12 bg-[#ff5b5b] rounded-full flex items-center justify-center mx-auto shadow-lg">
 											<svg
 												className="w-8 h-8 text-white"
 												fill="none"
@@ -298,7 +341,7 @@ export default function HomePageClient() {
 								<article className="text-center relative">
 									<div className="relative mb-6">
 										{/* Main Icon Circle */}
-										<div className="w-20 h-20 bg-[#ff5b5b] rounded-full flex items-center justify-center mx-auto shadow-lg">
+										<div className="md:w-20 md:h-20 w-12 h-12 bg-[#ff5b5b] rounded-full flex items-center justify-center mx-auto shadow-lg">
 											<svg
 												className="w-8 h-8 text-white"
 												fill="none"

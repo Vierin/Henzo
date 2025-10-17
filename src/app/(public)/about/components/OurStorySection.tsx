@@ -33,38 +33,22 @@ export function OurStorySection() {
 			<div className="max-w-7xl mx-auto">
 				<div className="grid lg:grid-cols-2 gap-12 items-center mb-20">
 					<div>
-						<h2
-							className="mb-6 text-foreground"
-							style={{
-								fontSize: '2.5rem',
-								fontWeight: '600',
-								lineHeight: '1.2',
-							}}
-						>
+						<h2 className="mb-6 text-foreground text-4xl font-semibold leading-tight">
 							How It All Started
 						</h2>
 
-						<p
-							className="mb-4 text-muted-foreground"
-							style={{ fontSize: '1.125rem' }}
-						>
+						<p className="mb-4 text-muted-foreground text-lg">
 							Henzo was born from a simple question: Why is finding a reliable
 							beauty salon in Vietnam still so difficult in 2024?
 						</p>
 
-						<p
-							className="mb-4 text-muted-foreground"
-							style={{ fontSize: '1.125rem' }}
-						>
+						<p className="mb-4 text-muted-foreground text-lg">
 							After researching the Vietnamese beauty market, we discovered that
 							talented salon owners lack affordable tools for online booking,
 							while customers waste time calling salons to check availability.
 						</p>
 
-						<p
-							className="text-muted-foreground"
-							style={{ fontSize: '1.125rem' }}
-						>
+						<p className="text-muted-foreground text-lg">
 							We're building Henzo to solve this.{' '}
 							<strong>Currently in development</strong>, we're preparing for
 							beta launch with partner salons.{' '}
@@ -85,16 +69,10 @@ export function OurStorySection() {
 
 				{/* Roadmap */}
 				<div className="text-center mb-12">
-					<h2
-						className="mb-4 text-foreground"
-						style={{ fontSize: '2.5rem', fontWeight: '600' }}
-					>
+					<h2 className="mb-4 text-foreground text-4xl font-semibold">
 						Our Roadmap
 					</h2>
-					<p
-						className="text-muted-foreground max-w-2xl mx-auto"
-						style={{ fontSize: '1.125rem' }}
-					>
+					<p className="text-muted-foreground max-w-2xl mx-auto text-lg">
 						We're just getting started - here's our journey from idea to
 						platform
 					</p>
@@ -116,10 +94,7 @@ export function OurStorySection() {
 											/>
 										</div>
 									</div>
-									<h3
-										className="mb-3 text-foreground"
-										style={{ fontWeight: '600', fontSize: '1.125rem' }}
-									>
+									<h3 className="mb-3 text-foreground font-semibold text-lg">
 										{item.title}
 									</h3>
 									<p className="text-muted-foreground">{item.description}</p>

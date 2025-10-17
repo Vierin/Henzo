@@ -44,16 +44,10 @@ export function ValuesSection() {
 		<section className="py-20 px-4 sm:px-6 lg:px-8 bg-muted/50">
 			<div className="max-w-7xl mx-auto">
 				<div className="text-center mb-16">
-					<h2
-						className="mb-4 text-foreground"
-						style={{ fontSize: '2.5rem', fontWeight: '600' }}
-					>
+					<h2 className="mb-4 text-foreground text-4xl font-semibold">
 						What We Stand For
 					</h2>
-					<p
-						className="text-muted-foreground max-w-2xl mx-auto"
-						style={{ fontSize: '1.125rem' }}
-					>
+					<p className="text-muted-foreground max-w-2xl mx-auto text-lg">
 						Our core values guide every decision we make and shape the Henzo
 						experience
 					</p>
@@ -68,10 +62,7 @@ export function ValuesSection() {
 							<div className="w-14 h-14 rounded-2xl bg-primary/10 flex items-center justify-center mb-6">
 								<value.icon className="text-primary" size={28} />
 							</div>
-							<h3
-								className="mb-3 text-foreground"
-								style={{ fontWeight: '600', fontSize: '1.25rem' }}
-							>
+							<h3 className="mb-3 text-foreground font-semibold text-xl">
 								{value.title}
 							</h3>
 							<p className="text-muted-foreground">{value.description}</p>

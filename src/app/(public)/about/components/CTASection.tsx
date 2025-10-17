@@ -2,12 +2,13 @@
 
 import { Button } from './ui/button';
 import { Sparkles } from 'lucide-react';
+import Link from 'next/link';
 
 export function CTASection() {
 	return (
-		<section className="py-20 px-4 sm:px-6 lg:px-8 bg-muted/50">
+		<section className="md:py-20 py-8 px-4 sm:px-6 lg:px-8 bg-muted/50">
 			<div className="max-w-7xl mx-auto">
-				<div className="relative overflow-hidden bg-gradient-to-br from-primary via-primary to-primary/80 rounded-3xl p-12 md:p-16">
+				<div className="relative overflow-hidden bg-gradient-to-br from-primary via-primary to-primary/80 rounded-3xl py-12 px-6 md:p-16">
 					{/* Background decoration */}
 					<div className="absolute inset-0 opacity-10">
 						<div className="absolute top-0 right-0 w-96 h-96 bg-white rounded-full blur-3xl" />
@@ -29,36 +30,28 @@ export function CTASection() {
 					</div>
 
 					<div className="relative z-10 text-center max-w-3xl mx-auto">
-						<h2
-							className="mb-6 text-primary-foreground"
-							style={{
-								fontSize: '2.5rem',
-								fontWeight: '600',
-								lineHeight: '1.2',
-							}}
-						>
+						<h2 className="mb-6 text-primary-foreground text-2xl md:text-4xl font-semibold leading-tight">
 							Ready to Transform Your Look?
 						</h2>
 
-						<p
-							className="mb-8 text-primary-foreground/90"
-							style={{ fontSize: '1.25rem' }}
-						>
+						<p className="mb-8 text-primary-foreground/90 text-base md:text-xl">
 							Download the Henzo app and get exclusive access to special deals,
 							instant booking, and personalized recommendations.
 						</p>
 
 						<div className="flex flex-col sm:flex-row gap-4 justify-center mb-8">
-							<Button
-								size="lg"
-								variant="outline"
-								className="gap-2 bg-transparent text-primary-foreground border-primary-foreground/20 hover:bg-primary-foreground/10 hover:text-primary-foreground"
-							>
-								Book Online
-							</Button>
+							<Link href="/salons">
+								<Button
+									size="lg"
+									variant="outline"
+									className="gap-2 bg-transparent w-40 mx-auto md:mx-0 md:w-auto text-primary-foreground border-primary-foreground/20 hover:bg-primary-foreground/10 hover:text-primary-foreground"
+								>
+									Book Online
+								</Button>
+							</Link>
 						</div>
 
-						<div className="flex flex-wrap items-center justify-center gap-8 text-primary-foreground/80">
+						<div className="flex flex-wrap items-center justify-center gap-2 md:gap-8 text-sm md:text-base text-primary-foreground/80">
 							<div className="flex items-center gap-2">
 								<svg
 									className="w-5 h-5"

@@ -94,10 +94,13 @@ export default function PublicHeader() {
 		<>
 			{/* Top Bar - Always visible, not fixed */}
 			<header className="bg-white shadow-sm">
-				<div className="mx-auto max-w-7xl px-6 py-4">
+				<div className="mx-auto max-w-7xl md:px-6 px-4 py-2">
 					<div className="flex items-center justify-between">
 						{/* Logo */}
-						<Link href="/" className="flex h-12 items-center gap-3">
+						<Link
+							href="/"
+							className="flex max-w-20 md:max-w-full md:h-12 h-10 items-center gap-3"
+						>
 							<Image
 								src="/logo.png"
 								alt="Henzo Logo"
@@ -116,30 +119,34 @@ export default function PublicHeader() {
 									onClick={() =>
 										setIsLanguageDropdownOpen(!isLanguageDropdownOpen)
 									}
-									className="flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:text-[#ff5b5b] font-medium transition-colors border border-gray-200 rounded-lg hover:border-[#ff5b5b] hover:bg-[#fff7f6]"
+									className="flex items-center gap-1 sm:gap-2 px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm text-gray-700 hover:text-[#ff5b5b] font-medium transition-colors border border-gray-200 rounded-lg hover:border-[#ff5b5b] hover:bg-[#fff7f6]"
 								>
 									<span>{selectedLanguage}</span>
 									<ChevronDown
-										className={`w-4 h-4 transition-transform ${
+										className={`w-3 h-3 sm:w-4 sm:h-4 transition-transform ${
 											isLanguageDropdownOpen ? 'rotate-180' : ''
 										}`}
 									/>
 								</button>
 
 								{isLanguageDropdownOpen && (
-									<div className="absolute top-full right-0 mt-1 w-48 bg-white border border-gray-200 rounded-lg shadow-lg z-50 overflow-hidden">
+									<div className="absolute top-full right-0 mt-1 w-36 sm:w-48 bg-white border border-gray-200 rounded-lg shadow-lg z-50 overflow-hidden">
 										{languages.map((language) => (
 											<button
 												key={language.code}
 												onClick={() => handleLanguageSelect(language)}
-												className={`w-full px-4 py-3 text-left transition-colors flex items-center gap-3 ${
+												className={`w-full px-3 sm:px-4 py-2 sm:py-3 text-left transition-colors flex items-center gap-2 sm:gap-3 ${
 													selectedLanguage === language.code.toUpperCase()
 														? 'bg-[#ff5b5b] text-white hover:bg-[#e04a4a]'
 														: 'text-gray-700 hover:text-[#ff5b5b] hover:bg-[#fff7f6]'
 												}`}
 											>
-												<span className="text-lg">{language.flag}</span>
-												<span className="font-medium">{language.name}</span>
+												<span className="text-base sm:text-lg">
+													{language.flag}
+												</span>
+												<span className="font-medium text-sm sm:text-base">
+													{language.name}
+												</span>
 											</button>
 										))}
 									</div>
@@ -154,14 +161,14 @@ export default function PublicHeader() {
 									<button
 										onClick={() => setShowProfileDropdown(!showProfileDropdown)}
 										onMouseEnter={() => setShowProfileDropdown(true)}
-										className="flex items-center gap-2 text-sm text-gray-700 font-medium hover:text-[#8B4513] transition-colors"
+										className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm text-gray-700 font-medium hover:text-[#8B4513] transition-colors"
 									>
-										<div className="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center">
-											<User className="w-4 h-4 text-gray-600" />
+										<div className="w-7 h-7 sm:w-8 sm:h-8 bg-gray-100 rounded-full flex items-center justify-center">
+											<User className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-gray-600" />
 										</div>
-										<span>Profile</span>
+										<span className="hidden sm:inline">Profile</span>
 										<ChevronDown
-											className={`w-4 h-4 text-gray-500 transition-transform ${
+											className={`w-3 h-3 sm:w-4 sm:h-4 text-gray-500 transition-transform ${
 												showProfileDropdown ? 'rotate-180' : ''
 											}`}
 										/>
@@ -215,13 +222,13 @@ export default function PublicHeader() {
 								<>
 									<Link
 										href={'/business'}
-										className="text-sm text-gray-700 hover:text-[#8B4513] font-medium transition-colors"
+										className="hidden sm:block text-sm text-gray-700 hover:text-[#8B4513] font-medium transition-colors"
 									>
 										{t.navigation.business}
 									</Link>
 									<Link
 										href="/login"
-										className="bg-[#ff5b5b] text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-[#e04a4a] transition-colors"
+										className="bg-[#ff5b5b] text-white px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg text-xs sm:text-sm font-medium hover:bg-[#e04a4a] transition-colors"
 									>
 										{t.navigation.login}
 									</Link>

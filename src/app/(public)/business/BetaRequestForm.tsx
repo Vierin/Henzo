@@ -72,7 +72,7 @@ export default function BetaRequestForm() {
 					</p>
 				</div>
 
-				<div className="bg-card rounded-2xl border border-border shadow-lg p-8 md:p-12">
+				<div className="bg-card rounded-lg md:rounded-2xl border border-border shadow-lg p-4 md:p-12">
 					<form onSubmit={handleSubmit} className="space-y-6">
 						{/* Full Name */}
 						<div>

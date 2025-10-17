@@ -73,6 +73,9 @@ export interface Translations {
 		flexibleSchedulingDescription: string;
 		trustedReviews: string;
 		trustedReviewsDescription: string;
+		salonOwner: string;
+		salonOwnerSubtitle: string;
+		learnMore: string;
 	};
 
 	// Salon
@@ -243,6 +246,10 @@ export const translations: Record<string, Translations> = {
 			trustedReviews: 'Đánh giá đáng tin cậy',
 			trustedReviewsDescription:
 				'Đọc đánh giá từ các khách hàng khác để tìm salon tốt nhất.',
+			salonOwner: 'Bạn là chủ salon?',
+			salonOwnerSubtitle:
+				'Tham gia Henzo và phát triển doanh nghiệp với nền tảng đặt lịch của chúng tôi',
+			learnMore: 'Tìm hiểu thêm',
 		},
 
 		// Salon
@@ -412,6 +419,10 @@ export const translations: Record<string, Translations> = {
 			trustedReviews: 'Trusted Reviews',
 			trustedReviewsDescription:
 				'Read reviews from other clients to find the best salon.',
+			salonOwner: 'Are you a salon owner?',
+			salonOwnerSubtitle:
+				'Join Henzo and grow your business with our booking platform',
+			learnMore: 'Learn More',
 		},
 
 		// Salon
