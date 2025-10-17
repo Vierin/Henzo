@@ -64,9 +64,7 @@ export const useRemoveFavorite = () => {
 
 	return useMutation({
 		mutationFn: async (salonId: string) => {
-			const response = await apiClient.delete(`/auth/favorites/${salonId}`, {
-				salonId,
-			});
+			const response = await apiClient.delete(`/auth/favorites/${salonId}`);
 			return response;
 		},
 		onSuccess: () => {

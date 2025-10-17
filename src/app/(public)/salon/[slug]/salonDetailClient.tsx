@@ -301,14 +301,15 @@ export default function SalonDetailClient({ salon }: SalonDetailClientProps) {
 																			{service.description}
 																		</p>
 																	)}
-																	<div className="flex items-center gap-4 text-sm text-gray-500">
-																		<span>
+																	<div className="flex items-center gap-4 text-md text-gray-500">
+																		<span className="flex gap-1">
 																			<span className="sr-only">
 																				Duration:{' '}
 																			</span>
-																			⏱️ {service.duration} min
+																			<Clock className="w-5 h-5 mt-[2px]" />{' '}
+																			{service.duration} min
 																		</span>
-																		<span className="text-[#ff5b5b] font-semibold">
+																		<span className="text-[#ff5b5b] font-semibold text-lg">
 																			<span className="sr-only">Price: </span>
 																			{formatVND(service.price)}
 																		</span>
@@ -420,14 +421,6 @@ export default function SalonDetailClient({ salon }: SalonDetailClientProps) {
 											<span className="text-gray-600 text-sm">
 												{rating}/5 ({reviewCount}{' '}
 												{reviewCount === 1 ? 'review' : 'reviews'})
-											</span>
-										</div>
-									);
-								} else {
-									return (
-										<div className="ml-6">
-											<span className="text-gray-500 text-sm">
-												No reviews yet
 											</span>
 										</div>
 									);

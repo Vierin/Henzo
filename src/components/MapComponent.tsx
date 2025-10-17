@@ -122,6 +122,15 @@ export default function MapComponent({
 		try {
 			console.log('🔍 Geocoding address:', address);
 
+			// Skip geocoding in development mode to avoid errors
+			if (process.env.NODE_ENV === 'development') {
+				console.log(
+					'🔄 Development mode: Skipping geocoding, showing default marker'
+				);
+				showDefaultMarker();
+				return;
+			}
+
 			// Use our backend API for geocoding
 			const API_BASE_URL =
 				process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
@@ -283,6 +292,11 @@ export default function MapComponent({
 			mapInstanceRef.current?.removeLayer(markerRef.current);
 		}
 
+		// Set map view to show Vietnam
+		if (mapInstanceRef.current) {
+			mapInstanceRef.current.setView(defaultLatLng, 17); // Zoom in for better view
+		}
+
 		// Create red marker icon
 		const redMarker = L.divIcon({
 			html: `<div style="
@@ -304,6 +318,15 @@ export default function MapComponent({
 		markerRef.current = L.marker(defaultLatLng, { icon: redMarker }).addTo(
 			mapInstanceRef.current!
 		);
+
+		// Add popup to indicate this is a default location
+		if (showPopup) {
+			markerRef.current
+				.bindPopup(
+					`<div class="text-sm"><strong>Vietnam</strong><br/><small class="text-gray-500">Location not found</small></div>`
+				)
+				.openPopup();
+		}
 	};
 
 	return (
