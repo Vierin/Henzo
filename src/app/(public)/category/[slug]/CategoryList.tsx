@@ -11,6 +11,13 @@ import { Salon, Service } from '@/types';
 import { ServiceResponseDto } from '@/types/dto/service.dto';
 import Link from 'next/link';
 import { Map } from 'lucide-react';
+import {
+	Select,
+	SelectContent,
+	SelectItem,
+	SelectTrigger,
+	SelectValue,
+} from '@/components/ui/select';
 
 interface CategoryListProps {
 	category: {
@@ -111,17 +118,22 @@ export default function CategoryList({ category }: CategoryListProps) {
 						<div className="flex gap-2 sm:gap-3">
 							{/* Sort Dropdown */}
 							<div className="flex-1 sm:flex-none sm:w-48">
-								<select
-									value={sortBy}
-									onChange={(e) => setSortBy(e.target.value)}
-									className="w-full px-3 sm:px-4 py-2 sm:py-3 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#ff5b5b] focus:border-transparent text-gray-900 text-sm"
-								>
-									{sortOptions.map((option) => (
-										<option key={option.value} value={option.value}>
-											{option.label}
-										</option>
-									))}
-								</select>
+								<Select value={sortBy} onValueChange={setSortBy}>
+									<SelectTrigger className="w-full bg-white border border-gray-300 rounded-md">
+										<SelectValue placeholder="Sort by" />
+									</SelectTrigger>
+									<SelectContent className="bg-white border border-gray-300 shadow-lg rounded-md">
+										{sortOptions.map((option) => (
+											<SelectItem
+												key={option.value}
+												value={option.value}
+												className="bg-white hover:bg-gray-50 focus:bg-gray-50 text-gray-900 cursor-pointer"
+											>
+												{option.label}
+											</SelectItem>
+										))}
+									</SelectContent>
+								</Select>
 							</div>
 
 							{/* map button */}

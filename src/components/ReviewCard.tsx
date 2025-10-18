@@ -43,7 +43,7 @@ export default function ReviewCard({
 	};
 
 	return (
-		<div className={`bg-white rounded-lg p-4 shadow-sm border ${className}`}>
+		<div className={`bg-white rounded-lg p-4 shadow-sm ${className}`}>
 			<div className="flex items-center justify-between mb-2">
 				<div className="flex items-center space-x-2">
 					<div className="w-8 h-8 bg-gray-300 rounded-full flex items-center justify-center">

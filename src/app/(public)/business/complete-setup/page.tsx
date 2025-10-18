@@ -733,3 +733,33 @@ export default function BusinessCompleteSetupPage() {
 		</div>
 	);
 }
+
+										onClick={nextStep}
+										className="px-6 py-3 bg-[#ff5b5b] text-white rounded-lg font-medium hover:bg-red-600 transition-colors"
+									>
+										Next: {steps[currentStep]?.title || 'Continue'}
+									</button>
+								)}
+							</div>
+						)}
+					</div>
+				</div>
+			</div>
+		</div>
+	);
+}
+
+										onClick={nextStep}
+										className="px-6 py-3 bg-[#ff5b5b] text-white rounded-lg font-medium hover:bg-red-600 transition-colors"
+									>
+										Next: {steps[currentStep]?.title || 'Continue'}
+									</button>
+								)}
+							</div>
+						)}
+					</div>
+				</div>
+			</div>
+		</div>
+	);
+}

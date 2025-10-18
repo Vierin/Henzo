@@ -23,6 +23,13 @@ export default function PublicHeader() {
 	// Используем новую систему аутентификации
 	const { user, isLoading, isClient, isOwner, isAdmin, logout } = useAuth();
 
+	// Check if we're on a client dashboard page
+	const isClientDashboard =
+		pathname.startsWith('/dashboard') ||
+		pathname.startsWith('/favorites') ||
+		pathname.startsWith('/reviews') ||
+		pathname.startsWith('/settings');
+
 	// Используем контекст языка
 	const { language, setLanguage, t } = useLanguage();
 
@@ -112,7 +119,9 @@ export default function PublicHeader() {
 						</Link>
 
 						{/* Language Dropdown and User Info/Login Buttons */}
-						<div className="flex items-center gap-4">
+						<div
+							className={`flex items-center gap-4 ${isClient() && isClientDashboard ? 'ml-16 md:ml-0' : ''}`}
+						>
 							{/* Language Dropdown */}
 							<div className="relative" ref={dropdownRef}>
 								<button
@@ -153,71 +162,76 @@ export default function PublicHeader() {
 								)}
 							</div>
 
-							{/* User Info or Login Buttons */}
+							{/* User Info or Login Buttons - Hide profile for client dashboard */}
 							{isLoading ? (
 								<div className="w-8 h-8 bg-gray-200 rounded-full animate-pulse"></div>
 							) : user ? (
-								<div className="relative" ref={profileDropdownRef}>
-									<button
-										onClick={() => setShowProfileDropdown(!showProfileDropdown)}
-										onMouseEnter={() => setShowProfileDropdown(true)}
-										className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm text-gray-700 font-medium hover:text-[#8B4513] transition-colors"
-									>
-										<div className="w-7 h-7 sm:w-8 sm:h-8 bg-gray-100 rounded-full flex items-center justify-center">
-											<User className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-gray-600" />
-										</div>
-										<span className="hidden sm:inline">Profile</span>
-										<ChevronDown
-											className={`w-3 h-3 sm:w-4 sm:h-4 text-gray-500 transition-transform ${
-												showProfileDropdown ? 'rotate-180' : ''
-											}`}
-										/>
-									</button>
-
-									{/* Profile Dropdown */}
-									{showProfileDropdown && (
-										<div
-											className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-50 border border-gray-200"
+								// Show profile dropdown only if not on client dashboard
+								!(isClient() && isClientDashboard) ? (
+									<div className="relative" ref={profileDropdownRef}>
+										<button
+											onClick={() =>
+												setShowProfileDropdown(!showProfileDropdown)
+											}
 											onMouseEnter={() => setShowProfileDropdown(true)}
-											onMouseLeave={() => setShowProfileDropdown(false)}
+											className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm text-gray-700 font-medium hover:text-[#8B4513] transition-colors"
 										>
-											<div className="px-4 py-2 text-sm text-gray-700 border-b border-gray-100">
-												<div className="font-medium">{user.email}</div>
-												<div className="text-xs text-gray-500">
-													{isOwner()
-														? 'Owner'
-														: isAdmin()
-															? 'Admin'
-															: isClient()
-																? 'Client'
-																: 'User'}
-												</div>
+											<div className="w-7 h-7 sm:w-8 sm:h-8 bg-gray-100 rounded-full flex items-center justify-center">
+												<User className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-gray-600" />
 											</div>
-											<Link
-												href={
-													isClient()
-														? '/dashboard'
-														: isAdmin()
-															? '/admin-panel'
-															: isOwner()
-																? '/owner-dashboard'
-																: '/dashboard'
-												}
-												className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
-												onClick={() => setShowProfileDropdown(false)}
+											<span className="hidden sm:inline">Profile</span>
+											<ChevronDown
+												className={`w-3 h-3 sm:w-4 sm:h-4 text-gray-500 transition-transform ${
+													showProfileDropdown ? 'rotate-180' : ''
+												}`}
+											/>
+										</button>
+
+										{/* Profile Dropdown */}
+										{showProfileDropdown && (
+											<div
+												className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-50 border border-gray-200"
+												onMouseEnter={() => setShowProfileDropdown(true)}
+												onMouseLeave={() => setShowProfileDropdown(false)}
 											>
-												Dashboard
-											</Link>
-											<button
-												onClick={handleLogout}
-												className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 flex items-center gap-2 transition-colors"
-											>
-												<LogOut className="w-4 h-4" />
-												Logout
-											</button>
-										</div>
-									)}
-								</div>
+												<div className="px-4 py-2 text-sm text-gray-700 border-b border-gray-100">
+													<div className="font-medium">{user.email}</div>
+													<div className="text-xs text-gray-500">
+														{isOwner()
+															? 'Owner'
+															: isAdmin()
+																? 'Admin'
+																: isClient()
+																	? 'Client'
+																	: 'User'}
+													</div>
+												</div>
+												<Link
+													href={
+														isClient()
+															? '/dashboard'
+															: isAdmin()
+																? '/admin-panel'
+																: isOwner()
+																	? '/owner-dashboard'
+																	: '/dashboard'
+													}
+													className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+													onClick={() => setShowProfileDropdown(false)}
+												>
+													Dashboard
+												</Link>
+												<button
+													onClick={handleLogout}
+													className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 flex items-center gap-2 transition-colors"
+												>
+													<LogOut className="w-4 h-4" />
+													Logout
+												</button>
+											</div>
+										)}
+									</div>
+								) : null
 							) : (
 								<>
 									<Link

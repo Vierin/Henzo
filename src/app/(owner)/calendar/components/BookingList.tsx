@@ -371,3 +371,47 @@ export default function BookingList({
 		</div>
 	);
 }
+
+									>
+										{page}
+									</button>
+								)
+							)}
+						</div>
+
+						<button
+							onClick={() => onPageChange(currentPage + 1)}
+							disabled={currentPage === totalPages}
+							className="px-3 py-1 text-sm text-gray-900 border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-[#ea4b4b] focus:ring-offset-2"
+							aria-label="Go to next page"
+						>
+							Next
+						</button>
+					</div>
+				</nav>
+			)}
+		</div>
+	);
+}
+
+									>
+										{page}
+									</button>
+								)
+							)}
+						</div>
+
+						<button
+							onClick={() => onPageChange(currentPage + 1)}
+							disabled={currentPage === totalPages}
+							className="px-3 py-1 text-sm text-gray-900 border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-[#ea4b4b] focus:ring-offset-2"
+							aria-label="Go to next page"
+						>
+							Next
+						</button>
+					</div>
+				</nav>
+			)}
+		</div>
+	);
+}

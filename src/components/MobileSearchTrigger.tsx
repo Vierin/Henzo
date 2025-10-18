@@ -2,7 +2,9 @@
 
 import { Search } from 'lucide-react';
 import { useState } from 'react';
+import Link from 'next/link';
 import SearchBookingForm from './SearchBookingForm';
+import { POPULAR_SEARCHES } from '@/constants/categories';
 
 export default function MobileSearchTrigger() {
 	const [isOpen, setIsOpen] = useState(false);
@@ -56,23 +58,15 @@ export default function MobileSearchTrigger() {
 					<div className="px-4 pb-6">
 						<p className="text-xs text-gray-500 mb-3">Popular searches:</p>
 						<div className="flex flex-wrap gap-2">
-							{[
-								'Haircut',
-								'Manicure',
-								'Massage',
-								'Facial',
-								'Hair Coloring',
-							].map((term) => (
-								<button
-									key={term}
-									onClick={() => {
-										// Could pre-fill search with this term
-										setIsOpen(false);
-									}}
+							{POPULAR_SEARCHES.map((item) => (
+								<Link
+									key={item.term}
+									href={`/category/${item.categorySlug}`}
+									onClick={() => setIsOpen(false)}
 									className="px-3 py-1.5 bg-gray-100 text-gray-700 rounded-full text-xs hover:bg-gray-200 transition-colors"
 								>
-									{term}
-								</button>
+									{item.term}
+								</Link>
 							))}
 						</div>
 					</div>

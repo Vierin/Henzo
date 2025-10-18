@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import BookingModal from '../../../../components/BookingModal';
 import LoadingSpinner from '../../../../components/LoadingSpinner';
 import ErrorDisplay from '../../../../components/ErrorDisplay';
-import MapComponent from '../../../../components/MapComponent';
+import MapComponentWithCoords from '../../../../components/MapComponentWithCoords';
 import MobileSearchTrigger from '../../../../components/MobileSearchTrigger';
 import { Service, WorkingHours, Salon } from '@/types';
 import { supabase } from '@/lib/supabase';
@@ -49,9 +49,9 @@ export default function SalonDetailClient({ salon }: SalonDetailClientProps) {
 	const addFavoriteMutation = useAddFavorite();
 	const removeFavoriteMutation = useRemoveFavorite();
 
-	const [activeTab, setActiveTab] = useState<'Services' | 'Reviews'>(
-		'Services'
-	);
+	const [activeTab, setActiveTab] = useState<
+		'Services' | 'Reviews' | 'Information'
+	>('Services');
 	const [isBookingModalOpen, setIsBookingModalOpen] = useState(false);
 	const [selectedService, setSelectedService] = useState<Service | null>(null);
 
@@ -211,16 +211,11 @@ export default function SalonDetailClient({ salon }: SalonDetailClientProps) {
 		return data.publicUrl;
 	}, []);
 
-	const tabs = ['Services', 'Reviews'] as const;
+	const tabs = ['Services', 'Information', 'Reviews'] as const;
 
 	return (
 		<main className="py-6 sm:py-8 px-4 sm:px-6" role="main">
 			<div className="mx-auto max-w-6xl">
-				{/* Mobile Search Trigger */}
-				<div className="md:hidden mb-4">
-					<MobileSearchTrigger />
-				</div>
-
 				{/* Salon Title */}
 				<header className="flex items-start justify-between mb-6 sm:mb-8 gap-2">
 					<h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-gray-900 flex-1 min-w-0">
@@ -228,7 +223,7 @@ export default function SalonDetailClient({ salon }: SalonDetailClientProps) {
 					</h1>
 					<button
 						onClick={handleFavoriteClick}
-						className={`p-2 sm:p-3 rounded-full transition-all hover:bg-gray-100 flex-shrink-0 ${
+						className={`p-1 sm:p-3 rounded-full transition-all hover:bg-gray-100 flex-shrink-0 ${
 							isFavorite ? 'text-[#ff5b5b]' : 'text-gray-400'
 						}`}
 						aria-label={
@@ -257,7 +252,7 @@ export default function SalonDetailClient({ salon }: SalonDetailClientProps) {
 						<nav
 							role="tablist"
 							aria-label="Salon information tabs"
-							className="flex gap-8 mb-8 border-b border-gray-200"
+							className="flex md:gap-8 gap-4 mb-8 border-b border-gray-200"
 						>
 							{tabs.map((tab) => (
 								<button
@@ -267,11 +262,11 @@ export default function SalonDetailClient({ salon }: SalonDetailClientProps) {
 									aria-controls={`tabpanel-${tab.toLowerCase()}`}
 									id={`tab-${tab.toLowerCase()}`}
 									onClick={() => setActiveTab(tab)}
-									className={`pb-4 px-1 text-lg font-medium transition-colors rounded-t ${
+									className={`pb-2 md:pb-4 px-1 text-sm md:text-lg font-medium transition-colors rounded-t ${
 										activeTab === tab
 											? 'text-[#ff5b5b] border-b-2 border-[#ff5b5b]'
 											: 'text-gray-600 hover:text-gray-900'
-									}`}
+									} ${tab === 'Information' ? 'md:hidden' : ''}`}
 								>
 									{tab}
 								</button>
@@ -297,27 +292,29 @@ export default function SalonDetailClient({ salon }: SalonDetailClientProps) {
 													{services.map((service) => (
 														<article
 															key={service.id}
-															className="bg-white rounded-lg p-6 hover:shadow-md transition-shadow border border-gray-100"
+															className="bg-white rounded-lg px-3 py-4 md:p-6 hover:shadow-md transition-shadow border border-gray-100"
 														>
 															<div className="flex justify-between items-start">
 																<div className="flex-1">
-																	<h3 className="text-xl font-semibold text-gray-900 mb-2">
+																	<h3 className="text-md md:text-xl font-semibold text-gray-900 mb-2">
 																		{service.name}
 																	</h3>
 																	{service.description && (
-																		<p className="text-gray-600 mb-3">
+																		<p className="text-gray-600 mb-3 hidden md:block">
 																			{service.description}
 																		</p>
 																	)}
-																	<div className="flex items-center gap-4 text-md text-gray-500">
+																	<div className="flex items-center gap-4 text-sm md:text-md text-gray-500">
 																		<span className="flex gap-1">
 																			<span className="sr-only">
 																				Duration:{' '}
 																			</span>
-																			<Clock className="w-5 h-5 mt-[2px]" />{' '}
-																			{service.duration} min
+																			<Clock className="w-4 h-4 md:w-5 md:h-5 md:mt-[2px]" />{' '}
+																			<span className="text-xs md:text-sm">
+																				{service.duration} min
+																			</span>
 																		</span>
-																		<span className="text-[#ff5b5b] font-semibold text-lg">
+																		<span className="text-[#ff5b5b] font-semibold text-sm md:text-lg">
 																			<span className="sr-only">Price: </span>
 																			{formatVND(service.price)}
 																		</span>
@@ -325,10 +322,13 @@ export default function SalonDetailClient({ salon }: SalonDetailClientProps) {
 																</div>
 																<button
 																	onClick={() => handleBookService(service)}
-																	className="ml-4 bg-[#ff5b5b] text-white px-6 py-2 rounded-lg font-medium hover:bg-[#e04a4a] transition-colors focus:outline-none focus:ring-2 focus:ring-[#ff5b5b] focus:ring-offset-2"
+																	className="ml-4 bg-[#ff5b5b] text-white px-4 md:px-6 md:py-2 py-1 rounded-lg font-medium hover:bg-[#e04a4a] transition-colors focus:outline-none focus:ring-2 focus:ring-[#ff5b5b] focus:ring-offset-2 text-sm md:text-base"
 																	aria-label={`Book ${service.name} service`}
 																>
-																	Book Now
+																	<span className="md:hidden">Book</span>
+																	<span className="hidden md:inline">
+																		Book Now
+																	</span>
 																</button>
 															</div>
 														</article>
@@ -372,11 +372,167 @@ export default function SalonDetailClient({ salon }: SalonDetailClientProps) {
 								/>
 							</div>
 						)}
+
+						{activeTab === 'Information' && (
+							<div
+								role="tabpanel"
+								id="tabpanel-information"
+								aria-labelledby="tab-information"
+								className="min-h-[400px]"
+							>
+								{/* Mobile Information Content - Same as sidebar */}
+								<div className="md:hidden rounded-xl py-3">
+									<h2 className="text-xl font-bold text-gray-900 mb-4">
+										{salon.name}
+									</h2>
+
+									<p className="text-gray-700 leading-relaxed mb-6">
+										{salon.description ||
+											'Professional beauty and wellness services to help you look and feel your best.'}
+									</p>
+
+									{/* Mini Map */}
+									{salon.address && (
+										<div className="mb-6">
+											<h3 className="text-lg font-semibold text-gray-900 mb-3">
+												Location
+											</h3>
+											<div className="w-full rounded-lg overflow-hidden border border-gray-200">
+												<MapComponentWithCoords
+													address={salon.address}
+													showPopup={false}
+													interactive={false}
+												/>
+											</div>
+											<button
+												onClick={handleGetDirections}
+												className="w-full mt-3 border border-gray-300 text-gray-700 py-3 px-6 rounded-lg font-medium hover:bg-gray-50 transition-colors focus:outline-none focus:ring-2 focus:ring-[#ff5b5b] focus:ring-offset-2"
+												aria-label="Get directions to salon"
+											>
+												Get Directions
+											</button>
+										</div>
+									)}
+
+									<div>
+										{(() => {
+											const rating = calculateAverageRating(salon);
+											const reviewCount = getReviewCount(salon);
+
+											if (rating > 0) {
+												return (
+													<div className="flex items-center gap-2 mb-3">
+														<div
+															className="flex"
+															role="img"
+															aria-label={`${rating} star rating`}
+														>
+															{renderStars(rating)}
+														</div>
+														<span className="text-gray-600 text-sm">
+															{rating}/5 ({reviewCount}{' '}
+															{reviewCount === 1 ? 'review' : 'reviews'})
+														</span>
+													</div>
+												);
+											}
+										})()}
+									</div>
+
+									<div className="space-y-4">
+										{salon.address && (
+											<div>
+												<div className="flex items-center gap-1.5 mb-1">
+													<span
+														className="text-gray-600"
+														role="img"
+														aria-label="Location"
+													>
+														<MapPin className="w-4 h-4" />
+													</span>
+													<span className="font-medium text-gray-900">
+														Address
+													</span>
+												</div>
+												<address className="text-gray-600 text-sm ml-6 not-italic">
+													{salon.address}
+												</address>
+											</div>
+										)}
+
+										<div>
+											<div className="flex items-center gap-1.5 mb-1">
+												<span
+													className="text-gray-600"
+													role="img"
+													aria-label="Clock"
+												>
+													<Clock className="w-4 h-4" />
+												</span>
+												<span className="font-medium text-gray-900">
+													Opening Hours
+												</span>
+											</div>
+											<div className="text-gray-600 text-sm ml-6">
+												<pre
+													className="whitespace-pre-line text-xs"
+													role="text"
+												>
+													{formatWorkingHours(salon.workingHours)}
+												</pre>
+											</div>
+										</div>
+
+										{salon.phone && (
+											<div>
+												<a
+													href={`tel:${salon.phone}`}
+													className="text-gray-600 text-sm hover:text-[#ff5b5b] transition-colors flex gap-1.5"
+												>
+													<Phone className="w-4 h-4" /> {salon.phone}
+												</a>
+											</div>
+										)}
+
+										{salon.website && (
+											<div>
+												<a
+													href={salon.website}
+													target="_blank"
+													rel="noopener noreferrer"
+													className="text-gray-600 text-sm flex gap-1.5 hover:text-[#ff5b5b] transition-colors break-all"
+												>
+													<Globe className="w-4 h-4" /> {salon.website}
+												</a>
+											</div>
+										)}
+
+										{salon.instagram && (
+											<div>
+												<a
+													href={
+														salon.instagram.startsWith('@')
+															? `https://instagram.com/${salon.instagram.substring(1)}`
+															: salon.instagram
+													}
+													target="_blank"
+													rel="noopener noreferrer"
+													className="text-gray-600 text-sm flex gap-1.5 hover:text-[#ff5b5b] transition-colors"
+												>
+													<Instagram className="w-4 h-4" />
+													{salon.instagram}
+												</a>
+											</div>
+										)}
+									</div>
+								</div>
+							</div>
+						)}
 					</section>
 
 					{/* Right Column - Sidebar */}
 					<aside
-						className="bg-white rounded-xl p-6 h-fit shadow-sm"
+						className="hidden md:block bg-white rounded-xl p-6 h-fit shadow-sm"
 						aria-label="Salon details"
 					>
 						<h2 className="text-xl font-bold text-gray-900 mb-4">
@@ -395,7 +551,7 @@ export default function SalonDetailClient({ salon }: SalonDetailClientProps) {
 									Location
 								</h3>
 								<div className="w-full rounded-lg overflow-hidden border border-gray-200">
-									<MapComponent
+									<MapComponentWithCoords
 										address={salon.address}
 										showPopup={false}
 										interactive={false}

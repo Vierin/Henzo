@@ -180,10 +180,10 @@ export default function SalonPhotoSlider({
 				</div>
 			</div>
 
-			{/* Navigation Arrows - Always Visible */}
+			{/* Navigation Arrows - Hidden on mobile */}
 			<button
 				onClick={prevSlide}
-				className="absolute left-4 top-1/2 transform -translate-y-1/2 bg-black bg-opacity-50 hover:bg-opacity-70 text-white p-2 rounded-full transition-all duration-200"
+				className="absolute left-4 top-1/2 transform -translate-y-1/2 bg-black bg-opacity-50 hover:bg-opacity-70 text-white p-2 rounded-full transition-all duration-200 hidden md:block"
 				aria-label="Previous image"
 			>
 				<svg
@@ -203,7 +203,7 @@ export default function SalonPhotoSlider({
 
 			<button
 				onClick={nextSlide}
-				className="absolute right-4 top-1/2 transform -translate-y-1/2 bg-black bg-opacity-50 hover:bg-opacity-70 text-white p-2 rounded-full transition-all duration-200"
+				className="absolute right-4 top-1/2 transform -translate-y-1/2 bg-black bg-opacity-50 hover:bg-opacity-70 text-white p-2 rounded-full transition-all duration-200 hidden md:block"
 				aria-label="Next image"
 			>
 				<svg

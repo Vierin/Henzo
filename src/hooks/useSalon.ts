@@ -57,3 +57,17 @@ export const useSalonById = (id: string) => {
 		enabled: !!id,
 	});
 };
+
+		gcTime: 10 * 60 * 1000,
+		retry: 2,
+		retryDelay: 1000,
+		enabled: !!id,
+	});
+};
+
+		gcTime: 10 * 60 * 1000,
+		retry: 2,
+		retryDelay: 1000,
+		enabled: !!id,
+	});
+};

@@ -25,6 +25,7 @@ interface MapComponentWithCoordsProps {
 	height?: string;
 	showPopup?: boolean;
 	interactive?: boolean;
+	zoom?: number;
 }
 
 export default function MapComponentWithCoords({
@@ -35,6 +36,7 @@ export default function MapComponentWithCoords({
 	height = '300px',
 	showPopup = true,
 	interactive = true,
+	zoom = 16,
 }: MapComponentWithCoordsProps) {
 	const mapRef = useRef<HTMLDivElement>(null);
 	const mapInstanceRef = useRef<L.Map | null>(null);
@@ -58,7 +60,7 @@ export default function MapComponentWithCoords({
 
 			const map = L.map(mapRef.current, mapOptions).setView(
 				[21.0285, 105.8542],
-				13
+				zoom
 			); // Default to Hanoi, Vietnam
 
 			// Use grayscale tile layer
@@ -89,7 +91,7 @@ export default function MapComponentWithCoords({
 				mapInstanceRef.current = null;
 			}
 		};
-	}, [lat, lon, address]);
+	}, [lat, lon, address, zoom]);
 
 	const updateMapWithCoords = (lat: number, lon: number, address?: string) => {
 		if (!mapInstanceRef.current) return;
@@ -97,7 +99,7 @@ export default function MapComponentWithCoords({
 		console.log('📍 Updating map with coordinates:', { lat, lon, address });
 
 		// Update map center and zoom
-		mapInstanceRef.current.setView([lat, lon], 15);
+		mapInstanceRef.current.setView([lat, lon], zoom);
 
 		// Remove existing marker
 		if (markerRef.current) {

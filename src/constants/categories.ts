@@ -6,6 +6,11 @@ export interface Category {
 	description?: string;
 }
 
+export interface PopularSearch {
+	term: string;
+	categorySlug: string;
+}
+
 export const STATIC_CATEGORIES: Category[] = [
 	{
 		id: 1,
@@ -51,6 +56,30 @@ export const STATIC_CATEGORIES: Category[] = [
 		slug: 'other-services',
 		icon: '✨',
 		description: 'Additional beauty and wellness services',
+	},
+];
+
+// Popular search terms mapped to category slugs
+export const POPULAR_SEARCHES: PopularSearch[] = [
+	{
+		term: 'Haircut',
+		categorySlug: 'hair-barber',
+	},
+	{
+		term: 'Manicure',
+		categorySlug: 'manicure-pedicure',
+	},
+	{
+		term: 'Massage',
+		categorySlug: 'massage-spa',
+	},
+	{
+		term: 'Facial',
+		categorySlug: 'cosmetic-medicine',
+	},
+	{
+		term: 'Hair Coloring',
+		categorySlug: 'hair-barber',
 	},
 ];
 

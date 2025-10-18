@@ -13,8 +13,13 @@ export default function ClientLayout({ children }: ClientLayoutProps) {
 		<div className="min-h-screen bg-[#fff7f6]">
 			<PublicHeader />
 			<div className="flex">
+				{/* Sidebar - handles both desktop and mobile */}
 				<ClientSidebar />
-				<main className="flex-1 p-8">{children}</main>
+
+				{/* Main Content */}
+				<main className="flex-1 p-4 md:p-8 min-h-screen md:ml-0">
+					{children}
+				</main>
 			</div>
 		</div>
 	);

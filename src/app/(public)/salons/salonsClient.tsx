@@ -486,3 +486,37 @@ export default function SalonsClient() {
 		</div>
 	);
 }
+
+						</div>
+					)}
+				</div>
+			</main>
+
+			{/* Booking Modal */}
+			<BookingModal
+				isOpen={isBookingModalOpen}
+				onClose={handleCloseBookingModal}
+				salonId={selectedService?.salonId || ''}
+				salonName={selectedService?.salonName || ''}
+				showServiceSelector={true}
+			/>
+		</div>
+	);
+}
+
+						</div>
+					)}
+				</div>
+			</main>
+
+			{/* Booking Modal */}
+			<BookingModal
+				isOpen={isBookingModalOpen}
+				onClose={handleCloseBookingModal}
+				salonId={selectedService?.salonId || ''}
+				salonName={selectedService?.salonName || ''}
+				showServiceSelector={true}
+			/>
+		</div>
+	);
+}
