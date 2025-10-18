@@ -15,6 +15,15 @@ interface VisitHistory {
 	salonId?: string;
 	serviceId?: string;
 	staffName?: string;
+	// Additional fields for review functionality
+	salon?: {
+		id: string;
+		name: string;
+	};
+	service?: {
+		id: string;
+		name: string;
+	};
 }
 
 interface VisitHistoryCardProps {
@@ -23,6 +32,7 @@ interface VisitHistoryCardProps {
 	onCancel?: (visit: VisitHistory) => void;
 	onLeaveReview?: (visit: VisitHistory) => void;
 	isUpcoming?: boolean; // Whether this is an upcoming appointment
+	hasReview?: boolean; // Whether the user has already left a review for this booking
 }
 
 export default function VisitHistoryCard({
@@ -31,6 +41,7 @@ export default function VisitHistoryCard({
 	onCancel,
 	onLeaveReview,
 	isUpcoming = false,
+	hasReview = false,
 }: VisitHistoryCardProps) {
 	const [showCancelConfirm, setShowCancelConfirm] = useState(false);
 
@@ -156,9 +167,14 @@ export default function VisitHistoryCard({
 								{onLeaveReview && (
 									<button
 										onClick={handleLeaveReview}
-										className="bg-gray-500 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-gray-600 transition-colors"
+										disabled={hasReview}
+										className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+											hasReview
+												? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+												: 'bg-gray-500 text-white hover:bg-gray-600'
+										}`}
 									>
-										Leave Review
+										{hasReview ? 'Review Left' : 'Leave Review'}
 									</button>
 								)}
 							</div>

@@ -178,7 +178,3 @@ export default function FavoritesClient() {
 		</main>
 	);
 }
-
-}
-
-}

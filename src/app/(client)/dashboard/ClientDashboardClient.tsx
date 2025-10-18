@@ -4,8 +4,10 @@ import {
 	useUpcomingBookings,
 	useCompletedBookings,
 	useCancelBooking,
+	useUserReviews,
 } from '@/hooks/useClient';
 import VisitHistoryCard from '@/components/VisitHistoryCard';
+import ReviewModal from '@/components/ReviewModal';
 import { useCallback, useMemo, useState } from 'react';
 
 export default function ClientDashboardClient() {
@@ -20,10 +22,30 @@ export default function ClientDashboardClient() {
 		error: completedError,
 	} = useCompletedBookings();
 	const cancelBookingMutation = useCancelBooking();
+	const { data: userReviews = [] } = useUserReviews();
+
+	// Function to check if a booking already has a review
+	const hasExistingReview = useCallback(
+		(bookingId: string) => {
+			return userReviews.some((review) => review.bookingId === bookingId);
+		},
+		[userReviews]
+	);
 
 	const [showSuccessMessage, setShowSuccessMessage] = useState<string | null>(
 		null
 	);
+	const [reviewModal, setReviewModal] = useState<{
+		isOpen: boolean;
+		salonId: string;
+		salonName: string;
+		bookingId?: string;
+		serviceName?: string;
+	}>({
+		isOpen: false,
+		salonId: '',
+		salonName: '',
+	});
 
 	const handleBookAgain = useCallback((booking: any) => {
 		// Navigate to booking page with pre-filled data
@@ -48,9 +70,30 @@ export default function ClientDashboardClient() {
 		[cancelBookingMutation]
 	);
 
-	const handleLeaveReview = useCallback((booking: any) => {
-		// Navigate to review page
-		window.location.href = `/reviews/create?bookingId=${booking.id}&salonId=${booking.salonId || booking.salon.id}`;
+	const handleLeaveReview = useCallback(
+		(visit: any) => {
+			// Additional safety check - should not happen since button is disabled
+			if (hasExistingReview(visit.id)) {
+				return;
+			}
+
+			setReviewModal({
+				isOpen: true,
+				salonId: visit.salonId || visit.salon?.id,
+				salonName: visit.salonName || visit.salon?.name,
+				bookingId: visit.id,
+				serviceName: visit.serviceName || visit.service?.name,
+			});
+		},
+		[hasExistingReview]
+	);
+
+	const handleCloseReviewModal = useCallback(() => {
+		setReviewModal({
+			isOpen: false,
+			salonId: '',
+			salonName: '',
+		});
 	}, []);
 
 	const upcomingBookingsList = useMemo(
@@ -178,7 +221,7 @@ export default function ClientDashboardClient() {
 				className="inline-block bg-[#ff5b5b] text-white px-6 py-3 rounded-lg font-medium hover:bg-[#e04a4a] transition-colors focus:outline-none focus:ring-2 focus:ring-[#ff5b5b] focus:ring-offset-2"
 				aria-label="Browse and book beauty services"
 			>
-				Book Your First Appointment
+				Book a Service
 			</a>
 		</div>
 	);
@@ -351,10 +394,19 @@ export default function ClientDashboardClient() {
 											salonId: booking.salon.id,
 											serviceId: booking.service.id,
 											staffName: booking.staff?.name,
+											salon: {
+												id: booking.salon.id,
+												name: booking.salon.name,
+											},
+											service: {
+												id: booking.service.id,
+												name: booking.service.name,
+											},
 										}}
 										onBookAgain={handleBookAgain}
 										onLeaveReview={handleLeaveReview}
 										isUpcoming={false}
+										hasReview={hasExistingReview(booking.id)}
 									/>
 								</div>
 							))}
@@ -362,6 +414,16 @@ export default function ClientDashboardClient() {
 					)}
 				</section>
 			</div>
+
+			{/* Review Modal */}
+			<ReviewModal
+				isOpen={reviewModal.isOpen}
+				onClose={handleCloseReviewModal}
+				salonId={reviewModal.salonId}
+				salonName={reviewModal.salonName}
+				bookingId={reviewModal.bookingId}
+				serviceName={reviewModal.serviceName}
+			/>
 		</main>
 	);
 }

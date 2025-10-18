@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '@/lib/api-client';
+import { toast } from 'react-hot-toast';
 
 // Types for client data
 export interface ClientBooking {
@@ -131,6 +132,32 @@ export function useCancelBooking() {
 			queryClient.invalidateQueries({ queryKey: ['user-bookings'] });
 			queryClient.invalidateQueries({ queryKey: ['upcoming-bookings'] });
 			queryClient.invalidateQueries({ queryKey: ['completed-bookings'] });
+		},
+	});
+}
+
+// Hook to create a review
+export function useCreateReview() {
+	const queryClient = useQueryClient();
+
+	return useMutation({
+		mutationFn: async (data: {
+			salonId: string;
+			bookingId?: string;
+			rating: number;
+			comment?: string;
+		}) => {
+			const response = await apiClient.post('/reviews', data);
+			return response;
+		},
+		onSuccess: () => {
+			// Invalidate and refetch reviews
+			queryClient.invalidateQueries({ queryKey: ['user-reviews'] });
+			queryClient.invalidateQueries({ queryKey: ['completed-bookings'] });
+			toast.success('Review submitted successfully!');
+		},
+		onError: (error: Error) => {
+			toast.error(error.message || 'Failed to submit review');
 		},
 	});
 }

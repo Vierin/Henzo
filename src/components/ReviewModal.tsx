@@ -1,7 +1,9 @@
 'use client';
 
 import { useState } from 'react';
-import { supabase } from '@/lib/supabase';
+import { Star, X } from 'lucide-react';
+import { useCreateReview } from '@/hooks/useClient';
+import { toast } from 'react-hot-toast';
 
 interface ReviewModalProps {
 	isOpen: boolean;
@@ -9,7 +11,7 @@ interface ReviewModalProps {
 	salonId: string;
 	salonName: string;
 	bookingId?: string;
-	onSuccess?: () => void;
+	serviceName?: string;
 }
 
 export default function ReviewModal({
@@ -18,188 +20,165 @@ export default function ReviewModal({
 	salonId,
 	salonName,
 	bookingId,
-	onSuccess,
+	serviceName,
 }: ReviewModalProps) {
 	const [rating, setRating] = useState(0);
 	const [comment, setComment] = useState('');
 	const [isSubmitting, setIsSubmitting] = useState(false);
-	const [error, setError] = useState('');
+	const createReviewMutation = useCreateReview();
+
+	const handleRatingClick = (newRating: number) => {
+		setRating(newRating);
+	};
 
 	const handleSubmit = async (e: React.FormEvent) => {
 		e.preventDefault();
-		setError('');
 
 		if (rating === 0) {
-			setError('Please select a rating');
+			toast.error('Please select a rating');
 			return;
 		}
 
 		setIsSubmitting(true);
-
 		try {
-			// Get current user session
-			const {
-				data: { session },
-			} = await supabase.auth.getSession();
-
-			if (!session?.access_token) {
-				throw new Error('You must be logged in to leave a review');
-			}
-
-			// Submit review
-			const API_BASE_URL =
-				process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
-			const response = await fetch(`${API_BASE_URL}/reviews`, {
-				method: 'POST',
-				headers: {
-					'Content-Type': 'application/json',
-					Authorization: `Bearer ${session.access_token}`,
-				},
-				body: JSON.stringify({
-					salonId,
-					bookingId,
-					rating,
-					comment: comment.trim() || undefined,
-				}),
+			await createReviewMutation.mutateAsync({
+				salonId,
+				bookingId,
+				rating,
+				comment: comment.trim() || undefined,
 			});
 
-			const result = await response.json();
-
-			if (!response.ok) {
-				throw new Error(result.message || 'Failed to submit review');
-			}
+			onClose();
 
 			// Reset form
 			setRating(0);
 			setComment('');
-			onClose();
-			onSuccess?.();
-		} catch (err: unknown) {
-			setError(err instanceof Error ? err.message : 'Failed to submit review');
+		} catch (error) {
+			console.error('Failed to submit review:', error);
 		} finally {
 			setIsSubmitting(false);
 		}
 	};
 
-	const handleStarClick = (starRating: number) => {
-		setRating(starRating);
-	};
-
-	const renderStars = () => {
-		return Array.from({ length: 5 }, (_, i) => {
-			const starRating = i + 1;
-			return (
-				<button
-					key={i}
-					type="button"
-					onClick={() => handleStarClick(starRating)}
-					className={`text-3xl transition-colors ${
-						starRating <= rating
-							? 'text-yellow-400'
-							: 'text-gray-300 hover:text-yellow-200'
-					}`}
-				>
-					★
-				</button>
-			);
-		});
+	const handleClose = () => {
+		if (!isSubmitting) {
+			onClose();
+			// Reset form when closing
+			setRating(0);
+			setComment('');
+		}
 	};
 
 	if (!isOpen) return null;
 
 	return (
-		<div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-			<div className="bg-white rounded-2xl p-8 max-w-md w-full mx-4 max-h-[90vh] overflow-y-auto">
-				<div className="flex items-center justify-between mb-6">
-					<h2 className="text-2xl font-bold text-gray-800">Leave a Review</h2>
+		<div className="fixed inset-0 bg-black/60 bg-opacity-50 flex items-center justify-center z-50 p-4">
+			<div className="bg-white rounded-xl max-w-md w-full max-h-[90vh] overflow-y-auto">
+				{/* Header */}
+				<div className="flex items-center justify-between p-6 border-b border-gray-200">
+					<h2 className="text-xl font-semibold text-gray-900">
+						Leave a Review
+					</h2>
 					<button
-						onClick={onClose}
-						className="text-gray-400 hover:text-gray-600 transition-colors"
+						onClick={handleClose}
+						disabled={isSubmitting}
+						className="text-gray-400 hover:text-gray-600 transition-colors disabled:opacity-50"
 					>
-						<svg
-							className="w-6 h-6"
-							fill="none"
-							stroke="currentColor"
-							viewBox="0 0 24 24"
-						>
-							<path
-								strokeLinecap="round"
-								strokeLinejoin="round"
-								strokeWidth={2}
-								d="M6 18L18 6M6 6l12 12"
-							/>
-						</svg>
+						<X className="w-6 h-6" />
 					</button>
 				</div>
 
-				<div className="mb-6">
-					<h3 className="text-lg font-semibold text-gray-800 mb-2">
-						{salonName}
-					</h3>
-					<p className="text-gray-600 text-sm">
-						Share your experience to help others
-					</p>
-				</div>
+				{/* Content */}
+				<form onSubmit={handleSubmit} className="p-6">
+					{/* Salon Info */}
+					<div className="mb-6">
+						<h3 className="font-medium text-gray-900 mb-1">{salonName}</h3>
+						{serviceName && (
+							<p className="text-sm text-gray-600">{serviceName}</p>
+						)}
+					</div>
 
-				<form onSubmit={handleSubmit} className="space-y-6">
 					{/* Rating */}
-					<div>
+					<div className="mb-6">
 						<label className="block text-sm font-medium text-gray-700 mb-3">
-							Rating *
+							How was your experience? *
 						</label>
-						<div className="flex gap-1">{renderStars()}</div>
+						<div className="flex gap-1">
+							{[1, 2, 3, 4, 5].map((star) => (
+								<button
+									key={star}
+									type="button"
+									onClick={() => handleRatingClick(star)}
+									disabled={isSubmitting}
+									className="transition-colors disabled:opacity-50"
+								>
+									<Star
+										className={`w-8 h-8 ${
+											star <= rating
+												? 'text-[#ff5b5b] fill-[#ff5b5b]'
+												: 'text-gray-300'
+										} hover:text-[#ff5b5b] hover:fill-[#ff5b5b]`}
+									/>
+								</button>
+							))}
+						</div>
 						{rating > 0 && (
 							<p className="text-sm text-gray-600 mt-2">
-								{rating} star{rating !== 1 ? 's' : ''}
+								{rating === 1 && 'Poor'}
+								{rating === 2 && 'Fair'}
+								{rating === 3 && 'Good'}
+								{rating === 4 && 'Very Good'}
+								{rating === 5 && 'Excellent'}
 							</p>
 						)}
 					</div>
 
 					{/* Comment */}
-					<div>
+					<div className="mb-6">
 						<label
 							htmlFor="comment"
 							className="block text-sm font-medium text-gray-700 mb-2"
 						>
-							Review (optional)
+							Share your experience (optional)
 						</label>
 						<textarea
 							id="comment"
 							value={comment}
 							onChange={(e) => setComment(e.target.value)}
-							placeholder="Tell us about your experience..."
-							className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#ff5b5b] focus:border-transparent resize-none"
+							disabled={isSubmitting}
 							rows={4}
+							className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#ff5b5b] focus:border-transparent disabled:opacity-50 disabled:bg-gray-100"
+							placeholder="Tell others about your experience..."
 							maxLength={500}
 						/>
-						<div className="flex justify-between text-xs text-gray-500 mt-1">
-							<span>Share details about your visit</span>
-							<span>{comment.length}/500</span>
+						<div className="text-xs text-gray-500 mt-1 text-right">
+							{comment.length}/500
 						</div>
 					</div>
 
-					{/* Error */}
-					{error && (
-						<div className="bg-red-50 border border-red-200 rounded-lg p-3">
-							<p className="text-red-600 text-sm">{error}</p>
-						</div>
-					)}
-
-					{/* Buttons */}
-					<div className="flex gap-3 pt-4">
+					{/* Actions */}
+					<div className="flex gap-3 justify-end">
 						<button
 							type="button"
-							onClick={onClose}
-							className="flex-1 px-4 py-3 border border-gray-300 text-gray-700 rounded-lg font-medium hover:bg-gray-50 transition-colors"
+							onClick={handleClose}
+							disabled={isSubmitting}
+							className="px-4 py-2 text-gray-600 hover:text-gray-800 transition-colors disabled:opacity-50"
 						>
 							Cancel
 						</button>
 						<button
 							type="submit"
 							disabled={isSubmitting || rating === 0}
-							className="flex-1 px-4 py-3 bg-[#ff5b5b] text-white rounded-lg font-medium hover:bg-[#e04a4a] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+							className="bg-[#ff5b5b] text-white px-6 py-2 rounded-lg font-medium hover:bg-[#e04a4a] transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
 						>
-							{isSubmitting ? 'Submitting...' : 'Submit Review'}
+							{isSubmitting ? (
+								<>
+									<div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+									Submitting...
+								</>
+							) : (
+								'Submit Review'
+							)}
 						</button>
 					</div>
 				</form>

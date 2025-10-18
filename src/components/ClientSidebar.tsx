@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useState } from 'react';
-import { useAuthStore } from '@/stores/authStore';
+import { useAuth } from '@/lib/auth-unified';
 import {
 	Heart,
 	Clock,
@@ -20,7 +20,7 @@ import { useUpcomingBookings, useUserReviews } from '@/hooks/useClient';
 export default function ClientSidebar() {
 	const pathname = usePathname();
 	const router = useRouter();
-	const { logout, user } = useAuthStore();
+	const { logout, user } = useAuth();
 	const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
 	// Get counts for badges
@@ -29,10 +29,23 @@ export default function ClientSidebar() {
 	const { data: userReviews = [] } = useUserReviews();
 
 	const handleLogout = async () => {
-		await logout();
-		// Small delay to ensure cookies are cleared
-		await new Promise((resolve) => setTimeout(resolve, 100));
-		router.replace('/');
+		try {
+			// Close mobile menu if open
+			setIsMobileMenuOpen(false);
+
+			// Call logout
+			await logout();
+
+			// Additional delay to ensure state is cleared
+			await new Promise((resolve) => setTimeout(resolve, 300));
+
+			// Force page reload to clear any cached state
+			window.location.href = '/';
+		} catch (error) {
+			console.error('Logout error:', error);
+			// Even if logout fails, redirect to home
+			window.location.href = '/';
+		}
 	};
 
 	const toggleMobileMenu = () => {
@@ -73,7 +86,7 @@ export default function ClientSidebar() {
 	// Helper function to render sidebar content
 	const renderSidebarContent = () => (
 		<div className="w-64 bg-white shadow-sm border-r border-gray-200 min-h-screen">
-			<div className="p-6">
+			<div className="md:p-6 p-4">
 				{/* User Profile Section */}
 				{user && (
 					<div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg mb-6">
@@ -141,16 +154,16 @@ export default function ClientSidebar() {
 				aria-label="Toggle menu"
 			>
 				{isMobileMenuOpen ? (
-					<X className="w-6 h-6 text-gray-700" />
+					<X className="w-5 h-5 text-gray-700" />
 				) : (
-					<Menu className="w-6 h-6 text-gray-700" />
+					<Menu className="w-5 h-5 text-gray-700" />
 				)}
 			</button>
 
 			{/* Mobile Overlay */}
 			{isMobileMenuOpen && (
 				<div
-					className="md:hidden fixed inset-0 bg-black bg-opacity-50 z-40"
+					className="md:hidden fixed inset-0 bg-black/60 bg-opacity-50 z-40"
 					onClick={() => setIsMobileMenuOpen(false)}
 				/>
 			)}

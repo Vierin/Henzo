@@ -169,15 +169,15 @@ export default function ReBookModal({
 	const availableDates = generateAvailableDates();
 
 	return (
-		<div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+		<div className="fixed inset-0 bg-black/60 bg-opacity-50 flex items-center justify-center z-50 p-4">
 			<div className="bg-white rounded-xl p-6 w-full max-w-md">
 				<h2 className="text-2xl font-bold text-gray-900 mb-4">
 					Book Again - {salon.name}
 				</h2>
 
 				<p className="text-gray-600 mb-4">
-					Service: <strong>{service.name}</strong> ({service.price.toLocaleString()}₫,{' '}
-					{service.duration} min)
+					Service: <strong>{service.name}</strong> (
+					{service.price.toLocaleString()}₫, {service.duration} min)
 				</p>
 
 				<form onSubmit={handleSubmit} className="space-y-4">
