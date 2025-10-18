@@ -24,6 +24,13 @@ import {
 } from 'lucide-react';
 import { safeParseDate } from '@/utils/date';
 import Link from 'next/link';
+import {
+	Select,
+	SelectContent,
+	SelectItem,
+	SelectTrigger,
+	SelectValue,
+} from '@/components/ui/select';
 
 const convertBookingDtoToBooking = (dto: any) => {
 	return {
@@ -332,15 +339,34 @@ export default function OwnerDashboardClient() {
 					</p>
 				</div>
 				<div className="flex items-center gap-3">
-					<select
+					<Select
 						value={period}
-						onChange={(e) => setPeriod(e.target.value as '7d' | '30d' | '1y')}
-						className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#ff5b5b] text-gray-900 bg-white"
+						onValueChange={(value: '7d' | '30d' | '1y') => setPeriod(value)}
 					>
-						<option value="7d">Last 7 days</option>
-						<option value="30d">Last 30 days</option>
-						<option value="1y">Last 1 year</option>
-					</select>
+						<SelectTrigger className="w-[180px] border border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#ff5b5b] text-gray-900 bg-white">
+							<SelectValue />
+						</SelectTrigger>
+						<SelectContent className="bg-white border border-gray-300 shadow-lg rounded-md">
+							<SelectItem
+								value="7d"
+								className="bg-white hover:bg-gray-50 focus:bg-gray-50 text-gray-900 cursor-pointer"
+							>
+								Last 7 days
+							</SelectItem>
+							<SelectItem
+								value="30d"
+								className="bg-white hover:bg-gray-50 focus:bg-gray-50 text-gray-900 cursor-pointer"
+							>
+								Last 30 days
+							</SelectItem>
+							<SelectItem
+								value="1y"
+								className="bg-white hover:bg-gray-50 focus:bg-gray-50 text-gray-900 cursor-pointer"
+							>
+								Last 1 year
+							</SelectItem>
+						</SelectContent>
+					</Select>
 					<button
 						onClick={() => {
 							setSelectedService(undefined);

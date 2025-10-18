@@ -7,6 +7,7 @@ import {
 	UpdateBookingDto,
 } from '@/types/dto/booking.dto';
 import { toast } from 'react-hot-toast';
+import { useAuth } from '@/lib/auth-unified';
 
 // Query keys
 export const bookingKeys = {
@@ -23,9 +24,17 @@ export const bookingKeys = {
 
 // Get all bookings for current user (owner/admin)
 export const useBookings = (filters?: { status?: string; date?: string }) => {
+	const { user, isLoading: authLoading, isOwner } = useAuth();
+
 	return useQuery({
 		queryKey: bookingKeys.list(filters || {}),
 		queryFn: async (): Promise<BookingWithDetailsDto[]> => {
+			if (!user || !isOwner()) {
+				throw new Error(
+					'Unauthorized: Only salon owners can access this endpoint'
+				);
+			}
+
 			const params = new URLSearchParams();
 			if (filters?.status) params.append('status', filters.status);
 			if (filters?.date) params.append('date', filters.date);
@@ -38,6 +47,7 @@ export const useBookings = (filters?: { status?: string; date?: string }) => {
 			const response = await apiClient.get<BookingWithDetailsDto[]>(endpoint);
 			return response || [];
 		},
+		enabled: !authLoading && !!user && isOwner(),
 		staleTime: 2 * 60 * 1000, // 2 minutes (bookings change frequently)
 	});
 };

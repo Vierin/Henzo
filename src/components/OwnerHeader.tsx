@@ -70,8 +70,8 @@ export default function OwnerHeader() {
 	};
 
 	return (
-		<header className="sticky top-0 bg-white/80 backdrop-blur border-b border-[#f1d9d7] z-[500]">
-			<div className="h-[5rem] px-6 py-4 flex items-center justify-between">
+		<header className="sticky w-[100vw] top-0 bg-white/80 backdrop-blur border-b border-[#f1d9d7] z-[300]">
+			<div className="h-[5rem] mx-auto max-w-7xl px-6 py-4 flex items-center justify-between">
 				<Link
 					href="/"
 					className="flex h-full items-center gap-3 hover:opacity-80 transition-opacity"

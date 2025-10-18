@@ -424,6 +424,46 @@ export default function BookingModal({
 		return hasFreeStaff;
 	};
 
+	// Calculate global time range from all working days
+	const getGlobalTimeRange = (): { startHour: number; endHour: number } => {
+		const currentWorkingHours = workingHours || salonWorkingHours;
+
+		if (!currentWorkingHours) {
+			return { startHour: 6, endHour: 23 }; // Extended default range
+		}
+
+		let minStartHour = 23; // Start with latest possible hour
+		let maxEndHour = 0; // Start with earliest possible hour
+
+		const days: (keyof WorkingHours)[] = [
+			'monday',
+			'tuesday',
+			'wednesday',
+			'thursday',
+			'friday',
+			'saturday',
+			'sunday',
+		];
+
+		days.forEach((dayName) => {
+			const dayHours = currentWorkingHours[dayName];
+			if (dayHours && !dayHours.closed && dayHours.open && dayHours.close) {
+				const openHour = parseInt(dayHours.open.split(':')[0]);
+				const closeHour = parseInt(dayHours.close.split(':')[0]);
+
+				minStartHour = Math.min(minStartHour, openHour);
+				maxEndHour = Math.max(maxEndHour, closeHour);
+			}
+		});
+
+		// If no working hours found, use extended default
+		if (minStartHour === 23 || maxEndHour === 0) {
+			return { startHour: 6, endHour: 23 };
+		}
+
+		return { startHour: minStartHour, endHour: maxEndHour };
+	};
+
 	// Generate time slots based on salon working hours for selected date
 	const generateTimeSlots = (
 		date?: string
@@ -452,29 +492,37 @@ export default function BookingModal({
 		];
 		const dayName = dayNames[dayOfWeek];
 
-		// Default hours if no working hours are set
-		let startHour = 9;
-		let endHour = 18;
+		// Get global time range for all working days
+		const globalRange = getGlobalTimeRange();
+		const startHour = globalRange.startHour;
+		const endHour = globalRange.endHour;
 
 		// Use passed workingHours or fallback to salonWorkingHours
 		const currentWorkingHours = workingHours || salonWorkingHours;
 
-		// Get working hours for the selected day if available
-		if (
-			currentWorkingHours &&
-			currentWorkingHours[dayName] &&
-			!currentWorkingHours[dayName].closed
-		) {
-			const openTime = currentWorkingHours[dayName].open;
-			const closeTime = currentWorkingHours[dayName].close;
+		// Get working hours for the selected day to check availability
+		let dayOpenHour = startHour;
+		let dayCloseHour = endHour;
+		let isDayClosed = false;
 
-			// Parse time strings (assuming 24-hour format like "09:00")
-			if (openTime && closeTime) {
-				startHour = parseInt(openTime.split(':')[0]);
-				endHour = parseInt(closeTime.split(':')[0]);
+		if (currentWorkingHours && currentWorkingHours[dayName]) {
+			if (currentWorkingHours[dayName].closed) {
+				isDayClosed = true;
+			} else if (
+				currentWorkingHours[dayName].open &&
+				currentWorkingHours[dayName].close
+			) {
+				dayOpenHour = parseInt(
+					currentWorkingHours[dayName].open!.split(':')[0]
+				);
+				dayCloseHour = parseInt(
+					currentWorkingHours[dayName].close!.split(':')[0]
+				);
 			}
-		} else if (currentWorkingHours && currentWorkingHours[dayName]?.closed) {
-			// Salon is closed on this day
+		}
+
+		// If salon is closed on this day, return empty slots
+		if (isDayClosed) {
 			return [];
 		}
 
@@ -489,6 +537,23 @@ export default function BookingModal({
 
 			// Add time slots with availability info
 			timeSlots.forEach((timeSlot) => {
+				// Check if this time slot is within the day's working hours
+				const timeHour = parseInt(timeSlot.split(':')[0]);
+				const timeMinute = parseInt(timeSlot.split(':')[1]);
+				const timeInMinutes = timeHour * 60 + timeMinute;
+
+				const dayOpenInMinutes = dayOpenHour * 60;
+				const dayCloseInMinutes = dayCloseHour * 60;
+
+				const isWithinWorkingHours =
+					timeInMinutes >= dayOpenInMinutes &&
+					timeInMinutes < dayCloseInMinutes;
+
+				if (!isWithinWorkingHours) {
+					// Skip this slot if it's outside working hours
+					return;
+				}
+
 				// Determine staff ID for availability check
 				let staffIdForCheck: string | undefined;
 				if (selectedStaff && selectedStaff !== 'Any Staff') {
@@ -497,16 +562,6 @@ export default function BookingModal({
 						(staff) => staff.name === selectedStaff
 					);
 					staffIdForCheck = staffMember?.id;
-
-					console.log('Staff selection debug:', {
-						selectedStaff,
-						staffMember,
-						staffIdForCheck,
-						allStaffMembers: staffMembers.map((s) => ({
-							id: s.id,
-							name: s.name,
-						})),
-					});
 				}
 
 				slots.push({

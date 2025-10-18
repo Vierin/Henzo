@@ -9,6 +9,15 @@ interface DayScheduleProps {
 	selectedDate: Date;
 	bookings: Booking[];
 	timeBlocks?: TimeBlock[];
+	workingHours?: {
+		monday?: { open: string; close: string; closed?: boolean };
+		tuesday?: { open: string; close: string; closed?: boolean };
+		wednesday?: { open: string; close: string; closed?: boolean };
+		thursday?: { open: string; close: string; closed?: boolean };
+		friday?: { open: string; close: string; closed?: boolean };
+		saturday?: { open: string; close: string; closed?: boolean };
+		sunday?: { open: string; close: string; closed?: boolean };
+	};
 	onBack: () => void;
 	onViewBookingDetails: (booking: Booking) => void;
 	onPrevDay?: () => void;
@@ -21,6 +30,7 @@ export default function DaySchedule({
 	selectedDate,
 	bookings,
 	timeBlocks = [],
+	workingHours,
 	onBack,
 	onViewBookingDetails,
 	onPrevDay,
@@ -103,9 +113,72 @@ export default function DaySchedule({
 		return staffMembers;
 	};
 
+	// Get day name from selected date
+	const getDayName = (date: Date) => {
+		const dayOfWeek = date.getDay();
+		const dayNames = [
+			'sunday',
+			'monday',
+			'tuesday',
+			'wednesday',
+			'thursday',
+			'friday',
+			'saturday',
+		] as const;
+		return dayNames[dayOfWeek];
+	};
+
+	// Check if selected day is closed
+	const isSelectedDayClosed = () => {
+		if (!workingHours) return false;
+		const dayName = getDayName(selectedDate);
+		const dayHours = workingHours[dayName];
+		return dayHours?.closed === true;
+	};
+
+	// Calculate global time range from all working days
+	const getGlobalTimeRange = () => {
+		if (!workingHours) {
+			return { startHour: 6, endHour: 23 }; // Extended default range
+		}
+
+		let minStartHour = 23; // Start with latest possible hour
+		let maxEndHour = 0; // Start with earliest possible hour
+
+		const days = [
+			'monday',
+			'tuesday',
+			'wednesday',
+			'thursday',
+			'friday',
+			'saturday',
+			'sunday',
+		] as const;
+
+		days.forEach((dayName) => {
+			const dayHours = workingHours[dayName];
+			if (dayHours && !dayHours.closed && dayHours.open && dayHours.close) {
+				const openHour = parseInt(dayHours.open.split(':')[0]);
+				const closeHour = parseInt(dayHours.close.split(':')[0]);
+
+				minStartHour = Math.min(minStartHour, openHour);
+				maxEndHour = Math.max(maxEndHour, closeHour);
+			}
+		});
+
+		// If no working hours found, use extended default
+		if (minStartHour === 23 || maxEndHour === 0) {
+			return { startHour: 6, endHour: 23 };
+		}
+
+		return { startHour: minStartHour, endHour: maxEndHour };
+	};
+
 	const getTimeSlots = () => {
 		const slots = [];
-		for (let hour = 8; hour <= 20; hour++) {
+		const { startHour, endHour } = getGlobalTimeRange();
+
+		for (let hour = startHour; hour <= endHour; hour++) {
 			slots.push({
 				time: `${hour.toString().padStart(2, '0')}:00`,
 				hour: hour,
@@ -366,182 +439,215 @@ export default function DaySchedule({
 					</div>
 				)}
 
-				<div className="flex">
-					{/* Left sticky column - Time labels and header */}
-					<div
-						className="flex-shrink-0 sticky left-0 z-20 bg-white"
-						style={{ width: DATA_WIDTH }}
-					>
-						{/* Time header */}
-						<div className="border-b border-r border-gray-200 bg-white">
-							<div className="py-3 px-2 text-sm font-medium text-gray-500">
-								Time
+				{/* Check if selected day is closed */}
+				{isSelectedDayClosed() ? (
+					<div className="flex items-center justify-center py-12 bg-gray-50 rounded-lg border border-gray-200">
+						<div className="text-center">
+							<div className="mb-4">
+								<svg
+									className="w-16 h-16 text-gray-400 mx-auto"
+									fill="none"
+									stroke="currentColor"
+									viewBox="0 0 24 24"
+								>
+									<path
+										strokeLinecap="round"
+										strokeLinejoin="round"
+										strokeWidth={1.5}
+										d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+									/>
+								</svg>
 							</div>
+							<h3 className="text-lg font-semibold text-gray-900 mb-2">
+								Salon is Closed
+							</h3>
+							<p className="text-gray-600">
+								The salon is not open on{' '}
+								{selectedDate.toLocaleDateString('en-US', {
+									weekday: 'long',
+								})}
+								.
+							</p>
 						</div>
-						{/* Time cells */}
-						{timeSlots.map((timeSlot) => (
-							<div
-								key={`time-${timeSlot.time}`}
-								className="flex items-center justify-center text-sm text-gray-600 h-16 border-b border-r border-gray-200 font-medium bg-white"
-							>
-								{timeSlot.time}
-							</div>
-						))}
 					</div>
-
-					{/* Right scrollable area - Staff columns with headers */}
-					<div
-						ref={scrollContainerRef}
-						className="flex-1 overflow-x-auto cursor-grab"
-						onMouseDown={handleMouseDown}
-						onMouseMove={handleMouseMove}
-						onMouseUp={handleMouseUp}
-						onMouseLeave={handleMouseLeave}
-					>
+				) : (
+					<div className="flex">
+						{/* Left sticky column - Time labels and header */}
 						<div
-							className="flex flex-col"
-							style={{ minWidth: `${staffMembers.length * 150}px` }}
+							className="flex-shrink-0 sticky left-0 z-20 bg-white"
+							style={{ width: DATA_WIDTH }}
 						>
-							{/* Staff headers row */}
-							<div className="flex border-b border-gray-200 bg-white">
-								{staffMembers.map((staff) => (
-									<div
-										key={staff.id}
-										className="flex-shrink-0 py-3 px-4 text-center border-r border-gray-200"
-										style={{ width: '150px' }}
-									>
-										<div className="text-sm font-semibold text-gray-900 truncate">
-											{staff.name}
-										</div>
-									</div>
-								))}
+							{/* Time header */}
+							<div className="border-b border-r border-gray-200 bg-white">
+								<div className="py-3 px-2 text-sm font-medium text-gray-500">
+									Time
+								</div>
 							</div>
+							{/* Time cells */}
+							{timeSlots.map((timeSlot) => (
+								<div
+									key={`time-${timeSlot.time}`}
+									className="flex items-center justify-center text-sm text-gray-600 h-16 border-b border-r border-gray-200 font-medium bg-white"
+								>
+									{timeSlot.time}
+								</div>
+							))}
+						</div>
 
-							{/* Staff columns grid */}
-							<div className="flex">
-								{staffMembers.map((staff) => (
-									<div
-										key={`staff-${staff.id}`}
-										className="flex-shrink-0"
-										style={{ width: '150px' }}
-									>
-										{timeSlots.map((timeSlot) => {
-											const startingAppointment = getAppointmentStartingAtTime(
-												staff.id,
-												timeSlot.hour
-											);
-											const position = getAppointmentPosition(
-												startingAppointment,
-												timeSlot.hour
-											);
-											const timeBlock = getTimeBlockAtTime(
-												staff.id,
-												timeSlot.hour
-											);
+						{/* Right scrollable area - Staff columns with headers */}
+						<div
+							ref={scrollContainerRef}
+							className="flex-1 overflow-x-auto cursor-grab"
+							onMouseDown={handleMouseDown}
+							onMouseMove={handleMouseMove}
+							onMouseUp={handleMouseUp}
+							onMouseLeave={handleMouseLeave}
+						>
+							<div
+								className="flex flex-col"
+								style={{ minWidth: `${staffMembers.length * 150}px` }}
+							>
+								{/* Staff headers row */}
+								<div className="flex border-b border-gray-200 bg-white">
+									{staffMembers.map((staff) => (
+										<div
+											key={staff.id}
+											className="flex-shrink-0 py-3 px-4 text-center border-r border-gray-200"
+											style={{ width: '150px' }}
+										>
+											<div className="text-sm font-semibold text-gray-900 truncate">
+												{staff.name}
+											</div>
+										</div>
+									))}
+								</div>
 
-											return (
-												<div
-													key={`${staff.id}-${timeSlot.time}`}
-													className={`relative h-16 border-b border-r border-gray-200 ${
-														timeBlock ? 'bg-gray-100' : ''
-													}`}
-												>
-													{timeBlock && (
-														<div
-															className="absolute inset-0 bg-gray-300 bg-opacity-50 flex items-center justify-center"
-															style={{
-																backgroundImage:
-																	'repeating-linear-gradient(45deg, transparent, transparent 10px, rgba(0,0,0,0.05) 10px, rgba(0,0,0,0.05) 20px)',
-															}}
-														>
-															<div className="text-xs text-gray-700 font-medium px-2 py-1 bg-white rounded shadow-sm">
-																{timeBlock.type === 'TIME_OFF'
-																	? '🚫 Time Off'
-																	: timeBlock.type === 'BUSY'
-																		? '⏸️ Busy'
-																		: '🔒 Closed'}
+								{/* Staff columns grid */}
+								<div className="flex">
+									{staffMembers.map((staff) => (
+										<div
+											key={`staff-${staff.id}`}
+											className="flex-shrink-0"
+											style={{ width: '150px' }}
+										>
+											{timeSlots.map((timeSlot) => {
+												const startingAppointment =
+													getAppointmentStartingAtTime(staff.id, timeSlot.hour);
+												const position = getAppointmentPosition(
+													startingAppointment,
+													timeSlot.hour
+												);
+												const timeBlock = getTimeBlockAtTime(
+													staff.id,
+													timeSlot.hour
+												);
+
+												return (
+													<div
+														key={`${staff.id}-${timeSlot.time}`}
+														className={`relative h-16 border-b border-r border-gray-200 ${
+															timeBlock ? 'bg-gray-100' : ''
+														}`}
+													>
+														{timeBlock && (
+															<div
+																className="absolute inset-0 bg-gray-300 bg-opacity-50 flex items-center justify-center"
+																style={{
+																	backgroundImage:
+																		'repeating-linear-gradient(45deg, transparent, transparent 10px, rgba(0,0,0,0.05) 10px, rgba(0,0,0,0.05) 20px)',
+																}}
+															>
+																<div className="text-xs text-gray-700 font-medium px-2 py-1 bg-white rounded shadow-sm">
+																	{timeBlock.type === 'TIME_OFF'
+																		? '🚫 Time Off'
+																		: timeBlock.type === 'BUSY'
+																			? '⏸️ Busy'
+																			: '🔒 Closed'}
+																</div>
 															</div>
-														</div>
-													)}
-													{startingAppointment && position && !timeBlock
-														? (() => {
-																const styles =
-																	getBookingBlockStyles(startingAppointment);
-																const clickable =
-																	isBookingClickable(startingAppointment);
+														)}
+														{startingAppointment && position && !timeBlock
+															? (() => {
+																	const styles =
+																		getBookingBlockStyles(startingAppointment);
+																	const clickable =
+																		isBookingClickable(startingAppointment);
 
-																return (
-																	<div
-																		className={styles.className}
-																		style={{
-																			top: position.top,
-																			height: position.height,
-																			minHeight: '24px',
-																		}}
-																		onClick={
-																			clickable
-																				? () =>
-																						onViewBookingDetails(
-																							startingAppointment
-																						)
-																				: undefined
-																		}
-																		role="button"
-																		tabIndex={clickable ? 0 : -1}
-																		aria-label={`View details for appointment: ${startingAppointment.service?.name} with ${startingAppointment.user?.name || `Client ID: ${startingAppointment.userId}`} at ${formatTimeSafe(startingAppointment.time)}`}
-																	>
-																		{position.duration < 40 ? (
-																			<div
-																				className={`text-xs ${styles.textClassName} font-medium leading-tight`}
-																			>
+																	return (
+																		<div
+																			className={styles.className}
+																			style={{
+																				top: position.top,
+																				height: position.height,
+																				minHeight: '24px',
+																			}}
+																			onClick={
+																				clickable
+																					? () =>
+																							onViewBookingDetails(
+																								startingAppointment
+																							)
+																					: undefined
+																			}
+																			role="button"
+																			tabIndex={clickable ? 0 : -1}
+																			aria-label={`View details for appointment: ${startingAppointment.service?.name} with ${startingAppointment.user?.name || `Client ID: ${startingAppointment.userId}`} at ${formatTimeSafe(startingAppointment.time)}`}
+																		>
+																			{position.duration < 40 ? (
 																				<div
-																					className={`truncate ${styles.textSecondaryClassName}`}
+																					className={`text-xs ${styles.textClassName} font-medium leading-tight`}
 																				>
-																					{startingAppointment.user?.name ||
-																						`Client ID: ${startingAppointment.userId}`}{' '}
-																					- {startingAppointment.service?.name}
+																					<div
+																						className={`truncate ${styles.textSecondaryClassName}`}
+																					>
+																						{startingAppointment.user?.name ||
+																							`Client ID: ${startingAppointment.userId}`}{' '}
+																						-{' '}
+																						{startingAppointment.service?.name}
+																					</div>
 																				</div>
-																			</div>
-																		) : (
-																			<div className="text-xs leading-tight">
-																				<div
-																					className={`font-medium ${styles.textClassName} truncate`}
-																				>
-																					{startingAppointment.service?.name} -{' '}
-																					{startingAppointment.user?.name ||
-																						`Client ID: ${startingAppointment.userId}`}
-																				</div>
-																				<div
-																					className={`${styles.textSecondaryClassName} truncate`}
-																				>
-																					{formatTimeSafe(
-																						startingAppointment.time
-																					)}{' '}
-																					-{' '}
-																					{formatTimeSafe(
-																						new Date(
+																			) : (
+																				<div className="text-xs leading-tight">
+																					<div
+																						className={`font-medium ${styles.textClassName} truncate`}
+																					>
+																						{startingAppointment.service?.name}{' '}
+																						-{' '}
+																						{startingAppointment.user?.name ||
+																							`Client ID: ${startingAppointment.userId}`}
+																					</div>
+																					<div
+																						className={`${styles.textSecondaryClassName} truncate`}
+																					>
+																						{formatTimeSafe(
+																							startingAppointment.time
+																						)}{' '}
+																						-{' '}
+																						{formatTimeSafe(
 																							new Date(
-																								startingAppointment.time
-																							).getTime() +
-																								position.duration * 60000
-																						).toISOString()
-																					)}
+																								new Date(
+																									startingAppointment.time
+																								).getTime() +
+																									position.duration * 60000
+																							).toISOString()
+																						)}
+																					</div>
 																				</div>
-																			</div>
-																		)}
-																	</div>
-																);
-															})()
-														: null}
-												</div>
-											);
-										})}
-									</div>
-								))}
+																			)}
+																		</div>
+																	);
+																})()
+															: null}
+													</div>
+												);
+											})}
+										</div>
+									))}
+								</div>
 							</div>
 						</div>
 					</div>
-				</div>
+				)}
 			</div>
 		</div>
 	);

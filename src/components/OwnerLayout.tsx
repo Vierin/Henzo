@@ -10,7 +10,7 @@ interface OwnerLayoutProps {
 
 export default function OwnerLayout({ children }: OwnerLayoutProps) {
 	return (
-		<div className="min-h-screen bg-[#fff7f6]">
+		<div className="min-h-screen bg-[#fff7f6] w-[100vw] overflow-x-hidden">
 			<OwnerHeader />
 			<div className="flex">
 				<OwnerSidebar />

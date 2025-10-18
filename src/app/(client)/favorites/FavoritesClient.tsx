@@ -53,38 +53,38 @@ export default function FavoritesClient() {
 	if (favorites.length === 0) {
 		return (
 			<main role="main" aria-labelledby="favorites-heading">
-				<header className="mb-8">
+				<header className="mb-6 md:mb-8">
 					<h1
 						id="favorites-heading"
-						className="text-3xl font-bold text-gray-900"
+						className="text-2xl md:text-3xl font-bold text-gray-900"
 					>
 						Favorite Salons
 					</h1>
-					<p className="text-gray-600 mt-2">
+					<p className="text-gray-600 mt-2 text-sm md:text-base">
 						Salons you've marked as favorites
 					</p>
 				</header>
 
 				<div
-					className="text-center py-12"
+					className="text-center py-8 md:py-12"
 					role="status"
 					aria-labelledby="empty-heading"
 				>
-					<div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-						<Heart className="w-8 h-8 text-gray-400" />
+					<div className="w-12 h-12 md:w-16 md:h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+						<Heart className="w-6 h-6 md:w-8 md:h-8 text-gray-400" />
 					</div>
 					<h3
 						id="empty-heading"
-						className="text-xl font-semibold text-gray-900 mb-2"
+						className="text-lg md:text-xl font-semibold text-gray-900 mb-2"
 					>
 						No favorite salons yet
 					</h3>
-					<p className="text-gray-600 mb-6">
+					<p className="text-gray-600 mb-4 md:mb-6 text-sm md:text-base px-4">
 						Browse salons and mark your favorites by clicking the heart icon
 					</p>
 					<a
 						href="/salons"
-						className="inline-block bg-[#ff5b5b] text-white px-6 py-3 rounded-lg font-medium hover:bg-[#e04a4a] transition-colors focus:outline-none focus:ring-2 focus:ring-[#ff5b5b] focus:ring-offset-2"
+						className="inline-block bg-[#ff5b5b] text-white px-4 md:px-6 py-2 md:py-3 rounded-lg text-sm md:text-base font-medium hover:bg-[#e04a4a] transition-colors focus:outline-none focus:ring-2 focus:ring-[#ff5b5b] focus:ring-offset-2"
 					>
 						Browse Salons
 					</a>
@@ -95,64 +95,75 @@ export default function FavoritesClient() {
 
 	return (
 		<main role="main" aria-labelledby="favorites-heading">
-			<header className="mb-8">
-				<h1 id="favorites-heading" className="text-3xl font-bold text-gray-900">
+			<header className="mb-6 md:mb-8">
+				<h1
+					id="favorites-heading"
+					className="text-2xl md:text-3xl font-bold text-gray-900"
+				>
 					Favorite Salons
 				</h1>
-				<p className="text-gray-600 mt-2">
+				<p className="text-gray-600 mt-2 text-sm md:text-base">
 					{favorites.length} {favorites.length === 1 ? 'salon' : 'salons'} saved
 				</p>
 			</header>
 
-			<div className="space-y-6" role="list" aria-label="Favorite salons list">
+			<div
+				className="space-y-3 md:space-y-6"
+				role="list"
+				aria-label="Favorite salons list"
+			>
 				{favorites.map((salon) => (
 					<div
 						key={salon.id}
 						role="listitem"
-						className="bg-white rounded-xl p-6 shadow-sm hover:shadow-md transition-shadow"
+						className="bg-white rounded-lg md:rounded-xl p-3 md:p-6 shadow-sm hover:shadow-md transition-shadow"
 					>
-						<div className="flex items-start gap-4">
+						<div className="flex items-center gap-3 md:gap-4">
 							{/* Salon Image */}
-							<div className="aspect-square h-30 rounded-lg flex-shrink-0">
+							<div className="aspect-square w-16 h-16 md:w-28 md:h-28 rounded-lg flex-shrink-0">
 								<SalonImage
 									src={salon.logo || salon.photos[0] || ''}
 									alt={salon.name}
 									width={120}
 									height={120}
-									className="aspect-square h-full object-cover rounded-lg"
-									style={{ width: 'auto', height: 'auto' }}
+									className="aspect-square w-full h-full object-cover rounded-lg"
 									placeholder="💇‍♀️"
 								/>
 							</div>
 
 							{/* Salon Info */}
 							<div className="flex-1 min-w-0">
-								<div className="flex items-start justify-between mb-2">
-									<h3 className="text-lg font-semibold text-gray-900 truncate">
+								<div className="flex items-start justify-between mb-1 md:mb-2">
+									<h3 className="text-base md:text-lg font-semibold text-gray-900 truncate">
 										{salon.name}
 									</h3>
 								</div>
 
 								{salon.address && (
-									<div className="flex items-start gap-1 mb-2">
-										<MapPin className="w-4 h-4 text-gray-400 flex-shrink-0 mt-0.5" />
-										<p className="text-gray-600 text-sm line-clamp-1">
+									<div className="flex items-start gap-1 mb-1 md:mb-2">
+										<MapPin className="w-3 h-3 md:w-4 md:h-4 text-gray-400 flex-shrink-0 mt-0.5" />
+										<p className="text-gray-600 text-xs md:text-sm truncate">
 											{salon.address}
 										</p>
 									</div>
 								)}
 
-								{salon.services && salon.services.length > 0 && (
-									<p className="text-gray-500 text-sm mb-3">
-										{salon.services.length}{' '}
-										{salon.services.length === 1 ? 'service' : 'services'}{' '}
-										available
-									</p>
+								{/* Rating - moved to show inline on mobile */}
+								{salon.averageRating > 0 && (
+									<div className="flex items-center gap-1 md:hidden mb-2">
+										<Star className="w-3 h-3 text-[#ff5b5b] fill-[#ff5b5b]" />
+										<span className="text-xs font-medium text-gray-900">
+											{salon.averageRating.toFixed(1)}
+										</span>
+										<span className="text-xs text-gray-500">
+											({salon.reviewCount})
+										</span>
+									</div>
 								)}
 							</div>
 
-							{/* Action Button */}
-							<div className="flex-shrink-0 h-full flex flex-col gap-4 items-end">
+							{/* Action Button - Desktop */}
+							<div className="hidden md:flex flex-shrink-0 h-full flex-col gap-4 items-end">
 								{salon.averageRating > 0 && (
 									<div className="flex items-center gap-1 ml-2 flex-shrink-0">
 										<Star className="w-4 h-4 text-[#ff5b5b] fill-[#ff5b5b]" />
@@ -169,6 +180,16 @@ export default function FavoritesClient() {
 									className="bg-[#ff5b5b] text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-[#e04a4a] transition-colors"
 								>
 									Book Again
+								</button>
+							</div>
+
+							{/* Action Button - Mobile */}
+							<div className="md:hidden flex-shrink-0">
+								<button
+									onClick={() => handleBookSalon(salon.id, salon.name)}
+									className="bg-[#ff5b5b] text-white px-3 py-1.5 rounded-md text-xs font-medium hover:bg-[#e04a4a] transition-colors"
+								>
+									Book
 								</button>
 							</div>
 						</div>

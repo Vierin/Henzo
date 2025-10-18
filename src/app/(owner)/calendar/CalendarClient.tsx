@@ -599,6 +599,7 @@ export default function CalendarClient() {
 							selectedDate={selectedDate}
 							bookings={bookings}
 							timeBlocks={timeBlocks}
+							workingHours={salonData?.workingHours}
 							onBack={handleBackToMonth}
 							onViewBookingDetails={handleViewBookingDetails}
 							onPrevDay={handlePrevDay}

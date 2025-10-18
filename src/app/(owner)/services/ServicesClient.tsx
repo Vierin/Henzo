@@ -11,6 +11,13 @@ import LoadingSpinner from '@/components/LoadingSpinner';
 import ErrorDisplay from '@/components/ErrorDisplay';
 import { Service } from '@/types';
 import { formatVND } from '@/utils/currency';
+import {
+	Select,
+	SelectContent,
+	SelectItem,
+	SelectTrigger,
+	SelectValue,
+} from '@/components/ui/select';
 
 export default function ServicesClient() {
 	const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -210,22 +217,33 @@ export default function ServicesClient() {
 						<label className="block text-sm font-medium text-black mb-2">
 							Category
 						</label>
-						<select
-							value={selectedCategory}
-							onChange={(e) =>
-								setSelectedCategory(
-									e.target.value ? Number(e.target.value) : ''
-								)
+						<Select
+							value={selectedCategory === '' ? '' : selectedCategory.toString()}
+							onValueChange={(value) =>
+								setSelectedCategory(value === '' ? '' : Number(value))
 							}
-							className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#ff5b5b] focus:border-transparent text-black"
 						>
-							<option value="">All Categories</option>
-							{categories.map((category) => (
-								<option key={category.id} value={category.id}>
-									{category.name}
-								</option>
-							))}
-						</select>
+							<SelectTrigger className="w-full border border-gray-300 focus:ring-2 focus:ring-[#ff5b5b] focus:border-transparent text-black">
+								<SelectValue placeholder="All Categories" />
+							</SelectTrigger>
+							<SelectContent className="bg-white border border-gray-300 shadow-lg rounded-md">
+								<SelectItem
+									value=""
+									className="bg-white hover:bg-gray-50 focus:bg-gray-50 text-gray-900 cursor-pointer"
+								>
+									All Categories
+								</SelectItem>
+								{categories.map((category) => (
+									<SelectItem
+										key={category.id}
+										value={category.id.toString()}
+										className="bg-white hover:bg-gray-50 focus:bg-gray-50 text-gray-900 cursor-pointer"
+									>
+										{category.name}
+									</SelectItem>
+								))}
+							</SelectContent>
+						</Select>
 					</div>
 
 					{/* Сортировка */}
@@ -233,25 +251,59 @@ export default function ServicesClient() {
 						<label className="block text-sm font-medium text-black mb-2">
 							Sort By
 						</label>
-						<select
+						<Select
 							value={`${sortBy}-${sortOrder}`}
-							onChange={(e) => {
-								const [newSortBy, newSortOrder] = e.target.value.split('-') as [
+							onValueChange={(value) => {
+								const [newSortBy, newSortOrder] = value.split('-') as [
 									typeof sortBy,
 									typeof sortOrder,
 								];
 								setSortBy(newSortBy);
 								setSortOrder(newSortOrder);
 							}}
-							className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#ff5b5b] focus:border-transparent text-black"
 						>
-							<option value="name-asc">Name (A-Z)</option>
-							<option value="name-desc">Name (Z-A)</option>
-							<option value="price-asc">Price (Low to High)</option>
-							<option value="price-desc">Price (High to Low)</option>
-							<option value="duration-asc">Duration (Short to Long)</option>
-							<option value="duration-desc">Duration (Long to Short)</option>
-						</select>
+							<SelectTrigger className="w-full border border-gray-300 focus:ring-2 focus:ring-[#ff5b5b] focus:border-transparent text-black">
+								<SelectValue />
+							</SelectTrigger>
+							<SelectContent className="bg-white border border-gray-300 shadow-lg rounded-md">
+								<SelectItem
+									value="name-asc"
+									className="bg-white hover:bg-gray-50 focus:bg-gray-50 text-gray-900 cursor-pointer"
+								>
+									Name (A-Z)
+								</SelectItem>
+								<SelectItem
+									value="name-desc"
+									className="bg-white hover:bg-gray-50 focus:bg-gray-50 text-gray-900 cursor-pointer"
+								>
+									Name (Z-A)
+								</SelectItem>
+								<SelectItem
+									value="price-asc"
+									className="bg-white hover:bg-gray-50 focus:bg-gray-50 text-gray-900 cursor-pointer"
+								>
+									Price (Low to High)
+								</SelectItem>
+								<SelectItem
+									value="price-desc"
+									className="bg-white hover:bg-gray-50 focus:bg-gray-50 text-gray-900 cursor-pointer"
+								>
+									Price (High to Low)
+								</SelectItem>
+								<SelectItem
+									value="duration-asc"
+									className="bg-white hover:bg-gray-50 focus:bg-gray-50 text-gray-900 cursor-pointer"
+								>
+									Duration (Short to Long)
+								</SelectItem>
+								<SelectItem
+									value="duration-desc"
+									className="bg-white hover:bg-gray-50 focus:bg-gray-50 text-gray-900 cursor-pointer"
+								>
+									Duration (Long to Short)
+								</SelectItem>
+							</SelectContent>
+						</Select>
 					</div>
 
 					{/* Кнопка сброса фильтров */}

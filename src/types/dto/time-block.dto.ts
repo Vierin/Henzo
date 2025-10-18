@@ -5,7 +5,8 @@ export interface CreateTimeBlockDto {
 	startDate: string; // ISO string
 	endDate: string; // ISO string
 	notes?: string;
-	conflictAction: 'KEEP' | 'CANCEL';
+	conflictAction: 'RESCHEDULE' | 'CANCEL';
+	rescheduleStaffId?: string; // ID сотрудника для переноса при conflictAction === 'RESCHEDULE'
 }
 
 export interface UpdateTimeBlockDto {
@@ -14,7 +15,8 @@ export interface UpdateTimeBlockDto {
 	startDate?: string;
 	endDate?: string;
 	notes?: string;
-	conflictAction?: 'KEEP' | 'CANCEL';
+	conflictAction?: 'RESCHEDULE' | 'CANCEL';
+	rescheduleStaffId?: string;
 }
 
 export interface TimeBlockDto {
@@ -26,7 +28,8 @@ export interface TimeBlockDto {
 	startDate: string;
 	endDate: string;
 	notes?: string;
-	conflictAction: 'KEEP' | 'CANCEL';
+	conflictAction: 'RESCHEDULE' | 'CANCEL';
+	rescheduleStaffId?: string;
 	createdAt: string;
 	updatedAt?: string;
 	// Relations
@@ -48,5 +51,3 @@ export interface TimeBlockDto {
 		};
 	}>;
 }
-
-

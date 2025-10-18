@@ -112,12 +112,23 @@ export default function BusinessCompleteSetupPage() {
 		// Check if user already has a salon (optional check, don't block if fails)
 		const checkExistingSalon = async () => {
 			try {
+				// Try to refresh session first
+				const { data: refreshData, error: refreshError } =
+					await supabase.auth.refreshSession();
+
 				// Get fresh session from Supabase
 				const {
 					data: { session: freshSession },
 				} = await supabase.auth.getSession();
+
 				if (!freshSession) {
-					console.log('No fresh session available');
+					console.log('No fresh session available after refresh attempt');
+					// If still no session, try to redirect to login
+					if (refreshError) {
+						console.log('Refresh error:', refreshError.message);
+						router.push('/login');
+						return;
+					}
 					return;
 				}
 
@@ -719,36 +730,6 @@ export default function BusinessCompleteSetupPage() {
 								) : (
 									<button
 										type="button"
-										onClick={nextStep}
-										className="px-6 py-3 bg-[#ff5b5b] text-white rounded-lg font-medium hover:bg-red-600 transition-colors"
-									>
-										Next: {steps[currentStep]?.title || 'Continue'}
-									</button>
-								)}
-							</div>
-						)}
-					</div>
-				</div>
-			</div>
-		</div>
-	);
-}
-
-										onClick={nextStep}
-										className="px-6 py-3 bg-[#ff5b5b] text-white rounded-lg font-medium hover:bg-red-600 transition-colors"
-									>
-										Next: {steps[currentStep]?.title || 'Continue'}
-									</button>
-								)}
-							</div>
-						)}
-					</div>
-				</div>
-			</div>
-		</div>
-	);
-}
-
 										onClick={nextStep}
 										className="px-6 py-3 bg-[#ff5b5b] text-white rounded-lg font-medium hover:bg-red-600 transition-colors"
 									>

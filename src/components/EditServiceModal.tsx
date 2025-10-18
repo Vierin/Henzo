@@ -298,21 +298,3 @@ export default function EditServiceModal({
 		</>
 	);
 }
-
-							</button>
-						</div>
-					</form>
-				</div>
-			</div>
-		</>
-	);
-}
-
-							</button>
-						</div>
-					</form>
-				</div>
-			</div>
-		</>
-	);
-}

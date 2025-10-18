@@ -31,3 +31,195 @@ body {
 .scrollbar-hide::-webkit-scrollbar {
 	display: none;
 }
+
+/* Custom styles for rsuite TimePicker to reduce width */
+.rs-picker-input-group {
+	width: 120px !important;
+	min-width: 120px !important;
+}
+
+.rs-picker-input-group .rs-picker-toggle {
+	width: 120px !important;
+	min-width: 120px !important;
+}
+
+.rs-picker-input-group .rs-picker-toggle-textbox {
+	width: 120px !important;
+	min-width: 120px !important;
+}
+
+.custom-time-picker {
+	width: 120px !important;
+	min-width: 120px !important;
+}
+
+.custom-time-picker .rs-picker-toggle {
+	width: 120px !important;
+	min-width: 120px !important;
+}
+
+.custom-time-picker .rs-picker-toggle-textbox {
+	width: 120px !important;
+	min-width: 120px !important;
+}
+
+/* Override rsuite TimePicker colors - change blue to accent orange */
+.custom-time-picker .rs-picker-toggle,
+.rs-picker-time .rs-picker-toggle {
+	width: 100% !important;
+}
+
+.custom-time-picker .rs-picker-toggle:hover,
+.custom-time-picker .rs-picker-toggle:focus-within,
+.custom-time-picker .rs-picker-toggle-active,
+.custom-time-picker .rs-picker-toggle-focus,
+.rs-picker-time .rs-picker-toggle:hover,
+.rs-picker-time .rs-picker-toggle:focus-within,
+.rs-picker-time .rs-picker-toggle-active,
+.rs-picker-time .rs-picker-toggle-focus {
+	border-color: #ff5b5b !important;
+	box-shadow: 0 0 0 2px rgba(255, 91, 91, 0.2) !important;
+}
+
+.custom-time-picker .rs-picker-toggle-textbox,
+.rs-picker-time .rs-picker-toggle-textbox {
+	width: 100% !important;
+}
+
+.custom-time-picker .rs-picker-toggle-textbox:focus,
+.rs-picker-time .rs-picker-toggle-textbox:focus {
+	border-color: #ff5b5b !important;
+	box-shadow: 0 0 0 2px rgba(255, 91, 91, 0.2) !important;
+}
+
+.rs-picker-time-menu .rs-picker-time-menu-cell:hover {
+	background-color: rgba(255, 91, 91, 0.1) !important;
+	color: #ff5b5b !important;
+}
+
+.rs-picker-time-menu .rs-picker-time-menu-cell-active,
+.rs-picker-time-menu .rs-picker-time-menu-cell-selected {
+	background-color: #ff5b5b !important;
+	color: white !important;
+}
+
+.rs-picker-time-menu .rs-picker-time-menu-cell-active:hover,
+.rs-picker-time-menu .rs-picker-time-menu-cell-selected:hover {
+	background-color: #e04a4a !important;
+	color: white !important;
+}
+
+/* Override the blue color for time picker dropdown */
+.rs-picker-time-menu {
+	border-color: #ff5b5b !important;
+}
+
+.rs-picker-time-menu .rs-picker-time-menu-header {
+	border-bottom-color: #ff5b5b !important;
+}
+
+/* More specific overrides for rsuite TimePicker blue colors */
+.rs-picker-time .rs-picker-toggle,
+.custom-time-picker {
+	border-color: #d1d5db !important;
+}
+
+.rs-picker-time .rs-picker-toggle:focus,
+.rs-picker-time .rs-picker-toggle:focus-within,
+.rs-picker-time .rs-picker-toggle-active,
+.custom-time-picker:focus,
+.custom-time-picker:focus-within,
+.custom-time-picker .rs-picker-toggle:focus,
+.custom-time-picker .rs-picker-toggle:focus-within {
+	border-color: #ff5b5b !important;
+	box-shadow: 0 0 0 2px rgba(255, 91, 91, 0.2) !important;
+	outline: none !important;
+}
+
+/* Override blue focus ring and active states */
+.rs-picker-time .rs-picker-toggle:focus-within .rs-picker-toggle-textbox,
+.custom-time-picker .rs-picker-toggle:focus-within .rs-picker-toggle-textbox {
+	border-color: #ff5b5b !important;
+	box-shadow: 0 0 0 2px rgba(255, 91, 91, 0.2) !important;
+	outline: none !important;
+}
+
+/* Override all blue color references in time picker */
+.rs-picker-time .rs-picker-toggle-textbox,
+.custom-time-picker .rs-picker-toggle-textbox {
+	color: #374151 !important;
+}
+
+.rs-picker-time .rs-picker-toggle-textbox:focus,
+.custom-time-picker .rs-picker-toggle-textbox:focus {
+	border-color: #ff5b5b !important;
+	box-shadow: 0 0 0 2px rgba(255, 91, 91, 0.2) !important;
+	outline: none !important;
+}
+
+/* Override any remaining blue elements */
+.rs-picker-time .rs-picker-toggle-textbox::placeholder,
+.custom-time-picker .rs-picker-toggle-textbox::placeholder {
+	color: #9ca3af !important;
+}
+
+/* Force override any CSS custom properties that might set blue */
+:root {
+	--rs-picker-toggle-bg: #ffffff !important;
+	--rs-picker-toggle-border: #d1d5db !important;
+	--rs-picker-toggle-focus-border: #ff5b5b !important;
+	--rs-picker-toggle-focus-shadow: rgba(255, 91, 91, 0.2) !important;
+}
+
+/* Aggressive overrides for rsuite TimePicker - target all possible blue elements */
+[class*='rs-picker-time'] .rs-picker-toggle {
+	border-color: #d1d5db !important;
+}
+
+[class*='rs-picker-time'] .rs-picker-toggle:focus,
+[class*='rs-picker-time'] .rs-picker-toggle:focus-within,
+[class*='rs-picker-time'] .rs-picker-toggle-active,
+[class*='rs-picker-time'] .rs-picker-toggle:focus .rs-picker-toggle-textbox {
+	border-color: #ff5b5b !important;
+	box-shadow: 0 0 0 2px rgba(255, 91, 91, 0.2) !important;
+}
+
+/* Override any remaining blue colors that might come from rsuite themes */
+.rs-picker-time .rs-picker-toggle * {
+	color: inherit !important;
+}
+
+.rs-picker-time .rs-picker-toggle:focus * {
+	border-color: #ff5b5b !important;
+}
+
+/* Ultimate override for rsuite TimePicker blue colors - highest specificity */
+.custom-time-picker.rs-picker-time .rs-picker-toggle,
+.custom-time-picker.rs-picker-time .rs-picker-toggle:focus,
+.custom-time-picker.rs-picker-time .rs-picker-toggle:focus-within {
+	border: 1px solid #d1d5db !important;
+}
+
+.custom-time-picker.rs-picker-time .rs-picker-toggle:focus,
+.custom-time-picker.rs-picker-time .rs-picker-toggle:focus-within {
+	border-color: #ff5b5b !important;
+	box-shadow: 0 0 0 2px rgba(255, 91, 91, 0.2) !important;
+	outline: none !important;
+}
+
+/* Force override any blue color in time picker */
+.rs-picker-time input,
+.rs-picker-time .rs-picker-toggle-textbox,
+.custom-time-picker input,
+.custom-time-picker .rs-picker-toggle-textbox {
+	color: #374151 !important;
+}
+
+.rs-picker-time input:focus,
+.rs-picker-time .rs-picker-toggle-textbox:focus,
+.custom-time-picker input:focus,
+.custom-time-picker .rs-picker-toggle-textbox:focus {
+	border-color: #ff5b5b !important;
+	box-shadow: 0 0 0 2px rgba(255, 91, 91, 0.2) !important;
+	outline: none !important;
+}

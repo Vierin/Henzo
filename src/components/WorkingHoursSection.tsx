@@ -35,7 +35,7 @@ const TimePicker24h = ({
 	};
 
 	return (
-		<div className={className}>
+		<div className={className} style={{ width: '120px' }}>
 			<TimePicker
 				value={parseTimeToDate(value)}
 				onChange={handleChange}
@@ -43,6 +43,7 @@ const TimePicker24h = ({
 				cleanable={false}
 				placeholder="09:00"
 				className="custom-time-picker"
+				style={{ width: '120px', minWidth: '120px' }}
 			/>
 		</div>
 	);
