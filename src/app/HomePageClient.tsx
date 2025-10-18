@@ -4,6 +4,7 @@ import { useEffect } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import PublicHeader from '@/components/PublicHeader';
 import SearchBookingForm from '@/components/SearchBookingForm';
+import MobileSearchTrigger from '@/components/MobileSearchTrigger';
 import RecommendedSalons from '@/components/RecommendedSalons';
 import CategoriesNavigation from '@/components/CategoriesNavigation';
 import { useTranslation } from '@/contexts/LanguageContext';
@@ -108,7 +109,14 @@ export default function HomePageClient() {
 
 							{/* Left Panel - Search/Booking Form (Second on mobile, first on desktop) */}
 							<div className="order-2 lg:order-1 w-full max-w-md lg:max-w-none">
-								<SearchBookingForm />
+								{/* Mobile: Compact trigger */}
+								<div className="md:hidden">
+									<MobileSearchTrigger />
+								</div>
+								{/* Desktop: Full form */}
+								<div className="hidden md:block">
+									<SearchBookingForm />
+								</div>
 							</div>
 						</div>
 					</div>

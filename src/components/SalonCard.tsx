@@ -76,24 +76,26 @@ export default function SalonCard({
 	return (
 		<div
 			onClick={handleSalonClick}
-			className={`bg-white rounded-2xl p-6 shadow-lg hover:shadow-xl transition-shadow cursor-pointer ${className}`}
+			className={`bg-white rounded-2xl p-4 sm:p-6 shadow-lg hover:shadow-xl transition-shadow cursor-pointer ${className}`}
 		>
-			<div className="flex gap-6">
+			<div className="flex flex-col md:flex-row gap-4 md:gap-6">
 				{/* Salon Image */}
 				<SalonImage
 					src={salon.logo}
 					alt={salon.name}
 					width={400}
 					height={320}
-					className="w-48 aspect-[4/3] object-cover rounded-xl flex-shrink-0"
+					className="w-full md:w-48 aspect-[4/3] object-cover rounded-xl md:flex-shrink-0"
 					style={{ width: 'auto', height: 'auto' }}
 				/>
 
 				{/* Salon Info */}
-				<div className="flex-1">
-					<div className="flex items-center justify-between mb-2">
-						<h2 className="text-xl font-bold text-gray-900">{salon.name}</h2>
-						<div className="flex items-center gap-3">
+				<div className="flex-1 min-w-0">
+					<div className="flex items-center justify-between mb-2 gap-2">
+						<h2 className="text-lg sm:text-xl font-bold text-gray-900 truncate">
+							{salon.name}
+						</h2>
+						<div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
 							{/* Rating */}
 							{(() => {
 								const rating = calculateAverageRating(salon);
@@ -130,10 +132,11 @@ export default function SalonCard({
 							</button>
 						</div>
 					</div>
-					<p className="text-gray-600 text-sm mb-2">{salon.address}</p>
+					<p className="text-gray-600 text-sm mb-2 truncate">{salon.address}</p>
 					{salon.phone && (
-						<p className="text-gray-500 text-sm mb-3 flex gap-1">
-							<Phone className="w-3.5 h-3.5 relative top-0.5" /> {salon.phone}
+						<p className="text-gray-500 text-sm mb-3 flex gap-1 items-center">
+							<Phone className="w-3.5 h-3.5 flex-shrink-0" />
+							<span className="truncate">{salon.phone}</span>
 						</p>
 					)}
 
@@ -163,24 +166,24 @@ export default function SalonCard({
 			{/* Services */}
 			{salon.services && salon.services.length > 0 ? (
 				<div className="mt-4">
-					<div className="flex justify-between gap-3">
+					<div className="flex flex-col md:flex-row md:justify-between gap-2 md:gap-3">
 						{salon.services
 							.slice(0, 3)
 							.map((service: Service, index: number) => (
 								<div
 									key={service.id || index}
-									className="flex items-center w-full max-w-[33.33%] justify-between py-2 px-3 bg-gray-50 rounded-lg"
+									className="flex items-center w-full md:max-w-[33.33%] justify-between py-3 px-3 sm:px-4 bg-gray-50 rounded-lg gap-2"
 								>
-									<div className="flex-1">
-										<span className="text-sm font-medium text-gray-900">
+									<div className="flex-1 min-w-0">
+										<span className="text-sm font-medium text-gray-900 block truncate">
 											{service.name}
 										</span>
-										<div className="flex items-center gap-4 mt-1">
-											<span className="text-xs text-gray-500 flex items-center gap-1">
-												<Clock8 className="w-3.5 h-3.5 relative" />{' '}
-												{service.duration} min
+										<div className="flex items-center gap-2 sm:gap-4 mt-1">
+											<span className="text-xs text-gray-500 flex items-center gap-1 flex-shrink-0">
+												<Clock8 className="w-3.5 h-3.5" /> {service.duration}{' '}
+												min
 											</span>
-											<span className="text-sm font-semibold text-[#ff5b5b]">
+											<span className="text-sm font-semibold text-[#ff5b5b] truncate">
 												{formatVND(service.price)}
 											</span>
 										</div>
@@ -188,7 +191,7 @@ export default function SalonCard({
 									{onBookService && (
 										<button
 											onClick={(e) => handleBookService(e, service)}
-											className="bg-[#ff5b5b] text-white px-3 py-1 rounded-md text-xs font-medium hover:bg-[#e04a4a] transition-colors"
+											className="bg-[#ff5b5b] text-white px-3 py-1.5 rounded-md text-xs font-medium hover:bg-[#e04a4a] transition-colors flex-shrink-0"
 										>
 											Book
 										</button>

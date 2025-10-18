@@ -5,7 +5,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useAuth } from '@/lib/auth-unified';
 import Image from 'next/image';
-import BooksySearch from './BooksySearch';
+import AdaptiveSearch from './AdaptiveSearch';
 import CategoriesNavigation from './CategoriesNavigation';
 import { User, LogOut, ChevronDown } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
@@ -246,8 +246,8 @@ export default function PublicHeader() {
 						isScrolled ? 'fixed top-0 left-0 right-0 z-[999]' : ''
 					}`}
 				>
-					<div className="mx-auto max-w-7xl px-6 py-4">
-						<BooksySearch />
+					<div className="mx-auto max-w-7xl px-4 sm:px-6 py-2 sm:py-4">
+						<AdaptiveSearch />
 					</div>
 				</div>
 			)}

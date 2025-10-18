@@ -6,6 +6,7 @@ import LoadingSpinner from '@/components/LoadingSpinner';
 import ErrorDisplay from '@/components/ErrorDisplay';
 import SalonCard from '@/components/SalonCard';
 import BookingModal from '@/components/BookingModal';
+import MobileSearchTrigger from '@/components/MobileSearchTrigger';
 import { Salon, Service } from '@/types';
 import { ServiceResponseDto } from '@/types/dto/service.dto';
 import Link from 'next/link';
@@ -100,20 +101,20 @@ export default function CategoryList({ category }: CategoryListProps) {
 
 	return (
 		<div className="min-h-screen bg-[#F8F5F2]">
-			<main className="py-8 px-6">
+			<main className="py-6 sm:py-8 px-4 sm:px-6">
 				<div className="mx-auto max-w-6xl">
 					{/* Category Header with Sort */}
-					<div className="flex items-center justify-between mb-8">
-						<h1 className="text-2xl font-bold text-gray-900">
+					<div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 sm:mb-8">
+						<h1 className="text-xl sm:text-2xl font-bold text-gray-900">
 							{category.name} ({filteredSalons.length})
 						</h1>
-						<div className="flex gap-3">
+						<div className="flex gap-2 sm:gap-3">
 							{/* Sort Dropdown */}
-							<div className="w-48">
+							<div className="flex-1 sm:flex-none sm:w-48">
 								<select
 									value={sortBy}
 									onChange={(e) => setSortBy(e.target.value)}
-									className="w-full px-4 py-3 h-full bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#ff5b5b] focus:border-transparent text-gray-900"
+									className="w-full px-3 sm:px-4 py-2 sm:py-3 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#ff5b5b] focus:border-transparent text-gray-900 text-sm"
 								>
 									{sortOptions.map((option) => (
 										<option key={option.value} value={option.value}>
@@ -126,15 +127,16 @@ export default function CategoryList({ category }: CategoryListProps) {
 							{/* map button */}
 							<Link
 								href="/map"
-								className="px-4 py-3 flex gap-1 items-center bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#ff5b5b] focus:border-transparent text-gray-900"
+								className="px-3 sm:px-4 py-2 sm:py-3 flex gap-1 items-center bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#ff5b5b] focus:border-transparent text-gray-900 text-sm whitespace-nowrap"
 							>
-								<Map className="w-4 h-4" /> Map View
+								<Map className="w-4 h-4" />{' '}
+								<span className="hidden sm:inline">Map View</span>
 							</Link>
 						</div>
 					</div>
 
 					{/* Salon Cards */}
-					<div className="space-y-6">
+					<div className="space-y-4 sm:space-y-6">
 						{filteredSalons.length > 0 ? (
 							filteredSalons.map((salon: Salon) => (
 								<SalonCard

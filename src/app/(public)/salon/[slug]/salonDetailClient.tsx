@@ -6,6 +6,7 @@ import BookingModal from '../../../../components/BookingModal';
 import LoadingSpinner from '../../../../components/LoadingSpinner';
 import ErrorDisplay from '../../../../components/ErrorDisplay';
 import MapComponent from '../../../../components/MapComponent';
+import MobileSearchTrigger from '../../../../components/MobileSearchTrigger';
 import { Service, WorkingHours, Salon } from '@/types';
 import { supabase } from '@/lib/supabase';
 import SalonPhotoSlider from '../../../../components/SalonPhotoSlider';
@@ -213,14 +214,21 @@ export default function SalonDetailClient({ salon }: SalonDetailClientProps) {
 	const tabs = ['Services', 'Reviews'] as const;
 
 	return (
-		<main className="py-8 px-6" role="main">
+		<main className="py-6 sm:py-8 px-4 sm:px-6" role="main">
 			<div className="mx-auto max-w-6xl">
+				{/* Mobile Search Trigger */}
+				<div className="md:hidden mb-4">
+					<MobileSearchTrigger />
+				</div>
+
 				{/* Salon Title */}
-				<header className="flex items-start justify-between mb-8">
-					<h1 className="text-4xl font-bold text-gray-900">{salon.name}</h1>
+				<header className="flex items-start justify-between mb-6 sm:mb-8 gap-2">
+					<h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-gray-900 flex-1 min-w-0">
+						{salon.name}
+					</h1>
 					<button
 						onClick={handleFavoriteClick}
-						className={`p-3 rounded-full transition-all hover:bg-gray-100 ${
+						className={`p-2 sm:p-3 rounded-full transition-all hover:bg-gray-100 flex-shrink-0 ${
 							isFavorite ? 'text-[#ff5b5b]' : 'text-gray-400'
 						}`}
 						aria-label={

@@ -8,17 +8,18 @@ import DateTimePicker from './DateTimePicker';
 
 interface SearchBookingFormProps {
 	className?: string;
+	inline?: boolean;
 }
 
 export default function SearchBookingForm({
 	className = '',
+	inline = false,
 }: SearchBookingFormProps) {
 	const router = useRouter();
 	const [searchQuery, setSearchQuery] = useState('');
 	const [selectedLocation, setSelectedLocation] = useState('');
 	const [selectedDate, setSelectedDate] = useState<Date | null>(null);
 	const [selectedTimeInterval, setSelectedTimeInterval] = useState<string>('');
-
 
 	const handleSearch = () => {
 		const params = new URLSearchParams();
@@ -38,6 +39,65 @@ export default function SearchBookingForm({
 		const finalUrl = `/salons${params.toString() ? `?${params.toString()}` : ''}`;
 		router.push(finalUrl);
 	};
+
+	if (inline) {
+		return (
+			<div
+				className={`bg-white rounded-lg border border-gray-200 p-4 shadow-sm ${className}`}
+				role="search"
+				aria-label="Appointment booking form"
+			>
+				{/* Input Fields in Row - Desktop only */}
+				<div className="flex gap-3 items-end">
+					{/* Unified Search Field - Service, Category or Salon */}
+					<div className="relative flex-1 min-w-0 h-10">
+						<ServiceAutocomplete
+							value={searchQuery}
+							onChange={setSearchQuery}
+							placeholder="Search treatments, categories..."
+							className="h-full"
+							inline={true}
+						/>
+					</div>
+
+					{/* Location Input */}
+					<div className="relative flex-1 min-w-0 h-10">
+						<AddressAutocomplete
+							value={selectedLocation}
+							onChange={setSelectedLocation}
+							onAddressSelect={(address, lat, lon) => {
+								setSelectedLocation(address);
+							}}
+							placeholder="Enter address"
+							className="h-full"
+							inline={true}
+						/>
+					</div>
+
+					{/* Date and Time Picker */}
+					<div className="relative flex-1 min-w-0 h-10">
+						<DateTimePicker
+							date={selectedDate}
+							timeInterval={selectedTimeInterval}
+							onDateChange={setSelectedDate}
+							onTimeChange={setSelectedTimeInterval}
+							placeholder="Select date and time"
+							className="h-full"
+							inline={true}
+						/>
+					</div>
+
+					{/* Search Button */}
+					<button
+						onClick={handleSearch}
+						className="bg-[#ff5b5b] text-white px-6 py-2 h-10 rounded-lg font-medium hover:bg-[#e04a4a] transition-colors text-sm whitespace-nowrap flex-shrink-0"
+					>
+						Find salon
+					</button>
+				</div>
+			</div>
+		);
+	}
 
 	return (
 		<div

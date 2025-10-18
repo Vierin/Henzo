@@ -12,6 +12,7 @@ interface DateTimePickerProps {
 	placeholder?: string;
 	className?: string;
 	disabled?: boolean;
+	inline?: boolean;
 }
 
 export default function DateTimePicker({
@@ -22,21 +23,25 @@ export default function DateTimePicker({
 	placeholder = 'Select date and time',
 	className = '',
 	disabled = false,
+	inline = false,
 }: DateTimePickerProps) {
 	const [showCalendar, setShowCalendar] = useState(false);
 	const [showTimeIntervals, setShowTimeIntervals] = useState(false);
 	const calendarRef = useRef<HTMLDivElement>(null);
 	const timeIntervalsRef = useRef<HTMLDivElement>(null);
+	const buttonRef = useRef<HTMLButtonElement>(null);
+	const containerRef = useRef<HTMLDivElement>(null);
 
-	// Close modals when clicking outside
+	// Close modals when clicking outside the entire component
 	useEffect(() => {
 		const handleClickOutside = (event: MouseEvent) => {
-			if (
-				calendarRef.current &&
-				!calendarRef.current.contains(event.target as Node) &&
-				timeIntervalsRef.current &&
-				!timeIntervalsRef.current.contains(event.target as Node)
-			) {
+			const target = event.target as Node;
+
+			// Check if click is inside our entire component container
+			const isInsideComponent = containerRef.current?.contains(target);
+
+			// Close both modals if clicking outside the entire component
+			if (!isInsideComponent && (showCalendar || showTimeIntervals)) {
 				setShowCalendar(false);
 				setShowTimeIntervals(false);
 			}
@@ -46,7 +51,22 @@ export default function DateTimePicker({
 		return () => {
 			document.removeEventListener('mousedown', handleClickOutside);
 		};
-	}, []);
+	}, [showCalendar, showTimeIntervals]);
+
+	// Close modal when pressing Escape key
+	useEffect(() => {
+		const handleKeyDown = (event: KeyboardEvent) => {
+			if (event.key === 'Escape' && (showCalendar || showTimeIntervals)) {
+				setShowCalendar(false);
+				setShowTimeIntervals(false);
+			}
+		};
+
+		document.addEventListener('keydown', handleKeyDown);
+		return () => {
+			document.removeEventListener('keydown', handleKeyDown);
+		};
+	}, [showCalendar, showTimeIntervals]);
 
 	const handleDateSelect = (selectedDate: Date) => {
 		console.log('📅 DateTimePicker - selected date:', selectedDate);
@@ -149,16 +169,34 @@ export default function DateTimePicker({
 	};
 
 	return (
-		<div className={`relative ${className}`}>
+		<div ref={containerRef} className={`relative ${className}`}>
 			<div className="relative h-full">
-				<Calendar className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 w-6 h-6" />
+				<Calendar
+					className={
+						inline
+							? 'absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5'
+							: 'absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 w-6 h-6'
+					}
+				/>
 				<button
+					ref={buttonRef}
 					type="button"
-					onClick={() => !disabled && setShowCalendar(!showCalendar)}
+					onClick={() => {
+						if (!disabled) {
+							setShowTimeIntervals(false); // Close time intervals when opening calendar
+							setShowCalendar(!showCalendar);
+						}
+					}}
 					disabled={disabled}
-					className={`w-full h-full pl-12 pr-4 py-3 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#ff5b5b] focus:border-transparent text-left text-gray-900 hover:bg-gray-50 ${
-						disabled ? 'bg-gray-50 text-gray-500  cursor-not-allowed' : ''
-					}`}
+					className={
+						inline
+							? `w-full h-full pl-10 pr-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#ff5b5b] focus:border-transparent text-left text-gray-900 hover:bg-gray-50 placeholder:text-gray-500 ${
+									disabled ? 'bg-gray-50 text-gray-500 cursor-not-allowed' : ''
+								}`
+							: `w-full h-full pl-12 pr-4 py-3 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#ff5b5b] focus:border-transparent text-left text-gray-900 hover:bg-gray-50 ${
+									disabled ? 'bg-gray-50 text-gray-500 cursor-not-allowed' : ''
+								}`
+					}
 				>
 					{displayText()}
 				</button>
