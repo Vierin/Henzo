@@ -27,7 +27,9 @@ export default function ServicesClient() {
 	const [isSearching, setIsSearching] = useState(false);
 	const [sortBy, setSortBy] = useState<'name' | 'price' | 'duration'>('name');
 	const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
-	const [selectedCategory, setSelectedCategory] = useState<number | ''>('');
+	const [selectedCategory, setSelectedCategory] = useState<number | 'all'>(
+		'all'
+	);
 	const router = useRouter();
 
 	// Используем оптимизированный хук для получения данных салона
@@ -102,7 +104,7 @@ export default function ServicesClient() {
 				}
 
 				// Фильтр по категории
-				if (selectedCategory) {
+				if (selectedCategory !== 'all') {
 					if (service.serviceCategoryId !== selectedCategory) return false;
 				}
 
@@ -141,7 +143,7 @@ export default function ServicesClient() {
 
 	const clearFilters = () => {
 		setSearchQuery('');
-		setSelectedCategory('');
+		setSelectedCategory('all');
 		setSortBy('name');
 		setSortOrder('asc');
 	};
@@ -172,28 +174,32 @@ export default function ServicesClient() {
 			<div className="mb-8">
 				<div className="flex items-center justify-between">
 					<div>
-						<h1 className="text-3xl font-bold text-black mb-2">Services</h1>
-						<p className="text-gray-800">
+						<h1 className="text-2xl md:text-3xl font-bold text-black md:mb-2">
+							Services
+						</h1>
+						<p className="text-sm md:text-base text-gray-800">
 							Manage your salon services and pricing
 						</p>
 					</div>
 					<button
 						onClick={() => router.push('/services/new')}
-						className="inline-flex items-center gap-2 rounded-full bg-[#ff5b5b] text-white px-4 py-2 text-sm shadow-sm hover:opacity-95"
+						className="inline-flex items-center gap-2 rounded-full bg-[#ff5b5b] text-white px-4 py-2 text-sm shadow-sm hover:opacity-95 whitespace-nowrap"
 					>
 						<span className="text-lg leading-none">＋</span>
-						Add New Service
+						<span>Add New</span>
+						<span className="hidden md:inline">Service</span>
 					</button>
 				</div>
 			</div>
 
 			{/* Фильтры и сортировка */}
-			<div className="mb-6 bg-white rounded-xl border border-[#f1d9d7] p-6">
-				<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+			<div className="mb-6 bg-white rounded-xl border border-[#f1d9d7] p-3 md:p-6">
+				<div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
 					{/* Поиск */}
 					<div>
 						<label className="block text-sm font-medium text-black mb-2">
-							Search Services
+							<span className="hidden sm:inline">Search Services</span>
+							<span className="sm:hidden">Search</span>
 						</label>
 						<div className="relative">
 							<input
@@ -218,9 +224,11 @@ export default function ServicesClient() {
 							Category
 						</label>
 						<Select
-							value={selectedCategory === '' ? '' : selectedCategory.toString()}
+							value={
+								selectedCategory === 'all' ? 'all' : selectedCategory.toString()
+							}
 							onValueChange={(value) =>
-								setSelectedCategory(value === '' ? '' : Number(value))
+								setSelectedCategory(value === 'all' ? 'all' : Number(value))
 							}
 						>
 							<SelectTrigger className="w-full border border-gray-300 focus:ring-2 focus:ring-[#ff5b5b] focus:border-transparent text-black">
@@ -228,7 +236,7 @@ export default function ServicesClient() {
 							</SelectTrigger>
 							<SelectContent className="bg-white border border-gray-300 shadow-lg rounded-md">
 								<SelectItem
-									value=""
+									value="all"
 									className="bg-white hover:bg-gray-50 focus:bg-gray-50 text-gray-900 cursor-pointer"
 								>
 									All Categories
@@ -318,14 +326,14 @@ export default function ServicesClient() {
 				</div>
 
 				{/* Информация о результатах */}
-				{(debouncedSearchQuery || selectedCategory) && (
+				{(debouncedSearchQuery || selectedCategory !== 'all') && (
 					<div className="mt-4 pt-4 border-t border-gray-200">
 						<p className="text-sm text-black">
 							Showing {filteredServices.length} of {services.length} services
 							{debouncedSearchQuery &&
 								debouncedSearchQuery.length > 2 &&
 								` matching "${debouncedSearchQuery}"`}
-							{selectedCategory &&
+							{selectedCategory !== 'all' &&
 								` in "${getCategoryName(Number(selectedCategory)) || 'Unknown'}" category`}
 						</p>
 					</div>
@@ -333,7 +341,7 @@ export default function ServicesClient() {
 			</div>
 
 			{filteredServices.length === 0 &&
-			(debouncedSearchQuery || selectedCategory) ? (
+			(debouncedSearchQuery || selectedCategory !== 'all') ? (
 				<div className="bg-white rounded-xl border border-[#f1d9d7] p-12 text-center">
 					<div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
 						<svg
@@ -408,102 +416,178 @@ export default function ServicesClient() {
 					)}
 
 					<div className="bg-white rounded-xl border border-[#f1d9d7] overflow-hidden">
-						<div className="grid grid-cols-5 px-6 py-3 text-[13px] text-gray-700 bg-[#fff2f1] font-semibold">
-							<div
-								className="flex items-center gap-1 cursor-pointer hover:text-[#ff5b5b] transition-colors select-none"
-								onClick={() => handleSortChange('name')}
-							>
-								Service Name
-								{sortBy === 'name' && (
-									<span className="text-[#ff5b5b]">
-										{sortOrder === 'asc' ? '↑' : '↓'}
-									</span>
-								)}
-							</div>
-							<div>Category</div>
-							<div
-								className="flex items-center gap-1 cursor-pointer hover:text-[#ff5b5b] transition-colors select-none"
-								onClick={() => handleSortChange('duration')}
-							>
-								Duration
-								{sortBy === 'duration' && (
-									<span className="text-[#ff5b5b]">
-										{sortOrder === 'asc' ? '↑' : '↓'}
-									</span>
-								)}
-							</div>
-							<div
-								className="flex items-center gap-1 cursor-pointer hover:text-[#ff5b5b] transition-colors select-none"
-								onClick={() => handleSortChange('price')}
-							>
-								Price
-								{sortBy === 'price' && (
-									<span className="text-[#ff5b5b]">
-										{sortOrder === 'asc' ? '↑' : '↓'}
-									</span>
-								)}
-							</div>
-							<div>Actions</div>
-						</div>
-						<div className="divide-y divide-[#f1d9d7]">
-							{filteredServices.map((service) => (
+						{/* Desktop Table View */}
+						<div className="hidden md:block">
+							<div className="grid grid-cols-5 px-6 py-3 text-sm text-gray-700 bg-[#fff2f1] font-semibold">
 								<div
-									key={service.id}
-									className="grid grid-cols-5 px-6 py-4 text-[15px] text-gray-800"
+									className="flex items-center gap-1 cursor-pointer hover:text-[#ff5b5b] transition-colors select-none"
+									onClick={() => handleSortChange('name')}
 								>
-									<div className="font-semibold">{service.name}</div>
-									<div className="text-gray-600">
-										{getCategoryName(service.serviceCategoryId) ? (
-											<span className="inline-flex items-center px-2 py-1 text-xs font-medium bg-gray-100 text-gray-700 rounded-full">
-												{getCategoryName(service.serviceCategoryId)}
-											</span>
-										) : (
-											<span className="text-gray-400 italic">No category</span>
-										)}
-									</div>
-									<div>{formatDuration(service.duration)}</div>
-									<div className="font-semibold text-[#ff5b5b]">
-										{formatVND(service.price)}
-									</div>
-									<div className="flex gap-2">
-										<button
-											onClick={() => handleEditService(service)}
-											className="p-1 text-[#ff5b5b] hover:text-[#e04a4a] hover:bg-red-50 rounded transition-colors"
-											title="Edit service"
-										>
-											<svg
-												className="w-4 h-4"
-												fill="none"
-												stroke="currentColor"
-												viewBox="0 0 24 24"
+									Service Name
+									{sortBy === 'name' && (
+										<span className="text-[#ff5b5b]">
+											{sortOrder === 'asc' ? '↑' : '↓'}
+										</span>
+									)}
+								</div>
+								<div>Category</div>
+								<div
+									className="flex items-center gap-1 cursor-pointer hover:text-[#ff5b5b] transition-colors select-none"
+									onClick={() => handleSortChange('duration')}
+								>
+									Duration
+									{sortBy === 'duration' && (
+										<span className="text-[#ff5b5b]">
+											{sortOrder === 'asc' ? '↑' : '↓'}
+										</span>
+									)}
+								</div>
+								<div
+									className="flex items-center gap-1 cursor-pointer hover:text-[#ff5b5b] transition-colors select-none"
+									onClick={() => handleSortChange('price')}
+								>
+									Price
+									{sortBy === 'price' && (
+										<span className="text-[#ff5b5b]">
+											{sortOrder === 'asc' ? '↑' : '↓'}
+										</span>
+									)}
+								</div>
+								<div>Actions</div>
+							</div>
+							<div className="divide-y divide-[#f1d9d7]">
+								{filteredServices.map((service) => (
+									<div
+										key={service.id}
+										className="grid grid-cols-5 px-6 py-4 text-sm text-gray-800"
+									>
+										<div className="font-semibold">{service.name}</div>
+										<div className="text-gray-600">
+											{getCategoryName(service.serviceCategoryId) ? (
+												<span className="inline-flex items-center px-2 py-1 text-xs font-medium bg-gray-100 text-gray-700 rounded-full">
+													{getCategoryName(service.serviceCategoryId)}
+												</span>
+											) : (
+												<span className="text-gray-400 italic">
+													No category
+												</span>
+											)}
+										</div>
+										<div>{formatDuration(service.duration)}</div>
+										<div className="font-semibold text-[#ff5b5b]">
+											{formatVND(service.price)}
+										</div>
+										<div className="flex gap-2">
+											<button
+												onClick={() => handleEditService(service)}
+												className="p-1 text-[#ff5b5b] hover:text-[#e04a4a] hover:bg-red-50 rounded transition-colors"
+												title="Edit service"
 											>
-												<path
-													strokeLinecap="round"
-													strokeLinejoin="round"
-													strokeWidth={2}
-													d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
-												/>
-											</svg>
-										</button>
-										<button
-											onClick={() => handleDeleteService(service.id)}
-											className="p-1 text-red-600 hover:text-red-700 hover:bg-red-50 rounded transition-colors"
-											title="Delete service"
-										>
-											<svg
-												className="w-4 h-4"
-												fill="none"
-												stroke="currentColor"
-												viewBox="0 0 24 24"
+												<svg
+													className="w-4 h-4"
+													fill="none"
+													stroke="currentColor"
+													viewBox="0 0 24 24"
+												>
+													<path
+														strokeLinecap="round"
+														strokeLinejoin="round"
+														strokeWidth={2}
+														d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
+													/>
+												</svg>
+											</button>
+											<button
+												onClick={() => handleDeleteService(service.id)}
+												className="p-1 text-red-600 hover:text-red-700 hover:bg-red-50 rounded transition-colors"
+												title="Delete service"
 											>
-												<path
-													strokeLinecap="round"
-													strokeLinejoin="round"
-													strokeWidth={2}
-													d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
-												/>
-											</svg>
-										</button>
+												<svg
+													className="w-4 h-4"
+													fill="none"
+													stroke="currentColor"
+													viewBox="0 0 24 24"
+												>
+													<path
+														strokeLinecap="round"
+														strokeLinejoin="round"
+														strokeWidth={2}
+														d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+													/>
+												</svg>
+											</button>
+										</div>
+									</div>
+								))}
+							</div>
+						</div>
+
+						{/* Mobile Card View */}
+						<div className="md:hidden divide-y divide-[#f1d9d7]">
+							{filteredServices.map((service) => (
+								<div key={service.id} className="p-4">
+									<div className="flex items-start justify-between mb-3">
+										<div className="flex-1 min-w-0">
+											<h3 className="font-semibold text-gray-900 truncate">
+												{service.name}
+											</h3>
+											<div className="text-lg font-bold text-[#ff5b5b] mt-1">
+												{formatVND(service.price)}
+											</div>
+										</div>
+										<div className="flex gap-2 ml-3">
+											<button
+												onClick={() => handleEditService(service)}
+												className="p-2 text-[#ff5b5b] hover:text-[#e04a4a] hover:bg-red-50 rounded transition-colors"
+												title="Edit service"
+											>
+												<svg
+													className="w-4 h-4"
+													fill="none"
+													stroke="currentColor"
+													viewBox="0 0 24 24"
+												>
+													<path
+														strokeLinecap="round"
+														strokeLinejoin="round"
+														strokeWidth={2}
+														d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
+													/>
+												</svg>
+											</button>
+											<button
+												onClick={() => handleDeleteService(service.id)}
+												className="p-2 text-red-600 hover:text-red-700 hover:bg-red-50 rounded transition-colors"
+												title="Delete service"
+											>
+												<svg
+													className="w-4 h-4"
+													fill="none"
+													stroke="currentColor"
+													viewBox="0 0 24 24"
+												>
+													<path
+														strokeLinecap="round"
+														strokeLinejoin="round"
+														strokeWidth={2}
+														d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+													/>
+												</svg>
+											</button>
+										</div>
+									</div>
+
+									<div className="flex items-center justify-between text-sm text-gray-600">
+										<div className="flex items-center gap-4">
+											{getCategoryName(service.serviceCategoryId) && (
+												<span className="inline-flex items-center px-2 py-1 text-xs font-medium bg-gray-100 text-gray-700 rounded-full">
+													{getCategoryName(service.serviceCategoryId)}
+												</span>
+											)}
+										</div>
+										<div className="text-right">
+											<div>{formatDuration(service.duration)}</div>
+										</div>
 									</div>
 								</div>
 							))}

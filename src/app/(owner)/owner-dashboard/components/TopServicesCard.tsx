@@ -6,6 +6,16 @@ interface TopServicesCardProps {
 	bookings: Booking[];
 }
 
+// Helper function to format currency with k/m notation
+const formatCurrency = (amount: number): string => {
+	if (amount >= 1000000) {
+		return `${(amount / 1000000).toFixed(1)}M₫`;
+	} else if (amount >= 1000) {
+		return `${(amount / 1000).toFixed(1)}k₫`;
+	}
+	return `${amount}₫`;
+};
+
 export default function TopServicesCard({ bookings }: TopServicesCardProps) {
 	// Calculate top services
 	const serviceStats = bookings
@@ -52,7 +62,7 @@ export default function TopServicesCard({ bookings }: TopServicesCardProps) {
 
 			{/* Table Header */}
 			<div
-				className="grid grid-cols-12 px-6 py-3 text-[13px] text-gray-700 bg-[#fff2f1] font-semibold"
+				className="grid grid-cols-12 px-3 md:px-6 py-3 text-[13px] text-gray-700 bg-[#fff2f1] font-semibold"
 				role="rowgroup"
 			>
 				<div className="col-span-1" role="columnheader">
@@ -82,7 +92,7 @@ export default function TopServicesCard({ bookings }: TopServicesCardProps) {
 					topServices.map((service, index) => (
 						<div
 							key={service.name}
-							className="grid grid-cols-12 px-6 py-3 text-[15px] text-gray-800 hover:bg-[#fffbfa] transition-colors"
+							className="grid grid-cols-12 px-3 md:px-6 py-3 text-[15px] text-gray-800 hover:bg-[#fffbfa] transition-colors"
 							role="listitem"
 						>
 							<div className="col-span-1 flex items-center">
@@ -90,14 +100,14 @@ export default function TopServicesCard({ bookings }: TopServicesCardProps) {
 									{index + 1}
 								</div>
 							</div>
-							<div className="col-span-5 font-medium flex items-center">
+							<div className="col-span-5 text-xs font-medium flex items-center">
 								{service.name}
 							</div>
-							<div className="col-span-3 flex items-center text-gray-600">
+							<div className="col-span-3 flex items-center text-gray-600 text-xs md:text-base">
 								{service.count} booking{service.count !== 1 ? 's' : ''}
 							</div>
 							<div className="col-span-3 text-right font-semibold flex items-center justify-end">
-								{service.revenue.toLocaleString()}₫
+								{formatCurrency(service.revenue)}
 							</div>
 						</div>
 					))

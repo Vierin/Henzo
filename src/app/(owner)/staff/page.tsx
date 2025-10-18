@@ -88,17 +88,20 @@ export default function StaffPage() {
 			<div className="mb-8">
 				<div className="flex items-center justify-between">
 					<div>
-						<h1 className="text-3xl font-bold text-black mb-2">Staff</h1>
-						<p className="text-gray-800">
+						<h1 className="text-2xl md:text-3xl font-bold text-black md:mb-2">
+							Staff
+						</h1>
+						<p className="text-sm md:text-base text-gray-800">
 							Manage your salon team and access levels
 						</p>
 					</div>
 					<button
 						onClick={() => router.push('/staff/new')}
-						className="inline-flex items-center gap-2 rounded-full bg-[#ff5b5b] text-white px-4 py-2 text-sm shadow-sm hover:opacity-95"
+						className="inline-flex items-center gap-2 rounded-full bg-[#ff5b5b] text-white px-4 py-2 text-sm shadow-sm hover:opacity-95 whitespace-nowrap"
 					>
 						<span className="text-lg leading-none">＋</span>
-						Add New Staff
+						<span>Add New</span>
+						<span className="hidden md:inline">Staff</span>
 					</button>
 				</div>
 			</div>
@@ -136,66 +139,142 @@ export default function StaffPage() {
 				</div>
 			) : (
 				<div className="bg-white rounded-xl border border-[#f1d9d7] overflow-hidden">
-					<div className="grid grid-cols-5 px-6 py-3 text-[13px] text-gray-700 bg-[#fff2f1] font-semibold">
-						<div>Name</div>
-						<div>Access Level</div>
-						<div>Email</div>
-						<div>Phone</div>
-						<div>Actions</div>
+					{/* Desktop Table View */}
+					<div className="hidden md:block">
+						<div className="grid grid-cols-5 px-6 py-3 text-sm text-gray-700 bg-[#fff2f1] font-semibold">
+							<div>Name</div>
+							<div>Access Level</div>
+							<div>Email</div>
+							<div>Phone</div>
+							<div>Actions</div>
+						</div>
+						<div className="divide-y divide-[#f1d9d7]">
+							{staff.map((member) => (
+								<div
+									key={member.id}
+									className="grid grid-cols-5 px-6 py-4 text-sm text-gray-800"
+								>
+									<div className="font-semibold">{member.name}</div>
+									<div>{getAccessLevelBadge(member.accessLevel)}</div>
+									<div className="text-gray-600">
+										{member.email || 'No email'}
+									</div>
+									<div className="text-gray-600">
+										{member.phone || 'No phone'}
+									</div>
+									<div className="flex gap-2">
+										<button
+											onClick={() => handleEditStaff(member)}
+											className="p-1 text-[#ff5b5b] hover:text-[#e04a4a] hover:bg-red-50 rounded transition-colors"
+											title="Edit staff member"
+										>
+											<svg
+												className="w-4 h-4"
+												fill="none"
+												stroke="currentColor"
+												viewBox="0 0 24 24"
+											>
+												<path
+													strokeLinecap="round"
+													strokeLinejoin="round"
+													strokeWidth={2}
+													d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
+												/>
+											</svg>
+										</button>
+										<button
+											onClick={() => handleDeleteStaff(member.id)}
+											className="p-1 text-red-600 hover:text-red-700 hover:bg-red-50 rounded transition-colors"
+											title="Delete staff member"
+										>
+											<svg
+												className="w-4 h-4"
+												fill="none"
+												stroke="currentColor"
+												viewBox="0 0 24 24"
+											>
+												<path
+													strokeLinecap="round"
+													strokeLinejoin="round"
+													strokeWidth={2}
+													d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+												/>
+											</svg>
+										</button>
+									</div>
+								</div>
+							))}
+						</div>
 					</div>
-					<div className="divide-y divide-[#f1d9d7]">
+
+					{/* Mobile Card View */}
+					<div className="md:hidden divide-y divide-[#f1d9d7]">
 						{staff.map((member) => (
-							<div
-								key={member.id}
-								className="grid grid-cols-5 px-6 py-4 text-[15px] text-gray-800"
-							>
-								<div className="font-semibold">{member.name}</div>
-								<div>{getAccessLevelBadge(member.accessLevel)}</div>
-								<div className="text-gray-600">
-									{member.email || 'No email'}
-								</div>
-								<div className="text-gray-600">
-									{member.phone || 'No phone'}
-								</div>
-								<div className="flex gap-2">
-									<button
-										onClick={() => handleEditStaff(member)}
-										className="p-1 text-[#ff5b5b] hover:text-[#e04a4a] hover:bg-red-50 rounded transition-colors"
-										title="Edit staff member"
-									>
-										<svg
-											className="w-4 h-4"
-											fill="none"
-											stroke="currentColor"
-											viewBox="0 0 24 24"
+							<div key={member.id} className="p-4">
+								<div className="flex items-start justify-between mb-3">
+									<div className="flex-1 min-w-0">
+										<h3 className="font-semibold text-gray-900 truncate">
+											{member.name}
+										</h3>
+										<div className="mt-1">
+											{getAccessLevelBadge(member.accessLevel)}
+										</div>
+									</div>
+									<div className="flex gap-2 ml-3">
+										<button
+											onClick={() => handleEditStaff(member)}
+											className="p-2 text-[#ff5b5b] hover:text-[#e04a4a] hover:bg-red-50 rounded transition-colors"
+											title="Edit staff member"
 										>
-											<path
-												strokeLinecap="round"
-												strokeLinejoin="round"
-												strokeWidth={2}
-												d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
-											/>
-										</svg>
-									</button>
-									<button
-										onClick={() => handleDeleteStaff(member.id)}
-										className="p-1 text-red-600 hover:text-red-700 hover:bg-red-50 rounded transition-colors"
-										title="Delete staff member"
-									>
-										<svg
-											className="w-4 h-4"
-											fill="none"
-											stroke="currentColor"
-											viewBox="0 0 24 24"
+											<svg
+												className="w-4 h-4"
+												fill="none"
+												stroke="currentColor"
+												viewBox="0 0 24 24"
+											>
+												<path
+													strokeLinecap="round"
+													strokeLinejoin="round"
+													strokeWidth={2}
+													d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
+												/>
+											</svg>
+										</button>
+										<button
+											onClick={() => handleDeleteStaff(member.id)}
+											className="p-2 text-red-600 hover:text-red-700 hover:bg-red-50 rounded transition-colors"
+											title="Delete staff member"
 										>
-											<path
-												strokeLinecap="round"
-												strokeLinejoin="round"
-												strokeWidth={2}
-												d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
-											/>
-										</svg>
-									</button>
+											<svg
+												className="w-4 h-4"
+												fill="none"
+												stroke="currentColor"
+												viewBox="0 0 24 24"
+											>
+												<path
+													strokeLinecap="round"
+													strokeLinejoin="round"
+													strokeWidth={2}
+													d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+												/>
+											</svg>
+										</button>
+									</div>
+								</div>
+
+								<div className="space-y-2 text-sm text-gray-600">
+									{member.email && (
+										<div className="flex items-center">
+											<span className="font-medium mr-2">Email:</span>
+											<span className="truncate">{member.email}</span>
+										</div>
+									)}
+									{member.phone && (
+										<div className="flex items-center">
+											<span className="font-medium mr-2">Phone:</span>
+											<span>{member.phone}</span>
+										</div>
+									)}
 								</div>
 							</div>
 						))}

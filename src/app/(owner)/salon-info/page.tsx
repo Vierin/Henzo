@@ -229,19 +229,19 @@ export default function SalonInfoPage() {
 	return (
 		<div>
 			<div className="text-center mb-8">
-				<h1 className="text-4xl font-bold text-gray-900 mb-4">
+				<h1 className="text-2xl md:text-4xl font-bold text-gray-900 mb-2 md:mb-4">
 					Salon Information
 				</h1>
-				<p className="text-lg text-gray-600">
+				<p className="text-sm md:text-lg text-gray-600 px-4 md:px-0">
 					Provide details about your salon, including name, description,
 					address, contact information, photos, and operating hours.
 				</p>
 			</div>
 
-			<form onSubmit={handleSubmit} className="space-y-8">
+			<form onSubmit={handleSubmit} className="space-y-6 md:space-y-8">
 				{/* Basic Details Section */}
-				<div className="bg-white border border-gray-200 rounded-lg p-6">
-					<h2 className="text-2xl font-semibold text-gray-900 mb-6">
+				<div className="bg-white border border-gray-200 rounded-lg p-3 md:p-6">
+					<h2 className="text-xl md:text-2xl font-semibold text-gray-900 mb-4 md:mb-6">
 						Basic Details
 					</h2>
 
@@ -330,8 +330,8 @@ export default function SalonInfoPage() {
 
 				{/* Map Section */}
 				{formData.address && (
-					<div className="bg-white border border-gray-200 rounded-lg p-6">
-						<h2 className="text-2xl font-semibold text-gray-900 mb-6">
+					<div className="bg-white border border-gray-200 rounded-lg p-3 md:p-6">
+						<h2 className="text-xl md:text-2xl font-semibold text-gray-900 mb-4 md:mb-6">
 							Location Preview
 						</h2>
 						<MapComponentWithCoords
@@ -343,8 +343,8 @@ export default function SalonInfoPage() {
 				)}
 
 				{/* Contact Information Section */}
-				<div className="bg-white border border-gray-200 rounded-lg p-6">
-					<h2 className="text-2xl font-semibold text-gray-900 mb-6">
+				<div className="bg-white border border-gray-200 rounded-lg p-3 md:p-6">
+					<h2 className="text-xl md:text-2xl font-semibold text-gray-900 mb-4 md:mb-6">
 						Contact Information
 					</h2>
 
@@ -412,8 +412,8 @@ export default function SalonInfoPage() {
 				</div>
 
 				{/* Logo Section */}
-				<div className="bg-white border border-gray-200 rounded-lg p-6">
-					<h2 className="text-2xl font-semibold text-gray-900 mb-6">
+				<div className="bg-white border border-gray-200 rounded-lg p-3 md:p-6">
+					<h2 className="text-xl md:text-2xl font-semibold text-gray-900 mb-4 md:mb-6">
 						Salon Logo
 					</h2>
 
@@ -436,8 +436,8 @@ export default function SalonInfoPage() {
 				</div>
 
 				{/* Salon Photos Section */}
-				<div className="bg-white border border-gray-200 rounded-lg p-6">
-					<h2 className="text-2xl font-semibold text-gray-900 mb-6">
+				<div className="bg-white border border-gray-200 rounded-lg p-3 md:p-6">
+					<h2 className="text-xl md:text-2xl font-semibold text-gray-900 mb-4 md:mb-6">
 						Salon Photos
 					</h2>
 
@@ -456,8 +456,8 @@ export default function SalonInfoPage() {
 				</div>
 
 				{/* Operating Hours Section */}
-				<div className="bg-white border border-gray-200 rounded-lg p-6">
-					<h2 className="text-2xl font-semibold text-gray-900 mb-6 flex items-center gap-2">
+				<div className="bg-white border border-gray-200 rounded-lg p-3 md:p-6">
+					<h2 className="text-xl md:text-2xl font-semibold text-gray-900 mb-4 md:mb-6 flex items-center gap-2">
 						<Clock4 className="w-5 h-5" /> Operating Hours
 					</h2>
 					<WorkingHoursSection
@@ -501,7 +501,7 @@ export default function SalonInfoPage() {
 					<button
 						type="submit"
 						disabled={loading}
-						className="bg-[#ff5b5b] text-white px-8 py-3 rounded-lg font-medium hover:bg-[#e04a4a] focus:outline-none focus:ring-2 focus:ring-[#ff5b5b] focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
+						className="w-full sm:w-auto bg-[#ff5b5b] text-white px-6 md:px-8 py-3 rounded-lg font-medium hover:bg-[#e04a4a] focus:outline-none focus:ring-2 focus:ring-[#ff5b5b] focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
 					>
 						{loading
 							? hasExistingSalon
@@ -515,7 +515,7 @@ export default function SalonInfoPage() {
 			</form>
 
 			{/* Account Deletion Section */}
-			<div className="mt-12 bg-red-50 border border-red-200 rounded-lg p-6">
+			<div className="mt-8 md:mt-12 bg-red-50 border border-red-200 rounded-lg p-3 md:p-6">
 				<div className="flex items-start">
 					<div className="flex-shrink-0">
 						<svg
@@ -567,7 +567,7 @@ export default function SalonInfoPage() {
 			{/* Delete Confirmation Modal */}
 			{showDeleteModal && (
 				<div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
-					<div className="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+					<div className="relative top-10 md:top-20 mx-auto p-5 border w-[90vw] md:w-96 max-w-md shadow-lg rounded-md bg-white">
 						<div className="mt-3 text-center">
 							<div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-100">
 								<svg
@@ -587,13 +587,13 @@ export default function SalonInfoPage() {
 							<h3 className="text-lg font-medium text-gray-900 mt-4">
 								Are you absolutely sure?
 							</h3>
-							<div className="mt-2 px-7 py-3">
+							<div className="mt-2 px-2 md:px-7 py-3">
 								<p className="text-sm text-gray-500">
 									This action cannot be undone. This will permanently delete
 									your account and remove all data from our servers.
 								</p>
 							</div>
-							<div className="flex justify-center space-x-4 mt-6">
+							<div className="flex flex-col sm:flex-row justify-center gap-3 sm:gap-4 mt-6">
 								<button
 									type="button"
 									onClick={() => setShowDeleteModal(false)}

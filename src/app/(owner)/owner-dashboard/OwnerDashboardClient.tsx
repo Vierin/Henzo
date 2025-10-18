@@ -331,19 +331,21 @@ export default function OwnerDashboardClient() {
 	return (
 		<main className="space-y-6">
 			{/* Header */}
-			<div className="flex items-center justify-between">
+			<div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
 				<div>
-					<h1 className="text-3xl font-bold text-black">Dashboard</h1>
-					<p className="text-gray-600 mt-1">
+					<h1 className="text-2xl sm:text-3xl font-bold text-black">
+						Dashboard
+					</h1>
+					<p className="text-gray-600 mt-1 text-sm sm:text-base">
 						Welcome back! Here's your business overview
 					</p>
 				</div>
-				<div className="flex items-center gap-3">
+				<div className="flex flex-row items-stretch sm:items-center gap-3">
 					<Select
 						value={period}
 						onValueChange={(value: '7d' | '30d' | '1y') => setPeriod(value)}
 					>
-						<SelectTrigger className="w-[180px] border border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#ff5b5b] text-gray-900 bg-white">
+						<SelectTrigger className="w-full sm:w-[180px] border border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#ff5b5b] text-gray-900 bg-white">
 							<SelectValue />
 						</SelectTrigger>
 						<SelectContent className="bg-white border border-gray-300 shadow-lg rounded-md">
@@ -373,7 +375,7 @@ export default function OwnerDashboardClient() {
 							setEditingBooking(null);
 							setIsBookingModalOpen(true);
 						}}
-						className="inline-flex items-center gap-2 rounded-full bg-[#ea4b4b] text-white px-4 py-2 text-sm shadow-sm hover:opacity-95 transition-opacity focus:outline-none focus:ring-2 focus:ring-[#ea4b4b] focus:ring-offset-2"
+						className="inline-flex items-center justify-center gap-2 rounded-full bg-[#ea4b4b] text-white px-4 py-2 text-sm shadow-sm hover:opacity-95 transition-opacity focus:outline-none focus:ring-2 focus:ring-[#ea4b4b] focus:ring-offset-2 w-full sm:w-auto"
 					>
 						<span className="text-lg leading-none">＋</span>
 						New Appointment
@@ -382,7 +384,7 @@ export default function OwnerDashboardClient() {
 			</div>
 
 			{/* Stats Cards */}
-			<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+			<div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-2 md:gap-6">
 				<StatsCard
 					title="Total Revenue"
 					value={`${stats.revenue.toLocaleString()}₫`}

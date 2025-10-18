@@ -483,77 +483,89 @@ export default function CalendarClient() {
 	}
 
 	return (
-		<main className="flex gap-6" role="main" aria-labelledby="calendar-heading">
+		<main
+			className="flex gap-4 md:gap-6"
+			role="main"
+			aria-labelledby="calendar-heading"
+		>
 			<div className="w-full">
-				<div className="mb-8 flex items-center justify-between">
-					<h1
-						id="calendar-heading"
-						className="text-3xl font-bold text-black mb-2"
-					>
-						Calendar
-					</h1>
+				<div className="mb-6 md:mb-8">
+					{/* Header */}
+					<div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4">
+						<h1
+							id="calendar-heading"
+							className="text-2xl md:text-3xl font-bold text-black"
+						>
+							Calendar
+						</h1>
 
-					<div
-						className="flex items-center gap-2"
-						role="group"
-						aria-label="View mode and new appointment"
-					>
-						<div className="flex border border-gray-300 rounded-lg overflow-hidden">
-							<button
-								onClick={() => {
-									setViewMode('list');
-									setShowDaySchedule(false);
-									setCurrentPage(1);
-								}}
-								className={`px-3 py-2 text-sm font-medium flex items-center gap-2 ${
-									viewMode === 'list'
-										? 'bg-[#ea4b4b] text-white'
-										: 'bg-white text-gray-700 hover:bg-gray-50'
-								}`}
-								aria-pressed={viewMode === 'list'}
-								aria-label="Switch to list view"
-							>
-								<List className="w-4 h-4" />
-								List
-							</button>
-							<button
-								onClick={() => {
-									setViewMode('calendar');
-									setShowDaySchedule(false);
-									setCurrentPage(1);
-								}}
-								className={`px-3 py-2 text-sm font-medium flex items-center gap-2 ${
-									viewMode === 'calendar'
-										? 'bg-[#ea4b4b] text-white'
-										: 'bg-white text-gray-700 hover:bg-gray-50'
-								}`}
-								aria-pressed={viewMode === 'calendar'}
-								aria-label="Switch to calendar view"
-							>
-								<CalendarDays className="w-4 h-4" />
-								Calendar
-							</button>
+						<div
+							className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3"
+							role="group"
+							aria-label="View mode and new appointment"
+						>
+							{/* View Mode Toggle */}
+							<div className="flex border border-gray-300 rounded-lg overflow-hidden">
+								<button
+									onClick={() => {
+										setViewMode('list');
+										setShowDaySchedule(false);
+										setCurrentPage(1);
+									}}
+									className={`flex-1 sm:flex-none px-3 py-2 text-sm font-medium flex items-center justify-center gap-2 ${
+										viewMode === 'list'
+											? 'bg-[#ea4b4b] text-white'
+											: 'bg-white text-gray-700 hover:bg-gray-50'
+									}`}
+									aria-pressed={viewMode === 'list'}
+									aria-label="Switch to list view"
+								>
+									<List className="w-4 h-4" />
+									<span className="hidden sm:inline">List</span>
+								</button>
+								<button
+									onClick={() => {
+										setViewMode('calendar');
+										setShowDaySchedule(false);
+										setCurrentPage(1);
+									}}
+									className={`flex-1 sm:flex-none px-3 py-2 text-sm font-medium flex items-center justify-center gap-2 ${
+										viewMode === 'calendar'
+											? 'bg-[#ea4b4b] text-white'
+											: 'bg-white text-gray-700 hover:bg-gray-50'
+									}`}
+									aria-pressed={viewMode === 'calendar'}
+									aria-label="Switch to calendar view"
+								>
+									<CalendarDays className="w-4 h-4" />
+									<span className="hidden sm:inline">Calendar</span>
+								</button>
+							</div>
+
+							{/* Action Buttons */}
+							<div className="flex gap-3">
+								<button
+									onClick={() => setIsBlockTimeModalOpen(true)}
+									className="flex-1 sm:flex-none inline-flex items-center justify-center gap-2 rounded-lg border-2 border-gray-300 bg-white text-gray-700 px-3 md:px-4 py-2 text-sm shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-400 focus:ring-offset-2 transition-colors"
+									aria-label="Block time"
+								>
+									<Ban className="w-4 h-4" />
+									<span className="hidden sm:inline">Block Time</span>
+								</button>
+
+								<button
+									onClick={handleNewAppointment}
+									className="flex-1 sm:flex-none inline-flex items-center justify-center gap-2 rounded-full bg-[#ea4b4b] text-white px-3 md:px-4 py-2 text-sm shadow-sm hover:opacity-95 focus:outline-none focus:ring-2 focus:ring-[#ea4b4b] focus:ring-offset-2 whitespace-nowrap"
+									aria-label="Add new appointment"
+								>
+									<span className="text-lg leading-none" aria-hidden="true">
+										＋
+									</span>
+									<span className="hidden sm:inline">New Appointment</span>
+									<span className="sm:hidden">New</span>
+								</button>
+							</div>
 						</div>
-
-						<button
-							onClick={() => setIsBlockTimeModalOpen(true)}
-							className="inline-flex items-center gap-2 rounded-lg border-2 border-gray-300 bg-white text-gray-700 px-4 py-2 text-sm shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-400 focus:ring-offset-2 transition-colors"
-							aria-label="Block time"
-						>
-							<Ban className="w-4 h-4" />
-							Block Time
-						</button>
-
-						<button
-							onClick={handleNewAppointment}
-							className="inline-flex items-center gap-2 rounded-full bg-[#ea4b4b] text-white px-4 py-2 text-sm shadow-sm hover:opacity-95 focus:outline-none focus:ring-2 focus:ring-[#ea4b4b] focus:ring-offset-2"
-							aria-label="Add new appointment"
-						>
-							<span className="text-lg leading-none" aria-hidden="true">
-								＋
-							</span>
-							New Appointment
-						</button>
 					</div>
 				</div>
 

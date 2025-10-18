@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
+import { useState } from 'react';
 import { useAuthStore } from '@/stores/authStore';
 import {
 	LayoutDashboard,
@@ -10,96 +11,104 @@ import {
 	Users,
 	TrendingUp,
 	Settings,
+	Menu,
+	X,
+	LogOut,
 } from 'lucide-react';
 
-export default function OwnerSidebar() {
+interface OwnerSidebarProps {
+	isMobileMenuOpen?: boolean;
+	setIsMobileMenuOpen?: (open: boolean) => void;
+}
+
+export default function OwnerSidebar({
+	isMobileMenuOpen = false,
+	setIsMobileMenuOpen,
+}: OwnerSidebarProps = {}) {
 	const pathname = usePathname();
 	const router = useRouter();
 	const { logout } = useAuthStore();
 
 	const handleLogout = async () => {
+		// Close mobile menu if open
+		setIsMobileMenuOpen?.(false);
+
 		await logout();
 		// Small delay to ensure cookies are cleared
 		await new Promise((resolve) => setTimeout(resolve, 100));
 		router.replace('/');
 	};
 
-	return (
-		<div className="w-64 bg-white shadow-sm border-r border-gray-200 min-h-screen">
-			<div className="p-6">
+	// Helper function to render navigation items
+	const renderNavItem = (
+		href: string,
+		icon: React.ReactNode,
+		label: string,
+		isActive: boolean
+	) => {
+		return (
+			<Link
+				href={href}
+				className={`flex items-center gap-3 px-3 py-2 rounded-lg transition-colors ${
+					isActive
+						? 'bg-[#ea4b4b] text-white'
+						: 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+				}`}
+				onClick={() => setIsMobileMenuOpen?.(false)}
+			>
+				{icon}
+				<span className="font-medium">{label}</span>
+			</Link>
+		);
+	};
+
+	// Helper function to render sidebar content
+	const renderSidebarContent = () => (
+		<div className="w-64 bg-white shadow-sm border-r border-gray-200 min-h-screen pt-20">
+			<div className="p-4 sm:p-6">
 				{/* Navigation */}
 				<nav className="space-y-2">
-					<Link
-						href="/owner-dashboard"
-						className={`flex items-center gap-3 px-3 py-2 rounded-lg transition-colors ${
-							pathname === '/owner-dashboard'
-								? 'bg-[#ea4b4b] text-white'
-								: 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
-						}`}
-					>
-						<LayoutDashboard className="w-5 h-5" />
-						<span className="font-medium">Dashboard</span>
-					</Link>
+					{renderNavItem(
+						'/owner-dashboard',
+						<LayoutDashboard className="w-5 h-5" />,
+						'Dashboard',
+						pathname === '/owner-dashboard'
+					)}
 
-					<Link
-						href="/calendar"
-						className={`flex items-center gap-3 px-3 py-2 rounded-lg transition-colors ${
-							pathname === '/calendar'
-								? 'bg-[#ea4b4b] text-white'
-								: 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
-						}`}
-					>
-						<CalendarDays className="w-5 h-5" />
-						<span className="font-medium">Calendar</span>
-					</Link>
+					{renderNavItem(
+						'/calendar',
+						<CalendarDays className="w-5 h-5" />,
+						'Calendar',
+						pathname === '/calendar'
+					)}
 
-					<Link
-						href="/services"
-						className={`flex items-center gap-3 px-3 py-2 rounded-lg transition-colors ${
-							pathname.startsWith('/services')
-								? 'bg-[#ea4b4b] text-white'
-								: 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
-						}`}
-					>
-						<Scissors className="w-5 h-5" />
-						<span className="font-medium">Services</span>
-					</Link>
+					{renderNavItem(
+						'/services',
+						<Scissors className="w-5 h-5" />,
+						'Services',
+						pathname.startsWith('/services')
+					)}
 
-					<Link
-						href="/staff"
-						className={`flex items-center gap-3 px-3 py-2 rounded-lg transition-colors ${
-							pathname.startsWith('/staff')
-								? 'bg-[#ea4b4b] text-white'
-								: 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
-						}`}
-					>
-						<Users className="w-5 h-5" />
-						<span className="font-medium">Staff</span>
-					</Link>
+					{renderNavItem(
+						'/staff',
+						<Users className="w-5 h-5" />,
+						'Staff',
+						pathname.startsWith('/staff')
+					)}
 
-					<Link
-						href="/marketing"
-						className={`flex items-center gap-3 px-3 py-2 rounded-lg transition-colors ${
-							pathname.startsWith('/marketing')
-								? 'bg-[#ea4b4b] text-white'
-								: 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
-						}`}
-					>
-						<TrendingUp className="w-5 h-5" />
-						<span className="font-medium">Marketing</span>
-					</Link>
+					{renderNavItem(
+						'/marketing',
+						<TrendingUp className="w-5 h-5" />,
+						'Marketing',
+						pathname.startsWith('/marketing')
+					)}
 
-					<Link
-						href="/salon-info"
-						className={`flex items-center gap-3 px-3 py-2 rounded-lg transition-colors ${
-							pathname.startsWith('/salon-info')
-								? 'bg-[#ea4b4b] text-white'
-								: 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
-						}`}
-					>
-						<Settings className="w-5 h-5" />
-						<span className="font-medium">Settings</span>
-					</Link>
+					{renderNavItem(
+						'/salon-info',
+						<Settings className="w-5 h-5" />,
+						'Settings',
+						pathname.startsWith('/salon-info')
+					)}
 				</nav>
 
 				{/* Logout Button */}
@@ -108,23 +117,13 @@ export default function OwnerSidebar() {
 						onClick={handleLogout}
 						className="flex items-center gap-3 px-3 py-2 text-gray-600 hover:bg-red-50 hover:text-red-600 rounded-lg transition-colors w-full"
 					>
-						<svg
-							className="w-5 h-5"
-							fill="none"
-							stroke="currentColor"
-							viewBox="0 0 24 24"
-						>
-							<path
-								strokeLinecap="round"
-								strokeLinejoin="round"
-								strokeWidth={2}
-								d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"
-							/>
-						</svg>
+						<LogOut className="w-5 h-5" />
 						<span className="font-medium">Log Out</span>
 					</button>
 				</div>
 			</div>
 		</div>
 	);
+
+	return renderSidebarContent();
 }

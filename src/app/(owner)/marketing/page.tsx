@@ -212,84 +212,89 @@ export default function MarketingPage() {
 	}
 
 	return (
-		<div className="px-4 sm:px-6 lg:px-8">
+		<div className="px-0 sm:px-3 lg:px-8">
 			<div className="max-w-4xl mx-auto">
 				{/* Header */}
-				<div className="text-center mb-12">
-					<p className="text-lg text-gray-600">
+				<div className="text-center mb-8 md:mb-12">
+					<h1 className="text-2xl md:text-3xl font-bold text-gray-900 mb-2 md:mb-4">
+						Marketing
+					</h1>
+					<p className="text-sm md:text-lg text-gray-600 px-4 md:px-0">
 						Download or share a QR code for your salon's link for customers to
 						scan to book an appointment
 					</p>
 				</div>
 
 				{/* Main Content */}
-				<div className="bg-white rounded-xl shadow-lg p-8">
-					<div className="flex flex-col lg:flex-row gap-8">
+				<div className="bg-white rounded-xl shadow-lg p-3 md:p-8">
+					<div className="flex flex-col lg:flex-row gap-6 md:gap-8">
 						{/* Left Side - Link and Actions */}
-						<div className="flex-1 space-y-6">
+						<div className="flex-1 space-y-4 md:space-y-6">
 							{/* Salon Link Display */}
 							<div>
 								<label className="block text-sm font-medium text-gray-700 mb-3">
 									Salon Link
 								</label>
-								<div className="flex gap-3">
+								<div className="space-y-3">
 									<input
 										type="text"
 										value={salonUrl}
 										readOnly
-										className="flex-1 px-4 py-3 border border-gray-300 rounded-lg bg-gray-50 text-gray-900 cursor-default"
+										className="w-full px-3 md:px-4 py-2 md:py-3 border border-gray-300 rounded-lg bg-gray-50 text-gray-900 cursor-default text-sm md:text-base"
 										placeholder="Loading salon link..."
 									/>
-									<button
-										onClick={copyToClipboard}
-										disabled={!salonUrl}
-										className="px-4 py-3 bg-gray-100 text-gray-700 rounded-lg font-medium hover:bg-gray-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 flex items-center gap-2"
-										title="Copy to clipboard"
-									>
-										<svg
-											className="w-4 h-4"
-											fill="none"
-											stroke="currentColor"
-											viewBox="0 0 24 24"
+									<div className="flex gap-3">
+										<button
+											onClick={copyToClipboard}
+											disabled={!salonUrl}
+											className="flex-1 px-3 md:px-4 py-2 md:py-3 bg-gray-100 text-gray-700 rounded-lg font-medium hover:bg-gray-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 flex items-center justify-center gap-2 text-sm md:text-base"
+											title="Copy to clipboard"
 										>
-											<path
-												strokeLinecap="round"
-												strokeLinejoin="round"
-												strokeWidth={2}
-												d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"
-											/>
-										</svg>
-										Copy
-									</button>
-									<button
-										onClick={shareLink}
-										disabled={!salonUrl}
-										className="px-4 py-3 bg-[#ff5b5b] text-white rounded-lg font-medium hover:bg-[#e04a4a] transition-colors disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-[#ff5b5b] focus:ring-offset-2 flex items-center gap-2"
-									>
-										<svg
-											className="w-4 h-4"
-											fill="none"
-											stroke="currentColor"
-											viewBox="0 0 24 24"
+											<svg
+												className="w-4 h-4"
+												fill="none"
+												stroke="currentColor"
+												viewBox="0 0 24 24"
+											>
+												<path
+													strokeLinecap="round"
+													strokeLinejoin="round"
+													strokeWidth={2}
+													d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"
+												/>
+											</svg>
+											Copy
+										</button>
+										<button
+											onClick={shareLink}
+											disabled={!salonUrl}
+											className="flex-1 px-3 md:px-4 py-2 md:py-3 bg-[#ff5b5b] text-white rounded-lg font-medium hover:bg-[#e04a4a] transition-colors disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-[#ff5b5b] focus:ring-offset-2 flex items-center justify-center gap-2 text-sm md:text-base"
 										>
-											<path
-												strokeLinecap="round"
-												strokeLinejoin="round"
-												strokeWidth={2}
-												d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.367 2.684 3 3 0 00-5.367-2.684z"
-											/>
-										</svg>
-										Share
-									</button>
+											<svg
+												className="w-4 h-4"
+												fill="none"
+												stroke="currentColor"
+												viewBox="0 0 24 24"
+											>
+												<path
+													strokeLinecap="round"
+													strokeLinejoin="round"
+													strokeWidth={2}
+													d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.367 2.684 3 3 0 00-5.367-2.684z"
+												/>
+											</svg>
+											Share
+										</button>
+									</div>
 								</div>
 							</div>
 
 							{/* Instructions */}
-							<div className="p-6 bg-blue-50 rounded-lg">
-								<h3 className="text-lg font-medium text-blue-900 mb-3">
+							<div className="p-4 md:p-6 bg-blue-50 rounded-lg">
+								<h3 className="text-base md:text-lg font-medium text-blue-900 mb-3">
 									How to use:
 								</h3>
-								<ul className="space-y-2 text-blue-800">
+								<ul className="space-y-2 text-sm md:text-base text-blue-800">
 									<li>• Copy the link to share with customers</li>
 									<li>
 										• Use the Share button to send via social media or messaging
@@ -301,27 +306,27 @@ export default function MarketingPage() {
 						</div>
 
 						{/* Right Side - QR Code */}
-						<div className="lg:w-80 flex flex-col items-center space-y-4">
+						<div className="w-full lg:w-80 flex flex-col items-center space-y-4">
 							<div className="text-center">
-								<h3 className="text-lg font-medium text-gray-900 mb-3">
+								<h3 className="text-base md:text-lg font-medium text-gray-900 mb-3">
 									QR Code
 								</h3>
 								{qrCodeUrl ? (
-									<div className="bg-white p-4 rounded-lg border-2 border-gray-200 inline-block">
+									<div className="bg-white p-3 md:p-4 rounded-lg border-2 border-gray-200 inline-block">
 										<img
 											src={qrCodeUrl}
 											alt="Salon QR Code"
-											className="w-32 h-32 mx-auto"
+											className="w-28 h-28 md:w-32 md:h-32 mx-auto"
 										/>
 										<p className="text-center text-xs text-gray-600 mt-2 font-medium">
 											{salon?.name || 'Salon'}
 										</p>
 									</div>
 								) : (
-									<div className="bg-gray-100 p-4 rounded-lg border-2 border-gray-200 inline-block">
-										<div className="w-32 h-32 bg-gray-200 rounded flex items-center justify-center">
+									<div className="bg-gray-100 p-3 md:p-4 rounded-lg border-2 border-gray-200 inline-block">
+										<div className="w-28 h-28 md:w-32 md:h-32 bg-gray-200 rounded flex items-center justify-center">
 											<svg
-												className="w-8 h-8 text-gray-400"
+												className="w-6 h-6 md:w-8 md:h-8 text-gray-400"
 												fill="none"
 												stroke="currentColor"
 												viewBox="0 0 24 24"
@@ -345,7 +350,7 @@ export default function MarketingPage() {
 							<button
 								onClick={downloadQRCodePDF}
 								disabled={!qrCodeUrl}
-								className="flex items-center gap-2 px-6 py-3 bg-gray-800 text-white rounded-lg font-medium hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-gray-800 focus:ring-offset-2"
+								className="w-full md:w-auto flex items-center justify-center gap-2 px-4 md:px-6 py-2 md:py-3 bg-gray-800 text-white rounded-lg font-medium hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-gray-800 focus:ring-offset-2 text-sm md:text-base"
 							>
 								<svg
 									className="w-4 h-4"

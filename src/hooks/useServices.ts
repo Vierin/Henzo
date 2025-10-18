@@ -107,11 +107,11 @@ export const useUpdateService = () => {
 			id: string;
 			data: UpdateServiceDto;
 		}): Promise<ServiceResponseDto> => {
-			const response = await apiClient.put<{ service: ServiceResponseDto }>(
+			const response = await apiClient.put<ServiceResponseDto>(
 				`/services/${id}`,
 				data
 			);
-			return response.service;
+			return response;
 		},
 		onSuccess: (data, variables) => {
 			// Update the specific service in cache

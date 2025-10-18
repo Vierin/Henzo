@@ -75,16 +75,16 @@ export default function AdditionalMetrics({
 	];
 
 	return (
-		<div className="bg-white rounded-xl border border-[#f1d9d7] p-6">
-			<h2 className="text-xl font-semibold text-gray-900 mb-6">
+		<div className="bg-white rounded-xl border border-[#f1d9d7] p-4 md:p-6">
+			<h2 className="text-xl font-semibold text-gray-900 mb-3 md:mb-6">
 				Additional Metrics
 			</h2>
 
-			<div className="space-y-4">
+			<div className="space-y-2 md:space-y-4">
 				{metrics.map((metric) => (
 					<div
 						key={metric.title}
-						className="flex items-center justify-between p-4 bg-[#fff7f6] rounded-lg"
+						className="flex items-center justify-between p-2 md:p-4 bg-[#fff7f6] rounded-lg"
 					>
 						<div className="flex items-center gap-4">
 							<div

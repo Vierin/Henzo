@@ -5,6 +5,13 @@ import { useRouter } from 'next/navigation';
 import { useSalonId } from '@/hooks/useSalon';
 import { useCreateStaff } from '@/hooks/useStaff';
 import Image from 'next/image';
+import {
+	Select,
+	SelectContent,
+	SelectItem,
+	SelectTrigger,
+	SelectValue,
+} from '@/components/ui/select';
 
 export default function NewStaffPage() {
 	const [formData, setFormData] = useState({
@@ -115,22 +122,22 @@ export default function NewStaffPage() {
 					</svg>
 					Back
 				</button>
-				<h1 className="text-3xl font-bold text-gray-900 mb-2">
+				<h1 className="text-2xl md:text-3xl font-bold text-gray-900 md:mb-2">
 					Add New Staff Member
 				</h1>
-				<p className="text-gray-600">
+				<p className="text-sm md:text-base text-gray-600">
 					Add a new team member to your salon with their details and photo.
 				</p>
 			</div>
 
-			<div className="bg-white rounded-xl border border-[#f1d9d7] p-6">
+			<div className="bg-white rounded-xl border border-[#f1d9d7] p-3 md:p-6">
 				<form onSubmit={handleSubmit} className="space-y-6">
 					{/* Photo Upload Section */}
 					<div>
 						<label className="block text-sm font-medium text-gray-700 mb-2">
 							Photo
 						</label>
-						<div className="flex items-center gap-6">
+						<div className="flex flex-col sm:flex-row sm:items-center gap-4 sm:gap-6">
 							{/* Photo Preview */}
 							<div className="flex-shrink-0">
 								{photoPreview ? (
@@ -180,7 +187,7 @@ export default function NewStaffPage() {
 								/>
 								<label
 									htmlFor="photo"
-									className="cursor-pointer inline-flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-[#ff5b5b]"
+									className="cursor-pointer inline-flex items-center justify-center gap-2 w-full sm:w-auto px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-[#ff5b5b]"
 								>
 									<svg
 										className="w-4 h-4"
@@ -224,19 +231,30 @@ export default function NewStaffPage() {
 						<label className="block text-sm font-medium text-gray-700 mb-2">
 							Access Level *
 						</label>
-						<select
-							required
+						<Select
 							value={formData.accessLevel}
-							onChange={(e) =>
-								setFormData({ ...formData, accessLevel: e.target.value })
+							onValueChange={(value) =>
+								setFormData({ ...formData, accessLevel: value })
 							}
-							className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#ff5b5b] focus:border-[#ff5b5b] text-gray-900"
 						>
-							<option value="EMPLOYEE">Employee - Limited access</option>
-							<option value="ADMIN">
-								Admin - Full access to salon management
-							</option>
-						</select>
+							<SelectTrigger className="w-full border border-gray-300 focus:ring-2 focus:ring-[#ff5b5b] focus:border-transparent text-gray-900">
+								<SelectValue placeholder="Select access level" />
+							</SelectTrigger>
+							<SelectContent className="bg-white border border-gray-300 shadow-lg rounded-md">
+								<SelectItem
+									value="EMPLOYEE"
+									className="bg-white hover:bg-gray-50 focus:bg-gray-50 text-gray-900 cursor-pointer"
+								>
+									Employee - Limited access
+								</SelectItem>
+								<SelectItem
+									value="ADMIN"
+									className="bg-white hover:bg-gray-50 focus:bg-gray-50 text-gray-900 cursor-pointer"
+								>
+									Admin - Full access to salon management
+								</SelectItem>
+							</SelectContent>
+						</Select>
 						<p className="text-xs text-gray-500 mt-1">
 							Admins can manage staff, services, and appointments. Employees
 							have limited access.
@@ -281,7 +299,7 @@ export default function NewStaffPage() {
 						</div>
 					)}
 
-					<div className="flex gap-4 pt-4">
+					<div className="flex flex-col sm:flex-row gap-4 pt-4">
 						<button
 							type="button"
 							onClick={() => router.back()}

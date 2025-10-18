@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo, useRef } from 'react';
+import { useState, useMemo, useRef, useEffect } from 'react';
 import { Booking, TimeBlock } from '@/types';
 import { safeParseDate, formatTimeSafe } from '@/utils/date';
 import { ChevronLeft, ChevronRight, X } from 'lucide-react';
@@ -41,6 +41,17 @@ export default function DaySchedule({
 	const [isDragging, setIsDragging] = useState(false);
 	const [startX, setStartX] = useState(0);
 	const [scrollLeft, setScrollLeft] = useState(0);
+	const [isMobile, setIsMobile] = useState(false);
+
+	useEffect(() => {
+		const checkMobile = () => {
+			setIsMobile(window.innerWidth < 640);
+		};
+
+		checkMobile();
+		window.addEventListener('resize', checkMobile);
+		return () => window.removeEventListener('resize', checkMobile);
+	}, []);
 
 	const getBookingsForDate = (date: Date) => {
 		return bookings.filter((booking) => {
@@ -341,7 +352,7 @@ export default function DaySchedule({
 
 	return (
 		<div
-			className="mt-6 w-full"
+			className="mt-4 md:mt-6 w-full"
 			role="region"
 			aria-labelledby="day-schedule-heading"
 		>
@@ -349,9 +360,10 @@ export default function DaySchedule({
 				Day Schedule
 			</h2>
 
-			<div className="rounded-xl border border-[#f1d9d7] bg-white p-6">
-				<div className="flex items-center justify-between mb-4">
-					<div className="flex items-center gap-3">
+			<div className="rounded-xl border border-[#f1d9d7] bg-white p-3 md:p-6">
+				{/* Header */}
+				<div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
+					<div className="flex items-center justify-between sm:justify-start gap-2 sm:gap-3">
 						<div className="flex items-center gap-1">
 							<button
 								onClick={onPrevDay}
@@ -370,15 +382,15 @@ export default function DaySchedule({
 								<ChevronRight className="w-4 h-4" />
 							</button>
 						</div>
-						<h3 className="text-lg font-semibold text-gray-900">
+						<h3 className="text-base md:text-lg font-semibold text-gray-900 text-center sm:text-left flex-1">
 							{selectedDate.toLocaleDateString('en-US', {
-								weekday: 'long',
-								month: 'long',
+								weekday: 'short',
+								month: 'short',
 								day: 'numeric',
 							})}
 						</h3>
 					</div>
-					<div className="flex items-center gap-2">
+					<div className="flex items-center justify-center sm:justify-end">
 						<button
 							onClick={onBack}
 							className="px-3 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors flex items-center gap-2 focus:outline-none focus:ring-2 focus:ring-[#ea4b4b] focus:ring-offset-2"
@@ -396,46 +408,53 @@ export default function DaySchedule({
 									clipRule="evenodd"
 								/>
 							</svg>
-							Back to Month
+							<span className="hidden sm:inline">Back to Month</span>
+							<span className="sm:hidden">Back</span>
 						</button>
 					</div>
 				</div>
 
 				{/* Staff Filter Pills */}
 				{allStaffMembers.length > 0 && (
-					<div className="mb-6 flex items-center gap-2 flex-wrap">
-						<span className="text-sm font-medium text-gray-600">
-							Filter by staff:
-						</span>
-						{allStaffMembers.map((staff) => {
-							const isSelected =
-								selectedStaffIds.length === 0 ||
-								selectedStaffIds.includes(staff.id);
-							return (
+					<div className="mb-4 md:mb-6">
+						<div className="mb-2">
+							<span className="text-xs md:text-sm font-medium text-gray-600">
+								Filter by staff:
+							</span>
+						</div>
+						<div className="flex flex-wrap gap-2">
+							{allStaffMembers.map((staff) => {
+								const isSelected =
+									selectedStaffIds.length === 0 ||
+									selectedStaffIds.includes(staff.id);
+								return (
+									<button
+										key={staff.id}
+										onClick={() => toggleStaffSelection(staff.id)}
+										className={`inline-flex items-center gap-1.5 px-2.5 md:px-3 py-1.5 rounded-full text-xs md:text-sm font-medium transition-all focus:outline-none focus:ring-2 focus:ring-[#ea4b4b] focus:ring-offset-2 ${
+											isSelected
+												? 'bg-[#ff5b5b] text-white hover:bg-[#e04a4a]'
+												: 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+										}`}
+									>
+										<span className="truncate max-w-[80px] md:max-w-none">
+											{staff.name}
+										</span>
+										{isSelected && selectedStaffIds.length > 0 && (
+											<X className="w-3 h-3 md:w-3.5 md:h-3.5 flex-shrink-0" />
+										)}
+									</button>
+								);
+							})}
+							{selectedStaffIds.length > 0 && (
 								<button
-									key={staff.id}
-									onClick={() => toggleStaffSelection(staff.id)}
-									className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium transition-all focus:outline-none focus:ring-2 focus:ring-[#ea4b4b] focus:ring-offset-2 ${
-										isSelected
-											? 'bg-[#ff5b5b] text-white hover:bg-[#e04a4a]'
-											: 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-									}`}
+									onClick={clearAllFilters}
+									className="text-xs md:text-sm text-gray-500 hover:text-gray-700 underline"
 								>
-									{staff.name}
-									{isSelected && selectedStaffIds.length > 0 && (
-										<X className="w-3.5 h-3.5" />
-									)}
+									Clear all
 								</button>
-							);
-						})}
-						{selectedStaffIds.length > 0 && (
-							<button
-								onClick={clearAllFilters}
-								className="text-sm text-gray-500 hover:text-gray-700 underline ml-2"
-							>
-								Clear all
-							</button>
-						)}
+							)}
+						</div>
 					</div>
 				)}
 
@@ -474,12 +493,12 @@ export default function DaySchedule({
 					<div className="flex">
 						{/* Left sticky column - Time labels and header */}
 						<div
-							className="flex-shrink-0 sticky left-0 z-20 bg-white"
-							style={{ width: DATA_WIDTH }}
+							className="flex-shrink-0 sticky left-0 z-20 bg-white border-r border-gray-200"
+							style={{ width: '45px' }}
 						>
 							{/* Time header */}
-							<div className="border-b border-r border-gray-200 bg-white">
-								<div className="py-3 px-2 text-sm font-medium text-gray-500">
+							<div className="border-b border-gray-200 bg-white">
+								<div className="py-2 md:py-3 px-1 md:px-2 text-xs md:text-sm font-medium text-gray-500 text-center">
 									Time
 								</div>
 							</div>
@@ -487,9 +506,9 @@ export default function DaySchedule({
 							{timeSlots.map((timeSlot) => (
 								<div
 									key={`time-${timeSlot.time}`}
-									className="flex items-center justify-center text-sm text-gray-600 h-16 border-b border-r border-gray-200 font-medium bg-white"
+									className="flex items-center justify-center text-xs md:text-sm text-gray-600 h-12 md:h-16 border-b border-gray-200 font-medium bg-white"
 								>
-									{timeSlot.time}
+									{timeSlot.displayTime.replace(':00', '')}
 								</div>
 							))}
 						</div>
@@ -502,147 +521,175 @@ export default function DaySchedule({
 							onMouseMove={handleMouseMove}
 							onMouseUp={handleMouseUp}
 							onMouseLeave={handleMouseLeave}
+							style={{
+								WebkitOverflowScrolling: 'touch' /* iOS smooth scrolling */,
+							}}
 						>
 							<div
 								className="flex flex-col"
-								style={{ minWidth: `${staffMembers.length * 150}px` }}
+								style={{
+									minWidth: `${staffMembers.length * (isMobile ? 120 : 150)}px`,
+								}}
 							>
 								{/* Staff headers row */}
 								<div className="flex border-b border-gray-200 bg-white">
-									{staffMembers.map((staff) => (
-										<div
-											key={staff.id}
-											className="flex-shrink-0 py-3 px-4 text-center border-r border-gray-200"
-											style={{ width: '150px' }}
-										>
-											<div className="text-sm font-semibold text-gray-900 truncate">
-												{staff.name}
+									{staffMembers.map((staff) => {
+										const colWidth = isMobile ? 120 : 150;
+										return (
+											<div
+												key={staff.id}
+												className="flex-shrink-0 py-2 md:py-3 px-2 md:px-4 text-center border-r border-gray-200"
+												style={{ width: `${colWidth}px` }}
+											>
+												<div className="text-xs md:text-sm font-semibold text-gray-900 truncate">
+													{staff.name}
+												</div>
 											</div>
-										</div>
-									))}
+										);
+									})}
 								</div>
 
 								{/* Staff columns grid */}
 								<div className="flex">
-									{staffMembers.map((staff) => (
-										<div
-											key={`staff-${staff.id}`}
-											className="flex-shrink-0"
-											style={{ width: '150px' }}
-										>
-											{timeSlots.map((timeSlot) => {
-												const startingAppointment =
-													getAppointmentStartingAtTime(staff.id, timeSlot.hour);
-												const position = getAppointmentPosition(
-													startingAppointment,
-													timeSlot.hour
-												);
-												const timeBlock = getTimeBlockAtTime(
-													staff.id,
-													timeSlot.hour
-												);
+									{staffMembers.map((staff) => {
+										const colWidth = isMobile ? 120 : 150;
+										return (
+											<div
+												key={`staff-${staff.id}`}
+												className="flex-shrink-0"
+												style={{ width: `${colWidth}px` }}
+											>
+												{timeSlots.map((timeSlot) => {
+													const startingAppointment =
+														getAppointmentStartingAtTime(
+															staff.id,
+															timeSlot.hour
+														);
+													const position = getAppointmentPosition(
+														startingAppointment,
+														timeSlot.hour
+													);
+													const timeBlock = getTimeBlockAtTime(
+														staff.id,
+														timeSlot.hour
+													);
 
-												return (
-													<div
-														key={`${staff.id}-${timeSlot.time}`}
-														className={`relative h-16 border-b border-r border-gray-200 ${
-															timeBlock ? 'bg-gray-100' : ''
-														}`}
-													>
-														{timeBlock && (
-															<div
-																className="absolute inset-0 bg-gray-300 bg-opacity-50 flex items-center justify-center"
-																style={{
-																	backgroundImage:
-																		'repeating-linear-gradient(45deg, transparent, transparent 10px, rgba(0,0,0,0.05) 10px, rgba(0,0,0,0.05) 20px)',
-																}}
-															>
-																<div className="text-xs text-gray-700 font-medium px-2 py-1 bg-white rounded shadow-sm">
-																	{timeBlock.type === 'TIME_OFF'
-																		? '🚫 Time Off'
-																		: timeBlock.type === 'BUSY'
-																			? '⏸️ Busy'
-																			: '🔒 Closed'}
+													return (
+														<div
+															key={`${staff.id}-${timeSlot.time}`}
+															className={`relative h-12 md:h-16 border-b border-r border-gray-200 ${
+																timeBlock ? 'bg-gray-100' : ''
+															}`}
+														>
+															{timeBlock && (
+																<div
+																	className="absolute inset-0 bg-gray-300 bg-opacity-50 flex items-center justify-center"
+																	style={{
+																		backgroundImage:
+																			'repeating-linear-gradient(45deg, transparent, transparent 10px, rgba(0,0,0,0.05) 10px, rgba(0,0,0,0.05) 20px)',
+																	}}
+																>
+																	<div className="text-xs text-gray-700 font-medium px-1 md:px-2 py-0.5 md:py-1 bg-white rounded shadow-sm truncate max-w-[90%]">
+																		{timeBlock.type === 'TIME_OFF'
+																			? isMobile
+																				? '🚫'
+																				: '🚫 Time Off'
+																			: timeBlock.type === 'BUSY'
+																				? isMobile
+																					? '⏸️'
+																					: '⏸️ Busy'
+																				: isMobile
+																					? '🔒'
+																					: '🔒 Closed'}
+																	</div>
 																</div>
-															</div>
-														)}
-														{startingAppointment && position && !timeBlock
-															? (() => {
-																	const styles =
-																		getBookingBlockStyles(startingAppointment);
-																	const clickable =
-																		isBookingClickable(startingAppointment);
+															)}
+															{startingAppointment && position && !timeBlock
+																? (() => {
+																		const styles =
+																			getBookingBlockStyles(
+																				startingAppointment
+																			);
+																		const clickable =
+																			isBookingClickable(startingAppointment);
 
-																	return (
-																		<div
-																			className={styles.className}
-																			style={{
-																				top: position.top,
-																				height: position.height,
-																				minHeight: '24px',
-																			}}
-																			onClick={
-																				clickable
-																					? () =>
-																							onViewBookingDetails(
-																								startingAppointment
-																							)
-																					: undefined
-																			}
-																			role="button"
-																			tabIndex={clickable ? 0 : -1}
-																			aria-label={`View details for appointment: ${startingAppointment.service?.name} with ${startingAppointment.user?.name || `Client ID: ${startingAppointment.userId}`} at ${formatTimeSafe(startingAppointment.time)}`}
-																		>
-																			{position.duration < 40 ? (
-																				<div
-																					className={`text-xs ${styles.textClassName} font-medium leading-tight`}
-																				>
+																		return (
+																			<div
+																				className={styles.className}
+																				style={{
+																					top: position.top,
+																					height: position.height,
+																					minHeight: isMobile ? '20px' : '24px',
+																				}}
+																				onClick={
+																					clickable
+																						? () =>
+																								onViewBookingDetails(
+																									startingAppointment
+																								)
+																						: undefined
+																				}
+																				role="button"
+																				tabIndex={clickable ? 0 : -1}
+																				aria-label={`View details for appointment: ${startingAppointment.service?.name} with ${startingAppointment.user?.name || `Client ID: ${startingAppointment.userId}`} at ${formatTimeSafe(startingAppointment.time)}`}
+																			>
+																				{position.duration < 40 || isMobile ? (
 																					<div
-																						className={`truncate ${styles.textSecondaryClassName}`}
+																						className={`text-xs ${styles.textClassName} font-medium leading-tight p-1`}
 																					>
-																						{startingAppointment.user?.name ||
-																							`Client ID: ${startingAppointment.userId}`}{' '}
-																						-{' '}
-																						{startingAppointment.service?.name}
+																						<div
+																							className={`truncate ${styles.textSecondaryClassName}`}
+																						>
+																							{isMobile
+																								? startingAppointment.service
+																										?.name ||
+																									startingAppointment.user
+																										?.name ||
+																									`Client`
+																								: `${startingAppointment.user?.name || `Client ID: ${startingAppointment.userId}`} - ${startingAppointment.service?.name}`}
+																						</div>
 																					</div>
-																				</div>
-																			) : (
-																				<div className="text-xs leading-tight">
-																					<div
-																						className={`font-medium ${styles.textClassName} truncate`}
-																					>
-																						{startingAppointment.service?.name}{' '}
-																						-{' '}
-																						{startingAppointment.user?.name ||
-																							`Client ID: ${startingAppointment.userId}`}
-																					</div>
-																					<div
-																						className={`${styles.textSecondaryClassName} truncate`}
-																					>
-																						{formatTimeSafe(
-																							startingAppointment.time
-																						)}{' '}
-																						-{' '}
-																						{formatTimeSafe(
-																							new Date(
+																				) : (
+																					<div className="text-xs leading-tight p-1">
+																						<div
+																							className={`font-medium ${styles.textClassName} truncate`}
+																						>
+																							{
+																								startingAppointment.service
+																									?.name
+																							}{' '}
+																							-{' '}
+																							{startingAppointment.user?.name ||
+																								`Client ID: ${startingAppointment.userId}`}
+																						</div>
+																						<div
+																							className={`${styles.textSecondaryClassName} truncate`}
+																						>
+																							{formatTimeSafe(
+																								startingAppointment.time
+																							)}{' '}
+																							-{' '}
+																							{formatTimeSafe(
 																								new Date(
-																									startingAppointment.time
-																								).getTime() +
-																									position.duration * 60000
-																							).toISOString()
-																						)}
+																									new Date(
+																										startingAppointment.time
+																									).getTime() +
+																										position.duration * 60000
+																								).toISOString()
+																							)}
+																						</div>
 																					</div>
-																				</div>
-																			)}
-																		</div>
-																	);
-																})()
-															: null}
-													</div>
-												);
-											})}
-										</div>
-									))}
+																				)}
+																			</div>
+																		);
+																	})()
+																: null}
+														</div>
+													);
+												})}
+											</div>
+										);
+									})}
 								</div>
 							</div>
 						</div>

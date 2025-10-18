@@ -71,10 +71,10 @@ export default function OwnerHeader() {
 
 	return (
 		<header className="sticky w-[100vw] top-0 bg-white/80 backdrop-blur border-b border-[#f1d9d7] z-[300]">
-			<div className="h-[5rem] mx-auto max-w-7xl px-6 py-4 flex items-center justify-between">
+			<div className="md:h-[5rem] h-[fit-content] mx-auto max-w-7xl md:px-6 px-4 py-4 flex items-center justify-between">
 				<Link
 					href="/"
-					className="flex h-full items-center gap-3 hover:opacity-80 transition-opacity"
+					className="flex max-w-20 md:max-w-full md:h-12 h-10 items-center gap-3 hover:opacity-80 transition-opacity"
 				>
 					<Image
 						src="/logo.png"
@@ -86,7 +86,7 @@ export default function OwnerHeader() {
 					/>
 				</Link>
 
-				<div className="flex items-center gap-4 ml-auto">
+				<div className="flex items-center gap-4 ml-auto mr-10 md:mr-0">
 					{/* Language Dropdown */}
 					<div className="relative" ref={languageDropdownRef}>
 						<button
@@ -122,7 +122,7 @@ export default function OwnerHeader() {
 					</div>
 
 					{user && (
-						<div className="relative" ref={dropdownRef}>
+						<div className="hidden md:block relative" ref={dropdownRef}>
 							<button
 								onClick={() => setShowProfileDropdown(!showProfileDropdown)}
 								onMouseEnter={() => setShowProfileDropdown(true)}

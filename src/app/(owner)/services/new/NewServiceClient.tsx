@@ -5,6 +5,13 @@ import { useRouter } from 'next/navigation';
 import { useCreateService } from '@/hooks/useServices';
 import { STATIC_CATEGORIES } from '@/constants/categories';
 import { useSalonId } from '@/hooks/useSalon';
+import {
+	Select,
+	SelectContent,
+	SelectItem,
+	SelectTrigger,
+	SelectValue,
+} from '@/components/ui/select';
 
 export default function NewServiceClient() {
 	const [formData, setFormData] = useState({
@@ -12,7 +19,7 @@ export default function NewServiceClient() {
 		description: '',
 		duration: '',
 		price: '',
-		serviceCategoryId: '',
+		serviceCategoryId: 'none',
 	});
 	const router = useRouter();
 
@@ -51,9 +58,10 @@ export default function NewServiceClient() {
 				duration: Number(formData.duration),
 				price: Number(formData.price),
 				salonId,
-				serviceCategoryId: formData.serviceCategoryId
-					? Number(formData.serviceCategoryId)
-					: undefined,
+				serviceCategoryId:
+					formData.serviceCategoryId && formData.serviceCategoryId !== 'none'
+						? Number(formData.serviceCategoryId)
+						: undefined,
 			});
 
 			// Wait a bit for cache invalidation, then redirect
@@ -110,15 +118,18 @@ export default function NewServiceClient() {
 					</svg>
 					Back
 				</button>
-				<h1 id="page-heading" className="text-3xl font-bold text-gray-900 mb-2">
+				<h1
+					id="page-heading"
+					className="text-2xl md:text-3xl font-bold text-gray-900 md:mb-2"
+				>
 					Add New Service
 				</h1>
-				<p className="text-gray-600">
+				<p className="text-sm md:text-base text-gray-600">
 					Create a new service for your salon with pricing and duration details.
 				</p>
 			</div>
 
-			<div className="bg-white rounded-xl border border-[#f1d9d7] p-6">
+			<div className="bg-white rounded-xl border border-[#f1d9d7] p-3 md:p-6">
 				<form
 					onSubmit={handleSubmit}
 					className="space-y-6"
@@ -179,25 +190,36 @@ export default function NewServiceClient() {
 						>
 							Category
 						</label>
-						<select
-							id="service-category"
+						<Select
 							value={formData.serviceCategoryId}
-							onChange={(e) =>
+							onValueChange={(value) =>
 								setFormData({
 									...formData,
-									serviceCategoryId: e.target.value,
+									serviceCategoryId: value,
 								})
 							}
-							className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#ff5b5b] focus:border-[#ff5b5b] text-gray-900"
-							aria-describedby="service-category-help"
 						>
-							<option value="">Select a category</option>
-							{categories.map((category) => (
-								<option key={category.id} value={category.id}>
-									{category.name}
-								</option>
-							))}
-						</select>
+							<SelectTrigger className="w-full border border-gray-300 focus:ring-2 focus:ring-[#ff5b5b] focus:border-transparent text-gray-900">
+								<SelectValue placeholder="Select a category" />
+							</SelectTrigger>
+							<SelectContent className="bg-white border border-gray-300 shadow-lg rounded-md">
+								<SelectItem
+									value="none"
+									className="bg-white hover:bg-gray-50 focus:bg-gray-50 text-gray-900 cursor-pointer"
+								>
+									No category
+								</SelectItem>
+								{categories.map((category) => (
+									<SelectItem
+										key={category.id}
+										value={category.id.toString()}
+										className="bg-white hover:bg-gray-50 focus:bg-gray-50 text-gray-900 cursor-pointer"
+									>
+										{category.name}
+									</SelectItem>
+								))}
+							</SelectContent>
+						</Select>
 						<p
 							id="service-category-help"
 							className="text-xs text-gray-500 mt-1"
@@ -262,7 +284,7 @@ export default function NewServiceClient() {
 					</div>
 
 					<div
-						className="flex gap-4 pt-4"
+						className="flex flex-col sm:flex-row gap-4 pt-4"
 						role="group"
 						aria-label="Form actions"
 					>

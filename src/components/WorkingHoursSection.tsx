@@ -35,7 +35,7 @@ const TimePicker24h = ({
 	};
 
 	return (
-		<div className={className} style={{ width: '120px' }}>
+		<div className={className} style={{ width: '100%', minWidth: '80px' }}>
 			<TimePicker
 				value={parseTimeToDate(value)}
 				onChange={handleChange}
@@ -43,7 +43,7 @@ const TimePicker24h = ({
 				cleanable={false}
 				placeholder="09:00"
 				className="custom-time-picker"
-				style={{ width: '120px', minWidth: '120px' }}
+				style={{ width: '100%', minWidth: '80px', maxWidth: '120px' }}
 			/>
 		</div>
 	);
@@ -115,50 +115,66 @@ export default function WorkingHoursSection({
 				return (
 					<div
 						key={day.key}
-						className="flex items-center justify-between py-4 px-5 bg-orange-50/30 rounded-lg"
+						className="flex flex-col sm:flex-row sm:items-center justify-between py-4 px-3 md:px-5 bg-orange-50/30 rounded-lg gap-3 sm:gap-4"
 					>
 						{/* Toggle + Day Name */}
-						<div className="flex items-center gap-4 min-w-[140px]">
-							<button
-								type="button"
-								onClick={() => toggleDayClosed(day.key)}
-								className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none ${
-									!dayData.closed ? 'bg-orange-500' : 'bg-gray-300'
-								}`}
-							>
-								<span
-									className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-										!dayData.closed ? 'translate-x-6' : 'translate-x-1'
+						<div className="flex items-center justify-between sm:justify-start gap-3 sm:min-w-[140px]">
+							<div className="flex items-center gap-3">
+								<button
+									type="button"
+									onClick={() => toggleDayClosed(day.key)}
+									className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none flex-shrink-0 ${
+										!dayData.closed ? 'bg-orange-500' : 'bg-gray-300'
 									}`}
-								/>
-							</button>
-							<span className="text-base font-medium text-gray-700">
-								{day.label}
-							</span>
+								>
+									<span
+										className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+											!dayData.closed ? 'translate-x-6' : 'translate-x-1'
+										}`}
+									/>
+								</button>
+								<span className="text-sm md:text-base font-medium text-gray-700">
+									{day.label}
+								</span>
+							</div>
+
+							{/* Show closed status on mobile */}
+							{dayData.closed && (
+								<span className="text-orange-500 font-medium sm:hidden">
+									Closed
+								</span>
+							)}
 						</div>
 
-						{/* Time Pickers or Closed */}
-						<div className="flex items-center gap-4">
-							{!dayData.closed ? (
-								<>
+						{/* Time Pickers or Closed (hidden on mobile for closed days) */}
+						{!dayData.closed && (
+							<div className="flex items-center gap-2 md:gap-4 w-full sm:w-auto">
+								<div className="flex-1 sm:flex-none">
 									<TimePicker24h
 										value={dayData.open}
 										onChange={(value) =>
 											handleTimeChange(day.key, 'open', value)
 										}
 									/>
-									<span className="text-gray-400 font-medium">-</span>
+								</div>
+								<span className="text-gray-400 font-medium">-</span>
+								<div className="flex-1 sm:flex-none">
 									<TimePicker24h
 										value={dayData.close}
 										onChange={(value) =>
 											handleTimeChange(day.key, 'close', value)
 										}
 									/>
-								</>
-							) : (
-								<span className="text-orange-500 font-medium">Closed</span>
-							)}
-						</div>
+								</div>
+							</div>
+						)}
+
+						{/* Closed status for desktop */}
+						{dayData.closed && (
+							<span className="text-orange-500 font-medium hidden sm:block">
+								Closed
+							</span>
+						)}
 					</div>
 				);
 			})}
