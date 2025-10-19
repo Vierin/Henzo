@@ -94,9 +94,9 @@ export default function AdminDashboard() {
 	if (!data) return null;
 
 	const totalBookings = data.bookings.total;
-	const conversionRate =
+	const avgBookingsPerSalon =
 		data.salons.active > 0
-			? ((totalBookings / data.salons.active) * 100).toFixed(1)
+			? (totalBookings / data.salons.active).toFixed(1)
 			: '0';
 
 	return (
@@ -177,7 +177,7 @@ export default function AdminDashboard() {
 					<div className="bg-white rounded-lg p-4 shadow-sm">
 						<div className="text-sm text-gray-600 mb-1">Avg per Salon</div>
 						<div className="text-3xl font-bold text-gray-900">
-							{conversionRate}
+							{avgBookingsPerSalon}
 						</div>
 						<div className="text-xs text-gray-500 mt-1">bookings/salon</div>
 					</div>
