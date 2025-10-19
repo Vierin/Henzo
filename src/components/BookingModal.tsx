@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import { Service, Staff, WorkingHours } from '@/types';
@@ -10,23 +10,30 @@ import { useAuthStore } from '@/stores/authStore';
 import toast from 'react-hot-toast';
 import { safeParseDate, parseBookingTimeAsLocal } from '@/utils/date';
 import { formatVND } from '@/utils/currency';
-import { Swiper, SwiperSlide } from 'swiper/react';
-import { Navigation } from 'swiper/modules';
-import 'swiper/css';
-import 'swiper/css/navigation';
-import { Clock } from 'lucide-react';
+// Swiper imports removed - using native scroll instead
+import { Clock, ChevronDown, ChevronLeft, ChevronRight } from 'lucide-react';
 
-// Custom Swiper styles
-const swiperStyles = `
-  .date-swiper .swiper-button-disabled,
-  .time-swiper .swiper-button-disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
+// Custom styles for native scroll
+const scrollStyles = `
+  /* Native scroll styles */
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
   }
   
-  .date-swiper .swiper-slide,
-  .time-swiper .swiper-slide {
-    width: auto !important;
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+  
+  /* Improve drag scrolling for desktop */
+  @media (min-width: 640px) {
+    .cursor-grab {
+      cursor: grab;
+    }
+    
+    .cursor-grab:active {
+      cursor: grabbing !important;
+    }
   }
 `;
 
@@ -87,9 +94,29 @@ export default function BookingModal({
 	const [timeFilter, setTimeFilter] = useState<
 		'all' | 'morning' | 'afternoon' | 'evening'
 	>('all');
-	const [loadedDaysCount, setLoadedDaysCount] = useState(18);
-	const INITIAL_DAYS = 18;
-	const LOAD_MORE_DAYS = 18;
+	const [loadedDaysCount, setLoadedDaysCount] = useState(40); // Начальное количество дней
+	const [isLoadingMoreDays, setIsLoadingMoreDays] = useState(false);
+	const [canScrollLeft, setCanScrollLeft] = useState(false);
+	const [canScrollRight, setCanScrollRight] = useState(false);
+	const [canScrollDateLeft, setCanScrollDateLeft] = useState(false);
+	const [canScrollDateRight, setCanScrollDateRight] = useState(false);
+	const INITIAL_DAYS = 40;
+	const LOAD_MORE_DAYS = 40; // Загружаем по 40 дней за раз
+
+	// Refs for native scroll
+	const timeScrollRef = useRef<HTMLDivElement>(null);
+	const dateScrollRef = useRef<HTMLDivElement>(null);
+
+	// Drag-to-scroll states for time scroll
+	const [isDragging, setIsDragging] = useState(false);
+	const [startX, setStartX] = useState(0);
+	const [scrollLeft, setScrollLeft] = useState(0);
+	const [hasMoved, setHasMoved] = useState(false);
+
+	// Drag-to-scroll states for date scroll
+	const [isDateDragging, setIsDateDragging] = useState(false);
+	const [dateStartX, setDateStartX] = useState(0);
+	const [dateScrollLeft, setDateScrollLeft] = useState(0);
 
 	// Используем Zustand store для аутентификации
 	const { user, isClient, login, refreshUser } = useAuthStore();
@@ -743,7 +770,170 @@ export default function BookingModal({
 
 	// Load more days when user clicks next arrow
 	const loadMoreDays = () => {
+		if (isLoadingMoreDays) return; // Prevent multiple calls
+
+		setIsLoadingMoreDays(true);
 		setLoadedDaysCount((prev) => prev + LOAD_MORE_DAYS);
+
+		// Reset loading state after a short delay
+		setTimeout(() => {
+			setIsLoadingMoreDays(false);
+		}, 1000);
+	};
+
+	// Check scroll position for navigation buttons
+	const checkScrollPosition = () => {
+		if (timeScrollRef.current) {
+			const { scrollLeft, scrollWidth, clientWidth } = timeScrollRef.current;
+			setCanScrollLeft(scrollLeft > 0);
+			setCanScrollRight(scrollLeft < scrollWidth - clientWidth - 1);
+		}
+	};
+
+	// Native scroll functions for time slots
+	const scrollTimeLeft = () => {
+		if (timeScrollRef.current) {
+			timeScrollRef.current.scrollBy({
+				left: -200,
+				behavior: 'smooth',
+			});
+			// Check position after scroll animation completes
+			setTimeout(() => {
+				checkScrollPosition();
+			}, 300);
+		}
+	};
+
+	const scrollTimeRight = () => {
+		if (timeScrollRef.current) {
+			timeScrollRef.current.scrollBy({
+				left: 200,
+				behavior: 'smooth',
+			});
+			// Check position after scroll animation completes
+			setTimeout(() => {
+				checkScrollPosition();
+			}, 300);
+		}
+	};
+
+	// Drag-to-scroll functions for desktop
+	const handleMouseDown = (e: React.MouseEvent) => {
+		if (!timeScrollRef.current) return;
+		setIsDragging(true);
+		setHasMoved(false);
+		setStartX(e.pageX - timeScrollRef.current.offsetLeft);
+		setScrollLeft(timeScrollRef.current.scrollLeft);
+		timeScrollRef.current.style.cursor = 'grabbing';
+		timeScrollRef.current.style.userSelect = 'none';
+	};
+
+	const handleMouseLeave = () => {
+		setIsDragging(false);
+		setHasMoved(false);
+		if (timeScrollRef.current) {
+			timeScrollRef.current.style.cursor = 'grab';
+			timeScrollRef.current.style.userSelect = 'auto';
+		}
+	};
+
+	const handleMouseUp = () => {
+		setIsDragging(false);
+		if (timeScrollRef.current) {
+			timeScrollRef.current.style.cursor = 'grab';
+			timeScrollRef.current.style.userSelect = 'auto';
+		}
+		checkScrollPosition();
+		// Reset hasMoved after a short delay to allow click events
+		setTimeout(() => setHasMoved(false), 100);
+	};
+
+	const handleMouseMove = (e: React.MouseEvent) => {
+		if (!isDragging || !timeScrollRef.current) return;
+		e.preventDefault();
+		const x = e.pageX - timeScrollRef.current.offsetLeft;
+		const walk = (x - startX) * 2; // Multiply for faster scroll
+		timeScrollRef.current.scrollLeft = scrollLeft - walk;
+
+		// Mark as moved if moved more than 5 pixels
+		if (Math.abs(walk) > 5) {
+			setHasMoved(true);
+		}
+	};
+
+	// Check scroll position for date navigation buttons
+	const checkDateScrollPosition = () => {
+		if (dateScrollRef.current) {
+			const { scrollLeft, scrollWidth, clientWidth } = dateScrollRef.current;
+			setCanScrollDateLeft(scrollLeft > 0);
+			setCanScrollDateRight(scrollLeft < scrollWidth - clientWidth - 1);
+		}
+	};
+
+	// Date scroll functions
+	const scrollDateLeft = () => {
+		if (dateScrollRef.current) {
+			dateScrollRef.current.scrollBy({
+				left: -200,
+				behavior: 'smooth',
+			});
+			setTimeout(() => {
+				checkDateScrollPosition();
+			}, 300);
+		}
+	};
+
+	const scrollDateRight = () => {
+		if (dateScrollRef.current) {
+			dateScrollRef.current.scrollBy({
+				left: 200,
+				behavior: 'smooth',
+			});
+			setTimeout(() => {
+				checkDateScrollPosition();
+			}, 300);
+		}
+	};
+
+	// Drag-to-scroll functions for date scroll
+	const handleDateMouseDown = (e: React.MouseEvent) => {
+		if (!dateScrollRef.current) return;
+		setIsDateDragging(true);
+		setDateStartX(e.pageX - dateScrollRef.current.offsetLeft);
+		setDateScrollLeft(dateScrollRef.current.scrollLeft);
+		dateScrollRef.current.style.cursor = 'grabbing';
+		dateScrollRef.current.style.userSelect = 'none';
+	};
+
+	const handleDateMouseLeave = () => {
+		setIsDateDragging(false);
+		if (dateScrollRef.current) {
+			dateScrollRef.current.style.cursor = 'grab';
+			dateScrollRef.current.style.userSelect = 'auto';
+		}
+	};
+
+	const handleDateMouseUp = () => {
+		setIsDateDragging(false);
+		if (dateScrollRef.current) {
+			dateScrollRef.current.style.cursor = 'grab';
+			dateScrollRef.current.style.userSelect = 'auto';
+		}
+		checkDateScrollPosition();
+	};
+
+	const handleDateMouseMove = (e: React.MouseEvent) => {
+		if (!isDateDragging || !dateScrollRef.current) return;
+		e.preventDefault();
+		const x = e.pageX - dateScrollRef.current.offsetLeft;
+		const walk = (x - dateStartX) * 2;
+		dateScrollRef.current.scrollLeft = dateScrollLeft - walk;
+
+		// Check if we need to load more days (similar to swiper logic)
+		const { scrollLeft, scrollWidth, clientWidth } = dateScrollRef.current;
+		if (scrollLeft + clientWidth > scrollWidth - 200 && !isLoadingMoreDays) {
+			loadMoreDays();
+		}
 	};
 
 	// Filter time slots by time of day
@@ -752,8 +942,8 @@ export default function BookingModal({
 
 		const ranges = {
 			morning: [6, 12],
-			afternoon: [12, 17],
-			evening: [17, 22],
+			afternoon: [12, 18], // Extended afternoon until 18:00
+			evening: [18, 23], // Extended evening until 23:00
 		};
 
 		const [start, end] = ranges[timeFilter];
@@ -764,6 +954,51 @@ export default function BookingModal({
 			return hour >= start && hour < end;
 		});
 	}, [timeSlots, timeFilter]);
+
+	// Reset selected time if it's not available in current filter
+	useEffect(() => {
+		if (selectedTime && filteredTimeSlots.length > 0) {
+			const isTimeInFilter = filteredTimeSlots.some((slot) => {
+				const time = typeof slot === 'string' ? slot : slot.time;
+				return time === selectedTime;
+			});
+
+			if (!isTimeInFilter) {
+				setSelectedTime('');
+			}
+		}
+	}, [selectedTime, filteredTimeSlots]);
+
+	// Scroll to beginning when time filter changes and check scroll position
+	useEffect(() => {
+		if (timeScrollRef.current) {
+			timeScrollRef.current.scrollLeft = 0;
+			// Check scroll position after a small delay to ensure DOM is updated
+			setTimeout(() => {
+				checkScrollPosition();
+			}, 100);
+		}
+	}, [timeFilter, filteredTimeSlots]);
+
+	// Update date scroll when loadedDaysCount changes
+	useEffect(() => {
+		if (dateScrollRef.current) {
+			setTimeout(() => {
+				if (dateScrollRef.current) {
+					checkDateScrollPosition();
+				}
+			}, 100);
+		}
+	}, [loadedDaysCount]);
+
+	// Initialize date scroll position when modal opens
+	useEffect(() => {
+		if (isOpen && dateScrollRef.current) {
+			setTimeout(() => {
+				checkDateScrollPosition();
+			}, 200);
+		}
+	}, [isOpen]);
 
 	// Auto-select nearest available date when modal opens or if selectedDate becomes closed
 	useEffect(() => {
@@ -877,6 +1112,8 @@ export default function BookingModal({
 			setPendingBookingData(null);
 			setBookingSuccess(null);
 			setSelectedDate(''); // Reset selected date to trigger auto-selection on next open
+			setSelectedTime(''); // Reset selected time
+			setTimeFilter('all'); // Reset time filter to show all slots
 			setLoadedDaysCount(INITIAL_DAYS); // Reset loaded days count
 		}
 	}, [isOpen]);
@@ -1234,22 +1471,22 @@ export default function BookingModal({
 
 	return (
 		<>
-			<style>{swiperStyles}</style>
+			<style>{scrollStyles}</style>
 			<div
-				className="fixed inset-0 bg-[#F8F5F2CC] bg-opacity-80 flex items-center justify-center z-[999] p-4"
+				className="fixed inset-0 bg-[#F8F5F2CC] bg-opacity-80 sm:flex sm:items-center sm:justify-center z-[999] p-0 sm:p-4"
 				onClick={handleClickOutside}
 			>
 				<div
-					className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-hidden relative"
+					className="bg-white sm:rounded-2xl sm:shadow-2xl w-full h-full sm:h-auto sm:max-w-4xl sm:max-h-[90vh] overflow-hidden relative"
 					onClick={(e) => e.stopPropagation()}
 				>
 					{/* Close button */}
 					<button
 						onClick={onClose}
-						className="absolute top-4 right-4 z-10 p-2 hover:bg-gray-100 rounded-full transition-colors"
+						className="absolute top-3 bg-white shadow-md right-3 sm:top-4 sm:right-4 z-10 p-1.5 sm:p-2 hover:bg-gray-100 rounded-full transition-colors"
 					>
 						<svg
-							className="w-6 h-6 text-gray-500 hover:text-gray-700"
+							className="w-5 h-5 sm:w-6 sm:h-6 text-gray-500 hover:text-gray-700"
 							fill="none"
 							stroke="currentColor"
 							viewBox="0 0 24 24"
@@ -1265,8 +1502,8 @@ export default function BookingModal({
 
 					{/* Success Message */}
 					{bookingSuccess ? (
-						<div className="p-8 flex flex-col items-center justify-center min-h-[400px]">
-							<div className="text-center max-w-md">
+						<div className="p-4 sm:p-8 flex flex-col items-center justify-center min-h-[100vh] sm:min-h-[400px]">
+							<div className="text-center max-w-md w-full px-4">
 								{bookingSuccess.status === 'PENDING' ? (
 									<>
 										<div className="mb-6">
@@ -1400,11 +1637,11 @@ export default function BookingModal({
 							</div>
 						</div>
 					) : (
-						<div className="flex overflow-x-auto">
+						<div className="flex flex-col sm:flex-row overflow-hidden h-full">
 							{/* Left Section - Service Details, Date, and Time Selection */}
-							<div className="flex-1 min-w-[500px] p-8 max-h-[90vh] overflow-y-auto">
+							<div className="flex-1 sm:min-w-[500px] p-4 sm:p-8 max-h-[70vh] sm:max-h-[90vh] overflow-y-auto">
 								{/* Service Details */}
-								<div className="mb-8">
+								<div className="mb-6 sm:mb-8 pt-4 md:pt-0">
 									{showServiceSelector ? (
 										<div>
 											{/* Service Selector Dropdown */}
@@ -1414,20 +1651,22 @@ export default function BookingModal({
 													onClick={() =>
 														setIsServiceDropdownOpen(!isServiceDropdownOpen)
 													}
-													className="w-full flex items-center justify-between p-4 border border-gray-300 rounded-lg bg-white text-left focus:outline-none focus:ring-2 focus:ring-[#ea4b4b] focus:border-transparent"
+													className="w-full flex items-center justify-between p-3 sm:p-4 border border-gray-300 rounded-lg bg-white text-left focus:outline-none focus:ring-2 focus:ring-[#ea4b4b] focus:border-transparent"
 												>
-													<div>
-														<div className="text-lg font-semibold text-gray-900">
+													<div className="flex-1 min-w-0">
+														<div className="text-base sm:text-lg font-semibold text-gray-900 truncate">
 															{selectedService?.name || 'Select a service'}
 														</div>
-														<div className="text-sm text-gray-600">
+														<div className="text-xs sm:text-sm text-gray-600 truncate">
 															{selectedService?.description ||
 																'Choose from available services'}
 														</div>
 													</div>
-													<span className="text-gray-400">
-														{isServiceDropdownOpen ? '▲' : '▼'}
-													</span>
+													<ChevronDown
+														className={`w-5 h-5 text-gray-400 transition-transform ${
+															isServiceDropdownOpen ? 'rotate-180' : ''
+														}`}
+													/>
 												</button>
 
 												{isServiceDropdownOpen && (
@@ -1479,14 +1718,14 @@ export default function BookingModal({
 										</div>
 									) : (
 										<div>
-											<h2 className="text-2xl font-bold text-gray-900 mb-2">
+											<h2 className="text-xl sm:text-2xl font-bold text-gray-900 mb-2">
 												{selectedService?.name || 'Select a service'}
 											</h2>
-											<p className="text-gray-700 mb-4">
+											<p className="text-sm sm:text-base text-gray-700 mb-4">
 												{selectedService?.description ||
 													'Please select a service to book'}
 											</p>
-											<div className="flex items-center gap-6">
+											<div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-6">
 												<div className="flex gap-1">
 													<span className="text-gray-500">
 														<Clock className="w-4 h-4 mt-[1px]" />
@@ -1498,7 +1737,7 @@ export default function BookingModal({
 													</span>
 												</div>
 												<div className="flex items-center gap-2">
-													<span className="text-lg font-bold text-[#ff5b5b]">
+													<span className="text-base sm:text-lg font-bold text-[#ff5b5b]">
 														{selectedService?.price
 															? formatVND(selectedService.price)
 															: 'Price'}
@@ -1510,153 +1749,142 @@ export default function BookingModal({
 								</div>
 
 								{/* Select Date - Date Pills */}
-								<div className="mb-8">
-									<div className="flex items-center justify-between mb-4">
-										<h3 className="text-lg font-bold text-gray-900">
+								<div className="mb-6 sm:mb-8">
+									<div className="flex items-center justify-between mb-3 sm:mb-4">
+										<h3 className="text-base sm:text-lg font-bold text-gray-900">
 											Select Date
 										</h3>
 									</div>
 
-									<div className="relative px-6">
-										<Swiper
-											modules={[Navigation]}
-											spaceBetween={8}
-											slidesPerView={6}
-											slidesPerGroup={6}
-											navigation={{
-												nextEl: '.date-swiper-next',
-												prevEl: '.date-swiper-prev',
-											}}
-											className="date-swiper"
-											breakpoints={{
-												320: {
-													slidesPerView: 3,
-													slidesPerGroup: 3,
-												},
-												640: {
-													slidesPerView: 4,
-													slidesPerGroup: 4,
-												},
-												768: {
-													slidesPerView: 6,
-													slidesPerGroup: 6,
-												},
+									<div className="relative">
+										{/* Navigation Buttons */}
+										<button
+											onClick={scrollDateLeft}
+											disabled={!canScrollDateLeft}
+											className={`absolute left-0 top-1/2 -translate-y-1/2 z-10 w-8 h-8 rounded-full shadow-md flex items-center justify-center transition-colors hidden sm:flex ${
+												canScrollDateLeft
+													? 'bg-white hover:bg-gray-50'
+													: 'bg-gray-100 cursor-not-allowed'
+											}`}
+										>
+											<ChevronLeft
+												className={`w-4 h-4 ${canScrollDateLeft ? 'text-gray-600' : 'text-gray-400'}`}
+											/>
+										</button>
+
+										<button
+											onClick={scrollDateRight}
+											disabled={!canScrollDateRight}
+											className={`absolute right-0 top-1/2 -translate-y-1/2 z-10 w-8 h-8 rounded-full shadow-md flex items-center justify-center transition-colors hidden sm:flex ${
+												canScrollDateRight
+													? 'bg-white hover:bg-gray-50'
+													: 'bg-gray-100 cursor-not-allowed'
+											}`}
+										>
+											<ChevronRight
+												className={`w-4 h-4 ${canScrollDateRight ? 'text-gray-600' : 'text-gray-400'}`}
+											/>
+										</button>
+
+										{/* Date Pills Container */}
+										<div
+											ref={dateScrollRef}
+											onScroll={checkDateScrollPosition}
+											onMouseDown={handleDateMouseDown}
+											onMouseLeave={handleDateMouseLeave}
+											onMouseUp={handleDateMouseUp}
+											onMouseMove={handleDateMouseMove}
+											className="flex gap-2 overflow-x-auto scrollbar-hide scroll-smooth cursor-grab select-none px-8 sm:px-12"
+											style={{
+												scrollbarWidth: 'none',
+												msOverflowStyle: 'none',
 											}}
 										>
 											{getAvailableDays().map((date) => {
 												const isSelected = selectedDate === date.dateString;
 
 												return (
-													<SwiperSlide
+													<button
 														key={date.dateString}
-														className="!w-auto"
+														onClick={() => {
+															if (!date.isClosed) {
+																setSelectedDate(date.dateString);
+															}
+														}}
+														disabled={!!date.isClosed}
+														className={`flex-shrink-0 flex flex-col items-center justify-center py-1 px-1 sm:py-3 sm:px-2 rounded-xl border-2 transition-all w-[50px] sm:w-[65px] md:w-[70px] min-h-[50px] sm:min-h-[80px] ${
+															date.isClosed
+																? 'border-gray-200 bg-gray-50 text-gray-300 cursor-not-allowed'
+																: isSelected
+																	? 'border-[#ff5b5b] bg-[#ff5b5b] text-white shadow-lg'
+																	: 'border-gray-200 bg-white hover:border-[#ff5b5b] hover:shadow-md'
+														}`}
 													>
-														<button
-															onClick={() => {
-																if (!date.isClosed) {
-																	setSelectedDate(date.dateString);
-																}
-															}}
-															disabled={!!date.isClosed}
-															className={`flex-shrink-0 flex flex-col items-center py-3 rounded-xl border-2 transition-all w-[70px] ${
-																date.isClosed
-																	? 'border-gray-200 bg-gray-50 text-gray-300 cursor-not-allowed'
-																	: isSelected
-																		? 'border-[#ff5b5b] bg-[#ff5b5b] text-white shadow-lg'
-																		: 'border-gray-200 bg-white hover:border-[#ff5b5b] hover:shadow-md'
-															}`}
+														<span
+															className={`text-[10px] sm:text-xs font-medium mb-0.5 sm:mb-1 ${isSelected ? 'text-white' : 'text-gray-500'}`}
 														>
-															<span
-																className={`text-xs font-medium mb-1 ${isSelected ? 'text-white' : 'text-gray-500'}`}
-															>
-																{date.dayName}
-															</span>
-															<span className="text-2xl font-bold mb-1">
-																{date.day}
-															</span>
-															<span
-																className={`text-xs ${isSelected ? 'text-white/80' : 'text-gray-500'}`}
-															>
-																{date.monthShort}
-															</span>
-														</button>
-													</SwiperSlide>
+															{date.dayName}
+														</span>
+														<span className="text-sm sm:text-lg md:text-2xl font-bold mb-0.5 sm:mb-1">
+															{date.day}
+														</span>
+														<span
+															className={`text-[10px] sm:text-xs ${isSelected ? 'text-white/80' : 'text-gray-500'}`}
+														>
+															{date.monthShort}
+														</span>
+													</button>
 												);
 											})}
-										</Swiper>
-
-										{/* Custom Navigation Buttons - positioned absolutely */}
-										<button className="date-swiper-prev absolute left-0 top-1/2 -translate-y-1/2 z-10 w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center text-gray-600 hover:bg-gray-200 transition-colors shadow-lg">
-											<svg
-												className="w-5 h-5"
-												fill="none"
-												stroke="currentColor"
-												viewBox="0 0 24 24"
-											>
-												<path
-													strokeLinecap="round"
-													strokeLinejoin="round"
-													strokeWidth={2}
-													d="M15 19l-7-7 7-7"
-												/>
-											</svg>
-										</button>
-										<button
-											className="date-swiper-next absolute right-0 top-1/2 -translate-y-1/2 z-10 w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center text-gray-600 hover:bg-gray-200 transition-colors shadow-lg"
-											onClick={loadMoreDays}
-										>
-											<svg
-												className="w-5 h-5"
-												fill="none"
-												stroke="currentColor"
-												viewBox="0 0 24 24"
-											>
-												<path
-													strokeLinecap="round"
-													strokeLinejoin="round"
-													strokeWidth={2}
-													d="M9 5l7 7-7 7"
-												/>
-											</svg>
-										</button>
+										</div>
 									</div>
 								</div>
 
 								{/* Select Time */}
-								<div className="">
-									<h3 className="text-lg font-bold text-gray-900 mb-2">
+								<div className="mt-10">
+									<h3 className="text-base sm:text-lg font-bold text-gray-900 mb-2">
 										Select a Time
 									</h3>
 
 									{/* Time Filters */}
-									<div className="mb-6 flex justify-center">
-										<div className="bg-gray-100 rounded-xl p-1 inline-flex">
+									<div className="mb-4 sm:mb-6 flex justify-center">
+										<div className="bg-gray-100 rounded-xl p-1 inline-flex w-full sm:w-auto">
+											<button
+												onClick={() => setTimeFilter('all')}
+												className={`flex-1 sm:flex-none px-3 sm:px-6 py-2 rounded-lg text-xs sm:text-sm font-medium transition-all ${
+													timeFilter === 'all'
+														? 'bg-white text-gray-900 shadow-sm'
+														: 'text-gray-600 hover:text-gray-900 hover:bg-white/50'
+												}`}
+											>
+												All
+											</button>
 											<button
 												onClick={() => setTimeFilter('morning')}
-												className={`px-6 py-2 rounded-lg text-sm font-medium transition-all ${
+												className={`flex-1 sm:flex-none px-3 sm:px-6 py-2 rounded-lg text-xs sm:text-sm font-medium transition-all ${
 													timeFilter === 'morning'
 														? 'bg-white text-gray-900 shadow-sm'
-														: 'text-gray-600 hover:text-gray-900'
+														: 'text-gray-600 hover:text-gray-900 hover:bg-white/50'
 												}`}
 											>
 												Morning
 											</button>
 											<button
 												onClick={() => setTimeFilter('afternoon')}
-												className={`px-6 py-2 rounded-lg text-sm font-medium transition-all ${
+												className={`flex-1 sm:flex-none px-3 sm:px-6 py-2 rounded-lg text-xs sm:text-sm font-medium transition-all ${
 													timeFilter === 'afternoon'
 														? 'bg-white text-gray-900 shadow-sm'
-														: 'text-gray-600 hover:text-gray-900'
+														: 'text-gray-600 hover:text-gray-900 hover:bg-white/50'
 												}`}
 											>
 												Afternoon
 											</button>
 											<button
 												onClick={() => setTimeFilter('evening')}
-												className={`px-6 py-2 rounded-lg text-sm font-medium transition-all ${
+												className={`flex-1 sm:flex-none px-3 sm:px-6 py-2 rounded-lg text-xs sm:text-sm font-medium transition-all ${
 													timeFilter === 'evening'
 														? 'bg-white text-gray-900 shadow-sm'
-														: 'text-gray-600 hover:text-gray-900'
+														: 'text-gray-600 hover:text-gray-900 hover:bg-white/50'
 												}`}
 											>
 												Evening
@@ -1664,36 +1892,50 @@ export default function BookingModal({
 										</div>
 									</div>
 
-									{/* Time Slots Swiper */}
+									{/* Time Slots - Native Scroll */}
 									{filteredTimeSlots.length > 0 ? (
-										<div className="relative px-8">
-											<Swiper
-												modules={[Navigation]}
-												spaceBetween={8}
-												slidesPerView={6}
-												slidesPerGroup={6}
-												navigation={{
-													nextEl: '.time-swiper-next',
-													prevEl: '.time-swiper-prev',
-												}}
-												className="time-swiper"
-												breakpoints={{
-													320: {
-														slidesPerView: 2,
-														slidesPerGroup: 2,
-													},
-													480: {
-														slidesPerView: 3,
-														slidesPerGroup: 3,
-													},
-													640: {
-														slidesPerView: 4,
-														slidesPerGroup: 4,
-													},
-													768: {
-														slidesPerView: 6,
-														slidesPerGroup: 6,
-													},
+										<div className="relative px-0 sm:px-8">
+											{/* Navigation Buttons */}
+											<button
+												onClick={scrollTimeLeft}
+												disabled={!canScrollLeft}
+												className={`absolute left-0 top-1/2 -translate-y-1/2 z-10 w-8 h-8 rounded-full shadow-md flex items-center justify-center transition-colors hidden sm:flex ${
+													canScrollLeft
+														? 'bg-white hover:bg-gray-50'
+														: 'bg-gray-100 cursor-not-allowed'
+												}`}
+											>
+												<ChevronLeft
+													className={`w-4 h-4 ${canScrollLeft ? 'text-gray-600' : 'text-gray-400'}`}
+												/>
+											</button>
+
+											<button
+												onClick={scrollTimeRight}
+												disabled={!canScrollRight}
+												className={`absolute right-0 top-1/2 -translate-y-1/2 z-10 w-8 h-8 rounded-full shadow-md flex items-center justify-center transition-colors hidden sm:flex ${
+													canScrollRight
+														? 'bg-white hover:bg-gray-50'
+														: 'bg-gray-100 cursor-not-allowed'
+												}`}
+											>
+												<ChevronRight
+													className={`w-4 h-4 ${canScrollRight ? 'text-gray-600' : 'text-gray-400'}`}
+												/>
+											</button>
+
+											{/* Time Slots Container */}
+											<div
+												ref={timeScrollRef}
+												onScroll={checkScrollPosition}
+												onMouseDown={handleMouseDown}
+												onMouseLeave={handleMouseLeave}
+												onMouseUp={handleMouseUp}
+												onMouseMove={handleMouseMove}
+												className="flex gap-2 overflow-x-auto scrollbar-hide cursor-grab select-none"
+												style={{
+													scrollbarWidth: 'none',
+													msOverflowStyle: 'none',
 												}}
 											>
 												{filteredTimeSlots.map((timeSlot) => {
@@ -1707,60 +1949,28 @@ export default function BookingModal({
 															: true;
 
 													return (
-														<SwiperSlide key={time} className="!w-auto">
-															<button
-																onClick={() => {
-																	if (available) {
-																		setSelectedTime(time);
-																	}
-																}}
-																disabled={!available}
-																className={`px-4 py-3 rounded-lg text-sm font-medium transition-colors whitespace-nowrap ${
-																	!available
-																		? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-																		: selectedTime === time
-																			? 'bg-[#ff5b5b] text-white'
-																			: 'bg-white text-gray-900 border border-gray-200 hover:bg-gray-50'
-																}`}
-															>
-																{time}
-															</button>
-														</SwiperSlide>
+														<button
+															key={time}
+															onClick={(e) => {
+																if (available && !hasMoved) {
+																	setSelectedTime(time);
+																}
+																e.stopPropagation();
+															}}
+															disabled={!available}
+															className={`flex-shrink-0 px-4 py-3 rounded-lg text-sm font-medium transition-colors whitespace-nowrap ${
+																!available
+																	? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+																	: selectedTime === time
+																		? 'bg-[#ff5b5b] text-white'
+																		: 'bg-white text-gray-900 border border-gray-200 hover:bg-gray-50'
+															}`}
+														>
+															{time}
+														</button>
 													);
 												})}
-											</Swiper>
-
-											{/* Custom Navigation Buttons - positioned absolutely */}
-											<button className="time-swiper-prev absolute left-0 top-1/2 -translate-y-1/2 z-10 w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center text-gray-600 hover:bg-gray-200 transition-colors shadow-lg">
-												<svg
-													className="w-5 h-5"
-													fill="none"
-													stroke="currentColor"
-													viewBox="0 0 24 24"
-												>
-													<path
-														strokeLinecap="round"
-														strokeLinejoin="round"
-														strokeWidth={2}
-														d="M15 19l-7-7 7-7"
-													/>
-												</svg>
-											</button>
-											<button className="time-swiper-next absolute right-0 top-1/2 -translate-y-1/2 z-10 w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center text-gray-600 hover:bg-gray-200 transition-colors shadow-lg">
-												<svg
-													className="w-5 h-5"
-													fill="none"
-													stroke="currentColor"
-													viewBox="0 0 24 24"
-												>
-													<path
-														strokeLinecap="round"
-														strokeLinejoin="round"
-														strokeWidth={2}
-														d="M9 5l7 7-7 7"
-													/>
-												</svg>
-											</button>
+											</div>
 										</div>
 									) : (
 										<div className="flex justify-center items-center gap-2 py-2">
@@ -1786,10 +1996,10 @@ export default function BookingModal({
 							</div>
 
 							{/* Right Section - Staff Selection and Booking Button */}
-							<div className="w-80 flex-shrink-0 bg-gray-50 p-8 rounded-r-2xl max-h-[90vh] overflow-y-auto">
+							<div className="w-full sm:w-80 flex-shrink-0 bg-gray-50 sm:bg-gray-50 p-4 sm:p-8 sm:rounded-r-2xl max-h-[30vh] sm:max-h-[90vh] overflow-y-auto border-t sm:border-t-0">
 								{/* Select Staff Member */}
-								<div className="mb-8">
-									<h3 className="text-lg font-bold text-gray-900 mb-4">
+								<div className="mb-6 sm:mb-8">
+									<h3 className="text-base sm:text-lg font-bold text-gray-900 mb-3 sm:mb-4">
 										Select a Staff Member
 									</h3>
 									<div className="relative staff-dropdown">
@@ -1797,14 +2007,9 @@ export default function BookingModal({
 											onClick={() =>
 												setIsStaffDropdownOpen(!isStaffDropdownOpen)
 											}
-											className="w-full p-4 rounded-lg text-left bg-white border border-gray-200 hover:bg-gray-50 transition-colors flex items-center justify-between"
+											className="w-full p-3 sm:p-4 rounded-lg text-left bg-white border border-gray-200 hover:bg-gray-50 transition-colors flex items-center justify-between"
 										>
 											<div className="flex items-center gap-3">
-												<div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center">
-													<span className="text-lg">
-														{selectedStaff === 'Any Staff' ? '👥' : '👤'}
-													</span>
-												</div>
 												<span className="font-medium text-gray-900">
 													{selectedStaff}
 												</span>
@@ -1837,11 +2042,6 @@ export default function BookingModal({
 														}}
 														className="w-full p-4 text-left hover:bg-gray-50 transition-colors flex items-center gap-3 first:rounded-t-lg last:rounded-b-lg"
 													>
-														<div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center">
-															<span className="text-lg">
-																{staff.id === 'any' ? '👥' : '👤'}
-															</span>
-														</div>
 														<span className="font-medium text-gray-900">
 															{staff.name}
 														</span>
@@ -1856,7 +2056,7 @@ export default function BookingModal({
 								<button
 									onClick={handleBooking}
 									disabled={loading}
-									className="w-full bg-[#ff5b5b] text-white py-4 rounded-lg font-semibold text-lg hover:bg-[#e04a4a] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+									className="w-full bg-[#ff5b5b] text-white py-3 sm:py-4 rounded-lg font-semibold text-base sm:text-lg hover:bg-[#e04a4a] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
 								>
 									{loading
 										? editingBooking
@@ -1870,7 +2070,7 @@ export default function BookingModal({
 								{/* Close Button */}
 								<button
 									onClick={onClose}
-									className="w-full mt-4 text-gray-500 hover:text-gray-700 font-medium"
+									className="w-full mt-3 sm:mt-4 text-gray-500 hover:text-gray-700 font-medium text-sm sm:text-base"
 								>
 									Cancel
 								</button>
