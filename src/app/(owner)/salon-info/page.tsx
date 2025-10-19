@@ -240,7 +240,7 @@ export default function SalonInfoPage() {
 
 			<form onSubmit={handleSubmit} className="space-y-6 md:space-y-8">
 				{/* Basic Details Section */}
-				<div className="bg-white border border-gray-200 rounded-lg p-3 md:p-6">
+				<div className="bg-white border border-gray-200 rounded-lg p-3 md:p-6 overflow-visible">
 					<h2 className="text-xl md:text-2xl font-semibold text-gray-900 mb-4 md:mb-6">
 						Basic Details
 					</h2>
@@ -310,7 +310,7 @@ export default function SalonInfoPage() {
 							)}
 						</div>
 
-						<div>
+						<div className="relative z-10">
 							<label className="block text-sm font-medium text-gray-700 mb-2">
 								Address
 							</label>

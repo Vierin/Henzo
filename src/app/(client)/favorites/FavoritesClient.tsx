@@ -1,21 +1,45 @@
 'use client';
 
-import { useFavoriteSalons } from '@/hooks/useFavorites';
+import { useFavoriteSalons, useRemoveFavorite } from '@/hooks/useFavorites';
 import LoadingSpinner from '@/components/LoadingSpinner';
 import SalonImage from '@/components/SalonImage';
-import { Heart, Star, MapPin } from 'lucide-react';
+import { Heart, Star, MapPin, X } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { generateSalonSlug } from '@/utils/slug';
-import { useAuthStore } from '@/stores/authStore';
+import { useAuth } from '@/lib/auth-unified';
+import { useState } from 'react';
 
 export default function FavoritesClient() {
-	const { user } = useAuthStore();
+	const { user } = useAuth();
 	const { data: favorites = [], isLoading, error } = useFavoriteSalons(!!user);
+	const removeFavoriteMutation = useRemoveFavorite();
 	const router = useRouter();
+	const [removingSalonId, setRemovingSalonId] = useState<string | null>(null);
 
 	const handleBookSalon = (salonId: string, salonName: string) => {
 		const slug = generateSalonSlug(salonId, salonName);
 		router.push(`/salon/${slug}`);
+	};
+
+	const handleRemoveFavorite = async (salonId: string, salonName: string) => {
+		// Show confirmation dialog before removing
+		const confirmed = window.confirm(
+			`Are you sure you want to remove "${salonName}" from your favorite salons? This action cannot be undone.`
+		);
+
+		if (!confirmed) {
+			return; // User cancelled the action
+		}
+
+		setRemovingSalonId(salonId);
+		try {
+			await removeFavoriteMutation.mutateAsync(salonId);
+		} catch (error) {
+			// Error is handled by the mutation's onError callback
+			console.error('Failed to remove favorite:', error);
+		} finally {
+			setRemovingSalonId(null);
+		}
 	};
 
 	if (isLoading) {
@@ -116,9 +140,23 @@ export default function FavoritesClient() {
 					<div
 						key={salon.id}
 						role="listitem"
-						className="bg-white rounded-lg md:rounded-xl p-3 md:p-6 shadow-sm hover:shadow-md transition-shadow"
+						className="bg-white rounded-lg md:rounded-xl p-3 md:p-6 shadow-sm hover:shadow-md transition-shadow relative"
 					>
-						<div className="flex items-center gap-3 md:gap-4">
+						{/* Remove button in top-right corner */}
+						<button
+							onClick={() => handleRemoveFavorite(salon.id, salon.name)}
+							disabled={removingSalonId === salon.id}
+							className="absolute top-3 right-3 p-1.5 text-gray-400 hover:text-red-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+							aria-label={`Remove ${salon.name} from favorites`}
+						>
+							{removingSalonId === salon.id ? (
+								<div className="w-4 h-4 border-2 border-gray-400 border-t-transparent rounded-full animate-spin" />
+							) : (
+								<X className="w-4 h-4" />
+							)}
+						</button>
+
+						<div className="flex items-center gap-3 md:gap-4 pr-8">
 							{/* Salon Image */}
 							<div className="aspect-square w-16 h-16 md:w-28 md:h-28 rounded-lg flex-shrink-0">
 								<SalonImage
@@ -175,21 +213,49 @@ export default function FavoritesClient() {
 										</span>
 									</div>
 								)}
-								<button
-									onClick={() => handleBookSalon(salon.id, salon.name)}
-									className="bg-[#ff5b5b] text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-[#e04a4a] transition-colors"
-								>
-									Book Again
-								</button>
+								<div className="flex gap-2">
+									<button
+										onClick={() => handleBookSalon(salon.id, salon.name)}
+										className="bg-[#ff5b5b] text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-[#e04a4a] transition-colors"
+									>
+										Book Again
+									</button>
+									<button
+										onClick={() => handleRemoveFavorite(salon.id, salon.name)}
+										disabled={removingSalonId === salon.id}
+										className="bg-gray-500 text-white px-3 py-2 rounded-lg text-sm font-medium hover:bg-gray-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1"
+										aria-label={`Remove ${salon.name} from favorites`}
+									>
+										{removingSalonId === salon.id ? (
+											<div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+										) : (
+											<X className="w-4 h-4" />
+										)}
+										<span className="hidden sm:inline">Remove</span>
+									</button>
+								</div>
 							</div>
 
 							{/* Action Button - Mobile */}
-							<div className="md:hidden flex-shrink-0">
+							<div className="md:hidden flex-shrink-0 flex flex-col gap-2">
 								<button
 									onClick={() => handleBookSalon(salon.id, salon.name)}
 									className="bg-[#ff5b5b] text-white px-3 py-1.5 rounded-md text-xs font-medium hover:bg-[#e04a4a] transition-colors"
 								>
 									Book
+								</button>
+								<button
+									onClick={() => handleRemoveFavorite(salon.id, salon.name)}
+									disabled={removingSalonId === salon.id}
+									className="bg-gray-500 text-white px-3 py-1.5 rounded-md text-xs font-medium hover:bg-gray-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-1"
+									aria-label={`Remove ${salon.name} from favorites`}
+								>
+									{removingSalonId === salon.id ? (
+										<div className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin" />
+									) : (
+										<X className="w-3 h-3" />
+									)}
+									<span>Remove</span>
 								</button>
 							</div>
 						</div>

@@ -115,13 +115,14 @@ export default function AddressAutocomplete({
 
 	// Fallback function to search Nominatim with Vietnam-only results
 	const fetchNominatimSuggestions = async (query: string) => {
-		const nominatimUrl = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=5&addressdetails=1&countrycodes=vn`;
+		const nominatimUrl = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=5&addressdetails=1&countrycodes=vn&accept-language=vi`;
 
 		const response = await fetch(nominatimUrl, {
 			method: 'GET',
 			headers: {
 				'User-Agent': 'Henzo Salon Booking App (hello@henzo.app)',
 				Accept: 'application/json',
+				'Accept-Language': 'vi-VN,vi,en-US,en',
 			},
 		});
 
@@ -233,7 +234,13 @@ export default function AddressAutocomplete({
 					const { latitude, longitude } = position.coords;
 					// Получаем детальный адрес по координатам
 					fetch(
-						`https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&addressdetails=1&zoom=18`
+						`https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&addressdetails=1&zoom=18&accept-language=vi`,
+						{
+							headers: {
+								'Accept-Language': 'vi-VN,vi,en-US,en',
+								'User-Agent': 'Henzo Salon Booking App (hello@henzo.app)',
+							},
+						}
 					)
 						.then((response) => response.json())
 						.then((data) => {
@@ -317,7 +324,7 @@ export default function AddressAutocomplete({
 	};
 
 	return (
-		<div className="relative h-full">
+		<div className="relative h-full overflow-visible">
 			<input
 				ref={inputRef}
 				type="text"
@@ -374,7 +381,7 @@ export default function AddressAutocomplete({
 			{showSuggestions && suggestions.length > 0 && (
 				<div
 					ref={suggestionsRef}
-					className="absolute z-50 w-full mt-1 bg-white border border-gray-200 rounded-md shadow-lg max-h-60 overflow-y-auto"
+					className="absolute z-[9999] w-full mt-1 bg-white border border-gray-200 rounded-md shadow-lg max-h-60 overflow-y-auto"
 				>
 					{suggestions.map((suggestion, index) => {
 						const isDefaultSuggestion =

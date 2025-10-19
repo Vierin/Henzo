@@ -67,12 +67,35 @@ export const useRemoveFavorite = () => {
 			const response = await apiClient.delete(`/auth/favorites/${salonId}`);
 			return response;
 		},
-		onSuccess: () => {
-			queryClient.invalidateQueries({ queryKey: ['favorites'] });
-			toast.success('Removed from favorites');
+		onMutate: async (salonId: string) => {
+			// Cancel any outgoing refetches
+			await queryClient.cancelQueries({ queryKey: ['favorites'] });
+
+			// Snapshot the previous value
+			const previousFavorites = queryClient.getQueryData<FavoriteSalon[]>(['favorites']);
+
+			// Optimistically update to the new value
+			queryClient.setQueryData<FavoriteSalon[]>(['favorites'], (old) => {
+				if (!old || !Array.isArray(old)) return [];
+				return old.filter((salon) => salon.id !== salonId);
+			});
+
+			// Return a context object with the snapshotted value
+			return { previousFavorites, salonId };
 		},
-		onError: (error: Error) => {
+		onError: (error: Error, salonId: string, context) => {
+			// If the mutation fails, use the context returned from onMutate to roll back
+			if (context?.previousFavorites) {
+				queryClient.setQueryData(['favorites'], context.previousFavorites);
+			}
 			toast.error(error.message || 'Failed to remove from favorites');
+		},
+		onSettled: () => {
+			// Always refetch after error or success to ensure cache consistency
+			queryClient.invalidateQueries({ queryKey: ['favorites'] });
+		},
+		onSuccess: () => {
+			toast.success('Removed from favorites');
 		},
 	});
 };

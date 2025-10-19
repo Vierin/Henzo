@@ -14,8 +14,9 @@ import {
 	Menu,
 	X,
 } from 'lucide-react';
+import { useQuery } from '@tanstack/react-query';
 import { useFavoriteSalons } from '@/hooks/useFavorites';
-import { useUpcomingBookings, useUserReviews } from '@/hooks/useClient';
+import { useUpcomingBookings } from '@/hooks/useClient';
 
 export default function ClientSidebar() {
 	const pathname = usePathname();
@@ -23,10 +24,22 @@ export default function ClientSidebar() {
 	const { logout, user } = useAuth();
 	const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
-	// Get counts for badges
-	const { data: favorites = [] } = useFavoriteSalons(!!user);
-	const { data: upcomingBookings = [] } = useUpcomingBookings();
-	const { data: userReviews = [] } = useUserReviews();
+	// Only load data if user is authenticated
+	const isAuthenticated = !!user;
+
+	// Get counts for badges - only load when authenticated
+	// Load minimal data for sidebar badges, full data will be loaded in respective pages
+	const { data: favorites = [] } = useFavoriteSalons(isAuthenticated);
+	const { data: upcomingBookings = [] } = useUpcomingBookings(isAuthenticated);
+	
+	// Use cached data from React Query instead of making new request
+	// This will use existing cache if available, preventing duplicate requests
+	const { data: userReviews = [] } = useQuery({
+		queryKey: ['user-reviews'],
+		queryFn: async () => [], // Empty function since we only need cache
+		staleTime: 5 * 60 * 1000, // 5 minutes
+		enabled: false, // Never make request, only use cache
+	});
 
 	const handleLogout = async () => {
 		try {
@@ -36,15 +49,12 @@ export default function ClientSidebar() {
 			// Call logout
 			await logout();
 
-			// Additional delay to ensure state is cleared
-			await new Promise((resolve) => setTimeout(resolve, 300));
-
-			// Force page reload to clear any cached state
-			window.location.href = '/';
+			// Use Next.js router instead of window.location.href
+			router.push('/');
 		} catch (error) {
 			console.error('Logout error:', error);
 			// Even if logout fails, redirect to home
-			window.location.href = '/';
+			router.push('/');
 		}
 	};
 

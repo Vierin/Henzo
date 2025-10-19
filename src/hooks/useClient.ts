@@ -71,7 +71,7 @@ export function useUserBookings() {
 }
 
 // Hook to get user's reviews
-export function useUserReviews() {
+export function useUserReviews(enabled: boolean = true) {
 	return useQuery({
 		queryKey: ['user-reviews'],
 		queryFn: async (): Promise<ClientReview[]> => {
@@ -83,11 +83,12 @@ export function useUserReviews() {
 			}
 		},
 		staleTime: 5 * 60 * 1000, // 5 minutes
+		enabled,
 	});
 }
 
 // Hook to get upcoming bookings
-export function useUpcomingBookings() {
+export function useUpcomingBookings(enabled: boolean = true) {
 	return useQuery({
 		queryKey: ['upcoming-bookings'],
 		queryFn: async (): Promise<ClientBooking[]> => {
@@ -99,6 +100,7 @@ export function useUpcomingBookings() {
 			}
 		},
 		staleTime: 2 * 60 * 1000, // 2 minutes
+		enabled,
 	});
 }
 
