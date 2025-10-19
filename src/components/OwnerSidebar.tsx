@@ -30,13 +30,20 @@ export default function OwnerSidebar({
 	const { logout } = useAuthStore();
 
 	const handleLogout = async () => {
-		// Close mobile menu if open
-		setIsMobileMenuOpen?.(false);
+		try {
+			// Close mobile menu if open
+			setIsMobileMenuOpen?.(false);
 
-		await logout();
-		// Small delay to ensure cookies are cleared
-		await new Promise((resolve) => setTimeout(resolve, 100));
-		router.replace('/');
+			// Logout and wait for completion
+			await logout();
+
+			// Force immediate redirect to home page
+			window.location.href = '/';
+		} catch (error) {
+			console.error('Logout error:', error);
+			// Even if logout fails, redirect to home
+			window.location.href = '/';
+		}
 	};
 
 	// Helper function to render navigation items

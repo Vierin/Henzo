@@ -1,5 +1,6 @@
 'use client';
 
+import { useMemo } from 'react';
 import { Booking } from '@/types';
 
 interface TopServicesCardProps {
@@ -17,40 +18,42 @@ const formatCurrency = (amount: number): string => {
 };
 
 export default function TopServicesCard({ bookings }: TopServicesCardProps) {
-	// Calculate top services
-	const serviceStats = bookings
-		.filter((b) => b.status === 'COMPLETED' && b.service)
-		.reduce(
-			(acc, booking) => {
-				const serviceName = booking.service!.name;
-				const servicePrice = booking.service!.price || 0;
+	// Calculate top services with memoization
+	const topServices = useMemo(() => {
+		const serviceStats = bookings
+			.filter((b) => b.status === 'COMPLETED' && b.service)
+			.reduce(
+				(acc, booking) => {
+					const serviceName = booking.service!.name;
+					const servicePrice = booking.service!.price || 0;
 
-				if (!acc[serviceName]) {
-					acc[serviceName] = {
-						name: serviceName,
-						count: 0,
-						revenue: 0,
-					};
-				}
+					if (!acc[serviceName]) {
+						acc[serviceName] = {
+							name: serviceName,
+							count: 0,
+							revenue: 0,
+						};
+					}
 
-				acc[serviceName].count += 1;
-				acc[serviceName].revenue += servicePrice;
+					acc[serviceName].count += 1;
+					acc[serviceName].revenue += servicePrice;
 
-				return acc;
-			},
-			{} as Record<
-				string,
-				{
-					name: string;
-					count: number;
-					revenue: number;
-				}
-			>
-		);
+					return acc;
+				},
+				{} as Record<
+					string,
+					{
+						name: string;
+						count: number;
+						revenue: number;
+					}
+				>
+			);
 
-	const topServices = Object.values(serviceStats)
-		.sort((a, b) => b.revenue - a.revenue)
-		.slice(0, 5);
+		return Object.values(serviceStats)
+			.sort((a, b) => b.revenue - a.revenue)
+			.slice(0, 5);
+	}, [bookings]);
 
 	return (
 		<div className="bg-white rounded-xl border border-[#f1d9d7] overflow-hidden">

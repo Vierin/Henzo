@@ -2,6 +2,7 @@
 
 import ProtectedRoute from '@/components/ProtectedRoute';
 import OwnerLayout from '@/components/OwnerLayout';
+import { OwnerLayoutProvider } from '@/contexts/OwnerLayoutContext';
 
 export default function OwnerGroupLayout({
 	children,
@@ -10,7 +11,9 @@ export default function OwnerGroupLayout({
 }) {
 	return (
 		<ProtectedRoute allowedRoles={['OWNER']}>
-			<OwnerLayout>{children}</OwnerLayout>
+			<OwnerLayoutProvider>
+				<OwnerLayout>{children}</OwnerLayout>
+			</OwnerLayoutProvider>
 		</ProtectedRoute>
 	);
 }

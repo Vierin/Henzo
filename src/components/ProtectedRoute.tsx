@@ -24,7 +24,8 @@ export default function ProtectedRoute({
 		}
 
 		if (!user) {
-			// Пользователь не аутентифицирован - middleware сделает редирект
+			// Пользователь не аутентифицирован - делаем редирект на главную
+			router.replace('/');
 			return;
 		}
 
@@ -33,20 +34,21 @@ export default function ProtectedRoute({
 			// Перенаправляем на соответствующую dashboard
 			switch (user.role) {
 				case 'CLIENT':
-					router.push('/dashboard');
+					router.replace('/dashboard');
 					break;
 				case 'OWNER':
-					router.push('/owner-dashboard');
+					router.replace('/owner-dashboard');
 					break;
 				case 'ADMIN':
-					router.push('/admin-panel');
+					router.replace('/admin-panel');
 					break;
 				default:
+					router.replace('/');
 					break;
 			}
 			return;
 		}
-	}, [user, isInitialized, isLoading, allowedRoles, router]);
+	}, [user, isInitialized, isLoading, allowedRoles, router, redirectTo]);
 
 	// Показываем загрузку пока проверяем аутентификацию
 	if (!isInitialized || isLoading) {

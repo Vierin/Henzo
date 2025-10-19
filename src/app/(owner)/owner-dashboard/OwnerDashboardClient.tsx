@@ -3,8 +3,7 @@
 import { useMemo, useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { useBookings } from '@/hooks/useBookings';
-import { useSalonId } from '@/hooks/useSalon';
-import { useCurrentUserSalon } from '@/hooks/useSalons';
+import { useOwnerLayout } from '@/contexts/OwnerLayoutContext';
 import LoadingSpinner from '@/components/LoadingSpinner';
 import ErrorDisplay from '@/components/ErrorDisplay';
 import StatsCard from './components/StatsCard';
@@ -24,7 +23,8 @@ import {
 } from 'lucide-react';
 import { safeParseDate } from '@/utils/date';
 import { formatVND } from '@/utils/currency';
-import Link from 'next/link';
+import { convertBookingDtoArray } from '@/utils/bookingTransformers';
+import { useDashboardStats } from '@/hooks/useDashboardStats';
 import {
 	Select,
 	SelectContent,
@@ -33,50 +33,6 @@ import {
 	SelectValue,
 } from '@/components/ui/select';
 
-const convertBookingDtoToBooking = (dto: any) => {
-	return {
-		id: dto.id,
-		salonId: dto.salonId,
-		userId: dto.userId,
-		clientId: dto.clientId || dto.userId,
-		serviceId: dto.serviceId,
-		staffId: dto.staffId,
-		time: dto.time || dto.dateTime,
-		status: dto.status,
-		notes: dto.notes,
-		createdAt: dto.createdAt,
-		service: dto.service
-			? {
-					id: dto.service.id,
-					name: dto.service.name || '',
-					description: dto.service.description,
-					duration: dto.service.duration,
-					price: dto.service.price,
-					salonId: dto.salonId,
-				}
-			: undefined,
-		staff: dto.staff
-			? {
-					id: dto.staff.id,
-					name: dto.staff.name,
-					role: dto.staff.accessLevel,
-					accessLevel: dto.staff.accessLevel as 'ADMIN' | 'EMPLOYEE',
-					salonId: dto.salonId,
-				}
-			: undefined,
-		user: dto.user
-			? {
-					id: dto.user.id,
-					email: dto.user.email,
-					name: dto.user.name,
-					phone: dto.user.phone,
-					role: 'CLIENT' as const,
-					createdAt: '',
-				}
-			: undefined,
-	};
-};
-
 export default function OwnerDashboardClient() {
 	const router = useRouter();
 	const [period, setPeriod] = useState<'7d' | '30d' | '1y'>('30d');
@@ -84,8 +40,7 @@ export default function OwnerDashboardClient() {
 	const [selectedService, setSelectedService] = useState<Service | undefined>();
 	const [editingBooking, setEditingBooking] = useState<Booking | null>(null);
 
-	const { salonId, isLoading: salonLoading, hasSalon } = useSalonId();
-	const { data: salonData } = useCurrentUserSalon();
+	const { salonId, isLoading, hasSalon, salonData } = useOwnerLayout();
 	const {
 		data: bookingsData = [],
 		isLoading: bookingsLoading,
@@ -93,121 +48,10 @@ export default function OwnerDashboardClient() {
 		refetch: refetchBookings,
 	} = useBookings();
 
-	const bookings = bookingsData.map(convertBookingDtoToBooking);
+	const bookings = convertBookingDtoArray(bookingsData);
 
-	useEffect(() => {
-		if (!salonLoading && !hasSalon) {
-			router.push('/business/complete-setup');
-		}
-	}, [hasSalon, salonLoading, router]);
-
-	// Calculate stats
-	const stats = useMemo(() => {
-		const now = new Date();
-
-		// Определяем период
-		let periodDays: number;
-		switch (period) {
-			case '7d':
-				periodDays = 7;
-				break;
-			case '30d':
-				periodDays = 30;
-				break;
-			case '1y':
-				periodDays = 365;
-				break;
-			default:
-				periodDays = 30;
-		}
-
-		const periodStart = new Date(
-			now.getTime() - periodDays * 24 * 60 * 60 * 1000
-		);
-		const previousPeriodStart = new Date(
-			periodStart.getTime() - periodDays * 24 * 60 * 60 * 1000
-		);
-
-		// Current period bookings
-		const currentPeriodBookings = bookings.filter((booking) => {
-			const bookingDate = safeParseDate(booking.time);
-			if (!bookingDate) return false;
-			return bookingDate >= periodStart && bookingDate <= now;
-		});
-
-		// Previous period bookings (for comparison)
-		const previousPeriodBookings = bookings.filter((booking) => {
-			const bookingDate = safeParseDate(booking.time);
-			if (!bookingDate) return false;
-			return bookingDate >= previousPeriodStart && bookingDate < periodStart;
-		});
-
-		// Revenue for current period
-		const currentRevenue = currentPeriodBookings
-			.filter((b) => b.status === 'COMPLETED')
-			.reduce((sum, b) => sum + (b.service?.price || 0), 0);
-
-		const previousRevenue = previousPeriodBookings
-			.filter((b) => b.status === 'COMPLETED')
-			.reduce((sum, b) => sum + (b.service?.price || 0), 0);
-
-		// Unique clients for current period
-		const currentClients = new Set(currentPeriodBookings.map((b) => b.userId))
-			.size;
-		const previousClients = new Set(previousPeriodBookings.map((b) => b.userId))
-			.size;
-
-		// Total bookings for current period
-		const currentTotal = currentPeriodBookings.length;
-		const previousTotal = previousPeriodBookings.length;
-
-		// Completion rate
-		const completedCurrent = currentPeriodBookings.filter(
-			(b) => b.status === 'COMPLETED'
-		).length;
-		const completionRate =
-			currentTotal > 0
-				? Math.round((completedCurrent / currentTotal) * 100)
-				: 0;
-
-		const completedPrevious = previousPeriodBookings.filter(
-			(b) => b.status === 'COMPLETED'
-		).length;
-		const previousCompletionRate =
-			previousTotal > 0
-				? Math.round((completedPrevious / previousTotal) * 100)
-				: 0;
-
-		// Calculate trends
-		const revenueTrend =
-			previousRevenue > 0
-				? Math.round(
-						((currentRevenue - previousRevenue) / previousRevenue) * 100
-					)
-				: 0;
-		const clientsTrend =
-			previousClients > 0
-				? Math.round(
-						((currentClients - previousClients) / previousClients) * 100
-					)
-				: 0;
-		const bookingsTrend =
-			previousTotal > 0
-				? Math.round(((currentTotal - previousTotal) / previousTotal) * 100)
-				: 0;
-		const completionTrend = completionRate - previousCompletionRate;
-
-		return {
-			revenue: currentRevenue,
-			revenueTrend,
-			clients: currentClients,
-			clientsTrend,
-			bookings: currentTotal,
-			bookingsTrend,
-			completionRate,
-			completionTrend,
-		};
-	}, [bookings, period]);
+	// Calculate stats using optimized hook
+	const stats = useDashboardStats(bookings, period);
 
 	// Upcoming bookings (next 7 days, not past, confirmed or pending)
 	const upcomingBookings = useMemo(() => {
@@ -295,7 +139,7 @@ export default function OwnerDashboardClient() {
 		refetchBookings();
 	}, [refetchBookings]);
 
-	if (salonLoading) {
+	if (isLoading) {
 		return (
 			<div className="flex items-center justify-center py-12">
 				<LoadingSpinner size="lg" />

@@ -21,6 +21,7 @@ import { useCurrentUserSalon } from '@/hooks/useSalons';
 import { useBookings } from '@/hooks/useBookings';
 import { useTimeBlocks } from '@/hooks/useTimeBlocks';
 import { BookingWithDetailsDto } from '@/types/dto/booking.dto';
+import { convertBookingDtoArray } from '@/utils/bookingTransformers';
 
 // Import calendar components
 import BookingList from './components/BookingList';
@@ -29,60 +30,6 @@ import BookingDetailsModal from './components/BookingDetailsModal';
 import DaySchedule from './components/DaySchedule';
 import BlockTimeModal from '@/components/BlockTimeModal';
 import { CalendarDays, List, Ban } from 'lucide-react';
-
-// Функция для преобразования BookingWithDetailsDto в Booking
-const convertBookingDtoToBooking = (dto: any): Booking => {
-	return {
-		id: dto.id,
-		salonId: dto.salonId,
-		userId: dto.userId,
-		clientId: dto.clientId || dto.userId,
-		serviceId: dto.serviceId,
-		staffId: dto.staffId,
-		time: dto.time || dto.dateTime,
-		status: dto.status,
-		notes: dto.notes,
-		createdAt: dto.createdAt,
-		service: dto.service
-			? {
-					id: dto.service.id,
-					name: dto.service.name || '',
-					description: dto.service.description,
-					duration: dto.service.duration,
-					price: dto.service.price,
-					salonId: dto.salonId,
-				}
-			: undefined,
-		salon: dto.salon
-			? {
-					id: dto.salon.id,
-					name: dto.salon.name,
-					address: dto.salon.address,
-					ownerId: '',
-					createdAt: '',
-				}
-			: undefined,
-		staff: dto.staff
-			? {
-					id: dto.staff.id,
-					name: dto.staff.name,
-					role: dto.staff.accessLevel,
-					accessLevel: dto.staff.accessLevel as 'ADMIN' | 'EMPLOYEE',
-					salonId: dto.salonId,
-				}
-			: undefined,
-		user: dto.user
-			? {
-					id: dto.user.id,
-					email: dto.user.email,
-					name: dto.user.name,
-					phone: dto.user.phone,
-					role: 'CLIENT',
-					createdAt: '',
-				}
-			: undefined,
-	};
-};
 
 export default function CalendarClient() {
 	const [isBookingModalOpen, setIsBookingModalOpen] = useState(false);
@@ -121,7 +68,7 @@ export default function CalendarClient() {
 		error: timeBlocksError,
 	} = useTimeBlocks();
 
-	const bookings = bookingsData.map(convertBookingDtoToBooking);
+	const bookings = convertBookingDtoArray(bookingsData);
 	const loading = bookingsLoading;
 	const error = bookingsError
 		? bookingsError instanceof Error
