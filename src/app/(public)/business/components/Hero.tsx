@@ -17,9 +17,7 @@ export function Hero() {
 
 						<h1 className="text-5xl lg:text-6xl tracking-tight">
 							Simplify Bookings,{' '}
-							<span className="bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
-								Delight Clients
-							</span>
+							<span className="text-primary">Delight Clients</span>
 						</h1>
 
 						<p className="text-xl text-muted-foreground max-w-xl">
@@ -28,16 +26,16 @@ export function Hero() {
 						</p>
 
 						<div className="flex flex-col sm:flex-row gap-4">
-							<Link href="#beta-form">
+							<Link href="#beta-form" className="cursor-pointer">
 								<Button
 									size="lg"
-									className="bg-primary hover:bg-primary/90 group w-full sm:w-auto"
+									className="bg-primary text-white hover:bg-primary/90 group w-full sm:w-auto"
 								>
 									Join Beta Testing
 									<ArrowRight className="ml-2 w-4 h-4 group-hover:translate-x-1 transition-transform" />
 								</Button>
 							</Link>
-							<Link href="/login">
+							<Link href="/login" className="cursor-pointer">
 								<Button
 									size="lg"
 									variant="outline"

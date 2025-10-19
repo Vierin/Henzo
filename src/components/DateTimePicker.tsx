@@ -190,10 +190,10 @@ export default function DateTimePicker({
 					disabled={disabled}
 					className={
 						inline
-							? `w-full h-full pl-10 pr-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#ff5b5b] focus:border-transparent text-left text-gray-900 hover:bg-gray-50 placeholder:text-gray-500 ${
+							? `w-full h-full pl-10 pr-3 py-2 text-sm truncate border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#ff5b5b] focus:border-transparent text-left text-gray-900 hover:bg-gray-50 placeholder:text-gray-500 ${
 									disabled ? 'bg-gray-50 text-gray-500 cursor-not-allowed' : ''
 								}`
-							: `w-full h-full pl-12 pr-4 py-3 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#ff5b5b] focus:border-transparent text-left text-gray-900 hover:bg-gray-50 ${
+							: `w-full h-full pl-12 pr-4 py-3 text-sm truncate border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#ff5b5b] focus:border-transparent text-left text-gray-900 hover:bg-gray-50 ${
 									disabled ? 'bg-gray-50 text-gray-500 cursor-not-allowed' : ''
 								}`
 					}

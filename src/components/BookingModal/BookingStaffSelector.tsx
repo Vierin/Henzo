@@ -49,7 +49,7 @@ export default function BookingStaffSelector({
 				</button>
 
 				{isStaffDropdownOpen && (
-					<div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-10">
+					<div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-10 max-h-[280px] overflow-y-auto scrollbar-hide">
 						{allStaffMembers.map((staff) => (
 							<button
 								key={staff.id}

@@ -21,10 +21,10 @@ export function CTA() {
 						</p>
 
 						<div className="flex flex-col sm:flex-row gap-4">
-							<Link href="#beta-form">
+							<Link href="#beta-form" className="cursor-pointer">
 								<Button
 									size="lg"
-									className="bg-primary hover:bg-primary/90 group w-full sm:w-auto"
+									className="bg-primary text-white hover:bg-primary/90 group w-full sm:w-auto"
 								>
 									Start for Free
 									<ArrowRight className="ml-2 w-4 h-4 group-hover:translate-x-1 transition-transform" />

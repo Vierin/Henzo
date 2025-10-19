@@ -4,6 +4,8 @@
 	--background: #ffffff;
 	--foreground: #374151;
 	--primary: #ff5b5b;
+	--border: #ff5b5b26;
+	--secondary: #ffe5e5;
 	--muted-foreground: #9ca3af;
 }
 
@@ -11,6 +13,8 @@
 	--color-background: var(--background);
 	--color-foreground: var(--foreground);
 	--color-primary: var(--primary);
+	--color-border: var(--border);
+	--color-secondary: var(--secondary);
 	--color-muted-foreground: var(--muted-foreground);
 	--font-sans: var(--font-geist-sans);
 	--font-mono: var(--font-geist-mono);

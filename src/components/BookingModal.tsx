@@ -1670,7 +1670,7 @@ export default function BookingModal({
 												</button>
 
 												{isServiceDropdownOpen && (
-													<div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-auto">
+													<div className="absolute z-20 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-auto scrollbar-hide">
 														{services.map((serviceOption) => (
 															<button
 																key={serviceOption.id}
@@ -1709,7 +1709,7 @@ export default function BookingModal({
 														</span>
 													</div>
 													<div className="flex items-center gap-2">
-														<span className="text-lg font-bold text-[#8B4513]">
+														<span className="text-lg font-bold text-[#ff5b5b]">
 															{formatVND(selectedService.price)}
 														</span>
 													</div>
@@ -2048,7 +2048,7 @@ export default function BookingModal({
 										</button>
 
 										{isStaffDropdownOpen && (
-											<div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-10">
+											<div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-10 max-h-[280px] overflow-y-auto scrollbar-hide">
 												{allStaffMembers.map((staff) => (
 													<button
 														key={staff.id}

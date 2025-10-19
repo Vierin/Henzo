@@ -117,15 +117,16 @@ export default function CategoryList({ category }: CategoryListProps) {
 						</h1>
 						<div className="flex gap-2 sm:gap-3">
 							{/* Sort Dropdown */}
-							<div className="flex-1 sm:flex-none sm:w-48 relative" style={{ contain: 'layout' }}>
+							<div className="flex-1 sm:flex-none sm:w-48">
 								<Select value={sortBy} onValueChange={setSortBy}>
 									<SelectTrigger className="w-full bg-white border border-gray-300 rounded-md">
 										<SelectValue placeholder="Sort by" />
 									</SelectTrigger>
-									<SelectContent 
-										className="bg-white border border-gray-300 shadow-lg rounded-md z-[1001]"
-										position="item-aligned"
-										sideOffset={4}
+									<SelectContent
+										className="bg-white border border-gray-300 shadow-lg rounded-md"
+										style={{ zIndex: 1001 }}
+										side="bottom"
+										align="start"
 									>
 										{sortOptions.map((option) => (
 											<SelectItem

@@ -9,6 +9,13 @@ import SalonCard from '../../../components/SalonCard';
 import { useSalonSearch } from '@/hooks/useSalonSearch';
 import { ServiceResponseDto } from '@/types/dto/service.dto';
 import { Salon, Service } from '@/types';
+import {
+	Select,
+	SelectContent,
+	SelectItem,
+	SelectTrigger,
+	SelectValue,
+} from '@/components/ui/select';
 
 export default function SalonsClient() {
 	const searchParams = useSearchParams();
@@ -246,24 +253,18 @@ export default function SalonsClient() {
 						</h1>
 						<div className="flex items-center gap-4">
 							{/* Sort Dropdown */}
-							<div className="relative">
-								<label htmlFor="sort-select" className="sr-only">
-									Sort salons by
-								</label>
-								<select
-									id="sort-select"
-									value={sortBy}
-									onChange={(e) => setSortBy(e.target.value)}
-									className="px-4 py-2 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#ff5b5b] focus:border-transparent text-gray-900"
-									aria-label="Sort salons by"
-								>
+							<Select value={sortBy} onValueChange={setSortBy}>
+								<SelectTrigger className="w-48 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#ff5b5b] focus:border-[#ff5b5b]">
+									<SelectValue placeholder="Sort by" />
+								</SelectTrigger>
+								<SelectContent className="bg-white border border-gray-300 shadow-lg rounded-lg">
 									{sortOptions.map((option) => (
-										<option key={option.value} value={option.value}>
+										<SelectItem key={option.value} value={option.value}>
 											{option.label}
-										</option>
+										</SelectItem>
 									))}
-								</select>
-							</div>
+								</SelectContent>
+							</Select>
 						</div>
 					</header>
 

@@ -33,9 +33,7 @@ export function Benefits() {
 
 						<h2 className="text-4xl lg:text-5xl tracking-tight">
 							Grow Your Business <br />
-							<span className="bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
-								with Confidence
-							</span>
+							<span className="text-primary">with Confidence</span>
 						</h2>
 
 						<p className="text-xl text-muted-foreground">

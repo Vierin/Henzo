@@ -83,7 +83,7 @@ export default function BookingServiceSelector({
 					</button>
 
 					{isServiceDropdownOpen && (
-						<div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-auto">
+						<div className="absolute z-20 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-auto scrollbar-hide">
 							{services.map((serviceOption) => (
 								<button
 									key={serviceOption.id}
@@ -121,7 +121,7 @@ export default function BookingServiceSelector({
 							</span>
 						</div>
 						<div className="flex items-center gap-2">
-							<span className="text-lg font-bold text-[#8B4513]">
+							<span className="text-lg font-bold text-[#ff5b5b]">
 								{formatVND(selectedService.price)}
 							</span>
 						</div>

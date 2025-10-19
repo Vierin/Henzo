@@ -141,7 +141,7 @@ export default function BetaRequestForm() {
 						<button
 							type="submit"
 							disabled={loading}
-							className="w-full bg-primary text-primary-foreground px-8 py-4 rounded-lg text-lg font-medium hover:bg-primary/90 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+							className="w-full bg-primary text-white px-8 py-4 rounded-lg text-lg font-medium hover:bg-primary/90 transition-all disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
 						>
 							{loading ? 'Submitting...' : 'Request Beta Access'}
 						</button>
