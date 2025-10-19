@@ -204,7 +204,7 @@ export default function AdminSalons() {
 							placeholder="Search salons, owners, addresses..."
 							value={searchTerm}
 							onChange={(e) => setSearchTerm(e.target.value)}
-							className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent text-gray-900"
+							className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#ff5b5b] focus:border-transparent text-gray-900"
 						/>
 					</div>
 
@@ -225,7 +225,7 @@ export default function AdminSalons() {
 									| 'reviews'
 							) => setSortBy(value)}
 						>
-							<SelectTrigger className="w-full border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent text-gray-900">
+							<SelectTrigger className="w-full border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#ff5b5b] focus:border-transparent text-gray-900">
 								<SelectValue />
 							</SelectTrigger>
 							<SelectContent className="bg-white border border-gray-300 shadow-lg rounded-md">
@@ -278,7 +278,7 @@ export default function AdminSalons() {
 							value={sortOrder}
 							onValueChange={(value: 'asc' | 'desc') => setSortOrder(value)}
 						>
-							<SelectTrigger className="w-full border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent text-gray-900">
+							<SelectTrigger className="w-full border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#ff5b5b] focus:border-transparent text-gray-900">
 								<SelectValue />
 							</SelectTrigger>
 							<SelectContent className="bg-white border border-gray-300 shadow-lg rounded-md">
@@ -309,7 +309,7 @@ export default function AdminSalons() {
 								setStatusFilter(value)
 							}
 						>
-							<SelectTrigger className="w-full border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent text-gray-900">
+							<SelectTrigger className="w-full border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#ff5b5b] focus:border-transparent text-gray-900">
 								<SelectValue />
 							</SelectTrigger>
 							<SelectContent className="bg-white border border-gray-300 shadow-lg rounded-md">
@@ -349,7 +349,7 @@ export default function AdminSalons() {
 								setSortBy('createdAt');
 								setSortOrder('desc');
 							}}
-							className="text-sm text-orange-600 hover:text-orange-800 font-medium"
+							className="text-sm text-[#ff5b5b] hover:text-[#ff4545] font-medium"
 						>
 							Clear all filters
 						</button>
@@ -582,7 +582,7 @@ export default function AdminSalons() {
 											</div>
 											<div className="text-center p-3 bg-white rounded-lg">
 												<div className="flex items-center justify-center mb-2">
-													<Users className="w-5 h-5 text-orange-600" />
+													<Users className="w-5 h-5 text-[#ff5b5b]" />
 												</div>
 												<div className="text-2xl font-bold text-gray-900">
 													{selectedSalon._count.staff}

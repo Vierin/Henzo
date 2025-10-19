@@ -1,6 +1,7 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { apiClient } from '@/lib/api-client';
 import { Line } from 'react-chartjs-2';
 import {
@@ -10,6 +11,7 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from '@/components/ui/select';
+import LoadingSpinner from '@/components/LoadingSpinner';
 import {
 	Chart as ChartJS,
 	CategoryScale,
@@ -53,76 +55,38 @@ ChartJS.register(
 );
 
 export default function AdminDashboard() {
-	const [data, setData] = useState<AnalyticsData | null>(null);
-	const [loading, setLoading] = useState(true);
 	const [period, setPeriod] = useState<'7d' | '30d' | '90d'>('30d');
 
-	useEffect(() => {
-		fetchAnalytics();
-	}, [period]);
-
-	const fetchAnalytics = async () => {
-		try {
-			setLoading(true);
+	const { data, isLoading, error } = useQuery({
+		queryKey: ['admin-analytics', period],
+		queryFn: async () => {
 			const response = await apiClient.get<AnalyticsData>(
 				`/admin/analytics?period=${period}`
 			);
-			setData(response);
-		} catch (error) {
-			console.error('Failed to fetch analytics:', error);
-			// Mock data for MVP testing
-			setData(generateMockData());
-		} finally {
-			setLoading(false);
-		}
-	};
+			return response;
+		},
+		staleTime: 30000, // 30 seconds
+		gcTime: 5 * 60 * 1000, // 5 minutes
+	});
 
-	const generateMockData = (): AnalyticsData => {
-		const now = new Date();
-		const days = period === '7d' ? 7 : period === '30d' ? 30 : 90;
+	if (isLoading) {
+		return <LoadingSpinner size="lg" message="Loading analytics..." />;
+	}
 
-		return {
-			salons: {
-				total: 12,
-				new: period === '7d' ? 2 : period === '30d' ? 5 : 12,
-				active: 8,
-			},
-			bookings: {
-				total: period === '7d' ? 45 : period === '30d' ? 180 : 520,
-				pending: period === '7d' ? 8 : period === '30d' ? 25 : 60,
-				confirmed: period === '7d' ? 15 : period === '30d' ? 60 : 180,
-				completed: period === '7d' ? 18 : period === '30d' ? 80 : 250,
-				canceled: period === '7d' ? 4 : period === '30d' ? 15 : 30,
-				byDay: Array.from({ length: Math.min(days, 30) }, (_, i) => {
-					const date = new Date(now);
-					date.setDate(date.getDate() - (days - i - 1));
-					return {
-						date: date.toISOString().split('T')[0],
-						count: Math.floor(Math.random() * 15) + 5,
-					};
-				}),
-			},
-			topServices: [
-				{ name: 'Haircut', count: 45, categoryName: 'Hair' },
-				{ name: 'Manicure', count: 38, categoryName: 'Nails' },
-				{ name: 'Massage', count: 32, categoryName: 'Spa' },
-				{ name: 'Facial', count: 28, categoryName: 'Skincare' },
-				{ name: 'Hair Color', count: 22, categoryName: 'Hair' },
-			],
-			topSalons: [
-				{ name: 'Beauty Studio A', bookingsCount: 67 },
-				{ name: 'Nail Salon B', bookingsCount: 54 },
-				{ name: 'Spa Center C', bookingsCount: 42 },
-				{ name: 'Hair Studio D', bookingsCount: 38 },
-				{ name: 'Beauty Salon E', bookingsCount: 31 },
-			],
-		};
-	};
-
-	if (loading) {
+	if (error) {
 		return (
-			<div className="flex items-center justify-center py-12">
-				<div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-500"></div>
+			<div className="text-center py-12">
+				<div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+					<span className="text-2xl">⚠️</span>
+				</div>
+				<h3 className="text-xl font-semibold text-gray-900 mb-2">
+					Error loading analytics
+				</h3>
+				<p className="text-gray-600">
+					{error instanceof Error
+						? error.message
+						: 'Failed to load analytics data'}
+				</p>
 			</div>
 		);
 	}
@@ -150,7 +114,7 @@ export default function AdminDashboard() {
 					value={period}
 					onValueChange={(value: '7d' | '30d' | '90d') => setPeriod(value)}
 				>
-					<SelectTrigger className="w-[180px] border border-gray-300 focus:outline-none focus:ring-2 focus:ring-orange-500 text-gray-900">
+					<SelectTrigger className="w-[180px] border border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#ff5b5b] text-gray-900">
 						<SelectValue />
 					</SelectTrigger>
 					<SelectContent className="bg-white border border-gray-300 shadow-lg rounded-md">
@@ -177,7 +141,7 @@ export default function AdminDashboard() {
 			</div>
 
 			{/* Key Metrics for MVP Validation */}
-			<div className="bg-gradient-to-r from-orange-50 to-red-50 rounded-xl p-6 border-2 border-orange-200">
+			<div className="bg-gradient-to-r from-red-50 to-red-100 rounded-xl p-6 border-2 border-red-200">
 				<h2 className="text-lg font-bold text-gray-900 mb-4">
 					🎯 MVP Validation Metrics
 				</h2>
@@ -483,7 +447,7 @@ export default function AdminDashboard() {
 								<div key={index}>
 									<div className="flex items-center justify-between mb-1">
 										<div className="flex items-center gap-2">
-											<span className="text-lg font-bold text-orange-500">
+											<span className="text-lg font-bold text-[#ff5b5b]">
 												#{index + 1}
 											</span>
 											<span className="text-sm font-medium text-gray-900">
@@ -501,7 +465,7 @@ export default function AdminDashboard() {
 									</div>
 									<div className="w-full bg-gray-200 rounded-full h-2">
 										<div
-											className="bg-orange-500 h-2 rounded-full transition-all"
+											className="bg-[#ff5b5b] h-2 rounded-full transition-all"
 											style={{ width: `${percentage}%` }}
 										></div>
 									</div>
@@ -525,7 +489,7 @@ export default function AdminDashboard() {
 								<div key={index}>
 									<div className="flex items-center justify-between mb-1">
 										<div className="flex items-center gap-2">
-											<span className="text-lg font-bold text-orange-500">
+											<span className="text-lg font-bold text-[#ff5b5b]">
 												#{index + 1}
 											</span>
 											<span className="text-sm font-medium text-gray-900">
@@ -538,7 +502,7 @@ export default function AdminDashboard() {
 									</div>
 									<div className="w-full bg-gray-200 rounded-full h-2">
 										<div
-											className="bg-orange-500 h-2 rounded-full transition-all"
+											className="bg-[#ff5b5b] h-2 rounded-full transition-all"
 											style={{ width: `${percentage}%` }}
 										></div>
 									</div>
@@ -629,25 +593,25 @@ export default function AdminDashboard() {
 			</div>
 
 			{/* Action Items */}
-			<div className="bg-orange-50 rounded-xl p-6 border border-orange-200">
+			<div className="bg-red-50 rounded-xl p-6 border border-red-200">
 				<h2 className="text-lg font-bold text-gray-900 mb-3">
 					🎯 Next Steps to Validate Demand
 				</h2>
 				<ul className="space-y-2">
 					<li className="flex items-start gap-2 text-sm text-gray-700">
-						<span className="text-orange-500 font-bold">1.</span>
+						<span className="text-[#ff5b5b] font-bold">1.</span>
 						<span>Contact salons with 0 bookings - understand barriers</span>
 					</li>
 					<li className="flex items-start gap-2 text-sm text-gray-700">
-						<span className="text-orange-500 font-bold">2.</span>
+						<span className="text-[#ff5b5b] font-bold">2.</span>
 						<span>Interview salons with 10+ bookings - find what works</span>
 					</li>
 					<li className="flex items-start gap-2 text-sm text-gray-700">
-						<span className="text-orange-500 font-bold">3.</span>
+						<span className="text-[#ff5b5b] font-bold">3.</span>
 						<span>Check cancellation reasons (high cancel rate = bad fit)</span>
 					</li>
 					<li className="flex items-start gap-2 text-sm text-gray-700">
-						<span className="text-orange-500 font-bold">4.</span>
+						<span className="text-[#ff5b5b] font-bold">4.</span>
 						<span>Double down on top service categories for marketing</span>
 					</li>
 				</ul>

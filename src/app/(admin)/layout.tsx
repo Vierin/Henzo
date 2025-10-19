@@ -114,12 +114,12 @@ export default function AdminLayout({
 											href={item.href}
 											className={`flex items-center px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
 												isActive
-													? 'bg-orange-50 text-orange-600 border-r-2 border-orange-500'
+													? 'bg-red-50 text-[#ff5b5b] border-r-2 border-[#ff5b5b]'
 													: 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
 											}`}
 										>
 											<span
-												className={`mr-3 ${isActive ? 'text-orange-500' : ''}`}
+												className={`mr-3 ${isActive ? 'text-[#ff5b5b]' : ''}`}
 											>
 												{item.icon}
 											</span>
