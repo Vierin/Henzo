@@ -29,7 +29,8 @@ const convertTimeBlockDtoToTimeBlock = (dto: TimeBlockDto): TimeBlock => {
 		startDate: dto.startDate,
 		endDate: dto.endDate,
 		notes: dto.notes,
-		conflictAction: dto.conflictAction,
+		conflictAction:
+			dto.conflictAction === 'RESCHEDULE' ? 'KEEP' : dto.conflictAction,
 		createdAt: dto.createdAt,
 		staff: dto.staff
 			? {
@@ -220,5 +221,3 @@ export const useCheckTimeBlockConflicts = () => {
 		},
 	});
 };
-
-

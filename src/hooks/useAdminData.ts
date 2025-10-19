@@ -35,18 +35,18 @@ export const useAdminData = <T extends Record<string, any>>({
 	// Build query params
 	const queryParams = useMemo(() => {
 		const params = new URLSearchParams();
-		
+
 		// Add pagination
 		params.append('page', pagination.page.toString());
 		params.append('limit', pagination.limit.toString());
-		
+
 		// Add filters
 		Object.entries(filters).forEach(([key, value]) => {
 			if (value !== undefined && value !== null && value !== '') {
 				params.append(key, value.toString());
 			}
 		});
-		
+
 		return params.toString();
 	}, [filters, pagination]);
 
@@ -59,12 +59,12 @@ export const useAdminData = <T extends Record<string, any>>({
 	});
 
 	const updateFilters = (newFilters: Partial<T>) => {
-		setFilters(prev => ({ ...prev, ...newFilters }));
-		setPagination(prev => ({ ...prev, page: 1 })); // Reset to first page
+		setFilters((prev) => ({ ...prev, ...newFilters }));
+		setPagination((prev) => ({ ...prev, page: 1 })); // Reset to first page
 	};
 
 	const updatePagination = (newPagination: Partial<typeof pagination>) => {
-		setPagination(prev => ({ ...prev, ...newPagination }));
+		setPagination((prev) => ({ ...prev, ...newPagination }));
 	};
 
 	const resetFilters = () => {
@@ -91,7 +91,7 @@ export const useAdminMutation = <T, P = any>({
 	queryKeys = [],
 	optimisticUpdate,
 }: {
-	endpoint: string;
+	endpoint: string | ((data: P) => string);
 	method?: 'PUT' | 'POST' | 'DELETE' | 'PATCH';
 	queryKeys?: (string | any)[][];
 	optimisticUpdate?: (oldData: any, variables: P) => any;
@@ -100,7 +100,7 @@ export const useAdminMutation = <T, P = any>({
 
 	return useMutation({
 		mutationFn: (data: P) => {
-			const url = typeof endpoint === 'function' ? endpoint(data as any) : endpoint;
+			const url = typeof endpoint === 'function' ? endpoint(data) : endpoint;
 			switch (method) {
 				case 'POST':
 					return apiClient.post<T>(url, data);
@@ -109,30 +109,36 @@ export const useAdminMutation = <T, P = any>({
 				case 'DELETE':
 					return apiClient.delete<T>(url);
 				case 'PATCH':
-					return apiClient.patch<T>(url, data);
+					return apiClient.put<T>(url, data);
 				default:
 					return apiClient.put<T>(url, data);
 			}
 		},
-		onMutate: optimisticUpdate ? async (variables) => {
-			// Cancel outgoing refetches
-			await Promise.all(
-				queryKeys.map(([key]) => queryClient.cancelQueries({ queryKey: [key] }))
-			);
+		onMutate: optimisticUpdate
+			? async (variables) => {
+					// Cancel outgoing refetches
+					await Promise.all(
+						queryKeys.map(([key]) =>
+							queryClient.cancelQueries({ queryKey: [key] })
+						)
+					);
 
-			// Snapshot previous values
-			const previousData = queryKeys.map(([key]) => ({
-				key,
-				data: queryClient.getQueryData([key]),
-			}));
+					// Snapshot previous values
+					const previousData = queryKeys.map(([key]) => ({
+						key,
+						data: queryClient.getQueryData([key]),
+					}));
 
-			// Optimistically update
-			queryKeys.forEach(([key]) => {
-				queryClient.setQueryData([key], (old: any) => optimisticUpdate(old, variables));
-			});
+					// Optimistically update
+					queryKeys.forEach(([key]) => {
+						queryClient.setQueryData([key], (old: any) =>
+							optimisticUpdate(old, variables)
+						);
+					});
 
-			return { previousData };
-		} : undefined,
+					return { previousData };
+				}
+			: undefined,
 		onError: (err, variables, context) => {
 			// Rollback on error
 			if (context?.previousData) {

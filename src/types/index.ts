@@ -164,13 +164,3 @@ export interface TimeBlock {
 	staff?: Staff;
 	conflictingBookings?: Booking[]; // bookings that conflict with this block
 }
-
-	createdAt: string;
-	staff?: Staff;
-	conflictingBookings?: Booking[]; // bookings that conflict with this block
-}
-
-	createdAt: string;
-	staff?: Staff;
-	conflictingBookings?: Booking[]; // bookings that conflict with this block
-}

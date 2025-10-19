@@ -55,7 +55,9 @@ export default function AdminTable<T extends { id: string }>({
 	}
 
 	return (
-		<div className={`bg-white shadow overflow-hidden sm:rounded-md ${className}`}>
+		<div
+			className={`bg-white shadow overflow-hidden sm:rounded-md ${className}`}
+		>
 			<div className="overflow-x-auto">
 				<table className="min-w-full divide-y divide-gray-200">
 					<thead className="bg-gray-50">
@@ -83,11 +85,11 @@ export default function AdminTable<T extends { id: string }>({
 								onClick={() => onRowClick?.(item)}
 							>
 								{columns.map((column, colIndex) => {
-									const value = column.key.includes('.')
-										? (column.key as string).split('.').reduce(
-												(obj, key) => (obj as any)?.[key],
-												item
-										  )
+									const keyStr = String(column.key);
+									const value = keyStr.includes('.')
+										? keyStr
+												.split('.')
+												.reduce((obj, key) => (obj as any)?.[key], item)
 										: (item as any)[column.key];
 
 									return (

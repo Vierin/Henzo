@@ -23,8 +23,8 @@ interface BookingDateSelectorProps {
 	isLoadingMoreDays: boolean;
 	canScrollLeft: boolean;
 	canScrollRight: boolean;
-	onScrollLeft: () => void;
-	onScrollRight: () => void;
+	onScrollLeft: (canScroll: boolean) => void;
+	onScrollRight: (canScroll: boolean) => void;
 }
 
 export default function BookingDateSelector({
@@ -92,6 +92,18 @@ export default function BookingDateSelector({
 			scrollContainer.removeEventListener('scroll', checkScrollPosition);
 	}, [checkScrollPosition]);
 
+	const handleScrollLeftClick = useCallback(() => {
+		if (dateScrollRef.current) {
+			dateScrollRef.current.scrollBy({ left: -200, behavior: 'smooth' });
+		}
+	}, []);
+
+	const handleScrollRightClick = useCallback(() => {
+		if (dateScrollRef.current) {
+			dateScrollRef.current.scrollBy({ left: 200, behavior: 'smooth' });
+		}
+	}, []);
+
 	return (
 		<div className="mb-6">
 			<h3 className="text-lg font-semibold text-gray-900 mb-3">
@@ -101,7 +113,7 @@ export default function BookingDateSelector({
 			{/* Date Navigation */}
 			<div className="relative mb-4">
 				<button
-					onClick={onScrollLeft}
+					onClick={handleScrollLeftClick}
 					disabled={!canScrollLeft}
 					className={`absolute left-0 top-1/2 transform -translate-y-1/2 z-10 w-8 h-8 bg-white rounded-full shadow-md flex items-center justify-center ${
 						canScrollLeft
@@ -113,7 +125,7 @@ export default function BookingDateSelector({
 				</button>
 
 				<button
-					onClick={onScrollRight}
+					onClick={handleScrollRightClick}
 					disabled={!canScrollRight}
 					className={`absolute right-0 top-1/2 transform -translate-y-1/2 z-10 w-8 h-8 bg-white rounded-full shadow-md flex items-center justify-center ${
 						canScrollRight
