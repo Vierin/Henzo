@@ -27,8 +27,24 @@ interface SearchResponse {
 }
 
 export function useSalonSearch(params: SearchParams) {
+	// Create a stable query key that doesn't include function references
+	const queryKey = [
+		'salons',
+		'search',
+		{
+			page: params.page,
+			limit: params.limit,
+			search: params.search,
+			location: params.location,
+			category: params.category,
+			sortBy: params.sortBy,
+			minRating: params.minRating,
+			isOpenNow: params.isOpenNow,
+		},
+	];
+
 	return useQuery({
-		queryKey: ['salons', 'search', params],
+		queryKey,
 		queryFn: async (): Promise<SearchResponse> => {
 			const searchParams = new URLSearchParams();
 
@@ -49,6 +65,6 @@ export function useSalonSearch(params: SearchParams) {
 		},
 		staleTime: 5 * 60 * 1000, // 5 minutes
 		gcTime: 10 * 60 * 1000, // 10 minutes
-		enabled: true, // Always enabled, but we can control this with params
+		refetchOnWindowFocus: false, // Prevent unnecessary refetches
 	});
 }

@@ -13,11 +13,51 @@ import { Salon, Service } from '@/types';
 export default function SalonsClient() {
 	const searchParams = useSearchParams();
 
-	// State management
-	const [searchQuery, setSearchQuery] = useState('');
-	const [selectedLocation, setSelectedLocation] = useState('');
-	const [selectedDate, setSelectedDate] = useState<Date | null>(null);
-	const [selectedTimeInterval, setSelectedTimeInterval] = useState<string>('');
+	// Initialize state from URL parameters immediately
+	const getInitialParams = useCallback(() => {
+		const search = searchParams.get('search');
+		const location = searchParams.get('location');
+		const salon = searchParams.get('salon');
+		const service = searchParams.get('service');
+		const date = searchParams.get('date');
+		const time = searchParams.get('time');
+
+		let searchQuery = '';
+		if (service) {
+			searchQuery = service;
+		} else if (salon) {
+			searchQuery = salon;
+		} else if (search) {
+			searchQuery = search;
+		}
+
+		let selectedDate: Date | null = null;
+		if (date) {
+			const [year, month, day] = date.split('-').map(Number);
+			selectedDate = new Date(year, month - 1, day);
+		}
+
+		return {
+			searchQuery,
+			selectedLocation: location || '',
+			selectedDate,
+			selectedTimeInterval: time || '',
+		};
+	}, [searchParams]);
+
+	const initialParams = getInitialParams();
+
+	// State management - initialize with URL params
+	const [searchQuery, setSearchQuery] = useState(initialParams.searchQuery);
+	const [selectedLocation, setSelectedLocation] = useState(
+		initialParams.selectedLocation
+	);
+	const [selectedDate, setSelectedDate] = useState<Date | null>(
+		initialParams.selectedDate
+	);
+	const [selectedTimeInterval, setSelectedTimeInterval] = useState<string>(
+		initialParams.selectedTimeInterval
+	);
 	const [activeFilter, setActiveFilter] = useState('all');
 	const [sortBy, setSortBy] = useState('name');
 	const [currentPage, setCurrentPage] = useState(1);
@@ -69,43 +109,39 @@ export default function SalonsClient() {
 	const salons = accumulatedSalons;
 	const pagination = currentPagination;
 
-	// Initialize from URL parameters
+	// Update state when URL parameters change
 	useEffect(() => {
-		const search = searchParams.get('search');
-		const location = searchParams.get('location');
-		const salon = searchParams.get('salon');
-		const service = searchParams.get('service');
-		const date = searchParams.get('date');
-		const time = searchParams.get('time');
+		const newParams = getInitialParams();
 
-		// Set search query based on service or salon parameter
-		if (service) {
-			setSearchQuery(service);
-		} else if (salon) {
-			setSearchQuery(salon);
-		} else if (search) {
-			setSearchQuery(search);
-		}
+		// Update state only if values have changed
+		setSearchQuery((prevQuery) => {
+			if (newParams.searchQuery !== prevQuery) {
+				return newParams.searchQuery;
+			}
+			return prevQuery;
+		});
 
-		// Set location
-		if (location) {
-			setSelectedLocation(location);
-		}
+		setSelectedLocation((prevLocation) => {
+			if (newParams.selectedLocation !== prevLocation) {
+				return newParams.selectedLocation;
+			}
+			return prevLocation;
+		});
 
-		// Set date
-		if (date) {
-			// Parse date string as local date to avoid timezone issues
-			const [year, month, day] = date.split('-').map(Number);
-			const parsedDate = new Date(year, month - 1, day);
+		setSelectedDate((prevDate) => {
+			if (newParams.selectedDate?.getTime() !== prevDate?.getTime()) {
+				return newParams.selectedDate;
+			}
+			return prevDate;
+		});
 
-			setSelectedDate(parsedDate);
-		}
-
-		// Set time interval
-		if (time) {
-			setSelectedTimeInterval(time);
-		}
-	}, [searchParams]);
+		setSelectedTimeInterval((prevTime) => {
+			if (newParams.selectedTimeInterval !== prevTime) {
+				return newParams.selectedTimeInterval;
+			}
+			return prevTime;
+		});
+	}, [getInitialParams]);
 
 	// Memoized sort options
 	const sortOptions = useMemo(
