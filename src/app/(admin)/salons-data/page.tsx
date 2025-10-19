@@ -3,6 +3,25 @@
 import { useState, useEffect } from 'react';
 import { apiClient } from '@/lib/api-client';
 import SalonLogo from '@/components/admin/SalonLogo';
+import {
+	Select,
+	SelectContent,
+	SelectItem,
+	SelectTrigger,
+	SelectValue,
+} from '@/components/ui/select';
+import {
+	X,
+	MapPin,
+	Phone,
+	Mail,
+	Globe,
+	Instagram,
+	Calendar,
+	Users,
+	Scissors,
+	Star,
+} from 'lucide-react';
 
 interface Salon {
 	id: string;
@@ -45,6 +64,10 @@ export default function AdminSalons() {
 	const [statusFilter, setStatusFilter] = useState<
 		'all' | 'active' | 'inactive'
 	>('all');
+
+	// Modal state for salon details
+	const [selectedSalon, setSelectedSalon] = useState<Salon | null>(null);
+	const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
 
 	useEffect(() => {
 		const fetchSalons = async () => {
@@ -127,6 +150,16 @@ export default function AdminSalons() {
 		setFilteredSalons(filtered);
 	}, [salons, searchTerm, sortBy, sortOrder, statusFilter]);
 
+	const handleViewDetails = (salon: Salon) => {
+		setSelectedSalon(salon);
+		setIsDetailModalOpen(true);
+	};
+
+	const handleCloseModal = () => {
+		setSelectedSalon(null);
+		setIsDetailModalOpen(false);
+	};
+
 	if (loading) {
 		return (
 			<div className="flex items-center justify-center py-12">
@@ -180,18 +213,60 @@ export default function AdminSalons() {
 						<label className="block text-sm font-medium text-gray-700 mb-2">
 							Sort By
 						</label>
-						<select
+						<Select
 							value={sortBy}
-							onChange={(e) => setSortBy(e.target.value as any)}
-							className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent text-gray-900"
+							onValueChange={(
+								value:
+									| 'name'
+									| 'createdAt'
+									| 'bookings'
+									| 'services'
+									| 'staff'
+									| 'reviews'
+							) => setSortBy(value)}
 						>
-							<option value="createdAt">Date Created</option>
-							<option value="name">Name</option>
-							<option value="bookings">Bookings</option>
-							<option value="services">Services</option>
-							<option value="staff">Staff</option>
-							<option value="reviews">Reviews</option>
-						</select>
+							<SelectTrigger className="w-full border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent text-gray-900">
+								<SelectValue />
+							</SelectTrigger>
+							<SelectContent className="bg-white border border-gray-300 shadow-lg rounded-md">
+								<SelectItem
+									value="createdAt"
+									className="bg-white hover:bg-gray-50 focus:bg-gray-50 text-gray-900 cursor-pointer"
+								>
+									Date Created
+								</SelectItem>
+								<SelectItem
+									value="name"
+									className="bg-white hover:bg-gray-50 focus:bg-gray-50 text-gray-900 cursor-pointer"
+								>
+									Name
+								</SelectItem>
+								<SelectItem
+									value="bookings"
+									className="bg-white hover:bg-gray-50 focus:bg-gray-50 text-gray-900 cursor-pointer"
+								>
+									Bookings
+								</SelectItem>
+								<SelectItem
+									value="services"
+									className="bg-white hover:bg-gray-50 focus:bg-gray-50 text-gray-900 cursor-pointer"
+								>
+									Services
+								</SelectItem>
+								<SelectItem
+									value="staff"
+									className="bg-white hover:bg-gray-50 focus:bg-gray-50 text-gray-900 cursor-pointer"
+								>
+									Staff
+								</SelectItem>
+								<SelectItem
+									value="reviews"
+									className="bg-white hover:bg-gray-50 focus:bg-gray-50 text-gray-900 cursor-pointer"
+								>
+									Reviews
+								</SelectItem>
+							</SelectContent>
+						</Select>
 					</div>
 
 					{/* Sort Order */}
@@ -199,14 +274,28 @@ export default function AdminSalons() {
 						<label className="block text-sm font-medium text-gray-700 mb-2">
 							Order
 						</label>
-						<select
+						<Select
 							value={sortOrder}
-							onChange={(e) => setSortOrder(e.target.value as 'asc' | 'desc')}
-							className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent text-gray-900"
+							onValueChange={(value: 'asc' | 'desc') => setSortOrder(value)}
 						>
-							<option value="desc">Descending</option>
-							<option value="asc">Ascending</option>
-						</select>
+							<SelectTrigger className="w-full border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent text-gray-900">
+								<SelectValue />
+							</SelectTrigger>
+							<SelectContent className="bg-white border border-gray-300 shadow-lg rounded-md">
+								<SelectItem
+									value="desc"
+									className="bg-white hover:bg-gray-50 focus:bg-gray-50 text-gray-900 cursor-pointer"
+								>
+									Descending
+								</SelectItem>
+								<SelectItem
+									value="asc"
+									className="bg-white hover:bg-gray-50 focus:bg-gray-50 text-gray-900 cursor-pointer"
+								>
+									Ascending
+								</SelectItem>
+							</SelectContent>
+						</Select>
 					</div>
 
 					{/* Status Filter */}
@@ -214,17 +303,36 @@ export default function AdminSalons() {
 						<label className="block text-sm font-medium text-gray-700 mb-2">
 							Status
 						</label>
-						<select
+						<Select
 							value={statusFilter}
-							onChange={(e) =>
-								setStatusFilter(e.target.value as 'all' | 'active' | 'inactive')
+							onValueChange={(value: 'all' | 'active' | 'inactive') =>
+								setStatusFilter(value)
 							}
-							className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent text-gray-900"
 						>
-							<option value="all">All Salons</option>
-							<option value="active">Active (has bookings)</option>
-							<option value="inactive">Inactive (no bookings)</option>
-						</select>
+							<SelectTrigger className="w-full border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent text-gray-900">
+								<SelectValue />
+							</SelectTrigger>
+							<SelectContent className="bg-white border border-gray-300 shadow-lg rounded-md">
+								<SelectItem
+									value="all"
+									className="bg-white hover:bg-gray-50 focus:bg-gray-50 text-gray-900 cursor-pointer"
+								>
+									All Salons
+								</SelectItem>
+								<SelectItem
+									value="active"
+									className="bg-white hover:bg-gray-50 focus:bg-gray-50 text-gray-900 cursor-pointer"
+								>
+									Active (has bookings)
+								</SelectItem>
+								<SelectItem
+									value="inactive"
+									className="bg-white hover:bg-gray-50 focus:bg-gray-50 text-gray-900 cursor-pointer"
+								>
+									Inactive (no bookings)
+								</SelectItem>
+							</SelectContent>
+						</Select>
 					</div>
 				</div>
 
@@ -270,9 +378,7 @@ export default function AdminSalons() {
 									<div className="flex items-center justify-between">
 										<div className="flex items-center">
 											<div className="flex-shrink-0">
-												<div
-													className={`w-16 h-16 rounded-lg bg-gray-200 flex items-center justify-center`}
-												>
+												<div className="w-16 h-16 rounded-lg bg-gray-200 flex items-center justify-center">
 													<span className="text-gray-400 text-lg">🏢</span>
 												</div>
 											</div>
@@ -283,14 +389,9 @@ export default function AdminSalons() {
 													</p>
 												</div>
 												<div className="mt-1">
-													<p className="text-sm text-gray-500">
+													<p className="text-xs text-gray-500">
 														Owner: {salon.owner.name || salon.owner.email}
 													</p>
-													{salon.address && (
-														<p className="text-sm text-gray-500">
-															📍 {salon.address}
-														</p>
-													)}
 												</div>
 											</div>
 										</div>
@@ -305,14 +406,16 @@ export default function AdminSalons() {
 											</div>
 											<div className="text-sm text-gray-500">
 												<div>
-													Created:{' '}
 													{new Date(salon.createdAt).toLocaleDateString(
 														'en-GB'
 													)}
 												</div>
 											</div>
 											<div className="flex space-x-2">
-												<button className="text-blue-600 hover:text-blue-900 text-sm font-medium">
+												<button
+													onClick={() => handleViewDetails(salon)}
+													className="text-blue-600 hover:text-blue-900 text-sm font-medium"
+												>
 													View Details
 												</button>
 												<button className="text-green-600 hover:text-green-900 text-sm font-medium">
@@ -327,6 +430,253 @@ export default function AdminSalons() {
 					</ul>
 				)}
 			</div>
+
+			{/* Salon Details Modal */}
+			{isDetailModalOpen && selectedSalon && (
+				<div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+					<div className="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+						<div className="p-6">
+							{/* Modal Header */}
+							<div className="flex items-center justify-between mb-6">
+								<h2 className="text-2xl font-bold text-gray-900">
+									{selectedSalon.name}
+								</h2>
+								<button
+									onClick={handleCloseModal}
+									className="text-gray-400 hover:text-gray-600 transition-colors"
+								>
+									<X className="w-6 h-6" />
+								</button>
+							</div>
+
+							{/* Salon Information Grid */}
+							<div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+								{/* Left Column - Basic Info */}
+								<div className="space-y-6">
+									{/* Salon Logo and Basic Info */}
+									<div className="flex items-start space-x-4">
+										<div className="w-20 h-20 bg-gray-200 rounded-lg flex items-center justify-center flex-shrink-0">
+											<span className="text-2xl">🏢</span>
+										</div>
+										<div className="flex-1">
+											<h3 className="text-lg font-semibold text-gray-900 mb-2">
+												{selectedSalon.name}
+											</h3>
+											{selectedSalon.description && (
+												<p className="text-gray-600 text-sm mb-3">
+													{selectedSalon.description}
+												</p>
+											)}
+											<div className="flex flex-wrap gap-2">
+												<span
+													className={`px-2 py-1 text-xs font-medium rounded-full ${
+														selectedSalon._count.bookings > 0
+															? 'bg-green-100 text-green-800'
+															: 'bg-gray-100 text-gray-800'
+													}`}
+												>
+													{selectedSalon._count.bookings > 0
+														? 'Active'
+														: 'Inactive'}
+												</span>
+											</div>
+										</div>
+									</div>
+
+									{/* Contact Information */}
+									<div className="bg-gray-50 rounded-lg p-4">
+										<h4 className="text-sm font-medium text-gray-900 mb-3">
+											Contact Information
+										</h4>
+										<div className="space-y-2">
+											{selectedSalon.address && (
+												<div className="flex items-center space-x-2 text-sm text-gray-600">
+													<MapPin className="w-4 h-4" />
+													<span>{selectedSalon.address}</span>
+												</div>
+											)}
+											{selectedSalon.phone && (
+												<div className="flex items-center space-x-2 text-sm text-gray-600">
+													<Phone className="w-4 h-4" />
+													<span>{selectedSalon.phone}</span>
+												</div>
+											)}
+											{selectedSalon.email && (
+												<div className="flex items-center space-x-2 text-sm text-gray-600">
+													<Mail className="w-4 h-4" />
+													<span>{selectedSalon.email}</span>
+												</div>
+											)}
+											{selectedSalon.website && (
+												<div className="flex items-center space-x-2 text-sm text-gray-600">
+													<Globe className="w-4 h-4" />
+													<a
+														href={selectedSalon.website}
+														target="_blank"
+														rel="noopener noreferrer"
+														className="text-blue-600 hover:text-blue-800"
+													>
+														{selectedSalon.website}
+													</a>
+												</div>
+											)}
+											{selectedSalon.instagram && (
+												<div className="flex items-center space-x-2 text-sm text-gray-600">
+													<Instagram className="w-4 h-4" />
+													<a
+														href={`https://instagram.com/${selectedSalon.instagram.replace('@', '')}`}
+														target="_blank"
+														rel="noopener noreferrer"
+														className="text-blue-600 hover:text-blue-800"
+													>
+														{selectedSalon.instagram}
+													</a>
+												</div>
+											)}
+										</div>
+									</div>
+
+									{/* Owner Information */}
+									<div className="bg-gray-50 rounded-lg p-4">
+										<h4 className="text-sm font-medium text-gray-900 mb-3">
+											Owner Information
+										</h4>
+										<div className="space-y-2">
+											<div className="text-sm text-gray-600">
+												<span className="font-medium">Name:</span>{' '}
+												{selectedSalon.owner.name || 'Not provided'}
+											</div>
+											<div className="text-sm text-gray-600">
+												<span className="font-medium">Email:</span>{' '}
+												{selectedSalon.owner.email}
+											</div>
+										</div>
+									</div>
+								</div>
+
+								{/* Right Column - Statistics */}
+								<div className="space-y-6">
+									{/* Statistics */}
+									<div className="bg-gray-50 rounded-lg p-4">
+										<h4 className="text-sm font-medium text-gray-900 mb-4">
+											Salon Statistics
+										</h4>
+										<div className="grid grid-cols-2 gap-4">
+											<div className="text-center p-3 bg-white rounded-lg">
+												<div className="flex items-center justify-center mb-2">
+													<Calendar className="w-5 h-5 text-blue-600" />
+												</div>
+												<div className="text-2xl font-bold text-gray-900">
+													{selectedSalon._count.bookings}
+												</div>
+												<div className="text-xs text-gray-600">Bookings</div>
+											</div>
+											<div className="text-center p-3 bg-white rounded-lg">
+												<div className="flex items-center justify-center mb-2">
+													<Scissors className="w-5 h-5 text-green-600" />
+												</div>
+												<div className="text-2xl font-bold text-gray-900">
+													{selectedSalon._count.services}
+												</div>
+												<div className="text-xs text-gray-600">Services</div>
+											</div>
+											<div className="text-center p-3 bg-white rounded-lg">
+												<div className="flex items-center justify-center mb-2">
+													<Users className="w-5 h-5 text-orange-600" />
+												</div>
+												<div className="text-2xl font-bold text-gray-900">
+													{selectedSalon._count.staff}
+												</div>
+												<div className="text-xs text-gray-600">Staff</div>
+											</div>
+											<div className="text-center p-3 bg-white rounded-lg">
+												<div className="flex items-center justify-center mb-2">
+													<Star className="w-5 h-5 text-yellow-600" />
+												</div>
+												<div className="text-2xl font-bold text-gray-900">
+													{selectedSalon._count.reviews}
+												</div>
+												<div className="text-xs text-gray-600">Reviews</div>
+											</div>
+										</div>
+									</div>
+
+									{/* Working Hours */}
+									{selectedSalon.workingHours && (
+										<div className="bg-gray-50 rounded-lg p-4">
+											<h4 className="text-sm font-medium text-gray-900 mb-3">
+												Working Hours
+											</h4>
+											<div className="space-y-1 text-sm text-gray-600">
+												{selectedSalon.workingHours &&
+												typeof selectedSalon.workingHours === 'object' ? (
+													Object.entries(selectedSalon.workingHours).map(
+														([day, hours]: [string, any]) => (
+															<div key={day} className="flex justify-between">
+																<span className="capitalize font-medium">
+																	{day}:
+																</span>
+																<span>
+																	{hours
+																		? `${hours.open || 'Closed'}-${hours.close || 'Closed'}`
+																		: 'Closed'}
+																</span>
+															</div>
+														)
+													)
+												) : (
+													<div className="text-gray-500">
+														No working hours set
+													</div>
+												)}
+											</div>
+										</div>
+									)}
+
+									{/* Additional Info */}
+									<div className="bg-gray-50 rounded-lg p-4">
+										<h4 className="text-sm font-medium text-gray-900 mb-3">
+											Additional Information
+										</h4>
+										<div className="space-y-2 text-sm text-gray-600">
+											<div>
+												<span className="font-medium">Created:</span>{' '}
+												{new Date(selectedSalon.createdAt).toLocaleDateString(
+													'en-GB',
+													{
+														year: 'numeric',
+														month: 'long',
+														day: 'numeric',
+														hour: '2-digit',
+														minute: '2-digit',
+													}
+												)}
+											</div>
+											<div>
+												<span className="font-medium">Salon ID:</span>{' '}
+												{selectedSalon.id}
+											</div>
+										</div>
+									</div>
+								</div>
+							</div>
+
+							{/* Modal Footer */}
+							<div className="mt-8 pt-6 border-t border-gray-200 flex justify-end space-x-3">
+								<button
+									onClick={handleCloseModal}
+									className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 transition-colors"
+								>
+									Close
+								</button>
+								<button className="px-4 py-2 bg-[#ff5b5b] text-white rounded-md hover:bg-[#ff4545] transition-colors">
+									Edit Salon
+								</button>
+							</div>
+						</div>
+					</div>
+				</div>
+			)}
 		</div>
 	);
 }

@@ -4,6 +4,13 @@ import { useState, useEffect } from 'react';
 import { apiClient } from '@/lib/api-client';
 import { Line } from 'react-chartjs-2';
 import {
+	Select,
+	SelectContent,
+	SelectItem,
+	SelectTrigger,
+	SelectValue,
+} from '@/components/ui/select';
+import {
 	Chart as ChartJS,
 	CategoryScale,
 	LinearScale,
@@ -139,15 +146,34 @@ export default function AdminDashboard() {
 				</div>
 
 				{/* Period Filter */}
-				<select
+				<Select
 					value={period}
-					onChange={(e) => setPeriod(e.target.value as any)}
-					className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 text-gray-900"
+					onValueChange={(value: '7d' | '30d' | '90d') => setPeriod(value)}
 				>
-					<option value="7d">Last 7 days</option>
-					<option value="30d">Last 30 days</option>
-					<option value="90d">Last 90 days</option>
-				</select>
+					<SelectTrigger className="w-[180px] border border-gray-300 focus:outline-none focus:ring-2 focus:ring-orange-500 text-gray-900">
+						<SelectValue />
+					</SelectTrigger>
+					<SelectContent className="bg-white border border-gray-300 shadow-lg rounded-md">
+						<SelectItem
+							value="7d"
+							className="bg-white hover:bg-gray-50 focus:bg-gray-50 text-gray-900 cursor-pointer"
+						>
+							Last 7 days
+						</SelectItem>
+						<SelectItem
+							value="30d"
+							className="bg-white hover:bg-gray-50 focus:bg-gray-50 text-gray-900 cursor-pointer"
+						>
+							Last 30 days
+						</SelectItem>
+						<SelectItem
+							value="90d"
+							className="bg-white hover:bg-gray-50 focus:bg-gray-50 text-gray-900 cursor-pointer"
+						>
+							Last 90 days
+						</SelectItem>
+					</SelectContent>
+				</Select>
 			</div>
 
 			{/* Key Metrics for MVP Validation */}
