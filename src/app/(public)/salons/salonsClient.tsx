@@ -1,25 +1,16 @@
 'use client';
 
 import { useState, useMemo, useEffect, useCallback } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useSearchParams } from 'next/navigation';
 import BookingModal from '../../../components/BookingModal';
 import LoadingSpinner from '../../../components/LoadingSpinner';
 import ErrorDisplay from '../../../components/ErrorDisplay';
-import SalonImage from '../../../components/SalonImage';
+import SalonCard from '../../../components/SalonCard';
 import { useSalonSearch } from '@/hooks/useSalonSearch';
-import { useSalonSlug } from '@/hooks/useSalonSlug';
 import { ServiceResponseDto } from '@/types/dto/service.dto';
 import { Salon, Service } from '@/types';
-import {
-	calculateAverageRating,
-	getReviewCount,
-	getAvailableTimeSlots,
-} from '@/utils/salonUtils';
-import { Clock8, Phone, Star } from 'lucide-react';
 
 export default function SalonsClient() {
-	const router = useRouter();
-	const { getSalonUrl } = useSalonSlug();
 	const searchParams = useSearchParams();
 
 	// State management
@@ -103,23 +94,10 @@ export default function SalonsClient() {
 
 		// Set date
 		if (date) {
-			console.log('📅 SalonsClient - URL date param:', date);
 			// Parse date string as local date to avoid timezone issues
 			const [year, month, day] = date.split('-').map(Number);
 			const parsedDate = new Date(year, month - 1, day);
-			console.log('📅 SalonsClient - parsed date:', parsedDate);
-			console.log(
-				'📅 SalonsClient - parsed date.getDate():',
-				parsedDate.getDate()
-			);
-			console.log(
-				'📅 SalonsClient - parsed date.getMonth():',
-				parsedDate.getMonth()
-			);
-			console.log(
-				'📅 SalonsClient - parsed date.getFullYear():',
-				parsedDate.getFullYear()
-			);
+
 			setSelectedDate(parsedDate);
 		}
 
@@ -142,12 +120,25 @@ export default function SalonsClient() {
 
 	// Event handlers
 	const handleBookService = useCallback(
-		(service: ServiceResponseDto, salonId: string, salonName: string) => {
-			setSelectedService({
-				...service,
-				salonId,
-				salonName,
-			});
+		(
+			service: ServiceResponseDto | Service,
+			salonId: string,
+			salonName: string
+		) => {
+			// Convert Service to ServiceResponseDto format if needed
+			const serviceDto: ServiceResponseDto & {
+				salonId: string;
+				salonName: string;
+			} = {
+				id: service.id,
+				name: service.name,
+				description: service.description,
+				duration: service.duration,
+				price: service.price,
+				salonId: salonId,
+				salonName: salonName,
+			};
+			setSelectedService(serviceDto);
 			setIsBookingModalOpen(true);
 		},
 		[]
@@ -158,31 +149,11 @@ export default function SalonsClient() {
 		setSelectedService(null);
 	}, []);
 
-	const handleSalonClick = useCallback(
-		(salon: Salon) => {
-			router.push(getSalonUrl(salon));
-		},
-		[router, getSalonUrl]
-	);
-
 	const handleLoadMore = useCallback(() => {
 		if (pagination?.hasNextPage) {
 			setCurrentPage((prev) => prev + 1);
 		}
 	}, [pagination?.hasNextPage]);
-
-	const handleServiceClick = useCallback(
-		(
-			e: React.MouseEvent,
-			service: ServiceResponseDto,
-			salonId: string,
-			salonName: string
-		) => {
-			e.stopPropagation();
-			handleBookService(service, salonId, salonName);
-		},
-		[handleBookService]
-	);
 
 	// Reset page when search parameters change
 	useEffect(() => {
@@ -262,7 +233,7 @@ export default function SalonsClient() {
 
 					{/* Salon Cards */}
 					<section aria-label="Search results">
-						<div className="space-y-6">
+						<div className="space-y-4 sm:space-y-6">
 							{loading ? (
 								<div role="status" aria-live="polite">
 									<LoadingSpinner message="Loading salons..." />
@@ -295,164 +266,13 @@ export default function SalonsClient() {
 							) : (
 								// Display salons
 								salons.map((salon) => (
-									<article
+									<SalonCard
 										key={salon.id}
-										onClick={() => handleSalonClick(salon)}
-										className="bg-white rounded-2xl p-6 shadow-lg hover:shadow-xl transition-shadow cursor-pointer focus-within:ring-2 focus-within:ring-[#ff5b5b] focus-within:ring-offset-2"
-										role="button"
-										tabIndex={0}
-										onKeyDown={(e) => {
-											if (e.key === 'Enter' || e.key === ' ') {
-												e.preventDefault();
-												handleSalonClick(salon);
-											}
-										}}
-										aria-label={`View details for ${salon.name}`}
-									>
-										<div className="flex gap-6">
-											{/* Salon Image */}
-											<SalonImage
-												src={salon.logo}
-												alt={`${salon.name} salon`}
-												width={400}
-												height={320}
-												className="w-48 aspect-[4/3] object-cover rounded-xl flex-shrink-0"
-												style={{ width: 'auto', height: 'auto' }}
-											/>
-
-											{/* Salon Info */}
-											<div className="flex-1">
-												<div className="flex items-center justify-between mb-2">
-													<h2 className="text-xl font-bold text-gray-900">
-														{salon.name}
-													</h2>
-													{/* Rating */}
-													{(() => {
-														const rating = calculateAverageRating(salon);
-														const reviewCount = getReviewCount(salon);
-
-														if (rating > 0) {
-															return (
-																<div className="flex items-center space-x-1">
-																	<Star className="w-4 h-4 fill-[#ff5b5b] text-[#ff5b5b]" />
-																	<span className="text-sm font-medium text-gray-900">
-																		{rating}
-																	</span>
-																	<span className="text-sm text-gray-500">
-																		({reviewCount})
-																	</span>
-																</div>
-															);
-														}
-														return null;
-													})()}
-												</div>
-												{salon.address && (
-													<address className="text-gray-600 text-sm mb-2 not-italic">
-														{salon.address}
-													</address>
-												)}
-												{salon.phone && (
-													<p className="text-gray-500 text-sm mb-3 flex gap-1">
-														<Phone className="w-3.5 h-3.5 relative top-0.5" />{' '}
-														{salon.phone}
-													</p>
-												)}
-
-												{/* Available Time Slots */}
-												{selectedDate &&
-													(() => {
-														const availableSlots = getAvailableTimeSlots(
-															salon,
-															selectedDate,
-															selectedTimeInterval
-														);
-														if (availableSlots.length > 0) {
-															return (
-																<div className="flex items-center space-x-1 mb-3">
-																	<span className="text-green-600">🕒</span>
-																	<span className="text-sm text-green-600 font-medium">
-																		Available: {availableSlots.join(', ')}
-																	</span>
-																</div>
-															);
-														}
-														return null;
-													})()}
-											</div>
-										</div>
-
-										{/* Services */}
-										{salon.services && salon.services.length > 0 ? (
-											<div className="mt-4">
-												<h3 className="sr-only">Available services</h3>
-												<div className="flex justify-between gap-3">
-													{salon.services
-														.slice(0, 3)
-														.map((service: Service, index: number) => (
-															<div
-																key={service.id || index}
-																className="flex items-center w-full max-w-[33.33%] justify-between py-2 px-3 bg-gray-50 rounded-lg"
-															>
-																<div className="flex-1">
-																	<span className="text-sm font-medium text-gray-900">
-																		{service.name}
-																	</span>
-																	<div className="flex items-center gap-4 mt-1">
-																		<span className="text-xs text-gray-500">
-																			<span className="sr-only">
-																				Duration:{' '}
-																			</span>
-																			<Clock8 className="w-3.5 h-3.5 relative top-0.5" />{' '}
-																			{service.duration} min
-																		</span>
-																		<span className="text-sm font-semibold text-[#ff5b5b]">
-																			<span className="sr-only">Price: </span>$
-																			{service.price}
-																		</span>
-																	</div>
-																</div>
-																<button
-																	onClick={(e) =>
-																		handleServiceClick(
-																			e,
-																			service,
-																			salon.id,
-																			salon.name
-																		)
-																	}
-																	className="bg-[#ff5b5b] text-white px-3 py-1 rounded-md text-xs font-medium hover:bg-[#e04a4a] transition-colors focus:outline-none focus:ring-2 focus:ring-[#ff5b5b] focus:ring-offset-2"
-																	aria-label={`Book ${service.name} at ${salon.name}`}
-																>
-																	Book
-																</button>
-															</div>
-														))}
-												</div>
-											</div>
-										) : (
-											<div className="mt-4 text-center py-4">
-												<p className="text-gray-500 text-sm">
-													No services available
-												</p>
-											</div>
-										)}
-
-										{salon.services && salon.services.length > 3 && (
-											<div className="text-center py-2">
-												<button
-													onClick={(e) => {
-														e.stopPropagation();
-														handleSalonClick(salon);
-													}}
-													className="text-[#ff5b5b] text-sm font-medium hover:text-[#e04a4a] transition-colors focus:outline-none focus:ring-2 focus:ring-[#ff5b5b] focus:ring-offset-2 rounded"
-													aria-label={`View all ${salon.services.length} services at ${salon.name}`}
-												>
-													View all {salon.services.length} services →
-												</button>
-											</div>
-										)}
-									</article>
+										salon={salon}
+										onBookService={handleBookService}
+										selectedDate={selectedDate}
+										selectedTimeInterval={selectedTimeInterval}
+									/>
 								))
 							)}
 						</div>
@@ -470,40 +290,6 @@ export default function SalonsClient() {
 								{pagination.total - pagination.page * pagination.limit}{' '}
 								remaining)
 							</button>
-						</div>
-					)}
-				</div>
-			</main>
-
-			{/* Booking Modal */}
-			<BookingModal
-				isOpen={isBookingModalOpen}
-				onClose={handleCloseBookingModal}
-				salonId={selectedService?.salonId || ''}
-				salonName={selectedService?.salonName || ''}
-				showServiceSelector={true}
-			/>
-		</div>
-	);
-}
-
-						</div>
-					)}
-				</div>
-			</main>
-
-			{/* Booking Modal */}
-			<BookingModal
-				isOpen={isBookingModalOpen}
-				onClose={handleCloseBookingModal}
-				salonId={selectedService?.salonId || ''}
-				salonName={selectedService?.salonName || ''}
-				showServiceSelector={true}
-			/>
-		</div>
-	);
-}
-
 						</div>
 					)}
 				</div>

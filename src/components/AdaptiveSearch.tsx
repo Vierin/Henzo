@@ -13,9 +13,11 @@ export default function AdaptiveSearch({
 }: AdaptiveSearchProps) {
 	const pathname = usePathname();
 
-	// Определяем, находимся ли мы на странице категории или салона
+	// Определяем, находимся ли мы на странице категории, салона или списка салонов
 	const isCategoryOrSalonPage =
-		pathname.startsWith('/category/') || pathname.startsWith('/salon/');
+		pathname.startsWith('/category/') ||
+		pathname.startsWith('/salon/') ||
+		pathname.startsWith('/salons');
 
 	return (
 		<div className={className}>
@@ -23,7 +25,7 @@ export default function AdaptiveSearch({
 			<div className="md:hidden">
 				<MobileSearchTrigger />
 			</div>
-			{/* Desktop: Full form - inline for category/salon pages, normal for others */}
+			{/* Desktop: Full form - inline for category/salon/salons pages, normal for others */}
 			<div className="hidden md:block">
 				<SearchBookingForm inline={isCategoryOrSalonPage} />
 			</div>

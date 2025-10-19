@@ -9,7 +9,14 @@ export function Header() {
 		<header className="fixed top-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-md border-b border-border">
 			<div className="container mx-auto px-4 py-4 flex items-center justify-between">
 				<Link href="/" className="flex items-center gap-2">
-					<Image src="/logo.png" alt="Henzo Logo" width={88} height={40} />
+					<Image
+						src="/logo.png"
+						alt="Henzo Logo"
+						width={88}
+						height={40}
+						priority
+						sizes="88px"
+					/>
 				</Link>
 
 				<nav className="hidden md:flex items-center gap-8">

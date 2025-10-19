@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { cleanAddressFromCountry } from '@/constants/locations';
@@ -38,6 +38,9 @@ export default function AddressAutocomplete({
 	const inputRef = useRef<HTMLInputElement>(null);
 	const suggestionsRef = useRef<HTMLDivElement>(null);
 
+	// Cache for address search results
+	const addressCache = useRef<Map<string, AddressSuggestion[]>>(new Map());
+
 	// Предустановленные подсказки для Вьетнама
 	const defaultSuggestions: AddressSuggestion[] = [
 		{
@@ -53,7 +56,13 @@ export default function AddressAutocomplete({
 	];
 
 	// Fetch address suggestions from our backend API with fallback to Nominatim
-	const fetchSuggestions = async (query: string) => {
+	const fetchSuggestions = useCallback(async (query: string) => {
+		// Check cache first
+		if (addressCache.current.has(query)) {
+			setSuggestions(addressCache.current.get(query) || []);
+			return;
+		}
+
 		if (query.length < 3) {
 			setSuggestions([]);
 			return;
@@ -102,7 +111,7 @@ export default function AddressAutocomplete({
 		} finally {
 			setLoading(false);
 		}
-	};
+	}, []);
 
 	// Fallback function to search Nominatim with Vietnam-only results
 	const fetchNominatimSuggestions = async (query: string) => {

@@ -12,6 +12,8 @@ interface SalonImageProps {
 	className?: string;
 	placeholder?: string;
 	style?: React.CSSProperties;
+	priority?: boolean;
+	sizes?: string;
 }
 
 export default function SalonImage({
@@ -22,6 +24,8 @@ export default function SalonImage({
 	className = '',
 	placeholder = '💇‍♀️',
 	style,
+	priority = false,
+	sizes,
 }: SalonImageProps) {
 	const [imageError, setImageError] = useState(false);
 
@@ -60,6 +64,8 @@ export default function SalonImage({
 			height={height}
 			className={className}
 			style={style}
+			priority={priority}
+			sizes={sizes}
 			onError={() => setImageError(true)}
 			unoptimized={isExternalUrl(src)} // Don't optimize external URLs
 		/>

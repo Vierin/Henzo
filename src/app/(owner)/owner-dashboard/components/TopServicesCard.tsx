@@ -68,10 +68,10 @@ export default function TopServicesCard({ bookings }: TopServicesCardProps) {
 				<div className="col-span-1" role="columnheader">
 					#
 				</div>
-				<div className="col-span-5" role="columnheader">
+				<div className="col-span-5 text-center" role="columnheader">
 					Service Name
 				</div>
-				<div className="col-span-3" role="columnheader">
+				<div className="col-span-3 text-center" role="columnheader">
 					Bookings
 				</div>
 				<div className="col-span-3 text-right" role="columnheader">

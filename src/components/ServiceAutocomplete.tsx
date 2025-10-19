@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 
 interface ServiceSuggestion {
 	id: number;
@@ -45,8 +45,17 @@ export default function ServiceAutocomplete({
 	const inputRef = useRef<HTMLInputElement>(null);
 	const suggestionsRef = useRef<HTMLDivElement>(null);
 
-	// Fetch suggestions from multiple sources
-	const fetchSuggestions = async (query: string) => {
+	// Cache for search results
+	const searchCache = useRef<Map<string, SuggestionGroup[]>>(new Map());
+
+	// Fetch suggestions from multiple sources with caching
+	const fetchSuggestions = useCallback(async (query: string) => {
+		// Check cache first
+		if (searchCache.current.has(query)) {
+			setSuggestionGroups(searchCache.current.get(query) || []);
+			return;
+		}
+
 		if (query.length < 2) {
 			setSuggestionGroups([]);
 			return;
@@ -135,13 +144,24 @@ export default function ServiceAutocomplete({
 			}
 
 			setSuggestionGroups(groups);
+
+			// Cache the results
+			searchCache.current.set(query, groups);
+
+			// Limit cache size to prevent memory issues
+			if (searchCache.current.size > 50) {
+				const firstKey = searchCache.current.keys().next().value;
+				if (firstKey !== undefined) {
+					searchCache.current.delete(firstKey);
+				}
+			}
 		} catch (error) {
 			console.error('Error fetching suggestions:', error);
 			setSuggestionGroups([]);
 		} finally {
 			setLoading(false);
 		}
-	};
+	}, []);
 
 	// Fetch initial suggestions on focus (popular items)
 	const fetchInitialSuggestions = async () => {
@@ -184,7 +204,7 @@ export default function ServiceAutocomplete({
 		}
 	};
 
-	// Debounce the search
+	// Debounce the search with improved performance
 	useEffect(() => {
 		const timeoutId = setTimeout(() => {
 			if (value) {
@@ -195,7 +215,7 @@ export default function ServiceAutocomplete({
 		}, 300);
 
 		return () => clearTimeout(timeoutId);
-	}, [value]);
+	}, [value, fetchSuggestions]);
 
 	// Close suggestions when clicking outside
 	useEffect(() => {

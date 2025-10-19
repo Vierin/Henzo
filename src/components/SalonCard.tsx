@@ -20,7 +20,7 @@ import { useAuthStore } from '@/stores/authStore';
 interface SalonCardProps {
 	salon: Salon;
 	onBookService?: (
-		service: ServiceResponseDto,
+		service: Service | ServiceResponseDto,
 		salonId: string,
 		salonName: string
 	) => void;

@@ -139,7 +139,7 @@ export default function CategoryList({ category }: CategoryListProps) {
 							{/* map button */}
 							<Link
 								href="/map"
-								className="px-3 sm:px-4 py-2 sm:py-3 flex gap-1 items-center bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#ff5b5b] focus:border-transparent text-gray-900 text-sm whitespace-nowrap"
+								className="px-3 sm:px-4 py-2 sm:h-9 flex gap-1 items-center bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#ff5b5b] focus:border-transparent text-gray-900 text-sm whitespace-nowrap"
 							>
 								<Map className="w-4 h-4" />{' '}
 								<span className="hidden sm:inline">Map View</span>

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useAuth } from '@/lib/auth-unified';
@@ -56,38 +56,36 @@ export default function PublicHeader() {
 		pathname.startsWith('/salons') ||
 		pathname.startsWith('/salon/');
 
-	// Handle scroll for fixed header
-	useEffect(() => {
-		const handleScroll = () => {
-			setIsScrolled(window.scrollY > 50);
-		};
-
-		window.addEventListener('scroll', handleScroll);
-		return () => window.removeEventListener('scroll', handleScroll);
+	// Combined scroll and click outside handlers with useCallback for performance
+	const handleScroll = useCallback(() => {
+		setIsScrolled(window.scrollY > 50);
 	}, []);
 
-	// Close dropdowns when clicking outside
-	useEffect(() => {
-		const handleClickOutside = (event: MouseEvent) => {
-			if (
-				dropdownRef.current &&
-				!dropdownRef.current.contains(event.target as Node)
-			) {
-				setIsLanguageDropdownOpen(false);
-			}
-			if (
-				profileDropdownRef.current &&
-				!profileDropdownRef.current.contains(event.target as Node)
-			) {
-				setShowProfileDropdown(false);
-			}
-		};
+	const handleClickOutside = useCallback((event: MouseEvent) => {
+		if (
+			dropdownRef.current &&
+			!dropdownRef.current.contains(event.target as Node)
+		) {
+			setIsLanguageDropdownOpen(false);
+		}
+		if (
+			profileDropdownRef.current &&
+			!profileDropdownRef.current.contains(event.target as Node)
+		) {
+			setShowProfileDropdown(false);
+		}
+	}, []);
 
+	// Combined useEffect for scroll and click outside events
+	useEffect(() => {
+		window.addEventListener('scroll', handleScroll, { passive: true });
 		document.addEventListener('mousedown', handleClickOutside);
+
 		return () => {
+			window.removeEventListener('scroll', handleScroll);
 			document.removeEventListener('mousedown', handleClickOutside);
 		};
-	}, []);
+	}, [handleScroll, handleClickOutside]);
 
 	const handleLogout = async () => {
 		await logout();
