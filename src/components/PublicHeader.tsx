@@ -6,7 +6,6 @@ import Link from 'next/link';
 import { useAuth } from '@/lib/auth-unified';
 import Image from 'next/image';
 import AdaptiveSearch from './AdaptiveSearch';
-import CategoriesNavigation from './CategoriesNavigation';
 import { User, LogOut, ChevronDown } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 
