@@ -19,14 +19,26 @@ export default function HomePageClient() {
 	useEffect(() => {
 		const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
-		// Prefetch featured salons
+		// Prefetch featured salons with optimized caching
 		queryClient.prefetchQuery({
 			queryKey: ['salons', 'featured', 6],
 			queryFn: async () => {
 				const response = await fetch(`${API_URL}/salons/featured?limit=6`);
 				return response.json();
 			},
-			staleTime: 15 * 60 * 1000, // 15 minutes
+			staleTime: 60 * 60 * 1000, // 1 hour - featured salons change very rarely
+			gcTime: 24 * 60 * 60 * 1000, // 24 hours - keep in cache for a full day
+		});
+
+		// Prefetch exactly 3 salons for the Top-Rated section
+		queryClient.prefetchQuery({
+			queryKey: ['salons', 'featured', 3],
+			queryFn: async () => {
+				const response = await fetch(`${API_URL}/salons/featured?limit=3`);
+				return response.json();
+			},
+			staleTime: 60 * 60 * 1000, // 1 hour - featured salons change very rarely
+			gcTime: 24 * 60 * 60 * 1000, // 24 hours - keep in cache for a full day
 		});
 
 		// Prefetch popular services

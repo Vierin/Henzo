@@ -468,12 +468,6 @@ export default function OwnerDashboardClient() {
 				/>
 			</div>
 
-			{/* Two Column Grid for Top Services and Additional Metrics */}
-			<div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-				<TopServicesCard bookings={bookings} />
-				<AdditionalMetrics bookings={bookings} />
-			</div>
-
 			{/* Upcoming Bookings List */}
 			<UpcomingBookingsList
 				bookings={upcomingBookings}
@@ -483,6 +477,12 @@ export default function OwnerDashboardClient() {
 				onConfirmBooking={handleConfirmBooking}
 				onRejectBooking={handleRejectBooking}
 			/>
+
+			{/* Two Column Grid for Top Services and Additional Metrics */}
+			<div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+				<TopServicesCard bookings={bookings} />
+				<AdditionalMetrics bookings={bookings} />
+			</div>
 
 			{/* Booking Modal */}
 			<BookingModal

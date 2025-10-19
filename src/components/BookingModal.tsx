@@ -1842,9 +1842,25 @@ export default function BookingModal({
 
 								{/* Select Time */}
 								<div className="mt-10">
-									<h3 className="text-base sm:text-lg font-bold text-gray-900 mb-2">
-										Select a Time
-									</h3>
+									<div className="flex items-center justify-between mb-2">
+										<h3 className="text-base sm:text-lg font-bold text-gray-900">
+											Select a Time
+										</h3>
+										{selectedDate && (
+											<div className="text-sm text-gray-600">
+												{new Date(selectedDate).toLocaleDateString('en-US', {
+													weekday: 'short',
+													month: 'short',
+													day: 'numeric',
+												})}
+											</div>
+										)}
+									</div>
+									{!selectedDate && (
+										<div className="text-sm text-amber-600 bg-amber-50 p-3 rounded-lg mb-4">
+											Please select a date first to see available time slots
+										</div>
+									)}
 
 									{/* Time Filters */}
 									<div className="mb-4 sm:mb-6 flex justify-center">

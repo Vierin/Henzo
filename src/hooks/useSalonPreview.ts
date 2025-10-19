@@ -66,8 +66,10 @@ export function useFeaturedSalons(limit: number = 6) {
 			);
 			return response;
 		},
-		staleTime: 15 * 60 * 1000, // 15 minutes - featured salons change rarely
-		gcTime: 60 * 60 * 1000, // 1 hour
+		staleTime: 60 * 60 * 1000, // 1 hour - featured salons change very rarely
+		gcTime: 24 * 60 * 60 * 1000, // 24 hours - keep in cache for a full day
+		refetchOnWindowFocus: false, // Don't refetch when user focuses window
+		refetchOnReconnect: false, // Don't refetch when reconnecting
 	});
 }
 

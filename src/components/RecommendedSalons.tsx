@@ -16,6 +16,7 @@ export default function RecommendedSalons() {
 		isLoading: loading,
 		error,
 		refetch,
+		isFetching,
 	} = useFeaturedSalons(3);
 
 	const getImageSrc = (imageSrc: string) => {
@@ -60,7 +61,7 @@ export default function RecommendedSalons() {
 			className="py-12 sm:py-16 bg-white"
 			aria-label="Featured beauty salons"
 		>
-			<div className="mx-auto max-w-6xl">
+			<div className="mx-auto max-w-6xl relative">
 				<header className="mb-8 sm:mb-12 text-center px-4 sm:px-6">
 					<h2 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-3 sm:mb-4">
 						Top-Rated Beauty & Wellness Salons
@@ -72,9 +73,9 @@ export default function RecommendedSalons() {
 					</p>
 				</header>
 
-				{loading ? (
+				{loading && salons.length === 0 ? (
 					<LoadingSpinner message="Loading salons..." />
-				) : error ? (
+				) : error && salons.length === 0 ? (
 					<ErrorDisplay
 						error={error}
 						message="Failed to load salons"
@@ -94,6 +95,16 @@ export default function RecommendedSalons() {
 					</div>
 				) : (
 					<>
+						{/* Background loading indicator */}
+						{isFetching && salons.length > 0 && (
+							<div className="absolute top-4 right-4 z-10">
+								<div className="flex items-center gap-2 bg-white/90 backdrop-blur-sm rounded-full px-3 py-1 shadow-sm">
+									<div className="w-3 h-3 border-2 border-[#ff5b5b] border-t-transparent rounded-full animate-spin"></div>
+									<span className="text-xs text-gray-600">Updating...</span>
+								</div>
+							</div>
+						)}
+
 						{/* Desktop grid view */}
 						<div className="hidden md:grid md:grid-cols-3 gap-6 px-6">
 							{(salons as any[]).slice(0, 3).map((salon: any) => {
