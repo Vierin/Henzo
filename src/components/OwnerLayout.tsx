@@ -18,32 +18,9 @@ export default function OwnerLayout({ children }: OwnerLayoutProps) {
 
 	return (
 		<div className="min-h-screen bg-[#fff7f6] w-[100vw] overflow-x-hidden">
-			<OwnerHeader />
-
-			{/* Mobile Menu Button */}
-			<button
-				onClick={toggleMobileMenu}
-				className="md:hidden fixed top-4 right-2 z-[999] bg-white shadow-lg rounded-lg p-2 border border-gray-200"
-				aria-label="Toggle menu"
-			>
-				{isMobileMenuOpen ? (
-					<X className="w-5 h-5 text-gray-700" />
-				) : (
-					<Menu className="w-5 h-5 text-gray-700" />
-				)}
-			</button>
-
-			{/* Mobile Overlay */}
-			{isMobileMenuOpen && (
-				<div
-					className="md:hidden fixed inset-0 bg-black/60 bg-opacity-50 z-40"
-					onClick={() => setIsMobileMenuOpen(false)}
-				/>
-			)}
-
 			<div className="flex">
-				{/* Desktop Sidebar */}
-				<div className="hidden md:block">
+				{/* Desktop Sidebar - Fixed */}
+				<div className="hidden md:block fixed left-0 top-0 h-full z-30">
 					<OwnerSidebar />
 				</div>
 
@@ -59,10 +36,39 @@ export default function OwnerLayout({ children }: OwnerLayoutProps) {
 					/>
 				</div>
 
-				{/* Main Content */}
-				<main className="flex-1 p-4 md:p-8 w-full overflow-x-hidden">
-					{children}
-				</main>
+				{/* Right side content area */}
+				<div className="flex-1 ">
+					{/* Header positioned for desktop */}
+					<div className="md:sticky md:top-0 md:z-40">
+						<OwnerHeader />
+					</div>
+
+					{/* Mobile Menu Button */}
+					<button
+						onClick={toggleMobileMenu}
+						className="md:hidden fixed top-4 right-2 z-[999] bg-white shadow-lg rounded-lg p-2 border border-gray-200"
+						aria-label="Toggle menu"
+					>
+						{isMobileMenuOpen ? (
+							<X className="w-5 h-5 text-gray-700" />
+						) : (
+							<Menu className="w-5 h-5 text-gray-700" />
+						)}
+					</button>
+
+					{/* Mobile Overlay */}
+					{isMobileMenuOpen && (
+						<div
+							className="md:hidden fixed inset-0 bg-black/60 bg-opacity-50 z-40"
+							onClick={() => setIsMobileMenuOpen(false)}
+						/>
+					)}
+
+					{/* Main Content */}
+					<main className="p-4 md:p-8 w-full overflow-x-hidden md:pl-64">
+						{children}
+					</main>
+				</div>
 			</div>
 		</div>
 	);

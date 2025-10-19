@@ -2,6 +2,7 @@
 
 import { Booking } from '@/types';
 import { AlertCircle, Users, TrendingUp } from 'lucide-react';
+import { formatVND } from '@/utils/currency';
 
 interface AdditionalMetricsProps {
 	bookings: Booking[];
@@ -66,7 +67,7 @@ export default function AdditionalMetrics({
 		},
 		{
 			title: 'Avg Revenue/Client',
-			value: `${avgRevenuePerClient.toLocaleString()}₫`,
+			value: formatVND(avgRevenuePerClient),
 			subtitle: 'Per client',
 			icon: <TrendingUp className="w-6 h-6" />,
 			color: 'text-green-600',

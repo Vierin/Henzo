@@ -64,7 +64,7 @@ export default function OwnerSidebar({
 
 	// Helper function to render sidebar content
 	const renderSidebarContent = () => (
-		<div className="w-64 bg-white shadow-sm border-r border-gray-200 min-h-screen pt-20">
+		<div className="w-64 bg-white shadow-sm border-r border-gray-200 h-screen pt-20 overflow-y-auto">
 			<div className="p-4 sm:p-6">
 				{/* Navigation */}
 				<nav className="space-y-2">

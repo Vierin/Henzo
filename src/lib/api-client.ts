@@ -23,18 +23,26 @@ export class ApiClient {
 
 	private async request<T>(
 		endpoint: string,
-		options: RequestInit = {}
+		options: RequestInit & { responseType?: 'blob' } = {}
 	): Promise<T> {
 		const url = `${this.baseUrl}${endpoint}`;
+		const { responseType, ...fetchOptions } = options;
 
 		// Get current session and add authorization header
 		const {
 			data: { session },
 		} = await supabase.auth.getSession();
-		const headers: HeadersInit = {
-			'Content-Type': 'application/json',
-			...(options.headers as Record<string, string>),
-		};
+		const headers: HeadersInit = {};
+
+		// Don't set Content-Type for blob requests
+		if (responseType !== 'blob') {
+			headers['Content-Type'] = 'application/json';
+		}
+
+		// Add any custom headers
+		if (options.headers) {
+			Object.assign(headers, options.headers);
+		}
 
 		if (session?.access_token) {
 			(headers as Record<string, string>)['Authorization'] =
@@ -43,12 +51,17 @@ export class ApiClient {
 
 		const config: RequestInit = {
 			headers,
-			...options,
+			...fetchOptions,
 		};
 
 		const response = await fetch(url, config);
 
 		if (!response.ok) {
+			// For blob responses, don't try to parse as JSON
+			if (responseType === 'blob') {
+				throw new Error(`HTTP error! status: ${response.status}`);
+			}
+
 			const errorData = await response.json().catch(() => ({}));
 			// NestJS returns errors as { message: string, statusCode: number }
 			// But some endpoints might return { error: string }
@@ -57,6 +70,26 @@ export class ApiClient {
 				errorData.error ||
 				`HTTP error! status: ${response.status}`;
 			throw new Error(errorMessage);
+		}
+
+		// Handle blob responses
+		if (responseType === 'blob') {
+			console.log(
+				'Response headers:',
+				Object.fromEntries(response.headers.entries())
+			);
+			console.log(
+				'Response content-type:',
+				response.headers.get('content-type')
+			);
+
+			const blob = await response.blob();
+			console.log('Created blob:', blob);
+			console.log('Blob size:', blob.size);
+			console.log('Blob type:', blob.type);
+
+			// Return the blob directly as T
+			return blob as T;
 		}
 
 		// Check if response has content
@@ -68,20 +101,6 @@ export class ApiClient {
 			}
 			const data = JSON.parse(text);
 
-			// Debug log for salon data
-			if (
-				url.includes('/salons/') &&
-				!url.includes('/salons?') &&
-				!url.includes('/salons/with-services')
-			) {
-				console.log('API Client - Salon data received:', {
-					url,
-					data,
-					hasReviews: !!data.reviews,
-					reviewsCount: data.reviews?.length || 0,
-				});
-			}
-
 			return data;
 		}
 
@@ -90,8 +109,11 @@ export class ApiClient {
 	}
 
 	// Generic CRUD operations
-	async get<T>(endpoint: string): Promise<T> {
-		return this.request<T>(endpoint, { method: 'GET' });
+	async get<T>(
+		endpoint: string,
+		options?: { responseType?: 'blob' }
+	): Promise<T> {
+		return this.request<T>(endpoint, { method: 'GET', ...options });
 	}
 
 	async post<T>(endpoint: string, data?: unknown): Promise<T> {

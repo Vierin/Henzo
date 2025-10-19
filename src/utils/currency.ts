@@ -5,15 +5,15 @@
 export function formatVND(amount: number): string {
 	if (amount >= 1_000_000) {
 		const millions = amount / 1_000_000;
-		return `${millions % 1 === 0 ? millions : millions.toFixed(1)}M ₫`;
+		return `${millions % 1 === 0 ? Math.floor(millions) : millions.toFixed(1)}M ₫`;
 	}
-	
+
 	if (amount >= 1_000) {
 		const thousands = amount / 1_000;
-		return `${thousands % 1 === 0 ? thousands : thousands.toFixed(1)}K ₫`;
+		return `${thousands % 1 === 0 ? Math.floor(thousands) : thousands.toFixed(1)}K ₫`;
 	}
-	
-	return `${amount} ₫`;
+
+	return `${amount.toFixed(0)} ₫`;
 }
 
 /**
@@ -30,4 +30,3 @@ export function formatVNDFull(amount: number): string {
 export function parseVNDInput(value: string): number {
 	return parseInt(value.replace(/\D/g, '') || '0', 10);
 }
-

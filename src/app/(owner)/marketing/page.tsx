@@ -5,7 +5,7 @@ import { useSalon } from '@/hooks/useSalon';
 import { useSalonSlug } from '@/hooks/useSalonSlug';
 import LoadingSpinner from '@/components/LoadingSpinner';
 import toast from 'react-hot-toast';
-import jsPDF from 'jspdf';
+import { apiClient } from '@/lib/api-client';
 
 export default function MarketingPage() {
 	const { data: salon, isLoading } = useSalon();
@@ -65,138 +65,39 @@ export default function MarketingPage() {
 	};
 
 	const downloadQRCodePDF = async () => {
-		if (!qrCodeUrl || !salonUrl) {
-			toast.error('Please wait for QR code to load');
-			return;
-		}
-
 		try {
-			// Create new PDF document in A5 format (148 x 210 mm)
-			const pdf = new jsPDF({
-				orientation: 'portrait',
-				unit: 'mm',
-				format: 'a5',
+			// Generate PDF using backend endpoint
+			const blob = await apiClient.get<Blob>('/salons/current/qr-pdf', {
+				responseType: 'blob',
 			});
 
-			// A5 dimensions: 148mm x 210mm
-			const pageWidth = 148;
-			const pageHeight = 210;
+			console.log('Received blob:', blob);
+			console.log('Blob size:', blob.size);
+			console.log('Blob type:', blob.type);
 
-			// Set background color to light cream
-			pdf.setFillColor(248, 245, 242); // #F8F5F2
-			pdf.rect(0, 0, pageWidth, pageHeight, 'F');
+			if (!blob || blob.size === 0) {
+				toast.error('PDF generation failed - empty response');
+				return;
+			}
 
-			// Add Henzo logo from public folder
-			const logoImg = new Image();
-			logoImg.crossOrigin = 'anonymous';
+			// Ensure blob is valid PDF
+			if (blob.type !== 'application/pdf' && blob.type !== '') {
+				console.warn('Unexpected blob type:', blob.type);
+			}
 
-			const loadLogoAndGenerate = () => {
-				// Add logo at the top with proper aspect ratio
-				try {
-					// Get original logo dimensions to maintain aspect ratio
-					const originalWidth = logoImg.naturalWidth || logoImg.width;
-					const originalHeight = logoImg.naturalHeight || logoImg.height;
+			// Create blob URL and open in new tab
+			const url = URL.createObjectURL(blob);
+			console.log('Created blob URL:', url);
 
-					// Set maximum width and calculate proportional height
-					const maxLogoWidth = 40; // 40mm max width
-					const aspectRatio = originalHeight / originalWidth;
-					const logoWidth = maxLogoWidth;
-					const logoHeight = logoWidth * aspectRatio;
+			// Use the simplest and most reliable method
+			window.open(url, '_blank');
 
-					// Center the logo
-					const logoX = (pageWidth - logoWidth) / 2;
-					const logoY = 15;
+			// Clean up after a delay to ensure the tab has loaded
+			setTimeout(() => {
+				URL.revokeObjectURL(url);
+			}, 5000); // Increased timeout
 
-					pdf.addImage(logoImg, 'PNG', logoX, logoY, logoWidth, logoHeight);
-				} catch (error) {
-					// Fallback to text if logo fails to load
-					pdf.setFontSize(24);
-					pdf.setTextColor(255, 91, 91); // #ff5b5b
-					pdf.setFont('helvetica', 'bold');
-					pdf.text('Henzo', pageWidth / 2, 30, { align: 'center' });
-				}
-
-				// Add subtitle
-				pdf.setFontSize(12);
-				pdf.setTextColor(75, 85, 99); // gray-600
-				pdf.setFont('helvetica', 'normal');
-				pdf.text('Book your visit through', pageWidth / 2, 45, {
-					align: 'center',
-				});
-			};
-
-			// Load logo
-			logoImg.onload = loadLogoAndGenerate;
-			logoImg.onerror = loadLogoAndGenerate; // Fallback if logo fails
-			logoImg.src = '/logo.png';
-
-			// Add QR code after logo loads
-			const generateQRSection = () => {
-				const qrSize = 60; // 60mm x 60mm QR code
-				const qrX = (pageWidth - qrSize) / 2;
-				const qrY = 65;
-
-				// Load QR code image and add to PDF
-				const qrImageUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(salonUrl)}`;
-
-				// Create image element to load QR code
-				const qrImg = new Image();
-				qrImg.crossOrigin = 'anonymous';
-
-				qrImg.onload = () => {
-					// Add QR code to PDF
-					pdf.addImage(qrImg, 'PNG', qrX, qrY, qrSize, qrSize);
-
-					// Add salon name below QR code
-					const salonName = salon?.name || 'Our Salon';
-					pdf.setFontSize(14);
-					pdf.setTextColor(17, 24, 39); // gray-900
-					pdf.setFont('helvetica', 'bold');
-					pdf.text(salonName, pageWidth / 2, qrY + qrSize + 15, {
-						align: 'center',
-					});
-
-					// Add instructions
-					pdf.setFontSize(10);
-					pdf.setTextColor(75, 85, 99); // gray-600
-					pdf.setFont('helvetica', 'normal');
-					pdf.text(
-						'Scan this QR code with your phone camera',
-						pageWidth / 2,
-						qrY + qrSize + 30,
-						{ align: 'center' }
-					);
-					pdf.text(
-						'to book your appointment instantly',
-						pageWidth / 2,
-						qrY + qrSize + 40,
-						{ align: 'center' }
-					);
-
-					// Add footer
-					pdf.setFontSize(8);
-					pdf.setTextColor(156, 163, 175); // gray-400
-					pdf.text('Powered by Henzo', pageWidth / 2, pageHeight - 10, {
-						align: 'center',
-					});
-
-					// Open PDF in new tab
-					const pdfBlob = pdf.output('blob');
-					const pdfUrl = URL.createObjectURL(pdfBlob);
-					window.open(pdfUrl, '_blank');
-
-					toast.success('QR Code brochure opened for download!');
-				};
-
-				qrImg.onerror = () => {
-					toast.error('Failed to load QR code image');
-				};
-
-				qrImg.src = qrImageUrl;
-			};
-
-			// Generate QR section after a short delay to ensure logo is processed
-			setTimeout(generateQRSection, 100);
+			toast.success('QR Code brochure opened for download!');
 		} catch (error) {
 			console.error('Error generating PDF:', error);
 			toast.error('Failed to generate PDF');
@@ -318,9 +219,6 @@ export default function MarketingPage() {
 											alt="Salon QR Code"
 											className="w-28 h-28 md:w-32 md:h-32 mx-auto"
 										/>
-										<p className="text-center text-xs text-gray-600 mt-2 font-medium">
-											{salon?.name || 'Salon'}
-										</p>
 									</div>
 								) : (
 									<div className="bg-gray-100 p-3 md:p-4 rounded-lg border-2 border-gray-200 inline-block">

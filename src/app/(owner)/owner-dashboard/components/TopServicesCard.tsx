@@ -96,15 +96,15 @@ export default function TopServicesCard({ bookings }: TopServicesCardProps) {
 							role="listitem"
 						>
 							<div className="col-span-1 flex items-center">
-								<div className="flex items-center justify-center w-6 h-6 rounded-full bg-[#ff5b5b] text-white font-bold text-xs">
+								<div className="flex items-center justify-center w-5 h-5 rounded-full bg-[#ff5b5b] text-white font-bold text-xs">
 									{index + 1}
 								</div>
 							</div>
-							<div className="col-span-5 text-xs font-medium flex items-center">
+							<div className="col-span-5 text-xs font-medium flex items-center justify-center">
 								{service.name}
 							</div>
-							<div className="col-span-3 flex items-center text-gray-600 text-xs md:text-base">
-								{service.count} booking{service.count !== 1 ? 's' : ''}
+							<div className="col-span-3 flex justify-center items-center text-gray-600 text-xs md:text-base">
+								{service.count}
 							</div>
 							<div className="col-span-3 text-right font-semibold flex items-center justify-end">
 								{formatCurrency(service.revenue)}

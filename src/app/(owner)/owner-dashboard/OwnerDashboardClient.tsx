@@ -23,6 +23,7 @@ import {
 	Calendar,
 } from 'lucide-react';
 import { safeParseDate } from '@/utils/date';
+import { formatVND } from '@/utils/currency';
 import Link from 'next/link';
 import {
 	Select,
@@ -387,7 +388,7 @@ export default function OwnerDashboardClient() {
 			<div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-2 md:gap-6">
 				<StatsCard
 					title="Total Revenue"
-					value={`${stats.revenue.toLocaleString()}₫`}
+					value={formatVND(stats.revenue)}
 					icon={<DollarSign className="w-6 h-6" />}
 					subtitle={
 						period === '7d'
