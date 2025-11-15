@@ -42,15 +42,12 @@ export function Header() {
 
 				<div className="flex items-center gap-3">
 					<Link href="/login" className="cursor-pointer">
-						<Button
-							variant="ghost"
-							className="hidden sm:inline-flex cursor-pointer"
-						>
+						<Button variant="ghost" className="hidden sm:inline-flex">
 							Sign In
 						</Button>
 					</Link>
 					<Link href="#beta-form" className="cursor-pointer">
-						<Button className="bg-primary text-white hover:bg-primary/90 cursor-pointer">
+						<Button className="bg-primary text-white hover:bg-primary/90">
 							Start Free
 						</Button>
 					</Link>

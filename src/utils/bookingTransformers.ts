@@ -64,3 +64,5 @@ export const convertBookingDtoToBooking = (dto: BookingWithDetailsDto | any): Bo
 export const convertBookingDtoArray = (dtos: BookingWithDetailsDto[] | any[]): Booking[] => {
 	return dtos.map(convertBookingDtoToBooking);
 };
+
+

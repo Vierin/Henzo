@@ -124,3 +124,5 @@ export const useDashboardStats = (
 		};
 	}, [bookings, period]);
 };
+
+

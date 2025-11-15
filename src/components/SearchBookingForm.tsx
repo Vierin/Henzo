@@ -85,11 +85,6 @@ export default function SearchBookingForm({
 				<div className="flex gap-3 items-end">
 					{/* Unified Search Field - Service, Category or Salon */}
 					<div className="relative flex-1 min-w-0 h-10">
-						{validationError && errorField === 'searchQuery' && (
-							<div className="absolute -top-6 left-0 text-xs text-red-600">
-								Please enter a search term
-							</div>
-						)}
 						<ServiceAutocomplete
 							value={searchQuery}
 							onChange={(value) => {
@@ -184,11 +179,6 @@ export default function SearchBookingForm({
 			<div className="space-y-3">
 				{/* Unified Search Field - Service, Category or Salon */}
 				<div className="relative h-13">
-					{validationError && errorField === 'searchQuery' && (
-						<div className="absolute -top-6 left-0 text-xs text-red-600">
-							Please enter a search term
-						</div>
-					)}
 					<ServiceAutocomplete
 						value={searchQuery}
 						onChange={(value) => {

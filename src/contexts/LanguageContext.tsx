@@ -26,7 +26,7 @@ interface LanguageProviderProps {
 }
 
 export function LanguageProvider({ children }: LanguageProviderProps) {
-	const [language, setLanguageState] = useState<Language>('vi'); // Vietnamese as default
+	const [language, setLanguageState] = useState<Language>('en'); // English as default
 
 	// Load language from localStorage on mount
 	useEffect(() => {
