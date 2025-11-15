@@ -162,10 +162,12 @@ export default function BusinessRegisterClient() {
 			localStorage.setItem('registrationType', 'business');
 			sessionStorage.setItem('registrationType', 'business');
 
+			const frontendUrl =
+				process.env.NEXT_PUBLIC_FRONTEND_URL || window.location.origin;
 			const { data, error } = await supabase.auth.signInWithOAuth({
 				provider: 'google',
 				options: {
-					redirectTo: `${window.location.origin}/auth/callback?type=business`,
+					redirectTo: `${frontendUrl}/auth/callback?type=business`,
 					queryParams: {
 						access_type: 'offline',
 						prompt: 'consent',

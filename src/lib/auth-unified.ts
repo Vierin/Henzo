@@ -198,6 +198,8 @@ class AuthManager {
 				}
 			} else {
 				// Обычная регистрация через Supabase signUp
+				const frontendUrl =
+					process.env.NEXT_PUBLIC_FRONTEND_URL || window.location.origin;
 				const { data: signUpData, error } = await supabase.auth.signUp({
 					email: data.email,
 					password: data.password,
@@ -206,7 +208,7 @@ class AuthManager {
 							name: data.name,
 							role: 'OWNER',
 						},
-						emailRedirectTo: `${window.location.origin}/auth/callback?type=business`,
+						emailRedirectTo: `${frontendUrl}/auth/callback?type=business`,
 					},
 				});
 
