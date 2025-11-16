@@ -16,6 +16,7 @@ import {
 } from '@/components/ui/select';
 
 export default function NewServiceClient() {
+	const [step, setStep] = useState<1 | 2>(1);
 	const [formData, setFormData] = useState({
 		name: '',
 		description: '',
@@ -28,6 +29,16 @@ export default function NewServiceClient() {
 		serviceCategoryId: 'none',
 		serviceGroupId: 'none',
 	});
+	const [translations, setTranslations] = useState<{
+		nameEn: string;
+		nameVi: string;
+		nameRu: string;
+		descriptionEn: string;
+		descriptionVi: string;
+		descriptionRu: string;
+	} | null>(null);
+	const [isGeneratingTranslations, setIsGeneratingTranslations] =
+		useState(false);
 	const [isGroupModalOpen, setIsGroupModalOpen] = useState(false);
 	const [newGroupName, setNewGroupName] = useState('');
 	const router = useRouter();
@@ -81,14 +92,54 @@ export default function NewServiceClient() {
 			return;
 		}
 
+		// Step 1: Generate translations and go to step 2
+		if (step === 1) {
+			setIsGeneratingTranslations(true);
+			try {
+				const generatedTranslations = await apiClient.post<{
+					nameEn: string;
+					nameVi: string;
+					nameRu: string;
+					descriptionEn: string;
+					descriptionVi: string;
+					descriptionRu: string;
+				}>('/services/translate', {
+					name: formData.name.trim(),
+					description: formData.description.trim() || '',
+					sourceLanguage: 'ru', // Assuming Russian is default
+				});
+				setTranslations(generatedTranslations);
+				setStep(2);
+			} catch (err) {
+				console.error('Failed to generate translations:', err);
+				// Continue to step 2 even if translation fails
+				setStep(2);
+			} finally {
+				setIsGeneratingTranslations(false);
+			}
+			return;
+		}
+
+		// Step 2: Create service
 		try {
 			await createServiceMutation.mutateAsync({
 				name: formData.name.trim(),
 				description: formData.description.trim() || undefined,
-				nameEn: formData.nameEn.trim() || undefined,
-				nameVi: formData.nameVi.trim() || undefined,
-				descriptionEn: formData.descriptionEn.trim() || undefined,
-				descriptionVi: formData.descriptionVi.trim() || undefined,
+				nameEn: translations?.nameEn || formData.nameEn.trim() || undefined,
+				nameVi: translations?.nameVi || formData.nameVi.trim() || undefined,
+				nameRu: translations?.nameRu || formData.name.trim() || undefined,
+				descriptionEn:
+					translations?.descriptionEn ||
+					formData.descriptionEn.trim() ||
+					undefined,
+				descriptionVi:
+					translations?.descriptionVi ||
+					formData.descriptionVi.trim() ||
+					undefined,
+				descriptionRu:
+					translations?.descriptionRu ||
+					formData.description.trim() ||
+					undefined,
 				duration: Number(formData.duration),
 				price: Number(formData.price),
 				salonId,
@@ -132,6 +183,211 @@ export default function NewServiceClient() {
 		return null;
 	}
 
+	const selectedCategory = categories.find(
+		(cat) => cat.id.toString() === formData.serviceCategoryId
+	);
+	const selectedGroup = groups.find(
+		(group: any) => group.id === formData.serviceGroupId
+	);
+
+	const formatVND = (value: string | number) => {
+		const num = typeof value === 'string' ? Number(value) : value;
+		return new Intl.NumberFormat('vi-VN', {
+			style: 'currency',
+			currency: 'VND',
+		}).format(num);
+	};
+
+	const formatDuration = (minutes: string | number) => {
+		const mins = typeof minutes === 'string' ? Number(minutes) : minutes;
+		const hours = Math.floor(mins / 60);
+		const remainingMins = mins % 60;
+		if (hours > 0) {
+			return `${hours}h ${remainingMins > 0 ? `${remainingMins}m` : ''}`;
+		}
+		return `${mins}m`;
+	};
+
+	// Step 2: Confirmation screen
+	if (step === 2) {
+		return (
+			<main role="main" aria-labelledby="page-heading">
+				<div className="mb-8">
+					<button
+						onClick={() => setStep(1)}
+						className="flex items-center gap-2 text-[#6b6b6b] hover:text-black mb-4 focus:outline-none focus:ring-2 focus:ring-[#ff5b5b] focus:ring-offset-2 rounded"
+						aria-label="Go back to edit"
+					>
+						<svg
+							className="w-4 h-4"
+							fill="none"
+							stroke="currentColor"
+							viewBox="0 0 24 24"
+							aria-hidden="true"
+						>
+							<path
+								strokeLinecap="round"
+								strokeLinejoin="round"
+								strokeWidth={2}
+								d="M15 19l-7-7 7-7"
+							/>
+						</svg>
+						Back to Edit
+					</button>
+					<h1
+						id="page-heading"
+						className="text-2xl md:text-3xl font-bold text-gray-900 md:mb-2"
+					>
+						Confirm Service Details
+					</h1>
+					<p className="text-sm md:text-base text-gray-600">
+						Please review the service information and translations before
+						creating.
+					</p>
+				</div>
+
+				<div className="bg-white rounded-xl border border-[#f1d9d7] p-3 md:p-6 space-y-6">
+					{/* Service Name */}
+					<div>
+						<label className="block text-sm font-medium text-gray-700 mb-2">
+							Service Name
+						</label>
+						<div className="bg-gray-50 rounded-md p-3 border border-gray-200">
+							<p className="text-gray-900 font-medium">{formData.name}</p>
+						</div>
+						{translations && (
+							<div className="mt-3 space-y-2">
+								<div className="text-xs text-gray-500">Translations:</div>
+								{translations.nameEn && (
+									<div className="bg-blue-50 rounded-md p-2 border border-blue-200">
+										<span className="text-xs text-gray-500">English: </span>
+										<span className="text-gray-700">{translations.nameEn}</span>
+									</div>
+								)}
+								{translations.nameVi && (
+									<div className="bg-green-50 rounded-md p-2 border border-green-200">
+										<span className="text-xs text-gray-500">Tiếng Việt: </span>
+										<span className="text-gray-700">{translations.nameVi}</span>
+									</div>
+								)}
+							</div>
+						)}
+					</div>
+
+					{/* Description */}
+					{formData.description && (
+						<div>
+							<label className="block text-sm font-medium text-gray-700 mb-2">
+								Description
+							</label>
+							<div className="bg-gray-50 rounded-md p-3 border border-gray-200">
+								<p className="text-gray-900 whitespace-pre-wrap">
+									{formData.description}
+								</p>
+							</div>
+							{translations && (
+								<div className="mt-3 space-y-2">
+									<div className="text-xs text-gray-500">Translations:</div>
+									{translations.descriptionEn && (
+										<div className="bg-blue-50 rounded-md p-2 border border-blue-200">
+											<span className="text-xs text-gray-500">English: </span>
+											<p className="text-gray-700 whitespace-pre-wrap">
+												{translations.descriptionEn}
+											</p>
+										</div>
+									)}
+									{translations.descriptionVi && (
+										<div className="bg-green-50 rounded-md p-2 border border-green-200">
+											<span className="text-xs text-gray-500">
+												Tiếng Việt:{' '}
+											</span>
+											<p className="text-gray-700 whitespace-pre-wrap">
+												{translations.descriptionVi}
+											</p>
+										</div>
+									)}
+								</div>
+							)}
+						</div>
+					)}
+
+					{/* Category and Group */}
+					<div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+						<div>
+							<label className="block text-sm font-medium text-gray-700 mb-2">
+								Category
+							</label>
+							<div className="bg-gray-50 rounded-md p-3 border border-gray-200">
+								<p className="text-gray-900">
+									{selectedCategory?.name || 'Not selected'}
+								</p>
+							</div>
+						</div>
+						{selectedGroup && (
+							<div>
+								<label className="block text-sm font-medium text-gray-700 mb-2">
+									Group
+								</label>
+								<div className="bg-gray-50 rounded-md p-3 border border-gray-200">
+									<p className="text-gray-900">{selectedGroup.name}</p>
+								</div>
+							</div>
+						)}
+					</div>
+
+					{/* Duration and Price */}
+					<div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+						<div>
+							<label className="block text-sm font-medium text-gray-700 mb-2">
+								Duration
+							</label>
+							<div className="bg-gray-50 rounded-md p-3 border border-gray-200">
+								<p className="text-gray-900">
+									{formatDuration(formData.duration)}
+								</p>
+							</div>
+						</div>
+						<div>
+							<label className="block text-sm font-medium text-gray-700 mb-2">
+								Price
+							</label>
+							<div className="bg-gray-50 rounded-md p-3 border border-gray-200">
+								<p className="text-gray-900 font-semibold text-[#ff5b5b]">
+									{formatVND(formData.price)}
+								</p>
+							</div>
+						</div>
+					</div>
+
+					{/* Actions */}
+					<div className="flex flex-col sm:flex-row gap-4 pt-4 border-t border-gray-200">
+						<button
+							type="button"
+							onClick={() => setStep(1)}
+							className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2"
+						>
+							Back to Edit
+						</button>
+						<button
+							type="button"
+							onClick={(e) => {
+								e.preventDefault();
+								handleSubmit(e as any);
+							}}
+							disabled={createServiceMutation.isPending}
+							className="flex-1 bg-[#ff5b5b] text-white px-4 py-2 rounded-md hover:bg-[#e04a4a] focus:outline-none focus:ring-2 focus:ring-[#ff5b5b] focus:ring-offset-2 disabled:opacity-50"
+						>
+							{createServiceMutation.isPending
+								? 'Creating...'
+								: 'Confirm & Create Service'}
+						</button>
+					</div>
+				</div>
+			</main>
+		);
+	}
+
+	// Step 1: Form
 	return (
 		<main role="main" aria-labelledby="page-heading">
 			<div className="mb-8">
@@ -383,13 +639,17 @@ export default function NewServiceClient() {
 						</button>
 						<button
 							type="submit"
-							disabled={createServiceMutation.isPending}
+							disabled={
+								createServiceMutation.isPending || isGeneratingTranslations
+							}
 							className="flex-1 bg-[#ff5b5b] text-white px-4 py-2 rounded-md hover:bg-[#e04a4a] focus:outline-none focus:ring-2 focus:ring-[#ff5b5b] focus:ring-offset-2 disabled:opacity-50"
 							aria-describedby="submit-status"
 						>
-							{createServiceMutation.isPending
-								? 'Creating...'
-								: 'Create Service'}
+							{isGeneratingTranslations
+								? 'Generating translations...'
+								: createServiceMutation.isPending
+									? 'Creating...'
+									: 'Continue'}
 						</button>
 						<div id="submit-status" className="sr-only" aria-live="polite">
 							{createServiceMutation.isPending
