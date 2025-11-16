@@ -26,15 +26,25 @@ export default function SalonAutocomplete({
 	const [suggestions, setSuggestions] = useState<SalonSuggestion[]>([]);
 	const [showSuggestions, setShowSuggestions] = useState(false);
 	const [loading, setLoading] = useState(false);
+	const [activeIndex, setActiveIndex] = useState<number>(-1);
 	const inputRef = useRef<HTMLInputElement>(null);
 	const suggestionsRef = useRef<HTMLDivElement>(null);
+	const abortRef = useRef<AbortController | null>(null);
 
 	// Fetch salon suggestions from our backend API
 	const fetchSuggestions = async (query: string) => {
-		if (query.length < 3) {
+		const normalized = query.trim();
+		if (normalized.length < 3) {
 			setSuggestions([]);
 			return;
 		}
+
+		// cancel previous
+		if (abortRef.current) {
+			abortRef.current.abort();
+		}
+		const controller = new AbortController();
+		abortRef.current = controller;
 
 		setLoading(true);
 		try {
@@ -42,7 +52,8 @@ export default function SalonAutocomplete({
 				process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
 			const response = await fetch(
-				`${API_BASE_URL}/salons/search?search=${encodeURIComponent(query)}&limit=10`
+				`${API_BASE_URL}/salons/search?search=${encodeURIComponent(normalized)}&limit=10`,
+				{ signal: controller.signal }
 			);
 
 			if (response.ok) {
@@ -55,15 +66,21 @@ export default function SalonAutocomplete({
 						address: salon.address,
 					}));
 					setSuggestions(transformedSuggestions);
+					setActiveIndex(-1);
 				} else {
 					setSuggestions([]);
+					setActiveIndex(-1);
 				}
 			} else {
 				setSuggestions([]);
+				setActiveIndex(-1);
 			}
 		} catch (error) {
-			console.error('Error fetching salon suggestions:', error);
+			if ((error as any)?.name !== 'AbortError') {
+				console.error('Error fetching salon suggestions:', error);
+			}
 			setSuggestions([]);
+			setActiveIndex(-1);
 		} finally {
 			setLoading(false);
 		}
@@ -92,6 +109,7 @@ export default function SalonAutocomplete({
 				!inputRef.current.contains(event.target as Node)
 			) {
 				setShowSuggestions(false);
+				setActiveIndex(-1);
 			}
 		};
 
@@ -103,6 +121,7 @@ export default function SalonAutocomplete({
 		const newValue = e.target.value;
 		onChange(newValue);
 		setShowSuggestions(true);
+		setActiveIndex(-1);
 	};
 
 	const handleSuggestionClick = (suggestion: SalonSuggestion) => {
@@ -118,6 +137,36 @@ export default function SalonAutocomplete({
 	const handleInputFocus = () => {
 		if (suggestions.length > 0) {
 			setShowSuggestions(true);
+		}
+	};
+
+	const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+		if (!showSuggestions && (e.key === 'ArrowDown' || e.key === 'ArrowUp')) {
+			setShowSuggestions(true);
+			return;
+		}
+		if (e.key === 'Escape') {
+			setShowSuggestions(false);
+			setActiveIndex(-1);
+			return;
+		}
+		if (e.key === 'ArrowDown') {
+			e.preventDefault();
+			setActiveIndex((prev) => {
+				const next = prev + 1;
+				return next >= suggestions.length ? suggestions.length - 1 : next;
+			});
+		} else if (e.key === 'ArrowUp') {
+			e.preventDefault();
+			setActiveIndex((prev) => {
+				const next = prev - 1;
+				return next < 0 ? -1 : next;
+			});
+		} else if (e.key === 'Enter') {
+			if (activeIndex >= 0 && activeIndex < suggestions.length) {
+				e.preventDefault();
+				handleSuggestionClick(suggestions[activeIndex]);
+			}
 		}
 	};
 
@@ -137,8 +186,13 @@ export default function SalonAutocomplete({
 				value={value}
 				onChange={handleInputChange}
 				onFocus={handleInputFocus}
+				onKeyDown={handleKeyDown}
 				placeholder={placeholder}
 				className={`w-full h-13 px-4 py-3 pl-12 bg-white placeholder:text-gray-900 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#ff5b5b] focus:border-transparent text-gray-900 ${className}`}
+				role="combobox"
+				aria-expanded={showSuggestions}
+				aria-autocomplete="list"
+				aria-controls="salon-autocomplete-listbox"
 			/>
 
 			{/* Search Icon */}
@@ -185,29 +239,38 @@ export default function SalonAutocomplete({
 				</div>
 			)}
 
-			{showSuggestions && suggestions.length > 0 && (
+			{showSuggestions && (
 				<div
 					ref={suggestionsRef}
+					id="salon-autocomplete-listbox"
+					role="listbox"
 					className="absolute z-50 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-60 overflow-y-auto"
+					aria-label="Salon suggestions"
 				>
-					{suggestions.map((suggestion) => (
-						<button
-							key={suggestion.id}
-							onClick={() => handleSuggestionClick(suggestion)}
-							className="w-full px-3 py-2 text-left hover:bg-gray-50 border-b border-gray-100 last:border-b-0 text-sm text-gray-700"
-						>
-							<div className="font-medium">{suggestion.name}</div>
-							{suggestion.address && (
-								<div className="text-xs text-gray-500">
-									{suggestion.address}
-								</div>
-							)}
-						</button>
-					))}
+					{loading ? null : suggestions.length === 0 ? (
+						<div className="px-3 py-2 text-sm text-gray-500">No results</div>
+					) : (
+						suggestions.map((suggestion, idx) => (
+							<button
+								key={suggestion.id}
+								onClick={() => handleSuggestionClick(suggestion)}
+								role="option"
+								aria-selected={idx === activeIndex}
+								className={`w-full px-3 py-2 text-left border-b border-gray-100 last:border-b-0 text-sm text-gray-700 hover:bg-gray-50 ${
+									idx === activeIndex ? 'bg-gray-50' : ''
+								}`}
+							>
+								<div className="font-medium">{suggestion.name}</div>
+								{suggestion.address && (
+									<div className="text-xs text-gray-500">
+										{suggestion.address}
+									</div>
+								)}
+							</button>
+						))
+					)}
 				</div>
 			)}
 		</div>
 	);
 }
-
-

@@ -58,9 +58,9 @@ export default function PublicHeader() {
 
 	// Check if we should show search (only on category pages, filter results, and salon pages)
 	const shouldShowSearch =
-		pathname.startsWith('/category/') ||
-		pathname.startsWith('/salons') ||
-		pathname.startsWith('/salon/');
+		pathNoLocale.startsWith('/category/') ||
+		pathNoLocale.startsWith('/salons') ||
+		pathNoLocale.startsWith('/salon/');
 
 	// Combined scroll and click outside handlers with useCallback for performance
 	const handleScroll = useCallback(() => {

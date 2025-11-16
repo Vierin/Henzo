@@ -14,9 +14,28 @@ export async function generateMetadata({
 	const rparams = await params;
 	const locale = isLocale(rparams.locale) ? (rparams.locale as Locale) : 'en';
 	const dict = await getDictionary(locale);
+	const baseUrl = process.env.NEXT_PUBLIC_FRONTEND_URL || 'https://henzo.app';
+
+	const localeToOg = {
+		en: 'en_US',
+		ru: 'ru_RU',
+		vi: 'vi_VN',
+	} as const;
+
 	return {
 		title: dict['meta.title'] ?? 'Henzo',
 		description: dict['meta.description'] ?? '',
+		metadataBase: new URL(baseUrl),
+		alternates: {
+			languages: {
+				'en-US': '/en',
+				'ru-RU': '/ru',
+				'vi-VN': '/vi',
+			},
+		},
+		openGraph: {
+			locale: localeToOg[locale],
+		},
 	};
 }
 

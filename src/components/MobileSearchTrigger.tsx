@@ -3,11 +3,16 @@
 import { Search } from 'lucide-react';
 import { useState } from 'react';
 import Link from 'next/link';
+import { useParams } from 'next/navigation';
 import SearchBookingForm from './SearchBookingForm';
 import { POPULAR_SEARCHES } from '@/constants/categories';
+import { useTranslation } from '@/contexts/LanguageContext';
 
 export default function MobileSearchTrigger() {
 	const [isOpen, setIsOpen] = useState(false);
+	const params = useParams();
+	const locale = (params as any)?.locale as string | undefined;
+	const t = useTranslation();
 
 	return (
 		<>
@@ -17,7 +22,7 @@ export default function MobileSearchTrigger() {
 				className="w-full flex items-center gap-3 px-4 py-3 bg-white rounded-xl shadow-md text-left text-gray-500 hover:shadow-lg transition-shadow"
 			>
 				<Search className="w-5 h-5 text-gray-400 flex-shrink-0" />
-				<span className="text-sm">Search services, salons...</span>
+				<span className="text-sm">{t.homepage.searchPlaceholder}</span>
 			</button>
 
 			{/* Fullscreen modal */}
@@ -26,12 +31,12 @@ export default function MobileSearchTrigger() {
 					{/* Header */}
 					<div className="sticky top-0 bg-white border-b border-gray-200 px-4 py-3 flex items-center justify-between shadow-sm">
 						<h2 className="text-lg font-semibold text-gray-900">
-							Find Your Perfect Salon
+							{t.homepage.heroTitle.replace(/<[^>]+>/g, '')}
 						</h2>
 						<button
 							onClick={() => setIsOpen(false)}
 							className="p-2 hover:bg-gray-100 rounded-full transition-colors"
-							aria-label="Close search"
+							aria-label={t.common.close}
 						>
 							<svg
 								className="w-6 h-6 text-gray-600"
@@ -61,7 +66,11 @@ export default function MobileSearchTrigger() {
 							{POPULAR_SEARCHES.map((item) => (
 								<Link
 									key={item.term}
-									href={`/category/${item.categorySlug}`}
+									href={
+										locale
+											? `/${locale}/category/${item.categorySlug}`
+											: `/category/${item.categorySlug}`
+									}
 									onClick={() => setIsOpen(false)}
 									className="px-3 py-1.5 bg-gray-100 text-gray-700 rounded-full text-xs hover:bg-gray-200 transition-colors"
 								>

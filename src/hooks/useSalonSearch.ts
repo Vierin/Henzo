@@ -11,6 +11,8 @@ interface SearchParams {
 	sortBy?: string;
 	minRating?: number;
 	isOpenNow?: boolean;
+	date?: string; // YYYY-MM-DD
+	time?: string; // e.g., 'morning' | 'afternoon' | 'evening' | 'any'
 	accumulate?: boolean; // New parameter to control accumulation
 }
 
@@ -40,6 +42,8 @@ export function useSalonSearch(params: SearchParams) {
 			sortBy: params.sortBy,
 			minRating: params.minRating,
 			isOpenNow: params.isOpenNow,
+			date: params.date,
+			time: params.time,
 		},
 	];
 
@@ -57,6 +61,8 @@ export function useSalonSearch(params: SearchParams) {
 			if (params.minRating)
 				searchParams.append('minRating', params.minRating.toString());
 			if (params.isOpenNow) searchParams.append('isOpenNow', 'true');
+			if (params.date) searchParams.append('date', params.date);
+			if (params.time) searchParams.append('time', params.time);
 
 			const response = await apiClient.get<SearchResponse>(
 				`/salons/search?${searchParams.toString()}`

@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
+import { useTranslation } from '@/contexts/LanguageContext';
 
 interface ServiceSuggestion {
 	id: number;
@@ -37,6 +38,7 @@ export default function ServiceAutocomplete({
 	className = '',
 	inline = false,
 }: ServiceAutocompleteProps) {
+	const t = useTranslation();
 	const [suggestionGroups, setSuggestionGroups] = useState<SuggestionGroup[]>(
 		[]
 	);
@@ -48,6 +50,9 @@ export default function ServiceAutocomplete({
 	// Cache for search results
 	const searchCache = useRef<Map<string, SuggestionGroup[]>>(new Map());
 
+	// request abort controller
+	const abortRef = useRef<AbortController | null>(null);
+
 	// Fetch suggestions from multiple sources with caching
 	const fetchSuggestions = useCallback(async (query: string) => {
 		// Check cache first
@@ -56,62 +61,61 @@ export default function ServiceAutocomplete({
 			return;
 		}
 
+		// categories from 2 chars, services from 3
 		if (query.length < 2) {
 			setSuggestionGroups([]);
 			return;
 		}
+
+		// cancel previous in-flight
+		if (abortRef.current) {
+			abortRef.current.abort();
+		}
+		const controller = new AbortController();
+		abortRef.current = controller;
 
 		setLoading(true);
 		try {
 			const API_BASE_URL =
 				process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
-			// Fetch from all sources in parallel
-			const [servicesResponse, categoriesResponse, salonsResponse] =
-				await Promise.allSettled([
+			// Build requests with AbortController and minimal set
+			const reqs: Promise<any>[] = [];
+			// categories (>=2)
+			reqs.push(
+				fetch(
+					`${API_BASE_URL}/search/categories?q=${encodeURIComponent(query)}&lang=en`,
+					{ signal: controller.signal }
+				)
+			);
+			// services (>=3)
+			if (query.length >= 3) {
+				reqs.push(
 					fetch(
-						`${API_BASE_URL}/search/services?q=${encodeURIComponent(query)}&lang=en`
-					),
+						`${API_BASE_URL}/search/services?q=${encodeURIComponent(query)}&lang=en`,
+						{ signal: controller.signal }
+					)
+				);
+			}
+			// optional: lightweight salon suggest (>=3)
+			if (query.length >= 3) {
+				reqs.push(
 					fetch(
-						`${API_BASE_URL}/search/categories?q=${encodeURIComponent(query)}&lang=en`
-					),
-					fetch(
-						`${API_BASE_URL}/salons/search?search=${encodeURIComponent(query)}&limit=5`
-					),
-				]);
+						`${API_BASE_URL}/salons/suggest?search=${encodeURIComponent(query)}&limit=5`,
+						{ signal: controller.signal }
+					)
+				);
+			}
+
+			// Fetch in parallel
+			const settled = await Promise.allSettled(reqs);
 
 			const groups: SuggestionGroup[] = [];
 
-			// Process services
-			if (
-				servicesResponse.status === 'fulfilled' &&
-				servicesResponse.value.ok
-			) {
-				const servicesResult = await servicesResponse.value.json();
-				if (servicesResult.success && servicesResult.data?.length > 0) {
-					groups.push({
-						type: 'service',
-						title: 'Services',
-						suggestions: servicesResult.data.map((service: any) => ({
-							id: service.id,
-							name: service.name,
-							type: 'service' as const,
-							category: service.serviceCategory
-								? {
-										name: service.serviceCategory.nameEn,
-									}
-								: undefined,
-						})),
-					});
-				}
-			}
-
-			// Process categories
-			if (
-				categoriesResponse.status === 'fulfilled' &&
-				categoriesResponse.value.ok
-			) {
-				const categoriesResult = await categoriesResponse.value.json();
+			// Process categories (first response)
+			const categoriesResp = settled[0];
+			if (categoriesResp.status === 'fulfilled' && categoriesResp.value.ok) {
+				const categoriesResult = await categoriesResp.value.json();
 				if (categoriesResult.success && categoriesResult.data?.length > 0) {
 					groups.push({
 						type: 'category',
@@ -126,9 +130,38 @@ export default function ServiceAutocomplete({
 				}
 			}
 
-			// Process salons
-			if (salonsResponse.status === 'fulfilled' && salonsResponse.value.ok) {
-				const salonsResult = await salonsResponse.value.json();
+			// Process services (second response when present)
+			const servicesResp = query.length >= 3 ? settled[1] : null;
+			if (
+				servicesResp &&
+				servicesResp.status === 'fulfilled' &&
+				servicesResp.value.ok
+			) {
+				const servicesResult = await servicesResp.value.json();
+				if (servicesResult.success && servicesResult.data?.length > 0) {
+					groups.push({
+						type: 'service',
+						title: 'Services',
+						suggestions: servicesResult.data.map((service: any) => ({
+							id: service.id,
+							name: service.name,
+							type: 'service' as const,
+							category: service.serviceCategory
+								? { name: service.serviceCategory.nameEn }
+								: undefined,
+						})),
+					});
+				}
+			}
+
+			// Process salons suggest (third response when present)
+			const salonsResp = query.length >= 3 ? settled[2] : null;
+			if (
+				salonsResp &&
+				salonsResp.status === 'fulfilled' &&
+				salonsResp.value.ok
+			) {
+				const salonsResult = await salonsResp.value.json();
 				if (salonsResult.success && salonsResult.data?.length > 0) {
 					groups.push({
 						type: 'salon',
@@ -191,7 +224,7 @@ export default function ServiceAutocomplete({
 					setSuggestionGroups([
 						{
 							type: 'category',
-							title: 'Popular Categories',
+							title: t.homepage.popularCategories,
 							suggestions: popularCategories,
 						},
 					]);

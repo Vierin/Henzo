@@ -91,7 +91,7 @@ export default function HomePageClient() {
 												24/7
 											</p>
 											<p className="text-xs sm:text-sm text-muted-foreground">
-												Online Booking
+												{t.homepage.onlineBooking}
 											</p>
 										</div>
 										<div className="w-px h-8 sm:h-10 bg-gray-300"></div>
@@ -99,20 +99,20 @@ export default function HomePageClient() {
 											<p className="text-2xl sm:text-3xl font-bold text-primary">
 												5
 												<span className="text-lg sm:text-xl relative left-1">
-													min
+													{t.homepage.minutesShort}
 												</span>
 											</p>
 											<p className="text-xs sm:text-sm text-muted-foreground">
-												to book
+												{t.homepage.toBook}
 											</p>
 										</div>
 										<div className="w-px h-8 sm:h-10 bg-gray-300"></div>
 										<div className="">
 											<p className="text-2xl sm:text-3xl font-bold text-primary">
-												Free
+												{t.homepage.free}
 											</p>
 											<p className="text-xs sm:text-sm text-muted-foreground">
-												Booking
+												{t.homepage.booking}
 											</p>
 										</div>
 									</div>

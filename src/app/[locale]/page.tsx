@@ -1,8 +1,5 @@
 import HomePageClient from '../HomePageClient';
-import { seoConfig } from '@/constants/seoConfig';
 import { isLocale, type Locale } from '@/i18n/routing';
-
-export const metadata = seoConfig.home;
 
 export default async function HomePage({
 	params,

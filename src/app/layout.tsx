@@ -4,7 +4,7 @@ import './globals.css';
 import Toaster from '@/components/Toaster';
 import QueryProvider from '@/components/QueryProvider';
 import AuthProvider from '@/components/AuthProvider';
-import ConditionalFooter from '../components/ConditionalFooter';
+import ConditionalFooter from '@/components/ConditionalFooter';
 import CookieBanner from '@/components/CookieBanner';
 import { LanguageProvider } from '@/contexts/LanguageContext';
 

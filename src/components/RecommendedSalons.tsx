@@ -8,9 +8,11 @@ import ErrorDisplay from './ErrorDisplay';
 import Image from 'next/image';
 import Link from 'next/link';
 import { ChevronRight, Star } from 'lucide-react';
+import { useTranslation } from '@/contexts/LanguageContext';
 import { Salon } from '@/types';
 
 export default function RecommendedSalons() {
+	const t = useTranslation();
 	const { getSalonUrl } = useSalonSlug();
 	const {
 		data: salons = [],
@@ -65,12 +67,10 @@ export default function RecommendedSalons() {
 			<div className="mx-auto max-w-6xl relative">
 				<header className="mb-8 sm:mb-12 text-center px-4 sm:px-6">
 					<h2 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-3 sm:mb-4">
-						Top-Rated Beauty & Wellness Salons
+						{(t.homepage as any).topRatedTitle || 'Top Rated Salons'}
 					</h2>
 					<p className="text-base sm:text-lg text-gray-600 max-w-2xl mx-auto">
-						Discover highly-rated salons and spas in your area. Book
-						appointments for hair styling, massages, facials, manicures, and
-						more professional services.
+						{(t.homepage as any).topRatedSubtitle || 'Popular choices near you'}
 					</p>
 				</header>
 
@@ -118,7 +118,6 @@ export default function RecommendedSalons() {
 											: 'Hair & Makeup';
 									const avgRating = salon.avgRating || 0;
 									const reviewCount = salon._count?.reviews || 0;
-									const priceRange = '$$'; // Default price range since it's not in the Salon type
 
 									return (
 										<Link
@@ -135,7 +134,8 @@ export default function RecommendedSalons() {
 															alt={salon.name}
 															width={400}
 															height={240}
-															priority={true}
+															priority={index === 0}
+															loading={index === 0 ? 'eager' : 'lazy'}
 															sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
 															className="grayscale-[30%] w-full h-full object-cover"
 															unoptimized={imageData.isExternal}
@@ -144,12 +144,15 @@ export default function RecommendedSalons() {
 														<span className="text-6xl">💇‍♀️</span>
 													);
 												})()}
-												{/* Price range badge */}
-												<div className="absolute top-4 right-4 bg-white rounded-full px-3 py-1 shadow-md">
-													<span className="text-sm font-medium text-gray-700">
-														{priceRange}
-													</span>
-												</div>
+												{/* Average rating badge (replaces price range) */}
+												{avgRating > 0 && (
+													<div className="absolute top-3 right-3 bg-white rounded-full px-3 py-1 shadow-md flex items-center gap-1">
+														<Star className="w-4 h-4 text-[#ff5b5b] fill-[#ff5b5b]" />
+														<span className="text-sm font-semibold text-gray-900">
+															{avgRating.toFixed(1)} ({reviewCount})
+														</span>
+													</div>
+												)}
 											</div>
 											<div className="p-5">
 												{/* Title and Rating */}
@@ -157,16 +160,6 @@ export default function RecommendedSalons() {
 													<h3 className="text-xl font-bold text-gray-900 flex-1">
 														{salon.name}
 													</h3>
-													{avgRating > 0 && (
-														<div className="flex items-center gap-1 ml-2 flex-shrink-0">
-															<span className="text-red-500">
-																<Star className="w-4 h-4 text-[#ff5b5b] fill-[#ff5b5b]" />
-															</span>
-															<span className="text-sm font-semibold text-gray-900">
-																{avgRating.toFixed(1)}
-															</span>
-														</div>
-													)}
 												</div>
 
 												{/* Category */}
@@ -175,11 +168,7 @@ export default function RecommendedSalons() {
 												</p>
 
 												{/* Footer: Reviews and View Details */}
-												<div className="flex items-center justify-between">
-													<span className="text-gray-500 text-sm">
-														{reviewCount}{' '}
-														{reviewCount === 1 ? 'review' : 'reviews'}
-													</span>
+												<div className="flex items-start justify-end">
 													<span className="text-red-500 flex gap-1 items-center text-sm font-medium hover:text-red-600 transition-colors">
 														View Details
 														<ChevronRight className="w-4 h-4" />
@@ -204,7 +193,6 @@ export default function RecommendedSalons() {
 												: 'Hair & Makeup';
 										const avgRating = salon.avgRating || 0;
 										const reviewCount = salon._count?.reviews || 0;
-										const priceRange = '$$'; // Default price range since it's not in the Salon type
 
 										return (
 											<Link
@@ -222,6 +210,7 @@ export default function RecommendedSalons() {
 																alt={salon.name}
 																width={400}
 																height={240}
+																loading={index === 0 ? 'eager' : 'lazy'}
 																style={{
 																	width: '100%',
 																	height: '100%',
@@ -234,12 +223,15 @@ export default function RecommendedSalons() {
 															<span className="text-6xl">💇‍♀️</span>
 														);
 													})()}
-													{/* Price range badge */}
-													<div className="absolute top-3 right-3 bg-white rounded-full px-3 shadow-sm">
-														<span className="text-sm font-medium text-gray-700">
-															{priceRange}
-														</span>
-													</div>
+													{/* Average rating badge (replaces price range) */}
+													{avgRating > 0 && (
+														<div className="absolute top-3 right-3 bg-white rounded-full px-3 py-0.5 shadow-sm flex items-center gap-1">
+															<Star className="w-4 h-4 text-[#ff5b5b] fill-[#ff5b5b]" />
+															<span className="text-sm font-semibold text-gray-900">
+																{avgRating.toFixed(1)} ({reviewCount})
+															</span>
+														</div>
+													)}
 												</div>
 												<div className="p-3">
 													{/* Title and Rating */}
@@ -283,6 +275,16 @@ export default function RecommendedSalons() {
 						</div>
 					</>
 				)}
+			</div>
+
+			<div className="mx-auto max-w-6xl px-6 mt-6 sm:mt-8 text-center">
+				<Link
+					href="/salons"
+					className="inline-flex items-center gap-2 text-[#ff5b5b] hover:text-[#e04a4a] font-medium"
+				>
+					See all salons
+					<ChevronRight className="w-4 h-4" />
+				</Link>
 			</div>
 		</section>
 	);

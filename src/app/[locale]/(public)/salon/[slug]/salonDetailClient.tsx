@@ -2,16 +2,16 @@
 
 import { useState, useCallback, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
-import BookingModal from '../../../../components/BookingModal';
-import LoadingSpinner from '../../../../components/LoadingSpinner';
-import ErrorDisplay from '../../../../components/ErrorDisplay';
-import MapComponentWithCoords from '../../../../components/MapComponentWithCoords';
-import MobileSearchTrigger from '../../../../components/MobileSearchTrigger';
+import BookingModal from '@/components/BookingModal';
+import LoadingSpinner from '@/components/LoadingSpinner';
+import ErrorDisplay from '@/components/ErrorDisplay';
+import MapComponentWithCoords from '@/components/MapComponentWithCoords';
+import MobileSearchTrigger from '@/components/MobileSearchTrigger';
 import { Service, WorkingHours, Salon } from '@/types';
 import { supabase } from '@/lib/supabase';
-import SalonPhotoSlider from '../../../../components/SalonPhotoSlider';
+import SalonPhotoSlider from '@/components/SalonPhotoSlider';
 import { generateSalonSlug } from '@/utils/slug';
-import ReviewsSection from '../../../../components/ReviewsSection';
+import ReviewsSection from '@/components/ReviewsSection';
 import {
 	Clock,
 	Clock1,
@@ -30,12 +30,14 @@ import {
 	useIsFavorite,
 } from '@/hooks/useFavorites';
 import { useAuthStore } from '@/stores/authStore';
+import { useTranslation } from '@/contexts/LanguageContext';
 
 interface SalonDetailClientProps {
 	salon: Salon;
 }
 
 export default function SalonDetailClient({ salon }: SalonDetailClientProps) {
+	const t = useTranslation();
 	// Debug log for salon data
 	console.log('SalonDetailClient received salon:', {
 		salonId: salon.id,
@@ -131,7 +133,7 @@ export default function SalonDetailClient({ salon }: SalonDetailClientProps) {
 
 	const formatWorkingHours = useCallback(
 		(workingHours: WorkingHours | undefined) => {
-			if (!workingHours) return 'Hours not specified';
+			if (!workingHours) return t.salon.hoursNotSpecified;
 
 			const days: (keyof WorkingHours)[] = [
 				'monday',
@@ -142,19 +144,27 @@ export default function SalonDetailClient({ salon }: SalonDetailClientProps) {
 				'saturday',
 				'sunday',
 			];
-			const dayNames = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+			const dayNames = [
+				t.salon.daysShort.mon,
+				t.salon.daysShort.tue,
+				t.salon.daysShort.wed,
+				t.salon.daysShort.thu,
+				t.salon.daysShort.fri,
+				t.salon.daysShort.sat,
+				t.salon.daysShort.sun,
+			];
 
 			return days
 				.map((day, index) => {
 					const hours = workingHours[day];
 					if (!hours || hours.closed) {
-						return `${dayNames[index]}: Closed`;
+						return `${dayNames[index]}: ${t.salon.closed}`;
 					}
 					return `${dayNames[index]}: ${hours.open} - ${hours.close}`;
 				})
 				.join('\n');
 		},
-		[]
+		[t.salon.closed, t.salon.daysShort, t.salon.hoursNotSpecified]
 	);
 
 	const serviceCategories = useMemo(() => {
@@ -212,6 +222,18 @@ export default function SalonDetailClient({ salon }: SalonDetailClientProps) {
 	}, []);
 
 	const tabs = ['Services', 'Information', 'Reviews'] as const;
+	const tabLabel = (tab: (typeof tabs)[number]) => {
+		switch (tab) {
+			case 'Services':
+				return t.salon.services;
+			case 'Reviews':
+				return t.salon.reviews;
+			case 'Information':
+				return t.salon.information;
+			default:
+				return tab;
+		}
+	};
 
 	return (
 		<main className="py-6 sm:py-8 px-4 sm:px-6" role="main">
@@ -268,7 +290,7 @@ export default function SalonDetailClient({ salon }: SalonDetailClientProps) {
 											: 'text-gray-600 hover:text-gray-900'
 									} ${tab === 'Information' ? 'md:hidden' : ''}`}
 								>
-									{tab}
+									{tabLabel(tab)}
 								</button>
 							))}
 						</nav>
@@ -323,11 +345,13 @@ export default function SalonDetailClient({ salon }: SalonDetailClientProps) {
 																<button
 																	onClick={() => handleBookService(service)}
 																	className="ml-4 bg-[#ff5b5b] text-white px-4 md:px-6 md:py-2 py-1 rounded-lg font-medium hover:bg-[#e04a4a] transition-colors focus:outline-none focus:ring-2 focus:ring-[#ff5b5b] focus:ring-offset-2 text-sm md:text-base"
-																	aria-label={`Book ${service.name} service`}
+																	aria-label={`${t.salon.bookNow} ${service.name}`}
 																>
-																	<span className="md:hidden">Book</span>
+																	<span className="md:hidden">
+																		{t.salon.bookNow}
+																	</span>
 																	<span className="hidden md:inline">
-																		Book Now
+																		{t.salon.bookNow}
 																	</span>
 																</button>
 															</div>
@@ -387,15 +411,14 @@ export default function SalonDetailClient({ salon }: SalonDetailClientProps) {
 									</h2>
 
 									<p className="text-gray-700 leading-relaxed mb-6">
-										{salon.description ||
-											'Professional beauty and wellness services to help you look and feel your best.'}
+										{salon.description || t.salon.description}
 									</p>
 
 									{/* Mini Map */}
 									{salon.address && (
 										<div className="mb-6">
 											<h3 className="text-lg font-semibold text-gray-900 mb-3">
-												Location
+												{t.salon.location}
 											</h3>
 											<div className="w-full rounded-lg overflow-hidden border border-gray-200">
 												<MapComponentWithCoords
@@ -407,9 +430,9 @@ export default function SalonDetailClient({ salon }: SalonDetailClientProps) {
 											<button
 												onClick={handleGetDirections}
 												className="w-full mt-3 border border-gray-300 text-gray-700 py-3 px-6 rounded-lg font-medium hover:bg-gray-50 transition-colors focus:outline-none focus:ring-2 focus:ring-[#ff5b5b] focus:ring-offset-2"
-												aria-label="Get directions to salon"
+												aria-label={t.salon.getDirections}
 											>
-												Get Directions
+												{t.salon.getDirections}
 											</button>
 										</div>
 									)}
@@ -430,8 +453,7 @@ export default function SalonDetailClient({ salon }: SalonDetailClientProps) {
 															{renderStars(rating)}
 														</div>
 														<span className="text-gray-600 text-sm">
-															{rating}/5 ({reviewCount}{' '}
-															{reviewCount === 1 ? 'review' : 'reviews'})
+															{rating}/5 ({reviewCount} {t.salon.reviews})
 														</span>
 													</div>
 												);
@@ -451,7 +473,7 @@ export default function SalonDetailClient({ salon }: SalonDetailClientProps) {
 														<MapPin className="w-4 h-4" />
 													</span>
 													<span className="font-medium text-gray-900">
-														Address
+														{t.salon.address}
 													</span>
 												</div>
 												<address className="text-gray-600 text-sm ml-6 not-italic">
@@ -470,7 +492,7 @@ export default function SalonDetailClient({ salon }: SalonDetailClientProps) {
 													<Clock className="w-4 h-4" />
 												</span>
 												<span className="font-medium text-gray-900">
-													Opening Hours
+													{t.salon.workingHours}
 												</span>
 											</div>
 											<div className="text-gray-600 text-sm ml-6">
@@ -548,7 +570,7 @@ export default function SalonDetailClient({ salon }: SalonDetailClientProps) {
 						{salon.address && (
 							<div className="mb-6">
 								<h3 className="text-lg font-semibold text-gray-900 mb-3">
-									Location
+									{t.salon.location}
 								</h3>
 								<div className="w-full rounded-lg overflow-hidden border border-gray-200">
 									<MapComponentWithCoords
@@ -560,9 +582,9 @@ export default function SalonDetailClient({ salon }: SalonDetailClientProps) {
 								<button
 									onClick={handleGetDirections}
 									className="w-full mt-3 border border-gray-300 text-gray-700 py-3 px-6 rounded-lg font-medium hover:bg-gray-50 transition-colors focus:outline-none focus:ring-2 focus:ring-[#ff5b5b] focus:ring-offset-2"
-									aria-label="Get directions to salon"
+									aria-label={t.salon.getDirections}
 								>
-									Get Directions
+									{t.salon.getDirections}
 								</button>
 							</div>
 						)}
@@ -583,8 +605,7 @@ export default function SalonDetailClient({ salon }: SalonDetailClientProps) {
 												{renderStars(rating)}
 											</div>
 											<span className="text-gray-600 text-sm">
-												{rating}/5 ({reviewCount}{' '}
-												{reviewCount === 1 ? 'review' : 'reviews'})
+												{rating}/5 ({reviewCount} {t.salon.reviews})
 											</span>
 										</div>
 									);
@@ -603,7 +624,9 @@ export default function SalonDetailClient({ salon }: SalonDetailClientProps) {
 										>
 											<MapPin className="w-4 h-4" />
 										</span>
-										<span className="font-medium text-gray-900">Address</span>
+										<span className="font-medium text-gray-900">
+											{t.salon.address}
+										</span>
 									</div>
 									<address className="text-gray-600 text-sm ml-6 not-italic">
 										{salon.address}
@@ -617,7 +640,7 @@ export default function SalonDetailClient({ salon }: SalonDetailClientProps) {
 										<Clock className="w-4 h-4" />
 									</span>
 									<span className="font-medium text-gray-900">
-										Opening Hours
+										{t.salon.workingHours}
 									</span>
 								</div>
 								<div className="text-gray-600 text-sm ml-6">

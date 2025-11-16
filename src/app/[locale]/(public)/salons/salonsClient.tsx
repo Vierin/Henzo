@@ -2,10 +2,10 @@
 
 import { useState, useMemo, useEffect, useCallback } from 'react';
 import { useSearchParams } from 'next/navigation';
-import BookingModal from '../../../components/BookingModal';
-import LoadingSpinner from '../../../components/LoadingSpinner';
-import ErrorDisplay from '../../../components/ErrorDisplay';
-import SalonCard from '../../../components/SalonCard';
+import BookingModal from '@/components/BookingModal';
+import LoadingSpinner from '@/components/LoadingSpinner';
+import ErrorDisplay from '@/components/ErrorDisplay';
+import SalonCard from '@/components/SalonCard';
 import { useSalonSearch } from '@/hooks/useSalonSearch';
 import { ServiceResponseDto } from '@/types/dto/service.dto';
 import { Salon, Service } from '@/types';
@@ -86,6 +86,10 @@ export default function SalonsClient() {
 		location: selectedLocation,
 		category: activeFilter,
 		sortBy: sortBy,
+		date: selectedDate
+			? `${selectedDate.getFullYear()}-${String(selectedDate.getMonth() + 1).padStart(2, '0')}-${String(selectedDate.getDate()).padStart(2, '0')}`
+			: undefined,
+		time: selectedTimeInterval || undefined,
 		accumulate: currentPage > 1, // Accumulate results for pagination
 	});
 
@@ -100,8 +104,15 @@ export default function SalonsClient() {
 				// Reset accumulated results for new search
 				setAccumulatedSalons(result.data);
 			} else {
-				// Append new results for pagination
-				setAccumulatedSalons((prev) => [...prev, ...result.data]);
+				// Append new results for pagination (dedupe by id)
+				setAccumulatedSalons((prev) => {
+					const existing = new Set(prev.map((s) => s.id));
+					const merged = [...prev];
+					for (const s of result.data as Salon[]) {
+						if (!existing.has(s.id)) merged.push(s);
+					}
+					return merged;
+				});
 			}
 			setCurrentPagination(result.pagination);
 		}
@@ -269,7 +280,7 @@ export default function SalonsClient() {
 					</header>
 
 					{/* Salon Cards */}
-					<section aria-label="Search results">
+					<section aria-label="Search results" role="list">
 						<div className="space-y-4 sm:space-y-6">
 							{loading ? (
 								<div role="status" aria-live="polite">

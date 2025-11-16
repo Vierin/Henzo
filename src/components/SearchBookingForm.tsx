@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import AddressAutocomplete from './AddressAutocomplete';
 import ServiceAutocomplete from './ServiceAutocomplete';
 import DateTimePicker from './DateTimePicker';
+import { useTranslation } from '@/contexts/LanguageContext';
 
 interface SearchBookingFormProps {
 	className?: string;
@@ -16,6 +17,7 @@ export default function SearchBookingForm({
 	inline = false,
 }: SearchBookingFormProps) {
 	const router = useRouter();
+	const t = useTranslation();
 	const [searchQuery, setSearchQuery] = useState('');
 	const [selectedLocation, setSelectedLocation] = useState('');
 	const [selectedDate, setSelectedDate] = useState<Date | null>(null);
@@ -24,15 +26,27 @@ export default function SearchBookingForm({
 	const [validationError, setValidationError] = useState<string>('');
 	const [errorField, setErrorField] = useState<string>('');
 
-	const handleSearch = async () => {
-		// Clear previous validation errors
+	const clearValidation = () => {
 		setValidationError('');
 		setErrorField('');
+	};
+
+	const handleKeyDown = (e: React.KeyboardEvent) => {
+		if (e.key === 'Enter' && !isLoading) {
+			e.preventDefault();
+			handleSearch();
+		}
+	};
+
+	const handleSearch = async () => {
+		if (isLoading) return;
+		// Clear previous validation errors
+		clearValidation();
 
 		// Validate that at least one of the first two fields is filled (search or location)
 		// Date is optional
 		if (!searchQuery.trim() && !selectedLocation.trim()) {
-			setValidationError('Please enter a search term or location');
+			setValidationError(t.common.search + ' / ' + t.salon.address);
 			setErrorField('searchQuery'); // Focus on the first field (search)
 			return;
 		}
@@ -59,9 +73,7 @@ export default function SearchBookingForm({
 			router.push(finalUrl);
 		} catch (error) {
 			console.error('Search error:', error);
-			setValidationError(
-				'An error occurred while searching. Please try again.'
-			);
+			setValidationError('Error');
 		} finally {
 			setIsLoading(false);
 		}
@@ -91,13 +103,13 @@ export default function SearchBookingForm({
 								setSearchQuery(value);
 								// Clear error when user starts typing
 								if (errorField === 'searchQuery') {
-									setValidationError('');
-									setErrorField('');
+									clearValidation();
 								}
 							}}
-							placeholder="Search treatments, categories..."
+							placeholder={t.homepage.searchPlaceholder}
 							className={`h-full ${validationError && errorField === 'searchQuery' ? 'border-red-500 focus:ring-red-500' : ''}`}
 							inline={true}
+							onKeyDown={handleKeyDown}
 						/>
 					</div>
 
@@ -108,22 +120,21 @@ export default function SearchBookingForm({
 							onChange={(value) => {
 								setSelectedLocation(value);
 								// Clear error when user starts typing
-								if (validationError) {
-									setValidationError('');
-									setErrorField('');
+								if (errorField === 'location' || validationError) {
+									clearValidation();
 								}
 							}}
 							onAddressSelect={(address, lat, lon) => {
 								setSelectedLocation(address);
 								// Clear error when user selects address
-								if (validationError) {
-									setValidationError('');
-									setErrorField('');
+								if (errorField === 'location' || validationError) {
+									clearValidation();
 								}
 							}}
-							placeholder="Enter address"
-							className={`h-full ${validationError && errorField === 'searchQuery' ? 'border-red-500 focus:ring-red-500' : ''}`}
+							placeholder={t.homepage.locationPlaceholder}
+							className={`h-full ${validationError && errorField === 'location' ? 'border-red-500 focus:ring-red-500' : ''}`}
 							inline={true}
+							onKeyDown={handleKeyDown}
 						/>
 					</div>
 
@@ -134,7 +145,7 @@ export default function SearchBookingForm({
 							timeInterval={selectedTimeInterval}
 							onDateChange={setSelectedDate}
 							onTimeChange={setSelectedTimeInterval}
-							placeholder="Select date and time"
+							placeholder={`${t.homepage.datePlaceholder} & ${t.homepage.timePlaceholder}`}
 							className="h-full"
 							inline={true}
 						/>
@@ -151,10 +162,10 @@ export default function SearchBookingForm({
 						{isLoading ? (
 							<>
 								<div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-								Searching...
+								{t.common.search + '...'}
 							</>
 						) : (
-							'Find salon'
+							t.navigation.salons
 						)}
 					</button>
 				</div>
@@ -185,12 +196,12 @@ export default function SearchBookingForm({
 							setSearchQuery(value);
 							// Clear error when user starts typing
 							if (errorField === 'searchQuery') {
-								setValidationError('');
-								setErrorField('');
+								clearValidation();
 							}
 						}}
-						placeholder="Search for treatments, categories or salon name..."
+						placeholder={t.homepage.searchPlaceholder}
 						className={`w-full h-full text-sm py-3 ${validationError && errorField === 'searchQuery' ? 'border-red-500 focus:ring-red-500' : ''}`}
+						onKeyDown={handleKeyDown}
 					/>
 				</div>
 
@@ -201,25 +212,24 @@ export default function SearchBookingForm({
 						onChange={(value) => {
 							setSelectedLocation(value);
 							// Clear error when user starts typing
-							if (validationError) {
-								setValidationError('');
-								setErrorField('');
+							if (errorField === 'location' || validationError) {
+								clearValidation();
 							}
 						}}
 						onAddressSelect={(address, lat, lon) => {
 							setSelectedLocation(address);
 							// Clear error when user selects address
-							if (validationError) {
-								setValidationError('');
-								setErrorField('');
+							if (errorField === 'location' || validationError) {
+								clearValidation();
 							}
 						}}
-						placeholder="Enter address"
+						placeholder={t.homepage.locationPlaceholder}
 						className={`w-full h-full px-4 py-3 placeholder:text-gray-900 pl-12 pr-12 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#ff5b5b] focus:border-transparent text-gray-900 text-sm ${
-							validationError && errorField === 'searchQuery'
+							validationError && errorField === 'location'
 								? 'border-red-500 focus:ring-red-500'
 								: ''
 						}`}
+						onKeyDown={handleKeyDown}
 					/>
 				</div>
 
@@ -229,7 +239,7 @@ export default function SearchBookingForm({
 					timeInterval={selectedTimeInterval}
 					onDateChange={setSelectedDate}
 					onTimeChange={setSelectedTimeInterval}
-					placeholder="Select date and time"
+					placeholder={`${t.homepage.datePlaceholder} & ${t.homepage.timePlaceholder}`}
 					className="w-full h-13"
 				/>
 			</div>
@@ -245,10 +255,10 @@ export default function SearchBookingForm({
 				{isLoading ? (
 					<>
 						<div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-						Searching...
+						{t.common.search + '...'}
 					</>
 				) : (
-					'Find salon'
+					t.navigation.salons
 				)}
 			</button>
 		</div>

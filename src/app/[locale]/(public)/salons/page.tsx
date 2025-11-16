@@ -1,6 +1,6 @@
 import { Metadata } from 'next';
 import { Suspense } from 'react';
-import SalonsClient from '@/app/(public)/salons/salonsClient';
+import SalonsClient from '@/app/[locale]/(public)/salons/salonsClient';
 
 export async function generateMetadata(): Promise<Metadata> {
 	const title = 'Find Beauty Salons & Services | Henzo';

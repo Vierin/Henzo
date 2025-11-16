@@ -4,6 +4,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { cleanAddressFromCountry } from '@/constants/locations';
+import { useTranslation } from '@/contexts/LanguageContext';
 
 interface AddressSuggestion {
 	display_name: string;
@@ -30,6 +31,7 @@ export default function AddressAutocomplete({
 	showIcon = true,
 	inline = false,
 }: AddressAutocompleteProps) {
+	const t = useTranslation();
 	const [suggestions, setSuggestions] = useState<AddressSuggestion[]>([]);
 	const [showSuggestions, setShowSuggestions] = useState(false);
 	const [loading, setLoading] = useState(false);
@@ -44,7 +46,7 @@ export default function AddressAutocomplete({
 	// Предустановленные подсказки для Вьетнама
 	const defaultSuggestions: AddressSuggestion[] = [
 		{
-			display_name: 'Use Current Location',
+			display_name: t.common.useCurrentLocation,
 			lat: '0',
 			lon: '0',
 		},
@@ -195,7 +197,7 @@ export default function AddressAutocomplete({
 
 	const handleSuggestionClick = (suggestion: AddressSuggestion) => {
 		// Специальная обработка для "Use Current Location"
-		if (suggestion.display_name === 'Use Current Location') {
+		if (suggestion.display_name === t.common.useCurrentLocation) {
 			handleCurrentLocation();
 			return;
 		}
@@ -328,12 +330,10 @@ export default function AddressAutocomplete({
 			<input
 				ref={inputRef}
 				type="text"
-				value={isGettingLocation ? 'Getting your location...' : value}
+				value={isGettingLocation ? t.common.gettingLocation : value}
 				onChange={handleInputChange}
 				onFocus={handleInputFocus}
-				placeholder={
-					isGettingLocation ? 'Getting your location...' : placeholder
-				}
+				placeholder={isGettingLocation ? t.common.gettingLocation : placeholder}
 				disabled={isGettingLocation}
 				className={
 					inline
@@ -385,7 +385,7 @@ export default function AddressAutocomplete({
 				>
 					{suggestions.map((suggestion, index) => {
 						const isDefaultSuggestion =
-							suggestion.display_name === 'Use Current Location' ||
+							suggestion.display_name === t.common.useCurrentLocation ||
 							suggestion.display_name === 'Đà Nẵng';
 
 						return (
@@ -397,7 +397,7 @@ export default function AddressAutocomplete({
 								}`}
 							>
 								{isDefaultSuggestion &&
-									suggestion.display_name === 'Use Current Location' && (
+									suggestion.display_name === t.common.useCurrentLocation && (
 										<svg
 											className="w-4 h-4 text-gray-700"
 											fill="none"

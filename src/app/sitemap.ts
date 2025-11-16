@@ -2,76 +2,59 @@ import { MetadataRoute } from 'next';
 
 export default function sitemap(): MetadataRoute.Sitemap {
 	const baseUrl = process.env.NEXT_PUBLIC_FRONTEND_URL || 'https://henzo.app';
+	const locales = ['en', 'ru', 'vi'] as const;
+
+	function withLocale(path: string, locale: (typeof locales)[number]) {
+		const clean = path.startsWith('/') ? path : `/${path}`;
+		return `${baseUrl}/${locale}${clean === '/' ? '' : clean}`;
+	}
+
+	function alternatesFor(path: string) {
+		return {
+			languages: {
+				'en-US': withLocale(path, 'en'),
+				'ru-RU': withLocale(path, 'ru'),
+				'vi-VN': withLocale(path, 'vi'),
+			},
+		} as const;
+	}
 
 	// Static pages - optimized priorities for Vietnamese market
-	const staticPages = [
+	const staticPaths = [
+		{ path: '/', changeFrequency: 'daily' as const, priority: 1 },
+		{ path: '/salons', changeFrequency: 'daily' as const, priority: 0.9 },
+		{ path: '/business', changeFrequency: 'weekly' as const, priority: 0.95 },
 		{
-			url: baseUrl,
-			lastModified: new Date(),
-			changeFrequency: 'daily' as const,
-			priority: 1,
-		},
-		{
-			url: `${baseUrl}/salons`,
-			lastModified: new Date(),
-			changeFrequency: 'daily' as const,
-			priority: 0.9,
-		},
-		{
-			url: `${baseUrl}/business`,
-			lastModified: new Date(),
-			changeFrequency: 'weekly' as const,
-			priority: 0.95,
-		},
-		{
-			url: `${baseUrl}/business/register`,
-			lastModified: new Date(),
+			path: '/business/register',
 			changeFrequency: 'monthly' as const,
 			priority: 0.85,
 		},
+		{ path: '/map', changeFrequency: 'daily' as const, priority: 0.8 },
+		{ path: '/about', changeFrequency: 'monthly' as const, priority: 0.6 },
+		{ path: '/contact', changeFrequency: 'monthly' as const, priority: 0.6 },
+		{ path: '/login', changeFrequency: 'monthly' as const, priority: 0.5 },
+		{ path: '/register', changeFrequency: 'monthly' as const, priority: 0.5 },
 		{
-			url: `${baseUrl}/map`,
-			lastModified: new Date(),
-			changeFrequency: 'daily' as const,
-			priority: 0.8,
-		},
-		{
-			url: `${baseUrl}/about`,
-			lastModified: new Date(),
-			changeFrequency: 'monthly' as const,
-			priority: 0.6,
-		},
-		{
-			url: `${baseUrl}/contact`,
-			lastModified: new Date(),
-			changeFrequency: 'monthly' as const,
-			priority: 0.6,
-		},
-		{
-			url: `${baseUrl}/login`,
-			lastModified: new Date(),
-			changeFrequency: 'monthly' as const,
-			priority: 0.5,
-		},
-		{
-			url: `${baseUrl}/register`,
-			lastModified: new Date(),
-			changeFrequency: 'monthly' as const,
-			priority: 0.5,
-		},
-		{
-			url: `${baseUrl}/terms-of-service`,
-			lastModified: new Date(),
+			path: '/terms-of-service',
 			changeFrequency: 'yearly' as const,
 			priority: 0.3,
 		},
 		{
-			url: `${baseUrl}/privacy-policy`,
-			lastModified: new Date(),
+			path: '/privacy-policy',
 			changeFrequency: 'yearly' as const,
 			priority: 0.3,
 		},
 	];
+
+	const staticPages = staticPaths.flatMap((item) =>
+		locales.map((locale) => ({
+			url: withLocale(item.path, locale),
+			lastModified: new Date(),
+			changeFrequency: item.changeFrequency,
+			priority: item.priority,
+			alternates: alternatesFor(item.path),
+		}))
+	);
 
 	// Category pages
 	const categoryPages = [
@@ -81,12 +64,15 @@ export default function sitemap(): MetadataRoute.Sitemap {
 		'manicure-pedicure',
 		'cosmetic-medicine',
 		'other-services',
-	].map((slug) => ({
-		url: `${baseUrl}/category/${slug}`,
-		lastModified: new Date(),
-		changeFrequency: 'weekly' as const,
-		priority: 0.8,
-	}));
+	].flatMap((slug) =>
+		locales.map((locale) => ({
+			url: withLocale(`/category/${slug}`, locale),
+			lastModified: new Date(),
+			changeFrequency: 'weekly' as const,
+			priority: 0.8,
+			alternates: alternatesFor(`/category/${slug}`),
+		}))
+	);
 
 	return [...staticPages, ...categoryPages];
 }

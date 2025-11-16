@@ -1,6 +1,7 @@
 'use client';
 
 import { usePathname } from 'next/navigation';
+import { stripLocaleFromPath } from '@/i18n/routing';
 import SearchBookingForm from './SearchBookingForm';
 import MobileSearchTrigger from './MobileSearchTrigger';
 
@@ -12,12 +13,13 @@ export default function AdaptiveSearch({
 	className = '',
 }: AdaptiveSearchProps) {
 	const pathname = usePathname();
+	const pathNoLocale = stripLocaleFromPath(pathname);
 
 	// Определяем, находимся ли мы на странице категории, салона или списка салонов
 	const isCategoryOrSalonPage =
-		pathname.startsWith('/category/') ||
-		pathname.startsWith('/salon/') ||
-		pathname.startsWith('/salons');
+		pathNoLocale.startsWith('/category/') ||
+		pathNoLocale.startsWith('/salon/') ||
+		pathNoLocale.startsWith('/salons');
 
 	return (
 		<div className={className}>

@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { useParams } from 'next/navigation';
 import { Category } from '@/constants/categories';
 
 interface CategoryCardProps {
@@ -10,9 +11,15 @@ export default function CategoryCard({
 	category,
 	className = '',
 }: CategoryCardProps) {
+	const params = useParams();
+	const locale = (params as any)?.locale as string | undefined;
 	return (
 		<Link
-			href={`/category/${category.slug}`}
+			href={
+				locale
+					? `/${locale}/category/${category.slug}`
+					: `/category/${category.slug}`
+			}
 			className={`group bg-white rounded-xl shadow-md hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 overflow-hidden relative ${className}`}
 		>
 			<div className="p-8 text-center">
