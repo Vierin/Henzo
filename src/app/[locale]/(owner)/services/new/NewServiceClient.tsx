@@ -106,7 +106,7 @@ export default function NewServiceClient() {
 				}>('/services/translate', {
 					name: formData.name.trim(),
 					description: formData.description.trim() || '',
-					sourceLanguage: 'ru', // Assuming Russian is default
+					// sourceLanguage will be auto-detected based on input text
 				});
 				setTranslations(generatedTranslations);
 				setStep(2);
@@ -252,12 +252,8 @@ export default function NewServiceClient() {
 						<label className="block text-sm font-medium text-gray-700 mb-2">
 							Service Name
 						</label>
-						<div className="bg-gray-50 rounded-md p-3 border border-gray-200">
-							<p className="text-gray-900 font-medium">{formData.name}</p>
-						</div>
 						{translations && (
 							<div className="mt-3 space-y-2">
-								<div className="text-xs text-gray-500">Translations:</div>
 								{translations.nameEn && (
 									<div className="bg-blue-50 rounded-md p-2 border border-blue-200">
 										<span className="text-xs text-gray-500">English: </span>
@@ -270,6 +266,12 @@ export default function NewServiceClient() {
 										<span className="text-gray-700">{translations.nameVi}</span>
 									</div>
 								)}
+								{translations.nameRu && (
+									<div className="bg-purple-50 rounded-md p-2 border border-purple-200">
+										<span className="text-xs text-gray-500">Русский: </span>
+										<span className="text-gray-700">{translations.nameRu}</span>
+									</div>
+								)}
 							</div>
 						)}
 					</div>
@@ -280,14 +282,8 @@ export default function NewServiceClient() {
 							<label className="block text-sm font-medium text-gray-700 mb-2">
 								Description
 							</label>
-							<div className="bg-gray-50 rounded-md p-3 border border-gray-200">
-								<p className="text-gray-900 whitespace-pre-wrap">
-									{formData.description}
-								</p>
-							</div>
 							{translations && (
 								<div className="mt-3 space-y-2">
-									<div className="text-xs text-gray-500">Translations:</div>
 									{translations.descriptionEn && (
 										<div className="bg-blue-50 rounded-md p-2 border border-blue-200">
 											<span className="text-xs text-gray-500">English: </span>
@@ -303,6 +299,14 @@ export default function NewServiceClient() {
 											</span>
 											<p className="text-gray-700 whitespace-pre-wrap">
 												{translations.descriptionVi}
+											</p>
+										</div>
+									)}
+									{translations.descriptionRu && (
+										<div className="bg-purple-50 rounded-md p-2 border border-purple-200">
+											<span className="text-xs text-gray-500">Русский: </span>
+											<p className="text-gray-700 whitespace-pre-wrap">
+												{translations.descriptionRu}
 											</p>
 										</div>
 									)}

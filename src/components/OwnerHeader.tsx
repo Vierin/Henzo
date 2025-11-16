@@ -2,22 +2,31 @@
 
 import Link from 'next/link';
 import { useState, useRef, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/auth-unified';
 import { useSalon } from '@/hooks/useSalon';
 import { supabase } from '@/lib/supabase';
+import {
+	extractLocaleFromPath,
+	stripLocaleFromPath,
+	withLocale,
+} from '@/i18n/routing';
 import Image from 'next/image';
 import { User, LogOut, ChevronDown } from 'lucide-react';
 
 export default function OwnerHeader() {
+	const pathname = usePathname();
 	const router = useRouter();
 	const { user, logout } = useAuth();
 	const { data: salon } = useSalon();
 	const [showProfileDropdown, setShowProfileDropdown] = useState(false);
 	const [isLanguageDropdownOpen, setIsLanguageDropdownOpen] = useState(false);
-	const [selectedLanguage, setSelectedLanguage] = useState('EN');
 	const dropdownRef = useRef<HTMLDivElement>(null);
 	const languageDropdownRef = useRef<HTMLDivElement>(null);
+
+	// Extract locale from pathname
+	const currentLocale = extractLocaleFromPath(pathname) ?? 'en';
+	const pathNoLocale = stripLocaleFromPath(pathname);
 
 	// Функция для получения URL логотипа салона
 	const getSalonLogoUrl = (logoPath?: string) => {
@@ -30,13 +39,15 @@ export default function OwnerHeader() {
 
 	// Языки
 	const languages = [
-		{ code: 'EN', name: 'English', flag: '🇺🇸' },
-		{ code: 'VI', name: 'Tiếng Việt', flag: '🇻🇳' },
-	];
+		{ code: 'en', name: 'English', flag: '🇺🇸' },
+		{ code: 'ru', name: 'Русский', flag: '🇷🇺' },
+		{ code: 'vi', name: 'Tiếng Việt', flag: '🇻🇳' },
+	] as const;
 
-	const handleLanguageSelect = (language: (typeof languages)[0]) => {
-		setSelectedLanguage(language.code);
+	const handleLanguageSelect = (lang: (typeof languages)[number]) => {
+		const target = withLocale(pathname, lang.code as 'en' | 'ru' | 'vi');
 		setIsLanguageDropdownOpen(false);
+		router.push(target);
 	};
 
 	// Close dropdowns when clicking outside
@@ -73,7 +84,7 @@ export default function OwnerHeader() {
 		<header className="sticky w-[100vw] top-0 bg-white/80 backdrop-blur border-b border-[#f1d9d7] z-[300]">
 			<div className="md:h-[5rem] h-[fit-content] mx-auto max-w-7xl md:px-6 px-4 py-4 flex items-center justify-between">
 				<Link
-					href="/"
+					href={withLocale('/', currentLocale as 'en' | 'ru' | 'vi')}
 					className="flex max-w-20 md:max-w-full md:h-12 h-10 items-center gap-3 hover:opacity-80 transition-opacity"
 				>
 					<Image
@@ -93,7 +104,7 @@ export default function OwnerHeader() {
 							onClick={() => setIsLanguageDropdownOpen(!isLanguageDropdownOpen)}
 							className="flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:text-[#ff5b5b] font-medium transition-colors border border-gray-200 rounded-lg hover:border-[#ff5b5b]"
 						>
-							<span>{selectedLanguage}</span>
+							<span>{currentLocale.toUpperCase()}</span>
 							<ChevronDown
 								className={`w-4 h-4 transition-transform ${
 									isLanguageDropdownOpen ? 'rotate-180' : ''
@@ -108,7 +119,7 @@ export default function OwnerHeader() {
 										key={language.code}
 										onClick={() => handleLanguageSelect(language)}
 										className={`w-full px-4 py-3 text-left hover:bg-gray-50 transition-colors flex items-center gap-3 first:rounded-t-lg last:rounded-b-lg ${
-											selectedLanguage === language.code
+											currentLocale === language.code
 												? 'bg-[#ff5b5b] text-white'
 												: 'text-gray-700'
 										}`}

@@ -5,6 +5,11 @@ import { usePathname, useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { useAuthStore } from '@/stores/authStore';
 import {
+	stripLocaleFromPath,
+	extractLocaleFromPath,
+	withLocale,
+} from '@/i18n/routing';
+import {
 	LayoutDashboard,
 	CalendarDays,
 	Scissors,
@@ -28,6 +33,10 @@ export default function OwnerSidebar({
 	const pathname = usePathname();
 	const router = useRouter();
 	const { logout } = useAuthStore();
+
+	// Extract locale and path without locale
+	const currentLocale = extractLocaleFromPath(pathname) ?? 'en';
+	const pathNoLocale = stripLocaleFromPath(pathname);
 
 	const handleLogout = async () => {
 		try {
@@ -53,9 +62,11 @@ export default function OwnerSidebar({
 		label: string,
 		isActive: boolean
 	) => {
+		// Add locale to href
+		const hrefWithLocale = withLocale(href, currentLocale as 'en' | 'ru' | 'vi');
 		return (
 			<Link
-				href={href}
+				href={hrefWithLocale}
 				className={`flex items-center gap-3 px-3 py-2 rounded-lg transition-colors ${
 					isActive
 						? 'bg-[#ea4b4b] text-white'
@@ -79,42 +90,42 @@ export default function OwnerSidebar({
 						'/owner-dashboard',
 						<LayoutDashboard className="w-5 h-5" />,
 						'Dashboard',
-						pathname === '/owner-dashboard'
+						pathNoLocale === '/owner-dashboard'
 					)}
 
 					{renderNavItem(
 						'/calendar',
 						<CalendarDays className="w-5 h-5" />,
 						'Calendar',
-						pathname === '/calendar'
+						pathNoLocale === '/calendar'
 					)}
 
 					{renderNavItem(
 						'/services',
 						<Scissors className="w-5 h-5" />,
 						'Services',
-						pathname.startsWith('/services')
+						pathNoLocale.startsWith('/services')
 					)}
 
 					{renderNavItem(
 						'/staff',
 						<Users className="w-5 h-5" />,
 						'Staff',
-						pathname.startsWith('/staff')
+						pathNoLocale.startsWith('/staff')
 					)}
 
 					{renderNavItem(
 						'/marketing',
 						<TrendingUp className="w-5 h-5" />,
 						'Marketing',
-						pathname.startsWith('/marketing')
+						pathNoLocale.startsWith('/marketing')
 					)}
 
 					{renderNavItem(
 						'/salon-info',
 						<Settings className="w-5 h-5" />,
 						'Settings',
-						pathname.startsWith('/salon-info')
+						pathNoLocale.startsWith('/salon-info')
 					)}
 				</nav>
 
