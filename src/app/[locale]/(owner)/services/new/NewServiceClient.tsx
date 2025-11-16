@@ -5,6 +5,8 @@ import { useRouter } from 'next/navigation';
 import { useCreateService } from '@/hooks/useServices';
 import { STATIC_CATEGORIES } from '@/constants/categories';
 import { useSalonId } from '@/hooks/useSalon';
+import { apiClient } from '@/lib/api-client';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
 	Select,
 	SelectContent,
@@ -17,16 +19,39 @@ export default function NewServiceClient() {
 	const [formData, setFormData] = useState({
 		name: '',
 		description: '',
+		nameEn: '',
+		nameVi: '',
+		descriptionEn: '',
+		descriptionVi: '',
 		duration: '',
 		price: '',
 		serviceCategoryId: 'none',
+		serviceGroupId: 'none',
 	});
+	const [isGroupModalOpen, setIsGroupModalOpen] = useState(false);
+	const [newGroupName, setNewGroupName] = useState('');
 	const router = useRouter();
 
 	// Используем оптимизированный хук для получения данных салона
 	const { salonId, isLoading: salonLoading, hasSalon } = useSalonId();
+	const queryClient = useQueryClient();
 
 	const categories = STATIC_CATEGORIES;
+
+	// Load service groups for this salon
+	const { data: groups = [] } = useQuery({
+		queryKey: ['service-groups', salonId],
+		queryFn: async () => {
+			if (!salonId) return [];
+			const params = new URLSearchParams();
+			params.append('salonId', salonId);
+			return apiClient.get<any[]>(
+				`/services/groups/by-salon?${params.toString()}`
+			);
+		},
+		enabled: !!salonId,
+		staleTime: 5 * 60 * 1000,
+	});
 	const createServiceMutation = useCreateService();
 
 	// Перенаправляем на создание салона, если салон не найден
@@ -43,6 +68,11 @@ export default function NewServiceClient() {
 			return;
 		}
 
+		// Require category
+		if (!formData.serviceCategoryId || formData.serviceCategoryId === 'none') {
+			return;
+		}
+
 		if (isNaN(Number(formData.duration)) || Number(formData.duration) <= 0) {
 			return;
 		}
@@ -55,12 +85,20 @@ export default function NewServiceClient() {
 			await createServiceMutation.mutateAsync({
 				name: formData.name.trim(),
 				description: formData.description.trim() || undefined,
+				nameEn: formData.nameEn.trim() || undefined,
+				nameVi: formData.nameVi.trim() || undefined,
+				descriptionEn: formData.descriptionEn.trim() || undefined,
+				descriptionVi: formData.descriptionVi.trim() || undefined,
 				duration: Number(formData.duration),
 				price: Number(formData.price),
 				salonId,
 				serviceCategoryId:
 					formData.serviceCategoryId && formData.serviceCategoryId !== 'none'
 						? Number(formData.serviceCategoryId)
+						: undefined,
+				serviceGroupId:
+					formData.serviceGroupId && formData.serviceGroupId !== 'none'
+						? formData.serviceGroupId
 						: undefined,
 			});
 
@@ -183,12 +221,65 @@ export default function NewServiceClient() {
 						</div>
 					</div>
 
+					{/* Service group (optional, always visible select + plus button) */}
+					<div>
+						<label
+							htmlFor="service-group"
+							className="block text-sm font-medium text-gray-700 mb-2"
+						>
+							Service Group (optional)
+						</label>
+						<div className="flex items-center gap-2">
+							<Select
+								value={formData.serviceGroupId}
+								onValueChange={(value) =>
+									setFormData((prev) => ({
+										...prev,
+										serviceGroupId: value,
+									}))
+								}
+							>
+								<SelectTrigger className="w-full border border-gray-300 focus:ring-2 focus:ring-[#ff5b5b] focus:border-transparent text-gray-900 text-sm">
+									<SelectValue placeholder="No group" />
+								</SelectTrigger>
+								<SelectContent className="bg-white border border-gray-300 shadow-lg rounded-md">
+									<SelectItem
+										value="none"
+										className="bg-white hover:bg-gray-50 focus:bg-gray-50 text-gray-900 cursor-pointer text-sm"
+									>
+										No group
+									</SelectItem>
+									{groups.map((group: any) => (
+										<SelectItem
+											key={group.id}
+											value={group.id}
+											className="bg-white hover:bg-gray-50 focus:bg-gray-50 text-gray-900 cursor-pointer text-sm"
+										>
+											{group.name}
+										</SelectItem>
+									))}
+								</SelectContent>
+							</Select>
+							<button
+								type="button"
+								onClick={() => setIsGroupModalOpen(true)}
+								className="px-3 py-2 bg-[#ff5b5b] text-white rounded-md hover:bg-[#e04a4a] text-sm"
+								title="Add new group"
+							>
+								+
+							</button>
+						</div>
+						<p className="text-xs text-gray-500 mt-1">
+							Use groups to structure your services on the salon page.
+						</p>
+					</div>
+
 					<div>
 						<label
 							htmlFor="service-category"
 							className="block text-sm font-medium text-gray-700 mb-2"
 						>
-							Category
+							Category *
 						</label>
 						<Select
 							value={formData.serviceCategoryId}
@@ -203,12 +294,6 @@ export default function NewServiceClient() {
 								<SelectValue placeholder="Select a category" />
 							</SelectTrigger>
 							<SelectContent className="bg-white border border-gray-300 shadow-lg rounded-md">
-								<SelectItem
-									value="none"
-									className="bg-white hover:bg-gray-50 focus:bg-gray-50 text-gray-900 cursor-pointer"
-								>
-									No category
-								</SelectItem>
 								{categories.map((category) => (
 									<SelectItem
 										key={category.id}
@@ -314,6 +399,74 @@ export default function NewServiceClient() {
 					</div>
 				</form>
 			</div>
+
+			{/* Add Group Modal */}
+			{isGroupModalOpen && (
+				<div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
+					<div className="bg-white rounded-lg shadow-lg p-5 w-full max-w-sm">
+						<h2 className="text-lg font-semibold text-gray-900 mb-3">
+							Add Service Group
+						</h2>
+						<p className="text-sm text-gray-600 mb-3">
+							Create a group to organize your services (e.g., “Hair services”,
+							“Nails”).
+						</p>
+						<input
+							type="text"
+							value={newGroupName}
+							onChange={(e) => setNewGroupName(e.target.value)}
+							className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#ff5b5b] focus:border-[#ff5b5b] text-gray-900 text-sm mb-4"
+							placeholder="Group name"
+							autoFocus
+						/>
+						<div className="flex justify-end gap-2">
+							<button
+								type="button"
+								onClick={() => {
+									setIsGroupModalOpen(false);
+									setNewGroupName('');
+								}}
+								className="px-3 py-2 text-sm border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
+							>
+								Cancel
+							</button>
+							<button
+								type="button"
+								onClick={async () => {
+									if (!salonId) return;
+									const name = newGroupName.trim();
+									if (!name) return;
+									try {
+										const created = await apiClient.post<any>(
+											'/services/groups',
+											{
+												salonId,
+												name,
+											}
+										);
+										queryClient.invalidateQueries({
+											queryKey: ['service-groups', salonId],
+										});
+										if (created?.id) {
+											setFormData((prev) => ({
+												...prev,
+												serviceGroupId: created.id,
+											}));
+										}
+										setIsGroupModalOpen(false);
+										setNewGroupName('');
+									} catch (err) {
+										console.error('Failed to create service group:', err);
+									}
+								}}
+								className="px-3 py-2 text-sm bg-[#ff5b5b] text-white rounded-md hover:bg-[#e04a4a]"
+							>
+								Create
+							</button>
+						</div>
+					</div>
+				</div>
+			)}
 		</main>
 	);
 }

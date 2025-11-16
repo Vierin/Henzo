@@ -5,19 +5,15 @@ import type React from 'react';
 import { useTranslation } from '@/contexts/LanguageContext';
 
 interface ServiceSuggestion {
-	id: number;
+	id: number | string;
 	name: string;
-	type: 'service' | 'category' | 'salon';
-	category?: {
-		name: string;
-	};
-	salon?: {
-		name: string;
-	};
+	type: 'category' | 'salon';
+	category?: { name: string };
+	salon?: { name: string };
 }
 
 interface SuggestionGroup {
-	type: 'service' | 'category' | 'salon';
+	type: 'category' | 'salon';
 	title: string;
 	suggestions: ServiceSuggestion[];
 }
@@ -82,24 +78,27 @@ export default function ServiceAutocomplete({
 			const API_BASE_URL =
 				process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
+			const safeJson = async (res: Response) => {
+				try {
+					if (!res) return null;
+					const text = await res.text();
+					if (!text) return null;
+					// try JSON parse regardless of content-type to handle proxies
+					return JSON.parse(text);
+				} catch {
+					return null;
+				}
+			};
+
 			// Build requests with AbortController and minimal set
 			const reqs: Promise<any>[] = [];
-			// categories (>=2)
+			// core suggestions (categories+synonyms) (>=2)
 			reqs.push(
 				fetch(
-					`${API_BASE_URL}/search/categories?q=${encodeURIComponent(query)}&lang=en`,
+					`${API_BASE_URL}/search/core/suggest?q=${encodeURIComponent(query)}&lang=en&limit=10`,
 					{ signal: controller.signal }
 				)
 			);
-			// services (>=3)
-			if (query.length >= 3) {
-				reqs.push(
-					fetch(
-						`${API_BASE_URL}/search/services?q=${encodeURIComponent(query)}&lang=en`,
-						{ signal: controller.signal }
-					)
-				);
-			}
 			// optional: lightweight salon suggest (>=3)
 			if (query.length >= 3) {
 				reqs.push(
@@ -115,60 +114,35 @@ export default function ServiceAutocomplete({
 
 			const groups: SuggestionGroup[] = [];
 
-			// Process categories (first response)
-			const categoriesResp = settled[0];
-			if (categoriesResp.status === 'fulfilled' && categoriesResp.value.ok) {
-				const categoriesResult = await categoriesResp.value.json();
-				if (categoriesResult.success && categoriesResult.data?.length > 0) {
+			// Process core suggestions (first response)
+			const coreResp = settled[0];
+			if (coreResp.status === 'fulfilled' && coreResp.value.ok) {
+				const coreResult = await safeJson(coreResp.value);
+				if (coreResult?.success && coreResult.data?.length > 0) {
 					groups.push({
 						type: 'category',
-						title: 'Categories',
-						suggestions: categoriesResult.data.map((category: any) => ({
+						title: t.homepage.popularCategories,
+						suggestions: coreResult.data.map((category: any) => ({
 							id: category.id,
-							name: category.nameEn,
+							name: category.name, // already localized on backend
 							type: 'category' as const,
-							category: { name: category.nameVn },
 						})),
 					});
 				}
 			}
 
-			// Process services (second response when present)
-			const servicesResp = query.length >= 3 ? settled[1] : null;
-			if (
-				servicesResp &&
-				servicesResp.status === 'fulfilled' &&
-				servicesResp.value.ok
-			) {
-				const servicesResult = await servicesResp.value.json();
-				if (servicesResult.success && servicesResult.data?.length > 0) {
-					groups.push({
-						type: 'service',
-						title: 'Services',
-						suggestions: servicesResult.data.map((service: any) => ({
-							id: service.id,
-							name: service.name,
-							type: 'service' as const,
-							category: service.serviceCategory
-								? { name: service.serviceCategory.nameEn }
-								: undefined,
-						})),
-					});
-				}
-			}
-
-			// Process salons suggest (third response when present)
-			const salonsResp = query.length >= 3 ? settled[2] : null;
+			// Process salons suggest (second response when present)
+			const salonsResp = query.length >= 3 ? settled[1] : null;
 			if (
 				salonsResp &&
 				salonsResp.status === 'fulfilled' &&
 				salonsResp.value.ok
 			) {
-				const salonsResult = await salonsResp.value.json();
-				if (salonsResult.success && salonsResult.data?.length > 0) {
+				const salonsResult = await safeJson(salonsResp.value);
+				if (salonsResult?.success && salonsResult.data?.length > 0) {
 					groups.push({
 						type: 'salon',
-						title: 'Salons',
+						title: t.navigation.salons,
 						suggestions: salonsResult.data.map((salon: any) => ({
 							id: salon.id,
 							name: salon.name,
@@ -191,8 +165,10 @@ export default function ServiceAutocomplete({
 					searchCache.current.delete(firstKey);
 				}
 			}
-		} catch (error) {
-			console.error('Error fetching suggestions:', error);
+		} catch (error: any) {
+			if (error?.name !== 'AbortError') {
+				console.error('Error fetching suggestions:', error);
+			}
 			setSuggestionGroups([]);
 		} finally {
 			setLoading(false);
@@ -436,11 +412,7 @@ export default function ServiceAutocomplete({
 									className="w-full px-3 py-2 text-left hover:bg-gray-50 border-b border-gray-100 last:border-b-0 text-sm text-gray-700"
 								>
 									<div className="font-medium">{suggestion.name}</div>
-									{suggestion.category && (
-										<div className="text-xs text-gray-500">
-											{suggestion.category.name}
-										</div>
-									)}
+									{/* No secondary language line to keep single-language display */}
 								</button>
 							))}
 						</div>

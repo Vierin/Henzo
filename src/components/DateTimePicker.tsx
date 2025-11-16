@@ -111,8 +111,20 @@ export default function DateTimePicker({
 
 	const getTimeIntervalLabel = (interval: string) => {
 		if (!interval) return '';
-		const timeInterval = TIME_INTERVALS.find((ti) => ti.value === interval);
-		return timeInterval ? timeInterval.label : '';
+		switch (interval) {
+			case 'any':
+				return t.booking.timeIntervals.any;
+			case 'morning':
+				return t.booking.timeIntervals.morning;
+			case 'afternoon':
+				return t.booking.timeIntervals.afternoon;
+			case 'evening':
+				return t.booking.timeIntervals.evening;
+			default: {
+				const timeInterval = TIME_INTERVALS.find((ti) => ti.value === interval);
+				return timeInterval ? timeInterval.label : '';
+			}
+		}
 	};
 
 	const generateCalendarDays = () => {
@@ -270,7 +282,7 @@ export default function DateTimePicker({
 							>
 								<div className="flex items-center">
 									<Clock className="w-4 h-4 mr-2" />
-									{interval.label}
+									{getTimeIntervalLabel(interval.value)}
 								</div>
 							</button>
 						))}

@@ -8,7 +8,16 @@ import {
 } from '@/hooks/useServices';
 import { useSalonId } from '@/hooks/useSalon';
 import { STATIC_CATEGORIES } from '@/constants/categories';
-import { Service } from '@/types';
+import { Service, ServiceGroup } from '@/types';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { apiClient } from '@/lib/api-client';
+import {
+	Select,
+	SelectContent,
+	SelectItem,
+	SelectTrigger,
+	SelectValue,
+} from '@/components/ui/select';
 
 interface EditServiceModalProps {
 	isOpen: boolean;
@@ -26,11 +35,18 @@ export default function EditServiceModal({
 	const [formData, setFormData] = useState({
 		name: '',
 		description: '',
+		nameEn: '',
+		nameVi: '',
+		descriptionEn: '',
+		descriptionVi: '',
 		duration: 0,
 		price: 0,
 		serviceCategoryId: 0,
+		serviceGroupId: 'none',
 	});
-	const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false);
+	const [isGroupModalOpen, setIsGroupModalOpen] = useState(false);
+	const [newGroupName, setNewGroupName] = useState('');
+	const queryClient = useQueryClient();
 
 	// Используем оптимизированный хук для получения данных салона
 	const { salonId } = useSalonId();
@@ -39,22 +55,47 @@ export default function EditServiceModal({
 	const createServiceMutation = useCreateService();
 	const updateServiceMutation = useUpdateService();
 
+	// Load service groups for this salon
+	const { data: groups = [] } = useQuery<ServiceGroup[]>({
+		queryKey: ['service-groups', salonId],
+		queryFn: async () => {
+			if (!salonId) return [];
+			const params = new URLSearchParams();
+			params.append('salonId', salonId);
+			return apiClient.get<ServiceGroup[]>(
+				`/services/groups/by-salon?${params.toString()}`
+			);
+		},
+		enabled: !!salonId,
+		staleTime: 5 * 60 * 1000,
+	});
+
 	useEffect(() => {
 		if (service) {
 			setFormData({
 				name: service.name,
 				description: service.description || '',
+				nameEn: service.nameEn || '',
+				nameVi: service.nameVi || '',
+				descriptionEn: service.descriptionEn || '',
+				descriptionVi: service.descriptionVi || '',
 				duration: service.duration,
 				price: service.price,
 				serviceCategoryId: service.serviceCategoryId || 0,
+				serviceGroupId: service.serviceGroupId || 'none',
 			});
 		} else {
 			setFormData({
 				name: '',
 				description: '',
+				nameEn: '',
+				nameVi: '',
+				descriptionEn: '',
+				descriptionVi: '',
 				duration: 0,
 				price: 0,
 				serviceCategoryId: 0,
+				serviceGroupId: 'none',
 			});
 		}
 	}, [service]);
@@ -77,11 +118,19 @@ export default function EditServiceModal({
 				const updateData = {
 					name: formData.name.trim(),
 					description: formData.description.trim() || undefined,
+					nameEn: formData.nameEn.trim() || undefined,
+					nameVi: formData.nameVi.trim() || undefined,
+					descriptionEn: formData.descriptionEn.trim() || undefined,
+					descriptionVi: formData.descriptionVi.trim() || undefined,
 					duration: formData.duration,
 					price: formData.price,
 					serviceCategoryId:
 						formData.serviceCategoryId > 0
 							? formData.serviceCategoryId
+							: undefined,
+					serviceGroupId:
+						formData.serviceGroupId && formData.serviceGroupId !== 'none'
+							? formData.serviceGroupId
 							: undefined,
 				};
 				const updatedService = await updateServiceMutation.mutateAsync({
@@ -94,12 +143,20 @@ export default function EditServiceModal({
 				const createData = {
 					name: formData.name.trim(),
 					description: formData.description.trim() || undefined,
+					nameEn: formData.nameEn.trim() || undefined,
+					nameVi: formData.nameVi.trim() || undefined,
+					descriptionEn: formData.descriptionEn.trim() || undefined,
+					descriptionVi: formData.descriptionVi.trim() || undefined,
 					duration: formData.duration,
 					price: formData.price,
 					salonId,
 					serviceCategoryId:
 						formData.serviceCategoryId > 0
 							? formData.serviceCategoryId
+							: undefined,
+					serviceGroupId:
+						formData.serviceGroupId && formData.serviceGroupId !== 'none'
+							? formData.serviceGroupId
 							: undefined,
 				};
 				const newService = await createServiceMutation.mutateAsync(createData);
@@ -110,17 +167,6 @@ export default function EditServiceModal({
 		} catch (error) {
 			console.error('Failed to save service:', error);
 		}
-	};
-
-	const handleCategoryCreated = (newCategory: {
-		id: number;
-		nameEn: string;
-		nameVn: string;
-	}) => {
-		setFormData((prev) => ({
-			...prev,
-			serviceCategoryId: newCategory.id,
-		}));
 	};
 
 	if (!isOpen) return null;
@@ -183,34 +229,76 @@ export default function EditServiceModal({
 							>
 								Category
 							</label>
-							<div className="flex gap-2">
-								<select
-									id="category"
-									value={formData.serviceCategoryId}
-									onChange={(e) =>
+							<select
+								id="category"
+								value={formData.serviceCategoryId}
+								onChange={(e) =>
+									setFormData((prev) => ({
+										...prev,
+										serviceCategoryId: Number(e.target.value),
+									}))
+								}
+								className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#ff5b5b] focus:border-transparent text-gray-900"
+							>
+								<option value="">Select a category</option>
+								{categories.map((category) => (
+									<option key={category.id} value={category.id}>
+										{category.name}
+									</option>
+								))}
+							</select>
+						</div>
+
+						<div className="mb-4">
+							<label
+								htmlFor="service-group"
+								className="block text-sm font-medium text-gray-700 mb-2"
+							>
+								Service Group (optional)
+							</label>
+							<div className="flex items-center gap-2">
+								<Select
+									value={formData.serviceGroupId}
+									onValueChange={(value) =>
 										setFormData((prev) => ({
 											...prev,
-											serviceCategoryId: Number(e.target.value),
+											serviceGroupId: value,
 										}))
 									}
-									className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#ff5b5b] focus:border-transparent text-gray-900"
 								>
-									<option value="">Select a category</option>
-									{categories.map((category) => (
-										<option key={category.id} value={category.id}>
-											{category.name}
-										</option>
-									))}
-								</select>
+									<SelectTrigger className="w-full border border-gray-300 focus:ring-2 focus:ring-[#ff5b5b] focus:border-transparent text-gray-900 text-sm">
+										<SelectValue placeholder="No group" />
+									</SelectTrigger>
+									<SelectContent className="bg-white border border-gray-300 shadow-lg rounded-md">
+										<SelectItem
+											value="none"
+											className="bg-white hover:bg-gray-50 focus:bg-gray-50 text-gray-900 cursor-pointer text-sm"
+										>
+											No group
+										</SelectItem>
+										{groups.map((group) => (
+											<SelectItem
+												key={group.id}
+												value={group.id}
+												className="bg-white hover:bg-gray-50 focus:bg-gray-50 text-gray-900 cursor-pointer text-sm"
+											>
+												{group.name}
+											</SelectItem>
+										))}
+									</SelectContent>
+								</Select>
 								<button
 									type="button"
-									onClick={() => setIsCategoryModalOpen(true)}
+									onClick={() => setIsGroupModalOpen(true)}
 									className="px-3 py-2 bg-[#ff5b5b] text-white rounded-lg hover:bg-[#e04a4a] transition-colors"
-									title="Add new category"
+									title="Add new group"
 								>
 									+
 								</button>
 							</div>
+							<p className="text-xs text-gray-500 mt-1">
+								Use groups to structure your services on the salon page.
+							</p>
 						</div>
 
 						<div className="grid grid-cols-2 gap-4 mb-4">
@@ -295,6 +383,74 @@ export default function EditServiceModal({
 					</form>
 				</div>
 			</div>
+
+			{/* Add Group Modal */}
+			{isGroupModalOpen && (
+				<div className="fixed inset-0 bg-black/40 flex items-center justify-center z-[60]">
+					<div className="bg-white rounded-lg shadow-lg p-5 w-full max-w-sm">
+						<h2 className="text-lg font-semibold text-gray-900 mb-3">
+							Add Service Group
+						</h2>
+						<p className="text-sm text-gray-600 mb-3">
+							Create a group to organize your services (e.g., "Hair services",
+							"Nails").
+						</p>
+						<input
+							type="text"
+							value={newGroupName}
+							onChange={(e) => setNewGroupName(e.target.value)}
+							className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#ff5b5b] focus:border-[#ff5b5b] text-gray-900 text-sm mb-4"
+							placeholder="Group name"
+							autoFocus
+						/>
+						<div className="flex justify-end gap-2">
+							<button
+								type="button"
+								onClick={() => {
+									setIsGroupModalOpen(false);
+									setNewGroupName('');
+								}}
+								className="px-3 py-2 text-sm border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
+							>
+								Cancel
+							</button>
+							<button
+								type="button"
+								onClick={async () => {
+									if (!salonId) return;
+									const name = newGroupName.trim();
+									if (!name) return;
+									try {
+										const created = await apiClient.post<any>(
+											'/services/groups',
+											{
+												salonId,
+												name,
+											}
+										);
+										queryClient.invalidateQueries({
+											queryKey: ['service-groups', salonId],
+										});
+										if (created?.id) {
+											setFormData((prev) => ({
+												...prev,
+												serviceGroupId: created.id,
+											}));
+										}
+										setIsGroupModalOpen(false);
+										setNewGroupName('');
+									} catch (err) {
+										console.error('Failed to create service group:', err);
+									}
+								}}
+								className="px-3 py-2 text-sm bg-[#ff5b5b] text-white rounded-md hover:bg-[#e04a4a]"
+							>
+								Create
+							</button>
+						</div>
+					</div>
+				</div>
+			)}
 		</>
 	);
 }

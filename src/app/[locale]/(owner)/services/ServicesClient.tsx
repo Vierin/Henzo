@@ -9,8 +9,10 @@ import { STATIC_CATEGORIES } from '@/constants/categories';
 import { useSalonId } from '@/hooks/useSalon';
 import LoadingSpinner from '@/components/LoadingSpinner';
 import ErrorDisplay from '@/components/ErrorDisplay';
-import { Service } from '@/types';
+import { Service, ServiceGroup } from '@/types';
 import { formatVND } from '@/utils/currency';
+import { useQuery } from '@tanstack/react-query';
+import { apiClient } from '@/lib/api-client';
 import {
 	Select,
 	SelectContent,
@@ -30,6 +32,7 @@ export default function ServicesClient() {
 	const [selectedCategory, setSelectedCategory] = useState<number | 'all'>(
 		'all'
 	);
+	const [selectedGroup, setSelectedGroup] = useState<string | 'all'>('all');
 	const router = useRouter();
 
 	// Используем оптимизированный хук для получения данных салона
@@ -46,6 +49,21 @@ export default function ServicesClient() {
 
 	const categories = STATIC_CATEGORIES;
 	const deleteServiceMutation = useDeleteService();
+
+	// Load service groups for this salon
+	const { data: groups = [] } = useQuery<ServiceGroup[]>({
+		queryKey: ['service-groups', salonId],
+		queryFn: async () => {
+			if (!salonId) return [];
+			const params = new URLSearchParams();
+			params.append('salonId', salonId);
+			return apiClient.get<ServiceGroup[]>(
+				`/services/groups/by-salon?${params.toString()}`
+			);
+		},
+		enabled: !!salonId,
+		staleTime: 5 * 60 * 1000,
+	});
 
 	// Дебаунс для поиска - задержка 600мс
 	useEffect(() => {
@@ -108,6 +126,11 @@ export default function ServicesClient() {
 					if (service.serviceCategoryId !== selectedCategory) return false;
 				}
 
+				// Фильтр по группе
+				if (selectedGroup !== 'all') {
+					if (service.serviceGroupId !== selectedGroup) return false;
+				}
+
 				return true;
 			})
 			.sort((a, b) => {
@@ -129,7 +152,14 @@ export default function ServicesClient() {
 
 				return sortOrder === 'asc' ? comparison : -comparison;
 			});
-	}, [services, debouncedSearchQuery, selectedCategory, sortBy, sortOrder]);
+	}, [
+		services,
+		debouncedSearchQuery,
+		selectedCategory,
+		selectedGroup,
+		sortBy,
+		sortOrder,
+	]);
 
 	// Функции для управления фильтрами
 	const handleSortChange = (newSortBy: 'name' | 'price' | 'duration') => {
@@ -144,6 +174,7 @@ export default function ServicesClient() {
 	const clearFilters = () => {
 		setSearchQuery('');
 		setSelectedCategory('all');
+		setSelectedGroup('all');
 		setSortBy('name');
 		setSortOrder('asc');
 	};
@@ -194,7 +225,7 @@ export default function ServicesClient() {
 
 			{/* Фильтры и сортировка */}
 			<div className="mb-6 bg-white rounded-xl border border-[#f1d9d7] p-3 md:p-6">
-				<div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
+				<div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 md:gap-4">
 					{/* Поиск */}
 					<div>
 						<label className="block text-sm font-medium text-black mb-2">
@@ -248,6 +279,38 @@ export default function ServicesClient() {
 										className="bg-white hover:bg-gray-50 focus:bg-gray-50 text-gray-900 cursor-pointer"
 									>
 										{category.name}
+									</SelectItem>
+								))}
+							</SelectContent>
+						</Select>
+					</div>
+
+					{/* Фильтр по группе */}
+					<div>
+						<label className="block text-sm font-medium text-black mb-2">
+							Group
+						</label>
+						<Select
+							value={selectedGroup}
+							onValueChange={(value) => setSelectedGroup(value)}
+						>
+							<SelectTrigger className="w-full border border-gray-300 focus:ring-2 focus:ring-[#ff5b5b] focus:border-transparent text-black">
+								<SelectValue placeholder="All Groups" />
+							</SelectTrigger>
+							<SelectContent className="bg-white border border-gray-300 shadow-lg rounded-md">
+								<SelectItem
+									value="all"
+									className="bg-white hover:bg-gray-50 focus:bg-gray-50 text-gray-900 cursor-pointer"
+								>
+									All Groups
+								</SelectItem>
+								{groups.map((group) => (
+									<SelectItem
+										key={group.id}
+										value={group.id}
+										className="bg-white hover:bg-gray-50 focus:bg-gray-50 text-gray-900 cursor-pointer"
+									>
+										{group.name}
 									</SelectItem>
 								))}
 							</SelectContent>
@@ -326,7 +389,9 @@ export default function ServicesClient() {
 				</div>
 
 				{/* Информация о результатах */}
-				{(debouncedSearchQuery || selectedCategory !== 'all') && (
+				{(debouncedSearchQuery ||
+					selectedCategory !== 'all' ||
+					selectedGroup !== 'all') && (
 					<div className="mt-4 pt-4 border-t border-gray-200">
 						<p className="text-sm text-black">
 							Showing {filteredServices.length} of {services.length} services
@@ -335,13 +400,17 @@ export default function ServicesClient() {
 								` matching "${debouncedSearchQuery}"`}
 							{selectedCategory !== 'all' &&
 								` in "${getCategoryName(Number(selectedCategory)) || 'Unknown'}" category`}
+							{selectedGroup !== 'all' &&
+								` in "${groups.find((g) => g.id === selectedGroup)?.name || 'Unknown'}" group`}
 						</p>
 					</div>
 				)}
 			</div>
 
 			{filteredServices.length === 0 &&
-			(debouncedSearchQuery || selectedCategory !== 'all') ? (
+			(debouncedSearchQuery ||
+				selectedCategory !== 'all' ||
+				selectedGroup !== 'all') ? (
 				<div className="bg-white rounded-xl border border-[#f1d9d7] p-12 text-center">
 					<div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
 						<svg
@@ -418,7 +487,7 @@ export default function ServicesClient() {
 					<div className="bg-white rounded-xl border border-[#f1d9d7] overflow-hidden">
 						{/* Desktop Table View */}
 						<div className="hidden md:block">
-							<div className="grid grid-cols-5 px-6 py-3 text-sm text-gray-700 bg-[#fff2f1] font-semibold">
+							<div className="grid grid-cols-6 px-6 py-3 text-sm text-gray-700 bg-[#fff2f1] font-semibold">
 								<div
 									className="flex items-center gap-1 cursor-pointer hover:text-[#ff5b5b] transition-colors select-none"
 									onClick={() => handleSortChange('name')}
@@ -431,6 +500,7 @@ export default function ServicesClient() {
 									)}
 								</div>
 								<div>Category</div>
+								<div>Group</div>
 								<div
 									className="flex items-center gap-1 cursor-pointer hover:text-[#ff5b5b] transition-colors select-none"
 									onClick={() => handleSortChange('duration')}
@@ -459,7 +529,7 @@ export default function ServicesClient() {
 								{filteredServices.map((service) => (
 									<div
 										key={service.id}
-										className="grid grid-cols-5 px-6 py-4 text-sm text-gray-800"
+										className="grid grid-cols-6 px-6 py-4 text-sm text-gray-800"
 									>
 										<div className="font-semibold">{service.name}</div>
 										<div className="text-gray-600">
@@ -471,6 +541,15 @@ export default function ServicesClient() {
 												<span className="text-gray-400 italic">
 													No category
 												</span>
+											)}
+										</div>
+										<div className="text-gray-600">
+											{service.serviceGroup ? (
+												<span className="inline-flex items-center px-2 py-1 text-xs font-medium bg-blue-100 text-blue-700 rounded-full">
+													{service.serviceGroup.name}
+												</span>
+											) : (
+												<span className="text-gray-400 italic">No group</span>
 											)}
 										</div>
 										<div>{formatDuration(service.duration)}</div>
@@ -578,10 +657,15 @@ export default function ServicesClient() {
 									</div>
 
 									<div className="flex items-center justify-between text-sm text-gray-600">
-										<div className="flex items-center gap-4">
+										<div className="flex items-center gap-2 flex-wrap">
 											{getCategoryName(service.serviceCategoryId) && (
 												<span className="inline-flex items-center px-2 py-1 text-xs font-medium bg-gray-100 text-gray-700 rounded-full">
 													{getCategoryName(service.serviceCategoryId)}
+												</span>
+											)}
+											{service.serviceGroup && (
+												<span className="inline-flex items-center px-2 py-1 text-xs font-medium bg-blue-100 text-blue-700 rounded-full">
+													{service.serviceGroup.name}
 												</span>
 											)}
 										</div>

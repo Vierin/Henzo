@@ -69,6 +69,12 @@ export async function middleware(req: NextRequest) {
 	const publicRoutes = [
 		'/', // homepage
 		'/login',
+		'/owner-dashboard',
+		'/calendar',
+		'/services',
+		'/marketing',
+		'/staff',
+		'/salon-info',
 		'/register',
 		'/salons',
 		'/category',

@@ -131,6 +131,12 @@ export interface Translations {
 		selectTime: string;
 		selectService: string;
 		selectStaff: string;
+		timeIntervals: {
+			any: string;
+			morning: string;
+			afternoon: string;
+			evening: string;
+		};
 		customerInfo: string;
 		name: string;
 		email: string;
@@ -330,6 +336,12 @@ export const translations: Record<string, Translations> = {
 			selectTime: 'Chọn giờ',
 			selectService: 'Chọn dịch vụ',
 			selectStaff: 'Chọn nhân viên',
+			timeIntervals: {
+				any: 'Bất kỳ lúc nào',
+				morning: 'Buổi sáng (6:00 - 12:00)',
+				afternoon: 'Buổi chiều (12:00 - 18:00)',
+				evening: 'Buổi tối (18:00 - 24:00)',
+			},
 			customerInfo: 'Thông tin khách hàng',
 			name: 'Họ tên',
 			email: 'Email',
@@ -528,6 +540,12 @@ export const translations: Record<string, Translations> = {
 			selectTime: 'Select Time',
 			selectService: 'Select Service',
 			selectStaff: 'Select Staff',
+			timeIntervals: {
+				any: 'Any time',
+				morning: 'Morning (6:00 - 12:00)',
+				afternoon: 'Afternoon (12:00 - 18:00)',
+				evening: 'Evening (18:00 - 24:00)',
+			},
 			customerInfo: 'Customer Information',
 			name: 'Name',
 			email: 'Email',
@@ -725,6 +743,12 @@ export const translations: Record<string, Translations> = {
 			selectTime: 'Выберите время',
 			selectService: 'Выберите услугу',
 			selectStaff: 'Выберите мастера',
+			timeIntervals: {
+				any: 'Любое время',
+				morning: 'Утро (6:00 - 12:00)',
+				afternoon: 'День (12:00 - 18:00)',
+				evening: 'Вечер (18:00 - 24:00)',
+			},
 			customerInfo: 'Данные клиента',
 			name: 'Имя',
 			email: 'Email',

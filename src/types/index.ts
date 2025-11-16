@@ -47,6 +47,12 @@ export interface Service {
 	id: string;
 	name: string;
 	description?: string;
+	nameEn?: string;
+	nameVi?: string;
+	nameRu?: string;
+	descriptionEn?: string;
+	descriptionVi?: string;
+	descriptionRu?: string;
 	duration: number;
 	price: number;
 	salonId?: string;
@@ -54,6 +60,8 @@ export interface Service {
 	category?: Category;
 	serviceCategoryId?: number;
 	serviceCategory?: ServiceCategory;
+	serviceGroupId?: string | null;
+	serviceGroup?: ServiceGroup;
 }
 
 export interface ServiceCategory {
@@ -68,6 +76,16 @@ export interface Category {
 	salonId: string;
 	createdAt: string;
 	services?: Service[];
+}
+
+export interface ServiceGroup {
+	id: string;
+	salonId: string;
+	name: string;
+	description?: string;
+	position: number;
+	isActive: boolean;
+	createdAt: string;
 }
 
 export interface Staff {

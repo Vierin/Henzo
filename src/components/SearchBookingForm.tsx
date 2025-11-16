@@ -19,6 +19,9 @@ export default function SearchBookingForm({
 	const router = useRouter();
 	const t = useTranslation();
 	const [searchQuery, setSearchQuery] = useState('');
+	const [selectedCategoryId, setSelectedCategoryId] = useState<number | null>(
+		null
+	);
 	const [selectedLocation, setSelectedLocation] = useState('');
 	const [selectedDate, setSelectedDate] = useState<Date | null>(null);
 	const [selectedTimeInterval, setSelectedTimeInterval] = useState<string>('');
@@ -43,9 +46,13 @@ export default function SearchBookingForm({
 		// Clear previous validation errors
 		clearValidation();
 
-		// Validate that at least one of the first two fields is filled (search or location)
+		// Validate that at least one of the first two fields is filled (search/category or location)
 		// Date is optional
-		if (!searchQuery.trim() && !selectedLocation.trim()) {
+		if (
+			!searchQuery.trim() &&
+			!selectedLocation.trim() &&
+			!selectedCategoryId
+		) {
 			setValidationError(t.common.search + ' / ' + t.salon.address);
 			setErrorField('searchQuery'); // Focus on the first field (search)
 			return;
@@ -56,7 +63,12 @@ export default function SearchBookingForm({
 		try {
 			const params = new URLSearchParams();
 
-			if (searchQuery.trim()) params.set('search', searchQuery.trim());
+			// Prefer category filter over plain text search
+			if (selectedCategoryId) {
+				params.set('category', String(selectedCategoryId));
+			} else if (searchQuery.trim()) {
+				params.set('search', searchQuery.trim());
+			}
 			if (selectedLocation.trim())
 				params.set('location', selectedLocation.trim());
 			if (selectedDate) {
@@ -101,9 +113,18 @@ export default function SearchBookingForm({
 							value={searchQuery}
 							onChange={(value) => {
 								setSearchQuery(value);
+								// Reset selected category when user edits text
+								setSelectedCategoryId(null);
 								// Clear error when user starts typing
 								if (errorField === 'searchQuery') {
 									clearValidation();
+								}
+							}}
+							onServiceSelect={(suggestion: any) => {
+								// If user picks a category -> set categoryId and text
+								if (suggestion?.type === 'category' && suggestion?.id) {
+									setSelectedCategoryId(Number(suggestion.id));
+									setSearchQuery(suggestion.name);
 								}
 							}}
 							placeholder={t.homepage.searchPlaceholder}
@@ -194,9 +215,16 @@ export default function SearchBookingForm({
 						value={searchQuery}
 						onChange={(value) => {
 							setSearchQuery(value);
+							setSelectedCategoryId(null);
 							// Clear error when user starts typing
 							if (errorField === 'searchQuery') {
 								clearValidation();
+							}
+						}}
+						onServiceSelect={(suggestion: any) => {
+							if (suggestion?.type === 'category' && suggestion?.id) {
+								setSelectedCategoryId(Number(suggestion.id));
+								setSearchQuery(suggestion.name);
 							}
 						}}
 						placeholder={t.homepage.searchPlaceholder}
