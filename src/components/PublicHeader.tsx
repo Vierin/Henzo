@@ -7,7 +7,11 @@ import { useAuth } from '@/lib/auth-unified';
 import Image from 'next/image';
 import AdaptiveSearch from './AdaptiveSearch';
 import { User, LogOut, ChevronDown } from 'lucide-react';
-import { useLanguage } from '@/contexts/LanguageContext';
+import {
+	extractLocaleFromPath,
+	stripLocaleFromPath,
+	withLocale,
+} from '@/i18n/routing';
 
 export default function PublicHeader() {
 	const [isLanguageDropdownOpen, setIsLanguageDropdownOpen] = useState(false);
@@ -22,30 +26,33 @@ export default function PublicHeader() {
 	// Используем новую систему аутентификации
 	const { user, isLoading, isClient, isOwner, isAdmin, logout } = useAuth();
 
-	// Check if we're on a client dashboard page
+	// Check if we're on a client dashboard page (strip locale)
+	const pathNoLocale = stripLocaleFromPath(pathname);
 	const isClientDashboard =
-		pathname.startsWith('/dashboard') ||
-		pathname.startsWith('/favorites') ||
-		pathname.startsWith('/reviews') ||
-		pathname.startsWith('/settings');
+		pathNoLocale.startsWith('/dashboard') ||
+		pathNoLocale.startsWith('/favorites') ||
+		pathNoLocale.startsWith('/reviews') ||
+		pathNoLocale.startsWith('/settings');
 
-	// Используем контекст языка
-	const { language, setLanguage, t } = useLanguage();
+	// Текущая локаль из URL
+	const currentLocale = extractLocaleFromPath(pathname) ?? 'en';
 
 	const languages = [
 		{ code: 'en', name: 'English', flag: '🇺🇸' },
+		{ code: 'ru', name: 'Русский', flag: '🇷🇺' },
 		{ code: 'vi', name: 'Tiếng Việt', flag: '🇻🇳' },
-	];
+	] as const;
 
-	const handleLanguageSelect = (lang: (typeof languages)[0]) => {
-		setLanguage(lang.code as 'vi' | 'en');
+	const handleLanguageSelect = (lang: (typeof languages)[number]) => {
+		const target = withLocale(pathname, lang.code as 'en' | 'ru' | 'vi');
 		setIsLanguageDropdownOpen(false);
+		router.push(target);
 	};
 
-	// Синхронизируем selectedLanguage с текущим языком из контекста
+	// selectedLanguage из URL
 	useEffect(() => {
-		setSelectedLanguage(language.toUpperCase());
-	}, [language]);
+		setSelectedLanguage(currentLocale.toUpperCase());
+	}, [currentLocale]);
 
 	// Check user auth on component mount
 
@@ -102,7 +109,7 @@ export default function PublicHeader() {
 					<div className="flex items-center justify-between">
 						{/* Logo */}
 						<Link
-							href="/"
+							href={withLocale('/', currentLocale as 'en' | 'ru' | 'vi')}
 							className="flex max-w-20 md:max-w-full md:h-12 h-10 items-center gap-3"
 						>
 							<Image
@@ -195,15 +202,16 @@ export default function PublicHeader() {
 													<div className="font-medium">{user.email}</div>
 												</div>
 												<Link
-													href={
+													href={withLocale(
 														isClient()
 															? '/dashboard'
 															: isAdmin()
 																? '/admin-panel'
 																: isOwner()
 																	? '/owner-dashboard'
-																	: '/dashboard'
-													}
+																	: '/dashboard',
+														currentLocale as 'en' | 'ru' | 'vi'
+													)}
 													className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
 													onClick={() => setShowProfileDropdown(false)}
 												>
@@ -223,16 +231,22 @@ export default function PublicHeader() {
 							) : (
 								<>
 									<Link
-										href={'/business'}
+										href={withLocale(
+											'/business',
+											currentLocale as 'en' | 'ru' | 'vi'
+										)}
 										className="hidden sm:block text-sm text-gray-700 hover:text-[#8B4513] font-medium transition-colors"
 									>
-										{t.navigation.business}
+										Business
 									</Link>
 									<Link
-										href="/login"
+										href={withLocale(
+											'/login',
+											currentLocale as 'en' | 'ru' | 'vi'
+										)}
 										className="bg-[#ff5b5b] text-white px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg text-xs sm:text-sm font-medium hover:bg-[#e04a4a] transition-colors"
 									>
-										{t.navigation.login}
+										Login
 									</Link>
 								</>
 							)}

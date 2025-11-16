@@ -1,8 +1,9 @@
 'use client';
 
 import { usePathname } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import PublicHeader from '@/components/PublicHeader';
+import { stripLocaleFromPath } from '@/i18n/routing';
 
 export default function PublicGroupLayout({
 	children,
@@ -10,19 +11,21 @@ export default function PublicGroupLayout({
 	children: React.ReactNode;
 }) {
 	const pathname = usePathname();
+	const pathWithoutLocale = useMemo(
+		() => stripLocaleFromPath(pathname),
+		[pathname]
+	);
 	const shouldShowSearch =
-		pathname.startsWith('/category/') ||
-		pathname.startsWith('/salons') ||
-		pathname.startsWith('/salon/');
-	const isBusinessPage = pathname === '/business';
+		pathWithoutLocale.startsWith('/category/') ||
+		pathWithoutLocale.startsWith('/salons') ||
+		pathWithoutLocale.startsWith('/salon/');
+	const isBusinessPage = pathWithoutLocale === '/business';
 	const [isScrolled, setIsScrolled] = useState(false);
 
-	// Handle scroll to determine if search is fixed
 	useEffect(() => {
 		const handleScroll = () => {
 			setIsScrolled(window.scrollY > 50);
 		};
-
 		window.addEventListener('scroll', handleScroll);
 		return () => window.removeEventListener('scroll', handleScroll);
 	}, []);
@@ -36,5 +39,3 @@ export default function PublicGroupLayout({
 		</div>
 	);
 }
-
-
