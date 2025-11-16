@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef, useCallback } from 'react';
+import type React from 'react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { cleanAddressFromCountry } from '@/constants/locations';
@@ -20,6 +21,7 @@ interface AddressAutocompleteProps {
 	className?: string;
 	showIcon?: boolean;
 	inline?: boolean;
+	onKeyDown?: React.KeyboardEventHandler<HTMLInputElement>;
 }
 
 export default function AddressAutocomplete({
@@ -30,6 +32,7 @@ export default function AddressAutocomplete({
 	className = '',
 	showIcon = true,
 	inline = false,
+	onKeyDown,
 }: AddressAutocompleteProps) {
 	const t = useTranslation();
 	const [suggestions, setSuggestions] = useState<AddressSuggestion[]>([]);
@@ -340,6 +343,7 @@ export default function AddressAutocomplete({
 						? `w-full h-full ${showIcon ? 'pl-10' : 'pl-3'} pr-10 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#ff5b5b] focus:border-transparent placeholder:text-gray-500 text-gray-900 ${isGettingLocation ? 'bg-gray-50 text-gray-500' : ''} ${className}`
 						: `w-full h-full ${showIcon ? 'pl-10' : 'pl-3'} pr-10 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#ff5b5b] focus:border-[#ff5b5b] placeholder:text-gray-900 text-gray-900 ${isGettingLocation ? 'bg-gray-50 text-gray-500' : ''} ${className}`
 				}
+				onKeyDown={onKeyDown}
 			/>
 
 			{/* Clear button */}

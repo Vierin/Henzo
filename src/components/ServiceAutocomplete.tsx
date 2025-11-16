@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
+import type React from 'react';
 import { useTranslation } from '@/contexts/LanguageContext';
 
 interface ServiceSuggestion {
@@ -28,6 +29,7 @@ interface ServiceAutocompleteProps {
 	placeholder?: string;
 	className?: string;
 	inline?: boolean;
+	onKeyDown?: React.KeyboardEventHandler<HTMLInputElement>;
 }
 
 export default function ServiceAutocomplete({
@@ -37,6 +39,7 @@ export default function ServiceAutocomplete({
 	placeholder = 'Search for treatments',
 	className = '',
 	inline = false,
+	onKeyDown,
 }: ServiceAutocompleteProps) {
 	const t = useTranslation();
 	const [suggestionGroups, setSuggestionGroups] = useState<SuggestionGroup[]>(
@@ -317,6 +320,7 @@ export default function ServiceAutocomplete({
 				onFocus={handleInputFocus}
 				placeholder={placeholder}
 				className={inputClasses}
+				onKeyDown={onKeyDown}
 			/>
 
 			{/* Search Icon */}

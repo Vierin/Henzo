@@ -19,6 +19,8 @@ export interface Translations {
 		none: string;
 		yes: string;
 		no: string;
+		useCurrentLocation: string;
+		gettingLocation: string;
 	};
 
 	// Navigation
@@ -47,6 +49,9 @@ export interface Translations {
 	homepage: {
 		heroTitle: string;
 		heroSubtitle: string;
+		topRatedTitle: string;
+		topRatedSubtitle: string;
+		popularCategories: string;
 		searchPlaceholder: string;
 		locationPlaceholder: string;
 		datePlaceholder: string;
@@ -76,6 +81,11 @@ export interface Translations {
 		salonOwner: string;
 		salonOwnerSubtitle: string;
 		learnMore: string;
+		onlineBooking: string;
+		minutesShort: string;
+		toBook: string;
+		free: string;
+		booking: string;
 	};
 
 	// Salon
@@ -84,6 +94,7 @@ export interface Translations {
 		reviews: string;
 		reviewsCount: string;
 		services: string;
+		information: string;
 		workingHours: string;
 		contact: string;
 		bookNow: string;
@@ -99,6 +110,19 @@ export interface Translations {
 		wifi: string;
 		airConditioning: string;
 		wheelchairAccessible: string;
+		location: string;
+		getDirections: string;
+		daysShort: {
+			mon: string;
+			tue: string;
+			wed: string;
+			thu: string;
+			fri: string;
+			sat: string;
+			sun: string;
+		};
+		closed: string;
+		hoursNotSpecified: string;
 	};
 
 	// Booking
@@ -169,7 +193,6 @@ export const translations: Record<string, Translations> = {
 			error: 'Lỗi',
 			save: 'Lưu',
 			cancel: 'Hủy',
-			close: 'Đóng',
 			delete: 'Xóa',
 			edit: 'Chỉnh sửa',
 			view: 'Xem',

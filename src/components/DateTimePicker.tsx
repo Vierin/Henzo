@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { Calendar, Clock } from 'lucide-react';
 import { TIME_INTERVALS } from '@/constants/timeIntervals';
+import { useLanguage, useTranslation } from '@/contexts/LanguageContext';
 
 interface DateTimePickerProps {
 	date: Date | null;
@@ -20,11 +21,18 @@ export default function DateTimePicker({
 	timeInterval,
 	onDateChange,
 	onTimeChange,
-	placeholder = 'Select date and time',
+	placeholder,
 	className = '',
 	disabled = false,
 	inline = false,
 }: DateTimePickerProps) {
+	const { language } = useLanguage();
+	const t = useTranslation();
+	const locale =
+		language === 'ru' ? 'ru-RU' : language === 'vi' ? 'vi-VN' : 'en-US';
+	const effectivePlaceholder =
+		placeholder ||
+		`${t.homepage.datePlaceholder} • ${t.homepage.timePlaceholder}`;
 	const [showCalendar, setShowCalendar] = useState(false);
 	const [showTimeIntervals, setShowTimeIntervals] = useState(false);
 	const calendarRef = useRef<HTMLDivElement>(null);
@@ -93,8 +101,8 @@ export default function DateTimePicker({
 	};
 
 	const formatDate = (date: Date | null) => {
-		if (!date) return placeholder;
-		return date.toLocaleDateString('en-US', {
+		if (!date) return effectivePlaceholder;
+		return date.toLocaleDateString(locale, {
 			day: 'numeric',
 			month: 'long',
 			year: 'numeric',
@@ -210,14 +218,22 @@ export default function DateTimePicker({
 				>
 					<div className="text-center mb-4">
 						<h3 className="text-lg font-semibold text-gray-900">
-							{new Date().toLocaleDateString('en-US', {
+							{new Date().toLocaleDateString(locale, {
 								month: 'long',
 								year: 'numeric',
 							})}
 						</h3>
 					</div>
 					<div className="grid grid-cols-7 gap-1 mb-2">
-						{['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map((day) => (
+						{[
+							t.salon.daysShort.mon,
+							t.salon.daysShort.tue,
+							t.salon.daysShort.wed,
+							t.salon.daysShort.thu,
+							t.salon.daysShort.fri,
+							t.salon.daysShort.sat,
+							t.salon.daysShort.sun,
+						].map((day) => (
 							<div
 								key={day}
 								className="h-10 flex items-center justify-center text-sm font-medium text-gray-500"
@@ -237,7 +253,9 @@ export default function DateTimePicker({
 					className="absolute top-full left-0 mt-2 bg-white border border-gray-200 rounded-lg shadow-lg p-4 z-50 min-w-[250px]"
 				>
 					<div className="text-center mb-3">
-						<h3 className="text-lg font-semibold text-gray-900">Time</h3>
+						<h3 className="text-lg font-semibold text-gray-900">
+							{t.booking.selectTime}
+						</h3>
 					</div>
 					<div className="space-y-2">
 						{TIME_INTERVALS.map((interval) => (
