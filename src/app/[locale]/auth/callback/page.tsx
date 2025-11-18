@@ -5,7 +5,6 @@ import { useRouter, usePathname } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import { useAuthStore } from '@/stores/authStore';
 import { withLocale, extractLocaleFromPath } from '@/i18n/routing';
-import { logger } from '@/lib/logger';
 import { authManager } from '@/lib/auth-unified';
 
 export default function AuthCallbackPage() {

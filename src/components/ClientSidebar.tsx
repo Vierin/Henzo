@@ -17,12 +17,19 @@ import {
 import { useQuery } from '@tanstack/react-query';
 import { useFavoriteSalons } from '@/hooks/useFavorites';
 import { useUpcomingBookings } from '@/hooks/useClient';
+import {
+	extractLocaleFromPath,
+	stripLocaleFromPath,
+	withLocale,
+} from '@/i18n/routing';
 
 export default function ClientSidebar() {
 	const pathname = usePathname();
 	const router = useRouter();
 	const { logout, user } = useAuth();
 	const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+	const currentLocale = extractLocaleFromPath(pathname) ?? 'en';
+	const pathWithoutLocale = stripLocaleFromPath(pathname);
 
 	// Only load data if user is authenticated
 	const isAuthenticated = !!user;
@@ -31,7 +38,7 @@ export default function ClientSidebar() {
 	// Load minimal data for sidebar badges, full data will be loaded in respective pages
 	const { data: favorites = [] } = useFavoriteSalons(isAuthenticated);
 	const { data: upcomingBookings = [] } = useUpcomingBookings(isAuthenticated);
-	
+
 	// Use cached data from React Query instead of making new request
 	// This will use existing cache if available, preventing duplicate requests
 	const { data: userReviews = [] } = useQuery({
@@ -49,12 +56,14 @@ export default function ClientSidebar() {
 			// Call logout
 			await logout();
 
-			// Use Next.js router instead of window.location.href
-			router.push('/');
+			// Redirect to home page with current locale
+			const homePath = withLocale('/', currentLocale as 'en' | 'ru' | 'vi');
+			router.push(homePath);
 		} catch (error) {
 			console.error('Logout error:', error);
 			// Even if logout fails, redirect to home
-			router.push('/');
+			const homePath = withLocale('/', currentLocale as 'en' | 'ru' | 'vi');
+			router.push(homePath);
 		}
 	};
 
@@ -69,10 +78,17 @@ export default function ClientSidebar() {
 		label: string,
 		badge?: number
 	) => {
-		const isActive = pathname === href;
+		// Добавляем локаль к href для правильной навигации
+		const hrefWithLocale = withLocale(
+			href,
+			currentLocale as 'en' | 'ru' | 'vi'
+		);
+		// Сравниваем пути без локали для определения активной вкладки
+		const hrefWithoutLocale = stripLocaleFromPath(href);
+		const isActive = pathWithoutLocale === hrefWithoutLocale;
 		return (
 			<Link
-				href={href}
+				href={hrefWithLocale}
 				className={`flex items-center justify-between px-3 py-2 rounded-lg transition-colors ${
 					isActive
 						? 'bg-red-50 text-[#ff5b5b] border-r-2 border-[#ff5b5b]'

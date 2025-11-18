@@ -5,7 +5,6 @@ import { useRouter, usePathname } from 'next/navigation';
 import { useAuth } from '@/lib/auth-unified';
 import { hasRouteAccess, getRequiredRole } from '@/config/routes';
 import { extractLocaleFromPath, withLocale } from '@/i18n/routing';
-import { logger } from '@/lib/logger';
 
 interface ProtectedRouteProps {
 	children: React.ReactNode;
@@ -32,10 +31,6 @@ export default function ProtectedRoute({
 			const locale = extractLocaleFromPath(pathname) ?? 'en';
 			const loginPath = withLocale('/login', locale as 'en' | 'ru' | 'vi');
 			router.replace(loginPath);
-			logger.debug('[ProtectedRoute] Redirecting to login', {
-				path: pathname,
-				reason: 'Not authenticated',
-			});
 			return;
 		}
 
@@ -71,11 +66,6 @@ export default function ProtectedRoute({
 					router.replace(withLocale('/', locale as 'en' | 'ru' | 'vi'));
 					break;
 			}
-			logger.debug('[ProtectedRoute] Redirecting due to role mismatch', {
-				path: pathname,
-				userRole: user.role,
-				allowedRoles,
-			});
 			return;
 		}
 
@@ -83,11 +73,6 @@ export default function ProtectedRoute({
 		if (requiredRole && !hasAccess) {
 			const locale = extractLocaleFromPath(pathname) ?? 'en';
 			router.replace(withLocale('/unauthorized', locale as 'en' | 'ru' | 'vi'));
-			logger.debug('[ProtectedRoute] Access denied', {
-				path: pathname,
-				userRole: user.role,
-				requiredRole,
-			});
 			return;
 		}
 

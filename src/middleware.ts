@@ -14,12 +14,10 @@ import {
 	getRequiredRole,
 	hasRouteAccess,
 } from './config/routes';
-import { logger } from './lib/logger';
 
 export async function middleware(req: NextRequest) {
 	const { pathname } = req.nextUrl;
 	const res = NextResponse.next();
-	const requestId = logger.generateRequestId();
 
 	// Ignore next internals and files
 	if (
@@ -73,18 +71,8 @@ export async function middleware(req: NextRequest) {
 	// Получаем путь без локали
 	const pathWithoutLocale = stripLocaleFromPath(pathname);
 
-	// Логирование запроса
-	logger.middleware.request(pathWithoutLocale, requestId, {
-		method: req.method,
-		url: req.url,
-	});
-
 	// Проверяем, является ли маршрут публичным
 	if (isPublicRoute(pathWithoutLocale)) {
-		logger.debug('[Middleware] Public route access', {
-			path: pathWithoutLocale,
-			requestId,
-		});
 		return res;
 	}
 
@@ -94,7 +82,6 @@ export async function middleware(req: NextRequest) {
 	// Создаем Supabase клиент для middleware с поддержкой cookies
 	// Важно: создаем после проверки публичных маршрутов
 	const supabaseResponse = NextResponse.next();
-	supabaseResponse.headers.set('X-Request-ID', requestId);
 
 	const supabase = createServerClient(
 		process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -124,38 +111,17 @@ export async function middleware(req: NextRequest) {
 		} = await supabase.auth.getUser();
 
 		if (userError || !user) {
-			logger.middleware.authCheck(pathWithoutLocale, false, null, {
-				error: userError?.message || 'Auth session missing!',
-				requestId,
-			});
 			// Перенаправляем на страницу логина с returnTo параметром
 			const loginUrl = new URL(`/${urlLocale}/login`, req.url);
 			loginUrl.searchParams.set('returnTo', pathname);
-			logger.middleware.redirect(
-				pathWithoutLocale,
-				loginUrl.pathname,
-				'No user found',
-				{ requestId }
-			);
 			return NextResponse.redirect(loginUrl);
 		}
 
 		// Пользователь залогинен - разрешаем доступ
 		// Проверка роли будет выполнена в ProtectedRoute через AuthContext
-		logger.middleware.accessGranted(
-			pathWithoutLocale,
-			'authenticated',
-			user.id,
-			{ requestId }
-		);
-
 		// Возвращаем supabaseResponse, который содержит обновленные cookies
 		return supabaseResponse;
 	} catch (error) {
-		logger.middleware.error(error as Error, pathWithoutLocale, {
-			requestId,
-			operation: 'authCheck',
-		});
 		// В случае ошибки перенаправляем на страницу логина
 		const loginUrl = new URL(`/${urlLocale}/login`, req.url);
 		loginUrl.searchParams.set('returnTo', pathname);

@@ -2,7 +2,6 @@
 import { supabase } from './supabase';
 import { apiClient } from './api-client';
 import { useAuthStore } from '@/stores/authStore';
-import { logger } from './logger';
 
 export interface User {
 	id: string;
@@ -90,12 +89,10 @@ class AuthManager {
 			});
 
 			if (error) {
-				logger.auth.login(email, false, { error: error.message });
 				throw error;
 			}
 
 			if (!data.session) {
-				logger.auth.login(email, false, { error: 'No session returned' });
 				throw new Error('No session returned');
 			}
 
@@ -114,7 +111,6 @@ class AuthManager {
 			// 4. Настройка автоматического обновления токена
 			this.setupTokenRefresh();
 
-			logger.auth.login(email, true, { userId: user.id });
 			return { success: true };
 		} catch (error) {
 			this.setState({
@@ -124,7 +120,6 @@ class AuthManager {
 			});
 			const errorMessage =
 				error instanceof Error ? error.message : 'Login failed';
-			logger.auth.error(error as Error, 'login', { email });
 			return {
 				success: false,
 				error: errorMessage,
@@ -284,13 +279,7 @@ class AuthManager {
 				isLoading: false,
 			});
 			this.clearTokenRefresh();
-			if (userId) {
-				logger.auth.logout(userId);
-			}
 		} catch (error) {
-			logger.auth.error(error as Error, 'logout', {
-				userId: this.authState.user?.id,
-			});
 			// Принудительная очистка даже при ошибке
 			this.setState({
 				user: null,
@@ -368,7 +357,6 @@ class AuthManager {
 			// 5. Настройка автоматического обновления токена
 			this.setupTokenRefresh();
 		} catch (error) {
-			logger.auth.error(error as Error, 'initialize');
 			this.setState({
 				user: null,
 				isAuthenticated: false,
@@ -392,7 +380,6 @@ class AuthManager {
 		// НЕ обновляем данные при TOKEN_REFRESHED, чтобы избежать бесконечных циклов
 		supabase.auth.onAuthStateChange((event, session) => {
 			if (event === 'TOKEN_REFRESHED' && session) {
-				logger.auth.sessionRefresh(session.user.id, true);
 				// НЕ вызываем refreshUserData здесь - это создает бесконечный цикл
 				// Supabase автоматически обновляет токен, роль уже в app_metadata
 			} else if (event === 'SIGNED_OUT') {
@@ -452,9 +439,6 @@ class AuthManager {
 			}
 		} catch (error) {
 			// Игнорируем ошибки фонового обновления
-			logger.debug('[Auth] Background user data refresh failed', {
-				error: error instanceof Error ? error.message : 'Unknown error',
-			});
 		}
 	}
 
@@ -471,13 +455,6 @@ class AuthManager {
 
 			if (!response.ok) {
 				const errorText = await response.text();
-				logger.auth.error(
-					new Error(
-						`Failed to fetch user data: ${response.status} ${errorText}`
-					),
-					'fetchUserWithRole',
-					{ status: response.status, statusText: response.statusText }
-				);
 				throw new Error(
 					`Failed to fetch user data: ${response.status} ${response.statusText}`
 				);
@@ -496,9 +473,6 @@ class AuthManager {
 
 			return user;
 		} catch (error) {
-			logger.auth.error(error as Error, 'fetchUserWithRole', {
-				hasAccessToken: !!accessToken,
-			});
 			throw error;
 		}
 	}
@@ -514,7 +488,6 @@ class AuthManager {
 			});
 			localStorage.setItem('auth_user', JSON.stringify(user));
 		} catch (error) {
-			logger.auth.error(error as Error, 'updateUser');
 			throw error;
 		}
 	}
