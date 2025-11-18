@@ -124,6 +124,9 @@ export interface Translations {
 		};
 		closed: string;
 		hoursNotSpecified: string;
+		serviceSingular: string; // единственное число (1 услуга)
+		servicePlural: string; // множественное число (2-4 услуги)
+		serviceGenitive: string; // родительный падеж (5+ услуг) - только для русского
 	};
 
 	// Booking
@@ -221,6 +224,13 @@ export interface Translations {
 		contact: string;
 		termsOfService: string;
 		privacyPolicy: string;
+	};
+
+	// Cookie Banner
+	cookieBanner: {
+		message: string;
+		acceptAll: string;
+		decline: string;
 	};
 
 	// Auth
@@ -395,6 +405,9 @@ export const translations: Record<string, Translations> = {
 			},
 			closed: 'Đóng cửa',
 			hoursNotSpecified: 'Chưa có giờ làm việc',
+			serviceSingular: 'dịch vụ',
+			servicePlural: 'dịch vụ',
+			serviceGenitive: 'dịch vụ',
 		},
 
 		// Booking
@@ -533,6 +546,14 @@ export const translations: Record<string, Translations> = {
 			contact: 'Liên hệ',
 			termsOfService: 'Điều khoản dịch vụ',
 			privacyPolicy: 'Chính sách bảo mật',
+		},
+
+		// Cookie Banner
+		cookieBanner: {
+			message:
+				'Chúng tôi sử dụng cookie để cải thiện trải nghiệm duyệt web, phân tích lưu lượng truy cập và cá nhân hóa nội dung. Bằng cách nhấp "Chấp nhận tất cả", bạn đồng ý với việc sử dụng cookie của chúng tôi. Bạn có thể quản lý tùy chọn của mình bất cứ lúc nào.',
+			acceptAll: 'Chấp nhận tất cả',
+			decline: 'Từ chối',
 		},
 	},
 
@@ -673,6 +694,9 @@ export const translations: Record<string, Translations> = {
 			},
 			closed: 'Closed',
 			hoursNotSpecified: 'Hours not specified',
+			serviceSingular: 'service',
+			servicePlural: 'services',
+			serviceGenitive: 'services',
 		},
 
 		// Booking
@@ -808,6 +832,14 @@ export const translations: Record<string, Translations> = {
 			contact: 'Contact',
 			termsOfService: 'Terms of Service',
 			privacyPolicy: 'Privacy Policy',
+		},
+
+		// Cookie Banner
+		cookieBanner: {
+			message:
+				'We use cookies to enhance your browsing experience, analyze site traffic, and personalize content. By clicking "Accept All", you consent to our use of cookies. You can manage your preferences at any time.',
+			acceptAll: 'Accept All',
+			decline: 'Decline',
 		},
 	},
 
@@ -947,6 +979,9 @@ export const translations: Record<string, Translations> = {
 			},
 			closed: 'Закрыто',
 			hoursNotSpecified: 'Время работы не указано',
+			serviceSingular: 'услуга',
+			servicePlural: 'услуги',
+			serviceGenitive: 'услуг',
 		},
 
 		// Booking
@@ -1083,6 +1118,14 @@ export const translations: Record<string, Translations> = {
 			contact: 'Контакты',
 			termsOfService: 'Условия использования',
 			privacyPolicy: 'Политика конфиденциальности',
+		},
+
+		// Cookie Banner
+		cookieBanner: {
+			message:
+				'Мы используем файлы cookie для улучшения вашего опыта просмотра, анализа трафика сайта и персонализации контента. Нажимая "Принять все", вы соглашаетесь с использованием нами файлов cookie. Вы можете управлять своими настройками в любое время.',
+			acceptAll: 'Принять все',
+			decline: 'Отклонить',
 		},
 	},
 };

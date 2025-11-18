@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback, useMemo } from 'react';
+import { useState, useCallback, useMemo, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import BookingModal from '@/components/BookingModal';
 import LoadingSpinner from '@/components/LoadingSpinner';
@@ -21,6 +21,7 @@ import {
 	Phone,
 	Star,
 	Heart,
+	ChevronDown,
 } from 'lucide-react';
 import { calculateAverageRating, getReviewCount } from '@/utils/salonUtils';
 import { formatVND } from '@/utils/currency';
@@ -43,13 +44,6 @@ interface SalonDetailClientProps {
 export default function SalonDetailClient({ salon }: SalonDetailClientProps) {
 	const t = useTranslation();
 	const { language } = useLanguage();
-	// Debug log for salon data
-	console.log('SalonDetailClient received salon:', {
-		salonId: salon.id,
-		salonName: salon.name,
-		reviews: salon.reviews,
-		reviewsCount: salon.reviews?.length || 0,
-	});
 	const router = useRouter();
 	const { user } = useAuthStore();
 	const isFavorite = useIsFavorite(salon.id, !!user);
@@ -61,6 +55,8 @@ export default function SalonDetailClient({ salon }: SalonDetailClientProps) {
 	>('Services');
 	const [isBookingModalOpen, setIsBookingModalOpen] = useState(false);
 	const [selectedService, setSelectedService] = useState<Service | null>(null);
+	const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
+	const groupsInitialized = useRef(false);
 
 	const handleBookService = useCallback((service: Service) => {
 		setSelectedService(service);
@@ -172,52 +168,90 @@ export default function SalonDetailClient({ salon }: SalonDetailClientProps) {
 		[t.salon.closed, t.salon.daysShort, t.salon.hoursNotSpecified]
 	);
 
-	const serviceCategories = useMemo(() => {
-		if (!salon.services) return {};
+	// Group services by serviceGroup
+	const serviceGroups = useMemo(() => {
+		if (!salon.services) return { groups: [], ungrouped: [] };
 
-		const categories: { [key: string]: Service[] } = {};
+		const groupsMap = new Map<
+			string,
+			{ group: NonNullable<Service['serviceGroup']>; services: Service[] }
+		>();
+		const ungrouped: Service[] = [];
+		// Map to track temporary groups created from serviceGroupId
+		const tempGroupsMap = new Map<
+			string,
+			NonNullable<Service['serviceGroup']>
+		>();
 
 		salon.services.forEach((service) => {
-			// Use serviceCategory from database if available, otherwise fallback to name-based categorization
-			let categoryName = 'Other Services';
+			// Try to get group from service.serviceGroup
+			let group: Service['serviceGroup'] | undefined = service.serviceGroup;
 
-			if (service.serviceCategory?.nameEn) {
-				categoryName = service.serviceCategory.nameEn;
-			} else {
-				// Fallback to static categorization based on service name
-				const serviceName = service.name.toLowerCase();
-
-				if (
-					serviceName.includes('hair') ||
-					serviceName.includes('cut') ||
-					serviceName.includes('color') ||
-					serviceName.includes('styling')
-				) {
-					categoryName = 'Hair Services';
-				} else if (
-					serviceName.includes('nail') ||
-					serviceName.includes('manicure') ||
-					serviceName.includes('pedicure')
-				) {
-					categoryName = 'Nail Care';
-				} else if (
-					serviceName.includes('facial') ||
-					serviceName.includes('skin') ||
-					serviceName.includes('massage') ||
-					serviceName.includes('wax')
-				) {
-					categoryName = 'Skincare';
+			// If serviceGroup is not loaded but serviceGroupId exists, create a temporary group
+			if (!group && service.serviceGroupId) {
+				// Check if we already created a temp group for this ID
+				if (!tempGroupsMap.has(service.serviceGroupId)) {
+					// Create a temporary group object with minimal data
+					const tempGroup: NonNullable<Service['serviceGroup']> = {
+						id: service.serviceGroupId,
+						salonId: salon.id,
+						name: `Group ${service.serviceGroupId.slice(0, 8)}`, // Temporary name
+						position: 0,
+						isActive: true,
+						createdAt: new Date().toISOString(),
+					};
+					tempGroupsMap.set(service.serviceGroupId, tempGroup);
 				}
+				group = tempGroupsMap.get(service.serviceGroupId);
 			}
 
-			if (!categories[categoryName]) {
-				categories[categoryName] = [];
+			// Check if service has a valid active group
+			if (group && (group.isActive === true || group.isActive === undefined)) {
+				const groupId = group.id;
+
+				if (!groupsMap.has(groupId)) {
+					groupsMap.set(groupId, {
+						group: group as NonNullable<Service['serviceGroup']>,
+						services: [],
+					});
+				}
+				groupsMap.get(groupId)!.services.push(service);
+			} else {
+				// Service without group, with inactive group, or serviceGroup not loaded
+				ungrouped.push(service);
 			}
-			categories[categoryName].push(service);
 		});
 
-		return categories;
-	}, [salon.services]);
+		// Sort groups by position
+		const groups = Array.from(groupsMap.values()).sort(
+			(a, b) => a.group.position - b.group.position
+		);
+
+		return { groups, ungrouped };
+	}, [salon.services, salon.id]);
+
+	// Toggle group expansion
+	const toggleGroup = useCallback((groupId: string) => {
+		setExpandedGroups((prev) => {
+			const next = new Set(prev);
+			if (next.has(groupId)) {
+				next.delete(groupId);
+			} else {
+				next.add(groupId);
+			}
+			return next;
+		});
+	}, []);
+
+	// Initialize: expand all groups by default (only once)
+	useEffect(() => {
+		if (serviceGroups.groups.length > 0 && !groupsInitialized.current) {
+			const allGroupIds = new Set(serviceGroups.groups.map((g) => g.group.id));
+			setExpandedGroups(allGroupIds);
+			groupsInitialized.current = true;
+		}
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, [serviceGroups.groups.length]);
 
 	const getPublicUrl = useCallback((filePath: string) => {
 		const { data } = supabase.storage
@@ -308,15 +342,132 @@ export default function SalonDetailClient({ salon }: SalonDetailClientProps) {
 								aria-labelledby="tab-services"
 								className="min-h-[400px]"
 							>
-								{Object.keys(serviceCategories).length > 0 ? (
-									Object.entries(serviceCategories).map(
-										([category, services]) => (
-											<section key={category} className="mb-12">
-												<h2 className="text-2xl font-bold text-gray-900 mb-6">
-													{category}
-												</h2>
+								{serviceGroups.groups.length > 0 ||
+								serviceGroups.ungrouped.length > 0 ? (
+									<>
+										{/* Service Groups */}
+										{serviceGroups.groups.map(({ group, services }) => {
+											const isExpanded = expandedGroups.has(group.id);
+											return (
+												<section
+													key={group.id}
+													className="mb-6 bg-white rounded-lg border border-gray-200"
+												>
+													<button
+														type="button"
+														onClick={(e) => {
+															e.preventDefault();
+															toggleGroup(group.id);
+														}}
+														className="w-full flex items-center justify-between p-4"
+														aria-expanded={isExpanded}
+														aria-controls={`group-${group.id}`}
+													>
+														<h2 className="text-xl font-bold text-gray-900">
+															{group.name}
+														</h2>
+														<div className="flex items-center gap-2">
+															<span className="text-sm text-gray-500">
+																{services.length}{' '}
+																{(() => {
+																	const count = services.length;
+																	// Russian pluralization rules
+																	if (language === 'ru') {
+																		if (count === 1) {
+																			return t.salon.serviceSingular;
+																		} else if (count >= 2 && count <= 4) {
+																			return t.salon.servicePlural;
+																		} else {
+																			return t.salon.serviceGenitive;
+																		}
+																	}
+																	// English and Vietnamese: simple singular/plural
+																	return count === 1
+																		? t.salon.serviceSingular
+																		: t.salon.servicePlural;
+																})()}
+															</span>
+															<ChevronDown
+																className={`w-5 h-5 text-gray-600 transition-transform ${
+																	isExpanded ? 'rotate-180' : ''
+																}`}
+															/>
+														</div>
+													</button>
+													{isExpanded && (
+														<div id={`group-${group.id}`} className="space-y-4">
+															{services.map((service) => {
+																const localizedName = getLocalizedServiceName(
+																	service,
+																	language
+																);
+																const localizedDescription =
+																	getLocalizedServiceDescription(
+																		service,
+																		language
+																	);
+																return (
+																	<article
+																		key={service.id}
+																		className="  px-3 py-4 md:p-6 border border-gray-100"
+																	>
+																		<div className="flex justify-between items-start">
+																			<div className="flex-1">
+																				<h3 className="text-md md:text-xl font-semibold text-gray-900 mb-2">
+																					{localizedName}
+																				</h3>
+																				{localizedDescription && (
+																					<p className="text-gray-600 mb-3 hidden md:block">
+																						{localizedDescription}
+																					</p>
+																				)}
+																				<div className="flex items-center gap-4 text-sm md:text-md text-gray-500">
+																					<span className="flex gap-1">
+																						<span className="sr-only">
+																							Duration:{' '}
+																						</span>
+																						<Clock className="w-4 h-4 md:w-5 md:h-5 md:mt-[2px]" />{' '}
+																						<span className="text-xs md:text-sm">
+																							{service.duration} min
+																						</span>
+																					</span>
+																					<span className="text-[#ff5b5b] font-semibold text-sm md:text-lg">
+																						<span className="sr-only">
+																							Price:{' '}
+																						</span>
+																						{formatVND(service.price)}
+																					</span>
+																				</div>
+																			</div>
+																			<button
+																				onClick={() =>
+																					handleBookService(service)
+																				}
+																				className="ml-4 bg-[#ff5b5b] text-white px-4 md:px-6 md:py-2 py-1 rounded-lg font-medium hover:bg-[#e04a4a] transition-colors focus:outline-none focus:ring-2 focus:ring-[#ff5b5b] focus:ring-offset-2 text-sm md:text-base"
+																				aria-label={`${t.salon.bookNow} ${localizedName}`}
+																			>
+																				<span className="md:hidden">
+																					{t.salon.bookNow}
+																				</span>
+																				<span className="hidden md:inline">
+																					{t.salon.bookNow}
+																				</span>
+																			</button>
+																		</div>
+																	</article>
+																);
+															})}
+														</div>
+													)}
+												</section>
+											);
+										})}
+
+										{/* Ungrouped Services */}
+										{serviceGroups.ungrouped.length > 0 && (
+											<section className="mt-8">
 												<div className="space-y-4">
-													{services.map((service) => {
+													{serviceGroups.ungrouped.map((service) => {
 														const localizedName = getLocalizedServiceName(
 															service,
 															language
@@ -372,8 +523,8 @@ export default function SalonDetailClient({ salon }: SalonDetailClientProps) {
 													})}
 												</div>
 											</section>
-										)
-									)
+										)}
+									</>
 								) : (
 									<div className="text-center py-12">
 										<div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
