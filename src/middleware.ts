@@ -117,32 +117,11 @@ export async function middleware(req: NextRequest) {
 	// Для защищенных маршрутов проверяем только наличие сессии
 	// Проверка роли выполняется в ProtectedRoute через AuthContext
 	try {
-		// Сначала проверяем сессию через getSession
-		const {
-			data: { session },
-			error: sessionError,
-		} = await supabase.auth.getSession();
-
-		console.log('[Middleware DEBUG] Session check:', {
-			hasSession: !!session,
-			hasAccessToken: !!session?.access_token,
-			sessionError: sessionError?.message,
-			cookies: req.cookies.getAll().map((c) => c.name),
-			path: pathWithoutLocale,
-		});
-
 		// Получаем пользователя - getUser более надежен в middleware и автоматически обновляет сессию
 		const {
 			data: { user },
 			error: userError,
 		} = await supabase.auth.getUser();
-
-		console.log('[Middleware DEBUG] User check:', {
-			hasUser: !!user,
-			userId: user?.id,
-			userError: userError?.message,
-			path: pathWithoutLocale,
-		});
 
 		if (userError || !user) {
 			logger.middleware.authCheck(pathWithoutLocale, false, null, {

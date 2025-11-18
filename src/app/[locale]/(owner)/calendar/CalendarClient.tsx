@@ -16,7 +16,7 @@ import {
 } from '@/utils/date';
 import LoadingSpinner from '@/components/LoadingSpinner';
 import ErrorDisplay from '@/components/ErrorDisplay';
-import { useSalonId } from '@/hooks/useSalon';
+import { useOwnerLayout } from '@/contexts/OwnerLayoutContext';
 import { useBookings } from '@/hooks/useBookings';
 import { useTimeBlocks } from '@/hooks/useTimeBlocks';
 import { useStaffBySalon } from '@/hooks/useStaff';
@@ -51,9 +51,12 @@ export default function CalendarClient() {
 	const [itemsPerPage] = useState(20);
 	const router = useRouter();
 
-	const { salonId, isLoading: salonLoading, hasSalon, salon } = useSalonId();
-	// salonData теперь берется из useSalonId (через useSalon) - нет дублирования запросов
-	const salonData = salon;
+	const {
+		salonId,
+		isLoading: salonLoading,
+		hasSalon,
+		salonData,
+	} = useOwnerLayout();
 
 	const {
 		data: bookingsData = [],

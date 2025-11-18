@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useCreateService } from '@/hooks/useServices';
 import { STATIC_CATEGORIES } from '@/constants/categories';
-import { useSalonId } from '@/hooks/useSalon';
+import { useOwnerLayout } from '@/contexts/OwnerLayoutContext';
 import { apiClient } from '@/lib/api-client';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
@@ -43,8 +43,8 @@ export default function NewServiceClient() {
 	const [newGroupName, setNewGroupName] = useState('');
 	const router = useRouter();
 
-	// Используем оптимизированный хук для получения данных салона
-	const { salonId, isLoading: salonLoading, hasSalon } = useSalonId();
+	// Используем данные салона из контекста (избегаем дублирования запросов)
+	const { salonId, isLoading: salonLoading, hasSalon } = useOwnerLayout();
 	const queryClient = useQueryClient();
 
 	const categories = STATIC_CATEGORIES;

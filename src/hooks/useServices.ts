@@ -40,6 +40,8 @@ export const useServices = (
 		},
 		enabled: !!salonId,
 		staleTime: 5 * 60 * 1000, // 5 minutes
+		refetchOnMount: false, // Не перезапрашивать если данные свежие
+		refetchOnWindowFocus: false, // Не перезапрашивать при фокусе окна
 	});
 };
 

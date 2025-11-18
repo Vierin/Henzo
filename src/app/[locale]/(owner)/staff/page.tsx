@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import toast from 'react-hot-toast';
 import EditStaffModal from '@/components/EditStaffModal';
 import { useStaffBySalon, useDeleteStaff } from '@/hooks/useStaff';
-import { useSalonId } from '@/hooks/useSalon';
+import { useOwnerLayout } from '@/contexts/OwnerLayoutContext';
 import LoadingSpinner from '@/components/LoadingSpinner';
 import ErrorDisplay from '@/components/ErrorDisplay';
 import { Staff } from '@/types';
@@ -15,8 +15,8 @@ export default function StaffPage() {
 	const [selectedStaff, setSelectedStaff] = useState<Staff | null>(null);
 	const router = useRouter();
 
-	// Используем оптимизированный хук для получения данных салона
-	const { salonId, isLoading: salonLoading, hasSalon } = useSalonId();
+	// Используем данные салона из контекста (избегаем дублирования запросов)
+	const { salonId, isLoading: salonLoading, hasSalon } = useOwnerLayout();
 
 	const {
 		data: staff = [],

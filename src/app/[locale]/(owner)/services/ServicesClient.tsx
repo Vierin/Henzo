@@ -6,7 +6,7 @@ import toast from 'react-hot-toast';
 import EditServiceModal from '@/components/EditServiceModal';
 import { useServices, useDeleteService } from '@/hooks/useServices';
 import { STATIC_CATEGORIES } from '@/constants/categories';
-import { useSalonId } from '@/hooks/useSalon';
+import { useOwnerLayout } from '@/contexts/OwnerLayoutContext';
 import LoadingSpinner from '@/components/LoadingSpinner';
 import ErrorDisplay from '@/components/ErrorDisplay';
 import { Service, ServiceGroup } from '@/types';
@@ -35,8 +35,8 @@ export default function ServicesClient() {
 	const [selectedGroup, setSelectedGroup] = useState<string | 'all'>('all');
 	const router = useRouter();
 
-	// Используем оптимизированный хук для получения данных салона
-	const { salonId, isLoading: salonLoading, error: salonError } = useSalonId();
+	// Используем данные салона из контекста (избегаем дублирования запросов)
+	const { salonId, isLoading: salonLoading } = useOwnerLayout();
 
 	const {
 		data: services = [],

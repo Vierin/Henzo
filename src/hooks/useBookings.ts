@@ -48,7 +48,9 @@ export const useBookings = (filters?: { status?: string; date?: string }) => {
 			return response || [];
 		},
 		enabled: !authLoading && !!user && isOwner(),
-		staleTime: 2 * 60 * 1000, // 2 minutes (bookings change frequently)
+		staleTime: 5 * 60 * 1000, // 5 minutes
+		refetchOnMount: false, // Не перезапрашивать если данные свежие
+		refetchOnWindowFocus: false, // Не перезапрашивать при фокусе окна
 	});
 };
 

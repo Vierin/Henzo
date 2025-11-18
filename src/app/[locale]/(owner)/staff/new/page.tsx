@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { useSalonId } from '@/hooks/useSalon';
+import { useOwnerLayout } from '@/contexts/OwnerLayoutContext';
 import { useCreateStaff } from '@/hooks/useStaff';
 import Image from 'next/image';
 import {
@@ -25,8 +25,8 @@ export default function NewStaffPage() {
 	const [error, setError] = useState('');
 	const router = useRouter();
 
-	// Используем оптимизированный хук для получения данных салона
-	const { salonId, isLoading: salonLoading, hasSalon } = useSalonId();
+	// Используем данные салона из контекста (избегаем дублирования запросов)
+	const { salonId, isLoading: salonLoading, hasSalon } = useOwnerLayout();
 
 	// Хук для создания работника
 	const createStaffMutation = useCreateStaff();

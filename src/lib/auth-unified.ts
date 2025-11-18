@@ -36,13 +36,6 @@ class AuthManager {
 	}
 
 	private notifyListeners() {
-		console.log('[AuthManager] Notifying listeners:', {
-			listenersCount: this.listeners.size,
-			user: this.authState.user?.id,
-			role: this.authState.user?.role,
-			isAuthenticated: this.authState.isAuthenticated,
-			isLoading: this.authState.isLoading,
-		});
 		this.listeners.forEach((listener) => listener(this.authState));
 	}
 
@@ -59,17 +52,8 @@ class AuthManager {
 		const loadingChanged = prevState.isLoading !== nextState.isLoading;
 
 		if (!userChanged && !authChanged && !loadingChanged) {
-			console.log('[AuthManager] State unchanged, skipping update');
 			return; // Не обновляем если состояние не изменилось
 		}
-
-		console.log('[AuthManager] State changed, updating:', {
-			userChanged,
-			authChanged,
-			loadingChanged,
-			prevRole: prevState.user?.role,
-			nextRole: nextState.user?.role,
-		});
 
 		this.authState = nextState;
 		this.notifyListeners();
@@ -320,11 +304,9 @@ class AuthManager {
 	async initialize(): Promise<void> {
 		// Защита от повторной инициализации
 		if (this.authState.isLoading) {
-			console.log('[AuthManager] Already initializing, skipping...');
 			return;
 		}
 
-		console.log('[AuthManager] Starting initialization...');
 		try {
 			this.setState({ isLoading: true });
 
@@ -335,15 +317,8 @@ class AuthManager {
 				error: sessionError,
 			} = await supabase.auth.getSession();
 
-			console.log('[AuthManager] Session check:', {
-				hasSession: !!session,
-				hasAccessToken: !!session?.access_token,
-				error: sessionError?.message,
-			});
-
 			if (sessionError || !session?.access_token) {
 				// Нет валидной сессии, очищаем кеш
-				console.log('[AuthManager] No valid session, clearing cache');
 				localStorage.removeItem('auth_user');
 				this.setState({
 					user: null,
@@ -361,10 +336,6 @@ class AuthManager {
 					const user = JSON.parse(cachedUser);
 					// Проверяем, что кешированный пользователь соответствует текущей сессии
 					if (user.id === session.user.id) {
-						console.log('[AuthManager] Using cached user:', {
-							userId: user.id,
-							role: user.role,
-						});
 						this.setState({
 							user,
 							isAuthenticated: true,
@@ -380,17 +351,11 @@ class AuthManager {
 					}
 				} catch (e) {
 					// Ошибка парсинга кеша, продолжаем загрузку
-					console.warn('[AuthManager] Cache parse error:', e);
 				}
 			}
 
 			// 3. Получение актуальных данных пользователя
-			console.log('[AuthManager] Fetching user data from API...');
 			const user = await this.fetchUserWithRole(session.access_token);
-			console.log('[AuthManager] User data fetched:', {
-				userId: user.id,
-				role: user.role,
-			});
 			this.setState({
 				user,
 				isAuthenticated: true,
@@ -402,7 +367,6 @@ class AuthManager {
 
 			// 5. Настройка автоматического обновления токена
 			this.setupTokenRefresh();
-			console.log('[AuthManager] Initialization complete');
 		} catch (error) {
 			logger.auth.error(error as Error, 'initialize');
 			this.setState({
@@ -619,16 +583,6 @@ export function useAuth() {
 	// Стабильная функция для обновления состояния
 	const handleStateChange = useCallback((newState: AuthState) => {
 		setAuthState((prevState) => {
-			console.log('[useAuth] State change received:', {
-				prevUser: prevState.user?.id,
-				prevRole: prevState.user?.role,
-				newUser: newState.user?.id,
-				newRole: newState.user?.role,
-				prevIsAuthenticated: prevState.isAuthenticated,
-				newIsAuthenticated: newState.isAuthenticated,
-				prevIsLoading: prevState.isLoading,
-				newIsLoading: newState.isLoading,
-			});
 			// Проверяем, действительно ли состояние изменилось
 			// Важно: проверяем не только id, но и роль, так как роль может обновиться
 			const userChanged =
@@ -639,14 +593,8 @@ export function useAuth() {
 			const loadingChanged = prevState.isLoading !== newState.isLoading;
 
 			if (!userChanged && !authChanged && !loadingChanged) {
-				console.log('[useAuth] State unchanged, skipping update');
 				return prevState; // Возвращаем старое состояние если ничего не изменилось
 			}
-			console.log('[useAuth] State changed, updating:', {
-				userChanged,
-				authChanged,
-				loadingChanged,
-			});
 			return newState;
 		});
 	}, []);
