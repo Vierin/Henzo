@@ -265,6 +265,120 @@ export interface Translations {
 		signInFailed: string;
 		googleSignInFailed: string;
 	};
+
+	// Owner Panel
+	owner: {
+		dashboard: string;
+		calendar: string;
+		services: string;
+		staff: string;
+		marketing: string;
+		settings: string;
+		logOut: string;
+		welcomeBack: string;
+		businessOverview: string;
+		totalRevenue: string;
+		totalClients: string;
+		bookings: string;
+		completionRate: string;
+		last7Days: string;
+		last30Days: string;
+		last1Year: string;
+		newAppointment: string;
+		upcomingBookings: string;
+		noUpcomingBookings: string;
+		noUpcomingBookingsNext7Days: string;
+		loadingBookings: string;
+		topSellingServices: string;
+		noCompletedServices: string;
+		additionalMetrics: string;
+		noShowRate: string;
+		missed: string;
+		repeatClients: string;
+		avgRevenuePerClient: string;
+		perClient: string;
+		vsLastMonth: string;
+		client: string;
+		service: string;
+		date: string;
+		time: string;
+		status: string;
+		actions: string;
+		confirm: string;
+		reject: string;
+		edit: string;
+		cancel: string;
+		pending: string;
+		confirmed: string;
+		completed: string;
+		cancelled: string;
+		noShow: string;
+		unassigned: string;
+		unknownService: string;
+		areYouSureCancel: string;
+		markAsNoShow: string;
+		areYouSureNoShow: string;
+		bookingCancelled: string;
+		bookingConfirmed: string;
+		bookingRejected: string;
+		bookingMarkedNoShow: string;
+		failedToCancel: string;
+		failedToConfirm: string;
+		failedToReject: string;
+		failedToMarkNoShow: string;
+		bookingsList: string;
+		all: string;
+		searchBookings: string;
+		noBookingsFound: string;
+		noBookingsWithFilters: string;
+		of: string;
+		results: string;
+		manageServices: string;
+		addNew: string;
+		addNewService: string;
+		searchServices: string;
+		search: string;
+		searchByName: string;
+		category: string;
+		allCategories: string;
+		group: string;
+		allGroups: string;
+		sortBy: string;
+		nameAZ: string;
+		nameZA: string;
+		priceLowToHigh: string;
+		priceHighToLow: string;
+		durationShortToLong: string;
+		durationLongToShort: string;
+		clearFilters: string;
+		showing: string;
+		ofServices: string;
+		matching: string;
+		inCategory: string;
+		inGroup: string;
+		noServicesFound: string;
+		tryAdjustingFilters: string;
+		noServicesYet: string;
+		addFirstService: string;
+		filteringServices: string;
+		serviceName: string;
+		duration: string;
+		price: string;
+		noCategory: string;
+		noGroup: string;
+		editService: string;
+		deleteService: string;
+		areYouSureDelete: string;
+		staffLabel: string;
+		dateAndTime: string;
+		failedToRefresh: string;
+		failedToLoadCalendar: string;
+		failedToLoadDashboard: string;
+		redirectingToSetup: string;
+		loadingDashboard: string;
+		viewMode: string;
+		newAppointmentLabel: string;
+	};
 }
 
 export const translations: Record<string, Translations> = {
@@ -555,6 +669,121 @@ export const translations: Record<string, Translations> = {
 			acceptAll: 'Chấp nhận tất cả',
 			decline: 'Từ chối',
 		},
+
+		// Owner Panel
+		owner: {
+			dashboard: 'Bảng điều khiển',
+			calendar: 'Lịch',
+			services: 'Dịch vụ',
+			staff: 'Nhân viên',
+			marketing: 'Tiếp thị',
+			settings: 'Cài đặt',
+			logOut: 'Đăng xuất',
+			welcomeBack: 'Chào mừng trở lại!',
+			businessOverview: 'Đây là tổng quan doanh nghiệp của bạn',
+			totalRevenue: 'Tổng doanh thu',
+			totalClients: 'Tổng khách hàng',
+			bookings: 'Đặt chỗ',
+			completionRate: 'Tỷ lệ hoàn thành',
+			last7Days: '7 ngày qua',
+			last30Days: '30 ngày qua',
+			last1Year: '1 năm qua',
+			newAppointment: 'Cuộc hẹn mới',
+			upcomingBookings: 'Đặt chỗ sắp tới',
+			noUpcomingBookings: 'Không có đặt chỗ sắp tới',
+			noUpcomingBookingsNext7Days: 'Không có đặt chỗ sắp tới trong 7 ngày tới',
+			loadingBookings: 'Đang tải đặt chỗ...',
+			topSellingServices: 'Dịch vụ bán chạy nhất',
+			noCompletedServices: 'Chưa có dịch vụ hoàn thành',
+			additionalMetrics: 'Chỉ số bổ sung',
+			noShowRate: 'Tỷ lệ không đến',
+			missed: 'đã bỏ lỡ',
+			repeatClients: 'Khách hàng quay lại',
+			avgRevenuePerClient: 'Doanh thu trung bình/Khách hàng',
+			perClient: 'Mỗi khách hàng',
+			vsLastMonth: 'so với tháng trước',
+			client: 'Khách hàng',
+			service: 'Dịch vụ',
+			date: 'Ngày',
+			time: 'Giờ',
+			status: 'Trạng thái',
+			actions: 'Hành động',
+			confirm: 'Xác nhận',
+			reject: 'Từ chối',
+			edit: 'Chỉnh sửa',
+			cancel: 'Hủy',
+			pending: 'Đang chờ',
+			confirmed: 'Đã xác nhận',
+			completed: 'Hoàn thành',
+			cancelled: 'Đã hủy',
+			noShow: 'Không đến',
+			unassigned: 'Chưa phân công',
+			unknownService: 'Dịch vụ không xác định',
+			areYouSureCancel: 'Bạn có chắc muốn hủy đặt chỗ này?',
+			markAsNoShow: 'Đánh dấu là không đến',
+			areYouSureNoShow: 'Bạn có chắc muốn đánh dấu đặt chỗ này là không đến?',
+			bookingCancelled: 'Đã hủy đặt chỗ thành công',
+			bookingConfirmed: 'Đã xác nhận đặt chỗ thành công',
+			bookingRejected: 'Đã từ chối đặt chỗ thành công',
+			bookingMarkedNoShow: 'Đã đánh dấu đặt chỗ là không đến',
+			failedToCancel: 'Không thể hủy đặt chỗ',
+			failedToConfirm: 'Không thể xác nhận đặt chỗ',
+			failedToReject: 'Không thể từ chối đặt chỗ',
+			failedToMarkNoShow: 'Không thể đánh dấu đặt chỗ là không đến',
+			bookingsList: 'Danh sách đặt chỗ',
+			all: 'Tất cả',
+			searchBookings: 'Tìm kiếm đặt chỗ theo tên hoặc số điện thoại khách hàng',
+			noBookingsFound: 'Không tìm thấy đặt chỗ',
+			noBookingsWithFilters: 'Không tìm thấy đặt chỗ với bộ lọc hiện tại',
+			of: 'của',
+			results: 'kết quả',
+			manageServices: 'Quản lý dịch vụ và giá cả của salon',
+			addNew: 'Thêm mới',
+			addNewService: 'Thêm dịch vụ mới',
+			searchServices: 'Tìm kiếm dịch vụ',
+			search: 'Tìm kiếm',
+			searchByName: 'Tìm kiếm theo tên...',
+			category: 'Danh mục',
+			allCategories: 'Tất cả danh mục',
+			group: 'Nhóm',
+			allGroups: 'Tất cả nhóm',
+			sortBy: 'Sắp xếp theo',
+			nameAZ: 'Tên (A-Z)',
+			nameZA: 'Tên (Z-A)',
+			priceLowToHigh: 'Giá (Thấp đến Cao)',
+			priceHighToLow: 'Giá (Cao đến Thấp)',
+			durationShortToLong: 'Thời lượng (Ngắn đến Dài)',
+			durationLongToShort: 'Thời lượng (Dài đến Ngắn)',
+			clearFilters: 'Xóa bộ lọc',
+			showing: 'Hiển thị',
+			ofServices: 'của',
+			matching: 'khớp',
+			inCategory: 'trong',
+			inGroup: 'trong',
+			noServicesFound: 'Không tìm thấy dịch vụ',
+			tryAdjustingFilters:
+				'Thử điều chỉnh tiêu chí tìm kiếm hoặc bộ lọc của bạn',
+			noServicesYet: 'Chưa có dịch vụ',
+			addFirstService: 'Thêm dịch vụ đầu tiên của bạn',
+			filteringServices: 'Đang lọc dịch vụ...',
+			serviceName: 'Tên dịch vụ',
+			duration: 'Thời lượng',
+			price: 'Giá',
+			noCategory: 'Không có danh mục',
+			noGroup: 'Không có nhóm',
+			editService: 'Chỉnh sửa dịch vụ',
+			deleteService: 'Xóa dịch vụ',
+			areYouSureDelete: 'Bạn có chắc muốn xóa dịch vụ này?',
+			staffLabel: 'Nhân viên:',
+			dateAndTime: 'Ngày & giờ:',
+			failedToRefresh: 'Không thể làm mới đặt chỗ',
+			failedToLoadCalendar: 'Không thể tải dữ liệu lịch.',
+			failedToLoadDashboard: 'Không thể tải dữ liệu bảng điều khiển.',
+			redirectingToSetup: 'Đang chuyển hướng đến thiết lập salon...',
+			loadingDashboard: 'Đang tải bảng điều khiển...',
+			viewMode: 'Chế độ xem và cuộc hẹn mới',
+			newAppointmentLabel: 'Cuộc hẹn mới',
+		},
 	},
 
 	en: {
@@ -841,6 +1070,121 @@ export const translations: Record<string, Translations> = {
 			acceptAll: 'Accept All',
 			decline: 'Decline',
 		},
+
+		// Owner Panel
+		owner: {
+			dashboard: 'Dashboard',
+			calendar: 'Calendar',
+			services: 'Services',
+			staff: 'Staff',
+			marketing: 'Marketing',
+			settings: 'Settings',
+			logOut: 'Log Out',
+			welcomeBack: 'Welcome back!',
+			businessOverview: "Here's your business overview",
+			totalRevenue: 'Total Revenue',
+			totalClients: 'Total Clients',
+			bookings: 'Bookings',
+			completionRate: 'Completion Rate',
+			last7Days: 'Last 7 days',
+			last30Days: 'Last 30 days',
+			last1Year: 'Last 1 year',
+			newAppointment: 'New Appointment',
+			upcomingBookings: 'Upcoming Bookings',
+			noUpcomingBookings: 'No upcoming bookings',
+			noUpcomingBookingsNext7Days: 'No upcoming bookings in the next 7 days',
+			loadingBookings: 'Loading bookings...',
+			topSellingServices: 'Top Selling Services',
+			noCompletedServices: 'No completed services yet',
+			additionalMetrics: 'Additional Metrics',
+			noShowRate: 'No-Show Rate',
+			missed: 'missed',
+			repeatClients: 'Repeat Clients',
+			avgRevenuePerClient: 'Avg Revenue/Client',
+			perClient: 'Per client',
+			vsLastMonth: 'vs last month',
+			client: 'Client',
+			service: 'Service',
+			date: 'Date',
+			time: 'Time',
+			status: 'Status',
+			actions: 'Actions',
+			confirm: 'Confirm',
+			reject: 'Reject',
+			edit: 'Edit',
+			cancel: 'Cancel',
+			pending: 'Pending',
+			confirmed: 'Confirmed',
+			completed: 'Completed',
+			cancelled: 'Cancelled',
+			noShow: 'No-Show',
+			unassigned: 'Unassigned',
+			unknownService: 'Unknown Service',
+			areYouSureCancel: 'Are you sure you want to cancel this booking?',
+			markAsNoShow: 'Mark as No-Show',
+			areYouSureNoShow:
+				'Are you sure you want to mark this booking as No-Show?',
+			bookingCancelled: 'Booking cancelled successfully',
+			bookingConfirmed: 'Booking confirmed successfully',
+			bookingRejected: 'Booking rejected successfully',
+			bookingMarkedNoShow: 'Booking marked as No-Show',
+			failedToCancel: 'Failed to cancel booking',
+			failedToConfirm: 'Failed to confirm booking',
+			failedToReject: 'Failed to reject booking',
+			failedToMarkNoShow: 'Failed to mark booking as No-Show',
+			bookingsList: 'Bookings List',
+			all: 'All',
+			searchBookings: 'Search bookings by client name or phone',
+			noBookingsFound: 'No bookings found',
+			noBookingsWithFilters: 'No bookings found with current filters',
+			of: 'of',
+			results: 'results',
+			manageServices: 'Manage your salon services and pricing',
+			addNew: 'Add New',
+			addNewService: 'Add New Service',
+			searchServices: 'Search Services',
+			search: 'Search',
+			searchByName: 'Search by name...',
+			category: 'Category',
+			allCategories: 'All Categories',
+			group: 'Group',
+			allGroups: 'All Groups',
+			sortBy: 'Sort By',
+			nameAZ: 'Name (A-Z)',
+			nameZA: 'Name (Z-A)',
+			priceLowToHigh: 'Price (Low to High)',
+			priceHighToLow: 'Price (High to Low)',
+			durationShortToLong: 'Duration (Short to Long)',
+			durationLongToShort: 'Duration (Long to Short)',
+			clearFilters: 'Clear Filters',
+			showing: 'Showing',
+			ofServices: 'of',
+			matching: 'matching',
+			inCategory: 'in',
+			inGroup: 'in',
+			noServicesFound: 'No services found',
+			tryAdjustingFilters: 'Try adjusting your search or filter criteria',
+			noServicesYet: 'No services yet',
+			addFirstService: 'Add Your First Service',
+			filteringServices: 'Filtering services...',
+			serviceName: 'Service Name',
+			duration: 'Duration',
+			price: 'Price',
+			noCategory: 'No category',
+			noGroup: 'No group',
+			editService: 'Edit service',
+			deleteService: 'Delete service',
+			areYouSureDelete: 'Are you sure you want to delete this service?',
+			staffLabel: 'Staff:',
+			dateAndTime: 'Date & time:',
+			failedToRefresh: 'Failed to refresh bookings',
+			failedToLoadCalendar: 'Failed to load calendar data.',
+			failedToLoadDashboard: 'Failed to load dashboard data.',
+			redirectingToSetup: 'Redirecting to salon setup...',
+			loadingDashboard: 'Loading dashboard...',
+			viewMode: 'View mode and new appointment',
+			newAppointmentLabel: 'New Appointment',
+		},
 	},
 
 	ru: {
@@ -1126,6 +1470,121 @@ export const translations: Record<string, Translations> = {
 				'Мы используем файлы cookie для улучшения вашего опыта просмотра, анализа трафика сайта и персонализации контента. Нажимая "Принять все", вы соглашаетесь с использованием нами файлов cookie. Вы можете управлять своими настройками в любое время.',
 			acceptAll: 'Принять все',
 			decline: 'Отклонить',
+		},
+
+		// Owner Panel
+		owner: {
+			dashboard: 'Панель управления',
+			calendar: 'Календарь',
+			services: 'Услуги',
+			staff: 'Персонал',
+			marketing: 'Маркетинг',
+			settings: 'Настройки',
+			logOut: 'Выйти',
+			welcomeBack: 'С возвращением!',
+			businessOverview: 'Вот обзор вашего бизнеса',
+			totalRevenue: 'Общий доход',
+			totalClients: 'Всего клиентов',
+			bookings: 'Бронирования',
+			completionRate: 'Процент выполнения',
+			last7Days: 'Последние 7 дней',
+			last30Days: 'Последние 30 дней',
+			last1Year: 'Последний год',
+			newAppointment: 'Новая запись',
+			upcomingBookings: 'Предстоящие записи',
+			noUpcomingBookings: 'Нет предстоящих записей',
+			noUpcomingBookingsNext7Days: 'Нет предстоящих записей в ближайшие 7 дней',
+			loadingBookings: 'Загрузка записей...',
+			topSellingServices: 'Популярные услуги',
+			noCompletedServices: 'Пока нет завершенных услуг',
+			additionalMetrics: 'Дополнительные показатели',
+			noShowRate: 'Процент неявок',
+			missed: 'пропущено',
+			repeatClients: 'Постоянные клиенты',
+			avgRevenuePerClient: 'Средний доход/Клиент',
+			perClient: 'На клиента',
+			vsLastMonth: 'по сравнению с прошлым месяцем',
+			client: 'Клиент',
+			service: 'Услуга',
+			date: 'Дата',
+			time: 'Время',
+			status: 'Статус',
+			actions: 'Действия',
+			confirm: 'Подтвердить',
+			reject: 'Отклонить',
+			edit: 'Редактировать',
+			cancel: 'Отменить',
+			pending: 'Ожидает',
+			confirmed: 'Подтверждено',
+			completed: 'Завершено',
+			cancelled: 'Отменено',
+			noShow: 'Неявка',
+			unassigned: 'Не назначено',
+			unknownService: 'Неизвестная услуга',
+			areYouSureCancel: 'Вы уверены, что хотите отменить эту запись?',
+			markAsNoShow: 'Отметить как неявку',
+			areYouSureNoShow:
+				'Вы уверены, что хотите отметить эту запись как неявку?',
+			bookingCancelled: 'Запись успешно отменена',
+			bookingConfirmed: 'Запись успешно подтверждена',
+			bookingRejected: 'Запись успешно отклонена',
+			bookingMarkedNoShow: 'Запись отмечена как неявка',
+			failedToCancel: 'Не удалось отменить запись',
+			failedToConfirm: 'Не удалось подтвердить запись',
+			failedToReject: 'Не удалось отклонить запись',
+			failedToMarkNoShow: 'Не удалось отметить запись как неявку',
+			bookingsList: 'Список записей',
+			all: 'Все',
+			searchBookings: 'Поиск записей по имени клиента или телефону',
+			noBookingsFound: 'Записи не найдены',
+			noBookingsWithFilters: 'Записи не найдены с текущими фильтрами',
+			of: 'из',
+			results: 'результатов',
+			manageServices: 'Управляйте услугами и ценами вашего салона',
+			addNew: 'Добавить',
+			addNewService: 'Добавить новую услугу',
+			searchServices: 'Поиск услуг',
+			search: 'Поиск',
+			searchByName: 'Поиск по имени...',
+			category: 'Категория',
+			allCategories: 'Все категории',
+			group: 'Группа',
+			allGroups: 'Все группы',
+			sortBy: 'Сортировать по',
+			nameAZ: 'Имя (А-Я)',
+			nameZA: 'Имя (Я-А)',
+			priceLowToHigh: 'Цена (От низкой к высокой)',
+			priceHighToLow: 'Цена (От высокой к низкой)',
+			durationShortToLong: 'Длительность (От короткой к длинной)',
+			durationLongToShort: 'Длительность (От длинной к короткой)',
+			clearFilters: 'Очистить фильтры',
+			showing: 'Показано',
+			ofServices: 'из',
+			matching: 'соответствует',
+			inCategory: 'в',
+			inGroup: 'в',
+			noServicesFound: 'Услуги не найдены',
+			tryAdjustingFilters: 'Попробуйте изменить критерии поиска или фильтры',
+			noServicesYet: 'Пока нет услуг',
+			addFirstService: 'Добавьте свою первую услугу',
+			filteringServices: 'Фильтрация услуг...',
+			serviceName: 'Название услуги',
+			duration: 'Длительность',
+			price: 'Цена',
+			noCategory: 'Нет категории',
+			noGroup: 'Нет группы',
+			editService: 'Редактировать услугу',
+			deleteService: 'Удалить услугу',
+			areYouSureDelete: 'Вы уверены, что хотите удалить эту услугу?',
+			staffLabel: 'Персонал:',
+			dateAndTime: 'Дата и время:',
+			failedToRefresh: 'Не удалось обновить записи',
+			failedToLoadCalendar: 'Не удалось загрузить данные календаря.',
+			failedToLoadDashboard: 'Не удалось загрузить данные панели управления.',
+			redirectingToSetup: 'Перенаправление на настройку салона...',
+			loadingDashboard: 'Загрузка панели управления...',
+			viewMode: 'Режим просмотра и новая запись',
+			newAppointmentLabel: 'Новая запись',
 		},
 	},
 };

@@ -26,6 +26,7 @@ import { serviceKeys } from '@/hooks/useServices';
 import { staffKeys } from '@/hooks/useStaff';
 import { timeBlockKeys } from '@/hooks/useTimeBlocks';
 import { apiClient } from '@/lib/api-client';
+import { useTranslation } from '@/contexts/LanguageContext';
 
 interface OwnerSidebarProps {
 	isMobileMenuOpen?: boolean;
@@ -41,6 +42,7 @@ export default function OwnerSidebar({
 	const { logout } = useAuthStore();
 	const queryClient = useQueryClient();
 	const { salonId } = useSalonId();
+	const t = useTranslation();
 
 	// Extract locale and path without locale
 	const currentLocale = extractLocaleFromPath(pathname) ?? 'en';
@@ -175,7 +177,7 @@ export default function OwnerSidebar({
 					{renderNavItem(
 						'/owner-dashboard',
 						<LayoutDashboard className="w-5 h-5" />,
-						'Dashboard',
+						t.owner.dashboard,
 						pathNoLocale === '/owner-dashboard',
 						'dashboard'
 					)}
@@ -183,7 +185,7 @@ export default function OwnerSidebar({
 					{renderNavItem(
 						'/calendar',
 						<CalendarDays className="w-5 h-5" />,
-						'Calendar',
+						t.owner.calendar,
 						pathNoLocale === '/calendar',
 						'calendar'
 					)}
@@ -191,7 +193,7 @@ export default function OwnerSidebar({
 					{renderNavItem(
 						'/services',
 						<Scissors className="w-5 h-5" />,
-						'Services',
+						t.owner.services,
 						pathNoLocale.startsWith('/services'),
 						'services'
 					)}
@@ -199,7 +201,7 @@ export default function OwnerSidebar({
 					{renderNavItem(
 						'/staff',
 						<Users className="w-5 h-5" />,
-						'Staff',
+						t.owner.staff,
 						pathNoLocale.startsWith('/staff'),
 						'staff'
 					)}
@@ -207,14 +209,14 @@ export default function OwnerSidebar({
 					{renderNavItem(
 						'/marketing',
 						<TrendingUp className="w-5 h-5" />,
-						'Marketing',
+						t.owner.marketing,
 						pathNoLocale.startsWith('/marketing')
 					)}
 
 					{renderNavItem(
 						'/salon-info',
 						<Settings className="w-5 h-5" />,
-						'Settings',
+						t.owner.settings,
 						pathNoLocale.startsWith('/salon-info')
 					)}
 				</nav>
@@ -226,7 +228,7 @@ export default function OwnerSidebar({
 						className="flex items-center gap-3 px-3 py-2 text-gray-600 hover:bg-red-50 hover:text-red-600 rounded-lg transition-colors w-full"
 					>
 						<LogOut className="w-5 h-5" />
-						<span className="font-medium">Log Out</span>
+						<span className="font-medium">{t.owner.logOut}</span>
 					</button>
 				</div>
 			</div>

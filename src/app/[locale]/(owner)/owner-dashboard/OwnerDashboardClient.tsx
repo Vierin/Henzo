@@ -25,12 +25,14 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from '@/components/ui/select';
+import { useTranslation } from '@/contexts/LanguageContext';
 
 export default function OwnerDashboardClient() {
 	const [period, setPeriod] = useState<'7d' | '30d' | '1y'>('30d');
 	const [isBookingModalOpen, setIsBookingModalOpen] = useState(false);
 	const [selectedService, setSelectedService] = useState<Service | undefined>();
 	const [editingBooking, setEditingBooking] = useState<Booking | null>(null);
+	const t = useTranslation();
 
 	const { salonId, isLoading, hasSalon, salonData } = useOwnerLayout();
 	const {
@@ -80,45 +82,45 @@ export default function OwnerDashboardClient() {
 		async (bookingId: string) => {
 			try {
 				await apiClient.put(`/bookings/${bookingId}/cancel`);
-				toast.success('Booking cancelled successfully');
+				toast.success(t.owner.bookingCancelled);
 				refetchBookings();
 			} catch (err) {
 				const errorMessage =
-					err instanceof Error ? err.message : 'Failed to cancel booking';
+					err instanceof Error ? err.message : t.owner.failedToCancel;
 				toast.error(errorMessage);
 			}
 		},
-		[refetchBookings]
+		[refetchBookings, t]
 	);
 
 	const handleConfirmBooking = useCallback(
 		async (bookingId: string) => {
 			try {
 				await apiClient.put(`/bookings/${bookingId}`, { status: 'CONFIRMED' });
-				toast.success('Booking confirmed successfully');
+				toast.success(t.owner.bookingConfirmed);
 				refetchBookings();
 			} catch (err) {
 				const errorMessage =
-					err instanceof Error ? err.message : 'Failed to confirm booking';
+					err instanceof Error ? err.message : t.owner.failedToConfirm;
 				toast.error(errorMessage);
 			}
 		},
-		[refetchBookings]
+		[refetchBookings, t]
 	);
 
 	const handleRejectBooking = useCallback(
 		async (bookingId: string) => {
 			try {
 				await apiClient.put(`/bookings/${bookingId}`, { status: 'CANCELED' });
-				toast.success('Booking rejected successfully');
+				toast.success(t.owner.bookingRejected);
 				refetchBookings();
 			} catch (err) {
 				const errorMessage =
-					err instanceof Error ? err.message : 'Failed to reject booking';
+					err instanceof Error ? err.message : t.owner.failedToReject;
 				toast.error(errorMessage);
 			}
 		},
-		[refetchBookings]
+		[refetchBookings, t]
 	);
 
 	const handleBookingModalClose = useCallback(() => {
@@ -135,7 +137,7 @@ export default function OwnerDashboardClient() {
 		return (
 			<div className="flex items-center justify-center py-12">
 				<LoadingSpinner size="lg" />
-				<span className="sr-only">Loading dashboard...</span>
+				<span className="sr-only">{t.owner.loadingDashboard}</span>
 			</div>
 		);
 	}
@@ -144,7 +146,7 @@ export default function OwnerDashboardClient() {
 		return (
 			<div className="flex items-center justify-center py-12">
 				<LoadingSpinner size="lg" />
-				<span className="sr-only">Redirecting to salon setup...</span>
+				<span className="sr-only">{t.owner.redirectingToSetup}</span>
 			</div>
 		);
 	}
@@ -159,7 +161,7 @@ export default function OwnerDashboardClient() {
 							: new Error('Failed to load bookings')
 					}
 					onRetry={refetchBookings}
-					message="Failed to load dashboard data."
+					message={t.owner.failedToLoadDashboard}
 				/>
 			</div>
 		);
@@ -171,10 +173,10 @@ export default function OwnerDashboardClient() {
 			<div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
 				<div>
 					<h1 className="text-2xl sm:text-3xl font-bold text-black">
-						Dashboard
+						{t.owner.dashboard}
 					</h1>
 					<p className="text-gray-600 mt-1 text-sm sm:text-base">
-						Welcome back! Here's your business overview
+						{t.owner.welcomeBack} {t.owner.businessOverview}
 					</p>
 				</div>
 				<div className="flex flex-row items-stretch sm:items-center gap-3">
@@ -190,19 +192,19 @@ export default function OwnerDashboardClient() {
 								value="7d"
 								className="bg-white hover:bg-gray-50 focus:bg-gray-50 text-gray-900 cursor-pointer"
 							>
-								Last 7 days
+								{t.owner.last7Days}
 							</SelectItem>
 							<SelectItem
 								value="30d"
 								className="bg-white hover:bg-gray-50 focus:bg-gray-50 text-gray-900 cursor-pointer"
 							>
-								Last 30 days
+								{t.owner.last30Days}
 							</SelectItem>
 							<SelectItem
 								value="1y"
 								className="bg-white hover:bg-gray-50 focus:bg-gray-50 text-gray-900 cursor-pointer"
 							>
-								Last 1 year
+								{t.owner.last1Year}
 							</SelectItem>
 						</SelectContent>
 					</Select>
@@ -215,7 +217,7 @@ export default function OwnerDashboardClient() {
 						className="inline-flex items-center justify-center gap-2 rounded-full bg-[#ea4b4b] text-white px-4 py-2 text-sm shadow-sm hover:opacity-95 transition-opacity focus:outline-none focus:ring-2 focus:ring-[#ea4b4b] focus:ring-offset-2 w-full sm:w-auto"
 					>
 						<span className="text-lg leading-none">＋</span>
-						New Appointment
+						{t.owner.newAppointment}
 					</button>
 				</div>
 			</div>
@@ -223,15 +225,15 @@ export default function OwnerDashboardClient() {
 			{/* Stats Cards */}
 			<div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-2 md:gap-6">
 				<StatsCard
-					title="Total Revenue"
+					title={t.owner.totalRevenue}
 					value={formatVND(stats.revenue)}
 					icon={<DollarSign className="w-6 h-6" />}
 					subtitle={
 						period === '7d'
-							? 'Last 7 days'
+							? t.owner.last7Days
 							: period === '30d'
-								? 'Last 30 days'
-								: 'Last year'
+								? t.owner.last30Days
+								: t.owner.last1Year
 					}
 					trend={
 						stats.revenueTrend !== 0
@@ -243,15 +245,15 @@ export default function OwnerDashboardClient() {
 					}
 				/>
 				<StatsCard
-					title="Total Clients"
+					title={t.owner.totalClients}
 					value={stats.clients}
 					icon={<Users className="w-6 h-6" />}
 					subtitle={
 						period === '7d'
-							? 'Last 7 days'
+							? t.owner.last7Days
 							: period === '30d'
-								? 'Last 30 days'
-								: 'Last year'
+								? t.owner.last30Days
+								: t.owner.last1Year
 					}
 					trend={
 						stats.clientsTrend !== 0
@@ -263,15 +265,15 @@ export default function OwnerDashboardClient() {
 					}
 				/>
 				<StatsCard
-					title="Bookings"
+					title={t.owner.bookings}
 					value={stats.bookings}
 					icon={<CalendarCheck className="w-6 h-6" />}
 					subtitle={
 						period === '7d'
-							? 'Last 7 days'
+							? t.owner.last7Days
 							: period === '30d'
-								? 'Last 30 days'
-								: 'Last year'
+								? t.owner.last30Days
+								: t.owner.last1Year
 					}
 					trend={
 						stats.bookingsTrend !== 0
@@ -283,15 +285,15 @@ export default function OwnerDashboardClient() {
 					}
 				/>
 				<StatsCard
-					title="Completion Rate"
+					title={t.owner.completionRate}
 					value={`${stats.completionRate}%`}
 					icon={<TrendingUp className="w-6 h-6" />}
 					subtitle={
 						period === '7d'
-							? 'Last 7 days'
+							? t.owner.last7Days
 							: period === '30d'
-								? 'Last 30 days'
-								: 'Last year'
+								? t.owner.last30Days
+								: t.owner.last1Year
 					}
 					trend={
 						stats.completionTrend !== 0

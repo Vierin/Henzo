@@ -1,6 +1,7 @@
 'use client';
 
 import { ReactNode } from 'react';
+import { useTranslation } from '@/contexts/LanguageContext';
 
 interface StatsCardProps {
 	title: string;
@@ -20,6 +21,7 @@ export default function StatsCard({
 	trend,
 	subtitle,
 }: StatsCardProps) {
+	const t = useTranslation();
 	return (
 		<div className="bg-white rounded-xl border border-[#f1d9d7] p-4 sm:p-6 hover:shadow-md transition-shadow">
 			<div className="flex items-start justify-between">
@@ -36,7 +38,7 @@ export default function StatsCard({
 							>
 								{trend.isPositive ? '↑' : '↓'} {trend.value}
 							</span>
-							<span className="text-xs text-gray-500 hidden sm:inline">vs last month</span>
+							<span className="text-xs text-gray-500 hidden sm:inline">{t.owner.vsLastMonth}</span>
 						</div>
 					)}
 				</div>
