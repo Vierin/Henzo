@@ -76,6 +76,9 @@ export default function BookingModal({
 	const [bookingsLoaded, setBookingsLoaded] = useState(true);
 	const [bookingsLoadError, setBookingsLoadError] = useState(false);
 	const [showLoginModal, setShowLoginModal] = useState(false);
+	const [clientEmail, setClientEmail] = useState('');
+	const [clientName, setClientName] = useState('');
+	const [clientPhone, setClientPhone] = useState('');
 	const [pendingBookingData, setPendingBookingData] = useState<{
 		service: Service;
 		date: string;
@@ -119,7 +122,7 @@ export default function BookingModal({
 	const [dateScrollLeft, setDateScrollLeft] = useState(0);
 
 	// Используем Zustand store для аутентификации
-	const { user, isClient, login, refreshUser } = useAuthStore();
+	const { user, isClient, isOwner, login, refreshUser } = useAuthStore();
 	const router = useRouter();
 
 	// Используем переданный salonId
@@ -170,7 +173,12 @@ export default function BookingModal({
 	}, [isOpen, user, isClient]);
 
 	// Функция для проверки авторизации клиента
+	// Если пользователь - владелец, авторизация не требуется
 	const checkClientAuth = () => {
+		// Владелец может создавать резервации без авторизации клиента
+		if (isOwner) {
+			return true;
+		}
 		return isClient;
 	};
 
@@ -1115,6 +1123,9 @@ export default function BookingModal({
 			setSelectedTime(''); // Reset selected time
 			setTimeFilter('all'); // Reset time filter to show all slots
 			setLoadedDaysCount(INITIAL_DAYS); // Reset loaded days count
+			setClientEmail(''); // Reset client email
+			setClientName(''); // Reset client name
+			setClientPhone(''); // Reset client phone
 		}
 	}, [isOpen]);
 
@@ -1269,9 +1280,23 @@ export default function BookingModal({
 			return;
 		}
 
+		// Если владелец создает резервацию, проверяем наличие email клиента
+		if (isOwner && !editingBooking) {
+			if (!clientEmail || !clientEmail.trim()) {
+				toast.error('Please enter client email');
+				return;
+			}
+			// Валидация email
+			const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+			if (!emailRegex.test(clientEmail.trim())) {
+				toast.error('Please enter a valid email address');
+				return;
+			}
+		}
+
 		// If editing existing booking, skip client auth check (owner can edit)
-		if (!editingBooking) {
-			// Проверяем авторизацию клиента только для новых бронирований
+		if (!editingBooking && !isOwner) {
+			// Проверяем авторизацию клиента только для новых бронирований (не владельцев)
 			if (!checkClientAuth()) {
 				// Сохраняем данные бронирования
 				setPendingBookingData({
@@ -1335,35 +1360,61 @@ export default function BookingModal({
 				);
 			}
 
+			// Если владелец создает резервацию, передаем email клиента
+			const requestBody: any = {
+				serviceId: selectedService?.id,
+				staffId: staffId === 'any' ? undefined : staffId,
+				time: bookingDateTime,
+				salonId: currentSalonId,
+				notes: `Booking for ${selectedService?.name}`,
+			};
+
+			// Если владелец создает резервацию, добавляем данные клиента
+			if (isOwner && clientEmail) {
+				requestBody.clientEmail = clientEmail.trim();
+				if (clientName) {
+					requestBody.clientName = clientName.trim();
+				}
+				if (clientPhone) {
+					requestBody.clientPhone = clientPhone.trim();
+				}
+			}
+
 			const response = await fetch(`${API_BASE_URL}/bookings`, {
 				method: 'POST',
 				headers: {
 					'Content-Type': 'application/json',
 					Authorization: `Bearer ${session.access_token}`,
 				},
-				body: JSON.stringify({
-					serviceId: selectedService?.id,
-					staffId: staffId === 'any' ? undefined : staffId,
-					time: bookingDateTime,
-					salonId: currentSalonId,
-					notes: `Booking for ${selectedService?.name}`,
-				}),
+				body: JSON.stringify(requestBody),
 			});
 
 			const result = await response.json();
 
 			if (!response.ok) {
-				throw new Error(result.error || 'Failed to create booking');
+				throw new Error(
+					result.error || result.message || 'Failed to create booking'
+				);
 			}
 
 			// Show success message in modal
-			const bookingStatus = result.booking?.status || 'PENDING';
+			// If owner created booking, it's always CONFIRMED
+			const bookingStatus = isOwner
+				? 'CONFIRMED'
+				: result.booking?.status || 'PENDING';
 			setBookingSuccess({
 				status: bookingStatus as 'PENDING' | 'CONFIRMED',
 				serviceName: selectedService?.name || '',
 				date: selectedDate,
 				time: selectedTime,
 			});
+
+			// Очищаем поля клиента после успешного создания
+			if (isOwner) {
+				setClientEmail('');
+				setClientName('');
+				setClientPhone('');
+			}
 		} catch (error: unknown) {
 			console.error('Booking error:', error);
 			toast.error(
@@ -2013,6 +2064,54 @@ export default function BookingModal({
 
 							{/* Right Section - Staff Selection and Booking Button */}
 							<div className="w-full sm:w-80 flex-shrink-0 bg-gray-50 sm:bg-gray-50 p-4 sm:p-8 sm:rounded-r-2xl max-h-[30vh] sm:max-h-[90vh] overflow-y-auto border-t sm:border-t-0">
+								{/* Client Information (only for owners creating new bookings) */}
+								{isOwner && !editingBooking && (
+									<div className="mb-6 sm:mb-8">
+										<h3 className="text-base sm:text-lg font-bold text-gray-900 mb-3 sm:mb-4">
+											Client Information
+										</h3>
+										<div className="space-y-4">
+											<div>
+												<label className="block text-sm font-medium text-gray-700 mb-1">
+													Client Email <span className="text-red-500">*</span>
+												</label>
+												<input
+													type="email"
+													value={clientEmail}
+													onChange={(e) => setClientEmail(e.target.value)}
+													className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#ff5b5b] focus:border-transparent text-sm"
+													placeholder="client@example.com"
+													required
+												/>
+											</div>
+											<div>
+												<label className="block text-sm font-medium text-gray-700 mb-1">
+													Client Name (optional)
+												</label>
+												<input
+													type="text"
+													value={clientName}
+													onChange={(e) => setClientName(e.target.value)}
+													className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#ff5b5b] focus:border-transparent text-sm"
+													placeholder="Client name"
+												/>
+											</div>
+											<div>
+												<label className="block text-sm font-medium text-gray-700 mb-1">
+													Client Phone (optional)
+												</label>
+												<input
+													type="tel"
+													value={clientPhone}
+													onChange={(e) => setClientPhone(e.target.value)}
+													className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#ff5b5b] focus:border-transparent text-sm"
+													placeholder="+84..."
+												/>
+											</div>
+										</div>
+									</div>
+								)}
+
 								{/* Select Staff Member */}
 								<div className="mb-6 sm:mb-8">
 									<h3 className="text-base sm:text-lg font-bold text-gray-900 mb-3 sm:mb-4">

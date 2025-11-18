@@ -2,6 +2,7 @@
 import { supabase } from './supabase';
 import { apiClient } from './api-client';
 import { useAuthStore } from '@/stores/authStore';
+import { logger } from './logger';
 
 export interface User {
 	id: string;
@@ -35,6 +36,13 @@ class AuthManager {
 	}
 
 	private notifyListeners() {
+		console.log('[AuthManager] Notifying listeners:', {
+			listenersCount: this.listeners.size,
+			user: this.authState.user?.id,
+			role: this.authState.user?.role,
+			isAuthenticated: this.authState.isAuthenticated,
+			isLoading: this.authState.isLoading,
+		});
 		this.listeners.forEach((listener) => listener(this.authState));
 	}
 
@@ -43,13 +51,25 @@ class AuthManager {
 		const nextState = { ...this.authState, ...newState };
 
 		// Проверяем, действительно ли состояние изменилось
-		if (
-			prevState.user?.id === nextState.user?.id &&
-			prevState.isAuthenticated === nextState.isAuthenticated &&
-			prevState.isLoading === nextState.isLoading
-		) {
+		// Важно: проверяем не только id, но и роль пользователя
+		const userChanged =
+			prevState.user?.id !== nextState.user?.id ||
+			prevState.user?.role !== nextState.user?.role;
+		const authChanged = prevState.isAuthenticated !== nextState.isAuthenticated;
+		const loadingChanged = prevState.isLoading !== nextState.isLoading;
+
+		if (!userChanged && !authChanged && !loadingChanged) {
+			console.log('[AuthManager] State unchanged, skipping update');
 			return; // Не обновляем если состояние не изменилось
 		}
+
+		console.log('[AuthManager] State changed, updating:', {
+			userChanged,
+			authChanged,
+			loadingChanged,
+			prevRole: prevState.user?.role,
+			nextRole: nextState.user?.role,
+		});
 
 		this.authState = nextState;
 		this.notifyListeners();
@@ -79,14 +99,23 @@ class AuthManager {
 			this.setState({ isLoading: true });
 
 			// 1. Аутентификация через Supabase
+			// Supabase автоматически управляет access_token и refresh_token
 			const { data, error } = await supabase.auth.signInWithPassword({
 				email,
 				password,
 			});
 
-			if (error) throw error;
+			if (error) {
+				logger.auth.login(email, false, { error: error.message });
+				throw error;
+			}
 
-			// 2. Получение роли из API (кешируется в localStorage)
+			if (!data.session) {
+				logger.auth.login(email, false, { error: 'No session returned' });
+				throw new Error('No session returned');
+			}
+
+			// 2. Получение роли из API
 			const user = await this.fetchUserWithRole(data.session.access_token);
 
 			this.setState({
@@ -98,6 +127,10 @@ class AuthManager {
 			// 3. Кеширование в localStorage
 			localStorage.setItem('auth_user', JSON.stringify(user));
 
+			// 4. Настройка автоматического обновления токена
+			this.setupTokenRefresh();
+
+			logger.auth.login(email, true, { userId: user.id });
 			return { success: true };
 		} catch (error) {
 			this.setState({
@@ -105,9 +138,12 @@ class AuthManager {
 				isAuthenticated: false,
 				isLoading: false,
 			});
+			const errorMessage =
+				error instanceof Error ? error.message : 'Login failed';
+			logger.auth.error(error as Error, 'login', { email });
 			return {
 				success: false,
-				error: error instanceof Error ? error.message : 'Login failed',
+				error: errorMessage,
 			};
 		}
 	}
@@ -255,6 +291,7 @@ class AuthManager {
 
 	async logout(): Promise<void> {
 		try {
+			const userId = this.authState.user?.id;
 			await supabase.auth.signOut();
 			localStorage.removeItem('auth_user');
 			this.setState({
@@ -262,53 +299,98 @@ class AuthManager {
 				isAuthenticated: false,
 				isLoading: false,
 			});
+			this.clearTokenRefresh();
+			if (userId) {
+				logger.auth.logout(userId);
+			}
 		} catch (error) {
-			console.error('Logout error:', error);
+			logger.auth.error(error as Error, 'logout', {
+				userId: this.authState.user?.id,
+			});
 			// Принудительная очистка даже при ошибке
 			this.setState({
 				user: null,
 				isAuthenticated: false,
 				isLoading: false,
 			});
+			this.clearTokenRefresh();
 		}
 	}
 
 	async initialize(): Promise<void> {
 		// Защита от повторной инициализации
 		if (this.authState.isLoading) {
+			console.log('[AuthManager] Already initializing, skipping...');
 			return;
 		}
 
+		console.log('[AuthManager] Starting initialization...');
 		try {
 			this.setState({ isLoading: true });
 
-			// 1. Проверка кеша
-			const cachedUser = localStorage.getItem('auth_user');
-			if (cachedUser) {
-				const user = JSON.parse(cachedUser);
-				this.setState({
-					user,
-					isAuthenticated: true,
-					isLoading: false,
-				});
-				return;
-			}
-
-			// 2. Проверка Supabase сессии
+			// 1. Проверка Supabase сессии (приоритет над кешем)
+			// Supabase автоматически обновляет токен если он истек
 			const {
 				data: { session },
+				error: sessionError,
 			} = await supabase.auth.getSession();
-			if (!session?.access_token) {
+
+			console.log('[AuthManager] Session check:', {
+				hasSession: !!session,
+				hasAccessToken: !!session?.access_token,
+				error: sessionError?.message,
+			});
+
+			if (sessionError || !session?.access_token) {
+				// Нет валидной сессии, очищаем кеш
+				console.log('[AuthManager] No valid session, clearing cache');
+				localStorage.removeItem('auth_user');
 				this.setState({
 					user: null,
 					isAuthenticated: false,
 					isLoading: false,
 				});
+				this.clearTokenRefresh();
 				return;
 			}
 
+			// 2. Проверка кеша (для быстрой загрузки)
+			const cachedUser = localStorage.getItem('auth_user');
+			if (cachedUser) {
+				try {
+					const user = JSON.parse(cachedUser);
+					// Проверяем, что кешированный пользователь соответствует текущей сессии
+					if (user.id === session.user.id) {
+						console.log('[AuthManager] Using cached user:', {
+							userId: user.id,
+							role: user.role,
+						});
+						this.setState({
+							user,
+							isAuthenticated: true,
+							isLoading: false,
+						});
+						// Настраиваем обновление токена
+						this.setupTokenRefresh();
+						// Обновляем данные пользователя в фоне
+						this.refreshUserData(session.access_token).catch(() => {
+							// Игнорируем ошибки фонового обновления
+						});
+						return;
+					}
+				} catch (e) {
+					// Ошибка парсинга кеша, продолжаем загрузку
+					console.warn('[AuthManager] Cache parse error:', e);
+				}
+			}
+
 			// 3. Получение актуальных данных пользователя
+			console.log('[AuthManager] Fetching user data from API...');
 			const user = await this.fetchUserWithRole(session.access_token);
+			console.log('[AuthManager] User data fetched:', {
+				userId: user.id,
+				role: user.role,
+			});
 			this.setState({
 				user,
 				isAuthenticated: true,
@@ -317,35 +399,158 @@ class AuthManager {
 
 			// 4. Обновление кеша
 			localStorage.setItem('auth_user', JSON.stringify(user));
+
+			// 5. Настройка автоматического обновления токена
+			this.setupTokenRefresh();
+			console.log('[AuthManager] Initialization complete');
 		} catch (error) {
-			console.error('Auth initialization error:', error);
+			logger.auth.error(error as Error, 'initialize');
 			this.setState({
 				user: null,
 				isAuthenticated: false,
 				isLoading: false,
+			});
+			this.clearTokenRefresh();
+		}
+	}
+
+	/**
+	 * Настройка автоматического обновления токена
+	 * Supabase автоматически обновляет токен, но мы слушаем события для обновления состояния
+	 */
+	private tokenRefreshInterval: NodeJS.Timeout | null = null;
+
+	private setupTokenRefresh(): void {
+		// Очищаем предыдущий интервал если есть
+		this.clearTokenRefresh();
+
+		// Слушаем события изменения сессии от Supabase
+		// НЕ обновляем данные при TOKEN_REFRESHED, чтобы избежать бесконечных циклов
+		supabase.auth.onAuthStateChange((event, session) => {
+			if (event === 'TOKEN_REFRESHED' && session) {
+				logger.auth.sessionRefresh(session.user.id, true);
+				// НЕ вызываем refreshUserData здесь - это создает бесконечный цикл
+				// Supabase автоматически обновляет токен, роль уже в app_metadata
+			} else if (event === 'SIGNED_OUT') {
+				this.setState({
+					user: null,
+					isAuthenticated: false,
+					isLoading: false,
+				});
+				localStorage.removeItem('auth_user');
+				this.clearTokenRefresh();
+			}
+		});
+
+		// Проверяем сессию каждые 10 минут (увеличено с 5, чтобы не перегружать)
+		// Supabase автоматически обновляет токен, мы только проверяем состояние
+		this.tokenRefreshInterval = setInterval(
+			async () => {
+				const {
+					data: { session },
+				} = await supabase.auth.getSession();
+				if (!session?.access_token) {
+					// Сессия истекла, очищаем состояние
+					this.setState({
+						user: null,
+						isAuthenticated: false,
+						isLoading: false,
+					});
+					localStorage.removeItem('auth_user');
+					this.clearTokenRefresh();
+				}
+				// НЕ обновляем данные пользователя автоматически - это создает циклы
+			},
+			10 * 60 * 1000
+		); // 10 минут
+	}
+
+	private clearTokenRefresh(): void {
+		if (this.tokenRefreshInterval) {
+			clearInterval(this.tokenRefreshInterval);
+			this.tokenRefreshInterval = null;
+		}
+	}
+
+	/**
+	 * Обновление данных пользователя в фоне
+	 */
+	private async refreshUserData(accessToken: string): Promise<void> {
+		try {
+			const user = await this.fetchUserWithRole(accessToken);
+			// Обновляем состояние только если пользователь изменился
+			if (user.id !== this.authState.user?.id) {
+				this.setState({
+					user,
+					isAuthenticated: true,
+				});
+				localStorage.setItem('auth_user', JSON.stringify(user));
+			}
+		} catch (error) {
+			// Игнорируем ошибки фонового обновления
+			logger.debug('[Auth] Background user data refresh failed', {
+				error: error instanceof Error ? error.message : 'Unknown error',
 			});
 		}
 	}
 
 	private async fetchUserWithRole(accessToken: string): Promise<User> {
 		try {
-			const response = await fetch(
-				`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/auth/user`,
-				{
-					headers: {
-						Authorization: `Bearer ${accessToken}`,
-					},
-				}
-			);
+			const API_BASE_URL =
+				process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+			const response = await fetch(`${API_BASE_URL}/auth/user`, {
+				headers: {
+					Authorization: `Bearer ${accessToken}`,
+					'Content-Type': 'application/json',
+				},
+			});
 
 			if (!response.ok) {
-				throw new Error('Failed to fetch user data');
+				const errorText = await response.text();
+				logger.auth.error(
+					new Error(
+						`Failed to fetch user data: ${response.status} ${errorText}`
+					),
+					'fetchUserWithRole',
+					{ status: response.status, statusText: response.statusText }
+				);
+				throw new Error(
+					`Failed to fetch user data: ${response.status} ${response.statusText}`
+				);
 			}
 
 			const result = await response.json();
-			return result.user;
+			const user = result.user;
+
+			if (!user) {
+				throw new Error('User data not found in response');
+			}
+
+			// Бэкенд автоматически синхронизирует роль в app_metadata при запросе /auth/user
+			// НЕ обновляем сессию здесь - это создает бесконечные циклы
+			// Новый токен с ролью будет получен автоматически при следующем запросе к Supabase
+
+			return user;
 		} catch (error) {
-			console.error('Error fetching user role:', error);
+			logger.auth.error(error as Error, 'fetchUserWithRole', {
+				hasAccessToken: !!accessToken,
+			});
+			throw error;
+		}
+	}
+
+	// Публичный метод для обновления пользователя (используется в auth callback)
+	async updateUser(accessToken: string): Promise<void> {
+		try {
+			const user = await this.fetchUserWithRole(accessToken);
+			this.setState({
+				user,
+				isAuthenticated: true,
+				isLoading: false,
+			});
+			localStorage.setItem('auth_user', JSON.stringify(user));
+		} catch (error) {
+			logger.auth.error(error as Error, 'updateUser');
 			throw error;
 		}
 	}
@@ -414,14 +619,34 @@ export function useAuth() {
 	// Стабильная функция для обновления состояния
 	const handleStateChange = useCallback((newState: AuthState) => {
 		setAuthState((prevState) => {
+			console.log('[useAuth] State change received:', {
+				prevUser: prevState.user?.id,
+				prevRole: prevState.user?.role,
+				newUser: newState.user?.id,
+				newRole: newState.user?.role,
+				prevIsAuthenticated: prevState.isAuthenticated,
+				newIsAuthenticated: newState.isAuthenticated,
+				prevIsLoading: prevState.isLoading,
+				newIsLoading: newState.isLoading,
+			});
 			// Проверяем, действительно ли состояние изменилось
-			if (
-				prevState.user?.id === newState.user?.id &&
-				prevState.isAuthenticated === newState.isAuthenticated &&
-				prevState.isLoading === newState.isLoading
-			) {
+			// Важно: проверяем не только id, но и роль, так как роль может обновиться
+			const userChanged =
+				prevState.user?.id !== newState.user?.id ||
+				prevState.user?.role !== newState.user?.role;
+			const authChanged =
+				prevState.isAuthenticated !== newState.isAuthenticated;
+			const loadingChanged = prevState.isLoading !== newState.isLoading;
+
+			if (!userChanged && !authChanged && !loadingChanged) {
+				console.log('[useAuth] State unchanged, skipping update');
 				return prevState; // Возвращаем старое состояние если ничего не изменилось
 			}
+			console.log('[useAuth] State changed, updating:', {
+				userChanged,
+				authChanged,
+				loadingChanged,
+			});
 			return newState;
 		});
 	}, []);

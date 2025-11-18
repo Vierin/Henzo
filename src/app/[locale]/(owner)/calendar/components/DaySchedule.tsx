@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useMemo, useRef, useEffect } from 'react';
-import { Booking, TimeBlock } from '@/types';
+import { Booking, TimeBlock, Staff } from '@/types';
 import { safeParseDate, formatTimeSafe } from '@/utils/date';
 import { ChevronLeft, ChevronRight, X } from 'lucide-react';
 
@@ -9,6 +9,7 @@ interface DayScheduleProps {
 	selectedDate: Date;
 	bookings: Booking[];
 	timeBlocks?: TimeBlock[];
+	staffMembers?: Staff[]; // Все работники салона
 	workingHours?: {
 		monday?: { open: string; close: string; closed?: boolean };
 		tuesday?: { open: string; close: string; closed?: boolean };
@@ -30,6 +31,7 @@ export default function DaySchedule({
 	selectedDate,
 	bookings,
 	timeBlocks = [],
+	staffMembers: providedStaffMembers = [],
 	workingHours,
 	onBack,
 	onViewBookingDetails,
@@ -105,7 +107,18 @@ export default function DaySchedule({
 		});
 	};
 
+	// Получаем всех работников: используем переданный список или извлекаем из резерваций
 	const getStaffMembers = () => {
+		// Если передан список всех работников, используем его
+		if (providedStaffMembers && providedStaffMembers.length > 0) {
+			return providedStaffMembers.map((staff) => ({
+				id: staff.id,
+				name: staff.name,
+				role: 'Staff Member',
+			}));
+		}
+
+		// Fallback: извлекаем из резерваций (для обратной совместимости)
 		const staffSet = new Set();
 		bookings.forEach((booking) => {
 			if (booking.staff) {

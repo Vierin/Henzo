@@ -19,6 +19,7 @@ import ErrorDisplay from '@/components/ErrorDisplay';
 import { useSalonId } from '@/hooks/useSalon';
 import { useBookings } from '@/hooks/useBookings';
 import { useTimeBlocks } from '@/hooks/useTimeBlocks';
+import { useStaffBySalon } from '@/hooks/useStaff';
 import { BookingWithDetailsDto } from '@/types/dto/booking.dto';
 import { convertBookingDtoArray } from '@/utils/bookingTransformers';
 
@@ -66,6 +67,10 @@ export default function CalendarClient() {
 		isLoading: timeBlocksLoading,
 		error: timeBlocksError,
 	} = useTimeBlocks();
+
+	const { data: staffMembers = [], isLoading: staffLoading } = useStaffBySalon(
+		salonId || ''
+	);
 
 	const bookings = convertBookingDtoArray(bookingsData);
 	const loading = bookingsLoading;
@@ -557,6 +562,7 @@ export default function CalendarClient() {
 							selectedDate={selectedDate}
 							bookings={bookings}
 							timeBlocks={timeBlocks}
+							staffMembers={staffMembers}
 							workingHours={salonData?.workingHours}
 							onBack={handleBackToMonth}
 							onViewBookingDetails={handleViewBookingDetails}

@@ -32,18 +32,21 @@ export default function LoginClient() {
 			}
 
 			// Стандартные редиректы по ролям
+			const locale = extractLocaleFromPath(pathname) ?? 'en';
 			switch (user.role) {
 				case 'ADMIN':
-					router.push('/admin-panel');
+					router.push(withLocale('/admin-panel', locale as 'en' | 'ru' | 'vi'));
 					break;
 				case 'OWNER':
-					router.push('/business/complete-setup');
+					router.push(
+						withLocale('/business/complete-setup', locale as 'en' | 'ru' | 'vi')
+					);
 					break;
 				case 'CLIENT':
-					router.push('/dashboard');
+					router.push(withLocale('/dashboard', locale as 'en' | 'ru' | 'vi'));
 					break;
 				default:
-					router.push('/');
+					router.push(withLocale('/', locale as 'en' | 'ru' | 'vi'));
 					break;
 			}
 		}

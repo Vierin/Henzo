@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
-import { createMiddlewareClient } from '@supabase/auth-helpers-nextjs';
+import { createServerClient } from '@supabase/ssr';
 import {
 	defaultLocale,
 	extractLocaleFromPath,
@@ -8,10 +8,18 @@ import {
 	locales,
 	stripLocaleFromPath,
 } from './i18n/routing';
+import {
+	isPublicRoute,
+	isProtectedRoute,
+	getRequiredRole,
+	hasRouteAccess,
+} from './config/routes';
+import { logger } from './lib/logger';
 
 export async function middleware(req: NextRequest) {
 	const { pathname } = req.nextUrl;
 	const res = NextResponse.next();
+	const requestId = logger.generateRequestId();
 
 	// Ignore next internals and files
 	if (
@@ -62,88 +70,117 @@ export async function middleware(req: NextRequest) {
 		}
 	}
 
-	// Создаем Supabase клиент для middleware
-	const supabase = createMiddlewareClient({ req, res });
+	// Получаем путь без локали
+	const pathWithoutLocale = stripLocaleFromPath(pathname);
 
-	// Публичные маршруты
-	const publicRoutes = [
-		'/', // homepage
-		'/login',
-		'/owner-dashboard',
-		'/calendar',
-		'/services',
-		'/marketing',
-		'/staff',
-		'/salon-info',
-		'/register',
-		'/salons',
-		'/category',
-		'/salon',
-		'/about',
-		'/contact',
-		'/auth',
-		'/verify',
-		'/check-email',
-		'/business',
-		'/terms-of-service',
-		'/privacy-policy',
-	];
+	// Логирование запроса
+	logger.middleware.request(pathWithoutLocale, requestId, {
+		method: req.method,
+		url: req.url,
+	});
 
 	// Проверяем, является ли маршрут публичным
-	const pathWithoutLocale = stripLocaleFromPath(pathname);
-	const isPublicRoute = publicRoutes.some(
-		(route) =>
-			pathWithoutLocale === route || pathWithoutLocale.startsWith(`${route}/`)
-	);
-
-	// Для публичных маршрутов разрешаем доступ
-	if (isPublicRoute) {
+	if (isPublicRoute(pathWithoutLocale)) {
+		logger.debug('[Middleware] Public route access', {
+			path: pathWithoutLocale,
+			requestId,
+		});
 		return res;
 	}
 
-	// Для защищенных маршрутов проверяем аутентификацию
+	// Проверка специальных маршрутов business
+	// Business маршруты обрабатываются через общую проверку авторизации ниже
+
+	// Создаем Supabase клиент для middleware с поддержкой cookies
+	// Важно: создаем после проверки публичных маршрутов
+	const supabaseResponse = NextResponse.next();
+	supabaseResponse.headers.set('X-Request-ID', requestId);
+
+	const supabase = createServerClient(
+		process.env.NEXT_PUBLIC_SUPABASE_URL!,
+		process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+		{
+			cookies: {
+				getAll() {
+					return req.cookies.getAll();
+				},
+				setAll(cookiesToSet) {
+					cookiesToSet.forEach(({ name, value, options }) => {
+						req.cookies.set(name, value);
+						supabaseResponse.cookies.set(name, value, options);
+					});
+				},
+			},
+		}
+	);
+
+	// Для защищенных маршрутов проверяем только наличие сессии
+	// Проверка роли выполняется в ProtectedRoute через AuthContext
 	try {
+		// Сначала проверяем сессию через getSession
 		const {
 			data: { session },
+			error: sessionError,
 		} = await supabase.auth.getSession();
 
-		if (!session) {
-			// Перенаправляем на главную страницу
-			return NextResponse.redirect(new URL(`/${urlLocale}`, req.url));
-		}
+		console.log('[Middleware DEBUG] Session check:', {
+			hasSession: !!session,
+			hasAccessToken: !!session?.access_token,
+			sessionError: sessionError?.message,
+			cookies: req.cookies.getAll().map((c) => c.name),
+			path: pathWithoutLocale,
+		});
 
-		// Проверяем роль пользователя для специфичных маршрутов
-		const userRole = session.user?.user_metadata?.role;
+		// Получаем пользователя - getUser более надежен в middleware и автоматически обновляет сессию
+		const {
+			data: { user },
+			error: userError,
+		} = await supabase.auth.getUser();
 
-		if (pathWithoutLocale.startsWith('/client') && userRole !== 'CLIENT') {
-			return NextResponse.redirect(
-				new URL(`/${urlLocale}/unauthorized`, req.url)
+		console.log('[Middleware DEBUG] User check:', {
+			hasUser: !!user,
+			userId: user?.id,
+			userError: userError?.message,
+			path: pathWithoutLocale,
+		});
+
+		if (userError || !user) {
+			logger.middleware.authCheck(pathWithoutLocale, false, null, {
+				error: userError?.message || 'Auth session missing!',
+				requestId,
+			});
+			// Перенаправляем на страницу логина с returnTo параметром
+			const loginUrl = new URL(`/${urlLocale}/login`, req.url);
+			loginUrl.searchParams.set('returnTo', pathname);
+			logger.middleware.redirect(
+				pathWithoutLocale,
+				loginUrl.pathname,
+				'No user found',
+				{ requestId }
 			);
+			return NextResponse.redirect(loginUrl);
 		}
 
-		if (
-			(pathWithoutLocale.startsWith('/owner') ||
-				pathWithoutLocale.startsWith('/business')) &&
-			userRole !== 'OWNER'
-		) {
-			return NextResponse.redirect(
-				new URL(`/${urlLocale}/unauthorized`, req.url)
-			);
-		}
-
-		if (pathWithoutLocale.startsWith('/admin') && userRole !== 'ADMIN') {
-			return NextResponse.redirect(
-				new URL(`/${urlLocale}/unauthorized`, req.url)
-			);
-		}
-
-		return res;
-	} catch (error) {
-		console.error('Middleware auth error:', error);
-		// В случае ошибки перенаправляем на главную страницу
-		return NextResponse.redirect(
-			new URL(`/${urlLocale ?? defaultLocale}`, req.url)
+		// Пользователь залогинен - разрешаем доступ
+		// Проверка роли будет выполнена в ProtectedRoute через AuthContext
+		logger.middleware.accessGranted(
+			pathWithoutLocale,
+			'authenticated',
+			user.id,
+			{ requestId }
 		);
+
+		// Возвращаем supabaseResponse, который содержит обновленные cookies
+		return supabaseResponse;
+	} catch (error) {
+		logger.middleware.error(error as Error, pathWithoutLocale, {
+			requestId,
+			operation: 'authCheck',
+		});
+		// В случае ошибки перенаправляем на страницу логина
+		const loginUrl = new URL(`/${urlLocale}/login`, req.url);
+		loginUrl.searchParams.set('returnTo', pathname);
+		return NextResponse.redirect(loginUrl);
 	}
 }
 

@@ -1,23 +1,33 @@
 'use client';
 
 import { useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import { useAuthStore } from '@/stores/authStore';
+import { withLocale, extractLocaleFromPath } from '@/i18n/routing';
+import { logger } from '@/lib/logger';
+import { authManager } from '@/lib/auth-unified';
 
 export default function AuthCallbackPage() {
 	const router = useRouter();
+	const pathname = usePathname();
 	const { setUser, setSession } = useAuthStore();
 
 	useEffect(() => {
 		const handleAuthCallback = async () => {
+			const locale = extractLocaleFromPath(pathname) ?? 'en';
 			try {
 				// Handle the auth callback
 				const { data, error } = await supabase.auth.getSession();
 
 				if (error) {
 					console.error('Auth callback error:', error);
-					router.push('/login?error=auth_callback_failed');
+					router.push(
+						withLocale(
+							'/login?error=auth_callback_failed',
+							locale as 'en' | 'ru' | 'vi'
+						)
+					);
 					return;
 				}
 
@@ -28,7 +38,9 @@ export default function AuthCallbackPage() {
 
 					if (type === 'recovery') {
 						// This is a password reset, redirect to reset password page
-						router.push('/reset-password');
+						router.push(
+							withLocale('/reset-password', locale as 'en' | 'ru' | 'vi')
+						);
 					} else {
 						// Regular auth callback (including Google OAuth)
 						// Check if this is a business registration
@@ -104,13 +116,24 @@ export default function AuthCallbackPage() {
 									}
 								}
 
-								// Update auth store
+								// Бэкенд автоматически синхронизирует роль в app_metadata при запросе /auth/user
+								// НЕ обновляем сессию здесь - это создает бесконечные циклы
+								// Новый токен с ролью будет получен автоматически при следующем запросе
+								const refreshedSession = data.session;
+
+								// Update authManager (единый источник истины)
 								console.log('Updating auth store with:', {
 									user: userData.user,
-									session: data.session ? 'present' : 'missing',
+									session: refreshedSession ? 'present' : 'missing',
+									role: userData.user.role,
 								});
+								// Обновляем authManager через updateUser (главный источник)
+								if (refreshedSession?.access_token) {
+									await authManager.updateUser(refreshedSession.access_token);
+								}
+								// Также обновляем authStore для совместимости
 								setUser(userData.user);
-								setSession(data.session);
+								setSession(refreshedSession);
 
 								// Debug: log final user data
 								console.log('Final user data before redirect:', {
@@ -122,7 +145,9 @@ export default function AuthCallbackPage() {
 								// Redirect based on role
 								switch (userData.user.role) {
 									case 'ADMIN':
-										router.push('/admin-panel');
+										router.push(
+											withLocale('/admin-panel', locale as 'en' | 'ru' | 'vi')
+										);
 										break;
 									case 'OWNER':
 										// For OWNER users, check if they have a salon first
@@ -144,32 +169,56 @@ export default function AuthCallbackPage() {
 													console.log(
 														'Owner has existing salon, redirecting to dashboard'
 													);
-													router.push('/owner-dashboard');
+													router.push(
+														withLocale(
+															'/owner-dashboard',
+															locale as 'en' | 'ru' | 'vi'
+														)
+													);
 												} else {
 													// User doesn't have a salon, go to complete-setup
 													console.log(
 														'Owner has no salon, redirecting to complete-setup'
 													);
-													router.push('/business/complete-setup');
+													router.push(
+														withLocale(
+															'/business/complete-setup',
+															locale as 'en' | 'ru' | 'vi'
+														)
+													);
 												}
 											} else {
 												// Error checking salon, go to complete-setup as fallback
 												console.log(
 													'Error checking salon, redirecting to complete-setup'
 												);
-												router.push('/business/complete-setup');
+												router.push(
+													withLocale(
+														'/business/complete-setup',
+														locale as 'en' | 'ru' | 'vi'
+													)
+												);
 											}
 										} catch (error) {
 											console.error('Error checking salon:', error);
 											// Error checking salon, go to complete-setup as fallback
-											router.push('/business/complete-setup');
+											router.push(
+												withLocale(
+													'/business/complete-setup',
+													locale as 'en' | 'ru' | 'vi'
+												)
+											);
 										}
 										break;
 									case 'CLIENT':
-										router.push('/dashboard');
+										router.push(
+											withLocale('/dashboard', locale as 'en' | 'ru' | 'vi')
+										);
 										break;
 									default:
-										router.push('/dashboard');
+										router.push(
+											withLocale('/dashboard', locale as 'en' | 'ru' | 'vi')
+										);
 										break;
 								}
 							} else {
@@ -187,6 +236,7 @@ export default function AuthCallbackPage() {
 									},
 								});
 
+								// Ensure role is set in metadata
 								if (updateError) {
 									console.error('Error updating user metadata:', updateError);
 								}
@@ -207,12 +257,31 @@ export default function AuthCallbackPage() {
 									// Redirect based on role
 									if (defaultRole === 'OWNER') {
 										// For new OWNER users, always go to complete-setup
-										router.push('/business/complete-setup');
+										router.push(
+											withLocale(
+												'/business/complete-setup',
+												locale as 'en' | 'ru' | 'vi'
+											)
+										);
 									} else {
-										router.push('/dashboard');
+										router.push(
+											withLocale('/dashboard', locale as 'en' | 'ru' | 'vi')
+										);
 									}
 								} else {
 									// If still fails, create a temporary user object and redirect
+									// Update user_metadata with role before creating temp user
+									try {
+										await supabase.auth.updateUser({
+											data: { role: defaultRole },
+										});
+									} catch (updateError) {
+										console.error(
+											'Error updating user metadata with role:',
+											updateError
+										);
+									}
+
 									const tempUser = {
 										id: data.session.user.id,
 										email: data.session.user.email || '',
@@ -228,9 +297,16 @@ export default function AuthCallbackPage() {
 									// Redirect based on role
 									if (defaultRole === 'OWNER') {
 										// For new OWNER users, always go to complete-setup
-										router.push('/business/complete-setup');
+										router.push(
+											withLocale(
+												'/business/complete-setup',
+												locale as 'en' | 'ru' | 'vi'
+											)
+										);
 									} else {
-										router.push('/dashboard');
+										router.push(
+											withLocale('/dashboard', locale as 'en' | 'ru' | 'vi')
+										);
 									}
 								}
 							}
@@ -238,6 +314,19 @@ export default function AuthCallbackPage() {
 							console.error('Error getting user role:', roleError);
 							// Create a temporary user object and redirect based on registration type
 							const defaultRole = isBusinessRegistration ? 'OWNER' : 'CLIENT';
+
+							// Update user_metadata with role
+							try {
+								await supabase.auth.updateUser({
+									data: { role: defaultRole },
+								});
+							} catch (updateError) {
+								console.error(
+									'Error updating user metadata with role:',
+									updateError
+								);
+							}
+
 							const tempUser = {
 								id: data.session.user.id,
 								email: data.session.user.email || '',
@@ -254,24 +343,36 @@ export default function AuthCallbackPage() {
 							// Redirect based on registration type
 							if (isBusinessRegistration) {
 								// For business registration, always go to complete-setup
-								router.push('/business/complete-setup');
+								router.push(
+									withLocale(
+										'/business/complete-setup',
+										locale as 'en' | 'ru' | 'vi'
+									)
+								);
 							} else {
-								router.push('/dashboard');
+								router.push(
+									withLocale('/dashboard', locale as 'en' | 'ru' | 'vi')
+								);
 							}
 						}
 					}
 				} else {
 					// No session, redirect to login
-					router.push('/login');
+					router.push(withLocale('/login', locale as 'en' | 'ru' | 'vi'));
 				}
 			} catch (error) {
 				console.error('Unexpected error in auth callback:', error);
-				router.push('/login?error=unexpected_error');
+				router.push(
+					withLocale(
+						'/login?error=unexpected_error',
+						locale as 'en' | 'ru' | 'vi'
+					)
+				);
 			}
 		};
 
 		handleAuthCallback();
-	}, [router]);
+	}, [router, pathname]);
 
 	return (
 		<div className="min-h-screen bg-[#fff7f6] flex items-center justify-center">
