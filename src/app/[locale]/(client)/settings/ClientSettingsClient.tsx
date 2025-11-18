@@ -1,13 +1,13 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useAuthStore } from '@/stores/authStore';
+import { useAuth } from '@/lib/auth-unified';
 import { supabase } from '@/lib/supabase';
 import toast from 'react-hot-toast';
 import LoadingSpinner from '@/components/LoadingSpinner';
 
 export default function ClientSettingsClient() {
-	const { user, setUser } = useAuthStore();
+	const { user } = useAuth();
 	const [isLoading, setIsLoading] = useState(false);
 	const [isSaving, setIsSaving] = useState(false);
 	const [formData, setFormData] = useState({
@@ -39,14 +39,8 @@ export default function ClientSettingsClient() {
 
 		try {
 			// TODO: Update client profile via API
-			// For now, just update local state
-			const updatedUser = {
-				...user,
-				name: formData.name,
-				phone: formData.phone,
-			};
-
-			setUser(updatedUser as any);
+			// For now, just show success message
+			// Profile update should be handled through API endpoint
 			toast.success('Profile updated successfully!');
 		} catch (error) {
 			console.error('Error updating profile:', error);

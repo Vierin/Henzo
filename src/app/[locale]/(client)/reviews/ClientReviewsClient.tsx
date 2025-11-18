@@ -1,48 +1,11 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { apiClient } from '@/lib/api-client';
+import { useUserReviews } from '@/hooks/useClient';
 import LoadingSpinner from '@/components/LoadingSpinner';
 import { Star } from 'lucide-react';
 
-interface Review {
-	id: string;
-	rating: number;
-	comment?: string;
-	createdAt: string;
-	salon: {
-		id: string;
-		name: string;
-	};
-	booking?: {
-		id: string;
-		service: {
-			name: string;
-		};
-	};
-}
-
 export default function ClientReviewsClient() {
-	const [reviews, setReviews] = useState<Review[]>([]);
-	const [loading, setLoading] = useState(true);
-	const [error, setError] = useState<string | null>(null);
-
-	useEffect(() => {
-		fetchReviews();
-	}, []);
-
-	const fetchReviews = async () => {
-		try {
-			setLoading(true);
-			const data = await apiClient.get<Review[]>('/reviews/user');
-			setReviews(data);
-		} catch (err) {
-			console.error('Failed to fetch reviews:', err);
-			setError(err instanceof Error ? err.message : 'Failed to load reviews');
-		} finally {
-			setLoading(false);
-		}
-	};
+	const { data: reviews = [], isLoading: loading, error } = useUserReviews();
 
 	const renderStars = (rating: number) => {
 		return Array.from({ length: 5 }, (_, i) => (
@@ -72,7 +35,9 @@ export default function ClientReviewsClient() {
 				<h3 className="text-xl font-semibold text-gray-900 mb-2">
 					Error loading reviews
 				</h3>
-				<p className="text-gray-600">{error}</p>
+				<p className="text-gray-600">
+					{error instanceof Error ? error.message : 'Failed to load reviews'}
+				</p>
 			</div>
 		);
 	}

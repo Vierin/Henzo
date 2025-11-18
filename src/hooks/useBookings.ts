@@ -74,7 +74,9 @@ export const useUserBookings = (filters?: {
 			const response = await apiClient.get<BookingWithDetailsDto[]>(endpoint);
 			return response || [];
 		},
-		staleTime: 2 * 60 * 1000, // 2 minutes
+		staleTime: 5 * 60 * 1000, // 5 minutes
+		refetchOnMount: false, // Не перезапрашивать если данные свежие
+		refetchOnWindowFocus: false, // Не перезапрашивать при фокусе окна
 	});
 };
 

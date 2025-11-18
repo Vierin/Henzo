@@ -67,6 +67,8 @@ export function useUserBookings() {
 			}
 		},
 		staleTime: 5 * 60 * 1000, // 5 minutes
+		refetchOnMount: false, // Не перезапрашивать если данные свежие
+		refetchOnWindowFocus: false, // Не перезапрашивать при фокусе окна
 	});
 }
 
@@ -83,6 +85,8 @@ export function useUserReviews(enabled: boolean = true) {
 			}
 		},
 		staleTime: 5 * 60 * 1000, // 5 minutes
+		refetchOnMount: false, // Не перезапрашивать если данные свежие
+		refetchOnWindowFocus: false, // Не перезапрашивать при фокусе окна
 		enabled,
 	});
 }
@@ -99,7 +103,9 @@ export function useUpcomingBookings(enabled: boolean = true) {
 				return [];
 			}
 		},
-		staleTime: 2 * 60 * 1000, // 2 minutes
+		staleTime: 5 * 60 * 1000, // 5 minutes
+		refetchOnMount: false, // Не перезапрашивать если данные свежие
+		refetchOnWindowFocus: false, // Не перезапрашивать при фокусе окна
 		enabled,
 	});
 }
@@ -117,6 +123,8 @@ export function useCompletedBookings() {
 			}
 		},
 		staleTime: 5 * 60 * 1000, // 5 minutes
+		refetchOnMount: false, // Не перезапрашивать если данные свежие
+		refetchOnWindowFocus: false, // Не перезапрашивать при фокусе окна
 	});
 }
 

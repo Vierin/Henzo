@@ -34,6 +34,9 @@ export const useFavoriteSalons = (isAuthenticated: boolean = false) => {
 			return response.favorites;
 		},
 		enabled: isAuthenticated, // Only enable when user is authenticated
+		staleTime: 5 * 60 * 1000, // 5 minutes
+		refetchOnMount: false, // Не перезапрашивать если данные свежие
+		refetchOnWindowFocus: false, // Не перезапрашивать при фокусе окна
 	});
 };
 
@@ -72,7 +75,9 @@ export const useRemoveFavorite = () => {
 			await queryClient.cancelQueries({ queryKey: ['favorites'] });
 
 			// Snapshot the previous value
-			const previousFavorites = queryClient.getQueryData<FavoriteSalon[]>(['favorites']);
+			const previousFavorites = queryClient.getQueryData<FavoriteSalon[]>([
+				'favorites',
+			]);
 
 			// Optimistically update to the new value
 			queryClient.setQueryData<FavoriteSalon[]>(['favorites'], (old) => {
