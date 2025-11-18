@@ -17,6 +17,7 @@ export const salonKeys = {
 	details: () => [...salonKeys.all, 'detail'] as const,
 	detail: (id: string) => [...salonKeys.details(), id] as const,
 	withServices: () => [...salonKeys.all, 'with-services'] as const,
+	current: () => [...salonKeys.all, 'current'] as const, // Единый ключ для текущего салона
 };
 
 // Get all salons
@@ -64,10 +65,11 @@ export const useSalon = (id: string) => {
 	});
 };
 
-// Get current user's salon
+// Get current user's salon - использует тот же query key что и useSalon
+// Это предотвращает дублирование запросов
 export const useCurrentUserSalon = () => {
 	return useQuery({
-		queryKey: [...salonKeys.all, 'current'],
+		queryKey: salonKeys.current(),
 		queryFn: async (): Promise<SalonWithDetailsResponseDto | null> => {
 			const response = await apiClient.get<{
 				success: boolean;
@@ -79,8 +81,9 @@ export const useCurrentUserSalon = () => {
 			}
 			return null;
 		},
-		staleTime: 0, // Всегда считать данные устаревшими
-		refetchOnMount: true, // Всегда перезагружать при монтировании
+		staleTime: 5 * 60 * 1000, // 5 минут - данные салона меняются редко
+		refetchOnMount: false, // Не перезагружать если данные свежие
+		refetchOnWindowFocus: false,
 	});
 };
 
@@ -114,7 +117,7 @@ export const useUpdateSalon = () => {
 		onSuccess: () => {
 			// Invalidate current user salon and lists
 			queryClient.invalidateQueries({
-				queryKey: [...salonKeys.all, 'current'],
+				queryKey: salonKeys.current(),
 			});
 			queryClient.invalidateQueries({ queryKey: salonKeys.lists() });
 			toast.success('Salon updated successfully!');

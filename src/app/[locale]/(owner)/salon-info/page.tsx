@@ -206,7 +206,7 @@ export default function SalonInfoPage() {
 	}
 
 	return (
-		<div>
+		<div className="px-4 max-w-7xl mx-auto">
 			<div className="text-center mb-8">
 				<h1 className="text-2xl md:text-4xl font-bold text-gray-900 mb-2 md:mb-4">
 					Salon Information

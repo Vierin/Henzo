@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react';
 import { getDictionary } from '@/i18n/dictionaries';
 import { locales, type Locale, isLocale } from '@/i18n/routing';
+import { ErrorBoundary } from '@/components/ErrorBoundary';
 
 export function generateStaticParams() {
 	return locales.map((locale) => ({ locale }));
@@ -53,7 +54,9 @@ export default async function LocaleRootLayout({
 
 	return (
 		<html lang={locale}>
-			<body>{children}</body>
+			<body>
+				<ErrorBoundary>{children}</ErrorBoundary>
+			</body>
 		</html>
 	);
 }

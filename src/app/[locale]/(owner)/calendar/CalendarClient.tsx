@@ -17,7 +17,6 @@ import {
 import LoadingSpinner from '@/components/LoadingSpinner';
 import ErrorDisplay from '@/components/ErrorDisplay';
 import { useSalonId } from '@/hooks/useSalon';
-import { useCurrentUserSalon } from '@/hooks/useSalons';
 import { useBookings } from '@/hooks/useBookings';
 import { useTimeBlocks } from '@/hooks/useTimeBlocks';
 import { BookingWithDetailsDto } from '@/types/dto/booking.dto';
@@ -52,8 +51,8 @@ export default function CalendarClient() {
 	const router = useRouter();
 
 	const { salonId, isLoading: salonLoading, hasSalon, salon } = useSalonId();
-	const { data: salonData, isLoading: salonDataLoading } =
-		useCurrentUserSalon();
+	// salonData теперь берется из useSalonId (через useSalon) - нет дублирования запросов
+	const salonData = salon;
 
 	const {
 		data: bookingsData = [],
@@ -378,7 +377,7 @@ export default function CalendarClient() {
 		}
 	}, [hasSalon, salonLoading, router]);
 
-	if (salonLoading || salonDataLoading) {
+	if (salonLoading) {
 		return (
 			<div
 				className="flex items-center justify-center py-12"
@@ -431,7 +430,7 @@ export default function CalendarClient() {
 
 	return (
 		<main
-			className="flex gap-4 md:gap-6"
+			className="flex gap-4 md:gap-6 px-4 max-w-7xl mx-auto"
 			role="main"
 			aria-labelledby="calendar-heading"
 		>

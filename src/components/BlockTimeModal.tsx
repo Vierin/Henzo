@@ -11,7 +11,6 @@ import {
 import { format } from 'date-fns';
 import { useStaffBySalon } from '@/hooks/useStaff';
 import { useSalonId } from '@/hooks/useSalon';
-import { useCurrentUserSalon } from '@/hooks/useSalons';
 import { WorkingHours } from '@/types';
 import {
 	useCreateTimeBlock,
@@ -55,11 +54,10 @@ export default function BlockTimeModal({
 	preselectedStartTime,
 	preselectedEndTime,
 }: BlockTimeModalProps) {
-	const { salonId } = useSalonId();
+	const { salonId, salon: salonData } = useSalonId();
 	const { data: staff = [], isLoading: staffLoading } = useStaffBySalon(
 		salonId || ''
 	);
-	const { data: salonData } = useCurrentUserSalon();
 
 	const createTimeBlockMutation = useCreateTimeBlock();
 	const checkConflictsMutation = useCheckTimeBlockConflicts();

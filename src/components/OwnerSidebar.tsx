@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { useState } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { useAuthStore } from '@/stores/authStore';
 import {
 	stripLocaleFromPath,
@@ -20,6 +20,12 @@ import {
 	X,
 	LogOut,
 } from 'lucide-react';
+import { useSalonId } from '@/hooks/useSalon';
+import { bookingKeys } from '@/hooks/useBookings';
+import { serviceKeys } from '@/hooks/useServices';
+import { staffKeys } from '@/hooks/useStaff';
+import { timeBlockKeys } from '@/hooks/useTimeBlocks';
+import { apiClient } from '@/lib/api-client';
 
 interface OwnerSidebarProps {
 	isMobileMenuOpen?: boolean;
@@ -33,10 +39,81 @@ export default function OwnerSidebar({
 	const pathname = usePathname();
 	const router = useRouter();
 	const { logout } = useAuthStore();
+	const queryClient = useQueryClient();
+	const { salonId } = useSalonId();
 
 	// Extract locale and path without locale
 	const currentLocale = extractLocaleFromPath(pathname) ?? 'en';
 	const pathNoLocale = stripLocaleFromPath(pathname);
+
+	// Prefetch data for different pages on hover
+	const prefetchPageData = async (page: string) => {
+		if (!salonId) return;
+
+		try {
+			switch (page) {
+				case 'dashboard':
+					// Prefetch bookings for dashboard
+					await queryClient.prefetchQuery({
+						queryKey: bookingKeys.list({}),
+						queryFn: async () => {
+							const response = await apiClient.get('/bookings/owner');
+							return response || [];
+						},
+						staleTime: 2 * 60 * 1000,
+					});
+					break;
+				case 'calendar':
+					// Prefetch bookings and time blocks for calendar
+					await Promise.all([
+						queryClient.prefetchQuery({
+							queryKey: bookingKeys.list({}),
+							queryFn: async () => {
+								const response = await apiClient.get('/bookings/owner');
+								return response || [];
+							},
+							staleTime: 2 * 60 * 1000,
+						}),
+						queryClient.prefetchQuery({
+							queryKey: timeBlockKeys.list({}),
+							queryFn: async () => {
+								const response = await apiClient.get('/time-blocks');
+								return response || [];
+							},
+							staleTime: 2 * 60 * 1000,
+						}),
+					]);
+					break;
+				case 'services':
+					// Prefetch services
+					await queryClient.prefetchQuery({
+						queryKey: serviceKeys.list({ salonId }),
+						queryFn: async () => {
+							const response = await apiClient.get(
+								`/services?salonId=${salonId}`
+							);
+							return response || [];
+						},
+						staleTime: 5 * 60 * 1000,
+					});
+					break;
+				case 'staff':
+					// Prefetch staff
+					await queryClient.prefetchQuery({
+						queryKey: staffKeys.bySalon(salonId),
+						queryFn: async () => {
+							const response = await apiClient.get(`/staff?salonId=${salonId}`);
+							return response || [];
+						},
+						staleTime: 5 * 60 * 1000,
+					});
+					break;
+			}
+		} catch (error) {
+			// Silently fail prefetching - it's just an optimization
+			console.debug('Prefetch failed for', page, error);
+		}
+	};
 
 	const handleLogout = async () => {
 		try {
@@ -60,10 +137,14 @@ export default function OwnerSidebar({
 		href: string,
 		icon: React.ReactNode,
 		label: string,
-		isActive: boolean
+		isActive: boolean,
+		prefetchKey?: string
 	) => {
 		// Add locale to href
-		const hrefWithLocale = withLocale(href, currentLocale as 'en' | 'ru' | 'vi');
+		const hrefWithLocale = withLocale(
+			href,
+			currentLocale as 'en' | 'ru' | 'vi'
+		);
 		return (
 			<Link
 				href={hrefWithLocale}
@@ -73,6 +154,11 @@ export default function OwnerSidebar({
 						: 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
 				}`}
 				onClick={() => setIsMobileMenuOpen?.(false)}
+				onMouseEnter={() => {
+					if (prefetchKey && !isActive) {
+						prefetchPageData(prefetchKey);
+					}
+				}}
 			>
 				{icon}
 				<span className="font-medium">{label}</span>
@@ -90,28 +176,32 @@ export default function OwnerSidebar({
 						'/owner-dashboard',
 						<LayoutDashboard className="w-5 h-5" />,
 						'Dashboard',
-						pathNoLocale === '/owner-dashboard'
+						pathNoLocale === '/owner-dashboard',
+						'dashboard'
 					)}
 
 					{renderNavItem(
 						'/calendar',
 						<CalendarDays className="w-5 h-5" />,
 						'Calendar',
-						pathNoLocale === '/calendar'
+						pathNoLocale === '/calendar',
+						'calendar'
 					)}
 
 					{renderNavItem(
 						'/services',
 						<Scissors className="w-5 h-5" />,
 						'Services',
-						pathNoLocale.startsWith('/services')
+						pathNoLocale.startsWith('/services'),
+						'services'
 					)}
 
 					{renderNavItem(
 						'/staff',
 						<Users className="w-5 h-5" />,
 						'Staff',
-						pathNoLocale.startsWith('/staff')
+						pathNoLocale.startsWith('/staff'),
+						'staff'
 					)}
 
 					{renderNavItem(

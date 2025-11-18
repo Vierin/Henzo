@@ -211,7 +211,11 @@ export default function NewServiceClient() {
 	// Step 2: Confirmation screen
 	if (step === 2) {
 		return (
-			<main role="main" aria-labelledby="page-heading">
+			<main
+				role="main"
+				className="px-4 max-w-7xl mx-auto"
+				aria-labelledby="page-heading"
+			>
 				<div className="mb-8">
 					<button
 						onClick={() => setStep(1)}
@@ -393,7 +397,11 @@ export default function NewServiceClient() {
 
 	// Step 1: Form
 	return (
-		<main role="main" aria-labelledby="page-heading">
+		<main
+			role="main"
+			aria-labelledby="page-heading"
+			className="px-4 max-w-7xl mx-auto"
+		>
 			<div className="mb-8">
 				<button
 					onClick={() => router.back()}

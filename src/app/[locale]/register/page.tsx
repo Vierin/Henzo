@@ -1,9 +1,12 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 import toast from 'react-hot-toast';
 import { useAuth } from '@/lib/auth-unified';
+import { useTranslation } from '@/contexts/LanguageContext';
+import { withLocale, extractLocaleFromPath } from '@/i18n/routing';
+import Link from 'next/link';
 
 export default function RegisterPage() {
 	const [formData, setFormData] = useState({
@@ -15,7 +18,9 @@ export default function RegisterPage() {
 	});
 	const [loading, setLoading] = useState(false);
 	const router = useRouter();
+	const pathname = usePathname();
 	const { registerClient, isAuthenticated, user } = useAuth();
+	const t = useTranslation();
 
 	// Редирект если уже авторизован
 	useEffect(() => {
@@ -42,17 +47,17 @@ export default function RegisterPage() {
 
 		// Валидация
 		if (formData.password !== formData.confirmPassword) {
-			toast.error('Passwords do not match');
+			toast.error(t.auth.passwordsDoNotMatch);
 			return;
 		}
 
 		if (formData.password.length < 6) {
-			toast.error('Password must be at least 6 characters');
+			toast.error(t.auth.passwordTooShort);
 			return;
 		}
 
 		if (!formData.email || !formData.password || !formData.name) {
-			toast.error('Please fill in all required fields');
+			toast.error(t.auth.fillAllFields);
 			return;
 		}
 
@@ -67,15 +72,18 @@ export default function RegisterPage() {
 			});
 
 			if (result.success) {
-				toast.success(
-					'Registration successful! Please check your email to verify your account.'
+				toast.success(t.auth.registrationSuccessful);
+				router.push(
+					withLocale(
+						'/check-email?email=' + encodeURIComponent(formData.email),
+						(extractLocaleFromPath(pathname) ?? 'en') as 'en' | 'ru' | 'vi'
+					)
 				);
-				router.push('/check-email?email=' + encodeURIComponent(formData.email));
 			} else {
-				toast.error(result.error || 'Registration failed');
+				toast.error(result.error || t.auth.registrationFailed);
 			}
 		} catch (error) {
-			toast.error('Registration failed. Please try again.');
+			toast.error(t.auth.registrationFailed);
 		} finally {
 			setLoading(false);
 		}
@@ -96,10 +104,10 @@ export default function RegisterPage() {
 						<span className="text-3xl">💇‍♀️</span>
 					</div>
 					<h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
-						Create your client account
+						{t.auth.signUpTitle}
 					</h2>
 					<p className="mt-2 text-center text-sm text-gray-600">
-						Join us to book beauty and wellness services
+						{t.auth.signUpSubtitle}
 					</p>
 				</div>
 				<form className="mt-8 space-y-6" onSubmit={handleSubmit}>
@@ -109,7 +117,7 @@ export default function RegisterPage() {
 							htmlFor="name"
 							className="block text-sm font-medium text-gray-700 mb-2"
 						>
-							Full Name *
+							{t.auth.fullName} *
 						</label>
 						<input
 							id="name"
@@ -119,7 +127,7 @@ export default function RegisterPage() {
 							value={formData.name}
 							onChange={handleInputChange}
 							className="appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-[#ff5b5b] focus:border-[#ff5b5b] focus:z-10 sm:text-sm"
-							placeholder="Enter your full name"
+							placeholder={t.auth.fullName}
 						/>
 					</div>
 
@@ -129,7 +137,7 @@ export default function RegisterPage() {
 							htmlFor="email"
 							className="block text-sm font-medium text-gray-700 mb-2"
 						>
-							Email Address *
+							{t.auth.emailAddress} *
 						</label>
 						<input
 							id="email"
@@ -139,7 +147,7 @@ export default function RegisterPage() {
 							value={formData.email}
 							onChange={handleInputChange}
 							className="appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-[#ff5b5b] focus:border-[#ff5b5b] focus:z-10 sm:text-sm"
-							placeholder="Enter your email"
+							placeholder={t.auth.emailAddress}
 						/>
 					</div>
 
@@ -149,7 +157,7 @@ export default function RegisterPage() {
 							htmlFor="phone"
 							className="block text-sm font-medium text-gray-700 mb-2"
 						>
-							Phone Number
+							{t.auth.phoneNumber}
 						</label>
 						<input
 							id="phone"
@@ -158,7 +166,7 @@ export default function RegisterPage() {
 							value={formData.phone}
 							onChange={handleInputChange}
 							className="appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-[#ff5b5b] focus:border-[#ff5b5b] focus:z-10 sm:text-sm"
-							placeholder="Enter your phone number"
+							placeholder={t.auth.phoneNumber}
 						/>
 					</div>
 
@@ -168,7 +176,7 @@ export default function RegisterPage() {
 							htmlFor="password"
 							className="block text-sm font-medium text-gray-700 mb-2"
 						>
-							Password *
+							{t.auth.password} *
 						</label>
 						<input
 							id="password"
@@ -178,7 +186,7 @@ export default function RegisterPage() {
 							value={formData.password}
 							onChange={handleInputChange}
 							className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-t-md focus:outline-none focus:ring-[#ff5b5b] focus:border-[#ff5b5b] focus:z-10 sm:text-sm"
-							placeholder="Create a password"
+							placeholder={t.auth.password}
 						/>
 					</div>
 
@@ -188,7 +196,7 @@ export default function RegisterPage() {
 							htmlFor="confirmPassword"
 							className="block text-sm font-medium text-gray-700 mb-2"
 						>
-							Confirm Password *
+							{t.auth.confirmPassword} *
 						</label>
 						<input
 							id="confirmPassword"
@@ -198,7 +206,7 @@ export default function RegisterPage() {
 							value={formData.confirmPassword}
 							onChange={handleInputChange}
 							className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-b-md focus:outline-none focus:ring-[#ff5b5b] focus:border-[#ff5b5b] focus:z-10 sm:text-sm"
-							placeholder="Confirm your password"
+							placeholder={t.auth.confirmPassword}
 						/>
 					</div>
 
@@ -212,7 +220,7 @@ export default function RegisterPage() {
 							{loading ? (
 								<div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
 							) : (
-								'Create Account'
+								t.auth.createAccount
 							)}
 						</button>
 					</div>
@@ -220,24 +228,36 @@ export default function RegisterPage() {
 					{/* Links */}
 					<div className="text-center space-y-4">
 						<p className="text-sm text-gray-600">
-							Already have an account?{' '}
-							<a
-								href="/login"
+							{t.auth.alreadyHaveAccount}{' '}
+							<Link
+								href={withLocale(
+									'/login',
+									(extractLocaleFromPath(pathname) ?? 'en') as
+										| 'en'
+										| 'ru'
+										| 'vi'
+								)}
 								className="font-medium text-[#ff5b5b] hover:text-[#ff5b5b]"
 							>
-								Sign in
-							</a>
+								{t.auth.signIn}
+							</Link>
 						</p>
 						<div className="border-t border-gray-200 pt-4">
 							<p className="text-sm text-gray-600 mb-2">
-								Are you a salon owner?
+								{t.auth.areYouSalonOwner}
 							</p>
-							<a
-								href="/business/register"
+							<Link
+								href={withLocale(
+									'/business/register',
+									(extractLocaleFromPath(pathname) ?? 'en') as
+										| 'en'
+										| 'ru'
+										| 'vi'
+								)}
 								className="text-sm font-medium text-orange-600 hover:text-orange-700"
 							>
-								Register your business account →
-							</a>
+								{t.auth.registerBusinessAccount}
+							</Link>
 						</div>
 					</div>
 				</form>

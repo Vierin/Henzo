@@ -84,7 +84,7 @@ export default function StaffPage() {
 	}
 
 	return (
-		<div>
+		<div className="px-4 max-w-7xl mx-auto">
 			<div className="mb-8">
 				<div className="flex items-center justify-between">
 					<div>

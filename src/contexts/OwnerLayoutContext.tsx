@@ -2,7 +2,6 @@
 
 import React, { createContext, useContext, ReactNode } from 'react';
 import { useSalonId } from '@/hooks/useSalon';
-import { useCurrentUserSalon } from '@/hooks/useSalons';
 import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
 
@@ -13,7 +12,9 @@ interface OwnerLayoutContextType {
 	hasSalon: boolean;
 }
 
-const OwnerLayoutContext = createContext<OwnerLayoutContextType | undefined>(undefined);
+const OwnerLayoutContext = createContext<OwnerLayoutContextType | undefined>(
+	undefined
+);
 
 interface OwnerLayoutProviderProps {
 	children: ReactNode;
@@ -21,10 +22,11 @@ interface OwnerLayoutProviderProps {
 
 export function OwnerLayoutProvider({ children }: OwnerLayoutProviderProps) {
 	const router = useRouter();
-	const { salonId, isLoading: salonLoading, hasSalon } = useSalonId();
-	const { data: salonData, isLoading: salonDataLoading } = useCurrentUserSalon();
+	// Используем только useSalonId - он уже использует useSalon с правильным кешированием
+	// useCurrentUserSalon больше не нужен, т.к. данные уже есть в useSalon
+	const { salonId, salon, isLoading: salonLoading, hasSalon } = useSalonId();
 
-	const isLoading = salonLoading || salonDataLoading;
+	const isLoading = salonLoading;
 
 	// Handle redirect if no salon exists
 	useEffect(() => {
@@ -35,7 +37,7 @@ export function OwnerLayoutProvider({ children }: OwnerLayoutProviderProps) {
 
 	const value = {
 		salonId,
-		salonData,
+		salonData: salon, // Используем данные из useSalon
 		isLoading,
 		hasSalon,
 	};
@@ -50,9 +52,9 @@ export function OwnerLayoutProvider({ children }: OwnerLayoutProviderProps) {
 export function useOwnerLayout() {
 	const context = useContext(OwnerLayoutContext);
 	if (context === undefined) {
-		throw new Error('useOwnerLayout must be used within an OwnerLayoutProvider');
+		throw new Error(
+			'useOwnerLayout must be used within an OwnerLayoutProvider'
+		);
 	}
 	return context;
 }
-
-

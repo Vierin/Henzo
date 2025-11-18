@@ -1,7 +1,6 @@
 'use client';
 
-import { useMemo, useEffect, useState, useCallback } from 'react';
-import { useRouter } from 'next/navigation';
+import { useMemo, useState, useCallback } from 'react';
 import { useBookings } from '@/hooks/useBookings';
 import { useOwnerLayout } from '@/contexts/OwnerLayoutContext';
 import LoadingSpinner from '@/components/LoadingSpinner';
@@ -14,13 +13,7 @@ import BookingModal from '@/components/BookingModal';
 import { Service, Booking } from '@/types';
 import { apiClient } from '@/lib/api-client';
 import toast from 'react-hot-toast';
-import {
-	DollarSign,
-	Users,
-	CalendarCheck,
-	TrendingUp,
-	Calendar,
-} from 'lucide-react';
+import { DollarSign, Users, CalendarCheck, TrendingUp } from 'lucide-react';
 import { safeParseDate } from '@/utils/date';
 import { formatVND } from '@/utils/currency';
 import { convertBookingDtoArray } from '@/utils/bookingTransformers';
@@ -34,7 +27,6 @@ import {
 } from '@/components/ui/select';
 
 export default function OwnerDashboardClient() {
-	const router = useRouter();
 	const [period, setPeriod] = useState<'7d' | '30d' | '1y'>('30d');
 	const [isBookingModalOpen, setIsBookingModalOpen] = useState(false);
 	const [selectedService, setSelectedService] = useState<Service | undefined>();
@@ -174,7 +166,7 @@ export default function OwnerDashboardClient() {
 	}
 
 	return (
-		<main className="space-y-6">
+		<main className="space-y-6 px-4 max-w-7xl mx-auto">
 			{/* Header */}
 			<div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
 				<div>

@@ -101,7 +101,7 @@ export default function NewStaffPage() {
 	}
 
 	return (
-		<div>
+		<div className="px-4 max-w-7xl mx-auto">
 			<div className="mb-8">
 				<button
 					onClick={() => router.back()}

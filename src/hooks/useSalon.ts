@@ -2,12 +2,13 @@ import { useQuery } from '@tanstack/react-query';
 import { apiClient } from '@/lib/api-client';
 import { Salon } from '@/types';
 import { useAuth } from '@/lib/auth-unified';
+import { salonKeys } from './useSalons';
 
 export const useSalon = () => {
 	const { user, isLoading: authLoading, isOwner } = useAuth();
 
 	return useQuery<Salon | null>({
-		queryKey: ['salon', 'current'],
+		queryKey: salonKeys.current(),
 		queryFn: async () => {
 			if (!user || !isOwner()) {
 				return null;
@@ -31,11 +32,12 @@ export const useSalon = () => {
 			}
 		},
 		enabled: !authLoading && !!user && isOwner(),
-		staleTime: 0, // Всегда считать данные устаревшими
-		gcTime: 10 * 60 * 1000, // 10 минут (gcTime вместо cacheTime)
-		retry: 1, // Одна попытка вместо двух
+		staleTime: 5 * 60 * 1000, // 5 минут - данные салона меняются редко
+		gcTime: 30 * 60 * 1000, // 30 минут в кеше
+		retry: 1,
 		retryDelay: 500,
-		refetchOnMount: true, // Всегда перезагружать при монтировании
+		refetchOnMount: false, // Не перезагружать если данные свежие
+		refetchOnWindowFocus: false, // Не перезагружать при фокусе окна
 	});
 };
 

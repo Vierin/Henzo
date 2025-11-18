@@ -113,7 +113,7 @@ export default function MarketingPage() {
 	}
 
 	return (
-		<div className="px-0 sm:px-3 lg:px-8">
+		<div className="px-4 sm:px-3 lg:px-8 max-w-7xl mx-auto">
 			<div className="max-w-4xl mx-auto">
 				{/* Header */}
 				<div className="text-center mb-8 md:mb-12">

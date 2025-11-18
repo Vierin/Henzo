@@ -189,6 +189,39 @@ export interface Translations {
 		vietnamese: string;
 		english: string;
 	};
+
+	// Auth
+	auth: {
+		signInTitle: string;
+		signInSubtitle: string;
+		signUpTitle: string;
+		signUpSubtitle: string;
+		emailAddress: string;
+		password: string;
+		rememberMe: string;
+		forgotPassword: string;
+		signIn: string;
+		signUp: string;
+		orContinueWith: string;
+		dontHaveAccount: string;
+		signUpAsClient: string;
+		alreadyHaveAccount: string;
+		areYouSalonOwner: string;
+		registerBusinessAccount: string;
+		fullName: string;
+		phoneNumber: string;
+		confirmPassword: string;
+		createAccount: string;
+		welcomeBack: string;
+		registrationSuccessful: string;
+		checkEmail: string;
+		passwordsDoNotMatch: string;
+		passwordTooShort: string;
+		fillAllFields: string;
+		registrationFailed: string;
+		signInFailed: string;
+		googleSignInFailed: string;
+	};
 }
 
 export const translations: Record<string, Translations> = {
@@ -386,6 +419,42 @@ export const translations: Record<string, Translations> = {
 			branding: 'Thương hiệu',
 			services: 'Dịch vụ',
 			staff: 'Nhân viên',
+		},
+
+		// Auth
+		auth: {
+			signInTitle: 'Đăng nhập vào tài khoản của bạn',
+			signInSubtitle:
+				'Truy cập quản lý salon, bảng điều khiển khách hàng hoặc bảng quản trị',
+			signUpTitle: 'Tạo tài khoản khách hàng',
+			signUpSubtitle:
+				'Tham gia với chúng tôi để đặt dịch vụ làm đẹp và chăm sóc sức khỏe',
+			emailAddress: 'Địa chỉ email',
+			password: 'Mật khẩu',
+			rememberMe: 'Ghi nhớ đăng nhập',
+			forgotPassword: 'Quên mật khẩu?',
+			signIn: 'Đăng nhập',
+			signUp: 'Đăng ký',
+			orContinueWith: 'Hoặc tiếp tục với',
+			dontHaveAccount: 'Chưa có tài khoản?',
+			signUpAsClient: 'Đăng ký làm khách hàng',
+			alreadyHaveAccount: 'Đã có tài khoản?',
+			areYouSalonOwner: 'Bạn là chủ salon?',
+			registerBusinessAccount: 'Đăng ký tài khoản doanh nghiệp →',
+			fullName: 'Họ tên',
+			phoneNumber: 'Số điện thoại',
+			confirmPassword: 'Xác nhận mật khẩu',
+			createAccount: 'Tạo tài khoản',
+			welcomeBack: 'Chào mừng trở lại!',
+			registrationSuccessful:
+				'Đăng ký thành công! Vui lòng kiểm tra email để xác minh tài khoản của bạn.',
+			checkEmail: 'Kiểm tra email',
+			passwordsDoNotMatch: 'Mật khẩu không khớp',
+			passwordTooShort: 'Mật khẩu phải có ít nhất 6 ký tự',
+			fillAllFields: 'Vui lòng điền vào tất cả các trường bắt buộc',
+			registrationFailed: 'Đăng ký thất bại',
+			signInFailed: 'Đăng nhập thất bại',
+			googleSignInFailed: 'Đăng nhập bằng Google thất bại',
 		},
 
 		// Language selector
@@ -592,6 +661,40 @@ export const translations: Record<string, Translations> = {
 			staff: 'Staff',
 		},
 
+		// Auth
+		auth: {
+			signInTitle: 'Sign in to your account',
+			signInSubtitle: 'Access your salon management, client dashboard',
+			signUpTitle: 'Create your client account',
+			signUpSubtitle: 'Join us to book beauty and wellness services',
+			emailAddress: 'Email address',
+			password: 'Password',
+			rememberMe: 'Remember me',
+			forgotPassword: 'Forgot your password?',
+			signIn: 'Sign in',
+			signUp: 'Sign up',
+			orContinueWith: 'Or continue with',
+			dontHaveAccount: "Don't have an account?",
+			signUpAsClient: 'Sign up as client',
+			alreadyHaveAccount: 'Already have an account?',
+			areYouSalonOwner: 'Are you a salon owner?',
+			registerBusinessAccount: 'Register your business account →',
+			fullName: 'Full Name',
+			phoneNumber: 'Phone Number',
+			confirmPassword: 'Confirm Password',
+			createAccount: 'Create Account',
+			welcomeBack: 'Welcome back!',
+			registrationSuccessful:
+				'Registration successful! Please check your email to verify your account.',
+			checkEmail: 'Check email',
+			passwordsDoNotMatch: 'Passwords do not match',
+			passwordTooShort: 'Password must be at least 6 characters',
+			fillAllFields: 'Please fill in all required fields',
+			registrationFailed: 'Registration failed',
+			signInFailed: 'Failed to sign in',
+			googleSignInFailed: 'Failed to sign in with Google',
+		},
+
 		// Language selector
 		language: {
 			selectLanguage: 'Select Language',
@@ -793,6 +896,41 @@ export const translations: Record<string, Translations> = {
 			branding: 'Брендинг',
 			services: 'Услуги',
 			staff: 'Персонал',
+		},
+
+		// Auth
+		auth: {
+			signInTitle: 'Войдите в свой аккаунт',
+			signInSubtitle: 'Доступ к управлению салоном, панели клиента',
+			signUpTitle: 'Создайте аккаунт клиента',
+			signUpSubtitle:
+				'Присоединяйтесь к нам, чтобы бронировать услуги красоты и здоровья',
+			emailAddress: 'Адрес электронной почты',
+			password: 'Пароль',
+			rememberMe: 'Запомнить меня',
+			forgotPassword: 'Забыли пароль?',
+			signIn: 'Войти',
+			signUp: 'Зарегистрироваться',
+			orContinueWith: 'Или продолжить с',
+			dontHaveAccount: 'Нет аккаунта?',
+			signUpAsClient: 'Зарегистрироваться как клиент',
+			alreadyHaveAccount: 'Уже есть аккаунт?',
+			areYouSalonOwner: 'Вы владелец салона?',
+			registerBusinessAccount: 'Зарегистрировать бизнес-аккаунт →',
+			fullName: 'Полное имя',
+			phoneNumber: 'Номер телефона',
+			confirmPassword: 'Подтвердите пароль',
+			createAccount: 'Создать аккаунт',
+			welcomeBack: 'С возвращением!',
+			registrationSuccessful:
+				'Регистрация успешна! Пожалуйста, проверьте свою электронную почту для подтверждения аккаунта.',
+			checkEmail: 'Проверьте почту',
+			passwordsDoNotMatch: 'Пароли не совпадают',
+			passwordTooShort: 'Пароль должен содержать не менее 6 символов',
+			fillAllFields: 'Пожалуйста, заполните все обязательные поля',
+			registrationFailed: 'Регистрация не удалась',
+			signInFailed: 'Не удалось войти',
+			googleSignInFailed: 'Не удалось войти через Google',
 		},
 
 		// Language selector
