@@ -1,11 +1,25 @@
+'use client';
+
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { Category } from '@/constants/categories';
+import { useTranslation } from '@/contexts/LanguageContext';
 
 interface CategoryCardProps {
 	category: Category;
 	className?: string;
 }
+
+const categoryTranslationMap: Record<
+	string,
+	keyof ReturnType<typeof useTranslation>['categories']
+> = {
+	'hair-barber': 'hairBarber',
+	'massage-spa': 'massageSpa',
+	'manicure-pedicure': 'manicurePedicure',
+	'cosmetic-medicine': 'cosmeticMedicine',
+	'other-services': 'otherServices',
+};
 
 export default function CategoryCard({
 	category,
@@ -13,6 +27,20 @@ export default function CategoryCard({
 }: CategoryCardProps) {
 	const params = useParams();
 	const locale = (params as any)?.locale as string | undefined;
+	const t = useTranslation();
+	const translationKey = categoryTranslationMap[category.slug];
+	const translatedName = translationKey
+		? t.categories[translationKey]
+		: category.name;
+
+	let translatedDescription: string | undefined;
+	if (translationKey) {
+		const descKey = `${translationKey}Description` as keyof typeof t.categories;
+		translatedDescription = t.categories[descKey] as string;
+	} else {
+		translatedDescription = category.description;
+	}
+
 	return (
 		<Link
 			href={
@@ -24,11 +52,11 @@ export default function CategoryCard({
 		>
 			<div className="p-8 text-center">
 				<h3 className="text-xl font-semibold text-gray-900 mb-2 group-hover:text-red-500 transition-colors">
-					{category.name}
+					{translatedName}
 				</h3>
-				{category.description && (
+				{translatedDescription && (
 					<p className="text-gray-600 text-sm leading-relaxed">
-						{category.description}
+						{translatedDescription}
 					</p>
 				)}
 			</div>

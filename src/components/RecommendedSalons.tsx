@@ -3,7 +3,6 @@
 import { useFeaturedSalons } from '@/hooks/useSalonPreview';
 import { useSalonSlug } from '@/hooks/useSalonSlug';
 import { supabase } from '@/lib/supabase';
-import LoadingSpinner from './LoadingSpinner';
 import ErrorDisplay from './ErrorDisplay';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -75,7 +74,46 @@ export default function RecommendedSalons() {
 				</header>
 
 				{loading && salons.length === 0 ? (
-					<LoadingSpinner message="Loading salons..." />
+					<div className="px-6">
+						{/* Desktop skeleton */}
+						<div className="hidden md:grid md:grid-cols-3 gap-6">
+							{[1, 2, 3].map((i) => (
+								<div
+									key={i}
+									className="bg-white rounded-2xl overflow-hidden shadow-md animate-pulse"
+								>
+									<div className="h-[15rem] bg-gray-200"></div>
+									<div className="p-5">
+										<div className="h-6 bg-gray-200 rounded mb-2"></div>
+										<div className="h-4 bg-gray-200 rounded w-2/3 mb-8"></div>
+										<div className="h-4 bg-gray-200 rounded w-1/3 ml-auto"></div>
+									</div>
+								</div>
+							))}
+						</div>
+						{/* Mobile skeleton */}
+						<div className="md:hidden overflow-x-auto scrollbar-hide pb-2">
+							<div className="flex gap-4" style={{ width: 'max-content' }}>
+								{[1, 2, 3].map((i) => (
+									<div
+										key={i}
+										className="bg-white rounded-2xl overflow-hidden shadow-md animate-pulse flex-shrink-0"
+										style={{ width: 'calc(66.666vw - 2rem)' }}
+									>
+										<div className="h-[12rem] bg-gray-200"></div>
+										<div className="p-3">
+											<div className="h-5 bg-gray-200 rounded mb-2"></div>
+											<div className="h-4 bg-gray-200 rounded w-2/3 mb-4"></div>
+											<div className="flex items-center justify-between">
+												<div className="h-4 bg-gray-200 rounded w-1/3"></div>
+												<div className="h-4 bg-gray-200 rounded w-1/4"></div>
+											</div>
+										</div>
+									</div>
+								))}
+							</div>
+						</div>
+					</div>
 				) : error && salons.length === 0 ? (
 					<ErrorDisplay
 						error={error}
@@ -282,7 +320,7 @@ export default function RecommendedSalons() {
 					href="/salons"
 					className="inline-flex items-center gap-2 text-[#ff5b5b] hover:text-[#e04a4a] font-medium"
 				>
-					See all salons
+					{t.homepage.seeAllSalons}
 					<ChevronRight className="w-4 h-4" />
 				</Link>
 			</div>

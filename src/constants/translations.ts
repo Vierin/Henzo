@@ -86,6 +86,7 @@ export interface Translations {
 		toBook: string;
 		free: string;
 		booking: string;
+		seeAllSalons: string;
 	};
 
 	// Salon
@@ -188,6 +189,38 @@ export interface Translations {
 		selectLanguage: string;
 		vietnamese: string;
 		english: string;
+	};
+
+	// Categories
+	categories: {
+		hairBarber: string;
+		hairBarberDescription: string;
+		massageSpa: string;
+		massageSpaDescription: string;
+		manicurePedicure: string;
+		manicurePedicureDescription: string;
+		cosmeticMedicine: string;
+		cosmeticMedicineDescription: string;
+		otherServices: string;
+		otherServicesDescription: string;
+	};
+
+	// Header
+	header: {
+		profile: string;
+		dashboard: string;
+		logout: string;
+		business: string;
+		login: string;
+	};
+
+	// Footer
+	footer: {
+		allRightsReserved: string;
+		aboutUs: string;
+		contact: string;
+		termsOfService: string;
+		privacyPolicy: string;
 	};
 
 	// Auth
@@ -324,6 +357,7 @@ export const translations: Record<string, Translations> = {
 			salonOwnerSubtitle:
 				'Tham gia Henzo và phát triển doanh nghiệp với nền tảng đặt lịch của chúng tôi',
 			learnMore: 'Tìm hiểu thêm',
+			seeAllSalons: 'Xem tất cả salon',
 		},
 
 		// Salon
@@ -463,6 +497,43 @@ export const translations: Record<string, Translations> = {
 			vietnamese: 'Tiếng Việt',
 			english: 'English',
 		},
+
+		// Categories
+		categories: {
+			hairBarber: 'Tóc & Cắt tóc',
+			hairBarberDescription:
+				'Dịch vụ tạo kiểu tóc, cắt tóc, nhuộm tóc và cắt tóc nam chuyên nghiệp',
+			massageSpa: 'Massage & Spa',
+			massageSpaDescription:
+				'Massage thư giãn, liệu pháp spa và dịch vụ chăm sóc sức khỏe',
+			manicurePedicure: 'Làm móng tay & chân',
+			manicurePedicureDescription:
+				'Chăm sóc móng, làm móng tay, làm móng chân và dịch vụ vẽ móng nghệ thuật',
+			cosmeticMedicine: 'Thẩm mỹ y khoa',
+			cosmeticMedicineDescription:
+				'Điều trị thẩm mỹ y khoa, botox, filler và các thủ thuật thẩm mỹ',
+			otherServices: 'Dịch vụ khác',
+			otherServicesDescription:
+				'Các dịch vụ làm đẹp và chăm sóc sức khỏe bổ sung',
+		},
+
+		// Header
+		header: {
+			profile: 'Hồ sơ',
+			dashboard: 'Bảng điều khiển',
+			logout: 'Đăng xuất',
+			business: 'Doanh nghiệp',
+			login: 'Đăng nhập',
+		},
+
+		// Footer
+		footer: {
+			allRightsReserved: '© 2024 Henzo. Bảo lưu mọi quyền.',
+			aboutUs: 'Về chúng tôi',
+			contact: 'Liên hệ',
+			termsOfService: 'Điều khoản dịch vụ',
+			privacyPolicy: 'Chính sách bảo mật',
+		},
 	},
 
 	en: {
@@ -564,6 +635,7 @@ export const translations: Record<string, Translations> = {
 			salonOwnerSubtitle:
 				'Join Henzo and grow your business with our booking platform',
 			learnMore: 'Learn More',
+			seeAllSalons: 'See all salons',
 		},
 
 		// Salon
@@ -701,6 +773,42 @@ export const translations: Record<string, Translations> = {
 			vietnamese: 'Tiếng Việt',
 			english: 'English',
 		},
+
+		// Categories
+		categories: {
+			hairBarber: 'Hair & Barber',
+			hairBarberDescription:
+				'Professional hair styling, cutting, coloring, and barber services',
+			massageSpa: 'Massage & Spa',
+			massageSpaDescription:
+				'Relaxing massages, spa treatments, and wellness services',
+			manicurePedicure: 'Manicure & Pedicure',
+			manicurePedicureDescription:
+				'Nail care, manicures, pedicures, and nail art services',
+			cosmeticMedicine: 'Cosmetic Medicine',
+			cosmeticMedicineDescription:
+				'Medical aesthetic treatments, botox, fillers, and cosmetic procedures',
+			otherServices: 'Other Services',
+			otherServicesDescription: 'Additional beauty and wellness services',
+		},
+
+		// Header
+		header: {
+			profile: 'Profile',
+			dashboard: 'Dashboard',
+			logout: 'Logout',
+			business: 'Business',
+			login: 'Login',
+		},
+
+		// Footer
+		footer: {
+			allRightsReserved: '© 2024 Henzo. All rights reserved.',
+			aboutUs: 'About Us',
+			contact: 'Contact',
+			termsOfService: 'Terms of Service',
+			privacyPolicy: 'Privacy Policy',
+		},
 	},
 
 	ru: {
@@ -736,7 +844,7 @@ export const translations: Record<string, Translations> = {
 			categories: 'Категории',
 			about: 'О нас',
 			contact: 'Контакты',
-			business: 'Бизнес',
+			business: 'Для бизнеса',
 			login: 'Войти',
 			register: 'Регистрация',
 			logout: 'Выйти',
@@ -801,6 +909,7 @@ export const translations: Record<string, Translations> = {
 			salonOwnerSubtitle:
 				'Присоединяйтесь к Henzo и развивайте бизнес с нашей платформой бронирований',
 			learnMore: 'Узнать больше',
+			seeAllSalons: 'Все салоны',
 		},
 
 		// Salon
@@ -938,6 +1047,42 @@ export const translations: Record<string, Translations> = {
 			selectLanguage: 'Выберите язык',
 			vietnamese: 'Tiếng Việt',
 			english: 'English',
+		},
+
+		// Categories
+		categories: {
+			hairBarber: 'Парикмахерские услуги',
+			hairBarberDescription:
+				'Профессиональная укладка, стрижка, окрашивание и барбершоп услуги',
+			massageSpa: 'Массаж & Спа',
+			massageSpaDescription:
+				'Расслабляющий массаж, спа-процедуры и оздоровительные услуги',
+			manicurePedicure: 'Маникюр & Педикюр',
+			manicurePedicureDescription:
+				'Уход за ногтями, маникюр, педикюр и услуги по дизайну ногтей',
+			cosmeticMedicine: 'Косметология',
+			cosmeticMedicineDescription:
+				'Медицинские эстетические процедуры, ботокс, филлеры и косметические процедуры',
+			otherServices: 'Другие услуги',
+			otherServicesDescription: 'Дополнительные услуги красоты и здоровья',
+		},
+
+		// Header
+		header: {
+			profile: 'Профиль',
+			dashboard: 'Панель',
+			logout: 'Выйти',
+			business: 'Для бизнеса',
+			login: 'Войти',
+		},
+
+		// Footer
+		footer: {
+			allRightsReserved: '© 2024 Henzo. Все права защищены.',
+			aboutUs: 'О нас',
+			contact: 'Контакты',
+			termsOfService: 'Условия использования',
+			privacyPolicy: 'Политика конфиденциальности',
 		},
 	},
 };

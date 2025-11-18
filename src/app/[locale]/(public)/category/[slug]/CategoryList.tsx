@@ -18,6 +18,7 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from '@/components/ui/select';
+import { useTranslation } from '@/contexts/LanguageContext';
 
 interface CategoryListProps {
 	category: {
@@ -28,14 +29,31 @@ interface CategoryListProps {
 	};
 }
 
+const categoryTranslationMap: Record<
+	string,
+	keyof ReturnType<typeof useTranslation>['categories']
+> = {
+	'hair-barber': 'hairBarber',
+	'massage-spa': 'massageSpa',
+	'manicure-pedicure': 'manicurePedicure',
+	'cosmetic-medicine': 'cosmeticMedicine',
+	'other-services': 'otherServices',
+};
+
 export default function CategoryList({ category }: CategoryListProps) {
 	const [sortBy, setSortBy] = useState('name');
 	const [isBookingModalOpen, setIsBookingModalOpen] = useState(false);
 	const [selectedService, setSelectedService] = useState<
 		(ServiceResponseDto & { salonId: string; salonName: string }) | null
 	>(null);
+	const t = useTranslation();
 
 	const { data: salons, isLoading: loading, error } = useSalonsWithServices();
+
+	const translationKey = categoryTranslationMap[category.slug];
+	const translatedName = translationKey
+		? t.categories[translationKey]
+		: category.name;
 
 	const handleBookService = (
 		service: ServiceResponseDto,
@@ -65,7 +83,7 @@ export default function CategoryList({ category }: CategoryListProps) {
 			}
 
 			// Fallback: filter by salon name containing category keywords
-			const categoryKeywords = category.name.toLowerCase().split(' ');
+			const categoryKeywords = translatedName.toLowerCase().split(' ');
 			return categoryKeywords.some(
 				(keyword) =>
 					salon.name.toLowerCase().includes(keyword) ||
@@ -112,7 +130,7 @@ export default function CategoryList({ category }: CategoryListProps) {
 					{/* Category Header with Sort */}
 					<div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 sm:mb-8">
 						<h1 className="text-xl sm:text-2xl font-bold text-gray-900">
-							{category.name} ({filteredSalons.length})
+							{translatedName} ({filteredSalons.length})
 						</h1>
 						<div className="flex gap-2 sm:gap-3">
 							{/* Sort Dropdown */}
@@ -165,11 +183,11 @@ export default function CategoryList({ category }: CategoryListProps) {
 							// No salons found
 							<div className="text-center py-12">
 								<h3 className="text-xl font-semibold text-gray-900 mb-2">
-									No {category.name.toLowerCase()} salons found
+									No {translatedName.toLowerCase()} salons found
 								</h3>
 								<p className="text-gray-600 mb-8">
-									We couldn't find any salons in the {category.name} category at
-									the moment. Check back soon or explore other categories.
+									We couldn't find any salons in the {translatedName} category
+									at the moment. Check back soon or explore other categories.
 								</p>
 								<div className="flex flex-col sm:flex-row gap-4 justify-center">
 									<Link
@@ -204,8 +222,8 @@ export default function CategoryList({ category }: CategoryListProps) {
 					__html: JSON.stringify({
 						'@context': 'https://schema.org',
 						'@type': 'CollectionPage',
-						name: `${category.name} Salons`,
-						description: `Find the best ${category.name.toLowerCase()} salons and services. Professional ${category.name.toLowerCase()} treatments and appointments.`,
+						name: `${translatedName} Salons`,
+						description: `Find the best ${translatedName.toLowerCase()} salons and services. Professional ${translatedName.toLowerCase()} treatments and appointments.`,
 						url: `/category/${category.slug}`,
 						mainEntity: {
 							'@type': 'ItemList',

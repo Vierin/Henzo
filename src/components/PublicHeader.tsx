@@ -12,6 +12,7 @@ import {
 	stripLocaleFromPath,
 	withLocale,
 } from '@/i18n/routing';
+import { useTranslation } from '@/contexts/LanguageContext';
 
 export default function PublicHeader() {
 	const [isLanguageDropdownOpen, setIsLanguageDropdownOpen] = useState(false);
@@ -22,6 +23,7 @@ export default function PublicHeader() {
 	const profileDropdownRef = useRef<HTMLDivElement>(null);
 	const pathname = usePathname();
 	const router = useRouter();
+	const t = useTranslation();
 
 	// Используем новую систему аутентификации
 	const { user, isLoading, isClient, isOwner, isAdmin, logout } = useAuth();
@@ -183,7 +185,9 @@ export default function PublicHeader() {
 											<div className="w-7 h-7 sm:w-8 sm:h-8 bg-gray-100 rounded-full flex items-center justify-center">
 												<User className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-gray-600" />
 											</div>
-											<span className="hidden sm:inline">Profile</span>
+											<span className="hidden sm:inline">
+												{t.header.profile}
+											</span>
 											<ChevronDown
 												className={`w-3 h-3 sm:w-4 sm:h-4 text-gray-500 transition-transform ${
 													showProfileDropdown ? 'rotate-180' : ''
@@ -215,14 +219,14 @@ export default function PublicHeader() {
 													className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
 													onClick={() => setShowProfileDropdown(false)}
 												>
-													Dashboard
+													{t.header.dashboard}
 												</Link>
 												<button
 													onClick={handleLogout}
 													className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 flex items-center gap-2 transition-colors"
 												>
 													<LogOut className="w-4 h-4" />
-													Logout
+													{t.header.logout}
 												</button>
 											</div>
 										)}
@@ -237,7 +241,7 @@ export default function PublicHeader() {
 										)}
 										className="hidden sm:block text-sm text-gray-700 hover:text-[#8B4513] font-medium transition-colors"
 									>
-										Business
+										{t.header.business}
 									</Link>
 									<Link
 										href={withLocale(
@@ -246,7 +250,7 @@ export default function PublicHeader() {
 										)}
 										className="bg-[#ff5b5b] text-white px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg text-xs sm:text-sm font-medium hover:bg-[#e04a4a] transition-colors"
 									>
-										Login
+										{t.header.login}
 									</Link>
 								</>
 							)}

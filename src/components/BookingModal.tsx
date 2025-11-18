@@ -10,6 +10,11 @@ import { useAuthStore } from '@/stores/authStore';
 import toast from 'react-hot-toast';
 import { safeParseDate, parseBookingTimeAsLocal } from '@/utils/date';
 import { formatVND } from '@/utils/currency';
+import { useLanguage } from '@/contexts/LanguageContext';
+import {
+	getLocalizedServiceName,
+	getLocalizedServiceDescription,
+} from '@/utils/serviceLocalization';
 // Swiper imports removed - using native scroll instead
 import { Clock, ChevronDown, ChevronLeft, ChevronRight } from 'lucide-react';
 
@@ -60,6 +65,7 @@ export default function BookingModal({
 	editingBooking,
 	onBookingUpdated,
 }: BookingModalProps) {
+	const { language } = useLanguage();
 	const [selectedDate, setSelectedDate] = useState('');
 	const [selectedTime, setSelectedTime] = useState('');
 	const [selectedStaff, setSelectedStaff] = useState('Any Staff');
@@ -1366,7 +1372,11 @@ export default function BookingModal({
 				staffId: staffId === 'any' ? undefined : staffId,
 				time: bookingDateTime,
 				salonId: currentSalonId,
-				notes: `Booking for ${selectedService?.name}`,
+				notes: `Booking for ${
+					selectedService
+						? getLocalizedServiceName(selectedService, language)
+						: 'service'
+				}`,
 			};
 
 			// Если владелец создает резервацию, добавляем данные клиента
@@ -1404,7 +1414,9 @@ export default function BookingModal({
 				: result.booking?.status || 'PENDING';
 			setBookingSuccess({
 				status: bookingStatus as 'PENDING' | 'CONFIRMED',
-				serviceName: selectedService?.name || '',
+				serviceName: selectedService
+					? getLocalizedServiceName(selectedService, language)
+					: '',
 				date: selectedDate,
 				time: selectedTime,
 			});
@@ -1474,7 +1486,11 @@ export default function BookingModal({
 						serviceId: selectedService?.id,
 						staffId: staffId === 'any' ? undefined : staffId,
 						time: bookingDateTime,
-						notes: `Updated booking for ${selectedService?.name}`,
+						notes: `Updated booking for ${
+							selectedService
+								? getLocalizedServiceName(selectedService, language)
+								: 'service'
+						}`,
 					}),
 				}
 			);
@@ -1706,11 +1722,20 @@ export default function BookingModal({
 												>
 													<div className="flex-1 min-w-0">
 														<div className="text-base sm:text-lg font-semibold text-gray-900 truncate">
-															{selectedService?.name || 'Select a service'}
+															{selectedService
+																? getLocalizedServiceName(
+																		selectedService,
+																		language
+																	)
+																: 'Select a service'}
 														</div>
 														<div className="text-xs sm:text-sm text-gray-600 truncate">
-															{selectedService?.description ||
-																'Choose from available services'}
+															{selectedService
+																? getLocalizedServiceDescription(
+																		selectedService,
+																		language
+																	) || 'Choose from available services'
+																: 'Choose from available services'}
 														</div>
 													</div>
 													<ChevronDown
@@ -1722,28 +1747,41 @@ export default function BookingModal({
 
 												{isServiceDropdownOpen && (
 													<div className="absolute z-20 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-auto scrollbar-hide">
-														{services.map((serviceOption) => (
-															<button
-																key={serviceOption.id}
-																type="button"
-																onClick={() => {
-																	setSelectedService(serviceOption);
-																	setIsServiceDropdownOpen(false);
-																}}
-																className="w-full text-left px-4 py-3 hover:bg-gray-50 border-b border-gray-100 last:border-b-0"
-															>
-																<div className="font-medium text-gray-900">
-																	{serviceOption.name}
-																</div>
-																<div className="text-sm text-gray-600">
-																	{serviceOption.description}
-																</div>
-																<div className="text-sm text-gray-500 mt-1">
-																	{serviceOption.duration} min •{' '}
-																	{formatVND(serviceOption.price)}
-																</div>
-															</button>
-														))}
+														{services.map((serviceOption) => {
+															const localizedName = getLocalizedServiceName(
+																serviceOption,
+																language
+															);
+															const localizedDescription =
+																getLocalizedServiceDescription(
+																	serviceOption,
+																	language
+																);
+															return (
+																<button
+																	key={serviceOption.id}
+																	type="button"
+																	onClick={() => {
+																		setSelectedService(serviceOption);
+																		setIsServiceDropdownOpen(false);
+																	}}
+																	className="w-full text-left px-4 py-3 hover:bg-gray-50 border-b border-gray-100 last:border-b-0"
+																>
+																	<div className="font-medium text-gray-900">
+																		{localizedName}
+																	</div>
+																	{localizedDescription && (
+																		<div className="text-sm text-gray-600">
+																			{localizedDescription}
+																		</div>
+																	)}
+																	<div className="text-sm text-gray-500 mt-1">
+																		{serviceOption.duration} min •{' '}
+																		{formatVND(serviceOption.price)}
+																	</div>
+																</button>
+															);
+														})}
 													</div>
 												)}
 											</div>

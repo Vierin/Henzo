@@ -16,6 +16,10 @@ import {
 	useIsFavorite,
 } from '@/hooks/useFavorites';
 import { useAuthStore } from '@/stores/authStore';
+import { useLanguage } from '@/contexts/LanguageContext';
+import {
+	getLocalizedServiceName,
+} from '@/utils/serviceLocalization';
 
 interface SalonCardProps {
 	salon: Salon;
@@ -39,6 +43,7 @@ export default function SalonCard({
 	const router = useRouter();
 	const { getSalonUrl } = useSalonSlug();
 	const { user } = useAuthStore();
+	const { language } = useLanguage();
 	const isFavorite = useIsFavorite(salon.id, !!user);
 	const addFavoriteMutation = useAddFavorite();
 	const removeFavoriteMutation = useRemoveFavorite();
@@ -169,15 +174,17 @@ export default function SalonCard({
 					<div className="flex flex-col md:flex-row md:justify-between gap-2 md:gap-3">
 						{salon.services
 							.slice(0, 3)
-							.map((service: Service, index: number) => (
-								<div
-									key={service.id || index}
-									className="flex items-center w-full md:max-w-[33.33%] justify-between py-3 px-3 sm:px-4 bg-gray-50 rounded-lg gap-2"
-								>
-									<div className="flex-1 min-w-0">
-										<span className="text-sm font-medium text-gray-900 block truncate">
-											{service.name}
-										</span>
+							.map((service: Service, index: number) => {
+								const localizedName = getLocalizedServiceName(service, language);
+								return (
+									<div
+										key={service.id || index}
+										className="flex items-center w-full md:max-w-[33.33%] justify-between py-3 px-3 sm:px-4 bg-gray-50 rounded-lg gap-2"
+									>
+										<div className="flex-1 min-w-0">
+											<span className="text-sm font-medium text-gray-900 block truncate">
+												{localizedName}
+											</span>
 										<div className="flex items-center gap-2 sm:gap-4 mt-1">
 											<span className="text-xs text-gray-500 flex items-center gap-1 flex-shrink-0">
 												<Clock8 className="w-3.5 h-3.5" /> {service.duration}{' '}

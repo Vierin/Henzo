@@ -30,7 +30,11 @@ import {
 	useIsFavorite,
 } from '@/hooks/useFavorites';
 import { useAuthStore } from '@/stores/authStore';
-import { useTranslation } from '@/contexts/LanguageContext';
+import { useTranslation, useLanguage } from '@/contexts/LanguageContext';
+import {
+	getLocalizedServiceName,
+	getLocalizedServiceDescription,
+} from '@/utils/serviceLocalization';
 
 interface SalonDetailClientProps {
 	salon: Salon;
@@ -38,6 +42,7 @@ interface SalonDetailClientProps {
 
 export default function SalonDetailClient({ salon }: SalonDetailClientProps) {
 	const t = useTranslation();
+	const { language } = useLanguage();
 	// Debug log for salon data
 	console.log('SalonDetailClient received salon:', {
 		salonId: salon.id,
@@ -311,52 +316,60 @@ export default function SalonDetailClient({ salon }: SalonDetailClientProps) {
 													{category}
 												</h2>
 												<div className="space-y-4">
-													{services.map((service) => (
-														<article
-															key={service.id}
-															className="bg-white rounded-lg px-3 py-4 md:p-6 hover:shadow-md transition-shadow border border-gray-100"
-														>
-															<div className="flex justify-between items-start">
-																<div className="flex-1">
-																	<h3 className="text-md md:text-xl font-semibold text-gray-900 mb-2">
-																		{service.name}
-																	</h3>
-																	{service.description && (
-																		<p className="text-gray-600 mb-3 hidden md:block">
-																			{service.description}
-																		</p>
-																	)}
-																	<div className="flex items-center gap-4 text-sm md:text-md text-gray-500">
-																		<span className="flex gap-1">
-																			<span className="sr-only">
-																				Duration:{' '}
+													{services.map((service) => {
+														const localizedName = getLocalizedServiceName(
+															service,
+															language
+														);
+														const localizedDescription =
+															getLocalizedServiceDescription(service, language);
+														return (
+															<article
+																key={service.id}
+																className="bg-white rounded-lg px-3 py-4 md:p-6 hover:shadow-md transition-shadow border border-gray-100"
+															>
+																<div className="flex justify-between items-start">
+																	<div className="flex-1">
+																		<h3 className="text-md md:text-xl font-semibold text-gray-900 mb-2">
+																			{localizedName}
+																		</h3>
+																		{localizedDescription && (
+																			<p className="text-gray-600 mb-3 hidden md:block">
+																				{localizedDescription}
+																			</p>
+																		)}
+																		<div className="flex items-center gap-4 text-sm md:text-md text-gray-500">
+																			<span className="flex gap-1">
+																				<span className="sr-only">
+																					Duration:{' '}
+																				</span>
+																				<Clock className="w-4 h-4 md:w-5 md:h-5 md:mt-[2px]" />{' '}
+																				<span className="text-xs md:text-sm">
+																					{service.duration} min
+																				</span>
 																			</span>
-																			<Clock className="w-4 h-4 md:w-5 md:h-5 md:mt-[2px]" />{' '}
-																			<span className="text-xs md:text-sm">
-																				{service.duration} min
+																			<span className="text-[#ff5b5b] font-semibold text-sm md:text-lg">
+																				<span className="sr-only">Price: </span>
+																				{formatVND(service.price)}
 																			</span>
-																		</span>
-																		<span className="text-[#ff5b5b] font-semibold text-sm md:text-lg">
-																			<span className="sr-only">Price: </span>
-																			{formatVND(service.price)}
-																		</span>
+																		</div>
 																	</div>
+																	<button
+																		onClick={() => handleBookService(service)}
+																		className="ml-4 bg-[#ff5b5b] text-white px-4 md:px-6 md:py-2 py-1 rounded-lg font-medium hover:bg-[#e04a4a] transition-colors focus:outline-none focus:ring-2 focus:ring-[#ff5b5b] focus:ring-offset-2 text-sm md:text-base"
+																		aria-label={`${t.salon.bookNow} ${localizedName}`}
+																	>
+																		<span className="md:hidden">
+																			{t.salon.bookNow}
+																		</span>
+																		<span className="hidden md:inline">
+																			{t.salon.bookNow}
+																		</span>
+																	</button>
 																</div>
-																<button
-																	onClick={() => handleBookService(service)}
-																	className="ml-4 bg-[#ff5b5b] text-white px-4 md:px-6 md:py-2 py-1 rounded-lg font-medium hover:bg-[#e04a4a] transition-colors focus:outline-none focus:ring-2 focus:ring-[#ff5b5b] focus:ring-offset-2 text-sm md:text-base"
-																	aria-label={`${t.salon.bookNow} ${service.name}`}
-																>
-																	<span className="md:hidden">
-																		{t.salon.bookNow}
-																	</span>
-																	<span className="hidden md:inline">
-																		{t.salon.bookNow}
-																	</span>
-																</button>
-															</div>
-														</article>
-													))}
+															</article>
+														);
+													})}
 												</div>
 											</section>
 										)
