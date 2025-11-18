@@ -65,10 +65,27 @@ export class ApiClient {
 			const errorData = await response.json().catch(() => ({}));
 			// NestJS returns errors as { message: string, statusCode: number }
 			// But some endpoints might return { error: string }
-			const errorMessage =
+			// For validation errors, extract specific constraint messages
+			let errorMessage =
 				errorData.message ||
 				errorData.error ||
 				`HTTP error! status: ${response.status}`;
+
+			// If it's a validation error, extract the first constraint message
+			if (
+				errorData.errors &&
+				Array.isArray(errorData.errors) &&
+				errorData.errors.length > 0
+			) {
+				const firstError = errorData.errors[0];
+				if (firstError.constraints) {
+					const constraintKeys = Object.keys(firstError.constraints);
+					if (constraintKeys.length > 0) {
+						errorMessage = firstError.constraints[constraintKeys[0]];
+					}
+				}
+			}
+
 			throw new Error(errorMessage);
 		}
 

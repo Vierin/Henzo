@@ -101,7 +101,13 @@ export default function CalendarClient() {
 			const bookingsToUpdate: string[] = [];
 
 			bookings.forEach((booking) => {
-				if (booking.status === 'CONFIRMED') {
+				// Only auto-complete CONFIRMED bookings that have passed
+				// Don't change NOSHOW or already COMPLETED bookings
+				if (
+					booking.status === 'CONFIRMED' &&
+					booking.status !== 'NOSHOW' &&
+					booking.status !== 'COMPLETED'
+				) {
 					const bookingTime = safeParseDate(booking.time);
 					if (!bookingTime) return;
 
@@ -228,6 +234,23 @@ export default function CalendarClient() {
 			} catch (err) {
 				const errorMessage =
 					err instanceof Error ? err.message : 'Failed to reject booking';
+				toast.error(errorMessage);
+			}
+		},
+		[fetchBookings]
+	);
+
+	const handleMarkAsNoShow = useCallback(
+		async (bookingId: string) => {
+			try {
+				await apiClient.put(`/bookings/${bookingId}`, { status: 'NOSHOW' });
+				toast.success('Booking marked as No-Show');
+				fetchBookings();
+			} catch (err) {
+				const errorMessage =
+					err instanceof Error
+						? err.message
+						: 'Failed to mark booking as No-Show';
 				toast.error(errorMessage);
 			}
 		},
@@ -591,6 +614,7 @@ export default function CalendarClient() {
 				isOpen={isBookingDetailsModalOpen}
 				booking={viewingBooking}
 				onClose={handleBookingDetailsModalClose}
+				onMarkAsNoShow={handleMarkAsNoShow}
 				onEdit={handleEditFromDetails}
 				onCancel={handleCancelBooking}
 			/>

@@ -106,7 +106,7 @@ export interface Booking {
 	serviceId: string;
 	staffId?: string;
 	time: string;
-	status: 'PENDING' | 'CONFIRMED' | 'CANCELED' | 'COMPLETED';
+	status: 'PENDING' | 'CONFIRMED' | 'CANCELED' | 'COMPLETED' | 'NOSHOW';
 	notes?: string;
 	createdAt: string;
 	service?: Service;

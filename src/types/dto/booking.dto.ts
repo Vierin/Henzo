@@ -5,6 +5,7 @@ export enum BookingStatus {
 	CONFIRMED = 'CONFIRMED',
 	COMPLETED = 'COMPLETED',
 	CANCELED = 'CANCELED',
+	NOSHOW = 'NOSHOW',
 }
 
 export interface CreateBookingDto {

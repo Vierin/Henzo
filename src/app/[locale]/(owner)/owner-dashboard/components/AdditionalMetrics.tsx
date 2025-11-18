@@ -11,16 +11,27 @@ interface AdditionalMetricsProps {
 export default function AdditionalMetrics({
 	bookings,
 }: AdditionalMetricsProps) {
-	// Calculate No-Show Rate
-	const totalBookings = bookings.filter(
-		(b) => b.status === 'CONFIRMED' || b.status === 'COMPLETED'
+	// Calculate No-Show Rate - only for past bookings
+	const now = new Date();
+	const pastBookings = bookings.filter((b) => {
+		const bookingTime = new Date(b.time);
+		return bookingTime < now;
+	});
+
+	// Count bookings that could result in no-show (CONFIRMED, COMPLETED, or NOSHOW)
+	const totalPastBookings = pastBookings.filter(
+		(b) =>
+			b.status === 'CONFIRMED' ||
+			b.status === 'COMPLETED' ||
+			b.status === 'NOSHOW'
 	).length;
-	const completedBookings = bookings.filter(
-		(b) => b.status === 'COMPLETED'
+	// Count actual no-shows (status = NOSHOW)
+	const noShowCount = pastBookings.filter(
+		(b) => b.status === 'NOSHOW'
 	).length;
 	const noShowRate =
-		totalBookings > 0
-			? Math.round(((totalBookings - completedBookings) / totalBookings) * 100)
+		totalPastBookings > 0
+			? Math.round((noShowCount / totalPastBookings) * 100)
 			: 0;
 
 	// Calculate Repeat Clients
@@ -52,7 +63,7 @@ export default function AdditionalMetrics({
 		{
 			title: 'No-Show Rate',
 			value: `${noShowRate}%`,
-			subtitle: `${totalBookings - completedBookings} missed`,
+			subtitle: `${noShowCount} missed`,
 			icon: <AlertCircle className="w-6 h-6" />,
 			color: noShowRate > 20 ? 'text-red-600' : 'text-yellow-600',
 			bgColor: noShowRate > 20 ? 'bg-red-50' : 'bg-yellow-50',

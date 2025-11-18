@@ -9,6 +9,7 @@ interface BookingDetailsModalProps {
 	onClose: () => void;
 	onEdit?: (booking: Booking) => void;
 	onCancel?: (bookingId: string) => void;
+	onMarkAsNoShow?: (bookingId: string) => void;
 }
 
 export default function BookingDetailsModal({
@@ -17,6 +18,7 @@ export default function BookingDetailsModal({
 	onClose,
 	onEdit,
 	onCancel,
+	onMarkAsNoShow,
 }: BookingDetailsModalProps) {
 	if (!isOpen || !booking) return null;
 
@@ -46,6 +48,12 @@ export default function BookingDetailsModal({
 						Cancelled
 					</span>
 				);
+			case 'NOSHOW':
+				return (
+					<span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-orange-100 text-orange-800">
+						No-Show
+					</span>
+				);
 			default:
 				return (
 					<span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
@@ -56,9 +64,12 @@ export default function BookingDetailsModal({
 	};
 
 	const canEdit =
-		booking.status !== 'CANCELED' && booking.status !== 'COMPLETED';
+		booking.status !== 'CANCELED' &&
+		booking.status !== 'COMPLETED' &&
+		booking.status !== 'NOSHOW';
 	const canCancel =
 		booking.status === 'CONFIRMED' || booking.status === 'PENDING';
+	const canMarkAsNoShow = booking.status === 'COMPLETED';
 
 	return (
 		<div
@@ -222,6 +233,23 @@ export default function BookingDetailsModal({
 							className="px-3 py-1.5 text-xs font-medium text-white bg-red-600 rounded-lg hover:bg-red-700 transition-colors"
 						>
 							Cancel
+						</button>
+					)}
+					{canMarkAsNoShow && onMarkAsNoShow && (
+						<button
+							onClick={() => {
+								if (
+									confirm(
+										'Are you sure you want to mark this booking as No-Show?'
+									)
+								) {
+									onMarkAsNoShow(booking.id);
+									onClose();
+								}
+							}}
+							className="px-3 py-1.5 text-xs font-medium text-white bg-orange-600 rounded-lg hover:bg-orange-700 transition-colors"
+						>
+							Mark as No-Show
 						</button>
 					)}
 				</div>

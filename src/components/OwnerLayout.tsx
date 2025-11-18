@@ -3,6 +3,7 @@
 import { ReactNode, useState } from 'react';
 import OwnerHeader from './OwnerHeader';
 import OwnerSidebar from './OwnerSidebar';
+import FeedbackButton from './FeedbackButton';
 import { Menu, X } from 'lucide-react';
 
 interface OwnerLayoutProps {
@@ -70,6 +71,9 @@ export default function OwnerLayout({ children }: OwnerLayoutProps) {
 					</main>
 				</div>
 			</div>
+
+			{/* Feedback Button */}
+			<FeedbackButton />
 		</div>
 	);
 }

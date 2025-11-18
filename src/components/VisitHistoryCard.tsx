@@ -82,10 +82,12 @@ export default function VisitHistoryCard({
 				return { text: 'Pending', className: 'bg-yellow-100 text-yellow-800' };
 			case 'CANCELED':
 				return { text: 'Canceled', className: 'bg-red-100 text-red-800' };
-			case 'COMPLETED':
-				return { text: 'Completed', className: 'bg-blue-100 text-blue-800' };
-			default:
-				return null;
+		case 'COMPLETED':
+			return { text: 'Completed', className: 'bg-blue-100 text-blue-800' };
+		case 'NOSHOW':
+			return { text: 'No-Show', className: 'bg-orange-100 text-orange-800' };
+		default:
+			return null;
 		}
 	};
 
