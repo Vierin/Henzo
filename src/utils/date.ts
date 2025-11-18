@@ -60,12 +60,14 @@ export function formatDateShort(
 
 /**
  * Format a time string for display, with fallback for invalid dates
+ * Uses parseBookingTimeAsLocal to avoid timezone conversion issues
  */
 export function formatTimeSafe(
 	dateString: string | null | undefined,
 	fallback: string = 'Time not available'
 ): string {
-	const date = safeParseDate(dateString);
+	// Use parseBookingTimeAsLocal to treat UTC times as local times
+	const date = parseBookingTimeAsLocal(dateString) || safeParseDate(dateString);
 	if (!date) return fallback;
 
 	return date.toLocaleTimeString('en-US', {
@@ -98,12 +100,14 @@ export function formatDateTimeSafe(
 
 /**
  * Format date and time separately for booking cards
+ * Uses parseBookingTimeAsLocal to avoid timezone conversion issues
  */
 export function formatBookingDateTime(dateString: string | null | undefined): {
 	date: string;
 	time: string;
 } {
-	const date = safeParseDate(dateString);
+	// Use parseBookingTimeAsLocal to treat UTC times as local times
+	const date = parseBookingTimeAsLocal(dateString) || safeParseDate(dateString);
 	if (!date) {
 		return {
 			date: 'Date not available',
