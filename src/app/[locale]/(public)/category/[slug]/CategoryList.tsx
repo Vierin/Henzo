@@ -25,7 +25,6 @@ interface CategoryListProps {
 		name: string;
 		description?: string;
 		slug: string;
-		icon: string;
 	};
 }
 
@@ -165,9 +164,6 @@ export default function CategoryList({ category }: CategoryListProps) {
 						) : (
 							// No salons found
 							<div className="text-center py-12">
-								<div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-									<span className="text-2xl">{category.icon}</span>
-								</div>
 								<h3 className="text-xl font-semibold text-gray-900 mb-2">
 									No {category.name.toLowerCase()} salons found
 								</h3>

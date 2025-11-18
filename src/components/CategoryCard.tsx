@@ -23,9 +23,6 @@ export default function CategoryCard({
 			className={`group bg-white rounded-xl shadow-md hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 overflow-hidden relative ${className}`}
 		>
 			<div className="p-8 text-center">
-				<div className="text-6xl mb-4 group-hover:scale-110 transition-transform duration-300">
-					{category.icon}
-				</div>
 				<h3 className="text-xl font-semibold text-gray-900 mb-2 group-hover:text-red-500 transition-colors">
 					{category.name}
 				</h3>
