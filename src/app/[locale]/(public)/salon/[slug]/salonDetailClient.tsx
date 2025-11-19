@@ -527,20 +527,11 @@ export default function SalonDetailClient({ salon }: SalonDetailClientProps) {
 									</>
 								) : (
 									<div className="text-center py-12">
-										<div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-											<span
-												className="text-2xl"
-												role="img"
-												aria-label="Beauty services"
-											>
-												💇‍♀️
-											</span>
-										</div>
 										<h3 className="text-xl font-semibold text-gray-900 mb-2">
-											No services available
+											{t.emptyStates.noServicesAvailable}
 										</h3>
 										<p className="text-gray-600">
-											This salon hasn&apos;t added any services yet.
+											{t.emptyStates.noServicesDescription}
 										</p>
 									</div>
 								)}

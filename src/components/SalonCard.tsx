@@ -16,7 +16,7 @@ import {
 	useIsFavorite,
 } from '@/hooks/useFavorites';
 import { useAuthStore } from '@/stores/authStore';
-import { useLanguage } from '@/contexts/LanguageContext';
+import { useLanguage, useTranslation } from '@/contexts/LanguageContext';
 import { getLocalizedServiceName } from '@/utils/serviceLocalization';
 
 interface SalonCardProps {
@@ -42,6 +42,7 @@ export default function SalonCard({
 	const { getSalonUrl } = useSalonSlug();
 	const { user } = useAuthStore();
 	const { language } = useLanguage();
+	const t = useTranslation();
 	const isFavorite = useIsFavorite(salon.id, !!user);
 	const addFavoriteMutation = useAddFavorite();
 	const removeFavoriteMutation = useRemoveFavorite();
@@ -211,7 +212,9 @@ export default function SalonCard({
 				</div>
 			) : (
 				<div className="mt-4 text-center py-4">
-					<p className="text-gray-500 text-sm">No services available</p>
+					<p className="text-gray-500 text-sm">
+						{t.emptyStates.noServicesAvailable}
+					</p>
 				</div>
 			)}
 
