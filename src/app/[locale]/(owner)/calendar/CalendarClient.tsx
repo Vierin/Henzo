@@ -103,11 +103,7 @@ export default function CalendarClient() {
 			bookings.forEach((booking) => {
 				// Only auto-complete CONFIRMED bookings that have passed
 				// Don't change NOSHOW or already COMPLETED bookings
-				if (
-					booking.status === 'CONFIRMED' &&
-					booking.status !== 'NOSHOW' &&
-					booking.status !== 'COMPLETED'
-				) {
+				if (booking.status === 'CONFIRMED') {
 					const bookingTime = safeParseDate(booking.time);
 					if (!bookingTime) return;
 
