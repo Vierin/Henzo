@@ -1,55 +1,52 @@
-import { Shield, Heart, Users, Zap, Award, TrendingUp } from 'lucide-react';
+'use client';
 
-const values = [
-	{
-		icon: Shield,
-		title: 'Trust & Safety',
-		description:
-			'Every salon is verified and reviewed. We prioritize your safety and satisfaction above all.',
-	},
-	{
-		icon: Heart,
-		title: 'Customer First',
-		description:
-			"Your beauty journey matters to us. We're committed to providing exceptional service every step of the way.",
-	},
-	{
-		icon: Users,
-		title: 'Community Driven',
-		description:
-			'We build connections between beauty professionals and clients, fostering a supportive community.',
-	},
-	{
-		icon: Zap,
-		title: 'Innovation',
-		description:
-			'Constantly improving our platform with the latest technology to enhance your experience.',
-	},
-	{
-		icon: Award,
-		title: 'Quality Standards',
-		description:
-			'We partner only with the best professionals who meet our rigorous quality criteria.',
-	},
-	{
-		icon: TrendingUp,
-		title: 'Growth Together',
-		description:
-			'We succeed when our salons and customers thrive. Your growth is our growth.',
-	},
-];
+import { Shield, Heart, Users, Zap, Award, TrendingUp } from 'lucide-react';
+import { useTranslation } from '@/contexts/LanguageContext';
 
 export function ValuesSection() {
+	const t = useTranslation();
+
+	const values = [
+		{
+			icon: Shield,
+			title: t.about.trustSafety,
+			description: t.about.trustSafetyDescription,
+		},
+		{
+			icon: Heart,
+			title: t.about.customerFirst,
+			description: t.about.customerFirstDescription,
+		},
+		{
+			icon: Users,
+			title: t.about.communityDriven,
+			description: t.about.communityDrivenDescription,
+		},
+		{
+			icon: Zap,
+			title: t.about.innovation,
+			description: t.about.innovationDescription,
+		},
+		{
+			icon: Award,
+			title: t.about.qualityStandards,
+			description: t.about.qualityStandardsDescription,
+		},
+		{
+			icon: TrendingUp,
+			title: t.about.growthTogether,
+			description: t.about.growthTogetherDescription,
+		},
+	];
 	return (
 		<section className="py-20 px-4 sm:px-6 lg:px-8 bg-muted/50">
 			<div className="max-w-7xl mx-auto">
 				<div className="text-center mb-16">
 					<h2 className="mb-4 text-foreground text-4xl font-semibold">
-						What We Stand For
+						{t.about.valuesSectionTitle}
 					</h2>
 					<p className="text-muted-foreground max-w-2xl mx-auto text-lg">
-						Our core values guide every decision we make and shape the Henzo
-						experience
+						{t.about.valuesSectionSubtitle}
 					</p>
 				</div>
 

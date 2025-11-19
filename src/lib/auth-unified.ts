@@ -523,6 +523,7 @@ class AuthManager {
 				'/category',
 				'/about',
 				'/contact',
+				'/map',
 			].some((publicRoute) => route.startsWith(publicRoute));
 		}
 

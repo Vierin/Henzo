@@ -24,6 +24,7 @@ export const publicRoutes = [
 	'/salon',
 	'/about',
 	'/contact',
+	'/map',
 	'/auth',
 	'/verify',
 	'/check-email',

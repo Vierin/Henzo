@@ -17,9 +17,7 @@ import {
 } from '@/hooks/useFavorites';
 import { useAuthStore } from '@/stores/authStore';
 import { useLanguage } from '@/contexts/LanguageContext';
-import {
-	getLocalizedServiceName,
-} from '@/utils/serviceLocalization';
+import { getLocalizedServiceName } from '@/utils/serviceLocalization';
 
 interface SalonCardProps {
 	salon: Salon;
@@ -175,7 +173,10 @@ export default function SalonCard({
 						{salon.services
 							.slice(0, 3)
 							.map((service: Service, index: number) => {
-								const localizedName = getLocalizedServiceName(service, language);
+								const localizedName = getLocalizedServiceName(
+									service,
+									language
+								);
 								return (
 									<div
 										key={service.id || index}
@@ -185,26 +186,27 @@ export default function SalonCard({
 											<span className="text-sm font-medium text-gray-900 block truncate">
 												{localizedName}
 											</span>
-										<div className="flex items-center gap-2 sm:gap-4 mt-1">
-											<span className="text-xs text-gray-500 flex items-center gap-1 flex-shrink-0">
-												<Clock8 className="w-3.5 h-3.5" /> {service.duration}{' '}
-												min
-											</span>
-											<span className="text-sm font-semibold text-[#ff5b5b] truncate">
-												{formatVND(service.price)}
-											</span>
+											<div className="flex items-center gap-2 sm:gap-4 mt-1">
+												<span className="text-xs text-gray-500 flex items-center gap-1 flex-shrink-0">
+													<Clock8 className="w-3.5 h-3.5" /> {service.duration}{' '}
+													min
+												</span>
+												<span className="text-sm font-semibold text-[#ff5b5b] truncate">
+													{formatVND(service.price)}
+												</span>
+											</div>
 										</div>
+										{onBookService && (
+											<button
+												onClick={(e) => handleBookService(e, service)}
+												className="bg-[#ff5b5b] text-white px-3 py-1.5 rounded-md text-xs font-medium hover:bg-[#e04a4a] transition-colors flex-shrink-0"
+											>
+												Book
+											</button>
+										)}
 									</div>
-									{onBookService && (
-										<button
-											onClick={(e) => handleBookService(e, service)}
-											className="bg-[#ff5b5b] text-white px-3 py-1.5 rounded-md text-xs font-medium hover:bg-[#e04a4a] transition-colors flex-shrink-0"
-										>
-											Book
-										</button>
-									)}
-								</div>
-							))}
+								);
+							})}
 					</div>
 				</div>
 			) : (

@@ -2,26 +2,26 @@
 
 import { Heart, Users, Target } from 'lucide-react';
 import { ImageWithFallback } from './figma/ImageWithFallback';
+import { useTranslation } from '@/contexts/LanguageContext';
 
 export function AboutHeroSection() {
+	const t = useTranslation();
 	return (
 		<section className="pt-8 pb-20 px-4 sm:px-6 lg:px-8 overflow-hidden">
 			<div className="max-w-7xl mx-auto">
 				<div className="text-center mb-16">
 					<div className="inline-flex items-center gap-2 mb-4 px-4 py-2 bg-accent/50 rounded-full">
 						<Heart className="text-primary fill-primary" size={16} />
-						<span className="text-foreground">Our Story</span>
+						<span className="text-foreground">{t.about.ourStory}</span>
 					</div>
 
-					<h1 className="mb-6 text-foreground tracking-tight max-w-4xl mx-auto text-4xl md:text-5xl font-semibold leading-[1.1]">
-						Making Beauty <span className="text-primary">Accessible</span> for
-						Everyone
-					</h1>
+					<h1
+						className="mb-6 text-foreground tracking-tight max-w-4xl mx-auto text-4xl md:text-5xl font-semibold leading-[1.1]"
+						dangerouslySetInnerHTML={{ __html: t.about.heroTitle }}
+					/>
 
 					<p className="text-muted-foreground max-w-2xl mx-auto text-xl">
-						We're on a mission to connect people with the best beauty
-						professionals in their neighborhood, making self-care easy and
-						affordable.
+						{t.about.heroSubtitle}
 					</p>
 				</div>
 
@@ -38,21 +38,18 @@ export function AboutHeroSection() {
 					{[
 						{
 							icon: Heart,
-							title: 'Our Mission',
-							description:
-								'To empower everyone to look and feel their best by connecting them with trusted beauty professionals.',
+							title: t.about.missionTitle,
+							description: t.about.missionDescription,
 						},
 						{
 							icon: Target,
-							title: 'Our Vision',
-							description:
-								'A world where quality beauty services are accessible, affordable, and just a tap away.',
+							title: t.about.visionTitle,
+							description: t.about.visionDescription,
 						},
 						{
 							icon: Users,
-							title: 'Our Values',
-							description:
-								'Trust, transparency, and community are at the heart of everything we do.',
+							title: t.about.valuesTitle,
+							description: t.about.valuesDescription,
 						},
 					].map((item, index) => (
 						<div

@@ -3,8 +3,10 @@
 import { Button } from './ui/button';
 import { Sparkles } from 'lucide-react';
 import Link from 'next/link';
+import { useTranslation } from '@/contexts/LanguageContext';
 
 export function CTASection() {
+	const t = useTranslation();
 	return (
 		<section className="md:py-20 py-8 px-4 sm:px-6 lg:px-8 bg-muted/50">
 			<div className="max-w-7xl mx-auto">
@@ -31,12 +33,11 @@ export function CTASection() {
 
 					<div className="relative z-10 text-center max-w-3xl mx-auto">
 						<h2 className="mb-6 text-primary-foreground text-2xl md:text-4xl font-semibold leading-tight">
-							Ready to Transform Your Look?
+							{t.about.ctaTitle}
 						</h2>
 
 						<p className="mb-8 text-primary-foreground/90 text-base md:text-xl">
-							Download the Henzo app and get exclusive access to special deals,
-							instant booking, and personalized recommendations.
+							{t.about.ctaSubtitle}
 						</p>
 
 						<div className="flex flex-col sm:flex-row gap-4 justify-center mb-8">
@@ -46,7 +47,7 @@ export function CTASection() {
 									variant="outline"
 									className="gap-2 bg-transparent w-40 mx-auto md:mx-0 md:w-auto text-primary-foreground border-primary-foreground/20 hover:bg-primary-foreground/10 hover:text-primary-foreground"
 								>
-									Book Online
+									{t.about.bookOnline}
 								</Button>
 							</Link>
 						</div>
@@ -60,7 +61,7 @@ export function CTASection() {
 								>
 									<path d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" />
 								</svg>
-								<span>No credit card required</span>
+								<span>{t.about.noCreditCard}</span>
 							</div>
 							<div className="flex items-center gap-2">
 								<svg
@@ -70,7 +71,7 @@ export function CTASection() {
 								>
 									<path d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" />
 								</svg>
-								<span>Free to use</span>
+								<span>{t.about.freeToUse}</span>
 							</div>
 							<div className="flex items-center gap-2">
 								<svg
@@ -80,7 +81,7 @@ export function CTASection() {
 								>
 									<path d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" />
 								</svg>
-								<span>Cancel anytime</span>
+								<span>{t.about.cancelAnytime}</span>
 							</div>
 						</div>
 					</div>

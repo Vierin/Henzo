@@ -3,8 +3,10 @@
 import React, { useState } from 'react';
 import toast from 'react-hot-toast';
 import FAQSection from '@/components/FAQSection';
+import { useTranslation } from '@/contexts/LanguageContext';
 
 export default function ContactPageClient() {
+	const t = useTranslation();
 	const [formData, setFormData] = useState({
 		name: '',
 		email: '',
@@ -41,9 +43,7 @@ export default function ContactPageClient() {
 			const result = await response.json();
 
 			if (response.ok) {
-				toast.success(
-					"Your message has been sent successfully! We'll get back to you soon."
-				);
+				toast.success(t.contact.successMessage);
 				setFormData({ name: '', email: '', message: '' });
 			} else {
 				// Handle validation errors from backend
@@ -53,15 +53,13 @@ export default function ContactPageClient() {
 						.join('; ');
 					toast.error(errorMessages);
 				} else {
-					toast.error(
-						result.message || 'Failed to send message. Please try again.'
-					);
+					toast.error(result.message || t.contact.errorMessage);
 				}
 				console.error('Backend error:', result);
 			}
 		} catch (error) {
 			console.error('Network error:', error);
-			toast.error('Network error. Please check your connection and try again.');
+			toast.error(t.contact.networkError);
 		} finally {
 			setIsSubmitting(false);
 		}
@@ -78,17 +76,16 @@ export default function ContactPageClient() {
 					>
 						<div className="max-w-4xl mx-auto text-center">
 							<p className="text-orange-600 text-sm font-semibold uppercase tracking-wide mb-4">
-								CONTACT US
+								{t.contact.title}
 							</p>
 							<h1
 								id="contact-hero-heading"
 								className="text-4xl md:text-5xl font-bold text-black mb-6"
 							>
-								We're here to help
+								{t.contact.heroTitle}
 							</h1>
 							<p className="text-xl text-gray-600 mb-12">
-								Have a question, comment, or concern? Our team is ready to
-								assist you.
+								{t.contact.heroSubtitle}
 							</p>
 						</div>
 					</section>
@@ -106,11 +103,9 @@ export default function ContactPageClient() {
 										id="contact-form-heading"
 										className="text-2xl font-bold text-black mb-2"
 									>
-										Send us a message
+										{t.contact.formTitle}
 									</h2>
-									<p className="text-gray-600 mb-8">
-										Fill out the form and we'll get back to you.
-									</p>
+									<p className="text-gray-600 mb-8">{t.contact.formSubtitle}</p>
 
 									<form
 										onSubmit={handleSubmit}
@@ -120,7 +115,7 @@ export default function ContactPageClient() {
 									>
 										<div>
 											<label htmlFor="name" className="sr-only">
-												Your name
+												{t.contact.nameLabel}
 											</label>
 											<input
 												type="text"
@@ -128,7 +123,7 @@ export default function ContactPageClient() {
 												name="name"
 												value={formData.name}
 												onChange={handleInputChange}
-												placeholder="Your name"
+												placeholder={t.contact.namePlaceholder}
 												className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent text-gray-500"
 												required
 												disabled={isSubmitting}
@@ -138,7 +133,7 @@ export default function ContactPageClient() {
 										</div>
 										<div>
 											<label htmlFor="email" className="sr-only">
-												Your email
+												{t.contact.emailLabel}
 											</label>
 											<input
 												type="email"
@@ -146,7 +141,7 @@ export default function ContactPageClient() {
 												name="email"
 												value={formData.email}
 												onChange={handleInputChange}
-												placeholder="Your email"
+												placeholder={t.contact.emailPlaceholder}
 												className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent text-gray-500"
 												required
 												disabled={isSubmitting}
@@ -156,7 +151,7 @@ export default function ContactPageClient() {
 										</div>
 										<div>
 											<label htmlFor="message" className="sr-only">
-												Your message
+												{t.contact.messageLabel}
 											</label>
 											<textarea
 												id="message"
@@ -164,7 +159,7 @@ export default function ContactPageClient() {
 												rows={6}
 												value={formData.message}
 												onChange={handleInputChange}
-												placeholder="Your message"
+												placeholder={t.contact.messagePlaceholder}
 												className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent text-gray-500 resize-none"
 												required
 												disabled={isSubmitting}
@@ -178,7 +173,7 @@ export default function ContactPageClient() {
 											className="w-full bg-orange-600 text-white py-3 px-6 rounded-lg font-semibold hover:bg-orange-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
 											aria-describedby="submit-status"
 										>
-											{isSubmitting ? 'Sending...' : 'Send Message'}
+											{isSubmitting ? t.contact.sending : t.contact.sendMessage}
 										</button>
 										<div
 											id="submit-status"
@@ -186,8 +181,8 @@ export default function ContactPageClient() {
 											className="sr-only"
 										>
 											{isSubmitting
-												? 'Sending your message...'
-												: 'Ready to send message'}
+												? t.contact.sendingStatus
+												: t.contact.readyStatus}
 										</div>
 									</form>
 								</div>
@@ -198,10 +193,10 @@ export default function ContactPageClient() {
 										id="contact-info-heading"
 										className="text-2xl font-bold text-black mb-2"
 									>
-										Contact Information
+										{t.contact.contactInfoTitle}
 									</h2>
 									<p className="text-gray-600 mb-8">
-										Reach out to us via email or phone.
+										{t.contact.contactInfoSubtitle}
 									</p>
 									<div
 										className="space-y-8"
@@ -231,10 +226,10 @@ export default function ContactPageClient() {
 											</div>
 											<div>
 												<h3 className="text-lg font-semibold text-black mb-1">
-													Email
+													{t.contact.email}
 												</h3>
 												<p className="text-gray-600 mb-1">
-													For general inquiries
+													{t.contact.emailDescription}
 												</p>
 												<a
 													href="mailto:hello@henzo.app"
@@ -262,11 +257,9 @@ export default function ContactPageClient() {
 									id="faq-heading"
 									className="text-3xl font-bold text-black mb-4"
 								>
-									Frequently Asked Questions
+									{t.contact.faqTitle}
 								</h2>
-								<p className="text-gray-600">
-									Find answers to common questions about Henzo.
-								</p>
+								<p className="text-gray-600">{t.contact.faqSubtitle}</p>
 							</div>
 							<FAQSection />
 						</div>

@@ -12,6 +12,7 @@ import {
 import { generateSalonSlug } from '@/utils/slug';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
+import { useTranslation } from '@/contexts/LanguageContext';
 
 interface SalonSidebarProps {
 	onSalonSelect: (salon: Salon) => void;
@@ -25,6 +26,7 @@ export default function SalonSidebar({
 	mapBounds,
 }: SalonSidebarProps) {
 	const router = useRouter();
+	const t = useTranslation();
 	const [sortBy, setSortBy] = useState('recommended');
 	const { data, isLoading } = useFeaturedSalons(20);
 	const salons = (data as unknown as Salon[]) || [];
@@ -116,13 +118,14 @@ export default function SalonSidebar({
 				<div className="mb-3">
 					<h2 className="text-lg font-semibold text-gray-900">
 						{mapBounds
-							? `Salons in view (${displaySalons.length})`
-							: 'All Salons'}
+							? t.map.salonsInView.replace(
+									'{count}',
+									displaySalons.length.toString()
+								)
+							: t.map.allSalons}
 					</h2>
 					{mapBounds && (
-						<p className="text-sm text-gray-500">
-							Showing salons visible on the map
-						</p>
+						<p className="text-sm text-gray-500">{t.map.showingSalonsInView}</p>
 					)}
 				</div>
 				<div className="relative">
@@ -131,10 +134,10 @@ export default function SalonSidebar({
 						onChange={(e) => setSortBy(e.target.value)}
 						className="appearance-none bg-white border border-gray-300 rounded-lg px-4 py-2 pr-8 w-full focus:ring-2 focus:ring-[#ff5b5b] focus:border-[#ff5b5b] outline-none"
 					>
-						<option value="recommended">Sort by: Recommended</option>
-						<option value="rating">Highest Rated</option>
-						<option value="distance">Nearest</option>
-						<option value="reviews">Most Reviews</option>
+						<option value="recommended">{t.map.sortByRecommended}</option>
+						<option value="rating">{t.map.highestRated}</option>
+						<option value="distance">{t.map.nearest}</option>
+						<option value="reviews">{t.map.mostReviews}</option>
 					</select>
 					<ChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
 				</div>
@@ -149,12 +152,10 @@ export default function SalonSidebar({
 								<MapPin size={48} className="mx-auto" />
 							</div>
 							<h3 className="text-lg font-medium text-gray-900 mb-2">
-								No salons in view
+								{t.map.noSalonsInView}
 							</h3>
 							<p className="text-gray-500">
-								{mapBounds
-									? 'Try zooming out or moving the map to see more salons'
-									: 'Loading salons...'}
+								{mapBounds ? t.map.tryZoomingOut : t.map.loadingSalons}
 							</p>
 						</div>
 					) : (
@@ -224,7 +225,7 @@ export default function SalonSidebar({
 											</span>
 											<span className="text-sm text-gray-500">
 												({salon.reviewCount || salon._count?.reviews || 0}{' '}
-												reviews)
+												{t.salon.reviewsCount})
 											</span>
 										</div>
 
@@ -233,7 +234,7 @@ export default function SalonSidebar({
 											onClick={(e) => handleViewSalon(salon, e)}
 											className="w-full bg-[#fff7f6] text-[#ff5b5b] px-4 py-2 rounded-lg text-sm font-medium hover:bg-[#ffe8e6] transition-colors"
 										>
-											View Salon
+											{t.map.viewSalon}
 										</button>
 									</div>
 								</div>

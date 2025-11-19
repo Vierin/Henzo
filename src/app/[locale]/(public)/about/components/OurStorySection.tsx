@@ -1,61 +1,55 @@
+'use client';
+
 import { ImageWithFallback } from './figma/ImageWithFallback';
 import { CheckCircle2, Lightbulb, Rocket, Target } from 'lucide-react';
-
-const roadmap = [
-	{
-		icon: Lightbulb,
-		title: 'The Problem',
-		description:
-			"Identified the challenge: Vietnamese beauty salons struggle with online booking, while clients can't easily find and compare services.",
-	},
-	{
-		icon: Rocket,
-		title: 'Building MVP',
-		description:
-			'Developed core platform: salon profiles, service listings, online booking system, and review functionality.',
-	},
-	{
-		icon: Target,
-		title: 'Beta Launch',
-		description: 'Launching beta with first partner salons in Da Nang.',
-	},
-	{
-		icon: CheckCircle2,
-		title: 'Vision',
-		description:
-			'Scale to 100+ salons, mobile app, loyalty programs, and advanced analytics for salon owners.',
-	},
-];
+import { useTranslation } from '@/contexts/LanguageContext';
 
 export function OurStorySection() {
+	const t = useTranslation();
+
+	const roadmap = [
+		{
+			icon: Lightbulb,
+			title: t.about.roadmapProblem,
+			description: t.about.roadmapProblemDescription,
+		},
+		{
+			icon: Rocket,
+			title: t.about.roadmapMVP,
+			description: t.about.roadmapMVPDescription,
+		},
+		{
+			icon: Target,
+			title: t.about.roadmapBeta,
+			description: t.about.roadmapBetaDescription,
+		},
+		{
+			icon: CheckCircle2,
+			title: t.about.roadmapVision,
+			description: t.about.roadmapVisionDescription,
+		},
+	];
 	return (
 		<section className="py-20 px-4 sm:px-6 lg:px-8 bg-muted/50">
 			<div className="max-w-7xl mx-auto">
 				<div className="grid lg:grid-cols-2 gap-12 items-center mb-20">
 					<div>
 						<h2 className="mb-6 text-foreground text-4xl font-semibold leading-tight">
-							How It All Started
+							{t.about.howItStartedTitle}
 						</h2>
 
 						<p className="mb-4 text-muted-foreground text-lg">
-							Henzo was born from a simple question: Why is finding a reliable
-							beauty salon in Vietnam still so difficult in 2024?
+							{t.about.howItStarted1}
 						</p>
 
 						<p className="mb-4 text-muted-foreground text-lg">
-							After researching the Vietnamese beauty market, we discovered that
-							talented salon owners lack affordable tools for online booking,
-							while customers waste time calling salons to check availability.
+							{t.about.howItStarted2}
 						</p>
 
-						<p className="text-muted-foreground text-lg">
-							We're building Henzo to solve this.{' '}
-							<strong>Currently in development</strong>, we're preparing for
-							beta launch with partner salons.{' '}
-							<strong className="text-primary">
-								Join us on this journey - it's free for beta program.
-							</strong>
-						</p>
+						<p
+							className="text-muted-foreground text-lg"
+							dangerouslySetInnerHTML={{ __html: t.about.howItStarted3 }}
+						/>
 					</div>
 
 					<div className="relative rounded-3xl overflow-hidden shadow-2xl">
@@ -70,11 +64,10 @@ export function OurStorySection() {
 				{/* Roadmap */}
 				<div className="text-center mb-12">
 					<h2 className="mb-4 text-foreground text-4xl font-semibold">
-						Our Roadmap
+						{t.about.roadmapTitle}
 					</h2>
 					<p className="text-muted-foreground max-w-2xl mx-auto text-lg">
-						We're just getting started - here's our journey from idea to
-						platform
+						{t.about.roadmapSubtitle}
 					</p>
 				</div>
 

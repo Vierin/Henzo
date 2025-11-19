@@ -69,9 +69,9 @@ export default function CategoryList({ category }: CategoryListProps) {
 	};
 
 	const sortOptions = [
-		{ value: 'name', label: 'Name A-Z' },
-		{ value: 'name-desc', label: 'Name Z-A' },
-		{ value: 'services', label: 'Most Services' },
+		{ value: 'name', label: t.categories.sortNameAZ },
+		{ value: 'name-desc', label: t.categories.sortNameZA },
+		{ value: 'services', label: t.categories.sortMostServices },
 	];
 
 	// Filter and sort salons by category
@@ -137,7 +137,7 @@ export default function CategoryList({ category }: CategoryListProps) {
 							<div className="flex-1 sm:flex-none sm:w-48">
 								<Select value={sortBy} onValueChange={setSortBy}>
 									<SelectTrigger className="w-full bg-white border border-gray-300 rounded-md">
-										<SelectValue placeholder="Sort by" />
+										<SelectValue placeholder={t.categories.sortBy} />
 									</SelectTrigger>
 									<SelectContent
 										className="bg-white border border-gray-300 shadow-lg rounded-md"
@@ -164,7 +164,7 @@ export default function CategoryList({ category }: CategoryListProps) {
 								className="px-3 sm:px-4 py-2 sm:h-9 flex gap-1 items-center bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#ff5b5b] focus:border-transparent text-gray-900 text-sm whitespace-nowrap"
 							>
 								<Map className="w-4 h-4" />{' '}
-								<span className="hidden sm:inline">Map View</span>
+								<span className="hidden sm:inline">{t.categories.mapView}</span>
 							</Link>
 						</div>
 					</div>
@@ -183,18 +183,23 @@ export default function CategoryList({ category }: CategoryListProps) {
 							// No salons found
 							<div className="text-center py-12">
 								<h3 className="text-xl font-semibold text-gray-900 mb-2">
-									No {translatedName.toLowerCase()} salons found
+									{t.categories.noSalonsFound.replace(
+										'{category}',
+										translatedName.toLowerCase()
+									)}
 								</h3>
 								<p className="text-gray-600 mb-8">
-									We couldn't find any salons in the {translatedName} category
-									at the moment. Check back soon or explore other categories.
+									{t.categories.noSalonsDescription.replace(
+										'{category}',
+										translatedName
+									)}
 								</p>
 								<div className="flex flex-col sm:flex-row gap-4 justify-center">
 									<Link
 										href="/salons"
 										className="inline-flex items-center px-6 py-3 bg-[#ff5b5b] text-white rounded-lg hover:bg-[#e04a4a] transition-colors"
 									>
-										Browse All Salons
+										{t.categories.browseAllSalons}
 									</Link>
 								</div>
 							</div>

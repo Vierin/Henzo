@@ -149,11 +149,6 @@ export default function RecommendedSalons() {
 							{(salons as Salon[])
 								.slice(0, 3)
 								.map((salon: Salon, index: number) => {
-									// Get all categories joined by commas
-									const categoryText =
-										salon.categories && salon.categories.length > 0
-											? salon.categories.join(', ')
-											: 'Hair & Makeup';
 									const avgRating = salon.avgRating || 0;
 									const reviewCount = salon._count?.reviews || 0;
 
@@ -194,21 +189,16 @@ export default function RecommendedSalons() {
 											</div>
 											<div className="p-5">
 												{/* Title and Rating */}
-												<div className="flex items-start justify-between mb-2">
+												<div className="flex items-start justify-between mb-8">
 													<h3 className="text-xl font-bold text-gray-900 flex-1">
 														{salon.name}
 													</h3>
 												</div>
 
-												{/* Category */}
-												<p className="text-gray-500 text-sm mb-8">
-													{categoryText}
-												</p>
-
-												{/* Footer: Reviews and View Details */}
+												{/* Footer: View Details */}
 												<div className="flex items-start justify-end">
 													<span className="text-red-500 flex gap-1 items-center text-sm font-medium hover:text-red-600 transition-colors">
-														View Details
+														{t.salon.viewDetails}
 														<ChevronRight className="w-4 h-4" />
 													</span>
 												</div>
@@ -224,11 +214,6 @@ export default function RecommendedSalons() {
 								{(salons as Salon[])
 									.slice(0, 3)
 									.map((salon: Salon, index: number) => {
-										// Get all categories joined by commas
-										const categoryText =
-											salon.categories && salon.categories.length > 0
-												? salon.categories.join(', ')
-												: 'Hair & Makeup';
 										const avgRating = salon.avgRating || 0;
 										const reviewCount = salon._count?.reviews || 0;
 
@@ -273,7 +258,7 @@ export default function RecommendedSalons() {
 												</div>
 												<div className="p-3">
 													{/* Title and Rating */}
-													<div className="flex items-start justify-between mb-2">
+													<div className="flex items-start justify-between mb-4">
 														<h3 className="text-lg font-bold text-gray-900 flex-1">
 															{salon.name}
 														</h3>
@@ -289,19 +274,13 @@ export default function RecommendedSalons() {
 														)}
 													</div>
 
-													{/* Category */}
-													<p className="text-gray-500 text-sm mb-4">
-														{categoryText}
-													</p>
-
 													{/* Footer: Reviews and View Details */}
 													<div className="flex items-center justify-between">
 														<span className="text-gray-500 text-sm">
-															{reviewCount}{' '}
-															{reviewCount === 1 ? 'review' : 'reviews'}
+															{reviewCount} {t.salon.reviewsCount}
 														</span>
 														<span className="text-red-500 flex gap-1 items-center text-sm font-medium hover:text-red-600 transition-colors">
-															View Details
+															{t.salon.viewDetails}
 															<ChevronRight className="w-4 h-4" />
 														</span>
 													</div>
