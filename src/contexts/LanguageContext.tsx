@@ -7,15 +7,16 @@ import React, {
 	useEffect,
 	ReactNode,
 } from 'react';
-import { translations, Translations } from '@/constants/translations';
 import { usePathname } from 'next/navigation';
+import { extractLocaleFromPath, type Locale } from '@/i18n/routing';
+import { useTranslations } from '@/i18n/useTranslations';
 
-type Language = 'vi' | 'en' | 'ru';
+type Language = Locale;
 
 interface LanguageContextType {
 	language: Language;
 	setLanguage: (lang: Language) => void;
-	t: Translations;
+	t: ReturnType<typeof useTranslations>;
 }
 
 const LanguageContext = createContext<LanguageContextType | undefined>(
@@ -27,8 +28,9 @@ interface LanguageProviderProps {
 }
 
 export function LanguageProvider({ children }: LanguageProviderProps) {
-	const [language, setLanguageState] = useState<Language>('en'); // English as default
+	const [language, setLanguageState] = useState<Language>('en');
 	const pathname = usePathname();
+	const t = useTranslations();
 
 	// Load language from localStorage on mount
 	useEffect(() => {
@@ -48,13 +50,11 @@ export function LanguageProvider({ children }: LanguageProviderProps) {
 	// Derive language from URL on first load and when path changes
 	useEffect(() => {
 		if (typeof window === 'undefined') return;
-		const seg = pathname.split('/')[1];
-		if (seg === 'en' || seg === 'vi' || seg === 'ru') {
-			setLanguageState(seg);
-			localStorage.setItem('henzo-language', seg);
-			document.documentElement.lang = seg;
-			document.documentElement.dir = 'ltr';
-		}
+		const locale = extractLocaleFromPath(pathname) ?? 'en';
+		setLanguageState(locale);
+		localStorage.setItem('henzo-language', locale);
+		document.documentElement.lang = locale;
+		document.documentElement.dir = 'ltr';
 	}, [pathname]);
 
 	const setLanguage = (lang: Language) => {
@@ -74,7 +74,7 @@ export function LanguageProvider({ children }: LanguageProviderProps) {
 	const value: LanguageContextType = {
 		language,
 		setLanguage,
-		t: translations[language],
+		t,
 	};
 
 	return (

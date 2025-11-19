@@ -24,8 +24,8 @@ export async function generateMetadata({
 	} as const;
 
 	return {
-		title: dict['meta.title'] ?? 'Henzo',
-		description: dict['meta.description'] ?? '',
+		title: dict.meta?.title ?? 'Henzo',
+		description: dict.meta?.description ?? '',
 		metadataBase: new URL(baseUrl),
 		alternates: {
 			languages: {
