@@ -377,11 +377,6 @@ export default function AdminSalons() {
 								<div className="px-4 py-4 sm:px-6">
 									<div className="flex items-center justify-between">
 										<div className="flex items-center">
-											<div className="flex-shrink-0">
-												<div className="w-16 h-16 rounded-lg bg-gray-200 flex items-center justify-center">
-													<span className="text-gray-400 text-lg">🏢</span>
-												</div>
-											</div>
 											<div className="ml-4">
 												<div className="flex items-center">
 													<p className="text-sm font-medium text-gray-900 truncate">
@@ -455,9 +450,6 @@ export default function AdminSalons() {
 								<div className="space-y-6">
 									{/* Salon Logo and Basic Info */}
 									<div className="flex items-start space-x-4">
-										<div className="w-20 h-20 bg-gray-200 rounded-lg flex items-center justify-center flex-shrink-0">
-											<span className="text-2xl">🏢</span>
-										</div>
 										<div className="flex-1">
 											<h3 className="text-lg font-semibold text-gray-900 mb-2">
 												{selectedSalon.name}
