@@ -151,6 +151,34 @@ export default function CalendarClient() {
 		bookings.length,
 	]);
 
+	// Open booking modal if there's a pending booking after OAuth
+	useEffect(() => {
+		const checkPendingBooking = () => {
+			const pendingBooking = localStorage.getItem('pendingBooking');
+			if (pendingBooking && !isBookingModalOpen) {
+				try {
+					const bookingData = JSON.parse(pendingBooking);
+					// Only open if this is from OAuth (has returnUrl)
+					if (bookingData.returnUrl) {
+						console.log(
+							'📅 Opening booking modal for pending booking after OAuth'
+						);
+						setIsBookingModalOpen(true);
+					}
+				} catch (error) {
+					console.error('Error parsing pending booking:', error);
+				}
+			}
+		};
+
+		// Check immediately
+		checkPendingBooking();
+
+		// Also check after a short delay to catch OAuth redirects
+		const timeout = setTimeout(checkPendingBooking, 500);
+		return () => clearTimeout(timeout);
+	}, [isBookingModalOpen]);
+
 	const handleNewAppointment = useCallback(() => {
 		setSelectedService(undefined);
 		setEditingBooking(null);

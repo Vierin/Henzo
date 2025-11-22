@@ -16,7 +16,40 @@ export default function AuthCallbackPage() {
 		const handleAuthCallback = async () => {
 			const locale = extractLocaleFromPath(pathname) ?? 'en';
 			try {
+				// Check if there's an error in URL params (from Supabase)
+				const urlParams = new URLSearchParams(window.location.search);
+				const errorParam = urlParams.get('error');
+				const errorDescription = urlParams.get('error_description');
+
+				if (errorParam) {
+					console.error('❌ OAuth error from Supabase:', {
+						error: errorParam,
+						description: errorDescription,
+					});
+					router.push(
+						withLocale(
+							`/login?error=${encodeURIComponent(errorParam)}&description=${encodeURIComponent(errorDescription || '')}`,
+							locale as 'en' | 'ru' | 'vi'
+						)
+					);
+					return;
+				}
+
+				// Get returnUrl and locale from localStorage (set before OAuth redirect)
+				const returnUrl = localStorage.getItem('oauthReturnUrl');
+				const storedLocale = localStorage.getItem('oauthLocale');
+				const pendingBooking = returnUrl ? true : false;
+
+				// Use stored locale if available, otherwise extract from pathname
+				const effectiveLocale = storedLocale || locale;
+
 				// Handle the auth callback
+				// Supabase SSR automatically handles the code exchange via cookies
+				// Just wait a bit for cookies to be set, then get the session
+				console.log('🔄 Waiting for Supabase to process callback...');
+				await new Promise((resolve) => setTimeout(resolve, 500));
+
+				// Get session - Supabase should have set it via cookies
 				const { data, error } = await supabase.auth.getSession();
 
 				if (error) {
@@ -31,333 +64,18 @@ export default function AuthCallbackPage() {
 				}
 
 				if (data.session) {
-					// Check if this is a password reset flow
-					const urlParams = new URLSearchParams(window.location.search);
-					const type = urlParams.get('type');
-
-					if (type === 'recovery') {
-						// This is a password reset, redirect to reset password page
-						router.push(
-							withLocale('/reset-password', locale as 'en' | 'ru' | 'vi')
-						);
-					} else {
-						// Regular auth callback (including Google OAuth)
-						// Check if this is a business registration
-						// Try URL param first, then localStorage and sessionStorage as fallback
-						const urlType = type;
-						const localStorageType = localStorage.getItem('registrationType');
-						const sessionStorageType =
-							sessionStorage.getItem('registrationType');
-						const isBusinessRegistration =
-							urlType === 'business' ||
-							localStorageType === 'business' ||
-							sessionStorageType === 'business';
-
-						// Clean up storage after use
-						if (localStorageType) {
-							localStorage.removeItem('registrationType');
-						}
-						if (sessionStorageType) {
-							sessionStorage.removeItem('registrationType');
-						}
-						// Get user role from backend
-						try {
-							const API_BASE_URL =
-								process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
-							const response = await fetch(`${API_BASE_URL}/auth/user`, {
-								headers: {
-									Authorization: `Bearer ${data.session.access_token}`,
-									'Content-Type': 'application/json',
-								},
-							});
-
-							if (response.ok) {
-								let userData = await response.json();
-								// Check if this is a business registration but user has CLIENT role
-								if (isBusinessRegistration && userData.user.role === 'CLIENT') {
-									// Update user role in backend
-									try {
-										const updateResponse = await fetch(
-											`${API_BASE_URL}/auth/user-role`,
-											{
-												method: 'PATCH',
-												headers: {
-													Authorization: `Bearer ${data.session.access_token}`,
-													'Content-Type': 'application/json',
-												},
-												body: JSON.stringify({ role: 'OWNER' }),
-											}
-										);
-
-										if (updateResponse.ok) {
-											// Get updated user data from backend
-											const updatedUserResponse = await fetch(
-												`${API_BASE_URL}/auth/user`,
-												{
-													headers: {
-														Authorization: `Bearer ${data.session.access_token}`,
-														'Content-Type': 'application/json',
-													},
-												}
-											);
-
-											if (updatedUserResponse.ok) {
-												const updatedUserData =
-													await updatedUserResponse.json();
-												userData = updatedUserData;
-											} else {
-												// Fallback: update role locally
-												userData.user.role = 'OWNER';
-											}
-										}
-									} catch (updateError) {
-										console.error('Error updating user role:', updateError);
-									}
-								}
-
-								// Бэкенд автоматически синхронизирует роль в app_metadata при запросе /auth/user
-								// НЕ обновляем сессию здесь - это создает бесконечные циклы
-								// Новый токен с ролью будет получен автоматически при следующем запросе
-								const refreshedSession = data.session;
-
-								// Update authManager (единый источник истины)
-								console.log('Updating auth store with:', {
-									user: userData.user,
-									session: refreshedSession ? 'present' : 'missing',
-									role: userData.user.role,
-								});
-								// Обновляем authManager через updateUser (главный источник)
-								if (refreshedSession?.access_token) {
-									await authManager.updateUser(refreshedSession.access_token);
-								}
-								// Также обновляем authStore для совместимости
-								setUser(userData.user);
-								setSession(refreshedSession);
-
-								// Debug: log final user data
-								console.log('Final user data before redirect:', {
-									role: userData.user.role,
-									email: userData.user.email,
-									isBusinessRegistration,
-								});
-
-								// Redirect based on role
-								switch (userData.user.role) {
-									case 'ADMIN':
-										router.push(
-											withLocale('/admin-panel', locale as 'en' | 'ru' | 'vi')
-										);
-										break;
-									case 'OWNER':
-										// For OWNER users, check if they have a salon first
-										try {
-											const salonResponse = await fetch(
-												`${API_BASE_URL}/salons/current`,
-												{
-													headers: {
-														Authorization: `Bearer ${data.session.access_token}`,
-														'Content-Type': 'application/json',
-													},
-												}
-											);
-
-											if (salonResponse.ok) {
-												const responseData = await salonResponse.json();
-												if (responseData.success && responseData.data) {
-													// User has a salon, go directly to dashboard
-													console.log(
-														'Owner has existing salon, redirecting to dashboard'
-													);
-													router.push(
-														withLocale(
-															'/owner-dashboard',
-															locale as 'en' | 'ru' | 'vi'
-														)
-													);
-												} else {
-													// User doesn't have a salon, go to complete-setup
-													console.log(
-														'Owner has no salon, redirecting to complete-setup'
-													);
-													router.push(
-														withLocale(
-															'/business/complete-setup',
-															locale as 'en' | 'ru' | 'vi'
-														)
-													);
-												}
-											} else {
-												// Error checking salon, go to complete-setup as fallback
-												console.log(
-													'Error checking salon, redirecting to complete-setup'
-												);
-												router.push(
-													withLocale(
-														'/business/complete-setup',
-														locale as 'en' | 'ru' | 'vi'
-													)
-												);
-											}
-										} catch (error) {
-											console.error('Error checking salon:', error);
-											// Error checking salon, go to complete-setup as fallback
-											router.push(
-												withLocale(
-													'/business/complete-setup',
-													locale as 'en' | 'ru' | 'vi'
-												)
-											);
-										}
-										break;
-									case 'CLIENT':
-										router.push(
-											withLocale('/dashboard', locale as 'en' | 'ru' | 'vi')
-										);
-										break;
-									default:
-										router.push(
-											withLocale('/dashboard', locale as 'en' | 'ru' | 'vi')
-										);
-										break;
-								}
-							} else {
-								// If user doesn't exist in backend, create based on registration type
-								const defaultRole = isBusinessRegistration ? 'OWNER' : 'CLIENT';
-
-								// Update user metadata with appropriate role
-								const { error: updateError } = await supabase.auth.updateUser({
-									data: {
-										role: defaultRole,
-										name:
-											data.session.user.user_metadata?.name ||
-											data.session.user.user_metadata?.full_name,
-										phone: data.session.user.user_metadata?.phone,
-									},
-								});
-
-								// Ensure role is set in metadata
-								if (updateError) {
-									console.error('Error updating user metadata:', updateError);
-								}
-
-								// Try to create user in backend again
-								const retryResponse = await fetch(`${API_BASE_URL}/auth/user`, {
-									headers: {
-										Authorization: `Bearer ${data.session.access_token}`,
-										'Content-Type': 'application/json',
-									},
-								});
-
-								if (retryResponse.ok) {
-									const userData = await retryResponse.json();
-									// Update auth store
-									setUser(userData.user);
-									setSession(data.session);
-									// Redirect based on role
-									if (defaultRole === 'OWNER') {
-										// For new OWNER users, always go to complete-setup
-										router.push(
-											withLocale(
-												'/business/complete-setup',
-												locale as 'en' | 'ru' | 'vi'
-											)
-										);
-									} else {
-										router.push(
-											withLocale('/dashboard', locale as 'en' | 'ru' | 'vi')
-										);
-									}
-								} else {
-									// If still fails, create a temporary user object and redirect
-									// Update user_metadata with role before creating temp user
-									try {
-										await supabase.auth.updateUser({
-											data: { role: defaultRole },
-										});
-									} catch (updateError) {
-										console.error(
-											'Error updating user metadata with role:',
-											updateError
-										);
-									}
-
-									const tempUser = {
-										id: data.session.user.id,
-										email: data.session.user.email || '',
-										name:
-											data.session.user.user_metadata?.name ||
-											data.session.user.user_metadata?.full_name,
-										phone: data.session.user.user_metadata?.phone,
-										role: defaultRole as 'ADMIN' | 'OWNER' | 'CLIENT',
-										createdAt: new Date().toISOString(),
-									};
-									setUser(tempUser);
-									setSession(data.session);
-									// Redirect based on role
-									if (defaultRole === 'OWNER') {
-										// For new OWNER users, always go to complete-setup
-										router.push(
-											withLocale(
-												'/business/complete-setup',
-												locale as 'en' | 'ru' | 'vi'
-											)
-										);
-									} else {
-										router.push(
-											withLocale('/dashboard', locale as 'en' | 'ru' | 'vi')
-										);
-									}
-								}
-							}
-						} catch (roleError) {
-							console.error('Error getting user role:', roleError);
-							// Create a temporary user object and redirect based on registration type
-							const defaultRole = isBusinessRegistration ? 'OWNER' : 'CLIENT';
-
-							// Update user_metadata with role
-							try {
-								await supabase.auth.updateUser({
-									data: { role: defaultRole },
-								});
-							} catch (updateError) {
-								console.error(
-									'Error updating user metadata with role:',
-									updateError
-								);
-							}
-
-							const tempUser = {
-								id: data.session.user.id,
-								email: data.session.user.email || '',
-								name:
-									data.session.user.user_metadata?.name ||
-									data.session.user.user_metadata?.full_name,
-								phone: data.session.user.user_metadata?.phone,
-								role: defaultRole as 'ADMIN' | 'OWNER' | 'CLIENT',
-								createdAt: new Date().toISOString(),
-							};
-							setUser(tempUser);
-							setSession(data.session);
-
-							// Redirect based on registration type
-							if (isBusinessRegistration) {
-								// For business registration, always go to complete-setup
-								router.push(
-									withLocale(
-										'/business/complete-setup',
-										locale as 'en' | 'ru' | 'vi'
-									)
-								);
-							} else {
-								router.push(
-									withLocale('/dashboard', locale as 'en' | 'ru' | 'vi')
-								);
-							}
-						}
+					// Create modified urlParams with pendingBooking info
+					const modifiedParams = new URLSearchParams(urlParams);
+					if (returnUrl) {
+						modifiedParams.set('returnUrl', returnUrl);
+						modifiedParams.set('pendingBooking', 'true');
 					}
+					await processSession(data.session, effectiveLocale, modifiedParams);
 				} else {
-					// No session, redirect to login
-					router.push(withLocale('/login', locale as 'en' | 'ru' | 'vi'));
+					console.error('❌ No session found after OAuth callback');
+					router.push(
+						withLocale('/login?error=no_session', locale as 'en' | 'ru' | 'vi')
+					);
 				}
 			} catch (error) {
 				console.error('Unexpected error in auth callback:', error);
@@ -367,6 +85,392 @@ export default function AuthCallbackPage() {
 						locale as 'en' | 'ru' | 'vi'
 					)
 				);
+			}
+		};
+
+		const processSession = async (
+			session: any,
+			locale: string,
+			urlParams: URLSearchParams
+		) => {
+			const type = urlParams.get('type');
+			const pendingBooking = urlParams.get('pendingBooking') === 'true';
+			const returnUrl = urlParams.get('returnUrl');
+
+			// Для pending booking flow - сразу редиректим, не ждем ответа от бэкенда
+			if (pendingBooking && returnUrl) {
+				console.log('📅 Pending booking flow, redirecting immediately...');
+				// Clean up localStorage
+				localStorage.removeItem('oauthReturnUrl');
+				localStorage.removeItem('oauthLocale');
+
+				const tempUser = {
+					id: session.user.id,
+					email: session.user.email || '',
+					name:
+						session.user.user_metadata?.name ||
+						session.user.user_metadata?.full_name ||
+						'User',
+					phone: session.user.user_metadata?.phone,
+					role: 'CLIENT' as const,
+					createdAt: new Date().toISOString(),
+				};
+				setUser(tempUser);
+				setSession(session);
+
+				// Пытаемся создать пользователя в бэкенде асинхронно (не блокируем)
+				const API_BASE_URL =
+					process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+				fetch(`${API_BASE_URL}/auth/user`, {
+					headers: {
+						Authorization: `Bearer ${session.access_token}`,
+						'Content-Type': 'application/json',
+					},
+				}).catch((err) => {
+					console.log('⚠️ Background user sync failed (non-critical):', err);
+				});
+
+				router.push(returnUrl);
+				return;
+			}
+
+			if (type === 'recovery') {
+				router.push(
+					withLocale('/reset-password', locale as 'en' | 'ru' | 'vi')
+				);
+				return;
+			}
+
+			try {
+				// Check if this is a password reset flow
+				const type = urlParams.get('type');
+				const pendingBooking = urlParams.get('pendingBooking') === 'true';
+				const returnUrl = urlParams.get('returnUrl');
+
+				// Для pending booking flow - сразу редиректим, не ждем ответа от бэкенда
+				if (pendingBooking && returnUrl) {
+					console.log('📅 Pending booking flow, redirecting immediately...');
+					// Создаем временного пользователя из Supabase session
+					const tempUser = {
+						id: session.user.id,
+						email: session.user.email || '',
+						name:
+							session.user.user_metadata?.name ||
+							session.user.user_metadata?.full_name ||
+							'User',
+						phone: session.user.user_metadata?.phone,
+						role: 'CLIENT' as const,
+						createdAt: new Date().toISOString(),
+					};
+					setUser(tempUser);
+					setSession(session);
+
+					// Пытаемся создать пользователя в бэкенде асинхронно (не блокируем)
+					const API_BASE_URL =
+						process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+					fetch(`${API_BASE_URL}/auth/user`, {
+						headers: {
+							Authorization: `Bearer ${session.access_token}`,
+							'Content-Type': 'application/json',
+						},
+					}).catch((err) => {
+						console.log('⚠️ Background user sync failed (non-critical):', err);
+					});
+
+					router.push(returnUrl);
+					return;
+				}
+
+				if (type === 'recovery') {
+					// This is a password reset, redirect to reset password page
+					router.push(
+						withLocale('/reset-password', locale as 'en' | 'ru' | 'vi')
+					);
+					return;
+				}
+
+				// Regular auth callback (including Google OAuth)
+				// Check if this is a business registration
+				// Try URL param first, then localStorage and sessionStorage as fallback
+				const urlType = type;
+				const localStorageType = localStorage.getItem('registrationType');
+				const sessionStorageType = sessionStorage.getItem('registrationType');
+				const isBusinessRegistration =
+					urlType === 'business' ||
+					localStorageType === 'business' ||
+					sessionStorageType === 'business';
+
+				// Clean up storage after use
+				if (localStorageType) {
+					localStorage.removeItem('registrationType');
+				}
+				if (sessionStorageType) {
+					sessionStorage.removeItem('registrationType');
+				}
+				// Get user role from backend
+				try {
+					const API_BASE_URL =
+						process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+					const response = await fetch(`${API_BASE_URL}/auth/user`, {
+						headers: {
+							Authorization: `Bearer ${session.access_token}`,
+							'Content-Type': 'application/json',
+						},
+					});
+
+					if (!response.ok) {
+						let errorData: any = {};
+						try {
+							const text = await response.text();
+							errorData = text ? JSON.parse(text) : {};
+						} catch (e) {
+							console.error('Failed to parse error response:', e);
+						}
+
+						console.error('❌ Failed to get user from backend:', {
+							status: response.status,
+							statusText: response.statusText,
+							error: errorData,
+						});
+
+						throw new Error(
+							errorData.message ||
+								errorData.error ||
+								`Failed to get user: ${response.status}`
+						);
+					}
+
+					if (response.ok) {
+						let userData = await response.json();
+						// Check if this is a business registration but user has CLIENT role
+						if (isBusinessRegistration && userData.user.role === 'CLIENT') {
+							// Update user role in backend
+							try {
+								const updateResponse = await fetch(
+									`${API_BASE_URL}/auth/user-role`,
+									{
+										method: 'PATCH',
+										headers: {
+											Authorization: `Bearer ${session.access_token}`,
+											'Content-Type': 'application/json',
+										},
+										body: JSON.stringify({ role: 'OWNER' }),
+									}
+								);
+
+								if (updateResponse.ok) {
+									// Get updated user data from backend
+									const updatedUserResponse = await fetch(
+										`${API_BASE_URL}/auth/user`,
+										{
+											headers: {
+												Authorization: `Bearer ${session.access_token}`,
+												'Content-Type': 'application/json',
+											},
+										}
+									);
+
+									if (updatedUserResponse.ok) {
+										const updatedUserData = await updatedUserResponse.json();
+										userData = updatedUserData;
+									} else {
+										// Fallback: update role locally
+										userData.user.role = 'OWNER';
+									}
+								}
+							} catch (updateError) {
+								console.error('Error updating user role:', updateError);
+							}
+						}
+
+						// Бэкенд автоматически синхронизирует роль в app_metadata при запросе /auth/user
+						// НЕ обновляем сессию здесь - это создает бесконечные циклы
+						// Новый токен с ролью будет получен автоматически при следующем запросе
+						const refreshedSession = session;
+
+						// Update authManager (единый источник истины)
+						console.log('Updating auth store with:', {
+							user: userData.user,
+							session: refreshedSession ? 'present' : 'missing',
+							role: userData.user.role,
+						});
+						// Обновляем authManager через updateUser (главный источник)
+						if (refreshedSession?.access_token) {
+							await authManager.updateUser(refreshedSession.access_token);
+						}
+						// Также обновляем authStore для совместимости
+						setUser(userData.user);
+						setSession(refreshedSession);
+
+						// Debug: log final user data
+						console.log('Final user data before redirect:', {
+							role: userData.user.role,
+							email: userData.user.email,
+							isBusinessRegistration,
+						});
+
+						// Redirect based on role
+						switch (userData.user.role) {
+							case 'ADMIN':
+								router.push(
+									withLocale('/admin-panel', locale as 'en' | 'ru' | 'vi')
+								);
+								break;
+							case 'OWNER':
+								// For OWNER users, check if they have a salon first
+								try {
+									const salonResponse = await fetch(
+										`${API_BASE_URL}/salons/current`,
+										{
+											headers: {
+												Authorization: `Bearer ${session.access_token}`,
+												'Content-Type': 'application/json',
+											},
+										}
+									);
+
+									if (salonResponse.ok) {
+										const responseData = await salonResponse.json();
+										if (responseData.success && responseData.data) {
+											// User has a salon, go directly to dashboard
+											console.log(
+												'Owner has existing salon, redirecting to dashboard'
+											);
+											router.push(
+												withLocale(
+													'/owner-dashboard',
+													locale as 'en' | 'ru' | 'vi'
+												)
+											);
+										} else {
+											// User doesn't have a salon, go to complete-setup
+											console.log(
+												'Owner has no salon, redirecting to complete-setup'
+											);
+											router.push(
+												withLocale(
+													'/business/complete-setup',
+													locale as 'en' | 'ru' | 'vi'
+												)
+											);
+										}
+									} else {
+										// Error checking salon, go to complete-setup as fallback
+										console.log(
+											'Error checking salon, redirecting to complete-setup'
+										);
+										router.push(
+											withLocale(
+												'/business/complete-setup',
+												locale as 'en' | 'ru' | 'vi'
+											)
+										);
+									}
+								} catch (error) {
+									console.error('Error checking salon:', error);
+									// Error checking salon, go to complete-setup as fallback
+									router.push(
+										withLocale(
+											'/business/complete-setup',
+											locale as 'en' | 'ru' | 'vi'
+										)
+									);
+								}
+								break;
+							case 'CLIENT':
+								// If this is a pending booking flow, return to the original page
+								if (pendingBooking && returnUrl) {
+									console.log(
+										'Redirecting to returnUrl for pending booking:',
+										returnUrl
+									);
+									router.push(returnUrl);
+								} else {
+									router.push(
+										withLocale('/dashboard', locale as 'en' | 'ru' | 'vi')
+									);
+								}
+								break;
+							default:
+								// If this is a pending booking flow, return to the original page
+								if (pendingBooking && returnUrl) {
+									console.log(
+										'Redirecting to returnUrl for pending booking:',
+										returnUrl
+									);
+									router.push(returnUrl);
+								} else {
+									router.push(
+										withLocale('/dashboard', locale as 'en' | 'ru' | 'vi')
+									);
+								}
+								break;
+						}
+					}
+				} catch (roleError) {
+					console.error('Error getting user role:', roleError);
+
+					// If this is a pending booking flow, try to return to original page
+					if (pendingBooking && returnUrl) {
+						console.log(
+							'Pending booking flow, redirecting to returnUrl:',
+							returnUrl
+						);
+						router.push(returnUrl);
+						return;
+					}
+
+					// Create a temporary user object and redirect based on registration type
+					const defaultRole = isBusinessRegistration ? 'OWNER' : 'CLIENT';
+
+					// Update user_metadata with role
+					try {
+						await supabase.auth.updateUser({
+							data: { role: defaultRole },
+						});
+					} catch (updateError) {
+						console.error(
+							'Error updating user metadata with role:',
+							updateError
+						);
+					}
+
+					const tempUser = {
+						id: session.user.id,
+						email: session.user.email || '',
+						name:
+							session.user.user_metadata?.name ||
+							session.user.user_metadata?.full_name,
+						phone: session.user.user_metadata?.phone,
+						role: defaultRole as 'ADMIN' | 'OWNER' | 'CLIENT',
+						createdAt: new Date().toISOString(),
+					};
+					setUser(tempUser);
+					setSession(session);
+
+					// Redirect based on registration type
+					if (isBusinessRegistration) {
+						// For business registration, always go to complete-setup
+						router.push(
+							withLocale(
+								'/business/complete-setup',
+								locale as 'en' | 'ru' | 'vi'
+							)
+						);
+					} else {
+						// If pending booking, return to original page
+						if (pendingBooking && returnUrl) {
+							router.push(returnUrl);
+						} else {
+							router.push(
+								withLocale('/dashboard', locale as 'en' | 'ru' | 'vi')
+							);
+						}
+					}
+				}
+			} catch (error) {
+				console.error('Error processing session:', error);
+				throw error;
 			}
 		};
 
