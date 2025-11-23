@@ -407,8 +407,8 @@
 			"pleaseEnterValidCode": "Please enter a valid invite code",
 			"passwordsDoNotMatch": "Passwords do not match",
 			"passwordTooShort": "Password must be at least 6 characters",
-			"registrationSuccessful": "Business registration successful! Complete your salon setup.",
-			"registrationSuccessfulEmail": "Business registration successful! Please check your email to verify your account.",
+			"registrationSuccessful": "Business account created! Complete your salon setup.",
+			"registrationSuccessfulEmail": "Business account created! Please check your email to verify your account.",
 			"failedToRegister": "Failed to register business account",
 			"failedToRegisterGoogle": "Failed to register with Google",
 			"pleaseEnterInviteCode": "Please enter an invite code first"

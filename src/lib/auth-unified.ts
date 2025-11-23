@@ -159,8 +159,7 @@ class AuthManager {
 		email: string;
 		password: string;
 		name?: string;
-		inviteCode?: string;
-		fromInviteLink?: boolean;
+		magicLinkToken?: string;
 	}): Promise<{ success: boolean; error?: string; emailConfirmed?: boolean }> {
 		try {
 			this.setState({ isLoading: true });
@@ -168,27 +167,20 @@ class AuthManager {
 			let authData: any = null;
 			let emailConfirmed = false;
 
-			// Если регистрация из инвайт-ссылки - backend создаст пользователя через Admin API
-			if (data.fromInviteLink) {
+			// Если регистрация из magic link - backend создаст пользователя через Admin API
+			if (data.magicLinkToken) {
 				// Отправляем запрос напрямую на backend с паролем
 				const response = await apiClient.post<{
 					user: any;
-					inviteCodeId?: string;
 					emailConfirmed?: boolean;
 				}>('/auth/register', {
 					userId: null, // Backend создаст нового пользователя
 					email: data.email,
 					password: data.password,
-					inviteCode: data.inviteCode,
+					magicLinkToken: data.magicLinkToken,
 					name: data.name,
 					role: 'OWNER',
-					fromInviteLink: true,
 				});
-
-				// Сохраняем inviteCodeId
-				if (response.inviteCodeId) {
-					sessionStorage.setItem('inviteCodeId', response.inviteCodeId);
-				}
 
 				emailConfirmed = response.emailConfirmed || false;
 
@@ -231,25 +223,18 @@ class AuthManager {
 
 				authData = signUpData;
 
-				// Создание пользователя в API с инвайт-кодом
+				// Создание пользователя в API
 				if (authData.user) {
 					const response = await apiClient.post<{
 						user: any;
-						inviteCodeId?: string;
 						emailConfirmed?: boolean;
 					}>('/auth/register', {
 						userId: authData.user.id,
 						email: data.email,
-						inviteCode: data.inviteCode,
+						magicLinkToken: (data as any).magicLinkToken,
 						name: data.name,
 						role: 'OWNER',
-						fromInviteLink: false,
 					});
-
-					// Сохраняем inviteCodeId для использования при создании салона
-					if (response.inviteCodeId) {
-						sessionStorage.setItem('inviteCodeId', response.inviteCodeId);
-					}
 				}
 			}
 

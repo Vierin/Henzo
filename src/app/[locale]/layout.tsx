@@ -52,11 +52,5 @@ export default async function LocaleRootLayout({
 	// preload dictionary for potential server components below
 	await getDictionary(locale);
 
-	return (
-		<html lang={locale}>
-			<body>
-				<ErrorBoundary>{children}</ErrorBoundary>
-			</body>
-		</html>
-	);
+	return <ErrorBoundary>{children}</ErrorBoundary>;
 }

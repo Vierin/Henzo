@@ -407,8 +407,8 @@
 			"pleaseEnterValidCode": "Vui lòng nhập mã mời hợp lệ",
 			"passwordsDoNotMatch": "Mật khẩu không khớp",
 			"passwordTooShort": "Mật khẩu phải có ít nhất 6 ký tự",
-			"registrationSuccessful": "Đăng ký doanh nghiệp thành công! Hoàn tất thiết lập salon của bạn.",
-			"registrationSuccessfulEmail": "Đăng ký doanh nghiệp thành công! Vui lòng kiểm tra email để xác minh tài khoản của bạn.",
+			"registrationSuccessful": "Tài khoản doanh nghiệp đã được tạo! Hoàn tất thiết lập salon của bạn.",
+			"registrationSuccessfulEmail": "Tài khoản doanh nghiệp đã được tạo! Vui lòng kiểm tra email để xác minh tài khoản của bạn.",
 			"failedToRegister": "Không thể đăng ký tài khoản doanh nghiệp",
 			"failedToRegisterGoogle": "Không thể đăng ký bằng Google",
 			"pleaseEnterInviteCode": "Vui lòng nhập mã mời trước"

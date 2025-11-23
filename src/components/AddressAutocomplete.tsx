@@ -120,9 +120,15 @@ export default function AddressAutocomplete({
 
 	// Fallback function to search Nominatim with Vietnam-only results
 	const fetchNominatimSuggestions = async (query: string) => {
-		const nominatimUrl = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=5&addressdetails=1&countrycodes=vn&accept-language=vi`;
+		// Clean the query - remove "Vietnam" or "Wietnam" at the end
+		const cleanedQuery = query
+			.replace(/,\s*(Vietnam|Wietnam|Việt Nam|VN)$/i, '')
+			.trim();
 
-		const response = await fetch(nominatimUrl, {
+		// Try with exact match first (for pasted addresses from Google Maps)
+		const exactMatchUrl = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(cleanedQuery)}&limit=5&addressdetails=1&countrycodes=vn&accept-language=vi&extratags=1&namedetails=1`;
+
+		const response = await fetch(exactMatchUrl, {
 			method: 'GET',
 			headers: {
 				'User-Agent': 'Henzo Salon Booking App (hello@henzo.app)',
@@ -138,15 +144,196 @@ export default function AddressAutocomplete({
 		const data = await response.json();
 
 		if (data && data.length > 0) {
-			const suggestions = data.map((item: any) => {
-				const cleanAddress = cleanAddressFromCountry(item.display_name);
-				return {
-					lat: parseFloat(item.lat),
-					lon: parseFloat(item.lon),
-					display_name: cleanAddress,
-					address: cleanAddress,
-				};
+			// Extract city/district keywords from original query
+			const queryParts = cleanedQuery
+				.toLowerCase()
+				.split(',')
+				.map((p) => p.trim());
+			const cityKeywords: string[] = [];
+			if (queryParts.length >= 3) {
+				cityKeywords.push(queryParts[2]); // City (e.g., "nha trang")
+				cityKeywords.push(queryParts[1]); // District (e.g., "lộc thọ")
+				if (queryParts.length >= 4) {
+					cityKeywords.push(queryParts[3]); // Province (e.g., "khánh hòa")
+				}
+			}
+
+			// Helper function to clean business names from address
+			const removeBusinessName = (address: string): string => {
+				// Don't modify if address is too short or looks like it's already cleaned
+				if (!address || address.length < 10) {
+					return address;
+				}
+
+				// Split by comma
+				const parts = address
+					.split(',')
+					.map((p) => p.trim())
+					.filter((p) => p);
+
+				// Find the first part that looks like an address (starts with number or street name)
+				const addressPartIndex = parts.findIndex((part, index) => {
+					// First part with number is likely the address
+					if (/^\d+/.test(part)) return true;
+
+					// Check if this part looks like a street name
+					if (/\b(street|đường|road|phố|avenue|boulevard)\b/i.test(part)) {
+						return true;
+					}
+
+					return false;
+				});
+
+				// If we found an address part, start from there
+				if (addressPartIndex > 0) {
+					const cleaned = parts.slice(addressPartIndex).join(', ');
+					// Only return if cleaned address is still meaningful (not too short)
+					if (cleaned.length >= 10) {
+						return cleaned;
+					}
+				}
+
+				// If first part doesn't look like address and next part starts with number
+				if (parts.length > 1) {
+					const firstPart = parts[0].toLowerCase();
+					const secondPart = parts[1];
+
+					// Common business name patterns
+					const businessPatterns = [
+						/^(pizza|restaurant|cafe|shop|store|salon|spa|hotel|bar|club|market|mall|center|centre|bank|pharmacy)/i,
+					];
+
+					// Check if first part looks like a business name and second starts with number
+					const looksLikeBusiness =
+						businessPatterns.some((pattern) => pattern.test(firstPart)) ||
+						(firstPart.length < 50 &&
+							!/^\d+/.test(firstPart) &&
+							!/\b(street|đường|road|phố)\b/i.test(firstPart));
+					const secondPartHasNumber = /^\d+/.test(secondPart);
+
+					if (looksLikeBusiness && secondPartHasNumber) {
+						const cleaned = parts.slice(1).join(', ');
+						// Only return if cleaned address is still meaningful
+						if (cleaned.length >= 10) {
+							return cleaned;
+						}
+					}
+				}
+
+				return address;
+			};
+
+			// Filter and clean addresses - remove business names
+			const cleanedData = data
+				.map((item: any) => {
+					let cleanAddr = cleanAddressFromCountry(item.display_name);
+					const originalAddr = cleanAddr;
+					cleanAddr = removeBusinessName(cleanAddr);
+
+					// If cleaned address is too short or only postal code, use original
+					if (
+						cleanAddr.length < 10 ||
+						/^\d{5,6}(\s*,\s*[^,]+)?$/.test(cleanAddr.trim())
+					) {
+						cleanAddr = originalAddr;
+					}
+
+					return {
+						...item,
+						cleaned_display_name: cleanAddr,
+						original_display_name: item.display_name,
+					};
+				})
+				.filter((item: any) => {
+					// Filter out results that are only postal codes
+					const addr = item.cleaned_display_name || item.display_name || '';
+					return (
+						addr.length >= 10 && !/^\d{5,6}(\s*,\s*[^,]+)?$/.test(addr.trim())
+					);
+				});
+
+			// Sort results by relevance
+			const sortedData = cleanedData.sort((a: any, b: any) => {
+				const aAddr = (a.cleaned_display_name || '').toLowerCase();
+				const bAddr = (b.cleaned_display_name || '').toLowerCase();
+
+				// Check city/district matches
+				let aCityMatch = 0;
+				let bCityMatch = 0;
+				for (const keyword of cityKeywords) {
+					if (keyword && aAddr.includes(keyword)) aCityMatch++;
+					if (keyword && bAddr.includes(keyword)) bCityMatch++;
+				}
+
+				// Prioritize results without business names (start with numbers or street names)
+				const aStartsWithNumber = /^\d+/.test(aAddr);
+				const bStartsWithNumber = /^\d+/.test(bAddr);
+				if (aStartsWithNumber && !bStartsWithNumber) return -1;
+				if (!aStartsWithNumber && bStartsWithNumber) return 1;
+
+				// Prioritize city matches first
+				if (aCityMatch > bCityMatch) return -1;
+				if (aCityMatch < bCityMatch) return 1;
+
+				// Then prioritize house numbers
+				const aHasNumber = /\d+/.test(aAddr);
+				const bHasNumber = /\d+/.test(bAddr);
+				if (aHasNumber && !bHasNumber) return -1;
+				if (!aHasNumber && bHasNumber) return 1;
+
+				return 0;
 			});
+
+			const suggestions = sortedData
+				.filter((item: any) => {
+					// Filter out results that are only postal codes or too short/incomplete
+					const cleanAddr =
+						item.cleaned_display_name || item.display_name || '';
+					if (!cleanAddr || cleanAddr.trim().length < 10) {
+						return false; // Too short
+					}
+
+					const trimmed = cleanAddr.trim();
+
+					// Skip if it's only a postal code
+					if (/^\d{5,6}$/.test(trimmed)) {
+						return false;
+					}
+
+					// Skip if it's only postal code with comma
+					if (/^,\s*\d{5,6}$/.test(trimmed)) {
+						return false;
+					}
+
+					// Skip if it starts with postal code only (like "57100, ...")
+					if (/^\d{5,6}(\s*,\s*[^,\d]+)?$/.test(trimmed)) {
+						return false;
+					}
+
+					// Must have at least one comma (indicating multiple address components)
+					if (!trimmed.includes(',')) {
+						return false;
+					}
+
+					// Must not start with just postal code
+					const firstPart = trimmed.split(',')[0].trim();
+					if (/^\d{5,6}$/.test(firstPart) && trimmed.split(',').length <= 2) {
+						return false;
+					}
+
+					return true;
+				})
+				.map((item: any) => {
+					const cleanAddr =
+						item.cleaned_display_name || item.display_name || '';
+					return {
+						lat: parseFloat(item.lat),
+						lon: parseFloat(item.lon),
+						display_name: cleanAddr,
+						address: cleanAddr,
+					};
+				})
+				.slice(0, 5); // Limit to 5 best results
 			setSuggestions(suggestions);
 		} else {
 			setSuggestions([]);
@@ -198,6 +385,47 @@ export default function AddressAutocomplete({
 		}
 	};
 
+	// Handle paste event - try to geocode pasted address immediately
+	const handlePaste = async (e: React.ClipboardEvent<HTMLInputElement>) => {
+		// Let the paste happen first
+		setTimeout(async () => {
+			const pastedValue = e.currentTarget.value;
+			// If pasted text looks like a full address (contains commas and numbers), try to geocode it
+			if (pastedValue && pastedValue.includes(',') && /\d+/.test(pastedValue)) {
+				setLoading(true);
+				try {
+					// Try to geocode through backend first
+					const API_BASE_URL =
+						process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+					const response = await fetch(
+						`${API_BASE_URL}/geocoding/search?address=${encodeURIComponent(pastedValue)}`
+					);
+
+					if (response.ok) {
+						const result = await response.json();
+						if (result.success && result.data) {
+							const cleanAddress = cleanAddressFromCountry(
+								result.data.display_name || result.data.address
+							);
+							onChange(cleanAddress);
+							if (onAddressSelect) {
+								onAddressSelect(cleanAddress, result.data.lat, result.data.lon);
+							}
+							setShowSuggestions(false);
+							setIsTyping(false);
+							setLoading(false);
+							return;
+						}
+					}
+				} catch (error) {
+					console.error('Error geocoding pasted address:', error);
+				} finally {
+					setLoading(false);
+				}
+			}
+		}, 100);
+	};
+
 	const handleSuggestionClick = (suggestion: AddressSuggestion) => {
 		// Специальная обработка для "Use Current Location"
 		if (suggestion.display_name === t.common.useCurrentLocation) {
@@ -227,6 +455,47 @@ export default function AddressAutocomplete({
 		} else if (suggestions.length > 0) {
 			setShowSuggestions(true);
 		}
+	};
+
+	// Handle blur - try to geocode if address looks complete
+	const handleInputBlur = async () => {
+		// Wait a bit to allow click on suggestions
+		setTimeout(async () => {
+			if (
+				value &&
+				value.includes(',') &&
+				/\d+/.test(value) &&
+				!showSuggestions
+			) {
+				// Address looks complete but wasn't selected from suggestions
+				// Try to geocode it
+				setLoading(true);
+				try {
+					const API_BASE_URL =
+						process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+					const response = await fetch(
+						`${API_BASE_URL}/geocoding/search?address=${encodeURIComponent(value)}`
+					);
+
+					if (response.ok) {
+						const result = await response.json();
+						if (result.success && result.data) {
+							const cleanAddress = cleanAddressFromCountry(
+								result.data.display_name || result.data.address
+							);
+							onChange(cleanAddress);
+							if (onAddressSelect) {
+								onAddressSelect(cleanAddress, result.data.lat, result.data.lon);
+							}
+						}
+					}
+				} catch (error) {
+					console.error('Error geocoding address on blur:', error);
+				} finally {
+					setLoading(false);
+				}
+			}
+		}, 200);
 	};
 
 	const handleCurrentLocation = () => {
@@ -335,7 +604,9 @@ export default function AddressAutocomplete({
 				type="text"
 				value={isGettingLocation ? t.common.gettingLocation : value}
 				onChange={handleInputChange}
+				onPaste={handlePaste}
 				onFocus={handleInputFocus}
+				onBlur={handleInputBlur}
 				placeholder={isGettingLocation ? t.common.gettingLocation : placeholder}
 				disabled={isGettingLocation}
 				className={

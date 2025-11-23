@@ -6,7 +6,6 @@ import toast from 'react-hot-toast';
 export default function BetaRequestForm() {
 	const [formData, setFormData] = useState({
 		fullName: '',
-		salonName: '',
 		email: '',
 	});
 	const [loading, setLoading] = useState(false);
@@ -16,27 +15,27 @@ export default function BetaRequestForm() {
 		setLoading(true);
 
 		try {
-			const response = await fetch(
-				`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/contact/send-message`,
-				{
-					method: 'POST',
-					headers: {
-						'Content-Type': 'application/json',
-					},
-					body: JSON.stringify({
-						name: formData.fullName,
-						email: formData.email,
-						message: `Beta Testing Request\n\nFull Name: ${formData.fullName}\nSalon Name: ${formData.salonName || 'Not provided'}\n\nRequesting access to beta testing program.`,
-					}),
-				}
-			);
+			const API_URL =
+				process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+			const response = await fetch(`${API_URL}/auth/send-business-magic-link`, {
+				method: 'POST',
+				headers: {
+					'Content-Type': 'application/json',
+				},
+				body: JSON.stringify({
+					name: formData.fullName,
+					email: formData.email,
+				}),
+			});
 
 			if (!response.ok) {
-				throw new Error('Failed to submit request');
+				const errorData = await response.json().catch(() => ({}));
+				const errorMessage = errorData.message || 'Failed to send magic link';
+				throw new Error(errorMessage);
 			}
 
 			toast.success(
-				"Thank you! We'll contact you soon about the beta program.",
+				'Magic link sent to your email! Please check your inbox to complete registration.',
 				{
 					duration: 5000,
 				}
@@ -45,11 +44,14 @@ export default function BetaRequestForm() {
 			// Reset form
 			setFormData({
 				fullName: '',
-				salonName: '',
 				email: '',
 			});
 		} catch (error) {
-			toast.error('Failed to submit request. Please try again.');
+			const errorMessage =
+				error instanceof Error
+					? error.message
+					: 'Failed to submit request. Please try again.';
+			toast.error(errorMessage);
 			console.error('Beta request error:', error);
 		} finally {
 			setLoading(false);
@@ -91,27 +93,6 @@ export default function BetaRequestForm() {
 									setFormData({ ...formData, fullName: e.target.value })
 								}
 								placeholder="John Doe"
-								className="block w-full px-4 py-3 border border-border rounded-lg bg-background text-foreground focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-colors"
-							/>
-						</div>
-
-						{/* Salon Name */}
-						<div>
-							<label
-								htmlFor="salonName"
-								className="block text-sm font-medium text-foreground mb-2"
-							>
-								Salon Name{' '}
-								<span className="text-muted-foreground">(Optional)</span>
-							</label>
-							<input
-								type="text"
-								id="salonName"
-								value={formData.salonName}
-								onChange={(e) =>
-									setFormData({ ...formData, salonName: e.target.value })
-								}
-								placeholder="Beauty Lounge"
 								className="block w-full px-4 py-3 border border-border rounded-lg bg-background text-foreground focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-colors"
 							/>
 						</div>

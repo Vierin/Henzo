@@ -177,36 +177,13 @@ export default function SalonDetailClient({ salon }: SalonDetailClientProps) {
 			{ group: NonNullable<Service['serviceGroup']>; services: Service[] }
 		>();
 		const ungrouped: Service[] = [];
-		// Map to track temporary groups created from serviceGroupId
-		const tempGroupsMap = new Map<
-			string,
-			NonNullable<Service['serviceGroup']>
-		>();
 
 		salon.services.forEach((service) => {
-			// Try to get group from service.serviceGroup
-			let group: Service['serviceGroup'] | undefined = service.serviceGroup;
-
-			// If serviceGroup is not loaded but serviceGroupId exists, create a temporary group
-			if (!group && service.serviceGroupId) {
-				// Check if we already created a temp group for this ID
-				if (!tempGroupsMap.has(service.serviceGroupId)) {
-					// Create a temporary group object with minimal data
-					const tempGroup: NonNullable<Service['serviceGroup']> = {
-						id: service.serviceGroupId,
-						salonId: salon.id,
-						name: `Group ${service.serviceGroupId.slice(0, 8)}`, // Temporary name
-						position: 0,
-						isActive: true,
-						createdAt: new Date().toISOString(),
-					};
-					tempGroupsMap.set(service.serviceGroupId, tempGroup);
-				}
-				group = tempGroupsMap.get(service.serviceGroupId);
-			}
+			// Get group from service.serviceGroup (should always be loaded from backend)
+			const group: Service['serviceGroup'] | undefined = service.serviceGroup;
 
 			// Check if service has a valid active group
-			if (group && (group.isActive === true || group.isActive === undefined)) {
+			if (group && group.isActive !== false) {
 				const groupId = group.id;
 
 				if (!groupsMap.has(groupId)) {
@@ -217,7 +194,7 @@ export default function SalonDetailClient({ salon }: SalonDetailClientProps) {
 				}
 				groupsMap.get(groupId)!.services.push(service);
 			} else {
-				// Service without group, with inactive group, or serviceGroup not loaded
+				// Service without group or with inactive group
 				ungrouped.push(service);
 			}
 		});

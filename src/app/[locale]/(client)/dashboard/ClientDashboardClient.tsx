@@ -49,12 +49,17 @@ export default function ClientDashboardClient() {
 
 	const handleBookAgain = useCallback((booking: any) => {
 		// Navigate to booking page with pre-filled data
+		const salonId = booking.salonId || booking.salon?.id || booking.Salon?.id;
+		const serviceId =
+			booking.serviceId || booking.service?.id || booking.Service?.id;
+		if (!salonId || !serviceId) return;
+
 		const params = new URLSearchParams({
-			salonId: booking.salonId || booking.salon.id,
-			serviceId: booking.serviceId || booking.service.id,
+			salonId,
+			serviceId,
 			...(booking.staffId && { staffId: booking.staffId }),
 		});
-		window.location.href = `/salons/${booking.salonId || booking.salon.id}/book?${params.toString()}`;
+		window.location.href = `/salons/${salonId}/book?${params.toString()}`;
 	}, []);
 
 	const handleCancel = useCallback(
@@ -79,10 +84,18 @@ export default function ClientDashboardClient() {
 
 			setReviewModal({
 				isOpen: true,
-				salonId: visit.salonId || visit.salon?.id,
-				salonName: visit.salonName || visit.salon?.name,
+				salonId: visit.salonId || visit.salon?.id || visit.Salon?.id,
+				salonName:
+					visit.salonName ||
+					visit.salon?.name ||
+					visit.Salon?.name ||
+					'Unknown Salon',
 				bookingId: visit.id,
-				serviceName: visit.serviceName || visit.service?.name,
+				serviceName:
+					visit.serviceName ||
+					visit.service?.name ||
+					visit.Service?.name ||
+					'Unknown Service',
 			});
 		},
 		[hasExistingReview]
@@ -336,16 +349,32 @@ export default function ClientDashboardClient() {
 									<VisitHistoryCard
 										visit={{
 											id: booking.id,
-											salonName: booking.salon.name,
-											serviceName: booking.service.name,
-											date: booking.time, // Pass raw time for proper formatting
+											salonName:
+												booking.salon?.name ||
+												booking.Salon?.name ||
+												'Unknown Salon',
+											serviceName:
+												booking.service?.name ||
+												booking.Service?.name ||
+												'Unknown Service',
+											date: booking.time,
 											image:
-												booking.salon.logo || booking.salon.photos[0] || '',
+												booking.salon?.logo ||
+												booking.Salon?.logo ||
+												booking.salon?.photos?.[0] ||
+												booking.Salon?.photos?.[0] ||
+												'',
 											time: booking.time,
 											status: booking.status,
-											salonId: booking.salon.id,
-											serviceId: booking.service.id,
-											staffName: booking.staff?.name,
+											salonId:
+												booking.salon?.id ||
+												booking.Salon?.id ||
+												booking.salonId,
+											serviceId:
+												booking.service?.id ||
+												booking.Service?.id ||
+												booking.serviceId,
+											staffName: booking.staff?.name || booking.Staff?.name,
 										}}
 										onCancel={handleCancel}
 										isUpcoming={true}
@@ -384,23 +413,51 @@ export default function ClientDashboardClient() {
 									<VisitHistoryCard
 										visit={{
 											id: booking.id,
-											salonName: booking.salon.name,
-											serviceName: booking.service.name,
+											salonName:
+												booking.salon?.name ||
+												booking.Salon?.name ||
+												'Unknown Salon',
+											serviceName:
+												booking.service?.name ||
+												booking.Service?.name ||
+												'Unknown Service',
 											date: booking.time, // Pass raw time for proper formatting
 											image:
-												booking.salon.logo || booking.salon.photos[0] || '',
+												booking.salon?.logo ||
+												booking.Salon?.logo ||
+												booking.salon?.photos?.[0] ||
+												booking.Salon?.photos?.[0] ||
+												'',
 											time: booking.time,
 											status: 'COMPLETED',
-											salonId: booking.salon.id,
-											serviceId: booking.service.id,
-											staffName: booking.staff?.name,
+											salonId:
+												booking.salon?.id ||
+												booking.Salon?.id ||
+												booking.salonId,
+											serviceId:
+												booking.service?.id ||
+												booking.Service?.id ||
+												booking.serviceId,
+											staffName: booking.staff?.name || booking.Staff?.name,
 											salon: {
-												id: booking.salon.id,
-												name: booking.salon.name,
+												id:
+													booking.salon?.id ||
+													booking.Salon?.id ||
+													booking.salonId,
+												name:
+													booking.salon?.name ||
+													booking.Salon?.name ||
+													'Unknown Salon',
 											},
 											service: {
-												id: booking.service.id,
-												name: booking.service.name,
+												id:
+													booking.service?.id ||
+													booking.Service?.id ||
+													booking.serviceId,
+												name:
+													booking.service?.name ||
+													booking.Service?.name ||
+													'Unknown Service',
 											},
 										}}
 										onBookAgain={handleBookAgain}

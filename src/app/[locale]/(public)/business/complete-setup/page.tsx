@@ -1,22 +1,25 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/lib/auth-unified';
 import { useQueryClient } from '@tanstack/react-query';
 import { STATIC_CATEGORIES } from '@/constants/categories';
 import { checkLocationMatch } from '@/constants/locations';
-import AddressAutocomplete from '@/components/AddressAutocomplete';
+import MapboxAddressAutocomplete from '@/components/MapboxAddressAutocomplete';
 import WorkingHoursSection from '@/components/WorkingHoursSection';
 import EnhancedFileUpload from '@/components/EnhancedFileUpload';
 import EnhancedPhotoUpload from '@/components/EnhancedPhotoUpload';
+import MapComponentWithCoords from '@/components/MapComponentWithCoords';
 import toast from 'react-hot-toast';
 
 interface SalonSetupData {
 	// Step 1: General Information
 	name: string;
 	address: string;
+	addressLat?: number;
+	addressLon?: number;
 	phone: string;
 
 	// Step 2: Categories
@@ -60,10 +63,69 @@ export default function BusinessCompleteSetupPage() {
 	const [currentStep, setCurrentStep] = useState(1);
 	const [loading, setLoading] = useState(false);
 	const [errors, setErrors] = useState<{ [key: string]: string }>({});
+	const [isUpdatingAddress, setIsUpdatingAddress] = useState(false);
+	const addressUpdateTimerRef = useRef<NodeJS.Timeout | null>(null);
+
+	// Memoize marker move handler to prevent unnecessary re-renders
+	const handleMarkerMove = useCallback(
+		(lat: number, lon: number, address?: string) => {
+			// Update coordinates immediately
+			setFormData((prev) => ({
+				...prev,
+				addressLat: lat,
+				addressLon: lon,
+			}));
+
+			// Debounce address update to avoid too many requests
+			if (addressUpdateTimerRef.current) {
+				clearTimeout(addressUpdateTimerRef.current);
+			}
+
+			if (address) {
+				// If address is already provided from reverse geocoding, update immediately
+				setFormData((prev) => ({
+					...prev,
+					address,
+				}));
+				setIsUpdatingAddress(false);
+			} else {
+				// Show loading indicator
+				setIsUpdatingAddress(true);
+
+				// Debounce reverse geocoding request (500ms delay)
+				addressUpdateTimerRef.current = setTimeout(async () => {
+					try {
+						const API_BASE_URL =
+							process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+						const response = await fetch(
+							`${API_BASE_URL}/mapbox/reverse-geocode?lat=${lat}&lon=${lon}`
+						);
+
+						if (response.ok) {
+							const result = await response.json();
+							if (result?.address) {
+								setFormData((prev) => ({
+									...prev,
+									address: result.address,
+								}));
+							}
+						}
+					} catch (error) {
+						console.error('Failed to reverse geocode:', error);
+					} finally {
+						setIsUpdatingAddress(false);
+					}
+				}, 500);
+			}
+		},
+		[]
+	);
 
 	const [formData, setFormData] = useState<SalonSetupData>({
 		name: '',
 		address: '',
+		addressLat: undefined,
+		addressLon: undefined,
 		phone: '',
 		categories: [],
 		workingHours: {
@@ -91,6 +153,25 @@ export default function BusinessCompleteSetupPage() {
 		{ number: 4, title: 'Branding' },
 		{ number: 5, title: 'Confirmation & Review' },
 	];
+
+	// Memoize map props to prevent unnecessary re-renders
+	const mapProps = useMemo(
+		() => ({
+			lat: formData.addressLat,
+			lon: formData.addressLon,
+			address: formData.address,
+		}),
+		[formData.addressLat, formData.addressLon, formData.address]
+	);
+
+	// Cleanup timer on unmount
+	useEffect(() => {
+		return () => {
+			if (addressUpdateTimerRef.current) {
+				clearTimeout(addressUpdateTimerRef.current);
+			}
+		};
+	}, []);
 
 	// Redirect if not authenticated or not a business user
 	useEffect(() => {
@@ -296,22 +377,20 @@ export default function BusinessCompleteSetupPage() {
 			const API_BASE_URL =
 				process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
-			// Get inviteCodeId from sessionStorage (saved during registration)
-			const inviteCodeId = sessionStorage.getItem('inviteCodeId');
-
 			// Create salon data with file paths
 			const salonData = {
 				name: formData.name.trim(),
 				description: formData.description.trim() || null,
-				categoryIds: formData.categories,
+				// categoryIds removed: categories are derived from services
 				address: formData.address.trim(),
+				latitude: formData.addressLat || undefined,
+				longitude: formData.addressLon || undefined,
 				phone: formData.phone.trim(),
 				website: formData.socialMedia.website.trim() || null,
 				instagram: formData.socialMedia.instagram.trim() || null,
 				workingHours: formData.workingHours,
 				logo: formData.logo || null,
 				photos: formData.photos,
-				inviteCodeId: inviteCodeId || undefined,
 			};
 
 			const response = await fetch(`${API_BASE_URL}/salons/current`, {
@@ -327,9 +406,6 @@ export default function BusinessCompleteSetupPage() {
 				const errorData = await response.json();
 				throw new Error(errorData.message || 'Failed to create salon');
 			}
-
-			// Clean up inviteCodeId from storage
-			sessionStorage.removeItem('inviteCodeId');
 
 			// Invalidate salon queries to refresh data on owner-dashboard
 			await queryClient.invalidateQueries({ queryKey: ['salons'] });
@@ -386,18 +462,74 @@ export default function BusinessCompleteSetupPage() {
 							>
 								Salon Address
 							</label>
-							<AddressAutocomplete
-								value={formData.address}
-								onChange={(address) => {
-									setFormData((prev) => ({ ...prev, address }));
-									if (errors.address) {
-										setErrors((prev) => ({ ...prev, address: '' }));
-									}
-								}}
-								placeholder="Select your salon address"
-								className="w-full h-13 px-4 py-3 rounded-lg text-gray-900 placeholder-gray-300 focus:ring-2 bg-white focus:ring-[#F8F5F2] focus:border-transparent"
-								showIcon={false}
-							/>
+							{/* Map above address field */}
+							{mapProps.lat && mapProps.lon ? (
+								<div className="mb-4 w-full rounded-lg overflow-hidden border border-gray-200 shadow-sm">
+									<MapComponentWithCoords
+										lat={mapProps.lat}
+										lon={mapProps.lon}
+										address={mapProps.address}
+										height="450px"
+										zoom={16}
+										interactive={true}
+										showPopup={false}
+										editable={true}
+										onMarkerMove={handleMarkerMove}
+										className="w-full h-full"
+									/>
+								</div>
+							) : (
+								<div className="mb-4 w-full aspect-square rounded-lg border border-gray-200 bg-gray-50 flex items-center justify-center">
+									<p className="text-sm text-gray-400">
+										Select address to see map
+									</p>
+								</div>
+							)}
+							{/* Address input field below map */}
+							<div className="relative">
+								<MapboxAddressAutocomplete
+									value={formData.address}
+									onChange={(address) => {
+										// Clear loading indicator when user types manually
+										if (addressUpdateTimerRef.current) {
+											clearTimeout(addressUpdateTimerRef.current);
+											addressUpdateTimerRef.current = null;
+										}
+										setIsUpdatingAddress(false);
+
+										setFormData((prev) => ({ ...prev, address }));
+										if (errors.address) {
+											setErrors((prev) => ({ ...prev, address: '' }));
+										}
+									}}
+									onAddressSelect={(address, lat, lon) => {
+										// Clear any pending updates when selecting from autocomplete
+										if (addressUpdateTimerRef.current) {
+											clearTimeout(addressUpdateTimerRef.current);
+											addressUpdateTimerRef.current = null;
+										}
+										setIsUpdatingAddress(false);
+
+										setFormData((prev) => ({
+											...prev,
+											address,
+											addressLat: lat,
+											addressLon: lon,
+										}));
+										if (errors.address) {
+											setErrors((prev) => ({ ...prev, address: '' }));
+										}
+									}}
+									placeholder="Select your salon address"
+									className="w-full h-13 px-4 py-3 rounded-lg text-gray-900 placeholder-gray-300 focus:ring-2 bg-white focus:ring-[#F8F5F2] focus:border-transparent"
+									showIcon={false}
+								/>
+								{isUpdatingAddress && (
+									<div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+										<div className="animate-spin rounded-full h-4 w-4 border-b-2 border-gray-400"></div>
+									</div>
+								)}
+							</div>
 							{errors.address && (
 								<p className="absolute -bottom-[1.4rem] right-0 text-sm text-red-400">
 									{errors.address}

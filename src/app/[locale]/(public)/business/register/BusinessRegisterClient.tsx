@@ -10,22 +10,21 @@ import { useTranslation } from '@/contexts/LanguageContext';
 export default function BusinessRegisterClient() {
 	const t = useTranslation();
 	const searchParams = useSearchParams();
-	const inviteCodeFromUrl = searchParams.get('invite') || '';
 	const emailFromUrl = searchParams.get('email') || '';
+	const tokenFromUrl = searchParams.get('token') || '';
+	const nameFromUrl = searchParams.get('name') || '';
 
-	// Check if coming from invite link (both invite code and email present)
-	const isInviteLink = !!(inviteCodeFromUrl && emailFromUrl);
+	// Check if coming from magic link (both token and email present)
+	const isMagicLink = !!(tokenFromUrl && emailFromUrl);
 
 	const [formData, setFormData] = useState({
 		email: emailFromUrl,
 		password: '',
 		confirmPassword: '',
-		name: '',
-		inviteCode: inviteCodeFromUrl,
+		name: nameFromUrl,
+		token: tokenFromUrl,
 	});
 	const [loading, setLoading] = useState(false);
-	const [validatingCode, setValidatingCode] = useState(false);
-	const [codeValid, setCodeValid] = useState<boolean | null>(null);
 	const router = useRouter();
 	const { registerOwner, isAuthenticated, user } = useAuth();
 
@@ -49,51 +48,15 @@ export default function BusinessRegisterClient() {
 		}
 	}, [isAuthenticated, user, router]);
 
-	// Валидация инвайт-кода при изменении
-	useEffect(() => {
-		const validateInviteCode = async () => {
-			if (!formData.inviteCode) {
-				setCodeValid(null);
-				return;
-			}
-
-			setValidatingCode(true);
-			try {
-				const API_URL =
-					process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
-				const response = await fetch(
-					`${API_URL}/invite-codes/validate/${formData.inviteCode}`
-				);
-				const result = await response.json();
-				setCodeValid(result.valid);
-				if (!result.valid) {
-					toast.error(result.error || t.business.register.invalidInviteCode);
-				}
-			} catch (error) {
-				setCodeValid(false);
-				console.error('Code validation error:', error);
-			} finally {
-				setValidatingCode(false);
-			}
-		};
-
-		const debounce = setTimeout(validateInviteCode, 500);
-		return () => clearTimeout(debounce);
-	}, [formData.inviteCode]);
-
 	const handleSubmit = async (e: React.FormEvent) => {
 		e.preventDefault();
 		setLoading(true);
 
-		// Проверка инвайт-кода
-		if (!formData.inviteCode) {
-			toast.error(t.business.register.inviteCodeRequiredError);
-			setLoading(false);
-			return;
-		}
-
-		if (codeValid === false) {
-			toast.error(t.business.register.pleaseEnterValidCode);
+		// Проверка magic link токена
+		if (isMagicLink && !formData.token) {
+			toast.error(
+				'Invalid registration link. Please request a new magic link.'
+			);
 			setLoading(false);
 			return;
 		}
@@ -115,13 +78,12 @@ export default function BusinessRegisterClient() {
 				email: formData.email,
 				password: formData.password,
 				name: formData.name,
-				inviteCode: formData.inviteCode,
-				fromInviteLink: isInviteLink,
+				magicLinkToken: formData.token || undefined,
 			});
 
 			if (result.success) {
-				// Если email уже подтвержден (регистрация по инвайт-ссылке), редиректим на complete-setup
-				if (result.emailConfirmed) {
+				// Если email уже подтвержден (регистрация по magic link), редиректим на complete-setup
+				if (result.emailConfirmed || isMagicLink) {
 					toast.success(t.business.register.registrationSuccessful);
 					router.push('/business/complete-setup');
 				} else {
@@ -143,20 +105,19 @@ export default function BusinessRegisterClient() {
 	};
 
 	const handleGoogleRegister = async () => {
-		if (!formData.inviteCode) {
-			toast.error(t.business.register.pleaseEnterInviteCode);
-			return;
-		}
-
-		if (codeValid === false) {
-			toast.error(t.business.register.pleaseEnterValidCode);
+		if (isMagicLink && !formData.token) {
+			toast.error(
+				'Invalid registration link. Please request a new magic link.'
+			);
 			return;
 		}
 
 		setLoading(true);
 		try {
-			// Store invite code for OAuth flow
-			sessionStorage.setItem('inviteCode', formData.inviteCode);
+			// Store magic link token for OAuth flow if present
+			if (formData.token) {
+				sessionStorage.setItem('magicLinkToken', formData.token);
+			}
 			localStorage.setItem('registrationType', 'business');
 			sessionStorage.setItem('registrationType', 'business');
 
@@ -240,15 +201,15 @@ export default function BusinessRegisterClient() {
 								type="email"
 								autoComplete="email"
 								required
-								readOnly={isInviteLink}
+								readOnly={isMagicLink}
 								className={`mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-orange-500 focus:border-orange-500 sm:text-sm text-gray-900 ${
-									isInviteLink ? 'bg-gray-100 cursor-not-allowed' : ''
+									isMagicLink ? 'bg-gray-100 cursor-not-allowed' : ''
 								}`}
 								placeholder={t.business.register.emailPlaceholder}
 								value={formData.email}
 								onChange={handleInputChange}
 							/>
-							{isInviteLink && (
+							{isMagicLink && (
 								<p className="mt-1 text-xs text-gray-500">
 									{t.business.register.emailVerified}
 								</p>
@@ -296,81 +257,12 @@ export default function BusinessRegisterClient() {
 								onChange={handleInputChange}
 							/>
 						</div>
-
-						{/* Invite Code */}
-						<div>
-							<label
-								htmlFor="inviteCode"
-								className="block text-sm font-medium text-gray-700"
-							>
-								{t.business.register.inviteCode}{' '}
-								<span className="text-red-500">*</span>
-							</label>
-							<div className="mt-1 relative">
-								<input
-									id="inviteCode"
-									name="inviteCode"
-									type="text"
-									required
-									readOnly={isInviteLink}
-									className={`block w-full px-3 py-2 pr-10 border ${
-										codeValid === true
-											? 'border-green-500 focus:ring-green-500 focus:border-green-500'
-											: codeValid === false
-												? 'border-red-500 focus:ring-red-500 focus:border-red-500'
-												: 'border-gray-300 focus:ring-orange-500 focus:border-orange-500'
-									} rounded-md shadow-sm focus:outline-none sm:text-sm text-gray-900 ${
-										isInviteLink ? 'bg-gray-100 cursor-not-allowed' : ''
-									}`}
-									placeholder={t.business.register.inviteCodePlaceholder}
-									value={formData.inviteCode}
-									onChange={handleInputChange}
-								/>
-								{/* Validation Icon */}
-								<div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
-									{validatingCode && (
-										<div className="animate-spin rounded-full h-4 w-4 border-b-2 border-orange-500"></div>
-									)}
-									{!validatingCode && codeValid === true && (
-										<svg
-											className="h-5 w-5 text-green-500"
-											fill="currentColor"
-											viewBox="0 0 20 20"
-										>
-											<path
-												fillRule="evenodd"
-												d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
-												clipRule="evenodd"
-											/>
-										</svg>
-									)}
-									{!validatingCode && codeValid === false && (
-										<svg
-											className="h-5 w-5 text-red-500"
-											fill="currentColor"
-											viewBox="0 0 20 20"
-										>
-											<path
-												fillRule="evenodd"
-												d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
-												clipRule="evenodd"
-											/>
-										</svg>
-									)}
-								</div>
-							</div>
-							<p className="mt-1 text-xs text-gray-500">
-								{isInviteLink
-									? t.business.register.inviteCodeApplied
-									: t.business.register.inviteCodeRequired}
-							</p>
-						</div>
 					</div>
 
 					<div>
 						<button
 							type="submit"
-							disabled={loading || validatingCode || codeValid === false}
+							disabled={loading}
 							className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-orange-500 hover:bg-orange-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500 disabled:opacity-50 disabled:cursor-not-allowed"
 						>
 							{loading ? (
@@ -401,7 +293,7 @@ export default function BusinessRegisterClient() {
 						<button
 							type="button"
 							onClick={handleGoogleRegister}
-							disabled={loading || !formData.inviteCode || codeValid === false}
+							disabled={loading || (isMagicLink && !formData.token)}
 							className="w-full flex justify-center items-center py-2 px-4 border border-gray-300 rounded-md shadow-sm bg-white text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500 disabled:opacity-50 disabled:cursor-not-allowed"
 						>
 							<svg className="w-5 h-5 mr-2" viewBox="0 0 24 24">
@@ -426,7 +318,7 @@ export default function BusinessRegisterClient() {
 						</button>
 					</div>
 
-					<div className="text-center space-y-4">
+					<div className="text-center">
 						<p className="text-sm text-gray-600">
 							{t.business.register.alreadyHaveAccount}{' '}
 							<a
@@ -436,17 +328,6 @@ export default function BusinessRegisterClient() {
 								{t.business.register.signIn}
 							</a>
 						</p>
-						<div className="border-t border-gray-200 pt-4">
-							<p className="text-sm text-gray-600 mb-2">
-								{t.business.register.lookingToBook}
-							</p>
-							<a
-								href="/register"
-								className="text-sm font-medium text-[#ff5b5b] hover:text-[#ff4545]"
-							>
-								{t.business.register.registerAsClient}
-							</a>
-						</div>
 					</div>
 				</form>
 			</div>
