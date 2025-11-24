@@ -1,14 +1,19 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import {
 	useServices,
 	useCreateService,
 	useUpdateService,
 } from '@/hooks/useServices';
 import { useSalonId } from '@/hooks/useSalon';
-import { STATIC_CATEGORIES } from '@/constants/categories';
-import { Service, ServiceGroup } from '@/types';
+import {
+	Service,
+	ServiceGroup,
+	ServiceCategory,
+	ServiceSubcategory,
+	ServiceTag,
+} from '@/types';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '@/lib/api-client';
 import {
@@ -18,6 +23,7 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from '@/components/ui/select';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 interface EditServiceModalProps {
 	isOpen: boolean;
@@ -42,18 +48,68 @@ export default function EditServiceModal({
 		duration: 0,
 		price: 0,
 		serviceCategoryId: 0,
+		serviceSubcategoryId: 0,
 		serviceGroupId: 'none',
+		tagIds: [] as number[],
 	});
+	const [tagSearchQuery, setTagSearchQuery] = useState('');
 	const [isGroupModalOpen, setIsGroupModalOpen] = useState(false);
 	const [newGroupName, setNewGroupName] = useState('');
 	const queryClient = useQueryClient();
+	const { language } = useLanguage();
 
 	// Используем оптимизированный хук для получения данных салона
 	const { salonId } = useSalonId();
 
-	const categories = STATIC_CATEGORIES;
 	const createServiceMutation = useCreateService();
 	const updateServiceMutation = useUpdateService();
+
+	// Load categories from API
+	const { data: categories = [] } = useQuery<ServiceCategory[]>({
+		queryKey: ['service-categories'],
+		queryFn: async () => {
+			return apiClient.get<ServiceCategory[]>('/services/categories');
+		},
+		staleTime: 10 * 60 * 1000,
+	});
+
+	// Load subcategories when category is selected
+	const { data: subcategories = [] } = useQuery<ServiceSubcategory[]>({
+		queryKey: ['service-subcategories', formData.serviceCategoryId],
+		queryFn: async () => {
+			if (!formData.serviceCategoryId) return [];
+			const params = new URLSearchParams();
+			params.append('categoryId', formData.serviceCategoryId.toString());
+			return apiClient.get<ServiceSubcategory[]>(
+				`/services/subcategories?${params.toString()}`
+			);
+		},
+		enabled: !!formData.serviceCategoryId,
+		staleTime: 10 * 60 * 1000,
+	});
+
+	// Load tags with search
+	const { data: allTags = [] } = useQuery<ServiceTag[]>({
+		queryKey: ['service-tags', tagSearchQuery],
+		queryFn: async () => {
+			const params = new URLSearchParams();
+			if (tagSearchQuery) params.append('q', tagSearchQuery);
+			params.append('limit', '50');
+			return apiClient.get<ServiceTag[]>(`/services/tags?${params.toString()}`);
+		},
+		enabled: true,
+		staleTime: 5 * 60 * 1000,
+	});
+
+	// Filter tags that are not already selected
+	const availableTags = useMemo(() => {
+		return allTags.filter((tag) => !formData.tagIds.includes(tag.id));
+	}, [allTags, formData.tagIds]);
+
+	// Get selected tags
+	const selectedTags = useMemo(() => {
+		return allTags.filter((tag) => formData.tagIds.includes(tag.id));
+	}, [allTags, formData.tagIds]);
 
 	// Load service groups for this salon
 	const { data: groups = [] } = useQuery<ServiceGroup[]>({
@@ -82,7 +138,9 @@ export default function EditServiceModal({
 				duration: service.duration,
 				price: service.price,
 				serviceCategoryId: service.serviceCategoryId || 0,
+				serviceSubcategoryId: service.serviceSubcategoryId || 0,
 				serviceGroupId: service.serviceGroupId || 'none',
+				tagIds: service.tags?.map((t) => t.id) || [],
 			});
 		} else {
 			setFormData({
@@ -95,10 +153,19 @@ export default function EditServiceModal({
 				duration: 0,
 				price: 0,
 				serviceCategoryId: 0,
+				serviceSubcategoryId: 0,
 				serviceGroupId: 'none',
+				tagIds: [],
 			});
 		}
 	}, [service]);
+
+	// Reset subcategory when category changes
+	useEffect(() => {
+		if (formData.serviceCategoryId) {
+			setFormData((prev) => ({ ...prev, serviceSubcategoryId: 0 }));
+		}
+	}, [formData.serviceCategoryId]);
 
 	const handleSubmit = async (e: React.FormEvent) => {
 		e.preventDefault();
@@ -128,10 +195,15 @@ export default function EditServiceModal({
 						formData.serviceCategoryId > 0
 							? formData.serviceCategoryId
 							: undefined,
+					serviceSubcategoryId:
+						formData.serviceSubcategoryId > 0
+							? formData.serviceSubcategoryId
+							: null,
 					serviceGroupId:
 						formData.serviceGroupId && formData.serviceGroupId !== 'none'
 							? formData.serviceGroupId
 							: undefined,
+					tagIds: formData.tagIds.length > 0 ? formData.tagIds : undefined,
 				};
 				const updatedService = await updateServiceMutation.mutateAsync({
 					id: service.id,
@@ -154,10 +226,15 @@ export default function EditServiceModal({
 						formData.serviceCategoryId > 0
 							? formData.serviceCategoryId
 							: undefined,
+					serviceSubcategoryId:
+						formData.serviceSubcategoryId > 0
+							? formData.serviceSubcategoryId
+							: undefined,
 					serviceGroupId:
 						formData.serviceGroupId && formData.serviceGroupId !== 'none'
 							? formData.serviceGroupId
 							: undefined,
+					tagIds: formData.tagIds.length > 0 ? formData.tagIds : undefined,
 				};
 				const newService = await createServiceMutation.mutateAsync(createData);
 				onSave(newService);
@@ -236,17 +313,152 @@ export default function EditServiceModal({
 									setFormData((prev) => ({
 										...prev,
 										serviceCategoryId: Number(e.target.value),
+										serviceSubcategoryId: 0,
 									}))
 								}
 								className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#ff5b5b] focus:border-transparent text-gray-900"
 							>
-								<option value="">Select a category</option>
-								{categories.map((category) => (
-									<option key={category.id} value={category.id}>
-										{category.name}
-									</option>
-								))}
+								<option value="0">Select a category</option>
+								{categories.map((category) => {
+									const name =
+										language === 'ru'
+											? category.name_ru || category.name_en
+											: language === 'vi'
+												? category.name_vn || category.name_en
+												: category.name_en;
+									return (
+										<option key={category.id} value={category.id}>
+											{name}
+										</option>
+									);
+								})}
 							</select>
+						</div>
+
+						{formData.serviceCategoryId > 0 && subcategories.length > 0 && (
+							<div className="mb-4">
+								<label
+									htmlFor="subcategory"
+									className="block text-sm font-medium text-gray-700 mb-2"
+								>
+									Subcategory
+								</label>
+								<select
+									id="subcategory"
+									value={formData.serviceSubcategoryId}
+									onChange={(e) =>
+										setFormData((prev) => ({
+											...prev,
+											serviceSubcategoryId: Number(e.target.value),
+										}))
+									}
+									className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#ff5b5b] focus:border-transparent text-gray-900"
+								>
+									<option value="0">Select a subcategory (optional)</option>
+									{subcategories.map((subcat) => {
+										const name =
+											language === 'ru'
+												? subcat.nameRu || subcat.nameEn
+												: language === 'vi'
+													? subcat.nameVi || subcat.nameEn
+													: subcat.nameEn;
+										return (
+											<option key={subcat.id} value={subcat.id}>
+												{name}
+											</option>
+										);
+									})}
+								</select>
+							</div>
+						)}
+
+						<div className="mb-4">
+							<label
+								htmlFor="tags"
+								className="block text-sm font-medium text-gray-700 mb-2"
+							>
+								Tags (up to 3)
+							</label>
+							<div className="space-y-2">
+								<input
+									type="text"
+									id="tags"
+									value={tagSearchQuery}
+									onChange={(e) => setTagSearchQuery(e.target.value)}
+									className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#ff5b5b] focus:border-transparent text-gray-900"
+									placeholder="Search tags..."
+								/>
+								{tagSearchQuery && availableTags.length > 0 && (
+									<div className="border border-gray-300 rounded-lg max-h-40 overflow-y-auto bg-white">
+										{availableTags.slice(0, 10).map((tag) => {
+											const name =
+												language === 'ru'
+													? tag.nameRu || tag.nameEn
+													: language === 'vi'
+														? tag.nameVi || tag.nameEn
+														: tag.nameEn;
+											return (
+												<button
+													key={tag.id}
+													type="button"
+													onClick={() => {
+														if (formData.tagIds.length < 3) {
+															setFormData((prev) => ({
+																...prev,
+																tagIds: [...prev.tagIds, tag.id],
+															}));
+															setTagSearchQuery('');
+														}
+													}}
+													className="w-full text-left px-3 py-2 hover:bg-gray-50 text-sm text-gray-900"
+													disabled={formData.tagIds.length >= 3}
+												>
+													{name}
+												</button>
+											);
+										})}
+									</div>
+								)}
+								{selectedTags.length > 0 && (
+									<div className="flex flex-wrap gap-2 mt-2">
+										{selectedTags.map((tag) => {
+											const name =
+												language === 'ru'
+													? tag.nameRu || tag.nameEn
+													: language === 'vi'
+														? tag.nameVi || tag.nameEn
+														: tag.nameEn;
+											return (
+												<span
+													key={tag.id}
+													className="inline-flex items-center gap-1 px-2 py-1 bg-[#ff5b5b] text-white rounded text-sm"
+												>
+													{name}
+													<button
+														type="button"
+														onClick={() => {
+															setFormData((prev) => ({
+																...prev,
+																tagIds: prev.tagIds.filter(
+																	(id) => id !== tag.id
+																),
+															}));
+														}}
+														className="ml-1 hover:text-gray-200"
+													>
+														×
+													</button>
+												</span>
+											);
+										})}
+									</div>
+								)}
+								{formData.tagIds.length >= 3 && (
+									<p className="text-xs text-gray-500 mt-1">
+										Maximum 3 tags selected
+									</p>
+								)}
+							</div>
 						</div>
 
 						<div className="mb-4">

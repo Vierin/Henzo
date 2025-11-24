@@ -76,12 +76,14 @@ export default function LoginClient() {
 	const handleGoogleLogin = async () => {
 		setLoading(true);
 		try {
-			const frontendUrl =
-				process.env.NEXT_PUBLIC_FRONTEND_URL || window.location.origin;
+			const frontendUrl = (
+				process.env.NEXT_PUBLIC_FRONTEND_URL || window.location.origin
+			).trim();
+			const redirectUrl = `${frontendUrl}/auth/callback`;
 			const { data, error } = await supabase.auth.signInWithOAuth({
 				provider: 'google',
 				options: {
-					redirectTo: `${frontendUrl}/auth/callback`,
+					redirectTo: redirectUrl,
 					queryParams: {
 						access_type: 'offline',
 						prompt: 'consent',

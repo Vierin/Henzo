@@ -15,10 +15,12 @@ export default function ForgotPasswordPage() {
 		setError('');
 
 		try {
-			const frontendUrl =
-				process.env.NEXT_PUBLIC_FRONTEND_URL || window.location.origin;
+			const frontendUrl = (
+				process.env.NEXT_PUBLIC_FRONTEND_URL || window.location.origin
+			).trim();
+			const redirectUrl = `${frontendUrl}/auth/callback?type=recovery`;
 			const { error } = await supabase.auth.resetPasswordForEmail(email, {
-				redirectTo: `${frontendUrl}/auth/callback?type=recovery`,
+				redirectTo: redirectUrl,
 			});
 
 			if (error) throw error;

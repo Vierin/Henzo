@@ -6,13 +6,13 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import toast from 'react-hot-toast';
 import { useAuth } from '@/lib/auth-unified';
 import { useTranslation } from '@/contexts/LanguageContext';
+import { getOAuthRedirectUrl } from '@/utils/oauth';
 
 export default function BusinessRegisterClient() {
 	const t = useTranslation();
 	const searchParams = useSearchParams();
 	const emailFromUrl = searchParams.get('email') || '';
 	const tokenFromUrl = searchParams.get('token') || '';
-	const nameFromUrl = searchParams.get('name') || '';
 
 	// Check if coming from magic link (both token and email present)
 	const isMagicLink = !!(tokenFromUrl && emailFromUrl);
@@ -21,7 +21,7 @@ export default function BusinessRegisterClient() {
 		email: emailFromUrl,
 		password: '',
 		confirmPassword: '',
-		name: nameFromUrl,
+		name: '',
 		token: tokenFromUrl,
 	});
 	const [loading, setLoading] = useState(false);
@@ -121,12 +121,14 @@ export default function BusinessRegisterClient() {
 			localStorage.setItem('registrationType', 'business');
 			sessionStorage.setItem('registrationType', 'business');
 
-			const frontendUrl =
-				process.env.NEXT_PUBLIC_FRONTEND_URL || window.location.origin;
+			// Get redirect URL based on platform (web or mobile app)
+			const redirectUrl = getOAuthRedirectUrl('/auth/callback?type=business');
+			console.log('🔗 OAuth redirect URL:', redirectUrl);
+
 			const { data, error } = await supabase.auth.signInWithOAuth({
 				provider: 'google',
 				options: {
-					redirectTo: `${frontendUrl}/auth/callback?type=business`,
+					redirectTo: redirectUrl,
 					queryParams: {
 						access_type: 'offline',
 						prompt: 'consent',
@@ -318,7 +320,7 @@ export default function BusinessRegisterClient() {
 						</button>
 					</div>
 
-					<div className="text-center">
+					<div className="text-center space-y-4">
 						<p className="text-sm text-gray-600">
 							{t.business.register.alreadyHaveAccount}{' '}
 							<a
@@ -328,6 +330,17 @@ export default function BusinessRegisterClient() {
 								{t.business.register.signIn}
 							</a>
 						</p>
+						<div className="border-t border-gray-200 pt-4">
+							<p className="text-sm text-gray-600 mb-2">
+								{t.business.register.lookingToBook}
+							</p>
+							<a
+								href="/register"
+								className="text-sm font-medium text-[#ff5b5b] hover:text-[#ff4545]"
+							>
+								{t.business.register.registerAsClient}
+							</a>
+						</div>
 					</div>
 				</form>
 			</div>

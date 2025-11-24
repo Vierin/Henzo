@@ -14,7 +14,9 @@ export interface CreateServiceDto {
 	price: number;
 	salonId: string;
 	serviceCategoryId?: number;
+	serviceSubcategoryId?: number;
 	serviceGroupId?: string;
+	tagIds?: number[];
 }
 
 export interface UpdateServiceDto {
@@ -29,7 +31,9 @@ export interface UpdateServiceDto {
 	duration?: number;
 	price?: number;
 	serviceCategoryId?: number;
-	serviceGroupId?: string;
+	serviceSubcategoryId?: number | null;
+	serviceGroupId?: string | null;
+	tagIds?: number[];
 }
 
 export interface ServiceResponseDto {
@@ -46,6 +50,13 @@ export interface ServiceResponseDto {
 	price: number;
 	salonId?: string;
 	serviceCategoryId?: number;
+	serviceSubcategoryId?: number | null;
+	tags?: Array<{
+		id: number;
+		nameEn: string;
+		nameRu?: string;
+		nameVi?: string;
+	}>;
 	serviceGroupId?: string | null;
 	serviceGroup?: ServiceGroup;
 }

@@ -4,6 +4,7 @@ import { useEffect, useRef, useCallback } from 'react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import '@/styles/map.css';
+import { logger } from '@/lib/logger';
 
 // Fix for default markers in Leaflet with Next.js
 delete (L.Icon.Default.prototype as unknown as Record<string, unknown>)
@@ -72,29 +73,28 @@ export default function MapComponentWithCoords({
 
 	const updateMapWithCoords = useCallback(
 		(lat: number, lon: number, address?: string, updateFromDrag = false) => {
-			if (!mapInstanceRef.current) return;
-
-			console.log('📍 Updating map with coordinates:', {
-				lat,
-				lon,
-				address,
-				updateFromDrag,
-			});
+			if (!mapInstanceRef.current) {
+				console.error('❌ Cannot update map: map instance not available');
+				return;
+			}
+ 
 
 			// Update map center and zoom (only if not from drag to avoid jumping)
 			if (!updateFromDrag) {
-				mapInstanceRef.current.setView([lat, lon], zoom);
+		mapInstanceRef.current.setView([lat, lon], zoom);
 			}
 
-			// Remove existing marker
-			if (markerRef.current) {
-				mapInstanceRef.current.removeLayer(markerRef.current);
+		// Remove existing marker
+		if (markerRef.current) {
+				logger.log('🗑️ Removing existing marker');
+			mapInstanceRef.current.removeLayer(markerRef.current);
 				markerRef.current.off('dragend'); // Remove previous event listeners
-			}
+				markerRef.current = null;
+		}
 
 			// Create red marker icon with cursor pointer if editable
-			const redMarker = L.divIcon({
-				html: `<div style="
+		const redMarker = L.divIcon({
+			html: `<div style="
 				background-color: #ff5b5b;
 				width: 20px;
 				height: 20px;
@@ -104,11 +104,11 @@ export default function MapComponentWithCoords({
 				position: relative;
 				cursor: ${editable ? 'move' : 'default'};
 			"></div>`,
-				iconSize: [20, 20],
-				iconAnchor: [10, 10],
-				popupAnchor: [0, -10],
-				className: 'custom-red-marker',
-			});
+			iconSize: [20, 20],
+			iconAnchor: [10, 10],
+			popupAnchor: [0, -10],
+			className: 'custom-red-marker',
+		});
 
 			// Add marker at coordinates with drag capability if editable
 			const markerOptions: L.MarkerOptions = {
@@ -116,33 +116,39 @@ export default function MapComponentWithCoords({
 				draggable: editable,
 			};
 
-			markerRef.current = L.marker([lat, lon], markerOptions).addTo(
-				mapInstanceRef.current
-			);
+			try {
+				logger.log('➕ Creating marker at:', { lat, lon });
+				markerRef.current = L.marker([lat, lon], markerOptions).addTo(
+			mapInstanceRef.current
+		);
+				logger.log('✅ Marker created and added to map');
 
-			// Handle marker drag events if editable
-			if (editable && onMarkerMove) {
-				markerRef.current.on('dragend', async (e: L.DragEndEvent) => {
-					const marker = e.target;
-					const position = marker.getLatLng();
-					const newLat = position.lat;
-					const newLon = position.lng;
+				// Handle marker drag events if editable
+				if (editable && onMarkerMove) {
+					markerRef.current.on('dragend', async (e: L.DragEndEvent) => {
+						const marker = e.target;
+						const position = marker.getLatLng();
+						const newLat = position.lat;
+						const newLon = position.lng;
 
-					console.log('🎯 Marker moved to:', { lat: newLat, lon: newLon });
+						logger.log('🎯 Marker moved to:', { lat: newLat, lon: newLon });
 
-					// Reverse geocode to get new address
-					const newAddress = await reverseGeocode(newLat, newLon);
+						// Reverse geocode to get new address
+						const newAddress = await reverseGeocode(newLat, newLon);
 
-					// Call callback with new coordinates and address
-					onMarkerMove(newLat, newLon, newAddress);
-				});
-			}
+						// Call callback with new coordinates and address
+						onMarkerMove(newLat, newLon, newAddress);
+					});
+				}
 
-			// Add popup if enabled and address provided
-			if (showPopup && address) {
-				markerRef.current
-					.bindPopup(`<div class="text-sm"><strong>${address}</strong></div>`)
-					.openPopup();
+		// Add popup if enabled and address provided
+		if (showPopup && address) {
+			markerRef.current
+				.bindPopup(`<div class="text-sm"><strong>${address}</strong></div>`)
+				.openPopup();
+		}
+			} catch (error) {
+				console.error('❌ Error creating marker:', error);
 			}
 		},
 		[zoom, editable, onMarkerMove, reverseGeocode, showPopup]
@@ -151,33 +157,33 @@ export default function MapComponentWithCoords({
 	const geocodeAddress = useCallback(
 		async (address: string) => {
 			try {
-				console.log('🔍 Geocoding address:', address);
+				logger.log('🔍 Geocoding address:', address);
 
-				// Use our backend API for geocoding
-				const API_BASE_URL =
-					process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
-				const response = await fetch(
-					`${API_BASE_URL}/geocoding/search?address=${encodeURIComponent(address)}`
-				);
+			// Use our backend API for geocoding
+			const API_BASE_URL =
+				process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+			const response = await fetch(
+				`${API_BASE_URL}/geocoding/search?address=${encodeURIComponent(address)}`
+			);
 
-				if (!response.ok) {
-					throw new Error(`HTTP error! status: ${response.status}`);
-				}
+			if (!response.ok) {
+				throw new Error(`HTTP error! status: ${response.status}`);
+			}
 
-				const result = await response.json();
+			const result = await response.json();
 
-				if (result.success && result.data) {
-					const { lat, lon, display_name } = result.data;
-					updateMapWithCoords(lat, lon, address);
-				} else {
-					console.warn('⚠️ No geocoding results found for:', address);
-					showDefaultMarker();
-				}
-			} catch (error) {
-				console.error('❌ Error geocoding address:', error);
-				// Show marker at default location if geocoding fails
+			if (result.success && result.data) {
+				const { lat, lon, display_name } = result.data;
+				updateMapWithCoords(lat, lon, address);
+			} else {
+				console.warn('⚠️ No geocoding results found for:', address);
 				showDefaultMarker();
 			}
+		} catch (error) {
+			console.error('❌ Error geocoding address:', error);
+			// Show marker at default location if geocoding fails
+			showDefaultMarker();
+		}
 		},
 		[updateMapWithCoords]
 	);
@@ -215,35 +221,55 @@ export default function MapComponentWithCoords({
 		);
 	}, []);
 
+	// Initialize map once
 	useEffect(() => {
-		if (!mapRef.current) return;
+		if (!mapRef.current || mapInstanceRef.current) return;
 
-		// Initialize map if not already created
+		logger.log('🗺️ Initializing map...');
+
+		const mapOptions: L.MapOptions = {
+			zoomControl: interactive, // Show zoom controls only if interactive
+			dragging: interactive, // Allow dragging only if interactive
+			touchZoom: interactive, // Allow touch zoom only if interactive
+			doubleClickZoom: interactive, // Allow double-click zoom only if interactive
+			scrollWheelZoom: interactive, // Allow scroll wheel zoom only if interactive
+			boxZoom: interactive, // Allow box zoom only if interactive
+			keyboard: interactive, // Allow keyboard navigation only if interactive
+			attributionControl: false, // Hide attribution for cleaner look
+		};
+
+		const map = L.map(mapRef.current, mapOptions).setView(
+			[21.0285, 105.8542],
+			zoom
+		); // Default to Hanoi, Vietnam
+
+		// Use grayscale tile layer
+		L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+			attribution: '© OpenStreetMap contributors',
+			maxZoom: 19,
+			className: 'grayscale-map', // Add CSS class for grayscale effect
+		}).addTo(map);
+
+		mapInstanceRef.current = map;
+
+		logger.log('✅ Map initialized');
+
+		// Cleanup on unmount only
+		return () => {
+			logger.log('🧹 Cleaning up map...');
+			if (mapInstanceRef.current) {
+				mapInstanceRef.current.remove();
+				mapInstanceRef.current = null;
+				markerRef.current = null;
+			}
+		};
+	}, []); // Only run once on mount
+
+	// Update map when coordinates or address change
+	useEffect(() => {
 		if (!mapInstanceRef.current) {
-			const mapOptions: L.MapOptions = {
-				zoomControl: interactive, // Show zoom controls only if interactive
-				dragging: interactive, // Allow dragging only if interactive
-				touchZoom: interactive, // Allow touch zoom only if interactive
-				doubleClickZoom: interactive, // Allow double-click zoom only if interactive
-				scrollWheelZoom: interactive, // Allow scroll wheel zoom only if interactive
-				boxZoom: interactive, // Allow box zoom only if interactive
-				keyboard: interactive, // Allow keyboard navigation only if interactive
-				attributionControl: false, // Hide attribution for cleaner look
-			};
-
-			const map = L.map(mapRef.current, mapOptions).setView(
-				[21.0285, 105.8542],
-				zoom
-			); // Default to Hanoi, Vietnam
-
-			// Use grayscale tile layer
-			L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-				attribution: '© OpenStreetMap contributors',
-				maxZoom: 19,
-				className: 'grayscale-map', // Add CSS class for grayscale effect
-			}).addTo(map);
-
-			mapInstanceRef.current = map;
+			logger.log('⏳ Map not initialized yet, waiting...');
+			return;
 		}
 
 		// Only update map if coordinates actually changed
@@ -251,10 +277,16 @@ export default function MapComponentWithCoords({
 			lastCoordsRef.current.lat !== lat || lastCoordsRef.current.lon !== lon;
 
 		// Update map with coordinates if provided
-		if (lat !== undefined && lon !== undefined && mapInstanceRef.current) {
+		if (lat !== undefined && lon !== undefined) {
 			if (coordsChanged) {
+				logger.log('🔄 Coordinates changed, updating map:', { lat, lon });
 				lastCoordsRef.current = { lat, lon };
-				updateMapWithCoords(lat, lon, address, false);
+				// Wait for map to be fully ready before adding marker
+				mapInstanceRef.current.whenReady(() => {
+					if (mapInstanceRef.current) {
+						updateMapWithCoords(lat, lon, address, false);
+					}
+				});
 			}
 		} else if (
 			address &&
@@ -269,20 +301,10 @@ export default function MapComponentWithCoords({
 				showDefaultMarker();
 			}
 		}
-
-		return () => {
-			// Cleanup function
-			if (mapInstanceRef.current) {
-				mapInstanceRef.current.remove();
-				mapInstanceRef.current = null;
-			}
-		};
 	}, [
 		lat,
 		lon,
 		address,
-		zoom,
-		interactive,
 		updateMapWithCoords,
 		geocodeAddress,
 		showDefaultMarker,

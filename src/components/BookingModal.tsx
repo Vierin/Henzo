@@ -2644,8 +2644,9 @@ function LoginForm({
 			localStorage.setItem('oauthLocale', locale);
 
 			// Use same format as other OAuth calls - without locale in path
-			const frontendUrl =
-				process.env.NEXT_PUBLIC_FRONTEND_URL || window.location.origin;
+			const frontendUrl = (
+				process.env.NEXT_PUBLIC_FRONTEND_URL || window.location.origin
+			).trim();
 			const redirectTo = `${frontendUrl}/auth/callback`;
 
 			console.log('🔐 Initiating Google OAuth:', {

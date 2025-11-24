@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react';
+import React from 'react';
 import { getDictionary } from '@/i18n/dictionaries';
 import { locales, type Locale, isLocale } from '@/i18n/routing';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
@@ -40,13 +40,14 @@ export async function generateMetadata({
 	};
 }
 
+// @ts-expect-error - Next.js type validation conflict with React types
 export default async function LocaleRootLayout({
 	children,
 	params,
-}: {
-	children: ReactNode;
+}: Readonly<{
+	children: React.ReactNode;
 	params: Promise<{ locale: string }>;
-}) {
+}>) {
 	const rparams = await params;
 	const locale = isLocale(rparams.locale) ? (rparams.locale as Locale) : 'en';
 	// preload dictionary for potential server components below

@@ -1,13 +1,13 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { apiClient } from '@/lib/api-client';
 import toast from 'react-hot-toast';
 import Link from 'next/link';
 import { CheckCircle, Clock, Mail, ArrowRight } from 'lucide-react';
 
-export default function BookingConfirmedPage() {
+function BookingConfirmedContent() {
 	const searchParams = useSearchParams();
 	const router = useRouter();
 	const token = searchParams.get('token');
@@ -184,3 +184,21 @@ export default function BookingConfirmedPage() {
 		</div>
 	);
 }
+
+export default function BookingConfirmedPage() {
+	return (
+		<Suspense
+			fallback={
+				<div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
+					<div className="text-center">
+						<div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#ff5b5b] mx-auto mb-4"></div>
+						<p className="text-gray-600">Loading...</p>
+					</div>
+				</div>
+			}
+		>
+			<BookingConfirmedContent />
+		</Suspense>
+	);
+}
+

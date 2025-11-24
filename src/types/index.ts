@@ -60,14 +60,33 @@ export interface Service {
 	category?: Category;
 	serviceCategoryId?: number;
 	serviceCategory?: ServiceCategory;
+	serviceSubcategoryId?: number | null;
+	serviceSubcategory?: ServiceSubcategory;
+	tags?: ServiceTag[];
 	serviceGroupId?: string | null;
 	serviceGroup?: ServiceGroup;
 }
 
 export interface ServiceCategory {
 	id: number;
+	name_en: string;
+	name_vn: string;
+	name_ru: string;
+}
+
+export interface ServiceSubcategory {
+	id: number;
 	nameEn: string;
-	nameVn: string;
+	nameRu?: string;
+	nameVi?: string;
+	categoryId: number;
+}
+
+export interface ServiceTag {
+	id: number;
+	nameEn: string;
+	nameRu?: string;
+	nameVi?: string;
 }
 
 export interface Category {

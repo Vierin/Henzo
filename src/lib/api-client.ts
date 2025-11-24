@@ -1,5 +1,6 @@
 import { plainToClass } from 'class-transformer';
 import { supabase } from './supabase';
+import { logger } from './logger';
 
 export interface ApiResponse<T> {
 	data?: T;
@@ -91,20 +92,8 @@ export class ApiClient {
 
 		// Handle blob responses
 		if (responseType === 'blob') {
-			console.log(
-				'Response headers:',
-				Object.fromEntries(response.headers.entries())
-			);
-			console.log(
-				'Response content-type:',
-				response.headers.get('content-type')
-			);
-
 			const blob = await response.blob();
-			console.log('Created blob:', blob);
-			console.log('Blob size:', blob.size);
-			console.log('Blob type:', blob.type);
-
+			// Blob responses don't need logging in production
 			// Return the blob directly as T
 			return blob as T;
 		}

@@ -11,8 +11,13 @@ import MapboxAddressAutocomplete from '@/components/MapboxAddressAutocomplete';
 import WorkingHoursSection from '@/components/WorkingHoursSection';
 import EnhancedFileUpload from '@/components/EnhancedFileUpload';
 import EnhancedPhotoUpload from '@/components/EnhancedPhotoUpload';
-import MapComponentWithCoords from '@/components/MapComponentWithCoords';
+import dynamic from 'next/dynamic';
 import toast from 'react-hot-toast';
+
+const MapComponentWithCoords = dynamic(
+	() => import('@/components/MapComponentWithCoords'),
+	{ ssr: false }
+);
 
 interface SalonSetupData {
 	// Step 1: General Information
@@ -628,9 +633,15 @@ export default function BusinessCompleteSetupPage() {
 								rows={3}
 								value={formData.description}
 								onChange={handleInputChange}
+								maxLength={250}
 								className="w-full px-4 py-3 bg-white border border-gray-600 rounded-lg text-gray-900 placeholder-gray-500 focus:ring-2 focus:ring-[#ff5b5b] focus:border-transparent"
 								placeholder="Describe your salon and what makes it special..."
 							/>
+							<div className="mt-1 flex justify-end">
+								<span className="text-xs text-gray-400">
+									{formData.description.length}/250
+								</span>
+							</div>
 						</div>
 
 						<div>

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import toast from 'react-hot-toast';
 import AddressAutocomplete from '@/components/AddressAutocomplete';
@@ -11,6 +11,7 @@ import EnhancedPhotoUpload from '@/components/EnhancedPhotoUpload';
 import WorkingHoursSection from '@/components/WorkingHoursSection';
 import { useSalon } from '@/hooks/useSalon';
 import { apiClient } from '@/lib/api-client';
+import { logger } from '@/lib/logger';
 import { Clock4 } from 'lucide-react';
 
 export default function SalonInfoPage() {
@@ -42,6 +43,8 @@ export default function SalonInfoPage() {
 	} | null>(null);
 	const [showDeleteModal, setShowDeleteModal] = useState(false);
 	const [deleteLoading, setDeleteLoading] = useState(false);
+	const [isUpdatingAddress, setIsUpdatingAddress] = useState(false);
+	const addressUpdateTimerRef = useRef<NodeJS.Timeout | null>(null);
 	const router = useRouter();
 
 	// Используем оптимизированный хук для получения данных салона
@@ -51,6 +54,27 @@ export default function SalonInfoPage() {
 		error: salonError,
 	} = useSalon();
 	const hasExistingSalon = !!salon?.id;
+
+	// Helper function to geocode address
+	const geocodeAddress = useCallback(async (address: string) => {
+		try {
+			const API_BASE_URL =
+				process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+			const response = await fetch(
+				`${API_BASE_URL}/mapbox/geocode?address=${encodeURIComponent(address)}`
+			);
+
+			if (response.ok) {
+				const data = await response.json();
+				if (data.lat && data.lon) {
+					return { lat: data.lat, lon: data.lon };
+				}
+			}
+		} catch (error) {
+			console.error('Failed to geocode address:', error);
+		}
+		return null;
+	}, []);
 
 	// Заполняем форму данными из кэша
 	useEffect(() => {
@@ -106,8 +130,100 @@ export default function SalonInfoPage() {
 						}
 					: formData.operatingHours,
 			});
+
+			// Set initial coordinates if salon has latitude/longitude
+			if (salon.latitude && salon.longitude) {
+				logger.log('📍 Setting coordinates from salon:', {
+					lat: salon.latitude,
+					lon: salon.longitude,
+				});
+				setSelectedCoords({
+					lat: salon.latitude,
+					lon: salon.longitude,
+				});
+			} else if (salon.address && salon.address.trim()) {
+				// If salon has address but no coordinates, geocode it
+				logger.log('🔍 Geocoding salon address:', salon.address);
+				geocodeAddress(salon.address.trim()).then((coords) => {
+					if (coords) {
+						logger.log('✅ Geocoding successful:', coords);
+						setSelectedCoords(coords);
+					} else {
+						logger.warn('⚠️ Geocoding failed for address:', salon.address);
+					}
+				});
+			} else {
+				logger.log('ℹ️ No coordinates or address found in salon');
+			}
 		}
-	}, [salon]);
+	}, [salon, geocodeAddress]);
+
+	// Handle marker move with debounce for address update
+	const handleMarkerMove = useCallback(
+		async (lat: number, lon: number, address?: string) => {
+			// Update coordinates immediately
+			setSelectedCoords({ lat, lon });
+
+			// Update address if provided directly
+			if (address) {
+				setFormData((prev) => ({ ...prev, address }));
+				setIsUpdatingAddress(false);
+				return;
+			}
+
+			// Show loading indicator
+			setIsUpdatingAddress(true);
+
+			// Clear existing timer
+			if (addressUpdateTimerRef.current) {
+				clearTimeout(addressUpdateTimerRef.current);
+			}
+
+			// Debounce reverse geocoding
+			addressUpdateTimerRef.current = setTimeout(async () => {
+				try {
+					const API_BASE_URL =
+						process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+					const response = await fetch(
+						`${API_BASE_URL}/mapbox/reverse-geocode?lat=${lat}&lon=${lon}`
+					);
+
+					if (response.ok) {
+						const data = await response.json();
+						if (data.address) {
+							setFormData((prev) => ({ ...prev, address: data.address }));
+						}
+					}
+				} catch (error) {
+					console.error('Failed to reverse geocode:', error);
+				} finally {
+					setIsUpdatingAddress(false);
+					addressUpdateTimerRef.current = null;
+				}
+			}, 800); // 800ms debounce
+		},
+		[]
+	);
+
+	// Cleanup timer on unmount
+	useEffect(() => {
+		return () => {
+			if (addressUpdateTimerRef.current) {
+				clearTimeout(addressUpdateTimerRef.current);
+			}
+		};
+	}, []);
+
+	// Memoize map props to prevent unnecessary re-renders
+	const mapProps = useMemo(() => {
+		const props = {
+			lat: selectedCoords?.lat,
+			lon: selectedCoords?.lon,
+			address: formData.address,
+		};
+		console.log('🗺️ Map props updated:', props);
+		return props;
+	}, [selectedCoords?.lat, selectedCoords?.lon, formData.address]);
 
 	const handleSubmit = async (e: React.FormEvent) => {
 		e.preventDefault();
@@ -135,6 +251,8 @@ export default function SalonInfoPage() {
 				name: formData.salonName,
 				description: formData.description,
 				address: formData.address,
+				latitude: selectedCoords?.lat,
+				longitude: selectedCoords?.lon,
 				phone: formData.phone,
 				email: formData.email,
 				website: formData.website,
@@ -277,16 +395,25 @@ export default function SalonInfoPage() {
 				</div>
 
 				{/* Map Section */}
-				{formData.address && (
+				{mapProps.lat && mapProps.lon && (
 					<div className="bg-white border border-gray-200 rounded-lg p-3 md:p-6">
 						<h2 className="text-xl md:text-2xl font-semibold text-gray-900 mb-4 md:mb-6">
 							Location Preview
 						</h2>
-						<MapComponentWithCoords
-							lat={selectedCoords?.lat}
-							lon={selectedCoords?.lon}
-							address={formData.address}
-						/>
+						<div className="w-full rounded-lg overflow-hidden border border-gray-200 shadow-sm">
+							<MapComponentWithCoords
+								lat={mapProps.lat}
+								lon={mapProps.lon}
+								address={mapProps.address}
+								height="450px"
+								zoom={16}
+								interactive={true}
+								showPopup={false}
+								editable={true}
+								onMarkerMove={handleMarkerMove}
+								className="w-full h-full"
+							/>
+						</div>
 					</div>
 				)}
 
