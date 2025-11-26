@@ -64,10 +64,21 @@ export class ApiClient {
 			}
 
 			const errorData = await response.json().catch(() => ({}));
-			// NestJS returns errors as { message: string, statusCode: number }
+			
+			// Log error details for debugging
+			if (process.env.NODE_ENV === 'development') {
+				console.error('API Error:', {
+					url,
+					status: response.status,
+					errorData,
+				});
+			}
+
+			// NestJS returns errors as { msg: string, code: number } or { message: string, statusCode: number }
 			// But some endpoints might return { error: string }
 			// For validation errors, extract specific constraint messages
 			let errorMessage =
+				errorData.msg ||
 				errorData.message ||
 				errorData.error ||
 				`HTTP error! status: ${response.status}`;
@@ -85,6 +96,15 @@ export class ApiClient {
 						errorMessage = firstError.constraints[constraintKeys[0]];
 					}
 				}
+			}
+
+			// Include more details in error for 500 errors
+			if (response.status >= 500) {
+				const error = new Error(errorMessage);
+				(error as any).status = response.status;
+				(error as any).url = url;
+				(error as any).errorData = errorData;
+				throw error;
 			}
 
 			throw new Error(errorMessage);

@@ -44,12 +44,19 @@ export const useSalonsWithServices = () => {
 	return useQuery({
 		queryKey: salonKeys.withServices(),
 		queryFn: async (): Promise<SalonWithDetailsResponseDto[]> => {
-			const response = await apiClient.get<SalonWithDetailsResponseDto[]>(
-				'/salons/with-services'
-			);
-			return response || [];
+			try {
+				const response = await apiClient.get<SalonWithDetailsResponseDto[]>(
+					'/salons/with-services'
+				);
+				return response || [];
+			} catch (error) {
+				console.error('Error fetching salons with services:', error);
+				// Return empty array on error to prevent UI crash
+				return [];
+			}
 		},
 		staleTime: 5 * 60 * 1000, // 5 minutes
+		retry: 2, // Retry 2 times on failure
 	});
 };
 

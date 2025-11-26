@@ -17,7 +17,20 @@ export default function BetaRequestForm() {
 		try {
 			const API_URL =
 				process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
-			const response = await fetch(`${API_URL}/auth/send-business-magic-link`, {
+			
+			// Validate API URL
+			if (!API_URL || API_URL.trim() === '') {
+				throw new Error('API URL is not configured. Please contact support.');
+			}
+
+			const endpoint = `${API_URL}/auth/send-business-magic-link`;
+			
+			// Log for debugging (only in development)
+			if (process.env.NODE_ENV === 'development') {
+				console.log('Sending request to:', endpoint);
+			}
+			
+			const response = await fetch(endpoint, {
 				method: 'POST',
 				headers: {
 					'Content-Type': 'application/json',
@@ -29,8 +42,21 @@ export default function BetaRequestForm() {
 			});
 
 			if (!response.ok) {
+				// Handle different error statuses
+				if (response.status === 404) {
+					console.error('404 Error - Endpoint not found:', endpoint);
+					throw new Error(
+						'API endpoint not found. The server may be down or the endpoint is missing. Please contact support.'
+					);
+				}
+				if (response.status >= 500) {
+					throw new Error(
+						'Server error. Please try again later or contact support.'
+					);
+				}
+				
 				const errorData = await response.json().catch(() => ({}));
-				const errorMessage = errorData.message || 'Failed to send magic link';
+				const errorMessage = errorData.message || errorData.msg || 'Failed to send magic link';
 				throw new Error(errorMessage);
 			}
 

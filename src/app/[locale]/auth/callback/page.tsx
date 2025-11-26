@@ -53,6 +53,44 @@ export default function AuthCallbackPage() {
 
 				if (!code) {
 					console.error('❌ No code parameter in callback URL');
+					// Check if there's a hash fragment (for mobile/web redirects)
+					const hash = window.location.hash.substring(1);
+					if (hash) {
+						const hashParams = new URLSearchParams(hash);
+						const accessToken = hashParams.get('access_token');
+						const refreshToken = hashParams.get('refresh_token');
+						
+						if (accessToken && refreshToken) {
+							console.log('✅ Found tokens in hash, setting session...');
+							const { data: sessionData, error: sessionError } = await supabase.auth.setSession({
+								access_token: accessToken,
+								refresh_token: refreshToken,
+							});
+							
+							if (sessionError) {
+								console.error('❌ Failed to set session from hash:', sessionError);
+								router.push(
+									withLocale('/login?error=session_error', locale as 'en' | 'ru' | 'vi')
+								);
+								return;
+							}
+							
+							if (sessionData.session) {
+								const modifiedParams = new URLSearchParams(urlParams);
+								if (returnUrl) {
+									modifiedParams.set('returnUrl', returnUrl);
+									modifiedParams.set('pendingBooking', 'true');
+								}
+								await processSession(
+									sessionData.session,
+									effectiveLocale,
+									modifiedParams
+								);
+								return;
+							}
+						}
+					}
+					
 					router.push(
 						withLocale('/login?error=no_code', locale as 'en' | 'ru' | 'vi')
 					);
@@ -60,6 +98,7 @@ export default function AuthCallbackPage() {
 				}
 
 				// Exchange code for session
+				// Supabase v2 automatically handles PKCE code_verifier from sessionStorage
 				const { data, error } =
 					await supabase.auth.exchangeCodeForSession(code);
 
@@ -69,6 +108,56 @@ export default function AuthCallbackPage() {
 						status: error.status,
 						error: error,
 					});
+
+					// If PKCE error (code_verifier missing), try to get session from URL hash
+					if (error.message?.includes('code verifier') || error.message?.includes('code_verifier')) {
+						console.log('⚠️ PKCE error, trying to get session from URL hash...');
+						const hash = window.location.hash.substring(1);
+						if (hash) {
+							const hashParams = new URLSearchParams(hash);
+							const accessToken = hashParams.get('access_token');
+							const refreshToken = hashParams.get('refresh_token');
+							
+							if (accessToken && refreshToken) {
+								console.log('✅ Found tokens in hash, setting session...');
+								const { data: sessionData, error: sessionError } = await supabase.auth.setSession({
+									access_token: accessToken,
+									refresh_token: refreshToken,
+								});
+								
+								if (!sessionError && sessionData.session) {
+									const modifiedParams = new URLSearchParams(urlParams);
+									if (returnUrl) {
+										modifiedParams.set('returnUrl', returnUrl);
+										modifiedParams.set('pendingBooking', 'true');
+									}
+									await processSession(
+										sessionData.session,
+										effectiveLocale,
+										modifiedParams
+									);
+									return;
+								}
+							}
+						}
+						
+						// Try to get session anyway - sometimes Supabase creates it despite the error
+						const { data: fallbackData } = await supabase.auth.getSession();
+						if (fallbackData?.session) {
+							console.log('✅ Got session despite PKCE error, continuing...');
+							const modifiedParams = new URLSearchParams(urlParams);
+							if (returnUrl) {
+								modifiedParams.set('returnUrl', returnUrl);
+								modifiedParams.set('pendingBooking', 'true');
+							}
+							await processSession(
+								fallbackData.session,
+								effectiveLocale,
+								modifiedParams
+							);
+							return;
+						}
+					}
 
 					// If it's a 500 error from Supabase, it might be a database hook issue
 					if (error.status === 500 || error.message?.includes('500')) {
