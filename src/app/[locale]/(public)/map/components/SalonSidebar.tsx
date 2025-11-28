@@ -195,16 +195,22 @@ export default function SalonSidebar({
 										</div>
 
 										{/* Rating */}
-										<div className="flex items-center space-x-2 mb-3">
-											<Star size={14} className="text-[#ff5b5b] fill-[#ff5b5b]" />
-											<span className="text-sm font-medium text-gray-900">
-												{(salon.avgRating || salon.rating || 0).toFixed(1)}
-											</span>
-											<span className="text-sm text-gray-500">
-												({salon.reviewCount || salon._count?.reviews || 0}{' '}
-												{t.salon.reviewsCount})
-											</span>
-										</div>
+										{((salon.avgRating || salon.rating || 0) > 0 ||
+											(salon.reviewCount || salon._count?.reviews || 0) > 0) && (
+											<div className="flex items-center space-x-2 mb-3">
+												<Star
+													size={14}
+													className="text-[#ff5b5b] fill-[#ff5b5b]"
+												/>
+												<span className="text-sm font-medium text-gray-900">
+													{(salon.avgRating || salon.rating || 0).toFixed(1)}
+												</span>
+												<span className="text-sm text-gray-500">
+													({salon.reviewCount || salon._count?.reviews || 0}{' '}
+													{t.salon.reviewsCount})
+												</span>
+											</div>
+										)}
 
 										{/* Action Button */}
 										<button
