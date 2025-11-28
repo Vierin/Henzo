@@ -1,46 +1,47 @@
+'use client';
+
 import { Calendar, Users, Bell, BarChart3 } from 'lucide-react';
 import { Card, CardContent } from './ui/card';
-
-const features = [
-	{
-		icon: Calendar,
-		title: 'Smart Scheduling',
-		description:
-			"Intelligent calendar that prevents double bookings and automatically optimizes your team's time.",
-	},
-	{
-		icon: Users,
-		title: 'Client Management',
-		description:
-			'Keep detailed client profiles, preferences, and service history all in one place.',
-	},
-	{
-		icon: Bell,
-		title: 'Email Reminders',
-		description: 'Reduce no-shows with automatic email appointment reminders.',
-	},
-	{
-		icon: BarChart3,
-		title: 'Analytics',
-		description:
-			'Track popular services and staff performance with real-time insights.',
-	},
-];
+import { useTranslation } from '@/contexts/LanguageContext';
 
 export function Features() {
+	const t = useTranslation();
+	
+	const features = [
+		{
+			icon: Calendar,
+			title: t.business.features.smartScheduling.title,
+			description: t.business.features.smartScheduling.description,
+		},
+		{
+			icon: Users,
+			title: t.business.features.clientManagement.title,
+			description: t.business.features.clientManagement.description,
+		},
+		{
+			icon: Bell,
+			title: t.business.features.emailReminders.title,
+			description: t.business.features.emailReminders.description,
+		},
+		{
+			icon: BarChart3,
+			title: t.business.features.analytics.title,
+			description: t.business.features.analytics.description,
+		},
+	];
+
 	return (
 		<section id="features" className="py-20 px-4 bg-muted/30">
 			<div className="container mx-auto">
 				<div className="text-center max-w-3xl mx-auto mb-16">
 					<div className="inline-block px-4 py-2 bg-secondary rounded-full mb-4">
-						<span className="text-primary">Features</span>
+						<span className="text-primary">{t.business.features.badge}</span>
 					</div>
 					<h2 className="text-4xl lg:text-5xl tracking-tight mb-4">
-						Everything You Need <br /> to Run Your Salon
+						{t.business.features.title} <br /> {t.business.features.titleBreak}
 					</h2>
 					<p className="text-xl text-muted-foreground">
-						Powerful features designed to save you time and help your business
-						grow
+						{t.business.features.subtitle}
 					</p>
 				</div>
 

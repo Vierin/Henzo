@@ -4,25 +4,26 @@ import Link from 'next/link';
 import { Button } from './ui/button';
 import { ArrowRight } from 'lucide-react';
 import { ImageWithFallback } from './ImageWithFallback';
+import { useTranslation } from '@/contexts/LanguageContext';
 
 export function Hero() {
+	const t = useTranslation();
 	return (
 		<section className="pt-32 pb-20 px-4 overflow-hidden">
 			<div className="container mx-auto">
 				<div className="grid lg:grid-cols-2 gap-12 items-center">
 					<div className="space-y-8">
 						<div className="inline-block px-4 py-2 bg-secondary rounded-full">
-							<span className="text-primary">✨ Free Beta Testing</span>
+							<span className="text-primary">{t.business.hero.badge}</span>
 						</div>
 
 						<h1 className="text-5xl lg:text-6xl tracking-tight">
-							Simplify Bookings,{' '}
-							<span className="text-primary">Delight Clients</span>
+							{t.business.hero.title}{' '}
+							<span className="text-primary">{t.business.hero.titleHighlight}</span>
 						</h1>
 
 						<p className="text-xl text-muted-foreground max-w-xl">
-							The all-in-one platform for your beauty business. Manage
-							appointments, clients, and payments all in one place.
+							{t.business.hero.subtitle}
 						</p>
 
 						<div className="flex flex-col sm:flex-row gap-4">
@@ -31,7 +32,7 @@ export function Hero() {
 									size="lg"
 									className="bg-primary text-white hover:bg-primary/90 group w-full sm:w-auto"
 								>
-									Join Beta Testing
+									{t.business.hero.joinBeta}
 									<ArrowRight className="ml-2 w-4 h-4 group-hover:translate-x-1 transition-transform" />
 								</Button>
 							</Link>
@@ -41,23 +42,23 @@ export function Hero() {
 									variant="outline"
 									className="w-full sm:w-auto"
 								>
-									Sign In
+									{t.business.hero.signIn}
 								</Button>
 							</Link>
 						</div>
 
 						<div className="flex items-center gap-8 pt-4">
 							<div>
-								<div className="text-3xl">100% Free</div>
+								<div className="text-3xl">{t.business.hero.free}</div>
 								<div className="text-sm text-muted-foreground">
-									Beta testing period
+									{t.business.hero.freePeriod}
 								</div>
 							</div>
 							<div className="w-px h-12 bg-border"></div>
 							<div>
-								<div className="text-3xl">Quick Start</div>
+								<div className="text-3xl">{t.business.hero.quickStart}</div>
 								<div className="text-sm text-muted-foreground">
-									Live in 5 minutes
+									{t.business.hero.quickStartTime}
 								</div>
 							</div>
 						</div>

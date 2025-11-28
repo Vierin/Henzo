@@ -66,6 +66,7 @@
 		"searchButton": "Search",
 		"featuredSalons": "Featured Salons",
 		"popularServices": "Popular Services",
+		"recommendedServices": "Recommended Services",
 		"howItWorks": "Book in 3 Simple Steps",
 		"howItWorksSubtitle": "Finding and booking your perfect beauty appointment has never been easier",
 		"step1": "01",
@@ -234,7 +235,8 @@
 		"mapView": "Map View",
 		"noSalonsFound": "No {category} salons found",
 		"noSalonsDescription": "We couldn't find any salons in the {category} category at the moment. Check back soon or explore other categories.",
-		"browseAllSalons": "Browse All Salons"
+		"browseAllSalons": "Browse All Salons",
+		"viewAllServices": "View all {count} services →"
 	},
 	"header": {
 		"profile": "Profile",
@@ -359,6 +361,66 @@
 			"subtitle": "Join Henzo's beta testing program. Completely free during beta, no commitments required.",
 			"startForFree": "Start for Free",
 			"joinBetaTesters": "Join our beta testers and get free access"
+		},
+		"hero": {
+			"badge": "✨ Free Beta Testing",
+			"title": "Simplify Bookings,",
+			"titleHighlight": "Delight Clients",
+			"subtitle": "The all-in-one platform for your beauty business. Manage appointments, clients, and payments all in one place.",
+			"joinBeta": "Join Beta Testing",
+			"signIn": "Sign In",
+			"free": "100% Free",
+			"freePeriod": "Beta testing period",
+			"quickStart": "Quick Start",
+			"quickStartTime": "Live in 5 minutes"
+		},
+		"features": {
+			"badge": "Features",
+			"title": "Everything You Need",
+			"titleBreak": "to Run Your Salon",
+			"subtitle": "Powerful features designed to save you time and help your business grow",
+			"smartScheduling": {
+				"title": "Smart Scheduling",
+				"description": "Intelligent calendar that prevents double bookings and automatically optimizes your team's time."
+			},
+			"clientManagement": {
+				"title": "Client Management",
+				"description": "Keep detailed client profiles, preferences, and service history all in one place."
+			},
+			"emailReminders": {
+				"title": "Email Reminders",
+				"description": "Reduce no-shows with automatic email appointment reminders."
+			},
+			"analytics": {
+				"title": "Analytics",
+				"description": "Track popular services and staff performance with real-time insights."
+			}
+		},
+		"benefits": {
+			"badge": "Why Henzo",
+			"title": "Grow Your Business",
+			"titleBreak": "with Confidence",
+			"subtitle": "A platform designed specifically for the beauty industry. Join our beta testing and get free access.",
+			"benefit1": "Increase bookings with 24/7 online scheduling",
+			"benefit2": "Save 10+ hours per week on administrative tasks",
+			"benefit3": "Reduce no-shows with automated reminders",
+			"benefit4": "Build client loyalty with a convenient booking system",
+			"benefit5": "Make data-driven decisions with powerful analytics",
+			"benefit6": "Payment happens on-site - no online payment complexities"
+		},
+		"cta": {
+			"title": "Ready to Transform",
+			"titleBreak": "Your Salon?",
+			"subtitle": "Join Henzo's beta testing program. Completely free during beta, no commitments required.",
+			"startForFree": "Start for Free",
+			"joinBetaTesters": "Join our beta testers and get free access"
+		},
+		"header": {
+			"features": "Features",
+			"benefits": "Benefits",
+			"betaAccess": "Beta Access",
+			"signIn": "Sign In",
+			"startFree": "Start Free"
 		},
 		"betaForm": {
 			"badge": "Beta Access",

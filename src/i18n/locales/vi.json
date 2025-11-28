@@ -66,6 +66,7 @@
 		"searchButton": "Tìm kiếm",
 		"featuredSalons": "Salon nổi bật",
 		"popularServices": "Dịch vụ phổ biến",
+		"recommendedServices": "Dịch vụ đề xuất",
 		"howItWorks": "Đặt lịch trong 3 bước đơn giản",
 		"howItWorksSubtitle": "Tìm và đặt lịch bệnh viện thẩm mỹ hoàn hảo chưa bao giờ dễ dàng đến thế",
 		"step1": "01",
@@ -131,8 +132,20 @@
 	"booking": {
 		"selectDate": "Chọn ngày",
 		"selectTime": "Chọn giờ",
+		"selectATime": "Chọn thời gian",
 		"selectService": "Chọn dịch vụ",
+		"selectAService": "Chọn dịch vụ",
 		"selectStaff": "Chọn nhân viên",
+		"selectAStaffMember": "Chọn nhân viên",
+		"anyStaff": "Bất kỳ nhân viên nào",
+		"chooseFromAvailableServices": "Chọn từ các dịch vụ có sẵn",
+		"pleaseSelectDateFirst": "Vui lòng chọn ngày trước để xem các khung giờ trống",
+		"timeFilters": {
+			"all": "Tất cả",
+			"morning": "Sáng",
+			"afternoon": "Chiều",
+			"evening": "Tối"
+		},
 		"timeIntervals": {
 			"any": "Bất kỳ lúc nào",
 			"morning": "Buổi sáng (6:00 - 12:00)",
@@ -140,15 +153,49 @@
 			"evening": "Buổi tối (18:00 - 24:00)"
 		},
 		"customerInfo": "Thông tin khách hàng",
+		"clientInfo": "Thông tin khách hàng",
+		"clientEmail": "Email khách hàng",
+		"clientName": "Tên khách hàng",
+		"clientNameOptional": "Tên khách hàng (tùy chọn)",
+		"clientPhone": "Số điện thoại khách hàng",
+		"clientPhoneOptional": "Số điện thoại khách hàng (tùy chọn)",
 		"name": "Họ tên",
 		"email": "Email",
 		"phone": "Số điện thoại",
 		"notes": "Ghi chú",
 		"confirmBooking": "Xác nhận đặt lịch",
+		"bookAppointment": "Đặt lịch hẹn",
+		"updateAppointment": "Cập nhật lịch hẹn",
+		"booking": "Đang đặt...",
+		"updating": "Đang cập nhật...",
 		"bookingConfirmed": "Đặt lịch thành công",
 		"bookingError": "Lỗi khi đặt lịch",
 		"noAvailableSlots": "Không có khung giờ trống",
-		"salonClosed": "Salon đã đóng cửa"
+		"noAvailableSlotsWithSelection": "Không có khung giờ trống với lựa chọn hiện tại",
+		"salonClosed": "Salon đã đóng cửa",
+		"thankYouForReservation": "Cảm ơn bạn đã đặt lịch!",
+		"awaitingConfirmation": "Đang chờ xác nhận từ salon",
+		"bookingConfirmedTitle": "Đặt lịch thành công!",
+		"appointmentBookedSuccessfully": "Cuộc hẹn của bạn đã được đặt thành công",
+		"bookingDetails": "Chi tiết đặt lịch:",
+		"service": "Dịch vụ:",
+		"date": "Ngày:",
+		"time": "Giờ:",
+		"done": "Hoàn thành",
+		"usuallyConfirmsWithin": "Thông thường salon sẽ xác nhận đặt lịch trong vòng 2 giờ.",
+		"willReceiveEmail": "Bạn sẽ nhận được email khi cuộc hẹn của bạn được xác nhận.",
+		"completeYourBooking": "Hoàn tất đặt lịch",
+		"signInToComplete": "Vui lòng đăng nhập hoặc nhập email để hoàn tất đặt lịch cho",
+		"checkYourEmail": "Kiểm tra email",
+		"magicLinkSent": "Chúng tôi đã gửi liên kết xác nhận đến",
+		"clickLinkToConfirm": "Nhấp vào liên kết trong email để xác nhận đặt lịch. Liên kết sẽ hết hạn sau 1 giờ.",
+		"duration": "Thời lượng",
+		"price": "Giá",
+		"pleaseFillAllFields": "Vui lòng điền vào tất cả các trường",
+		"pleaseEnterClientEmail": "Vui lòng nhập email khách hàng",
+		"pleaseEnterValidEmail": "Vui lòng nhập địa chỉ email hợp lệ",
+		"pleaseSelectDateAndTime": "Vui lòng chọn cả ngày và giờ cho đặt lịch của bạn",
+		"useEmailLinkInstead": "Sử dụng liên kết email thay thế"
 	},
 	"forms": {
 		"required": "Trường này là bắt buộc",
@@ -178,7 +225,121 @@
 		"salonInfo": "Thông tin salon",
 		"branding": "Thương hiệu",
 		"services": "Dịch vụ",
-		"staff": "Nhân viên"
+		"staff": "Nhân viên",
+		"header": {
+			"features": "Tính năng",
+			"benefits": "Lợi ích",
+			"betaAccess": "Truy cập Beta",
+			"signIn": "Đăng nhập",
+			"startFree": "Bắt đầu miễn phí"
+		},
+		"hero": {
+			"badge": "✨ Miễn phí Beta Testing",
+			"title": "Đơn giản hóa đặt lịch,",
+			"titleHighlight": "Làm hài lòng khách hàng",
+			"subtitle": "Nền tảng tất cả trong một cho doanh nghiệp làm đẹp của bạn. Quản lý cuộc hẹn, khách hàng và thanh toán ở một nơi.",
+			"joinBeta": "Tham gia Beta Testing",
+			"signIn": "Đăng nhập",
+			"free": "100% Miễn phí",
+			"freePeriod": "Giai đoạn beta testing",
+			"quickStart": "Khởi động nhanh",
+			"quickStartTime": "Hoạt động trong 5 phút"
+		},
+		"features": {
+			"badge": "Tính năng",
+			"title": "Mọi thứ bạn cần",
+			"titleBreak": "để vận hành salon của bạn",
+			"subtitle": "Các tính năng mạnh mẽ được thiết kế để tiết kiệm thời gian và giúp doanh nghiệp của bạn phát triển",
+			"smartScheduling": {
+				"title": "Lịch trình thông minh",
+				"description": "Lịch thông minh ngăn chặn đặt lịch trùng và tự động tối ưu hóa thời gian của nhóm bạn."
+			},
+			"clientManagement": {
+				"title": "Quản lý khách hàng",
+				"description": "Lưu trữ hồ sơ khách hàng chi tiết, sở thích và lịch sử dịch vụ ở một nơi."
+			},
+			"emailReminders": {
+				"title": "Nhắc nhở qua Email",
+				"description": "Giảm số lần không đến với nhắc nhở cuộc hẹn tự động qua email."
+			},
+			"analytics": {
+				"title": "Phân tích",
+				"description": "Theo dõi dịch vụ phổ biến và hiệu suất nhân viên với thông tin chi tiết theo thời gian thực."
+			}
+		},
+		"benefits": {
+			"badge": "Tại sao chọn Henzo",
+			"title": "Phát triển doanh nghiệp",
+			"titleBreak": "với sự tự tin",
+			"subtitle": "Nền tảng được thiết kế đặc biệt cho ngành làm đẹp. Tham gia beta testing của chúng tôi và nhận quyền truy cập miễn phí.",
+			"benefit1": "Tăng đặt lịch với lịch trình trực tuyến 24/7",
+			"benefit2": "Tiết kiệm 10+ giờ mỗi tuần cho các nhiệm vụ hành chính",
+			"benefit3": "Giảm số lần không đến với nhắc nhở tự động",
+			"benefit4": "Xây dựng lòng trung thành của khách hàng với hệ thống đặt lịch tiện lợi",
+			"benefit5": "Đưa ra quyết định dựa trên dữ liệu với phân tích mạnh mẽ",
+			"benefit6": "Thanh toán diễn ra tại chỗ - không có sự phức tạp của thanh toán trực tuyến"
+		},
+		"cta": {
+			"title": "Sẵn sàng thay đổi",
+			"titleBreak": "salon của bạn?",
+			"subtitle": "Tham gia chương trình beta testing của Henzo. Hoàn toàn miễn phí trong thời gian beta, không cần cam kết.",
+			"startForFree": "Bắt đầu miễn phí",
+			"joinBetaTesters": "Tham gia các beta tester của chúng tôi và nhận quyền truy cập miễn phí"
+		},
+		"betaForm": {
+			"badge": "Truy cập Beta",
+			"title": "Yêu cầu truy cập Beta",
+			"subtitle": "Điền vào biểu mẫu bên dưới để tham gia chương trình beta testing của chúng tôi và nhận quyền truy cập sớm vào Henzo.",
+			"fullName": "Họ tên",
+			"salonName": "Tên salon",
+			"optional": "(Tùy chọn)",
+			"email": "Email",
+			"required": "*",
+			"fullNamePlaceholder": "Nguyễn Văn A",
+			"salonNamePlaceholder": "Salon làm đẹp",
+			"emailPlaceholder": "nguyen@example.com",
+			"submitting": "Đang gửi...",
+			"requestBetaAccess": "Yêu cầu truy cập Beta",
+			"agreement": "Bằng cách gửi biểu mẫu này, bạn đồng ý được liên hệ về chương trình beta testing.",
+			"successMessage": "Cảm ơn bạn! Chúng tôi sẽ liên hệ với bạn sớm về chương trình beta.",
+			"errorMessage": "Không thể gửi yêu cầu. Vui lòng thử lại."
+		},
+		"register": {
+			"title": "Tạo tài khoản doanh nghiệp của bạn",
+			"subtitle": "Tham gia với tư cách chủ salon để quản lý doanh nghiệp của bạn",
+			"ownerFullName": "Họ tên chủ sở hữu",
+			"ownerFullNamePlaceholder": "Nhập họ tên đầy đủ của bạn",
+			"emailAddress": "Địa chỉ email",
+			"emailPlaceholder": "Nhập email của bạn",
+			"emailVerified": "✓ Email đã được xác minh qua liên kết mời",
+			"password": "Mật khẩu",
+			"passwordPlaceholder": "Tạo mật khẩu",
+			"confirmPassword": "Xác nhận mật khẩu",
+			"confirmPasswordPlaceholder": "Xác nhận mật khẩu của bạn",
+			"inviteCode": "Mã mời",
+			"inviteCodePlaceholder": "Nhập mã mời của bạn",
+			"inviteCodeApplied": "✓ Mã mời đã được áp dụng từ liên kết đăng ký",
+			"inviteCodeRequired": "Bắt buộc cho beta testing",
+			"creatingAccount": "Đang tạo tài khoản...",
+			"createBusinessAccount": "Tạo tài khoản doanh nghiệp",
+			"orContinueWith": "Hoặc tiếp tục với",
+			"continueWithGoogle": "Tiếp tục với Google",
+			"continueWithEmail": "Tiếp tục với Email",
+			"alreadyHaveAccount": "Đã có tài khoản?",
+			"signIn": "Đăng nhập",
+			"lookingToBook": "Muốn đặt lịch?",
+			"registerAsClient": "Đăng ký làm khách hàng →",
+			"inviteCodeRequiredError": "Mã mời là bắt buộc để đăng ký",
+			"invalidInviteCode": "Mã mời không hợp lệ",
+			"pleaseEnterValidCode": "Vui lòng nhập mã mời hợp lệ",
+			"passwordsDoNotMatch": "Mật khẩu không khớp",
+			"passwordTooShort": "Mật khẩu phải có ít nhất 6 ký tự",
+			"registrationSuccessful": "Tài khoản doanh nghiệp đã được tạo! Hoàn tất thiết lập salon của bạn.",
+			"registrationSuccessfulEmail": "Tài khoản doanh nghiệp đã được tạo! Vui lòng kiểm tra email để xác minh tài khoản của bạn.",
+			"failedToRegister": "Không thể đăng ký tài khoản doanh nghiệp",
+			"failedToRegisterGoogle": "Không thể đăng ký bằng Google",
+			"pleaseEnterInviteCode": "Vui lòng nhập mã mời trước"
+		}
 	},
 	"auth": {
 		"signInTitle": "Đăng nhập vào tài khoản của bạn",
@@ -234,7 +395,8 @@
 		"mapView": "Xem bản đồ",
 		"noSalonsFound": "Không tìm thấy salon {category}",
 		"noSalonsDescription": "Hiện tại chúng tôi không tìm thấy salon nào trong danh mục {category}. Vui lòng quay lại sau hoặc khám phá các danh mục khác.",
-		"browseAllSalons": "Xem tất cả salon"
+		"browseAllSalons": "Xem tất cả salon",
+		"viewAllServices": "Xem tất cả {count} dịch vụ →"
 	},
 	"header": {
 		"profile": "Hồ sơ",
@@ -298,121 +460,6 @@
 		"pageNotFoundDescription": "Có vẻ như bạn đã đi lạc. Hãy để chúng tôi đưa bạn trở lại đúng đường.",
 		"goHome": "Về trang chủ",
 		"returnToHomepage": "Quay lại trang chủ"
-	},
-	"business": {
-		"header": {
-			"features": "Tính năng",
-			"benefits": "Lợi ích",
-			"betaAccess": "Truy cập Beta",
-			"signIn": "Đăng nhập",
-			"startFree": "Bắt đầu miễn phí"
-		},
-		"hero": {
-			"freeBetaTesting": "✨ Miễn phí Beta Testing",
-			"title": "Đơn giản hóa đặt lịch, {delight}",
-			"delight": "Làm hài lòng khách hàng",
-			"subtitle": "Nền tảng tất cả trong một cho doanh nghiệp làm đẹp của bạn. Quản lý cuộc hẹn, khách hàng và thanh toán ở một nơi.",
-			"joinBetaTesting": "Tham gia Beta Testing",
-			"signIn": "Đăng nhập",
-			"hundredPercentFree": "100% Miễn phí",
-			"betaTestingPeriod": "Giai đoạn beta testing",
-			"quickStart": "Khởi động nhanh",
-			"liveIn5Minutes": "Hoạt động trong 5 phút"
-		},
-		"features": {
-			"badge": "Tính năng",
-			"title": "Mọi thứ bạn cần {toRun}",
-			"toRun": "để vận hành salon của bạn",
-			"subtitle": "Các tính năng mạnh mẽ được thiết kế để tiết kiệm thời gian và giúp doanh nghiệp của bạn phát triển",
-			"smartScheduling": {
-				"title": "Lịch trình thông minh",
-				"description": "Lịch thông minh ngăn chặn đặt lịch trùng và tự động tối ưu hóa thời gian của nhóm bạn."
-			},
-			"clientManagement": {
-				"title": "Quản lý khách hàng",
-				"description": "Lưu trữ hồ sơ khách hàng chi tiết, sở thích và lịch sử dịch vụ ở một nơi."
-			},
-			"emailReminders": {
-				"title": "Nhắc nhở qua Email",
-				"description": "Giảm số lần không đến với nhắc nhở cuộc hẹn tự động qua email."
-			},
-			"analytics": {
-				"title": "Phân tích",
-				"description": "Theo dõi dịch vụ phổ biến và hiệu suất nhân viên với thông tin chi tiết theo thời gian thực."
-			}
-		},
-		"benefits": {
-			"badge": "Tại sao chọn Henzo",
-			"title": "Phát triển doanh nghiệp {withConfidence}",
-			"withConfidence": "với sự tự tin",
-			"subtitle": "Nền tảng được thiết kế đặc biệt cho ngành làm đẹp. Tham gia beta testing của chúng tôi và nhận quyền truy cập miễn phí.",
-			"increaseBookings": "Tăng đặt lịch với lịch trình trực tuyến 24/7",
-			"saveTime": "Tiết kiệm 10+ giờ mỗi tuần cho các nhiệm vụ hành chính",
-			"reduceNoShows": "Giảm số lần không đến với nhắc nhở tự động",
-			"buildLoyalty": "Xây dựng lòng trung thành của khách hàng với hệ thống đặt lịch tiện lợi",
-			"dataDriven": "Đưa ra quyết định dựa trên dữ liệu với phân tích mạnh mẽ",
-			"paymentOnSite": "Thanh toán diễn ra tại chỗ - không có sự phức tạp của thanh toán trực tuyến"
-		},
-		"cta": {
-			"title": "Sẵn sàng thay đổi {yourSalon}?",
-			"yourSalon": "salon của bạn?",
-			"subtitle": "Tham gia chương trình beta testing của Henzo. Hoàn toàn miễn phí trong thời gian beta, không cần cam kết.",
-			"startForFree": "Bắt đầu miễn phí",
-			"joinBetaTesters": "Tham gia các beta tester của chúng tôi và nhận quyền truy cập miễn phí"
-		},
-		"betaForm": {
-			"badge": "Truy cập Beta",
-			"title": "Yêu cầu truy cập Beta",
-			"subtitle": "Điền vào biểu mẫu bên dưới để tham gia chương trình beta testing của chúng tôi và nhận quyền truy cập sớm vào Henzo.",
-			"fullName": "Họ tên",
-			"salonName": "Tên salon",
-			"optional": "(Tùy chọn)",
-			"email": "Email",
-			"required": "*",
-			"fullNamePlaceholder": "Nguyễn Văn A",
-			"salonNamePlaceholder": "Salon làm đẹp",
-			"emailPlaceholder": "nguyen@example.com",
-			"submitting": "Đang gửi...",
-			"requestBetaAccess": "Yêu cầu truy cập Beta",
-			"agreement": "Bằng cách gửi biểu mẫu này, bạn đồng ý được liên hệ về chương trình beta testing.",
-			"successMessage": "Cảm ơn bạn! Chúng tôi sẽ liên hệ với bạn sớm về chương trình beta.",
-			"errorMessage": "Không thể gửi yêu cầu. Vui lòng thử lại."
-		},
-		"register": {
-			"title": "Tạo tài khoản doanh nghiệp của bạn",
-			"subtitle": "Tham gia với tư cách chủ salon để quản lý doanh nghiệp của bạn",
-			"ownerFullName": "Họ tên chủ sở hữu",
-			"ownerFullNamePlaceholder": "Nhập họ tên đầy đủ của bạn",
-			"emailAddress": "Địa chỉ email",
-			"emailPlaceholder": "Nhập email của bạn",
-			"emailVerified": "✓ Email đã được xác minh qua liên kết mời",
-			"password": "Mật khẩu",
-			"passwordPlaceholder": "Tạo mật khẩu",
-			"confirmPassword": "Xác nhận mật khẩu",
-			"confirmPasswordPlaceholder": "Xác nhận mật khẩu của bạn",
-			"inviteCode": "Mã mời",
-			"inviteCodePlaceholder": "Nhập mã mời của bạn",
-			"inviteCodeApplied": "✓ Mã mời đã được áp dụng từ liên kết đăng ký",
-			"inviteCodeRequired": "Bắt buộc cho beta testing",
-			"creatingAccount": "Đang tạo tài khoản...",
-			"createBusinessAccount": "Tạo tài khoản doanh nghiệp",
-			"orContinueWith": "Hoặc tiếp tục với",
-			"continueWithGoogle": "Tiếp tục với Google",
-			"alreadyHaveAccount": "Đã có tài khoản?",
-			"signIn": "Đăng nhập",
-			"lookingToBook": "Muốn đặt lịch?",
-			"registerAsClient": "Đăng ký làm khách hàng →",
-			"inviteCodeRequiredError": "Mã mời là bắt buộc để đăng ký",
-			"invalidInviteCode": "Mã mời không hợp lệ",
-			"pleaseEnterValidCode": "Vui lòng nhập mã mời hợp lệ",
-			"passwordsDoNotMatch": "Mật khẩu không khớp",
-			"passwordTooShort": "Mật khẩu phải có ít nhất 6 ký tự",
-			"registrationSuccessful": "Tài khoản doanh nghiệp đã được tạo! Hoàn tất thiết lập salon của bạn.",
-			"registrationSuccessfulEmail": "Tài khoản doanh nghiệp đã được tạo! Vui lòng kiểm tra email để xác minh tài khoản của bạn.",
-			"failedToRegister": "Không thể đăng ký tài khoản doanh nghiệp",
-			"failedToRegisterGoogle": "Không thể đăng ký bằng Google",
-			"pleaseEnterInviteCode": "Vui lòng nhập mã mời trước"
-		}
 	},
 	"contact": {
 		"title": "LIÊN HỆ VỚI CHÚNG TÔI",

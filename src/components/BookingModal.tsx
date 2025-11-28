@@ -65,10 +65,10 @@ export default function BookingModal({
 	editingBooking,
 	onBookingUpdated,
 }: BookingModalProps) {
-	const { language } = useLanguage();
+	const { language, t } = useLanguage();
 	const [selectedDate, setSelectedDate] = useState('');
 	const [selectedTime, setSelectedTime] = useState('');
-	const [selectedStaff, setSelectedStaff] = useState('Any Staff');
+	const [selectedStaff, setSelectedStaff] = useState(t.booking.anyStaff);
 	const [isStaffDropdownOpen, setIsStaffDropdownOpen] = useState(false);
 	const [currentDateIndex, setCurrentDateIndex] = useState(0);
 	const [salonWorkingHours, setSalonWorkingHours] =
@@ -1257,7 +1257,7 @@ export default function BookingModal({
 			if (editingBooking.staff) {
 				setSelectedStaff(editingBooking.staff.name);
 			} else {
-				setSelectedStaff('Any Staff');
+				setSelectedStaff(t.booking.anyStaff);
 			}
 
 			// Mark as initialized
@@ -1302,7 +1302,7 @@ export default function BookingModal({
 
 	// Add "Any Staff" option to the beginning of staff list
 	const allStaffMembers = [
-		{ id: 'any', name: 'Any Staff', accessLevel: 'EMPLOYEE' as const },
+		{ id: 'any', name: t.booking.anyStaff, accessLevel: 'EMPLOYEE' as const },
 		...staffMembers,
 	];
 
@@ -1486,20 +1486,20 @@ export default function BookingModal({
 
 	const handleBooking = async () => {
 		if (!selectedService || !selectedDate || !selectedTime) {
-			toast.error('Please fill in all fields');
+			toast.error(t.booking.pleaseFillAllFields);
 			return;
 		}
 
 		// Если владелец создает резервацию, проверяем наличие email клиента
 		if (isOwner && !editingBooking) {
 			if (!clientEmail || !clientEmail.trim()) {
-				toast.error('Please enter client email');
+				toast.error(t.booking.pleaseEnterClientEmail);
 				return;
 			}
 			// Валидация email
 			const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 			if (!emailRegex.test(clientEmail.trim())) {
-				toast.error('Please enter a valid email address');
+				toast.error(t.booking.pleaseEnterValidEmail);
 				return;
 			}
 		}
@@ -1581,7 +1581,7 @@ export default function BookingModal({
 					selectedTime,
 					overrideData,
 				});
-				throw new Error('Please select both date and time for your booking');
+				throw new Error(t.booking.pleaseSelectDateAndTime);
 			}
 
 			// Validate date format (YYYY-MM-DD)
@@ -1853,10 +1853,10 @@ export default function BookingModal({
 												</svg>
 											</div>
 											<h2 className="text-2xl font-bold text-gray-900 mb-2">
-												Thank You for Your Reservation!
+												{t.booking.thankYouForReservation}
 											</h2>
 											<p className="text-gray-600 text-lg mb-4">
-												Awaiting confirmation from the salon
+												{t.booking.awaitingConfirmation}
 											</p>
 										</div>
 
@@ -1876,33 +1876,31 @@ export default function BookingModal({
 													</svg>
 													<div className="text-sm text-gray-700">
 														<strong className="font-semibold">
-															Usually the salon confirms bookings within 2
-															hours.
+															{t.booking.usuallyConfirmsWithin}
 														</strong>
 														<p className="mt-1">
-															You will receive an email once your appointment is
-															confirmed.
+															{t.booking.willReceiveEmail}
 														</p>
 													</div>
 												</div>
 
 												<div className="mt-4 pt-4 border-t border-yellow-200">
 													<p className="text-sm font-medium text-gray-900 mb-2">
-														Booking Details:
+														{t.booking.bookingDetails}
 													</p>
 													<ul className="text-sm text-gray-700 space-y-1">
 														<li>
-															<strong>Service:</strong>{' '}
+															<strong>{t.booking.service}</strong>{' '}
 															{bookingSuccess.serviceName}
 														</li>
 														<li>
-															<strong>Date:</strong>{' '}
+															<strong>{t.booking.date}</strong>{' '}
 															{new Date(
 																bookingSuccess.date
 															).toLocaleDateString()}
 														</li>
 														<li>
-															<strong>Time:</strong> {bookingSuccess.time}
+															<strong>{t.booking.time}</strong> {bookingSuccess.time}
 														</li>
 													</ul>
 												</div>
@@ -1928,27 +1926,27 @@ export default function BookingModal({
 												</svg>
 											</div>
 											<h2 className="text-2xl font-bold text-gray-900 mb-2">
-												Booking Confirmed!
+												{t.booking.bookingConfirmedTitle}
 											</h2>
 											<p className="text-gray-600 text-lg">
-												Your appointment has been successfully booked
+												{t.booking.appointmentBookedSuccessfully}
 											</p>
 										</div>
 
 										<div className="bg-green-50 border border-green-200 rounded-lg p-6 mb-6">
 											<p className="text-sm font-medium text-gray-900 mb-2">
-												Booking Details:
+												{t.booking.bookingDetails}
 											</p>
 											<ul className="text-sm text-gray-700 space-y-1 text-left">
 												<li>
-													<strong>Service:</strong> {bookingSuccess.serviceName}
+													<strong>{t.booking.service}</strong> {bookingSuccess.serviceName}
 												</li>
 												<li>
-													<strong>Date:</strong>{' '}
+													<strong>{t.booking.date}</strong>{' '}
 													{new Date(bookingSuccess.date).toLocaleDateString()}
 												</li>
 												<li>
-													<strong>Time:</strong> {bookingSuccess.time}
+													<strong>{t.booking.time}</strong> {bookingSuccess.time}
 												</li>
 											</ul>
 										</div>
@@ -1962,7 +1960,7 @@ export default function BookingModal({
 									}}
 									className="w-full bg-[#ff5b5b] text-white py-3 rounded-lg font-semibold text-lg hover:bg-[#e04a4a] transition-colors"
 								>
-									Done
+									{t.booking.done}
 								</button>
 							</div>
 						</div>
@@ -1985,20 +1983,20 @@ export default function BookingModal({
 												>
 													<div className="flex-1 min-w-0">
 														<div className="text-base sm:text-lg font-semibold text-gray-900 truncate">
-															{selectedService
-																? getLocalizedServiceName(
-																		selectedService,
-																		language
-																	)
-																: 'Select a service'}
+											{selectedService
+												? getLocalizedServiceName(
+														selectedService,
+														language
+													)
+												: t.booking.selectAService}
 														</div>
 														<div className="text-xs sm:text-sm text-gray-600 truncate">
-															{selectedService
-																? getLocalizedServiceDescription(
-																		selectedService,
-																		language
-																	) || 'Choose from available services'
-																: 'Choose from available services'}
+														{selectedService
+															? getLocalizedServiceDescription(
+																	selectedService,
+																	language
+																) || t.booking.chooseFromAvailableServices
+															: t.booking.chooseFromAvailableServices}
 														</div>
 													</div>
 													<ChevronDown
@@ -2057,7 +2055,7 @@ export default function BookingModal({
 															<Clock className="w-4 h-4" />
 														</span>
 														<span className="text-sm text-gray-600">
-															{selectedService.duration} min
+															{selectedService.duration} {t.common.minutesShort || 'min'}
 														</span>
 													</div>
 													<div className="flex items-center gap-2">
@@ -2071,11 +2069,11 @@ export default function BookingModal({
 									) : (
 										<div>
 											<h2 className="text-xl sm:text-2xl font-bold text-gray-900 mb-2">
-												{selectedService?.name || 'Select a service'}
+												{selectedService?.name || t.booking.selectAService}
 											</h2>
 											<p className="text-sm sm:text-base text-gray-700 mb-4">
 												{selectedService?.description ||
-													'Please select a service to book'}
+													t.booking.chooseFromAvailableServices}
 											</p>
 											<div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-6">
 												<div className="flex gap-1">
@@ -2085,14 +2083,14 @@ export default function BookingModal({
 													<span className="text-sm text-gray-600">
 														{selectedService?.duration
 															? `${selectedService.duration} min`
-															: 'Duration'}
+															: t.booking.duration}
 													</span>
 												</div>
 												<div className="flex items-center gap-2">
 													<span className="text-base sm:text-lg font-bold text-[#ff5b5b]">
 														{selectedService?.price
 															? formatVND(selectedService.price)
-															: 'Price'}
+															: t.booking.price}
 													</span>
 												</div>
 											</div>
@@ -2104,7 +2102,7 @@ export default function BookingModal({
 								<div className="mb-6 sm:mb-8">
 									<div className="flex items-center justify-between mb-3 sm:mb-4">
 										<h3 className="text-base sm:text-lg font-bold text-gray-900">
-											Select Date
+											{t.booking.selectDate}
 										</h3>
 									</div>
 
@@ -2196,7 +2194,7 @@ export default function BookingModal({
 								<div className="mt-10">
 									<div className="flex items-center justify-between mb-2">
 										<h3 className="text-base sm:text-lg font-bold text-gray-900">
-											Select a Time
+											{t.booking.selectATime}
 										</h3>
 										{selectedDate && (
 											<div className="text-sm text-gray-600">
@@ -2210,7 +2208,7 @@ export default function BookingModal({
 									</div>
 									{!selectedDate && (
 										<div className="text-sm text-amber-600 bg-amber-50 p-3 rounded-lg mb-4">
-											Please select a date first to see available time slots
+											{t.booking.pleaseSelectDateFirst}
 										</div>
 									)}
 
@@ -2225,7 +2223,7 @@ export default function BookingModal({
 														: 'text-gray-600 hover:text-gray-900 hover:bg-white/50'
 												}`}
 											>
-												All
+												{t.booking.timeFilters.all}
 											</button>
 											<button
 												onClick={() => setTimeFilter('morning')}
@@ -2235,7 +2233,7 @@ export default function BookingModal({
 														: 'text-gray-600 hover:text-gray-900 hover:bg-white/50'
 												}`}
 											>
-												Morning
+												{t.booking.timeFilters.morning}
 											</button>
 											<button
 												onClick={() => setTimeFilter('afternoon')}
@@ -2245,7 +2243,7 @@ export default function BookingModal({
 														: 'text-gray-600 hover:text-gray-900 hover:bg-white/50'
 												}`}
 											>
-												Afternoon
+												{t.booking.timeFilters.afternoon}
 											</button>
 											<button
 												onClick={() => setTimeFilter('evening')}
@@ -2255,7 +2253,7 @@ export default function BookingModal({
 														: 'text-gray-600 hover:text-gray-900 hover:bg-white/50'
 												}`}
 											>
-												Evening
+												{t.booking.timeFilters.evening}
 											</button>
 										</div>
 									</div>
@@ -2356,7 +2354,7 @@ export default function BookingModal({
 												/>
 											</svg>
 											<p className="text-sm text-gray-500">
-												No available time slots with current selection
+												{t.booking.noAvailableSlotsWithSelection}
 											</p>
 										</div>
 									)}
@@ -2368,13 +2366,13 @@ export default function BookingModal({
 								{/* Client Information (only for owners creating new bookings) */}
 								{isOwner && !editingBooking && (
 									<div className="mb-6 sm:mb-8">
-										<h3 className="text-base sm:text-lg font-bold text-gray-900 mb-3 sm:mb-4">
-											Client Information
-										</h3>
+									<h3 className="text-base sm:text-lg font-bold text-gray-900 mb-3 sm:mb-4">
+										{t.booking.clientInfo}
+									</h3>
 										<div className="space-y-4">
 											<div>
 												<label className="block text-sm font-medium text-gray-700 mb-1">
-													Client Email <span className="text-red-500">*</span>
+													{t.booking.clientEmail} <span className="text-red-500">*</span>
 												</label>
 												<input
 													type="email"
@@ -2387,7 +2385,7 @@ export default function BookingModal({
 											</div>
 											<div>
 												<label className="block text-sm font-medium text-gray-700 mb-1">
-													Client Name (optional)
+													{t.booking.clientNameOptional}
 												</label>
 												<input
 													type="text"
@@ -2399,7 +2397,7 @@ export default function BookingModal({
 											</div>
 											<div>
 												<label className="block text-sm font-medium text-gray-700 mb-1">
-													Client Phone (optional)
+													{t.booking.clientPhoneOptional}
 												</label>
 												<input
 													type="tel"
@@ -2416,7 +2414,7 @@ export default function BookingModal({
 								{/* Select Staff Member */}
 								<div className="mb-6 sm:mb-8">
 									<h3 className="text-base sm:text-lg font-bold text-gray-900 mb-3 sm:mb-4">
-										Select a Staff Member
+										{t.booking.selectAStaffMember}
 									</h3>
 									<div className="relative staff-dropdown">
 										<button
@@ -2476,11 +2474,11 @@ export default function BookingModal({
 								>
 									{loading
 										? editingBooking
-											? 'Updating...'
-											: 'Booking...'
+											? t.booking.updating
+											: t.booking.booking
 										: editingBooking
-											? 'Update Appointment'
-											: 'Book Appointment'}
+											? t.booking.updateAppointment
+											: t.booking.bookAppointment}
 								</button>
 
 								{/* Close Button */}
@@ -2488,7 +2486,7 @@ export default function BookingModal({
 									onClick={onClose}
 									className="w-full mt-3 sm:mt-4 text-gray-500 hover:text-gray-700 font-medium text-sm sm:text-base"
 								>
-									Cancel
+									{t.common.cancel}
 								</button>
 							</div>
 						</div>
@@ -2505,11 +2503,10 @@ export default function BookingModal({
 							{!showMagicLinkSent ? (
 								<>
 									<h3 className="text-2xl font-bold text-gray-900 mb-4">
-										Complete Your Booking
+										{t.booking.completeYourBooking}
 									</h3>
 									<p className="text-gray-600 mb-6">
-										Please sign in or enter your email to complete your
-										reservation for{' '}
+										{t.booking.signInToComplete}{' '}
 										<strong>
 											{pendingBookingData?.service?.name ||
 												selectedService?.name}
@@ -2552,15 +2549,14 @@ export default function BookingModal({
 										</svg>
 									</div>
 									<h3 className="text-2xl font-bold text-gray-900 mb-4">
-										Check Your Email
+										{t.booking.checkYourEmail}
 									</h3>
 									<p className="text-gray-600 mb-4">
-										We've sent a confirmation link to{' '}
+										{t.booking.magicLinkSent}{' '}
 										<strong>{guestEmail}</strong>
 									</p>
 									<p className="text-sm text-gray-500 mb-6">
-										Click the link in the email to confirm your reservation. The
-										link will expire in 1 hour.
+										{t.booking.clickLinkToConfirm}
 									</p>
 									<button
 										onClick={() => {
@@ -2570,7 +2566,7 @@ export default function BookingModal({
 										}}
 										className="w-full px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
 									>
-										Close
+										{t.common.close}
 									</button>
 								</div>
 							)}
@@ -2608,6 +2604,7 @@ function LoginForm({
 	const [loading, setLoading] = useState(false);
 	const [magicLinkLoading, setMagicLinkLoading] = useState(false);
 	const { login } = useAuthStore();
+	const { t } = useLanguage();
 
 	const handleGoogleLogin = async () => {
 		try {
@@ -2678,7 +2675,7 @@ function LoginForm({
 		} catch (error: any) {
 			console.error('❌ Google login error:', error);
 			const errorMessage = error?.message || 'Unknown error occurred';
-			toast.error(`Failed to sign in with Google: ${errorMessage}`);
+			toast.error(`${t.auth.googleSignInFailed}: ${errorMessage}`);
 			setLoading(false);
 		}
 	};
@@ -2703,7 +2700,7 @@ function LoginForm({
 		e.preventDefault();
 
 		if (!email || !password) {
-			toast.error('Please fill in all fields');
+			toast.error(t.booking.pleaseFillAllFields);
 			return;
 		}
 
@@ -2752,7 +2749,7 @@ function LoginForm({
 						d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
 					/>
 				</svg>
-				<span className="font-medium text-gray-700">Continue with Google</span>
+				<span className="font-medium text-gray-700">{t.auth.continueWithGoogle}</span>
 			</button>
 
 			<div className="relative">
@@ -2760,7 +2757,7 @@ function LoginForm({
 					<div className="w-full border-t border-gray-300"></div>
 				</div>
 				<div className="relative flex justify-center text-sm">
-					<span className="px-2 bg-white text-gray-500">or</span>
+					<span className="px-2 bg-white text-gray-500">{t.auth.orContinueWith || 'or'}</span>
 				</div>
 			</div>
 
@@ -2769,14 +2766,14 @@ function LoginForm({
 				<form onSubmit={handleMagicLinkSubmit} className="space-y-4">
 					<div>
 						<label className="block text-sm font-medium text-gray-700 mb-1">
-							Email
+							{t.auth.emailAddress}
 						</label>
 						<input
 							type="email"
 							value={email}
 							onChange={(e) => setEmail(e.target.value)}
 							className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#ff5b5b] focus:border-transparent"
-							placeholder="your@email.com"
+							placeholder={t.auth.emailPlaceholder || 'your@email.com'}
 							required
 						/>
 					</div>
@@ -2787,14 +2784,14 @@ function LoginForm({
 							onClick={onCancel}
 							className="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors"
 						>
-							Cancel
+							{t.common.cancel}
 						</button>
 						<button
 							type="submit"
 							disabled={magicLinkLoading}
 							className="flex-1 px-4 py-2 bg-[#ff5b5b] text-white rounded-lg hover:bg-[#e04a4a] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
 						>
-							{magicLinkLoading ? 'Sending...' : 'Continue with Email'}
+							{magicLinkLoading ? (t.contact.sending || 'Sending...') : t.auth.continueWithEmail}
 						</button>
 					</div>
 
@@ -2803,28 +2800,28 @@ function LoginForm({
 						onClick={() => setShowPasswordField(true)}
 						className="w-full text-sm text-center text-[#ff5b5b] hover:underline"
 					>
-						Already have an account? Sign in
+						{t.auth.alreadyHaveAccount}? {t.auth.signIn}
 					</button>
 				</form>
 			) : (
 				<form onSubmit={handleLoginSubmit} className="space-y-4">
 					<div>
 						<label className="block text-sm font-medium text-gray-700 mb-1">
-							Email
+							{t.auth.emailAddress}
 						</label>
 						<input
 							type="email"
 							value={email}
 							onChange={(e) => setEmail(e.target.value)}
 							className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#ff5b5b] focus:border-transparent"
-							placeholder="your@email.com"
+							placeholder={t.auth.emailPlaceholder || 'your@email.com'}
 							required
 						/>
 					</div>
 
 					<div>
 						<label className="block text-sm font-medium text-gray-700 mb-1">
-							Password
+							{t.auth.password}
 						</label>
 						<input
 							type="password"
@@ -2849,7 +2846,7 @@ function LoginForm({
 							disabled={loading}
 							className="flex-1 px-4 py-2 bg-[#ff5b5b] text-white rounded-lg hover:bg-[#e04a4a] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
 						>
-							{loading ? 'Logging in...' : 'Login'}
+							{loading ? (t.auth.signInFailed || 'Logging in...') : t.auth.signIn}
 						</button>
 					</div>
 
@@ -2858,13 +2855,13 @@ function LoginForm({
 						onClick={() => setShowPasswordField(false)}
 						className="w-full text-sm text-center text-[#ff5b5b] hover:underline"
 					>
-						Use email link instead
+						{t.booking.useEmailLinkInstead || 'Use email link instead'}
 					</button>
 
 					<p className="text-sm text-center text-gray-600 mt-4">
-						Don't have an account?{' '}
+						{t.auth.dontHaveAccount}{' '}
 						<a href="/register" className="text-[#ff5b5b] hover:underline">
-							Sign up
+							{t.auth.signUp}
 						</a>
 					</p>
 				</form>

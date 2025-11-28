@@ -227,7 +227,7 @@ export default function SalonCard({
 						}}
 						className="text-[#ff5b5b] text-sm font-medium hover:text-[#e04a4a] transition-colors"
 					>
-						View all {salon.services.length} services →
+						{t.categories.viewAllServices.replace('{count}', salon.services.length.toString())}
 					</button>
 				</div>
 			)}

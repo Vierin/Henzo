@@ -1,16 +1,21 @@
+'use client';
+
 import { ImageWithFallback } from './ImageWithFallback';
 import { CheckCircle2 } from 'lucide-react';
-
-const benefits = [
-	'Increase bookings with 24/7 online scheduling',
-	'Save 10+ hours per week on administrative tasks',
-	'Reduce no-shows with automated reminders',
-	'Build client loyalty with a convenient booking system',
-	'Make data-driven decisions with powerful analytics',
-	'Payment happens on-site - no online payment complexities',
-];
+import { useTranslation } from '@/contexts/LanguageContext';
 
 export function Benefits() {
+	const t = useTranslation();
+	
+	const benefits = [
+		t.business.benefits.benefit1,
+		t.business.benefits.benefit2,
+		t.business.benefits.benefit3,
+		t.business.benefits.benefit4,
+		t.business.benefits.benefit5,
+		t.business.benefits.benefit6,
+	];
+
 	return (
 		<section id="benefits" className="py-20 px-4">
 			<div className="container mx-auto">
@@ -28,17 +33,16 @@ export function Benefits() {
 
 					<div className="space-y-8 order-1 lg:order-2">
 						<div className="inline-block px-4 py-2 bg-secondary rounded-full">
-							<span className="text-primary">Why Henzo</span>
+							<span className="text-primary">{t.business.benefits.badge}</span>
 						</div>
 
 						<h2 className="text-4xl lg:text-5xl tracking-tight">
-							Grow Your Business <br />
-							<span className="text-primary">with Confidence</span>
+							{t.business.benefits.title} <br />
+							<span className="text-primary">{t.business.benefits.titleBreak}</span>
 						</h2>
 
 						<p className="text-xl text-muted-foreground">
-							A platform designed specifically for the beauty industry. Join our
-							beta testing and get free access.
+							{t.business.benefits.subtitle}
 						</p>
 
 						<div className="space-y-4">

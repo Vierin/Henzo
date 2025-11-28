@@ -2,18 +2,19 @@
 
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import type React from 'react';
-import { useTranslation } from '@/contexts/LanguageContext';
+import { useTranslation, useLanguage } from '@/contexts/LanguageContext';
 
 interface ServiceSuggestion {
 	id: number | string;
 	name: string;
-	type: 'category' | 'salon';
+	type: 'category' | 'salon' | 'recommended';
 	category?: { name: string };
 	salon?: { name: string };
+	address?: string;
 }
 
 interface SuggestionGroup {
-	type: 'category' | 'salon';
+	type: 'category' | 'salon' | 'recommended';
 	title: string;
 	suggestions: ServiceSuggestion[];
 }
@@ -38,6 +39,7 @@ export default function ServiceAutocomplete({
 	onKeyDown,
 }: ServiceAutocompleteProps) {
 	const t = useTranslation();
+	const { language } = useLanguage();
 	const [suggestionGroups, setSuggestionGroups] = useState<SuggestionGroup[]>(
 		[]
 	);
@@ -52,159 +54,146 @@ export default function ServiceAutocomplete({
 	// request abort controller
 	const abortRef = useRef<AbortController | null>(null);
 
-	// Fetch suggestions from multiple sources with caching
-	const fetchSuggestions = useCallback(async (query: string) => {
-		// Check cache first
-		if (searchCache.current.has(query)) {
-			setSuggestionGroups(searchCache.current.get(query) || []);
-			return;
-		}
-
-		// categories from 2 chars, services from 3
-		if (query.length < 2) {
-			setSuggestionGroups([]);
-			return;
-		}
-
-		// cancel previous in-flight
-		if (abortRef.current) {
-			abortRef.current.abort();
-		}
-		const controller = new AbortController();
-		abortRef.current = controller;
-
-		setLoading(true);
-		try {
-			const API_BASE_URL =
-				process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
-
-			const safeJson = async (res: Response) => {
-				try {
-					if (!res) return null;
-					const text = await res.text();
-					if (!text) return null;
-					// try JSON parse regardless of content-type to handle proxies
-					return JSON.parse(text);
-				} catch {
-					return null;
-				}
-			};
-
-			// Build requests with AbortController and minimal set
-			const reqs: Promise<any>[] = [];
-			// core suggestions (categories+synonyms) (>=2)
-			reqs.push(
-				fetch(
-					`${API_BASE_URL}/search/core/suggest?q=${encodeURIComponent(query)}&lang=en&limit=10`,
-					{ signal: controller.signal }
-				)
-			);
-			// optional: lightweight salon suggest (>=3)
-			if (query.length >= 3) {
-				reqs.push(
-					fetch(
-						`${API_BASE_URL}/salons/suggest?search=${encodeURIComponent(query)}&limit=5`,
-						{ signal: controller.signal }
-					)
-				);
+	// Fetch suggestions from unified endpoint (Booksy style)
+	const fetchSuggestions = useCallback(
+		async (query: string) => {
+			// Check cache first (with language in key)
+			const cacheKey = `${language}-${query.toLowerCase().trim()}`;
+			if (searchCache.current.has(cacheKey)) {
+				setSuggestionGroups(searchCache.current.get(cacheKey) || []);
+				return;
 			}
 
-			// Fetch in parallel
-			const settled = await Promise.allSettled(reqs);
+			// 0-2 chars: show popular recommended services
+			if (query.length === 0 || query.length < 3) {
+				setSuggestionGroups([]);
+				return;
+			}
 
-			const groups: SuggestionGroup[] = [];
+			// cancel previous in-flight
+			if (abortRef.current) {
+				abortRef.current.abort();
+			}
+			const controller = new AbortController();
+			abortRef.current = controller;
 
-			// Process core suggestions (first response)
-			const coreResp = settled[0];
-			if (coreResp.status === 'fulfilled' && coreResp.value.ok) {
-				const coreResult = await safeJson(coreResp.value);
-				if (coreResult?.success && coreResult.data?.length > 0) {
+			setLoading(true);
+			try {
+				const API_BASE_URL =
+					process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+
+				const safeJson = async (res: Response) => {
+					try {
+						if (!res) return null;
+						const text = await res.text();
+						if (!text) return null;
+						return JSON.parse(text);
+					} catch {
+						return null;
+					}
+				};
+
+				// Unified suggest: RecommendedServices + Salon names (3+ chars)
+				// Map language: 'vi' -> 'vn', 'ru' -> 'ru', 'en' -> 'en'
+				const apiLang =
+					language === 'vi' ? 'vn' : language === 'ru' ? 'ru' : 'en';
+				const response = await fetch(
+					`${API_BASE_URL}/search/unified/suggest?q=${encodeURIComponent(query)}&lang=${apiLang}&limit=10`,
+					{ signal: controller.signal }
+				);
+
+				if (!response.ok) {
+					setSuggestionGroups([]);
+					return;
+				}
+
+				const result = await safeJson(response);
+				if (!result?.success) {
+					setSuggestionGroups([]);
+					return;
+				}
+
+				const groups: SuggestionGroup[] = [];
+
+				// Add recommended services group
+				if (result.data?.recommendedServices?.length > 0) {
 					groups.push({
-						type: 'category',
-						title: t.homepage.popularCategories,
-						suggestions: coreResult.data.map((category: any) => ({
-							id: category.id,
-							name: category.name, // already localized on backend
-							type: 'category' as const,
+						type: 'recommended',
+						title: t.homepage.recommendedServices || 'Recommended Services',
+						suggestions: result.data.recommendedServices.map((item: any) => ({
+							id: item.id,
+							name: item.name,
+							type: 'recommended' as const,
 						})),
 					});
 				}
-			}
 
-			// Process salons suggest (second response when present)
-			const salonsResp = query.length >= 3 ? settled[1] : null;
-			if (
-				salonsResp &&
-				salonsResp.status === 'fulfilled' &&
-				salonsResp.value.ok
-			) {
-				const salonsResult = await safeJson(salonsResp.value);
-				if (salonsResult?.success && salonsResult.data?.length > 0) {
+				// Add salons group
+				if (result.data?.salons?.length > 0) {
 					groups.push({
 						type: 'salon',
 						title: t.navigation.salons,
-						suggestions: salonsResult.data.map((salon: any) => ({
+						suggestions: result.data.salons.map((salon: any) => ({
 							id: salon.id,
 							name: salon.name,
 							type: 'salon' as const,
 							salon: { name: salon.name },
+							address: salon.address,
 						})),
 					});
 				}
-			}
 
-			setSuggestionGroups(groups);
+				setSuggestionGroups(groups);
 
-			// Cache the results
-			searchCache.current.set(query, groups);
+				// Cache the results (with language in key)
+				searchCache.current.set(cacheKey, groups);
 
-			// Limit cache size to prevent memory issues
-			if (searchCache.current.size > 50) {
-				const firstKey = searchCache.current.keys().next().value;
-				if (firstKey !== undefined) {
-					searchCache.current.delete(firstKey);
+				// Limit cache size (per language)
+				if (searchCache.current.size > 100) {
+					const firstKey = searchCache.current.keys().next().value;
+					if (firstKey !== undefined) {
+						searchCache.current.delete(firstKey);
+					}
 				}
+			} catch (error: any) {
+				if (error?.name !== 'AbortError') {
+					console.error('Error fetching suggestions:', error);
+				}
+				setSuggestionGroups([]);
+			} finally {
+				setLoading(false);
 			}
-		} catch (error: any) {
-			if (error?.name !== 'AbortError') {
-				console.error('Error fetching suggestions:', error);
-			}
-			setSuggestionGroups([]);
-		} finally {
-			setLoading(false);
-		}
-	}, []);
+		},
+		[t]
+	);
 
-	// Fetch initial suggestions on focus (popular items)
-	const fetchInitialSuggestions = async () => {
+	// Fetch initial suggestions on focus (popular recommended services)
+	const fetchInitialSuggestions = useCallback(async () => {
 		setLoading(true);
 		try {
 			const API_BASE_URL =
 				process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
-			// Fetch popular categories
-			const categoriesResponse = await fetch(
-				`${API_BASE_URL}/search/categories?q=&lang=en`
+			// Fetch popular recommended services (0-2 chars)
+			// Map language: 'vi' -> 'vn', 'ru' -> 'ru', 'en' -> 'en'
+			const apiLang =
+				language === 'vi' ? 'vn' : language === 'ru' ? 'ru' : 'en';
+			const response = await fetch(
+				`${API_BASE_URL}/search/popular/recommended?lang=${apiLang}&limit=10`
 			);
 
-			if (categoriesResponse.ok) {
-				const categoriesResult = await categoriesResponse.json();
-				if (categoriesResult.success && categoriesResult.data?.length > 0) {
-					// Take first 3 popular categories
-					const popularCategories = categoriesResult.data
-						.slice(0, 3)
-						.map((category: any) => ({
-							id: category.id,
-							name: category.nameEn,
-							type: 'category' as const,
-							category: { name: category.nameVn },
-						}));
-
+			if (response.ok) {
+				const result = await response.json();
+				if (result.success && result.data?.length > 0) {
 					setSuggestionGroups([
 						{
-							type: 'category',
-							title: t.homepage.popularCategories,
-							suggestions: popularCategories,
+							type: 'recommended',
+							title: t.homepage.popularServices || 'Popular Services',
+							suggestions: result.data.map((item: any) => ({
+								id: item.id,
+								name: item.name,
+								type: 'recommended' as const,
+							})),
 						},
 					]);
 				}
@@ -214,20 +203,39 @@ export default function ServiceAutocomplete({
 		} finally {
 			setLoading(false);
 		}
-	};
+	}, [t, language]);
 
 	// Debounce the search with improved performance
 	useEffect(() => {
 		const timeoutId = setTimeout(() => {
-			if (value) {
+			if (value && value.length >= 3) {
 				fetchSuggestions(value);
+			} else if (value.length === 0) {
+				setSuggestionGroups([]);
 			} else {
+				// 1-2 chars: don't show suggestions yet
 				setSuggestionGroups([]);
 			}
 		}, 300);
 
 		return () => clearTimeout(timeoutId);
 	}, [value, fetchSuggestions]);
+
+	// Clear cache and refetch suggestions when language changes
+	useEffect(() => {
+		// Clear cache on language change to force fresh requests with new language
+		searchCache.current.clear();
+
+		// Refetch suggestions if they were shown
+		if (showSuggestions) {
+			if (value.length === 0) {
+				fetchInitialSuggestions();
+			} else if (value.length >= 3) {
+				fetchSuggestions(value);
+			}
+		}
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, [language]); // Only depend on language to avoid infinite loops
 
 	// Close suggestions when clicking outside
 	useEffect(() => {
@@ -353,6 +361,21 @@ export default function ServiceAutocomplete({
 							{/* Group Header */}
 							<div className="px-3 py-2 bg-gray-50 border-b border-gray-100">
 								<div className="flex items-center gap-2">
+									{group.type === 'recommended' && (
+										<svg
+											className="w-4 h-4 text-primary"
+											fill="none"
+											stroke="currentColor"
+											viewBox="0 0 24 24"
+										>
+											<path
+												strokeLinecap="round"
+												strokeLinejoin="round"
+												strokeWidth={2}
+												d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"
+											/>
+										</svg>
+									)}
 									{group.type === 'category' && (
 										<svg
 											className="w-4 h-4 text-primary"
@@ -394,10 +417,20 @@ export default function ServiceAutocomplete({
 								<button
 									key={`${suggestion.type}-${suggestion.id}-${suggestionIndex}`}
 									onClick={() => handleSuggestionClick(suggestion)}
-									className="w-full px-3 py-2 text-left hover:bg-gray-50 border-b border-gray-100 last:border-b-0 text-sm text-gray-700"
+									className="w-full px-3 py-2.5 text-left hover:bg-gray-50 border-b border-gray-100 last:border-b-0 text-sm text-gray-700 transition-colors"
 								>
-									<div className="font-medium">{suggestion.name}</div>
-									{/* No secondary language line to keep single-language display */}
+									<div className="flex items-center justify-between">
+										<div className="flex-1 min-w-0">
+											<div className="font-medium text-gray-900 truncate">
+												{suggestion.name}
+											</div>
+											{suggestion.type === 'salon' && suggestion.address && (
+												<div className="text-xs text-gray-500 truncate mt-0.5">
+													{suggestion.address}
+												</div>
+											)}
+										</div>
+									</div>
 								</button>
 							))}
 						</div>

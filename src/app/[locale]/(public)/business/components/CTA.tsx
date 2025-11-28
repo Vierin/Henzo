@@ -4,20 +4,21 @@ import Link from 'next/link';
 import { Button } from './ui/button';
 import { ArrowRight } from 'lucide-react';
 import { ImageWithFallback } from './ImageWithFallback';
+import { useTranslation } from '@/contexts/LanguageContext';
 
 export function CTA() {
+	const t = useTranslation();
 	return (
 		<section className="py-20 px-4 bg-gradient-to-br from-primary/10 via-accent/10 to-secondary">
 			<div className="container mx-auto">
 				<div className="grid lg:grid-cols-2 gap-12 items-center max-w-6xl mx-auto">
 					<div className="space-y-6">
 						<h2 className="text-4xl lg:text-5xl tracking-tight">
-							Ready to Transform <br /> Your Salon?
+							{t.business.cta.title} <br /> {t.business.cta.titleBreak}
 						</h2>
 
 						<p className="text-xl text-muted-foreground">
-							Join Henzo's beta testing program. Completely free during beta, no
-							commitments required.
+							{t.business.cta.subtitle}
 						</p>
 
 						<div className="flex flex-col sm:flex-row gap-4">
@@ -26,7 +27,7 @@ export function CTA() {
 									size="lg"
 									className="bg-primary text-white hover:bg-primary/90 group w-full sm:w-auto"
 								>
-									Start for Free
+									{t.business.cta.startForFree}
 									<ArrowRight className="ml-2 w-4 h-4 group-hover:translate-x-1 transition-transform" />
 								</Button>
 							</Link>
@@ -34,7 +35,7 @@ export function CTA() {
 
 						<div className="flex items-center gap-4 pt-4">
 							<div className="text-sm">
-								<div>Join our beta testers and get free access</div>
+								<div>{t.business.cta.joinBetaTesters}</div>
 							</div>
 						</div>
 					</div>
