@@ -54,8 +54,12 @@ export default function MapSearchClient() {
 					setIsLoadingLocation(false);
 				},
 				(error) => {
-					console.log('Geolocation error:', error.message);
-					// Fallback to Da Nang if user denies or error occurs
+					// Don't log user denial (PERMISSION_DENIED = 1) as an error - it's expected behavior
+					// Only log other errors like TIMEOUT or POSITION_UNAVAILABLE
+					if (error.code !== 1) {
+						console.warn('Geolocation error:', error.message);
+					}
+					// Fallback to Da Nang coordinates (already set as default)
 					setIsLoadingLocation(false);
 				},
 				{

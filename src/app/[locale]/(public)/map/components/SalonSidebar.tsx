@@ -68,27 +68,6 @@ export default function SalonSidebar({
 		return sortedSalons;
 	}, [salons, mapBounds, sortBy]);
 
-	const renderStars = (rating: number) => {
-		return Array.from({ length: 5 }, (_, i) => {
-			const starIndex = i + 1;
-			let className = 'text-gray-300';
-			let style = {};
-
-			if (starIndex <= Math.floor(rating)) {
-				className = 'text-[#ff5b5b] fill-[#ff5b5b]';
-			} else if (starIndex - 0.5 <= rating && rating < starIndex) {
-				className = 'text-gray-300';
-				style = {
-					background: 'linear-gradient(90deg, #ff5b5b 50%, transparent 50%)',
-					WebkitBackgroundClip: 'text',
-					WebkitTextFillColor: 'transparent',
-					backgroundClip: 'text',
-				};
-			}
-
-			return <Star key={i} size={14} className={className} style={style} />;
-		});
-	};
 
 	const handleViewSalon = (salon: any, e: React.MouseEvent) => {
 		e.stopPropagation();
@@ -217,9 +196,7 @@ export default function SalonSidebar({
 
 										{/* Rating */}
 										<div className="flex items-center space-x-2 mb-3">
-											<div className="flex items-center space-x-1">
-												{renderStars(salon.avgRating || salon.rating || 0)}
-											</div>
+											<Star size={14} className="text-[#ff5b5b] fill-[#ff5b5b]" />
 											<span className="text-sm font-medium text-gray-900">
 												{(salon.avgRating || salon.rating || 0).toFixed(1)}
 											</span>
