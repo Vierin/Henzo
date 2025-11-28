@@ -202,7 +202,7 @@ export default function SalonCard({
 												onClick={(e) => handleBookService(e, service)}
 												className="bg-[#ff5b5b] text-white px-3 py-1.5 rounded-md text-xs font-medium hover:bg-[#e04a4a] transition-colors flex-shrink-0"
 											>
-												Book
+												{t.salon.book || t.salon.bookNow}
 											</button>
 										)}
 									</div>

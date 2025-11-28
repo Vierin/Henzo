@@ -16,9 +16,11 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from '@/components/ui/select';
+import { useTranslation } from '@/contexts/LanguageContext';
 
 export default function SalonsClient() {
 	const searchParams = useSearchParams();
+	const t = useTranslation();
 
 	// Initialize state from URL parameters immediately
 	const getInitialParams = useCallback(() => {
@@ -164,12 +166,12 @@ export default function SalonsClient() {
 	// Memoized sort options
 	const sortOptions = useMemo(
 		() => [
-			{ value: 'name', label: 'Name A-Z' },
-			{ value: 'name-desc', label: 'Name Z-A' },
-			{ value: 'services', label: 'Most Services' },
-			{ value: 'rating', label: 'Highest Rated' },
+			{ value: 'name', label: t.categories.sortNameAZ },
+			{ value: 'name-desc', label: t.categories.sortNameZA },
+			{ value: 'services', label: t.categories.sortMostServices },
+			{ value: 'rating', label: t.categories.sortHighestRated },
 		],
-		[]
+		[t]
 	);
 
 	// Event handlers
@@ -266,7 +268,7 @@ export default function SalonsClient() {
 							{/* Sort Dropdown */}
 							<Select value={sortBy} onValueChange={setSortBy}>
 								<SelectTrigger className="w-48 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#ff5b5b] focus:border-[#ff5b5b]">
-									<SelectValue placeholder="Sort by" />
+									<SelectValue placeholder={t.categories.sortBy} />
 								</SelectTrigger>
 								<SelectContent className="bg-white border border-gray-300 shadow-lg rounded-lg">
 									{sortOptions.map((option) => (
