@@ -789,6 +789,7 @@
 		"failedToLoadDashboard": "Failed to load dashboard data.",
 		"redirectingToSetup": "Redirecting to salon setup...",
 		"loadingDashboard": "Loading dashboard...",
+		"loadingSalonInformation": "Loading salon information...",
 		"viewMode": "View mode and new appointment",
 		"newAppointmentLabel": "New Appointment",
 		"salonInfo": {

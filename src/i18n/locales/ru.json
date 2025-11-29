@@ -733,6 +733,7 @@
 		"failedToLoadDashboard": "Не удалось загрузить данные панели управления.",
 		"redirectingToSetup": "Перенаправление на настройку салона...",
 		"loadingDashboard": "Загрузка панели управления...",
+		"loadingSalonInformation": "Загрузка информации о салоне...",
 		"viewMode": "Режим просмотра и новая запись",
 		"newAppointmentLabel": "Новая запись",
 		"salonInfo": {

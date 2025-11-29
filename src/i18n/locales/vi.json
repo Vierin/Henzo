@@ -759,6 +759,7 @@
 		"failedToLoadDashboard": "Không thể tải dữ liệu bảng điều khiển.",
 		"redirectingToSetup": "Đang chuyển hướng đến thiết lập salon...",
 		"loadingDashboard": "Đang tải bảng điều khiển...",
+		"loadingSalonInformation": "Đang tải thông tin salon...",
 		"viewMode": "Chế độ xem và cuộc hẹn mới",
 		"newAppointmentLabel": "Cuộc hẹn mới",
 		"salonInfo": {

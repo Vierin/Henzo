@@ -12,8 +12,10 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from '@/components/ui/select';
+import { useTranslation } from '@/contexts/LanguageContext';
 
 export default function NewStaffPage() {
+	const t = useTranslation();
 	const [formData, setFormData] = useState({
 		name: '',
 		accessLevel: 'EMPLOYEE',
@@ -55,7 +57,7 @@ export default function NewStaffPage() {
 
 		// Validate form
 		if (!formData.name || !salonId) {
-			setError('Please fill in all required fields');
+			setError(t('owner.staffNew.fillRequiredFields'));
 			return;
 		}
 
@@ -73,7 +75,7 @@ export default function NewStaffPage() {
 			}, 100);
 		} catch (err: unknown) {
 			const errorMessage =
-				err instanceof Error ? err.message : 'Failed to create staff member';
+				err instanceof Error ? err.message : t('owner.staffNew.failedToCreate');
 			setError(errorMessage);
 		}
 	};
@@ -89,7 +91,7 @@ export default function NewStaffPage() {
 			<div className="flex items-center justify-center min-h-screen">
 				<div className="text-center">
 					<div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#ff5b5b] mx-auto mb-4"></div>
-					<p className="text-gray-600">Loading...</p>
+					<p className="text-gray-600">{t('owner.staffNew.loading')}</p>
 				</div>
 			</div>
 		);
@@ -120,13 +122,13 @@ export default function NewStaffPage() {
 							d="M15 19l-7-7 7-7"
 						/>
 					</svg>
-					Back
+					{t('owner.staffNew.back')}
 				</button>
 				<h1 className="text-2xl md:text-3xl font-bold text-gray-900 md:mb-2">
-					Add New Staff Member
+					{t('owner.staffNew.title')}
 				</h1>
 				<p className="text-sm md:text-base text-gray-600">
-					Add a new team member to your salon with their details and photo.
+					{t('owner.staffNew.subtitle')}
 				</p>
 			</div>
 
@@ -135,7 +137,7 @@ export default function NewStaffPage() {
 					{/* Photo Upload Section */}
 					<div>
 						<label className="block text-sm font-medium text-gray-700 mb-2">
-							Photo
+							{t('owner.staffNew.photo')}
 						</label>
 						<div className="flex flex-col sm:flex-row sm:items-center gap-4 sm:gap-6">
 							{/* Photo Preview */}
@@ -202,10 +204,10 @@ export default function NewStaffPage() {
 											d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"
 										/>
 									</svg>
-									{photo ? 'Change Photo' : 'Upload Photo'}
+									{photo ? t('owner.staffNew.changePhoto') : t('owner.staffNew.uploadPhoto')}
 								</label>
 								<p className="text-xs text-gray-500 mt-1">
-									JPG, PNG or GIF. Max size 5MB.
+									{t('owner.staffNew.photoFormat')}
 								</p>
 							</div>
 						</div>
@@ -213,7 +215,7 @@ export default function NewStaffPage() {
 
 					<div>
 						<label className="block text-sm font-medium text-gray-700 mb-2">
-							Full Name *
+							{t('owner.staffNew.fullName')}
 						</label>
 						<input
 							type="text"
@@ -223,13 +225,13 @@ export default function NewStaffPage() {
 								setFormData({ ...formData, name: e.target.value })
 							}
 							className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#ff5b5b] focus:border-[#ff5b5b] text-gray-900"
-							placeholder="e.g., Emily Carter"
+							placeholder={t('owner.staffNew.fullNamePlaceholder')}
 						/>
 					</div>
 
 					<div>
 						<label className="block text-sm font-medium text-gray-700 mb-2">
-							Access Level *
+							{t('owner.staffNew.accessLevel')}
 						</label>
 						<Select
 							value={formData.accessLevel}
@@ -238,33 +240,32 @@ export default function NewStaffPage() {
 							}
 						>
 							<SelectTrigger className="w-full border border-gray-300 focus:ring-2 focus:ring-[#ff5b5b] focus:border-transparent text-gray-900">
-								<SelectValue placeholder="Select access level" />
+								<SelectValue placeholder={t('owner.staffNew.selectAccessLevel')} />
 							</SelectTrigger>
 							<SelectContent className="bg-white border border-gray-300 shadow-lg rounded-md">
 								<SelectItem
 									value="EMPLOYEE"
 									className="bg-white hover:bg-gray-50 focus:bg-gray-50 text-gray-900 cursor-pointer"
 								>
-									Employee - Limited access
+									{t('owner.staffNew.employee')}
 								</SelectItem>
 								<SelectItem
 									value="ADMIN"
 									className="bg-white hover:bg-gray-50 focus:bg-gray-50 text-gray-900 cursor-pointer"
 								>
-									Admin - Full access to salon management
+									{t('owner.staffNew.admin')}
 								</SelectItem>
 							</SelectContent>
 						</Select>
 						<p className="text-xs text-gray-500 mt-1">
-							Admins can manage staff, services, and appointments. Employees
-							have limited access.
+							{t('owner.staffNew.accessLevelHelp')}
 						</p>
 					</div>
 
 					<div className="grid grid-cols-1 md:grid-cols-2 gap-6">
 						<div>
 							<label className="block text-sm font-medium text-gray-700 mb-2">
-								Email
+								{t('owner.staffNew.email')}
 							</label>
 							<input
 								type="email"
@@ -273,13 +274,13 @@ export default function NewStaffPage() {
 									setFormData({ ...formData, email: e.target.value })
 								}
 								className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#ff5b5b] focus:border-[#ff5b5b] text-gray-900"
-								placeholder="emily@salon.com"
+								placeholder={t('owner.staffNew.emailPlaceholder')}
 							/>
 						</div>
 
 						<div>
 							<label className="block text-sm font-medium text-gray-700 mb-2">
-								Phone
+								{t('owner.staffNew.phone')}
 							</label>
 							<input
 								type="tel"
@@ -288,7 +289,7 @@ export default function NewStaffPage() {
 									setFormData({ ...formData, phone: e.target.value })
 								}
 								className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#ff5b5b] focus:border-[#ff5b5b] text-gray-900"
-								placeholder="+1 (555) 123-4567"
+								placeholder={t('owner.staffNew.phonePlaceholder')}
 							/>
 						</div>
 					</div>
@@ -305,14 +306,14 @@ export default function NewStaffPage() {
 							onClick={() => router.back()}
 							className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-500"
 						>
-							Cancel
+							{t('owner.staffNew.cancel')}
 						</button>
 						<button
 							type="submit"
 							disabled={createStaffMutation.isPending}
 							className="flex-1 bg-[#ff5b5b] text-white px-4 py-2 rounded-md hover:bg-[#e04a4a] focus:outline-none focus:ring-2 focus:ring-[#ff5b5b] focus:ring-offset-2 disabled:opacity-50"
 						>
-							{createStaffMutation.isPending ? 'Adding...' : 'Add Staff Member'}
+							{createStaffMutation.isPending ? t('owner.staffNew.adding') : t('owner.staffNew.addStaffMember')}
 						</button>
 					</div>
 				</form>

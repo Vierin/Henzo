@@ -14,8 +14,10 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from '@/components/ui/select';
+import { useTranslation } from '@/contexts/LanguageContext';
 
 export default function NewServiceClient() {
+	const t = useTranslation();
 	const [step, setStep] = useState<1 | 2>(1);
 	const [formData, setFormData] = useState({
 		name: '',
@@ -236,17 +238,16 @@ export default function NewServiceClient() {
 								d="M15 19l-7-7 7-7"
 							/>
 						</svg>
-						Back to Edit
+						{t('owner.servicesNew.backToEdit')}
 					</button>
 					<h1
 						id="page-heading"
 						className="text-2xl md:text-3xl font-bold text-gray-900 md:mb-2"
 					>
-						Confirm Service Details
+						{t('owner.servicesNew.confirmTitle')}
 					</h1>
 					<p className="text-sm md:text-base text-gray-600">
-						Please review the service information and translations before
-						creating.
+						{t('owner.servicesNew.confirmSubtitle')}
 					</p>
 				</div>
 
@@ -254,25 +255,25 @@ export default function NewServiceClient() {
 					{/* Service Name */}
 					<div>
 						<label className="block text-sm font-medium text-gray-700 mb-2">
-							Service Name
+							{t('owner.servicesNew.serviceName')}
 						</label>
 						{translations && (
 							<div className="mt-3 space-y-2">
 								{translations.nameEn && (
 									<div className="bg-blue-50 rounded-md p-2 border border-blue-200">
-										<span className="text-xs text-gray-500">English: </span>
+										<span className="text-xs text-gray-500">{t('owner.servicesNew.english')} </span>
 										<span className="text-gray-700">{translations.nameEn}</span>
 									</div>
 								)}
 								{translations.nameVi && (
 									<div className="bg-green-50 rounded-md p-2 border border-green-200">
-										<span className="text-xs text-gray-500">Tiếng Việt: </span>
+										<span className="text-xs text-gray-500">{t('owner.servicesNew.vietnamese')} </span>
 										<span className="text-gray-700">{translations.nameVi}</span>
 									</div>
 								)}
 								{translations.nameRu && (
 									<div className="bg-purple-50 rounded-md p-2 border border-purple-200">
-										<span className="text-xs text-gray-500">Русский: </span>
+										<span className="text-xs text-gray-500">{t('owner.servicesNew.russian')} </span>
 										<span className="text-gray-700">{translations.nameRu}</span>
 									</div>
 								)}
@@ -284,13 +285,13 @@ export default function NewServiceClient() {
 					{formData.description && (
 						<div>
 							<label className="block text-sm font-medium text-gray-700 mb-2">
-								Description
+								{t('owner.servicesNew.description')}
 							</label>
 							{translations && (
 								<div className="mt-3 space-y-2">
 									{translations.descriptionEn && (
 										<div className="bg-blue-50 rounded-md p-2 border border-blue-200">
-											<span className="text-xs text-gray-500">English: </span>
+											<span className="text-xs text-gray-500">{t('owner.servicesNew.english')} </span>
 											<p className="text-gray-700 whitespace-pre-wrap">
 												{translations.descriptionEn}
 											</p>
@@ -299,7 +300,7 @@ export default function NewServiceClient() {
 									{translations.descriptionVi && (
 										<div className="bg-green-50 rounded-md p-2 border border-green-200">
 											<span className="text-xs text-gray-500">
-												Tiếng Việt:{' '}
+												{t('owner.servicesNew.vietnamese')}{' '}
 											</span>
 											<p className="text-gray-700 whitespace-pre-wrap">
 												{translations.descriptionVi}
@@ -308,7 +309,7 @@ export default function NewServiceClient() {
 									)}
 									{translations.descriptionRu && (
 										<div className="bg-purple-50 rounded-md p-2 border border-purple-200">
-											<span className="text-xs text-gray-500">Русский: </span>
+											<span className="text-xs text-gray-500">{t('owner.servicesNew.russian')} </span>
 											<p className="text-gray-700 whitespace-pre-wrap">
 												{translations.descriptionRu}
 											</p>
@@ -323,18 +324,18 @@ export default function NewServiceClient() {
 					<div className="grid grid-cols-1 md:grid-cols-2 gap-4">
 						<div>
 							<label className="block text-sm font-medium text-gray-700 mb-2">
-								Category
+								{t('owner.servicesNew.category')}
 							</label>
 							<div className="bg-gray-50 rounded-md p-3 border border-gray-200">
 								<p className="text-gray-900">
-									{selectedCategory?.name || 'Not selected'}
+									{selectedCategory?.name || t('owner.servicesNew.notSelected')}
 								</p>
 							</div>
 						</div>
 						{selectedGroup && (
 							<div>
 								<label className="block text-sm font-medium text-gray-700 mb-2">
-									Group
+									{t('owner.servicesNew.serviceGroup')}
 								</label>
 								<div className="bg-gray-50 rounded-md p-3 border border-gray-200">
 									<p className="text-gray-900">{selectedGroup.name}</p>
@@ -347,7 +348,7 @@ export default function NewServiceClient() {
 					<div className="grid grid-cols-1 md:grid-cols-2 gap-4">
 						<div>
 							<label className="block text-sm font-medium text-gray-700 mb-2">
-								Duration
+								{t('owner.servicesNew.duration')}
 							</label>
 							<div className="bg-gray-50 rounded-md p-3 border border-gray-200">
 								<p className="text-gray-900">
@@ -357,7 +358,7 @@ export default function NewServiceClient() {
 						</div>
 						<div>
 							<label className="block text-sm font-medium text-gray-700 mb-2">
-								Price
+								{t('owner.servicesNew.price')}
 							</label>
 							<div className="bg-gray-50 rounded-md p-3 border border-gray-200">
 								<p className="text-gray-900 font-semibold text-[#ff5b5b]">
@@ -374,7 +375,7 @@ export default function NewServiceClient() {
 							onClick={() => setStep(1)}
 							className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2"
 						>
-							Back to Edit
+							{t('owner.servicesNew.backToEdit')}
 						</button>
 						<button
 							type="button"
@@ -386,8 +387,8 @@ export default function NewServiceClient() {
 							className="flex-1 bg-[#ff5b5b] text-white px-4 py-2 rounded-md hover:bg-[#e04a4a] focus:outline-none focus:ring-2 focus:ring-[#ff5b5b] focus:ring-offset-2 disabled:opacity-50"
 						>
 							{createServiceMutation.isPending
-								? 'Creating...'
-								: 'Confirm & Create Service'}
+								? t('owner.servicesNew.creating')
+								: t('owner.servicesNew.confirmCreate')}
 						</button>
 					</div>
 				</div>
@@ -422,16 +423,16 @@ export default function NewServiceClient() {
 							d="M15 19l-7-7 7-7"
 						/>
 					</svg>
-					Back
+					{t('owner.servicesNew.back')}
 				</button>
 				<h1
 					id="page-heading"
 					className="text-2xl md:text-3xl font-bold text-gray-900 md:mb-2"
 				>
-					Add New Service
+					{t('owner.servicesNew.title')}
 				</h1>
 				<p className="text-sm md:text-base text-gray-600">
-					Create a new service for your salon with pricing and duration details.
+					{t('owner.servicesNew.subtitle')}
 				</p>
 			</div>
 
@@ -447,7 +448,7 @@ export default function NewServiceClient() {
 							htmlFor="service-name"
 							className="block text-sm font-medium text-gray-700 mb-2"
 						>
-							Service Name *
+							{t('owner.servicesNew.serviceName')}
 						</label>
 						<input
 							id="service-name"
@@ -458,11 +459,11 @@ export default function NewServiceClient() {
 								setFormData({ ...formData, name: e.target.value })
 							}
 							className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#ff5b5b] focus:border-[#ff5b5b] text-gray-900"
-							placeholder="e.g., Haircut, Manicure, Facial"
+							placeholder={t('owner.servicesNew.serviceNamePlaceholder')}
 							aria-describedby="service-name-help"
 						/>
 						<div id="service-name-help" className="sr-only">
-							Enter the name of the service you want to create
+							{t('owner.servicesNew.serviceNameHelp')}
 						</div>
 					</div>
 
@@ -471,7 +472,7 @@ export default function NewServiceClient() {
 							htmlFor="service-description"
 							className="block text-sm font-medium text-gray-700 mb-2"
 						>
-							Description
+							{t('owner.servicesNew.description')}
 						</label>
 						<textarea
 							id="service-description"
@@ -481,11 +482,11 @@ export default function NewServiceClient() {
 								setFormData({ ...formData, description: e.target.value })
 							}
 							className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#ff5b5b] focus:border-[#ff5b5b] text-gray-900"
-							placeholder="Describe what this service includes..."
+							placeholder={t('owner.servicesNew.descriptionPlaceholder')}
 							aria-describedby="service-description-help"
 						/>
 						<div id="service-description-help" className="sr-only">
-							Optional description of what the service includes
+							{t('owner.servicesNew.descriptionHelp')}
 						</div>
 					</div>
 
@@ -495,7 +496,7 @@ export default function NewServiceClient() {
 							htmlFor="service-group"
 							className="block text-sm font-medium text-gray-700 mb-2"
 						>
-							Service Group (optional)
+							{t('owner.servicesNew.serviceGroup')}
 						</label>
 						<div className="flex items-center gap-2">
 							<Select
@@ -508,14 +509,14 @@ export default function NewServiceClient() {
 								}
 							>
 								<SelectTrigger className="w-full border border-gray-300 focus:ring-2 focus:ring-[#ff5b5b] focus:border-transparent text-gray-900 text-sm">
-									<SelectValue placeholder="No group" />
+									<SelectValue placeholder={t('owner.servicesNew.noGroup')} />
 								</SelectTrigger>
 								<SelectContent className="bg-white border border-gray-300 shadow-lg rounded-md">
 									<SelectItem
 										value="none"
 										className="bg-white hover:bg-gray-50 focus:bg-gray-50 text-gray-900 cursor-pointer text-sm"
 									>
-										No group
+										{t('owner.servicesNew.noGroup')}
 									</SelectItem>
 									{groups.map((group: any) => (
 										<SelectItem
@@ -532,13 +533,13 @@ export default function NewServiceClient() {
 								type="button"
 								onClick={() => setIsGroupModalOpen(true)}
 								className="px-3 py-2 bg-[#ff5b5b] text-white rounded-md hover:bg-[#e04a4a] text-sm"
-								title="Add new group"
+								title={t('owner.servicesNew.addNewGroup')}
 							>
 								+
 							</button>
 						</div>
 						<p className="text-xs text-gray-500 mt-1">
-							Use groups to structure your services on the salon page.
+							{t('owner.servicesNew.serviceGroupHelp')}
 						</p>
 					</div>
 
@@ -547,7 +548,7 @@ export default function NewServiceClient() {
 							htmlFor="service-category"
 							className="block text-sm font-medium text-gray-700 mb-2"
 						>
-							Category *
+							{t('owner.servicesNew.category')}
 						</label>
 						<Select
 							value={formData.serviceCategoryId}
@@ -559,7 +560,7 @@ export default function NewServiceClient() {
 							}
 						>
 							<SelectTrigger className="w-full border border-gray-300 focus:ring-2 focus:ring-[#ff5b5b] focus:border-transparent text-gray-900">
-								<SelectValue placeholder="Select a category" />
+								<SelectValue placeholder={t('owner.servicesNew.selectCategory')} />
 							</SelectTrigger>
 							<SelectContent className="bg-white border border-gray-300 shadow-lg rounded-md">
 								{categories.map((category) => (
@@ -577,7 +578,7 @@ export default function NewServiceClient() {
 							id="service-category-help"
 							className="text-xs text-gray-500 mt-1"
 						>
-							Choose a category to organize your services
+							{t('owner.servicesNew.categoryHelp')}
 						</p>
 					</div>
 
@@ -587,7 +588,7 @@ export default function NewServiceClient() {
 								htmlFor="service-duration"
 								className="block text-sm font-medium text-gray-700 mb-2"
 							>
-								Duration (minutes) *
+								{t('owner.servicesNew.duration')}
 							</label>
 							<input
 								id="service-duration"
@@ -599,14 +600,14 @@ export default function NewServiceClient() {
 									setFormData({ ...formData, duration: e.target.value })
 								}
 								className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#ff5b5b] focus:border-[#ff5b5b] text-gray-900"
-								placeholder="60"
+								placeholder={t('owner.servicesNew.durationPlaceholder')}
 								aria-describedby="service-duration-help"
 							/>
 							<p
 								id="service-duration-help"
 								className="text-xs text-gray-500 mt-1"
 							>
-								Enter duration in minutes (e.g., 60 for 1 hour)
+								{t('owner.servicesNew.durationHelp')}
 							</p>
 						</div>
 
@@ -615,7 +616,7 @@ export default function NewServiceClient() {
 								htmlFor="service-price"
 								className="block text-sm font-medium text-gray-700 mb-2"
 							>
-								Price (₫) *
+								{t('owner.servicesNew.price')}
 							</label>
 							<input
 								id="service-price"
@@ -627,11 +628,11 @@ export default function NewServiceClient() {
 									setFormData({ ...formData, price: value });
 								}}
 								className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#ff5b5b] focus:border-[#ff5b5b] text-gray-900"
-								placeholder="50000"
+								placeholder={t('owner.servicesNew.pricePlaceholder')}
 								aria-describedby="service-price-help"
 							/>
 							<p id="service-price-help" className="text-xs text-gray-500 mt-1">
-								Enter price in Vietnamese Dong (numbers only, e.g., 50000)
+								{t('owner.servicesNew.priceHelp')}
 							</p>
 						</div>
 					</div>
@@ -645,9 +646,9 @@ export default function NewServiceClient() {
 							type="button"
 							onClick={() => router.back()}
 							className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2"
-							aria-label="Cancel and go back"
+							aria-label={t('owner.servicesNew.cancel')}
 						>
-							Cancel
+							{t('owner.servicesNew.cancel')}
 						</button>
 						<button
 							type="submit"
@@ -658,15 +659,15 @@ export default function NewServiceClient() {
 							aria-describedby="submit-status"
 						>
 							{isGeneratingTranslations
-								? 'Generating translations...'
+								? t('owner.servicesNew.generatingTranslations')
 								: createServiceMutation.isPending
-									? 'Creating...'
-									: 'Continue'}
+									? t('owner.servicesNew.creating')
+									: t('owner.servicesNew.continue')}
 						</button>
 						<div id="submit-status" className="sr-only" aria-live="polite">
 							{createServiceMutation.isPending
-								? 'Creating service...'
-								: 'Ready to create service'}
+								? t('owner.servicesNew.creatingService')
+								: t('owner.servicesNew.readyToCreate')}
 						</div>
 					</div>
 				</form>
@@ -677,18 +678,17 @@ export default function NewServiceClient() {
 				<div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
 					<div className="bg-white rounded-lg shadow-lg p-5 w-full max-w-sm">
 						<h2 className="text-lg font-semibold text-gray-900 mb-3">
-							Add Service Group
+							{t('owner.servicesNew.addServiceGroup')}
 						</h2>
 						<p className="text-sm text-gray-600 mb-3">
-							Create a group to organize your services (e.g., “Hair services”,
-							“Nails”).
+							{t('owner.servicesNew.addServiceGroupHelp')}
 						</p>
 						<input
 							type="text"
 							value={newGroupName}
 							onChange={(e) => setNewGroupName(e.target.value)}
 							className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#ff5b5b] focus:border-[#ff5b5b] text-gray-900 text-sm mb-4"
-							placeholder="Group name"
+							placeholder={t('owner.servicesNew.groupName')}
 							autoFocus
 						/>
 						<div className="flex justify-end gap-2">
@@ -700,7 +700,7 @@ export default function NewServiceClient() {
 								}}
 								className="px-3 py-2 text-sm border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
 							>
-								Cancel
+								{t('owner.servicesNew.cancel')}
 							</button>
 							<button
 								type="button"
@@ -733,7 +733,7 @@ export default function NewServiceClient() {
 								}}
 								className="px-3 py-2 text-sm bg-[#ff5b5b] text-white rounded-md hover:bg-[#e04a4a]"
 							>
-								Create
+								{t('owner.servicesNew.create')}
 							</button>
 						</div>
 					</div>
