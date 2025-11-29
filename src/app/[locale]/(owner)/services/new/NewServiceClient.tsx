@@ -15,10 +15,66 @@ import {
 	SelectValue,
 } from '@/components/ui/select';
 import { useTranslation } from '@/contexts/LanguageContext';
+import { useForm, Controller } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
+
+// Validation schema
+const createServiceSchema = (t: any) =>
+	z.object({
+		name: z.string().min(1, t('owner.servicesNew.errors.serviceNameRequired')),
+		description: z.string().optional(),
+		duration: z
+			.string()
+			.min(1, t('owner.servicesNew.errors.durationRequired'))
+			.refine(
+				(val) => !isNaN(Number(val)) && Number(val) > 0,
+				t('owner.servicesNew.errors.durationMustBePositive')
+			),
+		price: z
+			.string()
+			.min(1, t('owner.servicesNew.errors.priceRequired'))
+			.refine((val) => {
+				const num = Number(val.replace(/\D/g, ''));
+				return !isNaN(num) && num > 0;
+			}, t('owner.servicesNew.errors.priceMustBePositive')),
+		serviceCategoryId: z.string().refine((val) => val && val !== 'none', {
+			message: t('owner.servicesNew.errors.categoryRequired'),
+		}),
+		serviceGroupId: z.string().optional(),
+	});
+
+type ServiceFormData = z.infer<ReturnType<typeof createServiceSchema>>;
 
 export default function NewServiceClient() {
 	const t = useTranslation();
 	const [step, setStep] = useState<1 | 2>(1);
+
+	// Form with validation
+	const {
+		register,
+		handleSubmit: handleFormSubmit,
+		control,
+		formState: { errors },
+		getValues,
+		setValue,
+		watch,
+	} = useForm<ServiceFormData>({
+		resolver: zodResolver(createServiceSchema(t)),
+		defaultValues: {
+			name: '',
+			description: '',
+			duration: '',
+			price: '',
+			serviceCategoryId: 'none',
+			serviceGroupId: 'none',
+		},
+	});
+
+	// Watch form values for step 2 display
+	const formValues = watch();
+
+	// Keep formData for backward compatibility with step 2
 	const [formData, setFormData] = useState({
 		name: '',
 		description: '',
@@ -43,6 +99,16 @@ export default function NewServiceClient() {
 		useState(false);
 	const [isGroupModalOpen, setIsGroupModalOpen] = useState(false);
 	const [newGroupName, setNewGroupName] = useState('');
+	const [groupTranslations, setGroupTranslations] = useState<{
+		nameEn: string;
+		nameVi: string;
+		nameRu: string;
+	} | null>(null);
+	const [isGeneratingGroupTranslations, setIsGeneratingGroupTranslations] =
+		useState(false);
+	const [groupModalStep, setGroupModalStep] = useState<'input' | 'preview'>(
+		'input'
+	);
 	const router = useRouter();
 
 	// Используем данные салона из контекста (избегаем дублирования запросов)
@@ -50,6 +116,18 @@ export default function NewServiceClient() {
 	const queryClient = useQueryClient();
 
 	const categories = STATIC_CATEGORIES;
+
+	// Category translation mapping
+	const categoryTranslationMap: Record<
+		string,
+		keyof ReturnType<typeof useTranslation>['categories']
+	> = {
+		'hair-barber': 'hairBarber',
+		'massage-spa': 'massageSpa',
+		'manicure-pedicure': 'manicurePedicure',
+		'cosmetic-medicine': 'cosmeticMedicine',
+		'other-services': 'otherServices',
+	};
 
 	// Load service groups for this salon
 	const { data: groups = [] } = useQuery({
@@ -73,57 +151,63 @@ export default function NewServiceClient() {
 		return null;
 	}
 
+	// Handle form submission for step 1
+	const onSubmitStep1 = async (data: ServiceFormData) => {
+		if (!salonId) return;
+
+		// Update formData state for step 2
+		setFormData({
+			name: data.name,
+			description: data.description || '',
+			nameEn: '',
+			nameVi: '',
+			descriptionEn: '',
+			descriptionVi: '',
+			duration: data.duration,
+			price: data.price.replace(/\D/g, ''),
+			serviceCategoryId: data.serviceCategoryId,
+			serviceGroupId: data.serviceGroupId || 'none',
+		});
+
+		// Generate translations and go to step 2
+		setIsGeneratingTranslations(true);
+		try {
+			const generatedTranslations = await apiClient.post<{
+				nameEn: string;
+				nameVi: string;
+				nameRu: string;
+				descriptionEn: string;
+				descriptionVi: string;
+				descriptionRu: string;
+			}>('/services/translate', {
+				name: data.name.trim(),
+				description: data.description?.trim() || '',
+			});
+			setTranslations(generatedTranslations);
+			setStep(2);
+		} catch (err) {
+			console.error('Failed to generate translations:', err);
+			setStep(2);
+		} finally {
+			setIsGeneratingTranslations(false);
+		}
+	};
+
 	const handleSubmit = async (e: React.FormEvent) => {
 		e.preventDefault();
-
-		// Validate form
-		if (!formData.name || !formData.duration || !formData.price || !salonId) {
-			return;
-		}
-
-		// Require category
-		if (!formData.serviceCategoryId || formData.serviceCategoryId === 'none') {
-			return;
-		}
-
-		if (isNaN(Number(formData.duration)) || Number(formData.duration) <= 0) {
-			return;
-		}
-
-		if (isNaN(Number(formData.price)) || Number(formData.price) <= 0) {
-			return;
-		}
-
-		// Step 1: Generate translations and go to step 2
+		// This will be called for step 2, validation already done in step 1
 		if (step === 1) {
-			setIsGeneratingTranslations(true);
-			try {
-				const generatedTranslations = await apiClient.post<{
-					nameEn: string;
-					nameVi: string;
-					nameRu: string;
-					descriptionEn: string;
-					descriptionVi: string;
-					descriptionRu: string;
-				}>('/services/translate', {
-					name: formData.name.trim(),
-					description: formData.description.trim() || '',
-					// sourceLanguage will be auto-detected based on input text
-				});
-				setTranslations(generatedTranslations);
-				setStep(2);
-			} catch (err) {
-				console.error('Failed to generate translations:', err);
-				// Continue to step 2 even if translation fails
-				setStep(2);
-			} finally {
-				setIsGeneratingTranslations(false);
-			}
+			handleFormSubmit(onSubmitStep1)();
 			return;
 		}
 
 		// Step 2: Create service
 		try {
+			if (!salonId) {
+				console.error('Salon ID is required');
+				return;
+			}
+
 			await createServiceMutation.mutateAsync({
 				name: formData.name.trim(),
 				description: formData.description.trim() || undefined,
@@ -144,7 +228,7 @@ export default function NewServiceClient() {
 					undefined,
 				duration: Number(formData.duration),
 				price: Number(formData.price),
-				salonId,
+				salonId: salonId,
 				serviceCategoryId:
 					formData.serviceCategoryId && formData.serviceCategoryId !== 'none'
 						? Number(formData.serviceCategoryId)
@@ -261,19 +345,25 @@ export default function NewServiceClient() {
 							<div className="mt-3 space-y-2">
 								{translations.nameEn && (
 									<div className="bg-blue-50 rounded-md p-2 border border-blue-200">
-										<span className="text-xs text-gray-500">{t('owner.servicesNew.english')} </span>
+										<span className="text-xs text-gray-500">
+											{t('owner.servicesNew.english')}{' '}
+										</span>
 										<span className="text-gray-700">{translations.nameEn}</span>
 									</div>
 								)}
 								{translations.nameVi && (
 									<div className="bg-green-50 rounded-md p-2 border border-green-200">
-										<span className="text-xs text-gray-500">{t('owner.servicesNew.vietnamese')} </span>
+										<span className="text-xs text-gray-500">
+											{t('owner.servicesNew.vietnamese')}{' '}
+										</span>
 										<span className="text-gray-700">{translations.nameVi}</span>
 									</div>
 								)}
 								{translations.nameRu && (
 									<div className="bg-purple-50 rounded-md p-2 border border-purple-200">
-										<span className="text-xs text-gray-500">{t('owner.servicesNew.russian')} </span>
+										<span className="text-xs text-gray-500">
+											{t('owner.servicesNew.russian')}{' '}
+										</span>
 										<span className="text-gray-700">{translations.nameRu}</span>
 									</div>
 								)}
@@ -291,7 +381,9 @@ export default function NewServiceClient() {
 								<div className="mt-3 space-y-2">
 									{translations.descriptionEn && (
 										<div className="bg-blue-50 rounded-md p-2 border border-blue-200">
-											<span className="text-xs text-gray-500">{t('owner.servicesNew.english')} </span>
+											<span className="text-xs text-gray-500">
+												{t('owner.servicesNew.english')}{' '}
+											</span>
 											<p className="text-gray-700 whitespace-pre-wrap">
 												{translations.descriptionEn}
 											</p>
@@ -309,7 +401,9 @@ export default function NewServiceClient() {
 									)}
 									{translations.descriptionRu && (
 										<div className="bg-purple-50 rounded-md p-2 border border-purple-200">
-											<span className="text-xs text-gray-500">{t('owner.servicesNew.russian')} </span>
+											<span className="text-xs text-gray-500">
+												{t('owner.servicesNew.russian')}{' '}
+											</span>
 											<p className="text-gray-700 whitespace-pre-wrap">
 												{translations.descriptionRu}
 											</p>
@@ -328,7 +422,15 @@ export default function NewServiceClient() {
 							</label>
 							<div className="bg-gray-50 rounded-md p-3 border border-gray-200">
 								<p className="text-gray-900">
-									{selectedCategory?.name || t('owner.servicesNew.notSelected')}
+									{selectedCategory
+										? (() => {
+												const translationKey =
+													categoryTranslationMap[selectedCategory.slug];
+												return translationKey
+													? t.categories[translationKey]
+													: selectedCategory.name;
+											})()
+										: t('owner.servicesNew.notSelected')}
 								</p>
 							</div>
 						</div>
@@ -453,15 +555,25 @@ export default function NewServiceClient() {
 						<input
 							id="service-name"
 							type="text"
-							required
-							value={formData.name}
-							onChange={(e) =>
-								setFormData({ ...formData, name: e.target.value })
-							}
-							className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#ff5b5b] focus:border-[#ff5b5b] text-gray-900"
+							{...register('name')}
+							className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-[#ff5b5b] text-gray-900 ${
+								errors.name
+									? 'border-red-500 focus:border-red-500'
+									: 'border-gray-300 focus:border-[#ff5b5b]'
+							}`}
 							placeholder={t('owner.servicesNew.serviceNamePlaceholder')}
-							aria-describedby="service-name-help"
+							aria-describedby="service-name-help service-name-error"
+							aria-invalid={!!errors.name}
 						/>
+						{errors.name && (
+							<p
+								id="service-name-error"
+								className="mt-1 text-sm text-red-600"
+								role="alert"
+							>
+								{errors.name.message}
+							</p>
+						)}
 						<div id="service-name-help" className="sr-only">
 							{t('owner.servicesNew.serviceNameHelp')}
 						</div>
@@ -477,10 +589,7 @@ export default function NewServiceClient() {
 						<textarea
 							id="service-description"
 							rows={4}
-							value={formData.description}
-							onChange={(e) =>
-								setFormData({ ...formData, description: e.target.value })
-							}
+							{...register('description')}
 							className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#ff5b5b] focus:border-[#ff5b5b] text-gray-900"
 							placeholder={t('owner.servicesNew.descriptionPlaceholder')}
 							aria-describedby="service-description-help"
@@ -499,36 +608,41 @@ export default function NewServiceClient() {
 							{t('owner.servicesNew.serviceGroup')}
 						</label>
 						<div className="flex items-center gap-2">
-							<Select
-								value={formData.serviceGroupId}
-								onValueChange={(value) =>
-									setFormData((prev) => ({
-										...prev,
-										serviceGroupId: value,
-									}))
-								}
-							>
-								<SelectTrigger className="w-full border border-gray-300 focus:ring-2 focus:ring-[#ff5b5b] focus:border-transparent text-gray-900 text-sm">
-									<SelectValue placeholder={t('owner.servicesNew.noGroup')} />
-								</SelectTrigger>
-								<SelectContent className="bg-white border border-gray-300 shadow-lg rounded-md">
-									<SelectItem
-										value="none"
-										className="bg-white hover:bg-gray-50 focus:bg-gray-50 text-gray-900 cursor-pointer text-sm"
-									>
-										{t('owner.servicesNew.noGroup')}
-									</SelectItem>
-									{groups.map((group: any) => (
-										<SelectItem
-											key={group.id}
-											value={group.id}
-											className="bg-white hover:bg-gray-50 focus:bg-gray-50 text-gray-900 cursor-pointer text-sm"
-										>
-											{group.name}
-										</SelectItem>
-									))}
-								</SelectContent>
-							</Select>
+							<Controller
+								name="serviceGroupId"
+								control={control}
+								defaultValue="none"
+								render={({
+									field,
+								}: {
+									field: { value: string; onChange: (value: string) => void };
+								}) => (
+									<Select value={field.value} onValueChange={field.onChange}>
+										<SelectTrigger className="w-full border border-gray-300 focus:ring-2 focus:ring-[#ff5b5b] focus:border-transparent text-gray-900 text-sm">
+											<SelectValue
+												placeholder={t('owner.servicesNew.noGroup')}
+											/>
+										</SelectTrigger>
+										<SelectContent className="bg-white border border-gray-300 shadow-lg rounded-md">
+											<SelectItem
+												value="none"
+												className="bg-white hover:bg-gray-50 focus:bg-gray-50 text-gray-900 cursor-pointer text-sm"
+											>
+												{t('owner.servicesNew.noGroup')}
+											</SelectItem>
+											{groups.map((group: any) => (
+												<SelectItem
+													key={group.id}
+													value={group.id}
+													className="bg-white hover:bg-gray-50 focus:bg-gray-50 text-gray-900 cursor-pointer text-sm"
+												>
+													{group.name}
+												</SelectItem>
+											))}
+										</SelectContent>
+									</Select>
+								)}
+							/>
 							<button
 								type="button"
 								onClick={() => setIsGroupModalOpen(true)}
@@ -550,30 +664,58 @@ export default function NewServiceClient() {
 						>
 							{t('owner.servicesNew.category')}
 						</label>
-						<Select
-							value={formData.serviceCategoryId}
-							onValueChange={(value) =>
-								setFormData({
-									...formData,
-									serviceCategoryId: value,
-								})
-							}
-						>
-							<SelectTrigger className="w-full border border-gray-300 focus:ring-2 focus:ring-[#ff5b5b] focus:border-transparent text-gray-900">
-								<SelectValue placeholder={t('owner.servicesNew.selectCategory')} />
-							</SelectTrigger>
-							<SelectContent className="bg-white border border-gray-300 shadow-lg rounded-md">
-								{categories.map((category) => (
-									<SelectItem
-										key={category.id}
-										value={category.id.toString()}
-										className="bg-white hover:bg-gray-50 focus:bg-gray-50 text-gray-900 cursor-pointer"
+						<Controller
+							name="serviceCategoryId"
+							control={control}
+							defaultValue="none"
+							render={({
+								field,
+							}: {
+								field: { value: string; onChange: (value: string) => void };
+							}) => (
+								<Select value={field.value} onValueChange={field.onChange}>
+									<SelectTrigger
+										className={`w-full border focus:ring-2 focus:ring-[#ff5b5b] text-gray-900 ${
+											errors.serviceCategoryId
+												? 'border-red-500 focus:border-red-500'
+												: 'border-gray-300 focus:border-transparent'
+										}`}
+										aria-invalid={!!errors.serviceCategoryId}
 									>
-										{category.name}
-									</SelectItem>
-								))}
-							</SelectContent>
-						</Select>
+										<SelectValue
+											placeholder={t('owner.servicesNew.selectCategory')}
+										/>
+									</SelectTrigger>
+									<SelectContent className="bg-white border border-gray-300 shadow-lg rounded-md">
+										{categories.map((category) => {
+											const translationKey =
+												categoryTranslationMap[category.slug];
+											const translatedName = translationKey
+												? t.categories[translationKey]
+												: category.name;
+											return (
+												<SelectItem
+													key={category.id}
+													value={category.id.toString()}
+													className="bg-white hover:bg-gray-50 focus:bg-gray-50 text-gray-900 cursor-pointer"
+												>
+													{translatedName}
+												</SelectItem>
+											);
+										})}
+									</SelectContent>
+								</Select>
+							)}
+						/>
+						{errors.serviceCategoryId && (
+							<p
+								id="service-category-error"
+								className="mt-1 text-sm text-red-600"
+								role="alert"
+							>
+								{errors.serviceCategoryId.message}
+							</p>
+						)}
 						<p
 							id="service-category-help"
 							className="text-xs text-gray-500 mt-1"
@@ -593,16 +735,26 @@ export default function NewServiceClient() {
 							<input
 								id="service-duration"
 								type="number"
-								required
 								min="1"
-								value={formData.duration}
-								onChange={(e) =>
-									setFormData({ ...formData, duration: e.target.value })
-								}
-								className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#ff5b5b] focus:border-[#ff5b5b] text-gray-900"
+								{...register('duration')}
+								className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-[#ff5b5b] text-gray-900 ${
+									errors.duration
+										? 'border-red-500 focus:border-red-500'
+										: 'border-gray-300 focus:border-[#ff5b5b]'
+								}`}
 								placeholder={t('owner.servicesNew.durationPlaceholder')}
-								aria-describedby="service-duration-help"
+								aria-describedby="service-duration-help service-duration-error"
+								aria-invalid={!!errors.duration}
 							/>
+							{errors.duration && (
+								<p
+									id="service-duration-error"
+									className="mt-1 text-sm text-red-600"
+									role="alert"
+								>
+									{errors.duration.message}
+								</p>
+							)}
 							<p
 								id="service-duration-help"
 								className="text-xs text-gray-500 mt-1"
@@ -621,16 +773,30 @@ export default function NewServiceClient() {
 							<input
 								id="service-price"
 								type="text"
-								required
-								value={formData.price}
-								onChange={(e) => {
-									const value = e.target.value.replace(/\D/g, '');
-									setFormData({ ...formData, price: value });
-								}}
-								className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#ff5b5b] focus:border-[#ff5b5b] text-gray-900"
+								{...register('price', {
+									onChange: (e: React.ChangeEvent<HTMLInputElement>) => {
+										const value = e.target.value.replace(/\D/g, '');
+										setValue('price', value, { shouldValidate: true });
+									},
+								})}
+								className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-[#ff5b5b] text-gray-900 ${
+									errors.price
+										? 'border-red-500 focus:border-red-500'
+										: 'border-gray-300 focus:border-[#ff5b5b]'
+								}`}
 								placeholder={t('owner.servicesNew.pricePlaceholder')}
-								aria-describedby="service-price-help"
+								aria-describedby="service-price-help service-price-error"
+								aria-invalid={!!errors.price}
 							/>
+							{errors.price && (
+								<p
+									id="service-price-error"
+									className="mt-1 text-sm text-red-600"
+									role="alert"
+								>
+									{errors.price.message}
+								</p>
+							)}
 							<p id="service-price-help" className="text-xs text-gray-500 mt-1">
 								{t('owner.servicesNew.priceHelp')}
 							</p>
@@ -676,66 +842,179 @@ export default function NewServiceClient() {
 			{/* Add Group Modal */}
 			{isGroupModalOpen && (
 				<div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
-					<div className="bg-white rounded-lg shadow-lg p-5 w-full max-w-sm">
+					<div className="bg-white rounded-lg shadow-lg p-5 w-full max-w-md">
 						<h2 className="text-lg font-semibold text-gray-900 mb-3">
 							{t('owner.servicesNew.addServiceGroup')}
 						</h2>
-						<p className="text-sm text-gray-600 mb-3">
-							{t('owner.servicesNew.addServiceGroupHelp')}
-						</p>
-						<input
-							type="text"
-							value={newGroupName}
-							onChange={(e) => setNewGroupName(e.target.value)}
-							className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#ff5b5b] focus:border-[#ff5b5b] text-gray-900 text-sm mb-4"
-							placeholder={t('owner.servicesNew.groupName')}
-							autoFocus
-						/>
-						<div className="flex justify-end gap-2">
-							<button
-								type="button"
-								onClick={() => {
-									setIsGroupModalOpen(false);
-									setNewGroupName('');
-								}}
-								className="px-3 py-2 text-sm border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
-							>
-								{t('owner.servicesNew.cancel')}
-							</button>
-							<button
-								type="button"
-								onClick={async () => {
-									if (!salonId) return;
-									const name = newGroupName.trim();
-									if (!name) return;
-									try {
-										const created = await apiClient.post<any>(
-											'/services/groups',
-											{
-												salonId,
-												name,
+						{groupModalStep === 'input' ? (
+							<>
+								<p className="text-sm text-gray-600 mb-3">
+									{t('owner.servicesNew.addServiceGroupHelp')}
+								</p>
+								<input
+									type="text"
+									value={newGroupName}
+									onChange={(e) => setNewGroupName(e.target.value)}
+									className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#ff5b5b] focus:border-[#ff5b5b] text-gray-900 text-sm mb-4"
+									placeholder={t('owner.servicesNew.groupName')}
+									autoFocus
+								/>
+								<div className="flex justify-end gap-2">
+									<button
+										type="button"
+										onClick={() => {
+											setIsGroupModalOpen(false);
+											setNewGroupName('');
+											setGroupTranslations(null);
+											setGroupModalStep('input');
+										}}
+										className="px-3 py-2 text-sm border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
+									>
+										{t('owner.servicesNew.cancel')}
+									</button>
+									<button
+										type="button"
+										onClick={async () => {
+											const name = newGroupName.trim();
+											if (!name) return;
+											setIsGeneratingGroupTranslations(true);
+											try {
+												// Generate translations using the same API as services
+												const generatedTranslations = await apiClient.post<{
+													nameEn: string;
+													nameVi: string;
+													nameRu: string;
+												}>('/services/translate', {
+													name: name,
+													description: '',
+												});
+												setGroupTranslations({
+													nameEn: generatedTranslations.nameEn,
+													nameVi: generatedTranslations.nameVi,
+													nameRu: generatedTranslations.nameRu,
+												});
+												setGroupModalStep('preview');
+											} catch (err) {
+												console.error('Failed to generate translations:', err);
+												// Continue to preview even if translation fails
+												setGroupModalStep('preview');
+											} finally {
+												setIsGeneratingGroupTranslations(false);
 											}
-										);
-										queryClient.invalidateQueries({
-											queryKey: ['service-groups', salonId],
-										});
-										if (created?.id) {
-											setFormData((prev) => ({
-												...prev,
-												serviceGroupId: created.id,
-											}));
+										}}
+										disabled={
+											!newGroupName.trim() || isGeneratingGroupTranslations
 										}
-										setIsGroupModalOpen(false);
-										setNewGroupName('');
-									} catch (err) {
-										console.error('Failed to create service group:', err);
-									}
-								}}
-								className="px-3 py-2 text-sm bg-[#ff5b5b] text-white rounded-md hover:bg-[#e04a4a]"
-							>
-								{t('owner.servicesNew.create')}
-							</button>
-						</div>
+										className="px-3 py-2 text-sm bg-[#ff5b5b] text-white rounded-md hover:bg-[#e04a4a] disabled:opacity-50"
+									>
+										{isGeneratingGroupTranslations
+											? t('owner.servicesNew.generatingTranslations')
+											: t('owner.servicesNew.continue')}
+									</button>
+								</div>
+							</>
+						) : (
+							<>
+								{/* Preview step with translations */}
+								<div className="mb-4">
+									<label className="block text-sm font-medium text-gray-700 mb-2">
+										{t('owner.servicesNew.serviceName')}
+									</label>
+									<div className="bg-gray-50 rounded-md p-3 border border-gray-200">
+										<p className="text-gray-900 font-semibold">
+											{newGroupName}
+										</p>
+									</div>
+									{groupTranslations && (
+										<div className="mt-3 space-y-2">
+											{groupTranslations.nameEn && (
+												<div className="bg-blue-50 rounded-md p-2 border border-blue-200">
+													<span className="text-xs text-gray-500">
+														{t('owner.servicesNew.english')}{' '}
+													</span>
+													<span className="text-gray-700">
+														{groupTranslations.nameEn}
+													</span>
+												</div>
+											)}
+											{groupTranslations.nameVi && (
+												<div className="bg-green-50 rounded-md p-2 border border-green-200">
+													<span className="text-xs text-gray-500">
+														{t('owner.servicesNew.vietnamese')}{' '}
+													</span>
+													<span className="text-gray-700">
+														{groupTranslations.nameVi}
+													</span>
+												</div>
+											)}
+											{groupTranslations.nameRu && (
+												<div className="bg-purple-50 rounded-md p-2 border border-purple-200">
+													<span className="text-xs text-gray-500">
+														{t('owner.servicesNew.russian')}{' '}
+													</span>
+													<span className="text-gray-700">
+														{groupTranslations.nameRu}
+													</span>
+												</div>
+											)}
+										</div>
+									)}
+								</div>
+								<div className="flex justify-end gap-2">
+									<button
+										type="button"
+										onClick={() => {
+											setGroupModalStep('input');
+											setGroupTranslations(null);
+										}}
+										className="px-3 py-2 text-sm border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
+									>
+										{t('owner.servicesNew.backToEdit')}
+									</button>
+									<button
+										type="button"
+										onClick={async () => {
+											if (!salonId) return;
+											const name = newGroupName.trim();
+											if (!name) return;
+											try {
+												const created = await apiClient.post<any>(
+													'/services/groups',
+													{
+														salonId,
+														name,
+														nameEn: groupTranslations?.nameEn,
+														nameVi: groupTranslations?.nameVi,
+														nameRu: groupTranslations?.nameRu,
+													}
+												);
+												queryClient.invalidateQueries({
+													queryKey: ['service-groups', salonId],
+												});
+												if (created?.id) {
+													setValue('serviceGroupId', created.id, {
+														shouldValidate: false,
+													});
+													setFormData((prev) => ({
+														...prev,
+														serviceGroupId: created.id,
+													}));
+												}
+												setIsGroupModalOpen(false);
+												setNewGroupName('');
+												setGroupTranslations(null);
+												setGroupModalStep('input');
+											} catch (err) {
+												console.error('Failed to create service group:', err);
+											}
+										}}
+										className="px-3 py-2 text-sm bg-[#ff5b5b] text-white rounded-md hover:bg-[#e04a4a]"
+									>
+										{t('owner.servicesNew.create')}
+									</button>
+								</div>
+							</>
+						)}
 					</div>
 				</div>
 			)}

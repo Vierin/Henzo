@@ -101,7 +101,9 @@ export interface ServiceGroup {
 	id: string;
 	salonId: string;
 	name: string;
-	description?: string;
+	nameEn?: string;
+	nameVi?: string;
+	nameRu?: string;
 	position: number;
 	isActive: boolean;
 	createdAt: string;

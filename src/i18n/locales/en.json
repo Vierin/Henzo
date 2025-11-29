@@ -1057,7 +1057,15 @@
 			"groupName": "Group name",
 			"create": "Create",
 			"creatingService": "Creating service...",
-			"readyToCreate": "Ready to create service"
+			"readyToCreate": "Ready to create service",
+			"errors": {
+				"serviceNameRequired": "Service name is required",
+				"durationRequired": "Duration is required",
+				"durationMustBePositive": "Duration must be greater than 0",
+				"priceRequired": "Price is required",
+				"priceMustBePositive": "Price must be greater than 0",
+				"categoryRequired": "Please select a category"
+			}
 		}
 	}
 }
