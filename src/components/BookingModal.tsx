@@ -68,7 +68,7 @@ export default function BookingModal({
 	const { language, t } = useLanguage();
 	const [selectedDate, setSelectedDate] = useState('');
 	const [selectedTime, setSelectedTime] = useState('');
-	const [selectedStaff, setSelectedStaff] = useState(t.booking.anyStaff);
+	const [selectedStaff, setSelectedStaff] = useState(t?.booking?.anyStaff || 'Any Staff Member');
 	const [isStaffDropdownOpen, setIsStaffDropdownOpen] = useState(false);
 	const [currentDateIndex, setCurrentDateIndex] = useState(0);
 	const [salonWorkingHours, setSalonWorkingHours] =
@@ -1265,6 +1265,13 @@ export default function BookingModal({
 		}
 	}, [editingBooking, isOpen, isInitialized]);
 
+	// Initialize selectedStaff when modal opens
+	useEffect(() => {
+		if (isOpen && !editingBooking && t?.booking?.anyStaff) {
+			setSelectedStaff(t.booking.anyStaff);
+		}
+	}, [isOpen, editingBooking, t]);
+
 	// Reset initialization flag and error state when modal closes
 	useEffect(() => {
 		if (!isOpen) {
@@ -1280,8 +1287,9 @@ export default function BookingModal({
 			setClientEmail(''); // Reset client email
 			setClientName(''); // Reset client name
 			setClientPhone(''); // Reset client phone
+			setSelectedStaff(t?.booking?.anyStaff || 'Any Staff Member');
 		}
-	}, [isOpen]);
+	}, [isOpen, t]);
 
 	// Test date creation function after dates are available
 	const testDateCreation = () => {
@@ -2447,20 +2455,30 @@ export default function BookingModal({
 
 										{isStaffDropdownOpen && (
 											<div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-10 max-h-[280px] overflow-y-auto scrollbar-hide">
-												{allStaffMembers.map((staff) => (
-													<button
-														key={staff.id}
-														onClick={() => {
-															setSelectedStaff(staff.name);
-															setIsStaffDropdownOpen(false);
-														}}
-														className="w-full p-4 text-left hover:bg-gray-50 transition-colors flex items-center gap-3 first:rounded-t-lg last:rounded-b-lg"
-													>
-														<span className="font-medium text-gray-900">
-															{staff.name}
-														</span>
-													</button>
-												))}
+												{staffLoading ? (
+													<div className="p-4 text-center text-gray-500 text-sm">
+														Loading staff...
+													</div>
+												) : allStaffMembers.length === 0 ? (
+													<div className="p-4 text-center text-gray-500 text-sm">
+														No staff members available
+													</div>
+												) : (
+													allStaffMembers.map((staff) => (
+														<button
+															key={staff.id}
+															onClick={() => {
+																setSelectedStaff(staff.name);
+																setIsStaffDropdownOpen(false);
+															}}
+															className="w-full p-4 text-left hover:bg-gray-50 transition-colors flex items-center gap-3 first:rounded-t-lg last:rounded-b-lg"
+														>
+															<span className="font-medium text-gray-900">
+																{staff.name}
+															</span>
+														</button>
+													))
+												)}
 											</div>
 										)}
 									</div>

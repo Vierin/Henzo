@@ -2,6 +2,7 @@
 
 import { Booking, WorkingHours, TimeBlock } from '@/types';
 import { safeParseDate } from '@/utils/date';
+import { useTranslation } from '@/contexts/LanguageContext';
 
 interface CalendarViewProps {
 	currentMonth: number;
@@ -24,11 +25,21 @@ export default function CalendarView({
 	onNextMonth,
 	onDateClick,
 }: CalendarViewProps) {
+	const t = useTranslation();
+	
+	const monthNames = [
+		'january', 'february', 'march', 'april', 'may', 'june',
+		'july', 'august', 'september', 'october', 'november', 'december'
+	];
+	
+	const weekdayShort = [
+		'sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'
+	];
+	
 	const getMonthName = (month: number, year: number) => {
-		return new Date(year, month).toLocaleDateString('en-US', {
-			month: 'long',
-			year: 'numeric',
-		});
+		const monthKey = monthNames[month];
+		const monthName = t(`months.${monthKey}`);
+		return `${monthName} ${year}`;
 	};
 
 	const hasAppointmentsOnDate = (date: Date) => {
@@ -145,13 +156,13 @@ export default function CalendarView({
 
 				{/* Calendar Grid */}
 				<div className="grid grid-cols-7 gap-1 mb-2" role="rowgroup">
-					{['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((day) => (
+					{weekdayShort.map((dayKey, index) => (
 						<div
-							key={day}
+							key={dayKey}
 							className="p-2 text-center text-sm font-medium text-gray-500"
 							role="columnheader"
 						>
-							{day}
+							{t(`weekdays.short.${dayKey}`)}
 						</div>
 					))}
 				</div>

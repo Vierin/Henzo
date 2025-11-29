@@ -13,6 +13,7 @@ export default function BusinessRegisterClient() {
 	const searchParams = useSearchParams();
 	const emailFromUrl = searchParams.get('email') || '';
 	const tokenFromUrl = searchParams.get('token') || '';
+	const nameFromUrl = searchParams.get('name') || '';
 
 	// Check if coming from magic link (both token and email present)
 	const isMagicLink = !!(tokenFromUrl && emailFromUrl);
@@ -21,12 +22,34 @@ export default function BusinessRegisterClient() {
 		email: emailFromUrl,
 		password: '',
 		confirmPassword: '',
-		name: '',
+		name: nameFromUrl,
 		token: tokenFromUrl,
 	});
 	const [loading, setLoading] = useState(false);
 	const router = useRouter();
 	const { registerOwner, isAuthenticated, user } = useAuth();
+
+	// Обновляем форму при изменении параметров URL
+	useEffect(() => {
+		if (emailFromUrl) {
+			setFormData((prev) => ({
+				...prev,
+				email: emailFromUrl,
+			}));
+		}
+		if (nameFromUrl) {
+			setFormData((prev) => ({
+				...prev,
+				name: nameFromUrl,
+			}));
+		}
+		if (tokenFromUrl) {
+			setFormData((prev) => ({
+				...prev,
+				token: tokenFromUrl,
+			}));
+		}
+	}, [emailFromUrl, nameFromUrl, tokenFromUrl]);
 
 	// Редирект если уже авторизован
 	useEffect(() => {
@@ -98,7 +121,14 @@ export default function BusinessRegisterClient() {
 			}
 		} catch (error: any) {
 			console.error('Business registration error:', error);
-			toast.error(error.message || t.business.register.failedToRegister);
+			const errorMessage = error.message || t.business.register.failedToRegister;
+			
+			// Show more user-friendly error messages
+			if (errorMessage.includes('Unable to connect') || errorMessage.includes('Failed to fetch')) {
+				toast.error('Unable to connect to the server. Please check your internet connection and try again.');
+			} else {
+				toast.error(errorMessage);
+			}
 		} finally {
 			setLoading(false);
 		}

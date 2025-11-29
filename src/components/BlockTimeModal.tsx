@@ -36,6 +36,7 @@ import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { TimePicker } from 'rsuite';
 import 'rsuite/dist/rsuite-no-reset.min.css';
+import { useTranslation } from '@/contexts/LanguageContext';
 
 interface BlockTimeModalProps {
 	isOpen: boolean;
@@ -54,10 +55,30 @@ export default function BlockTimeModal({
 	preselectedStartTime,
 	preselectedEndTime,
 }: BlockTimeModalProps) {
+	const t = useTranslation();
 	const { salonId, salon: salonData } = useSalonId();
 	const { data: staff = [], isLoading: staffLoading } = useStaffBySalon(
 		salonId || ''
 	);
+	
+	const monthNames = [
+		'january', 'february', 'march', 'april', 'may', 'june',
+		'july', 'august', 'september', 'october', 'november', 'december'
+	];
+	
+	const weekdayNames = [
+		'sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'
+	];
+	
+	const formatDateForDisplay = (dateStr: string) => {
+		const date = new Date(dateStr);
+		const dayOfWeek = date.getDay();
+		const monthIndex = date.getMonth();
+		const day = date.getDate();
+		const weekdayName = t(`weekdays.short.${weekdayNames[dayOfWeek]}`);
+		const monthName = t(`months.short.${monthNames[monthIndex]}`);
+		return `${weekdayName}, ${monthName} ${day}`;
+	};
 
 	const createTimeBlockMutation = useCreateTimeBlock();
 	const checkConflictsMutation = useCheckTimeBlockConflicts();
@@ -362,11 +383,11 @@ export default function BlockTimeModal({
 	const getBlockTypeLabel = (type: 'TIME_OFF' | 'BUSY' | 'CLOSURE') => {
 		switch (type) {
 			case 'TIME_OFF':
-				return 'Time Off / Vacation';
+				return t('owner.calendarPage.blockTimeModal.timeOff');
 			case 'BUSY':
-				return 'Busy / Break';
+				return t('owner.calendarPage.blockTimeModal.busy');
 			case 'CLOSURE':
-				return 'Closure';
+				return t('owner.calendarPage.blockTimeModal.closure');
 		}
 	};
 
@@ -382,7 +403,7 @@ export default function BlockTimeModal({
 				<div className="flex items-center justify-between p-6 border-b border-gray-200 flex-shrink-0">
 					<h2 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
 						<Clock className="w-6 h-6 text-[#ff5b5b]" />
-						Block Time
+						{t('owner.calendarPage.blockTimeModal.title')}
 					</h2>
 					<button
 						onClick={onClose}
@@ -750,26 +771,17 @@ export default function BlockTimeModal({
 					{startDate && endDate && startDate !== endDate && (
 						<div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
 							<p className="text-sm text-blue-800">
-								<strong>Multiple days selected:</strong> This will block time
-								from{' '}
-								{new Date(startDate).toLocaleDateString('en-US', {
-									weekday: 'short',
-									month: 'short',
-									day: 'numeric',
-								})}{' '}
-								to{' '}
-								{new Date(endDate).toLocaleDateString('en-US', {
-									weekday: 'short',
-									month: 'short',
-									day: 'numeric',
-								})}{' '}
+								<strong>{t('owner.calendarPage.blockTimeModal.multipleDaysSelected')}</strong> {t('owner.calendarPage.blockTimeModal.thisWillBlockTimeFrom')}{' '}
+								{formatDateForDisplay(startDate)}{' '}
+								{t('common.to') || 'to'}{' '}
+								{formatDateForDisplay(endDate)}{' '}
 								(
 								{Math.ceil(
 									(new Date(endDate).getTime() -
 										new Date(startDate).getTime()) /
 										(1000 * 60 * 60 * 24)
 								) + 1}{' '}
-								days)
+								{t('owner.calendarPage.blockTimeModal.toDays')})
 							</p>
 						</div>
 					)}

@@ -55,7 +55,26 @@ export class ApiClient {
 			...fetchOptions,
 		};
 
-		const response = await fetch(url, config);
+		let response: Response;
+		try {
+			response = await fetch(url, config);
+		} catch (error: any) {
+			// Handle network errors (CORS, connection refused, etc.)
+			const errorMessage =
+				error.message === 'Failed to fetch'
+					? `Unable to connect to the server. Please check if the backend is running at ${this.baseUrl}`
+					: error.message || 'Network error occurred';
+			
+			if (process.env.NODE_ENV === 'development') {
+				console.error('Network Error:', {
+					url,
+					error: errorMessage,
+					baseUrl: this.baseUrl,
+				});
+			}
+			
+			throw new Error(errorMessage);
+		}
 
 		if (!response.ok) {
 			// For blob responses, don't try to parse as JSON

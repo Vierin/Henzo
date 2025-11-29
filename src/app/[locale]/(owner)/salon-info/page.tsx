@@ -13,8 +13,10 @@ import { useSalon } from '@/hooks/useSalon';
 import { apiClient } from '@/lib/api-client';
 import { logger } from '@/lib/logger';
 import { Clock4 } from 'lucide-react';
+import { useTranslation } from '@/contexts/LanguageContext';
 
 export default function SalonInfoPage() {
+	const t = useTranslation();
 	const [formData, setFormData] = useState({
 		salonName: '',
 		description: '',
@@ -231,18 +233,18 @@ export default function SalonInfoPage() {
 		setError('');
 
 		const actionText = hasExistingSalon
-			? 'Updating salon information...'
-			: 'Creating salon...';
+			? t.owner.salonInfo.updatingSalon
+			: t.owner.salonInfo.creatingSalon;
 		const saveToast = toast.loading(actionText);
 
 		try {
 			// Валидация данных
 			if (!formData.salonName.trim()) {
-				throw new Error('Salon name is required');
+				throw new Error(t.owner.salonInfo.salonNameRequired);
 			}
 
 			if (!formData.address.trim()) {
-				throw new Error('Address is required');
+				throw new Error(t.owner.salonInfo.addressRequired);
 			}
 
 			// No manual salon categories validation
@@ -267,18 +269,18 @@ export default function SalonInfoPage() {
 			// Выбираем метод запроса в зависимости от того, есть ли уже салон
 			if (hasExistingSalon) {
 				await apiClient.put('/salons/current', salonData);
-				toast.success('Salon information updated successfully!', {
+				toast.success(t.owner.salonInfo.salonUpdated, {
 					id: saveToast,
 				});
 			} else {
 				await apiClient.post('/salons/current', salonData);
-				toast.success('Salon created successfully!', { id: saveToast });
+				toast.success(t.owner.salonInfo.salonCreated, { id: saveToast });
 			}
 
 			// Stay on the page after successful save
 		} catch (err: unknown) {
 			const errorMessage =
-				err instanceof Error ? err.message : 'Failed to save salon information';
+				err instanceof Error ? err.message : t.owner.salonInfo.failedToSave;
 			setError(errorMessage);
 			toast.error(errorMessage, {
 				id: saveToast,
@@ -294,9 +296,7 @@ export default function SalonInfoPage() {
 			// Вызываем API для удаления аккаунта
 			await apiClient.delete('/auth/account');
 
-			toast.success(
-				'Account and salon deleted successfully. You will be redirected to the home page.'
-			);
+			toast.success(t.owner.salonInfo.accountDeleted);
 
 			// Перенаправляем на главную страницу
 			setTimeout(() => {
@@ -305,7 +305,7 @@ export default function SalonInfoPage() {
 		} catch (error: any) {
 			console.error('Error deleting account:', error);
 			toast.error(
-				error.message || 'Failed to delete account. Please try again.'
+				error.message || t.owner.salonInfo.failedToDelete
 			);
 		} finally {
 			setDeleteLoading(false);
@@ -327,11 +327,10 @@ export default function SalonInfoPage() {
 		<div className="px-4 max-w-7xl mx-auto">
 			<div className="text-center mb-8">
 				<h1 className="text-2xl md:text-4xl font-bold text-gray-900 mb-2 md:mb-4">
-					Salon Information
+					{t.owner.salonInfo.title}
 				</h1>
 				<p className="text-sm md:text-lg text-gray-600 px-4 md:px-0">
-					Provide details about your salon, including name, description,
-					address, contact information, photos, and operating hours.
+					{t.owner.salonInfo.subtitle}
 				</p>
 			</div>
 
@@ -339,13 +338,13 @@ export default function SalonInfoPage() {
 				{/* Basic Details Section */}
 				<div className="bg-white border border-gray-200 rounded-lg p-3 md:p-6 overflow-visible">
 					<h2 className="text-xl md:text-2xl font-semibold text-gray-900 mb-4 md:mb-6">
-						Basic Details
+						{t.owner.salonInfo.basicDetails}
 					</h2>
 
 					<div className="space-y-6">
 						<div>
 							<label className="block text-sm font-medium text-gray-700 mb-2">
-								Salon Name
+								{t.owner.salonInfo.salonName}
 							</label>
 							<input
 								type="text"
@@ -355,13 +354,13 @@ export default function SalonInfoPage() {
 									setFormData({ ...formData, salonName: e.target.value })
 								}
 								className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#ff5b5b] focus:border-[#ff5b5b] text-gray-900"
-								placeholder="Enter salon name"
+								placeholder={t.owner.salonInfo.salonNamePlaceholder}
 							/>
 						</div>
 
 						<div>
 							<label className="block text-sm font-medium text-gray-700 mb-2">
-								Description
+								{t.owner.salonInfo.description}
 							</label>
 							<textarea
 								rows={4}
@@ -370,7 +369,7 @@ export default function SalonInfoPage() {
 									setFormData({ ...formData, description: e.target.value })
 								}
 								className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#ff5b5b] focus:border-[#ff5b5b] text-gray-900"
-								placeholder="Describe your salon..."
+								placeholder={t.owner.salonInfo.descriptionPlaceholder}
 							/>
 						</div>
 
@@ -378,7 +377,7 @@ export default function SalonInfoPage() {
 
 						<div className="relative z-10">
 							<label className="block text-sm font-medium text-gray-700 mb-2">
-								Address
+								{t.owner.salonInfo.address}
 							</label>
 							<AddressAutocomplete
 								value={formData.address}
@@ -398,7 +397,7 @@ export default function SalonInfoPage() {
 				{mapProps.lat && mapProps.lon && (
 					<div className="bg-white border border-gray-200 rounded-lg p-3 md:p-6">
 						<h2 className="text-xl md:text-2xl font-semibold text-gray-900 mb-4 md:mb-6">
-							Location Preview
+							{t.owner.salonInfo.locationPreview}
 						</h2>
 						<div className="w-full rounded-lg overflow-hidden border border-gray-200 shadow-sm">
 							<MapComponentWithCoords
@@ -420,13 +419,13 @@ export default function SalonInfoPage() {
 				{/* Contact Information Section */}
 				<div className="bg-white border border-gray-200 rounded-lg p-3 md:p-6">
 					<h2 className="text-xl md:text-2xl font-semibold text-gray-900 mb-4 md:mb-6">
-						Contact Information
+						{t.owner.salonInfo.contactInformation}
 					</h2>
 
 					<div className="grid grid-cols-1 md:grid-cols-2 gap-6">
 						<div>
 							<label className="block text-sm font-medium text-gray-700 mb-2">
-								Phone Number
+								{t.owner.salonInfo.phoneNumber}
 							</label>
 							<input
 								type="tel"
@@ -435,13 +434,13 @@ export default function SalonInfoPage() {
 									setFormData({ ...formData, phone: e.target.value })
 								}
 								className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#ff5b5b] focus:border-[#ff5b5b] text-gray-900"
-								placeholder="+1 (555) 123-4567"
+								placeholder={t.owner.salonInfo.phonePlaceholder}
 							/>
 						</div>
 
 						<div>
 							<label className="block text-sm font-medium text-gray-700 mb-2">
-								Email Address
+								{t.owner.salonInfo.emailAddress}
 							</label>
 							<input
 								type="email"
@@ -450,13 +449,13 @@ export default function SalonInfoPage() {
 									setFormData({ ...formData, email: e.target.value })
 								}
 								className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#ff5b5b] focus:border-[#ff5b5b] text-gray-900"
-								placeholder="contact@salon.com"
+								placeholder={t.owner.salonInfo.emailPlaceholder}
 							/>
 						</div>
 
 						<div>
 							<label className="block text-sm font-medium text-gray-700 mb-2">
-								Website
+								{t.owner.salonInfo.website}
 							</label>
 							<input
 								type="url"
@@ -465,13 +464,13 @@ export default function SalonInfoPage() {
 									setFormData({ ...formData, website: e.target.value })
 								}
 								className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#ff5b5b] focus:border-[#ff5b5b] text-gray-900"
-								placeholder="https://www.salon.com"
+								placeholder={t.owner.salonInfo.websitePlaceholder}
 							/>
 						</div>
 
 						<div>
 							<label className="block text-sm font-medium text-gray-700 mb-2">
-								Instagram
+								{t.owner.salonInfo.instagram}
 							</label>
 							<input
 								type="text"
@@ -480,7 +479,7 @@ export default function SalonInfoPage() {
 									setFormData({ ...formData, instagram: e.target.value })
 								}
 								className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#ff5b5b] focus:border-[#ff5b5b] text-gray-900"
-								placeholder="@salon_handle"
+								placeholder={t.owner.salonInfo.instagramPlaceholder}
 							/>
 						</div>
 					</div>
@@ -489,12 +488,12 @@ export default function SalonInfoPage() {
 				{/* Logo Section */}
 				<div className="bg-white border border-gray-200 rounded-lg p-3 md:p-6">
 					<h2 className="text-xl md:text-2xl font-semibold text-gray-900 mb-4 md:mb-6">
-						Salon Logo
+						{t.owner.salonInfo.salonLogo}
 					</h2>
 
 					<div>
 						<label className="block text-sm font-medium text-gray-700 mb-2">
-							Salon Logo
+							{t.owner.salonInfo.salonLogo}
 						</label>
 						<EnhancedFileUpload
 							onUpload={(filePath) =>
@@ -504,7 +503,7 @@ export default function SalonInfoPage() {
 							currentFile={formData.logo}
 							accept="image/*"
 							maxSize={2}
-							placeholder="Click or drag and drop logo here"
+							placeholder={t.owner.salonInfo.logoPlaceholder}
 							disabled={loading}
 						/>
 					</div>
@@ -513,12 +512,12 @@ export default function SalonInfoPage() {
 				{/* Salon Photos Section */}
 				<div className="bg-white border border-gray-200 rounded-lg p-3 md:p-6">
 					<h2 className="text-xl md:text-2xl font-semibold text-gray-900 mb-4 md:mb-6">
-						Salon Photos
+						{t.owner.salonInfo.salonPhotos}
 					</h2>
 
 					<div>
 						<label className="block text-sm font-medium text-gray-700 mb-2">
-							Upload up to 3 photos of your salon
+							{t.owner.salonInfo.photosLabel}
 						</label>
 						<EnhancedPhotoUpload
 							photos={formData.photos}
@@ -533,7 +532,7 @@ export default function SalonInfoPage() {
 				{/* Operating Hours Section */}
 				<div className="bg-white border border-gray-200 rounded-lg p-3 md:p-6">
 					<h2 className="text-xl md:text-2xl font-semibold text-gray-900 mb-4 md:mb-6 flex items-center gap-2">
-						<Clock4 className="w-5 h-5" /> Operating Hours
+						<Clock4 className="w-5 h-5" /> {t.owner.salonInfo.operatingHours}
 					</h2>
 					<WorkingHoursSection
 						workingHours={formData.operatingHours}
@@ -561,7 +560,7 @@ export default function SalonInfoPage() {
 							</div>
 							<div className="ml-3">
 								<h3 className="text-sm font-medium text-red-800">
-									Error saving salon information
+									{t.owner.salonInfo.errorSaving}
 								</h3>
 								<div className="mt-2 text-sm text-red-700">
 									<p>{error}</p>
@@ -580,11 +579,11 @@ export default function SalonInfoPage() {
 					>
 						{loading
 							? hasExistingSalon
-								? 'Updating...'
-								: 'Creating...'
+								? t.owner.salonInfo.updating
+								: t.owner.salonInfo.creating
 							: hasExistingSalon
-								? 'Update Salon Information'
-								: 'Add Salon'}
+								? t.owner.salonInfo.updateSalonInfo
+								: t.owner.salonInfo.addSalon}
 					</button>
 				</div>
 			</form>
@@ -608,22 +607,20 @@ export default function SalonInfoPage() {
 						</svg>
 					</div>
 					<div className="ml-3 flex-1">
-						<h3 className="text-lg font-medium text-red-800">Delete Account</h3>
+						<h3 className="text-lg font-medium text-red-800">{t.owner.salonInfo.deleteAccount}</h3>
 						<div className="mt-2 text-sm text-red-700">
 							<p className="mb-3">
-								Once you delete your account, there is no going back. This
-								action will:
+								{t.owner.salonInfo.deleteAccountWarning}
 							</p>
 							<ul className="list-disc list-inside space-y-1 mb-4">
-								<li>Permanently delete all your salon information</li>
-								<li>Remove all your bookings and customer data</li>
-								<li>Delete all photos and documents</li>
-								<li>Cancel all future appointments</li>
-								<li>Remove your salon from search results</li>
+								<li>{t.owner.salonInfo.deleteAccountWarning1}</li>
+								<li>{t.owner.salonInfo.deleteAccountWarning2}</li>
+								<li>{t.owner.salonInfo.deleteAccountWarning3}</li>
+								<li>{t.owner.salonInfo.deleteAccountWarning4}</li>
+								<li>{t.owner.salonInfo.deleteAccountWarning5}</li>
 							</ul>
 							<p className="font-medium">
-								This process is irreversible and will result in the complete
-								loss of all your data.
+								{t.owner.salonInfo.deleteAccountIrreversible}
 							</p>
 						</div>
 						<div className="mt-4">
@@ -632,7 +629,7 @@ export default function SalonInfoPage() {
 								onClick={() => setShowDeleteModal(true)}
 								className="bg-red-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 transition-colors"
 							>
-								Delete My Account
+								{t.owner.salonInfo.deleteMyAccount}
 							</button>
 						</div>
 					</div>
@@ -660,12 +657,11 @@ export default function SalonInfoPage() {
 								</svg>
 							</div>
 							<h3 className="text-lg font-medium text-gray-900 mt-4">
-								Are you absolutely sure?
+								{t.owner.salonInfo.areYouAbsolutelySure}
 							</h3>
 							<div className="mt-2 px-2 md:px-7 py-3">
 								<p className="text-sm text-gray-500">
-									This action cannot be undone. This will permanently delete
-									your account and remove all data from our servers.
+									{t.owner.salonInfo.deleteAccountConfirmation}
 								</p>
 							</div>
 							<div className="flex flex-col sm:flex-row justify-center gap-3 sm:gap-4 mt-6">
@@ -674,7 +670,7 @@ export default function SalonInfoPage() {
 									onClick={() => setShowDeleteModal(false)}
 									className="bg-gray-300 text-gray-700 px-4 py-2 rounded-md text-sm font-medium hover:bg-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 transition-colors"
 								>
-									Cancel
+									{t.common.cancel}
 								</button>
 								<button
 									type="button"
@@ -682,7 +678,7 @@ export default function SalonInfoPage() {
 									disabled={deleteLoading}
 									className="bg-red-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
 								>
-									{deleteLoading ? 'Deleting...' : 'Yes, delete my account'}
+									{deleteLoading ? t.owner.salonInfo.deleting : t.owner.salonInfo.yesDeleteAccount}
 								</button>
 							</div>
 						</div>

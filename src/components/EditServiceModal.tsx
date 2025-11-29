@@ -95,7 +95,9 @@ export default function EditServiceModal({
 			const params = new URLSearchParams();
 			if (tagSearchQuery) params.append('q', tagSearchQuery);
 			params.append('limit', '50');
-			return apiClient.get<ServiceTag[]>(`/services/tags?${params.toString()}`);
+			const response = await apiClient.get<ServiceTag[]>(`/services/tags?${params.toString()}`);
+			// Ensure we always return an array
+			return Array.isArray(response) ? response : [];
 		},
 		enabled: true,
 		staleTime: 5 * 60 * 1000,
@@ -103,11 +105,13 @@ export default function EditServiceModal({
 
 	// Filter tags that are not already selected
 	const availableTags = useMemo(() => {
+		if (!Array.isArray(allTags)) return [];
 		return allTags.filter((tag) => !formData.tagIds.includes(tag.id));
 	}, [allTags, formData.tagIds]);
 
 	// Get selected tags
 	const selectedTags = useMemo(() => {
+		if (!Array.isArray(allTags)) return [];
 		return allTags.filter((tag) => formData.tagIds.includes(tag.id));
 	}, [allTags, formData.tagIds]);
 

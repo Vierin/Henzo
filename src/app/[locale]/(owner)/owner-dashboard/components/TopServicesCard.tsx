@@ -2,6 +2,7 @@
 
 import { useMemo } from 'react';
 import { Booking } from '@/types';
+import { useTranslation } from '@/contexts/LanguageContext';
 
 interface TopServicesCardProps {
 	bookings: Booking[];
@@ -18,6 +19,8 @@ const formatCurrency = (amount: number): string => {
 };
 
 export default function TopServicesCard({ bookings }: TopServicesCardProps) {
+	const t = useTranslation();
+	
 	// Calculate top services with memoization
 	const topServices = useMemo(() => {
 		const serviceStats = bookings
@@ -59,7 +62,7 @@ export default function TopServicesCard({ bookings }: TopServicesCardProps) {
 		<div className="bg-white rounded-xl border border-[#f1d9d7] overflow-hidden">
 			<div className="p-6 border-b border-[#f1d9d7]">
 				<h2 className="text-xl font-semibold text-gray-900">
-					Top Selling Services
+					{t('owner.topSellingServices')}
 				</h2>
 			</div>
 
@@ -72,13 +75,13 @@ export default function TopServicesCard({ bookings }: TopServicesCardProps) {
 					#
 				</div>
 				<div className="col-span-5 text-center" role="columnheader">
-					Service Name
+					{t('owner.serviceName')}
 				</div>
 				<div className="col-span-3 text-center" role="columnheader">
-					Bookings
+					{t('owner.bookings')}
 				</div>
 				<div className="col-span-3 text-right" role="columnheader">
-					Total Revenue
+					{t('owner.totalRevenue')}
 				</div>
 			</div>
 
@@ -89,7 +92,7 @@ export default function TopServicesCard({ bookings }: TopServicesCardProps) {
 						<div className="text-gray-400 mb-2" aria-hidden="true">
 							📊
 						</div>
-						<p className="text-gray-600">No completed services yet</p>
+						<p className="text-gray-600">{t('owner.noCompletedServices')}</p>
 					</div>
 				) : (
 					topServices.map((service, index) => (

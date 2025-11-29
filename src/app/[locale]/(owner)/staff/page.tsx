@@ -9,8 +9,10 @@ import { useOwnerLayout } from '@/contexts/OwnerLayoutContext';
 import LoadingSpinner from '@/components/LoadingSpinner';
 import ErrorDisplay from '@/components/ErrorDisplay';
 import { Staff } from '@/types';
+import { useTranslation } from '@/contexts/LanguageContext';
 
 export default function StaffPage() {
+	const t = useTranslation();
 	const [isEditModalOpen, setIsEditModalOpen] = useState(false);
 	const [selectedStaff, setSelectedStaff] = useState<Staff | null>(null);
 	const router = useRouter();
@@ -39,7 +41,7 @@ export default function StaffPage() {
 	};
 
 	const handleDeleteStaff = async (staffId: string) => {
-		if (!confirm('Are you sure you want to delete this staff member?')) return;
+		if (!confirm(t('owner.staff.areYouSureDelete'))) return;
 		deleteStaffMutation.mutate(staffId);
 	};
 
@@ -51,13 +53,13 @@ export default function StaffPage() {
 		if (accessLevel === 'ADMIN') {
 			return (
 				<span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
-					Admin
+					{t('owner.staff.admin')}
 				</span>
 			);
 		}
 		return (
 			<span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-				Employee
+				{t('owner.staff.employee')}
 			</span>
 		);
 	};
@@ -89,10 +91,10 @@ export default function StaffPage() {
 				<div className="flex items-center justify-between">
 					<div>
 						<h1 className="text-2xl md:text-3xl font-bold text-black md:mb-2">
-							Staff
+							{t('owner.staff.title')}
 						</h1>
 						<p className="text-sm md:text-base text-gray-800">
-							Manage your salon team and access levels
+							{t('owner.staff.subtitle')}
 						</p>
 					</div>
 					<button
@@ -100,8 +102,8 @@ export default function StaffPage() {
 						className="inline-flex items-center gap-2 rounded-full bg-[#ff5b5b] text-white px-4 py-2 text-sm shadow-sm hover:opacity-95 whitespace-nowrap"
 					>
 						<span className="text-lg leading-none">＋</span>
-						<span>Add New</span>
-						<span className="hidden md:inline">Staff</span>
+						<span>{t('owner.staff.addNew')}</span>
+						<span className="hidden md:inline">{t('owner.staff.title')}</span>
 					</button>
 				</div>
 			</div>
@@ -124,17 +126,17 @@ export default function StaffPage() {
 						</svg>
 					</div>
 					<h3 className="text-lg font-semibold text-gray-900 mb-2">
-						No staff members yet
+						{t('owner.staff.noStaffYet')}
 					</h3>
 					<p className="text-gray-600 mb-6">
-						Start by adding your first team member to your salon
+						{t('owner.staff.addFirstStaff')}
 					</p>
 					<button
 						onClick={() => router.push('/staff/new')}
 						className="inline-flex items-center gap-2 bg-[#ff5b5b] text-white px-6 py-3 rounded-lg font-medium hover:bg-[#e04a4a] transition-colors"
 					>
 						<span className="text-lg">＋</span>
-						Add Your First Staff Member
+						{t('owner.staff.addFirstStaffMember')}
 					</button>
 				</div>
 			) : (
@@ -142,11 +144,11 @@ export default function StaffPage() {
 					{/* Desktop Table View */}
 					<div className="hidden md:block">
 						<div className="grid grid-cols-5 px-6 py-3 text-sm text-gray-700 bg-[#fff2f1] font-semibold">
-							<div>Name</div>
-							<div>Access Level</div>
-							<div>Email</div>
-							<div>Phone</div>
-							<div>Actions</div>
+							<div>{t('owner.staff.name')}</div>
+							<div>{t('owner.staff.accessLevel')}</div>
+							<div>{t('owner.staff.email')}</div>
+							<div>{t('owner.staff.phone')}</div>
+							<div>{t('owner.staff.actions')}</div>
 						</div>
 						<div className="divide-y divide-[#f1d9d7]">
 							{staff.map((member) => (
@@ -157,16 +159,16 @@ export default function StaffPage() {
 									<div className="font-semibold">{member.name}</div>
 									<div>{getAccessLevelBadge(member.accessLevel)}</div>
 									<div className="text-gray-600">
-										{member.email || 'No email'}
+										{member.email || t('owner.staff.noEmail')}
 									</div>
 									<div className="text-gray-600">
-										{member.phone || 'No phone'}
+										{member.phone || t('owner.staff.noPhone')}
 									</div>
 									<div className="flex gap-2">
 										<button
 											onClick={() => handleEditStaff(member)}
 											className="p-1 text-[#ff5b5b] hover:text-[#e04a4a] hover:bg-red-50 rounded transition-colors"
-											title="Edit staff member"
+											title={t('owner.staff.editStaffMember')}
 										>
 											<svg
 												className="w-4 h-4"
@@ -185,7 +187,7 @@ export default function StaffPage() {
 										<button
 											onClick={() => handleDeleteStaff(member.id)}
 											className="p-1 text-red-600 hover:text-red-700 hover:bg-red-50 rounded transition-colors"
-											title="Delete staff member"
+											title={t('owner.staff.deleteStaffMember')}
 										>
 											<svg
 												className="w-4 h-4"
@@ -265,13 +267,13 @@ export default function StaffPage() {
 								<div className="space-y-2 text-sm text-gray-600">
 									{member.email && (
 										<div className="flex items-center">
-											<span className="font-medium mr-2">Email:</span>
+											<span className="font-medium mr-2">{t('owner.staff.email')}:</span>
 											<span className="truncate">{member.email}</span>
 										</div>
 									)}
 									{member.phone && (
 										<div className="flex items-center">
-											<span className="font-medium mr-2">Phone:</span>
+											<span className="font-medium mr-2">{t('owner.staff.phone')}:</span>
 											<span>{member.phone}</span>
 										</div>
 									)}

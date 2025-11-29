@@ -469,12 +469,12 @@ export default function BusinessCompleteSetupPage() {
 							</label>
 							{/* Map above address field */}
 							{mapProps.lat && mapProps.lon ? (
-								<div className="mb-4 w-full rounded-lg overflow-hidden border border-gray-200 shadow-sm">
+								<div className="mb-4 w-full aspect-[4/3] rounded-lg overflow-hidden border border-gray-200 shadow-sm">
 									<MapComponentWithCoords
 										lat={mapProps.lat}
 										lon={mapProps.lon}
 										address={mapProps.address}
-										height="450px"
+										height="100%"
 										zoom={16}
 										interactive={true}
 										showPopup={false}
@@ -484,7 +484,7 @@ export default function BusinessCompleteSetupPage() {
 									/>
 								</div>
 							) : (
-								<div className="mb-4 w-full aspect-square rounded-lg border border-gray-200 bg-gray-50 flex items-center justify-center">
+								<div className="mb-4 w-full aspect-[4/3] rounded-lg border border-gray-200 bg-gray-50 flex items-center justify-center">
 									<p className="text-sm text-gray-400">
 										Select address to see map
 									</p>

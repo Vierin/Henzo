@@ -6,7 +6,7 @@ import { useTranslation } from '@/contexts/LanguageContext';
 
 export function Benefits() {
 	const t = useTranslation();
-	
+
 	const benefits = [
 		t.business.benefits.benefit1,
 		t.business.benefits.benefit2,
@@ -38,7 +38,9 @@ export function Benefits() {
 
 						<h2 className="text-4xl lg:text-5xl tracking-tight">
 							{t.business.benefits.title} <br />
-							<span className="text-primary">{t.business.benefits.titleBreak}</span>
+							<span className="text-primary">
+								{t.business.benefits.titleBreak}
+							</span>
 						</h2>
 
 						<p className="text-xl text-muted-foreground">

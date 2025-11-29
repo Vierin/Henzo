@@ -2,6 +2,7 @@
 
 import { Booking } from '@/types';
 import { formatDateSafe, formatTimeSafe } from '@/utils/date';
+import { useTranslation } from '@/contexts/LanguageContext';
 
 interface BookingDetailsModalProps {
 	booking: Booking | null;
@@ -20,6 +21,7 @@ export default function BookingDetailsModal({
 	onCancel,
 	onMarkAsNoShow,
 }: BookingDetailsModalProps) {
+	const t = useTranslation();
 	if (!isOpen || !booking) return null;
 
 	const getStatusBadge = (status: string) => {
@@ -27,31 +29,31 @@ export default function BookingDetailsModal({
 			case 'PENDING':
 				return (
 					<span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
-						Pending
+						{t('owner.pending')}
 					</span>
 				);
 			case 'CONFIRMED':
 				return (
 					<span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-						Confirmed
+						{t('owner.confirmed')}
 					</span>
 				);
 			case 'COMPLETED':
 				return (
 					<span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-						Completed
+						{t('owner.completed')}
 					</span>
 				);
 			case 'CANCELED':
 				return (
 					<span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
-						Cancelled
+						{t('owner.cancelled')}
 					</span>
 				);
 			case 'NOSHOW':
 				return (
 					<span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-orange-100 text-orange-800">
-						No-Show
+						{t('owner.noShow')}
 					</span>
 				);
 			default:
@@ -83,12 +85,12 @@ export default function BookingDetailsModal({
 				{/* Header */}
 				<div className="flex items-center justify-between p-4 border-b border-gray-200">
 					<h2 className="text-lg font-semibold text-gray-900">
-						Booking Details
+						{t('owner.calendarPage.bookingDetails')}
 					</h2>
 					<button
 						onClick={onClose}
 						className="p-1.5 hover:bg-gray-100 rounded-full transition-colors"
-						aria-label="Close modal"
+						aria-label={t('owner.calendarPage.closeModal')}
 					>
 						<svg
 							className="w-5 h-5 text-gray-500"
@@ -111,7 +113,7 @@ export default function BookingDetailsModal({
 					{/* Status */}
 					<div>
 						<label className="text-xs font-medium text-gray-500 block mb-1">
-							Status
+							{t('owner.calendarPage.status')}
 						</label>
 						{getStatusBadge(booking.status)}
 					</div>
@@ -120,7 +122,7 @@ export default function BookingDetailsModal({
 					<div className="grid grid-cols-2 gap-3">
 						<div>
 							<label className="text-xs font-medium text-gray-500 block mb-1">
-								Date
+								{t('owner.calendarPage.date')}
 							</label>
 							<p className="text-sm font-semibold text-gray-900">
 								{formatDateSafe(booking.time)}
@@ -128,7 +130,7 @@ export default function BookingDetailsModal({
 						</div>
 						<div>
 							<label className="text-xs font-medium text-gray-500 block mb-1">
-								Time
+								{t('owner.calendarPage.time')}
 							</label>
 							<p className="text-sm font-semibold text-gray-900">
 								{formatTimeSafe(booking.time)}
@@ -139,10 +141,10 @@ export default function BookingDetailsModal({
 					{/* Service */}
 					<div>
 						<label className="text-xs font-medium text-gray-500 block mb-1">
-							Service
+							{t('owner.calendarPage.service')}
 						</label>
 						<p className="text-sm font-semibold text-gray-900">
-							{booking.service?.name || 'Unknown Service'}
+							{booking.service?.name || t('owner.unknownService')}
 						</p>
 						{booking.service?.description && (
 							<p className="text-xs text-gray-600 mt-1 line-clamp-2">
@@ -163,11 +165,11 @@ export default function BookingDetailsModal({
 					<div className="grid grid-cols-2 gap-3">
 						<div>
 							<label className="text-xs font-medium text-gray-500 block mb-1">
-								Client
-							</label>
-							<p className="text-sm font-semibold text-gray-900">
-								{booking.user?.name || `Client ID: ${booking.userId}`}
-							</p>
+							{t('owner.calendarPage.client')}
+						</label>
+						<p className="text-sm font-semibold text-gray-900">
+							{booking.user?.name || `${t('owner.calendarPage.clientId')} ${booking.userId}`}
+						</p>
 							{booking.user?.email && (
 								<p className="text-xs text-gray-600 mt-0.5">
 									{booking.user.email}
@@ -181,8 +183,8 @@ export default function BookingDetailsModal({
 						{booking.staff && (
 							<div>
 								<label className="text-xs font-medium text-gray-500 block mb-1">
-									Staff Member
-								</label>
+								{t('owner.calendarPage.staffMember')}
+							</label>
 								<p className="text-sm font-semibold text-gray-900">
 									{booking.staff.name}
 								</p>
@@ -194,7 +196,7 @@ export default function BookingDetailsModal({
 					{booking.notes && (
 						<div>
 							<label className="text-xs font-medium text-gray-500 block mb-1">
-								Notes
+								{t('owner.calendarPage.notes')}
 							</label>
 							<p className="text-xs text-gray-700 bg-gray-50 p-2 rounded-lg">
 								{booking.notes}
@@ -209,7 +211,7 @@ export default function BookingDetailsModal({
 						onClick={onClose}
 						className="px-3 py-1.5 text-xs font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
 					>
-						Close
+						{t('owner.calendarPage.close')}
 					</button>
 					{canEdit && onEdit && (
 						<button
@@ -219,20 +221,20 @@ export default function BookingDetailsModal({
 							}}
 							className="px-3 py-1.5 text-xs font-medium text-white bg-[#ff5b5b] rounded-lg hover:bg-[#e04a4a] transition-colors"
 						>
-							Edit
+							{t('owner.edit')}
 						</button>
 					)}
 					{canCancel && onCancel && (
 						<button
 							onClick={() => {
-								if (confirm('Are you sure you want to cancel this booking?')) {
+								if (confirm(t('owner.areYouSureCancel'))) {
 									onCancel(booking.id);
 									onClose();
 								}
 							}}
 							className="px-3 py-1.5 text-xs font-medium text-white bg-red-600 rounded-lg hover:bg-red-700 transition-colors"
 						>
-							Cancel
+							{t('owner.cancel')}
 						</button>
 					)}
 					{canMarkAsNoShow && onMarkAsNoShow && (
@@ -240,7 +242,7 @@ export default function BookingDetailsModal({
 							onClick={() => {
 								if (
 									confirm(
-										'Are you sure you want to mark this booking as No-Show?'
+										t('owner.areYouSureNoShow')
 									)
 								) {
 									onMarkAsNoShow(booking.id);
@@ -249,7 +251,7 @@ export default function BookingDetailsModal({
 							}}
 							className="px-3 py-1.5 text-xs font-medium text-white bg-orange-600 rounded-lg hover:bg-orange-700 transition-colors"
 						>
-							Mark as No-Show
+							{t('owner.markAsNoShow')}
 						</button>
 					)}
 				</div>

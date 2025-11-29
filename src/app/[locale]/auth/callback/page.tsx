@@ -59,22 +59,29 @@ export default function AuthCallbackPage() {
 						const hashParams = new URLSearchParams(hash);
 						const accessToken = hashParams.get('access_token');
 						const refreshToken = hashParams.get('refresh_token');
-						
+
 						if (accessToken && refreshToken) {
 							console.log('✅ Found tokens in hash, setting session...');
-							const { data: sessionData, error: sessionError } = await supabase.auth.setSession({
-								access_token: accessToken,
-								refresh_token: refreshToken,
-							});
-							
+							const { data: sessionData, error: sessionError } =
+								await supabase.auth.setSession({
+									access_token: accessToken,
+									refresh_token: refreshToken,
+								});
+
 							if (sessionError) {
-								console.error('❌ Failed to set session from hash:', sessionError);
+								console.error(
+									'❌ Failed to set session from hash:',
+									sessionError
+								);
 								router.push(
-									withLocale('/login?error=session_error', locale as 'en' | 'ru' | 'vi')
+									withLocale(
+										'/login?error=session_error',
+										locale as 'en' | 'ru' | 'vi'
+									)
 								);
 								return;
 							}
-							
+
 							if (sessionData.session) {
 								const modifiedParams = new URLSearchParams(urlParams);
 								if (returnUrl) {
@@ -90,7 +97,7 @@ export default function AuthCallbackPage() {
 							}
 						}
 					}
-					
+
 					router.push(
 						withLocale('/login?error=no_code', locale as 'en' | 'ru' | 'vi')
 					);
@@ -110,21 +117,27 @@ export default function AuthCallbackPage() {
 					});
 
 					// If PKCE error (code_verifier missing), try to get session from URL hash
-					if (error.message?.includes('code verifier') || error.message?.includes('code_verifier')) {
-						console.log('⚠️ PKCE error, trying to get session from URL hash...');
+					if (
+						error.message?.includes('code verifier') ||
+						error.message?.includes('code_verifier')
+					) {
+						console.log(
+							'⚠️ PKCE error, trying to get session from URL hash...'
+						);
 						const hash = window.location.hash.substring(1);
 						if (hash) {
 							const hashParams = new URLSearchParams(hash);
 							const accessToken = hashParams.get('access_token');
 							const refreshToken = hashParams.get('refresh_token');
-							
+
 							if (accessToken && refreshToken) {
 								console.log('✅ Found tokens in hash, setting session...');
-								const { data: sessionData, error: sessionError } = await supabase.auth.setSession({
-									access_token: accessToken,
-									refresh_token: refreshToken,
-								});
-								
+								const { data: sessionData, error: sessionError } =
+									await supabase.auth.setSession({
+										access_token: accessToken,
+										refresh_token: refreshToken,
+									});
+
 								if (!sessionError && sessionData.session) {
 									const modifiedParams = new URLSearchParams(urlParams);
 									if (returnUrl) {
@@ -140,7 +153,7 @@ export default function AuthCallbackPage() {
 								}
 							}
 						}
-						
+
 						// Try to get session anyway - sometimes Supabase creates it despite the error
 						const { data: fallbackData } = await supabase.auth.getSession();
 						if (fallbackData?.session) {

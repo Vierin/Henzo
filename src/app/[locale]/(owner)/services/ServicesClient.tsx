@@ -13,6 +13,7 @@ import { Service, ServiceGroup } from '@/types';
 import { formatVND } from '@/utils/currency';
 import { useQuery } from '@tanstack/react-query';
 import { apiClient } from '@/lib/api-client';
+import { useTranslation } from '@/contexts/LanguageContext';
 import {
 	Select,
 	SelectContent,
@@ -22,6 +23,7 @@ import {
 } from '@/components/ui/select';
 
 export default function ServicesClient() {
+	const t = useTranslation();
 	const [isEditModalOpen, setIsEditModalOpen] = useState(false);
 	const [selectedService, setSelectedService] = useState<Service | null>(null);
 	const [searchQuery, setSearchQuery] = useState('');
@@ -86,7 +88,7 @@ export default function ServicesClient() {
 	};
 
 	const handleDeleteService = async (serviceId: string) => {
-		if (!confirm('Are you sure you want to delete this service?')) return;
+		if (!confirm(t('owner.services.areYouSureDelete'))) return;
 		deleteServiceMutation.mutate(serviceId);
 	};
 
@@ -206,10 +208,10 @@ export default function ServicesClient() {
 				<div className="flex items-center justify-between">
 					<div>
 						<h1 className="text-2xl md:text-3xl font-bold text-black md:mb-2">
-							Services
+							{t('owner.services.title')}
 						</h1>
 						<p className="text-sm md:text-base text-gray-800">
-							Manage your salon services and pricing
+							{t('owner.services.subtitle')}
 						</p>
 					</div>
 					<button
@@ -217,8 +219,8 @@ export default function ServicesClient() {
 						className="inline-flex items-center gap-2 rounded-full bg-[#ff5b5b] text-white px-4 py-2 text-sm shadow-sm hover:opacity-95 whitespace-nowrap"
 					>
 						<span className="text-lg leading-none">＋</span>
-						<span>Add New</span>
-						<span className="hidden md:inline">Service</span>
+						<span>{t('owner.services.addNew')}</span>
+						<span className="hidden md:inline">{t('owner.services.title')}</span>
 					</button>
 				</div>
 			</div>
@@ -229,13 +231,13 @@ export default function ServicesClient() {
 					{/* Поиск */}
 					<div>
 						<label className="block text-sm font-medium text-black mb-2">
-							<span className="hidden sm:inline">Search Services</span>
-							<span className="sm:hidden">Search</span>
+							<span className="hidden sm:inline">{t('owner.services.searchServices')}</span>
+							<span className="sm:hidden">{t('owner.services.search')}</span>
 						</label>
 						<div className="relative">
 							<input
 								type="text"
-								placeholder="Search by name..."
+								placeholder={t('owner.services.searchByName')}
 								value={searchQuery}
 								onChange={(e) => setSearchQuery(e.target.value)}
 								className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#ff5b5b] focus:border-transparent text-black placeholder-gray-500"
@@ -252,7 +254,7 @@ export default function ServicesClient() {
 					{/* Фильтр по категории */}
 					<div>
 						<label className="block text-sm font-medium text-black mb-2">
-							Category
+							{t('owner.services.category')}
 						</label>
 						<Select
 							value={
@@ -263,14 +265,14 @@ export default function ServicesClient() {
 							}
 						>
 							<SelectTrigger className="w-full border border-gray-300 focus:ring-2 focus:ring-[#ff5b5b] focus:border-transparent text-black">
-								<SelectValue placeholder="All Categories" />
+								<SelectValue placeholder={t('owner.services.allCategories')} />
 							</SelectTrigger>
 							<SelectContent className="bg-white border border-gray-300 shadow-lg rounded-md">
 								<SelectItem
 									value="all"
 									className="bg-white hover:bg-gray-50 focus:bg-gray-50 text-gray-900 cursor-pointer"
 								>
-									All Categories
+									{t('owner.services.allCategories')}
 								</SelectItem>
 								{categories.map((category) => (
 									<SelectItem
@@ -288,21 +290,21 @@ export default function ServicesClient() {
 					{/* Фильтр по группе */}
 					<div>
 						<label className="block text-sm font-medium text-black mb-2">
-							Group
+							{t('owner.services.group')}
 						</label>
 						<Select
 							value={selectedGroup}
 							onValueChange={(value) => setSelectedGroup(value)}
 						>
 							<SelectTrigger className="w-full border border-gray-300 focus:ring-2 focus:ring-[#ff5b5b] focus:border-transparent text-black">
-								<SelectValue placeholder="All Groups" />
+								<SelectValue placeholder={t('owner.services.allGroups')} />
 							</SelectTrigger>
 							<SelectContent className="bg-white border border-gray-300 shadow-lg rounded-md">
 								<SelectItem
 									value="all"
 									className="bg-white hover:bg-gray-50 focus:bg-gray-50 text-gray-900 cursor-pointer"
 								>
-									All Groups
+									{t('owner.services.allGroups')}
 								</SelectItem>
 								{groups.map((group) => (
 									<SelectItem
@@ -320,7 +322,7 @@ export default function ServicesClient() {
 					{/* Сортировка */}
 					<div>
 						<label className="block text-sm font-medium text-black mb-2">
-							Sort By
+							{t('owner.services.sortBy')}
 						</label>
 						<Select
 							value={`${sortBy}-${sortOrder}`}
@@ -341,37 +343,37 @@ export default function ServicesClient() {
 									value="name-asc"
 									className="bg-white hover:bg-gray-50 focus:bg-gray-50 text-gray-900 cursor-pointer"
 								>
-									Name (A-Z)
+									{t('owner.services.nameAZ')}
 								</SelectItem>
 								<SelectItem
 									value="name-desc"
 									className="bg-white hover:bg-gray-50 focus:bg-gray-50 text-gray-900 cursor-pointer"
 								>
-									Name (Z-A)
+									{t('owner.services.nameZA')}
 								</SelectItem>
 								<SelectItem
 									value="price-asc"
 									className="bg-white hover:bg-gray-50 focus:bg-gray-50 text-gray-900 cursor-pointer"
 								>
-									Price (Low to High)
+									{t('owner.services.priceLowToHigh')}
 								</SelectItem>
 								<SelectItem
 									value="price-desc"
 									className="bg-white hover:bg-gray-50 focus:bg-gray-50 text-gray-900 cursor-pointer"
 								>
-									Price (High to Low)
+									{t('owner.services.priceHighToLow')}
 								</SelectItem>
 								<SelectItem
 									value="duration-asc"
 									className="bg-white hover:bg-gray-50 focus:bg-gray-50 text-gray-900 cursor-pointer"
 								>
-									Duration (Short to Long)
+									{t('owner.services.durationShortToLong')}
 								</SelectItem>
 								<SelectItem
 									value="duration-desc"
 									className="bg-white hover:bg-gray-50 focus:bg-gray-50 text-gray-900 cursor-pointer"
 								>
-									Duration (Long to Short)
+									{t('owner.services.durationLongToShort')}
 								</SelectItem>
 							</SelectContent>
 						</Select>
@@ -383,7 +385,7 @@ export default function ServicesClient() {
 							onClick={clearFilters}
 							className="w-full px-4 py-2 text-sm font-medium text-black bg-gray-100 border border-gray-300 rounded-lg hover:bg-gray-200 focus:ring-2 focus:ring-[#ff5b5b] focus:border-transparent transition-colors"
 						>
-							Clear Filters
+							{t('owner.services.clearFilters')}
 						</button>
 					</div>
 				</div>
@@ -394,14 +396,14 @@ export default function ServicesClient() {
 					selectedGroup !== 'all') && (
 					<div className="mt-4 pt-4 border-t border-gray-200">
 						<p className="text-sm text-black">
-							Showing {filteredServices.length} of {services.length} services
+							{t('owner.services.showing')} {filteredServices.length} {t('owner.services.of')} {services.length} {t('owner.services.matching')}
 							{debouncedSearchQuery &&
 								debouncedSearchQuery.length > 2 &&
-								` matching "${debouncedSearchQuery}"`}
+								` "${debouncedSearchQuery}"`}
 							{selectedCategory !== 'all' &&
-								` in "${getCategoryName(Number(selectedCategory)) || 'Unknown'}" category`}
+								` ${t('owner.services.inCategory')} "${getCategoryName(Number(selectedCategory)) || t('owner.services.unknown')}" ${t('owner.services.categoryLabel')}`}
 							{selectedGroup !== 'all' &&
-								` in "${groups.find((g) => g.id === selectedGroup)?.name || 'Unknown'}" group`}
+								` ${t('owner.services.inGroup')} "${groups.find((g) => g.id === selectedGroup)?.name || t('owner.services.unknown')}" ${t('owner.services.groupLabel')}`}
 						</p>
 					</div>
 				)}
@@ -428,16 +430,16 @@ export default function ServicesClient() {
 						</svg>
 					</div>
 					<h3 className="text-lg font-medium text-gray-900 mb-2">
-						No services found
+						{t('owner.services.noServicesFound')}
 					</h3>
 					<p className="text-gray-500 mb-4">
-						Try adjusting your search or filter criteria
+						{t('owner.services.tryAdjustingFilters')}
 					</p>
 					<button
 						onClick={clearFilters}
 						className="inline-flex items-center gap-2 rounded-full bg-[#ff5b5b] text-white px-4 py-2 text-sm shadow-sm hover:opacity-95"
 					>
-						Clear Filters
+						{t('owner.services.clearFilters')}
 					</button>
 				</div>
 			) : services.length === 0 ? (
@@ -458,17 +460,17 @@ export default function ServicesClient() {
 						</svg>
 					</div>
 					<h3 className="text-lg font-semibold text-gray-900 mb-2">
-						No services yet
+						{t('owner.services.noServicesYet')}
 					</h3>
 					<p className="text-gray-600 mb-6">
-						Start by adding your first service to your salon
+						{t('owner.services.addFirstService')}
 					</p>
 					<button
 						onClick={() => router.push('/services/new')}
 						className="inline-flex items-center gap-2 bg-[#ff5b5b] text-white px-6 py-3 rounded-lg font-medium hover:bg-[#e04a4a] transition-colors"
 					>
 						<span className="text-lg">＋</span>
-						Add Your First Service
+						{t('owner.services.addFirstService')}
 					</button>
 				</div>
 			) : (
@@ -476,12 +478,12 @@ export default function ServicesClient() {
 					{/* Индикатор локального обновления */}
 					{(isSearching ||
 						(searchQuery && searchQuery !== debouncedSearchQuery)) && (
-						<div className="flex items-center justify-center py-2">
-							<div className="flex items-center gap-2 text-sm text-gray-600">
-								<div className="animate-spin rounded-full h-4 w-4 border-b-2 border-[#ff5b5b]"></div>
-								<span>Filtering services...</span>
+							<div className="flex items-center justify-center py-2">
+								<div className="flex items-center gap-2 text-sm text-gray-600">
+									<div className="animate-spin rounded-full h-4 w-4 border-b-2 border-[#ff5b5b]"></div>
+									<span>{t('owner.services.filteringServices')}</span>
+								</div>
 							</div>
-						</div>
 					)}
 
 					<div className="bg-white rounded-xl border border-[#f1d9d7] overflow-hidden">
@@ -492,20 +494,20 @@ export default function ServicesClient() {
 									className="flex items-center gap-1 cursor-pointer hover:text-[#ff5b5b] transition-colors select-none"
 									onClick={() => handleSortChange('name')}
 								>
-									Service Name
+									{t('owner.services.serviceName')}
 									{sortBy === 'name' && (
 										<span className="text-[#ff5b5b]">
 											{sortOrder === 'asc' ? '↑' : '↓'}
 										</span>
 									)}
 								</div>
-								<div>Category</div>
-								<div>Group</div>
+								<div>{t('owner.services.category')}</div>
+								<div>{t('owner.services.group')}</div>
 								<div
 									className="flex items-center gap-1 cursor-pointer hover:text-[#ff5b5b] transition-colors select-none"
 									onClick={() => handleSortChange('duration')}
 								>
-									Duration
+									{t('owner.services.duration')}
 									{sortBy === 'duration' && (
 										<span className="text-[#ff5b5b]">
 											{sortOrder === 'asc' ? '↑' : '↓'}
@@ -516,14 +518,14 @@ export default function ServicesClient() {
 									className="flex items-center gap-1 cursor-pointer hover:text-[#ff5b5b] transition-colors select-none"
 									onClick={() => handleSortChange('price')}
 								>
-									Price
+									{t('owner.services.price')}
 									{sortBy === 'price' && (
 										<span className="text-[#ff5b5b]">
 											{sortOrder === 'asc' ? '↑' : '↓'}
 										</span>
 									)}
 								</div>
-								<div>Actions</div>
+								<div>{t('owner.services.actions')}</div>
 							</div>
 							<div className="divide-y divide-[#f1d9d7]">
 								{filteredServices.map((service) => (
@@ -539,7 +541,7 @@ export default function ServicesClient() {
 												</span>
 											) : (
 												<span className="text-gray-400 italic">
-													No category
+													{t('owner.services.noCategory')}
 												</span>
 											)}
 										</div>
@@ -549,7 +551,7 @@ export default function ServicesClient() {
 													{service.serviceGroup.name}
 												</span>
 											) : (
-												<span className="text-gray-400 italic">No group</span>
+												<span className="text-gray-400 italic">{t('owner.services.noGroup')}</span>
 											)}
 										</div>
 										<div>{formatDuration(service.duration)}</div>
@@ -560,7 +562,7 @@ export default function ServicesClient() {
 											<button
 												onClick={() => handleEditService(service)}
 												className="p-1 text-[#ff5b5b] hover:text-[#e04a4a] hover:bg-red-50 rounded transition-colors"
-												title="Edit service"
+												title={t('owner.services.editService')}
 											>
 												<svg
 													className="w-4 h-4"
@@ -579,7 +581,7 @@ export default function ServicesClient() {
 											<button
 												onClick={() => handleDeleteService(service.id)}
 												className="p-1 text-red-600 hover:text-red-700 hover:bg-red-50 rounded transition-colors"
-												title="Delete service"
+												title={t('owner.services.deleteService')}
 											>
 												<svg
 													className="w-4 h-4"

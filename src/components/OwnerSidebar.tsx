@@ -193,7 +193,7 @@ export default function OwnerSidebar({
 					{renderNavItem(
 						'/services',
 						<Scissors className="w-5 h-5" />,
-						t.owner.services,
+						t.owner.services?.title || 'Services',
 						pathNoLocale.startsWith('/services'),
 						'services'
 					)}
@@ -201,7 +201,7 @@ export default function OwnerSidebar({
 					{renderNavItem(
 						'/staff',
 						<Users className="w-5 h-5" />,
-						t.owner.staff,
+						t.owner.staff?.title || 'Staff',
 						pathNoLocale.startsWith('/staff'),
 						'staff'
 					)}

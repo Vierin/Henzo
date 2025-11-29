@@ -13,10 +13,17 @@ import { useTranslations } from '@/i18n/useTranslations';
 
 type Language = Locale;
 
+// Helper function to get nested translation by path
+function getNestedTranslation(obj: any, path: string): string {
+	return path.split('.').reduce((current: any, key: string) => {
+		return current?.[key];
+	}, obj) || path;
+}
+
 interface LanguageContextType {
 	language: Language;
 	setLanguage: (lang: Language) => void;
-	t: ReturnType<typeof useTranslations>;
+	t: ReturnType<typeof useTranslations> & ((path: string) => string);
 }
 
 const LanguageContext = createContext<LanguageContextType | undefined>(
@@ -71,10 +78,15 @@ export function LanguageProvider({ children }: LanguageProviderProps) {
 		}
 	};
 
+	// Create a function wrapper that supports both object access and string path access
+	const tWrapper = ((path: string) => getNestedTranslation(t, path)) as any;
+	// Copy all properties from t to tWrapper to support object notation
+	Object.assign(tWrapper, t);
+
 	const value: LanguageContextType = {
 		language,
 		setLanguage,
-		t,
+		t: tWrapper as ReturnType<typeof useTranslations> & ((path: string) => string),
 	};
 
 	return (

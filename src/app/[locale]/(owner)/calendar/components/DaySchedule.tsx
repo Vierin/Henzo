@@ -4,6 +4,7 @@ import { useState, useMemo, useRef, useEffect } from 'react';
 import { Booking, TimeBlock, Staff } from '@/types';
 import { safeParseDate, formatTimeSafe } from '@/utils/date';
 import { ChevronLeft, ChevronRight, X } from 'lucide-react';
+import { useTranslation } from '@/contexts/LanguageContext';
 
 interface DayScheduleProps {
 	selectedDate: Date;
@@ -38,12 +39,31 @@ export default function DaySchedule({
 	onPrevDay,
 	onNextDay,
 }: DayScheduleProps) {
+	const t = useTranslation();
 	const [selectedStaffIds, setSelectedStaffIds] = useState<string[]>([]);
 	const scrollContainerRef = useRef<HTMLDivElement>(null);
 	const [isDragging, setIsDragging] = useState(false);
 	const [startX, setStartX] = useState(0);
 	const [scrollLeft, setScrollLeft] = useState(0);
 	const [isMobile, setIsMobile] = useState(false);
+	
+	const monthNames = [
+		'january', 'february', 'march', 'april', 'may', 'june',
+		'july', 'august', 'september', 'october', 'november', 'december'
+	];
+	
+	const weekdayNames = [
+		'sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'
+	];
+	
+	const formatDateForDisplay = (date: Date) => {
+		const dayOfWeek = date.getDay();
+		const monthIndex = date.getMonth();
+		const day = date.getDate();
+		const weekdayName = t(`weekdays.${weekdayNames[dayOfWeek]}`);
+		const monthName = t(`months.short.${monthNames[monthIndex]}`);
+		return `${weekdayName}, ${monthName} ${day}`;
+	};
 
 	useEffect(() => {
 		const checkMobile = () => {
@@ -396,11 +416,7 @@ export default function DaySchedule({
 							</button>
 						</div>
 						<h3 className="text-base md:text-lg font-semibold text-gray-900 text-center sm:text-left flex-1">
-							{selectedDate.toLocaleDateString('en-US', {
-								weekday: 'short',
-								month: 'short',
-								day: 'numeric',
-							})}
+							{formatDateForDisplay(selectedDate)}
 						</h3>
 					</div>
 					<div className="flex items-center justify-center sm:justify-end">
@@ -494,11 +510,7 @@ export default function DaySchedule({
 								Salon is Closed
 							</h3>
 							<p className="text-gray-600">
-								The salon is not open on{' '}
-								{selectedDate.toLocaleDateString('en-US', {
-									weekday: 'long',
-								})}
-								.
+								{t('owner.calendarPage.closed')} {t(`weekdays.${weekdayNames[selectedDate.getDay()]}`)}.
 							</p>
 						</div>
 					</div>

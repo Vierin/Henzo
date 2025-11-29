@@ -13,8 +13,10 @@ import {
 } from '@/i18n/routing';
 import Image from 'next/image';
 import { User, LogOut, ChevronDown } from 'lucide-react';
+import { useTranslation } from '@/contexts/LanguageContext';
 
 export default function OwnerHeader() {
+	const t = useTranslation();
 	const pathname = usePathname();
 	const router = useRouter();
 	const { user, logout } = useAuth();
@@ -82,7 +84,7 @@ export default function OwnerHeader() {
 
 	return (
 		<header className="sticky w-[100vw] top-0 bg-white/80 backdrop-blur border-b border-[#f1d9d7] z-[300]">
-			<div className="md:h-[5rem] h-[fit-content] mx-auto max-w-7xl md:px-6 px-4 py-4 flex items-center justify-between">
+			<div className="mx-auto max-w-7xl md:px-6 px-4 py-2 flex items-center justify-between">
 				<Link
 					href={withLocale('/', currentLocale as 'en' | 'ru' | 'vi')}
 					className="flex max-w-20 md:max-w-full md:h-12 h-10 items-center gap-3 hover:opacity-80 transition-opacity"
@@ -153,7 +155,7 @@ export default function OwnerHeader() {
 										<User className="w-4 h-4 text-gray-600" />
 									)}
 								</div>
-								<span>Profile</span>
+								<span>{t('header.profile')}</span>
 								<ChevronDown
 									className={`w-4 h-4 text-gray-500 transition-transform ${
 										showProfileDropdown ? 'rotate-180' : ''
@@ -170,14 +172,14 @@ export default function OwnerHeader() {
 								>
 									<div className="px-4 py-2 text-sm text-gray-700 border-b border-gray-100">
 										<div className="font-medium">{user.email}</div>
-										<div className="text-xs text-gray-500">Owner</div>
+										<div className="text-xs text-gray-500">{t('header.owner')}</div>
 									</div>
 									<button
 										onClick={handleLogout}
 										className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 flex items-center gap-2 transition-colors"
 									>
 										<LogOut className="w-4 h-4" />
-										Logout
+										{t('header.logout')}
 									</button>
 								</div>
 							)}

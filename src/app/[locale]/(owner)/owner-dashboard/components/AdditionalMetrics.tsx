@@ -3,6 +3,7 @@
 import { Booking } from '@/types';
 import { AlertCircle, Users, TrendingUp } from 'lucide-react';
 import { formatVND } from '@/utils/currency';
+import { useTranslation } from '@/contexts/LanguageContext';
 
 interface AdditionalMetricsProps {
 	bookings: Booking[];
@@ -11,6 +12,8 @@ interface AdditionalMetricsProps {
 export default function AdditionalMetrics({
 	bookings,
 }: AdditionalMetricsProps) {
+	const t = useTranslation();
+	
 	// Calculate No-Show Rate - only for past bookings
 	const now = new Date();
 	const pastBookings = bookings.filter((b) => {
@@ -61,25 +64,25 @@ export default function AdditionalMetrics({
 
 	const metrics = [
 		{
-			title: 'No-Show Rate',
+			title: t('owner.noShowRate'),
 			value: `${noShowRate}%`,
-			subtitle: `${noShowCount} missed`,
+			subtitle: `${noShowCount} ${t('owner.missed')}`,
 			icon: <AlertCircle className="w-6 h-6" />,
 			color: noShowRate > 20 ? 'text-red-600' : 'text-yellow-600',
 			bgColor: noShowRate > 20 ? 'bg-red-50' : 'bg-yellow-50',
 		},
 		{
-			title: 'Repeat Clients',
+			title: t('owner.repeatClients'),
 			value: `${repeatClientRate}%`,
-			subtitle: `${repeatClients} of ${totalClients}`,
+			subtitle: `${repeatClients} ${t('owner.of')} ${totalClients}`,
 			icon: <Users className="w-6 h-6" />,
 			color: 'text-blue-600',
 			bgColor: 'bg-blue-50',
 		},
 		{
-			title: 'Avg Revenue/Client',
+			title: t('owner.avgRevenuePerClient'),
 			value: formatVND(avgRevenuePerClient),
-			subtitle: 'Per client',
+			subtitle: t('owner.perClient'),
 			icon: <TrendingUp className="w-6 h-6" />,
 			color: 'text-green-600',
 			bgColor: 'bg-green-50',
@@ -89,7 +92,7 @@ export default function AdditionalMetrics({
 	return (
 		<div className="bg-white rounded-xl border border-[#f1d9d7] p-4 md:p-6">
 			<h2 className="text-xl font-semibold text-gray-900 mb-3 md:mb-6">
-				Additional Metrics
+				{t('owner.additionalMetrics')}
 			</h2>
 
 			<div className="space-y-2 md:space-y-4">

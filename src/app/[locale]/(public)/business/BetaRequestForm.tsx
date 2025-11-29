@@ -17,19 +17,19 @@ export default function BetaRequestForm() {
 		try {
 			const API_URL =
 				process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
-			
+
 			// Validate API URL
 			if (!API_URL || API_URL.trim() === '') {
 				throw new Error('API URL is not configured. Please contact support.');
 			}
 
 			const endpoint = `${API_URL}/auth/send-business-magic-link`;
-			
+
 			// Log for debugging (only in development)
 			if (process.env.NODE_ENV === 'development') {
 				console.log('Sending request to:', endpoint);
 			}
-			
+
 			const response = await fetch(endpoint, {
 				method: 'POST',
 				headers: {
@@ -54,9 +54,20 @@ export default function BetaRequestForm() {
 						'Server error. Please try again later or contact support.'
 					);
 				}
-				
+
 				const errorData = await response.json().catch(() => ({}));
-				const errorMessage = errorData.message || errorData.msg || 'Failed to send magic link';
+				let errorMessage =
+					errorData.message || errorData.msg || 'Failed to send magic link';
+
+				// Improve error messages for existing account
+				if (
+					errorMessage.includes('already exists') ||
+					errorMessage.includes('business account')
+				) {
+					errorMessage =
+						'A business account with this email already exists. Please login instead.';
+				}
+
 				throw new Error(errorMessage);
 			}
 
