@@ -31,12 +31,12 @@ export default function MobileSearchTrigger() {
 					{/* Header */}
 					<div className="sticky top-0 bg-white border-b border-gray-200 px-4 py-3 flex items-center justify-between shadow-sm">
 						<h2 className="text-lg font-semibold text-gray-900">
-							{t.homepage.heroTitle.replace(/<[^>]+>/g, '')}
+							{t('homepage.heroTitle').replace(/<[^>]+>/g, '')}
 						</h2>
 						<button
 							onClick={() => setIsOpen(false)}
 							className="p-2 hover:bg-gray-100 rounded-full transition-colors"
-							aria-label={t.common.close}
+							aria-label={t('common.close')}
 						>
 							<svg
 								className="w-6 h-6 text-gray-600"

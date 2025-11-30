@@ -1,0 +1,22 @@
+{
+	"loading": "Loading...",
+	"error": "Error",
+	"save": "Save",
+	"cancel": "Cancel",
+	"close": "Close",
+	"delete": "Delete",
+	"edit": "Edit",
+	"view": "View",
+	"back": "Back",
+	"next": "Next",
+	"previous": "Previous",
+	"search": "Search",
+	"filter": "Filter",
+	"sort": "Sort",
+	"all": "All",
+	"none": "None",
+	"yes": "Yes",
+	"no": "No",
+	"useCurrentLocation": "Use Current Location",
+	"gettingLocation": "Getting your location..."
+}

@@ -5,25 +5,36 @@ import React, {
 	useContext,
 	useState,
 	useEffect,
+	useMemo,
 	ReactNode,
 } from 'react';
 import { usePathname } from 'next/navigation';
-import { extractLocaleFromPath, type Locale } from '@/i18n/routing';
-import { useTranslations } from '@/i18n/useTranslations';
+import { extractLocaleFromPath, stripLocaleFromPath, type Locale } from '@/i18n/routing';
+import { useTranslations as useBaseTranslations, useModuleTranslations } from '@/i18n/useTranslations';
+import type { TranslationModule } from '@/i18n/modules';
 
 type Language = Locale;
 
 // Helper function to get nested translation by path
 function getNestedTranslation(obj: any, path: string): string {
-	return path.split('.').reduce((current: any, key: string) => {
+	const result = path.split('.').reduce((current: any, key: string) => {
 		return current?.[key];
-	}, obj) || path;
+	}, obj);
+	// If result is undefined, null, or empty string, return the path as fallback
+	if (result === undefined || result === null || result === '') {
+		return path;
+	}
+	return result;
 }
+
+type Dictionary = {
+	[key: string]: any;
+};
 
 interface LanguageContextType {
 	language: Language;
 	setLanguage: (lang: Language) => void;
-	t: ReturnType<typeof useTranslations> & ((path: string) => string);
+	t: Dictionary & ((path: string) => string);
 }
 
 const LanguageContext = createContext<LanguageContextType | undefined>(
@@ -37,7 +48,118 @@ interface LanguageProviderProps {
 export function LanguageProvider({ children }: LanguageProviderProps) {
 	const [language, setLanguageState] = useState<Language>('en');
 	const pathname = usePathname();
-	const t = useTranslations();
+	
+	// Determine which modules to load based on current path
+	const pathNoLocale = stripLocaleFromPath(pathname);
+	const isOwnerPage = pathNoLocale.startsWith('/owner-dashboard') || 
+		pathNoLocale.startsWith('/salon-info') ||
+		pathNoLocale.startsWith('/services') ||
+		pathNoLocale.startsWith('/staff') ||
+		pathNoLocale.startsWith('/calendar') ||
+		pathNoLocale.startsWith('/marketing');
+	
+	const isClientPage = pathNoLocale.startsWith('/dashboard') ||
+		pathNoLocale.startsWith('/favorites') ||
+		pathNoLocale.startsWith('/reviews') ||
+		pathNoLocale.startsWith('/settings');
+	
+	// Determine specific owner module based on path
+	let ownerModule: TranslationModule | undefined;
+	if (pathNoLocale.startsWith('/owner-dashboard')) {
+		ownerModule = 'owner/dashboard';
+	} else if (pathNoLocale.startsWith('/salon-info')) {
+		ownerModule = 'owner/salonInfo';
+	} else if (pathNoLocale.startsWith('/services')) {
+		if (pathNoLocale.includes('/new')) {
+			ownerModule = 'owner/servicesNew';
+		} else {
+			ownerModule = 'owner/services';
+		}
+	} else if (pathNoLocale.startsWith('/staff')) {
+		if (pathNoLocale.includes('/new')) {
+			ownerModule = 'owner/staffNew';
+		} else {
+			ownerModule = 'owner/staff';
+		}
+	} else if (pathNoLocale.startsWith('/calendar')) {
+		ownerModule = 'owner/calendar';
+	} else if (pathNoLocale.startsWith('/marketing')) {
+		ownerModule = 'owner/marketing';
+	}
+	
+	// Determine public module based on path
+	const publicModules: TranslationModule[] = [];
+	
+	// Check for homepage (root path)
+	if (pathNoLocale === '/' || pathNoLocale === '' || !pathNoLocale) {
+		// Categories are also used on homepage
+		publicModules.push('public/homepage', 'public/categories');
+	} else if (pathNoLocale.startsWith('/salon/')) {
+		publicModules.push('public/salon');
+	} else if (pathNoLocale.startsWith('/booking')) {
+		publicModules.push('public/booking');
+	} else if (pathNoLocale.startsWith('/category/')) {
+		publicModules.push('public/categories');
+	} else if (pathNoLocale.startsWith('/map')) {
+		publicModules.push('public/map');
+	} else if (pathNoLocale.startsWith('/business')) {
+		publicModules.push('public/business');
+	} else if (pathNoLocale.startsWith('/contact')) {
+		publicModules.push('public/contact');
+	} else if (pathNoLocale.startsWith('/about')) {
+		publicModules.push('public/about');
+	}
+	
+	// Load base modules
+	const baseT = useBaseTranslations();
+	
+	// Load additional modules based on page type
+	const modulesToLoad: TranslationModule[] = [];
+	if (ownerModule) {
+		modulesToLoad.push(ownerModule);
+	}
+	if (isOwnerPage) {
+		modulesToLoad.push('owner/feedback');
+	}
+	// Add all public modules (can be multiple for homepage)
+	modulesToLoad.push(...publicModules);
+	if (isClientPage) {
+		modulesToLoad.push('client/settings');
+	}
+	
+	const { dictionary: additionalDict } = useModuleTranslations(
+		modulesToLoad,
+		language
+	);
+	
+	// Merge base and additional translations
+	const t = useMemo(() => {
+		const merged = { ...baseT };
+		if (additionalDict && Object.keys(additionalDict).length > 0) {
+			// Deep merge to preserve nested objects
+			for (const key in additionalDict) {
+				if (additionalDict[key] && typeof additionalDict[key] === 'object' && !Array.isArray(additionalDict[key])) {
+					// If both are objects, merge them
+					if (merged[key] && typeof merged[key] === 'object' && !Array.isArray(merged[key])) {
+						merged[key] = { ...merged[key], ...additionalDict[key] };
+					} else {
+						merged[key] = additionalDict[key];
+					}
+				} else {
+					merged[key] = additionalDict[key];
+				}
+			}
+		}
+		// Debug: log if homepage module is loaded (only in development)
+		if (process.env.NODE_ENV === 'development' && pathNoLocale === '/') {
+			console.log('Homepage translations loaded:', {
+				hasHomepage: !!merged.homepage,
+				homepageKeys: merged.homepage ? Object.keys(merged.homepage) : [],
+				topRatedTitle: merged.homepage?.topRatedTitle,
+			});
+		}
+		return merged;
+	}, [baseT, additionalDict, pathNoLocale]);
 
 	// Load language from localStorage on mount
 	useEffect(() => {
@@ -79,14 +201,45 @@ export function LanguageProvider({ children }: LanguageProviderProps) {
 	};
 
 	// Create a function wrapper that supports both object access and string path access
-	const tWrapper = ((path: string) => getNestedTranslation(t, path)) as any;
-	// Copy all properties from t to tWrapper to support object notation
-	Object.assign(tWrapper, t);
+	// Use Proxy to automatically handle both t('path.to.key') and t.path.to.key
+	const baseFunction = ((path: string) => getNestedTranslation(t, path)) as any;
+	
+	const createProxy = (prefix = ''): any => {
+		return new Proxy(baseFunction, {
+			get: (_target, prop: string) => {
+				// If accessing as function, return the function
+				if (prop === 'apply' || prop === 'call' || prop === 'bind' || prop === 'toString') {
+					return baseFunction[prop];
+				}
+				// Build the full path
+				const fullPath = prefix ? `${prefix}.${prop}` : prop;
+				// Try to get from translations object
+				const value = prefix 
+					? getNestedTranslation(t, fullPath)
+					: t[prop];
+				
+				// If it's an object, return a proxy for nested access
+				if (value !== undefined && typeof value === 'object' && value !== null && !Array.isArray(value)) {
+					return createProxy(fullPath);
+				}
+				
+				// If value exists, return it
+				if (value !== undefined) {
+					return value;
+				}
+				
+				// Return a proxy for nested access that will resolve on next property access
+				return createProxy(fullPath);
+			},
+		});
+	};
+	
+	const tWrapper = createProxy() as Dictionary & ((path: string) => string);
 
 	const value: LanguageContextType = {
 		language,
 		setLanguage,
-		t: tWrapper as ReturnType<typeof useTranslations> & ((path: string) => string),
+		t: tWrapper as Dictionary & ((path: string) => string),
 	};
 
 	return (

@@ -17,7 +17,7 @@ export default function FeedbackButton() {
 	const handleSubmit = async (e: React.FormEvent) => {
 		e.preventDefault();
 		if (!message.trim()) {
-			toast.error(t('feedback.pleaseEnterMessage'));
+			toast.error(t('owner.feedback.pleaseEnterMessage'));
 			return;
 		}
 
@@ -29,12 +29,12 @@ export default function FeedbackButton() {
 				userEmail: user?.email,
 				userName: user?.name,
 			});
-			toast.success(t('feedback.thankYou'));
+			toast.success(t('owner.feedback.thankYou'));
 			setMessage('');
 			setIsOpen(false);
 		} catch (error) {
 			// Extract error message from API response
-			let errorMessage = t('feedback.failedToSend');
+			let errorMessage = t('owner.feedback.failedToSend');
 			if (error instanceof Error) {
 				errorMessage = error.message;
 			}
@@ -52,15 +52,15 @@ export default function FeedbackButton() {
 					{/* Header */}
 					<div className="bg-[#ff5b5b] text-white px-4 py-3 flex items-center justify-between">
 						<div className="flex-1">
-							<h3 className="font-semibold text-sm">{t('feedback.title')}</h3>
+							<h3 className="font-semibold text-sm">{t('owner.feedback.title')}</h3>
 							<p className="text-xs text-white/90">
-								{t('feedback.subtitle')}
+								{t('owner.feedback.subtitle')}
 							</p>
 						</div>
 						<button
 							onClick={() => setIsOpen(false)}
 							className="text-white hover:text-gray-200 transition-colors ml-2 flex-shrink-0"
-							aria-label={t('feedback.close')}
+							aria-label={t('owner.feedback.close')}
 						>
 							<X className="w-5 h-5" />
 						</button>
@@ -71,7 +71,7 @@ export default function FeedbackButton() {
 						<textarea
 							value={message}
 							onChange={(e) => setMessage(e.target.value)}
-							placeholder={t('feedback.placeholder')}
+							placeholder={t('owner.feedback.placeholder')}
 							className="w-full min-h-[120px] p-3 border border-gray-300 rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-[#ff5b5b] focus:border-transparent text-sm"
 							disabled={isSubmitting}
 						/>
@@ -83,12 +83,12 @@ export default function FeedbackButton() {
 							{isSubmitting ? (
 								<>
 									<div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-									{t('feedback.sending')}
+									{t('owner.feedback.sending')}
 								</>
 							) : (
 								<>
 									<Send className="w-4 h-4" />
-									{t('feedback.send')}
+									{t('owner.feedback.send')}
 								</>
 							)}
 						</button>
@@ -102,7 +102,7 @@ export default function FeedbackButton() {
 				className={`w-14 h-14 bg-[#ff5b5b] text-white rounded-full shadow-lg hover:bg-[#e04a4a] transition-all duration-200 flex items-center justify-center flex-shrink-0 ${
 					isOpen ? 'rotate-180' : 'hover:scale-110'
 				}`}
-				aria-label={t('feedback.sendFeedback')}
+				aria-label={t('owner.feedback.sendFeedback')}
 			>
 				{isOpen ? (
 					<X className="w-6 h-6" />

@@ -119,7 +119,7 @@ export default function ServiceAutocomplete({
 				if (result.data?.recommendedServices?.length > 0) {
 					groups.push({
 						type: 'recommended',
-						title: t.homepage.recommendedServices || 'Recommended Services',
+						title: t('homepage.recommendedServices') || 'Recommended Services',
 						suggestions: result.data.recommendedServices.map((item: any) => ({
 							id: item.id,
 							name: item.name,
@@ -188,7 +188,7 @@ export default function ServiceAutocomplete({
 					setSuggestionGroups([
 						{
 							type: 'recommended',
-							title: t.homepage.popularServices || 'Popular Services',
+							title: t('homepage.popularServices') || 'Popular Services',
 							suggestions: result.data.map((item: any) => ({
 								id: item.id,
 								name: item.name,

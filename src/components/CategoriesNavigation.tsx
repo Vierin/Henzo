@@ -32,7 +32,7 @@ export default function CategoriesNavigation({
 				{STATIC_CATEGORIES.map((category) => {
 					const translationKey = categoryTranslationMap[category.slug];
 					const translatedName = translationKey
-						? t.categories[translationKey]
+						? t(`categories.${translationKey}`) || (t.categories as any)?.[translationKey]
 						: category.name;
 					return (
 						<Link

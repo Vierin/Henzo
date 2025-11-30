@@ -1,0 +1,115 @@
+{
+	"header": {
+		"features": "Features",
+		"benefits": "Benefits",
+		"betaAccess": "Beta Access",
+		"signIn": "Sign In",
+		"startFree": "Start Free"
+	},
+	"hero": {
+		"badge": "✨ Free Beta Testing",
+		"title": "Simplify Bookings,",
+		"titleHighlight": "Delight Clients",
+		"subtitle": "The all-in-one platform for your beauty business. Manage appointments, clients, and payments all in one place.",
+		"joinBeta": "Join Beta Testing",
+		"signIn": "Sign In",
+		"free": "100% Free",
+		"freePeriod": "Beta testing period",
+		"quickStart": "Quick Start",
+		"quickStartTime": "Live in 5 minutes"
+	},
+	"features": {
+		"badge": "Features",
+		"title": "Everything You Need",
+		"titleBreak": "to Run Your Salon",
+		"subtitle": "Powerful features designed to save you time and help your business grow",
+		"smartScheduling": {
+			"title": "Smart Scheduling",
+			"description": "Intelligent calendar that prevents double bookings and automatically optimizes your team's time."
+		},
+		"clientManagement": {
+			"title": "Client Management",
+			"description": "Keep detailed client profiles, preferences, and service history all in one place."
+		},
+		"emailReminders": {
+			"title": "Email Reminders",
+			"description": "Reduce no-shows with automatic email appointment reminders."
+		},
+		"analytics": {
+			"title": "Analytics",
+			"description": "Track popular services and staff performance with real-time insights."
+		}
+	},
+	"benefits": {
+		"badge": "Why Henzo",
+		"title": "Grow Your Business",
+		"titleBreak": "with Confidence",
+		"subtitle": "A platform designed specifically for the beauty industry. Join our beta testing and get free access.",
+		"benefit1": "Increase bookings with 24/7 online scheduling",
+		"benefit2": "Save 10+ hours per week on administrative tasks",
+		"benefit3": "Reduce no-shows with automated reminders",
+		"benefit4": "Build client loyalty with a convenient booking system",
+		"benefit5": "Make data-driven decisions with powerful analytics",
+		"benefit6": "Payment happens on-site - no online payment complexities"
+	},
+	"cta": {
+		"title": "Ready to Transform",
+		"titleBreak": "Your Salon?",
+		"subtitle": "Join Henzo's beta testing program. Completely free during beta, no commitments required.",
+		"startForFree": "Start for Free",
+		"joinBetaTesters": "Join our beta testers and get free access"
+	},
+	"betaForm": {
+		"badge": "Beta Access",
+		"title": "Request Beta Access",
+		"subtitle": "Fill out the form below to join our beta testing program and get early access to Henzo.",
+		"fullName": "Full Name",
+		"salonName": "Salon Name",
+		"optional": "(Optional)",
+		"email": "Email",
+		"required": "*",
+		"fullNamePlaceholder": "John Doe",
+		"salonNamePlaceholder": "Beauty Lounge",
+		"emailPlaceholder": "john@example.com",
+		"submitting": "Submitting...",
+		"requestBetaAccess": "Request Beta Access",
+		"agreement": "By submitting this form, you agree to be contacted about the beta testing program.",
+		"successMessage": "Thank you! We'll contact you soon about the beta program.",
+		"errorMessage": "Failed to submit request. Please try again."
+	},
+	"register": {
+		"title": "Create your business account",
+		"subtitle": "Join as a salon owner to manage your business",
+		"ownerFullName": "Owner Full Name",
+		"ownerFullNamePlaceholder": "Enter your full name",
+		"emailAddress": "Email Address",
+		"emailPlaceholder": "Enter your email",
+		"emailVerified": "✓ Email verified via invitation link",
+		"password": "Password",
+		"passwordPlaceholder": "Create a password",
+		"confirmPassword": "Confirm Password",
+		"confirmPasswordPlaceholder": "Confirm your password",
+		"inviteCode": "Invite Code",
+		"inviteCodePlaceholder": "Enter your invite code",
+		"inviteCodeApplied": "✓ Invite code applied from registration link",
+		"inviteCodeRequired": "Required for beta testing",
+		"creatingAccount": "Creating account...",
+		"createBusinessAccount": "Create Business Account",
+		"orContinueWith": "Or continue with",
+		"continueWithGoogle": "Continue with Google",
+		"alreadyHaveAccount": "Already have an account?",
+		"signIn": "Sign in",
+		"lookingToBook": "Looking to book?",
+		"registerAsClient": "Register as a client instead →",
+		"inviteCodeRequiredError": "Invite code is required for registration",
+		"invalidInviteCode": "Invalid invite code",
+		"pleaseEnterValidCode": "Please enter a valid invite code",
+		"passwordsDoNotMatch": "Passwords do not match",
+		"passwordTooShort": "Password must be at least 6 characters",
+		"registrationSuccessful": "Business account created! Complete your salon setup.",
+		"registrationSuccessfulEmail": "Business account created! Please check your email to verify your account.",
+		"failedToRegister": "Failed to register business account",
+		"failedToRegisterGoogle": "Failed to register with Google",
+		"pleaseEnterInviteCode": "Please enter an invite code first"
+	}
+}

@@ -30,13 +30,13 @@ export default function CategoryCard({
 	const t = useTranslation();
 	const translationKey = categoryTranslationMap[category.slug];
 	const translatedName = translationKey
-		? t.categories[translationKey]
+		? t(`categories.${translationKey}`) || (t.categories as any)?.[translationKey] || category.name
 		: category.name;
 
 	let translatedDescription: string | undefined;
 	if (translationKey) {
-		const descKey = `${translationKey}Description` as keyof typeof t.categories;
-		translatedDescription = t.categories[descKey] as string;
+		const descKey = `${translationKey}Description`;
+		translatedDescription = t(`categories.${descKey}`) || (t.categories as any)?.[descKey] || category.description;
 	} else {
 		translatedDescription = category.description;
 	}

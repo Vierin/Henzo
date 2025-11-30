@@ -1,0 +1,14 @@
+{
+	"title": "Map View",
+	"allSalons": "All Salons",
+	"salonsInView": "Salons in view ({count})",
+	"showingSalonsInView": "Showing salons visible on the map",
+	"sortByRecommended": "Sort by: Recommended",
+	"highestRated": "Highest Rated",
+	"nearest": "Nearest",
+	"mostReviews": "Most Reviews",
+	"noSalonsInView": "No salons in view",
+	"tryZoomingOut": "Try zooming out or moving the map to see more salons",
+	"loadingSalons": "Loading salons...",
+	"viewSalon": "View Salon"
+}

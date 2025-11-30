@@ -1,0 +1,22 @@
+{
+	"hairBarber": "Hair & Barber",
+	"hairBarberDescription": "Professional hair styling, cutting, coloring, and barber services",
+	"massageSpa": "Massage & Spa",
+	"massageSpaDescription": "Relaxing massages, spa treatments, and wellness services",
+	"manicurePedicure": "Manicure & Pedicure",
+	"manicurePedicureDescription": "Nail care, manicures, pedicures, and nail art services",
+	"cosmeticMedicine": "Cosmetic Medicine",
+	"cosmeticMedicineDescription": "Medical aesthetic treatments, botox, fillers, and cosmetic procedures",
+	"otherServices": "Other Services",
+	"otherServicesDescription": "Additional beauty and wellness services",
+	"sortBy": "Sort by",
+	"sortNameAZ": "Name A-Z",
+	"sortNameZA": "Name Z-A",
+	"sortMostServices": "Most Services",
+	"sortHighestRated": "Highest Rated",
+	"mapView": "Map View",
+	"noSalonsFound": "No {category} salons found",
+	"noSalonsDescription": "We couldn't find any salons in the {category} category at the moment. Check back soon or explore other categories.",
+	"browseAllSalons": "Browse All Salons",
+	"viewAllServices": "View all {count} services →"
+}

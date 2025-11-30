@@ -1,0 +1,23 @@
+{
+	"title": "Tiếp thị",
+	"subtitle": "Tải xuống hoặc chia sẻ mã QR cho liên kết salon của bạn để khách hàng quét để đặt lịch",
+	"salonLink": "Liên kết Salon",
+	"loadingSalonLink": "Đang tải liên kết salon...",
+	"copy": "Sao chép",
+	"share": "Chia sẻ",
+	"howToUse": "Cách sử dụng:",
+	"copyLinkInstruction": "Sao chép liên kết để chia sẻ với khách hàng",
+	"shareButtonInstruction": "Sử dụng nút Chia sẻ để gửi qua mạng xã hội hoặc tin nhắn",
+	"downloadQRInstruction": "Tải xuống mã QR cho tài liệu in",
+	"scanInstruction": "Khách hàng có thể quét hoặc nhấp để đặt lịch",
+	"qrCode": "Mã QR",
+	"salonQRCode": "Mã QR Salon",
+	"loading": "Đang tải...",
+	"downloadPDF": "Tải xuống PDF",
+	"pleaseWaitForSalonData": "Vui lòng đợi dữ liệu salon tải",
+	"linkCopied": "Đã sao chép liên kết vào clipboard!",
+	"failedToCopy": "Không thể sao chép liên kết",
+	"qrCodeOpened": "Tờ rơi mã QR đã được mở để tải xuống!",
+	"failedToGeneratePDF": "Không thể tạo PDF",
+	"pdfGenerationFailed": "Tạo PDF thất bại - phản hồi trống"
+}

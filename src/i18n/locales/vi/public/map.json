@@ -1,0 +1,14 @@
+{
+	"title": "Xem bản đồ",
+	"allSalons": "Tất cả salon",
+	"salonsInView": "Salon trong vùng ({count})",
+	"showingSalonsInView": "Hiển thị các salon có thể nhìn thấy trên bản đồ",
+	"sortByRecommended": "Sắp xếp: Đề xuất",
+	"highestRated": "Đánh giá cao nhất",
+	"nearest": "Gần nhất",
+	"mostReviews": "Nhiều đánh giá nhất",
+	"noSalonsInView": "Không có salon trong vùng",
+	"tryZoomingOut": "Thử thu nhỏ hoặc di chuyển bản đồ để xem thêm salon",
+	"loadingSalons": "Đang tải salon...",
+	"viewSalon": "Xem salon"
+}

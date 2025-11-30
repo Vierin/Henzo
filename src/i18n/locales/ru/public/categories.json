@@ -1,0 +1,22 @@
+{
+	"hairBarber": "Прическа",
+	"hairBarberDescription": "Профессиональная укладка, стрижка, окрашивание и барбершоп услуги",
+	"massageSpa": "Массаж & Спа",
+	"massageSpaDescription": "Расслабляющий массаж, спа-процедуры и оздоровительные услуги",
+	"manicurePedicure": "Маникюр & Педикюр",
+	"manicurePedicureDescription": "Уход за ногтями, маникюр, педикюр и услуги по дизайну ногтей",
+	"cosmeticMedicine": "Косметология",
+	"cosmeticMedicineDescription": "Медицинские эстетические процедуры, ботокс, филлеры и косметические процедуры",
+	"otherServices": "Другие услуги",
+	"otherServicesDescription": "Дополнительные услуги красоты и здоровья",
+	"sortBy": "Сортировать по",
+	"sortNameAZ": "Имя А-Я",
+	"sortNameZA": "Имя Я-А",
+	"sortMostServices": "Больше услуг",
+	"sortHighestRated": "Высший рейтинг",
+	"mapView": "Карта",
+	"noSalonsFound": "Салонов {category} не найдено",
+	"noSalonsDescription": "В данный момент мы не смогли найти салоны в категории {category}. Зайдите позже или изучите другие категории.",
+	"browseAllSalons": "Все салоны",
+	"viewAllServices": "Посмотреть все {count} услуг →"
+}

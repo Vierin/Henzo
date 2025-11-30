@@ -78,10 +78,12 @@ export default function HomePageClient() {
 								<div className="lg:absolute lg:left-0 lg:top-1/2 lg:transform lg:-translate-y-1/2 z-10 text-center lg:text-left">
 									<h1
 										className="text-3xl sm:text-4xl lg:text-5xl font-bold text-white leading-tight"
-										dangerouslySetInnerHTML={{ __html: t.homepage.heroTitle }}
+										dangerouslySetInnerHTML={{
+											__html: t('homepage.heroTitle'),
+										}}
 									/>
 									<p className="text-base sm:text-lg text-muted-foreground mt-4 max-w-md mx-auto lg:mx-0">
-										{t.homepage.heroSubtitle}
+										{t('homepage.heroSubtitle')}
 									</p>
 
 									{/* Features Stats */}
@@ -91,7 +93,7 @@ export default function HomePageClient() {
 												24/7
 											</p>
 											<p className="text-xs sm:text-sm text-muted-foreground">
-												{t.homepage.onlineBooking}
+												{t('homepage.onlineBooking')}
 											</p>
 										</div>
 										<div className="w-px h-8 sm:h-10 bg-gray-300"></div>
@@ -99,20 +101,20 @@ export default function HomePageClient() {
 											<p className="text-2xl sm:text-3xl font-bold text-primary">
 												5
 												<span className="text-lg sm:text-xl relative left-1">
-													{t.homepage.minutesShort}
+													{t('homepage.minutesShort')}
 												</span>
 											</p>
 											<p className="text-xs sm:text-sm text-muted-foreground">
-												{t.homepage.toBook}
+												{t('homepage.toBook')}
 											</p>
 										</div>
 										<div className="w-px h-8 sm:h-10 bg-gray-300"></div>
 										<div className="">
 											<p className="text-2xl sm:text-3xl font-bold text-primary">
-												{t.homepage.free}
+												{t('homepage.free')}
 											</p>
 											<p className="text-xs sm:text-sm text-muted-foreground">
-												{t.homepage.booking}
+												{t('homepage.booking')}
 											</p>
 										</div>
 									</div>
@@ -150,10 +152,10 @@ export default function HomePageClient() {
 						{/* Heading */}
 						<div className="text-center mb-8 sm:mb-12">
 							<h2 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-3 sm:mb-4">
-								{t.homepage.whyChooseHenzo}
+								{t('homepage.whyChooseHenzo')}
 							</h2>
 							<p className="text-base sm:text-lg text-gray-600 max-w-2xl mx-auto px-4">
-								{t.homepage.whyChooseSubtitle}
+								{t('homepage.whyChooseSubtitle')}
 							</p>
 						</div>
 
@@ -177,10 +179,10 @@ export default function HomePageClient() {
 									</svg>
 								</div>
 								<h3 className="text-xl font-bold text-gray-900 mb-4">
-									{t.homepage.easyBooking}
+									{t('homepage.easyBooking')}
 								</h3>
 								<p className="text-gray-600">
-									{t.homepage.easyBookingDescription}
+									{t('homepage.easyBookingDescription')}
 								</p>
 							</article>
 
@@ -202,10 +204,10 @@ export default function HomePageClient() {
 									</svg>
 								</div>
 								<h3 className="text-xl font-bold text-gray-900 mb-4">
-									{t.homepage.flexibleScheduling}
+									{t('homepage.flexibleScheduling')}
 								</h3>
 								<p className="text-gray-600">
-									{t.homepage.flexibleSchedulingDescription}
+									{t('homepage.flexibleSchedulingDescription')}
 								</p>
 							</article>
 
@@ -227,10 +229,10 @@ export default function HomePageClient() {
 									</svg>
 								</div>
 								<h3 className="text-xl font-bold text-gray-900 mb-4">
-									{t.homepage.trustedReviews}
+									{t('homepage.trustedReviews')}
 								</h3>
 								<p className="text-gray-600">
-									{t.homepage.trustedReviewsDescription}
+									{t('homepage.trustedReviewsDescription')}
 								</p>
 							</article>
 						</div>
@@ -257,17 +259,17 @@ export default function HomePageClient() {
 								</svg>
 							</div>
 							<h2 className="text-2xl font-bold text-white mb-3">
-								{t.homepage.salonOwner || 'Are you a salon owner?'}
+								{t('homepage.salonOwner') || 'Are you a salon owner?'}
 							</h2>
 							<p className="text-white/90 mb-6 text-sm">
-								{t.homepage.salonOwnerSubtitle ||
+								{t('homepage.salonOwnerSubtitle') ||
 									'Join Henzo and grow your business with our booking platform'}
 							</p>
 							<Link
 								href="/business"
 								className="inline-block bg-white text-[#ff5b5b] px-6 py-3 rounded-lg font-semibold hover:bg-gray-50 transition-colors shadow-lg"
 							>
-								{t.homepage.learnMore || 'Learn More'}
+								{t('homepage.learnMore') || 'Learn More'}
 							</Link>
 						</div>
 					</div>
@@ -279,10 +281,10 @@ export default function HomePageClient() {
 						{/* Heading */}
 						<div className="text-center mb-10 sm:mb-16">
 							<h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-gray-900 mb-3 sm:mb-4">
-								{t.homepage.howItWorks}
+								{t('homepage.howItWorks')}
 							</h2>
 							<p className="text-base sm:text-lg text-gray-600 max-w-2xl mx-auto px-4">
-								{t.homepage.howItWorksSubtitle}
+								{t('homepage.howItWorksSubtitle')}
 							</p>
 						</div>
 
@@ -322,10 +324,10 @@ export default function HomePageClient() {
 										</div>
 									</div>
 									<h3 className="text-2xl font-bold text-gray-900 mb-4">
-										{t.homepage.step1Title}
+										{t('homepage.step1Title')}
 									</h3>
 									<p className="text-gray-600 leading-relaxed">
-										{t.homepage.step1Description}
+										{t('homepage.step1Description')}
 									</p>
 								</article>
 
@@ -350,10 +352,10 @@ export default function HomePageClient() {
 										</div>
 									</div>
 									<h3 className="text-2xl font-bold text-gray-900 mb-4">
-										{t.homepage.step2Title}
+										{t('homepage.step2Title')}
 									</h3>
 									<p className="text-gray-600 leading-relaxed">
-										{t.homepage.step2Description}
+										{t('homepage.step2Description')}
 									</p>
 								</article>
 
@@ -378,10 +380,10 @@ export default function HomePageClient() {
 										</div>
 									</div>
 									<h3 className="text-2xl font-bold text-gray-900 mb-4">
-										{t.homepage.step3Title}
+										{t('homepage.step3Title')}
 									</h3>
 									<p className="text-gray-600 leading-relaxed">
-										{t.homepage.step3Description}
+										{t('homepage.step3Description')}
 									</p>
 								</article>
 							</div>

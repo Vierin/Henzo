@@ -1,0 +1,12 @@
+{
+	"title": "Gửi phản hồi",
+	"subtitle": "Báo cáo sự cố hoặc đề xuất cải tiến",
+	"placeholder": "Mô tả sự cố hoặc đề xuất của bạn...",
+	"send": "Gửi",
+	"sending": "Đang gửi...",
+	"pleaseEnterMessage": "Vui lòng nhập tin nhắn",
+	"thankYou": "Cảm ơn bạn đã phản hồi!",
+	"failedToSend": "Không thể gửi phản hồi. Vui lòng thử lại.",
+	"sendFeedback": "Gửi phản hồi",
+	"close": "Đóng"
+}

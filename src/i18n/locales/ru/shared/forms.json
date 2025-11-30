@@ -1,0 +1,10 @@
+{
+	"required": "Обязательное поле",
+	"invalidEmail": "Некорректный email",
+	"invalidPhone": "Некорректный телефон",
+	"passwordTooShort": "Пароль слишком короткий",
+	"passwordsDoNotMatch": "Пароли не совпадают",
+	"termsAndConditions": "Условия использования",
+	"privacyPolicy": "Политика конфиденциальности",
+	"agreeToTerms": "Я согласен с условиями"
+}

@@ -15,7 +15,7 @@ export default function Footer() {
 			<div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
 				<div className="flex md:flex-col gap-5 md:gap-0 flex-col-reverse md:flex-row justify-between items-start md:items-center">
 					<div className="mb-4 md:mb-0">
-						<p className="text-gray-400">{t.footer.allRightsReserved}</p>
+						<p className="text-gray-400">{t('footer.allRightsReserved')}</p>
 					</div>
 					<div className="flex md:flex-row flex-col justify-start gap-2 md:gap-0 space-x-6">
 						<Link
@@ -25,7 +25,7 @@ export default function Footer() {
 							)}
 							className="text-gray-700 hover:text-[#8B4513]"
 						>
-							{t.footer.aboutUs}
+							{t('footer.aboutUs')}
 						</Link>
 						<Link
 							href={withLocale(
@@ -34,7 +34,7 @@ export default function Footer() {
 							)}
 							className="text-gray-700 hover:text-[#8B4513]"
 						>
-							{t.footer.contact}
+							{t('footer.contact')}
 						</Link>
 						<Link
 							href={withLocale(
@@ -43,7 +43,7 @@ export default function Footer() {
 							)}
 							className="text-gray-700 hover:text-[#8B4513]"
 						>
-							{t.footer.termsOfService}
+							{t('footer.termsOfService')}
 						</Link>
 						<Link
 							href={withLocale(
@@ -52,7 +52,7 @@ export default function Footer() {
 							)}
 							className="text-gray-700 hover:text-[#8B4513]"
 						>
-							{t.footer.privacyPolicy}
+							{t('footer.privacyPolicy')}
 						</Link>
 					</div>
 				</div>

@@ -76,10 +76,10 @@ export default function RecommendedSalons() {
 			<div className="mx-auto max-w-6xl relative">
 				<header className="mb-8 sm:mb-12 text-center px-4 sm:px-6">
 					<h2 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-3 sm:mb-4">
-						{(t.homepage as any).topRatedTitle || 'Top Rated Salons'}
+						{t('homepage.topRatedTitle') || 'Top Rated Salons'}
 					</h2>
 					<p className="text-base sm:text-lg text-gray-600 max-w-2xl mx-auto">
-						{(t.homepage as any).topRatedSubtitle || 'Popular choices near you'}
+						{t('homepage.topRatedSubtitle') || 'Popular choices near you'}
 					</p>
 				</header>
 
@@ -136,10 +136,10 @@ export default function RecommendedSalons() {
 							<span className="text-2xl">🏪</span>
 						</div>
 						<h3 className="text-xl font-semibold text-gray-900 mb-2">
-							No salons available
+							{t('homepage.noSalonsAvailable')}
 						</h3>
 						<p className="text-gray-600">
-							Check back later for available salons.
+							{t('homepage.checkBackLater')}
 						</p>
 					</div>
 				) : (
@@ -309,7 +309,7 @@ export default function RecommendedSalons() {
 					href="/salons"
 					className="inline-flex items-center gap-2 text-[#ff5b5b] hover:text-[#e04a4a] font-medium"
 				>
-					{t.homepage.seeAllSalons}
+					{t('homepage.seeAllSalons')}
 					<ChevronRight className="w-4 h-4" />
 				</Link>
 			</div>

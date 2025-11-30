@@ -1,0 +1,34 @@
+{
+	"selectDate": "Select Date",
+	"selectTime": "Select Time",
+	"selectService": "Select Service",
+	"selectStaff": "Select Staff",
+	"selectAStaffMember": "Select a Staff Member",
+	"anyStaff": "Any Staff Member",
+	"bookAppointment": "Book Appointment",
+	"updateAppointment": "Update Appointment",
+	"booking": "Booking...",
+	"updating": "Updating...",
+	"timeIntervals": {
+		"any": "Any time",
+		"morning": "Morning (6:00 - 12:00)",
+		"afternoon": "Afternoon (12:00 - 18:00)",
+		"evening": "Evening (18:00 - 24:00)"
+	},
+	"timeFilters": {
+		"all": "All",
+		"morning": "Morning",
+		"afternoon": "Afternoon",
+		"evening": "Evening"
+	},
+	"customerInfo": "Customer Information",
+	"name": "Name",
+	"email": "Email",
+	"phone": "Phone",
+	"notes": "Notes",
+	"confirmBooking": "Confirm Booking",
+	"bookingConfirmed": "Booking Confirmed",
+	"bookingError": "Booking Error",
+	"noAvailableSlots": "No Available Slots",
+	"salonClosed": "Salon Closed"
+}
