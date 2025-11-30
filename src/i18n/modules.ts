@@ -63,7 +63,7 @@ export const moduleDependencies: Record<TranslationModule, TranslationModule[]> 
 	// Public - depend on core, ui, shared
 	'public/homepage': ['core/common', 'core/navigation', 'ui/header', 'ui/footer'],
 	'public/salon': ['core/common', 'core/navigation', 'ui/header', 'ui/footer'],
-	'public/booking': ['core/common', 'shared/forms', 'ui/header', 'ui/footer'],
+	'public/booking': ['core/common', 'core/weekdays', 'core/months', 'shared/forms', 'ui/header', 'ui/footer'],
 	'public/categories': ['core/common', 'ui/header', 'ui/footer'],
 	'public/map': ['core/common', 'ui/header', 'ui/footer'],
 	'public/business': ['core/common', 'core/navigation', 'ui/header', 'ui/footer'],

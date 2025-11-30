@@ -18,5 +18,6 @@
 	"yes": "Có",
 	"no": "Không",
 	"useCurrentLocation": "Sử dụng vị trí hiện tại",
-	"gettingLocation": "Đang lấy vị trí của bạn..."
+	"gettingLocation": "Đang lấy vị trí của bạn...",
+	"toggleMenu": "Chuyển đổi menu"
 }

@@ -15,6 +15,7 @@ function BookingConfirmedContent() {
 	const [bookingConfirmed, setBookingConfirmed] = useState(false);
 	const [error, setError] = useState<string | null>(null);
 	const [bookingId, setBookingId] = useState<string | null>(null);
+	const [email, setEmail] = useState<string | null>(null);
 
 	useEffect(() => {
 		if (!token) {
@@ -46,6 +47,11 @@ function BookingConfirmedContent() {
 
 				const data = await response.json();
 				setBookingId(data.bookingId);
+				// Get email from response (API now returns it) or URL parameter as fallback
+				const emailFromResponse = data.email || searchParams.get('email');
+				if (emailFromResponse) {
+					setEmail(emailFromResponse);
+				}
 				setBookingConfirmed(true);
 				toast.success('Booking confirmed successfully!');
 			} catch (err) {
@@ -154,7 +160,11 @@ function BookingConfirmedContent() {
 									appointment history, and receive reminders.
 								</p>
 								<Link
-									href="/register"
+									href={
+										email
+											? `/register?email=${encodeURIComponent(email)}&verified=true`
+											: '/register'
+									}
 									className="inline-flex items-center gap-2 text-sm font-medium text-[#ff5b5b] hover:text-[#e04a4a] transition-colors"
 								>
 									Complete Registration

@@ -4,8 +4,15 @@ import { BookingWithDetailsDto } from '@/types/dto/booking.dto';
 /**
  * Converts BookingWithDetailsDto to Booking type
  * Used across owner dashboard and calendar components
+ * Handles both camelCase (service, staff, user, salon) and PascalCase (Service, Staff, User, Salon) from backend
  */
 export const convertBookingDtoToBooking = (dto: BookingWithDetailsDto | any): Booking => {
+	// Normalize relation names - backend returns PascalCase, but we support both
+	const service = dto.service || dto.Service;
+	const staff = dto.staff || dto.Staff;
+	const user = dto.user || dto.User;
+	const salon = dto.salon || dto.Salon;
+
 	return {
 		id: dto.id,
 		salonId: dto.salonId,
@@ -17,42 +24,42 @@ export const convertBookingDtoToBooking = (dto: BookingWithDetailsDto | any): Bo
 		status: dto.status,
 		notes: dto.notes,
 		createdAt: dto.createdAt,
-		service: dto.service
+		service: service
 			? {
-					id: dto.service.id,
-					name: dto.service.name || '',
-					description: dto.service.description,
-					duration: dto.service.duration,
-					price: dto.service.price,
+					id: service.id,
+					name: service.name || '',
+					description: service.description,
+					duration: service.duration,
+					price: service.price,
 					salonId: dto.salonId,
 				}
 			: undefined,
-		salon: dto.salon
+		salon: salon
 			? {
-					id: dto.salon.id,
-					name: dto.salon.name,
-					address: dto.salon.address,
-					ownerId: dto.salon.ownerId || '',
-					createdAt: dto.salon.createdAt || '',
+					id: salon.id,
+					name: salon.name,
+					address: salon.address,
+					ownerId: salon.ownerId || '',
+					createdAt: salon.createdAt || '',
 				}
 			: undefined,
-		staff: dto.staff
+		staff: staff
 			? {
-					id: dto.staff.id,
-					name: dto.staff.name,
-					role: dto.staff.accessLevel,
-					accessLevel: dto.staff.accessLevel as 'ADMIN' | 'EMPLOYEE',
+					id: staff.id,
+					name: staff.name,
+					role: staff.accessLevel || staff.role,
+					accessLevel: (staff.accessLevel || staff.role) as 'ADMIN' | 'EMPLOYEE',
 					salonId: dto.salonId,
 				}
 			: undefined,
-		user: dto.user
+		user: user
 			? {
-					id: dto.user.id,
-					email: dto.user.email,
-					name: dto.user.name,
-					phone: dto.user.phone,
+					id: user.id,
+					email: user.email,
+					name: user.name,
+					phone: user.phone,
 					role: 'CLIENT' as const,
-					createdAt: dto.user.createdAt || '',
+					createdAt: user.createdAt || '',
 				}
 			: undefined,
 	};

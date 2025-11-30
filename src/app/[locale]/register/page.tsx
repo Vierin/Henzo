@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useRouter, usePathname } from 'next/navigation';
+import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 import toast from 'react-hot-toast';
 import { useAuth } from '@/lib/auth-unified';
 import { useTranslation } from '@/contexts/LanguageContext';
@@ -9,6 +9,7 @@ import { withLocale, extractLocaleFromPath } from '@/i18n/routing';
 import Link from 'next/link';
 
 export default function RegisterPage() {
+	const searchParams = useSearchParams();
 	const [formData, setFormData] = useState({
 		name: '',
 		email: '',
@@ -16,11 +17,28 @@ export default function RegisterPage() {
 		password: '',
 		confirmPassword: '',
 	});
+	const [emailVerified, setEmailVerified] = useState(false);
 	const [loading, setLoading] = useState(false);
 	const router = useRouter();
 	const pathname = usePathname();
 	const { registerClient, isAuthenticated, user } = useAuth();
 	const t = useTranslation();
+
+	// Get email from URL parameters and set it as verified if verified=true
+	useEffect(() => {
+		const emailFromUrl = searchParams.get('email');
+		const verified = searchParams.get('verified') === 'true';
+		
+		if (emailFromUrl) {
+			setFormData((prev) => ({
+				...prev,
+				email: emailFromUrl,
+			}));
+			if (verified) {
+				setEmailVerified(true);
+			}
+		}
+	}, [searchParams]);
 
 	// Редирект если уже авторизован
 	useEffect(() => {
@@ -135,6 +153,11 @@ export default function RegisterPage() {
 							className="block text-sm font-medium text-gray-700 mb-2"
 						>
 							{t.auth.emailAddress} *
+							{emailVerified && (
+								<span className="ml-2 text-xs text-green-600 font-normal">
+									(✓ Verified)
+								</span>
+							)}
 						</label>
 						<input
 							id="email"
@@ -143,9 +166,20 @@ export default function RegisterPage() {
 							required
 							value={formData.email}
 							onChange={handleInputChange}
-							className="appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-[#ff5b5b] focus:border-[#ff5b5b] focus:z-10 sm:text-sm"
+							disabled={emailVerified}
+							readOnly={emailVerified}
+							className={`appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-[#ff5b5b] focus:border-[#ff5b5b] focus:z-10 sm:text-sm ${
+								emailVerified
+									? 'bg-gray-100 cursor-not-allowed'
+									: ''
+							}`}
 							placeholder={t.auth.emailAddress}
 						/>
+						{emailVerified && (
+							<p className="mt-1 text-xs text-gray-500">
+								This email has been verified. You cannot change it.
+							</p>
+						)}
 					</div>
 
 					{/* Phone */}

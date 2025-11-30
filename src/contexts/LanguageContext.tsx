@@ -72,6 +72,8 @@ export function LanguageProvider({ children }: LanguageProviderProps) {
 	} else if (pathNoLocale.startsWith('/services')) {
 		if (pathNoLocale.includes('/new')) {
 			ownerModule = 'owner/servicesNew';
+			// Load categories module for category selector
+			publicModules.push('public/categories');
 		} else {
 			ownerModule = 'owner/services';
 		}
@@ -96,10 +98,27 @@ export function LanguageProvider({ children }: LanguageProviderProps) {
 		publicModules.push('public/homepage', 'public/categories');
 	} else if (pathNoLocale.startsWith('/salon/')) {
 		publicModules.push('public/salon');
+		// Booking module needed for BookingModal component
+		publicModules.push('public/booking');
+		// Auth module needed for LoginForm in BookingModal
+		publicModules.push('shared/auth');
+		// Homepage module needed for search components
+		publicModules.push('public/homepage');
+		// Categories module needed for category-related components
+		publicModules.push('public/categories');
 	} else if (pathNoLocale.startsWith('/booking')) {
 		publicModules.push('public/booking');
 	} else if (pathNoLocale.startsWith('/category/')) {
 		publicModules.push('public/categories');
+		// Homepage module needed for search components
+		publicModules.push('public/homepage');
+		// Salon module needed for SalonCard component
+		publicModules.push('public/salon');
+	} else if (pathNoLocale.startsWith('/salons')) {
+		// Salons page needs homepage and categories for search and sorting
+		publicModules.push('public/homepage', 'public/categories');
+		// Salon module needed for SalonCard component
+		publicModules.push('public/salon');
 	} else if (pathNoLocale.startsWith('/map')) {
 		publicModules.push('public/map');
 	} else if (pathNoLocale.startsWith('/business')) {

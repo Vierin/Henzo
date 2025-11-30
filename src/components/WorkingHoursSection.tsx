@@ -74,13 +74,13 @@ export default function WorkingHoursSection({
 	const t = useTranslation();
 	
 	const days = [
-		{ key: 'monday', label: t('weekdays.long.monday') },
-		{ key: 'tuesday', label: t('weekdays.long.tuesday') },
-		{ key: 'wednesday', label: t('weekdays.long.wednesday') },
-		{ key: 'thursday', label: t('weekdays.long.thursday') },
-		{ key: 'friday', label: t('weekdays.long.friday') },
-		{ key: 'saturday', label: t('weekdays.long.saturday') },
-		{ key: 'sunday', label: t('weekdays.long.sunday') },
+		{ key: 'monday', label: t('weekdays.monday') },
+		{ key: 'tuesday', label: t('weekdays.tuesday') },
+		{ key: 'wednesday', label: t('weekdays.wednesday') },
+		{ key: 'thursday', label: t('weekdays.thursday') },
+		{ key: 'friday', label: t('weekdays.friday') },
+		{ key: 'saturday', label: t('weekdays.saturday') },
+		{ key: 'sunday', label: t('weekdays.sunday') },
 	];
 	const toggleDayClosed = (day: string) => {
 		const newWorkingHours = {

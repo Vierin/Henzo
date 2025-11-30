@@ -68,7 +68,7 @@ export default function BookingModal({
 	const { language, t } = useLanguage();
 	const [selectedDate, setSelectedDate] = useState('');
 	const [selectedTime, setSelectedTime] = useState('');
-	const [selectedStaff, setSelectedStaff] = useState(t?.booking?.anyStaff || 'Any Staff Member');
+	const [selectedStaff, setSelectedStaff] = useState(t('booking.anyStaff') || 'Any Staff Member');
 	const [isStaffDropdownOpen, setIsStaffDropdownOpen] = useState(false);
 	const [currentDateIndex, setCurrentDateIndex] = useState(0);
 	const [salonWorkingHours, setSalonWorkingHours] =
@@ -745,7 +745,7 @@ export default function BookingModal({
 
 				// Determine staff ID for availability check
 				let staffIdForCheck: string | undefined;
-				if (selectedStaff && selectedStaff !== 'Any Staff') {
+				if (selectedStaff && selectedStaff !== t('booking.anyStaff')) {
 					// Find the staff member by name to get their ID
 					const staffMember = staffMembers.find(
 						(staff) => staff.name === selectedStaff
@@ -890,6 +890,33 @@ export default function BookingModal({
 		const days = [];
 		const today = new Date();
 
+		// Map for weekday translations
+		const weekdayMap: { [key: number]: string } = {
+			0: 'sunday',
+			1: 'monday',
+			2: 'tuesday',
+			3: 'wednesday',
+			4: 'thursday',
+			5: 'friday',
+			6: 'saturday',
+		};
+
+		// Map for month translations
+		const monthMap: { [key: number]: string } = {
+			0: 'january',
+			1: 'february',
+			2: 'march',
+			3: 'april',
+			4: 'may',
+			5: 'june',
+			6: 'july',
+			7: 'august',
+			8: 'september',
+			9: 'october',
+			10: 'november',
+			11: 'december',
+		};
+
 		for (let i = 0; i < loadedDaysCount; i++) {
 			const date = new Date(today);
 			date.setDate(today.getDate() + i);
@@ -915,11 +942,17 @@ export default function BookingModal({
 			const day = String(date.getDate()).padStart(2, '0');
 			const dateString = `${year}-${month}-${day}`;
 
+			// Get translated weekday and month
+			const weekdayKey = weekdayMap[dayOfWeek];
+			const monthKey = monthMap[date.getMonth()];
+			const dayNameTranslated = t(`weekdays.short.${weekdayKey}`) || weekdayKey;
+			const monthShortTranslated = t(`months.short.${monthKey}`) || monthKey;
+
 			days.push({
 				dateString,
 				day: date.getDate(),
-				dayName: date.toLocaleDateString('en-US', { weekday: 'short' }),
-				monthShort: date.toLocaleDateString('en-US', { month: 'short' }),
+				dayName: dayNameTranslated,
+				monthShort: monthShortTranslated,
 				isToday: i === 0,
 				isTomorrow: i === 1,
 				fullDate: date,
@@ -1257,7 +1290,7 @@ export default function BookingModal({
 			if (editingBooking.staff) {
 				setSelectedStaff(editingBooking.staff.name);
 			} else {
-				setSelectedStaff(t.booking.anyStaff);
+				setSelectedStaff(t('booking.anyStaff'));
 			}
 
 			// Mark as initialized
@@ -1267,8 +1300,8 @@ export default function BookingModal({
 
 	// Initialize selectedStaff when modal opens
 	useEffect(() => {
-		if (isOpen && !editingBooking && t?.booking?.anyStaff) {
-			setSelectedStaff(t.booking.anyStaff);
+		if (isOpen && !editingBooking && t('booking.anyStaff')) {
+			setSelectedStaff(t('booking.anyStaff'));
 		}
 	}, [isOpen, editingBooking, t]);
 
@@ -1287,7 +1320,7 @@ export default function BookingModal({
 			setClientEmail(''); // Reset client email
 			setClientName(''); // Reset client name
 			setClientPhone(''); // Reset client phone
-			setSelectedStaff(t?.booking?.anyStaff || 'Any Staff Member');
+			setSelectedStaff(t('booking.anyStaff') || 'Any Staff Member');
 		}
 	}, [isOpen, t]);
 
@@ -1309,8 +1342,8 @@ export default function BookingModal({
 	}, []);
 
 	// Add "Any Staff" option to the beginning of staff list
-	const allStaffMembers = [
-		{ id: 'any', name: t.booking.anyStaff, accessLevel: 'EMPLOYEE' as const },
+		const allStaffMembers = [
+		{ id: 'any', name: t('booking.anyStaff'), accessLevel: 'EMPLOYEE' as const },
 		...staffMembers,
 	];
 
@@ -1412,7 +1445,7 @@ export default function BookingModal({
 			const bookingData = {
 				serviceId: pendingBookingData?.service?.id || selectedService?.id,
 				staffId:
-					pendingBookingData?.staff === 'Any Staff'
+					pendingBookingData?.staff === t('booking.anyStaff')
 						? undefined
 						: staffMembers.find((s) => s.name === pendingBookingData?.staff)
 								?.id,
@@ -1444,13 +1477,13 @@ export default function BookingModal({
 
 			setGuestEmail(email.trim());
 			setShowMagicLinkSent(true);
-			toast.success('Confirmation email sent! Please check your inbox.');
+			toast.success(t('booking.confirmationEmailSent'));
 		} catch (error) {
 			console.error('Error sending magic link:', error);
 			toast.error(
 				error instanceof Error
 					? error.message
-					: 'Failed to send confirmation email. Please try again.'
+					: t('booking.failedToSendEmail')
 			);
 		} finally {
 			setLoading(false);
@@ -1701,7 +1734,7 @@ export default function BookingModal({
 		} catch (error: unknown) {
 			console.error('Booking error:', error);
 			toast.error(
-				error instanceof Error ? error.message : 'Failed to book appointment'
+				error instanceof Error ? error.message : t('booking.failedToBookAppointment')
 			);
 		} finally {
 			setLoading(false);
@@ -2204,15 +2237,27 @@ export default function BookingModal({
 										<h3 className="text-base sm:text-lg font-bold text-gray-900">
 											{t.booking.selectATime}
 										</h3>
-										{selectedDate && (
-											<div className="text-sm text-gray-600">
-												{new Date(selectedDate).toLocaleDateString('en-US', {
-													weekday: 'short',
-													month: 'short',
-													day: 'numeric',
-												})}
-											</div>
-										)}
+										{selectedDate && (() => {
+											const date = new Date(selectedDate);
+											const weekdayMap: { [key: number]: string } = {
+												0: 'sunday', 1: 'monday', 2: 'tuesday', 3: 'wednesday',
+												4: 'thursday', 5: 'friday', 6: 'saturday',
+											};
+											const monthMap: { [key: number]: string } = {
+												0: 'january', 1: 'february', 2: 'march', 3: 'april',
+												4: 'may', 5: 'june', 6: 'july', 7: 'august',
+												8: 'september', 9: 'october', 10: 'november', 11: 'december',
+											};
+											const weekdayKey = weekdayMap[date.getDay()];
+											const monthKey = monthMap[date.getMonth()];
+											const weekday = t(`weekdays.short.${weekdayKey}`) || weekdayKey;
+											const month = t(`months.short.${monthKey}`) || monthKey;
+											return (
+												<div className="text-sm text-gray-600">
+													{weekday}, {month} {date.getDate()}
+												</div>
+											);
+										})()}
 									</div>
 									{!selectedDate && (
 										<div className="text-sm text-amber-600 bg-amber-50 p-3 rounded-lg mb-4">
@@ -2457,11 +2502,11 @@ export default function BookingModal({
 											<div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-10 max-h-[280px] overflow-y-auto scrollbar-hide">
 												{staffLoading ? (
 													<div className="p-4 text-center text-gray-500 text-sm">
-														Loading staff...
+														{t('booking.loadingStaff')}
 													</div>
 												) : allStaffMembers.length === 0 ? (
 													<div className="p-4 text-center text-gray-500 text-sm">
-														No staff members available
+														{t('booking.noStaffAvailable')}
 													</div>
 												) : (
 													allStaffMembers.map((staff) => (
@@ -2857,7 +2902,7 @@ function LoginForm({
 							onClick={onCancel}
 							className="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors"
 						>
-							Cancel
+							{t('common.cancel')}
 						</button>
 						<button
 							type="submit"

@@ -64,5 +64,12 @@
 	"pleaseEnterClientEmail": "Vui lòng nhập email khách hàng",
 	"pleaseEnterValidEmail": "Vui lòng nhập địa chỉ email hợp lệ",
 	"pleaseSelectDateAndTime": "Vui lòng chọn cả ngày và giờ cho đặt lịch của bạn",
-	"useEmailLinkInstead": "Sử dụng liên kết email thay thế"
+	"useEmailLinkInstead": "Sử dụng liên kết email thay thế",
+	"loadingStaff": "Đang tải nhân viên...",
+	"noStaffAvailable": "Không có nhân viên nào",
+	"confirmationEmailSent": "Email xác nhận đã được gửi! Vui lòng kiểm tra hộp thư của bạn.",
+	"failedToSendEmail": "Không thể gửi email xác nhận. Vui lòng thử lại.",
+	"failedToBookAppointment": "Không thể đặt lịch hẹn",
+	"completeYourBooking": "Hoàn tất đặt lịch",
+	"signInToComplete": "Vui lòng đăng nhập hoặc nhập email để hoàn tất đặt lịch cho"
 }

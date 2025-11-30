@@ -40,7 +40,7 @@ export const useServices = (
 		},
 		enabled: !!salonId,
 		staleTime: 5 * 60 * 1000, // 5 minutes
-		refetchOnMount: false, // Не перезапрашивать если данные свежие
+		refetchOnMount: 'always', // Перезапрашивать при монтировании если данные устарели
 		refetchOnWindowFocus: false, // Не перезапрашивать при фокусе окна
 	});
 };
@@ -79,9 +79,24 @@ export const useCreateService = () => {
 			return apiClient.post<ServiceResponseDto>('/services', data);
 		},
 		onSuccess: (data) => {
-			// Invalidate and refetch services for the salon
+			// Optimistically update the cache
+			if (data.salonId) {
+				const bySalonKey = serviceKeys.bySalon(data.salonId);
+				const existingServices = queryClient.getQueryData<ServiceResponseDto[]>(bySalonKey) || [];
+				queryClient.setQueryData<ServiceResponseDto[]>(bySalonKey, [...existingServices, data]);
+				
+				// Also update list queries
+				const listKey = serviceKeys.list({ salonId: data.salonId });
+				const existingListServices = queryClient.getQueryData<ServiceResponseDto[]>(listKey) || [];
+				queryClient.setQueryData<ServiceResponseDto[]>(listKey, [...existingListServices, data]);
+			}
+			
+			// Invalidate and refetch to ensure we have the latest data
 			if (data.salonId) {
 				queryClient.invalidateQueries({
+					queryKey: serviceKeys.bySalon(data.salonId),
+				});
+				queryClient.refetchQueries({
 					queryKey: serviceKeys.bySalon(data.salonId),
 				});
 			}

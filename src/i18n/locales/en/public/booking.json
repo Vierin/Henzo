@@ -30,5 +30,16 @@
 	"bookingConfirmed": "Booking Confirmed",
 	"bookingError": "Booking Error",
 	"noAvailableSlots": "No Available Slots",
-	"salonClosed": "Salon Closed"
+	"salonClosed": "Salon Closed",
+	"checkYourEmail": "Check Your Email",
+	"magicLinkSent": "We've sent a confirmation link to",
+	"clickLinkToConfirm": "Click the link in the email to confirm your booking. The link will expire in 1 hour.",
+	"selectATime": "Select Time",
+	"loadingStaff": "Loading staff...",
+	"noStaffAvailable": "No staff members available",
+	"confirmationEmailSent": "Confirmation email sent! Please check your inbox.",
+	"failedToSendEmail": "Failed to send confirmation email. Please try again.",
+	"failedToBookAppointment": "Failed to book appointment",
+	"completeYourBooking": "Complete Your Booking",
+	"signInToComplete": "Please sign in or enter your email to complete booking for"
 }
