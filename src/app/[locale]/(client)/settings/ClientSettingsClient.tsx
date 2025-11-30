@@ -5,11 +5,16 @@ import { useAuth } from '@/lib/auth-unified';
 import { supabase } from '@/lib/supabase';
 import toast from 'react-hot-toast';
 import LoadingSpinner from '@/components/LoadingSpinner';
+import { apiClient } from '@/lib/api-client';
+import { useTranslation } from '@/contexts/LanguageContext';
 
 export default function ClientSettingsClient() {
 	const { user } = useAuth();
+	const t = useTranslation();
 	const [isLoading, setIsLoading] = useState(false);
 	const [isSaving, setIsSaving] = useState(false);
+	const [showDeleteModal, setShowDeleteModal] = useState(false);
+	const [deleteLoading, setDeleteLoading] = useState(false);
 	const [formData, setFormData] = useState({
 		name: '',
 		email: '',
@@ -98,6 +103,28 @@ export default function ClientSettingsClient() {
 		}
 	};
 
+	const handleDeleteAccount = async () => {
+		setDeleteLoading(true);
+		try {
+			// Вызываем API для удаления аккаунта
+			await apiClient.delete('/auth/account');
+
+			toast.success(t('clientSettings.accountDeleted'));
+
+			// Перенаправляем на главную страницу
+			setTimeout(() => {
+				window.location.href = '/';
+			}, 2000);
+		} catch (error: any) {
+			console.error('Error deleting account:', error);
+			toast.error(
+				error.message || t('clientSettings.failedToDelete')
+			);
+		} finally {
+			setDeleteLoading(false);
+		}
+	};
+
 	if (isLoading) {
 		return (
 			<div className="flex items-center justify-center min-h-[400px]">
@@ -110,10 +137,10 @@ export default function ClientSettingsClient() {
 		<main role="main" aria-labelledby="settings-heading">
 			<header className="mb-8">
 				<h1 id="settings-heading" className="text-3xl font-bold text-gray-900">
-					Account Settings
+					{t('clientSettings.title')}
 				</h1>
 				<p className="text-gray-600 mt-2">
-					Manage your account settings and preferences
+					{t('clientSettings.subtitle')}
 				</p>
 			</header>
 
@@ -121,7 +148,7 @@ export default function ClientSettingsClient() {
 				{/* Profile Information */}
 				<section className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
 					<h2 className="text-xl font-semibold text-gray-900 mb-6">
-						Profile Information
+						{t('clientSettings.profileInformation')}
 					</h2>
 
 					<form onSubmit={handleSaveProfile} className="space-y-4">
@@ -130,7 +157,7 @@ export default function ClientSettingsClient() {
 								htmlFor="name"
 								className="block text-sm font-medium text-gray-700 mb-2"
 							>
-								Full Name
+								{t('clientSettings.fullName')}
 							</label>
 							<input
 								type="text"
@@ -139,7 +166,7 @@ export default function ClientSettingsClient() {
 								value={formData.name}
 								onChange={handleInputChange}
 								className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#ff5b5b] focus:border-transparent"
-								placeholder="Enter your full name"
+								placeholder={t('clientSettings.fullNamePlaceholder')}
 							/>
 						</div>
 
@@ -148,7 +175,7 @@ export default function ClientSettingsClient() {
 								htmlFor="email"
 								className="block text-sm font-medium text-gray-700 mb-2"
 							>
-								Email Address
+								{t('clientSettings.emailAddress')}
 							</label>
 							<input
 								type="email"
@@ -161,7 +188,7 @@ export default function ClientSettingsClient() {
 								placeholder="your@email.com"
 							/>
 							<p className="text-sm text-gray-500 mt-1">
-								Email cannot be changed
+								{t('clientSettings.emailCannotBeChanged')}
 							</p>
 						</div>
 
@@ -170,7 +197,7 @@ export default function ClientSettingsClient() {
 								htmlFor="phone"
 								className="block text-sm font-medium text-gray-700 mb-2"
 							>
-								Phone Number
+								{t('clientSettings.phoneNumber')}
 							</label>
 							<input
 								type="tel"
@@ -179,7 +206,7 @@ export default function ClientSettingsClient() {
 								value={formData.phone}
 								onChange={handleInputChange}
 								className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#ff5b5b] focus:border-transparent"
-								placeholder="+84 123 456 789"
+								placeholder={t('clientSettings.phonePlaceholder')}
 							/>
 						</div>
 
@@ -269,31 +296,6 @@ export default function ClientSettingsClient() {
 							</button>
 						</div>
 					</form>
-				</section>
-
-				{/* Account Information */}
-				<section className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
-					<h2 className="text-xl font-semibold text-gray-900 mb-4">
-						Account Information
-					</h2>
-					<div className="space-y-3 text-sm">
-						<div className="flex justify-between py-2 border-b border-gray-100">
-							<span className="text-gray-600">Account Type:</span>
-							<span className="font-medium text-gray-900">Client</span>
-						</div>
-						<div className="flex justify-between py-2 border-b border-gray-100">
-							<span className="text-gray-600">User ID:</span>
-							<span className="font-mono text-gray-900">{user?.id}</span>
-						</div>
-						<div className="flex justify-between py-2">
-							<span className="text-gray-600">Member Since:</span>
-							<span className="text-gray-900">
-								{user?.createdAt
-									? new Date(user.createdAt).toLocaleDateString()
-									: 'N/A'}
-							</span>
-						</div>
-					</div>
 				</section>
 			</div>
 		</main>
