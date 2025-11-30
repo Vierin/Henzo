@@ -233,18 +233,18 @@ export default function SalonInfoPage() {
 		setError('');
 
 		const actionText = hasExistingSalon
-			? t.owner.salonInfo.updatingSalon
-			: t.owner.salonInfo.creatingSalon;
+			? t('owner.salonInfo.updatingSalon')
+			: t('owner.salonInfo.creatingSalon');
 		const saveToast = toast.loading(actionText);
 
 		try {
 			// Валидация данных
 			if (!formData.salonName.trim()) {
-				throw new Error(t.owner.salonInfo.salonNameRequired);
+				throw new Error(t('owner.salonInfo.salonNameRequired'));
 			}
 
 			if (!formData.address.trim()) {
-				throw new Error(t.owner.salonInfo.addressRequired);
+				throw new Error(t('owner.salonInfo.addressRequired'));
 			}
 
 			// No manual salon categories validation
@@ -269,18 +269,18 @@ export default function SalonInfoPage() {
 			// Выбираем метод запроса в зависимости от того, есть ли уже салон
 			if (hasExistingSalon) {
 				await apiClient.put('/salons/current', salonData);
-				toast.success(t.owner.salonInfo.salonUpdated, {
+				toast.success(t('owner.salonInfo.salonUpdated'), {
 					id: saveToast,
 				});
 			} else {
 				await apiClient.post('/salons/current', salonData);
-				toast.success(t.owner.salonInfo.salonCreated, { id: saveToast });
+				toast.success(t('owner.salonInfo.salonCreated'), { id: saveToast });
 			}
 
 			// Stay on the page after successful save
 		} catch (err: unknown) {
 			const errorMessage =
-				err instanceof Error ? err.message : t.owner.salonInfo.failedToSave;
+				err instanceof Error ? err.message : t('owner.salonInfo.failedToSave');
 			setError(errorMessage);
 			toast.error(errorMessage, {
 				id: saveToast,
@@ -296,7 +296,7 @@ export default function SalonInfoPage() {
 			// Вызываем API для удаления аккаунта
 			await apiClient.delete('/auth/account');
 
-			toast.success(t.owner.salonInfo.accountDeleted);
+			toast.success(t('owner.salonInfo.accountDeleted'));
 
 			// Перенаправляем на главную страницу
 			setTimeout(() => {
@@ -304,9 +304,7 @@ export default function SalonInfoPage() {
 			}, 2000);
 		} catch (error: any) {
 			console.error('Error deleting account:', error);
-			toast.error(
-				error.message || t.owner.salonInfo.failedToDelete
-			);
+			toast.error(error.message || t('owner.salonInfo.failedToDelete'));
 		} finally {
 			setDeleteLoading(false);
 		}
@@ -327,10 +325,10 @@ export default function SalonInfoPage() {
 		<div className="px-4 max-w-7xl mx-auto">
 			<div className="text-center mb-8">
 				<h1 className="text-2xl md:text-4xl font-bold text-gray-900 mb-2 md:mb-4">
-					{t.owner.salonInfo.title}
+					{t('owner.salonInfo.title')}
 				</h1>
 				<p className="text-sm md:text-lg text-gray-600 px-4 md:px-0">
-					{t.owner.salonInfo.subtitle}
+					{t('owner.salonInfo.subtitle')}
 				</p>
 			</div>
 
@@ -338,13 +336,13 @@ export default function SalonInfoPage() {
 				{/* Basic Details Section */}
 				<div className="bg-white border border-gray-200 rounded-lg p-3 md:p-6 overflow-visible">
 					<h2 className="text-xl md:text-2xl font-semibold text-gray-900 mb-4 md:mb-6">
-						{t.owner.salonInfo.basicDetails}
+						{t('owner.salonInfo.basicDetails')}
 					</h2>
 
 					<div className="space-y-6">
 						<div>
 							<label className="block text-sm font-medium text-gray-700 mb-2">
-								{t.owner.salonInfo.salonName}
+								{t('owner.salonInfo.salonName')}
 							</label>
 							<input
 								type="text"
@@ -354,13 +352,13 @@ export default function SalonInfoPage() {
 									setFormData({ ...formData, salonName: e.target.value })
 								}
 								className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#ff5b5b] focus:border-[#ff5b5b] text-gray-900"
-								placeholder={t.owner.salonInfo.salonNamePlaceholder}
+								placeholder={t('owner.salonInfo.salonNamePlaceholder')}
 							/>
 						</div>
 
 						<div>
 							<label className="block text-sm font-medium text-gray-700 mb-2">
-								{t.owner.salonInfo.description}
+								{t('owner.salonInfo.description')}
 							</label>
 							<textarea
 								rows={4}
@@ -369,7 +367,7 @@ export default function SalonInfoPage() {
 									setFormData({ ...formData, description: e.target.value })
 								}
 								className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#ff5b5b] focus:border-[#ff5b5b] text-gray-900"
-								placeholder={t.owner.salonInfo.descriptionPlaceholder}
+								placeholder={t('owner.salonInfo.descriptionPlaceholder')}
 							/>
 						</div>
 
@@ -377,7 +375,7 @@ export default function SalonInfoPage() {
 
 						<div className="relative z-10">
 							<label className="block text-sm font-medium text-gray-700 mb-2">
-								{t.owner.salonInfo.address}
+								{t('owner.salonInfo.address')}
 							</label>
 							<AddressAutocomplete
 								value={formData.address}
@@ -397,7 +395,7 @@ export default function SalonInfoPage() {
 				{mapProps.lat && mapProps.lon && (
 					<div className="bg-white border border-gray-200 rounded-lg p-3 md:p-6">
 						<h2 className="text-xl md:text-2xl font-semibold text-gray-900 mb-4 md:mb-6">
-							{t.owner.salonInfo.locationPreview}
+							{t('owner.salonInfo.locationPreview')}
 						</h2>
 						<div className="w-full rounded-lg overflow-hidden border border-gray-200 shadow-sm">
 							<MapComponentWithCoords
@@ -419,13 +417,13 @@ export default function SalonInfoPage() {
 				{/* Contact Information Section */}
 				<div className="bg-white border border-gray-200 rounded-lg p-3 md:p-6">
 					<h2 className="text-xl md:text-2xl font-semibold text-gray-900 mb-4 md:mb-6">
-						{t.owner.salonInfo.contactInformation}
+						{t('owner.salonInfo.contactInformation')}
 					</h2>
 
 					<div className="grid grid-cols-1 md:grid-cols-2 gap-6">
 						<div>
 							<label className="block text-sm font-medium text-gray-700 mb-2">
-								{t.owner.salonInfo.phoneNumber}
+								{t('owner.salonInfo.phoneNumber')}
 							</label>
 							<input
 								type="tel"
@@ -434,13 +432,13 @@ export default function SalonInfoPage() {
 									setFormData({ ...formData, phone: e.target.value })
 								}
 								className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#ff5b5b] focus:border-[#ff5b5b] text-gray-900"
-								placeholder={t.owner.salonInfo.phonePlaceholder}
+								placeholder={t('owner.salonInfo.phonePlaceholder')}
 							/>
 						</div>
 
 						<div>
 							<label className="block text-sm font-medium text-gray-700 mb-2">
-								{t.owner.salonInfo.emailAddress}
+								{t('owner.salonInfo.emailAddress')}
 							</label>
 							<input
 								type="email"
@@ -449,13 +447,13 @@ export default function SalonInfoPage() {
 									setFormData({ ...formData, email: e.target.value })
 								}
 								className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#ff5b5b] focus:border-[#ff5b5b] text-gray-900"
-								placeholder={t.owner.salonInfo.emailPlaceholder}
+								placeholder={t('owner.salonInfo.emailPlaceholder')}
 							/>
 						</div>
 
 						<div>
 							<label className="block text-sm font-medium text-gray-700 mb-2">
-								{t.owner.salonInfo.website}
+								{t('owner.salonInfo.website')}
 							</label>
 							<input
 								type="url"
@@ -464,13 +462,13 @@ export default function SalonInfoPage() {
 									setFormData({ ...formData, website: e.target.value })
 								}
 								className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#ff5b5b] focus:border-[#ff5b5b] text-gray-900"
-								placeholder={t.owner.salonInfo.websitePlaceholder}
+								placeholder={t('owner.salonInfo.websitePlaceholder')}
 							/>
 						</div>
 
 						<div>
 							<label className="block text-sm font-medium text-gray-700 mb-2">
-								{t.owner.salonInfo.instagram}
+								{t('owner.salonInfo.instagram')}
 							</label>
 							<input
 								type="text"
@@ -479,7 +477,7 @@ export default function SalonInfoPage() {
 									setFormData({ ...formData, instagram: e.target.value })
 								}
 								className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#ff5b5b] focus:border-[#ff5b5b] text-gray-900"
-								placeholder={t.owner.salonInfo.instagramPlaceholder}
+								placeholder={t('owner.salonInfo.instagramPlaceholder')}
 							/>
 						</div>
 					</div>
@@ -488,12 +486,12 @@ export default function SalonInfoPage() {
 				{/* Logo Section */}
 				<div className="bg-white border border-gray-200 rounded-lg p-3 md:p-6">
 					<h2 className="text-xl md:text-2xl font-semibold text-gray-900 mb-4 md:mb-6">
-						{t.owner.salonInfo.salonLogo}
+						{t('owner.salonInfo.salonLogo')}
 					</h2>
 
 					<div>
 						<label className="block text-sm font-medium text-gray-700 mb-2">
-							{t.owner.salonInfo.salonLogo}
+							{t('owner.salonInfo.salonLogo')}
 						</label>
 						<EnhancedFileUpload
 							onUpload={(filePath) =>
@@ -503,7 +501,7 @@ export default function SalonInfoPage() {
 							currentFile={formData.logo}
 							accept="image/*"
 							maxSize={2}
-							placeholder={t.owner.salonInfo.logoPlaceholder}
+							placeholder={t('owner.salonInfo.logoPlaceholder')}
 							disabled={loading}
 						/>
 					</div>
@@ -512,12 +510,12 @@ export default function SalonInfoPage() {
 				{/* Salon Photos Section */}
 				<div className="bg-white border border-gray-200 rounded-lg p-3 md:p-6">
 					<h2 className="text-xl md:text-2xl font-semibold text-gray-900 mb-4 md:mb-6">
-						{t.owner.salonInfo.salonPhotos}
+						{t('owner.salonInfo.salonPhotos')}
 					</h2>
 
 					<div>
 						<label className="block text-sm font-medium text-gray-700 mb-2">
-							{t.owner.salonInfo.photosLabel}
+							{t('owner.salonInfo.photosLabel')}
 						</label>
 						<EnhancedPhotoUpload
 							photos={formData.photos}
@@ -532,7 +530,7 @@ export default function SalonInfoPage() {
 				{/* Operating Hours Section */}
 				<div className="bg-white border border-gray-200 rounded-lg p-3 md:p-6">
 					<h2 className="text-xl md:text-2xl font-semibold text-gray-900 mb-4 md:mb-6 flex items-center gap-2">
-						<Clock4 className="w-5 h-5" /> {t.owner.salonInfo.operatingHours}
+						<Clock4 className="w-5 h-5" /> {t('owner.salonInfo.operatingHours')}
 					</h2>
 					<WorkingHoursSection
 						workingHours={formData.operatingHours}
@@ -560,7 +558,7 @@ export default function SalonInfoPage() {
 							</div>
 							<div className="ml-3">
 								<h3 className="text-sm font-medium text-red-800">
-									{t.owner.salonInfo.errorSaving}
+									{t('owner.salonInfo.errorSaving')}
 								</h3>
 								<div className="mt-2 text-sm text-red-700">
 									<p>{error}</p>
@@ -579,11 +577,11 @@ export default function SalonInfoPage() {
 					>
 						{loading
 							? hasExistingSalon
-								? t.owner.salonInfo.updating
-								: t.owner.salonInfo.creating
+								? t('owner.salonInfo.updating')
+								: t('owner.salonInfo.creating')
 							: hasExistingSalon
-								? t.owner.salonInfo.updateSalonInfo
-								: t.owner.salonInfo.addSalon}
+								? t('owner.salonInfo.updateSalonInfo')
+								: t('owner.salonInfo.addSalon')}
 					</button>
 				</div>
 			</form>
@@ -607,20 +605,22 @@ export default function SalonInfoPage() {
 						</svg>
 					</div>
 					<div className="ml-3 flex-1">
-						<h3 className="text-lg font-medium text-red-800">{t.owner.salonInfo.deleteAccount}</h3>
+						<h3 className="text-lg font-medium text-red-800">
+							{t('owner.salonInfo.deleteAccount')}
+						</h3>
 						<div className="mt-2 text-sm text-red-700">
 							<p className="mb-3">
-								{t.owner.salonInfo.deleteAccountWarning}
+								{t('owner.salonInfo.deleteAccountWarning')}
 							</p>
 							<ul className="list-disc list-inside space-y-1 mb-4">
-								<li>{t.owner.salonInfo.deleteAccountWarning1}</li>
-								<li>{t.owner.salonInfo.deleteAccountWarning2}</li>
-								<li>{t.owner.salonInfo.deleteAccountWarning3}</li>
-								<li>{t.owner.salonInfo.deleteAccountWarning4}</li>
-								<li>{t.owner.salonInfo.deleteAccountWarning5}</li>
+								<li>{t('owner.salonInfo.deleteAccountWarning1')}</li>
+								<li>{t('owner.salonInfo.deleteAccountWarning2')}</li>
+								<li>{t('owner.salonInfo.deleteAccountWarning3')}</li>
+								<li>{t('owner.salonInfo.deleteAccountWarning4')}</li>
+								<li>{t('owner.salonInfo.deleteAccountWarning5')}</li>
 							</ul>
 							<p className="font-medium">
-								{t.owner.salonInfo.deleteAccountIrreversible}
+								{t('owner.salonInfo.deleteAccountIrreversible')}
 							</p>
 						</div>
 						<div className="mt-4">
@@ -629,7 +629,7 @@ export default function SalonInfoPage() {
 								onClick={() => setShowDeleteModal(true)}
 								className="bg-red-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 transition-colors"
 							>
-								{t.owner.salonInfo.deleteMyAccount}
+								{t('owner.salonInfo.deleteMyAccount')}
 							</button>
 						</div>
 					</div>
@@ -657,11 +657,11 @@ export default function SalonInfoPage() {
 								</svg>
 							</div>
 							<h3 className="text-lg font-medium text-gray-900 mt-4">
-								{t.owner.salonInfo.areYouAbsolutelySure}
+								{t('owner.salonInfo.areYouAbsolutelySure')}
 							</h3>
 							<div className="mt-2 px-2 md:px-7 py-3">
 								<p className="text-sm text-gray-500">
-									{t.owner.salonInfo.deleteAccountConfirmation}
+									{t('owner.salonInfo.deleteAccountConfirmation')}
 								</p>
 							</div>
 							<div className="flex flex-col sm:flex-row justify-center gap-3 sm:gap-4 mt-6">
@@ -670,7 +670,7 @@ export default function SalonInfoPage() {
 									onClick={() => setShowDeleteModal(false)}
 									className="bg-gray-300 text-gray-700 px-4 py-2 rounded-md text-sm font-medium hover:bg-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 transition-colors"
 								>
-									{t.common.cancel}
+									{t('common.cancel')}
 								</button>
 								<button
 									type="button"
@@ -678,7 +678,9 @@ export default function SalonInfoPage() {
 									disabled={deleteLoading}
 									className="bg-red-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
 								>
-									{deleteLoading ? t.owner.salonInfo.deleting : t.owner.salonInfo.yesDeleteAccount}
+									{deleteLoading
+										? t('owner.salonInfo.deleting')
+										: t('owner.salonInfo.yesDeleteAccount')}
 								</button>
 							</div>
 						</div>

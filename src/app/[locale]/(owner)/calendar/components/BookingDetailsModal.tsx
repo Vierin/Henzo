@@ -85,12 +85,12 @@ export default function BookingDetailsModal({
 				{/* Header */}
 				<div className="flex items-center justify-between p-4 border-b border-gray-200">
 					<h2 className="text-lg font-semibold text-gray-900">
-						{t('owner.calendarPage.bookingDetails')}
+						{t('owner.calendar.bookingDetails')}
 					</h2>
 					<button
 						onClick={onClose}
 						className="p-1.5 hover:bg-gray-100 rounded-full transition-colors"
-						aria-label={t('owner.calendarPage.closeModal')}
+						aria-label={t('owner.calendar.closeModal')}
 					>
 						<svg
 							className="w-5 h-5 text-gray-500"
@@ -113,7 +113,7 @@ export default function BookingDetailsModal({
 					{/* Status */}
 					<div>
 						<label className="text-xs font-medium text-gray-500 block mb-1">
-							{t('owner.calendarPage.status')}
+							{t('owner.calendar.status')}
 						</label>
 						{getStatusBadge(booking.status)}
 					</div>
@@ -122,7 +122,7 @@ export default function BookingDetailsModal({
 					<div className="grid grid-cols-2 gap-3">
 						<div>
 							<label className="text-xs font-medium text-gray-500 block mb-1">
-								{t('owner.calendarPage.date')}
+								{t('owner.calendar.date')}
 							</label>
 							<p className="text-sm font-semibold text-gray-900">
 								{formatDateSafe(booking.time)}
@@ -130,7 +130,7 @@ export default function BookingDetailsModal({
 						</div>
 						<div>
 							<label className="text-xs font-medium text-gray-500 block mb-1">
-								{t('owner.calendarPage.time')}
+								{t('owner.calendar.time')}
 							</label>
 							<p className="text-sm font-semibold text-gray-900">
 								{formatTimeSafe(booking.time)}
@@ -141,7 +141,7 @@ export default function BookingDetailsModal({
 					{/* Service */}
 					<div>
 						<label className="text-xs font-medium text-gray-500 block mb-1">
-							{t('owner.calendarPage.service')}
+							{t('owner.calendar.service')}
 						</label>
 						<p className="text-sm font-semibold text-gray-900">
 							{booking.service?.name || t('owner.unknownService')}
@@ -165,10 +165,10 @@ export default function BookingDetailsModal({
 					<div className="grid grid-cols-2 gap-3">
 						<div>
 							<label className="text-xs font-medium text-gray-500 block mb-1">
-							{t('owner.calendarPage.client')}
+							{t('owner.calendar.client')}
 						</label>
 						<p className="text-sm font-semibold text-gray-900">
-							{booking.user?.name || `${t('owner.calendarPage.clientId')} ${booking.userId}`}
+							{booking.user?.name || `${t('owner.calendar.clientId')} ${booking.userId}`}
 						</p>
 							{booking.user?.email && (
 								<p className="text-xs text-gray-600 mt-0.5">
@@ -183,7 +183,7 @@ export default function BookingDetailsModal({
 						{booking.staff && (
 							<div>
 								<label className="text-xs font-medium text-gray-500 block mb-1">
-								{t('owner.calendarPage.staffMember')}
+								{t('owner.calendar.staffMember')}
 							</label>
 								<p className="text-sm font-semibold text-gray-900">
 									{booking.staff.name}
@@ -196,7 +196,7 @@ export default function BookingDetailsModal({
 					{booking.notes && (
 						<div>
 							<label className="text-xs font-medium text-gray-500 block mb-1">
-								{t('owner.calendarPage.notes')}
+								{t('owner.calendar.notes')}
 							</label>
 							<p className="text-xs text-gray-700 bg-gray-50 p-2 rounded-lg">
 								{booking.notes}
@@ -211,7 +211,7 @@ export default function BookingDetailsModal({
 						onClick={onClose}
 						className="px-3 py-1.5 text-xs font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
 					>
-						{t('owner.calendarPage.close')}
+						{t('owner.calendar.close')}
 					</button>
 					{canEdit && onEdit && (
 						<button

@@ -510,7 +510,7 @@ export default function DaySchedule({
 								Salon is Closed
 							</h3>
 							<p className="text-gray-600">
-								{t('owner.calendarPage.closed')} {t(`weekdays.${weekdayNames[selectedDate.getDay()]}`)}.
+								{t('owner.calendar.closed')} {t(`weekdays.${weekdayNames[selectedDate.getDay()]}`)}.
 							</p>
 						</div>
 					</div>

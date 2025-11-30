@@ -177,7 +177,7 @@ export default function OwnerSidebar({
 					{renderNavItem(
 						'/owner-dashboard',
 						<LayoutDashboard className="w-5 h-5" />,
-						t.owner.dashboard,
+						t('owner.dashboard.dashboard'),
 						pathNoLocale === '/owner-dashboard',
 						'dashboard'
 					)}
@@ -185,7 +185,7 @@ export default function OwnerSidebar({
 					{renderNavItem(
 						'/calendar',
 						<CalendarDays className="w-5 h-5" />,
-						t.owner.calendar,
+						t('owner.dashboard.calendar'),
 						pathNoLocale === '/calendar',
 						'calendar'
 					)}
@@ -193,7 +193,7 @@ export default function OwnerSidebar({
 					{renderNavItem(
 						'/services',
 						<Scissors className="w-5 h-5" />,
-						t.owner.services?.title || 'Services',
+						t('owner.services.title'),
 						pathNoLocale.startsWith('/services'),
 						'services'
 					)}
@@ -201,7 +201,7 @@ export default function OwnerSidebar({
 					{renderNavItem(
 						'/staff',
 						<Users className="w-5 h-5" />,
-						t.owner.staff?.title || 'Staff',
+						t('owner.staff.title'),
 						pathNoLocale.startsWith('/staff'),
 						'staff'
 					)}
@@ -209,14 +209,14 @@ export default function OwnerSidebar({
 					{renderNavItem(
 						'/marketing',
 						<TrendingUp className="w-5 h-5" />,
-						t.owner.marketing,
+						t('owner.dashboard.marketing'),
 						pathNoLocale.startsWith('/marketing')
 					)}
 
 					{renderNavItem(
 						'/salon-info',
 						<Settings className="w-5 h-5" />,
-						t.owner.settings,
+						t('owner.dashboard.settings'),
 						pathNoLocale.startsWith('/salon-info')
 					)}
 				</nav>
@@ -228,7 +228,7 @@ export default function OwnerSidebar({
 						className="flex items-center gap-3 px-3 py-2 text-gray-600 hover:bg-red-50 hover:text-red-600 rounded-lg transition-colors w-full"
 					>
 						<LogOut className="w-5 h-5" />
-						<span className="font-medium">{t.owner.logOut}</span>
+						<span className="font-medium">{t('owner.dashboard.logOut')}</span>
 					</button>
 				</div>
 			</div>

@@ -31,29 +31,29 @@ export default function MarketingPage() {
 
 	const copyToClipboard = async () => {
 		if (!salonUrl) {
-			toast.error(t('owner.marketingPage.pleaseWaitForSalonData'));
+			toast.error(t('owner.marketing.pleaseWaitForSalonData'));
 			return;
 		}
 
 		try {
 			await navigator.clipboard.writeText(salonUrl);
-			toast.success(t('owner.marketingPage.linkCopied'));
+			toast.success(t('owner.marketing.linkCopied'));
 		} catch (err) {
-			toast.error(t('owner.marketingPage.failedToCopy'));
+			toast.error(t('owner.marketing.failedToCopy'));
 		}
 	};
 
 	const shareLink = async () => {
 		if (!salonUrl) {
-			toast.error(t('owner.marketingPage.pleaseWaitForSalonData'));
+			toast.error(t('owner.marketing.pleaseWaitForSalonData'));
 			return;
 		}
 
 		if (navigator.share) {
 			try {
 				await navigator.share({
-					title: `${salon?.name || t('owner.marketingPage.title')} - ${t('common.bookNow')}`,
-					text: `${t('common.checkOut') || 'Check out'} ${salon?.name || t('owner.marketingPage.title')} ${t('common.andBookAppointment') || 'and book your appointment!'}`,
+					title: `${salon?.name || t('owner.marketing.title')} - ${t('common.bookNow')}`,
+					text: `${t('common.checkOut') || 'Check out'} ${salon?.name || t('owner.marketing.title')} ${t('common.andBookAppointment') || 'and book your appointment!'}`,
 					url: salonUrl,
 				});
 			} catch (err) {
@@ -81,7 +81,7 @@ export default function MarketingPage() {
 			console.log('Blob type:', blob.type);
 
 			if (!blob || blob.size === 0) {
-				toast.error(t('owner.marketingPage.pdfGenerationFailed'));
+				toast.error(t('owner.marketing.pdfGenerationFailed'));
 				return;
 			}
 
@@ -102,10 +102,10 @@ export default function MarketingPage() {
 				URL.revokeObjectURL(url);
 			}, 5000); // Increased timeout
 
-			toast.success(t('owner.marketingPage.qrCodeOpened'));
+			toast.success(t('owner.marketing.qrCodeOpened'));
 		} catch (error) {
 			console.error('Error generating PDF:', error);
-			toast.error(t('owner.marketingPage.failedToGeneratePDF'));
+			toast.error(t('owner.marketing.failedToGeneratePDF'));
 		}
 	};
 
@@ -123,10 +123,10 @@ export default function MarketingPage() {
 				{/* Header */}
 				<div className="text-center mb-8 md:mb-12">
 					<h1 className="text-2xl md:text-3xl font-bold text-gray-900 mb-2 md:mb-4">
-						{t('owner.marketingPage.title')}
+						{t('owner.marketing.title')}
 					</h1>
 					<p className="text-sm md:text-lg text-gray-600 px-4 md:px-0">
-						{t('owner.marketingPage.subtitle')}
+						{t('owner.marketing.subtitle')}
 					</p>
 				</div>
 
@@ -138,7 +138,7 @@ export default function MarketingPage() {
 							{/* Salon Link Display */}
 							<div>
 								<label className="block text-sm font-medium text-gray-700 mb-3">
-									{t('owner.marketingPage.salonLink')}
+									{t('owner.marketing.salonLink')}
 								</label>
 								<div className="space-y-3">
 									<input
@@ -146,14 +146,14 @@ export default function MarketingPage() {
 										value={salonUrl}
 										readOnly
 										className="w-full px-3 md:px-4 py-2 md:py-3 border border-gray-300 rounded-lg bg-gray-50 text-gray-900 cursor-default text-sm md:text-base"
-										placeholder={t('owner.marketingPage.loadingSalonLink')}
+										placeholder={t('owner.marketing.loadingSalonLink')}
 									/>
 									<div className="flex gap-3">
 										<button
 											onClick={copyToClipboard}
 											disabled={!salonUrl}
 											className="flex-1 px-3 md:px-4 py-2 md:py-3 bg-gray-100 text-gray-700 rounded-lg font-medium hover:bg-gray-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 flex items-center justify-center gap-2 text-sm md:text-base"
-											title={t('owner.marketingPage.copy')}
+											title={t('owner.marketing.copy')}
 										>
 											<svg
 												className="w-4 h-4"
@@ -168,7 +168,7 @@ export default function MarketingPage() {
 													d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"
 												/>
 											</svg>
-											{t('owner.marketingPage.copy')}
+											{t('owner.marketing.copy')}
 										</button>
 										<button
 											onClick={shareLink}
@@ -188,7 +188,7 @@ export default function MarketingPage() {
 													d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.367 2.684 3 3 0 00-5.367-2.684z"
 												/>
 											</svg>
-											{t('owner.marketingPage.share')}
+											{t('owner.marketing.share')}
 										</button>
 									</div>
 								</div>
@@ -197,15 +197,15 @@ export default function MarketingPage() {
 							{/* Instructions */}
 							<div className="p-4 md:p-6 bg-blue-50 rounded-lg">
 								<h3 className="text-base md:text-lg font-medium text-blue-900 mb-3">
-									{t('owner.marketingPage.howToUse')}
+									{t('owner.marketing.howToUse')}
 								</h3>
 								<ul className="space-y-2 text-sm md:text-base text-blue-800">
-									<li>• {t('owner.marketingPage.copyLinkInstruction')}</li>
+									<li>• {t('owner.marketing.copyLinkInstruction')}</li>
 									<li>
-										• {t('owner.marketingPage.shareButtonInstruction')}
+										• {t('owner.marketing.shareButtonInstruction')}
 									</li>
-									<li>• {t('owner.marketingPage.downloadQRInstruction')}</li>
-									<li>• {t('owner.marketingPage.scanInstruction')}</li>
+									<li>• {t('owner.marketing.downloadQRInstruction')}</li>
+									<li>• {t('owner.marketing.scanInstruction')}</li>
 								</ul>
 							</div>
 						</div>
@@ -214,13 +214,13 @@ export default function MarketingPage() {
 						<div className="w-full lg:w-80 flex flex-col items-center space-y-4">
 							<div className="text-center">
 								<h3 className="text-base md:text-lg font-medium text-gray-900 mb-3">
-									{t('owner.marketingPage.qrCode')}
+									{t('owner.marketing.qrCode')}
 								</h3>
 								{qrCodeUrl ? (
 									<div className="bg-white p-3 md:p-4 rounded-lg border-2 border-gray-200 inline-block">
 										<img
 											src={qrCodeUrl}
-											alt={t('owner.marketingPage.salonQRCode')}
+											alt={t('owner.marketing.salonQRCode')}
 											className="w-28 h-28 md:w-32 md:h-32 mx-auto"
 										/>
 									</div>
@@ -242,7 +242,7 @@ export default function MarketingPage() {
 											</svg>
 										</div>
 										<p className="text-center text-xs text-gray-500 mt-2">
-											{t('owner.marketingPage.loading')}
+											{t('owner.marketing.loading')}
 										</p>
 									</div>
 								)}
@@ -267,7 +267,7 @@ export default function MarketingPage() {
 										d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
 									/>
 								</svg>
-								{t('owner.marketingPage.downloadPDF')}
+								{t('owner.marketing.downloadPDF')}
 							</button>
 						</div>
 					</div>

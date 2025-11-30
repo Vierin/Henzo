@@ -91,5 +91,13 @@
 		"checkConflictsAndBlock": "Kiểm tra xung đột & Chặn thời gian",
 		"blocking": "Đang chặn...",
 		"confirmAndBlock": "Xác nhận & Chặn thời gian"
-	}
+	},
+	"bookingMarkedNoShow": "Đặt chỗ đã được đánh dấu là Không đến",
+	"failedToMarkNoShow": "Không thể đánh dấu đặt chỗ là Không đến",
+	"cannotCreateBooking": {
+		"noServices": "Vui lòng thêm ít nhất một dịch vụ trước khi tạo đặt chỗ",
+		"noStaff": "Vui lòng thêm ít nhất một nhân viên trước khi tạo đặt chỗ"
+	},
+	"noBookingsWithFilters": "Không tìm thấy đặt chỗ với bộ lọc hiện tại",
+	"tryAgain": "Thử lại"
 }

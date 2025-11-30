@@ -53,5 +53,22 @@
 	"cannotCreateBooking": {
 		"noServices": "Please add at least one service before creating a booking",
 		"noStaff": "Please add at least one staff member before creating a booking"
-	}
+	},
+	"loadingDashboard": "Loading dashboard...",
+	"redirectingToSetup": "Redirecting to setup...",
+	"failedToLoadDashboard": "Failed to load dashboard",
+	"bookingCancelled": "Booking cancelled successfully",
+	"failedToCancel": "Failed to cancel booking",
+	"bookingConfirmed": "Booking confirmed successfully",
+	"failedToConfirm": "Failed to confirm booking",
+	"bookingRejected": "Booking rejected successfully",
+	"failedToReject": "Failed to reject booking",
+	"areYouSureCancel": "Are you sure you want to cancel this booking?",
+	"unknownService": "Unknown service",
+	"staffLabel": "Staff:",
+	"dateAndTime": "Date & Time:",
+	"of": "of",
+	"failedToRefresh": "Failed to refresh data",
+	"bookingMarkedNoShow": "Booking marked as No-Show",
+	"failedToMarkNoShow": "Failed to mark booking as No-Show"
 }

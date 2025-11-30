@@ -87,11 +87,11 @@ export default function OwnerDashboardClient() {
 		async (bookingId: string) => {
 			try {
 				await apiClient.put(`/bookings/${bookingId}/cancel`);
-				toast.success(t.owner.bookingCancelled);
+				toast.success(t('owner.dashboard.bookingCancelled'));
 				refetchBookings();
 			} catch (err) {
 				const errorMessage =
-					err instanceof Error ? err.message : t.owner.failedToCancel;
+					err instanceof Error ? err.message : t('owner.dashboard.failedToCancel');
 				toast.error(errorMessage);
 			}
 		},
@@ -102,11 +102,11 @@ export default function OwnerDashboardClient() {
 		async (bookingId: string) => {
 			try {
 				await apiClient.put(`/bookings/${bookingId}`, { status: 'CONFIRMED' });
-				toast.success(t.owner.bookingConfirmed);
+				toast.success(t('owner.dashboard.bookingConfirmed'));
 				refetchBookings();
 			} catch (err) {
 				const errorMessage =
-					err instanceof Error ? err.message : t.owner.failedToConfirm;
+					err instanceof Error ? err.message : t('owner.dashboard.failedToConfirm');
 				toast.error(errorMessage);
 			}
 		},
@@ -117,11 +117,11 @@ export default function OwnerDashboardClient() {
 		async (bookingId: string) => {
 			try {
 				await apiClient.put(`/bookings/${bookingId}`, { status: 'CANCELED' });
-				toast.success(t.owner.bookingRejected);
+				toast.success(t('owner.dashboard.bookingRejected'));
 				refetchBookings();
 			} catch (err) {
 				const errorMessage =
-					err instanceof Error ? err.message : t.owner.failedToReject;
+					err instanceof Error ? err.message : t('owner.dashboard.failedToReject');
 				toast.error(errorMessage);
 			}
 		},
@@ -142,7 +142,7 @@ export default function OwnerDashboardClient() {
 		return (
 			<div className="flex items-center justify-center py-12">
 				<LoadingSpinner size="lg" />
-				<span className="sr-only">{t.owner.loadingDashboard}</span>
+				<span className="sr-only">{t('owner.dashboard.loadingDashboard')}</span>
 			</div>
 		);
 	}
@@ -151,7 +151,7 @@ export default function OwnerDashboardClient() {
 		return (
 			<div className="flex items-center justify-center py-12">
 				<LoadingSpinner size="lg" />
-				<span className="sr-only">{t.owner.redirectingToSetup}</span>
+				<span className="sr-only">{t('owner.dashboard.redirectingToSetup')}</span>
 			</div>
 		);
 	}
@@ -166,7 +166,7 @@ export default function OwnerDashboardClient() {
 							: new Error('Failed to load bookings')
 					}
 					onRetry={refetchBookings}
-					message={t.owner.failedToLoadDashboard}
+					message={t('owner.dashboard.failedToLoadDashboard')}
 				/>
 			</div>
 		);
@@ -178,10 +178,10 @@ export default function OwnerDashboardClient() {
 			<div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
 				<div>
 					<h1 className="text-2xl sm:text-3xl font-bold text-black">
-						{t.owner.dashboard}
+						{t('owner.dashboard.dashboard')}
 					</h1>
 					<p className="text-gray-600 mt-1 text-sm sm:text-base">
-						{t.owner.welcomeBack} {t.owner.businessOverview}
+						{t('owner.dashboard.welcomeBack')} {t('owner.dashboard.businessOverview')}
 					</p>
 				</div>
 				<div className="flex flex-row items-stretch sm:items-center gap-3">
@@ -197,19 +197,19 @@ export default function OwnerDashboardClient() {
 								value="7d"
 								className="bg-white hover:bg-gray-50 focus:bg-gray-50 text-gray-900 cursor-pointer"
 							>
-								{t.owner.last7Days}
+								{t('owner.dashboard.last7Days')}
 							</SelectItem>
 							<SelectItem
 								value="30d"
 								className="bg-white hover:bg-gray-50 focus:bg-gray-50 text-gray-900 cursor-pointer"
 							>
-								{t.owner.last30Days}
+								{t('owner.dashboard.last30Days')}
 							</SelectItem>
 							<SelectItem
 								value="1y"
 								className="bg-white hover:bg-gray-50 focus:bg-gray-50 text-gray-900 cursor-pointer"
 							>
-								{t.owner.last1Year}
+								{t('owner.dashboard.last1Year')}
 							</SelectItem>
 						</SelectContent>
 					</Select>
@@ -217,11 +217,11 @@ export default function OwnerDashboardClient() {
 						onClick={() => {
 							// Check if salon has services and staff
 							if (!services || services.length === 0) {
-								toast.error(t('owner.cannotCreateBooking.noServices'));
+								toast.error(t('owner.dashboard.cannotCreateBooking.noServices'));
 								return;
 							}
 							if (!staffMembers || staffMembers.length === 0) {
-								toast.error(t('owner.cannotCreateBooking.noStaff'));
+								toast.error(t('owner.dashboard.cannotCreateBooking.noStaff'));
 								return;
 							}
 
@@ -232,7 +232,7 @@ export default function OwnerDashboardClient() {
 						className="inline-flex items-center justify-center gap-2 rounded-full bg-[#ea4b4b] text-white px-4 py-2 text-sm shadow-sm hover:opacity-95 transition-opacity focus:outline-none focus:ring-2 focus:ring-[#ea4b4b] focus:ring-offset-2 w-full sm:w-auto"
 					>
 						<span className="text-lg leading-none">＋</span>
-						{t.owner.newAppointment}
+						{t('owner.dashboard.newAppointment')}
 					</button>
 				</div>
 			</div>
@@ -240,15 +240,15 @@ export default function OwnerDashboardClient() {
 			{/* Stats Cards */}
 			<div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-2 md:gap-6">
 				<StatsCard
-					title={t.owner.totalRevenue}
+					title={t('owner.dashboard.totalRevenue')}
 					value={formatVND(stats.revenue)}
 					icon={<DollarSign className="w-6 h-6" />}
 					subtitle={
 						period === '7d'
-							? t.owner.last7Days
+							? t('owner.dashboard.last7Days')
 							: period === '30d'
-								? t.owner.last30Days
-								: t.owner.last1Year
+								? t('owner.dashboard.last30Days')
+								: t('owner.dashboard.last1Year')
 					}
 					trend={
 						stats.revenueTrend !== 0
@@ -260,15 +260,15 @@ export default function OwnerDashboardClient() {
 					}
 				/>
 				<StatsCard
-					title={t.owner.totalClients}
+					title={t('owner.dashboard.totalClients')}
 					value={stats.clients}
 					icon={<Users className="w-6 h-6" />}
 					subtitle={
 						period === '7d'
-							? t.owner.last7Days
+							? t('owner.dashboard.last7Days')
 							: period === '30d'
-								? t.owner.last30Days
-								: t.owner.last1Year
+								? t('owner.dashboard.last30Days')
+								: t('owner.dashboard.last1Year')
 					}
 					trend={
 						stats.clientsTrend !== 0
@@ -280,15 +280,15 @@ export default function OwnerDashboardClient() {
 					}
 				/>
 				<StatsCard
-					title={t.owner.bookings}
+					title={t('owner.dashboard.bookings')}
 					value={stats.bookings}
 					icon={<CalendarCheck className="w-6 h-6" />}
 					subtitle={
 						period === '7d'
-							? t.owner.last7Days
+							? t('owner.dashboard.last7Days')
 							: period === '30d'
-								? t.owner.last30Days
-								: t.owner.last1Year
+								? t('owner.dashboard.last30Days')
+								: t('owner.dashboard.last1Year')
 					}
 					trend={
 						stats.bookingsTrend !== 0
@@ -300,15 +300,15 @@ export default function OwnerDashboardClient() {
 					}
 				/>
 				<StatsCard
-					title={t.owner.completionRate}
+					title={t('owner.dashboard.completionRate')}
 					value={`${stats.completionRate}%`}
 					icon={<TrendingUp className="w-6 h-6" />}
 					subtitle={
 						period === '7d'
-							? t.owner.last7Days
+							? t('owner.dashboard.last7Days')
 							: period === '30d'
-								? t.owner.last30Days
-								: t.owner.last1Year
+								? t('owner.dashboard.last30Days')
+								: t('owner.dashboard.last1Year')
 					}
 					trend={
 						stats.completionTrend !== 0

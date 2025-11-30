@@ -53,5 +53,22 @@
 	"cannotCreateBooking": {
 		"noServices": "Vui lòng thêm ít nhất một dịch vụ trước khi tạo đặt chỗ",
 		"noStaff": "Vui lòng thêm ít nhất một nhân viên trước khi tạo đặt chỗ"
-	}
+	},
+	"loadingDashboard": "Đang tải bảng điều khiển...",
+	"redirectingToSetup": "Đang chuyển hướng đến thiết lập...",
+	"failedToLoadDashboard": "Không thể tải bảng điều khiển",
+	"bookingCancelled": "Đặt chỗ đã được hủy thành công",
+	"failedToCancel": "Không thể hủy đặt chỗ",
+	"bookingConfirmed": "Đặt chỗ đã được xác nhận thành công",
+	"failedToConfirm": "Không thể xác nhận đặt chỗ",
+	"bookingRejected": "Đặt chỗ đã được từ chối thành công",
+	"failedToReject": "Không thể từ chối đặt chỗ",
+	"areYouSureCancel": "Bạn có chắc chắn muốn hủy đặt chỗ này không?",
+	"unknownService": "Dịch vụ không xác định",
+	"staffLabel": "Nhân viên:",
+	"dateAndTime": "Ngày & Giờ:",
+	"of": "trong số",
+	"failedToRefresh": "Không thể làm mới dữ liệu",
+	"bookingMarkedNoShow": "Đặt chỗ đã được đánh dấu là Không đến",
+	"failedToMarkNoShow": "Không thể đánh dấu đặt chỗ là Không đến"
 }

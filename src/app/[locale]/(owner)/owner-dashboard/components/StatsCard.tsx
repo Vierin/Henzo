@@ -38,7 +38,7 @@ export default function StatsCard({
 							>
 								{trend.isPositive ? '↑' : '↓'} {trend.value}
 							</span>
-							<span className="text-xs text-gray-500 hidden sm:inline">{t.owner.vsLastMonth}</span>
+							<span className="text-xs text-gray-500 hidden sm:inline">{t('owner.dashboard.vsLastMonth')}</span>
 						</div>
 					)}
 				</div>

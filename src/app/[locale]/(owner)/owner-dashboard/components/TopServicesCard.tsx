@@ -62,7 +62,7 @@ export default function TopServicesCard({ bookings }: TopServicesCardProps) {
 		<div className="bg-white rounded-xl border border-[#f1d9d7] overflow-hidden">
 			<div className="p-6 border-b border-[#f1d9d7]">
 				<h2 className="text-xl font-semibold text-gray-900">
-					{t('owner.topSellingServices')}
+					{t('owner.dashboard.topSellingServices')}
 				</h2>
 			</div>
 
@@ -75,13 +75,13 @@ export default function TopServicesCard({ bookings }: TopServicesCardProps) {
 					#
 				</div>
 				<div className="col-span-5 text-center" role="columnheader">
-					{t('owner.serviceName')}
+					{t('owner.dashboard.serviceName')}
 				</div>
 				<div className="col-span-3 text-center" role="columnheader">
-					{t('owner.bookings')}
+					{t('owner.dashboard.bookings')}
 				</div>
 				<div className="col-span-3 text-right" role="columnheader">
-					{t('owner.totalRevenue')}
+					{t('owner.dashboard.totalRevenue')}
 				</div>
 			</div>
 
@@ -92,7 +92,7 @@ export default function TopServicesCard({ bookings }: TopServicesCardProps) {
 						<div className="text-gray-400 mb-2" aria-hidden="true">
 							📊
 						</div>
-						<p className="text-gray-600">{t('owner.noCompletedServices')}</p>
+						<p className="text-gray-600">{t('owner.dashboard.noCompletedServices')}</p>
 					</div>
 				) : (
 					topServices.map((service, index) => (

@@ -2,6 +2,7 @@
 
 import { TimePicker } from 'rsuite';
 import 'rsuite/dist/rsuite-no-reset.min.css';
+import { useTranslation } from '@/contexts/LanguageContext';
 
 // Wrapper для rsuite TimePicker
 const TimePicker24h = ({
@@ -65,21 +66,22 @@ interface WorkingHoursSectionProps {
 	className?: string;
 }
 
-const days = [
-	{ key: 'monday', label: 'Monday' },
-	{ key: 'tuesday', label: 'Tuesday' },
-	{ key: 'wednesday', label: 'Wednesday' },
-	{ key: 'thursday', label: 'Thursday' },
-	{ key: 'friday', label: 'Friday' },
-	{ key: 'saturday', label: 'Saturday' },
-	{ key: 'sunday', label: 'Sunday' },
-];
-
 export default function WorkingHoursSection({
 	workingHours,
 	onChange,
 	className = '',
 }: WorkingHoursSectionProps) {
+	const t = useTranslation();
+	
+	const days = [
+		{ key: 'monday', label: t('weekdays.long.monday') },
+		{ key: 'tuesday', label: t('weekdays.long.tuesday') },
+		{ key: 'wednesday', label: t('weekdays.long.wednesday') },
+		{ key: 'thursday', label: t('weekdays.long.thursday') },
+		{ key: 'friday', label: t('weekdays.long.friday') },
+		{ key: 'saturday', label: t('weekdays.long.saturday') },
+		{ key: 'sunday', label: t('weekdays.long.sunday') },
+	];
 	const toggleDayClosed = (day: string) => {
 		const newWorkingHours = {
 			...workingHours,
@@ -141,7 +143,7 @@ export default function WorkingHoursSection({
 							{/* Show closed status on mobile */}
 							{dayData.closed && (
 								<span className="text-orange-500 font-medium sm:hidden">
-									Closed
+									{t('owner.salonInfo.closed')}
 								</span>
 							)}
 						</div>
@@ -172,7 +174,7 @@ export default function WorkingHoursSection({
 						{/* Closed status for desktop */}
 						{dayData.closed && (
 							<span className="text-orange-500 font-medium hidden sm:block">
-								Closed
+								{t('owner.salonInfo.closed')}
 							</span>
 						)}
 					</div>

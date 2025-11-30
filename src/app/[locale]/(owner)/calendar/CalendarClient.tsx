@@ -99,7 +99,7 @@ export default function CalendarClient() {
 			await refetchBookings();
 		} catch (err) {
 			console.error('Error refetching bookings:', err);
-				toast.error(t('owner.failedToRefresh'));
+				toast.error(t('owner.dashboard.failedToRefresh'));
 		}
 	}, [refetchBookings]);
 
@@ -190,11 +190,11 @@ export default function CalendarClient() {
 	const handleNewAppointment = useCallback(() => {
 		// Check if salon has services and staff
 		if (!services || services.length === 0) {
-			toast.error(t('owner.cannotCreateBooking.noServices'));
+			toast.error(t('owner.calendar.cannotCreateBooking.noServices'));
 			return;
 		}
 		if (!staffMembers || staffMembers.length === 0) {
-			toast.error(t('owner.cannotCreateBooking.noStaff'));
+			toast.error(t('owner.calendar.cannotCreateBooking.noStaff'));
 			return;
 		}
 
@@ -241,11 +241,11 @@ export default function CalendarClient() {
 		async (bookingId: string) => {
 			try {
 				await apiClient.put(`/bookings/${bookingId}/cancel`);
-				toast.success(t('owner.bookingCancelled'));
+				toast.success(t('owner.dashboard.bookingCancelled'));
 				fetchBookings();
 			} catch (err) {
 				const 					errorMessage =
-						err instanceof Error ? err.message : t('owner.failedToCancel');
+						err instanceof Error ? err.message : t('owner.dashboard.failedToCancel');
 				toast.error(errorMessage);
 			}
 		},
@@ -256,11 +256,11 @@ export default function CalendarClient() {
 		async (bookingId: string) => {
 			try {
 				await apiClient.put(`/bookings/${bookingId}`, { status: 'CONFIRMED' });
-				toast.success(t('owner.bookingConfirmed'));
+				toast.success(t('owner.dashboard.bookingConfirmed'));
 				fetchBookings();
 			} catch (err) {
 				const 					errorMessage =
-						err instanceof Error ? err.message : t('owner.failedToConfirm');
+						err instanceof Error ? err.message : t('owner.dashboard.failedToConfirm');
 				toast.error(errorMessage);
 			}
 		},
@@ -271,11 +271,11 @@ export default function CalendarClient() {
 		async (bookingId: string) => {
 			try {
 				await apiClient.put(`/bookings/${bookingId}`, { status: 'CANCELED' });
-				toast.success(t('owner.bookingRejected'));
+				toast.success(t('owner.dashboard.bookingRejected'));
 				fetchBookings();
 			} catch (err) {
 				const 					errorMessage =
-						err instanceof Error ? err.message : t('owner.failedToReject');
+						err instanceof Error ? err.message : t('owner.dashboard.failedToReject');
 				toast.error(errorMessage);
 			}
 		},
@@ -286,13 +286,13 @@ export default function CalendarClient() {
 		async (bookingId: string) => {
 			try {
 				await apiClient.put(`/bookings/${bookingId}`, { status: 'NOSHOW' });
-				toast.success(t('owner.bookingMarkedNoShow'));
+				toast.success(t('owner.calendar.bookingMarkedNoShow'));
 				fetchBookings();
 			} catch (err) {
 				const 					errorMessage =
 						err instanceof Error
 							? err.message
-							: t('owner.failedToMarkNoShow');
+							: t('owner.calendar.failedToMarkNoShow');
 				toast.error(errorMessage);
 			}
 		},
@@ -458,7 +458,7 @@ export default function CalendarClient() {
 				aria-live="polite"
 			>
 				<LoadingSpinner size="lg" />
-				<span className="sr-only">{t('owner.calendarPage.loadingCalendarData')}</span>
+				<span className="sr-only">{t('owner.calendar.loadingCalendarData')}</span>
 			</div>
 		);
 	}
@@ -471,7 +471,7 @@ export default function CalendarClient() {
 				aria-live="polite"
 			>
 				<LoadingSpinner size="lg" />
-				<span className="sr-only">{t('owner.calendarPage.redirectingToSetup')}</span>
+				<span className="sr-only">{t('owner.calendar.redirectingToSetup')}</span>
 			</div>
 		);
 	}
@@ -484,7 +484,7 @@ export default function CalendarClient() {
 				aria-live="polite"
 			>
 				<LoadingSpinner size="lg" />
-				<span className="sr-only">{t('owner.calendarPage.loadingBookings')}</span>
+				<span className="sr-only">{t('owner.calendar.loadingBookings')}</span>
 			</div>
 		);
 	}
@@ -495,7 +495,7 @@ export default function CalendarClient() {
 				<ErrorDisplay
 					error={new Error(error)}
 					onRetry={fetchBookings}
-					message={t('owner.calendarPage.failedToLoad')}
+					message={t('owner.calendar.failedToLoad')}
 				/>
 			</div>
 		);
@@ -515,7 +515,7 @@ export default function CalendarClient() {
 							id="calendar-heading"
 							className="text-2xl md:text-3xl font-bold text-black"
 						>
-							{t('owner.calendarPage.title')}
+							{t('owner.calendar.title')}
 						</h1>
 
 						<div
@@ -537,10 +537,10 @@ export default function CalendarClient() {
 											: 'bg-white text-gray-700 hover:bg-gray-50'
 									}`}
 									aria-pressed={viewMode === 'list'}
-									aria-label={t('owner.calendarPage.switchToListView')}
+									aria-label={t('owner.calendar.switchToListView')}
 								>
 									<List className="w-4 h-4" />
-									<span className="hidden sm:inline">{t('owner.calendarPage.list')}</span>
+									<span className="hidden sm:inline">{t('owner.calendar.list')}</span>
 								</button>
 								<button
 									onClick={() => {
@@ -554,10 +554,10 @@ export default function CalendarClient() {
 											: 'bg-white text-gray-700 hover:bg-gray-50'
 									}`}
 									aria-pressed={viewMode === 'calendar'}
-									aria-label={t('owner.calendarPage.switchToCalendarView')}
+									aria-label={t('owner.calendar.switchToCalendarView')}
 								>
 									<CalendarDays className="w-4 h-4" />
-									<span className="hidden sm:inline">{t('owner.calendarPage.title')}</span>
+									<span className="hidden sm:inline">{t('owner.calendar.title')}</span>
 								</button>
 							</div>
 
@@ -566,22 +566,22 @@ export default function CalendarClient() {
 								<button
 									onClick={() => setIsBlockTimeModalOpen(true)}
 									className="flex-1 sm:flex-none inline-flex items-center justify-center gap-2 rounded-lg border-2 border-gray-300 bg-white text-gray-700 px-3 md:px-4 py-2 text-sm shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-400 focus:ring-offset-2 transition-colors"
-									aria-label={t('owner.calendarPage.blockTime')}
+									aria-label={t('owner.calendar.blockTime')}
 								>
 									<Ban className="w-4 h-4" />
-									<span className="hidden sm:inline">{t('owner.calendarPage.blockTime')}</span>
+									<span className="hidden sm:inline">{t('owner.calendar.blockTime')}</span>
 								</button>
 
 								<button
 									onClick={handleNewAppointment}
 									className="flex-1 sm:flex-none inline-flex items-center justify-center gap-2 rounded-full bg-[#ea4b4b] text-white px-3 md:px-4 py-2 text-sm shadow-sm hover:opacity-95 focus:outline-none focus:ring-2 focus:ring-[#ea4b4b] focus:ring-offset-2 whitespace-nowrap"
-									aria-label={t('owner.calendarPage.addNewAppointment')}
+									aria-label={t('owner.calendar.addNewAppointment')}
 								>
 									<span className="text-lg leading-none" aria-hidden="true">
 										＋
 									</span>
-									<span className="hidden sm:inline">{t('owner.calendarPage.newAppointment')}</span>
-									<span className="sm:hidden">{t('owner.calendarPage.new')}</span>
+									<span className="hidden sm:inline">{t('owner.calendar.newAppointment')}</span>
+									<span className="sm:hidden">{t('owner.calendar.new')}</span>
 								</button>
 							</div>
 						</div>

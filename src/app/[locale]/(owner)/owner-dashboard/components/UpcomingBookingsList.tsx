@@ -28,31 +28,31 @@ export default function UpcomingBookingsList({
 			case 'PENDING':
 				return (
 					<span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
-						{t.owner.pending}
+						{t('owner.dashboard.pending')}
 					</span>
 				);
 			case 'CONFIRMED':
 				return (
 					<span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
-						{t.owner.confirmed}
+						{t('owner.dashboard.confirmed')}
 					</span>
 				);
 			case 'COMPLETED':
 				return (
 					<span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-						{t.owner.completed}
+						{t('owner.dashboard.completed')}
 					</span>
 				);
 			case 'CANCELED':
 				return (
 					<span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800">
-						{t.owner.cancelled}
+						{t('owner.dashboard.cancelled')}
 					</span>
 				);
 			case 'NOSHOW':
 				return (
 					<span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-orange-100 text-orange-800">
-						{t.owner.noShow}
+						{t('owner.dashboard.noShow')}
 					</span>
 				);
 			default:
@@ -75,18 +75,18 @@ export default function UpcomingBookingsList({
 					<button
 						onClick={() => onConfirmBooking(booking.id)}
 						className="px-3 py-1.5 text-sm font-medium text-white bg-green-600 hover:bg-green-700 rounded transition-colors focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 w-full sm:w-auto"
-						title={t.owner.confirm}
-						aria-label={`${t.owner.confirm} booking for ${booking.user?.name || t.owner.client}`}
+						title={t('owner.dashboard.confirm')}
+						aria-label={`${t('owner.dashboard.confirm')} booking for ${booking.user?.name || t('owner.dashboard.client')}`}
 					>
-						{t.owner.confirm}
+						{t('owner.dashboard.confirm')}
 					</button>
 					<button
 						onClick={() => onRejectBooking(booking.id)}
 						className="px-3 py-1.5 text-sm font-medium text-white bg-red-600 hover:bg-red-700 rounded transition-colors focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 w-full sm:w-auto"
-						title={t.owner.reject}
-						aria-label={`${t.owner.reject} booking for ${booking.user?.name || t.owner.client}`}
+						title={t('owner.dashboard.reject')}
+						aria-label={`${t('owner.dashboard.reject')} booking for ${booking.user?.name || t('owner.dashboard.client')}`}
 					>
-						{t.owner.reject}
+						{t('owner.dashboard.reject')}
 					</button>
 				</div>
 			);
@@ -120,13 +120,13 @@ export default function UpcomingBookingsList({
 					</button>
 					<button
 						onClick={() => {
-							if (confirm(t.owner.areYouSureCancel)) {
+							if (confirm(t('owner.dashboard.areYouSureCancel'))) {
 								onCancelBooking(booking.id);
 							}
 						}}
 						className="p-2 text-red-600 hover:text-red-700 hover:bg-red-50 rounded transition-colors focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2"
-						title={t.owner.cancel}
-						aria-label={`${t.owner.cancel} booking for ${booking.user?.name || t.owner.client}`}
+						title={t('owner.dashboard.cancel')}
+						aria-label={`${t('owner.dashboard.cancel')} booking for ${booking.user?.name || t('owner.dashboard.client')}`}
 					>
 						<svg
 							className="w-5 h-5 md:w-4 md:h-4"
@@ -153,7 +153,7 @@ export default function UpcomingBookingsList({
 		<div className="bg-white rounded-xl border border-[#f1d9d7] overflow-hidden">
 			<div className="p-4 sm:p-6 border-b border-[#f1d9d7]">
 				<h2 className="text-lg sm:text-xl font-semibold text-gray-900">
-					{t.owner.upcomingBookings}
+					{t('owner.dashboard.upcomingBookings')}
 				</h2>
 			</div>
 
@@ -163,15 +163,15 @@ export default function UpcomingBookingsList({
 					className="grid grid-cols-7 px-6 py-3 text-[13px] text-gray-700 bg-[#fff2f1] font-semibold"
 					role="rowgroup"
 				>
-					<div role="columnheader">{t.owner.client}</div>
-					<div role="columnheader">{t.owner.service}</div>
+					<div role="columnheader">{t('owner.dashboard.client')}</div>
+					<div role="columnheader">{t('owner.dashboard.service')}</div>
 					<div role="columnheader">
-						{t.owner.staffLabel?.replace(':', '') || 'Staff'}
+						{t('owner.dashboard.staffLabel')?.replace(':', '') || 'Staff'}
 					</div>
-					<div role="columnheader">{t.owner.date}</div>
-					<div role="columnheader">{t.owner.time}</div>
-					<div role="columnheader">{t.owner.status}</div>
-					<div role="columnheader">{t.owner.actions}</div>
+					<div role="columnheader">{t('owner.dashboard.date')}</div>
+					<div role="columnheader">{t('owner.dashboard.time')}</div>
+					<div role="columnheader">{t('owner.dashboard.status')}</div>
+					<div role="columnheader">{t('owner.dashboard.actions')}</div>
 				</div>
 
 				<div className="divide-y divide-[#f1d9d7]" role="list">
@@ -182,7 +182,7 @@ export default function UpcomingBookingsList({
 							aria-live="polite"
 						>
 							<div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#ea4b4b] mx-auto"></div>
-							<p className="mt-2 text-gray-600">{t.owner.loadingBookings}</p>
+							<p className="mt-2 text-gray-600">{t('owner.dashboard.loadingBookings')}</p>
 						</div>
 					) : bookings.length === 0 ? (
 						<div className="px-6 py-8 text-center" role="status">
@@ -190,7 +190,7 @@ export default function UpcomingBookingsList({
 								📅
 							</div>
 							<p className="text-gray-600">
-								{t.owner.noUpcomingBookingsNext7Days}
+								{t('owner.dashboard.noUpcomingBookingsNext7Days')}
 							</p>
 						</div>
 					) : (
@@ -205,8 +205,8 @@ export default function UpcomingBookingsList({
 								<div className="font-semibold">
 									{booking.user?.name || `Client ID: ${booking.userId}`}
 								</div>
-								<div>{booking.service?.name || t.owner.unknownService}</div>
-								<div>{booking.staff?.name || t.owner.unassigned}</div>
+								<div>{booking.service?.name || t('owner.dashboard.unknownService')}</div>
+								<div>{booking.staff?.name || t('owner.dashboard.unassigned')}</div>
 								<div>{formatDateShort(booking.time)}</div>
 								<div>{formatTimeSafe(booking.time)}</div>
 								<div>{getStatusBadge(booking.status)}</div>
@@ -216,18 +216,18 @@ export default function UpcomingBookingsList({
 											<button
 												onClick={() => onConfirmBooking(booking.id)}
 												className="px-3 py-1 text-sm font-medium text-white bg-green-600 hover:bg-green-700 rounded transition-colors focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2"
-												title={t.owner.confirm}
-												aria-label={`${t.owner.confirm} booking for ${booking.user?.name || t.owner.client}`}
+												title={t('owner.dashboard.confirm')}
+												aria-label={`${t('owner.dashboard.confirm')} booking for ${booking.user?.name || t('owner.dashboard.client')}`}
 											>
-												{t.owner.confirm}
+												{t('owner.dashboard.confirm')}
 											</button>
 											<button
 												onClick={() => onRejectBooking(booking.id)}
 												className="px-3 py-1 text-sm font-medium text-white bg-red-600 hover:bg-red-700 rounded transition-colors focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2"
-												title={t.owner.reject}
-												aria-label={`${t.owner.reject} booking for ${booking.user?.name || t.owner.client}`}
+												title={t('owner.dashboard.reject')}
+												aria-label={`${t('owner.dashboard.reject')} booking for ${booking.user?.name || t('owner.dashboard.client')}`}
 											>
-												{t.owner.reject}
+												{t('owner.dashboard.reject')}
 											</button>
 										</>
 									) : booking.status === 'CONFIRMED' ? (
@@ -255,13 +255,13 @@ export default function UpcomingBookingsList({
 											</button>
 											<button
 												onClick={() => {
-													if (confirm(t.owner.areYouSureCancel)) {
+													if (confirm(t('owner.dashboard.areYouSureCancel'))) {
 														onCancelBooking(booking.id);
 													}
 												}}
 												className="p-1 text-red-600 hover:text-red-700 hover:bg-red-50 rounded transition-colors focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2"
-												title={t.owner.cancel}
-												aria-label={`${t.owner.cancel} booking for ${booking.user?.name || t.owner.client}`}
+												title={t('owner.dashboard.cancel')}
+												aria-label={`${t('owner.dashboard.cancel')} booking for ${booking.user?.name || t('owner.dashboard.client')}`}
 											>
 												<svg
 													className="w-4 h-4"
@@ -296,7 +296,7 @@ export default function UpcomingBookingsList({
 						aria-live="polite"
 					>
 						<div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#ea4b4b] mx-auto"></div>
-						<p className="mt-2 text-gray-600">{t.owner.loadingBookings}</p>
+						<p className="mt-2 text-gray-600">{t('owner.dashboard.loadingBookings')}</p>
 					</div>
 				) : bookings.length === 0 ? (
 					<div className="px-4 py-8 text-center" role="status">
@@ -304,7 +304,7 @@ export default function UpcomingBookingsList({
 							📅
 						</div>
 						<p className="text-gray-600">
-							{t.owner.noUpcomingBookingsNext7Days}
+							{t('owner.dashboard.noUpcomingBookingsNext7Days')}
 						</p>
 					</div>
 				) : (
@@ -323,7 +323,7 @@ export default function UpcomingBookingsList({
 											{booking.user?.name || `Client ID: ${booking.userId}`}
 										</h3>
 										<p className="text-sm text-gray-600 truncate">
-											{booking.service?.name || t.owner.unknownService}
+											{booking.service?.name || t('owner.dashboard.unknownService')}
 										</p>
 									</div>
 									<div className="ml-3 flex-shrink-0">
@@ -333,16 +333,16 @@ export default function UpcomingBookingsList({
 
 								<div className="grid grid-cols-2 gap-3 text-xs sm:text-sm text-gray-600 mb-3">
 									<div>
-										<span className="font-medium">{t.owner.staffLabel}</span>
+										<span className="font-medium">{t('owner.dashboard.staffLabel')}</span>
 										<p className="truncate font-semibold">
-											{booking.staff?.name || t.owner.unassigned}
+											{booking.staff?.name || t('owner.dashboard.unassigned')}
 										</p>
 									</div>
 									<div className="flex justify-end items-start">
 										{renderBookingActions(booking)}
 									</div>
 									<div className="text-[0.8rem]">
-										<span className="font-medium">{t.owner.dateAndTime}</span>
+										<span className="font-medium">{t('owner.dashboard.dateAndTime')}</span>
 										<p className="font-semibold">
 											{formatDateShort(booking.time)}{' '}
 											{formatTimeSafe(booking.time)}

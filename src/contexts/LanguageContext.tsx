@@ -119,6 +119,10 @@ export function LanguageProvider({ children }: LanguageProviderProps) {
 		modulesToLoad.push(ownerModule);
 	}
 	if (isOwnerPage) {
+		// Always load dashboard module for navigation (sidebar uses it)
+		modulesToLoad.push('owner/dashboard');
+		// Load services and staff modules for navigation (sidebar uses them)
+		modulesToLoad.push('owner/services', 'owner/staff');
 		modulesToLoad.push('owner/feedback');
 	}
 	// Add all public modules (can be multiple for homepage)
@@ -136,23 +140,38 @@ export function LanguageProvider({ children }: LanguageProviderProps) {
 		language
 	);
 	
+	// Deep merge function for nested objects
+	const deepMerge = (target: any, source: any) => {
+		for (const key in source) {
+			if (source.hasOwnProperty(key)) {
+				if (typeof source[key] === 'object' && source[key] !== null && !Array.isArray(source[key]) &&
+					typeof target[key] === 'object' && target[key] !== null && !Array.isArray(target[key])) {
+					target[key] = deepMerge(target[key], source[key]);
+				} else {
+					target[key] = source[key];
+				}
+			}
+		}
+		return target;
+	};
+
 	// Merge base and additional translations
 	const t = useMemo(() => {
 		const merged = { ...baseT };
 		if (additionalDict && Object.keys(additionalDict).length > 0) {
 			// Deep merge to preserve nested objects
-			for (const key in additionalDict) {
-				if (additionalDict[key] && typeof additionalDict[key] === 'object' && !Array.isArray(additionalDict[key])) {
-					// If both are objects, merge them
-					if (merged[key] && typeof merged[key] === 'object' && !Array.isArray(merged[key])) {
-						merged[key] = { ...merged[key], ...additionalDict[key] };
-					} else {
-						merged[key] = additionalDict[key];
-					}
-				} else {
-					merged[key] = additionalDict[key];
-				}
-			}
+			deepMerge(merged, additionalDict);
+		}
+		// Debug: log if calendar module is loaded (only in development)
+		if (process.env.NODE_ENV === 'development' && pathNoLocale.startsWith('/calendar')) {
+			console.log('Calendar translations loaded:', {
+				hasOwner: !!merged.owner,
+				hasCalendar: !!merged.owner?.calendar,
+				calendarKeys: merged.owner?.calendar ? Object.keys(merged.owner.calendar) : [],
+				hasCannotCreateBooking: !!merged.owner?.calendar?.cannotCreateBooking,
+				cannotCreateBookingKeys: merged.owner?.calendar?.cannotCreateBooking ? Object.keys(merged.owner.calendar.cannotCreateBooking) : [],
+				noServices: merged.owner?.calendar?.cannotCreateBooking?.noServices,
+			});
 		}
 		// Debug: log if homepage module is loaded (only in development)
 		if (process.env.NODE_ENV === 'development' && pathNoLocale === '/') {

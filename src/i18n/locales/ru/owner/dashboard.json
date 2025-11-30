@@ -53,5 +53,22 @@
 	"cannotCreateBooking": {
 		"noServices": "Пожалуйста, добавьте хотя бы одну услугу перед созданием записи",
 		"noStaff": "Пожалуйста, добавьте хотя бы одного работника перед созданием записи"
-	}
+	},
+	"loadingDashboard": "Загрузка панели управления...",
+	"redirectingToSetup": "Перенаправление на настройку...",
+	"failedToLoadDashboard": "Не удалось загрузить панель управления",
+	"bookingCancelled": "Запись успешно отменена",
+	"failedToCancel": "Не удалось отменить запись",
+	"bookingConfirmed": "Запись успешно подтверждена",
+	"failedToConfirm": "Не удалось подтвердить запись",
+	"bookingRejected": "Запись успешно отклонена",
+	"failedToReject": "Не удалось отклонить запись",
+	"areYouSureCancel": "Вы уверены, что хотите отменить эту запись?",
+	"unknownService": "Неизвестная услуга",
+	"staffLabel": "Персонал:",
+	"dateAndTime": "Дата и время:",
+	"of": "из",
+	"failedToRefresh": "Не удалось обновить данные",
+	"bookingMarkedNoShow": "Запись отмечена как неявка",
+	"failedToMarkNoShow": "Не удалось отметить запись как неявку"
 }

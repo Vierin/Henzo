@@ -64,25 +64,25 @@ export default function AdditionalMetrics({
 
 	const metrics = [
 		{
-			title: t('owner.noShowRate'),
+			title: t('owner.dashboard.noShowRate'),
 			value: `${noShowRate}%`,
-			subtitle: `${noShowCount} ${t('owner.missed')}`,
+			subtitle: `${noShowCount} ${t('owner.dashboard.missed')}`,
 			icon: <AlertCircle className="w-6 h-6" />,
 			color: noShowRate > 20 ? 'text-red-600' : 'text-yellow-600',
 			bgColor: noShowRate > 20 ? 'bg-red-50' : 'bg-yellow-50',
 		},
 		{
-			title: t('owner.repeatClients'),
+			title: t('owner.dashboard.repeatClients'),
 			value: `${repeatClientRate}%`,
-			subtitle: `${repeatClients} ${t('owner.of')} ${totalClients}`,
+			subtitle: `${repeatClients} ${t('owner.dashboard.of')} ${totalClients}`,
 			icon: <Users className="w-6 h-6" />,
 			color: 'text-blue-600',
 			bgColor: 'bg-blue-50',
 		},
 		{
-			title: t('owner.avgRevenuePerClient'),
+			title: t('owner.dashboard.avgRevenuePerClient'),
 			value: formatVND(avgRevenuePerClient),
-			subtitle: t('owner.perClient'),
+			subtitle: t('owner.dashboard.perClient'),
 			icon: <TrendingUp className="w-6 h-6" />,
 			color: 'text-green-600',
 			bgColor: 'bg-green-50',
@@ -92,7 +92,7 @@ export default function AdditionalMetrics({
 	return (
 		<div className="bg-white rounded-xl border border-[#f1d9d7] p-4 md:p-6">
 			<h2 className="text-xl font-semibold text-gray-900 mb-3 md:mb-6">
-				{t('owner.additionalMetrics')}
+				{t('owner.dashboard.additionalMetrics')}
 			</h2>
 
 			<div className="space-y-2 md:space-y-4">
