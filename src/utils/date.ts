@@ -25,15 +25,28 @@ export function safeParseDate(
 
 /**
  * Format a date string for display, with fallback for invalid dates
+ * @param dateString - Date string to format
+ * @param fallback - Fallback text if date is invalid
+ * @param locale - Locale for date formatting (e.g., 'en', 'ru', 'vi'). Defaults to 'en'
  */
 export function formatDateSafe(
 	dateString: string | null | undefined,
-	fallback: string = 'Date not available'
+	fallback: string = 'Date not available',
+	locale: string = 'en'
 ): string {
 	const date = safeParseDate(dateString);
 	if (!date) return fallback;
 
-	return date.toLocaleDateString('en-US', {
+	// Map locale codes to Intl locale strings
+	const localeMap: Record<string, string> = {
+		en: 'en-US',
+		ru: 'ru-RU',
+		vi: 'vi-VN',
+	};
+
+	const intlLocale = localeMap[locale] || locale;
+
+	return date.toLocaleDateString(intlLocale, {
 		weekday: 'long',
 		year: 'numeric',
 		month: 'long',

@@ -3,6 +3,9 @@ import { Metadata } from 'next';
 import NewServiceClient from './NewServiceClient';
 import { OwnerRouteGuard } from '@/components/RouteGuard';
 
+// Force dynamic rendering to avoid build-time errors with client hooks
+export const dynamic = 'force-dynamic';
+
 // Private page - should not be indexed
 export const metadata: Metadata = {
 	title: 'Add New Service - Henzo',

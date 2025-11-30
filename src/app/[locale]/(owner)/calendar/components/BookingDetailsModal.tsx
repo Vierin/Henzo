@@ -2,7 +2,7 @@
 
 import { Booking } from '@/types';
 import { formatDateSafe, formatTimeSafe } from '@/utils/date';
-import { useTranslation } from '@/contexts/LanguageContext';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 interface BookingDetailsModalProps {
 	booking: Booking | null;
@@ -21,7 +21,7 @@ export default function BookingDetailsModal({
 	onCancel,
 	onMarkAsNoShow,
 }: BookingDetailsModalProps) {
-	const t = useTranslation();
+	const { t, language } = useLanguage();
 	if (!isOpen || !booking) return null;
 
 	const getStatusBadge = (status: string) => {
@@ -125,7 +125,7 @@ export default function BookingDetailsModal({
 								{t('owner.calendar.date')}
 							</label>
 							<p className="text-sm font-semibold text-gray-900">
-								{formatDateSafe(booking.time)}
+								{formatDateSafe(booking.time, 'Date not available', language)}
 							</p>
 						</div>
 						<div>
@@ -165,11 +165,12 @@ export default function BookingDetailsModal({
 					<div className="grid grid-cols-2 gap-3">
 						<div>
 							<label className="text-xs font-medium text-gray-500 block mb-1">
-							{t('owner.calendar.client')}
-						</label>
-						<p className="text-sm font-semibold text-gray-900">
-							{booking.user?.name || `${t('owner.calendar.clientId')} ${booking.userId}`}
-						</p>
+								{t('owner.calendar.client')}
+							</label>
+							<p className="text-sm font-semibold text-gray-900">
+								{booking.user?.name ||
+									`${t('owner.calendar.clientId')} ${booking.userId}`}
+							</p>
 							{booking.user?.email && (
 								<p className="text-xs text-gray-600 mt-0.5">
 									{booking.user.email}
@@ -183,8 +184,8 @@ export default function BookingDetailsModal({
 						{booking.staff && (
 							<div>
 								<label className="text-xs font-medium text-gray-500 block mb-1">
-								{t('owner.calendar.staffMember')}
-							</label>
+									{t('owner.calendar.staffMember')}
+								</label>
 								<p className="text-sm font-semibold text-gray-900">
 									{booking.staff.name}
 								</p>
@@ -240,11 +241,7 @@ export default function BookingDetailsModal({
 					{canMarkAsNoShow && onMarkAsNoShow && (
 						<button
 							onClick={() => {
-								if (
-									confirm(
-										t('owner.areYouSureNoShow')
-									)
-								) {
+								if (confirm(t('owner.areYouSureNoShow'))) {
 									onMarkAsNoShow(booking.id);
 									onClose();
 								}

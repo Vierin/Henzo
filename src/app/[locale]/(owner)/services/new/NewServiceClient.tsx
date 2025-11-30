@@ -19,9 +19,9 @@ import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 
-// Validation schema
-const createServiceSchema = (t: any) =>
-	z.object({
+// Validation schema factory
+function createServiceSchema(t: any) {
+	return z.object({
 		name: z.string().min(1, t('owner.servicesNew.errors.serviceNameRequired')),
 		description: z.string().optional(),
 		duration: z
@@ -43,8 +43,17 @@ const createServiceSchema = (t: any) =>
 		}),
 		serviceGroupId: z.string().optional(),
 	});
+}
 
-type ServiceFormData = z.infer<ReturnType<typeof createServiceSchema>>;
+// Type for form data - defined inline to avoid initialization issues
+type ServiceFormData = {
+	name: string;
+	description?: string;
+	duration: string;
+	price: string;
+	serviceCategoryId: string;
+	serviceGroupId?: string;
+};
 
 export default function NewServiceClient() {
 	const t = useTranslation();
@@ -118,10 +127,7 @@ export default function NewServiceClient() {
 	const categories = STATIC_CATEGORIES;
 
 	// Category translation mapping
-	const categoryTranslationMap: Record<
-		string,
-		keyof ReturnType<typeof useTranslation>['categories']
-	> = {
+	const categoryTranslationMap: Record<string, string> = {
 		'hair-barber': 'hairBarber',
 		'massage-spa': 'massageSpa',
 		'manicure-pedicure': 'manicurePedicure',
@@ -612,11 +618,7 @@ export default function NewServiceClient() {
 								name="serviceGroupId"
 								control={control}
 								defaultValue="none"
-								render={({
-									field,
-								}: {
-									field: { value: string; onChange: (value: string) => void };
-								}) => (
+								render={({ field }) => (
 									<Select value={field.value} onValueChange={field.onChange}>
 										<SelectTrigger className="w-full border border-gray-300 focus:ring-2 focus:ring-[#ff5b5b] focus:border-transparent text-gray-900 text-sm">
 											<SelectValue
@@ -668,11 +670,7 @@ export default function NewServiceClient() {
 							name="serviceCategoryId"
 							control={control}
 							defaultValue="none"
-							render={({
-								field,
-							}: {
-								field: { value: string; onChange: (value: string) => void };
-							}) => (
+							render={({ field }) => (
 								<Select value={field.value} onValueChange={field.onChange}>
 									<SelectTrigger
 										className={`w-full border focus:ring-2 focus:ring-[#ff5b5b] text-gray-900 ${
