@@ -13,6 +13,7 @@ import EnhancedFileUpload from '@/components/EnhancedFileUpload';
 import EnhancedPhotoUpload from '@/components/EnhancedPhotoUpload';
 import dynamic from 'next/dynamic';
 import toast from 'react-hot-toast';
+import { apiClient } from '@/lib/api-client';
 
 const MapComponentWithCoords = dynamic(
 	() => import('@/components/MapComponentWithCoords'),
@@ -218,32 +219,32 @@ export default function BusinessCompleteSetupPage() {
 					return;
 				}
 
-				const API_BASE_URL =
-					process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
-				const response = await fetch(`${API_BASE_URL}/salons/current`, {
-					headers: {
-						Authorization: `Bearer ${freshSession.access_token}`,
-						'Content-Type': 'application/json',
-					},
-				});
+				// Use apiClient which handles errors and adds auth token automatically
+				// This is an optional check, so we silently fail if it doesn't work
+				// Wrap in Promise.resolve().catch() to ensure errors are caught silently
+				const responseData = await Promise.resolve(
+					apiClient.get<{
+						success: boolean;
+						data?: any;
+					}>('/salons/current')
+				).catch(() => null); // Silently catch all errors
 
-				if (response.ok) {
-					const responseData = await response.json();
-					if (responseData.success && responseData.data) {
-						// Invalidate queries before redirect
-						await queryClient.invalidateQueries({ queryKey: ['salons'] });
-						await queryClient.invalidateQueries({ queryKey: ['salon'] });
+				if (responseData?.success && responseData?.data) {
+					// Invalidate queries before redirect
+					await queryClient.invalidateQueries({ queryKey: ['salons'] });
+					await queryClient.invalidateQueries({ queryKey: ['salon'] });
 
-						// Small delay to ensure queries are invalidated
-						await new Promise((resolve) => setTimeout(resolve, 100));
+					// Small delay to ensure queries are invalidated
+					await new Promise((resolve) => setTimeout(resolve, 100));
 
-						router.replace('/owner-dashboard');
-						return;
-					}
+					router.replace('/owner-dashboard');
+					return;
 				}
-			} catch (error) {
-				console.error('Error checking existing salon:', error);
-				// Don't redirect on error, let user continue with setup
+			} catch (error: any) {
+				// Silently suppress all errors for this optional check
+				// This is an optional check, so failures are acceptable and shouldn't be logged
+				// Network errors are expected if backend is not available
+				// No need to log or handle - just let user continue with setup
 			}
 		};
 

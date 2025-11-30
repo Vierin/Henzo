@@ -20,6 +20,7 @@ import { useOwnerLayout } from '@/contexts/OwnerLayoutContext';
 import { useBookings } from '@/hooks/useBookings';
 import { useTimeBlocks } from '@/hooks/useTimeBlocks';
 import { useStaffBySalon } from '@/hooks/useStaff';
+import { useServices } from '@/hooks/useServices';
 import { BookingWithDetailsDto } from '@/types/dto/booking.dto';
 import { convertBookingDtoArray } from '@/utils/bookingTransformers';
 
@@ -75,6 +76,11 @@ export default function CalendarClient() {
 
 	const { data: staffMembers = [], isLoading: staffLoading } = useStaffBySalon(
 		salonId || ''
+	);
+
+	const { data: services = [], isLoading: servicesLoading } = useServices(
+		salonId || '',
+		{}
 	);
 
 	const bookings = convertBookingDtoArray(bookingsData);
@@ -182,10 +188,20 @@ export default function CalendarClient() {
 	}, [isBookingModalOpen]);
 
 	const handleNewAppointment = useCallback(() => {
+		// Check if salon has services and staff
+		if (!services || services.length === 0) {
+			toast.error(t('owner.cannotCreateBooking.noServices'));
+			return;
+		}
+		if (!staffMembers || staffMembers.length === 0) {
+			toast.error(t('owner.cannotCreateBooking.noStaff'));
+			return;
+		}
+
 		setSelectedService(undefined);
 		setEditingBooking(null);
 		setIsBookingModalOpen(true);
-	}, []);
+	}, [services, staffMembers, t]);
 
 	const handleEditBooking = useCallback((booking: Booking) => {
 		setEditingBooking(booking);

@@ -537,6 +537,18 @@
 		"faqTitle": "Câu hỏi thường gặp",
 		"faqSubtitle": "Tìm câu trả lời cho các câu hỏi phổ biến về Henzo."
 	},
+	"feedback": {
+		"title": "Gửi phản hồi",
+		"subtitle": "Báo cáo sự cố hoặc đề xuất cải tiến",
+		"placeholder": "Mô tả sự cố hoặc đề xuất của bạn...",
+		"send": "Gửi",
+		"sending": "Đang gửi...",
+		"pleaseEnterMessage": "Vui lòng nhập tin nhắn",
+		"thankYou": "Cảm ơn bạn đã phản hồi!",
+		"failedToSend": "Không thể gửi phản hồi. Vui lòng thử lại.",
+		"sendFeedback": "Gửi phản hồi",
+		"close": "Đóng"
+	},
 	"about": {
 		"ourStory": "Câu chuyện của chúng tôi",
 		"heroTitle": "Làm cho vẻ đẹp <span class=\"text-primary\">dễ tiếp cận</span> cho mọi người",
@@ -630,6 +642,10 @@
 		"noShow": "Không đến",
 		"unassigned": "Chưa phân công",
 		"unknownService": "Dịch vụ không xác định",
+		"cannotCreateBooking": {
+			"noServices": "Vui lòng thêm ít nhất một dịch vụ trước khi tạo đặt chỗ",
+			"noStaff": "Vui lòng thêm ít nhất một nhân viên trước khi tạo đặt chỗ"
+		},
 		"areYouSureCancel": "Bạn có chắc muốn hủy đặt chỗ này?",
 		"markAsNoShow": "Đánh dấu là không đến",
 		"areYouSureNoShow": "Bạn có chắc muốn đánh dấu đặt chỗ này là không đến?",

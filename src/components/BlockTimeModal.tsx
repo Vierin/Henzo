@@ -419,7 +419,7 @@ export default function BlockTimeModal({
 					{/* Block For */}
 					<div>
 						<label className="block text-sm font-medium text-gray-700 mb-3">
-							Block for:
+							{t('owner.calendarPage.blockTimeModal.blockFor')}
 						</label>
 						<RadioGroup
 							value={blockFor}
@@ -438,7 +438,7 @@ export default function BlockTimeModal({
 									className="text-[#ff5b5b] border-gray-300 focus:ring-[#ff5b5b]"
 								/>
 								<span className="text-sm font-medium text-gray-900">
-									Entire Salon
+									{t('owner.calendarPage.blockTimeModal.entireSalon')}
 								</span>
 							</label>
 							<label className="flex items-center space-x-3 p-4 border-2 border-gray-300 rounded-lg hover:bg-gray-50 cursor-pointer transition-colors flex-1">
@@ -448,7 +448,7 @@ export default function BlockTimeModal({
 									className="text-[#ff5b5b] border-gray-300 focus:ring-[#ff5b5b]"
 								/>
 								<span className="text-sm font-medium text-gray-900">
-									Specific Staff Member
+									{t('owner.calendarPage.blockTimeModal.specificStaffMember')}
 								</span>
 							</label>
 						</RadioGroup>
@@ -458,7 +458,7 @@ export default function BlockTimeModal({
 					{blockFor === 'staff' && (
 						<div>
 							<label className="block text-sm font-medium text-gray-700 mb-2">
-								Select Staff Member <span className="text-red-500">*</span>
+								{t('owner.calendarPage.blockTimeModal.selectStaffMember')} <span className="text-red-500">*</span>
 							</label>
 							{staffLoading ? (
 								<div className="flex items-center justify-center py-4">
@@ -466,7 +466,7 @@ export default function BlockTimeModal({
 								</div>
 							) : staff.length === 0 ? (
 								<div className="flex items-center justify-center py-4 text-gray-500">
-									No staff members found
+									{t('owner.calendarPage.blockTimeModal.noStaffMembersFound')}
 								</div>
 							) : (
 								<Select
@@ -474,7 +474,7 @@ export default function BlockTimeModal({
 									onValueChange={setSelectedStaffId}
 								>
 									<SelectTrigger className="w-full border border-gray-300 focus:ring-2 focus:ring-[#ff5b5b] focus:border-[#ff5b5b] text-gray-900">
-										<SelectValue placeholder="Select a staff member" />
+										<SelectValue placeholder={t('owner.calendarPage.blockTimeModal.selectAStaffMember')} />
 									</SelectTrigger>
 									<SelectContent className="bg-white border border-gray-300 shadow-lg rounded-md">
 										{staff.map((member) => (
@@ -495,7 +495,7 @@ export default function BlockTimeModal({
 					{/* Block Type */}
 					<div>
 						<label className="block text-sm font-medium text-gray-700 mb-2">
-							Reason: <span className="text-red-500">*</span>
+							{t('owner.calendarPage.blockTimeModal.reason')} <span className="text-red-500">*</span>
 						</label>
 						<Select
 							value={blockType}
@@ -504,7 +504,7 @@ export default function BlockTimeModal({
 							}
 						>
 							<SelectTrigger className="w-full border border-gray-300 focus:ring-2 focus:ring-[#ff5b5b] focus:border-[#ff5b5b] text-gray-900">
-								<SelectValue placeholder="Select a reason" />
+								<SelectValue placeholder={t('owner.calendarPage.blockTimeModal.selectAReason')} />
 							</SelectTrigger>
 							<SelectContent className="bg-white border border-gray-300 shadow-lg rounded-md">
 								<SelectItem
@@ -534,13 +534,13 @@ export default function BlockTimeModal({
 					{/* Reason Description */}
 					<div>
 						<label className="block text-sm font-medium text-gray-700 mb-2">
-							Description <span className="text-red-500">*</span>
+							{t('owner.calendarPage.blockTimeModal.description')} <span className="text-red-500">*</span>
 						</label>
 						<input
 							type="text"
 							value={reason}
 							onChange={(e) => setReason(e.target.value)}
-							placeholder="e.g., Annual vacation, Sick leave, Team meeting"
+							placeholder={t('owner.calendarPage.blockTimeModal.descriptionPlaceholder')}
 							className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#ff5b5b] focus:border-[#ff5b5b] text-gray-900"
 							required
 						/>
@@ -549,7 +549,7 @@ export default function BlockTimeModal({
 					{/* Quick Time Presets */}
 					<div>
 						<label className="block text-sm font-medium text-gray-700 mb-2">
-							Quick Presets
+							{t('owner.calendarPage.blockTimeModal.quickPresets')}
 						</label>
 						<div className="flex flex-wrap gap-2">
 							<button
@@ -560,7 +560,7 @@ export default function BlockTimeModal({
 								}}
 								className="px-3 py-1.5 text-sm border border-[#ff5b5b] bg-[#fff7f6] text-[#ff5b5b] rounded-lg hover:bg-[#ff5b5b] hover:text-white transition-colors"
 							>
-								Full Day
+								{t('owner.calendarPage.blockTimeModal.fullDay')}
 							</button>
 							<button
 								type="button"
@@ -575,7 +575,7 @@ export default function BlockTimeModal({
 								}}
 								className="px-3 py-1.5 text-sm border border-[#ff5b5b] bg-[#fff7f6] text-[#ff5b5b] rounded-lg hover:bg-[#ff5b5b] hover:text-white transition-colors"
 							>
-								Morning
+								{t('owner.calendarPage.blockTimeModal.morning')}
 							</button>
 							<button
 								type="button"
@@ -590,7 +590,7 @@ export default function BlockTimeModal({
 								}}
 								className="px-3 py-1.5 text-sm border border-[#ff5b5b] bg-[#fff7f6] text-[#ff5b5b] rounded-lg hover:bg-[#ff5b5b] hover:text-white transition-colors"
 							>
-								Afternoon
+								{t('owner.calendarPage.blockTimeModal.afternoon')}
 							</button>
 							<button
 								type="button"
@@ -600,7 +600,7 @@ export default function BlockTimeModal({
 								}}
 								className="px-3 py-1.5 text-sm border border-[#ff5b5b] bg-[#fff7f6] text-[#ff5b5b] rounded-lg hover:bg-[#ff5b5b] hover:text-white transition-colors"
 							>
-								Lunch (12:00-13:00)
+								{t('owner.calendarPage.blockTimeModal.lunch')}
 							</button>
 						</div>
 					</div>
@@ -611,7 +611,7 @@ export default function BlockTimeModal({
 						<div>
 							<label className="block text-sm font-medium text-gray-700 mb-2">
 								<CalendarIcon className="w-4 h-4 inline mr-1" />
-								Start Date <span className="text-red-500">*</span>
+								{t('owner.calendarPage.blockTimeModal.startDate')} <span className="text-red-500">*</span>
 							</label>
 							<Popover
 								open={startDatePickerOpen}
@@ -629,7 +629,7 @@ export default function BlockTimeModal({
 										<CalendarIcon className="mr-2 h-4 w-4" />
 										{startDate && stringToDate(startDate)
 											? format(stringToDate(startDate)!, 'PPP')
-											: 'Pick a date'}
+											: t('owner.calendarPage.blockTimeModal.pickADate')}
 									</Button>
 								</PopoverTrigger>
 								<PopoverContent className="w-auto p-0 bg-white" align="start">
@@ -655,7 +655,7 @@ export default function BlockTimeModal({
 						<div>
 							<label className="block text-sm font-medium text-gray-700 mb-2">
 								<Clock className="w-4 h-4 inline mr-1" />
-								Start Time <span className="text-red-500">*</span>
+								{t('owner.calendarPage.blockTimeModal.startTime')} <span className="text-red-500">*</span>
 							</label>
 							<div className="w-full">
 								<TimePicker
@@ -688,7 +688,7 @@ export default function BlockTimeModal({
 						<div>
 							<label className="block text-sm font-medium text-gray-700 mb-2">
 								<CalendarIcon className="w-4 h-4 inline mr-1" />
-								End Date <span className="text-red-500">*</span>
+								{t('owner.calendarPage.blockTimeModal.endDate')} <span className="text-red-500">*</span>
 							</label>
 							<Popover
 								open={endDatePickerOpen}
@@ -706,7 +706,7 @@ export default function BlockTimeModal({
 										<CalendarIcon className="mr-2 h-4 w-4" />
 										{endDate && stringToDate(endDate)
 											? format(stringToDate(endDate)!, 'PPP')
-											: 'Pick a date'}
+											: t('owner.calendarPage.blockTimeModal.pickADate')}
 									</Button>
 								</PopoverTrigger>
 								<PopoverContent className="w-auto p-0 bg-white" align="start">
@@ -735,7 +735,7 @@ export default function BlockTimeModal({
 						<div>
 							<label className="block text-sm font-medium text-gray-700 mb-2">
 								<Clock className="w-4 h-4 inline mr-1" />
-								End Time <span className="text-red-500">*</span>
+								{t('owner.calendarPage.blockTimeModal.endTime')} <span className="text-red-500">*</span>
 							</label>
 							<div className="w-full">
 								<TimePicker
@@ -789,13 +789,13 @@ export default function BlockTimeModal({
 					{/* Notes */}
 					<div>
 						<label className="block text-sm font-medium text-gray-700 mb-2">
-							Additional Notes (Optional)
+							{t('owner.calendarPage.blockTimeModal.additionalNotes')}
 						</label>
 						<textarea
 							value={notes}
 							onChange={(e) => setNotes(e.target.value)}
 							rows={3}
-							placeholder="Any additional information..."
+							placeholder={t('owner.calendarPage.blockTimeModal.additionalNotesPlaceholder')}
 							className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#ff5b5b] focus:border-[#ff5b5b] text-gray-900"
 						/>
 					</div>
@@ -805,11 +805,10 @@ export default function BlockTimeModal({
 						<AlertCircle className="w-5 h-5 text-yellow-600 flex-shrink-0 mt-0.5" />
 						<div className="text-sm text-yellow-800">
 							<p className="font-medium mb-1">
-								This will prevent new bookings during this time.
+								{t('owner.calendarPage.blockTimeModal.warningTitle')}
 							</p>
 							<p>
-								If there are existing bookings during this period, you'll be
-								able to choose whether to keep or cancel them.
+								{t('owner.calendarPage.blockTimeModal.warningDescription')}
 							</p>
 						</div>
 					</div>
@@ -821,11 +820,10 @@ export default function BlockTimeModal({
 								<AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
 								<div>
 									<p className="text-sm font-medium text-red-900 mb-1">
-										{conflicts.length} Conflicting Booking
-										{conflicts.length > 1 ? 's' : ''} Found
+										{conflicts.length} {t('owner.calendarPage.blockTimeModal.conflictingBookingsFound')}
 									</p>
 									<p className="text-sm text-red-700">
-										The following bookings are scheduled during this time:
+										{t('owner.calendarPage.blockTimeModal.followingBookingsScheduled')}
 									</p>
 								</div>
 							</div>
@@ -837,7 +835,7 @@ export default function BlockTimeModal({
 										className="bg-white rounded p-3 text-sm border border-red-100"
 									>
 										<div className="font-medium text-gray-900">
-											{conflict.user?.name || 'Unknown Client'}
+											{conflict.user?.name || t('owner.calendarPage.blockTimeModal.unknownClient')}
 										</div>
 										<div className="text-gray-600 text-xs mt-1">
 											{conflict.service?.name} •{' '}
@@ -854,7 +852,7 @@ export default function BlockTimeModal({
 
 							<div>
 								<label className="block text-sm font-medium text-red-900 mb-2">
-									What would you like to do with these bookings?
+									{t('owner.calendarPage.blockTimeModal.whatToDoWithBookings')}
 								</label>
 								<div className="space-y-2">
 									{/* Option 1: Reschedule to another staff member */}
@@ -869,10 +867,10 @@ export default function BlockTimeModal({
 										/>
 										<div className="flex-1">
 											<div className="text-sm font-medium text-gray-900">
-												Transfer bookings to another staff member
+												{t('owner.calendarPage.blockTimeModal.transferBookings')}
 											</div>
 											<div className="text-xs text-gray-600">
-												Move existing bookings to a different staff member
+												{t('owner.calendarPage.blockTimeModal.moveBookings')}
 											</div>
 											{conflictAction === 'RESCHEDULE' && (
 												<div className="mt-2">
@@ -881,7 +879,7 @@ export default function BlockTimeModal({
 														onValueChange={setSelectedStaffIdForReschedule}
 													>
 														<SelectTrigger className="w-full border border-gray-300 focus:ring-2 focus:ring-[#ff5b5b] focus:border-[#ff5b5b] text-gray-900">
-															<SelectValue placeholder="Select staff member" />
+															<SelectValue placeholder={t('owner.calendarPage.blockTimeModal.selectAStaffMember')} />
 														</SelectTrigger>
 														<SelectContent>
 															{staff
@@ -916,10 +914,10 @@ export default function BlockTimeModal({
 										/>
 										<div>
 											<div className="text-sm font-medium text-gray-900">
-												Cancel all conflicting bookings
+												{t('owner.calendarPage.blockTimeModal.cancelAllBookings')}
 											</div>
 											<div className="text-xs text-gray-600">
-												Cancel all bookings and notify clients automatically
+												{t('owner.calendarPage.blockTimeModal.cancelAllAndNotify')}
 											</div>
 										</div>
 									</label>
@@ -936,7 +934,7 @@ export default function BlockTimeModal({
 						disabled={isSubmitting}
 						className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
 					>
-						Cancel
+						{t('owner.calendarPage.blockTimeModal.cancel')}
 					</button>
 					{!showConflicts ? (
 						<button
@@ -945,7 +943,7 @@ export default function BlockTimeModal({
 							className="px-4 py-2 text-sm font-medium text-white bg-[#ff5b5b] rounded-lg hover:bg-[#e04a4a] focus:outline-none focus:ring-2 focus:ring-[#ff5b5b] focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center gap-2"
 						>
 							{isSubmitting && <LoadingSpinner size="sm" />}
-							{isSubmitting ? 'Checking...' : 'Check Conflicts & Block Time'}
+							{isSubmitting ? t('owner.calendarPage.blockTimeModal.checking') : t('owner.calendarPage.blockTimeModal.checkConflictsAndBlock')}
 						</button>
 					) : (
 						<button
@@ -954,7 +952,7 @@ export default function BlockTimeModal({
 							className="px-4 py-2 text-sm font-medium text-white bg-[#ff5b5b] rounded-lg hover:bg-[#e04a4a] focus:outline-none focus:ring-2 focus:ring-[#ff5b5b] focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center gap-2"
 						>
 							{isSubmitting && <LoadingSpinner size="sm" />}
-							{isSubmitting ? 'Blocking...' : 'Confirm & Block Time'}
+							{isSubmitting ? t('owner.calendarPage.blockTimeModal.blocking') : t('owner.calendarPage.blockTimeModal.confirmAndBlock')}
 						</button>
 					)}
 				</div>

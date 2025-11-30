@@ -564,6 +564,18 @@
 		"faqTitle": "Frequently Asked Questions",
 		"faqSubtitle": "Find answers to common questions about Henzo."
 	},
+	"feedback": {
+		"title": "Send Feedback",
+		"subtitle": "Report an issue or suggest an improvement",
+		"placeholder": "Describe the issue or your suggestion...",
+		"send": "Send",
+		"sending": "Sending...",
+		"pleaseEnterMessage": "Please enter a message",
+		"thankYou": "Thank you for your feedback!",
+		"failedToSend": "Failed to send feedback. Please try again.",
+		"sendFeedback": "Send feedback",
+		"close": "Close"
+	},
 	"about": {
 		"ourStory": "Our Story",
 		"heroTitle": "Making Beauty <span class=\"text-primary\">Accessible</span> for Everyone",
@@ -659,6 +671,10 @@
 		"cancelled": "Cancelled",
 		"noShow": "No-Show",
 		"unassigned": "Unassigned",
+		"cannotCreateBooking": {
+			"noServices": "Please add at least one service before creating a booking",
+			"noStaff": "Please add at least one staff member before creating a booking"
+		},
 		"unknownService": "Unknown Service",
 		"areYouSureCancel": "Are you sure you want to cancel this booking?",
 		"markAsNoShow": "Mark as No-Show",

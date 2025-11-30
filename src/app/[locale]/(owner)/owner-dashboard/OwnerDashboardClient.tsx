@@ -3,6 +3,8 @@
 import { useMemo, useState, useCallback } from 'react';
 import { useBookings } from '@/hooks/useBookings';
 import { useOwnerLayout } from '@/contexts/OwnerLayoutContext';
+import { useServices } from '@/hooks/useServices';
+import { useStaffBySalon } from '@/hooks/useStaff';
 import LoadingSpinner from '@/components/LoadingSpinner';
 import ErrorDisplay from '@/components/ErrorDisplay';
 import StatsCard from './components/StatsCard';
@@ -41,6 +43,9 @@ export default function OwnerDashboardClient() {
 		error: bookingsError,
 		refetch: refetchBookings,
 	} = useBookings();
+
+	const { data: services = [] } = useServices(salonId || '', {});
+	const { data: staffMembers = [] } = useStaffBySalon(salonId || '');
 
 	const bookings = convertBookingDtoArray(bookingsData);
 
@@ -210,6 +215,16 @@ export default function OwnerDashboardClient() {
 					</Select>
 					<button
 						onClick={() => {
+							// Check if salon has services and staff
+							if (!services || services.length === 0) {
+								toast.error(t('owner.cannotCreateBooking.noServices'));
+								return;
+							}
+							if (!staffMembers || staffMembers.length === 0) {
+								toast.error(t('owner.cannotCreateBooking.noStaff'));
+								return;
+							}
+
 							setSelectedService(undefined);
 							setEditingBooking(null);
 							setIsBookingModalOpen(true);

@@ -1,5 +1,6 @@
 'use client';
 
+import { useMemo } from 'react';
 import { useFeaturedSalons } from '@/hooks/useSalonPreview';
 import { useSalonSlug } from '@/hooks/useSalonSlug';
 import { supabase } from '@/lib/supabase';
@@ -20,6 +21,15 @@ export default function RecommendedSalons() {
 		refetch,
 		isFetching,
 	} = useFeaturedSalons(3);
+
+	// Filter salons to only show those with at least one service
+	const salonsWithServices = useMemo(
+		() =>
+			(salons as Salon[]).filter(
+				(salon) => salon.services && salon.services.length > 0
+			),
+		[salons]
+	);
 
 	const getImageSrc = (imageSrc: string) => {
 		// If it's a URL, return it directly
@@ -114,13 +124,13 @@ export default function RecommendedSalons() {
 							</div>
 						</div>
 					</div>
-				) : error && salons.length === 0 ? (
+				) : error && salonsWithServices.length === 0 ? (
 					<ErrorDisplay
 						error={error}
 						message="Failed to load salons"
 						onRetry={() => refetch()}
 					/>
-				) : (salons as any[]).length === 0 ? (
+				) : salonsWithServices.length === 0 ? (
 					<div className="text-center py-12 px-4">
 						<div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
 							<span className="text-2xl">🏪</span>
@@ -135,7 +145,7 @@ export default function RecommendedSalons() {
 				) : (
 					<>
 						{/* Background loading indicator */}
-						{isFetching && salons.length > 0 && (
+						{isFetching && salonsWithServices.length > 0 && (
 							<div className="absolute top-4 right-4 z-10">
 								<div className="flex items-center gap-2 bg-white/90 backdrop-blur-sm rounded-full px-3 py-1 shadow-sm">
 									<div className="w-3 h-3 border-2 border-[#ff5b5b] border-t-transparent rounded-full animate-spin"></div>
@@ -146,7 +156,7 @@ export default function RecommendedSalons() {
 
 						{/* Desktop grid view */}
 						<div className="hidden md:grid md:grid-cols-3 gap-6 px-6">
-							{(salons as Salon[])
+							{salonsWithServices
 								.slice(0, 3)
 								.map((salon: Salon, index: number) => {
 									const avgRating = salon.avgRating || 0;
@@ -211,7 +221,7 @@ export default function RecommendedSalons() {
 						{/* Mobile swiper view */}
 						<div className="md:hidden overflow-x-auto scrollbar-hide px-4 pb-2">
 							<div className="flex gap-4" style={{ width: 'max-content' }}>
-								{(salons as Salon[])
+								{salonsWithServices
 									.slice(0, 3)
 									.map((salon: Salon, index: number) => {
 										const avgRating = salon.avgRating || 0;

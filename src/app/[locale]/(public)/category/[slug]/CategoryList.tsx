@@ -77,6 +77,11 @@ export default function CategoryList({ category }: CategoryListProps) {
 	// Filter and sort salons by category
 	const filteredSalons = (salons || [])
 		.filter((salon: Salon) => {
+			// Only show salons that have at least one service
+			if (!salon.services || salon.services.length === 0) {
+				return false;
+			}
+
 			// Filter by categoryIds if available, otherwise fallback to keyword matching
 			if (salon.categoryIds && salon.categoryIds.length > 0) {
 				return salon.categoryIds.includes(category.id);
