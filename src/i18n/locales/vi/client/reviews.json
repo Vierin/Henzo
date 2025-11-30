@@ -1,0 +1,11 @@
+{
+	"title": "Đánh giá của bạn",
+	"subtitle": "Xem tất cả các đánh giá bạn đã để lại cho salon",
+	"noReviewsYet": "Chưa có đánh giá",
+	"noReviewsDescription": "Hoàn thành đặt chỗ để để lại đánh giá đầu tiên của bạn",
+	"viewYourBookings": "Xem đặt chỗ của bạn",
+	"errorLoadingReviews": "Lỗi tải đánh giá",
+	"failedToLoadReviews": "Không thể tải đánh giá",
+	"loadingYourReviews": "Đang tải đánh giá của bạn..."
+}
+

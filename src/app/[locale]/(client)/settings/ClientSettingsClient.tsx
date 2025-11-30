@@ -46,10 +46,10 @@ export default function ClientSettingsClient() {
 			// TODO: Update client profile via API
 			// For now, just show success message
 			// Profile update should be handled through API endpoint
-			toast.success('Profile updated successfully!');
+			toast.success(t('clientSettings.profileUpdated'));
 		} catch (error) {
 			console.error('Error updating profile:', error);
-			toast.error('Failed to update profile');
+			toast.error(t('clientSettings.failedToUpdate'));
 		} finally {
 			setIsSaving(false);
 		}
@@ -74,12 +74,12 @@ export default function ClientSettingsClient() {
 
 		try {
 			if (passwordData.newPassword !== passwordData.confirmPassword) {
-				toast.error('New passwords do not match');
+				toast.error(t('clientSettings.passwordsDoNotMatch'));
 				return;
 			}
 
 			if (passwordData.newPassword.length < 6) {
-				toast.error('Password must be at least 6 characters');
+				toast.error(t('clientSettings.passwordMinLength'));
 				return;
 			}
 
@@ -89,7 +89,7 @@ export default function ClientSettingsClient() {
 
 			if (error) throw error;
 
-			toast.success('Password changed successfully!');
+			toast.success(t('clientSettings.passwordChanged'));
 			setPasswordData({
 				currentPassword: '',
 				newPassword: '',
@@ -97,7 +97,7 @@ export default function ClientSettingsClient() {
 			});
 		} catch (error: any) {
 			console.error('Error changing password:', error);
-			toast.error(error.message || 'Failed to change password');
+			toast.error(error.message || t('clientSettings.failedToChangePassword'));
 		} finally {
 			setIsSaving(false);
 		}
@@ -126,7 +126,7 @@ export default function ClientSettingsClient() {
 	if (isLoading) {
 		return (
 			<div className="flex items-center justify-center min-h-[400px]">
-				<LoadingSpinner size="lg" message="Loading settings..." />
+				<LoadingSpinner size="lg" message={t('clientSettings.loadingSettings')} />
 			</div>
 		);
 	}
@@ -212,7 +212,7 @@ export default function ClientSettingsClient() {
 								disabled={isSaving}
 								className="px-6 py-2 bg-[#ff5b5b] text-white rounded-lg font-medium hover:bg-[#e04a4a] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
 							>
-								{isSaving ? 'Saving...' : 'Save Changes'}
+								{isSaving ? t('clientSettings.saving') : t('clientSettings.saveChanges')}
 							</button>
 						</div>
 					</form>
@@ -221,7 +221,7 @@ export default function ClientSettingsClient() {
 				{/* Change Password */}
 				<section className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
 					<h2 className="text-xl font-semibold text-gray-900 mb-6">
-						Change Password
+						{t('clientSettings.changePassword')}
 					</h2>
 
 					<form onSubmit={handleChangePassword} className="space-y-4">
@@ -230,7 +230,7 @@ export default function ClientSettingsClient() {
 								htmlFor="currentPassword"
 								className="block text-sm font-medium text-gray-700 mb-2"
 							>
-								Current Password
+								{t('clientSettings.currentPassword')}
 							</label>
 							<input
 								type="password"
@@ -239,7 +239,7 @@ export default function ClientSettingsClient() {
 								value={passwordData.currentPassword}
 								onChange={handlePasswordChange}
 								className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#ff5b5b] focus:border-transparent"
-								placeholder="Enter current password"
+								placeholder={t('clientSettings.currentPasswordPlaceholder')}
 							/>
 						</div>
 
@@ -248,7 +248,7 @@ export default function ClientSettingsClient() {
 								htmlFor="newPassword"
 								className="block text-sm font-medium text-gray-700 mb-2"
 							>
-								New Password
+								{t('clientSettings.newPassword')}
 							</label>
 							<input
 								type="password"
@@ -257,10 +257,10 @@ export default function ClientSettingsClient() {
 								value={passwordData.newPassword}
 								onChange={handlePasswordChange}
 								className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#ff5b5b] focus:border-transparent"
-								placeholder="Enter new password"
+								placeholder={t('clientSettings.newPasswordPlaceholder')}
 							/>
 							<p className="text-sm text-gray-500 mt-1">
-								Must be at least 6 characters
+								{t('clientSettings.passwordMinLength')}
 							</p>
 						</div>
 
@@ -269,7 +269,7 @@ export default function ClientSettingsClient() {
 								htmlFor="confirmPassword"
 								className="block text-sm font-medium text-gray-700 mb-2"
 							>
-								Confirm New Password
+								{t('clientSettings.confirmNewPassword')}
 							</label>
 							<input
 								type="password"
@@ -278,7 +278,7 @@ export default function ClientSettingsClient() {
 								value={passwordData.confirmPassword}
 								onChange={handlePasswordChange}
 								className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#ff5b5b] focus:border-transparent"
-								placeholder="Confirm new password"
+								placeholder={t('clientSettings.confirmPasswordPlaceholder')}
 							/>
 						</div>
 
@@ -288,7 +288,7 @@ export default function ClientSettingsClient() {
 								disabled={isSaving}
 								className="px-6 py-2 bg-[#ff5b5b] text-white rounded-lg font-medium hover:bg-[#e04a4a] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
 							>
-								{isSaving ? 'Changing...' : 'Change Password'}
+								{isSaving ? t('clientSettings.changing') : t('clientSettings.changePasswordButton')}
 							</button>
 						</div>
 					</form>

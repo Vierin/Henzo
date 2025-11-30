@@ -8,8 +8,10 @@ import { useRouter } from 'next/navigation';
 import { generateSalonSlug } from '@/utils/slug';
 import { useAuth } from '@/lib/auth-unified';
 import { useState } from 'react';
+import { useTranslation } from '@/contexts/LanguageContext';
 
 export default function FavoritesClient() {
+	const t = useTranslation();
 	const { user } = useAuth();
 	const { data: favorites = [], isLoading, error } = useFavoriteSalons(!!user);
 	const removeFavoriteMutation = useRemoveFavorite();
@@ -24,7 +26,7 @@ export default function FavoritesClient() {
 	const handleRemoveFavorite = async (salonId: string, salonName: string) => {
 		// Show confirmation dialog before removing
 		const confirmed = window.confirm(
-			`Are you sure you want to remove "${salonName}" from your favorite salons? This action cannot be undone.`
+			t('client.favorites.removeConfirmation').replace('{salonName}', salonName)
 		);
 
 		if (!confirmed) {
@@ -64,11 +66,10 @@ export default function FavoritesClient() {
 					id="error-heading"
 					className="text-xl font-semibold text-gray-900 mb-2"
 				>
-					Error loading favorites
+					{t('client.favorites.errorLoadingFavorites')}
 				</h3>
 				<p className="text-gray-600">
-					There was an error loading your favorite salons. Please try again
-					later.
+					{t('client.favorites.errorLoadingDescription')}
 				</p>
 			</div>
 		);
@@ -82,10 +83,10 @@ export default function FavoritesClient() {
 						id="favorites-heading"
 						className="text-2xl md:text-3xl font-bold text-gray-900"
 					>
-						Favorite Salons
+						{t('client.favorites.title')}
 					</h1>
 					<p className="text-gray-600 mt-2 text-sm md:text-base">
-						Salons you've marked as favorites
+						{t('client.favorites.subtitle')}
 					</p>
 				</header>
 
@@ -101,16 +102,16 @@ export default function FavoritesClient() {
 						id="empty-heading"
 						className="text-lg md:text-xl font-semibold text-gray-900 mb-2"
 					>
-						No favorite salons yet
+						{t('client.favorites.noFavoriteSalons')}
 					</h3>
 					<p className="text-gray-600 mb-4 md:mb-6 text-sm md:text-base px-4">
-						Browse salons and mark your favorites by clicking the heart icon
+						{t('client.favorites.noFavoritesDescription')}
 					</p>
 					<a
 						href="/salons"
 						className="inline-block bg-[#ff5b5b] text-white px-4 md:px-6 py-2 md:py-3 rounded-lg text-sm md:text-base font-medium hover:bg-[#e04a4a] transition-colors focus:outline-none focus:ring-2 focus:ring-[#ff5b5b] focus:ring-offset-2"
 					>
-						Browse Salons
+						{t('client.favorites.browseSalons')}
 					</a>
 				</div>
 			</main>
@@ -124,10 +125,10 @@ export default function FavoritesClient() {
 					id="favorites-heading"
 					className="text-2xl md:text-3xl font-bold text-gray-900"
 				>
-					Favorite Salons
+					{t('client.favorites.title')}
 				</h1>
 				<p className="text-gray-600 mt-2 text-sm md:text-base">
-					{favorites.length} {favorites.length === 1 ? 'salon' : 'salons'} saved
+					{favorites.length} {favorites.length === 1 ? t('client.favorites.salon') : t('client.favorites.salonsSaved')} {t('client.favorites.saved')}
 				</p>
 			</header>
 
@@ -147,7 +148,7 @@ export default function FavoritesClient() {
 							onClick={() => handleRemoveFavorite(salon.id, salon.name)}
 							disabled={removingSalonId === salon.id}
 							className="absolute top-3 right-3 p-1.5 text-gray-400 hover:text-red-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-							aria-label={`Remove ${salon.name} from favorites`}
+							aria-label={t('client.favorites.removeFromFavorites').replace('{salonName}', salon.name)}
 						>
 							{removingSalonId === salon.id ? (
 								<div className="w-4 h-4 border-2 border-gray-400 border-t-transparent rounded-full animate-spin" />
@@ -218,20 +219,20 @@ export default function FavoritesClient() {
 										onClick={() => handleBookSalon(salon.id, salon.name)}
 										className="bg-[#ff5b5b] text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-[#e04a4a] transition-colors"
 									>
-										Book Again
+										{t('client.favorites.bookAgain')}
 									</button>
 									<button
 										onClick={() => handleRemoveFavorite(salon.id, salon.name)}
 										disabled={removingSalonId === salon.id}
 										className="bg-gray-500 text-white px-3 py-2 rounded-lg text-sm font-medium hover:bg-gray-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1"
-										aria-label={`Remove ${salon.name} from favorites`}
+										aria-label={t('client.favorites.removeFromFavorites').replace('{salonName}', salon.name)}
 									>
 										{removingSalonId === salon.id ? (
 											<div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
 										) : (
 											<X className="w-4 h-4" />
 										)}
-										<span className="hidden sm:inline">Remove</span>
+										<span className="hidden sm:inline">{t('client.favorites.remove')}</span>
 									</button>
 								</div>
 							</div>
@@ -242,7 +243,7 @@ export default function FavoritesClient() {
 									onClick={() => handleBookSalon(salon.id, salon.name)}
 									className="bg-[#ff5b5b] text-white px-3 py-1.5 rounded-md text-xs font-medium hover:bg-[#e04a4a] transition-colors"
 								>
-									Book
+									{t('client.favorites.book')}
 								</button>
 								<button
 									onClick={() => handleRemoveFavorite(salon.id, salon.name)}
@@ -255,7 +256,7 @@ export default function FavoritesClient() {
 									) : (
 										<X className="w-3 h-3" />
 									)}
-									<span>Remove</span>
+									<span>{t('client.favorites.remove')}</span>
 								</button>
 							</div>
 						</div>

@@ -128,7 +128,16 @@ export function LanguageProvider({ children }: LanguageProviderProps) {
 	// Add all public modules (can be multiple for homepage)
 	modulesToLoad.push(...publicModules);
 	if (isClientPage) {
-		modulesToLoad.push('client/settings');
+		// Determine specific client module based on path
+		if (pathNoLocale.startsWith('/dashboard')) {
+			modulesToLoad.push('client/dashboard');
+		} else if (pathNoLocale.startsWith('/favorites')) {
+			modulesToLoad.push('client/favorites');
+		} else if (pathNoLocale.startsWith('/reviews')) {
+			modulesToLoad.push('client/reviews');
+		} else if (pathNoLocale.startsWith('/settings')) {
+			modulesToLoad.push('client/settings');
+		}
 	}
 	// Load shared/auth for login and register pages
 	if (pathNoLocale.startsWith('/login') || pathNoLocale.startsWith('/register')) {

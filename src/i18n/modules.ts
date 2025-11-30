@@ -36,7 +36,10 @@ export type TranslationModule =
 	| 'owner/servicesNew'
 	| 'owner/feedback'
 	// Client modules
-	| 'client/settings';
+	| 'client/settings'
+	| 'client/dashboard'
+	| 'client/favorites'
+	| 'client/reviews';
 
 // Module dependencies - which modules should be loaded together
 export const moduleDependencies: Record<TranslationModule, TranslationModule[]> = {
@@ -80,6 +83,9 @@ export const moduleDependencies: Record<TranslationModule, TranslationModule[]> 
 	
 	// Client - depend on core, shared
 	'client/settings': ['core/common', 'shared/forms'],
+	'client/dashboard': ['core/common'],
+	'client/favorites': ['core/common'],
+	'client/reviews': ['core/common'],
 };
 
 // Cache for loaded modules

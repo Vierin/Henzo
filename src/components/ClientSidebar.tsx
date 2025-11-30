@@ -22,11 +22,13 @@ import {
 	stripLocaleFromPath,
 	withLocale,
 } from '@/i18n/routing';
+import { useTranslation } from '@/contexts/LanguageContext';
 
 export default function ClientSidebar() {
 	const pathname = usePathname();
 	const router = useRouter();
 	const { logout, user } = useAuth();
+	const t = useTranslation();
 	const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 	const currentLocale = extractLocaleFromPath(pathname) ?? 'en';
 	const pathWithoutLocale = stripLocaleFromPath(pathname);
@@ -132,28 +134,28 @@ export default function ClientSidebar() {
 					{renderNavItem(
 						'/dashboard',
 						<Clock className="w-5 h-5" />,
-						'Visit History',
+						t('client.dashboard.title'),
 						upcomingBookings.length
 					)}
 
 					{renderNavItem(
 						'/favorites',
 						<Heart className="w-5 h-5" />,
-						'Favorite Salons',
+						t('client.favorites.title'),
 						favorites.length
 					)}
 
 					{renderNavItem(
 						'/reviews',
 						<Star className="w-5 h-5" />,
-						'Your Reviews',
+						t('client.reviews.title'),
 						userReviews.length
 					)}
 
 					{renderNavItem(
 						'/settings',
 						<Settings className="w-5 h-5" />,
-						'Account Settings'
+						t('clientSettings.title')
 					)}
 				</nav>
 
@@ -164,7 +166,7 @@ export default function ClientSidebar() {
 						className="flex items-center gap-3 px-3 py-2 text-gray-600 hover:bg-red-50 hover:text-red-600 rounded-lg transition-colors w-full"
 					>
 						<LogOut className="w-5 h-5" />
-						<span className="font-medium">Log Out</span>
+						<span className="font-medium">{t('clientSettings.logOut')}</span>
 					</button>
 				</div>
 			</div>

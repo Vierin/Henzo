@@ -3,8 +3,10 @@
 import { useUserReviews } from '@/hooks/useClient';
 import LoadingSpinner from '@/components/LoadingSpinner';
 import { Star } from 'lucide-react';
+import { useTranslation } from '@/contexts/LanguageContext';
 
 export default function ClientReviewsClient() {
+	const t = useTranslation();
 	const { data: reviews = [], isLoading: loading, error } = useUserReviews();
 
 	const renderStars = (rating: number) => {
@@ -21,7 +23,7 @@ export default function ClientReviewsClient() {
 	if (loading) {
 		return (
 			<div className="flex items-center justify-center min-h-[400px]">
-				<LoadingSpinner size="lg" message="Loading your reviews..." />
+				<LoadingSpinner size="lg" message={t('client.reviews.loadingYourReviews')} />
 			</div>
 		);
 	}
@@ -33,10 +35,10 @@ export default function ClientReviewsClient() {
 					<span className="text-2xl">⚠️</span>
 				</div>
 				<h3 className="text-xl font-semibold text-gray-900 mb-2">
-					Error loading reviews
+					{t('client.reviews.errorLoadingReviews')}
 				</h3>
 				<p className="text-gray-600">
-					{error instanceof Error ? error.message : 'Failed to load reviews'}
+					{error instanceof Error ? error.message : t('client.reviews.failedToLoadReviews')}
 				</p>
 			</div>
 		);
@@ -46,10 +48,10 @@ export default function ClientReviewsClient() {
 		<main role="main" aria-labelledby="reviews-heading">
 			<header className="mb-8">
 				<h1 id="reviews-heading" className="text-3xl font-bold text-gray-900">
-					Your Reviews
+					{t('client.reviews.title')}
 				</h1>
 				<p className="text-gray-600 mt-2">
-					See all the reviews you've left for salons
+					{t('client.reviews.subtitle')}
 				</p>
 			</header>
 
@@ -59,16 +61,16 @@ export default function ClientReviewsClient() {
 						<Star className="w-8 h-8 text-gray-400" />
 					</div>
 					<h3 className="text-lg font-semibold text-gray-900 mb-2">
-						No reviews yet
+						{t('client.reviews.noReviewsYet')}
 					</h3>
 					<p className="text-gray-600 mb-6">
-						Complete a booking to leave your first review
+						{t('client.reviews.noReviewsDescription')}
 					</p>
 					<a
 						href="/dashboard"
 						className="inline-block bg-[#ff5b5b] text-white px-6 py-3 rounded-lg font-medium hover:bg-[#e04a4a] transition-colors"
 					>
-						View Your Bookings
+						{t('client.reviews.viewYourBookings')}
 					</a>
 				</div>
 			) : (

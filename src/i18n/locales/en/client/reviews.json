@@ -1,0 +1,23 @@
+{
+	"title": "Your Reviews",
+	"subtitle": "See all the reviews you've left for salons",
+	"noReviewsYet": "No reviews yet",
+	"noReviewsDescription": "Complete a booking to leave your first review",
+	"viewYourBookings": "View Your Bookings",
+	"errorLoadingReviews": "Error loading reviews",
+	"failedToLoadReviews": "Failed to load reviews",
+	"loadingYourReviews": "Loading your reviews...",
+	"leaveReview": "Leave a Review",
+	"howWasYourExperience": "How was your experience?",
+	"rating1": "Poor",
+	"rating2": "Fair",
+	"rating3": "Good",
+	"rating4": "Very Good",
+	"rating5": "Excellent",
+	"shareYourExperience": "Share your experience (optional)",
+	"commentPlaceholder": "Tell others about your experience...",
+	"submitting": "Submitting...",
+	"submitReview": "Submit Review",
+	"pleaseSelectRating": "Please select a rating"
+}
+

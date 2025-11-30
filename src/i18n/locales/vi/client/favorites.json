@@ -1,0 +1,18 @@
+{
+	"title": "Salon yêu thích",
+	"subtitle": "Các salon bạn đã đánh dấu là yêu thích",
+	"salonsSaved": "salon đã lưu",
+	"salon": "salon",
+	"noFavoriteSalons": "Chưa có salon yêu thích",
+	"noFavoritesDescription": "Duyệt các salon và đánh dấu yêu thích bằng cách nhấp vào biểu tượng trái tim",
+	"browseSalons": "Duyệt Salon",
+	"bookAgain": "Đặt lại",
+	"book": "Đặt",
+	"remove": "Xóa",
+	"errorLoadingFavorites": "Lỗi tải salon yêu thích",
+	"errorLoadingDescription": "Đã xảy ra lỗi khi tải các salon yêu thích của bạn. Vui lòng thử lại sau.",
+	"removeConfirmation": "Bạn có chắc chắn muốn xóa \"{salonName}\" khỏi salon yêu thích? Hành động này không thể hoàn tác.",
+	"removeFromFavorites": "Xóa {salonName} khỏi yêu thích",
+	"saved": "đã lưu"
+}
+

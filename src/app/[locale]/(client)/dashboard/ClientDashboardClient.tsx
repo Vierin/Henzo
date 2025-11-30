@@ -9,8 +9,10 @@ import {
 import VisitHistoryCard from '@/components/VisitHistoryCard';
 import ReviewModal from '@/components/ReviewModal';
 import { useCallback, useMemo, useState } from 'react';
+import { useTranslation } from '@/contexts/LanguageContext';
 
 export default function ClientDashboardClient() {
+	const t = useTranslation();
 	const {
 		data: upcomingBookings,
 		isLoading: upcomingLoading,
@@ -66,7 +68,7 @@ export default function ClientDashboardClient() {
 		async (booking: any) => {
 			try {
 				await cancelBookingMutation.mutateAsync(booking.id);
-				setShowSuccessMessage('Reservation canceled successfully');
+				setShowSuccessMessage(t('client.dashboard.reservationCanceled'));
 				setTimeout(() => setShowSuccessMessage(null), 3000);
 			} catch (error) {
 				console.error('Failed to cancel booking:', error);
@@ -89,13 +91,13 @@ export default function ClientDashboardClient() {
 					visit.salonName ||
 					visit.salon?.name ||
 					visit.Salon?.name ||
-					'Unknown Salon',
+					t('client.dashboard.unknownSalon'),
 				bookingId: visit.id,
 				serviceName:
 					visit.serviceName ||
 					visit.service?.name ||
 					visit.Service?.name ||
-					'Unknown Service',
+					t('client.dashboard.unknownService'),
 			});
 		},
 		[hasExistingReview]
@@ -190,17 +192,17 @@ export default function ClientDashboardClient() {
 				id="error-heading"
 				className="text-xl font-semibold text-gray-900 mb-2"
 			>
-				Error loading appointments
+				{t('client.dashboard.errorLoadingAppointments')}
 			</h3>
 			<p id="error-description" className="text-gray-600 mb-4">
-				There was an error loading your appointments. Please try again later.
+				{t('client.dashboard.errorLoadingDescription')}
 			</p>
 			<button
 				onClick={() => window.location.reload()}
 				className="bg-[#ff5b5b] text-white px-4 py-2 rounded-lg font-medium hover:bg-[#e04a4a] transition-colors focus:outline-none focus:ring-2 focus:ring-[#ff5b5b] focus:ring-offset-2"
-				aria-label="Retry loading appointments"
+				aria-label={t('client.dashboard.tryAgain')}
 			>
-				Try Again
+				{t('client.dashboard.tryAgain')}
 			</button>
 		</div>
 	);
@@ -223,18 +225,17 @@ export default function ClientDashboardClient() {
 				id="empty-upcoming-heading"
 				className="text-xl font-semibold text-gray-900 mb-2"
 			>
-				No upcoming reservations
+				{t('client.dashboard.noUpcomingReservations')}
 			</h3>
 			<p id="empty-upcoming-description" className="text-gray-600 mb-6">
-				Your upcoming reservations will appear here once you start booking
-				services.
+				{t('client.dashboard.noUpcomingDescription')}
 			</p>
 			<a
 				href="/salons"
 				className="inline-block bg-[#ff5b5b] text-white px-6 py-3 rounded-lg font-medium hover:bg-[#e04a4a] transition-colors focus:outline-none focus:ring-2 focus:ring-[#ff5b5b] focus:ring-offset-2"
-				aria-label="Browse and book beauty services"
+				aria-label={t('client.dashboard.bookAService')}
 			>
-				Book a Service
+				{t('client.dashboard.bookAService')}
 			</a>
 		</div>
 	);
@@ -257,10 +258,10 @@ export default function ClientDashboardClient() {
 				id="empty-past-heading"
 				className="text-lg font-semibold text-gray-900 mb-2"
 			>
-				No past reservations
+				{t('client.dashboard.noPastReservations')}
 			</h4>
 			<p id="empty-past-description" className="text-gray-600 text-sm">
-				Your completed appointments will appear here.
+				{t('client.dashboard.noPastDescription')}
 			</p>
 		</div>
 	);
@@ -284,11 +285,9 @@ export default function ClientDashboardClient() {
 						id="dashboard-heading"
 						className="text-3xl font-bold text-gray-900"
 					>
-						Your Reservations
+						{t('client.dashboard.title')}
 					</h1>
-					<p className="text-gray-600 mt-2">
-						Manage your beauty appointments and bookings
-					</p>
+					<p className="text-gray-600 mt-2">{t('client.dashboard.subtitle')}</p>
 				</header>
 				<LoadingSkeleton />
 			</main>
@@ -303,11 +302,9 @@ export default function ClientDashboardClient() {
 						id="dashboard-heading"
 						className="text-3xl font-bold text-gray-900"
 					>
-						Your Reservations
+						{t('client.dashboard.title')}
 					</h1>
-					<p className="text-gray-600 mt-2">
-						Manage your beauty appointments and bookings
-					</p>
+					<p className="text-gray-600 mt-2">{t('client.dashboard.subtitle')}</p>
 				</header>
 				<ErrorDisplay />
 			</main>
@@ -320,11 +317,9 @@ export default function ClientDashboardClient() {
 
 			<header className="mb-8">
 				<h1 id="dashboard-heading" className="text-3xl font-bold text-gray-900">
-					Your Reservations
+					{t('client.dashboard.title')}
 				</h1>
-				<p className="text-gray-600 mt-2">
-					Manage your beauty appointments and bookings
-				</p>
+				<p className="text-gray-600 mt-2">{t('client.dashboard.subtitle')}</p>
 			</header>
 
 			<div className="space-y-12">
@@ -352,11 +347,11 @@ export default function ClientDashboardClient() {
 											salonName:
 												booking.salon?.name ||
 												booking.Salon?.name ||
-												'Unknown Salon',
+												t('client.dashboard.unknownSalon'),
 											serviceName:
 												booking.service?.name ||
 												booking.Service?.name ||
-												'Unknown Service',
+												t('client.dashboard.unknownService'),
 											date: booking.time,
 											image:
 												booking.salon?.logo ||
@@ -391,7 +386,7 @@ export default function ClientDashboardClient() {
 						id="past-section-heading"
 						className="text-2xl font-semibold text-gray-900 mb-6"
 					>
-						Your Past Reservations
+						{t('client.dashboard.pastReservations')}
 					</h2>
 
 					{completedBookingsList.length === 0 ? (
@@ -416,11 +411,11 @@ export default function ClientDashboardClient() {
 											salonName:
 												booking.salon?.name ||
 												booking.Salon?.name ||
-												'Unknown Salon',
+												t('client.dashboard.unknownSalon'),
 											serviceName:
 												booking.service?.name ||
 												booking.Service?.name ||
-												'Unknown Service',
+												t('client.dashboard.unknownService'),
 											date: booking.time, // Pass raw time for proper formatting
 											image:
 												booking.salon?.logo ||
@@ -447,7 +442,7 @@ export default function ClientDashboardClient() {
 												name:
 													booking.salon?.name ||
 													booking.Salon?.name ||
-													'Unknown Salon',
+													t('client.dashboard.unknownSalon'),
 											},
 											service: {
 												id:
@@ -457,7 +452,7 @@ export default function ClientDashboardClient() {
 												name:
 													booking.service?.name ||
 													booking.Service?.name ||
-													'Unknown Service',
+													t('client.dashboard.unknownService'),
 											},
 										}}
 										onBookAgain={handleBookAgain}

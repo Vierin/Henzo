@@ -39,5 +39,7 @@
 	"deleting": "Deleting...",
 	"yesDeleteAccount": "Yes, delete my account",
 	"accountDeleted": "Account deleted successfully. You will be redirected to the home page.",
-	"failedToDelete": "Failed to delete account. Please try again."
+	"failedToDelete": "Failed to delete account. Please try again.",
+	"loadingSettings": "Loading settings...",
+	"logOut": "Log Out"
 }

@@ -3,6 +3,7 @@
 import SalonImage from '@/components/SalonImage';
 import { isPastDate, formatBookingDateTime, getDateBadge } from '@/utils/date';
 import { useState } from 'react';
+import { useTranslation } from '@/contexts/LanguageContext';
 
 interface VisitHistory {
 	id: string;
@@ -43,6 +44,7 @@ export default function VisitHistoryCard({
 	isUpcoming = false,
 	hasReview = false,
 }: VisitHistoryCardProps) {
+	const t = useTranslation();
 	const [showCancelConfirm, setShowCancelConfirm] = useState(false);
 
 	const handleBookAgain = () => {
@@ -77,15 +79,15 @@ export default function VisitHistoryCard({
 	const getStatusBadge = (status?: string) => {
 		switch (status) {
 			case 'CONFIRMED':
-				return { text: 'Confirmed', className: 'bg-green-100 text-green-800' };
+				return { text: t('client.dashboard.confirmed'), className: 'bg-green-100 text-green-800' };
 			case 'PENDING':
-				return { text: 'Pending', className: 'bg-yellow-100 text-yellow-800' };
+				return { text: t('client.dashboard.pending'), className: 'bg-yellow-100 text-yellow-800' };
 			case 'CANCELED':
-				return { text: 'Canceled', className: 'bg-red-100 text-red-800' };
+				return { text: t('client.dashboard.canceled'), className: 'bg-red-100 text-red-800' };
 		case 'COMPLETED':
-			return { text: 'Completed', className: 'bg-blue-100 text-blue-800' };
+			return { text: t('client.dashboard.completed'), className: 'bg-blue-100 text-blue-800' };
 		case 'NOSHOW':
-			return { text: 'No-Show', className: 'bg-orange-100 text-orange-800' };
+			return { text: t('client.dashboard.noShow'), className: 'bg-orange-100 text-orange-800' };
 		default:
 			return null;
 		}
@@ -127,7 +129,7 @@ export default function VisitHistoryCard({
 
 						{visit.staffName && (
 							<p className="text-gray-500 text-sm mb-2">
-								with {visit.staffName}
+								{t('client.dashboard.with')} {visit.staffName}
 							</p>
 						)}
 
@@ -156,7 +158,7 @@ export default function VisitHistoryCard({
 								onClick={handleCancel}
 								className="bg-red-500 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-red-600 transition-colors"
 							>
-								Cancel Reservation
+								{t('client.dashboard.cancelReservation')}
 							</button>
 						) : (
 							<div className="flex gap-2">
@@ -164,7 +166,7 @@ export default function VisitHistoryCard({
 									onClick={handleBookAgain}
 									className="bg-[#ff5b5b] text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-[#e04a4a] transition-colors"
 								>
-									Book Again
+									{t('client.dashboard.bookAgain')}
 								</button>
 								{onLeaveReview && (
 									<button
@@ -176,7 +178,7 @@ export default function VisitHistoryCard({
 												: 'bg-gray-500 text-white hover:bg-gray-600'
 										}`}
 									>
-										{hasReview ? 'Review Left' : 'Leave Review'}
+										{hasReview ? t('client.dashboard.reviewLeft') : t('client.dashboard.leaveReview')}
 									</button>
 								)}
 							</div>
@@ -190,24 +192,23 @@ export default function VisitHistoryCard({
 				<div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
 					<div className="bg-white rounded-xl p-6 max-w-md mx-4">
 						<h3 className="text-lg font-semibold text-gray-900 mb-4">
-							Cancel Reservation
+							{t('client.dashboard.cancelReservation')}
 						</h3>
 						<p className="text-gray-600 mb-6">
-							Are you sure you want to cancel this reservation? This action
-							cannot be undone.
+							{t('client.dashboard.cancelReservationConfirmation')}
 						</p>
 						<div className="flex gap-3 justify-end">
 							<button
 								onClick={() => setShowCancelConfirm(false)}
 								className="px-4 py-2 text-gray-600 hover:text-gray-800 transition-colors"
 							>
-								Keep Reservation
+								{t('client.dashboard.keepReservation')}
 							</button>
 							<button
 								onClick={confirmCancel}
 								className="bg-red-500 text-white px-4 py-2 rounded-lg font-medium hover:bg-red-600 transition-colors"
 							>
-								Yes, Cancel
+								{t('client.dashboard.yesCancel')}
 							</button>
 						</div>
 					</div>

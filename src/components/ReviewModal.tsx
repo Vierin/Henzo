@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { Star, X } from 'lucide-react';
 import { useCreateReview } from '@/hooks/useClient';
 import { toast } from 'react-hot-toast';
+import { useTranslation } from '@/contexts/LanguageContext';
 
 interface ReviewModalProps {
 	isOpen: boolean;
@@ -22,6 +23,7 @@ export default function ReviewModal({
 	bookingId,
 	serviceName,
 }: ReviewModalProps) {
+	const t = useTranslation();
 	const [rating, setRating] = useState(0);
 	const [comment, setComment] = useState('');
 	const [isSubmitting, setIsSubmitting] = useState(false);
@@ -35,7 +37,7 @@ export default function ReviewModal({
 		e.preventDefault();
 
 		if (rating === 0) {
-			toast.error('Please select a rating');
+			toast.error(t('client.reviews.pleaseSelectRating'));
 			return;
 		}
 
@@ -77,7 +79,7 @@ export default function ReviewModal({
 				{/* Header */}
 				<div className="flex items-center justify-between p-6 border-b border-gray-200">
 					<h2 className="text-xl font-semibold text-gray-900">
-						Leave a Review
+						{t('client.reviews.leaveReview')}
 					</h2>
 					<button
 						onClick={handleClose}
@@ -101,7 +103,7 @@ export default function ReviewModal({
 					{/* Rating */}
 					<div className="mb-6">
 						<label className="block text-sm font-medium text-gray-700 mb-3">
-							How was your experience? *
+							{t('client.reviews.howWasYourExperience')} *
 						</label>
 						<div className="flex gap-1">
 							{[1, 2, 3, 4, 5].map((star) => (
@@ -124,11 +126,11 @@ export default function ReviewModal({
 						</div>
 						{rating > 0 && (
 							<p className="text-sm text-gray-600 mt-2">
-								{rating === 1 && 'Poor'}
-								{rating === 2 && 'Fair'}
-								{rating === 3 && 'Good'}
-								{rating === 4 && 'Very Good'}
-								{rating === 5 && 'Excellent'}
+								{rating === 1 && t('client.reviews.rating1')}
+								{rating === 2 && t('client.reviews.rating2')}
+								{rating === 3 && t('client.reviews.rating3')}
+								{rating === 4 && t('client.reviews.rating4')}
+								{rating === 5 && t('client.reviews.rating5')}
 							</p>
 						)}
 					</div>
@@ -139,7 +141,7 @@ export default function ReviewModal({
 							htmlFor="comment"
 							className="block text-sm font-medium text-gray-700 mb-2"
 						>
-							Share your experience (optional)
+							{t('client.reviews.shareYourExperience')}
 						</label>
 						<textarea
 							id="comment"
@@ -148,7 +150,7 @@ export default function ReviewModal({
 							disabled={isSubmitting}
 							rows={4}
 							className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#ff5b5b] focus:border-transparent disabled:opacity-50 disabled:bg-gray-100"
-							placeholder="Tell others about your experience..."
+							placeholder={t('client.reviews.commentPlaceholder')}
 							maxLength={500}
 						/>
 						<div className="text-xs text-gray-500 mt-1 text-right">
@@ -164,7 +166,7 @@ export default function ReviewModal({
 							disabled={isSubmitting}
 							className="px-4 py-2 text-gray-600 hover:text-gray-800 transition-colors disabled:opacity-50"
 						>
-							Cancel
+							{t('common.cancel')}
 						</button>
 						<button
 							type="submit"
@@ -174,10 +176,10 @@ export default function ReviewModal({
 							{isSubmitting ? (
 								<>
 									<div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-									Submitting...
+									{t('client.reviews.submitting')}
 								</>
 							) : (
-								'Submit Review'
+								t('client.reviews.submitReview')
 							)}
 						</button>
 					</div>
