@@ -75,6 +75,7 @@
 		"requestBetaAccess": "Request Beta Access",
 		"agreement": "By submitting this form, you agree to be contacted about the beta testing program.",
 		"successMessage": "Thank you! We'll contact you soon about the beta program.",
+		"magicLinkSent": "Magic link sent to your email! Please check your inbox to complete registration.",
 		"errorMessage": "Failed to submit request. Please try again."
 	},
 	"register": {

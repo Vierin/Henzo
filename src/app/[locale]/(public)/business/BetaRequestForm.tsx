@@ -2,8 +2,10 @@
 
 import { useState } from 'react';
 import toast from 'react-hot-toast';
+import { useTranslation } from '@/contexts/LanguageContext';
 
 export default function BetaRequestForm() {
+	const t = useTranslation();
 	const [formData, setFormData] = useState({
 		fullName: '',
 		email: '',
@@ -72,7 +74,7 @@ export default function BetaRequestForm() {
 			}
 
 			toast.success(
-				'Magic link sent to your email! Please check your inbox to complete registration.',
+				t('business.betaForm.magicLinkSent'),
 				{
 					duration: 5000,
 				}
@@ -87,7 +89,7 @@ export default function BetaRequestForm() {
 			const errorMessage =
 				error instanceof Error
 					? error.message
-					: 'Failed to submit request. Please try again.';
+					: t('business.betaForm.errorMessage');
 			toast.error(errorMessage);
 			console.error('Beta request error:', error);
 		} finally {
@@ -100,14 +102,13 @@ export default function BetaRequestForm() {
 			<div className="container mx-auto max-w-3xl">
 				<div className="text-center mb-16">
 					<div className="inline-block px-4 py-2 bg-secondary rounded-full mb-4">
-						<span className="text-primary">Beta Access</span>
+						<span className="text-primary">{t('business.betaForm.badge')}</span>
 					</div>
 					<h2 className="text-4xl lg:text-5xl tracking-tight mb-4">
-						Request Beta Access
+						{t('business.betaForm.title')}
 					</h2>
 					<p className="text-xl text-muted-foreground">
-						Fill out the form below to join our beta testing program and get
-						early access to Henzo.
+						{t('business.betaForm.subtitle')}
 					</p>
 				</div>
 
@@ -119,7 +120,7 @@ export default function BetaRequestForm() {
 								htmlFor="fullName"
 								className="block text-sm font-medium text-foreground mb-2"
 							>
-								Full Name <span className="text-destructive">*</span>
+								{t('business.betaForm.fullName')} <span className="text-destructive">{t('business.betaForm.required')}</span>
 							</label>
 							<input
 								type="text"
@@ -129,7 +130,7 @@ export default function BetaRequestForm() {
 								onChange={(e) =>
 									setFormData({ ...formData, fullName: e.target.value })
 								}
-								placeholder="John Doe"
+								placeholder={t('business.betaForm.fullNamePlaceholder')}
 								className="block w-full px-4 py-3 border border-border rounded-lg bg-background text-foreground focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-colors"
 							/>
 						</div>
@@ -140,7 +141,7 @@ export default function BetaRequestForm() {
 								htmlFor="email"
 								className="block text-sm font-medium text-foreground mb-2"
 							>
-								Email <span className="text-destructive">*</span>
+								{t('business.betaForm.email')} <span className="text-destructive">{t('business.betaForm.required')}</span>
 							</label>
 							<input
 								type="email"
@@ -150,7 +151,7 @@ export default function BetaRequestForm() {
 								onChange={(e) =>
 									setFormData({ ...formData, email: e.target.value })
 								}
-								placeholder="john@example.com"
+								placeholder={t('business.betaForm.emailPlaceholder')}
 								className="block w-full px-4 py-3 border border-border rounded-lg bg-background text-foreground focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-colors"
 							/>
 						</div>
@@ -161,12 +162,11 @@ export default function BetaRequestForm() {
 							disabled={loading}
 							className="w-full bg-primary text-white px-8 py-4 rounded-lg text-lg font-medium hover:bg-primary/90 transition-all disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
 						>
-							{loading ? 'Submitting...' : 'Request Beta Access'}
+							{loading ? t('business.betaForm.submitting') : t('business.betaForm.requestBetaAccess')}
 						</button>
 
 						<p className="text-sm text-muted-foreground text-center">
-							By submitting this form, you agree to be contacted about the beta
-							testing program.
+							{t('business.betaForm.agreement')}
 						</p>
 					</form>
 				</div>

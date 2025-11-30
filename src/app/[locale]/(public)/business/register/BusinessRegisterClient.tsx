@@ -85,13 +85,13 @@ export default function BusinessRegisterClient() {
 		}
 
 		if (formData.password !== formData.confirmPassword) {
-			toast.error(t.business.register.passwordsDoNotMatch);
+			toast.error(t('business.register.passwordsDoNotMatch'));
 			setLoading(false);
 			return;
 		}
 
 		if (formData.password.length < 6) {
-			toast.error(t.business.register.passwordTooShort);
+			toast.error(t('business.register.passwordTooShort'));
 			setLoading(false);
 			return;
 		}
@@ -107,21 +107,21 @@ export default function BusinessRegisterClient() {
 			if (result.success) {
 				// Если email уже подтвержден (регистрация по magic link), редиректим на complete-setup
 				if (result.emailConfirmed || isMagicLink) {
-					toast.success(t.business.register.registrationSuccessful);
+					toast.success(t('business.register.registrationSuccessful'));
 					router.push('/business/complete-setup');
 				} else {
 					// Обычная регистрация - требуется подтверждение email
-					toast.success(t.business.register.registrationSuccessfulEmail);
+					toast.success(t('business.register.registrationSuccessfulEmail'));
 					router.push(
 						`/check-email?email=${encodeURIComponent(formData.email)}&type=business`
 					);
 				}
 			} else {
-				toast.error(result.error || t.business.register.failedToRegister);
+				toast.error(result.error || t('business.register.failedToRegister'));
 			}
 		} catch (error: any) {
 			console.error('Business registration error:', error);
-			const errorMessage = error.message || t.business.register.failedToRegister;
+			const errorMessage = error.message || t('business.register.failedToRegister');
 			
 			// Show more user-friendly error messages
 			if (errorMessage.includes('Unable to connect') || errorMessage.includes('Failed to fetch')) {
@@ -171,7 +171,7 @@ export default function BusinessRegisterClient() {
 			}
 		} catch (error: any) {
 			console.error('Google business registration error:', error);
-			toast.error(error.message || t.business.register.failedToRegisterGoogle);
+			toast.error(error.message || t('business.register.failedToRegisterGoogle'));
 			setLoading(false);
 		}
 	};
@@ -191,10 +191,10 @@ export default function BusinessRegisterClient() {
 			<div className="max-w-md w-full space-y-8">
 				<div>
 					<h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
-						{t.business.register.title}
+						{t('business.register.title')}
 					</h2>
 					<p className="mt-2 text-center text-sm text-gray-600">
-						{t.business.register.subtitle}
+						{t('business.register.subtitle')}
 					</p>
 				</div>
 				<form className="mt-8 space-y-6" onSubmit={handleSubmit}>
@@ -205,7 +205,7 @@ export default function BusinessRegisterClient() {
 								htmlFor="name"
 								className="block text-sm font-medium text-gray-700"
 							>
-								{t.business.register.ownerFullName}
+								{t('business.register.ownerFullName')}
 							</label>
 							<input
 								id="name"
@@ -213,7 +213,7 @@ export default function BusinessRegisterClient() {
 								type="text"
 								required
 								className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-orange-500 focus:border-orange-500 sm:text-sm text-gray-900"
-								placeholder={t.business.register.ownerFullNamePlaceholder}
+								placeholder={t('business.register.ownerFullNamePlaceholder')}
 								value={formData.name}
 								onChange={handleInputChange}
 							/>
@@ -225,7 +225,7 @@ export default function BusinessRegisterClient() {
 								htmlFor="email"
 								className="block text-sm font-medium text-gray-700"
 							>
-								{t.business.register.emailAddress}
+								{t('business.register.emailAddress')}
 							</label>
 							<input
 								id="email"
@@ -237,13 +237,13 @@ export default function BusinessRegisterClient() {
 								className={`mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-orange-500 focus:border-orange-500 sm:text-sm text-gray-900 ${
 									isMagicLink ? 'bg-gray-100 cursor-not-allowed' : ''
 								}`}
-								placeholder={t.business.register.emailPlaceholder}
+								placeholder={t('business.register.emailPlaceholder')}
 								value={formData.email}
 								onChange={handleInputChange}
 							/>
 							{isMagicLink && (
 								<p className="mt-1 text-xs text-gray-500">
-									{t.business.register.emailVerified}
+									{t('business.register.emailVerified')}
 								</p>
 							)}
 						</div>
@@ -254,7 +254,7 @@ export default function BusinessRegisterClient() {
 								htmlFor="password"
 								className="block text-sm font-medium text-gray-700"
 							>
-								{t.business.register.password}
+								{t('business.register.password')}
 							</label>
 							<input
 								id="password"
@@ -263,7 +263,7 @@ export default function BusinessRegisterClient() {
 								autoComplete="new-password"
 								required
 								className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-orange-500 focus:border-orange-500 sm:text-sm text-gray-900"
-								placeholder={t.business.register.passwordPlaceholder}
+								placeholder={t('business.register.passwordPlaceholder')}
 								value={formData.password}
 								onChange={handleInputChange}
 							/>
@@ -275,7 +275,7 @@ export default function BusinessRegisterClient() {
 								htmlFor="confirmPassword"
 								className="block text-sm font-medium text-gray-700"
 							>
-								{t.business.register.confirmPassword}
+								{t('business.register.confirmPassword')}
 							</label>
 							<input
 								id="confirmPassword"
@@ -284,7 +284,7 @@ export default function BusinessRegisterClient() {
 								autoComplete="new-password"
 								required
 								className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-orange-500 focus:border-orange-500 sm:text-sm text-gray-900"
-								placeholder={t.business.register.confirmPasswordPlaceholder}
+								placeholder={t('business.register.confirmPasswordPlaceholder')}
 								value={formData.confirmPassword}
 								onChange={handleInputChange}
 							/>
@@ -300,10 +300,10 @@ export default function BusinessRegisterClient() {
 							{loading ? (
 								<div className="flex items-center gap-2">
 									<div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-									<span>{t.business.register.creatingAccount}</span>
+									<span>{t('business.register.creatingAccount')}</span>
 								</div>
 							) : (
-								t.business.register.createBusinessAccount
+								t('business.register.createBusinessAccount')
 							)}
 						</button>
 					</div>
@@ -315,7 +315,7 @@ export default function BusinessRegisterClient() {
 						</div>
 						<div className="relative flex justify-center text-sm">
 							<span className="px-2 bg-gray-50 text-gray-500">
-								{t.business.register.orContinueWith}
+								{t('business.register.orContinueWith')}
 							</span>
 						</div>
 					</div>
@@ -346,29 +346,29 @@ export default function BusinessRegisterClient() {
 									d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
 								/>
 							</svg>
-							{t.business.register.continueWithGoogle}
+							{t('business.register.continueWithGoogle')}
 						</button>
 					</div>
 
 					<div className="text-center space-y-4">
 						<p className="text-sm text-gray-600">
-							{t.business.register.alreadyHaveAccount}{' '}
+							{t('business.register.alreadyHaveAccount')}{' '}
 							<a
 								href="/login"
 								className="font-medium text-orange-600 hover:text-orange-700"
 							>
-								{t.business.register.signIn}
+								{t('business.register.signIn')}
 							</a>
 						</p>
 						<div className="border-t border-gray-200 pt-4">
 							<p className="text-sm text-gray-600 mb-2">
-								{t.business.register.lookingToBook}
+								{t('business.register.lookingToBook')}
 							</p>
 							<a
 								href="/register"
 								className="text-sm font-medium text-[#ff5b5b] hover:text-[#ff4545]"
 							>
-								{t.business.register.registerAsClient}
+								{t('business.register.registerAsClient')}
 							</a>
 						</div>
 					</div>

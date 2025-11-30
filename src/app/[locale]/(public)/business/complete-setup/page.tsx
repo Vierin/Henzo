@@ -1,8 +1,9 @@
 'use client';
 
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
+import { extractLocaleFromPath, withLocale } from '@/i18n/routing';
 import { useAuth } from '@/lib/auth-unified';
 import { useQueryClient } from '@tanstack/react-query';
 import { STATIC_CATEGORIES } from '@/constants/categories';
@@ -64,6 +65,7 @@ const WEEKDAYS = [
 
 export default function BusinessCompleteSetupPage() {
 	const router = useRouter();
+	const pathname = usePathname();
 	const queryClient = useQueryClient();
 	const { user, isAuthenticated, isLoading } = useAuth();
 	const [currentStep, setCurrentStep] = useState(1);
@@ -196,40 +198,19 @@ export default function BusinessCompleteSetupPage() {
 			return;
 		}
 
-		// Check if user already has a salon (optional check, don't block if fails)
+		// Check if user already has a salon
 		const checkExistingSalon = async () => {
 			try {
-				// Try to refresh session first
-				const { data: refreshData, error: refreshError } =
-					await supabase.auth.refreshSession();
-
-				// Get fresh session from Supabase
-				const {
-					data: { session: freshSession },
-				} = await supabase.auth.getSession();
-
-				if (!freshSession) {
-					console.log('No fresh session available after refresh attempt');
-					// If still no session, try to redirect to login
-					if (refreshError) {
-						console.log('Refresh error:', refreshError.message);
-						router.push('/login');
-						return;
-					}
-					return;
-				}
-
 				// Use apiClient which handles errors and adds auth token automatically
-				// This is an optional check, so we silently fail if it doesn't work
-				// Wrap in Promise.resolve().catch() to ensure errors are caught silently
-				const responseData = await Promise.resolve(
-					apiClient.get<{
-						success: boolean;
-						data?: any;
-					}>('/salons/current')
-				).catch(() => null); // Silently catch all errors
+				const responseData = await apiClient.get<{
+					success: boolean;
+					data?: any;
+				}>('/salons/current');
 
 				if (responseData?.success && responseData?.data) {
+					// Салон существует - редиректим на дашборд
+					const locale = extractLocaleFromPath(pathname) ?? 'en';
+					
 					// Invalidate queries before redirect
 					await queryClient.invalidateQueries({ queryKey: ['salons'] });
 					await queryClient.invalidateQueries({ queryKey: ['salon'] });
@@ -237,14 +218,13 @@ export default function BusinessCompleteSetupPage() {
 					// Small delay to ensure queries are invalidated
 					await new Promise((resolve) => setTimeout(resolve, 100));
 
-					router.replace('/owner-dashboard');
+					router.replace(withLocale('/owner-dashboard', locale as 'en' | 'ru' | 'vi'));
 					return;
 				}
 			} catch (error: any) {
-				// Silently suppress all errors for this optional check
-				// This is an optional check, so failures are acceptable and shouldn't be logged
-				// Network errors are expected if backend is not available
-				// No need to log or handle - just let user continue with setup
+				// Если ошибка (например, салон не найден или сеть недоступна), 
+				// просто продолжаем - пользователь останется на странице настройки
+				// Это нормально, т.к. если салона нет, пользователь должен его создать
 			}
 		};
 
@@ -422,7 +402,8 @@ export default function BusinessCompleteSetupPage() {
 			// Small delay to ensure queries are invalidated before navigation
 			await new Promise((resolve) => setTimeout(resolve, 100));
 
-			router.push('/owner-dashboard');
+			const locale = extractLocaleFromPath(pathname) ?? 'en';
+			router.push(withLocale('/owner-dashboard', locale as 'en' | 'ru' | 'vi'));
 		} catch (error: any) {
 			console.error('Error completing salon setup:', error);
 			toast.error(error.message || 'Failed to complete salon setup');

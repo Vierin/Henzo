@@ -8,6 +8,7 @@ import { useAuth } from '@/lib/auth-unified';
 import { useTranslation } from '@/contexts/LanguageContext';
 import { withLocale, extractLocaleFromPath } from '@/i18n/routing';
 import Link from 'next/link';
+import { apiClient } from '@/lib/api-client';
 
 export default function LoginClient() {
 	const [email, setEmail] = useState('');
@@ -33,14 +34,39 @@ export default function LoginClient() {
 
 			// Стандартные редиректы по ролям
 			const locale = extractLocaleFromPath(pathname) ?? 'en';
+			
+			// Для OWNER нужно проверить наличие салона
+			if (user.role === 'OWNER') {
+				const checkSalonAndRedirect = async () => {
+					try {
+						// Проверяем наличие салона через API
+						const response = await apiClient.get<{
+							success: boolean;
+							data?: any;
+						}>('/salons/current');
+
+						if (response?.success && response?.data) {
+							// Салон существует - редиректим на дашборд
+							router.push(withLocale('/owner-dashboard', locale as 'en' | 'ru' | 'vi'));
+						} else {
+							// Салон не существует - редиректим на настройку
+							router.push(withLocale('/business/complete-setup', locale as 'en' | 'ru' | 'vi'));
+						}
+					} catch (error) {
+						// В случае ошибки (например, сеть недоступна) редиректим на настройку
+						// Это безопасный вариант, т.к. если салон есть, страница настройки сама проверит и перенаправит
+						router.push(withLocale('/business/complete-setup', locale as 'en' | 'ru' | 'vi'));
+					}
+				};
+
+				checkSalonAndRedirect();
+				return;
+			}
+
+			// Для других ролей стандартный редирект
 			switch (user.role) {
 				case 'ADMIN':
 					router.push(withLocale('/admin-panel', locale as 'en' | 'ru' | 'vi'));
-					break;
-				case 'OWNER':
-					router.push(
-						withLocale('/business/complete-setup', locale as 'en' | 'ru' | 'vi')
-					);
 					break;
 				case 'CLIENT':
 					router.push(withLocale('/dashboard', locale as 'en' | 'ru' | 'vi'));
@@ -50,7 +76,7 @@ export default function LoginClient() {
 					break;
 			}
 		}
-	}, [isAuthenticated, user, router, returnTo]);
+	}, [isAuthenticated, user, router, returnTo, pathname]);
 
 	const handleLogin = async (e: React.FormEvent) => {
 		e.preventDefault();
@@ -60,14 +86,14 @@ export default function LoginClient() {
 			const result = await login(email, password);
 
 			if (result.success) {
-				toast.success(t.auth.welcomeBack);
+				toast.success(t('auth.welcomeBack'));
 				// Редирект будет выполнен в useEffect когда user обновится
 			} else {
-				toast.error(result.error || t.auth.signInFailed);
+				toast.error(result.error || t('auth.signInFailed'));
 			}
 		} catch (error: any) {
 			console.error('Login error:', error);
-			toast.error(error.message || t.auth.signInFailed);
+			toast.error(error.message || t('auth.signInFailed'));
 		} finally {
 			setLoading(false);
 		}
@@ -96,7 +122,7 @@ export default function LoginClient() {
 			}
 		} catch (error: any) {
 			console.error('Google login error:', error);
-			toast.error(error.message || t.auth.googleSignInFailed);
+			toast.error(error.message || t('auth.googleSignInFailed'));
 			setLoading(false);
 		}
 	};
@@ -129,21 +155,21 @@ export default function LoginClient() {
 	};
 
 	return (
-		<div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
+		<div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8 pt-24">
 			<div className="max-w-md w-full space-y-8">
 				<div>
 					<h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
-						{t.auth.signInTitle}
+						{t('auth.signInTitle')}
 					</h2>
 					<p className="mt-2 text-center text-sm text-gray-600">
-						{t.auth.signInSubtitle}
+						{t('auth.signInSubtitle')}
 					</p>
 				</div>
 				<form className="mt-8 space-y-6" onSubmit={handleLogin}>
 					<div className="rounded-md shadow-sm -space-y-px">
 						<div>
 							<label htmlFor="email-address" className="sr-only">
-								{t.auth.emailAddress}
+								{t('auth.emailAddress')}
 							</label>
 							<input
 								id="email-address"
@@ -152,14 +178,14 @@ export default function LoginClient() {
 								autoComplete="email"
 								required
 								className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-t-md focus:outline-none focus:ring-[#ff5b5b] focus:border-[#ff5b5b] focus:z-10 sm:text-sm"
-								placeholder={t.auth.emailAddress}
+								placeholder={t('auth.emailAddress')}
 								value={email}
 								onChange={(e) => setEmail(e.target.value)}
 							/>
 						</div>
 						<div>
 							<label htmlFor="password" className="sr-only">
-								{t.auth.password}
+								{t('auth.password')}
 							</label>
 							<input
 								id="password"
@@ -168,7 +194,7 @@ export default function LoginClient() {
 								autoComplete="current-password"
 								required
 								className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-b-md focus:outline-none focus:ring-[#ff5b5b] focus:border-[#ff5b5b] focus:z-10 sm:text-sm"
-								placeholder={t.auth.password}
+								placeholder={t('auth.password')}
 								value={password}
 								onChange={(e) => setPassword(e.target.value)}
 							/>
@@ -187,7 +213,7 @@ export default function LoginClient() {
 								htmlFor="remember-me"
 								className="ml-2 block text-sm text-gray-900"
 							>
-								{t.auth.rememberMe}
+								{t('auth.rememberMe')}
 							</label>
 						</div>
 
@@ -202,7 +228,7 @@ export default function LoginClient() {
 								)}
 								className="font-medium text-[#ff5b5b] hover:text-[#ff5b5b]"
 							>
-								{t.auth.forgotPassword}
+								{t('auth.forgotPassword')}
 							</Link>
 						</div>
 					</div>
@@ -216,7 +242,7 @@ export default function LoginClient() {
 							{loading ? (
 								<div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
 							) : (
-								t.auth.signIn
+								t('auth.signIn')
 							)}
 						</button>
 					</div>
@@ -228,7 +254,7 @@ export default function LoginClient() {
 						</div>
 						<div className="relative flex justify-center text-sm">
 							<span className="px-2 bg-gray-50 text-gray-500">
-								{t.auth.orContinueWith}
+								{t('auth.orContinueWith')}
 							</span>
 						</div>
 					</div>
@@ -277,7 +303,7 @@ export default function LoginClient() {
 
 					<div className="text-center space-y-4">
 						<p className="text-sm text-gray-600">
-							{t.auth.dontHaveAccount}{' '}
+							{t('auth.dontHaveAccount')}{' '}
 							<Link
 								href={withLocale(
 									'/register',
@@ -288,12 +314,12 @@ export default function LoginClient() {
 								)}
 								className="font-medium text-[#ff5b5b] hover:text-[#ff5b5b]"
 							>
-								{t.auth.signUpAsClient}
+								{t('auth.signUpAsClient')}
 							</Link>
 						</p>
 						<div className="border-t border-gray-200 pt-4">
 							<p className="text-sm text-gray-600 mb-2">
-								{t.auth.areYouSalonOwner}
+								{t('auth.areYouSalonOwner')}
 							</p>
 							<Link
 								href={withLocale(
@@ -305,7 +331,7 @@ export default function LoginClient() {
 								)}
 								className="text-sm font-medium text-orange-600 hover:text-orange-700"
 							>
-								{t.auth.registerBusinessAccount}
+								{t('auth.registerBusinessAccount')}
 							</Link>
 						</div>
 					</div>

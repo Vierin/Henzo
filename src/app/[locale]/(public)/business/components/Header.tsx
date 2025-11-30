@@ -26,31 +26,31 @@ export function Header() {
 						href="#features"
 						className="text-foreground/70 hover:text-foreground transition-colors cursor-pointer"
 					>
-						{t.business.header.features}
+						{t('business.header.features')}
 					</a>
 					<a
 						href="#benefits"
 						className="text-foreground/70 hover:text-foreground transition-colors cursor-pointer"
 					>
-						{t.business.header.benefits}
+						{t('business.header.benefits')}
 					</a>
 					<a
 						href="#beta-form"
 						className="text-foreground/70 hover:text-foreground transition-colors cursor-pointer"
 					>
-						{t.business.header.betaAccess}
+						{t('business.header.betaAccess')}
 					</a>
 				</nav>
 
 				<div className="flex items-center gap-3">
 					<Link href="/login" className="cursor-pointer">
 						<Button variant="ghost" className="hidden sm:inline-flex">
-							{t.business.header.signIn}
+							{t('business.header.signIn')}
 						</Button>
 					</Link>
 					<Link href="#beta-form" className="cursor-pointer">
 						<Button className="bg-primary text-white hover:bg-primary/90">
-							{t.business.header.startFree}
+							{t('business.header.startFree')}
 						</Button>
 					</Link>
 				</div>

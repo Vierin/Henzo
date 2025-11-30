@@ -8,12 +8,12 @@ export function Benefits() {
 	const t = useTranslation();
 
 	const benefits = [
-		t.business.benefits.benefit1,
-		t.business.benefits.benefit2,
-		t.business.benefits.benefit3,
-		t.business.benefits.benefit4,
-		t.business.benefits.benefit5,
-		t.business.benefits.benefit6,
+		t('business.benefits.benefit1'),
+		t('business.benefits.benefit2'),
+		t('business.benefits.benefit3'),
+		t('business.benefits.benefit4'),
+		t('business.benefits.benefit5'),
+		t('business.benefits.benefit6'),
 	];
 
 	return (
@@ -33,18 +33,20 @@ export function Benefits() {
 
 					<div className="space-y-8 order-1 lg:order-2">
 						<div className="inline-block px-4 py-2 bg-secondary rounded-full">
-							<span className="text-primary">{t.business.benefits.badge}</span>
+							<span className="text-primary">
+								{t('business.benefits.badge')}
+							</span>
 						</div>
 
 						<h2 className="text-4xl lg:text-5xl tracking-tight">
-							{t.business.benefits.title} <br />
+							{t('business.benefits.title')} <br />
 							<span className="text-primary">
-								{t.business.benefits.titleBreak}
+								{t('business.benefits.titleBreak')}
 							</span>
 						</h2>
 
 						<p className="text-xl text-muted-foreground">
-							{t.business.benefits.subtitle}
+							{t('business.benefits.subtitle')}
 						</p>
 
 						<div className="space-y-4">

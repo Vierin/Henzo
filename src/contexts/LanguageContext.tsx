@@ -126,6 +126,10 @@ export function LanguageProvider({ children }: LanguageProviderProps) {
 	if (isClientPage) {
 		modulesToLoad.push('client/settings');
 	}
+	// Load shared/auth for login and register pages
+	if (pathNoLocale.startsWith('/login') || pathNoLocale.startsWith('/register')) {
+		modulesToLoad.push('shared/auth');
+	}
 	
 	const { dictionary: additionalDict } = useModuleTranslations(
 		modulesToLoad,

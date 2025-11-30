@@ -117,9 +117,7 @@ export default function ClientSettingsClient() {
 			}, 2000);
 		} catch (error: any) {
 			console.error('Error deleting account:', error);
-			toast.error(
-				error.message || t('clientSettings.failedToDelete')
-			);
+			toast.error(error.message || t('clientSettings.failedToDelete'));
 		} finally {
 			setDeleteLoading(false);
 		}
@@ -139,9 +137,7 @@ export default function ClientSettingsClient() {
 				<h1 id="settings-heading" className="text-3xl font-bold text-gray-900">
 					{t('clientSettings.title')}
 				</h1>
-				<p className="text-gray-600 mt-2">
-					{t('clientSettings.subtitle')}
-				</p>
+				<p className="text-gray-600 mt-2">{t('clientSettings.subtitle')}</p>
 			</header>
 
 			<div className="space-y-6">

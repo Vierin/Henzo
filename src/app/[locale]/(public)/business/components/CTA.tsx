@@ -14,11 +14,11 @@ export function CTA() {
 				<div className="grid lg:grid-cols-2 gap-12 items-center max-w-6xl mx-auto">
 					<div className="space-y-6">
 						<h2 className="text-4xl lg:text-5xl tracking-tight">
-							{t.business.cta.title} <br /> {t.business.cta.titleBreak}
+							{t('business.cta.title')} <br /> {t('business.cta.titleBreak')}
 						</h2>
 
 						<p className="text-xl text-muted-foreground">
-							{t.business.cta.subtitle}
+							{t('business.cta.subtitle')}
 						</p>
 
 						<div className="flex flex-col sm:flex-row gap-4">
@@ -27,7 +27,7 @@ export function CTA() {
 									size="lg"
 									className="bg-primary text-white hover:bg-primary/90 group w-full sm:w-auto"
 								>
-									{t.business.cta.startForFree}
+									{t('business.cta.startForFree')}
 									<ArrowRight className="ml-2 w-4 h-4 group-hover:translate-x-1 transition-transform" />
 								</Button>
 							</Link>
@@ -35,7 +35,7 @@ export function CTA() {
 
 						<div className="flex items-center gap-4 pt-4">
 							<div className="text-sm">
-								<div>{t.business.cta.joinBetaTesters}</div>
+								<div>{t('business.cta.joinBetaTesters')}</div>
 							</div>
 						</div>
 					</div>

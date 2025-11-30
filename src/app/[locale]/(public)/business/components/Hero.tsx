@@ -14,16 +14,16 @@ export function Hero() {
 				<div className="grid lg:grid-cols-2 gap-12 items-center">
 					<div className="space-y-8">
 						<div className="inline-block px-4 py-2 bg-secondary rounded-full">
-							<span className="text-primary">{t.business.hero.badge}</span>
+							<span className="text-primary">{t('business.hero.badge')}</span>
 						</div>
 
 						<h1 className="text-5xl lg:text-6xl tracking-tight">
-							{t.business.hero.title}{' '}
-							<span className="text-primary">{t.business.hero.titleHighlight}</span>
+							{t('business.hero.title')}{' '}
+							<span className="text-primary">{t('business.hero.titleHighlight')}</span>
 						</h1>
 
 						<p className="text-xl text-muted-foreground max-w-xl">
-							{t.business.hero.subtitle}
+							{t('business.hero.subtitle')}
 						</p>
 
 						<div className="flex flex-col sm:flex-row gap-4">
@@ -32,7 +32,7 @@ export function Hero() {
 									size="lg"
 									className="bg-primary text-white hover:bg-primary/90 group w-full sm:w-auto"
 								>
-									{t.business.hero.joinBeta}
+									{t('business.hero.joinBeta')}
 									<ArrowRight className="ml-2 w-4 h-4 group-hover:translate-x-1 transition-transform" />
 								</Button>
 							</Link>
@@ -42,23 +42,23 @@ export function Hero() {
 									variant="outline"
 									className="w-full sm:w-auto"
 								>
-									{t.business.hero.signIn}
+									{t('business.hero.signIn')}
 								</Button>
 							</Link>
 						</div>
 
 						<div className="flex items-center gap-8 pt-4">
 							<div>
-								<div className="text-3xl">{t.business.hero.free}</div>
+								<div className="text-3xl">{t('business.hero.free')}</div>
 								<div className="text-sm text-muted-foreground">
-									{t.business.hero.freePeriod}
+									{t('business.hero.freePeriod')}
 								</div>
 							</div>
 							<div className="w-px h-12 bg-border"></div>
 							<div>
-								<div className="text-3xl">{t.business.hero.quickStart}</div>
+								<div className="text-3xl">{t('business.hero.quickStart')}</div>
 								<div className="text-sm text-muted-foreground">
-									{t.business.hero.quickStartTime}
+									{t('business.hero.quickStartTime')}
 								</div>
 							</div>
 						</div>
