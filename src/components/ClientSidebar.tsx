@@ -179,7 +179,7 @@ export default function ClientSidebar() {
 			<button
 				onClick={toggleMobileMenu}
 				className="md:hidden fixed top-2 right-2 z-50 bg-white shadow-lg rounded-lg p-2 border border-gray-200"
-				aria-label="Toggle menu"
+				aria-label={t('common.toggleMenu')}
 			>
 				{isMobileMenuOpen ? (
 					<X className="w-5 h-5 text-gray-700" />

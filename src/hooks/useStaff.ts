@@ -26,7 +26,7 @@ export const useStaffBySalon = (salonId: string) => {
 		},
 		enabled: !!salonId,
 		staleTime: 5 * 60 * 1000, // 5 minutes
-		refetchOnMount: false, // Не перезапрашивать если данные свежие
+		refetchOnMount: 'always', // Перезапрашивать при монтировании если данные устарели
 		refetchOnWindowFocus: false, // Не перезапрашивать при фокусе окна
 	});
 };
@@ -58,10 +58,19 @@ export const useCreateStaff = () => {
 			return apiClient.post<Staff>('/staff', data);
 		},
 		onSuccess: (data) => {
-			// Invalidate staff lists for the salon
+			// Optimistically update the cache
+			const queryKey = staffKeys.bySalon(data.salonId);
+			const existingStaff = queryClient.getQueryData<Staff[]>(queryKey) || [];
+			queryClient.setQueryData<Staff[]>(queryKey, [...existingStaff, data]);
+			
+			// Invalidate and refetch to ensure we have the latest data
 			queryClient.invalidateQueries({
 				queryKey: staffKeys.bySalon(data.salonId),
 			});
+			queryClient.refetchQueries({
+				queryKey: staffKeys.bySalon(data.salonId),
+			});
+			
 			toast.success('Staff member created successfully!');
 		},
 		onError: (error: Error) => {

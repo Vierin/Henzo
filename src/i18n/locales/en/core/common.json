@@ -18,5 +18,6 @@
 	"yes": "Yes",
 	"no": "No",
 	"useCurrentLocation": "Use Current Location",
-	"gettingLocation": "Getting your location..."
+	"gettingLocation": "Getting your location...",
+	"toggleMenu": "Toggle menu"
 }

@@ -6,6 +6,18 @@
 	"viewYourBookings": "Посмотреть ваши бронирования",
 	"errorLoadingReviews": "Ошибка загрузки отзывов",
 	"failedToLoadReviews": "Не удалось загрузить отзывы",
-	"loadingYourReviews": "Загрузка ваших отзывов..."
+	"loadingYourReviews": "Загрузка ваших отзывов...",
+	"leaveReview": "Оставить отзыв",
+	"howWasYourExperience": "Как прошло ваше посещение?",
+	"rating1": "Плохо",
+	"rating2": "Удовлетворительно",
+	"rating3": "Хорошо",
+	"rating4": "Очень хорошо",
+	"rating5": "Отлично",
+	"shareYourExperience": "Поделитесь своим опытом (необязательно)",
+	"commentPlaceholder": "Расскажите другим о своем опыте...",
+	"submitting": "Отправка...",
+	"submitReview": "Отправить отзыв",
+	"pleaseSelectRating": "Пожалуйста, выберите оценку"
 }
 

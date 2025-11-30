@@ -39,5 +39,7 @@
 	"deleting": "Đang xóa...",
 	"yesDeleteAccount": "Có, xóa tài khoản của tôi",
 	"accountDeleted": "Xóa tài khoản thành công. Bạn sẽ được chuyển hướng đến trang chủ.",
-	"failedToDelete": "Không thể xóa tài khoản. Vui lòng thử lại."
+	"failedToDelete": "Không thể xóa tài khoản. Vui lòng thử lại.",
+	"loadingSettings": "Đang tải cài đặt...",
+	"logOut": "Đăng xuất"
 }
