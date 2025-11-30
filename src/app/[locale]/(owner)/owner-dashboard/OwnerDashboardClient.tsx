@@ -141,8 +141,7 @@ export default function OwnerDashboardClient() {
 	if (isLoading) {
 		return (
 			<div className="flex items-center justify-center py-12">
-				<LoadingSpinner size="lg" />
-				<span className="sr-only">{t('owner.dashboard.loadingDashboard')}</span>
+				<LoadingSpinner size="lg" message={t('owner.dashboard.loadingDashboard')} />
 			</div>
 		);
 	}
@@ -150,8 +149,7 @@ export default function OwnerDashboardClient() {
 	if (!hasSalon) {
 		return (
 			<div className="flex items-center justify-center py-12">
-				<LoadingSpinner size="lg" />
-				<span className="sr-only">{t('owner.dashboard.redirectingToSetup')}</span>
+				<LoadingSpinner size="lg" message={t('owner.dashboard.redirectingToSetup')} />
 			</div>
 		);
 	}
