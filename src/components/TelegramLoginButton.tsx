@@ -89,9 +89,10 @@ export default function TelegramLoginButton({
 			}
 		};
 
-		// Проверяем, что botId - это число (bot_id), а не username
-		if (!botId || isNaN(Number(botId))) {
-			console.error('❌ Invalid botId. Expected numeric bot_id, got:', botId);
+		// Проверяем, что botId указан
+		// Telegram Login Widget принимает как bot_id (число), так и username (строка)
+		if (!botId) {
+			console.error('❌ Invalid botId. botId is required');
 			return;
 		}
 
