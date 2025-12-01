@@ -89,15 +89,27 @@ export default function TelegramLoginButton({
 			}
 		};
 
+		// Проверяем, что botId - это число (bot_id), а не username
+		if (!botId || isNaN(Number(botId))) {
+			console.error('❌ Invalid botId. Expected numeric bot_id, got:', botId);
+			return;
+		}
+
 		console.log('🔧 Telegram Widget script setup:', {
 			botId,
+			botIdType: typeof botId,
+			isNumeric: !isNaN(Number(botId)),
 			callbackName,
 			buttonSize,
 			requestAccess,
 			lang,
+			currentOrigin: typeof window !== 'undefined' ? window.location.origin : 'N/A',
 		});
 
 		// Загружаем Telegram Widget скрипт
+		// Важно: Telegram Login Widget НЕ использует return_to (это для OAuth)
+		// Widget использует только callback функцию через data-onauth
+		// Виджет автоматически определяет origin из window.location.origin
 		const script = document.createElement('script');
 		script.src = 'https://telegram.org/js/telegram-widget.js?22';
 		script.setAttribute('data-telegram-login', botId);
@@ -107,7 +119,13 @@ export default function TelegramLoginButton({
 		script.setAttribute('data-userpic', usePic.toString());
 		script.setAttribute('data-lang', lang);
 		script.setAttribute('data-onauth', `${callbackName}(user)`);
+		// НЕ добавляем origin или return_to - виджет автоматически определяет origin
 		script.async = true;
+
+		// Обработка ошибок загрузки скрипта
+		script.onerror = () => {
+			console.error('❌ Failed to load Telegram Widget script');
+		};
 
 		containerRef.current.appendChild(script);
 
