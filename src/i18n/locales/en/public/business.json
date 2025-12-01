@@ -90,10 +90,6 @@
 		"passwordPlaceholder": "Create a password",
 		"confirmPassword": "Confirm Password",
 		"confirmPasswordPlaceholder": "Confirm your password",
-		"inviteCode": "Invite Code",
-		"inviteCodePlaceholder": "Enter your invite code",
-		"inviteCodeApplied": "✓ Invite code applied from registration link",
-		"inviteCodeRequired": "Required for beta testing",
 		"creatingAccount": "Creating account...",
 		"createBusinessAccount": "Create Business Account",
 		"orContinueWith": "Or continue with",
@@ -102,15 +98,11 @@
 		"signIn": "Sign in",
 		"lookingToBook": "Looking to book?",
 		"registerAsClient": "Register as a client instead →",
-		"inviteCodeRequiredError": "Invite code is required for registration",
-		"invalidInviteCode": "Invalid invite code",
-		"pleaseEnterValidCode": "Please enter a valid invite code",
 		"passwordsDoNotMatch": "Passwords do not match",
 		"passwordTooShort": "Password must be at least 6 characters",
 		"registrationSuccessful": "Business account created! Complete your salon setup.",
 		"registrationSuccessfulEmail": "Business account created! Please check your email to verify your account.",
 		"failedToRegister": "Failed to register business account",
-		"failedToRegisterGoogle": "Failed to register with Google",
-		"pleaseEnterInviteCode": "Please enter an invite code first"
+		"failedToRegisterGoogle": "Failed to register with Google"
 	}
 }

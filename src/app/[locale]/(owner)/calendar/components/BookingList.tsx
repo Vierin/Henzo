@@ -54,7 +54,7 @@ export default function BookingList({
 	onPageChange,
 }: BookingListProps) {
 	const t = useTranslation();
-	
+
 	const getStatusBadge = (status: string) => {
 		switch (status) {
 			case 'PENDING':
@@ -454,7 +454,9 @@ export default function BookingList({
 				>
 					<div role="columnheader">{t('owner.calendar.client')}</div>
 					<div role="columnheader">{t('owner.calendar.service')}</div>
-					<div role="columnheader">{t('owner.dashboard.staffLabel')?.replace(':', '') || 'Staff'}</div>
+					<div role="columnheader">
+						{t('owner.dashboard.staffLabel')?.replace(':', '') || 'Staff'}
+					</div>
 					<div role="columnheader">{t('owner.calendar.date')}</div>
 					<div role="columnheader">{t('owner.calendar.time')}</div>
 					<div role="columnheader">{t('owner.calendar.status')}</div>
@@ -469,7 +471,9 @@ export default function BookingList({
 							aria-live="polite"
 						>
 							<div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#ea4b4b] mx-auto"></div>
-							<p className="mt-2 text-gray-600">{t('owner.calendar.loadingBookings')}</p>
+							<p className="mt-2 text-gray-600">
+								{t('owner.calendar.loadingBookings')}
+							</p>
 						</div>
 					) : error ? (
 						<div className="px-6 py-8 text-center" role="alert">
@@ -487,9 +491,6 @@ export default function BookingList({
 						</div>
 					) : bookings.length === 0 ? (
 						<div className="px-6 py-8 text-center" role="status">
-							<div className="text-gray-400 mb-2" aria-hidden="true">
-								📅
-							</div>
 							<p className="text-gray-600">
 								{t('owner.calendar.noBookingsWithFilters')}
 							</p>
@@ -506,9 +507,12 @@ export default function BookingList({
 									aria-setsize={paginatedBookings.length}
 								>
 									<div className="font-semibold">
-										{booking.user?.name || `${t('owner.calendar.clientId')} ${booking.userId}`}
+										{booking.user?.name ||
+											`${t('owner.calendar.clientId')} ${booking.userId}`}
 									</div>
-									<div>{booking.service?.name || t('owner.unknownService')}</div>
+									<div>
+										{booking.service?.name || t('owner.unknownService')}
+									</div>
 									<div>{booking.staff?.name || t('owner.unassigned')}</div>
 									<div>{formatDateShort(booking.time)}</div>
 									<div>{formatTimeSafe(booking.time)}</div>
@@ -527,7 +531,8 @@ export default function BookingList({
 									<div className="flex items-start justify-between mb-2">
 										<div className="flex-1 min-w-0">
 											<h3 className="font-semibold text-gray-900 text-sm truncate">
-												{booking.user?.name || `${t('owner.calendar.clientId')} ${booking.userId}`}
+												{booking.user?.name ||
+													`${t('owner.calendar.clientId')} ${booking.userId}`}
 											</h3>
 											<p className="text-sm text-gray-600 truncate">
 												{booking.service?.name || 'Unknown Service'}
@@ -540,13 +545,17 @@ export default function BookingList({
 
 									<div className="grid grid-cols-2 gap-3 text-xs text-gray-600 mb-3">
 										<div>
-											<span className="font-medium">{t('owner.dashboard.staffLabel')}</span>
+											<span className="font-medium">
+												{t('owner.dashboard.staffLabel')}
+											</span>
 											<p className="truncate font-semibold">
 												{booking.staff?.name || t('owner.unassigned')}
 											</p>
 										</div>
 										<div>
-											<span className="font-medium">{t('owner.dateAndTime')}</span>
+											<span className="font-medium">
+												{t('owner.dateAndTime')}
+											</span>
 											<p className="truncate font-semibold">
 												{formatDateShort(booking.time)}{' '}
 												{formatTimeSafe(booking.time)}
@@ -569,11 +578,15 @@ export default function BookingList({
 					aria-label="Pagination"
 				>
 					<div className="text-sm text-gray-700 text-center sm:text-left">
-						{t('owner.showing')} <span className="font-medium">{startIndex + 1}</span> {t('owner.to')}{' '}
+						{t('owner.showing')}{' '}
+						<span className="font-medium">{startIndex + 1}</span>{' '}
+						{t('owner.to')}{' '}
 						<span className="font-medium">
 							{Math.min(endIndex, bookings.length)}
 						</span>{' '}
-						{t('owner.of')} <span className="font-medium">{bookings.length}</span> {t('owner.results')}
+						{t('owner.of')}{' '}
+						<span className="font-medium">{bookings.length}</span>{' '}
+						{t('owner.results')}
 					</div>
 
 					<div className="flex items-center justify-center gap-2">

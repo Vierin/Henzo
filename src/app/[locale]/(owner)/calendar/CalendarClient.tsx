@@ -99,7 +99,7 @@ export default function CalendarClient() {
 			await refetchBookings();
 		} catch (err) {
 			console.error('Error refetching bookings:', err);
-				toast.error(t('owner.dashboard.failedToRefresh'));
+			toast.error(t('owner.dashboard.failedToRefresh'));
 		}
 	}, [refetchBookings]);
 
@@ -169,7 +169,7 @@ export default function CalendarClient() {
 					// Only open if this is from OAuth (has returnUrl)
 					if (bookingData.returnUrl) {
 						console.log(
-							'📅 Opening booking modal for pending booking after OAuth'
+							'Opening booking modal for pending booking after OAuth'
 						);
 						setIsBookingModalOpen(true);
 					}
@@ -244,8 +244,10 @@ export default function CalendarClient() {
 				toast.success(t('owner.dashboard.bookingCancelled'));
 				fetchBookings();
 			} catch (err) {
-				const 					errorMessage =
-						err instanceof Error ? err.message : t('owner.dashboard.failedToCancel');
+				const errorMessage =
+					err instanceof Error
+						? err.message
+						: t('owner.dashboard.failedToCancel');
 				toast.error(errorMessage);
 			}
 		},
@@ -259,8 +261,10 @@ export default function CalendarClient() {
 				toast.success(t('owner.dashboard.bookingConfirmed'));
 				fetchBookings();
 			} catch (err) {
-				const 					errorMessage =
-						err instanceof Error ? err.message : t('owner.dashboard.failedToConfirm');
+				const errorMessage =
+					err instanceof Error
+						? err.message
+						: t('owner.dashboard.failedToConfirm');
 				toast.error(errorMessage);
 			}
 		},
@@ -274,8 +278,10 @@ export default function CalendarClient() {
 				toast.success(t('owner.dashboard.bookingRejected'));
 				fetchBookings();
 			} catch (err) {
-				const 					errorMessage =
-						err instanceof Error ? err.message : t('owner.dashboard.failedToReject');
+				const errorMessage =
+					err instanceof Error
+						? err.message
+						: t('owner.dashboard.failedToReject');
 				toast.error(errorMessage);
 			}
 		},
@@ -289,10 +295,10 @@ export default function CalendarClient() {
 				toast.success(t('owner.calendar.bookingMarkedNoShow'));
 				fetchBookings();
 			} catch (err) {
-				const 					errorMessage =
-						err instanceof Error
-							? err.message
-							: t('owner.calendar.failedToMarkNoShow');
+				const errorMessage =
+					err instanceof Error
+						? err.message
+						: t('owner.calendar.failedToMarkNoShow');
 				toast.error(errorMessage);
 			}
 		},
@@ -458,7 +464,9 @@ export default function CalendarClient() {
 				aria-live="polite"
 			>
 				<LoadingSpinner size="lg" />
-				<span className="sr-only">{t('owner.calendar.loadingCalendarData')}</span>
+				<span className="sr-only">
+					{t('owner.calendar.loadingCalendarData')}
+				</span>
 			</div>
 		);
 	}
@@ -471,7 +479,9 @@ export default function CalendarClient() {
 				aria-live="polite"
 			>
 				<LoadingSpinner size="lg" />
-				<span className="sr-only">{t('owner.calendar.redirectingToSetup')}</span>
+				<span className="sr-only">
+					{t('owner.calendar.redirectingToSetup')}
+				</span>
 			</div>
 		);
 	}
@@ -540,7 +550,9 @@ export default function CalendarClient() {
 									aria-label={t('owner.calendar.switchToListView')}
 								>
 									<List className="w-4 h-4" />
-									<span className="hidden sm:inline">{t('owner.calendar.list')}</span>
+									<span className="hidden sm:inline">
+										{t('owner.calendar.list')}
+									</span>
 								</button>
 								<button
 									onClick={() => {
@@ -557,7 +569,9 @@ export default function CalendarClient() {
 									aria-label={t('owner.calendar.switchToCalendarView')}
 								>
 									<CalendarDays className="w-4 h-4" />
-									<span className="hidden sm:inline">{t('owner.calendar.title')}</span>
+									<span className="hidden sm:inline">
+										{t('owner.calendar.title')}
+									</span>
 								</button>
 							</div>
 
@@ -569,7 +583,9 @@ export default function CalendarClient() {
 									aria-label={t('owner.calendar.blockTime')}
 								>
 									<Ban className="w-4 h-4" />
-									<span className="hidden sm:inline">{t('owner.calendar.blockTime')}</span>
+									<span className="hidden sm:inline">
+										{t('owner.calendar.blockTime')}
+									</span>
 								</button>
 
 								<button
@@ -580,7 +596,9 @@ export default function CalendarClient() {
 									<span className="text-lg leading-none" aria-hidden="true">
 										＋
 									</span>
-									<span className="hidden sm:inline">{t('owner.calendar.newAppointment')}</span>
+									<span className="hidden sm:inline">
+										{t('owner.calendar.newAppointment')}
+									</span>
 									<span className="sm:hidden">{t('owner.calendar.new')}</span>
 								</button>
 							</div>

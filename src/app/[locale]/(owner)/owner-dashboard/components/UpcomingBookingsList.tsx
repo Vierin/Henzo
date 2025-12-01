@@ -182,13 +182,12 @@ export default function UpcomingBookingsList({
 							aria-live="polite"
 						>
 							<div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#ea4b4b] mx-auto"></div>
-							<p className="mt-2 text-gray-600">{t('owner.dashboard.loadingBookings')}</p>
+							<p className="mt-2 text-gray-600">
+								{t('owner.dashboard.loadingBookings')}
+							</p>
 						</div>
 					) : bookings.length === 0 ? (
 						<div className="px-6 py-8 text-center" role="status">
-							<div className="text-gray-400 mb-2" aria-hidden="true">
-								📅
-							</div>
 							<p className="text-gray-600">
 								{t('owner.dashboard.noUpcomingBookingsNext7Days')}
 							</p>
@@ -205,8 +204,12 @@ export default function UpcomingBookingsList({
 								<div className="font-semibold">
 									{booking.user?.name || `Client ID: ${booking.userId}`}
 								</div>
-								<div>{booking.service?.name || t('owner.dashboard.unknownService')}</div>
-								<div>{booking.staff?.name || t('owner.dashboard.unassigned')}</div>
+								<div>
+									{booking.service?.name || t('owner.dashboard.unknownService')}
+								</div>
+								<div>
+									{booking.staff?.name || t('owner.dashboard.unassigned')}
+								</div>
 								<div>{formatDateShort(booking.time)}</div>
 								<div>{formatTimeSafe(booking.time)}</div>
 								<div>{getStatusBadge(booking.status)}</div>
@@ -296,13 +299,12 @@ export default function UpcomingBookingsList({
 						aria-live="polite"
 					>
 						<div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#ea4b4b] mx-auto"></div>
-						<p className="mt-2 text-gray-600">{t('owner.dashboard.loadingBookings')}</p>
+						<p className="mt-2 text-gray-600">
+							{t('owner.dashboard.loadingBookings')}
+						</p>
 					</div>
 				) : bookings.length === 0 ? (
 					<div className="px-4 py-8 text-center" role="status">
-						<div className="text-gray-400 mb-2" aria-hidden="true">
-							📅
-						</div>
 						<p className="text-gray-600">
 							{t('owner.dashboard.noUpcomingBookingsNext7Days')}
 						</p>
@@ -323,7 +325,8 @@ export default function UpcomingBookingsList({
 											{booking.user?.name || `Client ID: ${booking.userId}`}
 										</h3>
 										<p className="text-sm text-gray-600 truncate">
-											{booking.service?.name || t('owner.dashboard.unknownService')}
+											{booking.service?.name ||
+												t('owner.dashboard.unknownService')}
 										</p>
 									</div>
 									<div className="ml-3 flex-shrink-0">
@@ -333,7 +336,9 @@ export default function UpcomingBookingsList({
 
 								<div className="grid grid-cols-2 gap-3 text-xs sm:text-sm text-gray-600 mb-3">
 									<div>
-										<span className="font-medium">{t('owner.dashboard.staffLabel')}</span>
+										<span className="font-medium">
+											{t('owner.dashboard.staffLabel')}
+										</span>
 										<p className="truncate font-semibold">
 											{booking.staff?.name || t('owner.dashboard.unassigned')}
 										</p>
@@ -342,7 +347,9 @@ export default function UpcomingBookingsList({
 										{renderBookingActions(booking)}
 									</div>
 									<div className="text-[0.8rem]">
-										<span className="font-medium">{t('owner.dashboard.dateAndTime')}</span>
+										<span className="font-medium">
+											{t('owner.dashboard.dateAndTime')}
+										</span>
 										<p className="font-semibold">
 											{formatDateShort(booking.time)}{' '}
 											{formatTimeSafe(booking.time)}

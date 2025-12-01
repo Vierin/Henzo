@@ -120,6 +120,8 @@ export function LanguageProvider({ children }: LanguageProviderProps) {
 		publicModules.push('public/categories');
 	} else if (pathNoLocale.startsWith('/booking')) {
 		publicModules.push('public/booking');
+		// Auth module needed for booking-confirmed page
+		publicModules.push('shared/auth');
 	} else if (pathNoLocale.startsWith('/category/')) {
 		publicModules.push('public/categories');
 		// Homepage module needed for search components

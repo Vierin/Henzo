@@ -20,5 +20,6 @@
 	"useCurrentLocation": "Sử dụng vị trí hiện tại",
 	"gettingLocation": "Đang lấy vị trí của bạn...",
 	"toggleMenu": "Chuyển đổi menu",
-	"minutesShort": "phút"
+	"minutesShort": "phút",
+	"goHome": "Về trang chủ"
 }

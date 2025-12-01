@@ -41,5 +41,11 @@
 	"failedToSendEmail": "Failed to send confirmation email. Please try again.",
 	"failedToBookAppointment": "Failed to book appointment",
 	"completeYourBooking": "Complete Your Booking",
-	"signInToComplete": "Please sign in or enter your email to complete booking for"
+	"signInToComplete": "Please sign in or enter your email to complete booking for",
+	"confirming": "Confirming your booking...",
+	"confirmFailed": "Failed to confirm booking",
+	"confirmFailedTitle": "Confirmation Failed",
+	"bookingConfirmedDescription": "Your reservation has been successfully confirmed.",
+	"waitingForSalonConfirmationTitle": "Waiting for Salon Confirmation",
+	"waitingForSalonConfirmationDescription": "Your booking is now pending. The salon will review and confirm your appointment. You'll receive an email notification once it's confirmed."
 }

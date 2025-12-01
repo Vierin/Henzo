@@ -215,12 +215,6 @@ export default function ClientDashboardClient() {
 			aria-labelledby="empty-upcoming-heading"
 			aria-describedby="empty-upcoming-description"
 		>
-			<div
-				className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4"
-				aria-hidden="true"
-			>
-				<span className="text-2xl">📅</span>
-			</div>
 			<h3
 				id="empty-upcoming-heading"
 				className="text-xl font-semibold text-gray-900 mb-2"

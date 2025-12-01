@@ -20,5 +20,6 @@
 	"useCurrentLocation": "Использовать текущее местоположение",
 	"gettingLocation": "Определяем ваше местоположение...",
 	"toggleMenu": "Переключить меню",
-	"minutesShort": "мин"
+	"minutesShort": "мин",
+	"goHome": "На главную"
 }

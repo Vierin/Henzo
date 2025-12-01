@@ -91,12 +91,24 @@ export default function RegisterForm() {
 
 			if (result.success) {
 				toast.success(t.auth.registrationSuccessful);
-				router.push(
-					withLocale(
-						'/check-email?email=' + encodeURIComponent(formData.email),
-						(extractLocaleFromPath(pathname) ?? 'en') as 'en' | 'ru' | 'vi'
-					)
-				);
+				
+				// Если email уже подтвержден (например, при подтверждении бронирования),
+				// перенаправляем на dashboard вместо страницы проверки email
+				if (result.emailConfirmed) {
+					router.push(
+						withLocale(
+							'/dashboard',
+							(extractLocaleFromPath(pathname) ?? 'en') as 'en' | 'ru' | 'vi'
+						)
+					);
+				} else {
+					router.push(
+						withLocale(
+							'/check-email?email=' + encodeURIComponent(formData.email),
+							(extractLocaleFromPath(pathname) ?? 'en') as 'en' | 'ru' | 'vi'
+						)
+					);
+				}
 			} else {
 				toast.error(result.error || t.auth.registrationFailed);
 			}

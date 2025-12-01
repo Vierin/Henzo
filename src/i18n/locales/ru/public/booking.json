@@ -41,5 +41,11 @@
 	"failedToSendEmail": "Не удалось отправить письмо с подтверждением. Пожалуйста, попробуйте снова.",
 	"failedToBookAppointment": "Не удалось забронировать запись",
 	"completeYourBooking": "Завершите бронирование",
-	"signInToComplete": "Пожалуйста, войдите или введите email для завершения бронирования"
+	"signInToComplete": "Пожалуйста, войдите или введите email для завершения бронирования",
+	"confirming": "Подтверждаем вашу бронь...",
+	"confirmFailed": "Не удалось подтвердить бронирование",
+	"confirmFailedTitle": "Ошибка подтверждения",
+	"bookingConfirmedDescription": "Ваша запись успешно подтверждена.",
+	"waitingForSalonConfirmationTitle": "Ожидается подтверждение салона",
+	"waitingForSalonConfirmationDescription": "Ваша запись сейчас в ожидании. Салон проверит и подтвердит вашу запись. Вы получите письмо как только запись будет подтверждена."
 }

@@ -132,20 +132,38 @@ class AuthManager {
 		password: string;
 		name?: string;
 		phone?: string;
-	}): Promise<{ success: boolean; error?: string }> {
+	}): Promise<{ success: boolean; error?: string; emailConfirmed?: boolean }> {
 		try {
 			this.setState({ isLoading: true });
 
 			// Отправляем данные на бэкенд, который создаст пользователя в Supabase и БД
-			await apiClient.post('/auth/register-client', {
+			const response = await apiClient.post<{
+				user: any;
+				session: any;
+				emailConfirmed?: boolean;
+			}>('/auth/register-client', {
 				email: data.email,
 				password: data.password,
 				name: data.name,
 				phone: data.phone,
 			});
 
-			this.setState({ isLoading: false });
-			return { success: true };
+			// Если есть сессия, устанавливаем пользователя
+			if (response.session) {
+				this.setState({
+					user: response.user,
+					isAuthenticated: true,
+					isLoading: false,
+				});
+				localStorage.setItem('auth_user', JSON.stringify(response.user));
+			} else {
+				this.setState({ isLoading: false });
+			}
+
+			return { 
+				success: true, 
+				emailConfirmed: response.emailConfirmed || false 
+			};
 		} catch (error) {
 			this.setState({ isLoading: false });
 			return {

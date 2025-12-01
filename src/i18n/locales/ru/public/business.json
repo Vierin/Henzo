@@ -90,10 +90,6 @@
 		"passwordPlaceholder": "Создайте пароль",
 		"confirmPassword": "Подтвердите пароль",
 		"confirmPasswordPlaceholder": "Подтвердите ваш пароль",
-		"inviteCode": "Пригласительный код",
-		"inviteCodePlaceholder": "Введите ваш пригласительный код",
-		"inviteCodeApplied": "✓ Пригласительный код применен из ссылки регистрации",
-		"inviteCodeRequired": "Требуется для бета-тестирования",
 		"creatingAccount": "Создание аккаунта...",
 		"createBusinessAccount": "Создать бизнес-аккаунт",
 		"orContinueWith": "Или продолжить с",
@@ -102,15 +98,11 @@
 		"signIn": "Войти",
 		"lookingToBook": "Хотите записаться?",
 		"registerAsClient": "Зарегистрироваться как клиент →",
-		"inviteCodeRequiredError": "Пригласительный код обязателен для регистрации",
-		"invalidInviteCode": "Неверный пригласительный код",
-		"pleaseEnterValidCode": "Пожалуйста, введите действительный пригласительный код",
 		"passwordsDoNotMatch": "Пароли не совпадают",
 		"passwordTooShort": "Пароль должен содержать не менее 6 символов",
 		"registrationSuccessful": "Бизнес аккаунт создан! Завершите настройку вашего салона.",
 		"registrationSuccessfulEmail": "Бизнес аккаунт создан! Пожалуйста, проверьте вашу электронную почту для подтверждения аккаунта.",
 		"failedToRegister": "Не удалось зарегистрировать бизнес-аккаунт",
-		"failedToRegisterGoogle": "Не удалось зарегистрироваться через Google",
-		"pleaseEnterInviteCode": "Пожалуйста, сначала введите пригласительный код"
+		"failedToRegisterGoogle": "Не удалось зарегистрироваться через Google"
 	}
 }

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { usePathname, useRouter } from 'next/navigation';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { useAuth } from '@/lib/auth-unified';
 import Image from 'next/image';
@@ -22,6 +22,7 @@ export default function PublicHeader() {
 	const dropdownRef = useRef<HTMLDivElement>(null);
 	const profileDropdownRef = useRef<HTMLDivElement>(null);
 	const pathname = usePathname();
+	const searchParams = useSearchParams();
 	const router = useRouter();
 	const t = useTranslation();
 
@@ -46,7 +47,10 @@ export default function PublicHeader() {
 	] as const;
 
 	const handleLanguageSelect = (lang: (typeof languages)[number]) => {
-		const target = withLocale(pathname, lang.code as 'en' | 'ru' | 'vi');
+		// Сохраняем query-параметры (например, token на странице booking-confirmed)
+		const basePath = withLocale(pathname, lang.code as 'en' | 'ru' | 'vi');
+		const query = searchParams.toString();
+		const target = query ? `${basePath}?${query}` : basePath;
 		setIsLanguageDropdownOpen(false);
 		router.push(target);
 	};

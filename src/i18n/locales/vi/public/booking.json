@@ -71,5 +71,11 @@
 	"failedToSendEmail": "Không thể gửi email xác nhận. Vui lòng thử lại.",
 	"failedToBookAppointment": "Không thể đặt lịch hẹn",
 	"completeYourBooking": "Hoàn tất đặt lịch",
-	"signInToComplete": "Vui lòng đăng nhập hoặc nhập email để hoàn tất đặt lịch cho"
+	"signInToComplete": "Vui lòng đăng nhập hoặc nhập email để hoàn tất đặt lịch cho",
+	"confirming": "Đang xác nhận đặt lịch của bạn...",
+	"confirmFailed": "Xác nhận đặt lịch thất bại",
+	"confirmFailedTitle": "Lỗi xác nhận",
+	"bookingConfirmedDescription": "Lịch hẹn của bạn đã được xác nhận thành công.",
+	"waitingForSalonConfirmationTitle": "Đang chờ salon xác nhận",
+	"waitingForSalonConfirmationDescription": "Lịch hẹn của bạn đang ở trạng thái chờ. Salon sẽ xem xét và xác nhận. Bạn sẽ nhận được email khi lịch hẹn được xác nhận."
 }
