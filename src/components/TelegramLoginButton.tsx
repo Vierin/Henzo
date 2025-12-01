@@ -42,8 +42,39 @@ export default function TelegramLoginButton({
 
 		// Создаем глобальную функцию для обработки авторизации
 		(window as any)[callbackName] = (user: any) => {
-			console.log('📱 Telegram Widget auth data:', user);
-			if (user && user.id && user.hash) {
+			console.log('📱 Telegram Widget callback called');
+			console.log('📱 Raw user data:', user);
+			console.log('📱 User type:', typeof user);
+			console.log('📱 User keys:', user ? Object.keys(user) : 'null');
+			console.log('📱 User stringified:', JSON.stringify(user, null, 2));
+			
+			if (!user) {
+				console.error('❌ User data is null or undefined');
+				return;
+			}
+
+			if (!user.id) {
+				console.error('❌ User ID is missing:', user);
+				return;
+			}
+
+			if (!user.hash) {
+				console.error('❌ User hash is missing:', user);
+				return;
+			}
+
+			if (!user.first_name) {
+				console.error('❌ User first_name is missing:', user);
+				return;
+			}
+
+			if (!user.auth_date) {
+				console.error('❌ User auth_date is missing:', user);
+				return;
+			}
+
+			console.log('✅ All required fields present, calling onAuth');
+			try {
 				onAuth({
 					id: user.id,
 					first_name: user.first_name || '',
@@ -53,10 +84,18 @@ export default function TelegramLoginButton({
 					auth_date: user.auth_date,
 					hash: user.hash,
 				});
-			} else {
-				console.error('❌ Invalid Telegram auth data:', user);
+			} catch (error) {
+				console.error('❌ Error in onAuth callback:', error);
 			}
 		};
+
+		console.log('🔧 Telegram Widget script setup:', {
+			botId,
+			callbackName,
+			buttonSize,
+			requestAccess,
+			lang,
+		});
 
 		// Загружаем Telegram Widget скрипт
 		const script = document.createElement('script');

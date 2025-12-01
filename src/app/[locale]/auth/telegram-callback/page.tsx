@@ -12,6 +12,10 @@ function TelegramCallbackContent() {
 
 	useEffect(() => {
 		const handleCallback = async () => {
+			console.log('🔵 Telegram callback page loaded');
+			console.log('🔵 Window available:', typeof window !== 'undefined');
+			console.log('🔵 Current URL:', typeof window !== 'undefined' ? window.location.href : 'N/A');
+			
 			try {
 				// Telegram OAuth возвращает данные в hash фрагменте URL (после #)
 				// Важно: hash доступен только на клиенте, не на сервере
@@ -20,8 +24,10 @@ function TelegramCallbackContent() {
 					return;
 				}
 
+				console.log('🔵 Waiting for hash data...');
 				// Увеличиваем задержку для гарантии, что hash уже в URL после редиректа
 				await new Promise((resolve) => setTimeout(resolve, 500));
+				console.log('🔵 Delay completed, checking for data...');
 
 				let telegramData: Record<string, string | null> = {};
 

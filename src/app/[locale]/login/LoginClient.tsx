@@ -158,9 +158,39 @@ export default function LoginClient() {
 		auth_date: number;
 		hash: string;
 	}) => {
+		console.log('🚀 handleTelegramAuth called');
+		console.log('📱 Telegram data received:', telegramData);
+		console.log('📱 Data type check:', {
+			id: typeof telegramData.id,
+			first_name: typeof telegramData.first_name,
+			hash: typeof telegramData.hash,
+			auth_date: typeof telegramData.auth_date,
+		});
+		console.log('📱 Data validation:', {
+			hasId: !!telegramData.id,
+			hasFirstName: !!telegramData.first_name,
+			hasHash: !!telegramData.hash,
+			hasAuthDate: !!telegramData.auth_date,
+			idValue: telegramData.id,
+			firstNameValue: telegramData.first_name,
+			hashValue: telegramData.hash,
+			authDateValue: telegramData.auth_date,
+		});
+
+		if (!telegramData.id || !telegramData.first_name || !telegramData.hash || !telegramData.auth_date) {
+			console.error('❌ Missing required Telegram data in handleTelegramAuth:', {
+				id: telegramData.id,
+				first_name: telegramData.first_name,
+				hash: telegramData.hash,
+				auth_date: telegramData.auth_date,
+			});
+			toast.error('Missing required Telegram authentication data');
+			return;
+		}
+
 		setLoading(true);
 		try {
-			console.log('📱 Telegram Widget auth data received:', telegramData);
+			console.log('📱 Sending Telegram data to backend...');
 
 			// Отправляем данные на бэкенд
 			const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
@@ -186,8 +216,15 @@ export default function LoginClient() {
 			}
 
 			const result = await response.json();
+			console.log('📱 Backend response:', {
+				success: result.success,
+				hasSession: !!result.session,
+				hasAccessToken: !!result.session?.access_token,
+				user: result.user,
+			});
 
 			if (result.success && result.session?.access_token) {
+				console.log('✅ Authentication successful, setting session...');
 				// Сохраняем сессию в Supabase
 				const { error: sessionError } = await supabase.auth.setSession({
 					access_token: result.session.access_token,
