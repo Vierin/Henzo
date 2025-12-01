@@ -20,15 +20,18 @@ function TelegramCallbackContent() {
 					return;
 				}
 
-				// Небольшая задержка для гарантии, что hash уже в URL
-				await new Promise((resolve) => setTimeout(resolve, 100));
+				// Увеличиваем задержку для гарантии, что hash уже в URL после редиректа
+				await new Promise((resolve) => setTimeout(resolve, 500));
 
 				let telegramData: Record<string, string | null> = {};
 
 				// Получаем полный URL и извлекаем hash
 				const fullUrl = window.location.href;
 				console.log('🔍 Full URL:', fullUrl);
+				console.log('🔍 Location hash:', window.location.hash);
+				console.log('🔍 Location search:', window.location.search);
 
+				// Пробуем получить из hash (основной способ для Telegram OAuth)
 				const hashIndex = fullUrl.indexOf('#');
 
 				if (hashIndex !== -1) {
@@ -36,19 +39,23 @@ function TelegramCallbackContent() {
 					console.log('📋 Hash string:', hashString);
 
 					// Парсим hash как URLSearchParams
-					const hashParams = new URLSearchParams(hashString);
+					try {
+						const hashParams = new URLSearchParams(hashString);
 
-					telegramData = {
-						hash: hashParams.get('hash'),
-						id: hashParams.get('id'),
-						first_name: hashParams.get('first_name'),
-						last_name: hashParams.get('last_name'),
-						username: hashParams.get('username'),
-						photo_url: hashParams.get('photo_url'),
-						auth_date: hashParams.get('auth_date'),
-					};
+						telegramData = {
+							hash: hashParams.get('hash'),
+							id: hashParams.get('id'),
+							first_name: hashParams.get('first_name'),
+							last_name: hashParams.get('last_name'),
+							username: hashParams.get('username'),
+							photo_url: hashParams.get('photo_url'),
+							auth_date: hashParams.get('auth_date'),
+						};
 
-					console.log('📋 Parsed from hash:', telegramData);
+						console.log('📋 Parsed from hash:', telegramData);
+					} catch (e) {
+						console.error('❌ Error parsing hash:', e);
+					}
 				} else {
 					console.log('⚠️ No hash found in URL');
 				}
@@ -66,6 +73,23 @@ function TelegramCallbackContent() {
 						auth_date: searchParams.get('auth_date'),
 					};
 					console.log('📋 Parsed from query params:', telegramData);
+				}
+
+				// Если все еще нет данных, пробуем парсить напрямую из window.location.hash
+				if (!telegramData.id && !telegramData.hash && window.location.hash) {
+					console.log('📋 Trying to parse from window.location.hash directly');
+					const hashStr = window.location.hash.substring(1);
+					const hashParams = new URLSearchParams(hashStr);
+					telegramData = {
+						hash: hashParams.get('hash'),
+						id: hashParams.get('id'),
+						first_name: hashParams.get('first_name'),
+						last_name: hashParams.get('last_name'),
+						username: hashParams.get('username'),
+						photo_url: hashParams.get('photo_url'),
+						auth_date: hashParams.get('auth_date'),
+					};
+					console.log('📋 Parsed from window.location.hash:', telegramData);
 				}
 
 				const {

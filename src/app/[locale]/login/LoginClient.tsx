@@ -9,11 +9,13 @@ import { useTranslation } from '@/contexts/LanguageContext';
 import { withLocale, extractLocaleFromPath } from '@/i18n/routing';
 import Link from 'next/link';
 import { apiClient } from '@/lib/api-client';
+import TelegramLoginButton from '@/components/TelegramLoginButton';
 
 export default function LoginClient() {
 	const [email, setEmail] = useState('');
 	const [password, setPassword] = useState('');
 	const [loading, setLoading] = useState(false);
+	const [telegramBotId, setTelegramBotId] = useState<string | null>(null);
 	const router = useRouter();
 	const pathname = usePathname();
 	const searchParams = useSearchParams();
@@ -127,38 +129,99 @@ export default function LoginClient() {
 		}
 	};
 
-	const handleTelegramLogin = async () => {
+	// Загружаем bot_id при монтировании компонента
+	useEffect(() => {
+		const fetchBotId = async () => {
+			try {
+				const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+				const response = await fetch(`${apiUrl}/auth/telegram/bot-id`);
+
+				if (response.ok) {
+					const { botId } = await response.json();
+					setTelegramBotId(botId);
+				}
+			} catch (error) {
+				console.error('Failed to get Telegram bot ID:', error);
+			}
+		};
+
+		fetchBotId();
+	}, []);
+
+	// Обработчик авторизации через Telegram Widget
+	const handleTelegramAuth = async (telegramData: {
+		id: number;
+		first_name: string;
+		last_name?: string;
+		username?: string;
+		photo_url?: string;
+		auth_date: number;
+		hash: string;
+	}) => {
 		setLoading(true);
 		try {
-			// Получаем bot_id с бэкенда
+			console.log('📱 Telegram Widget auth data received:', telegramData);
+
+			// Отправляем данные на бэкенд
 			const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
-			const response = await fetch(`${apiUrl}/auth/telegram/bot-id`);
+			const response = await fetch(`${apiUrl}/auth/telegram`, {
+				method: 'POST',
+				headers: {
+					'Content-Type': 'application/json',
+				},
+				body: JSON.stringify({
+					id: telegramData.id,
+					first_name: telegramData.first_name,
+					last_name: telegramData.last_name || undefined,
+					username: telegramData.username || undefined,
+					photo_url: telegramData.photo_url || undefined,
+					auth_date: telegramData.auth_date,
+					hash: telegramData.hash,
+				}),
+			});
 
 			if (!response.ok) {
-				throw new Error('Failed to get Telegram bot ID');
+				const errorData = await response.json();
+				throw new Error(errorData.message || 'Telegram authentication failed');
 			}
 
-			const { botId } = await response.json();
+			const result = await response.json();
 
-			// Получаем origin (домен должен быть добавлен в BotFather)
-			const origin = window.location.origin;
-			
-			// Проверяем, что это не localhost (для продакшена)
-			if (origin.includes('localhost') || origin.includes('127.0.0.1')) {
-				console.warn('Telegram OAuth: Using localhost. Make sure to configure domain in BotFather for production.');
+			if (result.success && result.session?.access_token) {
+				// Сохраняем сессию в Supabase
+				const { error: sessionError } = await supabase.auth.setSession({
+					access_token: result.session.access_token,
+					refresh_token: result.session.refresh_token || '',
+				});
+
+				if (sessionError) {
+					throw sessionError;
+				}
+
+				toast.success('Successfully logged in with Telegram!');
+
+				// Обновляем состояние авторизации
+				await login({
+					email: result.user.email,
+					password: '', // Не используется для Telegram
+				});
+
+				// Редирект
+				if (returnTo && result.user.role === 'CLIENT') {
+					router.push(returnTo);
+				} else {
+					const locale = extractLocaleFromPath(pathname) ?? 'en';
+					router.push(
+						withLocale('/dashboard', locale as 'en' | 'ru' | 'vi')
+					);
+				}
+			} else {
+				throw new Error('Invalid response from server');
 			}
-
-			// Создаем callback URL
-			const callbackUrl = encodeURIComponent(
-				`${origin}/auth/telegram-callback`
-			);
-
-			// Открываем Telegram OAuth
-			// Важно: домен в параметре origin должен быть добавлен в BotFather через /mybots -> Bot Settings -> Domain
-			window.location.href = `https://oauth.telegram.org/auth?bot_id=${botId}&origin=${encodeURIComponent(origin)}&request_access=write&return_to=${callbackUrl}`;
 		} catch (error: any) {
-			console.error('Telegram login error:', error);
-			toast.error(error.message || 'Failed to login with Telegram');
+			console.error('Telegram auth error:', error);
+			toast.error(error.message || 'Failed to authenticate with Telegram');
+		} finally {
 			setLoading(false);
 		}
 	};
@@ -297,17 +360,22 @@ export default function LoginClient() {
 							Google
 						</button>
 
-						<button
-							type="button"
-							onClick={handleTelegramLogin}
-							disabled={loading}
-							className="w-full flex justify-center items-center py-2 px-4 border border-gray-300 rounded-md shadow-sm bg-white text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#0088cc] disabled:opacity-50 disabled:cursor-not-allowed"
-						>
-							<svg className="w-5 h-5 mr-2" viewBox="0 0 24 24" fill="#0088cc">
-								<path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.562 8.161c-.166 1.699-.835 5.826-1.178 7.73-.152.864-.45 1.152-.74 1.18-.63.056-1.108-.416-1.718-.816-.951-.64-1.49-1.037-2.416-1.662-1.07-.707-.376-1.096.233-1.73.16-.164 2.893-2.653 2.947-2.88.007-.03.014-.148-.055-.21-.069-.062-.17-.04-.244-.025-.105.02-1.78 1.13-5.024 3.316-.476.33-.907.49-1.293.482-.428-.009-1.252-.242-1.865-.44-.752-.243-1.35-.37-1.297-.781.027-.216.325-.437.895-.663 3.498-1.524 5.83-2.529 6.998-3.014 3.332-1.386 4.025-1.627 4.476-1.635.099-.002.321.023.465.14.118.095.151.223.167.312.016.09.036.293.02.45z" />
-							</svg>
-							Telegram
-						</button>
+						{telegramBotId ? (
+							<div className="flex justify-center">
+								<TelegramLoginButton
+									botId={telegramBotId}
+									onAuth={handleTelegramAuth}
+									buttonSize="large"
+									requestAccess="write"
+									usePic={true}
+									lang={extractLocaleFromPath(pathname) ?? 'en'}
+								/>
+							</div>
+						) : (
+							<div className="w-full flex justify-center items-center py-2 px-4 border border-gray-300 rounded-md shadow-sm bg-gray-50 text-sm font-medium text-gray-400">
+								Loading Telegram...
+							</div>
+						)}
 					</div>
 
 					<div className="text-center space-y-4">
