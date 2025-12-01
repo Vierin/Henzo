@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useRouter, useSearchParams } from 'next/navigation';
 import toast from 'react-hot-toast';
@@ -9,7 +9,7 @@ import { useAuth } from '@/lib/auth-unified';
 import { useTranslation } from '@/contexts/LanguageContext';
 import { getOAuthRedirectUrl } from '@/utils/oauth';
 
-export default function BusinessRegisterClient() {
+function BusinessRegisterForm() {
 	const t = useTranslation();
 	const searchParams = useSearchParams();
 	const emailFromUrl = searchParams.get('email') || '';
@@ -376,5 +376,22 @@ export default function BusinessRegisterClient() {
 				</form>
 			</div>
 		</div>
+	);
+}
+
+export default function BusinessRegisterClient() {
+	return (
+		<Suspense
+			fallback={
+				<div className="min-h-screen flex items-center justify-center bg-gray-50">
+					<div className="text-center">
+						<div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-500 mx-auto mb-4"></div>
+						<p className="text-gray-600">Loading...</p>
+					</div>
+				</div>
+			}
+		>
+			<BusinessRegisterForm />
+		</Suspense>
 	);
 }

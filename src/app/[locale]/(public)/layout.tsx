@@ -1,5 +1,6 @@
 'use client';
 
+import { Suspense } from 'react';
 import { usePathname } from 'next/navigation';
 import { useEffect, useMemo, useState } from 'react';
 import PublicHeader from '@/components/PublicHeader';

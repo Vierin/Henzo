@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback, Suspense } from 'react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { useAuth } from '@/lib/auth-unified';
@@ -14,7 +14,7 @@ import {
 } from '@/i18n/routing';
 import { useTranslation } from '@/contexts/LanguageContext';
 
-export default function PublicHeader() {
+function PublicHeaderContent() {
 	const [isLanguageDropdownOpen, setIsLanguageDropdownOpen] = useState(false);
 	const [showProfileDropdown, setShowProfileDropdown] = useState(false);
 	const [selectedLanguage, setSelectedLanguage] = useState('EN');
@@ -276,5 +276,24 @@ export default function PublicHeader() {
 				</div>
 			)}
 		</>
+	);
+}
+
+export default function PublicHeader() {
+	return (
+		<Suspense
+			fallback={
+				<header className="bg-white shadow-sm">
+					<div className="mx-auto max-w-7xl md:px-6 px-4 py-2">
+						<div className="flex items-center justify-between">
+							<div className="h-10 w-32 bg-gray-200 rounded animate-pulse"></div>
+							<div className="h-8 w-24 bg-gray-200 rounded animate-pulse"></div>
+						</div>
+					</div>
+				</header>
+			}
+		>
+			<PublicHeaderContent />
+		</Suspense>
 	);
 }

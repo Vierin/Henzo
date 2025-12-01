@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
+import { useState, useEffect, useRef, useCallback, useMemo, Suspense } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import { extractLocaleFromPath, withLocale } from '@/i18n/routing';
@@ -63,7 +63,7 @@ const WEEKDAYS = [
 	{ key: 'sunday', label: 'Sunday' },
 ];
 
-export default function BusinessCompleteSetupPage() {
+function BusinessCompleteSetupContent() {
 	const router = useRouter();
 	const pathname = usePathname();
 	const queryClient = useQueryClient();
@@ -867,5 +867,22 @@ export default function BusinessCompleteSetupPage() {
 				</div>
 			</div>
 		</div>
+	);
+}
+
+export default function BusinessCompleteSetupPage() {
+	return (
+		<Suspense
+			fallback={
+				<div className="min-h-screen bg-[#F8F5F2] flex items-center justify-center">
+					<div className="text-center">
+						<div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#ff5b5b] mx-auto mb-4"></div>
+						<p className="text-gray-900">Loading...</p>
+					</div>
+				</div>
+			}
+		>
+			<BusinessCompleteSetupContent />
+		</Suspense>
 	);
 }
