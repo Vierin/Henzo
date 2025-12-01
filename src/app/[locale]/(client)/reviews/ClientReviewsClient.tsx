@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { useUserReviews } from '@/hooks/useClient';
 import LoadingSpinner from '@/components/LoadingSpinner';
 import { Star } from 'lucide-react';
@@ -66,12 +67,12 @@ export default function ClientReviewsClient() {
 					<p className="text-gray-600 mb-6">
 						{t('client.reviews.noReviewsDescription')}
 					</p>
-					<a
+					<Link
 						href="/dashboard"
 						className="inline-block bg-[#ff5b5b] text-white px-6 py-3 rounded-lg font-medium hover:bg-[#e04a4a] transition-colors"
 					>
 						{t('client.reviews.viewYourBookings')}
-					</a>
+					</Link>
 				</div>
 			) : (
 				<div className="space-y-4">

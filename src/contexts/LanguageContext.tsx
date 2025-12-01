@@ -63,10 +63,19 @@ export function LanguageProvider({ children }: LanguageProviderProps) {
 		pathNoLocale.startsWith('/reviews') ||
 		pathNoLocale.startsWith('/settings');
 	
+	// Determine public module based on path (declare early as it may be used in owner module logic)
+	const publicModules: TranslationModule[] = [];
+	
 	// Determine specific owner module based on path
 	let ownerModule: TranslationModule | undefined;
 	if (pathNoLocale.startsWith('/owner-dashboard')) {
 		ownerModule = 'owner/dashboard';
+		// Booking module needed for BookingModal component
+		publicModules.push('public/booking');
+		// Auth module needed for BookingAuthForm in BookingModal
+		publicModules.push('shared/auth');
+		// Homepage module needed for minutesShort translation
+		publicModules.push('public/homepage');
 	} else if (pathNoLocale.startsWith('/salon-info')) {
 		ownerModule = 'owner/salonInfo';
 	} else if (pathNoLocale.startsWith('/services')) {
@@ -85,12 +94,15 @@ export function LanguageProvider({ children }: LanguageProviderProps) {
 		}
 	} else if (pathNoLocale.startsWith('/calendar')) {
 		ownerModule = 'owner/calendar';
+		// Booking module needed for BookingModal component
+		publicModules.push('public/booking');
+		// Auth module needed for BookingAuthForm in BookingModal
+		publicModules.push('shared/auth');
+		// Homepage module needed for minutesShort translation
+		publicModules.push('public/homepage');
 	} else if (pathNoLocale.startsWith('/marketing')) {
 		ownerModule = 'owner/marketing';
 	}
-	
-	// Determine public module based on path
-	const publicModules: TranslationModule[] = [];
 	
 	// Check for homepage (root path)
 	if (pathNoLocale === '/' || pathNoLocale === '' || !pathNoLocale) {
@@ -119,6 +131,12 @@ export function LanguageProvider({ children }: LanguageProviderProps) {
 		publicModules.push('public/homepage', 'public/categories');
 		// Salon module needed for SalonCard component
 		publicModules.push('public/salon');
+		// Booking module needed for BookingModal component
+		publicModules.push('public/booking');
+		// Auth module needed for BookingAuthForm in BookingModal
+		publicModules.push('shared/auth');
+		// Homepage module needed for minutesShort translation
+		publicModules.push('public/homepage');
 	} else if (pathNoLocale.startsWith('/map')) {
 		publicModules.push('public/map');
 	} else if (pathNoLocale.startsWith('/business')) {

@@ -1,8 +1,10 @@
 'use client';
 
+import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import LoadingSpinner from '@/components/LoadingSpinner';
+import { logger } from '@/lib/logger';
 
 export default function RejectBookingPage() {
 	const params = useParams();
@@ -48,7 +50,7 @@ export default function RejectBookingPage() {
 					router.push('/');
 				}, 5000);
 			} catch (error) {
-				console.error('Error rejecting booking:', error);
+				logger.error('Error rejecting booking:', error);
 				setStatus('error');
 				setMessage(
 					error instanceof Error
@@ -98,12 +100,12 @@ export default function RejectBookingPage() {
 					</h2>
 					<p className="mt-2 text-sm text-gray-600">{message}</p>
 					<div className="mt-6">
-						<a
+						<Link
 							href="/"
 							className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-[#ff5b5b] hover:bg-[#e04a4a] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#ff5b5b]"
 						>
 							Go to Home
-						</a>
+						</Link>
 					</div>
 				</div>
 			</div>
@@ -140,12 +142,12 @@ export default function RejectBookingPage() {
 					</p>
 				</div>
 				<div className="mt-6">
-					<a
+					<Link
 						href="/"
 						className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-[#ff5b5b] hover:bg-[#e04a4a] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#ff5b5b]"
 					>
 						Go to Home
-					</a>
+					</Link>
 				</div>
 			</div>
 		</div>

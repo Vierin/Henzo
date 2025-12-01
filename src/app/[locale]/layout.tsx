@@ -40,7 +40,6 @@ export async function generateMetadata({
 	};
 }
 
-// @ts-expect-error - Next.js type validation conflict with React types
 export default async function LocaleRootLayout({
 	children,
 	params,

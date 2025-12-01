@@ -9,7 +9,7 @@ import LoadingSpinner from '@/components/LoadingSpinner';
 import EnhancedFileUpload from '@/components/EnhancedFileUpload';
 import EnhancedPhotoUpload from '@/components/EnhancedPhotoUpload';
 import WorkingHoursSection from '@/components/WorkingHoursSection';
-import { useSalon } from '@/hooks/useSalon';
+import { useSalon } from '@/hooks/useSalons';
 import { apiClient } from '@/lib/api-client';
 import { logger } from '@/lib/logger';
 import { Clock4 } from 'lucide-react';

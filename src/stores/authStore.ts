@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { supabase } from '@/lib/supabase';
 import { User } from '@/types';
+import { logger } from '@/lib/logger';
 
 interface AuthState {
 	// User data
@@ -72,7 +73,7 @@ export const useAuthStore = create<AuthState>()(
 			setLoading: (isLoading) => set({ isLoading }),
 
 			setSession: (session) => {
-				console.log('AuthStore setSession called with:', {
+				logger.log('AuthStore setSession called with:', {
 					session: session ? 'present' : 'missing',
 				});
 				set({ session });

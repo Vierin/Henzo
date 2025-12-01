@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { useState, useRef, useEffect } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/auth-unified';
-import { useSalon } from '@/hooks/useSalon';
+import { useSalon } from '@/hooks/useSalons';
 import { supabase } from '@/lib/supabase';
 import {
 	extractLocaleFromPath,

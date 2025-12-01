@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { useFavoriteSalons, useRemoveFavorite } from '@/hooks/useFavorites';
 import LoadingSpinner from '@/components/LoadingSpinner';
 import SalonImage from '@/components/SalonImage';
@@ -107,12 +108,12 @@ export default function FavoritesClient() {
 					<p className="text-gray-600 mb-4 md:mb-6 text-sm md:text-base px-4">
 						{t('client.favorites.noFavoritesDescription')}
 					</p>
-					<a
+					<Link
 						href="/salons"
 						className="inline-block bg-[#ff5b5b] text-white px-4 md:px-6 py-2 md:py-3 rounded-lg text-sm md:text-base font-medium hover:bg-[#e04a4a] transition-colors focus:outline-none focus:ring-2 focus:ring-[#ff5b5b] focus:ring-offset-2"
 					>
 						{t('client.favorites.browseSalons')}
-					</a>
+					</Link>
 				</div>
 			</main>
 		);

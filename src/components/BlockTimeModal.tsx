@@ -10,7 +10,7 @@ import {
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { useStaffBySalon } from '@/hooks/useStaff';
-import { useSalonId } from '@/hooks/useSalon';
+import { useSalonId } from '@/hooks/useSalons';
 import { WorkingHours } from '@/types';
 import {
 	useCreateTimeBlock,

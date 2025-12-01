@@ -144,10 +144,10 @@ export async function loadModules(
 	// Get all required modules including dependencies
 	const requiredModules = new Set<TranslationModule>();
 	
-	for (const module of modules) {
-		requiredModules.add(module);
+	for (const mod of modules) {
+		requiredModules.add(mod);
 		// Add dependencies
-		const deps = moduleDependencies[module] || [];
+		const deps = moduleDependencies[mod] || [];
 		for (const dep of deps) {
 			requiredModules.add(dep);
 		}
@@ -169,8 +169,8 @@ export async function loadModules(
 	// - owner/dashboard → owner.dashboard
 	// - client/settings → clientSettings
 	const merged: any = {};
-	for (const { module, data } of loadedModules) {
-		const keys = module.split('/');
+	for (const { module: modName, data } of loadedModules) {
+		const keys = modName.split('/');
 		
 		if (keys.length === 2) {
 			const [namespace, moduleName] = keys;

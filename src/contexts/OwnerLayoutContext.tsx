@@ -1,7 +1,7 @@
 'use client';
 
 import React, { createContext, useContext, ReactNode } from 'react';
-import { useSalonId } from '@/hooks/useSalon';
+import { useSalonId } from '@/hooks/useSalons';
 import { useRouter, usePathname } from 'next/navigation';
 import { useEffect } from 'react';
 import LoadingSpinner from '@/components/LoadingSpinner';

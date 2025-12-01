@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useRouter, useSearchParams } from 'next/navigation';
@@ -353,23 +354,23 @@ export default function BusinessRegisterClient() {
 					<div className="text-center space-y-4">
 						<p className="text-sm text-gray-600">
 							{t('business.register.alreadyHaveAccount')}{' '}
-							<a
+							<Link
 								href="/login"
 								className="font-medium text-orange-600 hover:text-orange-700"
 							>
 								{t('business.register.signIn')}
-							</a>
+							</Link>
 						</p>
 						<div className="border-t border-gray-200 pt-4">
 							<p className="text-sm text-gray-600 mb-2">
 								{t('business.register.lookingToBook')}
 							</p>
-							<a
+							<Link
 								href="/register"
 								className="text-sm font-medium text-[#ff5b5b] hover:text-[#ff4545]"
 							>
 								{t('business.register.registerAsClient')}
-							</a>
+							</Link>
 						</div>
 					</div>
 				</form>

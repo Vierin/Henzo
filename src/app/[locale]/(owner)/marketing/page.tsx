@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useSalon } from '@/hooks/useSalon';
+import { useSalon } from '@/hooks/useSalons';
 import { useSalonSlug } from '@/hooks/useSalonSlug';
 import LoadingSpinner from '@/components/LoadingSpinner';
 import toast from 'react-hot-toast';

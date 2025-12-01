@@ -30,10 +30,10 @@ export default function CategoriesNavigation({
 		<div className={`overflow-x-auto scrollbar-hide ${className}`}>
 			<div className="flex items-center justify-start md:justify-center space-x-6 md:space-x-8 px-6 md:px-0 min-w-max md:min-w-0">
 				{STATIC_CATEGORIES.map((category) => {
-					const translationKey = categoryTranslationMap[category.slug];
-					const translatedName = translationKey
-						? t(`categories.${translationKey}`) || (t.categories as any)?.[translationKey]
-						: category.name;
+                                  const translationKey = categoryTranslationMap[category.slug];
+                                  const translatedName = translationKey
+                                          ? t(`categories.${String(translationKey)}`) || (t.categories as any)?.[String(translationKey)]
+                                          : category.name;
 					return (
 						<Link
 							key={category.id}

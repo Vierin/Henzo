@@ -28,14 +28,14 @@ export default function CategoryCard({
 	const params = useParams();
 	const locale = (params as any)?.locale as string | undefined;
 	const t = useTranslation();
-	const translationKey = categoryTranslationMap[category.slug];
-	const translatedName = translationKey
-		? t(`categories.${translationKey}`) || (t.categories as any)?.[translationKey] || category.name
-		: category.name;
+ const translationKey = categoryTranslationMap[category.slug];
+ const translatedName = translationKey
+         ? t(`categories.${String(translationKey)}`) || (t.categories as any)?.[String(translationKey)] || category.name
+         : category.name;
 
 	let translatedDescription: string | undefined;
 	if (translationKey) {
-		const descKey = `${translationKey}Description`;
+		const descKey = `${String(translationKey)}Description`;
 		translatedDescription = t(`categories.${descKey}`) || (t.categories as any)?.[descKey] || category.description;
 	} else {
 		translatedDescription = category.description;

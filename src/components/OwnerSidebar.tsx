@@ -20,7 +20,7 @@ import {
 	X,
 	LogOut,
 } from 'lucide-react';
-import { useSalonId } from '@/hooks/useSalon';
+import { useSalonId } from '@/hooks/useSalons';
 import { bookingKeys } from '@/hooks/useBookings';
 import { serviceKeys } from '@/hooks/useServices';
 import { staffKeys } from '@/hooks/useStaff';

@@ -19,5 +19,6 @@
 	"no": "No",
 	"useCurrentLocation": "Use Current Location",
 	"gettingLocation": "Getting your location...",
-	"toggleMenu": "Toggle menu"
+	"toggleMenu": "Toggle menu",
+	"minutesShort": "min"
 }

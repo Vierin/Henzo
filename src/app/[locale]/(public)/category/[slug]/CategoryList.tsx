@@ -89,11 +89,11 @@ export default function CategoryList({ category }: CategoryListProps) {
 
 			// Fallback: filter by salon name containing category keywords
 			const categoryKeywords = translatedName.toLowerCase().split(' ');
-			return categoryKeywords.some(
-				(keyword) =>
-					salon.name.toLowerCase().includes(keyword) ||
-					salon.description?.toLowerCase().includes(keyword)
-			);
+                  return categoryKeywords.some(
+                          (keyword: string) =>
+                                  salon.name.toLowerCase().includes(keyword) ||
+                                  salon.description?.toLowerCase().includes(keyword)
+                  );
 		})
 		.sort((a: Salon, b: Salon) => {
 			switch (sortBy) {

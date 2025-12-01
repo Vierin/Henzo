@@ -3,12 +3,19 @@ import path from 'path';
 
 const nextConfig: NextConfig = {
 	eslint: {
-		// Disable ESLint during builds to skip linting errors
-		ignoreDuringBuilds: true,
+		// Enable ESLint during builds to catch errors
+		ignoreDuringBuilds: false,
 	},
 	typescript: {
-		// Disable TypeScript errors during builds (temporary fix for React type conflicts)
-		ignoreBuildErrors: true,
+		// Enable TypeScript errors during builds
+		ignoreBuildErrors: false,
+	},
+	compiler: {
+		// Remove console.log in production (keep error and warn)
+		removeConsole:
+			process.env.NODE_ENV === 'production'
+				? { exclude: ['error', 'warn'] }
+				: false,
 	},
 	images: {
 		remotePatterns: [

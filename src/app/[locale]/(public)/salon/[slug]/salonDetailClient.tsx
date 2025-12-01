@@ -227,7 +227,6 @@ export default function SalonDetailClient({ salon }: SalonDetailClientProps) {
 			setExpandedGroups(allGroupIds);
 			groupsInitialized.current = true;
 		}
-		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [serviceGroups.groups.length]);
 
 	const getPublicUrl = useCallback((filePath: string) => {

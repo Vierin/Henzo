@@ -234,7 +234,6 @@ export default function ServiceAutocomplete({
 				fetchSuggestions(value);
 			}
 		}
-		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [language]); // Only depend on language to avoid infinite loops
 
 	// Close suggestions when clicking outside

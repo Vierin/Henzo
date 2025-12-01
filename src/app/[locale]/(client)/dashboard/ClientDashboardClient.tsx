@@ -6,6 +6,7 @@ import {
 	useCancelBooking,
 	useUserReviews,
 } from '@/hooks/useClient';
+import Link from 'next/link';
 import VisitHistoryCard from '@/components/VisitHistoryCard';
 import ReviewModal from '@/components/ReviewModal';
 import { useCallback, useMemo, useState } from 'react';
@@ -51,9 +52,8 @@ export default function ClientDashboardClient() {
 
 	const handleBookAgain = useCallback((booking: any) => {
 		// Navigate to booking page with pre-filled data
-		const salonId = booking.salonId || booking.salon?.id || booking.Salon?.id;
-		const serviceId =
-			booking.serviceId || booking.service?.id || booking.Service?.id;
+		const salonId = booking.salonId || booking.salon?.id;
+		const serviceId = booking.serviceId || booking.service?.id;
 		if (!salonId || !serviceId) return;
 
 		const params = new URLSearchParams({
@@ -230,13 +230,13 @@ export default function ClientDashboardClient() {
 			<p id="empty-upcoming-description" className="text-gray-600 mb-6">
 				{t('client.dashboard.noUpcomingDescription')}
 			</p>
-			<a
+			<Link
 				href="/salons"
 				className="inline-block bg-[#ff5b5b] text-white px-6 py-3 rounded-lg font-medium hover:bg-[#e04a4a] transition-colors focus:outline-none focus:ring-2 focus:ring-[#ff5b5b] focus:ring-offset-2"
 				aria-label={t('client.dashboard.bookAService')}
 			>
 				{t('client.dashboard.bookAService')}
-			</a>
+			</Link>
 		</div>
 	);
 
@@ -346,30 +346,30 @@ export default function ClientDashboardClient() {
 											id: booking.id,
 											salonName:
 												booking.salon?.name ||
-												booking.Salon?.name ||
+												booking.salon?.name ||
 												t('client.dashboard.unknownSalon'),
 											serviceName:
 												booking.service?.name ||
-												booking.Service?.name ||
+												booking.service?.name ||
 												t('client.dashboard.unknownService'),
 											date: booking.time,
 											image:
 												booking.salon?.logo ||
-												booking.Salon?.logo ||
+												booking.salon?.logo ||
 												booking.salon?.photos?.[0] ||
-												booking.Salon?.photos?.[0] ||
+												booking.salon?.photos?.[0] ||
 												'',
 											time: booking.time,
 											status: booking.status,
 											salonId:
 												booking.salon?.id ||
-												booking.Salon?.id ||
+												booking.salon?.id ||
 												booking.salonId,
 											serviceId:
 												booking.service?.id ||
-												booking.Service?.id ||
+												booking.service?.id ||
 												booking.serviceId,
-											staffName: booking.staff?.name || booking.Staff?.name,
+											staffName: booking.staff?.name || booking.staff?.name,
 										}}
 										onCancel={handleCancel}
 										isUpcoming={true}
@@ -410,48 +410,48 @@ export default function ClientDashboardClient() {
 											id: booking.id,
 											salonName:
 												booking.salon?.name ||
-												booking.Salon?.name ||
+												booking.salon?.name ||
 												t('client.dashboard.unknownSalon'),
 											serviceName:
 												booking.service?.name ||
-												booking.Service?.name ||
+												booking.service?.name ||
 												t('client.dashboard.unknownService'),
 											date: booking.time, // Pass raw time for proper formatting
 											image:
 												booking.salon?.logo ||
-												booking.Salon?.logo ||
+												booking.salon?.logo ||
 												booking.salon?.photos?.[0] ||
-												booking.Salon?.photos?.[0] ||
+												booking.salon?.photos?.[0] ||
 												'',
 											time: booking.time,
 											status: 'COMPLETED',
 											salonId:
 												booking.salon?.id ||
-												booking.Salon?.id ||
+												booking.salon?.id ||
 												booking.salonId,
 											serviceId:
 												booking.service?.id ||
-												booking.Service?.id ||
+												booking.service?.id ||
 												booking.serviceId,
-											staffName: booking.staff?.name || booking.Staff?.name,
+											staffName: booking.staff?.name || booking.staff?.name,
 											salon: {
 												id:
 													booking.salon?.id ||
-													booking.Salon?.id ||
+													booking.salon?.id ||
 													booking.salonId,
 												name:
 													booking.salon?.name ||
-													booking.Salon?.name ||
+													booking.salon?.name ||
 													t('client.dashboard.unknownSalon'),
 											},
 											service: {
 												id:
 													booking.service?.id ||
-													booking.Service?.id ||
+													booking.service?.id ||
 													booking.serviceId,
 												name:
 													booking.service?.name ||
-													booking.Service?.name ||
+													booking.service?.name ||
 													t('client.dashboard.unknownService'),
 											},
 										}}

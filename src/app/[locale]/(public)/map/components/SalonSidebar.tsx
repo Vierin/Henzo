@@ -42,7 +42,7 @@ export default function SalonSidebar({
 		}
 
 		// Sort based on selected criteria
-		let sortedSalons = [...filteredSalons];
+		const sortedSalons = [...filteredSalons];
 		switch (sortBy) {
 			case 'rating':
 				sortedSalons.sort(

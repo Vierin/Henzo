@@ -6,7 +6,7 @@ import {
 	useCreateService,
 	useUpdateService,
 } from '@/hooks/useServices';
-import { useSalonId } from '@/hooks/useSalon';
+import { useSalonId } from '@/hooks/useSalons';
 import {
 	Service,
 	ServiceGroup,
