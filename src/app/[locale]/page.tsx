@@ -1,3 +1,4 @@
+import { Suspense } from 'react';
 import HomePageClient from '../HomePageClient';
 import { isLocale, type Locale } from '@/i18n/routing';
 
@@ -60,7 +61,21 @@ export default async function HomePage({
 					__html: JSON.stringify(organizationData),
 				}}
 			/>
-			<HomePageClient />
+			<Suspense
+				fallback={
+					<div className="min-h-screen bg-[#F8F5F2]">
+						<div className="h-20 bg-white shadow-sm" />
+						<div className="flex items-center justify-center min-h-[calc(100vh-80px)]">
+							<div className="text-center">
+								<div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#ff5b5b] mx-auto mb-4"></div>
+								<p className="text-gray-600">Loading...</p>
+							</div>
+						</div>
+					</div>
+				}
+			>
+				<HomePageClient />
+			</Suspense>
 		</>
 	);
 }
