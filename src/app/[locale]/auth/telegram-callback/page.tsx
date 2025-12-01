@@ -13,16 +13,91 @@ function TelegramCallbackContent() {
 	useEffect(() => {
 		const handleCallback = async () => {
 			try {
-				// Получаем данные из URL параметров
-				const hash = searchParams.get('hash');
-				const id = searchParams.get('id');
-				const first_name = searchParams.get('first_name');
-				const last_name = searchParams.get('last_name');
-				const username = searchParams.get('username');
-				const photo_url = searchParams.get('photo_url');
-				const auth_date = searchParams.get('auth_date');
+				// Telegram OAuth возвращает данные в hash фрагменте URL (после #)
+				// Важно: hash доступен только на клиенте, не на сервере
+				if (typeof window === 'undefined') {
+					console.warn('⚠️ Window is undefined, waiting for client-side...');
+					return;
+				}
+
+				// Небольшая задержка для гарантии, что hash уже в URL
+				await new Promise((resolve) => setTimeout(resolve, 100));
+
+				let telegramData: Record<string, string | null> = {};
+
+				// Получаем полный URL и извлекаем hash
+				const fullUrl = window.location.href;
+				console.log('🔍 Full URL:', fullUrl);
+
+				const hashIndex = fullUrl.indexOf('#');
+
+				if (hashIndex !== -1) {
+					const hashString = fullUrl.substring(hashIndex + 1);
+					console.log('📋 Hash string:', hashString);
+
+					// Парсим hash как URLSearchParams
+					const hashParams = new URLSearchParams(hashString);
+
+					telegramData = {
+						hash: hashParams.get('hash'),
+						id: hashParams.get('id'),
+						first_name: hashParams.get('first_name'),
+						last_name: hashParams.get('last_name'),
+						username: hashParams.get('username'),
+						photo_url: hashParams.get('photo_url'),
+						auth_date: hashParams.get('auth_date'),
+					};
+
+					console.log('📋 Parsed from hash:', telegramData);
+				} else {
+					console.log('⚠️ No hash found in URL');
+				}
+
+				// Если в hash нет данных, пробуем query параметры (fallback)
+				if (!telegramData.id && !telegramData.hash) {
+					console.log('📋 Trying to get Telegram data from query params');
+					telegramData = {
+						hash: searchParams.get('hash'),
+						id: searchParams.get('id'),
+						first_name: searchParams.get('first_name'),
+						last_name: searchParams.get('last_name'),
+						username: searchParams.get('username'),
+						photo_url: searchParams.get('photo_url'),
+						auth_date: searchParams.get('auth_date'),
+					};
+					console.log('📋 Parsed from query params:', telegramData);
+				}
+
+				const {
+					hash,
+					id,
+					first_name,
+					last_name,
+					username,
+					photo_url,
+					auth_date,
+				} = telegramData;
+
+				console.log('📋 Parsed Telegram data:', {
+					hasId: !!id,
+					hasFirstName: !!first_name,
+					hasHash: !!hash,
+					hasAuthDate: !!auth_date,
+					id,
+					first_name,
+				});
 
 				if (!id || !first_name || !hash || !auth_date) {
+					console.error('❌ Missing Telegram data:', {
+						hash: !!hash,
+						id: !!id,
+						first_name: !!first_name,
+						auth_date: !!auth_date,
+					});
+					console.error(
+						'Full URL:',
+						typeof window !== 'undefined' ? window.location.href : 'N/A'
+					);
 					throw new Error('Missing required Telegram authentication data');
 				}
 

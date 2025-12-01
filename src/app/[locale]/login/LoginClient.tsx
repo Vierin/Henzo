@@ -140,13 +140,22 @@ export default function LoginClient() {
 
 			const { botId } = await response.json();
 
+			// Получаем origin (домен должен быть добавлен в BotFather)
+			const origin = window.location.origin;
+			
+			// Проверяем, что это не localhost (для продакшена)
+			if (origin.includes('localhost') || origin.includes('127.0.0.1')) {
+				console.warn('Telegram OAuth: Using localhost. Make sure to configure domain in BotFather for production.');
+			}
+
 			// Создаем callback URL
 			const callbackUrl = encodeURIComponent(
-				`${window.location.origin}/auth/telegram-callback`
+				`${origin}/auth/telegram-callback`
 			);
 
 			// Открываем Telegram OAuth
-			window.location.href = `https://oauth.telegram.org/auth?bot_id=${botId}&origin=${encodeURIComponent(window.location.origin)}&request_access=write&return_to=${callbackUrl}`;
+			// Важно: домен в параметре origin должен быть добавлен в BotFather через /mybots -> Bot Settings -> Domain
+			window.location.href = `https://oauth.telegram.org/auth?bot_id=${botId}&origin=${encodeURIComponent(origin)}&request_access=write&return_to=${callbackUrl}`;
 		} catch (error: any) {
 			console.error('Telegram login error:', error);
 			toast.error(error.message || 'Failed to login with Telegram');
