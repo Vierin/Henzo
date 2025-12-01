@@ -119,10 +119,12 @@ export default function RegisterForm() {
 			<div className="max-w-md w-full space-y-8">
 				<div>
 					<h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
-						{t.auth.signUpTitle}
+						{emailVerified ? t.auth.completeRegistrationTitle : t.auth.signUpTitle}
 					</h2>
 					<p className="mt-2 text-center text-sm text-gray-600">
-						{t.auth.signUpSubtitle}
+						{emailVerified
+							? t.auth.completeRegistrationSubtitle
+							: t.auth.signUpSubtitle}
 					</p>
 				</div>
 				<form className="mt-8 space-y-6" onSubmit={handleSubmit}>
