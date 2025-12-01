@@ -237,11 +237,9 @@ export default function LoginClient() {
 
 				toast.success('Successfully logged in with Telegram!');
 
-				// Обновляем состояние авторизации
-				await login({
-					email: result.user.email,
-					password: '', // Не используется для Telegram
-				});
+				// Обновляем состояние авторизации через authManager
+				const { authManager } = await import('@/lib/auth-unified');
+				await authManager.updateUser(result.session.access_token);
 
 				// Редирект
 				if (returnTo && result.user.role === 'CLIENT') {

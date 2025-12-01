@@ -14,8 +14,11 @@ function TelegramCallbackContent() {
 		const handleCallback = async () => {
 			console.log('🔵 Telegram callback page loaded');
 			console.log('🔵 Window available:', typeof window !== 'undefined');
-			console.log('🔵 Current URL:', typeof window !== 'undefined' ? window.location.href : 'N/A');
-			
+			console.log(
+				'🔵 Current URL:',
+				typeof window !== 'undefined' ? window.location.href : 'N/A'
+			);
+
 			try {
 				// Telegram OAuth возвращает данные в hash фрагменте URL (после #)
 				// Важно: hash доступен только на клиенте, не на сервере
