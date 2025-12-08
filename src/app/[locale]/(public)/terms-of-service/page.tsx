@@ -29,11 +29,12 @@ export default function TermsOfService() {
 								1. Acceptance of Terms
 							</h2>
 							<p className="text-gray-700 leading-relaxed text-base mb-4">
-								By accessing or using Henzo&apos;s services (&quot;Service&quot;,
-								&quot;Platform&quot;), you agree to be bound by these Terms of
-								Service (&quot;Terms&quot;). If you do not agree to these terms,
-								please do not use our services. These Terms constitute a legally
-								binding agreement between you and IVAN VIERIN PEREBIICHUK (operating as &quot;Henzo&quot;).
+								By accessing or using Henzo&apos;s services
+								(&quot;Service&quot;, &quot;Platform&quot;), you agree to be
+								bound by these Terms of Service (&quot;Terms&quot;). If you do
+								not agree to these terms, please do not use our services. These
+								Terms constitute a legally binding agreement between you and
+								IVAN VIERIN PEREBIICHUK (operating as &quot;Henzo&quot;).
 							</p>
 							<p className="text-gray-700 leading-relaxed text-base">
 								If you are using the Service on behalf of a business or other
@@ -50,8 +51,8 @@ export default function TermsOfService() {
 							<p className="text-gray-700 leading-relaxed text-base mb-4">
 								Henzo operates as an online marketplace platform that connects
 								clients with beauty salons, barbershops, massage parlors, and
-								other related service providers (&quot;Service Providers&quot; or
-								&quot;Businesses&quot;) in Southeast Asia (SEA) region. We
+								other related service providers (&quot;Service Providers&quot;
+								or &quot;Businesses&quot;) in Southeast Asia (SEA) region. We
 								provide a technology platform that facilitates the booking and
 								scheduling of appointments.
 							</p>
@@ -64,10 +65,10 @@ export default function TermsOfService() {
 								contractors and not employees, agents, or partners of Henzo.
 							</p>
 							<p className="text-gray-700 leading-relaxed text-base">
-								Henzo does not control, manage, or supervise the services provided
-								by Service Providers. We are not responsible for the quality,
-								safety, legality, or any other aspect of the services provided by
-								Service Providers.
+								Henzo does not control, manage, or supervise the services
+								provided by Service Providers. We are not responsible for the
+								quality, safety, legality, or any other aspect of the services
+								provided by Service Providers.
 							</p>
 						</section>
 
@@ -77,23 +78,24 @@ export default function TermsOfService() {
 								3. Age Restrictions and Eligibility
 							</h2>
 							<p className="text-gray-700 leading-relaxed text-base mb-4">
-								Our Service is available to users of all ages. However, if you are
-								under the age of 18 (or the age of majority in your jurisdiction),
-								you represent that you have obtained parental or guardian consent
-								to use the Service and that your parent or guardian agrees to be
-								bound by these Terms on your behalf.
+								Our Service is available to users of all ages. However, if you
+								are under the age of 18 (or the age of majority in your
+								jurisdiction), you represent that you have obtained parental or
+								guardian consent to use the Service and that your parent or
+								guardian agrees to be bound by these Terms on your behalf.
 							</p>
 							<p className="text-gray-700 leading-relaxed text-base mb-4">
-								If you are under 13 years of age, you may only use the Service with
-								the express consent and supervision of a parent or legal guardian.
-								By using the Service, you represent and warrant that you have the
-								legal capacity to enter into these Terms or that you have obtained
-								the necessary consent from your parent or guardian.
+								If you are under 13 years of age, you may only use the Service
+								with the express consent and supervision of a parent or legal
+								guardian. By using the Service, you represent and warrant that
+								you have the legal capacity to enter into these Terms or that
+								you have obtained the necessary consent from your parent or
+								guardian.
 							</p>
 							<p className="text-gray-700 leading-relaxed text-base">
 								Parents and guardians are responsible for supervising their
-								children&apos;s use of the Service and ensuring that their children
-								understand and comply with these Terms.
+								children&apos;s use of the Service and ensuring that their
+								children understand and comply with these Terms.
 							</p>
 						</section>
 
@@ -128,8 +130,8 @@ export default function TermsOfService() {
 							</ul>
 							<p className="text-gray-700 leading-relaxed text-base">
 								You agree not to use the Service in any way that infringes on
-								the rights of others, violates any applicable laws, or interferes
-								with the operation of the Service.
+								the rights of others, violates any applicable laws, or
+								interferes with the operation of the Service.
 							</p>
 						</section>
 
@@ -143,8 +145,9 @@ export default function TermsOfService() {
 							</p>
 							<ul className="list-disc list-inside text-gray-700 leading-relaxed text-base mb-4 space-y-2 ml-4">
 								<li>
-									When you make a booking, it is initially in &quot;PENDING&quot;
-									status and must be confirmed by the Service Provider
+									When you make a booking, it is initially in
+									&quot;PENDING&quot; status and must be confirmed by the
+									Service Provider
 								</li>
 								<li>
 									Pending bookings that are not confirmed within 3 hours may be
@@ -169,8 +172,8 @@ export default function TermsOfService() {
 									cancellation policy
 								</li>
 								<li>
-									You cannot cancel a booking that has already been completed
-									or has passed
+									You cannot cancel a booking that has already been completed or
+									has passed
 								</li>
 								<li>
 									Service Providers may have their own cancellation policies,
@@ -204,15 +207,16 @@ export default function TermsOfService() {
 							<ul className="list-disc list-inside text-gray-700 leading-relaxed text-base mb-4 space-y-2 ml-4">
 								<li>
 									You are responsible for the accuracy of all information you
-									provide about your business, services, prices, and availability
+									provide about your business, services, prices, and
+									availability
 								</li>
 								<li>
 									You must maintain appropriate licenses, permits, and insurance
 									as required by applicable laws
 								</li>
 								<li>
-									You are solely responsible for the quality, safety, and legality
-									of the services you provide
+									You are solely responsible for the quality, safety, and
+									legality of the services you provide
 								</li>
 								<li>
 									You must respond to booking requests in a timely manner and
@@ -228,9 +232,9 @@ export default function TermsOfService() {
 								</li>
 							</ul>
 							<p className="text-gray-700 leading-relaxed text-base">
-								Henzo reserves the right to suspend or terminate Service Provider
-								accounts that violate these Terms, engage in fraudulent activity,
-								or fail to maintain service quality standards.
+								Henzo reserves the right to suspend or terminate Service
+								Provider accounts that violate these Terms, engage in fraudulent
+								activity, or fail to maintain service quality standards.
 							</p>
 						</section>
 
@@ -245,8 +249,8 @@ export default function TermsOfService() {
 							</p>
 							<ul className="list-disc list-inside text-gray-700 leading-relaxed text-base mb-4 space-y-2 ml-4">
 								<li>
-									Your review is based on your actual experience with the Service
-									Provider
+									Your review is based on your actual experience with the
+									Service Provider
 								</li>
 								<li>
 									Your review is truthful, accurate, and not defamatory,
@@ -267,13 +271,13 @@ export default function TermsOfService() {
 							<p className="text-gray-700 leading-relaxed text-base mb-4">
 								Henzo reserves the right to remove, edit, or refuse to post any
 								review that violates these Terms, contains false information, is
-								defamatory, or violates any applicable laws. We are not obligated
-								to monitor or review user-generated content, but we may do so at
-								our discretion.
+								defamatory, or violates any applicable laws. We are not
+								obligated to monitor or review user-generated content, but we
+								may do so at our discretion.
 							</p>
 							<p className="text-gray-700 leading-relaxed text-base">
-								Service Providers may respond to reviews, but responses must also
-								comply with these Terms and applicable laws.
+								Service Providers may respond to reviews, but responses must
+								also comply with these Terms and applicable laws.
 							</p>
 						</section>
 
@@ -321,8 +325,9 @@ export default function TermsOfService() {
 								</li>
 							</ul>
 							<p className="text-gray-700 leading-relaxed text-base">
-								Violation of these prohibitions may result in immediate termination
-								of your account and may subject you to legal liability.
+								Violation of these prohibitions may result in immediate
+								termination of your account and may subject you to legal
+								liability.
 							</p>
 						</section>
 
@@ -332,16 +337,20 @@ export default function TermsOfService() {
 								9. Intellectual Property
 							</h2>
 							<p className="text-gray-700 leading-relaxed text-base mb-4">
-								<strong className="font-semibold">Henzo&apos;s Intellectual
-								Property:</strong> All content and materials on the Henzo Platform,
-								including but not limited to logos, trademarks, text, graphics,
-								software, code, design elements, and the overall look and feel of
-								the Platform, are the property of Henzo or its licensors and are
-								protected by copyright, trademark, and other intellectual property
-								laws.
+								<strong className="font-semibold">
+									Henzo&apos;s Intellectual Property:
+								</strong>{' '}
+								All content and materials on the Henzo Platform, including but
+								not limited to logos, trademarks, text, graphics, software,
+								code, design elements, and the overall look and feel of the
+								Platform, are the property of Henzo or its licensors and are
+								protected by copyright, trademark, and other intellectual
+								property laws.
 							</p>
 							<p className="text-gray-700 leading-relaxed text-base mb-4">
-								<strong className="font-semibold">User-Generated Content:</strong>
+								<strong className="font-semibold">
+									User-Generated Content:
+								</strong>
 								By posting, uploading, or submitting any content (including
 								reviews, photos, comments) to the Platform, you grant Henzo a
 								worldwide, non-exclusive, royalty-free, perpetual, irrevocable,
@@ -351,8 +360,8 @@ export default function TermsOfService() {
 							</p>
 							<p className="text-gray-700 leading-relaxed text-base">
 								You represent and warrant that you own or have the necessary
-								rights to grant the license described above and that your content
-								does not infringe any third-party rights.
+								rights to grant the license described above and that your
+								content does not infringe any third-party rights.
 							</p>
 						</section>
 
@@ -362,15 +371,19 @@ export default function TermsOfService() {
 								10. Limitations of Liability
 							</h2>
 							<p className="text-gray-700 leading-relaxed text-base mb-4">
-								<strong className="font-semibold">DISCLAIMER OF WARRANTIES:</strong>
+								<strong className="font-semibold">
+									DISCLAIMER OF WARRANTIES:
+								</strong>
 								THE SERVICE IS PROVIDED &quot;AS IS&quot; AND &quot;AS
-								AVAILABLE&quot; WITHOUT WARRANTIES OF ANY KIND, EITHER EXPRESS OR
-								IMPLIED, INCLUDING BUT NOT LIMITED TO WARRANTIES OF
+								AVAILABLE&quot; WITHOUT WARRANTIES OF ANY KIND, EITHER EXPRESS
+								OR IMPLIED, INCLUDING BUT NOT LIMITED TO WARRANTIES OF
 								MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, AND
 								NON-INFRINGEMENT.
 							</p>
 							<p className="text-gray-700 leading-relaxed text-base mb-4">
-								<strong className="font-semibold">LIMITATION OF LIABILITY:</strong>
+								<strong className="font-semibold">
+									LIMITATION OF LIABILITY:
+								</strong>
 							</p>
 							<ul className="list-disc list-inside text-gray-700 leading-relaxed text-base mb-4 space-y-2 ml-4">
 								<li>
@@ -378,15 +391,15 @@ export default function TermsOfService() {
 									ANY DAMAGES, INJURIES, LOSSES, OR CLAIMS ARISING FROM OR
 									RELATED TO THE SERVICES PROVIDED BY SERVICE PROVIDERS. THE
 									RELATIONSHIP BETWEEN YOU AND SERVICE PROVIDERS IS SOLELY
-									BETWEEN YOU AND THEM. HENZO ACTS ONLY AS A TECHNOLOGY
-									PLATFORM AND IS NOT A PARTY TO ANY AGREEMENT BETWEEN YOU AND
-									SERVICE PROVIDERS.
+									BETWEEN YOU AND THEM. HENZO ACTS ONLY AS A TECHNOLOGY PLATFORM
+									AND IS NOT A PARTY TO ANY AGREEMENT BETWEEN YOU AND SERVICE
+									PROVIDERS.
 								</li>
 								<li>
-									<strong>Platform Availability:</strong> HENZO DOES NOT GUARANTEE
-									THAT THE SERVICE WILL BE UNINTERRUPTED, SECURE, OR ERROR-FREE.
-									WE ARE NOT LIABLE FOR ANY LOSSES RESULTING FROM SERVICE
-									INTERRUPTIONS, TECHNICAL FAILURES, OR UNAVAILABILITY.
+									<strong>Platform Availability:</strong> HENZO DOES NOT
+									GUARANTEE THAT THE SERVICE WILL BE UNINTERRUPTED, SECURE, OR
+									ERROR-FREE. WE ARE NOT LIABLE FOR ANY LOSSES RESULTING FROM
+									SERVICE INTERRUPTIONS, TECHNICAL FAILURES, OR UNAVAILABILITY.
 								</li>
 								<li>
 									<strong>Maximum Liability:</strong> TO THE MAXIMUM EXTENT
@@ -444,15 +457,17 @@ export default function TermsOfService() {
 							<ul className="list-disc list-inside text-gray-700 leading-relaxed text-base mb-4 space-y-2 ml-4">
 								<li>Violate these Terms or any applicable laws</li>
 								<li>Engage in fraudulent, abusive, or illegal activity</li>
-								<li>Fail to pay any fees owed to Henzo (for Service Providers)</li>
+								<li>
+									Fail to pay any fees owed to Henzo (for Service Providers)
+								</li>
 								<li>Provide false, inaccurate, or misleading information</li>
 								<li>Interfere with the operation of the Service</li>
 							</ul>
 							<p className="text-gray-700 leading-relaxed text-base">
 								Upon termination, your right to use the Service will immediately
-								cease. We may retain certain information as required by law or for
-								legitimate business purposes. Provisions of these Terms that by
-								their nature should survive termination will survive.
+								cease. We may retain certain information as required by law or
+								for legitimate business purposes. Provisions of these Terms that
+								by their nature should survive termination will survive.
 							</p>
 						</section>
 
@@ -473,17 +488,18 @@ export default function TermsOfService() {
 								, which is incorporated into these Terms by reference.
 							</p>
 							<p className="text-gray-700 leading-relaxed text-base mb-4">
-								By using the Service, you consent to the collection and use of your
-								information as described in our Privacy Policy. We may share
-								certain information with Service Providers to facilitate bookings,
-								but we do not sell your personal information to third parties.
+								By using the Service, you consent to the collection and use of
+								your information as described in our Privacy Policy. We may
+								share certain information with Service Providers to facilitate
+								bookings, but we do not sell your personal information to third
+								parties.
 							</p>
 							<p className="text-gray-700 leading-relaxed text-base">
-								We are committed to protecting your personal data in accordance with
-								applicable data protection laws. For more information about your
-								rights and how we process your data, please see our Privacy Policy.
-								If you have any questions or wish to exercise your data protection
-								rights, please contact us at{' '}
+								We are committed to protecting your personal data in accordance
+								with applicable data protection laws. For more information about
+								your rights and how we process your data, please see our Privacy
+								Policy. If you have any questions or wish to exercise your data
+								protection rights, please contact us at{' '}
 								<a
 									href="mailto:hello@henzo.app"
 									className="text-[#ea4b4b] hover:text-[#d43d3d] font-medium underline"
@@ -500,11 +516,12 @@ export default function TermsOfService() {
 								14. Force Majeure
 							</h2>
 							<p className="text-gray-700 leading-relaxed text-base">
-								Henzo shall not be liable for any failure or delay in performance
-								under these Terms resulting from circumstances beyond our
-								reasonable control, including but not limited to acts of God,
-								natural disasters, war, terrorism, pandemics, government actions,
-								internet outages, or failures of third-party service providers.
+								Henzo shall not be liable for any failure or delay in
+								performance under these Terms resulting from circumstances
+								beyond our reasonable control, including but not limited to acts
+								of God, natural disasters, war, terrorism, pandemics, government
+								actions, internet outages, or failures of third-party service
+								providers.
 							</p>
 						</section>
 
@@ -527,28 +544,30 @@ export default function TermsOfService() {
 								your notice.
 							</p>
 							<p className="text-gray-700 leading-relaxed text-base mb-4">
-								<strong className="font-semibold">Disputes with Service
-								Providers:</strong> Any disputes between you and a Service
-								Provider regarding the services provided must be resolved directly
-								with the Service Provider. Henzo is not responsible for resolving
-								disputes between users and Service Providers, though we may
-								provide assistance at our discretion.
+								<strong className="font-semibold">
+									Disputes with Service Providers:
+								</strong>{' '}
+								Any disputes between you and a Service Provider regarding the
+								services provided must be resolved directly with the Service
+								Provider. Henzo is not responsible for resolving disputes
+								between users and Service Providers, though we may provide
+								assistance at our discretion.
 							</p>
 							<p className="text-gray-700 leading-relaxed text-base mb-4">
-								<strong className="font-semibold">Binding Arbitration:</strong> If
-								we cannot resolve a dispute informally, you and Henzo agree to
-								resolve any disputes arising out of or relating to these Terms or
-								the Service through final and binding arbitration, except as set
-								forth below. The arbitration will be conducted by a single
-								arbitrator in accordance with the rules of the arbitration
-								organization selected by mutual agreement.
+								<strong className="font-semibold">Binding Arbitration:</strong>{' '}
+								If we cannot resolve a dispute informally, you and Henzo agree
+								to resolve any disputes arising out of or relating to these
+								Terms or the Service through final and binding arbitration,
+								except as set forth below. The arbitration will be conducted by
+								a single arbitrator in accordance with the rules of the
+								arbitration organization selected by mutual agreement.
 							</p>
 							<p className="text-gray-700 leading-relaxed text-base mb-4">
-								<strong className="font-semibold">Exceptions:</strong> Either party
-								may bring a lawsuit solely for injunctive relief to stop
-								unauthorized use or abuse of the Service or intellectual property
-								infringement without first engaging in the informal dispute
-								resolution process described above.
+								<strong className="font-semibold">Exceptions:</strong> Either
+								party may bring a lawsuit solely for injunctive relief to stop
+								unauthorized use or abuse of the Service or intellectual
+								property infringement without first engaging in the informal
+								dispute resolution process described above.
 							</p>
 							<p className="text-gray-700 leading-relaxed text-base">
 								<strong className="font-semibold">Class Action Waiver:</strong>
@@ -564,22 +583,24 @@ export default function TermsOfService() {
 								16. Governing Law and Jurisdiction
 							</h2>
 							<p className="text-gray-700 leading-relaxed text-base mb-4">
-								These Terms shall be governed by and construed in accordance with
-								the laws of the Republic of Poland, without regard to its conflict
-								of law provisions.
+								These Terms shall be governed by and construed in accordance
+								with the laws of the Republic of Poland, without regard to its
+								conflict of law provisions.
 							</p>
 							<p className="text-gray-700 leading-relaxed text-base mb-4">
-								Any legal action or proceeding arising out of or relating to these
-								Terms or the Service (except for disputes subject to arbitration)
-								shall be brought exclusively in the competent courts of Poland.
-								You consent to the personal jurisdiction of such courts.
+								Any legal action or proceeding arising out of or relating to
+								these Terms or the Service (except for disputes subject to
+								arbitration) shall be brought exclusively in the competent
+								courts of Poland. You consent to the personal jurisdiction of
+								such courts.
 							</p>
 							<p className="text-gray-700 leading-relaxed text-base">
-								<strong className="font-semibold">Service Availability:</strong> The
-								Service is provided to users in Southeast Asia (SEA) region. By using
-								the Service, you represent that you are located in a jurisdiction
-								where the Service is available and that you are not located in a
-								jurisdiction where the use of the Service is prohibited by law.
+								<strong className="font-semibold">Service Availability:</strong>{' '}
+								The Service is provided to users in Southeast Asia (SEA) region.
+								By using the Service, you represent that you are located in a
+								jurisdiction where the Service is available and that you are not
+								located in a jurisdiction where the use of the Service is
+								prohibited by law.
 							</p>
 						</section>
 
@@ -595,8 +616,10 @@ export default function TermsOfService() {
 							<ul className="list-disc list-inside text-gray-700 leading-relaxed text-base mb-4 space-y-2 ml-4">
 								<li>Posting the updated Terms on this page</li>
 								<li>Updating the &quot;Last updated&quot; date</li>
-								<li>Sending an email notification for significant changes (if you
-									have provided an email address)</li>
+								<li>
+									Sending an email notification for significant changes (if you
+									have provided an email address)
+								</li>
 								<li>Displaying a notice on the Platform</li>
 							</ul>
 							<p className="text-gray-700 leading-relaxed text-base">
@@ -619,21 +642,21 @@ export default function TermsOfService() {
 							</p>
 							<p className="text-gray-700 leading-relaxed text-base mb-4">
 								<strong className="font-semibold">Severability:</strong> If any
-								provision of these Terms is found to be unenforceable or invalid,
-								that provision will be limited or eliminated to the minimum
-								extent necessary, and the remaining provisions will remain in full
-								force and effect.
+								provision of these Terms is found to be unenforceable or
+								invalid, that provision will be limited or eliminated to the
+								minimum extent necessary, and the remaining provisions will
+								remain in full force and effect.
 							</p>
 							<p className="text-gray-700 leading-relaxed text-base mb-4">
-								<strong className="font-semibold">Waiver:</strong> The failure of
-								Henzo to enforce any right or provision of these Terms will not
-								be deemed a waiver of such right or provision.
+								<strong className="font-semibold">Waiver:</strong> The failure
+								of Henzo to enforce any right or provision of these Terms will
+								not be deemed a waiver of such right or provision.
 							</p>
 							<p className="text-gray-700 leading-relaxed text-base mb-4">
-								<strong className="font-semibold">Assignment:</strong> You may not
-								assign or transfer these Terms or your account without Henzo&apos;s
-								prior written consent. Henzo may assign these Terms without
-								restriction.
+								<strong className="font-semibold">Assignment:</strong> You may
+								not assign or transfer these Terms or your account without
+								Henzo&apos;s prior written consent. Henzo may assign these Terms
+								without restriction.
 							</p>
 							<p className="text-gray-700 leading-relaxed text-base">
 								<strong className="font-semibold">Contact Information:</strong>

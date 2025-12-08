@@ -54,5 +54,12 @@
 	"deleting": "Deleting...",
 	"yesDeleteAccount": "Yes, delete my account",
 	"accountDeleted": "Account and salon deleted successfully. You will be redirected to the home page.",
-	"failedToDelete": "Failed to delete account. Please try again."
+	"failedToDelete": "Failed to delete account. Please try again.",
+	"reminderSettings": "Booking Reminder Settings",
+	"reminderSettingsDescription": "Select when to send reminder notifications to clients before their appointments. At least one option must be selected.",
+	"reminder3Hours": "3 hours before",
+	"reminder1Day": "1 day (24 hours) before",
+	"reminder1Week": "1 week (168 hours) before",
+	"default": "Default",
+	"atLeastOneReminderRequired": "At least one reminder option must be selected"
 }

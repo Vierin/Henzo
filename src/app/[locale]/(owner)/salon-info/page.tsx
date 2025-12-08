@@ -36,6 +36,9 @@ export default function SalonInfoPage() {
 			saturday: { open: '10:00', close: '17:00', closed: false },
 			sunday: { open: '', close: '', closed: true },
 		},
+		reminderSettings: {
+			intervals: [24] as number[], // Default: 24 hours (1 day)
+		},
 	});
 	const [loading, setLoading] = useState(false);
 	const [error, setError] = useState('');
@@ -92,6 +95,7 @@ export default function SalonInfoPage() {
 				logo: salon.logo || '',
 				photos: salon.photos || [],
 				// categories are derived from services; no manual selection
+				reminderSettings: (salon as any).reminderSettings || { intervals: [24] },
 				operatingHours: salon.workingHours
 					? {
 							monday: {
@@ -262,6 +266,7 @@ export default function SalonInfoPage() {
 				logo: formData.logo,
 				photos: formData.photos,
 				workingHours: formData.operatingHours,
+				reminderSettings: formData.reminderSettings,
 			};
 
 			console.log('📤 Sending salon data:', JSON.stringify(salonData, null, 2));
@@ -538,6 +543,136 @@ export default function SalonInfoPage() {
 							setFormData({ ...formData, operatingHours: workingHours })
 						}
 					/>
+				</div>
+
+				{/* Reminder Settings Section */}
+				<div className="bg-white border border-gray-200 rounded-lg p-3 md:p-6">
+					<h2 className="text-xl md:text-2xl font-semibold text-gray-900 mb-4 md:mb-6">
+						{t('owner.salonInfo.reminderSettings') || 'Booking Reminder Settings'}
+					</h2>
+					<p className="text-sm text-gray-600 mb-4">
+						{t('owner.salonInfo.reminderSettingsDescription') ||
+							'Select when to send reminder notifications to clients before their appointments. At least one option must be selected.'}
+					</p>
+					<div className="space-y-3">
+						{/* 3 hours option */}
+						<label className="flex items-center space-x-3 cursor-pointer">
+							<input
+								type="checkbox"
+								checked={formData.reminderSettings.intervals.includes(3)}
+								onChange={(e) => {
+									const intervals = formData.reminderSettings.intervals;
+									if (e.target.checked) {
+										setFormData({
+											...formData,
+											reminderSettings: {
+												intervals: [...intervals, 3].sort((a, b) => b - a),
+											},
+										});
+									} else {
+										// Prevent removing if it's the only option
+										if (intervals.length > 1) {
+											setFormData({
+												...formData,
+												reminderSettings: {
+													intervals: intervals.filter((i) => i !== 3),
+												},
+											});
+										}
+									}
+								}}
+								disabled={
+									formData.reminderSettings.intervals.length === 1 &&
+									formData.reminderSettings.intervals.includes(3)
+								}
+								className="w-4 h-4 text-[#ff5b5b] border-gray-300 rounded focus:ring-[#ff5b5b] focus:ring-2"
+							/>
+							<span className="text-gray-700">
+								{t('owner.salonInfo.reminder3Hours') || '3 hours before'}
+							</span>
+						</label>
+
+						{/* 24 hours (1 day) option - default */}
+						<label className="flex items-center space-x-3 cursor-pointer">
+							<input
+								type="checkbox"
+								checked={formData.reminderSettings.intervals.includes(24)}
+								onChange={(e) => {
+									const intervals = formData.reminderSettings.intervals;
+									if (e.target.checked) {
+										setFormData({
+											...formData,
+											reminderSettings: {
+												intervals: [...intervals, 24].sort((a, b) => b - a),
+											},
+										});
+									} else {
+										// Prevent removing if it's the only option
+										if (intervals.length > 1) {
+											setFormData({
+												...formData,
+												reminderSettings: {
+													intervals: intervals.filter((i) => i !== 24),
+												},
+											});
+										}
+									}
+								}}
+								disabled={
+									formData.reminderSettings.intervals.length === 1 &&
+									formData.reminderSettings.intervals.includes(24)
+								}
+								className="w-4 h-4 text-[#ff5b5b] border-gray-300 rounded focus:ring-[#ff5b5b] focus:ring-2"
+							/>
+							<span className="text-gray-700 font-medium">
+								{t('owner.salonInfo.reminder1Day') || '1 day (24 hours) before'} (
+								{t('owner.salonInfo.default') || 'Default'})
+							</span>
+						</label>
+
+						{/* 168 hours (1 week) option */}
+						<label className="flex items-center space-x-3 cursor-pointer">
+							<input
+								type="checkbox"
+								checked={formData.reminderSettings.intervals.includes(168)}
+								onChange={(e) => {
+									const intervals = formData.reminderSettings.intervals;
+									if (e.target.checked) {
+										setFormData({
+											...formData,
+											reminderSettings: {
+												intervals: [...intervals, 168].sort((a, b) => b - a),
+											},
+										});
+									} else {
+										// Prevent removing if it's the only option
+										if (intervals.length > 1) {
+											setFormData({
+												...formData,
+												reminderSettings: {
+													intervals: intervals.filter((i) => i !== 168),
+												},
+											});
+										}
+									}
+								}}
+								disabled={
+									formData.reminderSettings.intervals.length === 1 &&
+									formData.reminderSettings.intervals.includes(168)
+								}
+								className="w-4 h-4 text-[#ff5b5b] border-gray-300 rounded focus:ring-[#ff5b5b] focus:ring-2"
+							/>
+							<span className="text-gray-700">
+								{t('owner.salonInfo.reminder1Week') || '1 week (168 hours) before'}
+							</span>
+						</label>
+					</div>
+					{formData.reminderSettings.intervals.length === 0 && (
+						<p className="mt-2 text-sm text-red-600">
+							{t('owner.salonInfo.atLeastOneReminderRequired') ||
+								'At least one reminder option must be selected'}
+						</p>
+					)}
 				</div>
 
 				{error && (

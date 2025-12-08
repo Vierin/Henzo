@@ -54,5 +54,12 @@
 	"deleting": "Đang xóa...",
 	"yesDeleteAccount": "Có, xóa tài khoản của tôi",
 	"accountDeleted": "Tài khoản và salon đã được xóa thành công. Bạn sẽ được chuyển hướng đến trang chủ.",
-	"failedToDelete": "Không thể xóa tài khoản. Vui lòng thử lại."
+	"failedToDelete": "Không thể xóa tài khoản. Vui lòng thử lại.",
+	"reminderSettings": "Cài đặt nhắc nhở đặt chỗ",
+	"reminderSettingsDescription": "Chọn thời điểm gửi thông báo nhắc nhở cho khách hàng trước cuộc hẹn của họ. Phải chọn ít nhất một tùy chọn.",
+	"reminder3Hours": "3 giờ trước",
+	"reminder1Day": "1 ngày (24 giờ) trước",
+	"reminder1Week": "1 tuần (168 giờ) trước",
+	"default": "Mặc định",
+	"atLeastOneReminderRequired": "Phải chọn ít nhất một tùy chọn nhắc nhở"
 }
