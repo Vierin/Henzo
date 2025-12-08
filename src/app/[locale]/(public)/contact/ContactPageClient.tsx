@@ -75,7 +75,7 @@ export default function ContactPageClient() {
 						aria-labelledby="contact-hero-heading"
 					>
 						<div className="max-w-4xl mx-auto text-center">
-							<p className="text-orange-600 text-sm font-semibold uppercase tracking-wide mb-4">
+							<p className="text-[#ff5b5b] text-sm font-semibold uppercase tracking-wide mb-4">
 								{t.contact.title}
 							</p>
 							<h1
@@ -124,7 +124,7 @@ export default function ContactPageClient() {
 												value={formData.name}
 												onChange={handleInputChange}
 												placeholder={t.contact.namePlaceholder}
-												className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent text-gray-500"
+												className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#ff5b5b] focus:border-transparent text-gray-500"
 												required
 												disabled={isSubmitting}
 												aria-required="true"
@@ -142,7 +142,7 @@ export default function ContactPageClient() {
 												value={formData.email}
 												onChange={handleInputChange}
 												placeholder={t.contact.emailPlaceholder}
-												className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent text-gray-500"
+												className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#ff5b5b] focus:border-transparent text-gray-500"
 												required
 												disabled={isSubmitting}
 												aria-required="true"
@@ -160,7 +160,7 @@ export default function ContactPageClient() {
 												value={formData.message}
 												onChange={handleInputChange}
 												placeholder={t.contact.messagePlaceholder}
-												className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent text-gray-500 resize-none"
+												className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#ff5b5b] focus:border-transparent text-gray-500 resize-none"
 												required
 												disabled={isSubmitting}
 												aria-required="true"
@@ -170,7 +170,7 @@ export default function ContactPageClient() {
 										<button
 											type="submit"
 											disabled={isSubmitting}
-											className="w-full bg-orange-600 text-white py-3 px-6 rounded-lg font-semibold hover:bg-orange-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+											className="w-full bg-[#ff5b5b] text-white py-3 px-6 rounded-lg font-semibold hover:bg-[#ea4b4b] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
 											aria-describedby="submit-status"
 										>
 											{isSubmitting ? t.contact.sending : t.contact.sendMessage}
@@ -206,11 +206,11 @@ export default function ContactPageClient() {
 										{/* Email */}
 										<div className="flex items-start space-x-4">
 											<div
-												className="w-8 h-8 bg-orange-100 rounded-full flex items-center justify-center flex-shrink-0 mt-1"
+												className="w-8 h-8 bg-[#ffe5e5] rounded-full flex items-center justify-center flex-shrink-0 mt-1"
 												aria-hidden="true"
 											>
 												<svg
-													className="w-4 h-4 text-orange-600"
+													className="w-4 h-4 text-[#ff5b5b]"
 													fill="none"
 													stroke="currentColor"
 													viewBox="0 0 24 24"
@@ -233,7 +233,7 @@ export default function ContactPageClient() {
 												</p>
 												<a
 													href="mailto:hello@henzo.app"
-													className="text-orange-600 font-medium hover:text-orange-700 transition-colors"
+													className="text-[#ff5b5b] font-medium hover:text-[#ea4b4b] transition-colors"
 													aria-label="Send email to hello@henzo.app"
 												>
 													hello@henzo.app

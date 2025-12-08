@@ -13,6 +13,10 @@
 	"errorLoadingDescription": "There was an error loading your favorite salons. Please try again later.",
 	"removeConfirmation": "Are you sure you want to remove \"{salonName}\" from your favorite salons? This action cannot be undone.",
 	"removeFromFavorites": "Remove {salonName} from favorites",
-	"saved": "saved"
+	"saved": "saved",
+	"addedToFavorites": "Added to favorites!",
+	"removedFromFavorites": "Removed from favorites",
+	"failedToAdd": "Failed to add to favorites",
+	"failedToRemove": "Failed to remove from favorites"
 }
 

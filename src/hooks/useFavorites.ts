@@ -2,6 +2,47 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '@/lib/api-client';
 import toast from 'react-hot-toast';
 
+// Helper function to get translation for favorites messages
+// This function gets the current language from localStorage and returns the appropriate translation
+const getFavoriteTranslation = (key: string): string => {
+	if (typeof window === 'undefined') {
+		// Fallback to English on server
+		const fallbacks: Record<string, string> = {
+			addedToFavorites: 'Added to favorites!',
+			removedFromFavorites: 'Removed from favorites',
+			failedToAdd: 'Failed to add to favorites',
+			failedToRemove: 'Failed to remove from favorites',
+		};
+		return fallbacks[key] || key;
+	}
+
+	const language = localStorage.getItem('henzo-language') || 'en';
+	
+	// Import translations dynamically based on language
+	const translations: Record<string, Record<string, string>> = {
+		en: {
+			addedToFavorites: 'Added to favorites!',
+			removedFromFavorites: 'Removed from favorites',
+			failedToAdd: 'Failed to add to favorites',
+			failedToRemove: 'Failed to remove from favorites',
+		},
+		ru: {
+			addedToFavorites: 'Добавлено в избранное!',
+			removedFromFavorites: 'Удалено из избранного',
+			failedToAdd: 'Не удалось добавить в избранное',
+			failedToRemove: 'Не удалось удалить из избранного',
+		},
+		vi: {
+			addedToFavorites: 'Đã thêm vào yêu thích!',
+			removedFromFavorites: 'Đã xóa khỏi yêu thích',
+			failedToAdd: 'Không thể thêm vào yêu thích',
+			failedToRemove: 'Không thể xóa khỏi yêu thích',
+		},
+	};
+
+	return translations[language as 'en' | 'ru' | 'vi']?.[key] || translations.en[key] || key;
+};
+
 export interface FavoriteSalon {
 	id: string;
 	name: string;
@@ -53,10 +94,10 @@ export const useAddFavorite = () => {
 		},
 		onSuccess: () => {
 			queryClient.invalidateQueries({ queryKey: ['favorites'] });
-			toast.success('Added to favorites!');
+			toast.success(getFavoriteTranslation('addedToFavorites'));
 		},
 		onError: (error: Error) => {
-			toast.error(error.message || 'Failed to add to favorites');
+			toast.error(error.message || getFavoriteTranslation('failedToAdd'));
 		},
 	});
 };
@@ -93,14 +134,14 @@ export const useRemoveFavorite = () => {
 			if (context?.previousFavorites) {
 				queryClient.setQueryData(['favorites'], context.previousFavorites);
 			}
-			toast.error(error.message || 'Failed to remove from favorites');
+			toast.error(error.message || getFavoriteTranslation('failedToRemove'));
 		},
 		onSettled: () => {
 			// Always refetch after error or success to ensure cache consistency
 			queryClient.invalidateQueries({ queryKey: ['favorites'] });
 		},
 		onSuccess: () => {
-			toast.success('Removed from favorites');
+			toast.success(getFavoriteTranslation('removedFromFavorites'));
 		},
 	});
 };

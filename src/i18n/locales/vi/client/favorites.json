@@ -13,6 +13,10 @@
 	"errorLoadingDescription": "Đã xảy ra lỗi khi tải các salon yêu thích của bạn. Vui lòng thử lại sau.",
 	"removeConfirmation": "Bạn có chắc chắn muốn xóa \"{salonName}\" khỏi salon yêu thích? Hành động này không thể hoàn tác.",
 	"removeFromFavorites": "Xóa {salonName} khỏi yêu thích",
-	"saved": "đã lưu"
+	"saved": "đã lưu",
+	"addedToFavorites": "Đã thêm vào yêu thích!",
+	"removedFromFavorites": "Đã xóa khỏi yêu thích",
+	"failedToAdd": "Không thể thêm vào yêu thích",
+	"failedToRemove": "Không thể xóa khỏi yêu thích"
 }
 
