@@ -36,7 +36,7 @@ export default function LoginClient() {
 
 			// Стандартные редиректы по ролям
 			const locale = extractLocaleFromPath(pathname) ?? 'en';
-			
+
 			// Для OWNER нужно проверить наличие салона
 			if (user.role === 'OWNER') {
 				const checkSalonAndRedirect = async () => {
@@ -49,15 +49,27 @@ export default function LoginClient() {
 
 						if (response?.success && response?.data) {
 							// Салон существует - редиректим на дашборд
-							router.push(withLocale('/owner-dashboard', locale as 'en' | 'ru' | 'vi'));
+							router.push(
+								withLocale('/owner-dashboard', locale as 'en' | 'ru' | 'vi')
+							);
 						} else {
 							// Салон не существует - редиректим на настройку
-							router.push(withLocale('/business/complete-setup', locale as 'en' | 'ru' | 'vi'));
+							router.push(
+								withLocale(
+									'/business/complete-setup',
+									locale as 'en' | 'ru' | 'vi'
+								)
+							);
 						}
 					} catch (error) {
 						// В случае ошибки (например, сеть недоступна) редиректим на настройку
 						// Это безопасный вариант, т.к. если салон есть, страница настройки сама проверит и перенаправит
-						router.push(withLocale('/business/complete-setup', locale as 'en' | 'ru' | 'vi'));
+						router.push(
+							withLocale(
+								'/business/complete-setup',
+								locale as 'en' | 'ru' | 'vi'
+							)
+						);
 					}
 				};
 
@@ -133,15 +145,34 @@ export default function LoginClient() {
 	useEffect(() => {
 		const fetchBotId = async () => {
 			try {
-				const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+				const apiUrl =
+					process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 				const response = await fetch(`${apiUrl}/auth/telegram/bot-id`);
 
 				if (response.ok) {
-					const { botId } = await response.json();
-					setTelegramBotId(botId);
+					const data = await response.json();
+					const botId = data?.botId;
+					if (botId) {
+						console.log('✅ Telegram bot ID loaded:', botId);
+						setTelegramBotId(botId);
+					} else {
+						console.warn(
+							'⚠️ Telegram bot ID is null or undefined in response:',
+							data
+						);
+					}
+				} else {
+					const errorData = await response
+						.json()
+						.catch(() => ({ message: 'Unknown error' }));
+					console.error('❌ Failed to get Telegram bot ID:', {
+						status: response.status,
+						statusText: response.statusText,
+						error: errorData,
+					});
 				}
 			} catch (error) {
-				console.error('Failed to get Telegram bot ID:', error);
+				console.error('❌ Failed to get Telegram bot ID:', error);
 			}
 		};
 
@@ -177,13 +208,21 @@ export default function LoginClient() {
 			authDateValue: telegramData.auth_date,
 		});
 
-		if (!telegramData.id || !telegramData.first_name || !telegramData.hash || !telegramData.auth_date) {
-			console.error('❌ Missing required Telegram data in handleTelegramAuth:', {
-				id: telegramData.id,
-				first_name: telegramData.first_name,
-				hash: telegramData.hash,
-				auth_date: telegramData.auth_date,
-			});
+		if (
+			!telegramData.id ||
+			!telegramData.first_name ||
+			!telegramData.hash ||
+			!telegramData.auth_date
+		) {
+			console.error(
+				'❌ Missing required Telegram data in handleTelegramAuth:',
+				{
+					id: telegramData.id,
+					first_name: telegramData.first_name,
+					hash: telegramData.hash,
+					auth_date: telegramData.auth_date,
+				}
+			);
 			toast.error('Missing required Telegram authentication data');
 			return;
 		}
@@ -246,9 +285,7 @@ export default function LoginClient() {
 					router.push(returnTo);
 				} else {
 					const locale = extractLocaleFromPath(pathname) ?? 'en';
-					router.push(
-						withLocale('/dashboard', locale as 'en' | 'ru' | 'vi')
-					);
+					router.push(withLocale('/dashboard', locale as 'en' | 'ru' | 'vi'));
 				}
 			} else {
 				throw new Error('Invalid response from server');
