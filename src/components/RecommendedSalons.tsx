@@ -26,7 +26,16 @@ export default function RecommendedSalons() {
 	const salonsWithServices = useMemo(
 		() =>
 			(salons as Salon[]).filter(
-				(salon) => salon.services && salon.services.length > 0
+				(salon) => {
+					// Check multiple ways: _count, services array, or Service array (Prisma naming)
+					const serviceCount = 
+						(salon._count as any)?.Service || 
+						(salon._count as any)?.services || 
+						(salon as any).Service?.length ||
+						salon.services?.length || 
+						0;
+					return serviceCount > 0;
+				}
 			),
 		[salons]
 	);

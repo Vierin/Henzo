@@ -108,6 +108,10 @@ export function LanguageProvider({ children }: LanguageProviderProps) {
 	if (pathNoLocale === '/' || pathNoLocale === '' || !pathNoLocale) {
 		// Categories are also used on homepage
 		publicModules.push('public/homepage', 'public/categories');
+		// Salon module needed for DateTimePicker component (daysShort)
+		publicModules.push('public/salon');
+		// Booking module needed for DateTimePicker component (selectTime, timeIntervals)
+		publicModules.push('public/booking');
 	} else if (pathNoLocale.startsWith('/salon/')) {
 		publicModules.push('public/salon');
 		// Booking module needed for BookingModal component
@@ -269,45 +273,47 @@ export function LanguageProvider({ children }: LanguageProviderProps) {
 
 	// Create a function wrapper that supports both object access and string path access
 	// Use Proxy to automatically handle both t('path.to.key') and t.path.to.key
-	const baseFunction = ((path: string) => getNestedTranslation(t, path)) as any;
-	
-	const createProxy = (prefix = ''): any => {
-		return new Proxy(baseFunction, {
-			get: (_target, prop: string) => {
-				// If accessing as function, return the function
-				if (prop === 'apply' || prop === 'call' || prop === 'bind' || prop === 'toString') {
-					return baseFunction[prop];
-				}
-				// Build the full path
-				const fullPath = prefix ? `${prefix}.${prop}` : prop;
-				// Try to get from translations object
-				const value = prefix 
-					? getNestedTranslation(t, fullPath)
-					: t[prop];
-				
-				// If it's an object, return a proxy for nested access
-				if (value !== undefined && typeof value === 'object' && value !== null && !Array.isArray(value)) {
+	const tWrapper = useMemo(() => {
+		const baseFunction = ((path: string) => getNestedTranslation(t, path)) as any;
+		
+		const createProxy = (prefix = ''): any => {
+			return new Proxy(baseFunction, {
+				get: (_target, prop: string) => {
+					// If accessing as function, return the function
+					if (prop === 'apply' || prop === 'call' || prop === 'bind' || prop === 'toString') {
+						return baseFunction[prop];
+					}
+					// Build the full path
+					const fullPath = prefix ? `${prefix}.${prop}` : prop;
+					// Try to get from translations object
+					const value = prefix 
+						? getNestedTranslation(t, fullPath)
+						: t[prop];
+					
+					// If it's an object, return a proxy for nested access
+					if (value !== undefined && typeof value === 'object' && value !== null && !Array.isArray(value)) {
+						return createProxy(fullPath);
+					}
+					
+					// If value exists, return it
+					if (value !== undefined) {
+						return value;
+					}
+					
+					// Return a proxy for nested access that will resolve on next property access
 					return createProxy(fullPath);
-				}
-				
-				// If value exists, return it
-				if (value !== undefined) {
-					return value;
-				}
-				
-				// Return a proxy for nested access that will resolve on next property access
-				return createProxy(fullPath);
-			},
-		});
-	};
-	
-	const tWrapper = createProxy() as Dictionary & ((path: string) => string);
+				},
+			});
+		};
+		
+		return createProxy() as Dictionary & ((path: string) => string);
+	}, [t]);
 
-	const value: LanguageContextType = {
+	const value: LanguageContextType = useMemo(() => ({
 		language,
 		setLanguage,
 		t: tWrapper as Dictionary & ((path: string) => string),
-	};
+	}), [language, setLanguage, tWrapper]);
 
 	return (
 		<LanguageContext.Provider value={value}>

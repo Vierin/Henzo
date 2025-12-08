@@ -49,7 +49,7 @@ export default function AddressAutocomplete({
 	// Предустановленные подсказки для Вьетнама
 	const defaultSuggestions: AddressSuggestion[] = [
 		{
-			display_name: t.common.useCurrentLocation,
+			display_name: t('common.useCurrentLocation'),
 			lat: '0',
 			lon: '0',
 		},
@@ -428,7 +428,7 @@ export default function AddressAutocomplete({
 
 	const handleSuggestionClick = (suggestion: AddressSuggestion) => {
 		// Специальная обработка для "Use Current Location"
-		if (suggestion.display_name === t.common.useCurrentLocation) {
+		if (suggestion.display_name === t('common.useCurrentLocation')) {
 			handleCurrentLocation();
 			return;
 		}
@@ -602,12 +602,12 @@ export default function AddressAutocomplete({
 			<input
 				ref={inputRef}
 				type="text"
-				value={isGettingLocation ? t.common.gettingLocation : value}
+				value={isGettingLocation ? t('common.gettingLocation') : value}
 				onChange={handleInputChange}
 				onPaste={handlePaste}
 				onFocus={handleInputFocus}
 				onBlur={handleInputBlur}
-				placeholder={isGettingLocation ? t.common.gettingLocation : placeholder}
+				placeholder={isGettingLocation ? t('common.gettingLocation') : placeholder}
 				disabled={isGettingLocation}
 				className={
 					inline
@@ -660,7 +660,7 @@ export default function AddressAutocomplete({
 				>
 					{suggestions.map((suggestion, index) => {
 						const isDefaultSuggestion =
-							suggestion.display_name === t.common.useCurrentLocation ||
+							suggestion.display_name === t('common.useCurrentLocation') ||
 							suggestion.display_name === 'Đà Nẵng';
 
 						return (
@@ -672,7 +672,7 @@ export default function AddressAutocomplete({
 								}`}
 							>
 								{isDefaultSuggestion &&
-									suggestion.display_name === t.common.useCurrentLocation && (
+									suggestion.display_name === t('common.useCurrentLocation') && (
 										<svg
 											className="w-4 h-4 text-gray-700"
 											fill="none"

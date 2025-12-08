@@ -12,7 +12,7 @@ import {
 	stripLocaleFromPath,
 	withLocale,
 } from '@/i18n/routing';
-import { useTranslation } from '@/contexts/LanguageContext';
+import { useTranslation, useLanguage } from '@/contexts/LanguageContext';
 
 function PublicHeaderContent() {
 	const [isLanguageDropdownOpen, setIsLanguageDropdownOpen] = useState(false);
@@ -25,6 +25,7 @@ function PublicHeaderContent() {
 	const searchParams = useSearchParams();
 	const router = useRouter();
 	const t = useTranslation();
+	const { setLanguage } = useLanguage();
 
 	// Используем новую систему аутентификации
 	const { user, isLoading, isClient, isOwner, isAdmin, logout } = useAuth();
@@ -47,12 +48,14 @@ function PublicHeaderContent() {
 	] as const;
 
 	const handleLanguageSelect = (lang: (typeof languages)[number]) => {
+		// Обновляем язык в контексте
+		setLanguage(lang.code as 'en' | 'ru' | 'vi');
 		// Сохраняем query-параметры (например, token на странице booking-confirmed)
 		const basePath = withLocale(pathname, lang.code as 'en' | 'ru' | 'vi');
 		const query = searchParams.toString();
 		const target = query ? `${basePath}?${query}` : basePath;
 		setIsLanguageDropdownOpen(false);
-		router.push(target);
+		router.replace(target);
 	};
 
 	// selectedLanguage из URL

@@ -32,9 +32,11 @@ export default function DateTimePicker({
 		language === 'ru' ? 'ru-RU' : language === 'vi' ? 'vi-VN' : 'en-US';
 	const effectivePlaceholder =
 		placeholder ||
-		`${t.homepage.datePlaceholder} • ${t.homepage.timePlaceholder}`;
+		`${t('homepage.datePlaceholder')} • ${t('homepage.timePlaceholder')}`;
 	const [showCalendar, setShowCalendar] = useState(false);
 	const [showTimeIntervals, setShowTimeIntervals] = useState(false);
+	const [displayMonth, setDisplayMonth] = useState(new Date().getMonth());
+	const [displayYear, setDisplayYear] = useState(new Date().getFullYear());
 	const calendarRef = useRef<HTMLDivElement>(null);
 	const timeIntervalsRef = useRef<HTMLDivElement>(null);
 	const buttonRef = useRef<HTMLButtonElement>(null);
@@ -113,13 +115,13 @@ export default function DateTimePicker({
 		if (!interval) return '';
 		switch (interval) {
 			case 'any':
-				return t.booking.timeIntervals.any;
+				return t('booking.timeIntervals.any');
 			case 'morning':
-				return t.booking.timeIntervals.morning;
+				return t('booking.timeIntervals.morning');
 			case 'afternoon':
-				return t.booking.timeIntervals.afternoon;
+				return t('booking.timeIntervals.afternoon');
 			case 'evening':
-				return t.booking.timeIntervals.evening;
+				return t('booking.timeIntervals.evening');
 			default: {
 				const timeInterval = TIME_INTERVALS.find((ti) => ti.value === interval);
 				return timeInterval ? timeInterval.label : '';
@@ -127,12 +129,28 @@ export default function DateTimePicker({
 		}
 	};
 
+	const goToPreviousMonth = () => {
+		if (displayMonth === 0) {
+			setDisplayMonth(11);
+			setDisplayYear(displayYear - 1);
+		} else {
+			setDisplayMonth(displayMonth - 1);
+		}
+	};
+
+	const goToNextMonth = () => {
+		if (displayMonth === 11) {
+			setDisplayMonth(0);
+			setDisplayYear(displayYear + 1);
+		} else {
+			setDisplayMonth(displayMonth + 1);
+		}
+	};
+
 	const generateCalendarDays = () => {
 		const today = new Date();
-		const currentMonth = today.getMonth();
-		const currentYear = today.getFullYear();
-		const firstDay = new Date(currentYear, currentMonth, 1);
-		const lastDay = new Date(currentYear, currentMonth + 1, 0);
+		const firstDay = new Date(displayYear, displayMonth, 1);
+		const lastDay = new Date(displayYear, displayMonth + 1, 0);
 		const daysInMonth = lastDay.getDate();
 		// Adjust for Monday start: Sunday (0) becomes 6, Monday (1) becomes 0, etc.
 		const startingDayOfWeek = (firstDay.getDay() + 6) % 7;
@@ -146,9 +164,11 @@ export default function DateTimePicker({
 
 		// Add days of the month
 		for (let day = 1; day <= daysInMonth; day++) {
-			const dateString = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-			const dateObj = new Date(currentYear, currentMonth, day);
-			const isToday = day === today.getDate();
+			const dateObj = new Date(displayYear, displayMonth, day);
+			const isToday = 
+				day === today.getDate() &&
+				displayMonth === today.getMonth() &&
+				displayYear === today.getFullYear();
 			const isSelected =
 				date &&
 				dateObj.getDate() === date.getDate() &&
@@ -205,6 +225,12 @@ export default function DateTimePicker({
 						if (!disabled) {
 							setShowTimeIntervals(false); // Close time intervals when opening calendar
 							setShowCalendar(!showCalendar);
+							// Reset to current month when opening calendar
+							if (!showCalendar) {
+								const today = new Date();
+								setDisplayMonth(today.getMonth());
+								setDisplayYear(today.getFullYear());
+							}
 						}
 					}}
 					disabled={disabled}
@@ -228,23 +254,59 @@ export default function DateTimePicker({
 					ref={calendarRef}
 					className="absolute top-full left-0 mt-2 bg-white border border-gray-200 rounded-lg shadow-lg p-4 z-50 min-w-[300px]"
 				>
-					<div className="text-center mb-4">
+					<div className="flex items-center justify-between mb-4">
+						<button
+							onClick={goToPreviousMonth}
+							className="p-1 hover:bg-gray-100 rounded transition-colors focus:outline-none focus:ring-2 focus:ring-[#ff5b5b] focus:ring-offset-2"
+							aria-label="Previous month"
+						>
+							<svg
+								className="w-5 h-5 text-gray-800"
+								fill="currentColor"
+								viewBox="0 0 20 20"
+								aria-hidden="true"
+							>
+								<path
+									fillRule="evenodd"
+									d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z"
+									clipRule="evenodd"
+								/>
+							</svg>
+						</button>
 						<h3 className="text-lg font-semibold text-gray-900">
-							{new Date().toLocaleDateString(locale, {
+							{new Date(displayYear, displayMonth).toLocaleDateString(locale, {
 								month: 'long',
 								year: 'numeric',
 							})}
 						</h3>
+						<button
+							onClick={goToNextMonth}
+							className="p-1 hover:bg-gray-100 rounded transition-colors focus:outline-none focus:ring-2 focus:ring-[#ff5b5b] focus:ring-offset-2"
+							aria-label="Next month"
+						>
+							<svg
+								className="w-5 h-5 text-gray-800"
+								fill="currentColor"
+								viewBox="0 0 20 20"
+								aria-hidden="true"
+							>
+								<path
+									fillRule="evenodd"
+									d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z"
+									clipRule="evenodd"
+								/>
+							</svg>
+						</button>
 					</div>
 					<div className="grid grid-cols-7 gap-1 mb-2">
 						{[
-							t.salon.daysShort.mon,
-							t.salon.daysShort.tue,
-							t.salon.daysShort.wed,
-							t.salon.daysShort.thu,
-							t.salon.daysShort.fri,
-							t.salon.daysShort.sat,
-							t.salon.daysShort.sun,
+							t('salon.daysShort.mon'),
+							t('salon.daysShort.tue'),
+							t('salon.daysShort.wed'),
+							t('salon.daysShort.thu'),
+							t('salon.daysShort.fri'),
+							t('salon.daysShort.sat'),
+							t('salon.daysShort.sun'),
 						].map((day) => (
 							<div
 								key={day}
@@ -266,7 +328,7 @@ export default function DateTimePicker({
 				>
 					<div className="text-center mb-3">
 						<h3 className="text-lg font-semibold text-gray-900">
-							{t.booking.selectTime}
+							{t('booking.selectTime')}
 						</h3>
 					</div>
 					<div className="space-y-2">
