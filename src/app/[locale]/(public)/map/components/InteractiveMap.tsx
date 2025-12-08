@@ -40,6 +40,7 @@ interface InteractiveMapProps {
 		east: number;
 		west: number;
 	}) => void;
+	selectedCategories?: number[];
 }
 
 export default function InteractiveMap({
@@ -48,6 +49,7 @@ export default function InteractiveMap({
 	onMarkerClick,
 	selectedSalon,
 	onMapBoundsChange,
+	selectedCategories = [],
 }: InteractiveMapProps) {
 	const [currentZoom, setCurrentZoom] = useState(zoom);
 	const [mapInstance, setMapInstance] = useState<any>(null);
@@ -80,12 +82,26 @@ export default function InteractiveMap({
 		}
 	}, []);
 
-	// Filter salons that have coordinates (from geocoding cache)
-	const displaySalons = useMemo(
-		() =>
-			(salons as any[]).filter((salon) => salon.latitude && salon.longitude),
-		[salons]
-	);
+	// Filter salons that have coordinates and match selected categories
+	const displaySalons = useMemo(() => {
+		let filtered = (salons as any[]).filter(
+			(salon) => salon.latitude && salon.longitude
+		);
+
+		// Filter by categories if any selected
+		if (selectedCategories.length > 0) {
+			filtered = filtered.filter((salon: any) => {
+				const salonServices = salon.services || salon.Service || [];
+				return salonServices.some(
+					(service: any) =>
+						service.serviceCategoryId &&
+						selectedCategories.includes(service.serviceCategoryId)
+				);
+			});
+		}
+
+		return filtered;
+	}, [salons, selectedCategories]);
 
 	// Create custom pin icon function with useCallback
 	const createCustomIcon = useCallback(

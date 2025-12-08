@@ -149,6 +149,8 @@ export function LanguageProvider({ children }: LanguageProviderProps) {
 		publicModules.push('public/homepage');
 	} else if (pathNoLocale.startsWith('/map')) {
 		publicModules.push('public/map');
+		// Categories module needed for category filter buttons
+		publicModules.push('public/categories');
 	} else if (pathNoLocale.startsWith('/business')) {
 		publicModules.push('public/business');
 	} else if (pathNoLocale.startsWith('/contact')) {

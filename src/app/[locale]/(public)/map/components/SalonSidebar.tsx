@@ -13,17 +13,22 @@ import { generateSalonSlug } from '@/utils/slug';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { useTranslation } from '@/contexts/LanguageContext';
+import { STATIC_CATEGORIES } from '@/constants/categories';
 
 interface SalonSidebarProps {
 	onSalonSelect: (salon: Salon) => void;
 	selectedSalon: Salon | null;
 	mapBounds: MapBounds | null;
+	selectedCategories: number[];
+	onCategoriesChange: (categories: number[]) => void;
 }
 
 export default function SalonSidebar({
 	onSalonSelect,
 	selectedSalon,
 	mapBounds,
+	selectedCategories,
+	onCategoriesChange,
 }: SalonSidebarProps) {
 	const router = useRouter();
 	const t = useTranslation();
@@ -31,14 +36,25 @@ export default function SalonSidebar({
 	const { data, isLoading } = useFeaturedSalons(20);
 	const salons = (data as unknown as Salon[]) || [];
 
-	// Filter and sort salons based on map bounds and sort criteria
+	// Filter and sort salons based on map bounds, categories, and sort criteria
 	const displaySalons = useMemo(() => {
 		const allSalons = salons;
 
-		// Filter by map bounds if available
+		// Filter by categories if any selected
 		let filteredSalons = allSalons;
+		if (selectedCategories.length > 0) {
+			filteredSalons = allSalons.filter((salon: any) => {
+				// Check if salon has services in selected categories
+				const salonServices = salon.services || salon.Service || [];
+				return salonServices.some((service: any) => 
+					service.serviceCategoryId && selectedCategories.includes(service.serviceCategoryId)
+				);
+			});
+		}
+
+		// Filter by map bounds if available
 		if (mapBounds) {
-			filteredSalons = filterSalonsByBounds(allSalons, mapBounds);
+			filteredSalons = filterSalonsByBounds(filteredSalons, mapBounds);
 		}
 
 		// Sort based on selected criteria
@@ -66,7 +82,7 @@ export default function SalonSidebar({
 				break;
 		}
 		return sortedSalons;
-	}, [salons, mapBounds, sortBy]);
+	}, [salons, mapBounds, sortBy, selectedCategories]);
 
 
 	const handleViewSalon = (salon: any, e: React.MouseEvent) => {
@@ -90,10 +106,55 @@ export default function SalonSidebar({
 		);
 	}
 
+	const toggleCategory = (categoryId: number) => {
+		onCategoriesChange(
+			selectedCategories.includes(categoryId)
+				? selectedCategories.filter((id) => id !== categoryId)
+				: [...selectedCategories, categoryId]
+		);
+	};
+
+	// Get translated category name
+	const getCategoryName = (slug: string) => {
+		const categoryKeyMap: Record<string, string> = {
+			'hair-barber': 'categories.hairBarber',
+			'massage-spa': 'categories.massageSpa',
+			'manicure-pedicure': 'categories.manicurePedicure',
+			'cosmetic-medicine': 'categories.cosmeticMedicine',
+			'other-services': 'categories.otherServices',
+		};
+		const translationKey = categoryKeyMap[slug];
+		if (translationKey) {
+			return t(translationKey) || slug;
+		}
+		return slug;
+	};
+
 	return (
 		<div className="h-full flex flex-col">
 			{/* Sort Header */}
 			<div className="p-6 border-b border-gray-200">
+				{/* Category Filters */}
+				<div className="mb-4">
+					<div className="flex flex-wrap gap-2">
+						{STATIC_CATEGORIES.map((category) => {
+							const isSelected = selectedCategories.includes(category.id);
+							return (
+								<button
+									key={category.id}
+									onClick={() => toggleCategory(category.id)}
+									className={`px-3 py-1.5 text-xs font-medium rounded-full transition-colors ${
+										isSelected
+											? 'bg-[#ff5b5b] text-white'
+											: 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+									}`}
+								>
+									{getCategoryName(category.slug)}
+								</button>
+							);
+						})}
+					</div>
+				</div>
 				<div className="mb-3">
 					<h2 className="text-lg font-semibold text-gray-900">
 						{mapBounds

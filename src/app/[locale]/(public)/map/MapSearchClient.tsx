@@ -13,12 +13,13 @@ import {
 export default function MapSearchClient() {
 	const [selectedSalon, setSelectedSalon] = useState<Salon | null>(null);
 	const [mapCenter, setMapCenter] = useState<{ lat: number; lng: number }>({
-		lat: 16.0544, // Da Nang coordinates
-		lng: 108.2022,
+		lat: 12.2388, // Nha Trang coordinates (fallback if geolocation denied)
+		lng: 109.1967,
 	});
 	const [zoom, setZoom] = useState(13);
 	const [mapBounds, setMapBounds] = useState<MapBounds | null>(null);
 	const [isLoadingLocation, setIsLoadingLocation] = useState(false);
+	const [selectedCategories, setSelectedCategories] = useState<number[]>([]);
 
 	const handleSalonSelect = (salon: Salon) => {
 		setSelectedSalon(salon);
@@ -59,7 +60,11 @@ export default function MapSearchClient() {
 					if (error.code !== 1) {
 						console.warn('Geolocation error:', error.message);
 					}
-					// Fallback to Da Nang coordinates (already set as default)
+					// Fallback to Nha Trang coordinates (already set as default)
+					setMapCenter({
+						lat: 12.2388, // Nha Trang coordinates
+						lng: 109.1967,
+					});
 					setIsLoadingLocation(false);
 				},
 				{
@@ -83,13 +88,15 @@ export default function MapSearchClient() {
 	}, [mapBounds]);
 
 	return (
-		<div className="flex h-[calc(100svh-80px)] bg-white">
+		<div className="flex h-[calc(100svh-64px)] bg-white">
 			{/* Left Sidebar - 30% width */}
 			<div className="w-[30%] min-w-[350px] border-r border-gray-200 bg-white">
 				<SalonSidebar
 					onSalonSelect={handleSalonSelect}
 					selectedSalon={selectedSalon}
 					mapBounds={mapBounds}
+					selectedCategories={selectedCategories}
+					onCategoriesChange={setSelectedCategories}
 				/>
 			</div>
 
@@ -101,6 +108,7 @@ export default function MapSearchClient() {
 					onMarkerClick={handleMapMarkerClick}
 					selectedSalon={selectedSalon}
 					onMapBoundsChange={handleMapBoundsChange}
+					selectedCategories={selectedCategories}
 				/>
 			</div>
 		</div>
