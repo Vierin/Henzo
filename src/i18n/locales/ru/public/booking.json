@@ -47,5 +47,16 @@
 	"confirmFailedTitle": "Ошибка подтверждения",
 	"bookingConfirmedDescription": "Ваша запись успешно подтверждена.",
 	"waitingForSalonConfirmationTitle": "Ожидается подтверждение салона",
-	"waitingForSalonConfirmationDescription": "Ваша запись сейчас в ожидании. Салон проверит и подтвердит вашу запись. Вы получите письмо как только запись будет подтверждена."
+	"waitingForSalonConfirmationDescription": "Ваша запись сейчас в ожидании. Салон проверит и подтвердит вашу запись. Вы получите письмо как только запись будет подтверждена.",
+	"thankYouForReservation": "Спасибо за вашу запись!",
+	"awaitingConfirmation": "Ожидается подтверждение от салона",
+	"usuallyConfirmsWithin": "Обычно салон подтверждает записи в течение 2 часов.",
+	"willReceiveEmail": "Вы получите письмо, когда ваша запись будет подтверждена.",
+	"bookingDetails": "Детали записи:",
+	"service": "Услуга:",
+	"date": "Дата:",
+	"time": "Время:",
+	"done": "Готово",
+	"bookingConfirmedTitle": "Запись подтверждена!",
+	"appointmentBookedSuccessfully": "Ваша запись успешно оформлена"
 }

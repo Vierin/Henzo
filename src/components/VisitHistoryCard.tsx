@@ -85,7 +85,7 @@ export default function VisitHistoryCard({
 			case 'CANCELED':
 				return { text: t('client.dashboard.canceled'), className: 'bg-red-100 text-red-800' };
 		case 'COMPLETED':
-			return { text: t('client.dashboard.completed'), className: 'bg-blue-100 text-blue-800' };
+			return { text: t('client.dashboard.completed'), className: 'bg-blue-100 text-blue-800 dark:bg-blue-100 dark:text-blue-800' };
 		case 'NOSHOW':
 			return { text: t('client.dashboard.noShow'), className: 'bg-orange-100 text-orange-800' };
 		default:

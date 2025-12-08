@@ -30,6 +30,12 @@ export default function TelegramLoginButton({
 	lang = 'en',
 }: TelegramLoginButtonProps) {
 	const containerRef = useRef<HTMLDivElement>(null);
+	const onAuthRef = useRef(onAuth);
+
+	// Обновляем ref при изменении onAuth, чтобы избежать пересоздания скрипта
+	useEffect(() => {
+		onAuthRef.current = onAuth;
+	}, [onAuth]);
 
 	useEffect(() => {
 		if (!containerRef.current || !botId) return;
@@ -41,13 +47,14 @@ export default function TelegramLoginButton({
 		const callbackName = `onTelegramAuth_${botId}_${Date.now()}`;
 
 		// Создаем глобальную функцию для обработки авторизации
+		// Важно: создаем функцию ДО загрузки скрипта, чтобы она была доступна
 		(window as any)[callbackName] = (user: any) => {
 			console.log('📱 Telegram Widget callback called');
 			console.log('📱 Raw user data:', user);
 			console.log('📱 User type:', typeof user);
 			console.log('📱 User keys:', user ? Object.keys(user) : 'null');
 			console.log('📱 User stringified:', JSON.stringify(user, null, 2));
-			
+
 			if (!user) {
 				console.error('❌ User data is null or undefined');
 				return;
@@ -75,7 +82,8 @@ export default function TelegramLoginButton({
 
 			console.log('✅ All required fields present, calling onAuth');
 			try {
-				onAuth({
+				// Используем ref для получения актуальной функции onAuth
+				onAuthRef.current({
 					id: user.id,
 					first_name: user.first_name || '',
 					last_name: user.last_name,
@@ -88,6 +96,13 @@ export default function TelegramLoginButton({
 				console.error('❌ Error in onAuth callback:', error);
 			}
 		};
+
+		// Убеждаемся, что функция доступна глобально
+		console.log('✅ Callback function created:', callbackName);
+		console.log(
+			'✅ Callback function available:',
+			typeof (window as any)[callbackName] === 'function'
+		);
 
 		// Проверяем, что botId указан
 		// Telegram Login Widget принимает как bot_id (число), так и username (строка)
@@ -104,7 +119,8 @@ export default function TelegramLoginButton({
 			buttonSize,
 			requestAccess,
 			lang,
-			currentOrigin: typeof window !== 'undefined' ? window.location.origin : 'N/A',
+			currentOrigin:
+				typeof window !== 'undefined' ? window.location.origin : 'N/A',
 		});
 
 		// Загружаем Telegram Widget скрипт
@@ -123,12 +139,27 @@ export default function TelegramLoginButton({
 		// НЕ добавляем origin или return_to - виджет автоматически определяет origin
 		script.async = true;
 
+		// Обработка успешной загрузки скрипта
+		script.onload = () => {
+			console.log('✅ Telegram Widget script loaded successfully');
+			console.log(
+				'✅ Callback function still available:',
+				typeof (window as any)[callbackName] === 'function'
+			);
+		};
+
 		// Обработка ошибок загрузки скрипта
 		script.onerror = () => {
 			console.error('❌ Failed to load Telegram Widget script');
 		};
 
-		containerRef.current.appendChild(script);
+		// Добавляем небольшую задержку, чтобы убедиться, что callback функция точно доступна
+		setTimeout(() => {
+			if (containerRef.current) {
+				containerRef.current.appendChild(script);
+				console.log('✅ Script appended to container');
+			}
+		}, 0);
 
 		return () => {
 			// Cleanup
@@ -139,8 +170,7 @@ export default function TelegramLoginButton({
 				delete (window as any)[callbackName];
 			}
 		};
-	}, [botId, buttonSize, cornerRadius, requestAccess, usePic, lang, onAuth]);
+	}, [botId, buttonSize, cornerRadius, requestAccess, usePic, lang]);
 
 	return <div ref={containerRef} />;
 }
-

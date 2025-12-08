@@ -47,5 +47,16 @@
 	"confirmFailedTitle": "Confirmation Failed",
 	"bookingConfirmedDescription": "Your reservation has been successfully confirmed.",
 	"waitingForSalonConfirmationTitle": "Waiting for Salon Confirmation",
-	"waitingForSalonConfirmationDescription": "Your booking is now pending. The salon will review and confirm your appointment. You'll receive an email notification once it's confirmed."
+	"waitingForSalonConfirmationDescription": "Your booking is now pending. The salon will review and confirm your appointment. You'll receive an email notification once it's confirmed.",
+	"thankYouForReservation": "Thank you for your reservation!",
+	"awaitingConfirmation": "Awaiting confirmation from the salon",
+	"usuallyConfirmsWithin": "The salon usually confirms bookings within 2 hours.",
+	"willReceiveEmail": "You will receive an email when your appointment is confirmed.",
+	"bookingDetails": "Booking Details:",
+	"service": "Service:",
+	"date": "Date:",
+	"time": "Time:",
+	"done": "Done",
+	"bookingConfirmedTitle": "Booking Confirmed!",
+	"appointmentBookedSuccessfully": "Your appointment has been successfully booked"
 }

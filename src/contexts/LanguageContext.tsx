@@ -128,6 +128,10 @@ export function LanguageProvider({ children }: LanguageProviderProps) {
 		publicModules.push('public/homepage');
 		// Salon module needed for SalonCard component
 		publicModules.push('public/salon');
+		// Booking module needed for BookingModal component
+		publicModules.push('public/booking');
+		// Auth module needed for BookingAuthForm in BookingModal
+		publicModules.push('shared/auth');
 	} else if (pathNoLocale.startsWith('/salons')) {
 		// Salons page needs homepage and categories for search and sorting
 		publicModules.push('public/homepage', 'public/categories');
@@ -167,16 +171,8 @@ export function LanguageProvider({ children }: LanguageProviderProps) {
 	// Add all public modules (can be multiple for homepage)
 	modulesToLoad.push(...publicModules);
 	if (isClientPage) {
-		// Determine specific client module based on path
-		if (pathNoLocale.startsWith('/dashboard')) {
-			modulesToLoad.push('client/dashboard');
-		} else if (pathNoLocale.startsWith('/favorites')) {
-			modulesToLoad.push('client/favorites');
-		} else if (pathNoLocale.startsWith('/reviews')) {
-			modulesToLoad.push('client/reviews');
-		} else if (pathNoLocale.startsWith('/settings')) {
-			modulesToLoad.push('client/settings');
-		}
+		// Load all client modules since ClientSidebar uses translations from all of them
+		modulesToLoad.push('client/dashboard', 'client/favorites', 'client/reviews', 'client/settings');
 	}
 	// Load shared/auth for login and register pages
 	if (pathNoLocale.startsWith('/login') || pathNoLocale.startsWith('/register')) {

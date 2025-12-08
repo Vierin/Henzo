@@ -39,7 +39,7 @@ export default function UpcomingBookingsList({
 				);
 			case 'COMPLETED':
 				return (
-					<span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+					<span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-100 dark:text-blue-800">
 						{t('owner.dashboard.completed')}
 					</span>
 				);
