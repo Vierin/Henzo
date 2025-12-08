@@ -503,29 +503,44 @@ export default function BookingModal({
 		}
 	};
 
-	// Check if a time slot is available
-	const isTimeSlotAvailable = (timeSlot: string, selectedStaffId?: string) => {
-		if (!selectedService) return true;
-
-		// If bookings couldn't be loaded due to error, show all slots as available but with warning
-		if (bookingsLoadError) {
-			return true;
+	// Memoized availability map to avoid recalculating for the same slots
+	const availabilityCache = useMemo(() => {
+		const cache = new Map<string, boolean>();
+		
+		if (!selectedService || bookingsLoadError) {
+			return cache; // Return empty cache, all slots will be available
 		}
 
 		const serviceDuration = selectedService.duration;
-		const [slotHour, slotMinute] = timeSlot.split(':').map(Number);
-		const slotStartMinutes = slotHour * 60 + slotMinute;
-		const slotEndMinutes = slotStartMinutes + serviceDuration;
+		const allStaffIds = new Set(staffMembers.map((staff) => staff.id));
 
-		// Debug logging
-		logger.log('Checking time slot availability:', {
-			timeSlot,
-			selectedStaffId,
-			serviceDuration,
-			slotStartMinutes,
-			slotEndMinutes,
-			existingBookingsCount: existingBookings.length,
-		});
+		// Pre-calculate availability for all time slots
+		// This runs once when dependencies change, not on every render
+		return cache;
+	}, [selectedService, existingBookings, staffMembers, bookingsLoadError, selectedDate, selectedStaff]);
+
+	// Check if a time slot is available
+	const isTimeSlotAvailable = useMemo(() => {
+		return (timeSlot: string, selectedStaffId?: string): boolean => {
+			if (!selectedService) return true;
+
+			// If bookings couldn't be loaded due to error, show all slots as available but with warning
+			if (bookingsLoadError) {
+				return true;
+			}
+
+			const serviceDuration = selectedService.duration;
+			const [slotHour, slotMinute] = timeSlot.split(':').map(Number);
+			const slotStartMinutes = slotHour * 60 + slotMinute;
+			const slotEndMinutes = slotStartMinutes + serviceDuration;
+
+			// Create cache key
+			const cacheKey = `${timeSlot}-${selectedStaffId || 'any'}-${selectedDate}`;
+			
+			// Check cache first
+			if (availabilityCache.has(cacheKey)) {
+				return availabilityCache.get(cacheKey)!;
+			}
 
 		// If specific staff is selected, check only that staff's conflicts
 		if (selectedStaffId && selectedStaffId !== 'Any Staff') {
@@ -548,21 +563,13 @@ export default function BookingModal({
 
 				// Only block if it's the same staff AND time conflicts
 				const staffConflict = booking.staffId === selectedStaffId;
-				const shouldBlock = staffConflict && timeConflict;
-
-				logger.log('Staff-specific check:', {
-					bookingId: booking.id,
-					bookingStaffId: booking.staffId,
-					selectedStaffId,
-					staffConflict,
-					timeConflict,
-					shouldBlock,
-				});
-
-				return shouldBlock;
+				return staffConflict && timeConflict;
 			});
 
-			return !hasConflict;
+			const result = !hasConflict;
+			// Cache the result
+			availabilityCache.set(cacheKey, result);
+			return result;
 		}
 
 		// If "Any Staff" is selected, check if ALL staff members are busy
@@ -583,11 +590,7 @@ export default function BookingModal({
 				slotStartMinutes < bookingEndMinutes &&
 				slotEndMinutes > bookingStartMinutes;
 
-			logger.log('Any staff check - booking:', {
-				bookingId: booking.id,
-				bookingStaffId: booking.staffId,
-				timeConflict,
-			});
+			// Removed excessive logging
 
 			return timeConflict;
 		});
@@ -605,15 +608,22 @@ export default function BookingModal({
 			(staffId) => !busyStaffIds.has(staffId)
 		);
 
-		logger.log('Any staff availability check:', {
-			busyStaffIds: Array.from(busyStaffIds),
-			allStaffIds: Array.from(allStaffIds),
-			hasFreeStaff,
-			conflictingBookingsCount: conflictingBookings.length,
-		});
+			// Removed excessive logging - only log in development and limit frequency
+			if (process.env.NODE_ENV === 'development' && Math.random() < 0.01) {
+				logger.log('Any staff availability check (sampled):', {
+					busyStaffIds: Array.from(busyStaffIds),
+					allStaffIds: Array.from(allStaffIds),
+					hasFreeStaff,
+					conflictingBookingsCount: conflictingBookings.length,
+				});
+			}
 
-		return hasFreeStaff;
-	};
+			const result = hasFreeStaff;
+			// Cache the result
+			availabilityCache.set(cacheKey, result);
+			return result;
+		};
+	}, [selectedService, existingBookings, staffMembers, bookingsLoadError, selectedDate, selectedStaff, availabilityCache]);
 
 	// Calculate global time range from all working days
 	const getGlobalTimeRange = (): { startHour: number; endHour: number } => {
@@ -1132,6 +1142,29 @@ export default function BookingModal({
 			loadMoreDays();
 		}
 	};
+
+	// Memoize availability for all time slots to avoid recalculating on every render
+	const timeSlotAvailability = useMemo(() => {
+		const availabilityMap = new Map<string, boolean>();
+		
+		if (!selectedService || bookingsLoadError) {
+			// If no service or error, all slots are available
+			return availabilityMap;
+		}
+
+		// Pre-calculate availability for all time slots
+		timeSlots.forEach((slot) => {
+			const time = typeof slot === 'string' ? slot : slot.time;
+			const cacheKey = `${time}-${selectedStaff || 'any'}-${selectedDate}`;
+			if (!availabilityMap.has(cacheKey)) {
+				// Calculate availability once and cache it
+				const available = isTimeSlotAvailable(time, selectedStaff);
+				availabilityMap.set(cacheKey, available);
+			}
+		});
+
+		return availabilityMap;
+	}, [timeSlots, selectedStaff, selectedDate, selectedService, bookingsLoadError, isTimeSlotAvailable]);
 
 	// Filter time slots by time of day
 	const filteredTimeSlots = useMemo(() => {

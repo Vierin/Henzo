@@ -104,5 +104,72 @@
 		"registrationSuccessfulEmail": "Business account created! Please check your email to verify your account.",
 		"failedToRegister": "Failed to register business account",
 		"failedToRegisterGoogle": "Failed to register with Google"
+	},
+	"completeSetup": {
+		"title": "Complete Your Salon Setup",
+		"subtitle": "Let's get your business ready for clients.",
+		"loading": "Loading...",
+		"step": "Step",
+		"of": "of",
+		"steps": {
+			"1": "General Information",
+			"2": "Categories",
+			"3": "Working Hours",
+			"4": "Branding",
+			"5": "Confirmation & Review"
+		},
+		"step1": {
+			"salonName": "Salon Name",
+			"salonNamePlaceholder": "e.g., Henzo Beauty",
+			"salonAddress": "Salon Address",
+			"selectAddressToSeeMap": "Select address to see map",
+			"selectSalonAddress": "Select your salon address",
+			"salonPhone": "Salon Phone Number",
+			"phonePlaceholder": "(123) 456-7890"
+		},
+		"step2": {
+			"selectCategories": "Select Categories (Choose at least one)"
+		},
+		"step4": {
+			"salonDescription": "Salon Description (1-2 sentences)",
+			"descriptionPlaceholder": "Describe your salon and what makes it special...",
+			"logoUpload": "Logo Upload (Optional)",
+			"uploadSalonLogo": "Upload salon logo",
+			"photos": "Photos (Up to 3, Optional)",
+			"socialMedia": "Social Media (Optional)",
+			"websiteUrl": "Website URL",
+			"instagramHandle": "Instagram handle (e.g., @yoursalon)"
+		},
+		"step5": {
+			"reviewInformation": "Review Your Information",
+			"workingHours": "Working Hours",
+			"salonName": "Salon Name:",
+			"address": "Address:",
+			"phone": "Phone:",
+			"categories": "Categories:",
+			"description": "Description:",
+			"closed": "Closed"
+		},
+		"navigation": {
+			"previous": "Previous",
+			"next": "Next",
+			"continue": "Continue",
+			"skipThisStep": "Skip This Step",
+			"creatingSalon": "Creating Salon...",
+			"completeSetup": "Complete Setup"
+		},
+		"errors": {
+			"nameRequired": "Salon name is required",
+			"addressRequired": "Address is required",
+			"phoneRequired": "Phone number is required",
+			"categoriesRequired": "Please select at least one category",
+			"invalidPhone": "Please enter a valid phone number"
+		},
+		"success": {
+			"salonSetupCompleted": "Salon setup completed successfully!"
+		},
+		"error": {
+			"failedToCompleteSetup": "Failed to complete salon setup"
+		}
 	}
 }

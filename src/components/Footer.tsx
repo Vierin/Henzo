@@ -1,13 +1,14 @@
 'use client';
 
 import Link from 'next/link';
-import { useParams } from 'next/navigation';
-import { useTranslation } from '@/contexts/LanguageContext';
-import { withLocale } from '@/i18n/routing';
+import { usePathname } from 'next/navigation';
+import { useTranslation, useLanguage } from '@/contexts/LanguageContext';
+import { extractLocaleFromPath, withLocale } from '@/i18n/routing';
 
 export default function Footer() {
-	const params = useParams();
-	const locale = (params as any)?.locale as string | undefined;
+	const pathname = usePathname();
+	const { language } = useLanguage();
+	const locale = extractLocaleFromPath(pathname) ?? language;
 	const t = useTranslation();
 
 	return (

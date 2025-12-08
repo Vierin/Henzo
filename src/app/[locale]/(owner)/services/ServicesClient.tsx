@@ -183,7 +183,7 @@ export default function ServicesClient() {
 
 	if (salonLoading || servicesLoading) {
 		return (
-			<div className="min-h-screen bg-[#fff7f6] dark:bg-gray-900 flex items-center justify-center">
+			<div className="min-h-screen bg-[#fff7f6] flex items-center justify-center">
 				<LoadingSpinner />
 			</div>
 		);
@@ -191,7 +191,7 @@ export default function ServicesClient() {
 
 	if (error) {
 		return (
-			<div className="min-h-screen bg-[#fff7f6] dark:bg-gray-900 flex items-center justify-center">
+			<div className="min-h-screen bg-[#fff7f6] flex items-center justify-center">
 				<ErrorDisplay
 					error={
 						error instanceof Error ? error : new Error('An error occurred')
@@ -207,10 +207,10 @@ export default function ServicesClient() {
 			<div className="mb-8">
 				<div className="flex items-center justify-between">
 					<div>
-						<h1 className="text-2xl md:text-3xl font-bold text-black dark:text-white md:mb-2">
+						<h1 className="text-2xl md:text-3xl font-bold text-black md:mb-2">
 							{t('owner.services.title')}
 						</h1>
-						<p className="text-sm md:text-base text-gray-800 dark:text-gray-300">
+						<p className="text-sm md:text-base text-gray-800">
 							{t('owner.services.subtitle')}
 						</p>
 					</div>
@@ -226,11 +226,11 @@ export default function ServicesClient() {
 			</div>
 
 			{/* Фильтры и сортировка */}
-			<div className="mb-6 bg-white dark:bg-gray-800 rounded-xl border border-[#f1d9d7] dark:border-gray-700 p-3 md:p-6">
+			<div className="mb-6 bg-white rounded-xl border border-[#f1d9d7] p-3 md:p-6">
 				<div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 md:gap-4">
 					{/* Поиск */}
 					<div>
-						<label className="block text-sm font-medium text-black dark:text-white mb-2">
+						<label className="block text-sm font-medium text-black mb-2">
 							<span className="hidden sm:inline">{t('owner.services.searchServices')}</span>
 							<span className="sm:hidden">{t('owner.services.search')}</span>
 						</label>
@@ -240,7 +240,7 @@ export default function ServicesClient() {
 								placeholder={t('owner.services.searchByName')}
 								value={searchQuery}
 								onChange={(e) => setSearchQuery(e.target.value)}
-								className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-[#ff5b5b] focus:border-transparent text-black dark:text-white dark:bg-gray-700 placeholder-gray-500 dark:placeholder-gray-400"
+								className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#ff5b5b] focus:border-transparent text-black placeholder-gray-500"
 							/>
 							{/* Индикатор поиска */}
 							{isSearching && (
@@ -253,7 +253,7 @@ export default function ServicesClient() {
 
 					{/* Фильтр по категории */}
 					<div>
-						<label className="block text-sm font-medium text-black dark:text-white mb-2">
+						<label className="block text-sm font-medium text-black mb-2">
 							{t('owner.services.category')}
 						</label>
 						<Select
@@ -264,13 +264,13 @@ export default function ServicesClient() {
 								setSelectedCategory(value === 'all' ? 'all' : Number(value))
 							}
 						>
-							<SelectTrigger className="w-full border border-gray-300 dark:border-gray-600 focus:ring-2 focus:ring-[#ff5b5b] focus:border-transparent text-black dark:text-white dark:bg-gray-700">
+							<SelectTrigger className="w-full border border-gray-300 focus:ring-2 focus:ring-[#ff5b5b] focus:border-transparent text-black">
 								<SelectValue placeholder={t('owner.services.allCategories')} />
 							</SelectTrigger>
-							<SelectContent className="bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 shadow-lg rounded-md">
+							<SelectContent className="bg-white border border-gray-300 shadow-lg rounded-md">
 								<SelectItem
 									value="all"
-									className="bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 focus:bg-gray-50 dark:focus:bg-gray-700 text-gray-900 dark:text-white cursor-pointer"
+									className="bg-white hover:bg-gray-50 focus:bg-gray-50 text-gray-900 cursor-pointer"
 								>
 									{t('owner.services.allCategories')}
 								</SelectItem>
@@ -278,7 +278,7 @@ export default function ServicesClient() {
 									<SelectItem
 										key={category.id}
 										value={category.id.toString()}
-										className="bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 focus:bg-gray-50 dark:focus:bg-gray-700 text-gray-900 dark:text-white cursor-pointer"
+										className="bg-white hover:bg-gray-50 focus:bg-gray-50 text-gray-900 cursor-pointer"
 									>
 										{category.name}
 									</SelectItem>
@@ -289,20 +289,20 @@ export default function ServicesClient() {
 
 					{/* Фильтр по группе */}
 					<div>
-						<label className="block text-sm font-medium text-black dark:text-white mb-2">
+						<label className="block text-sm font-medium text-black mb-2">
 							{t('owner.services.group')}
 						</label>
 						<Select
 							value={selectedGroup}
 							onValueChange={(value) => setSelectedGroup(value)}
 						>
-							<SelectTrigger className="w-full border border-gray-300 dark:border-gray-600 focus:ring-2 focus:ring-[#ff5b5b] focus:border-transparent text-black dark:text-white dark:bg-gray-700">
+							<SelectTrigger className="w-full border border-gray-300 focus:ring-2 focus:ring-[#ff5b5b] focus:border-transparent text-black">
 								<SelectValue placeholder={t('owner.services.allGroups')} />
 							</SelectTrigger>
-							<SelectContent className="bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 shadow-lg rounded-md">
+							<SelectContent className="bg-white border border-gray-300 shadow-lg rounded-md">
 								<SelectItem
 									value="all"
-									className="bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 focus:bg-gray-50 dark:focus:bg-gray-700 text-gray-900 dark:text-white cursor-pointer"
+									className="bg-white hover:bg-gray-50 focus:bg-gray-50 text-gray-900 cursor-pointer"
 								>
 									{t('owner.services.allGroups')}
 								</SelectItem>
@@ -310,7 +310,7 @@ export default function ServicesClient() {
 									<SelectItem
 										key={group.id}
 										value={group.id}
-										className="bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 focus:bg-gray-50 dark:focus:bg-gray-700 text-gray-900 dark:text-white cursor-pointer"
+										className="bg-white hover:bg-gray-50 focus:bg-gray-50 text-gray-900 cursor-pointer"
 									>
 										{group.name}
 									</SelectItem>
@@ -321,7 +321,7 @@ export default function ServicesClient() {
 
 					{/* Сортировка */}
 					<div>
-						<label className="block text-sm font-medium text-black dark:text-white mb-2">
+						<label className="block text-sm font-medium text-black mb-2">
 							{t('owner.services.sortBy')}
 						</label>
 						<Select
@@ -335,43 +335,43 @@ export default function ServicesClient() {
 								setSortOrder(newSortOrder);
 							}}
 						>
-							<SelectTrigger className="w-full border border-gray-300 dark:border-gray-600 focus:ring-2 focus:ring-[#ff5b5b] focus:border-transparent text-black dark:text-white dark:bg-gray-700">
+							<SelectTrigger className="w-full border border-gray-300 focus:ring-2 focus:ring-[#ff5b5b] focus:border-transparent text-black">
 								<SelectValue />
 							</SelectTrigger>
-							<SelectContent className="bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 shadow-lg rounded-md">
+							<SelectContent className="bg-white border border-gray-300 shadow-lg rounded-md">
 								<SelectItem
 									value="name-asc"
-									className="bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 focus:bg-gray-50 dark:focus:bg-gray-700 text-gray-900 dark:text-white cursor-pointer"
+									className="bg-white hover:bg-gray-50 focus:bg-gray-50 text-gray-900 cursor-pointer"
 								>
 									{t('owner.services.nameAZ')}
 								</SelectItem>
 								<SelectItem
 									value="name-desc"
-									className="bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 focus:bg-gray-50 dark:focus:bg-gray-700 text-gray-900 dark:text-white cursor-pointer"
+									className="bg-white hover:bg-gray-50 focus:bg-gray-50 text-gray-900 cursor-pointer"
 								>
 									{t('owner.services.nameZA')}
 								</SelectItem>
 								<SelectItem
 									value="price-asc"
-									className="bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 focus:bg-gray-50 dark:focus:bg-gray-700 text-gray-900 dark:text-white cursor-pointer"
+									className="bg-white hover:bg-gray-50 focus:bg-gray-50 text-gray-900 cursor-pointer"
 								>
 									{t('owner.services.priceLowToHigh')}
 								</SelectItem>
 								<SelectItem
 									value="price-desc"
-									className="bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 focus:bg-gray-50 dark:focus:bg-gray-700 text-gray-900 dark:text-white cursor-pointer"
+									className="bg-white hover:bg-gray-50 focus:bg-gray-50 text-gray-900 cursor-pointer"
 								>
 									{t('owner.services.priceHighToLow')}
 								</SelectItem>
 								<SelectItem
 									value="duration-asc"
-									className="bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 focus:bg-gray-50 dark:focus:bg-gray-700 text-gray-900 dark:text-white cursor-pointer"
+									className="bg-white hover:bg-gray-50 focus:bg-gray-50 text-gray-900 cursor-pointer"
 								>
 									{t('owner.services.durationShortToLong')}
 								</SelectItem>
 								<SelectItem
 									value="duration-desc"
-									className="bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 focus:bg-gray-50 dark:focus:bg-gray-700 text-gray-900 dark:text-white cursor-pointer"
+									className="bg-white hover:bg-gray-50 focus:bg-gray-50 text-gray-900 cursor-pointer"
 								>
 									{t('owner.services.durationLongToShort')}
 								</SelectItem>
@@ -383,7 +383,7 @@ export default function ServicesClient() {
 					<div className="flex items-end">
 						<button
 							onClick={clearFilters}
-							className="w-full px-4 py-2 text-sm font-medium text-black dark:text-white bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 focus:ring-2 focus:ring-[#ff5b5b] focus:border-transparent transition-colors"
+							className="w-full px-4 py-2 text-sm font-medium text-black bg-gray-100 border border-gray-300 rounded-lg hover:bg-gray-200 focus:ring-2 focus:ring-[#ff5b5b] focus:border-transparent transition-colors"
 						>
 							{t('owner.services.clearFilters')}
 						</button>
@@ -394,8 +394,8 @@ export default function ServicesClient() {
 				{(debouncedSearchQuery ||
 					selectedCategory !== 'all' ||
 					selectedGroup !== 'all') && (
-					<div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
-						<p className="text-sm text-black dark:text-gray-300">
+					<div className="mt-4 pt-4 border-t border-gray-200">
+						<p className="text-sm text-black">
 							{t('owner.services.showing')} {filteredServices.length} {t('owner.services.of')} {services.length} {t('owner.services.matching')}
 							{debouncedSearchQuery &&
 								debouncedSearchQuery.length > 2 &&
@@ -413,10 +413,10 @@ export default function ServicesClient() {
 			(debouncedSearchQuery ||
 				selectedCategory !== 'all' ||
 				selectedGroup !== 'all') ? (
-				<div className="bg-white dark:bg-gray-800 rounded-xl border border-[#f1d9d7] dark:border-gray-700 p-12 text-center">
-					<div className="w-16 h-16 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center mx-auto mb-4">
+				<div className="bg-white rounded-xl border border-[#f1d9d7] p-12 text-center">
+					<div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
 						<svg
-							className="w-8 h-8 text-gray-400 dark:text-gray-500"
+							className="w-8 h-8 text-gray-400"
 							fill="none"
 							stroke="currentColor"
 							viewBox="0 0 24 24"
@@ -429,10 +429,10 @@ export default function ServicesClient() {
 							/>
 						</svg>
 					</div>
-					<h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
+					<h3 className="text-lg font-medium text-gray-900 mb-2">
 						{t('owner.services.noServicesFound')}
 					</h3>
-					<p className="text-gray-500 dark:text-gray-400 mb-4">
+					<p className="text-gray-500 mb-4">
 						{t('owner.services.tryAdjustingFilters')}
 					</p>
 					<button
@@ -443,10 +443,10 @@ export default function ServicesClient() {
 					</button>
 				</div>
 			) : services.length === 0 ? (
-				<div className="bg-white dark:bg-gray-800 rounded-xl border border-[#f1d9d7] dark:border-gray-700 p-12 text-center">
-					<div className="w-16 h-16 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center mx-auto mb-4">
+				<div className="bg-white rounded-xl border border-[#f1d9d7] p-12 text-center">
+					<div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
 						<svg
-							className="w-8 h-8 text-gray-400 dark:text-gray-500"
+							className="w-8 h-8 text-gray-400"
 							fill="none"
 							stroke="currentColor"
 							viewBox="0 0 24 24"
@@ -459,10 +459,10 @@ export default function ServicesClient() {
 							/>
 						</svg>
 					</div>
-					<h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
+					<h3 className="text-lg font-semibold text-gray-900 mb-2">
 						{t('owner.services.noServicesYet')}
 					</h3>
-					<p className="text-gray-600 dark:text-gray-400 mb-6">
+					<p className="text-gray-600 mb-6">
 						{t('owner.services.addFirstService')}
 					</p>
 					<button
@@ -479,17 +479,17 @@ export default function ServicesClient() {
 					{(isSearching ||
 						(searchQuery && searchQuery !== debouncedSearchQuery)) && (
 							<div className="flex items-center justify-center py-2">
-								<div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
+								<div className="flex items-center gap-2 text-sm text-gray-600">
 									<div className="animate-spin rounded-full h-4 w-4 border-b-2 border-[#ff5b5b]"></div>
 									<span>{t('owner.services.filteringServices')}</span>
 								</div>
 							</div>
 					)}
 
-					<div className="bg-white dark:bg-gray-800 rounded-xl border border-[#f1d9d7] dark:border-gray-700 overflow-hidden">
+					<div className="bg-white rounded-xl border border-[#f1d9d7] overflow-hidden">
 						{/* Desktop Table View */}
 						<div className="hidden md:block">
-							<div className="grid grid-cols-6 px-6 py-3 text-sm text-gray-700 dark:text-gray-300 bg-[#fff2f1] dark:bg-gray-900 font-semibold">
+							<div className="grid grid-cols-6 px-6 py-3 text-sm text-gray-700 bg-[#fff2f1] font-semibold">
 								<div
 									className="flex items-center gap-1 cursor-pointer hover:text-[#ff5b5b] transition-colors select-none"
 									onClick={() => handleSortChange('name')}
@@ -527,35 +527,35 @@ export default function ServicesClient() {
 								</div>
 								<div>{t('owner.services.actions')}</div>
 							</div>
-							<div className="divide-y divide-[#f1d9d7] dark:divide-gray-700">
+							<div className="divide-y divide-[#f1d9d7]">
 								{filteredServices.map((service) => (
 									<div
 										key={service.id}
-										className="grid grid-cols-6 px-6 py-4 text-sm text-gray-800 dark:text-gray-200"
+										className="grid grid-cols-6 px-6 py-4 text-sm text-gray-800"
 									>
-										<div className="font-semibold dark:text-white">{service.name}</div>
-										<div className="text-gray-600 dark:text-gray-400">
+										<div className="font-semibold">{service.name}</div>
+										<div className="text-gray-600">
 											{getCategoryName(service.serviceCategoryId) ? (
-												<span className="inline-flex items-center px-2 py-1 text-xs font-medium bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-full">
+												<span className="inline-flex items-center px-2 py-1 text-xs font-medium bg-gray-100 text-gray-700 rounded-full">
 													{getCategoryName(service.serviceCategoryId)}
 												</span>
 											) : (
-												<span className="text-gray-400 dark:text-gray-500 italic">
+												<span className="text-gray-400 italic">
 													{t('owner.services.noCategory')}
 												</span>
 											)}
 										</div>
-										<div className="text-gray-600 dark:text-gray-400">
+										<div className="text-gray-600">
 											{service.serviceGroup ? (
-												<span className="inline-flex items-center px-2 py-1 text-xs font-medium bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 rounded-full">
+												<span className="inline-flex items-center px-2 py-1 text-xs font-medium bg-blue-100 text-blue-700 rounded-full">
 													{service.serviceGroup.name}
 												</span>
 											) : (
-												<span className="text-gray-400 dark:text-gray-500 italic">{t('owner.services.noGroup')}</span>
+												<span className="text-gray-400 italic">{t('owner.services.noGroup')}</span>
 											)}
 										</div>
-										<div className="dark:text-gray-300">{formatDuration(service.duration)}</div>
-										<div className="font-semibold text-[#ff5b5b] dark:text-[#ff7b7b]">
+										<div>{formatDuration(service.duration)}</div>
+										<div className="font-semibold text-[#ff5b5b]">
 											{formatVND(service.price)}
 										</div>
 										<div className="flex gap-2">
@@ -604,15 +604,15 @@ export default function ServicesClient() {
 						</div>
 
 						{/* Mobile Card View */}
-						<div className="md:hidden divide-y divide-[#f1d9d7] dark:divide-gray-700">
+						<div className="md:hidden divide-y divide-[#f1d9d7]">
 							{filteredServices.map((service) => (
 								<div key={service.id} className="p-4">
 									<div className="flex items-start justify-between mb-3">
 										<div className="flex-1 min-w-0">
-											<h3 className="font-semibold text-gray-900 dark:text-white truncate">
+											<h3 className="font-semibold text-gray-900 truncate">
 												{service.name}
 											</h3>
-											<div className="text-lg font-bold text-[#ff5b5b] dark:text-[#ff7b7b] mt-1">
+											<div className="text-lg font-bold text-[#ff5b5b] mt-1">
 												{formatVND(service.price)}
 											</div>
 										</div>
@@ -658,20 +658,20 @@ export default function ServicesClient() {
 										</div>
 									</div>
 
-									<div className="flex items-center justify-between text-sm text-gray-600 dark:text-gray-400">
+									<div className="flex items-center justify-between text-sm text-gray-600">
 										<div className="flex items-center gap-2 flex-wrap">
 											{getCategoryName(service.serviceCategoryId) && (
-												<span className="inline-flex items-center px-2 py-1 text-xs font-medium bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-full">
+												<span className="inline-flex items-center px-2 py-1 text-xs font-medium bg-gray-100 text-gray-700 rounded-full">
 													{getCategoryName(service.serviceCategoryId)}
 												</span>
 											)}
 											{service.serviceGroup && (
-												<span className="inline-flex items-center px-2 py-1 text-xs font-medium bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 rounded-full">
+												<span className="inline-flex items-center px-2 py-1 text-xs font-medium bg-blue-100 text-blue-700 rounded-full">
 													{service.serviceGroup.name}
 												</span>
 											)}
 										</div>
-										<div className="text-right dark:text-gray-300">
+										<div className="text-right">
 											<div>{formatDuration(service.duration)}</div>
 										</div>
 									</div>

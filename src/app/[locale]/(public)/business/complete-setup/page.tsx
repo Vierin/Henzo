@@ -1,6 +1,13 @@
 'use client';
 
-import { useState, useEffect, useRef, useCallback, useMemo, Suspense } from 'react';
+import {
+	useState,
+	useEffect,
+	useRef,
+	useCallback,
+	useMemo,
+	Suspense,
+} from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import { extractLocaleFromPath, withLocale } from '@/i18n/routing';
@@ -15,6 +22,7 @@ import EnhancedPhotoUpload from '@/components/EnhancedPhotoUpload';
 import dynamic from 'next/dynamic';
 import toast from 'react-hot-toast';
 import { apiClient } from '@/lib/api-client';
+import { useTranslation } from '@/contexts/LanguageContext';
 
 const MapComponentWithCoords = dynamic(
 	() => import('@/components/MapComponentWithCoords'),
@@ -68,11 +76,14 @@ function BusinessCompleteSetupContent() {
 	const pathname = usePathname();
 	const queryClient = useQueryClient();
 	const { user, isAuthenticated, isLoading } = useAuth();
+	const t = useTranslation();
 	const [currentStep, setCurrentStep] = useState(1);
 	const [loading, setLoading] = useState(false);
 	const [errors, setErrors] = useState<{ [key: string]: string }>({});
 	const [isUpdatingAddress, setIsUpdatingAddress] = useState(false);
 	const addressUpdateTimerRef = useRef<NodeJS.Timeout | null>(null);
+	const nameInputRef = useRef<HTMLInputElement>(null);
+	const phoneInputRef = useRef<HTMLInputElement>(null);
 
 	// Memoize marker move handler to prevent unnecessary re-renders
 	const handleMarkerMove = useCallback(
@@ -154,23 +165,27 @@ function BusinessCompleteSetupContent() {
 		},
 	});
 
-	const steps = [
-		{ number: 1, title: 'General Information' },
-		{ number: 2, title: 'Categories' },
-		{ number: 3, title: 'Working Hours' },
-		{ number: 4, title: 'Branding' },
-		{ number: 5, title: 'Confirmation & Review' },
-	];
+	const steps = useMemo(
+		() => [
+			{ number: 1, title: t('business.completeSetup.steps.1') },
+			{ number: 2, title: t('business.completeSetup.steps.2') },
+			{ number: 3, title: t('business.completeSetup.steps.3') },
+			{ number: 4, title: t('business.completeSetup.steps.4') },
+			{ number: 5, title: t('business.completeSetup.steps.5') },
+		],
+		[t]
+	);
 
 	// Memoize map props to prevent unnecessary re-renders
-	const mapProps = useMemo(
-		() => ({
+	const mapProps = useMemo(() => {
+		const props = {
 			lat: formData.addressLat,
 			lon: formData.addressLon,
 			address: formData.address,
-		}),
-		[formData.addressLat, formData.addressLon, formData.address]
-	);
+		};
+		console.log('🗺️ Map props updated:', props);
+		return props;
+	}, [formData.addressLat, formData.addressLon, formData.address]);
 
 	// Cleanup timer on unmount
 	useEffect(() => {
@@ -210,7 +225,7 @@ function BusinessCompleteSetupContent() {
 				if (responseData?.success && responseData?.data) {
 					// Салон существует - редиректим на дашборд
 					const locale = extractLocaleFromPath(pathname) ?? 'en';
-					
+
 					// Invalidate queries before redirect
 					await queryClient.invalidateQueries({ queryKey: ['salons'] });
 					await queryClient.invalidateQueries({ queryKey: ['salon'] });
@@ -218,11 +233,13 @@ function BusinessCompleteSetupContent() {
 					// Small delay to ensure queries are invalidated
 					await new Promise((resolve) => setTimeout(resolve, 100));
 
-					router.replace(withLocale('/owner-dashboard', locale as 'en' | 'ru' | 'vi'));
+					router.replace(
+						withLocale('/owner-dashboard', locale as 'en' | 'ru' | 'vi')
+					);
 					return;
 				}
 			} catch (error: any) {
-				// Если ошибка (например, салон не найден или сеть недоступна), 
+				// Если ошибка (например, салон не найден или сеть недоступна),
 				// просто продолжаем - пользователь останется на странице настройки
 				// Это нормально, т.к. если салона нет, пользователь должен его создать
 			}
@@ -309,14 +326,20 @@ function BusinessCompleteSetupContent() {
 
 		switch (step) {
 			case 1:
-				if (!formData.name.trim()) newErrors.name = 'Salon name is required';
-				if (!formData.address.trim()) newErrors.address = 'Address is required';
+				if (!formData.name.trim())
+					newErrors.name = t('business.completeSetup.errors.nameRequired');
+				if (!formData.address.trim())
+					newErrors.address = t(
+						'business.completeSetup.errors.addressRequired'
+					);
 				if (!formData.phone.trim())
-					newErrors.phone = 'Phone number is required';
+					newErrors.phone = t('business.completeSetup.errors.phoneRequired');
 				break;
 			case 2:
 				if (formData.categories.length === 0)
-					newErrors.categories = 'Please select at least one category';
+					newErrors.categories = t(
+						'business.completeSetup.errors.categoriesRequired'
+					);
 				break;
 			case 3:
 				// Working hours validation is optional, they have defaults
@@ -327,6 +350,27 @@ function BusinessCompleteSetupContent() {
 		}
 
 		setErrors(newErrors);
+
+		// Focus on first field with error
+		if (Object.keys(newErrors).length > 0) {
+			const firstErrorField = Object.keys(newErrors)[0];
+			setTimeout(() => {
+				if (firstErrorField === 'name' && nameInputRef.current) {
+					nameInputRef.current.focus();
+				} else if (firstErrorField === 'address') {
+					// Find address input in MapboxAddressAutocomplete
+					const addressInput = document.querySelector(
+						'input[placeholder*="salon address"], input[placeholder*="адрес"], input[placeholder*="địa chỉ"]'
+					) as HTMLInputElement;
+					if (addressInput) {
+						addressInput.focus();
+					}
+				} else if (firstErrorField === 'phone' && phoneInputRef.current) {
+					phoneInputRef.current.focus();
+				}
+			}, 100);
+		}
+
 		return Object.keys(newErrors).length === 0;
 	};
 
@@ -397,7 +441,7 @@ function BusinessCompleteSetupContent() {
 			await queryClient.invalidateQueries({ queryKey: ['salons'] });
 			await queryClient.invalidateQueries({ queryKey: ['salon'] });
 
-			toast.success('Salon setup completed successfully!');
+			toast.success(t('business.completeSetup.success.salonSetupCompleted'));
 
 			// Small delay to ensure queries are invalidated before navigation
 			await new Promise((resolve) => setTimeout(resolve, 100));
@@ -406,7 +450,9 @@ function BusinessCompleteSetupContent() {
 			router.push(withLocale('/owner-dashboard', locale as 'en' | 'ru' | 'vi'));
 		} catch (error: any) {
 			console.error('Error completing salon setup:', error);
-			toast.error(error.message || 'Failed to complete salon setup');
+			toast.error(
+				error.message || t('business.completeSetup.error.failedToCompleteSetup')
+			);
 		} finally {
 			setLoading(false);
 		}
@@ -423,16 +469,19 @@ function BusinessCompleteSetupContent() {
 								htmlFor="name"
 								className="block text-sm font-medium text-gray-900 mb-2"
 							>
-								Salon Name
+								{t('business.completeSetup.step1.salonName')}
 							</label>
 							<input
+								ref={nameInputRef}
 								type="text"
 								id="name"
 								name="name"
 								value={formData.name}
 								onChange={handleInputChange}
 								className="w-full px-4 py-3 border border-gray-300 rounded-lg text-gray-900 placeholder-gray-500 focus:ring-2 bg-white focus:ring-[#F8F5F2] focus:border-transparent"
-								placeholder="e.g., Henzo Beauty"
+								placeholder={t(
+									'business.completeSetup.step1.salonNamePlaceholder'
+								)}
 							/>
 							{errors.name && (
 								<p className="absolute -bottom-[1.4rem] right-0 text-sm text-red-400">
@@ -447,7 +496,7 @@ function BusinessCompleteSetupContent() {
 								htmlFor="address"
 								className="block text-sm font-medium text-gray-900 mb-2"
 							>
-								Salon Address
+								{t('business.completeSetup.step1.salonAddress')}
 							</label>
 							{/* Map above address field */}
 							{mapProps.lat && mapProps.lon ? (
@@ -468,7 +517,7 @@ function BusinessCompleteSetupContent() {
 							) : (
 								<div className="mb-4 w-full aspect-[4/3] rounded-lg border border-gray-200 bg-gray-50 flex items-center justify-center">
 									<p className="text-sm text-gray-400">
-										Select address to see map
+										{t('business.completeSetup.step1.selectAddressToSeeMap')}
 									</p>
 								</div>
 							)}
@@ -490,6 +539,7 @@ function BusinessCompleteSetupContent() {
 										}
 									}}
 									onAddressSelect={(address, lat, lon) => {
+										console.log('📍 Address selected:', { address, lat, lon });
 										// Clear any pending updates when selecting from autocomplete
 										if (addressUpdateTimerRef.current) {
 											clearTimeout(addressUpdateTimerRef.current);
@@ -497,17 +547,27 @@ function BusinessCompleteSetupContent() {
 										}
 										setIsUpdatingAddress(false);
 
-										setFormData((prev) => ({
-											...prev,
-											address,
-											addressLat: lat,
-											addressLon: lon,
-										}));
+										setFormData((prev) => {
+											const updated = {
+												...prev,
+												address,
+												addressLat: lat,
+												addressLon: lon,
+											};
+											console.log('📝 Form data updated:', {
+												address: updated.address,
+												addressLat: updated.addressLat,
+												addressLon: updated.addressLon,
+											});
+											return updated;
+										});
 										if (errors.address) {
 											setErrors((prev) => ({ ...prev, address: '' }));
 										}
 									}}
-									placeholder="Select your salon address"
+									placeholder={t(
+										'business.completeSetup.step1.selectSalonAddress'
+									)}
 									className="w-full h-13 px-4 py-3 rounded-lg text-gray-900 placeholder-gray-300 focus:ring-2 bg-white focus:ring-[#F8F5F2] focus:border-transparent"
 									showIcon={false}
 								/>
@@ -530,16 +590,17 @@ function BusinessCompleteSetupContent() {
 								htmlFor="phone"
 								className="block text-sm font-medium text-gray-900 mb-2"
 							>
-								Salon Phone Number
+								{t('business.completeSetup.step1.salonPhone')}
 							</label>
 							<input
+								ref={phoneInputRef}
 								type="tel"
 								id="phone"
 								name="phone"
 								value={formData.phone}
 								onChange={handleInputChange}
 								className="w-full px-4 py-3 border border-gray-300 rounded-lg text-gray-900 placeholder-gray-500 focus:ring-2 bg-white focus:ring-[#F8F5F2] focus:border-transparent"
-								placeholder="(123) 456-7890"
+								placeholder={t('business.completeSetup.step1.phonePlaceholder')}
 							/>
 							{errors.phone && (
 								<p className="absolute -bottom-[1.4rem] right-0 text-sm text-red-400">
@@ -555,7 +616,7 @@ function BusinessCompleteSetupContent() {
 					<div className="space-y-6">
 						<div>
 							<label className="block text-sm font-medium text-gray-900 mb-4">
-								Select Categories (Choose at least one)
+								{t('business.completeSetup.step2.selectCategories')}
 							</label>
 							<div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
 								{STATIC_CATEGORIES.map((category) => (
@@ -607,7 +668,7 @@ function BusinessCompleteSetupContent() {
 								htmlFor="description"
 								className="block text-sm font-medium text-gray-900 mb-2"
 							>
-								Salon Description (1-2 sentences)
+								{t('business.completeSetup.step4.salonDescription')}
 							</label>
 							<textarea
 								id="description"
@@ -617,7 +678,9 @@ function BusinessCompleteSetupContent() {
 								onChange={handleInputChange}
 								maxLength={250}
 								className="w-full px-4 py-3 bg-white border border-gray-600 rounded-lg text-gray-900 placeholder-gray-500 focus:ring-2 focus:ring-[#ff5b5b] focus:border-transparent"
-								placeholder="Describe your salon and what makes it special..."
+								placeholder={t(
+									'business.completeSetup.step4.descriptionPlaceholder'
+								)}
 							/>
 							<div className="mt-1 flex justify-end">
 								<span className="text-xs text-gray-400">
@@ -628,7 +691,7 @@ function BusinessCompleteSetupContent() {
 
 						<div>
 							<label className="block text-sm font-medium text-gray-900 mb-2">
-								Logo Upload (Optional)
+								{t('business.completeSetup.step4.logoUpload')}
 							</label>
 							<EnhancedFileUpload
 								onUpload={handleLogoChange}
@@ -636,13 +699,13 @@ function BusinessCompleteSetupContent() {
 								currentFile={formData.logo || undefined}
 								accept="image/*"
 								maxSize={2}
-								placeholder="Upload salon logo"
+								placeholder={t('business.completeSetup.step4.uploadSalonLogo')}
 							/>
 						</div>
 
 						<div>
 							<label className="block text-sm font-medium text-gray-900 mb-2">
-								Photos (Up to 3, Optional)
+								{t('business.completeSetup.step4.photos')}
 							</label>
 							<EnhancedPhotoUpload
 								photos={formData.photos}
@@ -654,12 +717,12 @@ function BusinessCompleteSetupContent() {
 
 						<div className="space-y-4">
 							<label className="block text-sm font-medium text-gray-900 mb-2">
-								Social Media (Optional)
+								{t('business.completeSetup.step4.socialMedia')}
 							</label>
 							<div>
 								<input
 									type="url"
-									placeholder="Website URL"
+									placeholder={t('business.completeSetup.step4.websiteUrl')}
 									value={formData.socialMedia.website}
 									onChange={(e) =>
 										handleSocialMediaChange('website', e.target.value)
@@ -668,7 +731,9 @@ function BusinessCompleteSetupContent() {
 								/>
 								<input
 									type="text"
-									placeholder="Instagram handle (e.g., @yoursalon)"
+									placeholder={t(
+										'business.completeSetup.step4.instagramHandle'
+									)}
 									value={formData.socialMedia.instagram}
 									onChange={(e) =>
 										handleSocialMediaChange('instagram', e.target.value)
@@ -685,24 +750,32 @@ function BusinessCompleteSetupContent() {
 					<div className="space-y-6">
 						<div className="bg-white border-1 border-gray-300 rounded-lg p-6">
 							<h3 className="text-lg font-semibold text-gray-900 mb-4">
-								Review Your Information
+								{t('business.completeSetup.step5.reviewInformation')}
 							</h3>
 
 							<div className="space-y-4 text-sm">
 								<div>
-									<span className="text-gray-500">Salon Name:</span>
+									<span className="text-gray-500">
+										{t('business.completeSetup.step5.salonName')}
+									</span>
 									<span className="text-gray-900 ml-2">{formData.name}</span>
 								</div>
 								<div>
-									<span className="text-gray-500">Address:</span>
+									<span className="text-gray-500">
+										{t('business.completeSetup.step5.address')}
+									</span>
 									<span className="text-gray-900 ml-2">{formData.address}</span>
 								</div>
 								<div>
-									<span className="text-gray-500">Phone:</span>
+									<span className="text-gray-500">
+										{t('business.completeSetup.step5.phone')}
+									</span>
 									<span className="text-gray-900 ml-2">{formData.phone}</span>
 								</div>
 								<div>
-									<span className="text-gray-500">Categories:</span>
+									<span className="text-gray-500">
+										{t('business.completeSetup.step5.categories')}
+									</span>
 									<span className="text-gray-900 ml-2">
 										{formData.categories
 											.map(
@@ -714,7 +787,9 @@ function BusinessCompleteSetupContent() {
 								</div>
 								{formData.description && (
 									<div>
-										<span className="text-gray-500">Description:</span>
+										<span className="text-gray-500">
+											{t('business.completeSetup.step5.description')}
+										</span>
 										<span className="text-gray-900 ml-2">
 											{formData.description}
 										</span>
@@ -725,7 +800,7 @@ function BusinessCompleteSetupContent() {
 
 						<div className="bg-white border-1 border-gray-300 rounded-lg p-6">
 							<h3 className="text-lg font-semibold text-gray-900 mb-4">
-								Working Hours
+								{t('business.completeSetup.step5.workingHours')}
 							</h3>
 							<div className="space-y-2 text-sm">
 								{WEEKDAYS.map((day) => {
@@ -739,7 +814,7 @@ function BusinessCompleteSetupContent() {
 											<span className="text-gray-900">
 												{!dayHours.closed
 													? `${dayHours.open} - ${dayHours.close}`
-													: 'Closed'}
+													: t('business.completeSetup.step5.closed')}
 											</span>
 										</div>
 									);
@@ -759,7 +834,7 @@ function BusinessCompleteSetupContent() {
 			<div className="min-h-screen bg-white flex items-center justify-center">
 				<div className="text-center">
 					<div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#ff5b5b] mx-auto mb-4"></div>
-					<p className="text-gray-900">Loading...</p>
+					<p className="text-gray-900">{t('business.completeSetup.loading')}</p>
 				</div>
 			</div>
 		);
@@ -771,10 +846,10 @@ function BusinessCompleteSetupContent() {
 				{/* Header */}
 				<div className="text-center mb-8">
 					<h1 className="text-3xl font-bold text-gray-900 mb-2">
-						Complete Your Salon Setup
+						{t('business.completeSetup.title')}
 					</h1>
 					<p className="text-gray-500">
-						Let's get your business ready for clients.
+						{t('business.completeSetup.subtitle')}
 					</p>
 				</div>
 
@@ -783,7 +858,8 @@ function BusinessCompleteSetupContent() {
 					{/* Progress */}
 					<div className="flex justify-between items-center mb-6">
 						<span className="text-gray-900 font-medium">
-							Step {currentStep} of {steps.length}
+							{t('business.completeSetup.step')} {currentStep}{' '}
+							{t('business.completeSetup.of')} {steps.length}
 						</span>
 						<span className="text-gray-500">
 							{steps[currentStep - 1].title}
@@ -811,7 +887,7 @@ function BusinessCompleteSetupContent() {
 									onClick={prevStep}
 									className="px-6 py-3 bg-gray-600 text-white rounded-lg font-medium hover:bg-gray-500 transition-colors"
 								>
-									Previous
+									{t('business.completeSetup.navigation.previous')}
 								</button>
 
 								<div className="flex gap-3">
@@ -820,14 +896,16 @@ function BusinessCompleteSetupContent() {
 										onClick={skipStep}
 										className="px-6 py-3 border border-gray-500 bg-white text-gray-900 rounded-lg font-medium hover:bg-gray-50 transition-colors"
 									>
-										Skip This Step
+										{t('business.completeSetup.navigation.skipThisStep')}
 									</button>
 									<button
 										type="button"
 										onClick={nextStep}
 										className="px-6 py-3 bg-[#ff5b5b] text-white rounded-lg font-medium hover:bg-red-600 transition-colors"
 									>
-										Next: {steps[currentStep]?.title || 'Continue'}
+										{t('business.completeSetup.navigation.next')}:{' '}
+										{steps[currentStep]?.title ||
+											t('business.completeSetup.navigation.continue')}
 									</button>
 								</div>
 							</div>
@@ -840,7 +918,7 @@ function BusinessCompleteSetupContent() {
 									disabled={currentStep === 1}
 									className="px-6 py-3 bg-gray-600 text-white rounded-lg font-medium hover:bg-gray-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
 								>
-									Previous
+									{t('business.completeSetup.navigation.previous')}
 								</button>
 
 								{currentStep === steps.length ? (
@@ -850,7 +928,9 @@ function BusinessCompleteSetupContent() {
 										disabled={loading}
 										className="px-6 py-3 bg-[#ff5b5b] text-white rounded-lg font-medium hover:bg-red-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
 									>
-										{loading ? 'Creating Salon...' : 'Complete Setup'}
+										{loading
+											? t('business.completeSetup.navigation.creatingSalon')
+											: t('business.completeSetup.navigation.completeSetup')}
 									</button>
 								) : (
 									<button
@@ -858,7 +938,9 @@ function BusinessCompleteSetupContent() {
 										onClick={nextStep}
 										className="px-6 py-3 bg-[#ff5b5b] text-white rounded-lg font-medium hover:bg-red-600 transition-colors"
 									>
-										Next: {steps[currentStep]?.title || 'Continue'}
+										{t('business.completeSetup.navigation.next')}:{' '}
+										{steps[currentStep]?.title ||
+											t('business.completeSetup.navigation.continue')}
 									</button>
 								)}
 							</div>

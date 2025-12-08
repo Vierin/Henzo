@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useRef, useState, useCallback, useEffect } from 'react';
+import React, { useRef, useState, useCallback, useEffect, useMemo } from 'react';
 import { Clock } from 'lucide-react';
 
 interface BookingTimeSelectorProps {
@@ -101,6 +101,15 @@ export default function BookingTimeSelector({
 		}
 	}, [timeFilter, checkScrollPosition]);
 
+	// Memoize availability checks to avoid recalculating on every render
+	const availabilityMap = useMemo(() => {
+		const map = new Map<string, boolean>();
+		filteredTimeSlots.forEach((time) => {
+			map.set(time, isTimeSlotAvailable(time, selectedStaff));
+		});
+		return map;
+	}, [filteredTimeSlots, selectedStaff, isTimeSlotAvailable]);
+
 	const filterButtons = [
 		{ key: 'all', label: 'All' },
 		{ key: 'morning', label: 'Morning' },
@@ -170,7 +179,7 @@ export default function BookingTimeSelector({
 					>
 						{filteredTimeSlots.length > 0 ? (
 							filteredTimeSlots.map((time) => {
-								const available = isTimeSlotAvailable(time, selectedStaff);
+								const available = availabilityMap.get(time) ?? true;
 								const isSelected = selectedTime === time;
 
 								return (

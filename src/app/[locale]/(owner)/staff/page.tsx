@@ -52,13 +52,13 @@ export default function StaffPage() {
 	const getAccessLevelBadge = (accessLevel: string) => {
 		if (accessLevel === 'ADMIN') {
 			return (
-				<span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-purple-100 dark:bg-purple-900 text-purple-800 dark:text-purple-300">
+				<span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
 					{t('owner.staff.admin')}
 				</span>
 			);
 		}
 		return (
-			<span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-300">
+			<span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
 				{t('owner.staff.employee')}
 			</span>
 		);
@@ -90,10 +90,10 @@ export default function StaffPage() {
 			<div className="mb-8">
 				<div className="flex items-center justify-between">
 					<div>
-						<h1 className="text-2xl md:text-3xl font-bold text-black dark:text-white md:mb-2">
+						<h1 className="text-2xl md:text-3xl font-bold text-black md:mb-2">
 							{t('owner.staff.title')}
 						</h1>
-						<p className="text-sm md:text-base text-gray-800 dark:text-gray-300">
+						<p className="text-sm md:text-base text-gray-800">
 							{t('owner.staff.subtitle')}
 						</p>
 					</div>
@@ -109,10 +109,10 @@ export default function StaffPage() {
 			</div>
 
 			{staff.length === 0 ? (
-				<div className="bg-white dark:bg-gray-800 rounded-xl border border-[#f1d9d7] dark:border-gray-700 p-12 text-center">
-					<div className="w-16 h-16 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center mx-auto mb-4">
+				<div className="bg-white rounded-xl border border-[#f1d9d7] p-12 text-center">
+					<div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
 						<svg
-							className="w-8 h-8 text-gray-400 dark:text-gray-500"
+							className="w-8 h-8 text-gray-400"
 							fill="none"
 							stroke="currentColor"
 							viewBox="0 0 24 24"
@@ -125,10 +125,10 @@ export default function StaffPage() {
 							/>
 						</svg>
 					</div>
-					<h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
+					<h3 className="text-lg font-semibold text-gray-900 mb-2">
 						{t('owner.staff.noStaffYet')}
 					</h3>
-					<p className="text-gray-600 dark:text-gray-400 mb-6">
+					<p className="text-gray-600 mb-6">
 						{t('owner.staff.addFirstStaff')}
 					</p>
 					<button
@@ -140,28 +140,28 @@ export default function StaffPage() {
 					</button>
 				</div>
 			) : (
-				<div className="bg-white dark:bg-gray-800 rounded-xl border border-[#f1d9d7] dark:border-gray-700 overflow-hidden">
+				<div className="bg-white rounded-xl border border-[#f1d9d7] overflow-hidden">
 					{/* Desktop Table View */}
 					<div className="hidden md:block">
-						<div className="grid grid-cols-5 px-6 py-3 text-sm text-gray-700 dark:text-gray-300 bg-[#fff2f1] dark:bg-gray-900 font-semibold">
+						<div className="grid grid-cols-5 px-6 py-3 text-sm text-gray-700 bg-[#fff2f1] font-semibold">
 							<div>{t('owner.staff.name')}</div>
 							<div>{t('owner.staff.accessLevel')}</div>
 							<div>{t('owner.staff.email')}</div>
 							<div>{t('owner.staff.phone')}</div>
 							<div>{t('owner.staff.actions')}</div>
 						</div>
-						<div className="divide-y divide-[#f1d9d7] dark:divide-gray-700">
+						<div className="divide-y divide-[#f1d9d7]">
 							{staff.map((member) => (
 								<div
 									key={member.id}
-									className="grid grid-cols-5 px-6 py-4 text-sm text-gray-800 dark:text-gray-200"
+									className="grid grid-cols-5 px-6 py-4 text-sm text-gray-800"
 								>
-									<div className="font-semibold dark:text-white">{member.name}</div>
+									<div className="font-semibold">{member.name}</div>
 									<div>{getAccessLevelBadge(member.accessLevel)}</div>
-									<div className="text-gray-600 dark:text-gray-400">
+									<div className="text-gray-600">
 										{member.email || t('owner.staff.noEmail')}
 									</div>
-									<div className="text-gray-600 dark:text-gray-400">
+									<div className="text-gray-600">
 										{member.phone || t('owner.staff.noPhone')}
 									</div>
 									<div className="flex gap-2">
@@ -210,12 +210,12 @@ export default function StaffPage() {
 					</div>
 
 					{/* Mobile Card View */}
-					<div className="md:hidden divide-y divide-[#f1d9d7] dark:divide-gray-700">
+					<div className="md:hidden divide-y divide-[#f1d9d7]">
 						{staff.map((member) => (
 							<div key={member.id} className="p-4">
 								<div className="flex items-start justify-between mb-3">
 									<div className="flex-1 min-w-0">
-										<h3 className="font-semibold text-gray-900 dark:text-white truncate">
+										<h3 className="font-semibold text-gray-900 truncate">
 											{member.name}
 										</h3>
 										<div className="mt-1">
@@ -264,17 +264,17 @@ export default function StaffPage() {
 									</div>
 								</div>
 
-								<div className="space-y-2 text-sm text-gray-600 dark:text-gray-400">
+								<div className="space-y-2 text-sm text-gray-600">
 									{member.email && (
 										<div className="flex items-center">
-											<span className="font-medium mr-2 dark:text-gray-300">{t('owner.staff.email')}:</span>
-											<span className="truncate dark:text-gray-300">{member.email}</span>
+											<span className="font-medium mr-2">{t('owner.staff.email')}:</span>
+											<span className="truncate">{member.email}</span>
 										</div>
 									)}
 									{member.phone && (
 										<div className="flex items-center">
-											<span className="font-medium mr-2 dark:text-gray-300">{t('owner.staff.phone')}:</span>
-											<span className="dark:text-gray-300">{member.phone}</span>
+											<span className="font-medium mr-2">{t('owner.staff.phone')}:</span>
+											<span>{member.phone}</span>
 										</div>
 									)}
 								</div>

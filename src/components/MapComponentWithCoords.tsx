@@ -272,26 +272,38 @@ export default function MapComponentWithCoords({
 			return;
 		}
 
-		// Only update map if coordinates actually changed
+		// Check if coordinates actually changed (including undefined -> defined transition)
+		const prevLat = lastCoordsRef.current.lat;
+		const prevLon = lastCoordsRef.current.lon;
 		const coordsChanged =
-			lastCoordsRef.current.lat !== lat || lastCoordsRef.current.lon !== lon;
+			prevLat !== lat || prevLon !== lon;
 
 		// Update map with coordinates if provided
-		if (lat !== undefined && lon !== undefined) {
+		if (lat !== undefined && lon !== undefined && !isNaN(lat) && !isNaN(lon)) {
 			if (coordsChanged) {
-				logger.log('🔄 Coordinates changed, updating map:', { lat, lon });
+				logger.log('🔄 Coordinates changed, updating map:', { 
+					prev: { lat: prevLat, lon: prevLon },
+					new: { lat, lon } 
+				});
 				lastCoordsRef.current = { lat, lon };
-				// Wait for map to be fully ready before adding marker
-				mapInstanceRef.current.whenReady(() => {
+				
+				// Update map - use small delay to ensure map is ready
+				const updateMap = () => {
 					if (mapInstanceRef.current) {
 						updateMapWithCoords(lat, lon, address, false);
 					}
-				});
+				};
+
+				// Use setTimeout to ensure map tiles are loaded and map is interactive
+				setTimeout(() => {
+					if (mapInstanceRef.current) {
+						updateMap();
+					}
+				}, 100);
 			}
 		} else if (
 			address &&
-			!lastCoordsRef.current.lat &&
-			!lastCoordsRef.current.lon
+			(!lastCoordsRef.current.lat || !lastCoordsRef.current.lon)
 		) {
 			// Fallback to geocoding if no coordinates provided (only once)
 			geocodeAddress(address);

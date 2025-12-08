@@ -104,5 +104,72 @@
 		"registrationSuccessfulEmail": "Бизнес аккаунт создан! Пожалуйста, проверьте вашу электронную почту для подтверждения аккаунта.",
 		"failedToRegister": "Не удалось зарегистрировать бизнес-аккаунт",
 		"failedToRegisterGoogle": "Не удалось зарегистрироваться через Google"
+	},
+	"completeSetup": {
+		"title": "Завершите настройку вашего салона",
+		"subtitle": "Давайте подготовим ваш бизнес для клиентов.",
+		"loading": "Загрузка...",
+		"step": "Шаг",
+		"of": "из",
+		"steps": {
+			"1": "Общая информация",
+			"2": "Категории",
+			"3": "Часы работы",
+			"4": "Брендинг",
+			"5": "Подтверждение и проверка"
+		},
+		"step1": {
+			"salonName": "Название салона",
+			"salonNamePlaceholder": "например, Henzo Beauty",
+			"salonAddress": "Адрес салона",
+			"selectAddressToSeeMap": "Введите адрес, чтобы увидеть карту",
+			"selectSalonAddress": "Выберите адрес вашего салона",
+			"salonPhone": "Телефон салона",
+			"phonePlaceholder": "(123) 456-7890"
+		},
+		"step2": {
+			"selectCategories": "Выберите категории (выберите хотя бы одну)"
+		},
+		"step4": {
+			"salonDescription": "Описание салона (1-2 предложения)",
+			"descriptionPlaceholder": "Опишите ваш салон и что делает его особенным...",
+			"logoUpload": "Загрузка логотипа (необязательно)",
+			"uploadSalonLogo": "Загрузить логотип салона",
+			"photos": "Фотографии (до 3, необязательно)",
+			"socialMedia": "Социальные сети (необязательно)",
+			"websiteUrl": "URL веб-сайта",
+			"instagramHandle": "Instagram (например, @yoursalon)"
+		},
+		"step5": {
+			"reviewInformation": "Проверьте вашу информацию",
+			"workingHours": "Часы работы",
+			"salonName": "Название салона:",
+			"address": "Адрес:",
+			"phone": "Телефон:",
+			"categories": "Категории:",
+			"description": "Описание:",
+			"closed": "Закрыто"
+		},
+		"navigation": {
+			"previous": "Назад",
+			"next": "Далее",
+			"continue": "Продолжить",
+			"skipThisStep": "Пропустить этот шаг",
+			"creatingSalon": "Создание салона...",
+			"completeSetup": "Завершить настройку"
+		},
+		"errors": {
+			"nameRequired": "Название салона обязательно",
+			"addressRequired": "Адрес обязателен",
+			"phoneRequired": "Номер телефона обязателен",
+			"categoriesRequired": "Пожалуйста, выберите хотя бы одну категорию",
+			"invalidPhone": "Пожалуйста, введите действительный номер телефона"
+		},
+		"success": {
+			"salonSetupCompleted": "Настройка салона успешно завершена!"
+		},
+		"error": {
+			"failedToCompleteSetup": "Не удалось завершить настройку салона"
+		}
 	}
 }

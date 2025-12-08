@@ -123,5 +123,72 @@
 		"registrationSuccessfulEmail": "Tài khoản doanh nghiệp đã được tạo! Vui lòng kiểm tra email để xác minh tài khoản của bạn.",
 		"failedToRegister": "Không thể đăng ký tài khoản doanh nghiệp",
 		"failedToRegisterGoogle": "Không thể đăng ký bằng Google"
+	},
+	"completeSetup": {
+		"title": "Hoàn tất thiết lập salon của bạn",
+		"subtitle": "Hãy chuẩn bị doanh nghiệp của bạn cho khách hàng.",
+		"loading": "Đang tải...",
+		"step": "Bước",
+		"of": "của",
+		"steps": {
+			"1": "Thông tin chung",
+			"2": "Danh mục",
+			"3": "Giờ làm việc",
+			"4": "Thương hiệu",
+			"5": "Xác nhận và xem lại"
+		},
+		"step1": {
+			"salonName": "Tên salon",
+			"salonNamePlaceholder": "ví dụ: Henzo Beauty",
+			"salonAddress": "Địa chỉ salon",
+			"selectAddressToSeeMap": "Chọn địa chỉ để xem bản đồ",
+			"selectSalonAddress": "Chọn địa chỉ salon của bạn",
+			"salonPhone": "Số điện thoại salon",
+			"phonePlaceholder": "(123) 456-7890"
+		},
+		"step2": {
+			"selectCategories": "Chọn danh mục (chọn ít nhất một)"
+		},
+		"step4": {
+			"salonDescription": "Mô tả salon (1-2 câu)",
+			"descriptionPlaceholder": "Mô tả salon của bạn và điều gì làm cho nó đặc biệt...",
+			"logoUpload": "Tải lên logo (Tùy chọn)",
+			"uploadSalonLogo": "Tải lên logo salon",
+			"photos": "Ảnh (Tối đa 3, Tùy chọn)",
+			"socialMedia": "Mạng xã hội (Tùy chọn)",
+			"websiteUrl": "URL trang web",
+			"instagramHandle": "Tài khoản Instagram (ví dụ: @yoursalon)"
+		},
+		"step5": {
+			"reviewInformation": "Xem lại thông tin của bạn",
+			"workingHours": "Giờ làm việc",
+			"salonName": "Tên salon:",
+			"address": "Địa chỉ:",
+			"phone": "Điện thoại:",
+			"categories": "Danh mục:",
+			"description": "Mô tả:",
+			"closed": "Đóng cửa"
+		},
+		"navigation": {
+			"previous": "Trước",
+			"next": "Tiếp theo",
+			"continue": "Tiếp tục",
+			"skipThisStep": "Bỏ qua bước này",
+			"creatingSalon": "Đang tạo salon...",
+			"completeSetup": "Hoàn tất thiết lập"
+		},
+		"errors": {
+			"nameRequired": "Tên salon là bắt buộc",
+			"addressRequired": "Địa chỉ là bắt buộc",
+			"phoneRequired": "Số điện thoại là bắt buộc",
+			"categoriesRequired": "Vui lòng chọn ít nhất một danh mục",
+			"invalidPhone": "Vui lòng nhập số điện thoại hợp lệ"
+		},
+		"success": {
+			"salonSetupCompleted": "Thiết lập salon đã hoàn tất thành công!"
+		},
+		"error": {
+			"failedToCompleteSetup": "Không thể hoàn tất thiết lập salon"
+		}
 	}
 }
