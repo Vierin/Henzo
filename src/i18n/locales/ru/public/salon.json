@@ -37,5 +37,12 @@
 	"hoursNotSpecified": "Время работы не указано",
 	"serviceSingular": "услуга",
 	"servicePlural": "услуги",
-	"serviceGenitive": "услуг"
+	"serviceGenitive": "услуг",
+	"allSalons": "Все салоны",
+	"browseAllSalons": "Просмотреть все салоны",
+	"salonsIn": "Салоны в {location}",
+	"searchIn": "{query} в {location}",
+	"notFound": "Салон не найден",
+	"notFoundDescription": "Салон, который вы ищете, не существует или был удален.",
+	"goHome": "На главную"
 }

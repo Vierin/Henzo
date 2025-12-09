@@ -187,6 +187,10 @@ export function LanguageProvider({ children }: LanguageProviderProps) {
 	if (pathNoLocale.startsWith('/login') || pathNoLocale.startsWith('/register')) {
 		modulesToLoad.push('shared/auth');
 	}
+	// Load public/salon for admin salons-data page
+	if (pathNoLocale.startsWith('/admin-panel/salons-data')) {
+		modulesToLoad.push('public/salon');
+	}
 	
 	const { dictionary: additionalDict } = useModuleTranslations(
 		modulesToLoad,

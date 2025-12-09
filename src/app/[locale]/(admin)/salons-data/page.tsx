@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { apiClient } from '@/lib/api-client';
 import SalonLogo from '@/components/admin/SalonLogo';
+import { useTranslation } from '@/contexts/LanguageContext';
 import {
 	Select,
 	SelectContent,
@@ -50,6 +51,7 @@ interface Salon {
 }
 
 export default function AdminSalons() {
+	const t = useTranslation();
 	const [salons, setSalons] = useState<Salon[]>([]);
 	const [filteredSalons, setFilteredSalons] = useState<Salon[]>([]);
 	const [loading, setLoading] = useState(true);
@@ -185,7 +187,7 @@ export default function AdminSalons() {
 	return (
 		<div className="space-y-6">
 			<div className="flex justify-between items-center">
-				<h1 className="text-3xl font-bold text-gray-900">All Salons</h1>
+				<h1 className="text-3xl font-bold text-gray-900">{t('salon.allSalons')}</h1>
 				<div className="text-sm text-gray-500">
 					Showing: {filteredSalons.length} of {salons.length} salons
 				</div>
@@ -317,7 +319,7 @@ export default function AdminSalons() {
 									value="all"
 									className="bg-white hover:bg-gray-50 focus:bg-gray-50 text-gray-900 cursor-pointer"
 								>
-									All Salons
+									{t('salon.allSalons')}
 								</SelectItem>
 								<SelectItem
 									value="active"

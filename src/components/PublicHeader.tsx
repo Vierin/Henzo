@@ -103,11 +103,27 @@ function PublicHeaderContent() {
 	}, [handleScroll, handleClickOutside]);
 
 	const handleLogout = async () => {
-		await logout();
-		setShowProfileDropdown(false);
-		// Small delay to ensure cookies are cleared
-		await new Promise((resolve) => setTimeout(resolve, 100));
-		router.replace('/');
+		try {
+			setShowProfileDropdown(false);
+			
+			// Get localized home URL before logout
+			const homeUrl = withLocale('/', currentLocale as 'en' | 'ru' | 'vi');
+			
+			// Call logout
+			await logout();
+			
+			// Small delay to ensure cookies are cleared
+			await new Promise((resolve) => setTimeout(resolve, 100));
+			
+			// Force full page redirect to public homepage with locale
+			// This bypasses middleware checks
+			window.location.href = homeUrl;
+		} catch (error) {
+			console.error('Logout error:', error);
+			// Even if logout fails, redirect to home with locale
+			const homeUrl = withLocale('/', currentLocale as 'en' | 'ru' | 'vi');
+			window.location.href = homeUrl;
+		}
 	};
 
 	return (

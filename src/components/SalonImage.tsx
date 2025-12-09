@@ -10,7 +10,6 @@ interface SalonImageProps {
 	width: number;
 	height: number;
 	className?: string;
-	placeholder?: string;
 	style?: React.CSSProperties;
 	priority?: boolean;
 	sizes?: string;
@@ -22,7 +21,6 @@ export default function SalonImage({
 	width,
 	height,
 	className = '',
-	placeholder = '💇‍♀️',
 	style,
 	priority = false,
 	sizes,
@@ -33,9 +31,16 @@ export default function SalonImage({
 	if (!src || imageError) {
 		return (
 			<div
-				className={`bg-gradient-to-br from-pink-100 to-pink-200 flex items-center justify-center ${className}`}
+				className={`bg-gradient-to-br from-pink-100 to-pink-200 flex items-center justify-center overflow-hidden ${className}`}
 			>
-				<span className="text-4xl">{placeholder}</span>
+				<Image
+					src="/images/placeholder.webp"
+					alt={alt || 'Salon placeholder'}
+					width={width}
+					height={height}
+					className="w-full h-full object-cover"
+					unoptimized
+				/>
 			</div>
 		);
 	}

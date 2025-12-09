@@ -55,17 +55,23 @@ export default function ClientSidebar() {
 			// Close mobile menu if open
 			setIsMobileMenuOpen(false);
 
+			// Get localized home URL before logout
+			const homeUrl = withLocale('/', currentLocale as 'en' | 'ru' | 'vi');
+
 			// Call logout
 			await logout();
 
-			// Redirect to home page with current locale
-			const homePath = withLocale('/', currentLocale as 'en' | 'ru' | 'vi');
-			router.push(homePath);
+			// Small delay to ensure cookies are cleared
+			await new Promise((resolve) => setTimeout(resolve, 100));
+
+			// Force full page redirect to public homepage with locale
+			// This bypasses middleware checks
+			window.location.href = homeUrl;
 		} catch (error) {
 			console.error('Logout error:', error);
-			// Even if logout fails, redirect to home
-			const homePath = withLocale('/', currentLocale as 'en' | 'ru' | 'vi');
-			router.push(homePath);
+			// Even if logout fails, redirect to home with locale
+			const homeUrl = withLocale('/', currentLocale as 'en' | 'ru' | 'vi');
+			window.location.href = homeUrl;
 		}
 	};
 

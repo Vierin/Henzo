@@ -108,7 +108,6 @@ export default function VisitHistoryCard({
 							height={120}
 							className="aspect-square h-full object-cover rounded-lg"
 							style={{ width: 'auto', height: 'auto' }}
-							placeholder="💇‍♀️"
 						/>
 					</div>
 

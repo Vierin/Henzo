@@ -221,13 +221,15 @@ export default function SalonsClient() {
 		let baseText = '';
 
 		if (searchQuery && selectedLocation) {
-			baseText = `${searchQuery} in ${selectedLocation}`;
+			baseText = t('salon.searchIn')
+				.replace('{query}', searchQuery)
+				.replace('{location}', selectedLocation);
 		} else if (searchQuery) {
 			baseText = searchQuery;
 		} else if (selectedLocation) {
-			baseText = `Salons in ${selectedLocation}`;
+			baseText = t('salon.salonsIn').replace('{location}', selectedLocation);
 		} else {
-			baseText = 'All Salons';
+			baseText = t('salon.allSalons');
 		}
 
 		// Add date and time information
@@ -246,7 +248,7 @@ export default function SalonsClient() {
 		}
 
 		return baseText;
-	}, [searchQuery, selectedLocation, selectedDate, selectedTimeInterval]);
+	}, [searchQuery, selectedLocation, selectedDate, selectedTimeInterval, t]);
 
 	const resultsCountText = useMemo(() => {
 		if (pagination) {

@@ -193,7 +193,14 @@ export default function RecommendedSalons() {
 															unoptimized={imageData.isExternal}
 														/>
 													) : (
-														<span className="text-6xl">💇‍♀️</span>
+														<Image
+															src="/images/placeholder.webp"
+															alt={salon.name}
+															width={400}
+															height={240}
+															className="w-full h-full object-cover"
+															unoptimized
+														/>
 													);
 												})()}
 												{/* Average rating badge (replaces price range) */}
@@ -262,7 +269,14 @@ export default function RecommendedSalons() {
 																unoptimized={imageData.isExternal}
 															/>
 														) : (
-															<span className="text-6xl">💇‍♀️</span>
+															<Image
+																src="/images/placeholder.webp"
+																alt={salon.name}
+																width={400}
+																height={240}
+																className="w-full h-full object-cover"
+																unoptimized
+															/>
 														);
 													})()}
 													{/* Average rating badge (replaces price range) */}

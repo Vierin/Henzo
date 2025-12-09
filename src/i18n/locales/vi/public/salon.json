@@ -37,5 +37,12 @@
 	"hoursNotSpecified": "Chưa có giờ làm việc",
 	"serviceSingular": "dịch vụ",
 	"servicePlural": "dịch vụ",
-	"serviceGenitive": "dịch vụ"
+	"serviceGenitive": "dịch vụ",
+	"allSalons": "Tất cả salon",
+	"browseAllSalons": "Xem tất cả salon",
+	"salonsIn": "Salon tại {location}",
+	"searchIn": "{query} tại {location}",
+	"notFound": "Không tìm thấy salon",
+	"notFoundDescription": "Salon bạn đang tìm không tồn tại hoặc đã bị xóa.",
+	"goHome": "Về trang chủ"
 }

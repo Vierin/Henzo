@@ -167,7 +167,6 @@ export default function FavoritesClient() {
 									width={120}
 									height={120}
 									className="aspect-square w-full h-full object-cover rounded-lg"
-									placeholder="💇‍♀️"
 								/>
 							</div>
 

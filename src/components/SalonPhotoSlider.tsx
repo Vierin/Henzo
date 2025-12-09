@@ -105,15 +105,29 @@ export default function SalonPhotoSlider({
 							}}
 						/>
 						<div
-							className="placeholder w-full h-full bg-gradient-to-br from-pink-100 to-pink-200 rounded-xl flex items-center justify-center"
+							className="placeholder w-full h-full bg-gradient-to-br from-pink-100 to-pink-200 rounded-xl flex items-center justify-center overflow-hidden"
 							style={{ display: 'none' }}
 						>
-							<span className="text-6xl">💇‍♀️</span>
+							<Image
+								src="/images/placeholder.webp"
+								alt={salonName || 'Salon placeholder'}
+								width={400}
+								height={320}
+								className="w-full h-full object-cover rounded-xl"
+								unoptimized
+							/>
 						</div>
 					</>
 				) : (
-					<div className="w-full h-full bg-gradient-to-br from-pink-100 to-pink-200 rounded-xl flex items-center justify-center">
-						<span className="text-6xl">💇‍♀️</span>
+					<div className="w-full h-full bg-gradient-to-br from-pink-100 to-pink-200 rounded-xl flex items-center justify-center overflow-hidden">
+						<Image
+							src="/images/placeholder.webp"
+							alt={salonName || 'Salon placeholder'}
+							width={400}
+							height={320}
+							className="w-full h-full object-cover rounded-xl"
+							unoptimized
+						/>
 					</div>
 				)}
 			</div>
@@ -141,10 +155,17 @@ export default function SalonPhotoSlider({
 					}}
 				/>
 				<div
-					className="w-full h-full bg-gradient-to-br from-pink-100 to-pink-200 rounded-xl flex items-center justify-center"
+					className="w-full h-full bg-gradient-to-br from-pink-100 to-pink-200 rounded-xl flex items-center justify-center overflow-hidden"
 					style={{ display: 'none' }}
 				>
-					<span className="text-6xl">💇‍♀️</span>
+					<Image
+						src="/images/placeholder.webp"
+						alt={salonName || 'Salon placeholder'}
+						width={400}
+						height={320}
+						className="w-full h-full object-cover rounded-xl"
+						unoptimized
+					/>
 				</div>
 			</div>
 		);
@@ -173,10 +194,17 @@ export default function SalonPhotoSlider({
 					}}
 				/>
 				<div
-					className="w-full h-full bg-gradient-to-br from-pink-100 to-pink-200 rounded-xl flex items-center justify-center"
+					className="w-full h-full bg-gradient-to-br from-pink-100 to-pink-200 rounded-xl flex items-center justify-center overflow-hidden"
 					style={{ display: 'none' }}
 				>
-					<span className="text-6xl">💇‍♀️</span>
+					<Image
+						src="/images/placeholder.webp"
+						alt={salonName || 'Salon placeholder'}
+						width={400}
+						height={320}
+						className="w-full h-full object-cover rounded-xl"
+						unoptimized
+					/>
 				</div>
 			</div>
 

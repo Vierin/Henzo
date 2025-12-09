@@ -37,5 +37,12 @@
 	"hoursNotSpecified": "Hours not specified",
 	"serviceSingular": "service",
 	"servicePlural": "services",
-	"serviceGenitive": "services"
+	"serviceGenitive": "services",
+	"allSalons": "All Salons",
+	"browseAllSalons": "Browse All Salons",
+	"salonsIn": "Salons in {location}",
+	"searchIn": "{query} in {location}",
+	"notFound": "Salon Not Found",
+	"notFoundDescription": "The salon you're looking for doesn't exist or may have been removed.",
+	"goHome": "Go Home"
 }

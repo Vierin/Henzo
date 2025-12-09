@@ -229,17 +229,29 @@ export default function SalonSidebar({
 													);
 												} catch {
 													return (
-														<div className="w-full h-full bg-gradient-to-br from-[#fff7f6] to-[#ffe8e6] flex items-center justify-center">
-															<span className="text-[#ff5b5b] text-2xl">
-																💇‍♀️
-															</span>
+														<div className="w-full h-full bg-gradient-to-br from-[#fff7f6] to-[#ffe8e6] flex items-center justify-center overflow-hidden">
+															<Image
+																src="/images/placeholder.webp"
+																alt={salon.name || 'Salon placeholder'}
+																width={80}
+																height={80}
+																className="w-full h-full object-cover"
+																unoptimized
+															/>
 														</div>
 													);
 												}
 											})()
 										) : (
-											<div className="w-full h-full bg-gradient-to-br from-[#fff7f6] to-[#ffe8e6] flex items-center justify-center">
-												<span className="text-[#ff5b5b] text-2xl">💇‍♀️</span>
+											<div className="w-full h-full bg-gradient-to-br from-[#fff7f6] to-[#ffe8e6] flex items-center justify-center overflow-hidden">
+												<Image
+													src="/images/placeholder.webp"
+													alt={salon.name || 'Salon placeholder'}
+													width={80}
+													height={80}
+													className="w-full h-full object-cover"
+													unoptimized
+												/>
 											</div>
 										)}
 									</div>
