@@ -117,7 +117,7 @@ export default function WorkingHoursSection({
 				return (
 					<div
 						key={day.key}
-						className="flex flex-col sm:flex-row sm:items-center justify-between py-4 px-3 md:px-5 bg-orange-50/30 rounded-lg gap-3 sm:gap-4"
+						className="flex flex-col sm:flex-row sm:items-center justify-between py-4 px-3 md:px-5 bg-[#ffe5e5]/30 rounded-lg gap-3 sm:gap-4"
 					>
 						{/* Toggle + Day Name */}
 						<div className="flex items-center justify-between sm:justify-start gap-3 sm:min-w-[140px]">
@@ -126,7 +126,7 @@ export default function WorkingHoursSection({
 									type="button"
 									onClick={() => toggleDayClosed(day.key)}
 									className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none flex-shrink-0 ${
-										!dayData.closed ? 'bg-orange-500' : 'bg-gray-300'
+										!dayData.closed ? 'bg-[#ff5b5b]' : 'bg-gray-300'
 									}`}
 								>
 									<span
@@ -142,7 +142,7 @@ export default function WorkingHoursSection({
 
 							{/* Show closed status on mobile */}
 							{dayData.closed && (
-								<span className="text-orange-500 font-medium sm:hidden">
+								<span className="text-[#ff5b5b] font-medium sm:hidden">
 									{t('owner.salonInfo.closed')}
 								</span>
 							)}
@@ -173,7 +173,7 @@ export default function WorkingHoursSection({
 
 						{/* Closed status for desktop */}
 						{dayData.closed && (
-							<span className="text-orange-500 font-medium hidden sm:block">
+							<span className="text-[#ff5b5b] font-medium hidden sm:block">
 								{t('owner.salonInfo.closed')}
 							</span>
 						)}

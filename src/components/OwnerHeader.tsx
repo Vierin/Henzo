@@ -23,6 +23,7 @@ export default function OwnerHeader() {
 	const { data: salon } = useSalon();
 	const [showProfileDropdown, setShowProfileDropdown] = useState(false);
 	const [isLanguageDropdownOpen, setIsLanguageDropdownOpen] = useState(false);
+	const [isLoggingOut, setIsLoggingOut] = useState(false);
 	const dropdownRef = useRef<HTMLDivElement>(null);
 	const languageDropdownRef = useRef<HTMLDivElement>(null);
 
@@ -76,10 +77,29 @@ export default function OwnerHeader() {
 	}, []);
 
 	const handleLogout = async () => {
-		await logout();
-		// Small delay to ensure cookies are cleared
-		await new Promise((resolve) => setTimeout(resolve, 100));
-		router.replace('/');
+		if (isLoggingOut) return; // Prevent double logout
+		
+		try {
+			setIsLoggingOut(true);
+			setShowProfileDropdown(false);
+			
+			// Get localized home URL
+			const homeUrl = withLocale('/', currentLocale as 'en' | 'ru' | 'vi');
+			
+			// Logout and wait for completion
+			await logout();
+			
+			// Small delay to ensure cookies are cleared
+			await new Promise((resolve) => setTimeout(resolve, 100));
+			
+			// Force full page redirect to public homepage with locale
+			window.location.href = homeUrl;
+		} catch (error) {
+			console.error('Logout error:', error);
+			// Even if logout fails, redirect to home with locale
+			const homeUrl = withLocale('/', currentLocale as 'en' | 'ru' | 'vi');
+			window.location.href = homeUrl;
+		}
 	};
 
 	return (
@@ -176,10 +196,20 @@ export default function OwnerHeader() {
 									</div>
 									<button
 										onClick={handleLogout}
-										className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 flex items-center gap-2 transition-colors"
+										disabled={isLoggingOut}
+										className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 flex items-center gap-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
 									>
-										<LogOut className="w-4 h-4" />
-										{t('header.logout')}
+										{isLoggingOut ? (
+											<>
+												<div className="w-4 h-4 border-2 border-red-600 border-t-transparent rounded-full animate-spin" />
+												<span>{t('header.loggingOut') || 'Logging out...'}</span>
+											</>
+										) : (
+											<>
+												<LogOut className="w-4 h-4" />
+												{t('header.logout')}
+											</>
+										)}
 									</button>
 								</div>
 							)}

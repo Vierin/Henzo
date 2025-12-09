@@ -95,7 +95,9 @@ export default function SalonInfoPage() {
 				logo: salon.logo || '',
 				photos: salon.photos || [],
 				// categories are derived from services; no manual selection
-				reminderSettings: (salon as any).reminderSettings || { intervals: [24] },
+				reminderSettings: (salon as any).reminderSettings || {
+					intervals: [24],
+				},
 				operatingHours: salon.workingHours
 					? {
 							monday: {
@@ -535,7 +537,7 @@ export default function SalonInfoPage() {
 				{/* Operating Hours Section */}
 				<div className="bg-white border border-gray-200 rounded-lg p-3 md:p-6">
 					<h2 className="text-xl md:text-2xl font-semibold text-gray-900 mb-4 md:mb-6 flex items-center gap-2">
-						<Clock4 className="w-5 h-5" /> {t('owner.salonInfo.operatingHours')}
+						{t('owner.salonInfo.operatingHours')}
 					</h2>
 					<WorkingHoursSection
 						workingHours={formData.operatingHours}
@@ -548,7 +550,8 @@ export default function SalonInfoPage() {
 				{/* Reminder Settings Section */}
 				<div className="bg-white border border-gray-200 rounded-lg p-3 md:p-6">
 					<h2 className="text-xl md:text-2xl font-semibold text-gray-900 mb-4 md:mb-6">
-						{t('owner.salonInfo.reminderSettings') || 'Booking Reminder Settings'}
+						{t('owner.salonInfo.reminderSettings') ||
+							'Booking Reminder Settings'}
 					</h2>
 					<p className="text-sm text-gray-600 mb-4">
 						{t('owner.salonInfo.reminderSettingsDescription') ||
@@ -625,8 +628,8 @@ export default function SalonInfoPage() {
 								className="w-4 h-4 text-[#ff5b5b] border-gray-300 rounded focus:ring-[#ff5b5b] focus:ring-2"
 							/>
 							<span className="text-gray-700 font-medium">
-								{t('owner.salonInfo.reminder1Day') || '1 day (24 hours) before'} (
-								{t('owner.salonInfo.default') || 'Default'})
+								{t('owner.salonInfo.reminder1Day') || '1 day (24 hours) before'}{' '}
+								({t('owner.salonInfo.default') || 'Default'})
 							</span>
 						</label>
 
@@ -663,7 +666,8 @@ export default function SalonInfoPage() {
 								className="w-4 h-4 text-[#ff5b5b] border-gray-300 rounded focus:ring-[#ff5b5b] focus:ring-2"
 							/>
 							<span className="text-gray-700">
-								{t('owner.salonInfo.reminder1Week') || '1 week (168 hours) before'}
+								{t('owner.salonInfo.reminder1Week') ||
+									'1 week (168 hours) before'}
 							</span>
 						</label>
 					</div>

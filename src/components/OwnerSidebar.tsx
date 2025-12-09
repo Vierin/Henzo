@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import { useState } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import { useQueryClient } from '@tanstack/react-query';
 import { useAuthStore } from '@/stores/authStore';
@@ -43,6 +44,7 @@ export default function OwnerSidebar({
 	const queryClient = useQueryClient();
 	const { salonId } = useSalonId();
 	const t = useTranslation();
+	const [isLoggingOut, setIsLoggingOut] = useState(false);
 
 	// Extract locale and path without locale
 	const currentLocale = extractLocaleFromPath(pathname) ?? 'en';
@@ -118,19 +120,29 @@ export default function OwnerSidebar({
 	};
 
 	const handleLogout = async () => {
+		if (isLoggingOut) return; // Prevent double logout
+		
 		try {
+			setIsLoggingOut(true);
 			// Close mobile menu if open
 			setIsMobileMenuOpen?.(false);
+
+			// Get localized home URL
+			const homeUrl = withLocale('/', currentLocale as 'en' | 'ru' | 'vi');
 
 			// Logout and wait for completion
 			await logout();
 
-			// Force immediate redirect to home page
-			window.location.href = '/';
+			// Small delay to ensure cookies are cleared
+			await new Promise((resolve) => setTimeout(resolve, 100));
+
+			// Force full page redirect to public homepage with locale
+			window.location.href = homeUrl;
 		} catch (error) {
 			console.error('Logout error:', error);
-			// Even if logout fails, redirect to home
-			window.location.href = '/';
+			// Even if logout fails, redirect to home with locale
+			const homeUrl = withLocale('/', currentLocale as 'en' | 'ru' | 'vi');
+			window.location.href = homeUrl;
 		}
 	};
 
@@ -225,10 +237,20 @@ export default function OwnerSidebar({
 				<div className="mt-8 pt-6 border-t border-gray-200">
 					<button
 						onClick={handleLogout}
-						className="flex items-center gap-3 px-3 py-2 text-gray-600 hover:bg-red-50 hover:text-red-600 rounded-lg transition-colors w-full"
+						disabled={isLoggingOut}
+						className="flex items-center gap-3 px-3 py-2 text-gray-600 hover:bg-red-50 hover:text-red-600 rounded-lg transition-colors w-full disabled:opacity-50 disabled:cursor-not-allowed"
 					>
-						<LogOut className="w-5 h-5" />
-						<span className="font-medium">{t('owner.dashboard.logOut')}</span>
+						{isLoggingOut ? (
+							<>
+								<div className="w-5 h-5 border-2 border-red-600 border-t-transparent rounded-full animate-spin" />
+								<span className="font-medium">{t('owner.dashboard.loggingOut') || 'Logging out...'}</span>
+							</>
+						) : (
+							<>
+								<LogOut className="w-5 h-5" />
+								<span className="font-medium">{t('owner.dashboard.logOut')}</span>
+							</>
+						)}
 					</button>
 				</div>
 			</div>

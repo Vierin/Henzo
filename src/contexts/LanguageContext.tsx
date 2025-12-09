@@ -157,6 +157,9 @@ export function LanguageProvider({ children }: LanguageProviderProps) {
 		publicModules.push('public/contact');
 	} else if (pathNoLocale.startsWith('/about')) {
 		publicModules.push('public/about');
+	} else if (pathNoLocale.startsWith('/login') || pathNoLocale.startsWith('/forgot-password')) {
+		// Auth module needed for login and forgot-password pages
+		publicModules.push('shared/auth');
 	}
 	
 	// Load base modules
