@@ -22,6 +22,15 @@
 		"evening": "Evening"
 	},
 	"customerInfo": "Customer Information",
+	"clientInfo": "Client Information",
+	"clientEmail": "Client Email",
+	"clientEmailPlaceholder": "client@example.com",
+	"clientName": "Client Name",
+	"clientNameOptional": "Client Name (Optional)",
+	"clientNamePlaceholder": "Client name",
+	"clientPhone": "Client Phone",
+	"clientPhoneOptional": "Client Phone (Optional)",
+	"clientPhonePlaceholder": "+84...",
 	"name": "Name",
 	"email": "Email",
 	"phone": "Phone",
@@ -58,5 +67,8 @@
 	"time": "Time:",
 	"done": "Done",
 	"bookingConfirmedTitle": "Booking Confirmed!",
-	"appointmentBookedSuccessfully": "Your appointment has been successfully booked"
+	"appointmentBookedSuccessfully": "Your appointment has been successfully booked",
+	"ownerCannotBookOtherSalon": "To book in another salon, please log in as a client account.",
+	"pleaseEnterClientEmail": "Please enter client email",
+	"pleaseEnterValidEmail": "Please enter a valid email address"
 }

@@ -99,5 +99,14 @@
 		"noStaff": "Vui lòng thêm ít nhất một nhân viên trước khi tạo đặt chỗ"
 	},
 	"noBookingsWithFilters": "Không tìm thấy đặt chỗ với bộ lọc hiện tại",
-	"tryAgain": "Thử lại"
+	"tryAgain": "Thử lại",
+	"edit": "Chỉnh sửa",
+	"cancel": "Hủy",
+	"confirmed": "Đã xác nhận",
+	"cancelled": "Đã hủy",
+	"pending": "Đang chờ",
+	"completed": "Hoàn thành",
+	"noShow": "Không đến",
+	"backToMonth": "Quay lại tháng",
+	"filterByStaffLabel": "Lọc theo nhân viên:"
 }

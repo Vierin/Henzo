@@ -7,6 +7,7 @@ import { Service, Staff, WorkingHours } from '@/types';
 import { useStaffBySalon } from '@/hooks/useStaff';
 import { useServices } from '@/hooks/useServices';
 import { useAuthStore } from '@/stores/authStore';
+import { useSalonId } from '@/hooks/useSalons';
 import toast from 'react-hot-toast';
 import { safeParseDate, parseBookingTimeAsLocal } from '@/utils/date';
 import { formatVND } from '@/utils/currency';
@@ -140,6 +141,9 @@ export default function BookingModal({
 
 	// Используем переданный salonId
 	const currentSalonId = salonId;
+	
+	// Получаем salonId владельца для проверки
+	const { salonId: ownerSalonId } = useSalonId();
 
 	// Используем новые хуки для получения данных (только если salonId передан)
 	const {
@@ -328,12 +332,24 @@ export default function BookingModal({
 		}
 	}, [isOpen, user, isClient]);
 
+	// Функция для проверки, является ли владелец владельцем этого салона
+	const isOwnerOfThisSalon = () => {
+		if (!isOwner || !currentSalonId || !ownerSalonId) {
+			return false;
+		}
+		return ownerSalonId === currentSalonId;
+	};
+
 	// Функция для проверки авторизации клиента
-	// Если пользователь - владелец, авторизация не требуется
+	// Если пользователь - владелец СВОЕГО салона, авторизация не требуется
 	const checkClientAuth = () => {
-		// Владелец может создавать резервации без авторизации клиента
-		if (isOwner) {
+		// Владелец может создавать резервации без авторизации клиента только в своем салоне
+		if (isOwner && isOwnerOfThisSalon()) {
 			return true;
+		}
+		// Если владелец пытается забронировать в чужом салоне, нужно залогиниться как клиент
+		if (isOwner && !isOwnerOfThisSalon()) {
+			return false;
 		}
 		return isClient;
 	};
@@ -1568,8 +1584,14 @@ export default function BookingModal({
 			return;
 		}
 
-		// Если владелец создает резервацию, проверяем наличие email клиента
-		if (isOwner && !editingBooking) {
+		// Проверяем, является ли владелец владельцем этого салона
+		if (isOwner && !isOwnerOfThisSalon() && !editingBooking) {
+			toast.error(t('booking.ownerCannotBookOtherSalon') || 'To book in another salon, please log in as a client account.');
+			return;
+		}
+
+		// Если владелец создает резервацию в своем салоне, проверяем наличие email клиента
+		if (isOwner && isOwnerOfThisSalon() && !editingBooking) {
 			if (!clientEmail || !clientEmail.trim()) {
 				toast.error(t.booking.pleaseEnterClientEmail);
 				return;
@@ -2475,8 +2497,8 @@ export default function BookingModal({
 
 							{/* Right Section - Staff Selection and Booking Button */}
 							<div className="w-full sm:w-80 flex-shrink-0 bg-gray-50 sm:bg-gray-50 p-4 sm:p-8 sm:rounded-r-2xl max-h-[30vh] sm:max-h-[90vh] overflow-y-auto border-t sm:border-t-0">
-								{/* Client Information (only for owners creating new bookings) */}
-								{isOwner && !editingBooking && (
+								{/* Client Information (only for owners creating new bookings in their own salon) */}
+								{isOwner && isOwnerOfThisSalon() && !editingBooking && (
 									<BookingGuestForm
 										clientEmail={clientEmail}
 										clientName={clientName}

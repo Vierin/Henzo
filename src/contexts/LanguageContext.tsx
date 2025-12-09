@@ -43,11 +43,24 @@ const LanguageContext = createContext<LanguageContextType | undefined>(
 
 interface LanguageProviderProps {
 	children: ReactNode;
+	initialDictionary?: any; // Base dictionary loaded on server
 }
 
-export function LanguageProvider({ children }: LanguageProviderProps) {
+export function LanguageProvider({ children, initialDictionary }: LanguageProviderProps) {
 	const [language, setLanguageState] = useState<Language>('en');
 	const pathname = usePathname();
+	
+	// Get initial dictionary from window object (set by server via script tag)
+	// Use useState to read it once on mount, before React hydration
+	const [serverDictionary] = useState(() => {
+		if (typeof window !== 'undefined') {
+			return (window as any).__INITIAL_DICTIONARY__;
+		}
+		return undefined;
+	});
+	
+	// Use initialDictionary prop if provided, otherwise try window object, otherwise undefined
+	const effectiveInitialDictionary = initialDictionary || serverDictionary;
 	
 	// Determine which modules to load based on current path
 	const pathNoLocale = stripLocaleFromPath(pathname);
@@ -162,8 +175,18 @@ export function LanguageProvider({ children }: LanguageProviderProps) {
 		publicModules.push('shared/auth');
 	}
 	
-	// Load base modules
-	const baseT = useBaseTranslations();
+	// Use initial dictionary from server if provided, otherwise load base modules
+	// Only call useBaseTranslations if we don't have initialDictionary to avoid unnecessary loading
+	const baseTFromHook = useBaseTranslations();
+	const baseT = useMemo(() => {
+		// If we have initial dictionary from server (via prop or window), use it immediately
+		// This prevents the flash of translation keys
+		if (effectiveInitialDictionary && Object.keys(effectiveInitialDictionary).length > 0) {
+			return effectiveInitialDictionary;
+		}
+		// Fallback to hook result (for cases where initialDictionary is not provided)
+		return baseTFromHook;
+	}, [effectiveInitialDictionary, baseTFromHook]);
 	
 	// Load additional modules based on page type
 	const modulesToLoad: TranslationModule[] = [];

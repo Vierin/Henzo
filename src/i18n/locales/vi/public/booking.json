@@ -28,6 +28,9 @@
 	"clientNameOptional": "Tên khách hàng (tùy chọn)",
 	"clientPhone": "Số điện thoại khách hàng",
 	"clientPhoneOptional": "Số điện thoại khách hàng (tùy chọn)",
+	"clientEmailPlaceholder": "client@example.com",
+	"clientNamePlaceholder": "Tên khách hàng",
+	"clientPhonePlaceholder": "+84...",
 	"name": "Họ tên",
 	"email": "Email",
 	"phone": "Số điện thoại",
@@ -77,5 +80,6 @@
 	"confirmFailedTitle": "Lỗi xác nhận",
 	"bookingConfirmedDescription": "Lịch hẹn của bạn đã được xác nhận thành công.",
 	"waitingForSalonConfirmationTitle": "Đang chờ salon xác nhận",
-	"waitingForSalonConfirmationDescription": "Lịch hẹn của bạn đang ở trạng thái chờ. Salon sẽ xem xét và xác nhận. Bạn sẽ nhận được email khi lịch hẹn được xác nhận."
+	"waitingForSalonConfirmationDescription": "Lịch hẹn của bạn đang ở trạng thái chờ. Salon sẽ xem xét và xác nhận. Bạn sẽ nhận được email khi lịch hẹn được xác nhận.",
+	"ownerCannotBookOtherSalon": "Để đặt lịch ở salon khác, vui lòng đăng nhập bằng tài khoản khách hàng."
 }

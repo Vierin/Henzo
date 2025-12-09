@@ -301,9 +301,9 @@ export default function DaySchedule({
 		} else if (booking.status === 'COMPLETED') {
 			return {
 				className:
-					'absolute left-1 right-1 bg-blue-50 border border-blue-200 rounded-lg p-1 z-10 cursor-pointer hover:bg-blue-100 transition-colors dark:bg-blue-50 dark:border-blue-200 dark:hover:bg-blue-100',
-				textClassName: 'text-blue-800 dark:text-blue-800',
-				textSecondaryClassName: 'text-blue-600 dark:text-blue-600',
+					'absolute left-1 right-1 bg-blue-50 border border-blue-200 rounded-lg p-1 z-10 cursor-pointer hover:bg-blue-100 transition-colors',
+				textClassName: 'text-blue-800',
+				textSecondaryClassName: 'text-blue-600',
 			};
 		} else {
 			return {
@@ -400,14 +400,14 @@ export default function DaySchedule({
 				Day Schedule
 			</h2>
 
-			<div className="rounded-xl border border-[#f1d9d7] bg-white p-3 md:p-6 dark:bg-gray-800 dark:border-gray-700">
+			<div className="rounded-xl border border-[#f1d9d7] bg-white p-3 md:p-6">
 				{/* Header */}
-				<div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4 dark:bg-gray-900 dark:text-white p-3 rounded-lg -m-3 md:-m-6 md:p-6">
+				<div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4 p-3 rounded-lg -m-3 md:-m-6 md:p-6">
 					<div className="flex items-center justify-between sm:justify-start gap-2 sm:gap-3">
 						<div className="flex items-center gap-1">
 							<button
 								onClick={onPrevDay}
-								className="p-1.5 text-gray-600 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 hover:text-gray-900 transition-colors focus:outline-none focus:ring-2 focus:ring-[#ea4b4b] focus:ring-offset-2 dark:text-gray-300 dark:bg-gray-800 dark:border-gray-600 dark:hover:bg-gray-700 dark:hover:text-white"
+								className="p-1.5 text-gray-600 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 hover:text-gray-900 transition-colors focus:outline-none focus:ring-2 focus:ring-[#ea4b4b] focus:ring-offset-2"
 								aria-label="Previous day"
 								disabled={!onPrevDay}
 							>
@@ -415,22 +415,22 @@ export default function DaySchedule({
 							</button>
 							<button
 								onClick={onNextDay}
-								className="p-1.5 text-gray-600 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 hover:text-gray-900 transition-colors focus:outline-none focus:ring-2 focus:ring-[#ea4b4b] focus:ring-offset-2 dark:text-gray-300 dark:bg-gray-800 dark:border-gray-600 dark:hover:bg-gray-700 dark:hover:text-white"
+								className="p-1.5 text-gray-600 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 hover:text-gray-900 transition-colors focus:outline-none focus:ring-2 focus:ring-[#ea4b4b] focus:ring-offset-2"
 								aria-label="Next day"
 								disabled={!onNextDay}
 							>
 								<ChevronRight className="w-4 h-4" />
 							</button>
 						</div>
-						<h3 className="text-base md:text-lg font-semibold text-gray-900 text-center sm:text-left flex-1 dark:text-white">
+						<h3 className="text-base md:text-lg font-semibold text-gray-900 text-center sm:text-left flex-1">
 							{formatDateForDisplay(selectedDate)}
 						</h3>
 					</div>
 					<div className="flex items-center justify-center sm:justify-end">
 						<button
 							onClick={onBack}
-							className="px-3 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors flex items-center gap-2 focus:outline-none focus:ring-2 focus:ring-[#ea4b4b] focus:ring-offset-2 dark:text-gray-200 dark:bg-gray-800 dark:border-gray-600 dark:hover:bg-gray-700"
-							aria-label="Back to month view"
+							className="px-3 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors flex items-center gap-2 focus:outline-none focus:ring-2 focus:ring-[#ea4b4b] focus:ring-offset-2"
+							aria-label={t('owner.calendar.backToMonth')}
 						>
 							<svg
 								className="w-4 h-4"
@@ -444,8 +444,8 @@ export default function DaySchedule({
 									clipRule="evenodd"
 								/>
 							</svg>
-							<span className="hidden sm:inline">Back to Month</span>
-							<span className="sm:hidden">Back</span>
+							<span className="hidden sm:inline">{t('owner.calendar.backToMonth')}</span>
+							<span className="sm:hidden">{t('owner.calendar.back')}</span>
 						</button>
 					</div>
 				</div>
@@ -455,7 +455,7 @@ export default function DaySchedule({
 					<div className="mb-4 md:mb-6">
 						<div className="mb-2">
 							<span className="text-xs md:text-sm font-medium text-gray-600">
-								Filter by staff:
+								{t('owner.calendar.filterByStaffLabel')}
 							</span>
 						</div>
 						<div className="flex flex-wrap gap-2">
@@ -564,16 +564,16 @@ export default function DaySchedule({
 								}}
 							>
 								{/* Staff headers row */}
-								<div className="flex border-b border-gray-200 bg-white dark:bg-gray-800 dark:border-gray-700">
+								<div className="flex border-b border-gray-200 bg-white">
 									{staffMembers.map((staff) => {
 										const colWidth = isMobile ? 120 : 150;
 										return (
 											<div
 												key={staff.id}
-												className="flex-shrink-0 py-2 md:py-3 px-2 md:px-4 text-center border-r border-gray-200 dark:border-gray-700"
+												className="flex-shrink-0 py-2 md:py-3 px-2 md:px-4 text-center border-r border-gray-200"
 												style={{ width: `${colWidth}px` }}
 											>
-												<div className="text-xs md:text-sm font-semibold text-gray-900 dark:text-white truncate">
+												<div className="text-xs md:text-sm font-semibold text-gray-900 truncate">
 													{staff.name}
 												</div>
 											</div>

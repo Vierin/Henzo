@@ -99,5 +99,14 @@
 		"noStaff": "Please add at least one staff member before creating a booking"
 	},
 	"noBookingsWithFilters": "No bookings found with the current filters",
-	"tryAgain": "Try again"
+	"tryAgain": "Try again",
+	"edit": "Edit",
+	"cancel": "Cancel",
+	"confirmed": "Confirmed",
+	"cancelled": "Cancelled",
+	"pending": "Pending",
+	"completed": "Completed",
+	"noShow": "No-Show",
+	"backToMonth": "Back to Month",
+	"filterByStaffLabel": "Filter by staff:"
 }

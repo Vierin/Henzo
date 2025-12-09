@@ -49,8 +49,17 @@ export default async function LocaleRootLayout({
 }>) {
 	const rparams = await params;
 	const locale = isLocale(rparams.locale) ? (rparams.locale as Locale) : 'en';
-	// preload dictionary for potential server components below
-	await getDictionary(locale);
+	// Load base dictionary on server and pass via script tag
+	const initialDictionary = await getDictionary(locale);
 
-	return <ErrorBoundary>{children}</ErrorBoundary>;
+	return (
+		<ErrorBoundary>
+			<script
+				dangerouslySetInnerHTML={{
+					__html: `window.__INITIAL_DICTIONARY__ = ${JSON.stringify(initialDictionary)};`,
+				}}
+			/>
+			{children}
+		</ErrorBoundary>
+	);
 }

@@ -22,6 +22,15 @@
 		"evening": "Вечер"
 	},
 	"customerInfo": "Данные клиента",
+	"clientInfo": "Информация о клиенте",
+	"clientEmail": "Email клиента",
+	"clientEmailPlaceholder": "client@example.com",
+	"clientName": "Имя клиента",
+	"clientNameOptional": "Имя клиента (необязательно)",
+	"clientNamePlaceholder": "Имя клиента",
+	"clientPhone": "Телефон клиента",
+	"clientPhoneOptional": "Телефон клиента (необязательно)",
+	"clientPhonePlaceholder": "+7...",
 	"name": "Имя",
 	"email": "Email",
 	"phone": "Телефон",
@@ -58,5 +67,8 @@
 	"time": "Время:",
 	"done": "Готово",
 	"bookingConfirmedTitle": "Запись подтверждена!",
-	"appointmentBookedSuccessfully": "Ваша запись успешно оформлена"
+	"appointmentBookedSuccessfully": "Ваша запись успешно оформлена",
+	"ownerCannotBookOtherSalon": "Для бронирования в другом салоне, пожалуйста, войдите в аккаунт клиента.",
+	"pleaseEnterClientEmail": "Пожалуйста, введите email клиента",
+	"pleaseEnterValidEmail": "Пожалуйста, введите действительный email адрес"
 }
