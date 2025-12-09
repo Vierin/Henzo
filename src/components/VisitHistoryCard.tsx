@@ -4,6 +4,7 @@ import SalonImage from '@/components/SalonImage';
 import { isPastDate, formatBookingDateTime, getDateBadge } from '@/utils/date';
 import { useState } from 'react';
 import { useTranslation } from '@/contexts/LanguageContext';
+import Link from 'next/link';
 
 interface VisitHistory {
 	id: string;
@@ -97,29 +98,44 @@ export default function VisitHistoryCard({
 
 	return (
 		<>
-			<div className="relative bg-white rounded-xl p-6 shadow-sm hover:shadow-md transition-shadow">
-				<div className="flex items-start gap-4">
+			<div className="relative bg-white rounded-xl p-4 sm:p-6 shadow-sm hover:shadow-md transition-shadow">
+				<div className="flex flex-col sm:flex-row items-start gap-3 sm:gap-4">
 					{/* Service Image */}
-					<div className="aspect-square h-30 rounded-lg flex-shrink-0">
+					<div className="w-full sm:w-32 aspect-[4/3] rounded-lg flex-shrink-0">
 						<SalonImage
 							src={visit.image}
 							alt={visit.salonName}
-							width={120}
-							height={120}
-							className="aspect-square h-full object-cover rounded-lg"
-							style={{ width: 'auto', height: 'auto' }}
+							width={128}
+							height={96}
+							className="w-full h-full object-cover rounded-lg"
 						/>
 					</div>
 
 					{/* Service Info */}
-					<div className="flex-1 min-w-0">
-						<div className="flex items-start justify-between mb-2">
-							<h3 className="text-lg font-semibold text-gray-900 truncate">
-								{visit.salonName}
-							</h3>
+					<div className="flex-1 min-w-0 w-full sm:w-auto">
+						<div className="flex items-start justify-between mb-2 gap-2">
+							{visit.salonId ? (
+								<Link
+									href={`/salon/${visit.salonId}`}
+									className="text-base sm:text-lg font-semibold text-gray-900 truncate flex-1 hover:text-[#ff5b5b] transition-colors"
+								>
+									{visit.salonName}
+								</Link>
+							) : (
+								<h3 className="text-base sm:text-lg font-semibold text-gray-900 truncate flex-1">
+									{visit.salonName}
+								</h3>
+							)}
 							{dateBadge && (
-								<span className="bg-blue-100 text-blue-800 text-xs font-medium px-2.5 py-0.5 rounded-full ml-2 flex-shrink-0">
+								<span className="bg-blue-100 text-blue-800 text-xs font-medium px-2.5 py-0.5 rounded-full flex-shrink-0">
 									{dateBadge}
+								</span>
+							)}
+							{statusBadge && (
+								<span
+									className={`sm:hidden text-xs font-medium px-2 py-0.5 rounded-full flex-shrink-0 ${statusBadge.className}`}
+								>
+									{statusBadge.text}
 								</span>
 							)}
 						</div>
@@ -132,7 +148,7 @@ export default function VisitHistoryCard({
 							</p>
 						)}
 
-						<div className="flex items-center gap-4">
+						<div className="flex items-center gap-4 mb-3 sm:mb-0">
 							<div>
 								<p className="text-gray-500 text-xs">{formattedDate}</p>
 								<p className="text-gray-700 text-sm font-medium">
@@ -143,15 +159,49 @@ export default function VisitHistoryCard({
 
 						{statusBadge && (
 							<span
-								className={`absolute top-6 right-6 text-sm font-medium px-2.5 py-0.5 rounded-full ${statusBadge.className}`}
+								className={`hidden sm:block absolute top-6 right-6 text-sm font-medium px-2.5 py-0.5 rounded-full ${statusBadge.className}`}
 							>
 								{statusBadge.text}
 							</span>
 						)}
+
+						{/* Action Buttons - Mobile */}
+						<div className="flex flex-col sm:hidden gap-2 w-full mt-2">
+							{isUpcoming && !isPast ? (
+								<button
+									onClick={handleCancel}
+									className="w-full bg-red-500 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-red-600 transition-colors"
+								>
+									{t('client.dashboard.cancelReservation')}
+								</button>
+							) : (
+								<div className="flex flex-col gap-2 w-full">
+									<button
+										onClick={handleBookAgain}
+										className="w-full bg-[#ff5b5b] text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-[#e04a4a] transition-colors"
+									>
+										{t('client.dashboard.bookAgain')}
+									</button>
+									{onLeaveReview && (
+										<button
+											onClick={handleLeaveReview}
+											disabled={hasReview}
+											className={`w-full px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+												hasReview
+													? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+													: 'bg-gray-500 text-white hover:bg-gray-600'
+											}`}
+										>
+											{hasReview ? t('client.dashboard.reviewLeft') : t('client.dashboard.leaveReview')}
+										</button>
+									)}
+								</div>
+							)}
+						</div>
 					</div>
 
-					{/* Action Buttons */}
-					<div className="flex gap-2 flex-shrink-0 mt-auto">
+					{/* Action Buttons - Desktop */}
+					<div className="hidden sm:flex gap-2 flex-shrink-0 mt-auto">
 						{isUpcoming && !isPast ? (
 							<button
 								onClick={handleCancel}

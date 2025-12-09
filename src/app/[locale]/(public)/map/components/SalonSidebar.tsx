@@ -21,6 +21,7 @@ interface SalonSidebarProps {
 	mapBounds: MapBounds | null;
 	selectedCategories: number[];
 	onCategoriesChange: (categories: number[]) => void;
+	onSalonCountChange?: (count: number) => void;
 }
 
 export default function SalonSidebar({
@@ -29,6 +30,7 @@ export default function SalonSidebar({
 	mapBounds,
 	selectedCategories,
 	onCategoriesChange,
+	onSalonCountChange,
 }: SalonSidebarProps) {
 	const router = useRouter();
 	const t = useTranslation();
@@ -83,6 +85,13 @@ export default function SalonSidebar({
 		}
 		return sortedSalons;
 	}, [salons, mapBounds, sortBy, selectedCategories]);
+
+	// Notify parent about salon count change
+	useEffect(() => {
+		if (onSalonCountChange) {
+			onSalonCountChange(displaySalons.length);
+		}
+	}, [displaySalons.length, onSalonCountChange]);
 
 
 	const handleViewSalon = (salon: any, e: React.MouseEvent) => {

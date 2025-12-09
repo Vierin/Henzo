@@ -61,10 +61,11 @@ export class ApiClient {
 		} catch (error: any) {
 			// Handle network errors (CORS, connection refused, etc.)
 			const errorMessage =
-				error.message === 'Failed to fetch'
+				error.message === 'Failed to fetch' || error.message === 'fetch failed'
 					? `Unable to connect to the server. Please check if the backend is running at ${this.baseUrl}`
 					: error.message || 'Network error occurred';
 			
+			// Only log in development to avoid cluttering production logs
 			if (process.env.NODE_ENV === 'development') {
 				console.error('Network Error:', {
 					url,
@@ -73,7 +74,11 @@ export class ApiClient {
 				});
 			}
 			
-			throw new Error(errorMessage);
+			// Create a more specific error that can be caught and handled gracefully
+			const networkError = new Error(errorMessage);
+			(networkError as any).isNetworkError = true;
+			(networkError as any).url = url;
+			throw networkError;
 		}
 
 		if (!response.ok) {

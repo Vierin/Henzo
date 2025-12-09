@@ -10,5 +10,6 @@
 	"noSalonsInView": "No salons in view",
 	"tryZoomingOut": "Try zooming out or moving the map to see more salons",
 	"loadingSalons": "Loading salons...",
-	"viewSalon": "View Salon"
+	"viewSalon": "View Salon",
+	"showSalons": "Show Salons"
 }

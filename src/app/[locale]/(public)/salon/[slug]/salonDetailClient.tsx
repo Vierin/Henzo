@@ -546,16 +546,19 @@ export default function SalonDetailClient({ salon }: SalonDetailClientProps) {
 									</p>
 
 									{/* Mini Map */}
-									{salon.address && (
+									{(salon.address || (salon.latitude && salon.longitude)) && (
 										<div className="mb-6">
 											<h3 className="text-lg font-semibold text-gray-900 mb-3">
 												{t.salon.location}
 											</h3>
 											<div className="w-full rounded-lg overflow-hidden border border-gray-200">
 												<MapComponentWithCoords
+													lat={salon.latitude}
+													lon={salon.longitude}
 													address={salon.address}
 													showPopup={false}
 													interactive={false}
+													height="250px"
 												/>
 											</div>
 											<button

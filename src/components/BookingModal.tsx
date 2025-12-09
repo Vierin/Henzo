@@ -141,7 +141,7 @@ export default function BookingModal({
 
 	// Используем переданный salonId
 	const currentSalonId = salonId;
-	
+
 	// Получаем salonId владельца для проверки
 	const { salonId: ownerSalonId } = useSalonId();
 
@@ -294,12 +294,25 @@ export default function BookingModal({
 									return;
 								}
 
+								// Validate service has ID
+								if (!finalService.id) {
+									logger.error('❌ Service missing ID:', {
+										service: finalService,
+										selectedService,
+										bookingDataService: bookingData.service,
+									});
+									toast.error('Invalid service data. Please try again.');
+									return;
+								}
+
 								// Directly call createBooking with data from bookingData to avoid state issues
 								logger.log('🚀 Creating booking directly with data:', {
 									service: finalService?.name,
+									serviceId: finalService?.id,
 									date: finalDate,
 									time: finalTime,
 									staff: bookingData.staff,
+									salonId: currentSalonId,
 								});
 								await createBooking({
 									service: finalService,
@@ -522,7 +535,7 @@ export default function BookingModal({
 	// Memoized availability map to avoid recalculating for the same slots
 	const availabilityCache = useMemo(() => {
 		const cache = new Map<string, boolean>();
-		
+
 		if (!selectedService || bookingsLoadError) {
 			return cache; // Return empty cache, all slots will be available
 		}
@@ -533,7 +546,14 @@ export default function BookingModal({
 		// Pre-calculate availability for all time slots
 		// This runs once when dependencies change, not on every render
 		return cache;
-	}, [selectedService, existingBookings, staffMembers, bookingsLoadError, selectedDate, selectedStaff]);
+	}, [
+		selectedService,
+		existingBookings,
+		staffMembers,
+		bookingsLoadError,
+		selectedDate,
+		selectedStaff,
+	]);
 
 	// Check if a time slot is available
 	const isTimeSlotAvailable = useMemo(() => {
@@ -552,20 +572,49 @@ export default function BookingModal({
 
 			// Create cache key
 			const cacheKey = `${timeSlot}-${selectedStaffId || 'any'}-${selectedDate}`;
-			
+
 			// Check cache first
 			if (availabilityCache.has(cacheKey)) {
 				return availabilityCache.get(cacheKey)!;
 			}
 
-		// If specific staff is selected, check only that staff's conflicts
-		if (selectedStaffId && selectedStaffId !== 'Any Staff') {
-			const hasConflict = existingBookings.some((booking) => {
-				// Use parseBookingTimeAsLocal to avoid timezone conversion issues
+			// If specific staff is selected, check only that staff's conflicts
+			if (selectedStaffId && selectedStaffId !== 'Any Staff') {
+				const hasConflict = existingBookings.some((booking) => {
+					// Use parseBookingTimeAsLocal to avoid timezone conversion issues
+					const bookingDateTime = parseBookingTimeAsLocal(
+						booking.time || booking.dateTime
+					);
+					if (!bookingDateTime) return false; // Skip invalid dates
+
+					const bookingStartMinutes =
+						bookingDateTime.getHours() * 60 + bookingDateTime.getMinutes();
+					const bookingEndMinutes =
+						bookingStartMinutes + (booking.service?.duration || 60);
+
+					// Check if time slots overlap
+					const timeConflict =
+						slotStartMinutes < bookingEndMinutes &&
+						slotEndMinutes > bookingStartMinutes;
+
+					// Only block if it's the same staff AND time conflicts
+					const staffConflict = booking.staffId === selectedStaffId;
+					return staffConflict && timeConflict;
+				});
+
+				const result = !hasConflict;
+				// Cache the result
+				availabilityCache.set(cacheKey, result);
+				return result;
+			}
+
+			// If "Any Staff" is selected, check if ALL staff members are busy
+			// The slot is available if at least one staff member is free
+			const conflictingBookings = existingBookings.filter((booking) => {
 				const bookingDateTime = parseBookingTimeAsLocal(
 					booking.time || booking.dateTime
 				);
-				if (!bookingDateTime) return false; // Skip invalid dates
+				if (!bookingDateTime) return false;
 
 				const bookingStartMinutes =
 					bookingDateTime.getHours() * 60 + bookingDateTime.getMinutes();
@@ -577,52 +626,23 @@ export default function BookingModal({
 					slotStartMinutes < bookingEndMinutes &&
 					slotEndMinutes > bookingStartMinutes;
 
-				// Only block if it's the same staff AND time conflicts
-				const staffConflict = booking.staffId === selectedStaffId;
-				return staffConflict && timeConflict;
+				// Removed excessive logging
+
+				return timeConflict;
 			});
 
-			const result = !hasConflict;
-			// Cache the result
-			availabilityCache.set(cacheKey, result);
-			return result;
-		}
-
-		// If "Any Staff" is selected, check if ALL staff members are busy
-		// The slot is available if at least one staff member is free
-		const conflictingBookings = existingBookings.filter((booking) => {
-			const bookingDateTime = parseBookingTimeAsLocal(
-				booking.time || booking.dateTime
+			// Get all staff IDs that are busy during this time slot
+			const busyStaffIds = new Set(
+				conflictingBookings.map((booking) => booking.staffId).filter(Boolean)
 			);
-			if (!bookingDateTime) return false;
 
-			const bookingStartMinutes =
-				bookingDateTime.getHours() * 60 + bookingDateTime.getMinutes();
-			const bookingEndMinutes =
-				bookingStartMinutes + (booking.service?.duration || 60);
+			// Get all available staff IDs
+			const allStaffIds = new Set(staffMembers.map((staff) => staff.id));
 
-			// Check if time slots overlap
-			const timeConflict =
-				slotStartMinutes < bookingEndMinutes &&
-				slotEndMinutes > bookingStartMinutes;
-
-			// Removed excessive logging
-
-			return timeConflict;
-		});
-
-		// Get all staff IDs that are busy during this time slot
-		const busyStaffIds = new Set(
-			conflictingBookings.map((booking) => booking.staffId).filter(Boolean)
-		);
-
-		// Get all available staff IDs
-		const allStaffIds = new Set(staffMembers.map((staff) => staff.id));
-
-		// Check if there are any free staff members
-		const hasFreeStaff = Array.from(allStaffIds).some(
-			(staffId) => !busyStaffIds.has(staffId)
-		);
+			// Check if there are any free staff members
+			const hasFreeStaff = Array.from(allStaffIds).some(
+				(staffId) => !busyStaffIds.has(staffId)
+			);
 
 			// Removed excessive logging - only log in development and limit frequency
 			if (process.env.NODE_ENV === 'development' && Math.random() < 0.01) {
@@ -639,7 +659,15 @@ export default function BookingModal({
 			availabilityCache.set(cacheKey, result);
 			return result;
 		};
-	}, [selectedService, existingBookings, staffMembers, bookingsLoadError, selectedDate, selectedStaff, availabilityCache]);
+	}, [
+		selectedService,
+		existingBookings,
+		staffMembers,
+		bookingsLoadError,
+		selectedDate,
+		selectedStaff,
+		availabilityCache,
+	]);
 
 	// Calculate global time range from all working days
 	const getGlobalTimeRange = (): { startHour: number; endHour: number } => {
@@ -1162,7 +1190,7 @@ export default function BookingModal({
 	// Memoize availability for all time slots to avoid recalculating on every render
 	const timeSlotAvailability = useMemo(() => {
 		const availabilityMap = new Map<string, boolean>();
-		
+
 		if (!selectedService || bookingsLoadError) {
 			// If no service or error, all slots are available
 			return availabilityMap;
@@ -1180,7 +1208,14 @@ export default function BookingModal({
 		});
 
 		return availabilityMap;
-	}, [timeSlots, selectedStaff, selectedDate, selectedService, bookingsLoadError, isTimeSlotAvailable]);
+	}, [
+		timeSlots,
+		selectedStaff,
+		selectedDate,
+		selectedService,
+		bookingsLoadError,
+		isTimeSlotAvailable,
+	]);
 
 	// Filter time slots by time of day
 	const filteredTimeSlots = useMemo(() => {
@@ -1586,7 +1621,10 @@ export default function BookingModal({
 
 		// Проверяем, является ли владелец владельцем этого салона
 		if (isOwner && !isOwnerOfThisSalon() && !editingBooking) {
-			toast.error(t('booking.ownerCannotBookOtherSalon') || 'To book in another salon, please log in as a client account.');
+			toast.error(
+				t('booking.ownerCannotBookOtherSalon') ||
+					'To book in another salon, please log in as a client account.'
+			);
 			return;
 		}
 
@@ -1723,12 +1761,45 @@ export default function BookingModal({
 				);
 			}
 
+			// Validate required fields before creating request
+			if (!serviceToUse?.id) {
+				logger.error('❌ Missing service ID:', {
+					serviceToUse,
+					selectedService,
+					overrideData,
+				});
+				throw new Error('Service is required to create a booking');
+			}
+
+			// Use currentSalonId or fallback to bookingData.salonId from localStorage
+			let finalSalonId = currentSalonId;
+			if (!finalSalonId) {
+				try {
+					const pendingBooking = localStorage.getItem('pendingBooking');
+					if (pendingBooking) {
+						const bookingData = JSON.parse(pendingBooking);
+						finalSalonId = bookingData.salonId;
+					}
+				} catch (e) {
+					// Ignore parsing errors
+				}
+			}
+
+			if (!finalSalonId) {
+				logger.error('❌ Missing salon ID:', {
+					currentSalonId,
+					salonId,
+					pendingBooking: localStorage.getItem('pendingBooking'),
+				});
+				throw new Error('Salon ID is required to create a booking');
+			}
+
 			// Если владелец создает резервацию, передаем email клиента
 			const requestBody: any = {
-				serviceId: serviceToUse?.id,
+				serviceId: serviceToUse.id,
 				staffId: staffId === 'any' ? undefined : staffId,
 				time: bookingDateTime,
-				salonId: currentSalonId,
+				salonId: finalSalonId,
 				notes: `Booking for ${
 					serviceToUse
 						? getLocalizedServiceName(serviceToUse, language)
@@ -1747,6 +1818,14 @@ export default function BookingModal({
 				}
 			}
 
+			logger.log('📤 Sending booking request:', {
+				serviceId: requestBody.serviceId,
+				salonId: requestBody.salonId,
+				time: requestBody.time,
+				hasStaffId: !!requestBody.staffId,
+				hasClientEmail: !!requestBody.clientEmail,
+			});
+
 			const response = await fetch(`${API_BASE_URL}/bookings`, {
 				method: 'POST',
 				headers: {
@@ -1759,9 +1838,27 @@ export default function BookingModal({
 			const result = await response.json();
 
 			if (!response.ok) {
-				throw new Error(
-					result.error || result.message || 'Failed to create booking'
-				);
+				logger.error('❌ Booking request failed:', {
+					status: response.status,
+					statusText: response.statusText,
+					result,
+					requestBody,
+				});
+
+				// Extract detailed error message
+				let errorMessage = 'Failed to create booking';
+				if (result.message) {
+					errorMessage = result.message;
+				} else if (result.error) {
+					errorMessage = result.error;
+				} else if (Array.isArray(result.message)) {
+					// Validation errors from class-validator
+					errorMessage = result.message.join(', ');
+				} else if (typeof result === 'string') {
+					errorMessage = result;
+				}
+
+				throw new Error(errorMessage);
 			}
 
 			// Clean up localStorage after successful booking
@@ -1789,7 +1886,21 @@ export default function BookingModal({
 				setClientPhone('');
 			}
 
-			// Don't show toast - bookingSuccess modal will show the message
+			// Show toast notification for user feedback (especially after OAuth redirect)
+			if (bookingStatus === 'PENDING') {
+				toast.success(
+					`${t('booking.thankYouForReservation')} ${t('booking.awaitingConfirmation')}`,
+					{
+						duration: 6000,
+						icon: '⏳',
+					}
+				);
+			} else {
+				toast.success(t('booking.bookingConfirmedTitle'), {
+					duration: 5000,
+					icon: '✅',
+				});
+			}
 		} catch (error: unknown) {
 			logger.error('Booking error:', error);
 			toast.error(
@@ -2568,7 +2679,7 @@ export default function BookingModal({
 										</button>
 
 										{isStaffDropdownOpen && (
-											<div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-10 max-h-[280px] overflow-y-auto scrollbar-hide">
+											<div className="absolute bottom-full left-0 right-0 mb-1 sm:bottom-auto sm:top-full sm:mb-0 sm:mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-10 max-h-[280px] overflow-y-auto scrollbar-hide">
 												{staffLoading ? (
 													<div className="p-4 text-center text-gray-500 text-sm">
 														{t('booking.loadingStaff')}

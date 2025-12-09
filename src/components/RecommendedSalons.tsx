@@ -312,9 +312,26 @@ export default function RecommendedSalons() {
 
 													{/* Footer: Reviews and View Details */}
 													<div className="flex items-center justify-between">
-														<span className="text-gray-500 text-sm">
-															{reviewCount} {t.salon.reviewsCount}
-														</span>
+														{/* Mobile: Show only star + rating if reviews exist, Desktop: Show review count */}
+														{reviewCount > 0 ? (
+															<>
+																{/* Mobile: Star + rating only */}
+																<div className="md:hidden flex items-center gap-1">
+																	<Star className="w-4 h-4 text-[#ff5b5b] fill-[#ff5b5b]" />
+																	<span className="text-sm font-semibold text-gray-900">
+																		{avgRating.toFixed(1)}
+																	</span>
+																</div>
+																{/* Desktop: Review count */}
+																<span className="hidden md:block text-gray-500 text-sm">
+																	{reviewCount} {t.salon.reviewsCount}
+																</span>
+															</>
+														) : (
+															<span className="hidden md:block text-gray-500 text-sm">
+																{reviewCount} {t.salon.reviewsCount}
+															</span>
+														)}
 														<span className="text-red-500 flex gap-1 items-center text-sm font-medium hover:text-red-600 transition-colors">
 															{t.salon.viewDetails}
 															<ChevronRight className="w-4 h-4" />

@@ -58,6 +58,11 @@ export default function AddressAutocomplete({
 			lat: '16.0544',
 			lon: '108.2022',
 		},
+		{
+			display_name: 'Nha Trang',
+			lat: '12.2388',
+			lon: '109.1967',
+		},
 	];
 
 	// Fetch address suggestions from our backend API with fallback to Nominatim
@@ -72,6 +77,13 @@ export default function AddressAutocomplete({
 			setSuggestions([]);
 			return;
 		}
+
+		// Check if query matches "дананг" (in various spellings) and add Nha Trang suggestion
+		const queryLower = query.toLowerCase().trim();
+		const danangVariants = ['дананг', 'danang', 'đà nẵng', 'da nang'];
+		const shouldShowNhaTrang = danangVariants.some(variant => 
+			queryLower.includes(variant) || variant.includes(queryLower)
+		);
 
 		setLoading(true);
 		try {
@@ -96,22 +108,41 @@ export default function AddressAutocomplete({
 						address: cleanAddress,
 					};
 
-					// Wrap single result in array for consistency
-					setSuggestions([cleanedData]);
+					// If query matches "дананг", add Nha Trang as first suggestion
+					if (shouldShowNhaTrang) {
+						const nhaTrangSuggestion: AddressSuggestion = {
+							display_name: 'Nha Trang',
+							lat: '12.2388',
+							lon: '109.1967',
+						};
+						setSuggestions([nhaTrangSuggestion, cleanedData]);
+					} else {
+						setSuggestions([cleanedData]);
+					}
 					return;
 				}
 			}
 
 			// Fallback to Nominatim with Vietnam-only search
-			await fetchNominatimSuggestions(query);
+			await fetchNominatimSuggestions(query, shouldShowNhaTrang);
 		} catch (error) {
 			console.error('Error fetching address suggestions:', error);
 			// Try Nominatim fallback
 			try {
-				await fetchNominatimSuggestions(query);
+				await fetchNominatimSuggestions(query, shouldShowNhaTrang);
 			} catch (fallbackError) {
 				console.error('Nominatim fallback also failed:', fallbackError);
-				setSuggestions([]);
+				// If query matches "дананг", show Nha Trang even if API fails
+				if (shouldShowNhaTrang) {
+					const nhaTrangSuggestion: AddressSuggestion = {
+						display_name: 'Nha Trang',
+						lat: '12.2388',
+						lon: '109.1967',
+					};
+					setSuggestions([nhaTrangSuggestion]);
+				} else {
+					setSuggestions([]);
+				}
 			}
 		} finally {
 			setLoading(false);
@@ -119,7 +150,7 @@ export default function AddressAutocomplete({
 	}, []);
 
 	// Fallback function to search Nominatim with Vietnam-only results
-	const fetchNominatimSuggestions = async (query: string) => {
+	const fetchNominatimSuggestions = async (query: string, shouldShowNhaTrang: boolean = false) => {
 		// Clean the query - remove "Vietnam" or "Wietnam" at the end
 		const cleanedQuery = query
 			.replace(/,\s*(Vietnam|Wietnam|Việt Nam|VN)$/i, '')
@@ -334,7 +365,18 @@ export default function AddressAutocomplete({
 					};
 				})
 				.slice(0, 5); // Limit to 5 best results
-			setSuggestions(suggestions);
+			
+			// If query matches "дананг", add Nha Trang as first suggestion
+			if (shouldShowNhaTrang) {
+				const nhaTrangSuggestion: AddressSuggestion = {
+					display_name: 'Nha Trang',
+					lat: '12.2388',
+					lon: '109.1967',
+				};
+				setSuggestions([nhaTrangSuggestion, ...suggestions]);
+			} else {
+				setSuggestions(suggestions);
+			}
 		} else {
 			setSuggestions([]);
 		}
@@ -659,9 +701,10 @@ export default function AddressAutocomplete({
 					className="absolute z-[9999] w-full mt-1 bg-white border border-gray-200 rounded-md shadow-lg max-h-60 overflow-y-auto"
 				>
 					{suggestions.map((suggestion, index) => {
-						const isDefaultSuggestion =
-							suggestion.display_name === t('common.useCurrentLocation') ||
-							suggestion.display_name === 'Đà Nẵng';
+					const isDefaultSuggestion =
+						suggestion.display_name === t('common.useCurrentLocation') ||
+						suggestion.display_name === 'Đà Nẵng' ||
+						suggestion.display_name === 'Nha Trang';
 
 						return (
 							<button

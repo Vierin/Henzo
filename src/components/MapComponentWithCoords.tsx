@@ -93,20 +93,26 @@ export default function MapComponentWithCoords({
 		}
 
 			// Create red marker icon with cursor pointer if editable
+			// Use larger size for better visibility on mobile
+			const markerSize = 24;
+			const markerBorder = 3;
+			const markerAnchor = markerSize / 2;
+			
 		const redMarker = L.divIcon({
 			html: `<div style="
 				background-color: #ff5b5b;
-				width: 20px;
-				height: 20px;
+				width: ${markerSize}px;
+				height: ${markerSize}px;
 				border-radius: 50%;
-				border: 3px solid white;
-				box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+				border: ${markerBorder}px solid white;
+				box-shadow: 0 2px 6px rgba(0,0,0,0.4);
 				position: relative;
 				cursor: ${editable ? 'move' : 'default'};
+				transform: translate(-50%, -50%);
 			"></div>`,
-			iconSize: [20, 20],
-			iconAnchor: [10, 10],
-			popupAnchor: [0, -10],
+			iconSize: [markerSize, markerSize],
+			iconAnchor: [markerAnchor, markerAnchor],
+			popupAnchor: [0, -markerAnchor],
 			className: 'custom-red-marker',
 		});
 
@@ -199,19 +205,25 @@ export default function MapComponentWithCoords({
 		}
 
 		// Create red marker icon
+		// Use larger size for better visibility on mobile
+		const markerSize = 24;
+		const markerBorder = 3;
+		const markerAnchor = markerSize / 2;
+		
 		const redMarker = L.divIcon({
 			html: `<div style="
 				background-color: #ff5b5b;
-				width: 20px;
-				height: 20px;
+				width: ${markerSize}px;
+				height: ${markerSize}px;
 				border-radius: 50%;
-				border: 3px solid white;
-				box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+				border: ${markerBorder}px solid white;
+				box-shadow: 0 2px 6px rgba(0,0,0,0.4);
 				position: relative;
+				transform: translate(-50%, -50%);
 			"></div>`,
-			iconSize: [20, 20],
-			iconAnchor: [10, 10],
-			popupAnchor: [0, -10],
+			iconSize: [markerSize, markerSize],
+			iconAnchor: [markerAnchor, markerAnchor],
+			popupAnchor: [0, -markerAnchor],
 			className: 'custom-red-marker',
 		});
 

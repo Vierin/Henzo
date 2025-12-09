@@ -102,6 +102,14 @@ export default function DateTimePicker({
 		setShowTimeIntervals(false);
 	};
 
+	const handleAnyNearestTime = () => {
+		const today = new Date();
+		onDateChange(today);
+		onTimeChange('any');
+		setShowCalendar(false);
+		setShowTimeIntervals(false);
+	};
+
 	const formatDate = (date: Date | null) => {
 		if (!date) return effectivePlaceholder;
 		return date.toLocaleDateString(locale, {
@@ -254,6 +262,13 @@ export default function DateTimePicker({
 					ref={calendarRef}
 					className="absolute top-full left-0 mt-2 bg-white border border-gray-200 rounded-lg shadow-lg p-4 z-50 min-w-[300px]"
 				>
+					{/* Any Nearest Time Button */}
+					<button
+						onClick={handleAnyNearestTime}
+						className="w-full mb-3 px-3 py-2 text-sm font-medium text-[#ff5b5b] bg-[#ff5b5b]/10 hover:bg-[#ff5b5b]/20 rounded-lg transition-colors border border-[#ff5b5b]/20"
+					>
+						{t('homepage.anyNearestTime')}
+					</button>
 					<div className="flex items-center justify-between mb-4">
 						<button
 							onClick={goToPreviousMonth}

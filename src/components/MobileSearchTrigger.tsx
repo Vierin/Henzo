@@ -2,16 +2,11 @@
 
 import { Search } from 'lucide-react';
 import { useState } from 'react';
-import Link from 'next/link';
-import { useParams } from 'next/navigation';
 import SearchBookingForm from './SearchBookingForm';
-import { POPULAR_SEARCHES } from '@/constants/categories';
 import { useTranslation } from '@/contexts/LanguageContext';
 
 export default function MobileSearchTrigger() {
 	const [isOpen, setIsOpen] = useState(false);
-	const params = useParams();
-	const locale = (params as any)?.locale as string | undefined;
 	const t = useTranslation();
 
 	return (
@@ -57,27 +52,6 @@ export default function MobileSearchTrigger() {
 					{/* Search Form */}
 					<div className="p-4">
 						<SearchBookingForm className="!max-w-none !shadow-none" />
-					</div>
-
-					{/* Quick hints */}
-					<div className="px-4 pb-6">
-						<p className="text-xs text-gray-500 mb-3">Popular searches:</p>
-						<div className="flex flex-wrap gap-2">
-							{POPULAR_SEARCHES.map((item) => (
-								<Link
-									key={item.term}
-									href={
-										locale
-											? `/${locale}/category/${item.categorySlug}`
-											: `/category/${item.categorySlug}`
-									}
-									onClick={() => setIsOpen(false)}
-									className="px-3 py-1.5 bg-gray-100 text-gray-700 rounded-full text-xs hover:bg-gray-200 transition-colors"
-								>
-									{item.term}
-								</Link>
-							))}
-						</div>
 					</div>
 				</div>
 			)}

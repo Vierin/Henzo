@@ -13,6 +13,7 @@
 	"locationPlaceholder": "Your location",
 	"datePlaceholder": "Select date",
 	"timePlaceholder": "Select time",
+	"anyNearestTime": "Any nearest time",
 	"searchButton": "Search",
 	"featuredSalons": "Featured Salons",
 	"popularServices": "Popular Services",
