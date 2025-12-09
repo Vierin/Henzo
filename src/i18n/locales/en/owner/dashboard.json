@@ -55,6 +55,7 @@
 		"noStaff": "Please add at least one staff member before creating a booking"
 	},
 	"loadingDashboard": "Loading dashboard...",
+	"loadingSalonInformation": "Loading salon information...",
 	"redirectingToSetup": "Redirecting to setup...",
 	"failedToLoadDashboard": "Failed to load dashboard",
 	"bookingCancelled": "Booking cancelled successfully",

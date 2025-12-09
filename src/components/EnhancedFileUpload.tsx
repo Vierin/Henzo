@@ -303,7 +303,9 @@ export default function EnhancedFileUpload({
 									width={64}
 									height={64}
 									className="h-16 w-16 object-cover rounded-lg"
-									unoptimized={true} // Disable optimization for all images to avoid issues
+									loading="lazy"
+									sizes="64px"
+									unoptimized={isUrl(currentFile)}
 								/>
 							) : (
 								<div className="h-16 w-16 bg-gray-200 rounded-lg flex items-center justify-center">

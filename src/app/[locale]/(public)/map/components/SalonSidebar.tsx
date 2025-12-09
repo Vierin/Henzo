@@ -236,7 +236,8 @@ export default function SalonSidebar({
 																width={80}
 																height={80}
 																className="w-full h-full object-cover"
-																unoptimized
+																loading="lazy"
+																sizes="80px"
 															/>
 														</div>
 													);
@@ -250,7 +251,8 @@ export default function SalonSidebar({
 													width={80}
 													height={80}
 													className="w-full h-full object-cover"
-													unoptimized
+													loading="lazy"
+													sizes="80px"
 												/>
 											</div>
 										)}

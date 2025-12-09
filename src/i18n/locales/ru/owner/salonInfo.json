@@ -61,5 +61,6 @@
 	"reminder1Day": "За 1 день (24 часа)",
 	"reminder1Week": "За 1 неделю (168 часов)",
 	"default": "По умолчанию",
-	"atLeastOneReminderRequired": "Должен быть выбран хотя бы один вариант напоминания"
+	"atLeastOneReminderRequired": "Должен быть выбран хотя бы один вариант напоминания",
+	"loading": "Загрузка..."
 }

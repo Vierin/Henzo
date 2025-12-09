@@ -1884,14 +1884,34 @@ export default function BookingModal({
 		}
 	};
 
-	// Close dropdown when clicking outside
+	// Close dropdowns when clicking outside
+	useEffect(() => {
+		const handleClickOutside = (e: MouseEvent) => {
+			const target = e.target as HTMLElement;
+
+			// Close staff dropdown if clicking outside
+			if (isStaffDropdownOpen && !target.closest('.staff-dropdown')) {
+				setIsStaffDropdownOpen(false);
+			}
+
+			// Close service dropdown if clicking outside
+			if (isServiceDropdownOpen && !target.closest('.service-dropdown')) {
+				setIsServiceDropdownOpen(false);
+			}
+		};
+
+		if (isStaffDropdownOpen || isServiceDropdownOpen) {
+			document.addEventListener('mousedown', handleClickOutside);
+		}
+
+		return () => {
+			document.removeEventListener('mousedown', handleClickOutside);
+		};
+	}, [isStaffDropdownOpen, isServiceDropdownOpen]);
+
+	// Close dropdown when clicking outside (for backdrop)
 	const handleClickOutside = (e: React.MouseEvent) => {
 		const target = e.target as HTMLElement;
-
-		// Close staff dropdown if clicking outside
-		if (isStaffDropdownOpen && !target.closest('.staff-dropdown')) {
-			setIsStaffDropdownOpen(false);
-		}
 
 		// Close modal if clicking on the backdrop
 		if (target.classList.contains('fixed')) {
@@ -2076,12 +2096,14 @@ export default function BookingModal({
 									{showServiceSelector ? (
 										<div>
 											{/* Service Selector Dropdown */}
-											<div className="relative mb-4">
+											<div className="relative mb-4 service-dropdown">
 												<button
 													type="button"
-													onClick={() =>
-														setIsServiceDropdownOpen(!isServiceDropdownOpen)
-													}
+													onClick={() => {
+														// Always close staff dropdown when toggling service dropdown
+														setIsStaffDropdownOpen(false);
+														setIsServiceDropdownOpen(!isServiceDropdownOpen);
+													}}
 													className="w-full flex items-center justify-between p-3 sm:p-4 border border-gray-300 rounded-lg bg-white text-left focus:outline-none focus:ring-2 focus:ring-[#ea4b4b] focus:border-transparent"
 												>
 													<div className="flex-1 min-w-0">
@@ -2516,9 +2538,11 @@ export default function BookingModal({
 									</h3>
 									<div className="relative staff-dropdown">
 										<button
-											onClick={() =>
-												setIsStaffDropdownOpen(!isStaffDropdownOpen)
-											}
+											onClick={() => {
+												// Always close service dropdown when toggling staff dropdown
+												setIsServiceDropdownOpen(false);
+												setIsStaffDropdownOpen(!isStaffDropdownOpen);
+											}}
 											className="w-full p-3 sm:p-4 rounded-lg text-left bg-white border border-gray-200 hover:bg-gray-50 transition-colors flex items-center justify-between"
 										>
 											<div className="flex items-center gap-3">

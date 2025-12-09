@@ -463,10 +463,7 @@ export default function CalendarClient() {
 				role="status"
 				aria-live="polite"
 			>
-				<LoadingSpinner size="lg" />
-				<span className="sr-only">
-					{t('owner.calendar.loadingCalendarData')}
-				</span>
+				<LoadingSpinner size="lg" message={t('owner.calendar.loadingCalendarData')} />
 			</div>
 		);
 	}
@@ -478,10 +475,7 @@ export default function CalendarClient() {
 				role="status"
 				aria-live="polite"
 			>
-				<LoadingSpinner size="lg" />
-				<span className="sr-only">
-					{t('owner.calendar.redirectingToSetup')}
-				</span>
+				<LoadingSpinner size="lg" message={t('owner.calendar.redirectingToSetup')} />
 			</div>
 		);
 	}
@@ -493,8 +487,7 @@ export default function CalendarClient() {
 				role="status"
 				aria-live="polite"
 			>
-				<LoadingSpinner size="lg" />
-				<span className="sr-only">{t('owner.calendar.loadingBookings')}</span>
+				<LoadingSpinner size="lg" message={t('owner.calendar.loadingBookings')} />
 			</div>
 		);
 	}

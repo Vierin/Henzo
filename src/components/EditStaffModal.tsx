@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import toast from 'react-hot-toast';
 import { Staff } from '@/types';
+import { useTranslation } from '@/contexts/LanguageContext';
 
 interface EditStaffModalProps {
 	isOpen: boolean;
@@ -17,6 +18,7 @@ export default function EditStaffModal({
 	staff,
 	onSave,
 }: EditStaffModalProps) {
+	const t = useTranslation();
 	const [formData, setFormData] = useState({
 		name: '',
 		accessLevel: 'EMPLOYEE' as 'ADMIN' | 'EMPLOYEE',
@@ -86,7 +88,7 @@ export default function EditStaffModal({
 				<div className="p-6">
 					<div className="flex items-center justify-between mb-6">
 						<h2 className="text-2xl font-bold text-gray-900">
-							Edit Staff Member
+							{t('owner.staff.editStaffMemberTitle')}
 						</h2>
 						<button
 							onClick={onClose}
@@ -111,7 +113,7 @@ export default function EditStaffModal({
 					<form onSubmit={handleSubmit} className="space-y-4">
 						<div>
 							<label className="block text-sm font-medium text-gray-700 mb-2">
-								Full Name *
+								{t('owner.staff.fullName')}
 							</label>
 							<input
 								type="text"
@@ -121,13 +123,13 @@ export default function EditStaffModal({
 									setFormData({ ...formData, name: e.target.value })
 								}
 								className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#ff5b5b] focus:border-[#ff5b5b] text-gray-900"
-								placeholder="Enter full name"
+								placeholder={t('owner.staff.enterFullName')}
 							/>
 						</div>
 
 						<div>
 							<label className="block text-sm font-medium text-gray-700 mb-2">
-								Access Level *
+								{t('owner.staff.accessLevel')} *
 							</label>
 							<select
 								required
@@ -140,20 +142,19 @@ export default function EditStaffModal({
 								}
 								className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#ff5b5b] focus:border-[#ff5b5b] text-gray-900"
 							>
-								<option value="EMPLOYEE">Employee - Limited access</option>
+								<option value="EMPLOYEE">{t('owner.staff.employeeLimitedAccess')}</option>
 								<option value="ADMIN">
-									Admin - Full access to salon management
+									{t('owner.staff.adminFullAccess')}
 								</option>
 							</select>
 							<p className="text-xs text-gray-500 mt-1">
-								Admins can manage staff, services, and appointments. Employees
-								have limited access.
+								{t('owner.staff.accessLevelDescription')}
 							</p>
 						</div>
 
 						<div>
 							<label className="block text-sm font-medium text-gray-700 mb-2">
-								Email
+								{t('owner.staff.email')}
 							</label>
 							<input
 								type="email"
@@ -162,13 +163,13 @@ export default function EditStaffModal({
 									setFormData({ ...formData, email: e.target.value })
 								}
 								className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#ff5b5b] focus:border-[#ff5b5b] text-gray-900"
-								placeholder="staff@salon.com"
+								placeholder={t('owner.staff.emailPlaceholder')}
 							/>
 						</div>
 
 						<div>
 							<label className="block text-sm font-medium text-gray-700 mb-2">
-								Phone
+								{t('owner.staff.phone')}
 							</label>
 							<input
 								type="tel"
@@ -177,7 +178,7 @@ export default function EditStaffModal({
 									setFormData({ ...formData, phone: e.target.value })
 								}
 								className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#ff5b5b] focus:border-[#ff5b5b] text-gray-900"
-								placeholder="+1 (555) 123-4567"
+								placeholder={t('owner.staff.phonePlaceholder')}
 							/>
 						</div>
 
@@ -193,14 +194,14 @@ export default function EditStaffModal({
 								onClick={onClose}
 								className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-500"
 							>
-								Cancel
+								{t('core.common.cancel')}
 							</button>
 							<button
 								type="submit"
 								disabled={loading}
 								className="flex-1 bg-[#ff5b5b] text-white px-4 py-2 rounded-md hover:bg-[#e04a4a] focus:outline-none focus:ring-2 focus:ring-[#ff5b5b] focus:ring-offset-2 disabled:opacity-50"
 							>
-								{loading ? 'Saving...' : 'Save Changes'}
+								{loading ? t('owner.staff.saving') : t('owner.staff.saveChanges')}
 							</button>
 						</div>
 					</form>

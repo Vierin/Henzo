@@ -1,4 +1,5 @@
 import { Metadata } from 'next';
+import Link from 'next/link';
 import { seoConfig } from '@/constants/seoConfig';
 
 export const metadata: Metadata = seoConfig.terms;
@@ -479,12 +480,12 @@ export default function TermsOfService() {
 							<p className="text-gray-700 leading-relaxed text-base mb-4">
 								Your privacy is important to us. Our collection, use, and
 								disclosure of your personal information is governed by our{' '}
-								<a
+								<Link
 									href="/privacy-policy"
 									className="text-[#ea4b4b] hover:text-[#d43d3d] font-medium underline"
 								>
 									Privacy Policy
-								</a>
+								</Link>
 								, which is incorporated into these Terms by reference.
 							</p>
 							<p className="text-gray-700 leading-relaxed text-base mb-4">

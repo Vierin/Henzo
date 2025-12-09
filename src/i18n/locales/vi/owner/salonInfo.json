@@ -61,5 +61,6 @@
 	"reminder1Day": "1 ngày (24 giờ) trước",
 	"reminder1Week": "1 tuần (168 giờ) trước",
 	"default": "Mặc định",
-	"atLeastOneReminderRequired": "Phải chọn ít nhất một tùy chọn nhắc nhở"
+	"atLeastOneReminderRequired": "Phải chọn ít nhất một tùy chọn nhắc nhở",
+	"loading": "Đang tải..."
 }

@@ -315,7 +315,9 @@ export default function EnhancedPhotoUpload({
 								width={100}
 								height={96}
 								className="w-full h-24 object-cover rounded-lg"
-								unoptimized={true} // Disable optimization for all images to avoid issues
+								loading="lazy"
+								sizes="(max-width: 768px) 33vw, 100px"
+								unoptimized={isUrl(photo)}
 							/>
 							{/* Photo type indicator */}
 							<div className="absolute top-1 left-1">

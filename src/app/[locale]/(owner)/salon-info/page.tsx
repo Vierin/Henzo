@@ -1,14 +1,34 @@
 'use client';
 
-import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
+import {
+	useState,
+	useEffect,
+	useRef,
+	useCallback,
+	useMemo,
+	lazy,
+	Suspense,
+} from 'react';
 import { useRouter } from 'next/navigation';
 import toast from 'react-hot-toast';
-import AddressAutocomplete from '@/components/AddressAutocomplete';
-import MapComponentWithCoords from '@/components/MapComponentWithCoords';
 import LoadingSpinner from '@/components/LoadingSpinner';
-import EnhancedFileUpload from '@/components/EnhancedFileUpload';
-import EnhancedPhotoUpload from '@/components/EnhancedPhotoUpload';
-import WorkingHoursSection from '@/components/WorkingHoursSection';
+
+// P1: Lazy load тяжелых компонентов для code splitting
+const AddressAutocomplete = lazy(
+	() => import('@/components/AddressAutocomplete')
+);
+const MapComponentWithCoords = lazy(
+	() => import('@/components/MapComponentWithCoords')
+);
+const EnhancedFileUpload = lazy(
+	() => import('@/components/EnhancedFileUpload')
+);
+const EnhancedPhotoUpload = lazy(
+	() => import('@/components/EnhancedPhotoUpload')
+);
+const WorkingHoursSection = lazy(
+	() => import('@/components/WorkingHoursSection')
+);
 import { useSalon } from '@/hooks/useSalons';
 import { apiClient } from '@/lib/api-client';
 import { logger } from '@/lib/logger';
@@ -323,7 +343,7 @@ export default function SalonInfoPage() {
 	if (initialLoading) {
 		return (
 			<div className="flex items-center justify-center min-h-[400px]">
-				<LoadingSpinner />
+				<LoadingSpinner message={t('owner.salonInfo.loading')} />
 			</div>
 		);
 	}
@@ -384,16 +404,18 @@ export default function SalonInfoPage() {
 							<label className="block text-sm font-medium text-gray-700 mb-2">
 								{t('owner.salonInfo.address')}
 							</label>
-							<AddressAutocomplete
-								value={formData.address}
-								onChange={(address) => setFormData({ ...formData, address })}
-								onAddressSelect={(address, lat, lon) => {
-									// Update form data and coordinates
-									setFormData({ ...formData, address });
-									setSelectedCoords({ lat, lon });
-									console.log('📍 Address selected:', { address, lat, lon });
-								}}
-							/>
+							<Suspense fallback={<LoadingSpinner />}>
+								<AddressAutocomplete
+									value={formData.address}
+									onChange={(address) => setFormData({ ...formData, address })}
+									onAddressSelect={(address, lat, lon) => {
+										// Update form data and coordinates
+										setFormData({ ...formData, address });
+										setSelectedCoords({ lat, lon });
+										console.log('📍 Address selected:', { address, lat, lon });
+									}}
+								/>
+							</Suspense>
 						</div>
 					</div>
 				</div>
@@ -405,18 +427,20 @@ export default function SalonInfoPage() {
 							{t('owner.salonInfo.locationPreview')}
 						</h2>
 						<div className="w-full rounded-lg overflow-hidden border border-gray-200 shadow-sm">
-							<MapComponentWithCoords
-								lat={mapProps.lat}
-								lon={mapProps.lon}
-								address={mapProps.address}
-								height="450px"
-								zoom={16}
-								interactive={true}
-								showPopup={false}
-								editable={true}
-								onMarkerMove={handleMarkerMove}
-								className="w-full h-full"
-							/>
+							<Suspense fallback={<LoadingSpinner />}>
+								<MapComponentWithCoords
+									lat={mapProps.lat}
+									lon={mapProps.lon}
+									address={mapProps.address}
+									height="450px"
+									zoom={16}
+									interactive={true}
+									showPopup={false}
+									editable={true}
+									onMarkerMove={handleMarkerMove}
+									className="w-full h-full"
+								/>
+							</Suspense>
 						</div>
 					</div>
 				)}
@@ -500,17 +524,19 @@ export default function SalonInfoPage() {
 						<label className="block text-sm font-medium text-gray-700 mb-2">
 							{t('owner.salonInfo.salonLogo')}
 						</label>
-						<EnhancedFileUpload
-							onUpload={(filePath) =>
-								setFormData({ ...formData, logo: filePath })
-							}
-							onRemove={() => setFormData({ ...formData, logo: '' })}
-							currentFile={formData.logo}
-							accept="image/*"
-							maxSize={2}
-							placeholder={t('owner.salonInfo.logoPlaceholder')}
-							disabled={loading}
-						/>
+						<Suspense fallback={<LoadingSpinner />}>
+							<EnhancedFileUpload
+								onUpload={(filePath) =>
+									setFormData({ ...formData, logo: filePath })
+								}
+								onRemove={() => setFormData({ ...formData, logo: '' })}
+								currentFile={formData.logo}
+								accept="image/*"
+								maxSize={2}
+								placeholder={t('owner.salonInfo.logoPlaceholder')}
+								disabled={loading}
+							/>
+						</Suspense>
 					</div>
 				</div>
 
@@ -524,13 +550,17 @@ export default function SalonInfoPage() {
 						<label className="block text-sm font-medium text-gray-700 mb-2">
 							{t('owner.salonInfo.photosLabel')}
 						</label>
-						<EnhancedPhotoUpload
-							photos={formData.photos}
-							onPhotosChange={(photos) => setFormData({ ...formData, photos })}
-							maxPhotos={3}
-							maxSize={2}
-							disabled={loading}
-						/>
+						<Suspense fallback={<LoadingSpinner />}>
+							<EnhancedPhotoUpload
+								photos={formData.photos}
+								onPhotosChange={(photos) =>
+									setFormData({ ...formData, photos })
+								}
+								maxPhotos={3}
+								maxSize={2}
+								disabled={loading}
+							/>
+						</Suspense>
 					</div>
 				</div>
 
@@ -539,12 +569,14 @@ export default function SalonInfoPage() {
 					<h2 className="text-xl md:text-2xl font-semibold text-gray-900 mb-4 md:mb-6 flex items-center gap-2">
 						{t('owner.salonInfo.operatingHours')}
 					</h2>
-					<WorkingHoursSection
-						workingHours={formData.operatingHours}
-						onChange={(workingHours) =>
-							setFormData({ ...formData, operatingHours: workingHours })
-						}
-					/>
+					<Suspense fallback={<LoadingSpinner />}>
+						<WorkingHoursSection
+							workingHours={formData.operatingHours}
+							onChange={(workingHours) =>
+								setFormData({ ...formData, operatingHours: workingHours })
+							}
+						/>
+					</Suspense>
 				</div>
 
 				{/* Reminder Settings Section */}

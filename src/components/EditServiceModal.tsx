@@ -12,7 +12,6 @@ import {
 	ServiceGroup,
 	ServiceCategory,
 	ServiceSubcategory,
-	ServiceTag,
 } from '@/types';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '@/lib/api-client';
@@ -23,7 +22,7 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from '@/components/ui/select';
-import { useLanguage } from '@/contexts/LanguageContext';
+import { useLanguage, useTranslation } from '@/contexts/LanguageContext';
 
 interface EditServiceModalProps {
 	isOpen: boolean;
@@ -50,13 +49,12 @@ export default function EditServiceModal({
 		serviceCategoryId: 0,
 		serviceSubcategoryId: 0,
 		serviceGroupId: 'none',
-		tagIds: [] as number[],
 	});
-	const [tagSearchQuery, setTagSearchQuery] = useState('');
 	const [isGroupModalOpen, setIsGroupModalOpen] = useState(false);
 	const [newGroupName, setNewGroupName] = useState('');
 	const queryClient = useQueryClient();
 	const { language } = useLanguage();
+	const t = useTranslation();
 
 	// Используем оптимизированный хук для получения данных салона
 	const { salonId } = useSalonId();
@@ -88,32 +86,6 @@ export default function EditServiceModal({
 		staleTime: 10 * 60 * 1000,
 	});
 
-	// Load tags with search
-	const { data: allTags = [] } = useQuery<ServiceTag[]>({
-		queryKey: ['service-tags', tagSearchQuery],
-		queryFn: async () => {
-			const params = new URLSearchParams();
-			if (tagSearchQuery) params.append('q', tagSearchQuery);
-			params.append('limit', '50');
-			const response = await apiClient.get<ServiceTag[]>(`/services/tags?${params.toString()}`);
-			// Ensure we always return an array
-			return Array.isArray(response) ? response : [];
-		},
-		enabled: true,
-		staleTime: 5 * 60 * 1000,
-	});
-
-	// Filter tags that are not already selected
-	const availableTags = useMemo(() => {
-		if (!Array.isArray(allTags)) return [];
-		return allTags.filter((tag) => !formData.tagIds.includes(tag.id));
-	}, [allTags, formData.tagIds]);
-
-	// Get selected tags
-	const selectedTags = useMemo(() => {
-		if (!Array.isArray(allTags)) return [];
-		return allTags.filter((tag) => formData.tagIds.includes(tag.id));
-	}, [allTags, formData.tagIds]);
 
 	// Load service groups for this salon
 	const { data: groups = [] } = useQuery<ServiceGroup[]>({
@@ -144,7 +116,6 @@ export default function EditServiceModal({
 				serviceCategoryId: service.serviceCategoryId || 0,
 				serviceSubcategoryId: service.serviceSubcategoryId || 0,
 				serviceGroupId: service.serviceGroupId || 'none',
-				tagIds: service.tags?.map((t) => t.id) || [],
 			});
 		} else {
 			setFormData({
@@ -159,7 +130,6 @@ export default function EditServiceModal({
 				serviceCategoryId: 0,
 				serviceSubcategoryId: 0,
 				serviceGroupId: 'none',
-				tagIds: [],
 			});
 		}
 	}, [service]);
@@ -207,7 +177,6 @@ export default function EditServiceModal({
 						formData.serviceGroupId && formData.serviceGroupId !== 'none'
 							? formData.serviceGroupId
 							: undefined,
-					tagIds: formData.tagIds.length > 0 ? formData.tagIds : undefined,
 				};
 				const updatedService = await updateServiceMutation.mutateAsync({
 					id: service.id,
@@ -238,7 +207,6 @@ export default function EditServiceModal({
 						formData.serviceGroupId && formData.serviceGroupId !== 'none'
 							? formData.serviceGroupId
 							: undefined,
-					tagIds: formData.tagIds.length > 0 ? formData.tagIds : undefined,
 				};
 				const newService = await createServiceMutation.mutateAsync(createData);
 				onSave(newService);
@@ -257,7 +225,7 @@ export default function EditServiceModal({
 			<div className="fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center z-50">
 				<div className="bg-white rounded-lg shadow-xl p-6 w-full max-w-md mx-auto">
 					<h2 className="text-xl font-bold text-gray-900 mb-4">
-						{service ? 'Edit Service' : 'Add New Service'}
+						{service ? t('owner.services.editService') : t('owner.services.addNewService')}
 					</h2>
 
 					<form onSubmit={handleSubmit}>
@@ -266,7 +234,7 @@ export default function EditServiceModal({
 								htmlFor="serviceName"
 								className="block text-sm font-medium text-gray-700 mb-2"
 							>
-								Service Name
+								{t('owner.services.serviceNameLabel')}
 							</label>
 							<input
 								type="text"
@@ -286,7 +254,7 @@ export default function EditServiceModal({
 								htmlFor="description"
 								className="block text-sm font-medium text-gray-700 mb-2"
 							>
-								Description
+								{t('owner.services.descriptionLabel')}
 							</label>
 							<textarea
 								id="description"
@@ -308,7 +276,7 @@ export default function EditServiceModal({
 								htmlFor="category"
 								className="block text-sm font-medium text-gray-700 mb-2"
 							>
-								Category
+								{t('owner.services.categoryLabel')}
 							</label>
 							<select
 								id="category"
@@ -378,99 +346,10 @@ export default function EditServiceModal({
 
 						<div className="mb-4">
 							<label
-								htmlFor="tags"
-								className="block text-sm font-medium text-gray-700 mb-2"
-							>
-								Tags (up to 3)
-							</label>
-							<div className="space-y-2">
-								<input
-									type="text"
-									id="tags"
-									value={tagSearchQuery}
-									onChange={(e) => setTagSearchQuery(e.target.value)}
-									className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#ff5b5b] focus:border-transparent text-gray-900"
-									placeholder="Search tags..."
-								/>
-								{tagSearchQuery && availableTags.length > 0 && (
-									<div className="border border-gray-300 rounded-lg max-h-40 overflow-y-auto bg-white">
-										{availableTags.slice(0, 10).map((tag) => {
-											const name =
-												language === 'ru'
-													? tag.nameRu || tag.nameEn
-													: language === 'vi'
-														? tag.nameVi || tag.nameEn
-														: tag.nameEn;
-											return (
-												<button
-													key={tag.id}
-													type="button"
-													onClick={() => {
-														if (formData.tagIds.length < 3) {
-															setFormData((prev) => ({
-																...prev,
-																tagIds: [...prev.tagIds, tag.id],
-															}));
-															setTagSearchQuery('');
-														}
-													}}
-													className="w-full text-left px-3 py-2 hover:bg-gray-50 text-sm text-gray-900"
-													disabled={formData.tagIds.length >= 3}
-												>
-													{name}
-												</button>
-											);
-										})}
-									</div>
-								)}
-								{selectedTags.length > 0 && (
-									<div className="flex flex-wrap gap-2 mt-2">
-										{selectedTags.map((tag) => {
-											const name =
-												language === 'ru'
-													? tag.nameRu || tag.nameEn
-													: language === 'vi'
-														? tag.nameVi || tag.nameEn
-														: tag.nameEn;
-											return (
-												<span
-													key={tag.id}
-													className="inline-flex items-center gap-1 px-2 py-1 bg-[#ff5b5b] text-white rounded text-sm"
-												>
-													{name}
-													<button
-														type="button"
-														onClick={() => {
-															setFormData((prev) => ({
-																...prev,
-																tagIds: prev.tagIds.filter(
-																	(id) => id !== tag.id
-																),
-															}));
-														}}
-														className="ml-1 hover:text-gray-200"
-													>
-														×
-													</button>
-												</span>
-											);
-										})}
-									</div>
-								)}
-								{formData.tagIds.length >= 3 && (
-									<p className="text-xs text-gray-500 mt-1">
-										Maximum 3 tags selected
-									</p>
-								)}
-							</div>
-						</div>
-
-						<div className="mb-4">
-							<label
 								htmlFor="service-group"
 								className="block text-sm font-medium text-gray-700 mb-2"
 							>
-								Service Group (optional)
+								{t('owner.services.serviceGroupLabel')}
 							</label>
 							<div className="flex items-center gap-2">
 								<Select
@@ -513,7 +392,7 @@ export default function EditServiceModal({
 								</button>
 							</div>
 							<p className="text-xs text-gray-500 mt-1">
-								Use groups to structure your services on the salon page.
+								{t('owner.services.serviceGroupHint')}
 							</p>
 						</div>
 
@@ -523,7 +402,7 @@ export default function EditServiceModal({
 									htmlFor="duration"
 									className="block text-sm font-medium text-gray-700 mb-2"
 								>
-									Duration (minutes)
+									{t('owner.services.durationLabel')}
 								</label>
 								<input
 									type="number"
@@ -545,7 +424,7 @@ export default function EditServiceModal({
 									htmlFor="price"
 									className="block text-sm font-medium text-gray-700 mb-2"
 								>
-									Price (₫)
+									{t('owner.services.priceLabel')}
 								</label>
 								<input
 									type="text"
@@ -563,7 +442,7 @@ export default function EditServiceModal({
 									required
 								/>
 								<p className="text-xs text-gray-500 mt-1">
-									Numbers only (e.g., 50000 for 50K ₫)
+									{t('owner.services.priceHint')}
 								</p>
 							</div>
 						</div>
@@ -578,7 +457,7 @@ export default function EditServiceModal({
 									updateServiceMutation.isPending
 								}
 							>
-								Cancel
+								{t('owner.services.cancel')}
 							</button>
 							<button
 								type="submit"
@@ -590,10 +469,10 @@ export default function EditServiceModal({
 							>
 								{createServiceMutation.isPending ||
 								updateServiceMutation.isPending
-									? 'Saving...'
+									? t('owner.services.saving')
 									: service
-										? 'Update Service'
-										: 'Add Service'}
+										? t('owner.services.updateService')
+										: t('owner.services.addService')}
 							</button>
 						</div>
 					</form>

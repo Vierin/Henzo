@@ -112,7 +112,7 @@ export default function MarketingPage() {
 	if (isLoading) {
 		return (
 			<div className="flex items-center justify-center min-h-[400px]">
-				<LoadingSpinner />
+				<LoadingSpinner message={t('owner.marketing.loading')} />
 			</div>
 		);
 	}

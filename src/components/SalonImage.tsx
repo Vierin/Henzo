@@ -39,7 +39,10 @@ export default function SalonImage({
 					width={width}
 					height={height}
 					className="w-full h-full object-cover"
-					unoptimized
+					loading="lazy"
+					sizes={
+						sizes || '(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw'
+					}
 				/>
 			</div>
 		);
@@ -70,9 +73,12 @@ export default function SalonImage({
 			className={className}
 			style={style}
 			priority={priority}
-			sizes={sizes}
+			loading={priority ? 'eager' : 'lazy'} // P1: Lazy loading для не приоритетных
+			sizes={
+				sizes || '(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw'
+			} // P1: Responsive sizes
 			onError={() => setImageError(true)}
-			unoptimized={isExternalUrl(src)} // Don't optimize external URLs
+			unoptimized={isExternalUrl(src)} // External URLs (Supabase) не могут быть оптимизированы Next.js
 		/>
 	);
 }

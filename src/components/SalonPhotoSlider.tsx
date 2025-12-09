@@ -92,6 +92,8 @@ export default function SalonPhotoSlider({
 							width={400}
 							height={320}
 							className="w-full h-full object-cover rounded-xl"
+							priority
+							sizes="(max-width: 768px) 100vw, 50vw"
 							unoptimized={isExternalUrl(logo)}
 							onError={(e) => {
 								e.currentTarget.style.display = 'none';
@@ -114,7 +116,8 @@ export default function SalonPhotoSlider({
 								width={400}
 								height={320}
 								className="w-full h-full object-cover rounded-xl"
-								unoptimized
+								loading="lazy"
+								sizes="(max-width: 768px) 100vw, 50vw"
 							/>
 						</div>
 					</>
@@ -126,7 +129,8 @@ export default function SalonPhotoSlider({
 							width={400}
 							height={320}
 							className="w-full h-full object-cover rounded-xl"
-							unoptimized
+							loading="lazy"
+							sizes="(max-width: 768px) 100vw, 50vw"
 						/>
 					</div>
 				)}
@@ -144,6 +148,8 @@ export default function SalonPhotoSlider({
 					width={400}
 					height={320}
 					className="w-full h-full object-cover rounded-xl"
+					priority
+					sizes="(max-width: 768px) 100vw, 50vw"
 					unoptimized={allImages[0].isExternal}
 					onError={(e) => {
 						e.currentTarget.style.display = 'none';
@@ -164,7 +170,8 @@ export default function SalonPhotoSlider({
 						width={400}
 						height={320}
 						className="w-full h-full object-cover rounded-xl"
-						unoptimized
+						loading="lazy"
+						sizes="(max-width: 768px) 100vw, 50vw"
 					/>
 				</div>
 			</div>
@@ -183,6 +190,8 @@ export default function SalonPhotoSlider({
 					width={400}
 					height={320}
 					className="w-full h-full object-cover rounded-xl transition-opacity duration-300"
+					loading={currentIndex === 0 ? 'eager' : 'lazy'}
+					sizes="(max-width: 768px) 100vw, 50vw"
 					unoptimized={allImages[currentIndex].isExternal}
 					onError={(e) => {
 						e.currentTarget.style.display = 'none';
@@ -203,7 +212,8 @@ export default function SalonPhotoSlider({
 						width={400}
 						height={320}
 						className="w-full h-full object-cover rounded-xl"
-						unoptimized
+						loading="lazy"
+						sizes="(max-width: 768px) 100vw, 50vw"
 					/>
 				</div>
 			</div>

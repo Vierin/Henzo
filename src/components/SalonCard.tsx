@@ -84,14 +84,15 @@ export default function SalonCard({
 		>
 			<div className="flex flex-col md:flex-row gap-4 md:gap-6">
 				{/* Salon Image */}
-				<SalonImage
-					src={salon.logo}
-					alt={salon.name}
-					width={400}
-					height={320}
-					className="w-full md:w-48 aspect-[4/3] object-cover rounded-xl md:flex-shrink-0"
-					style={{ width: 'auto', height: 'auto' }}
-				/>
+				<div className="w-full md:w-[360px] md:h-[270px] flex-shrink-0">
+					<SalonImage
+						src={salon.logo}
+						alt={salon.name}
+						width={360}
+						height={270}
+						className="w-full h-full object-cover rounded-xl"
+					/>
+				</div>
 
 				{/* Salon Info */}
 				<div className="flex-1 min-w-0">
@@ -227,7 +228,10 @@ export default function SalonCard({
 						}}
 						className="text-[#ff5b5b] text-sm font-medium hover:text-[#e04a4a] transition-colors"
 					>
-						{t.categories.viewAllServices.replace('{count}', salon.services.length.toString())}
+						{t.categories.viewAllServices.replace(
+							'{count}',
+							salon.services.length.toString()
+						)}
 					</button>
 				</div>
 			)}

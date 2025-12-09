@@ -39,6 +39,7 @@
 	"bookingConfirmed": "Booking Confirmed",
 	"bookingError": "Booking Error",
 	"noAvailableSlots": "No Available Slots",
+	"noAvailableSlotsWithSelection": "No available time slots with current selection",
 	"salonClosed": "Salon Closed",
 	"checkYourEmail": "Check Your Email",
 	"magicLinkSent": "We've sent a confirmation link to",

@@ -67,7 +67,7 @@ export default function StaffPage() {
 	if (salonLoading || loading) {
 		return (
 			<div className="flex items-center justify-center min-h-[400px]">
-				<LoadingSpinner size="lg" />
+				<LoadingSpinner size="lg" message={t('owner.staff.loading')} />
 			</div>
 		);
 	}

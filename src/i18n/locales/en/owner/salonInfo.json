@@ -61,5 +61,6 @@
 	"reminder1Day": "1 day (24 hours) before",
 	"reminder1Week": "1 week (168 hours) before",
 	"default": "Default",
-	"atLeastOneReminderRequired": "At least one reminder option must be selected"
+	"atLeastOneReminderRequired": "At least one reminder option must be selected",
+	"loading": "Loading..."
 }

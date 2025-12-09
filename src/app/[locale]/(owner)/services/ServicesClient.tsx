@@ -184,7 +184,7 @@ export default function ServicesClient() {
 	if (salonLoading || servicesLoading) {
 		return (
 			<div className="min-h-screen bg-[#fff7f6] flex items-center justify-center">
-				<LoadingSpinner />
+				<LoadingSpinner message={t('owner.services.loading')} />
 			</div>
 		);
 	}

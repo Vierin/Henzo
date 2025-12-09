@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import Script from 'next/script';
 import { Geist, Geist_Mono } from 'next/font/google';
 import './globals.css';
 import Toaster from '@/components/Toaster';
@@ -103,28 +104,6 @@ export default function RootLayout({
 	return (
 		<html lang="vi">
 			<head>
-				{/* Google Analytics */}
-				<script
-					async
-					src="https://www.googletagmanager.com/gtag/js?id=G-KBLFJ1533R"
-				/>
-				<script
-					dangerouslySetInnerHTML={{
-						__html: `
-							window.dataLayer = window.dataLayer || [];
-							function gtag(){dataLayer.push(arguments);}
-							gtag('js', new Date());
-							
-							// Set default consent state to denied
-							gtag('consent', 'default', {
-								analytics_storage: 'denied',
-								ad_storage: 'denied',
-							});
-							
-							gtag('config', 'G-KBLFJ1533R');
-						`,
-					}}
-				/>
 				<link rel="icon" href="/favicon/favicon.ico" sizes="any" />
 				<link rel="manifest" href="/site.webmanifest" />
 				<meta name="geo.region" content="VN" />
@@ -146,6 +125,26 @@ export default function RootLayout({
 						</AuthProvider>
 					</QueryProvider>
 				</LanguageProvider>
+				{/* Google Analytics */}
+				<Script
+					src="https://www.googletagmanager.com/gtag/js?id=G-KBLFJ1533R"
+					strategy="afterInteractive"
+				/>
+				<Script id="google-analytics" strategy="afterInteractive">
+					{`
+						window.dataLayer = window.dataLayer || [];
+						function gtag(){dataLayer.push(arguments);}
+						gtag('js', new Date());
+						
+						// Set default consent state to denied
+						gtag('consent', 'default', {
+							analytics_storage: 'denied',
+							ad_storage: 'denied',
+						});
+						
+						gtag('config', 'G-KBLFJ1533R');
+					`}
+				</Script>
 			</body>
 		</html>
 	);

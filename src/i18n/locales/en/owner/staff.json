@@ -16,6 +16,17 @@
 	"noEmail": "No email",
 	"noPhone": "No phone",
 	"editStaffMember": "Edit staff member",
+	"editStaffMemberTitle": "Edit Staff Member",
 	"deleteStaffMember": "Delete staff member",
-	"areYouSureDelete": "Are you sure you want to delete this staff member?"
+	"areYouSureDelete": "Are you sure you want to delete this staff member?",
+	"fullName": "Full Name *",
+	"employeeLimitedAccess": "Employee - Limited access",
+	"adminFullAccess": "Admin - Full access to salon management",
+	"accessLevelDescription": "Admins can manage staff, services, and appointments. Employees have limited access.",
+	"enterFullName": "Enter full name",
+	"emailPlaceholder": "staff@salon.com",
+	"phonePlaceholder": "+1 (555) 123-4567",
+	"saveChanges": "Save Changes",
+	"saving": "Saving...",
+	"loading": "Loading..."
 }

@@ -16,6 +16,17 @@
 	"noEmail": "Нет email",
 	"noPhone": "Нет телефона",
 	"editStaffMember": "Редактировать сотрудника",
+	"editStaffMemberTitle": "Редактировать сотрудника",
 	"deleteStaffMember": "Удалить сотрудника",
-	"areYouSureDelete": "Вы уверены, что хотите удалить этого сотрудника?"
+	"areYouSureDelete": "Вы уверены, что хотите удалить этого сотрудника?",
+	"fullName": "Полное имя *",
+	"employeeLimitedAccess": "Сотрудник - Ограниченный доступ",
+	"adminFullAccess": "Администратор - Полный доступ к управлению салоном",
+	"accessLevelDescription": "Администраторы могут управлять персоналом, услугами и записями. Сотрудники имеют ограниченный доступ.",
+	"enterFullName": "Введите полное имя",
+	"emailPlaceholder": "staff@salon.com",
+	"phonePlaceholder": "+1 (555) 123-4567",
+	"saveChanges": "Сохранить изменения",
+	"saving": "Сохранение...",
+	"loading": "Загрузка..."
 }

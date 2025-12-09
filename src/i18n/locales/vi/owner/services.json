@@ -39,5 +39,18 @@
 	"deleteService": "Xóa dịch vụ",
 	"areYouSureDelete": "Bạn có chắc muốn xóa dịch vụ này?",
 	"unknown": "Không xác định",
-	"actions": "Hành động"
+	"actions": "Hành động",
+	"serviceNameLabel": "Tên dịch vụ",
+	"descriptionLabel": "Mô tả",
+	"categoryLabel": "Danh mục",
+	"serviceGroupLabel": "Nhóm dịch vụ (tùy chọn)",
+	"serviceGroupHint": "Sử dụng nhóm để cấu trúc dịch vụ của bạn trên trang salon.",
+	"durationLabel": "Thời lượng (phút)",
+	"priceLabel": "Giá (₫)",
+	"priceHint": "Chỉ số (ví dụ: 50000 cho 50K ₫)",
+	"cancel": "Hủy",
+	"updateService": "Cập nhật dịch vụ",
+	"addService": "Thêm dịch vụ",
+	"saving": "Đang lưu...",
+	"loading": "Đang tải..."
 }

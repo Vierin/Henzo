@@ -16,6 +16,17 @@
 	"noEmail": "Không có email",
 	"noPhone": "Không có điện thoại",
 	"editStaffMember": "Chỉnh sửa nhân viên",
+	"editStaffMemberTitle": "Chỉnh sửa nhân viên",
 	"deleteStaffMember": "Xóa nhân viên",
-	"areYouSureDelete": "Bạn có chắc muốn xóa nhân viên này?"
+	"areYouSureDelete": "Bạn có chắc muốn xóa nhân viên này?",
+	"fullName": "Họ và tên *",
+	"employeeLimitedAccess": "Nhân viên - Quyền truy cập hạn chế",
+	"adminFullAccess": "Quản trị viên - Quyền truy cập đầy đủ để quản lý salon",
+	"accessLevelDescription": "Quản trị viên có thể quản lý nhân viên, dịch vụ và lịch hẹn. Nhân viên có quyền truy cập hạn chế.",
+	"enterFullName": "Nhập họ và tên",
+	"emailPlaceholder": "staff@salon.com",
+	"phonePlaceholder": "+1 (555) 123-4567",
+	"saveChanges": "Lưu thay đổi",
+	"saving": "Đang lưu...",
+	"loading": "Đang tải..."
 }

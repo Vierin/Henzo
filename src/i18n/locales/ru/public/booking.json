@@ -39,6 +39,7 @@
 	"bookingConfirmed": "Запись подтверждена",
 	"bookingError": "Ошибка при бронировании",
 	"noAvailableSlots": "Нет доступных слотов",
+	"noAvailableSlotsWithSelection": "Нет доступных слотов с текущим выбором",
 	"salonClosed": "Салон закрыт",
 	"checkYourEmail": "Проверьте вашу почту",
 	"magicLinkSent": "Мы отправили ссылку для подтверждения на",

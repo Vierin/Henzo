@@ -67,8 +67,7 @@ export function OwnerLayoutProvider({ children }: OwnerLayoutProviderProps) {
 		return (
 			<div className="flex items-center justify-center min-h-screen bg-[#fff7f6]">
 				<div className="text-center">
-					<LoadingSpinner size="lg" />
-					<p className="mt-4 text-gray-600 text-sm">{t('owner.loadingSalonInformation')}</p>
+					<LoadingSpinner size="lg" message={t('owner.dashboard.loadingSalonInformation')} />
 				</div>
 			</div>
 		);

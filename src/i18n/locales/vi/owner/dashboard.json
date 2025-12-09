@@ -55,6 +55,7 @@
 		"noStaff": "Vui lòng thêm ít nhất một nhân viên trước khi tạo đặt chỗ"
 	},
 	"loadingDashboard": "Đang tải bảng điều khiển...",
+	"loadingSalonInformation": "Đang tải thông tin salon...",
 	"redirectingToSetup": "Đang chuyển hướng đến thiết lập...",
 	"failedToLoadDashboard": "Không thể tải bảng điều khiển",
 	"bookingCancelled": "Đặt chỗ đã được hủy thành công",

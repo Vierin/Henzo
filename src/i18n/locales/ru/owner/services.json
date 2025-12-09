@@ -39,5 +39,18 @@
 	"deleteService": "Удалить услугу",
 	"areYouSureDelete": "Вы уверены, что хотите удалить эту услугу?",
 	"unknown": "Неизвестно",
-	"actions": "Действия"
+	"actions": "Действия",
+	"serviceNameLabel": "Название услуги",
+	"descriptionLabel": "Описание",
+	"categoryLabel": "Категория",
+	"serviceGroupLabel": "Группа услуг (необязательно)",
+	"serviceGroupHint": "Используйте группы для структурирования услуг на странице салона.",
+	"durationLabel": "Длительность (минуты)",
+	"priceLabel": "Цена (₫)",
+	"priceHint": "Только числа (например, 50000 для 50K ₫)",
+	"cancel": "Отмена",
+	"updateService": "Обновить услугу",
+	"addService": "Добавить услугу",
+	"saving": "Сохранение...",
+	"loading": "Загрузка..."
 }
