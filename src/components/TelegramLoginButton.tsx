@@ -24,7 +24,7 @@ export default function TelegramLoginButton({
 	botId,
 	onAuth,
 	buttonSize = 'large',
-	cornerRadius = 0,
+	cornerRadius = 5,
 	requestAccess = 'write',
 	usePic = true,
 	lang = 'en',
