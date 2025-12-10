@@ -44,5 +44,10 @@
 	"searchIn": "{query} в {location}",
 	"notFound": "Салон не найден",
 	"notFoundDescription": "Салон, который вы ищете, не существует или был удален.",
-	"goHome": "На главную"
+	"goHome": "На главную",
+	"onDate": "на {date}",
+	"noSalonsFound": "Салоны не найдены",
+	"tryAdjustingSearch": "Попробуйте изменить критерии поиска или вернитесь позже.",
+	"loadingSalons": "Загрузка салонов...",
+	"failedToLoadSalons": "Не удалось загрузить салоны"
 }

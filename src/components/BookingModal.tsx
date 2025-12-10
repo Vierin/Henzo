@@ -799,6 +799,24 @@ export default function BookingModal({
 					return;
 				}
 
+				// Check if the selected date is today and filter out past time slots
+				const now = new Date();
+				const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+				const selectedDay = new Date(targetDate.getFullYear(), targetDate.getMonth(), targetDate.getDate());
+				const isToday = today.getTime() === selectedDay.getTime();
+
+				if (isToday) {
+					// Get current time in minutes
+					const currentHour = now.getHours();
+					const currentMinute = now.getMinutes();
+					const currentTimeInMinutes = currentHour * 60 + currentMinute;
+
+					// Skip past time slots (add 15 minutes buffer to allow booking for current time slot)
+					if (timeInMinutes < currentTimeInMinutes + 15) {
+						return;
+					}
+				}
+
 				// Determine staff ID for availability check
 				let staffIdForCheck: string | undefined;
 				if (selectedStaff && selectedStaff !== t('booking.anyStaff')) {

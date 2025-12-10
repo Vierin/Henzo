@@ -209,6 +209,35 @@ export function getAvailableTimeSlots(
 	const workingHours = normalizeWorkingHours(salon.workingHours);
 	if (!workingHours) {
 		// Return default time slots if no working hours specified
+		// But filter out past slots if today
+		const now = new Date();
+		const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+		const selectedDay = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+		const isToday = today.getTime() === selectedDay.getTime();
+		
+		if (isToday) {
+			const currentHour = now.getHours();
+			const currentMinute = now.getMinutes();
+			const currentTimeInMinutes = currentHour * 60 + currentMinute;
+			
+			const slots = ['morning', 'afternoon', 'evening'];
+			return slots.filter((slot) => {
+				const ranges: { [key: string]: { start: string; end: string } } = {
+					morning: { start: '06:00', end: '12:00' },
+					afternoon: { start: '12:00', end: '18:00' },
+					evening: { start: '18:00', end: '22:00' },
+				};
+				const range = ranges[slot];
+				if (!range) return false;
+				
+				const [endHour, endMinute] = range.end.split(':').map(Number);
+				const endTimeInMinutes = endHour * 60 + endMinute;
+				
+				// Only include slot if it hasn't ended yet (with 15 min buffer)
+				return endTimeInMinutes > currentTimeInMinutes + 15;
+			});
+		}
+		
 		return ['morning', 'afternoon', 'evening'];
 	}
 
@@ -226,6 +255,20 @@ export function getAvailableTimeSlots(
 		{ name: 'evening', range: { start: '18:00', end: '22:00' } },
 	];
 
+	// Check if selected date is today
+	const now = new Date();
+	const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+	const selectedDay = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+	const isToday = today.getTime() === selectedDay.getTime();
+	
+	// Get current time in minutes if today
+	let currentTimeInMinutes: number | null = null;
+	if (isToday) {
+		const currentHour = now.getHours();
+		const currentMinute = now.getMinutes();
+		currentTimeInMinutes = currentHour * 60 + currentMinute;
+	}
+
 	timeSlots.forEach((slot) => {
 		if (
 			isTimeRangeOverlapping(
@@ -235,7 +278,18 @@ export function getAvailableTimeSlots(
 				slot.range.end
 			)
 		) {
-			availableSlots.push(slot.name);
+			// If today, filter out past time slots
+			if (isToday && currentTimeInMinutes !== null) {
+				const [endHour, endMinute] = slot.range.end.split(':').map(Number);
+				const endTimeInMinutes = endHour * 60 + endMinute;
+				
+				// Only include slot if it hasn't ended yet (with 15 min buffer)
+				if (endTimeInMinutes > currentTimeInMinutes + 15) {
+					availableSlots.push(slot.name);
+				}
+			} else {
+				availableSlots.push(slot.name);
+			}
 		}
 	});
 

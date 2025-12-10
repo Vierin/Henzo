@@ -16,11 +16,12 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from '@/components/ui/select';
-import { useTranslation } from '@/contexts/LanguageContext';
+import { useTranslation, useLanguage } from '@/contexts/LanguageContext';
 
 export default function SalonsClient() {
 	const searchParams = useSearchParams();
 	const t = useTranslation();
+	const { language } = useLanguage();
 
 	// Initialize state from URL parameters immediately
 	const getInitialParams = useCallback(() => {
@@ -234,16 +235,24 @@ export default function SalonsClient() {
 
 		// Add date and time information
 		if (selectedDate) {
-			const dateStr = selectedDate.toLocaleDateString('en-US', {
+			const localeMap: Record<string, string> = {
+				en: 'en-US',
+				ru: 'ru-RU',
+				vi: 'vi-VN',
+			};
+			const locale = localeMap[language] || 'en-US';
+			
+			const dateStr = selectedDate.toLocaleDateString(locale, {
 				weekday: 'long',
 				month: 'long',
 				day: 'numeric',
 			});
 
 			if (selectedTimeInterval && selectedTimeInterval !== 'any') {
-				baseText += ` on ${dateStr} (${selectedTimeInterval})`;
+				const timeLabel = t(`booking.timeIntervals.${selectedTimeInterval}`) || selectedTimeInterval;
+				baseText += ` ${t('salon.onDate').replace('{date}', dateStr)} (${timeLabel})`;
 			} else {
-				baseText += ` on ${dateStr}`;
+				baseText += ` ${t('salon.onDate').replace('{date}', dateStr)}`;
 			}
 		}
 
@@ -288,12 +297,12 @@ export default function SalonsClient() {
 						<div className="space-y-4 sm:space-y-6">
 							{loading ? (
 								<div role="status" aria-live="polite">
-									<LoadingSpinner message="Loading salons..." />
+									<LoadingSpinner message={t('salon.loadingSalons')} />
 								</div>
 							) : error ? (
 								<ErrorDisplay
 									error={error}
-									message="Failed to load salons"
+									message={t('salon.failedToLoadSalons')}
 									onRetry={() => refetch()}
 								/>
 							) : salons.length === 0 ? (
@@ -303,16 +312,16 @@ export default function SalonsClient() {
 										<span
 											className="text-2xl"
 											role="img"
-											aria-label="No salons found"
+											aria-label={t('salon.noSalonsFound')}
 										>
 											🏪
 										</span>
 									</div>
 									<h3 className="text-xl font-semibold text-gray-900 mb-2">
-										No salons found
+										{t('salon.noSalonsFound')}
 									</h3>
 									<p className="text-gray-600">
-										Try adjusting your search criteria or check back later.
+										{t('salon.tryAdjustingSearch')}
 									</p>
 								</div>
 							) : (
