@@ -213,7 +213,7 @@ function BusinessRegisterForm() {
 								name="name"
 								type="text"
 								required
-								className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-orange-500 focus:border-orange-500 sm:text-sm text-gray-900"
+								className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-[#ff5b5b] focus:border-[#ff5b5b] sm:text-sm text-gray-900"
 								placeholder={t('business.register.ownerFullNamePlaceholder')}
 								value={formData.name}
 								onChange={handleInputChange}
@@ -235,7 +235,7 @@ function BusinessRegisterForm() {
 								autoComplete="email"
 								required
 								readOnly={isMagicLink}
-								className={`mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-orange-500 focus:border-orange-500 sm:text-sm text-gray-900 ${
+								className={`mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-[#ff5b5b] focus:border-[#ff5b5b] sm:text-sm text-gray-900 ${
 									isMagicLink ? 'bg-gray-100 cursor-not-allowed' : ''
 								}`}
 								placeholder={t('business.register.emailPlaceholder')}
@@ -263,7 +263,7 @@ function BusinessRegisterForm() {
 								type="password"
 								autoComplete="new-password"
 								required
-								className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-orange-500 focus:border-orange-500 sm:text-sm text-gray-900"
+								className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-[#ff5b5b] focus:border-[#ff5b5b] sm:text-sm text-gray-900"
 								placeholder={t('business.register.passwordPlaceholder')}
 								value={formData.password}
 								onChange={handleInputChange}
@@ -284,7 +284,7 @@ function BusinessRegisterForm() {
 								type="password"
 								autoComplete="new-password"
 								required
-								className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-orange-500 focus:border-orange-500 sm:text-sm text-gray-900"
+								className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-[#ff5b5b] focus:border-[#ff5b5b] sm:text-sm text-gray-900"
 								placeholder={t('business.register.confirmPasswordPlaceholder')}
 								value={formData.confirmPassword}
 								onChange={handleInputChange}
@@ -296,7 +296,7 @@ function BusinessRegisterForm() {
 						<button
 							type="submit"
 							disabled={loading}
-							className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-orange-500 hover:bg-orange-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500 disabled:opacity-50 disabled:cursor-not-allowed"
+							className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-[#ff5b5b] hover:bg-[#e04a4a] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#ff5b5b] disabled:opacity-50 disabled:cursor-not-allowed"
 						>
 							{loading ? (
 								<div className="flex items-center gap-2">
@@ -327,7 +327,7 @@ function BusinessRegisterForm() {
 							type="button"
 							onClick={handleGoogleRegister}
 							disabled={loading || (isMagicLink && !formData.token)}
-							className="w-full flex justify-center items-center py-2 px-4 border border-gray-300 rounded-md shadow-sm bg-white text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500 disabled:opacity-50 disabled:cursor-not-allowed"
+							className="w-full flex justify-center items-center py-2 px-4 border border-gray-300 rounded-md shadow-sm bg-white text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#ff5b5b] disabled:opacity-50 disabled:cursor-not-allowed"
 						>
 							<svg className="w-5 h-5 mr-2" viewBox="0 0 24 24">
 								<path
@@ -356,7 +356,7 @@ function BusinessRegisterForm() {
 							{t('business.register.alreadyHaveAccount')}{' '}
 							<Link
 								href="/login"
-								className="font-medium text-orange-600 hover:text-orange-700"
+								className="font-medium text-[#ff5b5b] hover:text-[#e04a4a]"
 							>
 								{t('business.register.signIn')}
 							</Link>
@@ -385,7 +385,7 @@ export default function BusinessRegisterClient() {
 			fallback={
 				<div className="min-h-screen flex items-center justify-center bg-gray-50">
 					<div className="text-center">
-						<div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-500 mx-auto mb-4"></div>
+						<div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#ff5b5b] mx-auto mb-4"></div>
 						<p className="text-gray-600">Loading...</p>
 					</div>
 				</div>

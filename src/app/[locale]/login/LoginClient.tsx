@@ -437,9 +437,9 @@ export default function LoginClient() {
 								<TelegramLoginButton
 									botId={telegramBotId}
 									onAuth={handleTelegramAuth}
-									buttonSize="large"
+									buttonSize="small"
 									requestAccess="write"
-									usePic={true}
+									usePic={false}
 									lang={extractLocaleFromPath(pathname) ?? 'en'}
 								/>
 							</div>
