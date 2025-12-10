@@ -95,7 +95,7 @@ export default function TelegramLoginButton({
 		// Загружаем Telegram Widget скрипт
 		const script = document.createElement('script');
 		script.src = 'https://telegram.org/js/telegram-widget.js?22';
-		script.setAttribute('data-telegram-login', botId);
+		script.setAttribute('data-telegram-login', 'henzo_app_bot');
 		script.setAttribute('data-size', buttonSize);
 		script.setAttribute('data-radius', cornerRadius.toString());
 		script.setAttribute('data-request-access', requestAccess);
