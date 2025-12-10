@@ -101,7 +101,7 @@ export default function TelegramLoginButton({
 		script.setAttribute('data-request-access', requestAccess);
 		script.setAttribute('data-userpic', usePic.toString());
 		script.setAttribute('data-lang', lang);
-		script.setAttribute('data-onauth', `${callbackName}(user)`);
+		script.setAttribute('data-onauth', callbackName);
 		script.async = true;
 
 		// Обработка успешной загрузки скрипта
