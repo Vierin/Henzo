@@ -25,19 +25,27 @@ export default function RecommendedSalons() {
 	// Filter salons to only show those with at least one service
 	const salonsWithServices = useMemo(
 		() =>
-			(salons as Salon[]).filter(
-				(salon) => {
-					// Check multiple ways: _count, services array, or Service array (Prisma naming)
-					const serviceCount = 
-						(salon._count as any)?.Service || 
-						(salon._count as any)?.services || 
-						(salon as any).Service?.length ||
-						salon.services?.length || 
-						0;
-					return serviceCount > 0;
-				}
-			),
+			(salons as Salon[]).filter((salon) => {
+				// Check multiple ways: _count, services array, or Service array (Prisma naming)
+				const serviceCount =
+					(salon._count as any)?.Service ||
+					(salon._count as any)?.services ||
+					(salon as any).Service?.length ||
+					salon.services?.length ||
+					0;
+				return serviceCount > 0;
+			}),
 		[salons]
+	);
+
+	// Мемоизируем URL для каждого салона
+	const salonsWithUrls = useMemo(
+		() =>
+			salonsWithServices.map((salon: Salon) => ({
+				...salon,
+				url: getSalonUrl(salon),
+			})),
+		[salonsWithServices, getSalonUrl]
 	);
 
 	const getImageSrc = (imageSrc: string) => {
@@ -147,9 +155,7 @@ export default function RecommendedSalons() {
 						<h3 className="text-xl font-semibold text-gray-900 mb-2">
 							{t('homepage.noSalonsAvailable')}
 						</h3>
-						<p className="text-gray-600">
-							{t('homepage.checkBackLater')}
-						</p>
+						<p className="text-gray-600">{t('homepage.checkBackLater')}</p>
 					</div>
 				) : (
 					<>
@@ -165,19 +171,89 @@ export default function RecommendedSalons() {
 
 						{/* Desktop grid view */}
 						<div className="hidden md:grid md:grid-cols-3 gap-6 px-6">
-							{salonsWithServices
-								.slice(0, 3)
-								.map((salon: Salon, index: number) => {
+							{salonsWithUrls.slice(0, 3).map((salon, index: number) => {
+								const avgRating = salon.avgRating || 0;
+								const reviewCount = salon._count?.reviews || 0;
+
+								return (
+									<Link
+										key={salon.id}
+										href={salon.url}
+										className="bg-white rounded-2xl overflow-hidden shadow-md hover:shadow-xl transition-all duration-300 block"
+									>
+										<div className="relative h-[15rem] bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center">
+											{(() => {
+												const imageData = getSalonImage(salon);
+												return imageData.url ? (
+													<Image
+														src={imageData.url}
+														alt={salon.name}
+														width={400}
+														height={240}
+														priority={index === 0}
+														loading={index === 0 ? 'eager' : 'lazy'}
+														sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+														className="grayscale-[30%] w-full h-full object-cover"
+														unoptimized={imageData.isExternal}
+													/>
+												) : (
+													<Image
+														src="/images/placeholder.webp"
+														alt={salon.name}
+														width={400}
+														height={240}
+														className="w-full h-full object-cover"
+														loading="lazy"
+														sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+													/>
+												);
+											})()}
+											{/* Average rating badge (replaces price range) */}
+											{avgRating > 0 && (
+												<div className="absolute top-3 right-3 bg-white rounded-full px-3 py-1 shadow-md flex items-center gap-1">
+													<Star className="w-4 h-4 text-[#ff5b5b] fill-[#ff5b5b]" />
+													<span className="text-sm font-semibold text-gray-900">
+														{avgRating.toFixed(1)} ({reviewCount})
+													</span>
+												</div>
+											)}
+										</div>
+										<div className="p-5">
+											{/* Title and Rating */}
+											<div className="flex items-start justify-between mb-8">
+												<h3 className="text-xl font-bold text-gray-900 flex-1">
+													{salon.name}
+												</h3>
+											</div>
+
+											{/* Footer: View Details */}
+											<div className="flex items-start justify-end">
+												<span className="text-red-500 flex gap-1 items-center text-sm font-medium hover:text-red-600 transition-colors">
+													{t.salon.viewDetails}
+													<ChevronRight className="w-4 h-4" />
+												</span>
+											</div>
+										</div>
+									</Link>
+								);
+							})}
+						</div>
+
+						{/* Mobile swiper view */}
+						<div className="md:hidden overflow-x-auto scrollbar-hide px-4 pb-2">
+							<div className="flex gap-4" style={{ width: 'max-content' }}>
+								{salonsWithUrls.slice(0, 3).map((salon, index: number) => {
 									const avgRating = salon.avgRating || 0;
 									const reviewCount = salon._count?.reviews || 0;
 
 									return (
 										<Link
 											key={salon.id}
-											href={getSalonUrl(salon)}
-											className="bg-white rounded-2xl overflow-hidden shadow-md hover:shadow-xl transition-all duration-300 block"
+											href={salon.url}
+											className="bg-white rounded-2xl overflow-hidden shadow-md hover:shadow-xl transition-all duration-300 block flex-shrink-0"
+											style={{ width: 'calc(66.666vw - 2rem)' }}
 										>
-											<div className="relative h-[15rem] bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center">
+											<div className="relative h-[12rem] bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center">
 												{(() => {
 													const imageData = getSalonImage(salon);
 													return imageData.url ? (
@@ -186,10 +262,14 @@ export default function RecommendedSalons() {
 															alt={salon.name}
 															width={400}
 															height={240}
-															priority={index === 0}
 															loading={index === 0 ? 'eager' : 'lazy'}
-															sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-															className="grayscale-[30%] w-full h-full object-cover"
+															sizes="(max-width: 768px) 100vw, 50vw"
+															style={{
+																width: '100%',
+																height: '100%',
+																objectFit: 'cover',
+															}}
+															className="grayscale-[30%] object-cover"
 															unoptimized={imageData.isExternal}
 														/>
 													) : (
@@ -200,13 +280,13 @@ export default function RecommendedSalons() {
 															height={240}
 															className="w-full h-full object-cover"
 															loading="lazy"
-															sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+															sizes="(max-width: 768px) 100vw, 50vw"
 														/>
 													);
 												})()}
 												{/* Average rating badge (replaces price range) */}
 												{avgRating > 0 && (
-													<div className="absolute top-3 right-3 bg-white rounded-full px-3 py-1 shadow-md flex items-center gap-1">
+													<div className="absolute top-3 right-3 bg-white rounded-full px-3 py-0.5 shadow-sm flex items-center gap-1">
 														<Star className="w-4 h-4 text-[#ff5b5b] fill-[#ff5b5b]" />
 														<span className="text-sm font-semibold text-gray-900">
 															{avgRating.toFixed(1)} ({reviewCount})
@@ -214,16 +294,46 @@ export default function RecommendedSalons() {
 													</div>
 												)}
 											</div>
-											<div className="p-5">
+											<div className="p-3">
 												{/* Title and Rating */}
-												<div className="flex items-start justify-between mb-8">
-													<h3 className="text-xl font-bold text-gray-900 flex-1">
+												<div className="flex items-start justify-between mb-4">
+													<h3 className="text-lg font-bold text-gray-900 flex-1">
 														{salon.name}
 													</h3>
+													{avgRating > 0 && (
+														<div className="flex items-center gap-1 ml-2 flex-shrink-0">
+															<span className="text-red-500">
+																<Star className="w-4 h-4 text-[#ff5b5b] fill-[#ff5b5b]" />
+															</span>
+															<span className="text-sm font-semibold text-gray-900">
+																{avgRating.toFixed(1)}
+															</span>
+														</div>
+													)}
 												</div>
 
-												{/* Footer: View Details */}
-												<div className="flex items-start justify-end">
+												{/* Footer: Reviews and View Details */}
+												<div className="flex items-center justify-between">
+													{/* Mobile: Show only star + rating if reviews exist, Desktop: Show review count */}
+													{reviewCount > 0 ? (
+														<>
+															{/* Mobile: Star + rating only */}
+															<div className="md:hidden flex items-center gap-1">
+																<Star className="w-4 h-4 text-[#ff5b5b] fill-[#ff5b5b]" />
+																<span className="text-sm font-semibold text-gray-900">
+																	{avgRating.toFixed(1)}
+																</span>
+															</div>
+															{/* Desktop: Review count */}
+															<span className="hidden md:block text-gray-500 text-sm">
+																{reviewCount} {t.salon.reviewsCount}
+															</span>
+														</>
+													) : (
+														<span className="hidden md:block text-gray-500 text-sm">
+															{reviewCount} {t.salon.reviewsCount}
+														</span>
+													)}
 													<span className="text-red-500 flex gap-1 items-center text-sm font-medium hover:text-red-600 transition-colors">
 														{t.salon.viewDetails}
 														<ChevronRight className="w-4 h-4" />
@@ -233,114 +343,6 @@ export default function RecommendedSalons() {
 										</Link>
 									);
 								})}
-						</div>
-
-						{/* Mobile swiper view */}
-						<div className="md:hidden overflow-x-auto scrollbar-hide px-4 pb-2">
-							<div className="flex gap-4" style={{ width: 'max-content' }}>
-								{salonsWithServices
-									.slice(0, 3)
-									.map((salon: Salon, index: number) => {
-										const avgRating = salon.avgRating || 0;
-										const reviewCount = salon._count?.reviews || 0;
-
-										return (
-											<Link
-												key={salon.id}
-												href={getSalonUrl(salon)}
-												className="bg-white rounded-2xl overflow-hidden shadow-md hover:shadow-xl transition-all duration-300 block flex-shrink-0"
-												style={{ width: 'calc(66.666vw - 2rem)' }}
-											>
-												<div className="relative h-[12rem] bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center">
-													{(() => {
-														const imageData = getSalonImage(salon);
-														return imageData.url ? (
-															<Image
-																src={imageData.url}
-																alt={salon.name}
-																width={400}
-																height={240}
-																loading={index === 0 ? 'eager' : 'lazy'}
-																sizes="(max-width: 768px) 100vw, 50vw"
-																style={{
-																	width: '100%',
-																	height: '100%',
-																	objectFit: 'cover',
-																}}
-																className="grayscale-[30%] object-cover"
-																unoptimized={imageData.isExternal}
-															/>
-														) : (
-															<Image
-																src="/images/placeholder.webp"
-																alt={salon.name}
-																width={400}
-																height={240}
-																className="w-full h-full object-cover"
-																loading="lazy"
-																sizes="(max-width: 768px) 100vw, 50vw"
-															/>
-														);
-													})()}
-													{/* Average rating badge (replaces price range) */}
-													{avgRating > 0 && (
-														<div className="absolute top-3 right-3 bg-white rounded-full px-3 py-0.5 shadow-sm flex items-center gap-1">
-															<Star className="w-4 h-4 text-[#ff5b5b] fill-[#ff5b5b]" />
-															<span className="text-sm font-semibold text-gray-900">
-																{avgRating.toFixed(1)} ({reviewCount})
-															</span>
-														</div>
-													)}
-												</div>
-												<div className="p-3">
-													{/* Title and Rating */}
-													<div className="flex items-start justify-between mb-4">
-														<h3 className="text-lg font-bold text-gray-900 flex-1">
-															{salon.name}
-														</h3>
-														{avgRating > 0 && (
-															<div className="flex items-center gap-1 ml-2 flex-shrink-0">
-																<span className="text-red-500">
-																	<Star className="w-4 h-4 text-[#ff5b5b] fill-[#ff5b5b]" />
-																</span>
-																<span className="text-sm font-semibold text-gray-900">
-																	{avgRating.toFixed(1)}
-																</span>
-															</div>
-														)}
-													</div>
-
-													{/* Footer: Reviews and View Details */}
-													<div className="flex items-center justify-between">
-														{/* Mobile: Show only star + rating if reviews exist, Desktop: Show review count */}
-														{reviewCount > 0 ? (
-															<>
-																{/* Mobile: Star + rating only */}
-																<div className="md:hidden flex items-center gap-1">
-																	<Star className="w-4 h-4 text-[#ff5b5b] fill-[#ff5b5b]" />
-																	<span className="text-sm font-semibold text-gray-900">
-																		{avgRating.toFixed(1)}
-																	</span>
-																</div>
-																{/* Desktop: Review count */}
-																<span className="hidden md:block text-gray-500 text-sm">
-																	{reviewCount} {t.salon.reviewsCount}
-																</span>
-															</>
-														) : (
-															<span className="hidden md:block text-gray-500 text-sm">
-																{reviewCount} {t.salon.reviewsCount}
-															</span>
-														)}
-														<span className="text-red-500 flex gap-1 items-center text-sm font-medium hover:text-red-600 transition-colors">
-															{t.salon.viewDetails}
-															<ChevronRight className="w-4 h-4" />
-														</span>
-													</div>
-												</div>
-											</Link>
-										);
-									})}
 							</div>
 						</div>
 					</>

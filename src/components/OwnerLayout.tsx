@@ -18,7 +18,7 @@ export default function OwnerLayout({ children }: OwnerLayoutProps) {
 	};
 
 	return (
-		<div className="min-h-screen bg-[#fff7f6] w-[100vw] overflow-x-hidden">
+		<div className="min-h-screen bg-[#fff7f6] w-full overflow-x-hidden">
 			<div className="flex">
 				{/* Desktop Sidebar - Fixed */}
 				<div className="hidden md:block fixed left-0 top-0 h-full z-30">

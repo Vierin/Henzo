@@ -103,7 +103,7 @@ export default function OwnerHeader() {
 	};
 
 	return (
-		<header className="sticky w-[100vw] top-0 bg-white/80 backdrop-blur border-b border-[#f1d9d7] z-[300]">
+		<header className="sticky w-full top-0 bg-white/80 backdrop-blur border-b border-[#f1d9d7] z-[300]">
 			<div className="mx-auto max-w-7xl md:px-6 px-4 py-2 flex items-center justify-between">
 				<Link
 					href={withLocale('/', currentLocale as 'en' | 'ru' | 'vi')}

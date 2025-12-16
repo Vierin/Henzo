@@ -1,4 +1,6 @@
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
+import { useMemo } from 'react';
 import { Salon, Service } from '@/types';
 import { ServiceResponseDto } from '@/types/dto/service.dto';
 import { useSalonSlug } from '@/hooks/useSalonSlug';
@@ -47,12 +49,15 @@ export default function SalonCard({
 	const addFavoriteMutation = useAddFavorite();
 	const removeFavoriteMutation = useRemoveFavorite();
 
-	const handleSalonClick = () => {
-		router.push(getSalonUrl(salon));
-	};
+	// Мемоизируем URL салона
+	const salonUrl = useMemo(
+		() => getSalonUrl(salon),
+		[salon.id, salon.name, salon.address, getSalonUrl]
+	);
 
 	const handleBookService = (e: React.MouseEvent, service: Service) => {
 		e.stopPropagation();
+		e.preventDefault();
 		if (onBookService) {
 			onBookService(service, salon.id, salon.name);
 		}
@@ -60,6 +65,7 @@ export default function SalonCard({
 
 	const handleFavoriteClick = (e: React.MouseEvent) => {
 		e.stopPropagation();
+		e.preventDefault();
 
 		// Check if user is logged in
 		if (!user) {
@@ -78,9 +84,9 @@ export default function SalonCard({
 	};
 
 	return (
-		<div
-			onClick={handleSalonClick}
-			className={`bg-white rounded-2xl p-4 sm:p-6 shadow-lg hover:shadow-xl transition-shadow cursor-pointer ${className}`}
+		<Link
+			href={salonUrl}
+			className={`bg-white rounded-2xl p-4 sm:p-6 shadow-lg hover:shadow-xl transition-shadow block ${className}`}
 		>
 			<div className="flex flex-col md:flex-row gap-4 md:gap-6">
 				{/* Salon Image */}
@@ -221,20 +227,14 @@ export default function SalonCard({
 
 			{salon.services && salon.services.length > 3 && (
 				<div className="text-center py-2">
-					<button
-						onClick={(e) => {
-							e.stopPropagation();
-							handleSalonClick();
-						}}
-						className="text-[#ff5b5b] text-sm font-medium hover:text-[#e04a4a] transition-colors"
-					>
+					<span className="text-[#ff5b5b] text-sm font-medium hover:text-[#e04a4a] transition-colors">
 						{t.categories.viewAllServices.replace(
 							'{count}',
 							salon.services.length.toString()
 						)}
-					</button>
+					</span>
 				</div>
 			)}
-		</div>
+		</Link>
 	);
 }
