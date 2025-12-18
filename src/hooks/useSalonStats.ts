@@ -19,7 +19,7 @@ export function useSalonStats(salonId: string) {
 			return response;
 		},
 		enabled: !!salonId,
-		staleTime: 5 * 60 * 1000, // 5 minutes - stats change moderately
-		gcTime: 15 * 60 * 1000, // 15 minutes
+		staleTime: 10 * 60 * 1000, // Важно: 10 minutes - статистика меняется редко
+		gcTime: 30 * 60 * 1000, // 30 минут в кэше
 	});
 }

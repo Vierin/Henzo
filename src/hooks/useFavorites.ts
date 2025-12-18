@@ -75,7 +75,8 @@ export const useFavoriteSalons = (isAuthenticated: boolean = false) => {
 			return response.favorites;
 		},
 		enabled: isAuthenticated, // Only enable when user is authenticated
-		staleTime: 5 * 60 * 1000, // 5 minutes
+		staleTime: 10 * 60 * 1000, // Важно: 10 minutes - избранное меняется редко
+		gcTime: 30 * 60 * 1000, // 30 минут в кэше
 		refetchOnMount: false, // Не перезапрашивать если данные свежие
 		refetchOnWindowFocus: false, // Не перезапрашивать при фокусе окна
 	});

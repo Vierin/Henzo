@@ -806,8 +806,16 @@ export default function BookingModal({
 
 				// Check if the selected date is today and filter out past time slots
 				const now = new Date();
-				const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-				const selectedDay = new Date(targetDate.getFullYear(), targetDate.getMonth(), targetDate.getDate());
+				const today = new Date(
+					now.getFullYear(),
+					now.getMonth(),
+					now.getDate()
+				);
+				const selectedDay = new Date(
+					targetDate.getFullYear(),
+					targetDate.getMonth(),
+					targetDate.getDate()
+				);
 				const isToday = today.getTime() === selectedDay.getTime();
 
 				if (isToday) {

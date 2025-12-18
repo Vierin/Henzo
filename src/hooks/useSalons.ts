@@ -108,7 +108,7 @@ export const useSalon = () => {
 			}
 		},
 		enabled: !authLoading && !!user && isOwner(),
-		staleTime: 5 * 60 * 1000, // 5 минут - данные салона меняются редко
+		staleTime: 15 * 60 * 1000, // Важно: 15 минут - данные салона меняются редко
 		gcTime: 30 * 60 * 1000, // 30 минут в кеше
 		retry: 1,
 		retryDelay: 500,

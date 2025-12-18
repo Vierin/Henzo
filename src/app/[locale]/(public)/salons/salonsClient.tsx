@@ -359,6 +359,7 @@ export default function SalonsClient() {
 										onBookService={handleBookService}
 										selectedDate={selectedDate}
 										selectedTimeInterval={selectedTimeInterval}
+										priority={index < 3} // Критично: Priority для первых 3 изображений
 										priority={index < 3}
 									/>
 								))

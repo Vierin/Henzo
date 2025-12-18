@@ -39,7 +39,8 @@ export const useStaff = (id: string) => {
 			return apiClient.get<Staff>(`/staff/${id}`);
 		},
 		enabled: !!id,
-		staleTime: 5 * 60 * 1000, // 5 minutes
+		staleTime: 10 * 60 * 1000, // Важно: 10 minutes - детали сотрудника меняются редко
+		gcTime: 30 * 60 * 1000, // 30 минут в кэше
 	});
 };
 

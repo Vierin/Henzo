@@ -29,8 +29,8 @@ export function useServiceCategories() {
 
 			return categoriesData;
 		},
-		staleTime: 5 * 60 * 1000, // 5 minutes
-		gcTime: 10 * 60 * 1000, // 10 minutes
+		staleTime: 15 * 60 * 1000, // Важно: 15 minutes - категории статические данные
+		gcTime: 60 * 60 * 1000, // 1 час в кэше
 		retry: 2,
 	});
 }
@@ -63,8 +63,8 @@ export function useCategoriesBySalon(salonId: string) {
 			}
 		},
 		enabled: !!salonId,
-		staleTime: 5 * 60 * 1000, // 5 minutes
-		gcTime: 10 * 60 * 1000, // 10 minutes
+		staleTime: 15 * 60 * 1000, // Важно: 15 minutes - категории статические данные
+		gcTime: 60 * 60 * 1000, // 1 час в кэше
 		retry: 2,
 	});
 }

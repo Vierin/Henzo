@@ -54,7 +54,8 @@ export const usePublicServices = () => {
 				await apiClient.get<ServiceResponseDto[]>('/services/public');
 			return response || [];
 		},
-		staleTime: 5 * 60 * 1000, // 5 minutes
+		staleTime: 10 * 60 * 1000, // Важно: 10 minutes - публичные услуги меняются редко
+		gcTime: 30 * 60 * 1000, // 30 минут в кэше
 	});
 };
 
@@ -66,7 +67,8 @@ export const useService = (id: string) => {
 			return apiClient.get<ServiceResponseDto>(`/services/${id}`);
 		},
 		enabled: !!id,
-		staleTime: 5 * 60 * 1000, // 5 minutes
+		staleTime: 10 * 60 * 1000, // Важно: 10 minutes - детали услуги меняются редко
+		gcTime: 30 * 60 * 1000, // 30 минут в кэше
 	});
 };
 

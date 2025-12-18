@@ -1,5 +1,6 @@
 'use client';
 
+import React from 'react';
 import SalonImage from '@/components/SalonImage';
 import { isPastDate, formatBookingDateTime, getDateBadge } from '@/utils/date';
 import { useState } from 'react';
@@ -37,7 +38,8 @@ interface VisitHistoryCardProps {
 	hasReview?: boolean; // Whether the user has already left a review for this booking
 }
 
-export default function VisitHistoryCard({
+// Критично: Мемоизация для предотвращения лишних ре-рендеров
+function VisitHistoryCard({
 	visit,
 	onBookAgain,
 	onCancel,
@@ -267,3 +269,6 @@ export default function VisitHistoryCard({
 		</>
 	);
 }
+
+// Критично: Мемоизация компонента для предотвращения лишних ре-рендеров
+export default React.memo(VisitHistoryCard);

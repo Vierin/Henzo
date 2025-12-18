@@ -99,6 +99,7 @@ function SalonCard({
 						width={360}
 						height={270}
 						className="w-full h-full object-cover rounded-xl"
+						priority={priority} // Критично: Priority для первых изображений
 						priority={priority}
 					/>
 				</div>
