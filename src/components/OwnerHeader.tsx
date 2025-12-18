@@ -86,14 +86,14 @@ export default function OwnerHeader() {
 			// Get localized home URL
 			const homeUrl = withLocale('/', currentLocale as 'en' | 'ru' | 'vi');
 			
-			// Logout and wait for completion
-			await logout();
-			
-			// Small delay to ensure cookies are cleared
-			await new Promise((resolve) => setTimeout(resolve, 100));
-			
-			// Force full page redirect to public homepage with locale
+			// Оптимистичный редирект: сначала редиректим, потом выполняем logout в фоне
+			// Это предотвращает мерцание контента
 			window.location.href = homeUrl;
+			
+			// Выполняем logout в фоне (не ждем завершения)
+			logout().catch((error) => {
+				console.error('Logout error:', error);
+			});
 		} catch (error) {
 			console.error('Logout error:', error);
 			// Even if logout fails, redirect to home with locale

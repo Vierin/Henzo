@@ -1,6 +1,7 @@
 import { Suspense } from 'react';
 import HomePageClient from '../HomePageClient';
 import { isLocale, type Locale } from '@/i18n/routing';
+import { getDictionary } from '@/i18n/dictionaries';
 
 export default async function HomePage({
 	params,
@@ -9,6 +10,16 @@ export default async function HomePage({
 }) {
 	const rparams = await params;
 	const locale = (isLocale(rparams.locale) ? rparams.locale : 'en') as Locale;
+	
+	// Загружаем переводы для главной страницы на сервере
+	// Это предотвращает показ ключей переводов при редиректе
+	const homepageModules = [
+		'public/homepage',
+		'public/categories',
+		'public/salon',
+		'public/booking',
+	] as const;
+	const initialDictionary = await getDictionary(locale, homepageModules);
 
 	// Structured data (kept as-is; adjust per-locale later if needed)
 	const structuredData = {
@@ -61,6 +72,12 @@ export default async function HomePage({
 					__html: JSON.stringify(organizationData),
 				}}
 			/>
+			{/* Передаем переводы через window для предотвращения мерцания ключей */}
+			<script
+				dangerouslySetInnerHTML={{
+					__html: `window.__HOMEPAGE_DICTIONARY__ = ${JSON.stringify(initialDictionary)};`,
+				}}
+			/>
 			<Suspense
 				fallback={
 					<div className="min-h-screen bg-[#F8F5F2]">
@@ -74,7 +91,7 @@ export default async function HomePage({
 					</div>
 				}
 			>
-				<HomePageClient />
+				<HomePageClient initialDictionary={initialDictionary} />
 			</Suspense>
 		</>
 	);

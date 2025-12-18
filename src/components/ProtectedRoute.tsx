@@ -19,7 +19,7 @@ export default function ProtectedRoute({
 }: ProtectedRouteProps) {
 	const router = useRouter();
 	const pathname = usePathname();
-	const { user, isLoading, isAuthenticated } = useAuth();
+	const { user, isLoading, isAuthenticated, isLoggingOut } = useAuth();
 
 	useEffect(() => {
 		if (isLoading) {
@@ -99,6 +99,12 @@ export default function ProtectedRoute({
 				<div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#ff5b5b]"></div>
 			</div>
 		);
+	}
+
+	// Если идет выход, не скрываем контент - редирект произойдет оптимистично
+	// Это предотвращает мерцание контента перед редиректом
+	if (isLoggingOut) {
+		return <>{children}</>;
 	}
 
 	// Если пользователь не аутентифицирован, не показываем контент

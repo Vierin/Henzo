@@ -54,7 +54,14 @@ export function LanguageProvider({ children, initialDictionary }: LanguageProvid
 	// Use useState to read it once on mount, before React hydration
 	const [serverDictionary] = useState(() => {
 		if (typeof window !== 'undefined') {
-			return (window as any).__INITIAL_DICTIONARY__;
+			// Объединяем базовый словарь и словарь для главной страницы
+			const baseDict = (window as any).__INITIAL_DICTIONARY__ || {};
+			const homepageDict = (window as any).__HOMEPAGE_DICTIONARY__ || {};
+			// Объединяем их, приоритет у homepageDict
+			return {
+				...baseDict,
+				...homepageDict,
+			};
 		}
 		return undefined;
 	});
@@ -237,7 +244,29 @@ export function LanguageProvider({ children, initialDictionary }: LanguageProvid
 
 	// Merge base and additional translations
 	const t = useMemo(() => {
-		const merged = { ...baseT };
+		// baseT может быть Proxy из useBaseTranslations, поэтому используем effectiveInitialDictionary если он есть
+		// Иначе пытаемся извлечь данные из baseT
+		let baseToMerge: any = {};
+		
+		if (effectiveInitialDictionary && Object.keys(effectiveInitialDictionary).length > 0) {
+			// Используем словарь с сервера (приоритет)
+			baseToMerge = effectiveInitialDictionary;
+		} else if (baseT) {
+			// Если baseT это Proxy, пытаемся извлечь известные ключи
+			// Для главной страницы проверяем наличие homepage
+			if (baseT.homepage) {
+				baseToMerge.homepage = baseT.homepage;
+			}
+			// Копируем другие известные ключи из baseT
+			const knownKeys = ['common', 'meta', 'navigation', 'header', 'footer', 'forms', 'auth'];
+			for (const key of knownKeys) {
+				if (baseT[key]) {
+					baseToMerge[key] = baseT[key];
+				}
+			}
+		}
+		
+		const merged = { ...baseToMerge };
 		if (additionalDict && Object.keys(additionalDict).length > 0) {
 			// Deep merge to preserve nested objects
 			deepMerge(merged, additionalDict);
@@ -259,10 +288,16 @@ export function LanguageProvider({ children, initialDictionary }: LanguageProvid
 				hasHomepage: !!merged.homepage,
 				homepageKeys: merged.homepage ? Object.keys(merged.homepage) : [],
 				topRatedTitle: merged.homepage?.topRatedTitle,
+				baseTKeys: Object.keys(baseT),
+				hasBaseHomepage: !!baseT.homepage,
+				additionalDictKeys: additionalDict ? Object.keys(additionalDict) : [],
+				hasAdditionalHomepage: !!(additionalDict && additionalDict.homepage),
+				effectiveInitialDictKeys: effectiveInitialDictionary ? Object.keys(effectiveInitialDictionary) : [],
+				hasEffectiveHomepage: !!(effectiveInitialDictionary && effectiveInitialDictionary.homepage),
 			});
 		}
 		return merged;
-	}, [baseT, additionalDict, pathNoLocale]);
+	}, [baseT, additionalDict, pathNoLocale, effectiveInitialDictionary]);
 
 	// Load language from localStorage on mount
 	useEffect(() => {

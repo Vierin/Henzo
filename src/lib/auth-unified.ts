@@ -16,6 +16,7 @@ export interface AuthState {
 	user: User | null;
 	isLoading: boolean;
 	isAuthenticated: boolean;
+	isLoggingOut: boolean; // Флаг для оптимистичного редиректа
 }
 
 class AuthManager {
@@ -24,6 +25,7 @@ class AuthManager {
 		user: null,
 		isLoading: false,
 		isAuthenticated: false,
+		isLoggingOut: false,
 	};
 	private listeners: Set<(state: AuthState) => void> = new Set();
 
@@ -273,6 +275,12 @@ class AuthManager {
 
 	async logout(): Promise<void> {
 		try {
+			// Устанавливаем флаг выхода перед обновлением состояния
+			// Это позволяет ProtectedRoute не скрывать контент во время выхода
+			this.setState({
+				isLoggingOut: true,
+			});
+			
 			const userId = this.authState.user?.id;
 			await supabase.auth.signOut();
 			localStorage.removeItem('auth_user');
@@ -280,6 +288,7 @@ class AuthManager {
 				user: null,
 				isAuthenticated: false,
 				isLoading: false,
+				isLoggingOut: false,
 			});
 			this.clearTokenRefresh();
 		} catch (error) {
@@ -288,6 +297,7 @@ class AuthManager {
 				user: null,
 				isAuthenticated: false,
 				isLoading: false,
+				isLoggingOut: false,
 			});
 			this.clearTokenRefresh();
 		}
@@ -613,17 +623,18 @@ export function useAuth() {
 		setAuthState((prevState) => {
 			// Проверяем, действительно ли состояние изменилось
 			// Важно: проверяем не только id, но и роль, так как роль может обновиться
-			const userChanged =
-				prevState.user?.id !== newState.user?.id ||
-				prevState.user?.role !== newState.user?.role;
-			const authChanged =
-				prevState.isAuthenticated !== newState.isAuthenticated;
-			const loadingChanged = prevState.isLoading !== newState.isLoading;
+		const userChanged =
+			prevState.user?.id !== newState.user?.id ||
+			prevState.user?.role !== newState.user?.role;
+		const authChanged =
+			prevState.isAuthenticated !== newState.isAuthenticated;
+		const loadingChanged = prevState.isLoading !== newState.isLoading;
+		const loggingOutChanged = prevState.isLoggingOut !== newState.isLoggingOut;
 
-			if (!userChanged && !authChanged && !loadingChanged) {
-				return prevState; // Возвращаем старое состояние если ничего не изменилось
-			}
-			return newState;
+		if (!userChanged && !authChanged && !loadingChanged && !loggingOutChanged) {
+			return prevState; // Возвращаем старое состояние если ничего не изменилось
+		}
+		return newState;
 		});
 	}, []);
 

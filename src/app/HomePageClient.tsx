@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import PublicHeader from '@/components/PublicHeader';
 import SearchBookingForm from '@/components/SearchBookingForm';
@@ -11,8 +11,35 @@ import { useTranslation } from '@/contexts/LanguageContext';
 import Image from 'next/image';
 import Link from 'next/link';
 
-export default function HomePageClient() {
+interface HomePageClientProps {
+	initialDictionary?: any; // Переводы, загруженные на сервере
+}
+
+export default function HomePageClient({ initialDictionary }: HomePageClientProps = {}) {
 	const queryClient = useQueryClient();
+	
+	// Используем переводы из window если они есть (от сервера), иначе загружаем через хук
+	const [serverDictionary] = useState(() => {
+		if (typeof window !== 'undefined') {
+			return (window as any).__HOMEPAGE_DICTIONARY__;
+		}
+		return undefined;
+	});
+	
+	const effectiveInitialDictionary = initialDictionary || serverDictionary;
+	
+	// Передаем initialDictionary в LanguageProvider через window для предотвращения мерцания
+	useEffect(() => {
+		if (effectiveInitialDictionary && typeof window !== 'undefined') {
+			// Объединяем с базовым словарем если он есть
+			const existing = (window as any).__INITIAL_DICTIONARY__ || {};
+			(window as any).__INITIAL_DICTIONARY__ = {
+				...existing,
+				...effectiveInitialDictionary,
+			};
+		}
+	}, [effectiveInitialDictionary]);
+	
 	const t = useTranslation();
 
 	// Preload critical data for better performance
