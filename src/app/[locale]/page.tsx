@@ -2,6 +2,7 @@ import { Suspense } from 'react';
 import HomePageClient from '../HomePageClient';
 import { isLocale, type Locale } from '@/i18n/routing';
 import { getDictionary } from '@/i18n/dictionaries';
+import type { TranslationModule } from '@/i18n/modules';
 
 export default async function HomePage({
 	params,
@@ -13,12 +14,12 @@ export default async function HomePage({
 	
 	// Загружаем переводы для главной страницы на сервере
 	// Это предотвращает показ ключей переводов при редиректе
-	const homepageModules = [
+	const homepageModules: TranslationModule[] = [
 		'public/homepage',
 		'public/categories',
 		'public/salon',
 		'public/booking',
-	] as const;
+	];
 	const initialDictionary = await getDictionary(locale, homepageModules);
 
 	// Structured data (kept as-is; adjust per-locale later if needed)

@@ -1467,6 +1467,7 @@ export default function BookingModal({
 			id: 'any',
 			name: t('booking.anyStaff'),
 			accessLevel: 'EMPLOYEE' as const,
+			salonId: salonId || '', // Добавляем salonId для соответствия типу Staff
 		},
 		...staffMembers,
 	];
@@ -2278,8 +2279,8 @@ export default function BookingModal({
 									</div>
 								)}
 								<BookingTimeSelector
-									timeSlots={timeSlots}
-									filteredTimeSlots={filteredTimeSlots}
+									timeSlots={timeSlots.map((slot) => slot.time)}
+									filteredTimeSlots={filteredTimeSlots.map((slot) => slot.time)}
 									selectedTime={selectedTime}
 									onTimeSelect={setSelectedTime}
 									timeFilter={timeFilter}

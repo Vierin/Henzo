@@ -100,7 +100,7 @@ const nextConfig: NextConfig = {
 	// P1: Production source maps отключены для меньшего bundle
 	productionBrowserSourceMaps: false,
 	// P1: Оптимизация для production
-	swcMinify: true, // Использовать SWC для минификации (быстрее чем Terser)
+	// swcMinify удалено - в Next.js 15 SWC минификация включена по умолчанию
 	poweredByHeader: false, // Убрать X-Powered-By header
 };
 

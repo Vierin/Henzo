@@ -187,13 +187,9 @@ export default function BookingTimeSelector({
 							msOverflowStyle: 'none',
 						}}
 					>
-						{filteredTimeSlots.map((timeSlot) => {
-							const time =
-								typeof timeSlot === 'string' ? timeSlot : timeSlot.time;
-							const available =
-								typeof timeSlot === 'object'
-									? timeSlot.available
-									: availabilityMap.get(time) ?? true;
+					{filteredTimeSlots.map((timeSlot) => {
+						const time = timeSlot; // timeSlot теперь всегда string
+						const available = availabilityMap.get(time) ?? true;
 							const isSelected = selectedTime === time;
 
 							return (

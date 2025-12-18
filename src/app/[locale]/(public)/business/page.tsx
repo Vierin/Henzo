@@ -1,5 +1,6 @@
 import { seoConfig } from '@/constants/seoConfig';
 import { Metadata } from 'next';
+import { Suspense } from 'react';
 import { Header } from './components/Header';
 import { Hero } from './components/Hero';
 import { Features } from './components/Features';
@@ -81,7 +82,9 @@ export default function BusinessLandingPage() {
 				}}
 			/>
 
-			<Header />
+			<Suspense fallback={<div className="h-20 bg-white" />}>
+				<Header />
+			</Suspense>
 			<main role="main">
 				<Hero />
 				<Features />
