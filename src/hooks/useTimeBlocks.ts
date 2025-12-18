@@ -95,7 +95,7 @@ export const useTimeBlocks = (filters?: {
 			const response = await apiClient.get<TimeBlockDto[]>(endpoint);
 			return (response || []).map(convertTimeBlockDtoToTimeBlock);
 		},
-		staleTime: 5 * 60 * 1000, // 5 minutes
+		staleTime: 15 * 60 * 1000, // P2: 15 minutes - блокировки времени меняются редко
 		refetchOnMount: false, // Не перезапрашивать если данные свежие
 		refetchOnWindowFocus: false, // Не перезапрашивать при фокусе окна
 	});

@@ -25,8 +25,8 @@ export const useStaffBySalon = (salonId: string) => {
 			return response || [];
 		},
 		enabled: !!salonId,
-		staleTime: 5 * 60 * 1000, // 5 minutes
-		refetchOnMount: 'always', // Перезапрашивать при монтировании если данные устарели
+		staleTime: 10 * 60 * 1000, // 10 minutes - данные редко меняются
+		refetchOnMount: false, // P1: Не перезапрашивать если данные свежие
 		refetchOnWindowFocus: false, // Не перезапрашивать при фокусе окна
 	});
 };

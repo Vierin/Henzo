@@ -110,8 +110,8 @@ export default function AuthCallbackPage() {
 				let data: any = null;
 				let error: any = null;
 				let retryCount = 0;
-				const maxRetries = 2;
-				const retryDelay = 1500; // 1.5 seconds - give database hooks time
+				const maxRetries = 1; // Reduced from 2 to 1 for faster failure handling
+				const retryDelay = 300; // Reduced from 1500ms to 300ms for faster retries
 
 				// Try exchangeCodeForSession with retries
 				while (retryCount <= maxRetries) {
@@ -175,9 +175,8 @@ export default function AuthCallbackPage() {
 							}
 
 							// Try to get session anyway - sometimes Supabase creates it despite the error
-							// Wait a bit for database hooks to complete
-							console.log('⚠️ Waiting for session to be available...');
-							await new Promise((resolve) => setTimeout(resolve, 1500));
+							// Check immediately without delay
+							console.log('⚠️ Checking for session availability...');
 							const { data: fallbackData } = await supabase.auth.getSession();
 							if (fallbackData?.session) {
 								console.log('✅ Got session after retry, continuing...');
@@ -195,15 +194,16 @@ export default function AuthCallbackPage() {
 							}
 						}
 
-						// If it's a 500 error or database hook issue, wait and check session
-						if (error.status === 500 || error.message?.includes('500') || error.message?.includes('hook')) {
+						// If it's a 500 error or database hook issue, check session immediately
+						if (
+							error.status === 500 ||
+							error.message?.includes('500') ||
+							error.message?.includes('hook')
+						) {
 							console.log(
-								'⚠️ Database hook may be processing, waiting before fallback check...'
+								'⚠️ Database hook may be processing, checking session...'
 							);
-							// Wait a bit more for database hooks to complete
-							await new Promise((resolve) => setTimeout(resolve, 2000));
-							
-							// Try to get session anyway - sometimes the user is created despite the error
+							// Check immediately - database hooks usually complete quickly
 							const { data: fallbackData } = await supabase.auth.getSession();
 							if (fallbackData?.session) {
 								console.log('✅ Got session after retry, continuing...');
@@ -222,11 +222,14 @@ export default function AuthCallbackPage() {
 						}
 
 						// Only log error if all retries and fallbacks failed
-						console.error('❌ Auth callback error after all retries and fallbacks:', {
-							message: error.message,
-							status: error.status,
-							attempts: retryCount + 1,
-						});
+						console.error(
+							'❌ Auth callback error after all retries and fallbacks:',
+							{
+								message: error.message,
+								status: error.status,
+								attempts: retryCount + 1,
+							}
+						);
 					}
 					break;
 				}
@@ -273,13 +276,23 @@ export default function AuthCallbackPage() {
 			const pendingBooking = urlParams.get('pendingBooking') === 'true';
 			const returnUrl = urlParams.get('returnUrl');
 
+			// Handle password reset flow
+			if (type === 'recovery') {
+				router.push(
+					withLocale('/reset-password', locale as 'en' | 'ru' | 'vi')
+				);
+				return;
+			}
+
 			// Для pending booking flow - сразу редиректим, не ждем ответа от бэкенда
+			// Optimistic update: показываем UI сразу, синхронизируем в фоне
 			if (pendingBooking && returnUrl) {
 				console.log('📅 Pending booking flow, redirecting immediately...');
 				// Clean up localStorage
 				localStorage.removeItem('oauthReturnUrl');
 				localStorage.removeItem('oauthLocale');
 
+				// Optimistic update: создаем временного пользователя сразу
 				const tempUser = {
 					id: session.user.id,
 					email: session.user.email || '',
@@ -291,10 +304,15 @@ export default function AuthCallbackPage() {
 					role: 'CLIENT' as const,
 					createdAt: new Date().toISOString(),
 				};
+
+				// Кэшируем в localStorage для быстрого доступа
+				localStorage.setItem('auth_user', JSON.stringify(tempUser));
+
+				// Обновляем состояние сразу (optimistic update)
 				setUser(tempUser);
 				setSession(session);
 
-				// Пытаемся создать пользователя в бэкенде асинхронно (не блокируем)
+				// Пытаемся создать/обновить пользователя в бэкенде асинхронно (не блокируем)
 				const API_BASE_URL =
 					process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 				fetch(`${API_BASE_URL}/auth/user`, {
@@ -302,69 +320,24 @@ export default function AuthCallbackPage() {
 						Authorization: `Bearer ${session.access_token}`,
 						'Content-Type': 'application/json',
 					},
-				}).catch((err) => {
-					console.log('⚠️ Background user sync failed (non-critical):', err);
-				});
+				})
+					.then(async (response) => {
+						if (response.ok) {
+							const userData = await response.json();
+							// Обновляем кэш с актуальными данными
+							localStorage.setItem('auth_user', JSON.stringify(userData.user));
+							setUser(userData.user);
+						}
+					})
+					.catch((err) => {
+						console.log('⚠️ Background user sync failed (non-critical):', err);
+					});
 
 				router.push(returnUrl);
 				return;
 			}
 
-			if (type === 'recovery') {
-				router.push(
-					withLocale('/reset-password', locale as 'en' | 'ru' | 'vi')
-				);
-				return;
-			}
-
 			try {
-				// Check if this is a password reset flow
-				const type = urlParams.get('type');
-				const pendingBooking = urlParams.get('pendingBooking') === 'true';
-				const returnUrl = urlParams.get('returnUrl');
-
-				// Для pending booking flow - сразу редиректим, не ждем ответа от бэкенда
-				if (pendingBooking && returnUrl) {
-					console.log('📅 Pending booking flow, redirecting immediately...');
-					// Создаем временного пользователя из Supabase session
-					const tempUser = {
-						id: session.user.id,
-						email: session.user.email || '',
-						name:
-							session.user.user_metadata?.name ||
-							session.user.user_metadata?.full_name ||
-							'User',
-						phone: session.user.user_metadata?.phone,
-						role: 'CLIENT' as const,
-						createdAt: new Date().toISOString(),
-					};
-					setUser(tempUser);
-					setSession(session);
-
-					// Пытаемся создать пользователя в бэкенде асинхронно (не блокируем)
-					const API_BASE_URL =
-						process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
-					fetch(`${API_BASE_URL}/auth/user`, {
-						headers: {
-							Authorization: `Bearer ${session.access_token}`,
-							'Content-Type': 'application/json',
-						},
-					}).catch((err) => {
-						console.log('⚠️ Background user sync failed (non-critical):', err);
-					});
-
-					router.push(returnUrl);
-					return;
-				}
-
-				if (type === 'recovery') {
-					// This is a password reset, redirect to reset password page
-					router.push(
-						withLocale('/reset-password', locale as 'en' | 'ru' | 'vi')
-					);
-					return;
-				}
-
 				// Regular auth callback (including Google OAuth)
 				// Check if this is a business registration
 				// Try URL param first, then localStorage and sessionStorage as fallback
@@ -384,107 +357,105 @@ export default function AuthCallbackPage() {
 					sessionStorage.removeItem('registrationType');
 				}
 				// For business registration, register user first with OWNER role
+				// Execute registration and user fetch in parallel for better performance
+				const API_BASE_URL =
+					process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+
+				let registrationPromise: Promise<void> | null = null;
 				if (isBusinessRegistration) {
-					try {
-						const API_BASE_URL =
-							process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
-						const magicLinkToken = sessionStorage.getItem('magicLinkToken');
+					registrationPromise = (async () => {
+						try {
+							const magicLinkToken = sessionStorage.getItem('magicLinkToken');
 
-						// Register user with OWNER role
-						const registerResponse = await fetch(
-							`${API_BASE_URL}/auth/register`,
-							{
-								method: 'POST',
-								headers: {
-									'Content-Type': 'application/json',
-								},
-								body: JSON.stringify({
-									userId: session.user.id,
-									email: session.user.email || '',
-									name:
-										session.user.user_metadata?.name ||
-										session.user.user_metadata?.full_name ||
-										'',
-									role: 'OWNER',
-									magicLinkToken: magicLinkToken || undefined,
-								}),
-							}
-						);
+							// Register user with OWNER role
+							const registerResponse = await fetch(
+								`${API_BASE_URL}/auth/register`,
+								{
+									method: 'POST',
+									headers: {
+										'Content-Type': 'application/json',
+									},
+									body: JSON.stringify({
+										userId: session.user.id,
+										email: session.user.email || '',
+										name:
+											session.user.user_metadata?.name ||
+											session.user.user_metadata?.full_name ||
+											'',
+										role: 'OWNER',
+										magicLinkToken: magicLinkToken || undefined,
+									}),
+								}
+							);
 
-						if (registerResponse.ok) {
-							console.log('✅ User registered with OWNER role');
-							// Clean up magic link token
-							if (magicLinkToken) {
-								sessionStorage.removeItem('magicLinkToken');
-							}
-							// Wait a bit for app_metadata to sync in Supabase
-							console.log('⏳ Waiting for app_metadata to sync...');
-							await new Promise((resolve) => setTimeout(resolve, 1000));
-						} else {
-							const errorText = await registerResponse.text();
-							let errorData: any = {};
-							try {
-								errorData = errorText ? JSON.parse(errorText) : {};
-							} catch (e) {
-								console.error('Failed to parse error response:', e);
-							}
-
-							console.error('⚠️ Failed to register user:', {
-								status: registerResponse.status,
-								statusText: registerResponse.statusText,
-								error: errorData,
-							});
-
-							// If user already exists, try to update role to OWNER
-							if (
-								errorData.message?.includes('already exists') ||
-								errorData.message?.includes('already been registered') ||
-								registerResponse.status === 400
-							) {
-								console.log(
-									'ℹ️ User already exists, attempting to update role to OWNER...'
-								);
-								// Try to update role using PATCH /auth/user-role
-								try {
-									const updateResponse = await fetch(
-										`${API_BASE_URL}/auth/user-role`,
-										{
-											method: 'PATCH',
-											headers: {
-												Authorization: `Bearer ${session.access_token}`,
-												'Content-Type': 'application/json',
-											},
-											body: JSON.stringify({ role: 'OWNER' }),
-										}
-									);
-									if (updateResponse.ok) {
-										console.log('✅ Role updated to OWNER');
-										// Wait for metadata to sync
-										await new Promise((resolve) => setTimeout(resolve, 500));
-									} else {
-										console.warn('⚠️ Failed to update role, continuing...');
-									}
-								} catch (updateError) {
-									console.error('⚠️ Error updating role:', updateError);
+							if (registerResponse.ok) {
+								console.log('✅ User registered with OWNER role');
+								// Clean up magic link token
+								if (magicLinkToken) {
+									sessionStorage.removeItem('magicLinkToken');
 								}
 							} else {
-								// For other errors, log but continue - getCurrentUser might handle it
-								console.warn('⚠️ Registration error, but continuing...');
+								const errorText = await registerResponse.text();
+								let errorData: any = {};
+								try {
+									errorData = errorText ? JSON.parse(errorText) : {};
+								} catch (e) {
+									console.error('Failed to parse error response:', e);
+								}
+
+								console.error('⚠️ Failed to register user:', {
+									status: registerResponse.status,
+									statusText: registerResponse.statusText,
+									error: errorData,
+								});
+
+								// If user already exists, try to update role to OWNER
+								if (
+									errorData.message?.includes('already exists') ||
+									errorData.message?.includes('already been registered') ||
+									registerResponse.status === 400
+								) {
+									console.log(
+										'ℹ️ User already exists, attempting to update role to OWNER...'
+									);
+									// Try to update role using PATCH /auth/user-role
+									try {
+										const updateResponse = await fetch(
+											`${API_BASE_URL}/auth/user-role`,
+											{
+												method: 'PATCH',
+												headers: {
+													Authorization: `Bearer ${session.access_token}`,
+													'Content-Type': 'application/json',
+												},
+												body: JSON.stringify({ role: 'OWNER' }),
+											}
+										);
+										if (updateResponse.ok) {
+											console.log('✅ Role updated to OWNER');
+										} else {
+											console.warn('⚠️ Failed to update role, continuing...');
+										}
+									} catch (updateError) {
+										console.error('⚠️ Error updating role:', updateError);
+									}
+								} else {
+									// For other errors, log but continue - getCurrentUser might handle it
+									console.warn('⚠️ Registration error, but continuing...');
+								}
 							}
+						} catch (registerError: any) {
+							console.error('⚠️ Error registering user:', {
+								message: registerError.message,
+								stack: registerError.stack,
+							});
+							// Continue anyway - getCurrentUser will handle it
 						}
-					} catch (registerError: any) {
-						console.error('⚠️ Error registering user:', {
-							message: registerError.message,
-							stack: registerError.stack,
-						});
-						// Continue anyway - getCurrentUser will handle it
-					}
+					})();
 				}
 
-				// Get user role from backend
+				// Get user role from backend (in parallel with registration if needed)
 				try {
-					const API_BASE_URL =
-						process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 					const response = await fetch(`${API_BASE_URL}/auth/user`, {
 						headers: {
 							Authorization: `Bearer ${session.access_token}`,
@@ -515,6 +486,11 @@ export default function AuthCallbackPage() {
 					}
 
 					if (response.ok) {
+						// Wait for registration to complete if it was started
+						if (registrationPromise) {
+							await registrationPromise;
+						}
+
 						let userData = await response.json();
 
 						// For business registration, ensure user has OWNER role
@@ -522,33 +498,30 @@ export default function AuthCallbackPage() {
 							console.log(
 								'🔄 Business registration detected, updating role to OWNER...'
 							);
-							// Update user role in backend
+							// Update user role in backend and fetch updated data in parallel
 							try {
-								const updateResponse = await fetch(
-									`${API_BASE_URL}/auth/user-role`,
-									{
-										method: 'PATCH',
-										headers: {
-											Authorization: `Bearer ${session.access_token}`,
-											'Content-Type': 'application/json',
-										},
-										body: JSON.stringify({ role: 'OWNER' }),
-									}
-								);
-
-								if (updateResponse.ok) {
-									console.log('✅ Role updated to OWNER');
-									// Get updated user data from backend
-									const updatedUserResponse = await fetch(
-										`${API_BASE_URL}/auth/user`,
-										{
+								const [updateResponse, updatedUserResponse] = await Promise.all(
+									[
+										fetch(`${API_BASE_URL}/auth/user-role`, {
+											method: 'PATCH',
 											headers: {
 												Authorization: `Bearer ${session.access_token}`,
 												'Content-Type': 'application/json',
 											},
-										}
-									);
+											body: JSON.stringify({ role: 'OWNER' }),
+										}),
+										// Pre-fetch updated user data in parallel
+										fetch(`${API_BASE_URL}/auth/user`, {
+											headers: {
+												Authorization: `Bearer ${session.access_token}`,
+												'Content-Type': 'application/json',
+											},
+										}),
+									]
+								);
 
+								if (updateResponse.ok) {
+									console.log('✅ Role updated to OWNER');
 									if (updatedUserResponse.ok) {
 										const updatedUserData = await updatedUserResponse.json();
 										userData = updatedUserData;
@@ -584,16 +557,26 @@ export default function AuthCallbackPage() {
 						// Новый токен с ролью будет получен автоматически при следующем запросе
 						const refreshedSession = session;
 
+						// Кэшируем данные пользователя в localStorage для быстрого доступа
+						localStorage.setItem('auth_user', JSON.stringify(userData.user));
+
 						// Update authManager (единый источник истины)
+						// Оптимизация: передаем уже полученные данные, избегая лишнего запроса
 						console.log('Updating auth store with:', {
 							user: userData.user,
 							session: refreshedSession ? 'present' : 'missing',
 							role: userData.user.role,
 						});
-						// Обновляем authManager через updateUser (главный источник)
+
+						// Обновляем authManager напрямую без дополнительного запроса
+						// Передаем уже полученные данные пользователя
 						if (refreshedSession?.access_token) {
-							await authManager.updateUser(refreshedSession.access_token);
+							await authManager.updateUser(
+								refreshedSession.access_token,
+								userData.user as any
+							);
 						}
+
 						// Также обновляем authStore для совместимости
 						setUser(userData.user);
 						setSession(refreshedSession);
@@ -613,65 +596,15 @@ export default function AuthCallbackPage() {
 								);
 								break;
 							case 'OWNER':
-								// For OWNER users, check if they have a salon first
-								try {
-									const salonResponse = await fetch(
-										`${API_BASE_URL}/salons/current`,
-										{
-											headers: {
-												Authorization: `Bearer ${session.access_token}`,
-												'Content-Type': 'application/json',
-											},
-										}
-									);
-
-									if (salonResponse.ok) {
-										const responseData = await salonResponse.json();
-										if (responseData.success && responseData.data) {
-											// User has a salon, go directly to dashboard
-											console.log(
-												'Owner has existing salon, redirecting to dashboard'
-											);
-											router.push(
-												withLocale(
-													'/owner-dashboard',
-													locale as 'en' | 'ru' | 'vi'
-												)
-											);
-										} else {
-											// User doesn't have a salon, go to complete-setup
-											console.log(
-												'Owner has no salon, redirecting to complete-setup'
-											);
-											router.push(
-												withLocale(
-													'/business/complete-setup',
-													locale as 'en' | 'ru' | 'vi'
-												)
-											);
-										}
-									} else {
-										// Error checking salon, go to complete-setup as fallback
-										console.log(
-											'Error checking salon, redirecting to complete-setup'
-										);
-										router.push(
-											withLocale(
-												'/business/complete-setup',
-												locale as 'en' | 'ru' | 'vi'
-											)
-										);
-									}
-								} catch (error) {
-									console.error('Error checking salon:', error);
-									// Error checking salon, go to complete-setup as fallback
-									router.push(
-										withLocale(
-											'/business/complete-setup',
-											locale as 'en' | 'ru' | 'vi'
-										)
-									);
-								}
+								// For OWNER users, redirect immediately to dashboard
+								// The dashboard page will check for salon and redirect if needed
+								// This eliminates blocking API call during auth flow
+								console.log(
+									'Owner redirecting to dashboard (salon check on page)'
+								);
+								router.push(
+									withLocale('/owner-dashboard', locale as 'en' | 'ru' | 'vi')
+								);
 								break;
 							case 'CLIENT':
 								// If this is a pending booking flow, return to the original page
@@ -719,17 +652,17 @@ export default function AuthCallbackPage() {
 					// Create a temporary user object and redirect based on registration type
 					const defaultRole = isBusinessRegistration ? 'OWNER' : 'CLIENT';
 
-					// Update user_metadata with role
-					try {
-						await supabase.auth.updateUser({
+					// Update user_metadata with role (не блокируем редирект)
+					supabase.auth
+						.updateUser({
 							data: { role: defaultRole },
+						})
+						.catch((updateError) => {
+							console.error(
+								'Error updating user metadata with role:',
+								updateError
+							);
 						});
-					} catch (updateError) {
-						console.error(
-							'Error updating user metadata with role:',
-							updateError
-						);
-					}
 
 					const tempUser = {
 						id: session.user.id,
@@ -741,6 +674,10 @@ export default function AuthCallbackPage() {
 						role: defaultRole as 'ADMIN' | 'OWNER' | 'CLIENT',
 						createdAt: new Date().toISOString(),
 					};
+
+					// Кэшируем в localStorage для быстрого доступа
+					localStorage.setItem('auth_user', JSON.stringify(tempUser));
+
 					setUser(tempUser);
 					setSession(session);
 

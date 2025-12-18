@@ -481,9 +481,60 @@ class AuthManager {
 	}
 
 	// Публичный метод для обновления пользователя (используется в auth callback)
-	async updateUser(accessToken: string): Promise<void> {
+	async updateUser(accessToken: string, cachedUserData?: User): Promise<void> {
 		try {
+			// Оптимизация: если данные уже получены, используем их вместо запроса
+			if (cachedUserData) {
+				(cachedUserData as any)._cachedAt = Date.now();
+				this.setState({
+					user: cachedUserData,
+					isAuthenticated: true,
+					isLoading: false,
+				});
+				localStorage.setItem('auth_user', JSON.stringify(cachedUserData));
+				return;
+			}
+			
+			// Оптимизация: проверяем кэш перед запросом к API
+			const cachedUser = localStorage.getItem('auth_user');
+			if (cachedUser) {
+				try {
+					const parsedUser = JSON.parse(cachedUser);
+					// Если кэш свежий (менее 5 секунд), используем его
+					// Иначе делаем запрос к API для обновления
+					const cacheAge = Date.now() - (parsedUser._cachedAt || 0);
+					if (cacheAge < 5000) {
+						// Используем кэш, но обновляем в фоне
+						this.setState({
+							user: parsedUser,
+							isAuthenticated: true,
+							isLoading: false,
+						});
+						
+						// Обновляем в фоне без блокировки
+						this.fetchUserWithRole(accessToken)
+							.then((user) => {
+								(user as any)._cachedAt = Date.now();
+								localStorage.setItem('auth_user', JSON.stringify(user));
+								this.setState({
+									user,
+									isAuthenticated: true,
+									isLoading: false,
+								});
+							})
+							.catch(() => {
+								// Игнорируем ошибки фонового обновления
+							});
+						return;
+					}
+				} catch (e) {
+					// Если кэш поврежден, продолжаем с запросом
+				}
+			}
+			
+			// Если кэша нет или он устарел, делаем запрос
 			const user = await this.fetchUserWithRole(accessToken);
+			(user as any)._cachedAt = Date.now();
 			this.setState({
 				user,
 				isAuthenticated: true,

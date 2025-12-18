@@ -61,6 +61,8 @@ export default function CalendarClient() {
 		salonData,
 	} = useOwnerLayout();
 
+	// P1: Параллельно загружаем независимые данные
+	// Bookings и TimeBlocks не зависят от salonId, загружаем сразу
 	const {
 		data: bookingsData = [],
 		isLoading: bookingsLoading,
@@ -74,6 +76,7 @@ export default function CalendarClient() {
 		error: timeBlocksError,
 	} = useTimeBlocks();
 
+	// Staff и Services зависят от salonId, но загружаются параллельно друг с другом
 	const { data: staffMembers = [], isLoading: staffLoading } = useStaffBySalon(
 		salonId || ''
 	);

@@ -1013,8 +1013,9 @@ export default function BookingModal({
 			];
 			const dayName = dayNames[dayOfWeek];
 			const currentWorkingHours = workingHours || salonWorkingHours;
-			const isClosed =
-				currentWorkingHours && currentWorkingHours[dayName]?.closed === true;
+			const isClosed = Boolean(
+				currentWorkingHours && currentWorkingHours[dayName]?.closed === true
+			);
 
 			const year = date.getFullYear();
 			const month = String(date.getMonth() + 1).padStart(2, '0');

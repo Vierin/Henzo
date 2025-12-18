@@ -6,6 +6,7 @@ import { useRouter, usePathname } from 'next/navigation';
 import { useEffect } from 'react';
 import LoadingSpinner from '@/components/LoadingSpinner';
 import { useTranslation } from '@/contexts/LanguageContext';
+import { withLocale, extractLocaleFromPath } from '@/i18n/routing';
 
 interface OwnerLayoutContextType {
 	salonId: string | null;
@@ -51,7 +52,8 @@ export function OwnerLayoutProvider({ children }: OwnerLayoutProviderProps) {
 
 		// Редиректим только если салона нет и мы не на странице настройки
 		if (!hasSalon) {
-			router.push('/business/complete-setup');
+			const locale = extractLocaleFromPath(pathname) ?? 'en';
+			router.push(withLocale('/business/complete-setup', locale as 'en' | 'ru' | 'vi'));
 		}
 	}, [hasSalon, salonLoading, router, isOnCompleteSetupPage, isOnSalonInfoPage]);
 

@@ -82,13 +82,8 @@ const nextConfig: NextConfig = {
 
 		// P1: Ускорение dev компиляции
 		if (dev) {
-			// Кэшируем модули node_modules для ускорения повторных компиляций
-			config.cache = {
-				type: 'filesystem',
-				buildDependencies: {
-					config: [__filename],
-				},
-			};
+			// Next.js 15 автоматически управляет кэшем, не нужно настраивать вручную
+			// Ручная настройка может вызывать конфликты с PackFileCacheStrategy
 			
 			// Ускоряем компиляцию за счет уменьшения проверок
 			config.watchOptions = {

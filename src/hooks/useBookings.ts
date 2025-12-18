@@ -23,7 +23,7 @@ export const bookingKeys = {
 };
 
 // Get all bookings for current user (owner/admin)
-export const useBookings = (filters?: { status?: string; date?: string }) => {
+export const useBookings = (filters?: { status?: string; date?: string; page?: number; limit?: number }) => {
 	const { user, isLoading: authLoading, isOwner } = useAuth();
 
 	return useQuery({
@@ -38,6 +38,9 @@ export const useBookings = (filters?: { status?: string; date?: string }) => {
 			const params = new URLSearchParams();
 			if (filters?.status) params.append('status', filters.status);
 			if (filters?.date) params.append('date', filters.date);
+			// P1: Добавляем пагинацию
+			if (filters?.page) params.append('page', filters.page.toString());
+			if (filters?.limit) params.append('limit', filters.limit.toString());
 
 			const queryString = params.toString();
 			const endpoint = queryString
@@ -48,7 +51,8 @@ export const useBookings = (filters?: { status?: string; date?: string }) => {
 			return response || [];
 		},
 		enabled: !authLoading && !!user && isOwner(),
-		staleTime: 5 * 60 * 1000, // 5 minutes
+		staleTime: 10 * 60 * 1000, // P2: 10 minutes - увеличили для редко меняющихся данных
+		gcTime: 30 * 60 * 1000, // P2: 30 minutes в кэше
 		refetchOnMount: false, // Не перезапрашивать если данные свежие
 		refetchOnWindowFocus: false, // Не перезапрашивать при фокусе окна
 	});

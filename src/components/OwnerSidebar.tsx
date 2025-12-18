@@ -162,6 +162,7 @@ export default function OwnerSidebar({
 		return (
 			<Link
 				href={hrefWithLocale}
+				prefetch={true} // P3: Включаем prefetch для быстрой навигации
 				className={`flex items-center gap-3 px-3 py-2 rounded-lg transition-colors ${
 					isActive
 						? 'bg-[#ea4b4b] text-white'
@@ -169,6 +170,7 @@ export default function OwnerSidebar({
 				}`}
 				onClick={() => setIsMobileMenuOpen?.(false)}
 				onMouseEnter={() => {
+					// P3: Дополнительный prefetch данных при hover
 					if (prefetchKey && !isActive) {
 						prefetchPageData(prefetchKey);
 					}
