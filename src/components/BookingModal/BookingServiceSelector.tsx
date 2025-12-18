@@ -4,6 +4,11 @@ import React from 'react';
 import { ChevronDown, Clock } from 'lucide-react';
 import { Service } from '@/types';
 import { formatVND } from '@/utils/currency';
+import { useLanguage } from '@/contexts/LanguageContext';
+import {
+	getLocalizedServiceName,
+	getLocalizedServiceDescription,
+} from '@/utils/serviceLocalization';
 
 interface BookingServiceSelectorProps {
 	selectedService: Service | null;
@@ -22,15 +27,22 @@ export default function BookingServiceSelector({
 	onServiceSelect,
 	onToggleServiceDropdown,
 }: BookingServiceSelectorProps) {
+	const { language, t } = useLanguage();
+
 	if (!showServiceSelector) {
 		return (
 			<div className="mb-6 sm:mb-8 pt-4 md:pt-0">
 				<div>
 					<h2 className="text-xl sm:text-2xl font-bold text-gray-900 mb-2">
-						{selectedService?.name || 'Select a service'}
+						{selectedService
+							? getLocalizedServiceName(selectedService, language)
+							: t.booking.selectAService}
 					</h2>
 					<p className="text-sm sm:text-base text-gray-700 mb-4">
-						{selectedService?.description || 'Please select a service to book'}
+						{selectedService
+							? getLocalizedServiceDescription(selectedService, language) ||
+								t.booking.chooseFromAvailableServices
+							: t.booking.chooseFromAvailableServices}
 					</p>
 					<div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-6">
 						<div className="flex gap-1">
@@ -39,15 +51,15 @@ export default function BookingServiceSelector({
 							</span>
 							<span className="text-sm text-gray-600">
 								{selectedService?.duration
-									? `${selectedService.duration} min`
-									: 'Duration'}
+									? `${selectedService.duration} ${t('common.minutesShort') || t('homepage.minutesShort') || 'min'}`
+									: t.booking.duration}
 							</span>
 						</div>
 						<div className="flex items-center gap-2">
 							<span className="text-base sm:text-lg font-bold text-[#ff5b5b]">
 								{selectedService?.price
 									? formatVND(selectedService.price)
-									: 'Price'}
+									: t.booking.price}
 							</span>
 						</div>
 					</div>
@@ -68,11 +80,15 @@ export default function BookingServiceSelector({
 					>
 						<div className="flex-1 min-w-0">
 							<div className="text-base sm:text-lg font-semibold text-gray-900 truncate">
-								{selectedService?.name || 'Select a service'}
+								{selectedService
+									? getLocalizedServiceName(selectedService, language)
+									: t.booking.selectAService}
 							</div>
 							<div className="text-xs sm:text-sm text-gray-600 truncate">
-								{selectedService?.description ||
-									'Choose from available services'}
+								{selectedService
+									? getLocalizedServiceDescription(selectedService, language) ||
+										t.booking.chooseFromAvailableServices
+									: t.booking.chooseFromAvailableServices}
 							</div>
 						</div>
 						<ChevronDown
@@ -84,27 +100,39 @@ export default function BookingServiceSelector({
 
 					{isServiceDropdownOpen && (
 						<div className="absolute z-20 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-auto scrollbar-hide">
-							{services.map((serviceOption) => (
-								<button
-									key={serviceOption.id}
-									type="button"
-									onClick={() => {
-										onServiceSelect(serviceOption);
-									}}
-									className="w-full text-left px-4 py-3 hover:bg-gray-50 border-b border-gray-100 last:border-b-0"
-								>
-									<div className="font-medium text-gray-900">
-										{serviceOption.name}
-									</div>
-									<div className="text-sm text-gray-600">
-										{serviceOption.description}
-									</div>
-									<div className="text-sm text-gray-500 mt-1">
-										{serviceOption.duration} min •{' '}
-										{formatVND(serviceOption.price)}
-									</div>
-								</button>
-							))}
+							{services.map((serviceOption) => {
+								const localizedName = getLocalizedServiceName(
+									serviceOption,
+									language
+								);
+								const localizedDescription = getLocalizedServiceDescription(
+									serviceOption,
+									language
+								);
+								return (
+									<button
+										key={serviceOption.id}
+										type="button"
+										onClick={() => {
+											onServiceSelect(serviceOption);
+										}}
+										className="w-full text-left px-4 py-3 hover:bg-gray-50 border-b border-gray-100 last:border-b-0"
+									>
+										<div className="font-medium text-gray-900">
+											{localizedName}
+										</div>
+										{localizedDescription && (
+											<div className="text-sm text-gray-600">
+												{localizedDescription}
+											</div>
+										)}
+										<div className="text-sm text-gray-500 mt-1">
+											{serviceOption.duration} min •{' '}
+											{formatVND(serviceOption.price)}
+										</div>
+									</button>
+								);
+							})}
 						</div>
 					)}
 				</div>
@@ -117,7 +145,10 @@ export default function BookingServiceSelector({
 								<Clock className="w-4 h-4" />
 							</span>
 							<span className="text-sm text-gray-600">
-								{selectedService.duration} min
+								{selectedService.duration}{' '}
+								{t('common.minutesShort') ||
+									t('homepage.minutesShort') ||
+									'min'}
 							</span>
 						</div>
 						<div className="flex items-center gap-2">

@@ -8,7 +8,7 @@ export default function TermsOfService() {
 	return (
 		<div className="min-h-screen bg-white">
 			<main className="max-w-4xl mx-auto px-6 py-12" role="main">
-				<article className="prose prose-lg max-w-none">
+				<article className="prose prose-lg max-w-7xl mx-auto">
 					{/* Header */}
 					<header className="text-center mb-12">
 						<p className="text-[#ea4b4b] text-sm font-semibold uppercase tracking-wide mb-4">

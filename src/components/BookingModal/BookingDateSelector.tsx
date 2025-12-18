@@ -2,12 +2,15 @@
 
 import React, { useRef, useState, useCallback, useEffect } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { useTranslation } from '@/contexts/LanguageContext';
 
 interface DateInfo {
 	dateString: string;
-	displayDate: string;
-	displayMonth: string;
+	displayDate?: string;
+	displayMonth?: string;
 	dayName: string;
+	day?: number;
+	monthShort?: string;
 	isToday: boolean;
 	isClosed: boolean;
 }
@@ -41,6 +44,7 @@ export default function BookingDateSelector({
 	onScrollLeft,
 	onScrollRight,
 }: BookingDateSelectorProps) {
+	const t = useTranslation();
 	const dateScrollRef = useRef<HTMLDivElement>(null);
 	const [isDragging, setIsDragging] = useState(false);
 	const [startX, setStartX] = useState(0);
@@ -105,46 +109,55 @@ export default function BookingDateSelector({
 	}, []);
 
 	return (
-		<div className="mb-6">
-			<h3 className="text-lg font-semibold text-gray-900 mb-3">
-				Select a Date
-			</h3>
+		<div className="mb-6 sm:mb-8">
+			<div className="flex items-center justify-between mb-3 sm:mb-4">
+				<h3 className="text-base sm:text-lg font-bold text-gray-900">
+					{t.booking.selectDate}
+				</h3>
+			</div>
 
-			{/* Date Navigation */}
-			<div className="relative mb-4">
+			<div className="relative">
+				{/* Navigation Buttons */}
 				<button
 					onClick={handleScrollLeftClick}
 					disabled={!canScrollLeft}
-					className={`absolute left-0 top-1/2 transform -translate-y-1/2 z-10 w-8 h-8 bg-white rounded-full shadow-md flex items-center justify-center ${
+					className={`absolute left-0 top-1/2 -translate-y-1/2 z-10 w-8 h-8 rounded-full shadow-md flex items-center justify-center transition-colors hidden sm:flex ${
 						canScrollLeft
-							? 'text-gray-600 hover:bg-gray-50'
-							: 'text-gray-300 cursor-not-allowed'
+							? 'bg-white hover:bg-gray-50'
+							: 'bg-gray-100 cursor-not-allowed'
 					}`}
 				>
-					<ChevronLeft className="w-5 h-5" />
+					<ChevronLeft
+						className={`w-4 h-4 ${canScrollLeft ? 'text-gray-600' : 'text-gray-400'}`}
+					/>
 				</button>
 
 				<button
 					onClick={handleScrollRightClick}
 					disabled={!canScrollRight}
-					className={`absolute right-0 top-1/2 transform -translate-y-1/2 z-10 w-8 h-8 bg-white rounded-full shadow-md flex items-center justify-center ${
+					className={`absolute right-0 top-1/2 -translate-y-1/2 z-10 w-8 h-8 rounded-full shadow-md flex items-center justify-center transition-colors hidden sm:flex ${
 						canScrollRight
-							? 'text-gray-600 hover:bg-gray-50'
-							: 'text-gray-300 cursor-not-allowed'
+							? 'bg-white hover:bg-gray-50'
+							: 'bg-gray-100 cursor-not-allowed'
 					}`}
 				>
-					<ChevronRight className="w-5 h-5" />
+					<ChevronRight
+						className={`w-4 h-4 ${canScrollRight ? 'text-gray-600' : 'text-gray-400'}`}
+					/>
 				</button>
 
-				{/* Date Scroller */}
+				{/* Date Pills Container */}
 				<div
 					ref={dateScrollRef}
-					className="flex overflow-x-auto scrollbar-hide gap-2 px-10 cursor-grab select-none"
 					onMouseDown={handleMouseDown}
 					onMouseLeave={handleMouseLeave}
 					onMouseUp={handleMouseUp}
 					onMouseMove={handleMouseMove}
-					style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+					className="flex gap-2 overflow-x-auto scrollbar-hide scroll-smooth cursor-grab select-none px-8 sm:px-12"
+					style={{
+						scrollbarWidth: 'none',
+						msOverflowStyle: 'none',
+					}}
 				>
 					{dates.map((date, index) => {
 						const isSelected = selectedDate === date.dateString;
@@ -152,26 +165,34 @@ export default function BookingDateSelector({
 						return (
 							<button
 								key={date.dateString}
-								onClick={(e) => {
+								onClick={() => {
 									if (!date.isClosed && !hasMoved) {
 										onDateSelect(date.dateString);
 										onDateIndexChange(index);
 									}
 								}}
-								disabled={date.isClosed}
-								className={`flex flex-col items-center justify-center min-w-[70px] md:min-w-[80px] h-16 md:h-20 p-2 rounded-lg border transition-all duration-200 flex-shrink-0 ${
+								disabled={!!date.isClosed}
+								className={`flex-shrink-0 flex flex-col items-center justify-center py-1 px-1 sm:py-3 sm:px-2 rounded-xl border-2 transition-all w-[50px] sm:w-[65px] md:w-[70px] min-h-[50px] sm:min-h-[80px] ${
 									date.isClosed
-										? 'bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed'
+										? 'border-gray-200 bg-gray-50 text-gray-300 cursor-not-allowed'
 										: isSelected
-											? 'bg-[#ff5b5b] text-white border-[#ff5b5b] shadow-md'
-											: 'bg-white text-gray-700 border-gray-200 hover:bg-gray-50 hover:border-gray-300'
+											? 'border-[#ff5b5b] bg-[#ff5b5b] text-white shadow-lg'
+											: 'border-gray-200 bg-white hover:border-[#ff5b5b] hover:shadow-md'
 								}`}
 							>
-								<span className="text-xs font-medium">{date.dayName}</span>
-								<span className="text-sm md:text-base font-bold">
-									{date.displayDate}
+								<span
+									className={`text-[10px] sm:text-xs font-medium mb-0.5 sm:mb-1 ${isSelected ? 'text-white' : 'text-gray-500'}`}
+								>
+									{date.dayName}
 								</span>
-								<span className="text-xs">{date.displayMonth}</span>
+								<span className="text-sm sm:text-lg md:text-2xl font-bold mb-0.5 sm:mb-1">
+									{date.displayDate || date.day}
+								</span>
+								<span
+									className={`text-[10px] sm:text-xs ${isSelected ? 'text-white/80' : 'text-gray-500'}`}
+								>
+									{date.displayMonth || date.monthShort}
+								</span>
 							</button>
 						);
 					})}

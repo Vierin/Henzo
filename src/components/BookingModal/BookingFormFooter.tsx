@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import { useTranslation } from '@/contexts/LanguageContext';
 
 interface BookingFormFooterProps {
 	loading: boolean;
@@ -15,6 +16,8 @@ export default function BookingFormFooter({
 	onBooking,
 	onClose,
 }: BookingFormFooterProps) {
+	const t = useTranslation();
+
 	return (
 		<div className="w-full sm:w-80 flex-shrink-0 bg-gray-50 sm:bg-gray-50 p-4 sm:p-8 sm:rounded-r-2xl max-h-[30vh] sm:max-h-[90vh] overflow-y-auto border-t sm:border-t-0">
 			{/* Book Appointment Button */}
@@ -25,11 +28,11 @@ export default function BookingFormFooter({
 			>
 				{loading
 					? editingBooking
-						? 'Updating...'
-						: 'Booking...'
+						? t.booking.updating
+						: t.booking.booking
 					: editingBooking
-						? 'Update Appointment'
-						: 'Book Appointment'}
+						? t.booking.updateAppointment
+						: t.booking.bookAppointment}
 			</button>
 
 			{/* Close Button */}
@@ -37,7 +40,7 @@ export default function BookingFormFooter({
 				onClick={onClose}
 				className="w-full mt-3 sm:mt-4 text-gray-500 hover:text-gray-700 font-medium text-sm sm:text-base"
 			>
-				Cancel
+				{t.common.close || 'Cancel'}
 			</button>
 		</div>
 	);

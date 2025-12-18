@@ -2,6 +2,7 @@
 
 import React, { useRef, useState, useCallback, useEffect, useMemo } from 'react';
 import { Clock } from 'lucide-react';
+import { useTranslation } from '@/contexts/LanguageContext';
 
 interface BookingTimeSelectorProps {
 	timeSlots: string[];
@@ -28,6 +29,7 @@ export default function BookingTimeSelector({
 	selectedStaff,
 	timeSlotsLoading,
 }: BookingTimeSelectorProps) {
+	const t = useTranslation();
 	const timeScrollRef = useRef<HTMLDivElement>(null);
 	const [isDragging, setIsDragging] = useState(false);
 	const [startX, setStartX] = useState(0);
@@ -111,104 +113,131 @@ export default function BookingTimeSelector({
 	}, [filteredTimeSlots, selectedStaff, isTimeSlotAvailable]);
 
 	const filterButtons = [
-		{ key: 'all', label: 'All' },
-		{ key: 'morning', label: 'Morning' },
-		{ key: 'afternoon', label: 'Afternoon' },
-		{ key: 'evening', label: 'Evening' },
+		{ key: 'all', label: t.booking.timeFilters.all },
+		{ key: 'morning', label: t.booking.timeFilters.morning },
+		{ key: 'afternoon', label: t.booking.timeFilters.afternoon },
+		{ key: 'evening', label: t.booking.timeFilters.evening },
 	] as const;
 
 	return (
-		<div className="mb-6">
-			<h3 className="text-lg font-semibold text-gray-900 mb-3 flex items-center gap-2">
-				<Clock className="w-5 h-5" />
-				Select a Time
-			</h3>
-
-			{/* Time Filter Buttons */}
-			<div className="flex gap-2 mb-4">
-				{filterButtons.map((filter) => (
-					<button
-						key={filter.key}
-						onClick={() => onTimeFilterChange(filter.key)}
-						className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-							timeFilter === filter.key
-								? 'bg-[#ff5b5b] text-white'
-								: 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-						}`}
-					>
-						{filter.label}
-					</button>
-				))}
+		<div className="mt-10">
+			<div className="flex items-center justify-between mb-2">
+				<h3 className="text-base sm:text-lg font-bold text-gray-900">
+					{t.booking.selectATime}
+				</h3>
 			</div>
 
-			{/* Time Slots */}
-			{timeSlotsLoading ? (
-				<div className="flex justify-center py-8">
-					<div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#ff5b5b]"></div>
+			{/* Time Filters */}
+			<div className="mb-4 sm:mb-6 flex justify-center">
+				<div className="bg-gray-100 rounded-xl p-1 inline-flex w-full sm:w-auto">
+					{filterButtons.map((filter) => (
+						<button
+							key={filter.key}
+							onClick={() => onTimeFilterChange(filter.key)}
+							className={`flex-1 sm:flex-none px-3 sm:px-6 py-2 rounded-lg text-xs sm:text-sm font-medium transition-all ${
+								timeFilter === filter.key
+									? 'bg-white text-gray-900 shadow-sm'
+									: 'text-gray-600 hover:text-gray-900 hover:bg-white/50'
+							}`}
+						>
+							{filter.label}
+						</button>
+					))}
 				</div>
-			) : (
-				<div className="relative">
-					{/* Scroll Navigation */}
-					{canScrollLeft && (
-						<button
-							onClick={scrollTimeLeft}
-							className="absolute left-0 top-1/2 transform -translate-y-1/2 z-10 w-8 h-8 bg-white rounded-full shadow-md flex items-center justify-center text-gray-600 hover:bg-gray-50"
-						>
-							←
-						</button>
-					)}
+			</div>
 
-					{canScrollRight && (
-						<button
-							onClick={scrollTimeRight}
-							className="absolute right-0 top-1/2 transform -translate-y-1/2 z-10 w-8 h-8 bg-white rounded-full shadow-md flex items-center justify-center text-gray-600 hover:bg-gray-50"
-						>
-							→
-						</button>
-					)}
+			{/* Time Slots - Native Scroll */}
+			{filteredTimeSlots.length > 0 ? (
+				<div className="relative px-0 sm:px-8">
+					{/* Navigation Buttons */}
+					<button
+						onClick={scrollTimeLeft}
+						disabled={!canScrollLeft}
+						className={`absolute left-0 top-1/2 -translate-y-1/2 z-10 w-8 h-8 rounded-full shadow-md flex items-center justify-center transition-colors hidden sm:flex ${
+							canScrollLeft
+								? 'bg-white hover:bg-gray-50'
+								: 'bg-gray-100 cursor-not-allowed'
+						}`}
+					>
+						←
+					</button>
+
+					<button
+						onClick={scrollTimeRight}
+						disabled={!canScrollRight}
+						className={`absolute right-0 top-1/2 -translate-y-1/2 z-10 w-8 h-8 rounded-full shadow-md flex items-center justify-center transition-colors hidden sm:flex ${
+							canScrollRight
+								? 'bg-white hover:bg-gray-50'
+								: 'bg-gray-100 cursor-not-allowed'
+						}`}
+					>
+						→
+					</button>
 
 					{/* Time Slots Container */}
 					<div
 						ref={timeScrollRef}
-						className="flex overflow-x-auto scrollbar-hide gap-2 px-4 cursor-grab select-none"
 						onMouseDown={handleMouseDown}
 						onMouseLeave={handleMouseLeave}
 						onMouseUp={handleMouseUp}
 						onMouseMove={handleMouseMove}
-						style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+						className="flex gap-2 overflow-x-auto scrollbar-hide cursor-grab select-none"
+						style={{
+							scrollbarWidth: 'none',
+							msOverflowStyle: 'none',
+						}}
 					>
-						{filteredTimeSlots.length > 0 ? (
-							filteredTimeSlots.map((time) => {
-								const available = availabilityMap.get(time) ?? true;
-								const isSelected = selectedTime === time;
+						{filteredTimeSlots.map((timeSlot) => {
+							const time =
+								typeof timeSlot === 'string' ? timeSlot : timeSlot.time;
+							const available =
+								typeof timeSlot === 'object'
+									? timeSlot.available
+									: availabilityMap.get(time) ?? true;
+							const isSelected = selectedTime === time;
 
-								return (
-									<button
-										key={time}
-										onClick={(e) => {
-											if (available && !hasMoved) {
-												onTimeSelect(time);
-											}
-										}}
-										disabled={!available}
-										className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 flex-shrink-0 ${
-											!available
-												? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-												: isSelected
-													? 'bg-[#ff5b5b] text-white shadow-md'
-													: 'bg-white text-gray-700 border border-gray-200 hover:bg-gray-50 hover:border-gray-300'
-										}`}
-									>
-										{time}
-									</button>
-								);
-							})
-						) : (
-							<div className="text-center py-8 text-gray-500 w-full">
-								No available time slots for this date
-							</div>
-						)}
+							return (
+								<button
+									key={time}
+									onClick={(e) => {
+										if (available && !hasMoved) {
+											onTimeSelect(time);
+										}
+										e.stopPropagation();
+									}}
+									disabled={!available}
+									className={`flex-shrink-0 px-4 py-3 rounded-lg text-sm font-medium transition-colors whitespace-nowrap ${
+										!available
+											? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+											: isSelected
+												? 'bg-[#ff5b5b] text-white'
+												: 'bg-white text-gray-900 border border-gray-200 hover:bg-gray-50'
+									}`}
+								>
+									{time}
+								</button>
+							);
+						})}
 					</div>
+				</div>
+			) : (
+				<div className="flex justify-center items-center gap-2 py-2">
+					<svg
+						className="w-5 h-5 text-gray-500"
+						fill="none"
+						stroke="currentColor"
+						viewBox="0 0 24 24"
+					>
+						<path
+							strokeLinecap="round"
+							strokeLinejoin="round"
+							strokeWidth={1.5}
+							d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+						/>
+					</svg>
+					<p className="text-sm text-gray-500">
+						{t.booking.noAvailableSlotsWithSelection}
+					</p>
 				</div>
 			)}
 		</div>

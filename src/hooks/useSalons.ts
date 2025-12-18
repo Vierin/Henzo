@@ -38,7 +38,8 @@ export const useSalons = (filters?: { search?: string; category?: string }) => {
 			const response = await apiClient.get<SalonResponseDto[]>(endpoint);
 			return response || [];
 		},
-		staleTime: 5 * 60 * 1000, // 5 minutes
+		staleTime: 10 * 60 * 1000, // 10 minutes
+		gcTime: 30 * 60 * 1000, // 30 minutes
 	});
 };
 
@@ -58,7 +59,8 @@ export const useSalonsWithServices = () => {
 				return [];
 			}
 		},
-		staleTime: 5 * 60 * 1000, // 5 minutes
+		staleTime: 10 * 60 * 1000, // 10 minutes
+		gcTime: 30 * 60 * 1000, // 30 minutes
 		retry: 2, // Retry 2 times on failure
 	});
 };
@@ -71,7 +73,8 @@ export const useSalonById = (id: string) => {
 			return apiClient.get<SalonWithDetailsResponseDto>(`/salons/${id}`);
 		},
 		enabled: !!id,
-		staleTime: 5 * 60 * 1000, // 5 minutes
+		staleTime: 10 * 60 * 1000, // 10 minutes
+		gcTime: 30 * 60 * 1000, // 30 minutes
 	});
 };
 

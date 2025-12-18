@@ -69,8 +69,8 @@ export function useSalonSearch(params: SearchParams) {
 			);
 			return response;
 		},
-		staleTime: 5 * 60 * 1000, // 5 minutes
-		gcTime: 10 * 60 * 1000, // 10 minutes
+		staleTime: 10 * 60 * 1000, // 10 minutes
+		gcTime: 30 * 60 * 1000, // 30 minutes
 		refetchOnWindowFocus: false, // Prevent unnecessary refetches
 	});
 }

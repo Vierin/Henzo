@@ -19,6 +19,11 @@ import {
 import { logger } from '@/lib/logger';
 import BookingGuestForm from './BookingModal/BookingGuestForm';
 import BookingAuthForm from './BookingModal/BookingAuthForm';
+import BookingServiceSelector from './BookingModal/BookingServiceSelector';
+import BookingDateSelector from './BookingModal/BookingDateSelector';
+import BookingTimeSelector from './BookingModal/BookingTimeSelector';
+import BookingStaffSelector from './BookingModal/BookingStaffSelector';
+import BookingFormFooter from './BookingModal/BookingFormFooter';
 // Swiper imports removed - using native scroll instead
 import { Clock, ChevronDown, ChevronLeft, ChevronRight } from 'lucide-react';
 
@@ -1027,6 +1032,8 @@ export default function BookingModal({
 				day: date.getDate(),
 				dayName: dayNameTranslated,
 				monthShort: monthShortTranslated,
+				displayDate: String(date.getDate()),
+				displayMonth: monthShortTranslated,
 				isToday: i === 0,
 				isTomorrow: i === 1,
 				fullDate: date,
@@ -2221,429 +2228,57 @@ export default function BookingModal({
 							{/* Left Section - Service Details, Date, and Time Selection */}
 							<div className="flex-1 sm:min-w-[500px] p-4 sm:p-8 max-h-[70vh] sm:max-h-[90vh] overflow-y-auto">
 								{/* Service Details */}
-								<div className="mb-6 sm:mb-8 pt-4 md:pt-0">
-									{showServiceSelector ? (
-										<div>
-											{/* Service Selector Dropdown */}
-											<div className="relative mb-4 service-dropdown">
-												<button
-													type="button"
-													onClick={() => {
-														// Always close staff dropdown when toggling service dropdown
-														setIsStaffDropdownOpen(false);
-														setIsServiceDropdownOpen(!isServiceDropdownOpen);
-													}}
-													className="w-full flex items-center justify-between p-3 sm:p-4 border border-gray-300 rounded-lg bg-white text-left focus:outline-none focus:ring-2 focus:ring-[#ea4b4b] focus:border-transparent"
-												>
-													<div className="flex-1 min-w-0">
-														<div className="text-base sm:text-lg font-semibold text-gray-900 truncate">
-															{selectedService
-																? getLocalizedServiceName(
-																		selectedService,
-																		language
-																	)
-																: t.booking.selectAService}
-														</div>
-														<div className="text-xs sm:text-sm text-gray-600 truncate">
-															{selectedService
-																? getLocalizedServiceDescription(
-																		selectedService,
-																		language
-																	) || t.booking.chooseFromAvailableServices
-																: t.booking.chooseFromAvailableServices}
-														</div>
-													</div>
-													<ChevronDown
-														className={`w-5 h-5 text-gray-400 transition-transform ${
-															isServiceDropdownOpen ? 'rotate-180' : ''
-														}`}
-													/>
-												</button>
-
-												{isServiceDropdownOpen && (
-													<div className="absolute z-20 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-auto scrollbar-hide">
-														{services.map((serviceOption) => {
-															const localizedName = getLocalizedServiceName(
-																serviceOption,
-																language
-															);
-															const localizedDescription =
-																getLocalizedServiceDescription(
-																	serviceOption,
-																	language
-																);
-															return (
-																<button
-																	key={serviceOption.id}
-																	type="button"
-																	onClick={() => {
-																		setSelectedService(serviceOption);
-																		setIsServiceDropdownOpen(false);
-																	}}
-																	className="w-full text-left px-4 py-3 hover:bg-gray-50 border-b border-gray-100 last:border-b-0"
-																>
-																	<div className="font-medium text-gray-900">
-																		{localizedName}
-																	</div>
-																	{localizedDescription && (
-																		<div className="text-sm text-gray-600">
-																			{localizedDescription}
-																		</div>
-																	)}
-																	<div className="text-sm text-gray-500 mt-1">
-																		{serviceOption.duration} min •{' '}
-																		{formatVND(serviceOption.price)}
-																	</div>
-																</button>
-															);
-														})}
-													</div>
-												)}
-											</div>
-
-											{/* Service Details */}
-											{selectedService && (
-												<div className="flex items-center gap-6">
-													<div className="flex items-center gap-2">
-														<span className="text-gray-500">
-															<Clock className="w-4 h-4" />
-														</span>
-														<span className="text-sm text-gray-600">
-															{selectedService.duration}{' '}
-															{t('common.minutesShort') ||
-																t('homepage.minutesShort') ||
-																'min'}
-														</span>
-													</div>
-													<div className="flex items-center gap-2">
-														<span className="text-lg font-bold text-[#ff5b5b]">
-															{formatVND(selectedService.price)}
-														</span>
-													</div>
-												</div>
-											)}
-										</div>
-									) : (
-										<div>
-											<h2 className="text-xl sm:text-2xl font-bold text-gray-900 mb-2">
-												{selectedService?.name || t.booking.selectAService}
-											</h2>
-											<p className="text-sm sm:text-base text-gray-700 mb-4">
-												{selectedService?.description ||
-													t.booking.chooseFromAvailableServices}
-											</p>
-											<div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-6">
-												<div className="flex gap-1">
-													<span className="text-gray-500">
-														<Clock className="w-4 h-4 mt-[1px]" />
-													</span>
-													<span className="text-sm text-gray-600">
-														{selectedService?.duration
-															? `${selectedService.duration} min`
-															: t.booking.duration}
-													</span>
-												</div>
-												<div className="flex items-center gap-2">
-													<span className="text-base sm:text-lg font-bold text-[#ff5b5b]">
-														{selectedService?.price
-															? formatVND(selectedService.price)
-															: t.booking.price}
-													</span>
-												</div>
-											</div>
-										</div>
-									)}
-								</div>
+								<BookingServiceSelector
+									selectedService={selectedService}
+									services={services}
+									showServiceSelector={showServiceSelector}
+									isServiceDropdownOpen={isServiceDropdownOpen}
+									onServiceSelect={(service) => {
+										setSelectedService(service);
+										setIsServiceDropdownOpen(false);
+										setIsStaffDropdownOpen(false);
+									}}
+									onToggleServiceDropdown={() => {
+										setIsStaffDropdownOpen(false);
+										setIsServiceDropdownOpen(!isServiceDropdownOpen);
+									}}
+								/>
 
 								{/* Select Date - Date Pills */}
-								<div className="mb-6 sm:mb-8">
-									<div className="flex items-center justify-between mb-3 sm:mb-4">
-										<h3 className="text-base sm:text-lg font-bold text-gray-900">
-											{t.booking.selectDate}
-										</h3>
-									</div>
-
-									<div className="relative">
-										{/* Navigation Buttons */}
-										<button
-											onClick={scrollDateLeft}
-											disabled={!canScrollDateLeft}
-											className={`absolute left-0 top-1/2 -translate-y-1/2 z-10 w-8 h-8 rounded-full shadow-md flex items-center justify-center transition-colors hidden sm:flex ${
-												canScrollDateLeft
-													? 'bg-white hover:bg-gray-50'
-													: 'bg-gray-100 cursor-not-allowed'
-											}`}
-										>
-											<ChevronLeft
-												className={`w-4 h-4 ${canScrollDateLeft ? 'text-gray-600' : 'text-gray-400'}`}
-											/>
-										</button>
-
-										<button
-											onClick={scrollDateRight}
-											disabled={!canScrollDateRight}
-											className={`absolute right-0 top-1/2 -translate-y-1/2 z-10 w-8 h-8 rounded-full shadow-md flex items-center justify-center transition-colors hidden sm:flex ${
-												canScrollDateRight
-													? 'bg-white hover:bg-gray-50'
-													: 'bg-gray-100 cursor-not-allowed'
-											}`}
-										>
-											<ChevronRight
-												className={`w-4 h-4 ${canScrollDateRight ? 'text-gray-600' : 'text-gray-400'}`}
-											/>
-										</button>
-
-										{/* Date Pills Container */}
-										<div
-											ref={dateScrollRef}
-											onScroll={checkDateScrollPosition}
-											onMouseDown={handleDateMouseDown}
-											onMouseLeave={handleDateMouseLeave}
-											onMouseUp={handleDateMouseUp}
-											onMouseMove={handleDateMouseMove}
-											className="flex gap-2 overflow-x-auto scrollbar-hide scroll-smooth cursor-grab select-none px-8 sm:px-12"
-											style={{
-												scrollbarWidth: 'none',
-												msOverflowStyle: 'none',
-											}}
-										>
-											{getAvailableDays().map((date) => {
-												const isSelected = selectedDate === date.dateString;
-
-												return (
-													<button
-														key={date.dateString}
-														onClick={() => {
-															if (!date.isClosed) {
-																setSelectedDate(date.dateString);
-															}
-														}}
-														disabled={!!date.isClosed}
-														className={`flex-shrink-0 flex flex-col items-center justify-center py-1 px-1 sm:py-3 sm:px-2 rounded-xl border-2 transition-all w-[50px] sm:w-[65px] md:w-[70px] min-h-[50px] sm:min-h-[80px] ${
-															date.isClosed
-																? 'border-gray-200 bg-gray-50 text-gray-300 cursor-not-allowed'
-																: isSelected
-																	? 'border-[#ff5b5b] bg-[#ff5b5b] text-white shadow-lg'
-																	: 'border-gray-200 bg-white hover:border-[#ff5b5b] hover:shadow-md'
-														}`}
-													>
-														<span
-															className={`text-[10px] sm:text-xs font-medium mb-0.5 sm:mb-1 ${isSelected ? 'text-white' : 'text-gray-500'}`}
-														>
-															{date.dayName}
-														</span>
-														<span className="text-sm sm:text-lg md:text-2xl font-bold mb-0.5 sm:mb-1">
-															{date.day}
-														</span>
-														<span
-															className={`text-[10px] sm:text-xs ${isSelected ? 'text-white/80' : 'text-gray-500'}`}
-														>
-															{date.monthShort}
-														</span>
-													</button>
-												);
-											})}
-										</div>
-									</div>
-								</div>
+								<BookingDateSelector
+									dates={getAvailableDays()}
+									selectedDate={selectedDate}
+									onDateSelect={(dateString) => {
+										setSelectedDate(dateString);
+									}}
+									currentDateIndex={currentDateIndex}
+									onDateIndexChange={setCurrentDateIndex}
+									loadedDaysCount={loadedDaysCount}
+									onLoadMoreDays={loadMoreDays}
+									isLoadingMoreDays={isLoadingMoreDays}
+									canScrollLeft={canScrollDateLeft}
+									canScrollRight={canScrollDateRight}
+									onScrollLeft={setCanScrollDateLeft}
+									onScrollRight={setCanScrollDateRight}
+								/>
 
 								{/* Select Time */}
-								<div className="mt-10">
-									<div className="flex items-center justify-between mb-2">
-										<h3 className="text-base sm:text-lg font-bold text-gray-900">
-											{t.booking.selectATime}
-										</h3>
-										{selectedDate &&
-											(() => {
-												const date = new Date(selectedDate);
-												const weekdayMap: { [key: number]: string } = {
-													0: 'sunday',
-													1: 'monday',
-													2: 'tuesday',
-													3: 'wednesday',
-													4: 'thursday',
-													5: 'friday',
-													6: 'saturday',
-												};
-												const monthMap: { [key: number]: string } = {
-													0: 'january',
-													1: 'february',
-													2: 'march',
-													3: 'april',
-													4: 'may',
-													5: 'june',
-													6: 'july',
-													7: 'august',
-													8: 'september',
-													9: 'october',
-													10: 'november',
-													11: 'december',
-												};
-												const weekdayKey = weekdayMap[date.getDay()];
-												const monthKey = monthMap[date.getMonth()];
-												const weekday =
-													t(`weekdays.short.${weekdayKey}`) || weekdayKey;
-												const month = t(`months.short.${monthKey}`) || monthKey;
-												return (
-													<div className="text-sm text-gray-600">
-														{weekday}, {month} {date.getDate()}
-													</div>
-												);
-											})()}
+								{!selectedDate && (
+									<div className="text-sm text-amber-600 bg-amber-50 p-3 rounded-lg mb-4">
+										{t.booking.pleaseSelectDateFirst}
 									</div>
-									{!selectedDate && (
-										<div className="text-sm text-amber-600 bg-amber-50 p-3 rounded-lg mb-4">
-											{t.booking.pleaseSelectDateFirst}
-										</div>
-									)}
-
-									{/* Time Filters */}
-									<div className="mb-4 sm:mb-6 flex justify-center">
-										<div className="bg-gray-100 rounded-xl p-1 inline-flex w-full sm:w-auto">
-											<button
-												onClick={() => setTimeFilter('all')}
-												className={`flex-1 sm:flex-none px-3 sm:px-6 py-2 rounded-lg text-xs sm:text-sm font-medium transition-all ${
-													timeFilter === 'all'
-														? 'bg-white text-gray-900 shadow-sm'
-														: 'text-gray-600 hover:text-gray-900 hover:bg-white/50'
-												}`}
-											>
-												{t.booking.timeFilters.all}
-											</button>
-											<button
-												onClick={() => setTimeFilter('morning')}
-												className={`flex-1 sm:flex-none px-3 sm:px-6 py-2 rounded-lg text-xs sm:text-sm font-medium transition-all ${
-													timeFilter === 'morning'
-														? 'bg-white text-gray-900 shadow-sm'
-														: 'text-gray-600 hover:text-gray-900 hover:bg-white/50'
-												}`}
-											>
-												{t.booking.timeFilters.morning}
-											</button>
-											<button
-												onClick={() => setTimeFilter('afternoon')}
-												className={`flex-1 sm:flex-none px-3 sm:px-6 py-2 rounded-lg text-xs sm:text-sm font-medium transition-all ${
-													timeFilter === 'afternoon'
-														? 'bg-white text-gray-900 shadow-sm'
-														: 'text-gray-600 hover:text-gray-900 hover:bg-white/50'
-												}`}
-											>
-												{t.booking.timeFilters.afternoon}
-											</button>
-											<button
-												onClick={() => setTimeFilter('evening')}
-												className={`flex-1 sm:flex-none px-3 sm:px-6 py-2 rounded-lg text-xs sm:text-sm font-medium transition-all ${
-													timeFilter === 'evening'
-														? 'bg-white text-gray-900 shadow-sm'
-														: 'text-gray-600 hover:text-gray-900 hover:bg-white/50'
-												}`}
-											>
-												{t.booking.timeFilters.evening}
-											</button>
-										</div>
-									</div>
-
-									{/* Time Slots - Native Scroll */}
-									{filteredTimeSlots.length > 0 ? (
-										<div className="relative px-0 sm:px-8">
-											{/* Navigation Buttons */}
-											<button
-												onClick={scrollTimeLeft}
-												disabled={!canScrollLeft}
-												className={`absolute left-0 top-1/2 -translate-y-1/2 z-10 w-8 h-8 rounded-full shadow-md flex items-center justify-center transition-colors hidden sm:flex ${
-													canScrollLeft
-														? 'bg-white hover:bg-gray-50'
-														: 'bg-gray-100 cursor-not-allowed'
-												}`}
-											>
-												<ChevronLeft
-													className={`w-4 h-4 ${canScrollLeft ? 'text-gray-600' : 'text-gray-400'}`}
-												/>
-											</button>
-
-											<button
-												onClick={scrollTimeRight}
-												disabled={!canScrollRight}
-												className={`absolute right-0 top-1/2 -translate-y-1/2 z-10 w-8 h-8 rounded-full shadow-md flex items-center justify-center transition-colors hidden sm:flex ${
-													canScrollRight
-														? 'bg-white hover:bg-gray-50'
-														: 'bg-gray-100 cursor-not-allowed'
-												}`}
-											>
-												<ChevronRight
-													className={`w-4 h-4 ${canScrollRight ? 'text-gray-600' : 'text-gray-400'}`}
-												/>
-											</button>
-
-											{/* Time Slots Container */}
-											<div
-												ref={timeScrollRef}
-												onScroll={checkScrollPosition}
-												onMouseDown={handleMouseDown}
-												onMouseLeave={handleMouseLeave}
-												onMouseUp={handleMouseUp}
-												onMouseMove={handleMouseMove}
-												className="flex gap-2 overflow-x-auto scrollbar-hide cursor-grab select-none"
-												style={{
-													scrollbarWidth: 'none',
-													msOverflowStyle: 'none',
-												}}
-											>
-												{filteredTimeSlots.map((timeSlot) => {
-													const time =
-														typeof timeSlot === 'string'
-															? timeSlot
-															: timeSlot.time;
-													const available =
-														typeof timeSlot === 'object'
-															? timeSlot.available
-															: true;
-
-													return (
-														<button
-															key={time}
-															onClick={(e) => {
-																if (available && !hasMoved) {
-																	setSelectedTime(time);
-																}
-																e.stopPropagation();
-															}}
-															disabled={!available}
-															className={`flex-shrink-0 px-4 py-3 rounded-lg text-sm font-medium transition-colors whitespace-nowrap ${
-																!available
-																	? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-																	: selectedTime === time
-																		? 'bg-[#ff5b5b] text-white'
-																		: 'bg-white text-gray-900 border border-gray-200 hover:bg-gray-50'
-															}`}
-														>
-															{time}
-														</button>
-													);
-												})}
-											</div>
-										</div>
-									) : (
-										<div className="flex justify-center items-center gap-2 py-2">
-											<svg
-												className="w-5 h-5 text-gray-500"
-												fill="none"
-												stroke="currentColor"
-												viewBox="0 0 24 24"
-											>
-												<path
-													strokeLinecap="round"
-													strokeLinejoin="round"
-													strokeWidth={1.5}
-													d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
-												/>
-											</svg>
-											<p className="text-sm text-gray-500">
-												{t.booking.noAvailableSlotsWithSelection}
-											</p>
-										</div>
-									)}
-								</div>
+								)}
+								<BookingTimeSelector
+									timeSlots={timeSlots}
+									filteredTimeSlots={filteredTimeSlots}
+									selectedTime={selectedTime}
+									onTimeSelect={setSelectedTime}
+									timeFilter={timeFilter}
+									onTimeFilterChange={setTimeFilter}
+									isTimeSlotAvailable={isTimeSlotAvailable}
+									selectedStaff={selectedStaff}
+									timeSlotsLoading={false}
+								/>
 							</div>
 
 							{/* Right Section - Staff Selection and Booking Button */}
@@ -2661,94 +2296,29 @@ export default function BookingModal({
 								)}
 
 								{/* Select Staff Member */}
-								<div className="mb-6 sm:mb-8">
-									<h3 className="text-base sm:text-lg font-bold text-gray-900 mb-3 sm:mb-4">
-										{t.booking.selectAStaffMember}
-									</h3>
-									<div className="relative staff-dropdown">
-										<button
-											onClick={() => {
-												// Always close service dropdown when toggling staff dropdown
-												setIsServiceDropdownOpen(false);
-												setIsStaffDropdownOpen(!isStaffDropdownOpen);
-											}}
-											className="w-full p-3 sm:p-4 rounded-lg text-left bg-white border border-gray-200 hover:bg-gray-50 transition-colors flex items-center justify-between"
-										>
-											<div className="flex items-center gap-3">
-												<span className="font-medium text-gray-900">
-													{selectedStaff}
-												</span>
-											</div>
-											<svg
-												className={`w-5 h-5 text-gray-400 transition-transform ${
-													isStaffDropdownOpen ? 'rotate-180' : ''
-												}`}
-												fill="none"
-												stroke="currentColor"
-												viewBox="0 0 24 24"
-											>
-												<path
-													strokeLinecap="round"
-													strokeLinejoin="round"
-													strokeWidth={2}
-													d="M19 9l-7 7-7-7"
-												/>
-											</svg>
-										</button>
+								<BookingStaffSelector
+									selectedStaff={selectedStaff}
+									allStaffMembers={allStaffMembers}
+									isStaffDropdownOpen={isStaffDropdownOpen}
+									onStaffSelect={(staffName) => {
+										setSelectedStaff(staffName);
+										setIsStaffDropdownOpen(false);
+										setIsServiceDropdownOpen(false);
+									}}
+									onToggleStaffDropdown={() => {
+										setIsServiceDropdownOpen(false);
+										setIsStaffDropdownOpen(!isStaffDropdownOpen);
+									}}
+									staffLoading={staffLoading}
+								/>
 
-										{isStaffDropdownOpen && (
-											<div className="absolute bottom-full left-0 right-0 mb-1 sm:bottom-auto sm:top-full sm:mb-0 sm:mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-10 max-h-[280px] overflow-y-auto scrollbar-hide">
-												{staffLoading ? (
-													<div className="p-4 text-center text-gray-500 text-sm">
-														{t('booking.loadingStaff')}
-													</div>
-												) : allStaffMembers.length === 0 ? (
-													<div className="p-4 text-center text-gray-500 text-sm">
-														{t('booking.noStaffAvailable')}
-													</div>
-												) : (
-													allStaffMembers.map((staff) => (
-														<button
-															key={staff.id}
-															onClick={() => {
-																setSelectedStaff(staff.name);
-																setIsStaffDropdownOpen(false);
-															}}
-															className="w-full p-4 text-left hover:bg-gray-50 transition-colors flex items-center gap-3 first:rounded-t-lg last:rounded-b-lg"
-														>
-															<span className="font-medium text-gray-900">
-																{staff.name}
-															</span>
-														</button>
-													))
-												)}
-											</div>
-										)}
-									</div>
-								</div>
-
-								{/* Book Appointment Button */}
-								<button
-									onClick={handleBooking}
-									disabled={loading}
-									className="w-full bg-[#ff5b5b] text-white py-3 sm:py-4 rounded-lg font-semibold text-base sm:text-lg hover:bg-[#e04a4a] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-								>
-									{loading
-										? editingBooking
-											? t.booking.updating
-											: t.booking.booking
-										: editingBooking
-											? t.booking.updateAppointment
-											: t.booking.bookAppointment}
-								</button>
-
-								{/* Close Button */}
-								<button
-									onClick={onClose}
-									className="w-full mt-3 sm:mt-4 text-gray-500 hover:text-gray-700 font-medium text-sm sm:text-base"
-								>
-									{t.common.cancel}
-								</button>
+								{/* Book Appointment Button and Close */}
+								<BookingFormFooter
+									loading={loading}
+									editingBooking={editingBooking}
+									onBooking={handleBooking}
+									onClose={onClose}
+								/>
 							</div>
 						</div>
 					)}

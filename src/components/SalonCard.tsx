@@ -1,6 +1,6 @@
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { useMemo } from 'react';
+import { useMemo, memo } from 'react';
 import { Salon, Service } from '@/types';
 import { ServiceResponseDto } from '@/types/dto/service.dto';
 import { useSalonSlug } from '@/hooks/useSalonSlug';
@@ -31,14 +31,16 @@ interface SalonCardProps {
 	className?: string;
 	selectedDate?: Date | null;
 	selectedTimeInterval?: string;
+	priority?: boolean;
 }
 
-export default function SalonCard({
+function SalonCard({
 	salon,
 	onBookService,
 	className = '',
 	selectedDate,
 	selectedTimeInterval,
+	priority = false,
 }: SalonCardProps) {
 	const router = useRouter();
 	const { getSalonUrl } = useSalonSlug();
@@ -97,6 +99,7 @@ export default function SalonCard({
 						width={360}
 						height={270}
 						className="w-full h-full object-cover rounded-xl"
+						priority={priority}
 					/>
 				</div>
 
@@ -241,3 +244,5 @@ export default function SalonCard({
 		</Link>
 	);
 }
+
+export default memo(SalonCard);

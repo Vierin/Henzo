@@ -1,8 +1,15 @@
 'use client';
 
-import { useState, useMemo, useEffect, useCallback } from 'react';
+import {
+	useState,
+	useMemo,
+	useEffect,
+	useCallback,
+	lazy,
+	Suspense,
+} from 'react';
 import { useSearchParams } from 'next/navigation';
-import BookingModal from '@/components/BookingModal';
+const BookingModal = lazy(() => import('@/components/BookingModal'));
 import LoadingSpinner from '@/components/LoadingSpinner';
 import ErrorDisplay from '@/components/ErrorDisplay';
 import SalonCard from '@/components/SalonCard';
@@ -59,6 +66,9 @@ export default function SalonsClient() {
 
 	// State management - initialize with URL params
 	const [searchQuery, setSearchQuery] = useState(initialParams.searchQuery);
+	const [debouncedSearchQuery, setDebouncedSearchQuery] = useState(
+		initialParams.searchQuery
+	);
 	const [selectedLocation, setSelectedLocation] = useState(
 		initialParams.selectedLocation
 	);
@@ -76,6 +86,14 @@ export default function SalonsClient() {
 		(ServiceResponseDto & { salonId: string; salonName: string }) | null
 	>(null);
 
+	// Debounce search query
+	useEffect(() => {
+		const timer = setTimeout(() => {
+			setDebouncedSearchQuery(searchQuery);
+		}, 300);
+		return () => clearTimeout(timer);
+	}, [searchQuery]);
+
 	// Use optimized search instead of loading all salons
 	const {
 		data: searchData,
@@ -85,7 +103,7 @@ export default function SalonsClient() {
 	} = useSalonSearch({
 		page: currentPage,
 		limit: 20,
-		search: searchQuery,
+		search: debouncedSearchQuery,
 		location: selectedLocation,
 		category: activeFilter,
 		sortBy: sortBy,
@@ -125,7 +143,7 @@ export default function SalonsClient() {
 	useEffect(() => {
 		setAccumulatedSalons([]);
 		setCurrentPagination(null);
-	}, [searchQuery, selectedLocation, activeFilter, sortBy]);
+	}, [debouncedSearchQuery, selectedLocation, activeFilter, sortBy]);
 
 	const salons = accumulatedSalons;
 	const pagination = currentPagination;
@@ -215,18 +233,18 @@ export default function SalonsClient() {
 	// Reset page when search parameters change
 	useEffect(() => {
 		setCurrentPage(1);
-	}, [searchQuery, selectedLocation, activeFilter, sortBy]);
+	}, [debouncedSearchQuery, selectedLocation, activeFilter, sortBy]);
 
 	// Generate results header text
 	const resultsHeaderText = useMemo(() => {
 		let baseText = '';
 
-		if (searchQuery && selectedLocation) {
+		if (debouncedSearchQuery && selectedLocation) {
 			baseText = t('salon.searchIn')
-				.replace('{query}', searchQuery)
+				.replace('{query}', debouncedSearchQuery)
 				.replace('{location}', selectedLocation);
-		} else if (searchQuery) {
-			baseText = searchQuery;
+		} else if (debouncedSearchQuery) {
+			baseText = debouncedSearchQuery;
 		} else if (selectedLocation) {
 			baseText = t('salon.salonsIn').replace('{location}', selectedLocation);
 		} else {
@@ -259,7 +277,13 @@ export default function SalonsClient() {
 		}
 
 		return baseText;
-	}, [searchQuery, selectedLocation, selectedDate, selectedTimeInterval, t]);
+	}, [
+		debouncedSearchQuery,
+		selectedLocation,
+		selectedDate,
+		selectedTimeInterval,
+		t,
+	]);
 
 	const resultsCountText = useMemo(() => {
 		if (pagination) {
@@ -328,13 +352,14 @@ export default function SalonsClient() {
 								</div>
 							) : (
 								// Display salons
-								salons.map((salon) => (
+								salons.map((salon, index) => (
 									<SalonCard
 										key={salon.id}
 										salon={salon}
 										onBookService={handleBookService}
 										selectedDate={selectedDate}
 										selectedTimeInterval={selectedTimeInterval}
+										priority={index < 3}
 									/>
 								))
 							)}
@@ -359,13 +384,17 @@ export default function SalonsClient() {
 			</main>
 
 			{/* Booking Modal */}
-			<BookingModal
-				isOpen={isBookingModalOpen}
-				onClose={handleCloseBookingModal}
-				salonId={selectedService?.salonId || ''}
-				salonName={selectedService?.salonName || ''}
-				showServiceSelector={true}
-			/>
+			{isBookingModalOpen && (
+				<Suspense fallback={null}>
+					<BookingModal
+						isOpen={isBookingModalOpen}
+						onClose={handleCloseBookingModal}
+						salonId={selectedService?.salonId || ''}
+						salonName={selectedService?.salonName || ''}
+						showServiceSelector={true}
+					/>
+				</Suspense>
+			)}
 		</div>
 	);
 }

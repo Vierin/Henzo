@@ -1,7 +1,9 @@
 import { Metadata } from 'next';
 import { getCategoryBySlug } from '@/constants/categories';
-import CategoryList from './CategoryList';
+import CategoryListClient from './CategoryListClient';
+import CategoryStructuredData from './CategoryStructuredData';
 import Link from 'next/link';
+import { Suspense } from 'react';
 
 interface CategoryPageProps {
 	params: Promise<{
@@ -85,5 +87,24 @@ export default async function CategoryPage({ params }: CategoryPageProps) {
 		);
 	}
 
-	return <CategoryList category={category} />;
+	// For now, we'll use the category name as translated name
+	// In the future, this could be loaded from server-side translations
+	const translatedName = category.name;
+
+	return (
+		<>
+			<Suspense
+				fallback={
+					<div className="min-h-screen bg-[#F8F5F2]">
+						<div className="container mx-auto px-4 py-8">
+							<div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#ff5b5b] mx-auto"></div>
+						</div>
+					</div>
+				}
+			>
+				<CategoryListClient category={category} translatedName={translatedName} />
+			</Suspense>
+			<CategoryStructuredData category={category} translatedName={translatedName} />
+		</>
+	);
 }
