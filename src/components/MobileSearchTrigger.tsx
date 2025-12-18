@@ -26,7 +26,7 @@ export default function MobileSearchTrigger() {
 					{/* Header */}
 					<div className="sticky top-0 bg-white border-b border-gray-200 px-4 py-3 flex items-center justify-between shadow-sm">
 						<h2 className="text-lg font-semibold text-gray-900">
-							{t('homepage.heroTitle').replace(/<[^>]+>/g, '')}
+							{t('homepage.search')}
 						</h2>
 						<button
 							onClick={() => setIsOpen(false)}
@@ -51,7 +51,10 @@ export default function MobileSearchTrigger() {
 
 					{/* Search Form */}
 					<div className="p-4">
-						<SearchBookingForm className="!max-w-none !shadow-none" />
+						<SearchBookingForm
+							className="!max-w-none !shadow-none"
+							onSearchSuccess={() => setIsOpen(false)}
+						/>
 					</div>
 				</div>
 			)}

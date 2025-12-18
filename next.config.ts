@@ -22,6 +22,17 @@ const nextConfig: NextConfig = {
 				? { exclude: ['error', 'warn'] }
 				: false,
 	},
+	// P1: Ускорение dev компиляции
+	experimental: {
+		// Ускоряет компиляцию в dev режиме
+		optimizePackageImports: [
+			'lucide-react',
+			'@radix-ui/react-popover',
+			'@radix-ui/react-select',
+			'@tanstack/react-query',
+			'react-hot-toast',
+		],
+	},
 	images: {
 		remotePatterns: [
 			{
@@ -43,8 +54,13 @@ const nextConfig: NextConfig = {
 				pathname: '/**',
 			},
 		],
+		// P1: Оптимизация изображений для production
+		formats: ['image/avif', 'image/webp'], // Современные форматы
+		minimumCacheTTL: 60, // Кэш изображений
+		deviceSizes: [640, 750, 828, 1080, 1200, 1920, 2048, 3840],
+		imageSizes: [16, 32, 48, 64, 96, 128, 256, 384],
 	},
-	webpack: (config, { isServer }) => {
+	webpack: (config, { isServer, dev }) => {
 		config.resolve.alias = {
 			...config.resolve.alias,
 			'@db': path.resolve(__dirname, '../../packages/db'),
@@ -64,12 +80,33 @@ const nextConfig: NextConfig = {
 			config.externals.push('puppeteer');
 		}
 
+		// P1: Ускорение dev компиляции
+		if (dev) {
+			// Кэшируем модули node_modules для ускорения повторных компиляций
+			config.cache = {
+				type: 'filesystem',
+				buildDependencies: {
+					config: [__filename],
+				},
+			};
+			
+			// Ускоряем компиляцию за счет уменьшения проверок
+			config.watchOptions = {
+				poll: false,
+				aggregateTimeout: 300,
+				ignored: ['**/node_modules', '**/.git', '**/.next'],
+			};
+		}
+
 		return config;
 	},
 	// P1: Compression (Next.js автоматически использует gzip/brotli)
 	compress: true,
 	// P1: Production source maps отключены для меньшего bundle
 	productionBrowserSourceMaps: false,
+	// P1: Оптимизация для production
+	swcMinify: true, // Использовать SWC для минификации (быстрее чем Terser)
+	poweredByHeader: false, // Убрать X-Powered-By header
 };
 
 export default withBundleAnalyzer(nextConfig);

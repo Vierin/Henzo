@@ -156,6 +156,7 @@ export default function EditServiceModal({
 		try {
 			if (service) {
 				// Update existing service - don't send salonId
+				// Note: serviceSubcategoryId is not supported in update endpoint
 				const updateData = {
 					name: formData.name.trim(),
 					description: formData.description.trim() || undefined,
@@ -169,10 +170,6 @@ export default function EditServiceModal({
 						formData.serviceCategoryId > 0
 							? formData.serviceCategoryId
 							: undefined,
-					serviceSubcategoryId:
-						formData.serviceSubcategoryId > 0
-							? formData.serviceSubcategoryId
-							: null,
 					serviceGroupId:
 						formData.serviceGroupId && formData.serviceGroupId !== 'none'
 							? formData.serviceGroupId

@@ -91,7 +91,9 @@ export default function OwnerDashboardClient() {
 				refetchBookings();
 			} catch (err) {
 				const errorMessage =
-					err instanceof Error ? err.message : t('owner.dashboard.failedToCancel');
+					err instanceof Error
+						? err.message
+						: t('owner.dashboard.failedToCancel');
 				toast.error(errorMessage);
 			}
 		},
@@ -106,7 +108,9 @@ export default function OwnerDashboardClient() {
 				refetchBookings();
 			} catch (err) {
 				const errorMessage =
-					err instanceof Error ? err.message : t('owner.dashboard.failedToConfirm');
+					err instanceof Error
+						? err.message
+						: t('owner.dashboard.failedToConfirm');
 				toast.error(errorMessage);
 			}
 		},
@@ -121,7 +125,9 @@ export default function OwnerDashboardClient() {
 				refetchBookings();
 			} catch (err) {
 				const errorMessage =
-					err instanceof Error ? err.message : t('owner.dashboard.failedToReject');
+					err instanceof Error
+						? err.message
+						: t('owner.dashboard.failedToReject');
 				toast.error(errorMessage);
 			}
 		},
@@ -141,7 +147,10 @@ export default function OwnerDashboardClient() {
 	if (isLoading) {
 		return (
 			<div className="flex items-center justify-center py-12">
-				<LoadingSpinner size="lg" message={t('owner.dashboard.loadingDashboard')} />
+				<LoadingSpinner
+					size="lg"
+					message={t('owner.dashboard.loadingDashboard')}
+				/>
 			</div>
 		);
 	}
@@ -149,7 +158,10 @@ export default function OwnerDashboardClient() {
 	if (!hasSalon) {
 		return (
 			<div className="flex items-center justify-center py-12">
-				<LoadingSpinner size="lg" message={t('owner.dashboard.redirectingToSetup')} />
+				<LoadingSpinner
+					size="lg"
+					message={t('owner.dashboard.redirectingToSetup')}
+				/>
 			</div>
 		);
 	}
@@ -171,7 +183,7 @@ export default function OwnerDashboardClient() {
 	}
 
 	return (
-		<main className="space-y-6 px-4 max-w-7xl mx-auto">
+		<main className="space-y-6 px-0 md:px-4 max-w-7xl mx-auto">
 			{/* Header */}
 			<div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
 				<div>
@@ -179,7 +191,8 @@ export default function OwnerDashboardClient() {
 						{t('owner.dashboard.dashboard')}
 					</h1>
 					<p className="text-gray-600 mt-1 text-sm sm:text-base">
-						{t('owner.dashboard.welcomeBack')} {t('owner.dashboard.businessOverview')}
+						{t('owner.dashboard.welcomeBack')}{' '}
+						{t('owner.dashboard.businessOverview')}
 					</p>
 				</div>
 				<div className="flex flex-row items-stretch sm:items-center gap-3">
@@ -215,7 +228,9 @@ export default function OwnerDashboardClient() {
 						onClick={() => {
 							// Check if salon has services and staff
 							if (!services || services.length === 0) {
-								toast.error(t('owner.dashboard.cannotCreateBooking.noServices'));
+								toast.error(
+									t('owner.dashboard.cannotCreateBooking.noServices')
+								);
 								return;
 							}
 							if (!staffMembers || staffMembers.length === 0) {

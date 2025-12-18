@@ -216,6 +216,40 @@ export default function DateTimePicker({
 		return timeStr ? `${dateStr} • ${timeStr}` : dateStr;
 	};
 
+	// Check if a time interval is disabled (past time for today)
+	const isTimeIntervalDisabled = (intervalValue: string): boolean => {
+		if (!date || intervalValue === 'any') return false;
+
+		// Check if selected date is today
+		const today = new Date();
+		const isToday =
+			date.getDate() === today.getDate() &&
+			date.getMonth() === today.getMonth() &&
+			date.getFullYear() === today.getFullYear();
+
+		if (!isToday) return false;
+
+		// Get current time
+		const currentHour = today.getHours();
+		const currentMinute = today.getMinutes();
+		const currentTimeInMinutes = currentHour * 60 + currentMinute;
+
+		// Check if interval has passed
+		switch (intervalValue) {
+			case 'morning':
+				// Morning: 6:00 - 12:00, disable if current time >= 12:00
+				return currentTimeInMinutes >= 12 * 60; // 12:00 = 720 minutes
+			case 'afternoon':
+				// Afternoon: 12:00 - 18:00, disable if current time >= 18:00
+				return currentTimeInMinutes >= 18 * 60; // 18:00 = 1080 minutes
+			case 'evening':
+				// Evening: 18:00 - 24:00, always available (never disable)
+				return false;
+			default:
+				return false;
+		}
+	};
+
 	return (
 		<div ref={containerRef} className={`relative ${className}`}>
 			<div className="relative h-full">
@@ -347,22 +381,28 @@ export default function DateTimePicker({
 						</h3>
 					</div>
 					<div className="space-y-2">
-						{TIME_INTERVALS.map((interval) => (
-							<button
-								key={interval.value}
-								onClick={() => handleTimeIntervalSelect(interval.value)}
-								className={`w-full text-left px-3 py-2 rounded-lg transition-colors ${
-									timeInterval === interval.value
-										? 'bg-[#ff5b5b] text-white'
-										: 'hover:bg-gray-100 text-gray-700'
-								}`}
-							>
-								<div className="flex items-center">
-									<Clock className="w-4 h-4 mr-2" />
-									{getTimeIntervalLabel(interval.value)}
-								</div>
-							</button>
-						))}
+						{TIME_INTERVALS.map((interval) => {
+							const isDisabled = isTimeIntervalDisabled(interval.value);
+							return (
+								<button
+									key={interval.value}
+									onClick={() => !isDisabled && handleTimeIntervalSelect(interval.value)}
+									disabled={isDisabled}
+									className={`w-full text-left px-3 py-2 rounded-lg transition-colors ${
+										isDisabled
+											? 'opacity-50 cursor-not-allowed bg-gray-100 text-gray-400'
+											: timeInterval === interval.value
+												? 'bg-[#ff5b5b] text-white'
+												: 'hover:bg-gray-100 text-gray-700'
+									}`}
+								>
+									<div className="flex items-center">
+										<Clock className="w-4 h-4 mr-2" />
+										{getTimeIntervalLabel(interval.value)}
+									</div>
+								</button>
+							);
+						})}
 					</div>
 				</div>
 			)}

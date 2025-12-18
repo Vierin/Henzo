@@ -108,5 +108,14 @@
 	"completed": "Завершено",
 	"noShow": "Неявка",
 	"backToMonth": "Вернуться к месяцу",
-	"filterByStaffLabel": "Фильтр по сотруднику:"
+	"filterByStaffLabel": "Фильтр по сотруднику:",
+	"dateAndTime": "Дата и время:",
+	"showing": "Показано",
+	"to": "до",
+	"of": "из",
+	"results": "результатов",
+	"page": "Страница",
+	"previous": "Предыдущая",
+	"next": "Следующая",
+	"goToPage": "Перейти на страницу"
 }

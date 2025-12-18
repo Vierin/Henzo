@@ -431,24 +431,26 @@ export default function LoginClient() {
 							</svg>
 							Google
 						</button>
-
-						{telegramBotId ? (
-							<div className="flex justify-center">
-								<TelegramLoginButton
-									botId={telegramBotId}
-									onAuth={handleTelegramAuth}
-									buttonSize="large"
-									requestAccess="write"
-									usePic={false}
-									lang={extractLocaleFromPath(pathname) ?? 'en'}
-								/>
-							</div>
-						) : (
-							<div className="w-full flex justify-center items-center py-2 px-4 border border-gray-300 rounded-md shadow-sm bg-gray-50 text-sm font-medium text-gray-400">
-								Loading Telegram...
-							</div>
-						)}
 					</div>
+
+					{/* Telegram Login Button - Hidden for now */}
+					{false && telegramBotId && (
+						<div className="flex justify-center">
+							<TelegramLoginButton
+								botId={telegramBotId as string}
+								onAuth={handleTelegramAuth}
+								buttonSize="large"
+								requestAccess="write"
+								usePic={false}
+								lang={
+									(extractLocaleFromPath(pathname) ?? 'en') as
+										| 'en'
+										| 'ru'
+										| 'vi'
+								}
+							/>
+						</div>
+					)}
 
 					<div className="text-center space-y-4">
 						<p className="text-sm text-gray-600">

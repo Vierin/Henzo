@@ -19,15 +19,18 @@ export default function Footer() {
 						<p className="text-gray-400">{t('footer.allRightsReserved')}</p>
 					</div>
 					<div className="flex md:flex-row flex-col justify-start gap-2 md:gap-0 space-x-6">
-						<Link
-							href={withLocale(
-								'/about',
-								(locale as 'en' | 'ru' | 'vi') || 'en'
-							)}
-							className="text-gray-700 hover:text-[#8B4513]"
-						>
-							{t('footer.aboutUs')}
-						</Link>
+						{/* About Us link - Hidden for now */}
+						{false && (
+							<Link
+								href={withLocale(
+									'/about',
+									(locale as 'en' | 'ru' | 'vi') || 'en'
+								)}
+								className="text-gray-700 hover:text-[#8B4513]"
+							>
+								{t('footer.aboutUs')}
+							</Link>
+						)}
 						<Link
 							href={withLocale(
 								'/contact',

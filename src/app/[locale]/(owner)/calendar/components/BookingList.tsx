@@ -554,7 +554,7 @@ export default function BookingList({
 										</div>
 										<div>
 											<span className="font-medium">
-												{t('owner.dateAndTime')}
+												{t('owner.calendar.dateAndTime')}
 											</span>
 											<p className="truncate font-semibold">
 												{formatDateShort(booking.time)}{' '}
@@ -578,15 +578,15 @@ export default function BookingList({
 					aria-label="Pagination"
 				>
 					<div className="text-sm text-gray-700 text-center sm:text-left">
-						{t('owner.showing')}{' '}
+						{t('owner.calendar.showing')}{' '}
 						<span className="font-medium">{startIndex + 1}</span>{' '}
-						{t('owner.to')}{' '}
+						{t('owner.calendar.to')}{' '}
 						<span className="font-medium">
 							{Math.min(endIndex, bookings.length)}
 						</span>{' '}
-						{t('owner.of')}{' '}
+						{t('owner.calendar.of')}{' '}
 						<span className="font-medium">{bookings.length}</span>{' '}
-						{t('owner.results')}
+						{t('owner.calendar.results')}
 					</div>
 
 					<div className="flex items-center justify-center gap-2">
@@ -594,7 +594,7 @@ export default function BookingList({
 							onClick={() => onPageChange(currentPage - 1)}
 							disabled={currentPage === 1}
 							className="p-2 text-gray-900 border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-[#ea4b4b] focus:ring-offset-2 transition-colors"
-							aria-label={t('owner.previous')}
+							aria-label={t('owner.calendar.previous')}
 						>
 							<ChevronLeft className="w-4 h-4" />
 						</button>
@@ -615,7 +615,7 @@ export default function BookingList({
 												: 'text-gray-900 border-gray-300 hover:bg-gray-50'
 										} focus:outline-none focus:ring-2 focus:ring-[#ea4b4b] focus:ring-offset-2 transition-colors`}
 										aria-current={page === currentPage ? 'page' : undefined}
-										aria-label={`${t('owner.goToPage')} ${page}`}
+										aria-label={`${t('owner.calendar.goToPage')} ${page}`}
 									>
 										{page}
 									</button>
@@ -626,7 +626,7 @@ export default function BookingList({
 						{/* Mobile: Show current page and total */}
 						<div className="sm:hidden flex items-center gap-2 text-sm text-gray-700">
 							<span>
-								{t('owner.page')} {currentPage} {t('owner.of')} {totalPages}
+								{t('owner.calendar.page')} {currentPage} {t('owner.calendar.of')} {totalPages}
 							</span>
 						</div>
 
@@ -634,7 +634,7 @@ export default function BookingList({
 							onClick={() => onPageChange(currentPage + 1)}
 							disabled={currentPage === totalPages}
 							className="p-2 text-gray-900 border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-[#ea4b4b] focus:ring-offset-2 transition-colors"
-							aria-label={t('owner.next')}
+							aria-label={t('owner.calendar.next')}
 						>
 							<ChevronRight className="w-4 h-4" />
 						</button>

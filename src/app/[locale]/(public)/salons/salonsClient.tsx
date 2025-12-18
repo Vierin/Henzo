@@ -241,7 +241,7 @@ export default function SalonsClient() {
 				vi: 'vi-VN',
 			};
 			const locale = localeMap[language] || 'en-US';
-			
+
 			const dateStr = selectedDate.toLocaleDateString(locale, {
 				weekday: 'long',
 				month: 'long',
@@ -249,7 +249,9 @@ export default function SalonsClient() {
 			});
 
 			if (selectedTimeInterval && selectedTimeInterval !== 'any') {
-				const timeLabel = t(`booking.timeIntervals.${selectedTimeInterval}`) || selectedTimeInterval;
+				const timeLabel =
+					t(`booking.timeIntervals.${selectedTimeInterval}`) ||
+					selectedTimeInterval;
 				baseText += ` ${t('salon.onDate').replace('{date}', dateStr)} (${timeLabel})`;
 			} else {
 				baseText += ` ${t('salon.onDate').replace('{date}', dateStr)}`;
@@ -271,7 +273,7 @@ export default function SalonsClient() {
 			<main className="py-8 px-6" role="main">
 				<div className="mx-auto max-w-6xl">
 					{/* Results Header */}
-					<header className="flex items-center justify-between mb-8">
+					<header className="flex flex-col sm:flex-row items-center justify-between gap-2 mb-8">
 						<h1 className="text-2xl font-bold text-gray-900">
 							{resultsHeaderText} ({resultsCountText})
 						</h1>

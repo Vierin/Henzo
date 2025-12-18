@@ -10,11 +10,13 @@ import { useTranslation } from '@/contexts/LanguageContext';
 interface SearchBookingFormProps {
 	className?: string;
 	inline?: boolean;
+	onSearchSuccess?: () => void;
 }
 
 export default function SearchBookingForm({
 	className = '',
 	inline = false,
+	onSearchSuccess,
 }: SearchBookingFormProps) {
 	const router = useRouter();
 	const t = useTranslation();
@@ -83,6 +85,10 @@ export default function SearchBookingForm({
 
 			const finalUrl = `/salons${params.toString() ? `?${params.toString()}` : ''}`;
 			router.push(finalUrl);
+			// Close modal if callback provided (for mobile search)
+			if (onSearchSuccess) {
+				onSearchSuccess();
+			}
 		} catch (error) {
 			console.error('Search error:', error);
 			setValidationError('Error');

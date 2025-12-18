@@ -46,16 +46,32 @@ export default function DaySchedule({
 	const [startX, setStartX] = useState(0);
 	const [scrollLeft, setScrollLeft] = useState(0);
 	const [isMobile, setIsMobile] = useState(false);
-	
+
 	const monthNames = [
-		'january', 'february', 'march', 'april', 'may', 'june',
-		'july', 'august', 'september', 'october', 'november', 'december'
+		'january',
+		'february',
+		'march',
+		'april',
+		'may',
+		'june',
+		'july',
+		'august',
+		'september',
+		'october',
+		'november',
+		'december',
 	];
-	
+
 	const weekdayNames = [
-		'sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'
+		'sunday',
+		'monday',
+		'tuesday',
+		'wednesday',
+		'thursday',
+		'friday',
+		'saturday',
 	];
-	
+
 	const formatDateForDisplay = (date: Date) => {
 		const dayOfWeek = date.getDay();
 		const monthIndex = date.getMonth();
@@ -402,7 +418,7 @@ export default function DaySchedule({
 
 			<div className="rounded-xl border border-[#f1d9d7] bg-white p-3 md:p-6">
 				{/* Header */}
-				<div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4 p-3 rounded-lg -m-3 md:-m-6 md:p-6">
+				<div className="flex flex-row items-center justify-between gap-3 mb-4 p-3 rounded-lg">
 					<div className="flex items-center justify-between sm:justify-start gap-2 sm:gap-3">
 						<div className="flex items-center gap-1">
 							<button
@@ -425,8 +441,7 @@ export default function DaySchedule({
 						<h3 className="text-base md:text-lg font-semibold text-gray-900 text-center sm:text-left flex-1">
 							{formatDateForDisplay(selectedDate)}
 						</h3>
-					</div>
-					<div className="flex items-center justify-center sm:justify-end">
+
 						<button
 							onClick={onBack}
 							className="px-3 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors flex items-center gap-2 focus:outline-none focus:ring-2 focus:ring-[#ea4b4b] focus:ring-offset-2"
@@ -444,7 +459,9 @@ export default function DaySchedule({
 									clipRule="evenodd"
 								/>
 							</svg>
-							<span className="hidden sm:inline">{t('owner.calendar.backToMonth')}</span>
+							<span className="hidden sm:inline">
+								{t('owner.calendar.backToMonth')}
+							</span>
 							<span className="sm:hidden">{t('owner.calendar.back')}</span>
 						</button>
 					</div>
@@ -517,7 +534,8 @@ export default function DaySchedule({
 								Salon is Closed
 							</h3>
 							<p className="text-gray-600">
-								{t('owner.calendar.closed')} {t(`weekdays.${weekdayNames[selectedDate.getDay()]}`)}.
+								{t('owner.calendar.closed')}{' '}
+								{t(`weekdays.${weekdayNames[selectedDate.getDay()]}`)}.
 							</p>
 						</div>
 					</div>

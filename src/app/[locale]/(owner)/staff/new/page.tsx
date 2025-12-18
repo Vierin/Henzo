@@ -103,7 +103,7 @@ export default function NewStaffPage() {
 	}
 
 	return (
-		<div className="px-4 max-w-7xl mx-auto">
+		<div className="px-0 md:px-4 max-w-7xl mx-auto">
 			<div className="mb-8">
 				<button
 					onClick={() => router.back()}
@@ -204,7 +204,9 @@ export default function NewStaffPage() {
 											d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"
 										/>
 									</svg>
-									{photo ? t('owner.staffNew.changePhoto') : t('owner.staffNew.uploadPhoto')}
+									{photo
+										? t('owner.staffNew.changePhoto')
+										: t('owner.staffNew.uploadPhoto')}
 								</label>
 								<p className="text-xs text-gray-500 mt-1">
 									{t('owner.staffNew.photoFormat')}
@@ -240,7 +242,9 @@ export default function NewStaffPage() {
 							}
 						>
 							<SelectTrigger className="w-full border border-gray-300 focus:ring-2 focus:ring-[#ff5b5b] focus:border-transparent text-gray-900">
-								<SelectValue placeholder={t('owner.staffNew.selectAccessLevel')} />
+								<SelectValue
+									placeholder={t('owner.staffNew.selectAccessLevel')}
+								/>
 							</SelectTrigger>
 							<SelectContent className="bg-white border border-gray-300 shadow-lg rounded-md">
 								<SelectItem
@@ -313,7 +317,9 @@ export default function NewStaffPage() {
 							disabled={createStaffMutation.isPending}
 							className="flex-1 bg-[#ff5b5b] text-white px-4 py-2 rounded-md hover:bg-[#e04a4a] focus:outline-none focus:ring-2 focus:ring-[#ff5b5b] focus:ring-offset-2 disabled:opacity-50"
 						>
-							{createStaffMutation.isPending ? t('owner.staffNew.adding') : t('owner.staffNew.addStaffMember')}
+							{createStaffMutation.isPending
+								? t('owner.staffNew.adding')
+								: t('owner.staffNew.addStaffMember')}
 						</button>
 					</div>
 				</form>

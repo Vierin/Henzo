@@ -160,11 +160,14 @@ export default function SalonCard({
 								selectedTimeInterval
 							);
 							if (availableSlots.length > 0) {
+								const translatedSlots = availableSlots.map((slot) =>
+									t(`salon.timeSlots.${slot}`)
+								);
 								return (
 									<div className="flex items-center space-x-1 mb-3 items-center">
 										<Clock className="w-4 h-4 text-green-600" />
 										<span className="text-sm text-green-600 font-medium">
-											Available: {availableSlots.join(', ')}
+											{t('salon.available')}: {translatedSlots.join(', ')}
 										</span>
 									</div>
 								);

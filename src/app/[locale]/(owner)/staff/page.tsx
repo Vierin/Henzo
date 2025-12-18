@@ -86,7 +86,7 @@ export default function StaffPage() {
 	}
 
 	return (
-		<div className="px-4 max-w-7xl mx-auto">
+		<div className="px-0 md:px-4 max-w-7xl mx-auto">
 			<div className="mb-8">
 				<div className="flex items-center justify-between">
 					<div>
@@ -128,9 +128,7 @@ export default function StaffPage() {
 					<h3 className="text-lg font-semibold text-gray-900 mb-2">
 						{t('owner.staff.noStaffYet')}
 					</h3>
-					<p className="text-gray-600 mb-6">
-						{t('owner.staff.addFirstStaff')}
-					</p>
+					<p className="text-gray-600 mb-6">{t('owner.staff.addFirstStaff')}</p>
 					<button
 						onClick={() => router.push('/staff/new')}
 						className="inline-flex items-center gap-2 bg-[#ff5b5b] text-white px-6 py-3 rounded-lg font-medium hover:bg-[#e04a4a] transition-colors"
@@ -267,13 +265,17 @@ export default function StaffPage() {
 								<div className="space-y-2 text-sm text-gray-600">
 									{member.email && (
 										<div className="flex items-center">
-											<span className="font-medium mr-2">{t('owner.staff.email')}:</span>
+											<span className="font-medium mr-2">
+												{t('owner.staff.email')}:
+											</span>
 											<span className="truncate">{member.email}</span>
 										</div>
 									)}
 									{member.phone && (
 										<div className="flex items-center">
-											<span className="font-medium mr-2">{t('owner.staff.phone')}:</span>
+											<span className="font-medium mr-2">
+												{t('owner.staff.phone')}:
+											</span>
 											<span>{member.phone}</span>
 										</div>
 									)}

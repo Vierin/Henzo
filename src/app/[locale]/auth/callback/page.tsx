@@ -106,105 +106,132 @@ export default function AuthCallbackPage() {
 
 				// Exchange code for session
 				// Supabase v2 automatically handles PKCE code_verifier from sessionStorage
-				const { data, error } =
-					await supabase.auth.exchangeCodeForSession(code);
+				// Add retry mechanism for race conditions with database hooks
+				let data: any = null;
+				let error: any = null;
+				let retryCount = 0;
+				const maxRetries = 2;
+				const retryDelay = 1500; // 1.5 seconds - give database hooks time
 
-				if (error) {
-					console.error('❌ Auth callback error:', {
-						message: error.message,
-						status: error.status,
-						error: error,
-					});
+				// Try exchangeCodeForSession with retries
+				while (retryCount <= maxRetries) {
+					const result = await supabase.auth.exchangeCodeForSession(code);
+					data = result.data;
+					error = result.error;
 
-					// If PKCE error (code_verifier missing), try to get session from URL hash
-					if (
-						error.message?.includes('code verifier') ||
-						error.message?.includes('code_verifier')
-					) {
+					if (!error && data?.session) {
+						// Success!
+						break;
+					}
+
+					// If error and not last attempt, wait and retry
+					if (error && retryCount < maxRetries) {
 						console.log(
-							'⚠️ PKCE error, trying to get session from URL hash...'
+							`⚠️ Auth callback attempt ${retryCount + 1} failed, retrying in ${retryDelay}ms...`
 						);
-						const hash = window.location.hash.substring(1);
-						if (hash) {
-							const hashParams = new URLSearchParams(hash);
-							const accessToken = hashParams.get('access_token');
-							const refreshToken = hashParams.get('refresh_token');
+						await new Promise((resolve) => setTimeout(resolve, retryDelay));
+						retryCount++;
+						continue;
+					}
 
-							if (accessToken && refreshToken) {
-								console.log('✅ Found tokens in hash, setting session...');
-								const { data: sessionData, error: sessionError } =
-									await supabase.auth.setSession({
-										access_token: accessToken,
-										refresh_token: refreshToken,
-									});
+					// Last attempt failed, check fallback mechanisms
+					if (error) {
+						// If PKCE error (code_verifier missing), try to get session from URL hash
+						if (
+							error.message?.includes('code verifier') ||
+							error.message?.includes('code_verifier')
+						) {
+							console.log(
+								'⚠️ PKCE error detected, checking fallback mechanisms...'
+							);
+							const hash = window.location.hash.substring(1);
+							if (hash) {
+								const hashParams = new URLSearchParams(hash);
+								const accessToken = hashParams.get('access_token');
+								const refreshToken = hashParams.get('refresh_token');
 
-								if (!sessionError && sessionData.session) {
-									const modifiedParams = new URLSearchParams(urlParams);
-									if (returnUrl) {
-										modifiedParams.set('returnUrl', returnUrl);
-										modifiedParams.set('pendingBooking', 'true');
+								if (accessToken && refreshToken) {
+									console.log('✅ Found tokens in hash, setting session...');
+									const { data: sessionData, error: sessionError } =
+										await supabase.auth.setSession({
+											access_token: accessToken,
+											refresh_token: refreshToken,
+										});
+
+									if (!sessionError && sessionData.session) {
+										const modifiedParams = new URLSearchParams(urlParams);
+										if (returnUrl) {
+											modifiedParams.set('returnUrl', returnUrl);
+											modifiedParams.set('pendingBooking', 'true');
+										}
+										await processSession(
+											sessionData.session,
+											effectiveLocale,
+											modifiedParams
+										);
+										return;
 									}
-									await processSession(
-										sessionData.session,
-										effectiveLocale,
-										modifiedParams
-									);
-									return;
 								}
 							}
-						}
 
-						// Try to get session anyway - sometimes Supabase creates it despite the error
-						const { data: fallbackData } = await supabase.auth.getSession();
-						if (fallbackData?.session) {
-							console.log('✅ Got session despite PKCE error, continuing...');
-							const modifiedParams = new URLSearchParams(urlParams);
-							if (returnUrl) {
-								modifiedParams.set('returnUrl', returnUrl);
-								modifiedParams.set('pendingBooking', 'true');
+							// Try to get session anyway - sometimes Supabase creates it despite the error
+							// Wait a bit for database hooks to complete
+							console.log('⚠️ Waiting for session to be available...');
+							await new Promise((resolve) => setTimeout(resolve, 1500));
+							const { data: fallbackData } = await supabase.auth.getSession();
+							if (fallbackData?.session) {
+								console.log('✅ Got session after retry, continuing...');
+								const modifiedParams = new URLSearchParams(urlParams);
+								if (returnUrl) {
+									modifiedParams.set('returnUrl', returnUrl);
+									modifiedParams.set('pendingBooking', 'true');
+								}
+								await processSession(
+									fallbackData.session,
+									effectiveLocale,
+									modifiedParams
+								);
+								return;
 							}
-							await processSession(
-								fallbackData.session,
-								effectiveLocale,
-								modifiedParams
-							);
-							return;
 						}
-					}
 
-					// If it's a 500 error from Supabase, it might be a database hook issue
-					if (error.status === 500 || error.message?.includes('500')) {
-						console.error(
-							'⚠️ Supabase returned 500 - possible database hook issue'
-						);
-						// Try to get session anyway - sometimes the user is created despite the error
-						const { data: fallbackData } = await supabase.auth.getSession();
-						if (fallbackData?.session) {
-							console.log('✅ Got session despite error, continuing...');
-							const modifiedParams = new URLSearchParams(urlParams);
-							if (returnUrl) {
-								modifiedParams.set('returnUrl', returnUrl);
-								modifiedParams.set('pendingBooking', 'true');
+						// If it's a 500 error or database hook issue, wait and check session
+						if (error.status === 500 || error.message?.includes('500') || error.message?.includes('hook')) {
+							console.log(
+								'⚠️ Database hook may be processing, waiting before fallback check...'
+							);
+							// Wait a bit more for database hooks to complete
+							await new Promise((resolve) => setTimeout(resolve, 2000));
+							
+							// Try to get session anyway - sometimes the user is created despite the error
+							const { data: fallbackData } = await supabase.auth.getSession();
+							if (fallbackData?.session) {
+								console.log('✅ Got session after retry, continuing...');
+								const modifiedParams = new URLSearchParams(urlParams);
+								if (returnUrl) {
+									modifiedParams.set('returnUrl', returnUrl);
+									modifiedParams.set('pendingBooking', 'true');
+								}
+								await processSession(
+									fallbackData.session,
+									effectiveLocale,
+									modifiedParams
+								);
+								return;
 							}
-							await processSession(
-								fallbackData.session,
-								effectiveLocale,
-								modifiedParams
-							);
-							return;
 						}
-					}
 
-					router.push(
-						withLocale(
-							`/login?error=auth_callback_failed&details=${encodeURIComponent(error.message || 'Unknown error')}`,
-							locale as 'en' | 'ru' | 'vi'
-						)
-					);
-					return;
+						// Only log error if all retries and fallbacks failed
+						console.error('❌ Auth callback error after all retries and fallbacks:', {
+							message: error.message,
+							status: error.status,
+							attempts: retryCount + 1,
+						});
+					}
+					break;
 				}
 
-				if (data.session) {
+				if (data?.session) {
 					// Create modified urlParams with pendingBooking info
 					const modifiedParams = new URLSearchParams(urlParams);
 					if (returnUrl) {
@@ -212,6 +239,14 @@ export default function AuthCallbackPage() {
 						modifiedParams.set('pendingBooking', 'true');
 					}
 					await processSession(data.session, effectiveLocale, modifiedParams);
+				} else if (error) {
+					// All retries and fallbacks failed
+					router.push(
+						withLocale(
+							`/login?error=auth_callback_failed&details=${encodeURIComponent(error.message || 'Unknown error')}`,
+							locale as 'en' | 'ru' | 'vi'
+						)
+					);
 				} else {
 					console.error('❌ No session found after OAuth callback');
 					router.push(

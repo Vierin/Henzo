@@ -49,5 +49,11 @@
 	"noSalonsFound": "Салоны не найдены",
 	"tryAdjustingSearch": "Попробуйте изменить критерии поиска или вернитесь позже.",
 	"loadingSalons": "Загрузка салонов...",
-	"failedToLoadSalons": "Не удалось загрузить салоны"
+	"failedToLoadSalons": "Не удалось загрузить салоны",
+	"available": "Доступно",
+	"timeSlots": {
+		"morning": "Утро",
+		"afternoon": "День",
+		"evening": "Вечер"
+	}
 }

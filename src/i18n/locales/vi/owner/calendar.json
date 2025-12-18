@@ -108,5 +108,14 @@
 	"completed": "Hoàn thành",
 	"noShow": "Không đến",
 	"backToMonth": "Quay lại tháng",
-	"filterByStaffLabel": "Lọc theo nhân viên:"
+	"filterByStaffLabel": "Lọc theo nhân viên:",
+	"dateAndTime": "Ngày & Giờ:",
+	"showing": "Hiển thị",
+	"to": "đến",
+	"of": "trong",
+	"results": "kết quả",
+	"page": "Trang",
+	"previous": "Trước",
+	"next": "Tiếp",
+	"goToPage": "Đi tới trang"
 }

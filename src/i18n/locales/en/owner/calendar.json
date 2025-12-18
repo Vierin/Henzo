@@ -108,5 +108,14 @@
 	"completed": "Completed",
 	"noShow": "No-Show",
 	"backToMonth": "Back to Month",
-	"filterByStaffLabel": "Filter by staff:"
+	"filterByStaffLabel": "Filter by staff:",
+	"dateAndTime": "Date & Time:",
+	"showing": "Showing",
+	"to": "to",
+	"of": "of",
+	"results": "results",
+	"page": "Page",
+	"previous": "Previous",
+	"next": "Next",
+	"goToPage": "Go to page"
 }

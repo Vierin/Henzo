@@ -49,5 +49,11 @@
 	"noSalonsFound": "Không tìm thấy salon",
 	"tryAdjustingSearch": "Thử điều chỉnh tiêu chí tìm kiếm hoặc quay lại sau.",
 	"loadingSalons": "Đang tải salon...",
-	"failedToLoadSalons": "Không thể tải salon"
+	"failedToLoadSalons": "Không thể tải salon",
+	"available": "Có sẵn",
+	"timeSlots": {
+		"morning": "Sáng",
+		"afternoon": "Chiều",
+		"evening": "Tối"
+	}
 }

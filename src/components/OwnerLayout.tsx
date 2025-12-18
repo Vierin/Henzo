@@ -47,7 +47,7 @@ export default function OwnerLayout({ children }: OwnerLayoutProps) {
 					{/* Mobile Menu Button */}
 					<button
 						onClick={toggleMobileMenu}
-						className="md:hidden fixed top-4 right-2 z-[999] bg-white shadow-lg rounded-lg p-2 border border-gray-200"
+						className="md:hidden fixed top-2 right-2 z-[999] bg-white shadow-lg rounded-lg p-2 border border-gray-200"
 						aria-label="Toggle menu"
 					>
 						{isMobileMenuOpen ? (

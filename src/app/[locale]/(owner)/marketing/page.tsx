@@ -70,11 +70,14 @@ export default function MarketingPage() {
 		try {
 			// Get current language from context
 			const currentLanguage = language || 'en';
-			
+
 			// Generate PDF using backend endpoint with language parameter
-			const blob = await apiClient.get<Blob>(`/salons/current/qr-pdf?locale=${currentLanguage}`, {
-				responseType: 'blob',
-			});
+			const blob = await apiClient.get<Blob>(
+				`/salons/current/qr-pdf?locale=${currentLanguage}`,
+				{
+					responseType: 'blob',
+				}
+			);
 
 			console.log('Received blob:', blob);
 			console.log('Blob size:', blob.size);
@@ -118,7 +121,7 @@ export default function MarketingPage() {
 	}
 
 	return (
-		<div className="px-4 sm:px-3 lg:px-8 max-w-7xl mx-auto">
+		<div className="px-0 md:px-4 max-w-7xl mx-auto">
 			<div className="max-w-4xl mx-auto">
 				{/* Header */}
 				<div className="text-center mb-8 md:mb-12">
@@ -201,9 +204,7 @@ export default function MarketingPage() {
 								</h3>
 								<ul className="space-y-2 text-sm md:text-base text-blue-800">
 									<li>• {t('owner.marketing.copyLinkInstruction')}</li>
-									<li>
-										• {t('owner.marketing.shareButtonInstruction')}
-									</li>
+									<li>• {t('owner.marketing.shareButtonInstruction')}</li>
 									<li>• {t('owner.marketing.downloadQRInstruction')}</li>
 									<li>• {t('owner.marketing.scanInstruction')}</li>
 								</ul>

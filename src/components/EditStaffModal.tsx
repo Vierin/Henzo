@@ -194,7 +194,7 @@ export default function EditStaffModal({
 								onClick={onClose}
 								className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-500"
 							>
-								{t('core.common.cancel')}
+								{t('common.cancel')}
 							</button>
 							<button
 								type="submit"

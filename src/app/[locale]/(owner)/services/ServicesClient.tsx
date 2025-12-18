@@ -203,7 +203,7 @@ export default function ServicesClient() {
 	}
 
 	return (
-		<div className="px-4 max-w-7xl mx-auto">
+		<div className="px-0 md:px-4 max-w-7xl mx-auto">
 			<div className="mb-8">
 				<div className="flex items-center justify-between">
 					<div>
@@ -220,7 +220,9 @@ export default function ServicesClient() {
 					>
 						<span className="text-lg leading-none">＋</span>
 						<span>{t('owner.services.addNew')}</span>
-						<span className="hidden md:inline">{t('owner.services.title')}</span>
+						<span className="hidden md:inline">
+							{t('owner.services.title')}
+						</span>
 					</button>
 				</div>
 			</div>
@@ -231,7 +233,9 @@ export default function ServicesClient() {
 					{/* Поиск */}
 					<div>
 						<label className="block text-sm font-medium text-black mb-2">
-							<span className="hidden sm:inline">{t('owner.services.searchServices')}</span>
+							<span className="hidden sm:inline">
+								{t('owner.services.searchServices')}
+							</span>
 							<span className="sm:hidden">{t('owner.services.search')}</span>
 						</label>
 						<div className="relative">
@@ -396,7 +400,9 @@ export default function ServicesClient() {
 					selectedGroup !== 'all') && (
 					<div className="mt-4 pt-4 border-t border-gray-200">
 						<p className="text-sm text-black">
-							{t('owner.services.showing')} {filteredServices.length} {t('owner.services.of')} {services.length} {t('owner.services.matching')}
+							{t('owner.services.showing')} {filteredServices.length}{' '}
+							{t('owner.services.of')} {services.length}{' '}
+							{t('owner.services.matching')}
 							{debouncedSearchQuery &&
 								debouncedSearchQuery.length > 2 &&
 								` "${debouncedSearchQuery}"`}
@@ -478,12 +484,12 @@ export default function ServicesClient() {
 					{/* Индикатор локального обновления */}
 					{(isSearching ||
 						(searchQuery && searchQuery !== debouncedSearchQuery)) && (
-							<div className="flex items-center justify-center py-2">
-								<div className="flex items-center gap-2 text-sm text-gray-600">
-									<div className="animate-spin rounded-full h-4 w-4 border-b-2 border-[#ff5b5b]"></div>
-									<span>{t('owner.services.filteringServices')}</span>
-								</div>
+						<div className="flex items-center justify-center py-2">
+							<div className="flex items-center gap-2 text-sm text-gray-600">
+								<div className="animate-spin rounded-full h-4 w-4 border-b-2 border-[#ff5b5b]"></div>
+								<span>{t('owner.services.filteringServices')}</span>
 							</div>
+						</div>
 					)}
 
 					<div className="bg-white rounded-xl border border-[#f1d9d7] overflow-hidden">
@@ -551,7 +557,9 @@ export default function ServicesClient() {
 													{service.serviceGroup.name}
 												</span>
 											) : (
-												<span className="text-gray-400 italic">{t('owner.services.noGroup')}</span>
+												<span className="text-gray-400 italic">
+													{t('owner.services.noGroup')}
+												</span>
 											)}
 										</div>
 										<div>{formatDuration(service.duration)}</div>

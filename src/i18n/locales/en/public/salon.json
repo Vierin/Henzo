@@ -49,5 +49,11 @@
 	"noSalonsFound": "No salons found",
 	"tryAdjustingSearch": "Try adjusting your search criteria or check back later.",
 	"loadingSalons": "Loading salons...",
-	"failedToLoadSalons": "Failed to load salons"
+	"failedToLoadSalons": "Failed to load salons",
+	"available": "Available",
+	"timeSlots": {
+		"morning": "Morning",
+		"afternoon": "Afternoon",
+		"evening": "Evening"
+	}
 }

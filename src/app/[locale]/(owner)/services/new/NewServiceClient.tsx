@@ -305,7 +305,7 @@ export default function NewServiceClient() {
 		return (
 			<main
 				role="main"
-				className="px-4 max-w-7xl mx-auto"
+				className="px-0 md:px-4 max-w-7xl mx-auto"
 				aria-labelledby="page-heading"
 			>
 				<div className="mb-8">
@@ -509,7 +509,7 @@ export default function NewServiceClient() {
 		<main
 			role="main"
 			aria-labelledby="page-heading"
-			className="px-4 max-w-7xl mx-auto"
+			className="px-0 md:px-4 max-w-7xl mx-auto"
 		>
 			<div className="mb-8">
 				<button

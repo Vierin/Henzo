@@ -463,7 +463,10 @@ export default function CalendarClient() {
 				role="status"
 				aria-live="polite"
 			>
-				<LoadingSpinner size="lg" message={t('owner.calendar.loadingCalendarData')} />
+				<LoadingSpinner
+					size="lg"
+					message={t('owner.calendar.loadingCalendarData')}
+				/>
 			</div>
 		);
 	}
@@ -475,7 +478,10 @@ export default function CalendarClient() {
 				role="status"
 				aria-live="polite"
 			>
-				<LoadingSpinner size="lg" message={t('owner.calendar.redirectingToSetup')} />
+				<LoadingSpinner
+					size="lg"
+					message={t('owner.calendar.redirectingToSetup')}
+				/>
 			</div>
 		);
 	}
@@ -487,7 +493,10 @@ export default function CalendarClient() {
 				role="status"
 				aria-live="polite"
 			>
-				<LoadingSpinner size="lg" message={t('owner.calendar.loadingBookings')} />
+				<LoadingSpinner
+					size="lg"
+					message={t('owner.calendar.loadingBookings')}
+				/>
 			</div>
 		);
 	}
@@ -506,11 +515,11 @@ export default function CalendarClient() {
 
 	return (
 		<main
-			className="flex gap-4 md:gap-6 px-4 max-w-7xl mx-auto"
+			className="flex gap-4 md:gap-6"
 			role="main"
 			aria-labelledby="calendar-heading"
 		>
-			<div className="w-full">
+			<div className="w-full max-w-7xl mx-auto px-0 md:px-4">
 				<div className="mb-6 md:mb-8">
 					{/* Header */}
 					<div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4">
