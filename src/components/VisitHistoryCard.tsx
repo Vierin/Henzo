@@ -108,6 +108,7 @@ export default function VisitHistoryCard({
 							width={128}
 							height={96}
 							className="w-full h-full object-cover rounded-lg"
+							priority={false} // P3: Lazy loading для изображений в списке
 						/>
 					</div>
 

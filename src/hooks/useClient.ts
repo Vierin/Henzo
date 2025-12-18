@@ -84,7 +84,8 @@ export function useUserReviews(enabled: boolean = true) {
 				return [];
 			}
 		},
-		staleTime: 5 * 60 * 1000, // 5 minutes
+		staleTime: 15 * 60 * 1000, // P1: 15 minutes - отзывы меняются редко
+		gcTime: 60 * 60 * 1000, // P1: 1 час в кэше
 		refetchOnMount: false, // Не перезапрашивать если данные свежие
 		refetchOnWindowFocus: false, // Не перезапрашивать при фокусе окна
 		enabled,
@@ -103,7 +104,8 @@ export function useUpcomingBookings(enabled: boolean = true) {
 				return [];
 			}
 		},
-		staleTime: 5 * 60 * 1000, // 5 minutes
+		staleTime: 10 * 60 * 1000, // P1: 10 minutes - увеличили для редко меняющихся данных
+		gcTime: 30 * 60 * 1000, // P1: 30 minutes в кэше
 		refetchOnMount: false, // Не перезапрашивать если данные свежие
 		refetchOnWindowFocus: false, // Не перезапрашивать при фокусе окна
 		enabled,
@@ -111,18 +113,28 @@ export function useUpcomingBookings(enabled: boolean = true) {
 }
 
 // Hook to get completed bookings (for reviews)
-export function useCompletedBookings() {
+export function useCompletedBookings(options?: { page?: number; limit?: number }) {
 	return useQuery({
-		queryKey: ['completed-bookings'],
+		queryKey: ['completed-bookings', options],
 		queryFn: async (): Promise<ClientBooking[]> => {
 			try {
-				const response = await apiClient.get('/bookings/user/completed');
+				const params = new URLSearchParams();
+				if (options?.page) params.append('page', options.page.toString());
+				if (options?.limit) params.append('limit', options.limit.toString());
+				
+				const queryString = params.toString();
+				const endpoint = queryString
+					? `/bookings/user/completed?${queryString}`
+					: '/bookings/user/completed';
+					
+				const response = await apiClient.get(endpoint);
 				return (response as any) || [];
 			} catch (error) {
 				return [];
 			}
 		},
-		staleTime: 5 * 60 * 1000, // 5 minutes
+		staleTime: 15 * 60 * 1000, // P1: 15 minutes - данные меняются редко
+		gcTime: 60 * 60 * 1000, // P1: 1 час в кэше
 		refetchOnMount: false, // Не перезапрашивать если данные свежие
 		refetchOnWindowFocus: false, // Не перезапрашивать при фокусе окна
 	});

@@ -14,9 +14,10 @@ import {
 	Menu,
 	X,
 } from 'lucide-react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useFavoriteSalons } from '@/hooks/useFavorites';
 import { useUpcomingBookings } from '@/hooks/useClient';
+import { apiClient } from '@/lib/api-client';
 import {
 	extractLocaleFromPath,
 	stripLocaleFromPath,
@@ -29,6 +30,7 @@ export default function ClientSidebar() {
 	const router = useRouter();
 	const { logout, user } = useAuth();
 	const t = useTranslation();
+	const queryClient = useQueryClient();
 	const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 	const currentLocale = extractLocaleFromPath(pathname) ?? 'en';
 	const pathWithoutLocale = stripLocaleFromPath(pathname);
@@ -79,12 +81,42 @@ export default function ClientSidebar() {
 		setIsMobileMenuOpen(!isMobileMenuOpen);
 	};
 
+	// P2: Prefetch данные для dashboard при hover
+	const prefetchDashboardData = async () => {
+		if (!isAuthenticated) return;
+		
+		try {
+			await Promise.all([
+				queryClient.prefetchQuery({
+					queryKey: ['upcoming-bookings'],
+					queryFn: async () => {
+						const response = await apiClient.get('/bookings/user/upcoming');
+						return response || [];
+					},
+					staleTime: 10 * 60 * 1000,
+				}),
+				queryClient.prefetchQuery({
+					queryKey: ['completed-bookings'],
+					queryFn: async () => {
+						const response = await apiClient.get('/bookings/user/completed');
+						return response || [];
+					},
+					staleTime: 15 * 60 * 1000,
+				}),
+			]);
+		} catch (error) {
+			// Silently fail prefetching - it's just an optimization
+			console.debug('Prefetch failed for dashboard', error);
+		}
+	};
+
 	// Helper function to render navigation items
 	const renderNavItem = (
 		href: string,
 		icon: React.ReactNode,
 		label: string,
-		badge?: number
+		badge?: number,
+		prefetchKey?: string
 	) => {
 		// Добавляем локаль к href для правильной навигации
 		const hrefWithLocale = withLocale(
@@ -97,12 +129,19 @@ export default function ClientSidebar() {
 		return (
 			<Link
 				href={hrefWithLocale}
+				prefetch={true} // P2: Включаем prefetch для быстрой навигации
 				className={`flex items-center justify-between px-3 py-2 rounded-lg transition-colors ${
 					isActive
 						? 'bg-red-50 text-[#ff5b5b] border-r-2 border-[#ff5b5b]'
 						: 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
 				}`}
 				onClick={() => setIsMobileMenuOpen(false)}
+				onMouseEnter={() => {
+					// P2: Дополнительный prefetch данных при hover
+					if (prefetchKey === 'dashboard' && !isActive) {
+						prefetchDashboardData();
+					}
+				}}
 			>
 				<div className="flex items-center gap-3">
 					{icon}
@@ -141,7 +180,8 @@ export default function ClientSidebar() {
 						'/dashboard',
 						<Clock className="w-5 h-5" />,
 						t('client.dashboard.title'),
-						upcomingBookings.length
+						upcomingBookings.length,
+						'dashboard' // P2: Prefetch key
 					)}
 
 					{renderNavItem(

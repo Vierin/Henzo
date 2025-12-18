@@ -111,21 +111,9 @@ export default function ClientDashboardClient() {
 		});
 	}, []);
 
-	const upcomingBookingsList = useMemo(
-		() =>
-			(upcomingBookings || []).sort(
-				(a, b) => new Date(a.time).getTime() - new Date(b.time).getTime()
-			),
-		[upcomingBookings]
-	);
-
-	const completedBookingsList = useMemo(
-		() =>
-			(completedBookings || []).sort(
-				(a, b) => new Date(b.time).getTime() - new Date(a.time).getTime()
-			),
-		[completedBookings]
-	);
+	// P1: Убираем сортировку - данные уже отсортированы на бэкенде
+	const upcomingBookingsList = upcomingBookings || [];
+	const completedBookingsList = completedBookings || [];
 
 	const isLoading = upcomingLoading || completedLoading;
 	const hasError = upcomingError || completedError;
