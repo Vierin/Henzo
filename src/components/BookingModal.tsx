@@ -1598,14 +1598,32 @@ export default function BookingModal({
 
 			if (!response.ok) {
 				const error = await response.json();
-				throw new Error(error.message || 'Failed to send magic link');
+				
+				// If user already exists (409 Conflict), switch to login form
+				// Check both error.code and error.error_code for compatibility
+				if (response.status === 409 && (error.code === 'USER_EXISTS' || error.error_code === 'USER_EXISTS')) {
+					// Throw error with special code for BookingAuthForm to handle
+					const userExistsError: any = new Error(error.msg || error.message || 'An account with this email already exists. Please login with your password.');
+					userExistsError.code = 'USER_EXISTS';
+					userExistsError.email = email.trim();
+					throw userExistsError;
+				}
+				
+				throw new Error(error.msg || error.message || 'Failed to send magic link');
 			}
 
 			setGuestEmail(email.trim());
 			setShowMagicLinkSent(true);
 			toast.success(t('booking.confirmationEmailSent'));
-		} catch (error) {
+		} catch (error: any) {
 			logger.error('Error sending magic link:', error);
+			
+			// If user exists, re-throw with special code for BookingAuthForm to handle
+			if (error && typeof error === 'object' && 'code' in error && error.code === 'USER_EXISTS') {
+				throw error; // Re-throw to let BookingAuthForm handle it
+			}
+			
+			// For other errors, show toast and don't re-throw
 			toast.error(
 				error instanceof Error ? error.message : t('booking.failedToSendEmail')
 			);

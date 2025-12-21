@@ -11,7 +11,7 @@ import { logger } from '@/lib/logger';
 
 interface BookingAuthFormProps {
 	onSuccess: () => void;
-	onSendMagicLink: (email: string) => void;
+	onSendMagicLink: (email: string) => Promise<void>;
 	onCancel: () => void;
 	bookingData?: {
 		service: Service | null;
@@ -116,13 +116,24 @@ export default function BookingAuthForm({
 		e.preventDefault();
 
 		if (!email) {
-			toast.error('Please enter your email');
+			toast.error(t.auth.emailAddress || 'Please enter your email');
 			return;
 		}
 
 		setMagicLinkLoading(true);
 		try {
 			await onSendMagicLink(email);
+		} catch (error: any) {
+			// If user already exists, switch to login form
+			if (error?.code === 'USER_EXISTS') {
+				setShowPasswordField(true);
+				// Email is already set, show informative message
+				toast.error(
+					error.message || 
+					'An account with this email already exists. Please login with your password.'
+				);
+			}
+			// Other errors are already handled in handleSendMagicLink (toast shown there)
 		} finally {
 			setMagicLinkLoading(false);
 		}

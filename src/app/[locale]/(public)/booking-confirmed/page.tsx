@@ -65,23 +65,38 @@ function BookingConfirmedContent() {
 					const errorMessage = errorData.message || 'Failed to confirm booking';
 
 					// Если токен уже использован или истек - это нормально, показываем успех
+					// Это может произойти при повторном клике на ссылку или React Strict Mode
 					if (
 						errorMessage.includes('expired') ||
 						errorMessage.includes('already') ||
-						errorMessage.includes('Invalid or expired')
+						errorMessage.includes('already been used') ||
+						errorMessage.includes('Invalid or expired') ||
+						errorMessage.includes('confirmation link has already been used')
 					) {
 						// Проверяем, может быть уже был сохранен успешный результат
 						const savedData = sessionStorage.getItem(storageKey);
 						if (savedData) {
-							const data = JSON.parse(savedData);
-							setBookingId(data.bookingId);
-							setEmail(data.email);
-							setBookingConfirmed(true);
-							setLoading(false);
-							return;
+							try {
+								const data = JSON.parse(savedData);
+								setBookingId(data.bookingId);
+								setEmail(data.email);
+								setBookingConfirmed(true);
+								setLoading(false);
+								toast.success('Booking already confirmed!');
+								return;
+							} catch (e) {
+								// Если данные повреждены, продолжаем
+								console.warn('Failed to parse saved booking data', e);
+							}
 						}
-						// Если нет сохраненных данных, показываем ошибку
-						throw new Error(errorMessage);
+						
+						// Если токен уже использован, но нет сохраненных данных,
+						// это означает, что бронирование уже создано, но мы не можем показать детали
+						// Показываем успех с общим сообщением
+						setBookingConfirmed(true);
+						setLoading(false);
+						toast.success('Your booking has already been confirmed!');
+						return;
 					}
 
 					throw new Error(errorMessage);
