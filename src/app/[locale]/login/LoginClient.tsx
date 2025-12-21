@@ -14,6 +14,7 @@ import TelegramLoginButton from '@/components/TelegramLoginButton';
 export default function LoginClient() {
 	const [email, setEmail] = useState('');
 	const [password, setPassword] = useState('');
+	const [rememberMe, setRememberMe] = useState(false);
 	const [loading, setLoading] = useState(false);
 	const [telegramBotId, setTelegramBotId] = useState<string | null>(null);
 	const router = useRouter();
@@ -97,7 +98,7 @@ export default function LoginClient() {
 		setLoading(true);
 
 		try {
-			const result = await login(email, password);
+			const result = await login(email, password, rememberMe);
 
 			if (result.success) {
 				toast.success(t('auth.welcomeBack'));
@@ -351,6 +352,8 @@ export default function LoginClient() {
 								id="remember-me"
 								name="remember-me"
 								type="checkbox"
+								checked={rememberMe}
+								onChange={(e) => setRememberMe(e.target.checked)}
 								className="h-4 w-4 text-[#ff5b5b] focus:ring-[#ff5b5b] border-gray-300 rounded"
 							/>
 							<label

@@ -43,16 +43,22 @@ const categoryTranslationMap: Record<
 
 export default function CategoryListClient({
 	category,
-	translatedName,
+	translatedName: _translatedName, // Keep for backward compatibility but use translation instead
 }: CategoryListClientProps) {
+	const t = useTranslation();
 	const [sortBy, setSortBy] = useState('name');
 	const [isBookingModalOpen, setIsBookingModalOpen] = useState(false);
 	const [selectedService, setSelectedService] = useState<
 		(ServiceResponseDto & { salonId: string; salonName: string }) | null
 	>(null);
-	const t = useTranslation();
 
 	const { data: salons, isLoading: loading, error } = useSalonsWithServices();
+
+	// Get translated category name
+	const translationKey = categoryTranslationMap[category.slug];
+	const translatedName = translationKey
+		? (t.categories[translationKey] as string) || category.name
+		: category.name;
 
 	const handleBookService = (
 		service: ServiceResponseDto,
@@ -169,7 +175,9 @@ export default function CategoryListClient({
 									className="px-3 sm:px-4 py-2 sm:h-9 flex gap-1 items-center bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#ff5b5b] focus:border-transparent text-gray-900 text-sm whitespace-nowrap"
 								>
 									<Map className="w-4 h-4" />{' '}
-									<span className="hidden sm:inline">{t.categories.mapView}</span>
+									<span className="hidden sm:inline">
+										{t.categories.mapView}
+									</span>
 								</Link>
 							</div>
 						</div>
@@ -188,16 +196,10 @@ export default function CategoryListClient({
 								// No salons found
 								<div className="text-center py-12">
 									<h3 className="text-xl font-semibold text-gray-900 mb-2">
-										{t.categories.noSalonsFound.replace(
-											'{category}',
-											translatedName.toLowerCase()
-										)}
+										{t.categories.noSalonsFound}
 									</h3>
 									<p className="text-gray-600 mb-8">
-										{t.categories.noSalonsDescription.replace(
-											'{category}',
-											translatedName
-										)}
+										{t.categories.noSalonsDescription}
 									</p>
 									<div className="flex flex-col sm:flex-row gap-4 justify-center">
 										<Link
@@ -228,4 +230,3 @@ export default function CategoryListClient({
 		</>
 	);
 }
-

@@ -178,8 +178,8 @@ export function LanguageProvider({ children, initialDictionary }: LanguageProvid
 		publicModules.push('public/contact');
 	} else if (pathNoLocale.startsWith('/about')) {
 		publicModules.push('public/about');
-	} else if (pathNoLocale.startsWith('/login') || pathNoLocale.startsWith('/forgot-password')) {
-		// Auth module needed for login and forgot-password pages
+	} else if (pathNoLocale.startsWith('/login') || pathNoLocale.startsWith('/forgot-password') || pathNoLocale.startsWith('/check-email')) {
+		// Auth module needed for login, forgot-password, and check-email pages
 		publicModules.push('shared/auth');
 	}
 	
@@ -214,8 +214,8 @@ export function LanguageProvider({ children, initialDictionary }: LanguageProvid
 		// Load all client modules since ClientSidebar uses translations from all of them
 		modulesToLoad.push('client/dashboard', 'client/favorites', 'client/reviews', 'client/settings');
 	}
-	// Load shared/auth for login and register pages
-	if (pathNoLocale.startsWith('/login') || pathNoLocale.startsWith('/register')) {
+	// Load shared/auth for login, register, and check-email pages
+	if (pathNoLocale.startsWith('/login') || pathNoLocale.startsWith('/register') || pathNoLocale.startsWith('/check-email')) {
 		modulesToLoad.push('shared/auth');
 	}
 	// Load public/salon for admin salons-data page

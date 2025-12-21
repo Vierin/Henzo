@@ -15,8 +15,8 @@
 	"sortMostServices": "Most Services",
 	"sortHighestRated": "Highest Rated",
 	"mapView": "Map View",
-	"noSalonsFound": "No {category} salons found",
-	"noSalonsDescription": "We couldn't find any salons in the {category} category at the moment. Check back soon or explore other categories.",
+	"noSalonsFound": "No salons found",
+	"noSalonsDescription": "We couldn't find any salons in this category at the moment. Check back soon or explore other categories.",
 	"browseAllSalons": "Browse All Salons",
 	"viewAllServices": "View all {count} services →"
 }

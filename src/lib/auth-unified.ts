@@ -79,16 +79,21 @@ class AuthManager {
 
 	async login(
 		email: string,
-		password: string
+		password: string,
+		rememberMe: boolean = false
 	): Promise<{ success: boolean; error?: string }> {
 		try {
 			this.setState({ isLoading: true });
 
 			// 1. Аутентификация через Supabase
-			// Supabase автоматически управляет access_token и refresh_token
+			// persistSession: true = localStorage (постоянная сессия)
+			// persistSession: false = sessionStorage (сессия до закрытия вкладки)
 			const { data, error } = await supabase.auth.signInWithPassword({
 				email,
 				password,
+				options: {
+					persistSession: rememberMe,
+				},
 			});
 
 			if (error) {
@@ -108,8 +113,16 @@ class AuthManager {
 				isLoading: false,
 			});
 
-			// 3. Кеширование в localStorage
-			storage.setItem('auth_user', JSON.stringify(user));
+			// 3. Кеширование пользователя в соответствующем хранилище
+			if (rememberMe) {
+				// Постоянная сессия - используем localStorage
+				storage.setItem('auth_user', JSON.stringify(user));
+				storage.removeItem('auth_user'); // Удаляем из sessionStorage если был там
+			} else {
+				// Временная сессия - используем sessionStorage
+				storage.session.setItem('auth_user', JSON.stringify(user));
+				storage.removeItem('auth_user'); // Удаляем из localStorage если был там
+			}
 
 			// 4. Настройка автоматического обновления токена
 			this.setupTokenRefresh();
@@ -284,7 +297,9 @@ class AuthManager {
 			
 			const userId = this.authState.user?.id;
 			await supabase.auth.signOut();
+			// Очищаем оба хранилища (localStorage и sessionStorage)
 			storage.removeItem('auth_user');
+			storage.session.removeItem('auth_user');
 			this.setState({
 				user: null,
 				isAuthenticated: false,
@@ -321,8 +336,9 @@ class AuthManager {
 			} = await supabase.auth.getSession();
 
 			if (sessionError || !session?.access_token) {
-				// Нет валидной сессии, очищаем кеш
+				// Нет валидной сессии, очищаем кеш из обоих хранилищ
 				storage.removeItem('auth_user');
+				storage.session.removeItem('auth_user');
 				this.setState({
 					user: null,
 					isAuthenticated: false,
@@ -333,7 +349,13 @@ class AuthManager {
 			}
 
 			// 2. Проверка кеша (для быстрой загрузки)
-			const cachedUser = storage.getItem('auth_user');
+			// Сначала проверяем localStorage (постоянная сессия)
+			let cachedUser = storage.getItem('auth_user');
+			// Если нет в localStorage, проверяем sessionStorage (временная сессия)
+			if (!cachedUser) {
+				cachedUser = storage.session.getItem('auth_user');
+			}
+
 			if (cachedUser) {
 				try {
 					const user = JSON.parse(cachedUser);
@@ -366,7 +388,25 @@ class AuthManager {
 			});
 
 			// 4. Обновление кеша
-			storage.setItem('auth_user', JSON.stringify(user));
+			// Определяем, где хранить на основе того, где Supabase хранит сессию
+			// Supabase хранит сессию в localStorage если persistSession: true, иначе в sessionStorage
+			// Проверяем, где уже есть кешированный пользователь (если был), и используем то же хранилище
+			// Если кеша нет, проверяем, где Supabase хранит токен
+			const hadLocalStorageCache = storage.getItem('auth_user') !== null;
+			const hadSessionStorageCache = storage.session.getItem('auth_user') !== null;
+			
+			// Если был кеш в localStorage, значит rememberMe был true - используем localStorage
+			// Если был только в sessionStorage, значит rememberMe был false - используем sessionStorage
+			// Если кеша не было, проверяем, где Supabase хранит токен (по умолчанию localStorage)
+			if (hadLocalStorageCache || (!hadSessionStorageCache && typeof window !== 'undefined')) {
+				// Постоянная сессия - используем localStorage
+				storage.setItem('auth_user', JSON.stringify(user));
+				storage.session.removeItem('auth_user'); // Очищаем sessionStorage если был там
+			} else {
+				// Временная сессия - используем sessionStorage
+				storage.session.setItem('auth_user', JSON.stringify(user));
+				storage.removeItem('auth_user'); // Очищаем localStorage если был там
+			}
 
 			// 5. Настройка автоматического обновления токена
 			this.setupTokenRefresh();
@@ -402,7 +442,9 @@ class AuthManager {
 					isAuthenticated: false,
 					isLoading: false,
 				});
+				// Очищаем оба хранилища
 				storage.removeItem('auth_user');
+				storage.session.removeItem('auth_user');
 				this.clearTokenRefresh();
 			}
 		});
@@ -421,7 +463,9 @@ class AuthManager {
 						isAuthenticated: false,
 						isLoading: false,
 					});
+					// Очищаем оба хранилища
 					storage.removeItem('auth_user');
+					storage.session.removeItem('auth_user');
 					this.clearTokenRefresh();
 				}
 				// НЕ обновляем данные пользователя автоматически - это создает циклы

@@ -2,30 +2,27 @@
 
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Suspense } from 'react';
+import { useTranslation } from '@/contexts/LanguageContext';
+import PublicHeader from '@/components/PublicHeader';
 
 function CheckEmailForm() {
 	const router = useRouter();
 	const searchParams = useSearchParams();
 	const email = searchParams.get('email') || '';
 	const userType = searchParams.get('type') || 'client';
+	const t = useTranslation();
 
 	const getTitle = () => {
-		switch (userType) {
-			case 'business':
-				return 'Check Your Email';
-			case 'client':
-			default:
-				return 'Check Your Email';
-		}
+		return t.auth.checkYourEmail;
 	};
 
 	const getDescription = () => {
 		switch (userType) {
 			case 'business':
-				return "We've sent a verification link to your email address. Please check your inbox and click the link to activate your business account.";
+				return t.auth.verificationLinkSentBusiness;
 			case 'client':
 			default:
-				return "We've sent a verification link to your email address. Please check your inbox and click the link to activate your account.";
+				return t.auth.verificationLinkSent;
 		}
 	};
 
@@ -33,26 +30,28 @@ function CheckEmailForm() {
 		switch (userType) {
 			case 'business':
 				return [
-					'Check your email inbox (and spam folder)',
-					'Click the verification link in the email',
-					'Complete your salon setup after verification',
-					'Start managing your business',
+					t.auth.step1CheckEmail,
+					t.auth.step2ClickLink,
+					t.auth.step3CompleteSetup,
+					t.auth.step4StartManaging,
 				];
 			case 'client':
 			default:
 				return [
-					'Check your email inbox (and spam folder)',
-					'Click the verification link in the email',
-					'Log in to your account',
-					'Start booking appointments',
+					t.auth.step1CheckEmail,
+					t.auth.step2ClickLink,
+					t.auth.step3Login,
+					t.auth.step4StartBooking,
 				];
 		}
 	};
 
 	return (
-		<div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
-			<div className="max-w-md w-full space-y-8">
-				<div className="text-center">
+		<div className="min-h-screen bg-[#F8F5F2]">
+			<PublicHeader />
+			<div className="flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8 min-h-[calc(100vh-80px)]">
+				<div className="max-w-md w-full space-y-8">
+					<div className="text-center">
 					{/* Email Icon */}
 					<div className="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-blue-100 mb-4">
 						<svg
@@ -82,7 +81,7 @@ function CheckEmailForm() {
 					{email && (
 						<div className="mt-4 p-3 bg-gray-100 rounded-lg">
 							<p className="text-sm text-gray-700">
-								<span className="font-medium">Email sent to:</span> {email}
+								<span className="font-medium">{t.auth.emailSentTo}:</span> {email}
 							</p>
 						</div>
 					)}
@@ -90,7 +89,7 @@ function CheckEmailForm() {
 					{/* Next Steps */}
 					<div className="mt-6 text-left">
 						<h3 className="text-sm font-medium text-gray-900 mb-3">
-							Next Steps:
+							{t.auth.nextSteps}:
 						</h3>
 						<ul className="space-y-2">
 							{getNextSteps().map((step, index) => (
@@ -112,28 +111,29 @@ function CheckEmailForm() {
 							onClick={() => router.push('/login')}
 							className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-[#ff5b5b] hover:bg-[#e04a4a] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#ff5b5b]"
 						>
-							Go to Login
+							{t.auth.goToLogin}
 						</button>
 
 						<button
 							onClick={() => router.push('/')}
 							className="w-full flex justify-center py-2 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#ff5b5b]"
 						>
-							Back to Home
+							{t.auth.backToHome}
 						</button>
 					</div>
 
 					{/* Help Text */}
 					<div className="mt-6 text-center">
 						<p className="text-xs text-gray-500">
-							Didn't receive the email? Check your spam folder or{' '}
+							{t.auth.didntReceiveEmail}{' '}
 							<button
 								onClick={() => router.push('/login')}
 								className="text-[#ff5b5b] hover:text-[#e04a4a] font-medium"
 							>
-								try logging in again
+								{t.auth.tryLoggingInAgain}
 							</button>
 						</p>
+					</div>
 					</div>
 				</div>
 			</div>

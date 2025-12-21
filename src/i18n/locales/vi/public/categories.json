@@ -15,8 +15,8 @@
 	"sortMostServices": "Nhiều dịch vụ nhất",
 	"sortHighestRated": "Đánh giá cao nhất",
 	"mapView": "Xem bản đồ",
-	"noSalonsFound": "Không tìm thấy salon {category}",
-	"noSalonsDescription": "Hiện tại chúng tôi không tìm thấy salon nào trong danh mục {category}. Vui lòng quay lại sau hoặc khám phá các danh mục khác.",
+	"noSalonsFound": "Không tìm thấy salon",
+	"noSalonsDescription": "Hiện tại chúng tôi không tìm thấy salon nào trong danh mục này. Vui lòng quay lại sau hoặc khám phá các danh mục khác.",
 	"browseAllSalons": "Xem tất cả salon",
 	"viewAllServices": "Xem tất cả {count} dịch vụ →"
 }
