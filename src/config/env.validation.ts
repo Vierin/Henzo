@@ -33,21 +33,37 @@ export function validateEnv(): EnvValidationResult {
 	}
 
 	// Check required variables
+	// In development, these are optional (have defaults in code)
+	// In production, they should be set
+	const isDevelopment = process.env.NODE_ENV !== 'production';
+	
 	requiredEnvVars.forEach((varName) => {
 		const value = process.env[varName];
 		if (!value || value.trim() === '') {
-			errors.push(`${varName} is required but not set`);
+			if (isDevelopment) {
+				// In development, just warn (code has defaults)
+				warnings.push(
+					`${varName} is not set. Using default value. Set it in .env for production.`
+				);
+			} else {
+				// In production, this is an error
+				errors.push(`${varName} is required but not set`);
+			}
 		} else if (varName === 'NEXT_PUBLIC_API_URL' && value === 'http://localhost:3001') {
-			warnings.push(
-				`${varName} is set to localhost. This should be changed to production URL in production environment.`
-			);
+			if (!isDevelopment) {
+				warnings.push(
+					`${varName} is set to localhost. This should be changed to production URL in production environment.`
+				);
+			}
 		} else if (
 			varName === 'NEXT_PUBLIC_FRONTEND_URL' &&
 			value === 'http://localhost:3000'
 		) {
-			warnings.push(
-				`${varName} is set to localhost. This should be changed to production URL in production environment.`
-			);
+			if (!isDevelopment) {
+				warnings.push(
+					`${varName} is set to localhost. This should be changed to production URL in production environment.`
+				);
+			}
 		}
 	});
 
@@ -69,11 +85,18 @@ export function validateEnv(): EnvValidationResult {
 		});
 	}
 
-	if (warnings.length > 0 && process.env.NODE_ENV === 'production') {
-		console.warn('⚠️ Environment variable validation warnings:', warnings);
-		warnings.forEach((warning) => {
-			console.warn(`  - ${warning}`);
-		});
+	// Only show warnings in development (they're informational)
+	// In production, warnings are shown above
+	if (warnings.length > 0) {
+		if (process.env.NODE_ENV === 'development') {
+			// In development, warnings are less critical
+			console.debug('ℹ️ Environment variable validation info:', warnings);
+		} else {
+			console.warn('⚠️ Environment variable validation warnings:', warnings);
+			warnings.forEach((warning) => {
+				console.warn(`  - ${warning}`);
+			});
+		}
 	}
 
 	return {
