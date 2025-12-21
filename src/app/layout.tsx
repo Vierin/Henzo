@@ -8,6 +8,7 @@ import AuthProvider from '@/components/AuthProvider';
 import ConditionalFooter from '@/components/ConditionalFooter';
 import CookieBanner from '@/components/CookieBanner';
 import { LanguageProvider } from '@/contexts/LanguageContext';
+import { EnvValidator } from '@/components/EnvValidator';
 
 const geistSans = Geist({
 	variable: '--font-geist-sans',
@@ -115,6 +116,7 @@ export default function RootLayout({
 				className={`${geistSans.variable} ${geistMono.variable} antialiased`}
 				suppressHydrationWarning={true}
 			>
+				<EnvValidator />
 				<LanguageProvider>
 					<QueryProvider>
 						<AuthProvider>

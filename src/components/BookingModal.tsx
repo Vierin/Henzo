@@ -17,6 +17,7 @@ import {
 	getLocalizedServiceDescription,
 } from '@/utils/serviceLocalization';
 import { logger } from '@/lib/logger';
+import { storage } from '@/utils/storage';
 import BookingGuestForm from './BookingModal/BookingGuestForm';
 import BookingAuthForm from './BookingModal/BookingAuthForm';
 import BookingServiceSelector from './BookingModal/BookingServiceSelector';
@@ -190,7 +191,7 @@ export default function BookingModal({
 	// Check for pending booking after OAuth (even if modal is closed)
 	useEffect(() => {
 		if (user && isClient) {
-			const pendingBooking = localStorage.getItem('pendingBooking');
+			const pendingBooking = storage.getItem('pendingBooking');
 			if (pendingBooking) {
 				try {
 					const bookingData = JSON.parse(pendingBooking);
@@ -210,7 +211,7 @@ export default function BookingModal({
 								hasTime: !!bookingData.time,
 								bookingData,
 							});
-							localStorage.removeItem('pendingBooking');
+							storage.removeItem('pendingBooking');
 							toast.error('Invalid booking data. Please try again.');
 							return;
 						}
@@ -222,7 +223,7 @@ export default function BookingModal({
 								'❌ Invalid date format in localStorage:',
 								bookingData.date
 							);
-							localStorage.removeItem('pendingBooking');
+							storage.removeItem('pendingBooking');
 							toast.error('Invalid date format. Please try again.');
 							return;
 						}
@@ -234,7 +235,7 @@ export default function BookingModal({
 								'❌ Invalid time format in localStorage:',
 								bookingData.time
 							);
-							localStorage.removeItem('pendingBooking');
+							storage.removeItem('pendingBooking');
 							toast.error('Invalid time format. Please try again.');
 							return;
 						}
@@ -255,9 +256,9 @@ export default function BookingModal({
 							setSalonWorkingHours(bookingData.workingHours);
 						}
 
-						// Remove returnUrl from localStorage to mark as processed
+						// Remove returnUrl from storage to mark as processed
 						delete bookingData.returnUrl;
-						localStorage.setItem('pendingBooking', JSON.stringify(bookingData));
+						storage.setItem('pendingBooking', JSON.stringify(bookingData));
 
 						// Small delay to ensure state is set, then complete booking
 						setTimeout(async () => {
@@ -385,12 +386,12 @@ export default function BookingModal({
 			timestamp: Date.now(),
 			returnUrl: window.location.href,
 		};
-		localStorage.setItem('pendingBooking', JSON.stringify(bookingState));
+		storage.setItem('pendingBooking', JSON.stringify(bookingState));
 	};
 
 	// Функция для восстановления состояния бронирования
 	const restoreBookingState = () => {
-		const pendingBooking = localStorage.getItem('pendingBooking');
+		const pendingBooking = storage.getItem('pendingBooking');
 		if (pendingBooking) {
 			try {
 				const bookingData = JSON.parse(pendingBooking);
@@ -408,15 +409,15 @@ export default function BookingModal({
 					toast.success('Booking details restored!');
 
 					// Удаляем сохраненные данные
-					localStorage.removeItem('pendingBooking');
+					storage.removeItem('pendingBooking');
 					return true;
 				} else {
 					// Удаляем устаревшие данные
-					localStorage.removeItem('pendingBooking');
+					storage.removeItem('pendingBooking');
 				}
 			} catch (error) {
 				logger.error('Error restoring booking state:', error);
-				localStorage.removeItem('pendingBooking');
+				storage.removeItem('pendingBooking');
 			}
 		}
 		return false;
@@ -1773,6 +1774,50 @@ export default function BookingModal({
 				throw new Error(`Invalid time format: ${timeToUse}. Expected HH:MM`);
 			}
 
+			// Validate that date is not in the past
+			const selectedDateObj = safeParseDate(dateToUse);
+			if (selectedDateObj) {
+				const now = new Date();
+				const today = new Date(
+					now.getFullYear(),
+					now.getMonth(),
+					now.getDate()
+				);
+				const selectedDateOnly = new Date(
+					selectedDateObj.getFullYear(),
+					selectedDateObj.getMonth(),
+					selectedDateObj.getDate()
+				);
+
+				if (selectedDateOnly < today) {
+					logger.error('❌ Selected date is in the past:', dateToUse);
+					throw new Error(
+						t.booking.dateInPast ||
+							'Selected date is in the past. Please select a future date.'
+					);
+				}
+
+				// If date is today, validate that time is not in the past
+				if (selectedDateOnly.getTime() === today.getTime()) {
+					const [hours, minutes] = timeToUse.split(':').map(Number);
+					const selectedDateTime = new Date(
+						now.getFullYear(),
+						now.getMonth(),
+						now.getDate(),
+						hours,
+						minutes
+					);
+
+					if (selectedDateTime < now) {
+						logger.error('❌ Selected time is in the past:', timeToUse);
+						throw new Error(
+							t.booking.timeInPast ||
+								'Selected time is in the past. Please select a future time.'
+						);
+					}
+				}
+			}
+
 			let bookingDateTime: string;
 			try {
 				logger.log('🕐 Creating booking date time:', {
@@ -1810,7 +1855,7 @@ export default function BookingModal({
 			let finalSalonId = currentSalonId;
 			if (!finalSalonId) {
 				try {
-					const pendingBooking = localStorage.getItem('pendingBooking');
+					const pendingBooking = storage.getItem('pendingBooking');
 					if (pendingBooking) {
 						const bookingData = JSON.parse(pendingBooking);
 						finalSalonId = bookingData.salonId;
@@ -1824,7 +1869,7 @@ export default function BookingModal({
 				logger.error('❌ Missing salon ID:', {
 					currentSalonId,
 					salonId,
-					pendingBooking: localStorage.getItem('pendingBooking'),
+					pendingBooking: storage.getItem('pendingBooking'),
 				});
 				throw new Error('Salon ID is required to create a booking');
 			}
@@ -1896,8 +1941,8 @@ export default function BookingModal({
 				throw new Error(errorMessage);
 			}
 
-			// Clean up localStorage after successful booking
-			localStorage.removeItem('pendingBooking');
+			// Clean up storage after successful booking
+			storage.removeItem('pendingBooking');
 			setPendingBookingData(null);
 
 			// Show success message in modal

@@ -2,6 +2,7 @@
 import { supabase } from './supabase';
 import { apiClient } from './api-client';
 import { useAuthStore } from '@/stores/authStore';
+import { storage } from '@/utils/storage';
 
 export interface User {
 	id: string;
@@ -108,7 +109,7 @@ class AuthManager {
 			});
 
 			// 3. Кеширование в localStorage
-			localStorage.setItem('auth_user', JSON.stringify(user));
+			storage.setItem('auth_user', JSON.stringify(user));
 
 			// 4. Настройка автоматического обновления токена
 			this.setupTokenRefresh();
@@ -157,7 +158,7 @@ class AuthManager {
 					isAuthenticated: true,
 					isLoading: false,
 				});
-				localStorage.setItem('auth_user', JSON.stringify(response.user));
+				storage.setItem('auth_user', JSON.stringify(response.user));
 			} else {
 				this.setState({ isLoading: false });
 			}
@@ -221,7 +222,7 @@ class AuthManager {
 						isLoading: false,
 					});
 
-					localStorage.setItem('auth_user', JSON.stringify(response.user));
+					storage.setItem('auth_user', JSON.stringify(response.user));
 				}
 			} else {
 				// Обычная регистрация через Supabase signUp
@@ -283,7 +284,7 @@ class AuthManager {
 			
 			const userId = this.authState.user?.id;
 			await supabase.auth.signOut();
-			localStorage.removeItem('auth_user');
+			storage.removeItem('auth_user');
 			this.setState({
 				user: null,
 				isAuthenticated: false,
@@ -321,7 +322,7 @@ class AuthManager {
 
 			if (sessionError || !session?.access_token) {
 				// Нет валидной сессии, очищаем кеш
-				localStorage.removeItem('auth_user');
+				storage.removeItem('auth_user');
 				this.setState({
 					user: null,
 					isAuthenticated: false,
@@ -332,7 +333,7 @@ class AuthManager {
 			}
 
 			// 2. Проверка кеша (для быстрой загрузки)
-			const cachedUser = localStorage.getItem('auth_user');
+			const cachedUser = storage.getItem('auth_user');
 			if (cachedUser) {
 				try {
 					const user = JSON.parse(cachedUser);
@@ -365,7 +366,7 @@ class AuthManager {
 			});
 
 			// 4. Обновление кеша
-			localStorage.setItem('auth_user', JSON.stringify(user));
+			storage.setItem('auth_user', JSON.stringify(user));
 
 			// 5. Настройка автоматического обновления токена
 			this.setupTokenRefresh();
@@ -401,7 +402,7 @@ class AuthManager {
 					isAuthenticated: false,
 					isLoading: false,
 				});
-				localStorage.removeItem('auth_user');
+				storage.removeItem('auth_user');
 				this.clearTokenRefresh();
 			}
 		});
@@ -420,7 +421,7 @@ class AuthManager {
 						isAuthenticated: false,
 						isLoading: false,
 					});
-					localStorage.removeItem('auth_user');
+					storage.removeItem('auth_user');
 					this.clearTokenRefresh();
 				}
 				// НЕ обновляем данные пользователя автоматически - это создает циклы
@@ -448,7 +449,7 @@ class AuthManager {
 					user,
 					isAuthenticated: true,
 				});
-				localStorage.setItem('auth_user', JSON.stringify(user));
+				storage.setItem('auth_user', JSON.stringify(user));
 			}
 		} catch (error) {
 			// Игнорируем ошибки фонового обновления
@@ -501,12 +502,12 @@ class AuthManager {
 					isAuthenticated: true,
 					isLoading: false,
 				});
-				localStorage.setItem('auth_user', JSON.stringify(cachedUserData));
+				storage.setItem('auth_user', JSON.stringify(cachedUserData));
 				return;
 			}
 			
 			// Оптимизация: проверяем кэш перед запросом к API
-			const cachedUser = localStorage.getItem('auth_user');
+			const cachedUser = storage.getItem('auth_user');
 			if (cachedUser) {
 				try {
 					const parsedUser = JSON.parse(cachedUser);
@@ -525,7 +526,7 @@ class AuthManager {
 						this.fetchUserWithRole(accessToken)
 							.then((user) => {
 								(user as any)._cachedAt = Date.now();
-								localStorage.setItem('auth_user', JSON.stringify(user));
+								storage.setItem('auth_user', JSON.stringify(user));
 								this.setState({
 									user,
 									isAuthenticated: true,
@@ -550,7 +551,7 @@ class AuthManager {
 				isAuthenticated: true,
 				isLoading: false,
 			});
-			localStorage.setItem('auth_user', JSON.stringify(user));
+			storage.setItem('auth_user', JSON.stringify(user));
 		} catch (error) {
 			throw error;
 		}

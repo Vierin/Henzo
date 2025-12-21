@@ -12,6 +12,7 @@ import { usePathname } from 'next/navigation';
 import { extractLocaleFromPath, stripLocaleFromPath, type Locale } from '@/i18n/routing';
 import { useTranslations as useBaseTranslations, useModuleTranslations } from '@/i18n/useTranslations';
 import type { TranslationModule } from '@/i18n/modules';
+import { storage } from '@/utils/storage';
 
 type Language = Locale;
 
@@ -299,10 +300,10 @@ export function LanguageProvider({ children, initialDictionary }: LanguageProvid
 		return merged;
 	}, [baseT, additionalDict, pathNoLocale, effectiveInitialDictionary]);
 
-	// Load language from localStorage on mount
+	// Load language from storage on mount
 	useEffect(() => {
 		if (typeof window !== 'undefined') {
-			const savedLanguage = localStorage.getItem('henzo-language') as Language;
+			const savedLanguage = storage.getItem('henzo-language') as Language;
 			if (
 				savedLanguage &&
 				(savedLanguage === 'vi' ||
@@ -319,7 +320,7 @@ export function LanguageProvider({ children, initialDictionary }: LanguageProvid
 		if (typeof window === 'undefined') return;
 		const locale = extractLocaleFromPath(pathname) ?? 'en';
 		setLanguageState(locale);
-		localStorage.setItem('henzo-language', locale);
+		storage.setItem('henzo-language', locale);
 		document.documentElement.lang = locale;
 		document.documentElement.dir = 'ltr';
 	}, [pathname]);
@@ -328,7 +329,7 @@ export function LanguageProvider({ children, initialDictionary }: LanguageProvid
 		setLanguageState(lang);
 
 		if (typeof window !== 'undefined') {
-			localStorage.setItem('henzo-language', lang);
+			storage.setItem('henzo-language', lang);
 
 			// Update document language attribute
 			document.documentElement.lang = lang;

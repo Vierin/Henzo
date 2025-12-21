@@ -112,6 +112,7 @@ export const useCreateBooking = () => {
 			}>('/appointments', data);
 			return response.appointment;
 		},
+		retry: false, // Don't retry critical booking operations
 		onSuccess: () => {
 			// Invalidate and refetch bookings
 			queryClient.invalidateQueries({ queryKey: bookingKeys.lists() });
@@ -142,6 +143,7 @@ export const useUpdateBooking = () => {
 			);
 			return response.booking;
 		},
+		retry: false, // Don't retry critical booking operations
 		onSuccess: (data, variables) => {
 			// Update the specific booking in cache
 			queryClient.setQueryData(bookingKeys.detail(variables.id), data);
@@ -170,6 +172,7 @@ export const useCancelBooking = () => {
 			);
 			return response.booking;
 		},
+		retry: false, // Don't retry critical booking operations
 		onSuccess: (data, id) => {
 			// Update the specific booking in cache
 			queryClient.setQueryData(bookingKeys.detail(id), data);
@@ -192,6 +195,7 @@ export const useDeleteBooking = () => {
 		mutationFn: async (id: string): Promise<void> => {
 			await apiClient.delete(`/appointments/${id}`);
 		},
+		retry: false, // Don't retry critical booking operations
 		onSuccess: (_, id) => {
 			// Remove from cache
 			queryClient.removeQueries({ queryKey: bookingKeys.detail(id) });

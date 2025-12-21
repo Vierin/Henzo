@@ -17,6 +17,7 @@ export interface PaginatedResponse<T> {
 
 export class ApiClient {
 	private baseUrl: string;
+	private readonly REQUEST_TIMEOUT = 30000; // 30 seconds
 
 	constructor(baseUrl: string = 'http://localhost:3001') {
 		this.baseUrl = baseUrl;
@@ -50,15 +51,33 @@ export class ApiClient {
 				`Bearer ${session.access_token}`;
 		}
 
+		// Create AbortController for timeout
+		const controller = new AbortController();
+		const timeoutId = setTimeout(() => controller.abort(), this.REQUEST_TIMEOUT);
+
 		const config: RequestInit = {
-			headers,
 			...fetchOptions,
+			headers,
+			signal: controller.signal,
 		};
 
 		let response: Response;
 		try {
 			response = await fetch(url, config);
+			clearTimeout(timeoutId);
 		} catch (error: any) {
+			clearTimeout(timeoutId);
+
+			// Handle abort (timeout)
+			if (error.name === 'AbortError' || controller.signal.aborted) {
+				const timeoutError = new Error(
+					`Request timeout: The request took longer than ${this.REQUEST_TIMEOUT / 1000} seconds`
+				);
+				(timeoutError as any).isTimeoutError = true;
+				(timeoutError as any).url = url;
+				throw timeoutError;
+			}
+
 			// Handle network errors (CORS, connection refused, etc.)
 			const errorMessage =
 				error.message === 'Failed to fetch' || error.message === 'fetch failed'
@@ -82,6 +101,30 @@ export class ApiClient {
 		}
 
 		if (!response.ok) {
+			// Handle 401 Unauthorized - automatically logout
+			if (response.status === 401) {
+				// Try to logout user and redirect to login
+				try {
+					await supabase.auth.signOut();
+					// Redirect to login page if we're in browser
+					if (typeof window !== 'undefined') {
+						const currentPath = window.location.pathname;
+						// Don't redirect if already on login/register pages
+						if (!currentPath.includes('/login') && !currentPath.includes('/register')) {
+							window.location.href = '/login?session=expired';
+						}
+					}
+				} catch (logoutError) {
+					// Ignore logout errors, but log them
+					logger.error('Failed to logout on 401:', logoutError);
+				}
+
+				const authError = new Error('Your session has expired. Please log in again.');
+				(authError as any).status = 401;
+				(authError as any).isAuthError = true;
+				throw authError;
+			}
+
 			// For blob responses, don't try to parse as JSON
 			if (responseType === 'blob') {
 				throw new Error(`HTTP error! status: ${response.status}`);
@@ -131,7 +174,9 @@ export class ApiClient {
 				throw error;
 			}
 
-			throw new Error(errorMessage);
+			const error = new Error(errorMessage);
+			(error as any).status = response.status;
+			throw error;
 		}
 
 		// Handle blob responses
