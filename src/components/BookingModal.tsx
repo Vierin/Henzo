@@ -18,6 +18,7 @@ import {
 } from '@/utils/serviceLocalization';
 import { logger } from '@/lib/logger';
 import { storage } from '@/utils/storage';
+import { zonedTimeToUtc, utcToZonedTime } from 'date-fns-tz';
 import BookingGuestForm from './BookingModal/BookingGuestForm';
 import BookingAuthForm from './BookingModal/BookingAuthForm';
 import BookingServiceSelector from './BookingModal/BookingServiceSelector';
@@ -85,6 +86,8 @@ export default function BookingModal({
 	const [currentDateIndex, setCurrentDateIndex] = useState(0);
 	const [salonWorkingHours, setSalonWorkingHours] =
 		useState<WorkingHours | null>(null);
+	const [salonTimezone, setSalonTimezone] =
+		useState<string>('Asia/Ho_Chi_Minh');
 	const [loading, setLoading] = useState(false);
 	const [selectedService, setSelectedService] = useState<Service | null>(null);
 	const [isServiceDropdownOpen, setIsServiceDropdownOpen] = useState(false);
@@ -433,8 +436,13 @@ export default function BookingModal({
 				const response = await fetch(`${API_BASE_URL}/salons/${salonId}`);
 				if (response.ok) {
 					const data = await response.json();
-					if (data && data.workingHours) {
-						setSalonWorkingHours(data.workingHours);
+					if (data) {
+						if (data.workingHours) {
+							setSalonWorkingHours(data.workingHours);
+						}
+						if (data.timezone) {
+							setSalonTimezone(data.timezone);
+						}
 					}
 				}
 			} else {
@@ -460,12 +468,13 @@ export default function BookingModal({
 				}
 
 				const responseData = await response.json();
-				if (
-					responseData.success &&
-					responseData.data &&
-					responseData.data.workingHours
-				) {
-					setSalonWorkingHours(responseData.data.workingHours);
+				if (responseData.success && responseData.data) {
+					if (responseData.data.workingHours) {
+						setSalonWorkingHours(responseData.data.workingHours);
+					}
+					if (responseData.data.timezone) {
+						setSalonTimezone(responseData.data.timezone);
+					}
 				}
 			}
 		} catch (error) {
@@ -1534,7 +1543,8 @@ export default function BookingModal({
 	// Helper function to create a UTC DateTime string for API
 	const createBookingDateTimeUTC = (
 		dateStr: string,
-		timeStr: string
+		timeStr: string,
+		salonTimezone: string = 'Asia/Ho_Chi_Minh'
 	): string => {
 		const [year, month, day] = dateStr.split('-').map(Number);
 		const [hours, minutes] = timeStr.split(':').map(Number);
@@ -1547,14 +1557,29 @@ export default function BookingModal({
 			throw new Error(`Invalid time format: ${timeStr}`);
 		}
 
-		// Create UTC date string directly to avoid timezone conversion issues
-		const utcDateString = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}T${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:00.000Z`;
+		// IMPORTANT: All bookings are interpreted in salon's timezone
+		// The selected time (e.g., 20:15) should be interpreted as local time in salon's timezone
+		// We use date-fns-tz to properly convert from salon timezone to UTC
+		// Example: 20:15 in Asia/Ho_Chi_Minh → UTC
 
-		logger.log('Creating UTC date string:', {
+		// Create a date string in format: "YYYY-MM-DD HH:mm:ss"
+		const localDateTimeString = `${dateStr} ${timeStr.padStart(5, '0')}:00`;
+
+		// Convert from salon timezone to UTC using date-fns-tz
+		// zonedTimeToUtc interprets the date/time as being in the specified timezone
+		// and converts it to UTC
+		const localDate = new Date(`${dateStr}T${timeStr.padStart(5, '0')}:00`);
+		const utcDate = zonedTimeToUtc(localDate, salonTimezone);
+		const utcDateString = utcDate.toISOString();
+
+		logger.log('Creating UTC date string (salon timezone):', {
 			dateStr,
 			timeStr,
-			utcDateString,
-			localDate: new Date(year, month - 1, day, hours, minutes).toISOString(),
+			salonTimezone,
+			selectedTime: `${hours}:${minutes}`,
+			localDateTimeString,
+			utcTime: utcDateString,
+			note: `Selected time is interpreted as local time in ${salonTimezone} and converted to UTC`,
 		});
 
 		return utcDateString;
@@ -1577,7 +1602,8 @@ export default function BookingModal({
 								?.id,
 				time: createBookingDateTimeUTC(
 					pendingBookingData?.date || selectedDate,
-					pendingBookingData?.time || selectedTime
+					pendingBookingData?.time || selectedTime,
+					salonTimezone
 				),
 				salonId: currentSalonId,
 				clientEmail: email.trim(),
@@ -1598,18 +1624,27 @@ export default function BookingModal({
 
 			if (!response.ok) {
 				const error = await response.json();
-				
+
 				// If user already exists (409 Conflict), switch to login form
 				// Check both error.code and error.error_code for compatibility
-				if (response.status === 409 && (error.code === 'USER_EXISTS' || error.error_code === 'USER_EXISTS')) {
+				if (
+					response.status === 409 &&
+					(error.code === 'USER_EXISTS' || error.error_code === 'USER_EXISTS')
+				) {
 					// Throw error with special code for BookingAuthForm to handle
-					const userExistsError: any = new Error(error.msg || error.message || 'An account with this email already exists. Please login with your password.');
+					const userExistsError: any = new Error(
+						error.msg ||
+							error.message ||
+							'An account with this email already exists. Please login with your password.'
+					);
 					userExistsError.code = 'USER_EXISTS';
 					userExistsError.email = email.trim();
 					throw userExistsError;
 				}
-				
-				throw new Error(error.msg || error.message || 'Failed to send magic link');
+
+				throw new Error(
+					error.msg || error.message || 'Failed to send magic link'
+				);
 			}
 
 			setGuestEmail(email.trim());
@@ -1617,12 +1652,17 @@ export default function BookingModal({
 			toast.success(t('booking.confirmationEmailSent'));
 		} catch (error: any) {
 			logger.error('Error sending magic link:', error);
-			
+
 			// If user exists, re-throw with special code for BookingAuthForm to handle
-			if (error && typeof error === 'object' && 'code' in error && error.code === 'USER_EXISTS') {
+			if (
+				error &&
+				typeof error === 'object' &&
+				'code' in error &&
+				error.code === 'USER_EXISTS'
+			) {
 				throw error; // Re-throw to let BookingAuthForm handle it
 			}
-			
+
 			// For other errors, show toast and don't re-throw
 			toast.error(
 				error instanceof Error ? error.message : t('booking.failedToSendEmail')
@@ -1844,7 +1884,11 @@ export default function BookingModal({
 					selectedDate,
 					selectedTime,
 				});
-				bookingDateTime = createBookingDateTimeUTC(dateToUse, timeToUse);
+				bookingDateTime = createBookingDateTimeUTC(
+					dateToUse,
+					timeToUse,
+					salonTimezone
+				);
 				logger.log('✅ Booking date time created:', bookingDateTime);
 			} catch (dateError) {
 				logger.error('❌ Error creating booking date time:', dateError);
@@ -2040,7 +2084,11 @@ export default function BookingModal({
 
 			let bookingDateTime: string;
 			try {
-				bookingDateTime = createBookingDateTimeUTC(selectedDate, selectedTime);
+				bookingDateTime = createBookingDateTimeUTC(
+					selectedDate,
+					selectedTime,
+					salonTimezone
+				);
 			} catch (dateError) {
 				console.error('❌ Error creating booking date time:', dateError);
 				throw new Error(

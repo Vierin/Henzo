@@ -2,7 +2,7 @@
 
 import { useState, useMemo, useRef, useEffect } from 'react';
 import { Booking, TimeBlock, Staff } from '@/types';
-import { safeParseDate, formatTimeSafe } from '@/utils/date';
+import { safeParseDate, formatTimeSafe, parseBookingTimeAsLocal } from '@/utils/date';
 import { ChevronLeft, ChevronRight, X } from 'lucide-react';
 import { useTranslation } from '@/contexts/LanguageContext';
 
@@ -93,7 +93,7 @@ export default function DaySchedule({
 
 	const getBookingsForDate = (date: Date) => {
 		return bookings.filter((booking) => {
-			const bookingDate = safeParseDate(booking.time);
+			const bookingDate = parseBookingTimeAsLocal(booking.time);
 			if (!bookingDate) return false;
 			return bookingDate.toDateString() === date.toDateString();
 		});
@@ -257,7 +257,7 @@ export default function DaySchedule({
 			if (booking.status === 'CANCELED') return false;
 			if (!booking.staff || booking.staff.id !== staffId) return false;
 
-			const bookingTime = safeParseDate(booking.time);
+			const bookingTime = parseBookingTimeAsLocal(booking.time);
 			if (!bookingTime) return false;
 
 			const bookingHour = bookingTime.getHours();
@@ -286,7 +286,7 @@ export default function DaySchedule({
 
 	const getBookingBlockStyles = (booking: any) => {
 		const now = new Date();
-		const bookingTime = safeParseDate(booking.time);
+		const bookingTime = parseBookingTimeAsLocal(booking.time);
 		if (!bookingTime) return {};
 
 		const serviceDuration = booking.service?.duration || 60;
@@ -333,7 +333,7 @@ export default function DaySchedule({
 
 	const isBookingClickable = (booking: any) => {
 		const now = new Date();
-		const bookingTime = safeParseDate(booking.time);
+		const bookingTime = parseBookingTimeAsLocal(booking.time);
 		if (!bookingTime) return false;
 
 		const serviceDuration = booking.service?.duration || 60;

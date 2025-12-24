@@ -116,7 +116,7 @@ export default function BookingAuthForm({
 		e.preventDefault();
 
 		if (!email) {
-			toast.error(t.auth.emailAddress || 'Please enter your email');
+			toast.error(t.auth.pleaseEnterEmail || 'Please enter your email');
 			return;
 		}
 
@@ -130,6 +130,7 @@ export default function BookingAuthForm({
 				// Email is already set, show informative message
 				toast.error(
 					error.message || 
+					t.auth.accountExists ||
 					'An account with this email already exists. Please login with your password.'
 				);
 			}
@@ -153,13 +154,13 @@ export default function BookingAuthForm({
 			const result = await login(email, password);
 
 			if (result.success) {
-				toast.success('Login successful!');
+				toast.success(t.auth.welcomeBack || 'Login successful!');
 				onSuccess();
 			} else {
-				toast.error(result.error || 'Login failed');
+				toast.error(result.error || t.auth.signInFailed || 'Login failed');
 			}
 		} catch (error) {
-			toast.error('Login failed. Please try again.');
+			toast.error(t.auth.signInFailed || 'Login failed. Please try again.');
 		} finally {
 			setLoading(false);
 		}

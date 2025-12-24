@@ -7,6 +7,9 @@ import toast from 'react-hot-toast';
 import Link from 'next/link';
 import { CheckCircle, Clock, Mail, ArrowRight } from 'lucide-react';
 import { useTranslation } from '@/contexts/LanguageContext';
+import LoadingFallback from '@/components/LoadingFallback';
+import ErrorFallback from '@/components/ErrorFallback';
+import { sessionStorage } from '@/utils/storage';
 
 function BookingConfirmedContent() {
 	const searchParams = useSearchParams();
@@ -28,11 +31,11 @@ function BookingConfirmedContent() {
 
 		// Проверяем, был ли токен уже подтвержден (сохранено в sessionStorage)
 		const storageKey = `booking_confirmed_${token}`;
-		const savedData = sessionStorage.getItem(storageKey);
+		const savedData = sessionStorage.getItem<string>(storageKey);
 
 		if (savedData) {
 			try {
-				const data = JSON.parse(savedData);
+				const data = typeof savedData === 'string' ? JSON.parse(savedData) : savedData;
 				setBookingId(data.bookingId);
 				setEmail(data.email);
 				setBookingConfirmed(true);
@@ -40,32 +43,37 @@ function BookingConfirmedContent() {
 				return;
 			} catch (e) {
 				// Если данные повреждены, продолжаем с подтверждением
-				console.warn('Failed to parse saved booking data', e);
+				// Data parsing failed, continue with confirmation
 			}
 		}
 
 		const confirmBooking = async () => {
 			try {
 				setLoading(true);
-				const API_BASE_URL =
-					process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+				const data = await apiClient.get<{
+					bookingId: string;
+					email?: string;
+				}>(`/bookings/confirm-magic-link?token=${token}`);
 
-				const response = await fetch(
-					`${API_BASE_URL}/bookings/confirm-magic-link?token=${token}`,
-					{
-						method: 'GET',
-						headers: {
-							'Content-Type': 'application/json',
-						},
-					}
-				);
+				setBookingId(data.bookingId);
+				// Get email from response (API now returns it) or URL parameter as fallback
+				const emailFromResponse = data.email || searchParams.get('email');
+				if (emailFromResponse) {
+					setEmail(emailFromResponse);
+				}
 
-				if (!response.ok) {
-					const errorData = await response.json();
-					const errorMessage = errorData.message || 'Failed to confirm booking';
+				// Сохраняем результат в sessionStorage для предотвращения повторных запросов
+				sessionStorage.setItem(storageKey, {
+					bookingId: data.bookingId,
+					email: emailFromResponse,
+				});
 
+				setBookingConfirmed(true);
+				toast.success('Booking confirmed successfully!');
+			} catch (err: any) {
 					// Если токен уже использован или истек - это нормально, показываем успех
 					// Это может произойти при повторном клике на ссылку или React Strict Mode
+				const errorMessage = err.message || t.booking.confirmFailed;
 					if (
 						errorMessage.includes('expired') ||
 						errorMessage.includes('already') ||
@@ -74,20 +82,17 @@ function BookingConfirmedContent() {
 						errorMessage.includes('confirmation link has already been used')
 					) {
 						// Проверяем, может быть уже был сохранен успешный результат
-						const savedData = sessionStorage.getItem(storageKey);
+					const savedData = sessionStorage.getItem<{
+						bookingId: string;
+						email?: string;
+					}>(storageKey);
 						if (savedData) {
-							try {
-								const data = JSON.parse(savedData);
-								setBookingId(data.bookingId);
-								setEmail(data.email);
+						setBookingId(savedData.bookingId);
+						setEmail(savedData.email || null);
 								setBookingConfirmed(true);
 								setLoading(false);
 								toast.success('Booking already confirmed!');
 								return;
-							} catch (e) {
-								// Если данные повреждены, продолжаем
-								console.warn('Failed to parse saved booking data', e);
-							}
 						}
 						
 						// Если токен уже использован, но нет сохраненных данных,
@@ -99,32 +104,6 @@ function BookingConfirmedContent() {
 						return;
 					}
 
-					throw new Error(errorMessage);
-				}
-
-				const data = await response.json();
-				setBookingId(data.bookingId);
-				// Get email from response (API now returns it) or URL parameter as fallback
-				const emailFromResponse = data.email || searchParams.get('email');
-				if (emailFromResponse) {
-					setEmail(emailFromResponse);
-				}
-
-				// Сохраняем результат в sessionStorage для предотвращения повторных запросов
-				sessionStorage.setItem(
-					storageKey,
-					JSON.stringify({
-						bookingId: data.bookingId,
-						email: emailFromResponse,
-					})
-				);
-
-				setBookingConfirmed(true);
-				toast.success('Booking confirmed successfully!');
-			} catch (err) {
-				console.error('Error confirming booking:', err);
-				const errorMessage =
-					err instanceof Error ? err.message : t.booking.confirmFailed;
 				setError(errorMessage);
 				toast.error(errorMessage);
 			} finally {
@@ -136,47 +115,16 @@ function BookingConfirmedContent() {
 	}, [token, searchParams]);
 
 	if (loading) {
-		return (
-			<div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
-				<div className="text-center">
-					<div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#ff5b5b] mx-auto mb-4"></div>
-					<p className="text-gray-600">{t.booking.confirming}</p>
-				</div>
-			</div>
-		);
+		return <LoadingFallback message={t.booking.confirming} />;
 	}
 
 	if (error) {
 		return (
-			<div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
-				<div className="max-w-md w-full bg-white rounded-xl shadow-lg p-8 text-center">
-					<div className="mb-4">
-						<svg
-							className="w-16 h-16 text-red-500 mx-auto"
-							fill="none"
-							stroke="currentColor"
-							viewBox="0 0 24 24"
-						>
-							<path
-								strokeLinecap="round"
-								strokeLinejoin="round"
-								strokeWidth={2}
-								d="M6 18L18 6M6 6l12 12"
-							/>
-						</svg>
-					</div>
-					<h1 className="text-2xl font-bold text-gray-900 mb-4">
-						{t.booking.confirmFailedTitle}
-					</h1>
-					<p className="text-gray-600 mb-6">{error}</p>
-					<Link
-						href="/"
-						className="inline-block px-6 py-3 bg-[#ff5b5b] text-white rounded-lg hover:bg-[#e04a4a] transition-colors"
-					>
-						{t.common.goHome}
-					</Link>
-				</div>
-			</div>
+			<ErrorFallback
+				title={t.booking.confirmFailedTitle}
+				message={error}
+				showHomeLink={true}
+			/>
 		);
 	}
 
@@ -255,16 +203,7 @@ function BookingConfirmedContent() {
 
 export default function BookingConfirmedPage() {
 	return (
-		<Suspense
-			fallback={
-				<div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
-					<div className="text-center">
-						<div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#ff5b5b] mx-auto mb-4"></div>
-						<p className="text-gray-600">Loading...</p>
-					</div>
-				</div>
-			}
-		>
+		<Suspense fallback={<LoadingFallback />}>
 			<BookingConfirmedContent />
 		</Suspense>
 	);

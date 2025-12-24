@@ -1,6 +1,7 @@
 import { Metadata } from 'next';
 import { Suspense } from 'react';
 import SalonsClient from '@/app/[locale]/(public)/salons/salonsClient';
+import LoadingFallback from '@/components/LoadingFallback';
 
 export async function generateMetadata(): Promise<Metadata> {
 	const title = 'Find Beauty Salons & Services | Henzo';
@@ -41,13 +42,7 @@ export async function generateMetadata(): Promise<Metadata> {
 
 export default function SalonsPage() {
 	return (
-		<Suspense
-			fallback={
-				<div className="min-h-screen flex items-center justify-center bg-[#F8F5F2]">
-					<div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#ff5b5b]"></div>
-				</div>
-			}
-		>
+		<Suspense fallback={<LoadingFallback fullScreen={true} />}>
 			<SalonsClient />
 		</Suspense>
 	);

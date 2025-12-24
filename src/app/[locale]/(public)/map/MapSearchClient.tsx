@@ -67,10 +67,7 @@ export default function MapSearchClient() {
 				},
 				(error) => {
 					// Don't log user denial (PERMISSION_DENIED = 1) as an error - it's expected behavior
-					// Only log other errors like TIMEOUT or POSITION_UNAVAILABLE
-					if (error.code !== 1) {
-						console.warn('Geolocation error:', error.message);
-					}
+					// Only handle other errors like TIMEOUT or POSITION_UNAVAILABLE
 					// Fallback to Nha Trang coordinates (already set as default)
 					setMapCenter({
 						lat: 12.2388, // Nha Trang coordinates

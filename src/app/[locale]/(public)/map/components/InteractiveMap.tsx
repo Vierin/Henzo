@@ -127,7 +127,7 @@ export default function InteractiveMap({
 					popupAnchor: [0, -37],
 				});
 			} catch (error) {
-				console.error('Error creating custom icon:', error);
+				// Error creating custom icon, return null to use default
 				return null;
 			}
 		},

@@ -3,9 +3,12 @@
 import { useState } from 'react';
 import toast from 'react-hot-toast';
 import { useTranslation } from '@/contexts/LanguageContext';
+import { apiClient } from '@/lib/api-client';
+import { useErrorHandler } from '@/hooks/useErrorHandler';
 
 export default function BetaRequestForm() {
 	const t = useTranslation();
+	const { handleError } = useErrorHandler();
 	const [formData, setFormData] = useState({
 		fullName: '',
 		email: '',
@@ -17,81 +20,31 @@ export default function BetaRequestForm() {
 		setLoading(true);
 
 		try {
-			const API_URL =
-				process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
-
-			// Validate API URL
-			if (!API_URL || API_URL.trim() === '') {
-				throw new Error('API URL is not configured. Please contact support.');
-			}
-
-			const endpoint = `${API_URL}/auth/send-business-magic-link`;
-
-			// Log for debugging (only in development)
-			if (process.env.NODE_ENV === 'development') {
-				console.log('Sending request to:', endpoint);
-			}
-
-			const response = await fetch(endpoint, {
-				method: 'POST',
-				headers: {
-					'Content-Type': 'application/json',
-				},
-				body: JSON.stringify({
-					name: formData.fullName,
-					email: formData.email,
-				}),
+			await apiClient.post('/auth/send-business-magic-link', {
+				name: formData.fullName,
+				email: formData.email,
 			});
 
-			if (!response.ok) {
-				// Handle different error statuses
-				if (response.status === 404) {
-					console.error('404 Error - Endpoint not found:', endpoint);
-					throw new Error(
-						'API endpoint not found. The server may be down or the endpoint is missing. Please contact support.'
-					);
-				}
-				if (response.status >= 500) {
-					throw new Error(
-						'Server error. Please try again later or contact support.'
-					);
-				}
-
-				const errorData = await response.json().catch(() => ({}));
-				let errorMessage =
-					errorData.message || errorData.msg || 'Failed to send magic link';
-
-				// Improve error messages for existing account
-				if (
-					errorMessage.includes('already exists') ||
-					errorMessage.includes('business account')
-				) {
-					errorMessage =
-						'A business account with this email already exists. Please login instead.';
-				}
-
-				throw new Error(errorMessage);
-			}
-
-			toast.success(
-				t('business.betaForm.magicLinkSent'),
-				{
-					duration: 5000,
-				}
-			);
+			toast.success(t('business.betaForm.magicLinkSent'), {
+				duration: 5000,
+			});
 
 			// Reset form
 			setFormData({
 				fullName: '',
 				email: '',
 			});
-		} catch (error) {
-			const errorMessage =
-				error instanceof Error
-					? error.message
-					: t('business.betaForm.errorMessage');
-			toast.error(errorMessage);
-			console.error('Beta request error:', error);
+		} catch (error: any) {
+			// Improve error messages for existing account
+			let errorMessage = error.message || t('business.betaForm.errorMessage');
+			if (
+				errorMessage.includes('already exists') ||
+				errorMessage.includes('business account')
+			) {
+				errorMessage =
+					'A business account with this email already exists. Please login instead.';
+			}
+			handleError(error, errorMessage);
 		} finally {
 			setLoading(false);
 		}

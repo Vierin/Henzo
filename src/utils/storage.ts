@@ -1,100 +1,88 @@
 /**
- * Safe localStorage and sessionStorage utilities with SSR support
- * Wraps storage access to prevent errors in SSR or private browsing mode
+ * Unified storage utilities for sessionStorage and localStorage
  */
 
-const isClient = typeof window !== 'undefined';
+class Storage {
+	constructor(private storage: globalThis.Storage) {}
 
-export const storage = {
-	getItem: (key: string): string | null => {
-		if (!isClient) return null;
+	getItem<T = string>(key: string): T | null {
 		try {
-			return localStorage.getItem(key);
+			const item = this.storage.getItem(key);
+			if (item === null) return null;
+			return JSON.parse(item) as T;
 		} catch (error) {
-			// Handle private browsing mode or storage quota exceeded
-			console.warn('localStorage.getItem failed:', error);
+			// If parsing fails, return raw string
+			return this.storage.getItem(key) as T | null;
+		}
+	}
+
+	setItem<T = string>(key: string, value: T): void {
+		try {
+			const serialized = typeof value === 'string' ? value : JSON.stringify(value);
+			this.storage.setItem(key, serialized);
+		} catch (error) {
+			console.error(`Error storing ${key}:`, error);
+		}
+	}
+
+	removeItem(key: string): void {
+		this.storage.removeItem(key);
+	}
+
+	clear(): void {
+		this.storage.clear();
+	}
+
+	key(index: number): string | null {
+		return this.storage.key(index);
+	}
+
+	get length(): number {
+		return this.storage.length;
+	}
+}
+
+export const sessionStorage = new Storage(
+	typeof window !== 'undefined' ? window.sessionStorage : ({} as Storage)
+);
+
+export const localStorage = new Storage(
+	typeof window !== 'undefined' ? window.localStorage : ({} as Storage)
+);
+
+// Unified storage object for backward compatibility
+// Note: getItem returns raw string (not parsed) to match usage in auth-unified.ts
+export const storage = {
+	setItem: <T = string>(key: string, value: T): void => {
+		localStorage.setItem(key, value);
+	},
+	getItem: (key: string): string | null => {
+		// Return raw string from localStorage (not parsed) since auth-unified.ts does JSON.parse
+		if (typeof window === 'undefined') return null;
+		try {
+			return window.localStorage.getItem(key);
+		} catch (e) {
 			return null;
 		}
 	},
-
-	setItem: (key: string, value: string): boolean => {
-		if (!isClient) return false;
-		try {
-			localStorage.setItem(key, value);
-			return true;
-		} catch (error) {
-			// Handle private browsing mode or storage quota exceeded
-			console.warn('localStorage.setItem failed:', error);
-			return false;
-		}
+	removeItem: (key: string): void => {
+		localStorage.removeItem(key);
 	},
-
-	removeItem: (key: string): boolean => {
-		if (!isClient) return false;
-		try {
-			localStorage.removeItem(key);
-			return true;
-		} catch (error) {
-			console.warn('localStorage.removeItem failed:', error);
-			return false;
-		}
-	},
-
-	clear: (): boolean => {
-		if (!isClient) return false;
-		try {
-			localStorage.clear();
-			return true;
-		} catch (error) {
-			console.warn('localStorage.clear failed:', error);
-			return false;
-		}
-	},
-
-	// Session storage methods (for temporary sessions when "Remember me" is unchecked)
 	session: {
+		setItem: <T = string>(key: string, value: T): void => {
+			sessionStorage.setItem(key, value);
+		},
 		getItem: (key: string): string | null => {
-			if (!isClient) return null;
+			// Return raw string from sessionStorage (not parsed) since auth-unified.ts does JSON.parse
+			if (typeof window === 'undefined') return null;
 			try {
-				return sessionStorage.getItem(key);
-			} catch (error) {
-				console.warn('sessionStorage.getItem failed:', error);
+				return window.sessionStorage.getItem(key);
+			} catch (e) {
 				return null;
 			}
 		},
-
-		setItem: (key: string, value: string): boolean => {
-			if (!isClient) return false;
-			try {
-				sessionStorage.setItem(key, value);
-				return true;
-			} catch (error) {
-				console.warn('sessionStorage.setItem failed:', error);
-				return false;
-			}
-		},
-
-		removeItem: (key: string): boolean => {
-			if (!isClient) return false;
-			try {
-				sessionStorage.removeItem(key);
-				return true;
-			} catch (error) {
-				console.warn('sessionStorage.removeItem failed:', error);
-				return false;
-			}
-		},
-
-		clear: (): boolean => {
-			if (!isClient) return false;
-			try {
-				sessionStorage.clear();
-				return true;
-			} catch (error) {
-				console.warn('sessionStorage.clear failed:', error);
-				return false;
-			}
+		removeItem: (key: string): void => {
+			sessionStorage.removeItem(key);
 		},
 	},
 };
-

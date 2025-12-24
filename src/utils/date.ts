@@ -1,3 +1,5 @@
+import { utcToZonedTime } from 'date-fns-tz';
+
 /**
  * Safely parse a date string and return a Date object or null if invalid
  */
@@ -227,34 +229,47 @@ export function getDatePart(dateString: string | null | undefined): string {
 }
 
 /**
- * Parse a UTC date string and extract time components without timezone conversion
- * This ensures that 10:00 UTC is treated as 10:00 local time
+ * Parse a UTC date string and convert it to salon's local timezone
+ * This ensures that bookings are displayed in the salon's timezone regardless of browser timezone
  */
 export function parseBookingTimeAsLocal(
-	dateString: string | null | undefined
+	dateString: string | null | undefined,
+	salonTimezone: string = 'Asia/Ho_Chi_Minh'
 ): Date | null {
 	if (!dateString) return null;
 
 	try {
-		// If it's a UTC string like "2024-01-15T10:00:00.000Z"
+		// IMPORTANT: All bookings are stored in UTC but represent salon's local time
+		// When displaying, we need to convert from UTC to salon's timezone
+		// Example: 13:15 UTC in Asia/Ho_Chi_Minh = 20:15 local time
+		
+		// If it's a UTC string like "2024-01-15T13:00:00.000Z"
 		if (dateString.includes('Z')) {
-			// Extract the date and time parts
-			const [datePart, timePart] = dateString.split('T');
-			const [year, month, day] = datePart.split('-').map(Number);
-			const [time, ms] = timePart.split('.');
-			const [hours, minutes, seconds] = time.split(':').map(Number);
-
-			// Create a local date with the same time components
-			const localDate = new Date(
-				year,
-				month - 1,
-				day,
-				hours,
-				minutes,
-				seconds || 0,
-				0
-			);
-			return isNaN(localDate.getTime()) ? null : localDate;
+			// Parse the UTC date
+			const utcDate = new Date(dateString);
+			if (isNaN(utcDate.getTime())) return null;
+			
+			// Use date-fns-tz to convert from UTC to salon's timezone
+			// utcToZonedTime converts a UTC date to the equivalent date in the specified timezone
+			// The returned date will have the correct local time components for that timezone
+			const zonedDate = utcToZonedTime(utcDate, salonTimezone);
+			
+			// Extract components from zoned date
+			const year = zonedDate.getFullYear();
+			const month = zonedDate.getMonth();
+			const day = zonedDate.getDate();
+			const hours = zonedDate.getHours();
+			const minutes = zonedDate.getMinutes();
+			const seconds = zonedDate.getSeconds();
+			
+			// Create a Date object that represents this time as local time
+			// We adjust by browser timezone offset so that getHours() returns the correct salon time
+			const localTimestamp = Date.UTC(year, month, day, hours, minutes, seconds || 0, 0);
+			const testDate = new Date(localTimestamp);
+			const browserOffset = testDate.getTimezoneOffset() * 60 * 1000;
+			const adjustedDate = new Date(localTimestamp - browserOffset);
+			
+			return isNaN(adjustedDate.getTime()) ? null : adjustedDate;
 		}
 
 		// Fallback to regular parsing

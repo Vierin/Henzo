@@ -4,9 +4,12 @@ import React, { useState } from 'react';
 import toast from 'react-hot-toast';
 import FAQSection from '@/components/FAQSection';
 import { useTranslation } from '@/contexts/LanguageContext';
+import { apiClient } from '@/lib/api-client';
+import { useErrorHandler } from '@/hooks/useErrorHandler';
 
 export default function ContactPageClient() {
 	const t = useTranslation();
+	const { handleError } = useErrorHandler();
 	const [formData, setFormData] = useState({
 		name: '',
 		email: '',
@@ -30,36 +33,19 @@ export default function ContactPageClient() {
 		setIsSubmitting(true);
 
 		try {
-			const backendUrl =
-				process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
-			const response = await fetch(`${backendUrl}/contact/send-message`, {
-				method: 'POST',
-				headers: {
-					'Content-Type': 'application/json',
-				},
-				body: JSON.stringify(formData),
-			});
-
-			const result = await response.json();
-
-			if (response.ok) {
-				toast.success(t.contact.successMessage);
-				setFormData({ name: '', email: '', message: '' });
+			await apiClient.post('/contact/send-message', formData);
+			toast.success(t.contact.successMessage);
+			setFormData({ name: '', email: '', message: '' });
+		} catch (error: any) {
+			// Handle validation errors from backend
+			if (error.errorData?.errors && Array.isArray(error.errorData.errors)) {
+				const errorMessages = error.errorData.errors
+					.map((err: any) => Object.values(err.constraints || {}).join(', '))
+					.join('; ');
+				toast.error(errorMessages);
 			} else {
-				// Handle validation errors from backend
-				if (result.errors && Array.isArray(result.errors)) {
-					const errorMessages = result.errors
-						.map((err: any) => Object.values(err.constraints || {}).join(', '))
-						.join('; ');
-					toast.error(errorMessages);
-				} else {
-					toast.error(result.message || t.contact.errorMessage);
-				}
-				console.error('Backend error:', result);
+				handleError(error, t.contact.errorMessage);
 			}
-		} catch (error) {
-			console.error('Network error:', error);
-			toast.error(t.contact.networkError);
 		} finally {
 			setIsSubmitting(false);
 		}

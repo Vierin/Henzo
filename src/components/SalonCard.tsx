@@ -94,7 +94,12 @@ function SalonCard({
 				{/* Salon Image */}
 				<div className="w-full md:w-[360px] md:h-[270px] flex-shrink-0">
 					<SalonImage
-						src={salon.logo}
+						src={
+							// Use first photo if available, otherwise use logo
+							salon.photos && salon.photos.length > 0
+								? salon.photos[0]
+								: salon.logo
+						}
 						alt={salon.name}
 						width={360}
 						height={270}

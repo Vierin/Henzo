@@ -25,6 +25,15 @@ export default function LoginClient() {
 
 	// Get return URL from query parameters
 	const returnTo = searchParams.get('returnTo');
+	const errorParam = searchParams.get('error');
+	const errorMessage = searchParams.get('message');
+
+	// Display error message from query parameters
+	useEffect(() => {
+		if (errorParam && errorMessage) {
+			toast.error(decodeURIComponent(errorMessage));
+		}
+	}, [errorParam, errorMessage]);
 
 	// Редирект если уже авторизован
 	useEffect(() => {

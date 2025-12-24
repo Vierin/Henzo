@@ -35,6 +35,8 @@ export interface Salon {
 	rating?: number;
 	avgRating?: number;
 	reviewCount?: number;
+	// Timezone (IANA timezone identifier, e.g., "Asia/Ho_Chi_Minh")
+	timezone?: string;
 	_count?: {
 		reviews?: number;
 		services?: number;

@@ -461,6 +461,15 @@ export default function AuthCallbackPage() {
 							Authorization: `Bearer ${session.access_token}`,
 							'Content-Type': 'application/json',
 						},
+					}).catch((networkError) => {
+						// Handle network errors (backend unavailable, connection refused, etc.)
+						console.error(
+							'❌ Network error getting user from backend:',
+							networkError
+						);
+						throw new Error(
+							`Backend server is unavailable. Please make sure the backend is running on ${API_BASE_URL}`
+						);
 					});
 
 					if (!response.ok) {
@@ -636,8 +645,29 @@ export default function AuthCallbackPage() {
 								break;
 						}
 					}
-				} catch (roleError) {
+				} catch (roleError: any) {
 					console.error('Error getting user role:', roleError);
+
+					// Check if it's a network error (backend unavailable)
+					const isNetworkError =
+						roleError?.message?.includes('Failed to fetch') ||
+						roleError?.message?.includes('ERR_CONNECTION_REFUSED') ||
+						roleError?.message?.includes('Backend server is unavailable') ||
+						roleError?.name === 'TypeError';
+
+					if (isNetworkError) {
+						console.error('❌ Backend server is unavailable');
+						// Redirect to login with error message
+						router.push(
+							withLocale(
+								`/login?error=backend_unavailable&message=${encodeURIComponent(
+									'Backend server is unavailable. Please make sure the backend is running.'
+								)}`,
+								locale as 'en' | 'ru' | 'vi'
+							)
+						);
+						return;
+					}
 
 					// If this is a pending booking flow, try to return to original page
 					if (pendingBooking && returnUrl) {

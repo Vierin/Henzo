@@ -23,9 +23,6 @@ async function getSalonData(
 		const salonId = isOldId ? slug : extractSalonIdFromSlug(slug);
 
 		if (!salonId) {
-			if (process.env.NODE_ENV === 'development') {
-				console.log('❌ No salonId extracted from slug:', slug);
-			}
 			return null;
 		}
 
@@ -41,11 +38,6 @@ async function getSalonData(
 
 		return salon;
 	} catch (error: any) {
-		// Only log network errors in development
-		// In production, silently return null to show 404 page
-		if (process.env.NODE_ENV === 'development') {
-			console.error('Error fetching salon:', error);
-		}
 		// Return null to trigger notFound() which shows a proper 404 page
 		return null;
 	}

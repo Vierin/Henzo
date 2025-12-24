@@ -1,7 +1,7 @@
 'use client';
 
 import { Booking, WorkingHours, TimeBlock } from '@/types';
-import { safeParseDate } from '@/utils/date';
+import { safeParseDate, parseBookingTimeAsLocal } from '@/utils/date';
 import { useTranslation } from '@/contexts/LanguageContext';
 
 interface CalendarViewProps {
@@ -44,7 +44,7 @@ export default function CalendarView({
 
 	const hasAppointmentsOnDate = (date: Date) => {
 		return bookings.some((booking) => {
-			const bookingDate = safeParseDate(booking.time);
+			const bookingDate = parseBookingTimeAsLocal(booking.time);
 			if (!bookingDate) return false;
 			return bookingDate.toDateString() === date.toDateString();
 		});

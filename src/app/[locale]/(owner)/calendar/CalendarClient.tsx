@@ -13,6 +13,7 @@ import {
 	formatTimeSafe,
 	isToday,
 	getDatePart,
+	parseBookingTimeAsLocal,
 } from '@/utils/date';
 import LoadingSpinner from '@/components/LoadingSpinner';
 import ErrorDisplay from '@/components/ErrorDisplay';
@@ -115,7 +116,7 @@ export default function CalendarClient() {
 				// Only auto-complete CONFIRMED bookings that have passed
 				// Don't change NOSHOW or already COMPLETED bookings
 				if (booking.status === 'CONFIRMED') {
-					const bookingTime = safeParseDate(booking.time);
+					const bookingTime = parseBookingTimeAsLocal(booking.time);
 					if (!bookingTime) return;
 
 					const serviceDuration = booking.service?.duration || 60;
@@ -308,13 +309,19 @@ export default function CalendarClient() {
 		[fetchBookings]
 	);
 
-	const getFilteredBookings = useMemo(() => {
+		const getFilteredBookings = useMemo(() => {
 		const now = new Date();
+		const today = new Date();
+		today.setHours(0, 0, 0, 0);
+		
 		return bookings.filter((booking) => {
-			const bookingDate = safeParseDate(booking.time);
+			const bookingDate = parseBookingTimeAsLocal(booking.time);
 			if (!bookingDate) return false;
 
-			const isTodayBooking = isToday(booking.time);
+			// Check if booking is today (using Vietnam timezone)
+			const bookingDateOnly = new Date(bookingDate);
+			bookingDateOnly.setHours(0, 0, 0, 0);
+			const isTodayBooking = bookingDateOnly.toDateString() === today.toDateString();
 			const isThisWeek =
 				bookingDate >= new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000) &&
 				bookingDate <= now;
