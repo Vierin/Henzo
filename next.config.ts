@@ -9,7 +9,10 @@ const withBundleAnalyzer = require('@next/bundle-analyzer')({
 
 const nextConfig: NextConfig = {
 	// Указываем корень workspace для правильного определения lockfile
-	outputFileTracingRoot: path.join(__dirname, '../..'),
+	// На Vercel это может вызывать проблемы с путями, поэтому делаем условно
+	...(process.env.VERCEL
+		? {}
+		: { outputFileTracingRoot: path.join(__dirname, '../..') }),
 	eslint: {
 		// Enable ESLint during builds to catch errors
 		ignoreDuringBuilds: false,
