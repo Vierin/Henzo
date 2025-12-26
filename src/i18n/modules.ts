@@ -28,6 +28,7 @@ export type TranslationModule =
 	// Owner panel
 	| 'owner/dashboard'
 	| 'owner/salonInfo'
+	| 'owner/profileSettings'
 	| 'owner/services'
 	| 'owner/staff'
 	| 'owner/calendar'
@@ -73,6 +74,7 @@ export const moduleDependencies: Record<TranslationModule, TranslationModule[]> 
 	// Owner - depend on core, shared
 	'owner/dashboard': ['core/common', 'shared/emptyStates'],
 	'owner/salonInfo': ['core/common', 'shared/forms'],
+	'owner/profileSettings': ['core/common', 'shared/forms'],
 	'owner/services': ['core/common'],
 	'owner/staff': ['core/common'],
 	'owner/calendar': ['core/common', 'core/weekdays', 'core/months'],

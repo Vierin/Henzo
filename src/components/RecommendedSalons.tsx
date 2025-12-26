@@ -107,11 +107,6 @@ export default function RecommendedSalons() {
 		// Try multiple ways to get categoryIds
 		const categoryIds = (salon as any).categoryIds || salon.categoryIds || [];
 
-		// Debug: log categoryIds to see what we're getting
-		if (process.env.NODE_ENV === 'development' && categoryIds.length > 0) {
-			console.log('Salon categories for', salon.name, ':', categoryIds);
-		}
-
 		if (categoryIds.length === 0) {
 			return { firstCategory: null, additionalCount: 0 };
 		}

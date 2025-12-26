@@ -17,6 +17,7 @@ import {
 	Users,
 	TrendingUp,
 	Settings,
+	UserCircle,
 	Menu,
 	X,
 	LogOut,
@@ -230,8 +231,15 @@ export default function OwnerSidebar({
 					{renderNavItem(
 						'/salon-info',
 						<Settings className="w-5 h-5" />,
-						t('owner.dashboard.settings'),
+						t('owner.dashboard.salonSettings'),
 						pathNoLocale.startsWith('/salon-info')
+					)}
+
+					{renderNavItem(
+						'/profile-settings',
+						<UserCircle className="w-5 h-5" />,
+						t('owner.dashboard.profileSettings'),
+						pathNoLocale.startsWith('/profile-settings')
 					)}
 				</nav>
 

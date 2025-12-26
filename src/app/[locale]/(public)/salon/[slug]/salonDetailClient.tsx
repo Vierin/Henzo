@@ -2,10 +2,16 @@
 
 import { useState, useCallback, useMemo, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
+import dynamic from 'next/dynamic';
 import BookingModal from '@/components/BookingModal';
 import LoadingSpinner from '@/components/LoadingSpinner';
 import ErrorDisplay from '@/components/ErrorDisplay';
-import MapComponentWithCoords from '@/components/MapComponentWithCoords';
+
+// Dynamically import MapComponentWithCoords to avoid SSR issues with Leaflet
+const MapComponentWithCoords = dynamic(
+	() => import('@/components/MapComponentWithCoords'),
+	{ ssr: false }
+);
 import MobileSearchTrigger from '@/components/MobileSearchTrigger';
 import { Service, WorkingHours, Salon } from '@/types';
 import { supabase } from '@/lib/supabase';
@@ -541,9 +547,11 @@ export default function SalonDetailClient({ salon }: SalonDetailClientProps) {
 										{salon.name}
 									</h2>
 
-									<p className="text-gray-700 leading-relaxed mb-6">
-										{salon.description || t.salon.description}
-									</p>
+									{salon.description && (
+										<p className="text-gray-700 leading-relaxed mb-6">
+											{salon.description}
+										</p>
+									)}
 
 									{/* Mini Map */}
 									{(salon.address || (salon.latitude && salon.longitude)) && (
@@ -695,10 +703,11 @@ export default function SalonDetailClient({ salon }: SalonDetailClientProps) {
 							{salon.name}
 						</h2>
 
-						<p className="text-gray-700 leading-relaxed mb-6">
-							{salon.description ||
-								'Professional beauty and wellness services to help you look and feel your best.'}
-						</p>
+						{salon.description && (
+							<p className="text-gray-700 leading-relaxed mb-6">
+								{salon.description}
+							</p>
+						)}
 
 						{/* Mini Map */}
 						{(salon.address || (salon.latitude && salon.longitude)) && (

@@ -86,14 +86,10 @@ class AuthManager {
 			this.setState({ isLoading: true });
 
 			// 1. Аутентификация через Supabase
-			// persistSession: true = localStorage (постоянная сессия)
-			// persistSession: false = sessionStorage (сессия до закрытия вкладки)
+			// Supabase автоматически использует localStorage для постоянных сессий
 			const { data, error } = await supabase.auth.signInWithPassword({
 				email,
 				password,
-				options: {
-					persistSession: rememberMe,
-				},
 			});
 
 			if (error) {
@@ -176,9 +172,9 @@ class AuthManager {
 				this.setState({ isLoading: false });
 			}
 
-			return { 
-				success: true, 
-				emailConfirmed: response.emailConfirmed || false 
+			return {
+				success: true,
+				emailConfirmed: response.emailConfirmed || false,
 			};
 		} catch (error) {
 			this.setState({ isLoading: false });
@@ -294,7 +290,7 @@ class AuthManager {
 			this.setState({
 				isLoggingOut: true,
 			});
-			
+
 			const userId = this.authState.user?.id;
 			await supabase.auth.signOut();
 			// Очищаем оба хранилища (localStorage и sessionStorage)
@@ -393,12 +389,16 @@ class AuthManager {
 			// Проверяем, где уже есть кешированный пользователь (если был), и используем то же хранилище
 			// Если кеша нет, проверяем, где Supabase хранит токен
 			const hadLocalStorageCache = storage.getItem('auth_user') !== null;
-			const hadSessionStorageCache = storage.session.getItem('auth_user') !== null;
-			
+			const hadSessionStorageCache =
+				storage.session.getItem('auth_user') !== null;
+
 			// Если был кеш в localStorage, значит rememberMe был true - используем localStorage
 			// Если был только в sessionStorage, значит rememberMe был false - используем sessionStorage
 			// Если кеша не было, проверяем, где Supabase хранит токен (по умолчанию localStorage)
-			if (hadLocalStorageCache || (!hadSessionStorageCache && typeof window !== 'undefined')) {
+			if (
+				hadLocalStorageCache ||
+				(!hadSessionStorageCache && typeof window !== 'undefined')
+			) {
 				// Постоянная сессия - используем localStorage
 				storage.setItem('auth_user', JSON.stringify(user));
 				storage.session.removeItem('auth_user'); // Очищаем sessionStorage если был там
@@ -549,7 +549,7 @@ class AuthManager {
 				storage.setItem('auth_user', JSON.stringify(cachedUserData));
 				return;
 			}
-			
+
 			// Оптимизация: проверяем кэш перед запросом к API
 			const cachedUser = storage.getItem('auth_user');
 			if (cachedUser) {
@@ -565,7 +565,7 @@ class AuthManager {
 							isAuthenticated: true,
 							isLoading: false,
 						});
-						
+
 						// Обновляем в фоне без блокировки
 						this.fetchUserWithRole(accessToken)
 							.then((user) => {
@@ -586,7 +586,7 @@ class AuthManager {
 					// Если кэш поврежден, продолжаем с запросом
 				}
 			}
-			
+
 			// Если кэша нет или он устарел, делаем запрос
 			const user = await this.fetchUserWithRole(accessToken);
 			(user as any)._cachedAt = Date.now();
@@ -668,18 +668,24 @@ export function useAuth() {
 		setAuthState((prevState) => {
 			// Проверяем, действительно ли состояние изменилось
 			// Важно: проверяем не только id, но и роль, так как роль может обновиться
-		const userChanged =
-			prevState.user?.id !== newState.user?.id ||
-			prevState.user?.role !== newState.user?.role;
-		const authChanged =
-			prevState.isAuthenticated !== newState.isAuthenticated;
-		const loadingChanged = prevState.isLoading !== newState.isLoading;
-		const loggingOutChanged = prevState.isLoggingOut !== newState.isLoggingOut;
+			const userChanged =
+				prevState.user?.id !== newState.user?.id ||
+				prevState.user?.role !== newState.user?.role;
+			const authChanged =
+				prevState.isAuthenticated !== newState.isAuthenticated;
+			const loadingChanged = prevState.isLoading !== newState.isLoading;
+			const loggingOutChanged =
+				prevState.isLoggingOut !== newState.isLoggingOut;
 
-		if (!userChanged && !authChanged && !loadingChanged && !loggingOutChanged) {
-			return prevState; // Возвращаем старое состояние если ничего не изменилось
-		}
-		return newState;
+			if (
+				!userChanged &&
+				!authChanged &&
+				!loadingChanged &&
+				!loggingOutChanged
+			) {
+				return prevState; // Возвращаем старое состояние если ничего не изменилось
+			}
+			return newState;
 		});
 	}, []);
 

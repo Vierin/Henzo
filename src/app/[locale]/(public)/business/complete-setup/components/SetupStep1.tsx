@@ -13,8 +13,8 @@ interface SetupStep1Props {
 	errors: { [key: string]: string };
 	mapProps: { lat?: number; lon?: number; address: string };
 	isUpdatingAddress: boolean;
-	nameInputRef: RefObject<HTMLInputElement>;
-	phoneInputRef: RefObject<HTMLInputElement>;
+	nameInputRef: RefObject<HTMLInputElement | null>;
+	phoneInputRef: RefObject<HTMLInputElement | null>;
 	onInputChange: (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => void;
 	onMarkerMove: (lat: number, lon: number, address?: string) => void;
 	onAddressChange: (address: string) => void;

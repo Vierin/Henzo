@@ -13,7 +13,6 @@ import SetupStep5 from './components/SetupStep5';
 import SetupProgress from './components/SetupProgress';
 import SetupNavigation from './components/SetupNavigation';
 import { apiClient } from '@/lib/api-client';
-import { useAuth } from '@/lib/auth-unified';
 import toast from 'react-hot-toast';
 import { supabase } from '@/lib/supabase';
 
@@ -21,8 +20,6 @@ function BusinessCompleteSetupContent() {
 	const searchParams = useSearchParams();
 	const router = useRouter();
 	const token = searchParams.get('token');
-	const { refreshUser } = useAuth();
-
 	// Обработка magic link токена
 	useEffect(() => {
 		const handleMagicLink = async () => {
@@ -49,7 +46,7 @@ function BusinessCompleteSetupContent() {
 					const { data: sessionData } = await supabase.auth.getSession();
 					
 					if (sessionData?.session) {
-						await refreshUser();
+						// Сессия уже обновлена автоматически через Supabase
 						toast.success('Email confirmed! Welcome!');
 						// Убираем токен из URL
 						router.replace('/business/complete-setup');
@@ -67,7 +64,7 @@ function BusinessCompleteSetupContent() {
 		};
 
 		handleMagicLink();
-	}, [token, router, refreshUser]);
+	}, [token, router]);
 	const t = useTranslation();
 	const {
 		formData,

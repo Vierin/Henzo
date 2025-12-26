@@ -99,6 +99,8 @@ export function LanguageProvider({ children, initialDictionary }: LanguageProvid
 		publicModules.push('public/homepage');
 	} else if (pathNoLocale.startsWith('/salon-info')) {
 		ownerModule = 'owner/salonInfo';
+	} else if (pathNoLocale.startsWith('/profile-settings')) {
+		ownerModule = 'owner/profileSettings';
 	} else if (pathNoLocale.startsWith('/services')) {
 		if (pathNoLocale.includes('/new')) {
 			ownerModule = 'owner/servicesNew';
