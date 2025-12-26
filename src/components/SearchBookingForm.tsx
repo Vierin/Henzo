@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef } from 'react';
+import { useState, useRef, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import AddressAutocomplete from './AddressAutocomplete';
 import ServiceAutocomplete from './ServiceAutocomplete';
@@ -20,6 +20,7 @@ export default function SearchBookingForm({
 }: SearchBookingFormProps) {
 	const router = useRouter();
 	const t = useTranslation();
+	const [isPending, startTransition] = useTransition();
 	const [searchQuery, setSearchQuery] = useState('');
 	const [selectedCategoryId, setSelectedCategoryId] = useState<number | null>(
 		null
@@ -44,7 +45,7 @@ export default function SearchBookingForm({
 	};
 
 	const handleSearch = async () => {
-		if (isLoading) return;
+		if (isLoading || isPending) return;
 		// Clear previous validation errors
 		clearValidation();
 
@@ -84,7 +85,16 @@ export default function SearchBookingForm({
 			if (selectedTimeInterval) params.set('time', selectedTimeInterval);
 
 			const finalUrl = `/salons${params.toString() ? `?${params.toString()}` : ''}`;
-			router.push(finalUrl);
+			
+			// Use startTransition for smooth navigation
+			startTransition(() => {
+				router.push(finalUrl);
+			});
+
+			// Give navigation time to start (100-150ms) before closing modal
+			// This ensures smooth transition and user sees loading state
+			await new Promise(resolve => setTimeout(resolve, 150));
+			
 			// Close modal if callback provided (for mobile search)
 			if (onSearchSuccess) {
 				onSearchSuccess();
@@ -181,12 +191,12 @@ export default function SearchBookingForm({
 					{/* Search Button */}
 					<button
 						onClick={handleSearch}
-						disabled={isLoading}
+						disabled={isLoading || isPending}
 						className={`bg-[#ff5b5b] text-white px-6 py-2 h-10 rounded-lg font-medium transition-colors text-sm whitespace-nowrap flex-shrink-0 flex items-center justify-center gap-2 ${
-							isLoading ? 'opacity-70 cursor-not-allowed' : 'hover:bg-[#e04a4a]'
+							isLoading || isPending ? 'opacity-70 cursor-not-allowed' : 'hover:bg-[#e04a4a]'
 						}`}
 					>
-						{isLoading ? (
+						{isLoading || isPending ? (
 							<>
 								<div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
 								{t.common.search + '...'}
@@ -281,12 +291,12 @@ export default function SearchBookingForm({
 			{/* Search Button */}
 			<button
 				onClick={handleSearch}
-				disabled={isLoading}
+				disabled={isLoading || isPending}
 				className={`w-full bg-[#ff5b5b] text-white py-3 rounded-lg font-medium transition-colors mt-4 text-sm flex items-center justify-center gap-2 ${
-					isLoading ? 'opacity-70 cursor-not-allowed' : 'hover:bg-[#e04a4a]'
+					isLoading || isPending ? 'opacity-70 cursor-not-allowed' : 'hover:bg-[#e04a4a]'
 				}`}
 			>
-				{isLoading ? (
+				{isLoading || isPending ? (
 					<>
 						<div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
 						{t.common.search + '...'}

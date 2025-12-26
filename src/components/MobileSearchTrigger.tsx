@@ -1,13 +1,22 @@
 'use client';
 
 import { Search } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import SearchBookingForm from './SearchBookingForm';
 import { useTranslation } from '@/contexts/LanguageContext';
 
 export default function MobileSearchTrigger() {
 	const [isOpen, setIsOpen] = useState(false);
+	const router = useRouter();
 	const t = useTranslation();
+
+	// Prefetch search page when modal opens
+	useEffect(() => {
+		if (isOpen) {
+			router.prefetch('/salons');
+		}
+	}, [isOpen, router]);
 
 	return (
 		<>

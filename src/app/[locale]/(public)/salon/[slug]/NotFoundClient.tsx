@@ -13,11 +13,6 @@ export default function NotFoundClient() {
 	return (
 		<div className="min-h-screen bg-[#F8F5F2] flex items-center justify-center">
 			<div className="text-center max-w-md mx-auto px-4">
-				<div className="w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-6">
-					<span className="text-4xl" role="img" aria-label="Salon not found">
-						🏪
-					</span>
-				</div>
 				<h1 className="text-3xl font-bold text-gray-900 mb-4">
 					{t('salon.notFound') || 'Salon Not Found'}
 				</h1>
@@ -45,4 +40,3 @@ export default function NotFoundClient() {
 		</div>
 	);
 }
-

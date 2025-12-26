@@ -92,7 +92,7 @@ function SalonCard({
 		>
 			<div className="flex flex-col md:flex-row gap-4 md:gap-6">
 				{/* Salon Image */}
-				<div className="w-full md:w-[360px] md:h-[270px] flex-shrink-0">
+				<div className="w-full md:w-[360px] aspect-[4/3] flex-shrink-0 overflow-hidden rounded-xl">
 					<SalonImage
 						src={
 							// Use first photo if available, otherwise use logo

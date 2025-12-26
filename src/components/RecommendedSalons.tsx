@@ -232,7 +232,7 @@ export default function RecommendedSalons() {
 										href={salon.url}
 										className="bg-white rounded-2xl overflow-hidden shadow-md hover:shadow-xl transition-all duration-300 block"
 									>
-										<div className="relative h-[15rem] bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center">
+										<div className="relative aspect-[4/3] bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center">
 											{(() => {
 												const imageData = getSalonImage(salon);
 												return imageData.url ? (
@@ -324,7 +324,7 @@ export default function RecommendedSalons() {
 											className="bg-white rounded-2xl overflow-hidden shadow-md hover:shadow-xl transition-all duration-300 block flex-shrink-0"
 											style={{ width: 'calc(66.666vw - 2rem)' }}
 										>
-											<div className="relative h-[12rem] bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center">
+											<div className="relative aspect-[4/3] bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center">
 												{(() => {
 													const imageData = getSalonImage(salon);
 													return imageData.url ? (

@@ -17,7 +17,7 @@ export default function BookingFormFooter({
 	const t = useTranslation();
 
 	return (
-		<div className="w-full flex-shrink-0 bg-gray-50 sm:bg-gray-50 p-4 sm:p-8 sm:rounded-r-2xl max-h-[30vh] sm:max-h-[90vh] overflow-y-auto border-t sm:border-t-0">
+		<div className="w-full flex-shrink-0 bg-gray-50 sm:bg-gray-50 p-4 sm:p-8 sm:rounded-r-2xl max-h-[30vh] sm:max-h-[90vh] overflow-y-auto">
 			{/* Book Appointment Button */}
 			<button
 				onClick={onBooking}

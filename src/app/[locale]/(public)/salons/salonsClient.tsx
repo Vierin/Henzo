@@ -297,14 +297,14 @@ export default function SalonsClient() {
 			<main className="py-8 px-6" role="main">
 				<div className="mx-auto max-w-6xl">
 					{/* Results Header */}
-					<header className="flex flex-col sm:flex-row items-center justify-between gap-2 mb-8">
-						<h1 className="text-2xl font-bold text-gray-900">
+					<header className="flex flex-row items-center justify-between gap-4 mb-8">
+						<h1 className="text-xl sm:text-2xl font-bold text-gray-900 truncate flex-shrink min-w-0">
 							{resultsHeaderText} ({resultsCountText})
 						</h1>
-						<div className="flex items-center gap-4">
+						<div className="flex items-center gap-4 flex-shrink-0">
 							{/* Sort Dropdown */}
 							<Select value={sortBy} onValueChange={setSortBy}>
-								<SelectTrigger className="w-48 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#ff5b5b] focus:border-[#ff5b5b]">
+								<SelectTrigger className="w-40 sm:w-48 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#ff5b5b] focus:border-[#ff5b5b]">
 									<SelectValue placeholder={t.categories.sortBy} />
 								</SelectTrigger>
 								<SelectContent className="bg-white border border-gray-300 shadow-lg rounded-lg">
@@ -334,15 +334,6 @@ export default function SalonsClient() {
 							) : salons.length === 0 ? (
 								// No salons found
 								<div className="text-center py-12">
-									<div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-										<span
-											className="text-2xl"
-											role="img"
-											aria-label={t('salon.noSalonsFound')}
-										>
-											🏪
-										</span>
-									</div>
 									<h3 className="text-xl font-semibold text-gray-900 mb-2">
 										{t('salon.noSalonsFound')}
 									</h3>

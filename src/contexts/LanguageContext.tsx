@@ -166,6 +166,8 @@ export function LanguageProvider({ children, initialDictionary }: LanguageProvid
 		publicModules.push('public/booking');
 		// Auth module needed for BookingAuthForm in BookingModal
 		publicModules.push('shared/auth');
+		// Core weekdays module needed for BookingModal date selector
+		publicModules.push('core/weekdays');
 		// Homepage module needed for minutesShort translation
 		publicModules.push('public/homepage');
 	} else if (pathNoLocale.startsWith('/map')) {

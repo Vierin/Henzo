@@ -19,6 +19,7 @@ import {
 	SelectValue,
 } from '@/components/ui/select';
 import { useTranslation } from '@/contexts/LanguageContext';
+import { getCategoryTranslatedName } from '@/hooks/useCategories';
 
 interface CategoryListClientProps {
 	category: {
@@ -29,17 +30,6 @@ interface CategoryListClientProps {
 	};
 	translatedName: string;
 }
-
-const categoryTranslationMap: Record<
-	string,
-	keyof ReturnType<typeof useTranslation>['categories']
-> = {
-	'hair-barber': 'hairBarber',
-	'massage-spa': 'massageSpa',
-	'manicure-pedicure': 'manicurePedicure',
-	'cosmetic-medicine': 'cosmeticMedicine',
-	'other-services': 'otherServices',
-};
 
 export default function CategoryListClient({
 	category,

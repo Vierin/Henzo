@@ -107,10 +107,10 @@ export default function BookingServiceSelector({
 								t('booking.chooseFromAvailableServices')
 							: t('booking.chooseFromAvailableServices')}
 					</p>
-					<div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-6">
-						<div className="flex gap-1">
+					<div className="flex flex-row items-center gap-3 sm:gap-6">
+						<div className="flex items-center gap-1">
 							<span className="text-gray-500">
-								<Clock className="w-4 h-4 mt-[1px]" />
+								<Clock className="w-4 h-4" />
 							</span>
 							<span className="text-sm text-gray-600">
 								{selectedService?.duration

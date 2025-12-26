@@ -988,8 +988,8 @@ export default function BookingModal({
 		const days = [];
 		const today = new Date();
 
-		// Map for weekday translations
-		const weekdayMap: { [key: number]: string } = {
+		// Map for weekday full names (for working hours)
+		const weekdayFullMap: { [key: number]: keyof WorkingHours } = {
 			0: 'sunday',
 			1: 'monday',
 			2: 'tuesday',
@@ -998,6 +998,9 @@ export default function BookingModal({
 			5: 'friday',
 			6: 'saturday',
 		};
+
+		// Weekday short keys for translations (matches weekdays.json short keys)
+		const weekdayShortKeys = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'];
 
 		// Map for month translations
 		const monthMap: { [key: number]: string } = {
@@ -1021,16 +1024,7 @@ export default function BookingModal({
 
 			// Check if this day is closed
 			const dayOfWeek = date.getDay();
-			const dayNames: (keyof WorkingHours)[] = [
-				'sunday',
-				'monday',
-				'tuesday',
-				'wednesday',
-				'thursday',
-				'friday',
-				'saturday',
-			];
-			const dayName = dayNames[dayOfWeek];
+			const dayName = weekdayFullMap[dayOfWeek];
 			const currentWorkingHours = workingHours || salonWorkingHours;
 			const isClosed = Boolean(
 				currentWorkingHours && currentWorkingHours[dayName]?.closed === true
@@ -1042,9 +1036,9 @@ export default function BookingModal({
 			const dateString = `${year}-${month}-${day}`;
 
 			// Get translated weekday and month
-			const weekdayKey = weekdayMap[dayOfWeek];
+			const weekdayShortKey = weekdayShortKeys[dayOfWeek];
 			const monthKey = monthMap[date.getMonth()];
-			const dayNameTranslated = t(`weekdays.short.${weekdayKey}`) || weekdayKey;
+			const dayNameTranslated = t(`weekdays.short.${weekdayShortKey}`);
 			const monthShortTranslated = t(`months.short.${monthKey}`) || monthKey;
 
 			days.push({
@@ -2404,7 +2398,7 @@ export default function BookingModal({
 							</div>
 
 							{/* Right Section - Staff Selection and Booking Button */}
-							<div className="w-full sm:w-80 flex-shrink-0 bg-gray-50 sm:bg-gray-50 p-4 sm:p-8 sm:rounded-r-2xl max-h-[30vh] sm:max-h-[90vh] overflow-y-auto border-t sm:border-t-0">
+							<div className="w-full sm:w-80 flex-shrink-0 bg-gray-50 sm:bg-gray-50 p-4 sm:p-8 sm:rounded-r-2xl border-t sm:border-t-0">
 								{/* Client Information (only for owners creating new bookings in their own salon) */}
 								{isOwner && isOwnerOfThisSalon() && !editingBooking && (
 									<BookingGuestForm
