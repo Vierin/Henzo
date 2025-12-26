@@ -1,4 +1,4 @@
-import { utcToZonedTime } from 'date-fns-tz';
+import { toZonedTime } from 'date-fns-tz';
 
 /**
  * Safely parse a date string and return a Date object or null if invalid
@@ -250,9 +250,9 @@ export function parseBookingTimeAsLocal(
 			if (isNaN(utcDate.getTime())) return null;
 			
 			// Use date-fns-tz to convert from UTC to salon's timezone
-			// utcToZonedTime converts a UTC date to the equivalent date in the specified timezone
+			// toZonedTime converts a UTC date to the equivalent date in the specified timezone
 			// The returned date will have the correct local time components for that timezone
-			const zonedDate = utcToZonedTime(utcDate, salonTimezone);
+			const zonedDate = toZonedTime(utcDate, salonTimezone);
 			
 			// Extract components from zoned date
 			const year = zonedDate.getFullYear();

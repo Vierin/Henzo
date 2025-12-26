@@ -19,6 +19,12 @@ export const STATIC_CATEGORIES: Category[] = [
 			'Professional hair styling, cutting, coloring, and barber services',
 	},
 	{
+		id: 2,
+		name: 'Tattoo & Piercing',
+		slug: 'tattoo-piercing',
+		description: 'Tattoo and body piercing services',
+	},
+	{
 		id: 3,
 		name: 'Massage & Spa',
 		slug: 'massage-spa',

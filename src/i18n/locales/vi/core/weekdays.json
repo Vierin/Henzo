@@ -8,12 +8,12 @@
 	"sunday": "Chủ Nhật",
 	"closed": "Đóng cửa",
 	"short": {
-		"sunday": "CN",
-		"monday": "T2",
-		"tuesday": "T3",
-		"wednesday": "T4",
-		"thursday": "T5",
-		"friday": "T6",
-		"saturday": "T7"
+		"sun": "CN",
+		"mon": "T2",
+		"tue": "T3",
+		"wed": "T4",
+		"thu": "T5",
+		"fri": "T6",
+		"sat": "T7"
 	}
 }

@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import Script from 'next/script';
+import { Suspense } from 'react';
 import { Geist, Geist_Mono } from 'next/font/google';
 import './globals.css';
 import Toaster from '@/components/Toaster';
@@ -9,6 +10,7 @@ import ConditionalFooter from '@/components/ConditionalFooter';
 import CookieBanner from '@/components/CookieBanner';
 import { LanguageProvider } from '@/contexts/LanguageContext';
 import { EnvValidator } from '@/components/EnvValidator';
+import LoadingFallback from '@/components/LoadingFallback';
 
 const geistSans = Geist({
 	variable: '--font-geist-sans',
@@ -113,14 +115,20 @@ export default function RootLayout({
 				<meta name="ICBM" content="21.028511, 105.804817" />
 			</head>
 			<body
-				className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+				className={`${geistSans.variable} ${geistMono.variable} antialiased min-h-screen flex flex-col`}
 				suppressHydrationWarning={true}
 			>
 				<EnvValidator />
 				<LanguageProvider>
 					<QueryProvider>
 						<AuthProvider>
-							{children}
+							<div className="flex-1">
+								<Suspense
+									fallback={<LoadingFallback message="" fullScreen={true} />}
+								>
+									{children}
+								</Suspense>
+							</div>
 							<ConditionalFooter />
 							<CookieBanner />
 							<Toaster />

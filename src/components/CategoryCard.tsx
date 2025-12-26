@@ -4,22 +4,12 @@ import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { Category } from '@/constants/categories';
 import { useTranslation } from '@/contexts/LanguageContext';
+import { getCategoryTranslatedName } from '@/hooks/useCategories';
 
 interface CategoryCardProps {
 	category: Category;
 	className?: string;
 }
-
-const categoryTranslationMap: Record<
-	string,
-	keyof ReturnType<typeof useTranslation>['categories']
-> = {
-	'hair-barber': 'hairBarber',
-	'massage-spa': 'massageSpa',
-	'manicure-pedicure': 'manicurePedicure',
-	'cosmetic-medicine': 'cosmeticMedicine',
-	'other-services': 'otherServices',
-};
 
 export default function CategoryCard({
 	category,
@@ -28,18 +18,7 @@ export default function CategoryCard({
 	const params = useParams();
 	const locale = (params as any)?.locale as string | undefined;
 	const t = useTranslation();
- const translationKey = categoryTranslationMap[category.slug];
- const translatedName = translationKey
-         ? t(`categories.${String(translationKey)}`) || (t.categories as any)?.[String(translationKey)] || category.name
-         : category.name;
-
-	let translatedDescription: string | undefined;
-	if (translationKey) {
-		const descKey = `${String(translationKey)}Description`;
-		translatedDescription = t(`categories.${descKey}`) || (t.categories as any)?.[descKey] || category.description;
-	} else {
-		translatedDescription = category.description;
-	}
+	const translatedName = getCategoryTranslatedName(category, t);
 
 	return (
 		<Link
@@ -54,11 +33,6 @@ export default function CategoryCard({
 				<h3 className="text-xl font-semibold text-gray-900 mb-2 group-hover:text-red-500 transition-colors">
 					{translatedName}
 				</h3>
-				{translatedDescription && (
-					<p className="text-gray-600 text-sm leading-relaxed">
-						{translatedDescription}
-					</p>
-				)}
 			</div>
 			<div className="absolute inset-0 bg-gradient-to-t from-red-500/0 to-red-500/0 group-hover:from-red-500/5 group-hover:to-red-500/10 transition-all duration-300 pointer-events-none" />
 		</Link>

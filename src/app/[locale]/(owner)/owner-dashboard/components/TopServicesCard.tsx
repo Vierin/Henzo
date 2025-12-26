@@ -3,24 +3,15 @@
 import { useMemo } from 'react';
 import { Booking } from '@/types';
 import { useTranslation } from '@/contexts/LanguageContext';
+import { formatVND } from '@/utils/currency';
 
 interface TopServicesCardProps {
 	bookings: Booking[];
 }
 
-// Helper function to format currency with k/m notation
-const formatCurrency = (amount: number): string => {
-	if (amount >= 1000000) {
-		return `${(amount / 1000000).toFixed(1)}M₫`;
-	} else if (amount >= 1000) {
-		return `${(amount / 1000).toFixed(1)}k₫`;
-	}
-	return `${amount}₫`;
-};
-
 export default function TopServicesCard({ bookings }: TopServicesCardProps) {
 	const t = useTranslation();
-	
+
 	// Calculate top services with memoization
 	const topServices = useMemo(() => {
 		const serviceStats = bookings
@@ -92,7 +83,9 @@ export default function TopServicesCard({ bookings }: TopServicesCardProps) {
 						<div className="text-gray-400 mb-2" aria-hidden="true">
 							📊
 						</div>
-						<p className="text-gray-600">{t('owner.dashboard.noCompletedServices')}</p>
+						<p className="text-gray-600">
+							{t('owner.dashboard.noCompletedServices')}
+						</p>
 					</div>
 				) : (
 					topServices.map((service, index) => (
@@ -113,7 +106,7 @@ export default function TopServicesCard({ bookings }: TopServicesCardProps) {
 								{service.count}
 							</div>
 							<div className="col-span-3 text-right font-semibold flex items-center justify-end">
-								{formatCurrency(service.revenue)}
+								{formatVND(service.revenue)}
 							</div>
 						</div>
 					))

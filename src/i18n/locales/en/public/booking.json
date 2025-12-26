@@ -2,6 +2,7 @@
 	"selectDate": "Select Date",
 	"selectTime": "Select Time",
 	"selectService": "Select Service",
+	"selectAService": "Select a Service",
 	"selectStaff": "Select Staff",
 	"selectAStaffMember": "Select a Staff Member",
 	"anyStaff": "Any Staff Member",
@@ -71,5 +72,8 @@
 	"appointmentBookedSuccessfully": "Your appointment has been successfully booked",
 	"ownerCannotBookOtherSalon": "To book in another salon, please log in as a client account.",
 	"pleaseEnterClientEmail": "Please enter client email",
-	"pleaseEnterValidEmail": "Please enter a valid email address"
+	"pleaseEnterValidEmail": "Please enter a valid email address",
+	"pleaseFillAllFields": "Please fill in all fields",
+	"optional": "(Optional)",
+	"noEmailWarning": "Reminders will not be sent without an email address."
 }

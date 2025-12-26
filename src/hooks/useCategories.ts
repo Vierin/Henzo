@@ -1,70 +1,60 @@
 import { useQuery } from '@tanstack/react-query';
 import { apiClient } from '@/lib/api-client';
 
-interface ServiceCategory {
+export interface Category {
 	id: number;
-	nameEn: string;
-	nameVn: string;
+	name: string;
+	slug: string;
 }
 
-export function useServiceCategories() {
-	return useQuery<ServiceCategory[]>({
-		queryKey: ['service-categories'],
-		queryFn: async (): Promise<ServiceCategory[]> => {
-			const response = await apiClient.get('/search/categories?lang=en');
+// Category translation mapping - single source of truth
+export const CATEGORY_TRANSLATION_MAP: Record<string, string> = {
+	'hair-barber': 'categories.hairBarber',
+	'tattoo-piercing': 'categories.tattooPiercing',
+	'massage-spa': 'categories.massageSpa',
+	'manicure-pedicure': 'categories.manicurePedicure',
+	'cosmetic-medicine': 'categories.cosmeticMedicine',
+	'other-services': 'categories.otherServices',
+};
 
-			// Проверяем, что response - это массив или объект с data
-			let categoriesData: ServiceCategory[] = [];
-			if (Array.isArray(response)) {
-				categoriesData = response;
-			} else if (
-				response &&
-				typeof response === 'object' &&
-				(response as any).data
-			) {
-				categoriesData = (response as any).data;
-			} else if (response && typeof response === 'object') {
-				categoriesData = response as ServiceCategory[];
-			}
-
-			return categoriesData;
+export function useCategories() {
+	return useQuery<Category[]>({
+		queryKey: ['salons', 'categories'],
+		queryFn: async () => {
+			const response = await apiClient.get<Category[]>('/salons/categories');
+			return response;
 		},
-		staleTime: 15 * 60 * 1000, // Важно: 15 minutes - категории статические данные
-		gcTime: 60 * 60 * 1000, // 1 час в кэше
-		retry: 2,
+		staleTime: 24 * 60 * 60 * 1000, // 24 hours - categories rarely change
+		gcTime: 24 * 60 * 60 * 1000, // 24 hours
+		refetchOnWindowFocus: false,
+		refetchOnReconnect: false,
+		refetchOnMount: false,
 	});
 }
 
-// Хук для получения категорий конкретного салона (теперь использует ServiceCategory)
-export function useCategoriesBySalon(salonId: string) {
-	return useQuery<{ id: number; name: string }[]>({
-		queryKey: ['service-categories', salonId],
-		queryFn: async (): Promise<{ id: number; name: string }[]> => {
-			if (!salonId) {
-				return [];
-			}
+// Helper function to get category by ID
+export function getCategoryById(categories: Category[], id: number): Category | undefined {
+	return categories.find((cat) => cat.id === id);
+}
 
-			try {
-				// Получаем эталонные категории услуг из нашей новой системы
-				const response = await apiClient.get('/search/categories?q=&lang=en');
+// Helper function to get category by slug
+export function getCategoryBySlug(categories: Category[], slug: string): Category | undefined {
+	return categories.find((cat) => cat.slug === slug);
+}
 
-				// Преобразуем в формат, ожидаемый компонентом
-				if (response && Array.isArray(response)) {
-					return response.map((cat: any) => ({
-						id: cat.id,
-						name: cat.nameEn,
-					}));
-				}
+// Helper function to get category translation key by slug
+export function getCategoryTranslationKey(slug: string): string {
+	return CATEGORY_TRANSLATION_MAP[slug] || '';
+}
 
-				return [];
-			} catch (error) {
-				console.error('Error fetching service categories:', error);
-				return [];
-			}
-		},
-		enabled: !!salonId,
-		staleTime: 15 * 60 * 1000, // Важно: 15 minutes - категории статические данные
-		gcTime: 60 * 60 * 1000, // 1 час в кэше
-		retry: 2,
-	});
+// Helper function to get translated category name
+export function getCategoryTranslatedName(
+	category: Category,
+	t: (key: string) => string
+): string {
+	const translationKey = getCategoryTranslationKey(category.slug);
+	if (translationKey) {
+		return t(translationKey) || category.name;
+	}
+	return category.name;
 }

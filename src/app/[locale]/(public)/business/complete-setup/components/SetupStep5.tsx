@@ -1,14 +1,18 @@
-import { STATIC_CATEGORIES } from '@/constants/categories';
+import {
+	useCategories,
+	getCategoryById,
+	getCategoryTranslatedName,
+} from '@/hooks/useCategories';
 import { SalonSetupData } from '@/hooks/useSalonSetup';
 
 const WEEKDAYS = [
-	{ key: 'monday', label: 'Monday' },
-	{ key: 'tuesday', label: 'Tuesday' },
-	{ key: 'wednesday', label: 'Wednesday' },
-	{ key: 'thursday', label: 'Thursday' },
-	{ key: 'friday', label: 'Friday' },
-	{ key: 'saturday', label: 'Saturday' },
-	{ key: 'sunday', label: 'Sunday' },
+	{ key: 'monday' },
+	{ key: 'tuesday' },
+	{ key: 'wednesday' },
+	{ key: 'thursday' },
+	{ key: 'friday' },
+	{ key: 'saturday' },
+	{ key: 'sunday' },
 ];
 
 interface SetupStep5Props {
@@ -17,6 +21,14 @@ interface SetupStep5Props {
 }
 
 export default function SetupStep5({ formData, t }: SetupStep5Props) {
+	const { data: categories = [] } = useCategories();
+
+	const getCategoryName = (categoryId: number): string => {
+		const category = getCategoryById(categories, categoryId);
+		if (!category) return '';
+		return getCategoryTranslatedName(category, t);
+	};
+
 	return (
 		<div className="space-y-6">
 			<div className="bg-white border-1 border-gray-300 rounded-lg p-6">
@@ -49,10 +61,8 @@ export default function SetupStep5({ formData, t }: SetupStep5Props) {
 						</span>
 						<span className="text-gray-900 ml-2">
 							{formData.categories
-								.map(
-									(id) =>
-										STATIC_CATEGORIES.find((cat) => cat.id === id)?.name
-								)
+								.map((id) => getCategoryName(id))
+								.filter(Boolean)
 								.join(', ')}
 						</span>
 					</div>
@@ -61,9 +71,7 @@ export default function SetupStep5({ formData, t }: SetupStep5Props) {
 							<span className="text-gray-500">
 								{t('business.completeSetup.step5.description')}
 							</span>
-							<span className="text-gray-900 ml-2">
-								{formData.description}
-							</span>
+							<span className="text-gray-900 ml-2">{formData.description}</span>
 						</div>
 					)}
 				</div>
@@ -81,11 +89,14 @@ export default function SetupStep5({ formData, t }: SetupStep5Props) {
 							];
 						return (
 							<div key={day.key} className="flex justify-between">
-								<span className="text-gray-500">{day.label}:</span>
+								<span className="text-gray-500">
+									{t(`weekdays.${day.key}`) || day.key}:
+								</span>
 								<span className="text-gray-900">
 									{!dayHours.closed
 										? `${dayHours.open} - ${dayHours.close}`
-										: t('business.completeSetup.step5.closed')}
+										: t('weekdays.closed') ||
+											t('business.completeSetup.step5.closed')}
 								</span>
 							</div>
 						);
@@ -95,4 +106,3 @@ export default function SetupStep5({ formData, t }: SetupStep5Props) {
 		</div>
 	);
 }
-

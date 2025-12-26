@@ -1,6 +1,7 @@
 'use client';
 
-import { Suspense } from 'react';
+import { Suspense, useEffect } from 'react';
+import { useSearchParams, useRouter } from 'next/navigation';
 import { useTranslation } from '@/contexts/LanguageContext';
 import { useSalonSetup } from '@/hooks/useSalonSetup';
 import LoadingFallback from '@/components/LoadingFallback';
@@ -11,8 +12,62 @@ import SetupStep4 from './components/SetupStep4';
 import SetupStep5 from './components/SetupStep5';
 import SetupProgress from './components/SetupProgress';
 import SetupNavigation from './components/SetupNavigation';
+import { apiClient } from '@/lib/api-client';
+import { useAuth } from '@/lib/auth-unified';
+import toast from 'react-hot-toast';
+import { supabase } from '@/lib/supabase';
 
 function BusinessCompleteSetupContent() {
+	const searchParams = useSearchParams();
+	const router = useRouter();
+	const token = searchParams.get('token');
+	const { refreshUser } = useAuth();
+
+	// Обработка magic link токена
+	useEffect(() => {
+		const handleMagicLink = async () => {
+			if (!token) return;
+
+			try {
+				// Проверяем токен и подтверждаем email
+				const result = await apiClient.get<{
+					success: boolean;
+					user: any;
+					emailConfirmed: boolean;
+					loginUrl?: string;
+				}>(`/auth/verify-business-magic-link?token=${token}`);
+
+				if (result.success && result.emailConfirmed) {
+					// Если есть loginUrl, используем его для автоматического логина
+					if (result.loginUrl) {
+						// Редиректим на magic link для автоматического логина
+						window.location.href = result.loginUrl;
+						return;
+					}
+
+					// Если нет loginUrl, проверяем текущую сессию
+					const { data: sessionData } = await supabase.auth.getSession();
+					
+					if (sessionData?.session) {
+						await refreshUser();
+						toast.success('Email confirmed! Welcome!');
+						// Убираем токен из URL
+						router.replace('/business/complete-setup');
+					} else {
+						toast.success('Email confirmed! Please login to continue.');
+						router.push('/login?email=' + encodeURIComponent(result.user.email));
+					}
+				}
+			} catch (error: any) {
+				console.error('Error verifying magic link:', error);
+				toast.error(error.message || 'Failed to verify magic link');
+				// Убираем токен из URL при ошибке
+				router.replace('/business/complete-setup');
+			}
+		};
+
+		handleMagicLink();
+	}, [token, router, refreshUser]);
 	const t = useTranslation();
 	const {
 		formData,

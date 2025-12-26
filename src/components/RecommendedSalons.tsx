@@ -3,6 +3,11 @@
 import { useMemo } from 'react';
 import { useFeaturedSalons } from '@/hooks/useSalonPreview';
 import { useSalonSlug } from '@/hooks/useSalonSlug';
+import {
+	useCategories,
+	getCategoryById,
+	getCategoryTranslatedName,
+} from '@/hooks/useCategories';
 import { supabase } from '@/lib/supabase';
 import ErrorDisplay from './ErrorDisplay';
 import Image from 'next/image';
@@ -14,6 +19,7 @@ import { Salon } from '@/types';
 export default function RecommendedSalons() {
 	const t = useTranslation();
 	const { getSalonUrl } = useSalonSlug();
+	const { data: categories = [] } = useCategories();
 	const {
 		data: salons = [],
 		isLoading: loading,
@@ -85,6 +91,54 @@ export default function RecommendedSalons() {
 		return { url: undefined, isExternal: false };
 	};
 
+	// Helper function to get category name by ID
+	const getCategoryName = (categoryId: number): string => {
+		const category = getCategoryById(categories, categoryId);
+		if (!category) {
+			return '';
+		}
+		return getCategoryTranslatedName(category, t);
+	};
+
+	// Helper function to get salon categories
+	const getSalonCategories = (
+		salon: Salon
+	): { firstCategory: string | null; additionalCount: number } => {
+		// Try multiple ways to get categoryIds
+		const categoryIds = (salon as any).categoryIds || salon.categoryIds || [];
+
+		// Debug: log categoryIds to see what we're getting
+		if (process.env.NODE_ENV === 'development' && categoryIds.length > 0) {
+			console.log('Salon categories for', salon.name, ':', categoryIds);
+		}
+
+		if (categoryIds.length === 0) {
+			return { firstCategory: null, additionalCount: 0 };
+		}
+
+		// Filter out invalid category IDs and get valid ones
+		const validCategoryIds = categoryIds.filter((id: number) => {
+			const category = getCategoryById(categories, id);
+			return !!category;
+		});
+
+		if (validCategoryIds.length === 0) {
+			return { firstCategory: null, additionalCount: 0 };
+		}
+
+		const firstCategoryName = getCategoryName(validCategoryIds[0]);
+		if (!firstCategoryName) {
+			return { firstCategory: null, additionalCount: 0 };
+		}
+
+		const additionalCount = validCategoryIds.length - 1;
+
+		return {
+			firstCategory: firstCategoryName,
+			additionalCount,
+		};
+	};
+
 	return (
 		<section
 			className="py-12 sm:py-16 bg-white"
@@ -149,9 +203,6 @@ export default function RecommendedSalons() {
 					/>
 				) : salonsWithServices.length === 0 ? (
 					<div className="text-center py-12 px-4">
-						<div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-							<span className="text-2xl">🏪</span>
-						</div>
 						<h3 className="text-xl font-semibold text-gray-900 mb-2">
 							{t('homepage.noSalonsAvailable')}
 						</h3>
@@ -220,11 +271,31 @@ export default function RecommendedSalons() {
 										</div>
 										<div className="p-5">
 											{/* Title and Rating */}
-											<div className="flex items-start justify-between mb-8">
+											<div className="flex items-start justify-between mb-2">
 												<h3 className="text-xl font-bold text-gray-900 flex-1">
 													{salon.name}
 												</h3>
 											</div>
+
+											{/* Categories */}
+											{(() => {
+												const { firstCategory, additionalCount } =
+													getSalonCategories(salon);
+												if (!firstCategory) return null;
+
+												return (
+													<div className="flex items-center gap-2 mb-6">
+														<span className="text-sm text-gray-600">
+															{firstCategory}
+														</span>
+														{additionalCount > 0 && (
+															<span className="flex items-center justify-center w-6 h-6 rounded-full bg-gray-100 text-gray-600 text-xs font-medium">
+																+{additionalCount}
+															</span>
+														)}
+													</div>
+												);
+											})()}
 
 											{/* Footer: View Details */}
 											<div className="flex items-start justify-end">
@@ -296,7 +367,7 @@ export default function RecommendedSalons() {
 											</div>
 											<div className="p-3">
 												{/* Title and Rating */}
-												<div className="flex items-start justify-between mb-4">
+												<div className="flex items-start justify-between mb-2">
 													<h3 className="text-lg font-bold text-gray-900 flex-1">
 														{salon.name}
 													</h3>
@@ -311,6 +382,26 @@ export default function RecommendedSalons() {
 														</div>
 													)}
 												</div>
+
+												{/* Categories */}
+												{(() => {
+													const { firstCategory, additionalCount } =
+														getSalonCategories(salon);
+													if (!firstCategory) return null;
+
+													return (
+														<div className="flex items-center gap-2 mb-3">
+															<span className="text-xs text-gray-600">
+																{firstCategory}
+															</span>
+															{additionalCount > 0 && (
+																<span className="flex items-center justify-center w-5 h-5 rounded-full bg-gray-100 text-gray-600 text-xs font-medium">
+																	+{additionalCount}
+																</span>
+															)}
+														</div>
+													);
+												})()}
 
 												{/* Footer: Reviews and View Details */}
 												<div className="flex items-center justify-between">

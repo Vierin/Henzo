@@ -190,10 +190,10 @@ export default function OwnerHeader() {
 									onMouseEnter={() => setShowProfileDropdown(true)}
 									onMouseLeave={() => setShowProfileDropdown(false)}
 								>
-									<div className="px-4 py-2 text-sm text-gray-700 border-b border-gray-100">
-										<div className="font-medium">{user.email}</div>
-										<div className="text-xs text-gray-500">{t('header.owner')}</div>
-									</div>
+								<div className="px-4 py-2 text-sm text-gray-700 border-b border-gray-100">
+									<div className="font-medium">{user.name || user.email?.split('@')[0] || user.email}</div>
+									<div className="text-xs text-gray-500">{t('header.owner')}</div>
+								</div>
 									<button
 										onClick={handleLogout}
 										disabled={isLoggingOut}

@@ -1,4 +1,7 @@
-import { STATIC_CATEGORIES } from '@/constants/categories';
+import {
+	useCategories,
+	getCategoryTranslatedName,
+} from '@/hooks/useCategories';
 import { SalonSetupData } from '@/hooks/useSalonSetup';
 
 interface SetupStep2Props {
@@ -14,6 +17,23 @@ export default function SetupStep2({
 	onCategoryToggle,
 	t,
 }: SetupStep2Props) {
+	const { data: categories = [], isLoading } = useCategories();
+
+	if (isLoading) {
+		return (
+			<div className="space-y-6">
+				<div className="animate-pulse">
+					<div className="h-6 bg-gray-200 rounded w-1/3 mb-4"></div>
+					<div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+						{[1, 2, 3, 4, 5, 6].map((i) => (
+							<div key={i} className="h-20 bg-gray-200 rounded-lg"></div>
+						))}
+					</div>
+				</div>
+			</div>
+		);
+	}
+
 	return (
 		<div className="space-y-6">
 			<div>
@@ -21,7 +41,7 @@ export default function SetupStep2({
 					{t('business.completeSetup.step2.selectCategories')}
 				</label>
 				<div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-					{STATIC_CATEGORIES.map((category) => (
+					{categories.map((category) => (
 						<button
 							key={category.id}
 							type="button"
@@ -34,8 +54,9 @@ export default function SetupStep2({
 						>
 							<div className="flex items-center space-x-3">
 								<div>
-									<h3 className="font-bold text-gray-900">{category.name}</h3>
-									<p className="text-sm text-gray-500">{category.description}</p>
+									<h3 className="font-bold text-gray-900">
+										{getCategoryTranslatedName(category, t)}
+									</h3>
 								</div>
 							</div>
 						</button>

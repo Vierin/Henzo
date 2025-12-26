@@ -2,6 +2,7 @@
 	"selectDate": "Выберите дату",
 	"selectTime": "Выберите время",
 	"selectService": "Выберите услугу",
+	"selectAService": "Выберите услугу",
 	"selectStaff": "Выберите мастера",
 	"selectAStaffMember": "Выберите мастера",
 	"anyStaff": "Любой мастер",
@@ -71,5 +72,8 @@
 	"appointmentBookedSuccessfully": "Ваша запись успешно оформлена",
 	"ownerCannotBookOtherSalon": "Для бронирования в другом салоне, пожалуйста, войдите в аккаунт клиента.",
 	"pleaseEnterClientEmail": "Пожалуйста, введите email клиента",
-	"pleaseEnterValidEmail": "Пожалуйста, введите действительный email адрес"
+	"pleaseEnterValidEmail": "Пожалуйста, введите действительный email адрес",
+	"pleaseFillAllFields": "Пожалуйста, заполните все поля",
+	"optional": "(Необязательно)",
+	"noEmailWarning": "Напоминания не будут отправлены без указания email адреса."
 }

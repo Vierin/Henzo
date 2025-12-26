@@ -10,6 +10,7 @@ interface SalonPreview {
 	photos: string[];
 	avgRating?: number;
 	priceRange?: string;
+	categoryIds?: number[];
 	_count: {
 		reviews: number;
 		services: number;
@@ -65,10 +66,11 @@ export function useFeaturedSalons(limit: number = 6) {
 			);
 			return response;
 		},
-		staleTime: 60 * 60 * 1000, // 1 hour - featured salons change very rarely
+		staleTime: 24 * 60 * 60 * 1000, // 24 hours - featured salons change very rarely
 		gcTime: 24 * 60 * 60 * 1000, // 24 hours - keep in cache for a full day
 		refetchOnWindowFocus: false, // Don't refetch when user focuses window
 		refetchOnReconnect: false, // Don't refetch when reconnecting
+		refetchOnMount: false, // Don't refetch on component mount if data is fresh
 	});
 }
 

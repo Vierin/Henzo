@@ -42,6 +42,24 @@ main {
 	overflow-x: hidden;
 }
 
+/* Prevent Safari zoom on input focus - minimum 16px font size on mobile */
+@media (max-width: 768px) {
+	input[type="text"],
+	input[type="email"],
+	input[type="tel"],
+	input[type="number"],
+	input[type="password"],
+	input[type="search"],
+	input[type="url"],
+	input[type="date"],
+	input[type="time"],
+	input[type="datetime-local"],
+	textarea,
+	select {
+		font-size: 16px !important;
+	}
+}
+
 /* Hide scrollbar but keep functionality */
 .scrollbar-hide {
 	-ms-overflow-style: none;

@@ -1,28 +1,58 @@
 'use client';
 
-import { useState } from 'react';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
 import toast from 'react-hot-toast';
 import { useTranslation } from '@/contexts/LanguageContext';
 import { apiClient } from '@/lib/api-client';
 import { useErrorHandler } from '@/hooks/useErrorHandler';
 
+// Zod schema для валидации формы
+const betaRequestSchema = z
+	.object({
+		fullName: z
+			.string()
+			.min(2, 'Full name must be at least 2 characters')
+			.max(100, 'Full name must be no more than 100 characters'),
+		email: z.string().email('Please enter a valid email address'),
+		password: z
+			.string()
+			.min(8, 'Password must be at least 8 characters')
+			.max(100, 'Password must be no more than 100 characters'),
+		confirmPassword: z.string(),
+	})
+	.refine((data) => data.password === data.confirmPassword, {
+		message: 'Passwords do not match',
+		path: ['confirmPassword'],
+	});
+
+type BetaRequestFormData = z.infer<typeof betaRequestSchema>;
+
 export default function BetaRequestForm() {
 	const t = useTranslation();
 	const { handleError } = useErrorHandler();
-	const [formData, setFormData] = useState({
-		fullName: '',
-		email: '',
+	const {
+		register,
+		handleSubmit: handleFormSubmit,
+		formState: { errors, isSubmitting },
+		reset,
+	} = useForm<BetaRequestFormData>({
+		resolver: zodResolver(betaRequestSchema),
+		defaultValues: {
+			fullName: '',
+			email: '',
+			password: '',
+			confirmPassword: '',
+		},
 	});
-	const [loading, setLoading] = useState(false);
 
-	const handleSubmit = async (e: React.FormEvent) => {
-		e.preventDefault();
-		setLoading(true);
-
+	const onSubmit = async (data: BetaRequestFormData) => {
 		try {
 			await apiClient.post('/auth/send-business-magic-link', {
-				name: formData.fullName,
-				email: formData.email,
+				name: data.fullName,
+				email: data.email,
+				password: data.password,
 			});
 
 			toast.success(t('business.betaForm.magicLinkSent'), {
@@ -30,10 +60,7 @@ export default function BetaRequestForm() {
 			});
 
 			// Reset form
-			setFormData({
-				fullName: '',
-				email: '',
-			});
+			reset();
 		} catch (error: any) {
 			// Improve error messages for existing account
 			let errorMessage = error.message || t('business.betaForm.errorMessage');
@@ -45,8 +72,6 @@ export default function BetaRequestForm() {
 					'A business account with this email already exists. Please login instead.';
 			}
 			handleError(error, errorMessage);
-		} finally {
-			setLoading(false);
 		}
 	};
 
@@ -66,56 +91,135 @@ export default function BetaRequestForm() {
 				</div>
 
 				<div className="bg-card rounded-lg md:rounded-2xl border border-border shadow-lg p-4 md:p-12">
-					<form onSubmit={handleSubmit} className="space-y-6">
-						{/* Full Name */}
-						<div>
-							<label
-								htmlFor="fullName"
-								className="block text-sm font-medium text-foreground mb-2"
-							>
-								{t('business.betaForm.fullName')} <span className="text-destructive">{t('business.betaForm.required')}</span>
-							</label>
-							<input
-								type="text"
-								id="fullName"
-								required
-								value={formData.fullName}
-								onChange={(e) =>
-									setFormData({ ...formData, fullName: e.target.value })
-								}
-								placeholder={t('business.betaForm.fullNamePlaceholder')}
-								className="block w-full px-4 py-3 border border-border rounded-lg bg-background text-foreground focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-colors"
-							/>
-						</div>
+					<form onSubmit={handleFormSubmit(onSubmit)} className="space-y-6">
+						{/* Grid for desktop: 2 columns */}
+						<div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+							{/* Full Name */}
+							<div>
+								<label
+									htmlFor="fullName"
+									className="block text-sm font-medium text-foreground mb-2"
+								>
+									{t('business.betaForm.fullName')}{' '}
+									<span className="text-destructive">
+										{t('business.betaForm.required')}
+									</span>
+								</label>
+								<input
+									type="text"
+									id="fullName"
+									{...register('fullName')}
+									placeholder={t('business.betaForm.fullNamePlaceholder')}
+									className={`block w-full px-4 py-3 border rounded-lg bg-background text-foreground focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-colors ${
+										errors.fullName ? 'border-destructive' : 'border-border'
+									}`}
+								/>
+								{errors.fullName && (
+									<p className="mt-1 text-sm text-destructive">
+										{errors.fullName.message}
+									</p>
+								)}
+							</div>
 
-						{/* Email */}
-						<div>
-							<label
-								htmlFor="email"
-								className="block text-sm font-medium text-foreground mb-2"
-							>
-								{t('business.betaForm.email')} <span className="text-destructive">{t('business.betaForm.required')}</span>
-							</label>
-							<input
-								type="email"
-								id="email"
-								required
-								value={formData.email}
-								onChange={(e) =>
-									setFormData({ ...formData, email: e.target.value })
-								}
-								placeholder={t('business.betaForm.emailPlaceholder')}
-								className="block w-full px-4 py-3 border border-border rounded-lg bg-background text-foreground focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-colors"
-							/>
+							{/* Email */}
+							<div>
+								<label
+									htmlFor="email"
+									className="block text-sm font-medium text-foreground mb-2"
+								>
+									{t('business.betaForm.email')}{' '}
+									<span className="text-destructive">
+										{t('business.betaForm.required')}
+									</span>
+								</label>
+								<input
+									type="email"
+									id="email"
+									{...register('email')}
+									placeholder={t('business.betaForm.emailPlaceholder')}
+									className={`block w-full px-4 py-3 border rounded-lg bg-background text-foreground focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-colors ${
+										errors.email ? 'border-destructive' : 'border-border'
+									}`}
+								/>
+								{errors.email && (
+									<p className="mt-1 text-sm text-destructive">
+										{errors.email.message}
+									</p>
+								)}
+							</div>
+
+							{/* Password */}
+							<div>
+								<label
+									htmlFor="password"
+									className="block text-sm font-medium text-foreground mb-2"
+								>
+									{t('business.betaForm.password') || 'Password'}{' '}
+									<span className="text-destructive">
+										{t('business.betaForm.required')}
+									</span>
+								</label>
+								<input
+									type="password"
+									id="password"
+									{...register('password')}
+									placeholder={
+										t('business.betaForm.passwordPlaceholder') ||
+										'Enter your password'
+									}
+									className={`block w-full px-4 py-3 border rounded-lg bg-background text-foreground focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-colors ${
+										errors.password ? 'border-destructive' : 'border-border'
+									}`}
+								/>
+								{errors.password && (
+									<p className="mt-1 text-sm text-destructive">
+										{errors.password.message}
+									</p>
+								)}
+							</div>
+
+							{/* Confirm Password */}
+							<div>
+								<label
+									htmlFor="confirmPassword"
+									className="block text-sm font-medium text-foreground mb-2"
+								>
+									{t('business.betaForm.confirmPassword') || 'Confirm Password'}{' '}
+									<span className="text-destructive">
+										{t('business.betaForm.required')}
+									</span>
+								</label>
+								<input
+									type="password"
+									id="confirmPassword"
+									{...register('confirmPassword')}
+									placeholder={
+										t('business.betaForm.confirmPasswordPlaceholder') ||
+										'Confirm your password'
+									}
+									className={`block w-full px-4 py-3 border rounded-lg bg-background text-foreground focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-colors ${
+										errors.confirmPassword
+											? 'border-destructive'
+											: 'border-border'
+									}`}
+								/>
+								{errors.confirmPassword && (
+									<p className="mt-1 text-sm text-destructive">
+										{errors.confirmPassword.message}
+									</p>
+								)}
+							</div>
 						</div>
 
 						{/* Submit Button */}
 						<button
 							type="submit"
-							disabled={loading}
+							disabled={isSubmitting}
 							className="w-full bg-primary text-white px-8 py-4 rounded-lg text-lg font-medium hover:bg-primary/90 transition-all disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
 						>
-							{loading ? t('business.betaForm.submitting') : t('business.betaForm.requestBetaAccess')}
+							{isSubmitting
+								? t('business.betaForm.submitting')
+								: t('business.betaForm.requestBetaAccess')}
 						</button>
 
 						<p className="text-sm text-muted-foreground text-center">

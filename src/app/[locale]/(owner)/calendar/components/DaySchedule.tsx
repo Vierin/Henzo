@@ -2,7 +2,11 @@
 
 import { useState, useMemo, useRef, useEffect } from 'react';
 import { Booking, TimeBlock, Staff } from '@/types';
-import { safeParseDate, formatTimeSafe, parseBookingTimeAsLocal } from '@/utils/date';
+import {
+	safeParseDate,
+	formatTimeSafe,
+	parseBookingTimeAsLocal,
+} from '@/utils/date';
 import { ChevronLeft, ChevronRight, X } from 'lucide-react';
 import { useTranslation } from '@/contexts/LanguageContext';
 
@@ -419,7 +423,7 @@ export default function DaySchedule({
 			<div className="rounded-xl border border-[#f1d9d7] bg-white p-3 md:p-6">
 				{/* Header */}
 				<div className="flex flex-row items-center justify-between gap-3 mb-4 p-3 rounded-lg">
-					<div className="flex items-center justify-between sm:justify-start gap-2 sm:gap-3">
+					<div className="flex items-center justify-between gap-2">
 						<div className="flex items-center gap-1">
 							<button
 								onClick={onPrevDay}
@@ -438,7 +442,7 @@ export default function DaySchedule({
 								<ChevronRight className="w-4 h-4" />
 							</button>
 						</div>
-						<h3 className="text-base md:text-lg font-semibold text-gray-900 text-center sm:text-left flex-1">
+						<h3 className="text-base md:text-lg font-semibold text-gray-900 text-center flex-1">
 							{formatDateForDisplay(selectedDate)}
 						</h3>
 

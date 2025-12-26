@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useRef, useState, useCallback, useEffect, useMemo } from 'react';
-import { Clock } from 'lucide-react';
+import { Clock, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useTranslation } from '@/contexts/LanguageContext';
 
 interface BookingTimeSelectorProps {
@@ -9,9 +9,9 @@ interface BookingTimeSelectorProps {
 	filteredTimeSlots: string[];
 	selectedTime: string;
 	onTimeSelect: (time: string) => void;
-	timeFilter: 'all' | 'morning' | 'afternoon' | 'evening';
+	timeFilter: 'morning' | 'afternoon' | 'evening';
 	onTimeFilterChange: (
-		filter: 'all' | 'morning' | 'afternoon' | 'evening'
+		filter: 'morning' | 'afternoon' | 'evening'
 	) => void;
 	isTimeSlotAvailable: (timeSlot: string, selectedStaffId?: string) => boolean;
 	selectedStaff?: string;
@@ -49,14 +49,22 @@ export default function BookingTimeSelector({
 	const scrollTimeLeft = useCallback(() => {
 		if (timeScrollRef.current) {
 			timeScrollRef.current.scrollBy({ left: -200, behavior: 'smooth' });
+			// Check position after scroll animation completes
+			setTimeout(() => {
+				checkScrollPosition();
+			}, 300);
 		}
-	}, []);
+	}, [checkScrollPosition]);
 
 	const scrollTimeRight = useCallback(() => {
 		if (timeScrollRef.current) {
 			timeScrollRef.current.scrollBy({ left: 200, behavior: 'smooth' });
+			// Check position after scroll animation completes
+			setTimeout(() => {
+				checkScrollPosition();
+			}, 300);
 		}
-	}, []);
+	}, [checkScrollPosition]);
 
 	const handleMouseDown = useCallback((e: React.MouseEvent) => {
 		if (!timeScrollRef.current) return;
@@ -68,20 +76,31 @@ export default function BookingTimeSelector({
 
 	const handleMouseLeave = useCallback(() => {
 		setIsDragging(false);
+		// Reset hasMoved after a short delay to allow click events
+		setTimeout(() => setHasMoved(false), 100);
 	}, []);
 
 	const handleMouseUp = useCallback(() => {
 		setIsDragging(false);
-	}, []);
+		// Reset hasMoved after a short delay to allow click events
+		setTimeout(() => setHasMoved(false), 100);
+		// Check scroll position after drag
+		setTimeout(() => checkScrollPosition(), 100);
+	}, [checkScrollPosition]);
 
 	const handleMouseMove = useCallback(
 		(e: React.MouseEvent) => {
 			if (!isDragging || !timeScrollRef.current) return;
-			e.preventDefault();
 			const x = e.pageX - timeScrollRef.current.offsetLeft;
-			const walk = (x - startX) * 2;
-			timeScrollRef.current.scrollLeft = scrollLeft - walk;
-			setHasMoved(true);
+			const distance = Math.abs(x - startX);
+			
+			// Only prevent default and scroll if moved more than 5 pixels (to distinguish from click)
+			if (distance > 5) {
+				e.preventDefault();
+				const walk = (x - startX) * 2;
+				timeScrollRef.current.scrollLeft = scrollLeft - walk;
+				setHasMoved(true);
+			}
 		},
 		[isDragging, startX, scrollLeft]
 	);
@@ -99,9 +118,45 @@ export default function BookingTimeSelector({
 	useEffect(() => {
 		if (timeScrollRef.current) {
 			timeScrollRef.current.scrollLeft = 0;
-			checkScrollPosition();
+			// Check scroll position after a small delay to ensure DOM is updated
+			setTimeout(() => {
+				checkScrollPosition();
+			}, 100);
 		}
 	}, [timeFilter, checkScrollPosition]);
+
+	// Check scroll position when filteredTimeSlots change (e.g., when date changes)
+	useEffect(() => {
+		if (timeScrollRef.current && filteredTimeSlots.length > 0) {
+			// Wait for DOM to update with new slots
+			setTimeout(() => {
+				checkScrollPosition();
+			}, 100);
+		}
+	}, [filteredTimeSlots.length, checkScrollPosition]);
+
+	// Initial check when component mounts or container becomes available
+	useEffect(() => {
+		if (timeScrollRef.current) {
+			// Use ResizeObserver to check when content size changes
+			const resizeObserver = new ResizeObserver(() => {
+				setTimeout(() => {
+					checkScrollPosition();
+				}, 50);
+			});
+
+			resizeObserver.observe(timeScrollRef.current);
+
+			// Initial check
+			setTimeout(() => {
+				checkScrollPosition();
+			}, 100);
+
+			return () => {
+				resizeObserver.disconnect();
+			};
+		}
+	}, [checkScrollPosition]);
 
 	// Memoize availability checks to avoid recalculating on every render
 	const availabilityMap = useMemo(() => {
@@ -113,7 +168,6 @@ export default function BookingTimeSelector({
 	}, [filteredTimeSlots, selectedStaff, isTimeSlotAvailable]);
 
 	const filterButtons = [
-		{ key: 'all', label: t.booking.timeFilters.all },
 		{ key: 'morning', label: t.booking.timeFilters.morning },
 		{ key: 'afternoon', label: t.booking.timeFilters.afternoon },
 		{ key: 'evening', label: t.booking.timeFilters.evening },
@@ -155,11 +209,13 @@ export default function BookingTimeSelector({
 						disabled={!canScrollLeft}
 						className={`absolute left-0 top-1/2 -translate-y-1/2 z-10 w-8 h-8 rounded-full shadow-md flex items-center justify-center transition-colors hidden sm:flex ${
 							canScrollLeft
-								? 'bg-white hover:bg-gray-50'
-								: 'bg-gray-100 cursor-not-allowed'
+								? 'bg-white hover:bg-gray-50 border border-gray-200'
+								: 'bg-gray-100 cursor-not-allowed border border-gray-200'
 						}`}
 					>
-						←
+						<ChevronLeft
+							className={`w-4 h-4 ${canScrollLeft ? 'text-gray-600' : 'text-gray-400'}`}
+						/>
 					</button>
 
 					<button
@@ -167,11 +223,13 @@ export default function BookingTimeSelector({
 						disabled={!canScrollRight}
 						className={`absolute right-0 top-1/2 -translate-y-1/2 z-10 w-8 h-8 rounded-full shadow-md flex items-center justify-center transition-colors hidden sm:flex ${
 							canScrollRight
-								? 'bg-white hover:bg-gray-50'
-								: 'bg-gray-100 cursor-not-allowed'
+								? 'bg-white hover:bg-gray-50 border border-gray-200'
+								: 'bg-gray-100 cursor-not-allowed border border-gray-200'
 						}`}
 					>
-						→
+						<ChevronRight
+							className={`w-4 h-4 ${canScrollRight ? 'text-gray-600' : 'text-gray-400'}`}
+						/>
 					</button>
 
 					{/* Time Slots Container */}
@@ -196,9 +254,19 @@ export default function BookingTimeSelector({
 								<button
 									key={time}
 									onClick={(e) => {
-										if (available && !hasMoved) {
+										// Prevent click if we were dragging
+										if (hasMoved) {
+											e.preventDefault();
+											e.stopPropagation();
+											return;
+										}
+										if (available) {
 											onTimeSelect(time);
 										}
+										e.stopPropagation();
+									}}
+									onMouseDown={(e) => {
+										// Stop propagation to prevent container drag handler
 										e.stopPropagation();
 									}}
 									disabled={!available}

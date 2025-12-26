@@ -18,7 +18,7 @@ import {
 } from '@/utils/serviceLocalization';
 import { logger } from '@/lib/logger';
 import { storage } from '@/utils/storage';
-import { zonedTimeToUtc, utcToZonedTime } from 'date-fns-tz';
+import { fromZonedTime } from 'date-fns-tz';
 import BookingGuestForm from './BookingModal/BookingGuestForm';
 import BookingAuthForm from './BookingModal/BookingAuthForm';
 import BookingServiceSelector from './BookingModal/BookingServiceSelector';
@@ -84,6 +84,7 @@ export default function BookingModal({
 	);
 	const [isStaffDropdownOpen, setIsStaffDropdownOpen] = useState(false);
 	const [currentDateIndex, setCurrentDateIndex] = useState(0);
+	const [startDateIndex, setStartDateIndex] = useState(0);
 	const [salonWorkingHours, setSalonWorkingHours] =
 		useState<WorkingHours | null>(null);
 	const [salonTimezone, setSalonTimezone] =
@@ -118,15 +119,15 @@ export default function BookingModal({
 
 	// New states for improved UX
 	const [timeFilter, setTimeFilter] = useState<
-		'all' | 'morning' | 'afternoon' | 'evening'
-	>('all');
-	const [loadedDaysCount, setLoadedDaysCount] = useState(40); // Начальное количество дней
+		'morning' | 'afternoon' | 'evening'
+	>('morning');
+	const [loadedDaysCount, setLoadedDaysCount] = useState(90); // Начальное количество дней
 	const [isLoadingMoreDays, setIsLoadingMoreDays] = useState(false);
 	const [canScrollLeft, setCanScrollLeft] = useState(false);
 	const [canScrollRight, setCanScrollRight] = useState(false);
 	const [canScrollDateLeft, setCanScrollDateLeft] = useState(false);
 	const [canScrollDateRight, setCanScrollDateRight] = useState(false);
-	const INITIAL_DAYS = 40;
+	const INITIAL_DAYS = 90;
 	const LOAD_MORE_DAYS = 40; // Загружаем по 40 дней за раз
 
 	// Refs for native scroll
@@ -1263,8 +1264,6 @@ export default function BookingModal({
 
 	// Filter time slots by time of day
 	const filteredTimeSlots = useMemo(() => {
-		if (timeFilter === 'all') return timeSlots;
-
 		const ranges = {
 			morning: [6, 12],
 			afternoon: [12, 18], // Extended afternoon until 18:00
@@ -1445,12 +1444,13 @@ export default function BookingModal({
 			setBookingSuccess(null);
 			setSelectedDate(''); // Reset selected date to trigger auto-selection on next open
 			setSelectedTime(''); // Reset selected time
-			setTimeFilter('all'); // Reset time filter to show all slots
+			setTimeFilter('morning'); // Reset time filter to morning
 			setLoadedDaysCount(INITIAL_DAYS); // Reset loaded days count
 			setClientEmail(''); // Reset client email
 			setClientName(''); // Reset client name
 			setClientPhone(''); // Reset client phone
 			setSelectedStaff(t('booking.anyStaff') || 'Any Staff Member');
+			setStartDateIndex(0); // Reset start date index to show first 7 days
 		}
 	}, [isOpen, t]);
 
@@ -1566,10 +1566,10 @@ export default function BookingModal({
 		const localDateTimeString = `${dateStr} ${timeStr.padStart(5, '0')}:00`;
 
 		// Convert from salon timezone to UTC using date-fns-tz
-		// zonedTimeToUtc interprets the date/time as being in the specified timezone
+		// fromZonedTime interprets the date/time as being in the specified timezone
 		// and converts it to UTC
 		const localDate = new Date(`${dateStr}T${timeStr.padStart(5, '0')}:00`);
-		const utcDate = zonedTimeToUtc(localDate, salonTimezone);
+		const utcDate = fromZonedTime(localDate, salonTimezone);
 		const utcDateString = utcDate.toISOString();
 
 		logger.log('Creating UTC date string (salon timezone):', {
@@ -1722,17 +1722,15 @@ export default function BookingModal({
 			return;
 		}
 
-		// Если владелец создает резервацию в своем салоне, проверяем наличие email клиента
+		// Если владелец создает резервацию в своем салоне, валидируем email только если он введен
 		if (isOwner && isOwnerOfThisSalon() && !editingBooking) {
-			if (!clientEmail || !clientEmail.trim()) {
-				toast.error(t.booking.pleaseEnterClientEmail);
-				return;
-			}
-			// Валидация email
-			const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-			if (!emailRegex.test(clientEmail.trim())) {
-				toast.error(t.booking.pleaseEnterValidEmail);
-				return;
+			// Email опционален, но если введен - должен быть валидным
+			if (clientEmail && clientEmail.trim()) {
+				const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+				if (!emailRegex.test(clientEmail.trim())) {
+					toast.error(t.booking.pleaseEnterValidEmail);
+					return;
+				}
 			}
 		}
 
@@ -2363,6 +2361,7 @@ export default function BookingModal({
 										setIsStaffDropdownOpen(false);
 										setIsServiceDropdownOpen(!isServiceDropdownOpen);
 									}}
+									isOwnerMode={showServiceSelector && !!salonId}
 								/>
 
 								{/* Select Date - Date Pills */}
@@ -2381,6 +2380,8 @@ export default function BookingModal({
 									canScrollRight={canScrollDateRight}
 									onScrollLeft={setCanScrollDateLeft}
 									onScrollRight={setCanScrollDateRight}
+									startDateIndex={startDateIndex}
+									onStartDateIndexChange={setStartDateIndex}
 								/>
 
 								{/* Select Time */}
@@ -2433,12 +2434,11 @@ export default function BookingModal({
 									staffLoading={staffLoading}
 								/>
 
-								{/* Book Appointment Button and Close */}
+								{/* Book Appointment Button */}
 								<BookingFormFooter
 									loading={loading}
 									editingBooking={editingBooking}
 									onBooking={handleBooking}
-									onClose={onClose}
 								/>
 							</div>
 						</div>

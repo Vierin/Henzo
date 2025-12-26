@@ -143,7 +143,7 @@ export default function WorkingHoursSection({
 							{/* Show closed status on mobile */}
 							{dayData.closed && (
 								<span className="text-[#ff5b5b] font-medium sm:hidden">
-									{t('owner.salonInfo.closed')}
+									{t('owner.salonInfo.closed') || t('business.completeSetup.step5.closed') || 'Closed'}
 								</span>
 							)}
 						</div>
@@ -174,7 +174,7 @@ export default function WorkingHoursSection({
 						{/* Closed status for desktop */}
 						{dayData.closed && (
 							<span className="text-[#ff5b5b] font-medium hidden sm:block">
-								{t('owner.salonInfo.closed')}
+								{t('owner.salonInfo.closed') || t('business.completeSetup.step5.closed') || 'Closed'}
 							</span>
 						)}
 					</div>

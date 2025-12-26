@@ -8,12 +8,12 @@
 	"sunday": "Воскресенье",
 	"closed": "Закрыто",
 	"short": {
-		"sunday": "Вс",
-		"monday": "Пн",
-		"tuesday": "Вт",
-		"wednesday": "Ср",
-		"thursday": "Чт",
-		"friday": "Пт",
-		"saturday": "Сб"
+		"sun": "Вс",
+		"mon": "Пн",
+		"tue": "Вт",
+		"wed": "Ср",
+		"thu": "Чт",
+		"fri": "Пт",
+		"sat": "Сб"
 	}
 }

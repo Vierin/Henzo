@@ -55,10 +55,7 @@ export default function CategoryListClient({
 	const { data: salons, isLoading: loading, error } = useSalonsWithServices();
 
 	// Get translated category name
-	const translationKey = categoryTranslationMap[category.slug];
-	const translatedName = translationKey
-		? (t.categories[translationKey] as string) || category.name
-		: category.name;
+	const translatedName = getCategoryTranslatedName(category, t);
 
 	const handleBookService = (
 		service: ServiceResponseDto,

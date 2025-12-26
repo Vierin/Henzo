@@ -146,13 +146,13 @@ export default function SalonDetailClient({ salon }: SalonDetailClientProps) {
 				'sunday',
 			];
 			const dayNames = [
-				t.salon.daysShort.mon,
-				t.salon.daysShort.tue,
-				t.salon.daysShort.wed,
-				t.salon.daysShort.thu,
-				t.salon.daysShort.fri,
-				t.salon.daysShort.sat,
-				t.salon.daysShort.sun,
+				t('weekdays.short.mon'),
+				t('weekdays.short.tue'),
+				t('weekdays.short.wed'),
+				t('weekdays.short.thu'),
+				t('weekdays.short.fri'),
+				t('weekdays.short.sat'),
+				t('weekdays.short.sun'),
 			];
 
 			return days
@@ -165,7 +165,7 @@ export default function SalonDetailClient({ salon }: SalonDetailClientProps) {
 				})
 				.join('\n');
 		},
-		[t.salon.closed, t.salon.daysShort, t.salon.hoursNotSpecified]
+		[t.salon.closed, t.salon.hoursNotSpecified]
 	);
 
 	// Group services by serviceGroup

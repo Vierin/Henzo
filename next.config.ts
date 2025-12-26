@@ -8,6 +8,8 @@ const withBundleAnalyzer = require('@next/bundle-analyzer')({
 });
 
 const nextConfig: NextConfig = {
+	// Указываем корень workspace для правильного определения lockfile
+	outputFileTracingRoot: path.join(__dirname, '../..'),
 	eslint: {
 		// Enable ESLint during builds to catch errors
 		ignoreDuringBuilds: false,

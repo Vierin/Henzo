@@ -8,12 +8,12 @@
 	"sunday": "Sunday",
 	"closed": "Closed",
 	"short": {
-		"sunday": "Sun",
-		"monday": "Mon",
-		"tuesday": "Tue",
-		"wednesday": "Wed",
-		"thursday": "Thu",
-		"friday": "Fri",
-		"saturday": "Sat"
+		"sun": "Sun",
+		"mon": "Mon",
+		"tue": "Tue",
+		"wed": "Wed",
+		"thu": "Thu",
+		"fri": "Fri",
+		"sat": "Sat"
 	}
 }

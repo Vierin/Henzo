@@ -4,7 +4,7 @@
 		"benefits": "Преимущества",
 		"betaAccess": "Бета-доступ",
 		"signIn": "Войти",
-		"startFree": "Начать бесплатно"
+		"startFree": "Начать"
 	},
 	"hero": {
 		"badge": "✨ Бесплатное бета-тестирование",
@@ -67,10 +67,14 @@
 		"salonName": "Название салона",
 		"optional": "(Необязательно)",
 		"email": "Email",
+		"password": "Пароль",
+		"confirmPassword": "Подтвердите пароль",
 		"required": "*",
 		"fullNamePlaceholder": "Иван Иванов",
 		"salonNamePlaceholder": "Салон красоты",
 		"emailPlaceholder": "ivan@example.com",
+		"passwordPlaceholder": "Введите пароль",
+		"confirmPasswordPlaceholder": "Подтвердите пароль",
 		"submitting": "Отправка...",
 		"requestBetaAccess": "Запросить бета-доступ",
 		"agreement": "Отправляя эту форму, вы соглашаетесь на контакт по поводу программы бета-тестирования.",
@@ -154,7 +158,7 @@
 			"previous": "Назад",
 			"next": "Далее",
 			"continue": "Продолжить",
-			"skipThisStep": "Пропустить этот шаг",
+			"skipThisStep": "Пропустить",
 			"creatingSalon": "Создание салона...",
 			"completeSetup": "Завершить настройку"
 		},

@@ -129,7 +129,7 @@ export function LanguageProvider({ children, initialDictionary }: LanguageProvid
 	if (pathNoLocale === '/' || pathNoLocale === '' || !pathNoLocale) {
 		// Categories are also used on homepage
 		publicModules.push('public/homepage', 'public/categories');
-		// Salon module needed for DateTimePicker component (daysShort)
+		// Salon module needed for salon detail page
 		publicModules.push('public/salon');
 		// Booking module needed for DateTimePicker component (selectTime, timeIntervals)
 		publicModules.push('public/booking');
@@ -172,6 +172,12 @@ export function LanguageProvider({ children, initialDictionary }: LanguageProvid
 		publicModules.push('public/map');
 		// Categories module needed for category filter buttons
 		publicModules.push('public/categories');
+	} else if (pathNoLocale.startsWith('/business/complete-setup')) {
+		// Owner salonInfo module needed for WorkingHoursSection component
+		ownerModule = 'owner/salonInfo';
+		publicModules.push('public/business');
+		// Core weekdays module needed for days of week translations
+		publicModules.push('core/weekdays');
 	} else if (pathNoLocale.startsWith('/business')) {
 		publicModules.push('public/business');
 	} else if (pathNoLocale.startsWith('/contact')) {

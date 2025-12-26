@@ -356,22 +356,28 @@ export default function LoginClient() {
 					</div>
 
 					<div className="flex items-center justify-between">
-						<div className="flex items-center">
+						<label htmlFor="remember-me" className="flex items-center cursor-pointer group">
 							<input
 								id="remember-me"
 								name="remember-me"
 								type="checkbox"
 								checked={rememberMe}
 								onChange={(e) => setRememberMe(e.target.checked)}
-								className="h-4 w-4 text-[#ff5b5b] focus:ring-[#ff5b5b] border-gray-300 rounded"
+								className="sr-only"
 							/>
-							<label
-								htmlFor="remember-me"
-								className="ml-2 block text-sm text-gray-900"
-							>
+							<div className={`relative w-4 h-4 border-2 border-[#ff5b5b] rounded flex items-center justify-center transition-colors ${
+								rememberMe ? 'bg-[#ff5b5b]' : 'bg-white'
+							} cursor-pointer`}>
+								{rememberMe && (
+									<svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+										<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+									</svg>
+								)}
+							</div>
+							<span className="ml-2 block text-sm text-gray-900">
 								{t('auth.rememberMe')}
-							</label>
-						</div>
+							</span>
+						</label>
 
 						<div className="text-sm">
 							<Link

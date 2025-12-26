@@ -71,5 +71,7 @@
 	"of": "trong số",
 	"failedToRefresh": "Không thể làm mới dữ liệu",
 	"bookingMarkedNoShow": "Đặt chỗ đã được đánh dấu là Không đến",
-	"failedToMarkNoShow": "Không thể đánh dấu đặt chỗ là Không đến"
+	"failedToMarkNoShow": "Không thể đánh dấu đặt chỗ là Không đến",
+	"noPhotosWarning": "Salon được hiển thị trong tìm kiếm và danh mục với hình ảnh mặc định.",
+	"addPhotoLink": "Thêm ít nhất một ảnh salon trên trang cài đặt"
 }

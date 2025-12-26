@@ -13,7 +13,11 @@ import { generateSalonSlug } from '@/utils/slug';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { useTranslation } from '@/contexts/LanguageContext';
-import { STATIC_CATEGORIES } from '@/constants/categories';
+import {
+	useCategories,
+	getCategoryBySlug,
+	getCategoryTranslatedName,
+} from '@/hooks/useCategories';
 
 interface SalonSidebarProps {
 	onSalonSelect: (salon: Salon) => void;
@@ -34,6 +38,7 @@ export default function SalonSidebar({
 }: SalonSidebarProps) {
 	const router = useRouter();
 	const t = useTranslation();
+	const { data: categories = [] } = useCategories();
 	const [sortBy, setSortBy] = useState('recommended');
 	const { data, isLoading } = useFeaturedSalons(20);
 	const salons = (data as unknown as Salon[]) || [];
@@ -48,8 +53,10 @@ export default function SalonSidebar({
 			filteredSalons = allSalons.filter((salon: any) => {
 				// Check if salon has services in selected categories
 				const salonServices = salon.services || salon.Service || [];
-				return salonServices.some((service: any) => 
-					service.serviceCategoryId && selectedCategories.includes(service.serviceCategoryId)
+				return salonServices.some(
+					(service: any) =>
+						service.serviceCategoryId &&
+						selectedCategories.includes(service.serviceCategoryId)
 				);
 			});
 		}
@@ -93,7 +100,6 @@ export default function SalonSidebar({
 		}
 	}, [displaySalons.length, onSalonCountChange]);
 
-
 	const handleViewSalon = (salon: any, e: React.MouseEvent) => {
 		e.stopPropagation();
 		const slug = generateSalonSlug(salon.name, salon.id);
@@ -125,17 +131,11 @@ export default function SalonSidebar({
 
 	// Get translated category name
 	const getCategoryName = (slug: string) => {
-		const categoryKeyMap: Record<string, string> = {
-			'hair-barber': 'categories.hairBarber',
-			'massage-spa': 'categories.massageSpa',
-			'manicure-pedicure': 'categories.manicurePedicure',
-			'cosmetic-medicine': 'categories.cosmeticMedicine',
-			'other-services': 'categories.otherServices',
-		};
-		const translationKey = categoryKeyMap[slug];
-		if (translationKey) {
-			return t(translationKey) || slug;
+		const category = getCategoryBySlug(categories, slug);
+		if (category) {
+			return getCategoryTranslatedName(category, t);
 		}
+		// Fallback to slug if category not found
 		return slug;
 	};
 
@@ -146,7 +146,7 @@ export default function SalonSidebar({
 				{/* Category Filters */}
 				<div className="mb-4">
 					<div className="flex flex-wrap gap-2">
-						{STATIC_CATEGORIES.map((category) => {
+						{categories.map((category) => {
 							const isSelected = selectedCategories.includes(category.id);
 							return (
 								<button
@@ -280,7 +280,8 @@ export default function SalonSidebar({
 
 										{/* Rating */}
 										{((salon.avgRating || salon.rating || 0) > 0 ||
-											(salon.reviewCount || salon._count?.reviews || 0) > 0) && (
+											(salon.reviewCount || salon._count?.reviews || 0) >
+												0) && (
 											<div className="flex items-center space-x-2 mb-3">
 												<Star
 													size={14}

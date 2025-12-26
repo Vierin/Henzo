@@ -56,6 +56,15 @@ function BusinessRegisterForm() {
 		}
 	}, [emailFromUrl, nameFromUrl, tokenFromUrl]);
 
+	// Если есть токен в URL, но нет email/name - это новый формат magic link (ведет на complete-setup)
+	// Редиректим на complete-setup с токеном
+	useEffect(() => {
+		if (tokenFromUrl && !emailFromUrl && !nameFromUrl) {
+			router.replace(`/business/complete-setup?token=${tokenFromUrl}`);
+			return;
+		}
+	}, [tokenFromUrl, emailFromUrl, nameFromUrl, router]);
+
 	// Редирект если уже авторизован
 	useEffect(() => {
 		if (isAuthenticated && user) {

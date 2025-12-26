@@ -349,13 +349,13 @@ export default function DateTimePicker({
 					</div>
 					<div className="grid grid-cols-7 gap-1 mb-2">
 						{[
-							t('salon.daysShort.mon'),
-							t('salon.daysShort.tue'),
-							t('salon.daysShort.wed'),
-							t('salon.daysShort.thu'),
-							t('salon.daysShort.fri'),
-							t('salon.daysShort.sat'),
-							t('salon.daysShort.sun'),
+							t('weekdays.short.mon'),
+							t('weekdays.short.tue'),
+							t('weekdays.short.wed'),
+							t('weekdays.short.thu'),
+							t('weekdays.short.fri'),
+							t('weekdays.short.sat'),
+							t('weekdays.short.sun'),
 						].map((day) => (
 							<div
 								key={day}

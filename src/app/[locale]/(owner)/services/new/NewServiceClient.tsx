@@ -3,7 +3,10 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useCreateService } from '@/hooks/useServices';
-import { STATIC_CATEGORIES } from '@/constants/categories';
+import {
+	useCategories,
+	getCategoryTranslatedName,
+} from '@/hooks/useCategories';
 import { useOwnerLayout } from '@/contexts/OwnerLayoutContext';
 import { apiClient } from '@/lib/api-client';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -124,16 +127,7 @@ export default function NewServiceClient() {
 	const { salonId, isLoading: salonLoading, hasSalon } = useOwnerLayout();
 	const queryClient = useQueryClient();
 
-	const categories = STATIC_CATEGORIES;
-
-	// Category translation mapping
-	const categoryTranslationMap: Record<string, string> = {
-		'hair-barber': 'hairBarber',
-		'massage-spa': 'massageSpa',
-		'manicure-pedicure': 'manicurePedicure',
-		'cosmetic-medicine': 'cosmeticMedicine',
-		'other-services': 'otherServices',
-	};
+	const { data: categories = [] } = useCategories();
 
 	// Load service groups for this salon
 	const { data: groups = [] } = useQuery({
@@ -429,13 +423,7 @@ export default function NewServiceClient() {
 							<div className="bg-gray-50 rounded-md p-3 border border-gray-200">
 								<p className="text-gray-900">
 									{selectedCategory
-										? (() => {
-												const translationKey =
-													categoryTranslationMap[selectedCategory.slug];
-												return translationKey
-													? t.categories[translationKey]
-													: selectedCategory.name;
-											})()
+										? getCategoryTranslatedName(selectedCategory, t)
 										: t('owner.servicesNew.notSelected')}
 								</p>
 							</div>
@@ -686,11 +674,10 @@ export default function NewServiceClient() {
 									</SelectTrigger>
 									<SelectContent className="bg-white border border-gray-300 shadow-lg rounded-md">
 										{categories.map((category) => {
-											const translationKey =
-												categoryTranslationMap[category.slug];
-											const translatedName = translationKey
-												? t.categories[translationKey]
-												: category.name;
+											const translatedName = getCategoryTranslatedName(
+												category,
+												t
+											);
 											return (
 												<SelectItem
 													key={category.id}

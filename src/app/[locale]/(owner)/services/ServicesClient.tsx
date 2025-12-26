@@ -5,7 +5,10 @@ import { useRouter } from 'next/navigation';
 import toast from 'react-hot-toast';
 import EditServiceModal from '@/components/EditServiceModal';
 import { useServices, useDeleteService } from '@/hooks/useServices';
-import { STATIC_CATEGORIES } from '@/constants/categories';
+import {
+	useCategories,
+	getCategoryTranslatedName,
+} from '@/hooks/useCategories';
 import { useOwnerLayout } from '@/contexts/OwnerLayoutContext';
 import LoadingSpinner from '@/components/LoadingSpinner';
 import ErrorDisplay from '@/components/ErrorDisplay';
@@ -49,7 +52,7 @@ export default function ServicesClient() {
 		// Убираем серверную фильтрацию - делаем всё на клиенте
 	});
 
-	const categories = STATIC_CATEGORIES;
+	const { data: categories = [] } = useCategories();
 	const deleteServiceMutation = useDeleteService();
 
 	// Load service groups for this salon
@@ -284,7 +287,7 @@ export default function ServicesClient() {
 										value={category.id.toString()}
 										className="bg-white hover:bg-gray-50 focus:bg-gray-50 text-gray-900 cursor-pointer"
 									>
-										{category.name}
+										{getCategoryTranslatedName(category, t)}
 									</SelectItem>
 								))}
 							</SelectContent>

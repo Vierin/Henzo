@@ -121,7 +121,7 @@ export default function OwnerSidebar({
 
 	const handleLogout = async () => {
 		if (isLoggingOut) return; // Prevent double logout
-		
+
 		try {
 			setIsLoggingOut(true);
 			// Close mobile menu if open
@@ -220,12 +220,12 @@ export default function OwnerSidebar({
 						'staff'
 					)}
 
-					{renderNavItem(
+					{/* {renderNavItem(
 						'/marketing',
 						<TrendingUp className="w-5 h-5" />,
 						t('owner.dashboard.marketing'),
 						pathNoLocale.startsWith('/marketing')
-					)}
+					)} */}
 
 					{renderNavItem(
 						'/salon-info',
@@ -245,12 +245,16 @@ export default function OwnerSidebar({
 						{isLoggingOut ? (
 							<>
 								<div className="w-5 h-5 border-2 border-red-600 border-t-transparent rounded-full animate-spin" />
-								<span className="font-medium">{t('owner.dashboard.loggingOut') || 'Logging out...'}</span>
+								<span className="font-medium">
+									{t('owner.dashboard.loggingOut') || 'Logging out...'}
+								</span>
 							</>
 						) : (
 							<>
 								<LogOut className="w-5 h-5" />
-								<span className="font-medium">{t('owner.dashboard.logOut')}</span>
+								<span className="font-medium">
+									{t('owner.dashboard.logOut')}
+								</span>
 							</>
 						)}
 					</button>
