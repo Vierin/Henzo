@@ -1,8 +1,7 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { apiClient } from '@/lib/api-client';
-import SalonLogo from '@/components/admin/SalonLogo';
+import { useState, useMemo } from 'react';
+import { useAdminSalons, type AdminSalon } from '@/hooks/useAdmin';
 import { useTranslation } from '@/contexts/LanguageContext';
 import {
 	Select,
@@ -11,6 +10,7 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from '@/components/ui/select';
+import LoadingSpinner from '@/components/LoadingSpinner';
 import {
 	X,
 	MapPin,
@@ -24,42 +24,9 @@ import {
 	Star,
 } from 'lucide-react';
 
-interface Salon {
-	id: string;
-	name: string;
-	description?: string;
-	address?: string;
-	phone?: string;
-	email?: string;
-	website?: string;
-	instagram?: string;
-	logo?: string;
-	photos: string[];
-	workingHours?: any;
-	owner?: {
-		id: string;
-		name?: string;
-		email: string;
-	};
-	_count?: {
-		bookings: number;
-		reviews: number;
-		staff: number;
-		services: number;
-	};
-	subscription?: {
-		type: 'FREEMIUM' | 'BASIC' | 'ENTERPRISE';
-		status: string;
-	};
-	createdAt: string;
-}
-
 export default function AdminSalons() {
 	const t = useTranslation();
-	const [salons, setSalons] = useState<Salon[]>([]);
-	const [filteredSalons, setFilteredSalons] = useState<Salon[]>([]);
-	const [loading, setLoading] = useState(true);
-	const [error, setError] = useState<string | null>(null);
+	const { data: salons = [], isLoading, error } = useAdminSalons();
 
 	// Filter and sort states
 	const [searchTerm, setSearchTerm] = useState('');
@@ -72,27 +39,11 @@ export default function AdminSalons() {
 	>('all');
 
 	// Modal state for salon details
-	const [selectedSalon, setSelectedSalon] = useState<Salon | null>(null);
+	const [selectedSalon, setSelectedSalon] = useState<AdminSalon | null>(null);
 	const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
 
-	useEffect(() => {
-		const fetchSalons = async () => {
-			try {
-				const data = await apiClient.get<Salon[]>('/admin/salons');
-				setSalons(data);
-				setFilteredSalons(data);
-			} catch (err) {
-				setError(err instanceof Error ? err.message : 'Failed to load salons');
-			} finally {
-				setLoading(false);
-			}
-		};
-
-		fetchSalons();
-	}, []);
-
 	// Filter and sort salons
-	useEffect(() => {
+	const filteredSalons = useMemo(() => {
 		let filtered = [...salons];
 
 		// Search filter
@@ -157,10 +108,10 @@ export default function AdminSalons() {
 			return 0;
 		});
 
-		setFilteredSalons(filtered);
+		return filtered;
 	}, [salons, searchTerm, sortBy, sortOrder, statusFilter]);
 
-	const handleViewDetails = (salon: Salon) => {
+	const handleViewDetails = (salon: AdminSalon) => {
 		setSelectedSalon(salon);
 		setIsDetailModalOpen(true);
 	};
@@ -170,12 +121,8 @@ export default function AdminSalons() {
 		setIsDetailModalOpen(false);
 	};
 
-	if (loading) {
-		return (
-			<div className="flex items-center justify-center py-12">
-				<div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#ff5b5b]"></div>
-			</div>
-		);
+	if (isLoading) {
+		return <LoadingSpinner size="lg" message="Loading salons..." />;
 	}
 
 	if (error) {
@@ -187,7 +134,9 @@ export default function AdminSalons() {
 				<h3 className="text-xl font-semibold text-gray-900 mb-2">
 					Error loading salons
 				</h3>
-				<p className="text-gray-600">{error}</p>
+				<p className="text-gray-600">
+					{error instanceof Error ? error.message : 'Failed to load salons'}
+				</p>
 			</div>
 		);
 	}

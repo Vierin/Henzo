@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { apiClient } from '@/lib/api-client';
+import { formatVND } from '@/utils/currency';
 import { Line, Pie } from 'react-chartjs-2';
 import {
 	Select,
@@ -39,6 +40,13 @@ interface AnalyticsData {
 		canceled: number;
 		byDay: Array<{ date: string; count: number }>;
 	};
+	metrics?: {
+		totalRevenue: number;
+		averageBookingValue: number;
+		conversionRate: number;
+		uniqueCustomers: number;
+		repeatCustomerRate: number;
+	};
 	topServices: Array<{ name: string; count: number; categoryName?: string }>;
 	topSalons: Array<{ name: string; bookingsCount: number }>;
 }
@@ -67,8 +75,8 @@ export default function AdminDashboard() {
 			);
 			return response;
 		},
-		staleTime: 30000, // 30 seconds
-		gcTime: 5 * 60 * 1000, // 5 minutes
+		staleTime: 2 * 60 * 1000, // 2 minutes (увеличено с 30 секунд)
+		gcTime: 10 * 60 * 1000, // 10 minutes (увеличено с 5 минут)
 	});
 
 	if (isLoading) {
@@ -147,7 +155,7 @@ export default function AdminDashboard() {
 				<h2 className="text-lg font-bold text-gray-900 mb-4">
 					MVP Validation Metrics
 				</h2>
-				<div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+				<div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
 					<div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
 						<div className="text-sm text-gray-600 mb-1">Total Salons</div>
 						<div className="text-3xl font-bold text-gray-900">
@@ -184,6 +192,60 @@ export default function AdminDashboard() {
 						<div className="text-xs text-gray-500 mt-1">bookings/salon</div>
 					</div>
 				</div>
+
+				{/* Revenue & Performance Metrics */}
+				{data.metrics && (
+					<div className="grid grid-cols-1 md:grid-cols-5 gap-4 mt-4 pt-4 border-t border-[#ff5b5b]/20">
+						<div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
+							<div className="text-sm text-gray-600 mb-1">Total Revenue</div>
+							<div className="text-2xl font-bold text-gray-900">
+								{formatVND(data.metrics.totalRevenue)}
+							</div>
+							<div className="text-xs text-gray-500 mt-1">
+								{data.bookings.confirmed + data.bookings.completed} bookings
+							</div>
+						</div>
+						<div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
+							<div className="text-sm text-gray-600 mb-1">
+								Avg Booking Value
+							</div>
+							<div className="text-2xl font-bold text-gray-900">
+								{formatVND(data.metrics.averageBookingValue)}
+							</div>
+							<div className="text-xs text-gray-500 mt-1">per booking</div>
+						</div>
+						<div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
+							<div className="text-sm text-gray-600 mb-1">Conversion Rate</div>
+							<div className="text-2xl font-bold text-green-600">
+								{data.metrics.conversionRate.toFixed(1)}%
+							</div>
+							<div className="text-xs text-gray-500 mt-1">
+								confirmed/completed
+							</div>
+						</div>
+						<div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
+							<div className="text-sm text-gray-600 mb-1">Unique Customers</div>
+							<div className="text-2xl font-bold text-gray-900">
+								{data.metrics.uniqueCustomers}
+							</div>
+							<div className="text-xs text-gray-500 mt-1">
+								{data.metrics.uniqueCustomers > 0
+									? (totalBookings / data.metrics.uniqueCustomers).toFixed(1)
+									: 0}{' '}
+								bookings/customer
+							</div>
+						</div>
+						<div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
+							<div className="text-sm text-gray-600 mb-1">
+								Repeat Customer Rate
+							</div>
+							<div className="text-2xl font-bold text-purple-600">
+								{data.metrics.repeatCustomerRate.toFixed(1)}%
+							</div>
+							<div className="text-xs text-gray-500 mt-1">2+ bookings</div>
+						</div>
+					</div>
+				)}
 			</div>
 
 			{/* Booking Status Distribution */}

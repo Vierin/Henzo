@@ -1,7 +1,7 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
-import { apiClient } from '@/lib/api-client';
+import { useState, useMemo } from 'react';
+import { useAdminBookings } from '@/hooks/useAdmin';
 import { formatTimeSafe, safeParseDate } from '@/utils/date';
 import { formatVND } from '@/utils/currency';
 import {
@@ -11,37 +11,10 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from '@/components/ui/select';
-
-interface Booking {
-	id: string;
-	time: string;
-	status: string;
-	notes?: string;
-	createdAt: string;
-	salon?: {
-		id: string;
-		name: string;
-	};
-	user?: {
-		id: string;
-		name?: string;
-		email: string;
-	};
-	service?: {
-		id: string;
-		name: string;
-		price: number;
-	};
-	staff?: {
-		id: string;
-		name: string;
-	};
-}
+import LoadingSpinner from '@/components/LoadingSpinner';
 
 export default function AdminBookings() {
-	const [bookings, setBookings] = useState<Booking[]>([]);
-	const [loading, setLoading] = useState(true);
-	const [error, setError] = useState<string | null>(null);
+	const { data: bookings = [], isLoading, error } = useAdminBookings();
 
 	// Filter and search states
 	const [searchTerm, setSearchTerm] = useState('');
@@ -50,23 +23,6 @@ export default function AdminBookings() {
 		'date'
 	);
 	const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
-
-	useEffect(() => {
-		const fetchBookings = async () => {
-			try {
-				const data = await apiClient.get<Booking[]>('/admin/bookings');
-				setBookings(data);
-			} catch (err) {
-				setError(
-					err instanceof Error ? err.message : 'Failed to load bookings'
-				);
-			} finally {
-				setLoading(false);
-			}
-		};
-
-		fetchBookings();
-	}, []);
 
 	// Filter and sort bookings
 	const filteredAndSortedBookings = useMemo(() => {
@@ -139,12 +95,8 @@ export default function AdminBookings() {
 		}
 	};
 
-	if (loading) {
-		return (
-			<div className="flex items-center justify-center py-12">
-				<div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#ff5b5b]"></div>
-			</div>
-		);
+	if (isLoading) {
+		return <LoadingSpinner size="lg" message="Loading bookings..." />;
 	}
 
 	if (error) {
@@ -156,7 +108,9 @@ export default function AdminBookings() {
 				<h3 className="text-xl font-semibold text-gray-900 mb-2">
 					Error loading bookings
 				</h3>
-				<p className="text-gray-600">{error}</p>
+				<p className="text-gray-600">
+					{error instanceof Error ? error.message : 'Failed to load bookings'}
+				</p>
 			</div>
 		);
 	}

@@ -139,7 +139,7 @@ export default function NewStaffPage() {
 									{photoPreview ? (
 										<div className="relative">
 											<Image
-												src={photoPreview}
+												src={photoPreview as string}
 												alt="Staff preview"
 												width={80}
 												height={80}
