@@ -1,10 +1,12 @@
 'use client';
 
-import { TimePicker } from 'rsuite';
-import 'rsuite/dist/rsuite-no-reset.min.css';
+import { TimePicker } from 'antd';
+import type { Dayjs } from 'dayjs';
+import dayjs from 'dayjs';
 import { useTranslation } from '@/contexts/LanguageContext';
+import 'antd/dist/reset.css';
 
-// Wrapper для rsuite TimePicker
+// Wrapper для ant design TimePicker
 const TimePicker24h = ({
 	value,
 	onChange,
@@ -14,35 +16,32 @@ const TimePicker24h = ({
 	onChange: (value: string) => void;
 	className?: string;
 }) => {
-	// Конвертируем строку HH:MM в Date для rsuite
-	const parseTimeToDate = (timeStr: string): Date | null => {
+	// Конвертируем строку HH:MM в dayjs
+	const parseTimeToDayjs = (timeStr: string): Dayjs | null => {
 		if (!timeStr || !timeStr.includes(':')) return null;
 		const [hours, minutes] = timeStr.split(':').map(Number);
-		const date = new Date();
-		date.setHours(hours, minutes, 0, 0);
-		return date;
+		return dayjs().hour(hours).minute(minutes).second(0).millisecond(0);
 	};
 
-	// Конвертируем Date обратно в строку HH:MM
-	const formatDateToTime = (date: Date | null): string => {
-		if (!date) return '';
-		const hours = date.getHours().toString().padStart(2, '0');
-		const minutes = date.getMinutes().toString().padStart(2, '0');
-		return `${hours}:${minutes}`;
+	// Конвертируем dayjs обратно в строку HH:MM
+	const formatDayjsToTime = (time: Dayjs | null): string => {
+		if (!time) return '';
+		return time.format('HH:mm');
 	};
 
-	const handleChange = (date: Date | null) => {
-		onChange(formatDateToTime(date));
+	const handleChange = (time: Dayjs | null) => {
+		onChange(formatDayjsToTime(time));
 	};
 
 	return (
 		<div className={className} style={{ width: '100%', minWidth: '80px' }}>
 			<TimePicker
-				value={parseTimeToDate(value)}
+				value={parseTimeToDayjs(value)}
 				onChange={handleChange}
 				format="HH:mm"
-				cleanable={false}
 				placeholder="09:00"
+				minuteStep={5}
+				inputReadOnly={true}
 				className="custom-time-picker"
 				style={{ width: '100%', minWidth: '80px', maxWidth: '120px' }}
 			/>

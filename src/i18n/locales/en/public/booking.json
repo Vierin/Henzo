@@ -75,5 +75,9 @@
 	"pleaseEnterValidEmail": "Please enter a valid email address",
 	"pleaseFillAllFields": "Please fill in all fields",
 	"optional": "(Optional)",
-	"noEmailWarning": "Reminders will not be sent without an email address."
+	"noEmailWarning": "Reminders will not be sent without an email address.",
+	"next": "Next",
+	"back": "Back",
+	"bookingSummary": "Booking Summary",
+	"staff": "Staff"
 }

@@ -77,7 +77,8 @@ export function LanguageProvider({ children, initialDictionary }: LanguageProvid
 		pathNoLocale.startsWith('/services') ||
 		pathNoLocale.startsWith('/staff') ||
 		pathNoLocale.startsWith('/calendar') ||
-		pathNoLocale.startsWith('/marketing');
+		pathNoLocale.startsWith('/marketing') ||
+		pathNoLocale.startsWith('/profile-settings');
 	
 	const isClientPage = pathNoLocale.startsWith('/dashboard') ||
 		pathNoLocale.startsWith('/favorites') ||
@@ -123,6 +124,8 @@ export function LanguageProvider({ children, initialDictionary }: LanguageProvid
 		publicModules.push('shared/auth');
 		// Homepage module needed for minutesShort translation
 		publicModules.push('public/homepage');
+		// Core weekdays module needed for calendar weekday translations
+		publicModules.push('core/weekdays');
 	} else if (pathNoLocale.startsWith('/marketing')) {
 		ownerModule = 'owner/marketing';
 	}

@@ -117,6 +117,39 @@ export default function BookingModal({
 		time: string;
 	} | null>(null);
 
+	// Multi-step form state for mobile
+	const [currentStep, setCurrentStep] = useState<'booking' | 'client'>(
+		'booking'
+	);
+	const [isMobile, setIsMobile] = useState(false);
+
+	// Check if mobile device
+	useEffect(() => {
+		const checkMobile = () => {
+			setIsMobile(window.innerWidth <= 768);
+		};
+
+		checkMobile();
+		window.addEventListener('resize', checkMobile);
+		return () => window.removeEventListener('resize', checkMobile);
+	}, []);
+
+	// Reset step when modal opens/closes
+	useEffect(() => {
+		if (isOpen) {
+			setCurrentStep('booking');
+		} else {
+			// Reset step when modal closes
+			setCurrentStep('booking');
+		}
+	}, [isOpen]);
+
+	// Handle close with step reset
+	const handleClose = () => {
+		setCurrentStep('booking');
+		onClose();
+	};
+
 	// New states for improved UX
 	const [timeFilter, setTimeFilter] = useState<
 		'morning' | 'afternoon' | 'evening'
@@ -1701,7 +1734,35 @@ export default function BookingModal({
 		}
 	};
 
+	// Validate booking step (step 1)
+	const validateBookingStep = (): boolean => {
+		if (!selectedService || !selectedDate || !selectedTime) {
+			toast.error(t.booking.pleaseFillAllFields);
+			return false;
+		}
+		return true;
+	};
+
+	// Handle next step (from booking to client info)
+	const handleNextStep = () => {
+		if (validateBookingStep()) {
+			setCurrentStep('client');
+		}
+	};
+
+	// Handle back step (from client to booking)
+	const handleBackStep = () => {
+		setCurrentStep('booking');
+	};
+
 	const handleBooking = async () => {
+		// On mobile, if we're on booking step, validate and move to next step
+		if (isMobile && currentStep === 'booking') {
+			handleNextStep();
+			return;
+		}
+
+		// Validate booking data
 		if (!selectedService || !selectedDate || !selectedTime) {
 			toast.error(t.booking.pleaseFillAllFields);
 			return;
@@ -2020,6 +2081,9 @@ export default function BookingModal({
 				setClientPhone('');
 			}
 
+			// Reset step after successful booking
+			setCurrentStep('booking');
+
 			// Show toast notification for user feedback (especially after OAuth redirect)
 			if (bookingStatus === 'PENDING') {
 				toast.success(
@@ -2117,7 +2181,7 @@ export default function BookingModal({
 
 			// Show success message
 			toast.success('Appointment updated successfully!');
-			onClose();
+			handleClose();
 
 			// Call callback to refresh bookings list
 			if (onBookingUpdated) {
@@ -2164,7 +2228,7 @@ export default function BookingModal({
 
 		// Close modal if clicking on the backdrop
 		if (target.classList.contains('fixed')) {
-			onClose();
+			handleClose();
 		}
 	};
 
@@ -2175,7 +2239,11 @@ export default function BookingModal({
 			<style>{scrollStyles}</style>
 			<div
 				className="fixed inset-0 bg-[#F8F5F2CC] bg-opacity-80 sm:flex sm:items-center sm:justify-center z-[999] p-0 sm:p-4"
-				onClick={handleClickOutside}
+				onClick={(e) => {
+					if (e.target === e.currentTarget) {
+						handleClose();
+					}
+				}}
 			>
 				<div
 					className="bg-white sm:rounded-2xl sm:shadow-2xl w-full h-full sm:h-auto sm:max-w-4xl sm:max-h-[90vh] overflow-hidden relative"
@@ -2183,7 +2251,7 @@ export default function BookingModal({
 				>
 					{/* Close button */}
 					<button
-						onClick={onClose}
+						onClick={handleClose}
 						className="absolute top-3 bg-white shadow-md right-3 sm:top-4 sm:right-4 z-10 p-1.5 sm:p-2 hover:bg-gray-100 rounded-full transition-colors"
 					>
 						<svg
@@ -2327,7 +2395,7 @@ export default function BookingModal({
 
 								<button
 									onClick={() => {
-										onClose();
+										handleClose();
 										window.location.reload();
 									}}
 									className="w-full bg-[#ff5b5b] text-white py-3 rounded-lg font-semibold text-lg hover:bg-[#e04a4a] transition-colors"
@@ -2336,7 +2404,203 @@ export default function BookingModal({
 								</button>
 							</div>
 						</div>
+					) : isMobile && isOwner && isOwnerOfThisSalon() && !editingBooking ? (
+						/* Mobile Multi-Step Form */
+						<div className="flex flex-col h-full overflow-hidden">
+							{/* Progress Indicator */}
+							<div className="flex items-center justify-center gap-2 p-4 border-b border-gray-200 bg-white">
+								<div
+									className={`flex items-center gap-2 ${currentStep === 'booking' ? 'text-[#ff5b5b]' : 'text-gray-400'}`}
+								>
+									<div
+										className={`w-8 h-8 rounded-full flex items-center justify-center font-semibold ${
+											currentStep === 'booking'
+												? 'bg-[#ff5b5b] text-white'
+												: 'bg-gray-200 text-gray-600'
+										}`}
+									>
+										1
+									</div>
+									<span className="text-sm font-medium hidden sm:inline">
+										{t('booking.bookingDetails') || 'Booking Details'}
+									</span>
+								</div>
+								<div className="w-8 h-0.5 bg-gray-200"></div>
+								<div
+									className={`flex items-center gap-2 ${currentStep === 'client' ? 'text-[#ff5b5b]' : 'text-gray-400'}`}
+								>
+									<div
+										className={`w-8 h-8 rounded-full flex items-center justify-center font-semibold ${
+											currentStep === 'client'
+												? 'bg-[#ff5b5b] text-white'
+												: 'bg-gray-200 text-gray-600'
+										}`}
+									>
+										2
+									</div>
+									<span className="text-sm font-medium hidden sm:inline">
+										{t('booking.clientInfo') || 'Client Info'}
+									</span>
+								</div>
+							</div>
+
+							{/* Step Content */}
+							<div className="flex-1 overflow-y-auto">
+								{currentStep === 'booking' ? (
+									/* Step 1: Booking Details */
+									<div className="p-4 space-y-6">
+										{/* Service Details */}
+										<BookingServiceSelector
+											selectedService={selectedService}
+											services={services}
+											showServiceSelector={showServiceSelector}
+											isServiceDropdownOpen={isServiceDropdownOpen}
+											onServiceSelect={(service) => {
+												setSelectedService(service);
+												setIsServiceDropdownOpen(false);
+												setIsStaffDropdownOpen(false);
+											}}
+											onToggleServiceDropdown={() => {
+												setIsStaffDropdownOpen(false);
+												setIsServiceDropdownOpen(!isServiceDropdownOpen);
+											}}
+											isOwnerMode={showServiceSelector && !!salonId}
+										/>
+
+										{/* Select Date */}
+										<BookingDateSelector
+											dates={getAvailableDays()}
+											selectedDate={selectedDate}
+											onDateSelect={(dateString) => {
+												setSelectedDate(dateString);
+											}}
+											currentDateIndex={currentDateIndex}
+											onDateIndexChange={setCurrentDateIndex}
+											loadedDaysCount={loadedDaysCount}
+											onLoadMoreDays={loadMoreDays}
+											isLoadingMoreDays={isLoadingMoreDays}
+											canScrollLeft={canScrollDateLeft}
+											canScrollRight={canScrollDateRight}
+											onScrollLeft={setCanScrollDateLeft}
+											onScrollRight={setCanScrollDateRight}
+											startDateIndex={startDateIndex}
+											onStartDateIndexChange={setStartDateIndex}
+										/>
+
+										{/* Select Time */}
+										{!selectedDate && (
+											<div className="text-sm text-amber-600 bg-amber-50 p-3 rounded-lg">
+												{t.booking.pleaseSelectDateFirst}
+											</div>
+										)}
+										<BookingTimeSelector
+											timeSlots={timeSlots.map((slot) => slot.time)}
+											filteredTimeSlots={filteredTimeSlots.map(
+												(slot) => slot.time
+											)}
+											selectedTime={selectedTime}
+											onTimeSelect={setSelectedTime}
+											timeFilter={timeFilter}
+											onTimeFilterChange={setTimeFilter}
+											isTimeSlotAvailable={isTimeSlotAvailable}
+											selectedStaff={selectedStaff}
+											timeSlotsLoading={false}
+										/>
+
+										{/* Select Staff Member */}
+										<BookingStaffSelector
+											selectedStaff={selectedStaff}
+											allStaffMembers={allStaffMembers}
+											isStaffDropdownOpen={isStaffDropdownOpen}
+											onStaffSelect={(staffName) => {
+												setSelectedStaff(staffName);
+												setIsStaffDropdownOpen(false);
+												setIsServiceDropdownOpen(false);
+											}}
+											onToggleStaffDropdown={() => {
+												setIsServiceDropdownOpen(false);
+												setIsStaffDropdownOpen(!isStaffDropdownOpen);
+											}}
+											staffLoading={staffLoading}
+										/>
+
+										{/* Next Button */}
+										<button
+											onClick={handleNextStep}
+											disabled={
+												!selectedService || !selectedDate || !selectedTime
+											}
+											className="w-full bg-[#ff5b5b] text-white py-3 rounded-lg font-semibold text-lg hover:bg-[#e04a4a] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+										>
+											{t('booking.next') || 'Next'}
+										</button>
+									</div>
+								) : (
+									/* Step 2: Client Information */
+									<div className="p-4 space-y-6">
+										{/* Booking Summary */}
+										<div className="bg-gray-50 rounded-lg p-4 space-y-2">
+											<h3 className="font-semibold text-gray-900 mb-3">
+												{t('booking.bookingSummary') || 'Booking Summary'}
+											</h3>
+											<div className="space-y-1 text-sm text-gray-700">
+												<div>
+													<strong>{t('booking.service') || 'Service'}:</strong>{' '}
+													{selectedService
+														? getLocalizedServiceName(selectedService, language)
+														: '-'}
+												</div>
+												<div>
+													<strong>{t('booking.date') || 'Date'}:</strong>{' '}
+													{selectedDate
+														? new Date(selectedDate).toLocaleDateString()
+														: '-'}
+												</div>
+												<div>
+													<strong>{t('booking.time') || 'Time'}:</strong>{' '}
+													{selectedTime || '-'}
+												</div>
+												<div>
+													<strong>{t('booking.staff') || 'Staff'}:</strong>{' '}
+													{selectedStaff}
+												</div>
+											</div>
+										</div>
+
+										{/* Client Information Form */}
+										<BookingGuestForm
+											clientEmail={clientEmail}
+											clientName={clientName}
+											clientPhone={clientPhone}
+											onEmailChange={setClientEmail}
+											onNameChange={setClientName}
+											onPhoneChange={setClientPhone}
+										/>
+
+										{/* Action Buttons */}
+										<div className="flex gap-3">
+											<button
+												onClick={handleBackStep}
+												className="flex-1 bg-gray-200 text-gray-700 py-3 rounded-lg font-semibold hover:bg-gray-300 transition-colors"
+											>
+												{t('booking.back') || 'Back'}
+											</button>
+											<button
+												onClick={handleBooking}
+												disabled={loading}
+												className="flex-1 bg-[#ff5b5b] text-white py-3 rounded-lg font-semibold hover:bg-[#e04a4a] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+											>
+												{loading
+													? t('booking.booking') || 'Booking...'
+													: t('booking.bookAppointment') || 'Book Appointment'}
+											</button>
+										</div>
+									</div>
+								)}
+							</div>
+						</div>
 					) : (
+						/* Desktop Layout (unchanged) */
 						<div className="flex flex-col sm:flex-row overflow-hidden h-full">
 							{/* Left Section - Service Details, Date, and Time Selection */}
 							<div className="flex-1 sm:min-w-[500px] p-4 sm:p-8 max-h-[70vh] sm:max-h-[90vh] overflow-y-auto">

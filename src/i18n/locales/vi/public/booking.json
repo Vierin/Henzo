@@ -83,5 +83,9 @@
 	"waitingForSalonConfirmationDescription": "Lịch hẹn của bạn đang ở trạng thái chờ. Salon sẽ xem xét và xác nhận. Bạn sẽ nhận được email khi lịch hẹn được xác nhận.",
 	"ownerCannotBookOtherSalon": "Để đặt lịch ở salon khác, vui lòng đăng nhập bằng tài khoản khách hàng.",
 	"optional": "(Tùy chọn)",
-	"noEmailWarning": "Nhắc nhở sẽ không được gửi nếu không có địa chỉ email."
+	"noEmailWarning": "Nhắc nhở sẽ không được gửi nếu không có địa chỉ email.",
+	"next": "Tiếp theo",
+	"back": "Quay lại",
+	"bookingSummary": "Tóm tắt đặt lịch",
+	"staff": "Nhân viên"
 }

@@ -49,8 +49,8 @@
 	"blockTimeModal": {
 		"title": "Заблокировать время",
 		"blockFor": "Заблокировать для:",
-		"entireSalon": "Весь салон",
-		"specificStaffMember": "Конкретный сотрудник",
+		"entireSalon": "Салон",
+		"specificStaffMember": "Сотрудник",
 		"selectStaffMember": "Выбрать сотрудника",
 		"noStaffMembersFound": "Сотрудники не найдены",
 		"selectAStaffMember": "Выберите сотрудника",

@@ -12,8 +12,8 @@
 	"blockTimeModal": {
 		"title": "Block Time",
 		"blockFor": "Block for:",
-		"entireSalon": "Entire Salon",
-		"specificStaffMember": "Specific Staff Member",
+		"entireSalon": "Salon",
+		"specificStaffMember": "Staff Member",
 		"selectStaffMember": "Select Staff Member",
 		"noStaffMembersFound": "No staff members found",
 		"selectAStaffMember": "Select a staff member",

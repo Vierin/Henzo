@@ -26,16 +26,26 @@ export default function CalendarView({
 	onDateClick,
 }: CalendarViewProps) {
 	const t = useTranslation();
-	
+
 	const monthNames = [
-		'january', 'february', 'march', 'april', 'may', 'june',
-		'july', 'august', 'september', 'october', 'november', 'december'
+		'january',
+		'february',
+		'march',
+		'april',
+		'may',
+		'june',
+		'july',
+		'august',
+		'september',
+		'october',
+		'november',
+		'december',
 	];
-	
-	const weekdayShort = [
-		'sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'
-	];
-	
+
+	// Weekday short keys matching JavaScript Date.getDay() order (0=Sunday, 1=Monday, etc.)
+	// Maps to weekdays.json short keys: sun, mon, tue, wed, thu, fri, sat
+	const weekdayShortKeys = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'];
+
 	const getMonthName = (month: number, year: number) => {
 		const monthKey = monthNames[month];
 		const monthName = t(`months.${monthKey}`);
@@ -156,7 +166,7 @@ export default function CalendarView({
 
 				{/* Calendar Grid */}
 				<div className="grid grid-cols-7 gap-1 mb-2" role="rowgroup">
-					{weekdayShort.map((dayKey, index) => (
+					{weekdayShortKeys.map((dayKey, index) => (
 						<div
 							key={dayKey}
 							className="p-2 text-center text-sm font-medium text-gray-500"

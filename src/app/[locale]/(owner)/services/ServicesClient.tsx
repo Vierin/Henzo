@@ -634,7 +634,7 @@ export default function ServicesClient() {
 												title="Edit service"
 											>
 												<svg
-													className="w-4 h-4"
+													className="w-5 h-5 sm:w-4 sm:h-4 "
 													fill="none"
 													stroke="currentColor"
 													viewBox="0 0 24 24"
@@ -653,7 +653,7 @@ export default function ServicesClient() {
 												title="Delete service"
 											>
 												<svg
-													className="w-4 h-4"
+													className="w-5 h-5 sm:w-4 sm:h-4 "
 													fill="none"
 													stroke="currentColor"
 													viewBox="0 0 24 24"

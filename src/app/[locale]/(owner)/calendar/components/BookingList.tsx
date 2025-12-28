@@ -128,7 +128,7 @@ export default function BookingList({
 						aria-label={`${t('owner.dashboard.edit')} booking for ${booking.user?.name || t('owner.calendar.client')}`}
 					>
 						<svg
-							className="w-4 h-4"
+							className="w-5 h-5 sm:w-4 sm:h-4 "
 							fill="none"
 							stroke="currentColor"
 							viewBox="0 0 24 24"
@@ -149,7 +149,7 @@ export default function BookingList({
 						aria-label={`${t('owner.dashboard.cancel')} booking for ${booking.user?.name || t('owner.calendar.client')}`}
 					>
 						<svg
-							className="w-4 h-4"
+							className="w-5 h-5 sm:w-4 sm:h-4 "
 							fill="none"
 							stroke="currentColor"
 							viewBox="0 0 24 24"
@@ -626,7 +626,8 @@ export default function BookingList({
 						{/* Mobile: Show current page and total */}
 						<div className="sm:hidden flex items-center gap-2 text-sm text-gray-700">
 							<span>
-								{t('owner.calendar.page')} {currentPage} {t('owner.calendar.of')} {totalPages}
+								{t('owner.calendar.page')} {currentPage}{' '}
+								{t('owner.calendar.of')} {totalPages}
 							</span>
 						</div>
 

@@ -261,3 +261,146 @@ main {
 	box-shadow: 0 0 0 2px rgba(255, 91, 91, 0.2) !important;
 	outline: none !important;
 }
+
+/* Ant Design TimePicker - брендовые цвета */
+.ant-picker {
+	border-color: #d1d5db !important;
+}
+
+.ant-picker:hover,
+.ant-picker-focused {
+	border-color: #ff5b5b !important;
+	box-shadow: 0 0 0 2px rgba(255, 91, 91, 0.2) !important;
+}
+
+.ant-picker-input > input {
+	color: #374151 !important;
+}
+
+.ant-picker-input > input::placeholder {
+	color: #9ca3af !important;
+}
+
+/* Ant Design TimePicker панель */
+.ant-picker-dropdown {
+	z-index: 9999 !important;
+}
+
+.ant-picker-time-panel-column > li.ant-picker-time-panel-cell-selected {
+	background-color: #ff5b5b !important;
+	color: white !important;
+}
+
+.ant-picker-time-panel-column > li.ant-picker-time-panel-cell-selected:hover {
+	background-color: #e04a4a !important;
+}
+
+.ant-picker-time-panel-column > li:hover {
+	background-color: rgba(255, 91, 91, 0.1) !important;
+	color: #ff5b5b !important;
+}
+
+/* Ant Design TimePicker активные элементы */
+.ant-picker-time-panel-column > li.ant-picker-time-panel-cell-selected .ant-picker-time-panel-cell-inner {
+	background-color: #ff5b5b !important;
+	color: white !important;
+}
+
+.ant-picker-time-panel-column > li.ant-picker-time-panel-cell-selected .ant-picker-time-panel-cell-inner:hover {
+	background-color: #e04a4a !important;
+}
+
+/* Ant Design TimePicker фокус */
+.ant-picker-focused {
+	border-color: #ff5b5b !important;
+	box-shadow: 0 0 0 2px rgba(255, 91, 91, 0.2) !important;
+}
+
+/* Переопределение синих цветов в ant design */
+.ant-picker-time-panel-column > li.ant-picker-time-panel-cell-selected {
+	background: #ff5b5b !important;
+}
+
+.ant-picker-time-panel-column > li.ant-picker-time-panel-cell-selected .ant-picker-time-panel-cell-inner {
+	background: #ff5b5b !important;
+	color: white !important;
+}
+
+/* Hover состояния */
+.ant-picker-time-panel-column > li:hover .ant-picker-time-panel-cell-inner {
+	background-color: rgba(255, 91, 91, 0.1) !important;
+	color: #ff5b5b !important;
+}
+
+/* Ant Design TimePicker кнопки (OK, Cancel) */
+.ant-picker-footer .ant-btn-primary {
+	background-color: #ff5b5b !important;
+	border-color: #ff5b5b !important;
+	color: white !important;
+}
+
+.ant-picker-footer .ant-btn-primary:hover,
+.ant-picker-footer .ant-btn-primary:focus {
+	background-color: #e04a4a !important;
+	border-color: #e04a4a !important;
+	color: white !important;
+}
+
+.ant-picker-footer .ant-btn-primary:active {
+	background-color: #c93a3a !important;
+	border-color: #c93a3a !important;
+}
+
+/* Общие кнопки ant design в панели выбора времени */
+.ant-picker-dropdown .ant-btn-primary {
+	background-color: #ff5b5b !important;
+	border-color: #ff5b5b !important;
+	color: white !important;
+}
+
+.ant-picker-dropdown .ant-btn-primary:hover,
+.ant-picker-dropdown .ant-btn-primary:focus {
+	background-color: #e04a4a !important;
+	border-color: #e04a4a !important;
+	color: white !important;
+}
+
+.ant-picker-dropdown .ant-btn-primary:active {
+	background-color: #c93a3a !important;
+	border-color: #c93a3a !important;
+}
+
+/* Переопределение всех синих кнопок в ant design */
+.ant-picker-dropdown .ant-btn-primary.ant-btn-primary {
+	background: #ff5b5b !important;
+	border-color: #ff5b5b !important;
+}
+
+.ant-picker-dropdown .ant-btn-primary.ant-btn-primary:hover {
+	background: #e04a4a !important;
+	border-color: #e04a4a !important;
+}
+
+/* Переопределение CSS переменных ant design для кнопок */
+:root {
+	--ant-primary-color: #ff5b5b !important;
+	--ant-primary-color-hover: #e04a4a !important;
+	--ant-primary-color-active: #c93a3a !important;
+}
+
+/* Более специфичные селекторы для кнопок в панели времени */
+.ant-picker-time-panel .ant-picker-footer .ant-btn-primary,
+.ant-picker-dropdown .ant-picker-footer .ant-btn-primary {
+	background-color: #ff5b5b !important;
+	border-color: #ff5b5b !important;
+	color: white !important;
+}
+
+.ant-picker-time-panel .ant-picker-footer .ant-btn-primary:hover,
+.ant-picker-dropdown .ant-picker-footer .ant-btn-primary:hover,
+.ant-picker-time-panel .ant-picker-footer .ant-btn-primary:focus,
+.ant-picker-dropdown .ant-picker-footer .ant-btn-primary:focus {
+	background-color: #e04a4a !important;
+	border-color: #e04a4a !important;
+	color: white !important;
+}
