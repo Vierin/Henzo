@@ -5,6 +5,7 @@ import { usePathname } from 'next/navigation';
 import Link from 'next/link';
 import { useEffect } from 'react';
 import { useAuthStore } from '@/stores/authStore';
+import Footer from '@/components/Footer';
 
 export default function AdminLayout({
 	children,
@@ -75,36 +76,34 @@ export default function AdminLayout({
 
 	return (
 		<ProtectedRoute allowedRoles={['ADMIN']}>
-			<div className="min-h-screen bg-gray-50">
+			<div className="min-h-screen bg-[#fff7f6]">
 				<div className="flex">
 					{/* Fixed Sidebar */}
-					<aside className="fixed left-0 top-0 w-64 h-screen bg-white shadow-sm z-10 flex flex-col">
+					<aside className="fixed left-0 top-0 w-64 h-screen bg-white shadow-sm border-r border-gray-200 z-10 flex flex-col">
 						{/* Logo */}
-						<div className="px-6 py-6">
-							<h1 className="text-2xl font-bold text-gray-900">Henzo</h1>
+						<div className="px-6 py-6 border-b border-gray-200">
+							<h1 className="text-2xl font-bold text-gray-900">Henzo Admin</h1>
 						</div>
 
 						{/* Navigation */}
-						<nav className="px-4 flex-1">
+						<nav className="px-4 py-6 flex-1">
 							<div className="space-y-2">
 								{navigationItems.map((item) => {
-									const isActive = pathname === item.href;
+									const isActive = pathname.includes(item.href);
 									return (
 										<Link
 											key={item.name}
 											href={item.href}
-											className={`flex items-center px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
+											className={`flex items-center gap-3 px-3 py-2 rounded-lg transition-colors ${
 												isActive
-													? 'bg-red-50 text-[#ff5b5b] border-r-2 border-[#ff5b5b]'
+													? 'bg-[#ea4b4b] text-white'
 													: 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
 											}`}
 										>
-											<span
-												className={`mr-3 ${isActive ? 'text-[#ff5b5b]' : ''}`}
-											>
+											<span className="flex-shrink-0">
 												{item.icon}
 											</span>
-											{item.name}
+											<span className="font-medium">{item.name}</span>
 										</Link>
 									);
 								})}
@@ -112,16 +111,17 @@ export default function AdminLayout({
 						</nav>
 
 						{/* Logout at bottom */}
-						<div className="px-4 py-4">
+						<div className="px-4 py-4 border-t border-gray-200">
 							<button
 								onClick={async () => {
 									const { logout } = useAuthStore.getState();
 									await logout();
+									window.location.href = '/';
 								}}
-								className="flex items-center w-full px-4 py-2 text-sm font-medium text-gray-600 hover:bg-gray-50 rounded-lg transition-colors"
+								className="flex items-center gap-3 w-full px-3 py-2 text-gray-600 hover:bg-red-50 hover:text-red-600 rounded-lg transition-colors"
 							>
 								<svg
-									className="w-5 h-5 mr-3"
+									className="w-5 h-5"
 									fill="none"
 									stroke="currentColor"
 									viewBox="0 0 24 24"
@@ -133,13 +133,18 @@ export default function AdminLayout({
 										d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"
 									/>
 								</svg>
-								Logout
+								<span className="font-medium">Logout</span>
 							</button>
 						</div>
 					</aside>
 
 					{/* Main Content */}
-					<main className="flex-1 p-8 ml-64">{children}</main>
+					<main className="flex-1 p-4 md:p-8 ml-64 flex flex-col min-h-screen">
+						<div className="flex-1">{children}</div>
+						<div className="-mx-4 md:-mx-8 mt-auto">
+							<Footer />
+						</div>
+					</main>
 				</div>
 			</div>
 		</ProtectedRoute>

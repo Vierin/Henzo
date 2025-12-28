@@ -36,16 +36,20 @@ interface Salon {
 	logo?: string;
 	photos: string[];
 	workingHours?: any;
-	owner: {
+	owner?: {
 		id: string;
 		name?: string;
 		email: string;
 	};
-	_count: {
+	_count?: {
 		bookings: number;
 		reviews: number;
 		staff: number;
 		services: number;
+	};
+	subscription?: {
+		type: 'FREEMIUM' | 'BASIC' | 'ENTERPRISE';
+		status: string;
 	};
 	createdAt: string;
 }
@@ -96,17 +100,21 @@ export default function AdminSalons() {
 			filtered = filtered.filter(
 				(salon) =>
 					salon.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-					salon.owner.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-					salon.owner.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+					salon.owner?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+					salon.owner?.email
+						?.toLowerCase()
+						.includes(searchTerm.toLowerCase()) ||
 					salon.address?.toLowerCase().includes(searchTerm.toLowerCase())
 			);
 		}
 
 		// Status filter (assuming active = has bookings, inactive = no bookings)
 		if (statusFilter === 'active') {
-			filtered = filtered.filter((salon) => salon._count.bookings > 0);
+			filtered = filtered.filter((salon) => (salon._count?.bookings || 0) > 0);
 		} else if (statusFilter === 'inactive') {
-			filtered = filtered.filter((salon) => salon._count.bookings === 0);
+			filtered = filtered.filter(
+				(salon) => (salon._count?.bookings || 0) === 0
+			);
 		}
 
 		// Sort
@@ -124,20 +132,20 @@ export default function AdminSalons() {
 					bValue = new Date(b.createdAt).getTime();
 					break;
 				case 'bookings':
-					aValue = a._count.bookings;
-					bValue = b._count.bookings;
+					aValue = a._count?.bookings ?? 0;
+					bValue = b._count?.bookings ?? 0;
 					break;
 				case 'services':
-					aValue = a._count.services;
-					bValue = b._count.services;
+					aValue = a._count?.services ?? 0;
+					bValue = b._count?.services ?? 0;
 					break;
 				case 'staff':
-					aValue = a._count.staff;
-					bValue = b._count.staff;
+					aValue = a._count?.staff ?? 0;
+					bValue = b._count?.staff ?? 0;
 					break;
 				case 'reviews':
-					aValue = a._count.reviews;
-					bValue = b._count.reviews;
+					aValue = a._count?.reviews ?? 0;
+					bValue = b._count?.reviews ?? 0;
 					break;
 				default:
 					aValue = a.name.toLowerCase();
@@ -187,14 +195,16 @@ export default function AdminSalons() {
 	return (
 		<div className="space-y-6">
 			<div className="flex justify-between items-center">
-				<h1 className="text-3xl font-bold text-gray-900">{t('salon.allSalons')}</h1>
+				<h1 className="text-3xl font-bold text-gray-900">
+					{t('salon.allSalons')}
+				</h1>
 				<div className="text-sm text-gray-500">
 					Showing: {filteredSalons.length} of {salons.length} salons
 				</div>
 			</div>
 
 			{/* Filters and Sorting */}
-			<div className="bg-white p-6 rounded-lg shadow-sm border">
+			<div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
 				<div className="grid grid-cols-1 md:grid-cols-4 gap-4">
 					{/* Search */}
 					<div>
@@ -351,7 +361,7 @@ export default function AdminSalons() {
 								setSortBy('createdAt');
 								setSortOrder('desc');
 							}}
-							className="text-sm text-[#ff5b5b] hover:text-[#ff4545] font-medium"
+							className="px-4 py-2 text-sm text-[#ff5b5b] hover:text-white hover:bg-[#ff5b5b] font-medium border border-[#ff5b5b] rounded-lg transition-colors"
 						>
 							Clear all filters
 						</button>
@@ -387,19 +397,22 @@ export default function AdminSalons() {
 												</div>
 												<div className="mt-1">
 													<p className="text-xs text-gray-500">
-														Owner: {salon.owner.name || salon.owner.email}
+														Owner:{' '}
+														{salon.owner?.name ||
+															salon.owner?.email ||
+															'Unknown'}
 													</p>
 												</div>
 											</div>
 										</div>
 										<div className="flex items-center space-x-6">
 											<div className="text-sm text-gray-500">
-												<div>Bookings: {salon._count.bookings}</div>
-												<div>Services: {salon._count.services}</div>
+												<div>Bookings: {salon._count?.bookings ?? 0}</div>
+												<div>Services: {salon._count?.services ?? 0}</div>
 											</div>
 											<div className="text-sm text-gray-500">
-												<div>Staff: {salon._count.staff}</div>
-												<div>Reviews: {salon._count.reviews}</div>
+												<div>Staff: {salon._count?.staff ?? 0}</div>
+												<div>Reviews: {salon._count?.reviews ?? 0}</div>
 											</div>
 											<div className="text-sm text-gray-500">
 												<div>
@@ -411,11 +424,11 @@ export default function AdminSalons() {
 											<div className="flex space-x-2">
 												<button
 													onClick={() => handleViewDetails(salon)}
-													className="text-blue-600 hover:text-blue-900 text-sm font-medium"
+													className="px-3 py-1.5 text-sm font-medium text-[#ff5b5b] hover:text-white hover:bg-[#ff5b5b] border border-[#ff5b5b] rounded-lg transition-colors"
 												>
 													View Details
 												</button>
-												<button className="text-green-600 hover:text-green-900 text-sm font-medium">
+												<button className="px-3 py-1.5 text-sm font-medium text-gray-700 hover:text-white hover:bg-gray-700 border border-gray-300 rounded-lg transition-colors">
 													Edit
 												</button>
 											</div>
@@ -430,7 +443,7 @@ export default function AdminSalons() {
 
 			{/* Salon Details Modal */}
 			{isDetailModalOpen && selectedSalon && (
-				<div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+				<div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
 					<div className="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
 						<div className="p-6">
 							{/* Modal Header */}
@@ -464,15 +477,28 @@ export default function AdminSalons() {
 											<div className="flex flex-wrap gap-2">
 												<span
 													className={`px-2 py-1 text-xs font-medium rounded-full ${
-														selectedSalon._count.bookings > 0
+														(selectedSalon._count?.bookings ?? 0) > 0
 															? 'bg-green-100 text-green-800'
 															: 'bg-gray-100 text-gray-800'
 													}`}
 												>
-													{selectedSalon._count.bookings > 0
+													{(selectedSalon._count?.bookings ?? 0) > 0
 														? 'Active'
 														: 'Inactive'}
 												</span>
+												{selectedSalon.subscription && (
+													<span
+														className={`px-2 py-1 text-xs font-medium rounded-full ${
+															selectedSalon.subscription.type === 'ENTERPRISE'
+																? 'bg-purple-100 text-purple-800'
+																: selectedSalon.subscription.type === 'BASIC'
+																	? 'bg-blue-100 text-blue-800'
+																	: 'bg-gray-100 text-gray-800'
+														}`}
+													>
+														{selectedSalon.subscription.type}
+													</span>
+												)}
 											</div>
 										</div>
 									</div>
@@ -538,11 +564,57 @@ export default function AdminSalons() {
 										<div className="space-y-2">
 											<div className="text-sm text-gray-600">
 												<span className="font-medium">Name:</span>{' '}
-												{selectedSalon.owner.name || 'Not provided'}
+												{selectedSalon.owner?.name || 'Not provided'}
 											</div>
 											<div className="text-sm text-gray-600">
 												<span className="font-medium">Email:</span>{' '}
-												{selectedSalon.owner.email}
+												{selectedSalon.owner?.email || 'Not provided'}
+											</div>
+										</div>
+									</div>
+
+									{/* Subscription Information */}
+									<div className="bg-gray-50 rounded-lg p-4">
+										<h4 className="text-sm font-medium text-gray-900 mb-3">
+											Subscription
+										</h4>
+										<div className="space-y-2">
+											<div className="text-sm text-gray-600">
+												<span className="font-medium">Type:</span>{' '}
+												{selectedSalon.subscription?.type ? (
+													<span
+														className={`px-2 py-0.5 text-xs font-medium rounded ${
+															selectedSalon.subscription.type === 'ENTERPRISE'
+																? 'bg-purple-100 text-purple-800'
+																: selectedSalon.subscription.type === 'BASIC'
+																	? 'bg-blue-100 text-blue-800'
+																	: 'bg-gray-100 text-gray-800'
+														}`}
+													>
+														{selectedSalon.subscription.type}
+													</span>
+												) : (
+													<span className="text-gray-400">Not assigned</span>
+												)}
+											</div>
+											<div className="text-sm text-gray-600">
+												<span className="font-medium">Status:</span>{' '}
+												{selectedSalon.subscription?.status ? (
+													<span
+														className={`px-2 py-0.5 text-xs font-medium rounded ${
+															selectedSalon.subscription.status === 'ACTIVE'
+																? 'bg-green-100 text-green-800'
+																: selectedSalon.subscription.status ===
+																	  'INACTIVE'
+																	? 'bg-gray-100 text-gray-800'
+																	: 'bg-red-100 text-red-800'
+														}`}
+													>
+														{selectedSalon.subscription.status}
+													</span>
+												) : (
+													<span className="text-gray-400">Unknown</span>
+												)}
 											</div>
 										</div>
 									</div>
@@ -561,7 +633,7 @@ export default function AdminSalons() {
 													<Calendar className="w-5 h-5 text-blue-600" />
 												</div>
 												<div className="text-2xl font-bold text-gray-900">
-													{selectedSalon._count.bookings}
+													{selectedSalon._count?.bookings ?? 0}
 												</div>
 												<div className="text-xs text-gray-600">Bookings</div>
 											</div>
@@ -570,7 +642,7 @@ export default function AdminSalons() {
 													<Scissors className="w-5 h-5 text-green-600" />
 												</div>
 												<div className="text-2xl font-bold text-gray-900">
-													{selectedSalon._count.services}
+													{selectedSalon._count?.services ?? 0}
 												</div>
 												<div className="text-xs text-gray-600">Services</div>
 											</div>
@@ -579,7 +651,7 @@ export default function AdminSalons() {
 													<Users className="w-5 h-5 text-[#ff5b5b]" />
 												</div>
 												<div className="text-2xl font-bold text-gray-900">
-													{selectedSalon._count.staff}
+													{selectedSalon._count?.staff ?? 0}
 												</div>
 												<div className="text-xs text-gray-600">Staff</div>
 											</div>
@@ -588,7 +660,7 @@ export default function AdminSalons() {
 													<Star className="w-5 h-5 text-yellow-600" />
 												</div>
 												<div className="text-2xl font-bold text-gray-900">
-													{selectedSalon._count.reviews}
+													{selectedSalon._count?.reviews ?? 0}
 												</div>
 												<div className="text-xs text-gray-600">Reviews</div>
 											</div>
@@ -659,11 +731,11 @@ export default function AdminSalons() {
 							<div className="mt-8 pt-6 border-t border-gray-200 flex justify-end space-x-3">
 								<button
 									onClick={handleCloseModal}
-									className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 transition-colors"
+									className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors"
 								>
 									Close
 								</button>
-								<button className="px-4 py-2 bg-[#ff5b5b] text-white rounded-md hover:bg-[#ff4545] transition-colors">
+								<button className="px-4 py-2 bg-[#ff5b5b] text-white rounded-lg hover:bg-[#ea4b4b] transition-colors font-medium">
 									Edit Salon
 								</button>
 							</div>

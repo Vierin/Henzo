@@ -118,6 +118,9 @@ export default function BlockTimeModal({
 	);
 	const [selectedStaffIdForReschedule, setSelectedStaffIdForReschedule] =
 		useState('');
+	const [selectedQuickPreset, setSelectedQuickPreset] = useState<string | null>(
+		null
+	);
 
 	// Conflict detection state
 	const [showConflicts, setShowConflicts] = useState(false);
@@ -205,6 +208,7 @@ export default function BlockTimeModal({
 			setSelectedStaffIdForReschedule('');
 			setShowConflicts(false);
 			setConflicts([]);
+			setSelectedQuickPreset(null);
 		}
 	}, [isOpen]);
 
@@ -584,8 +588,14 @@ export default function BlockTimeModal({
 								onClick={() => {
 									setStartTime('00:00');
 									setEndTime('24:00');
+									setSelectedQuickPreset('fullDay');
 								}}
-								className="px-3 py-1.5 text-sm border border-[#ff5b5b] bg-[#fff7f6] text-[#ff5b5b] rounded-lg hover:bg-[#ff5b5b] hover:text-white transition-colors"
+								className={cn(
+									'px-3 py-1.5 text-sm border border-[#ff5b5b] rounded-lg transition-colors',
+									selectedQuickPreset === 'fullDay'
+										? 'bg-[#ff5b5b] text-white'
+										: 'bg-[#fff7f6] text-[#ff5b5b] hover:bg-[#ff5b5b] hover:text-white'
+								)}
 							>
 								{t('owner.calendar.blockTimeModal.fullDay')}
 							</button>
@@ -599,8 +609,14 @@ export default function BlockTimeModal({
 									const midHour = Math.floor((startHour + 12) / 2);
 									setStartTime(`${startHour.toString().padStart(2, '0')}:00`);
 									setEndTime(`${midHour.toString().padStart(2, '0')}:00`);
+									setSelectedQuickPreset('morning');
 								}}
-								className="px-3 py-1.5 text-sm border border-[#ff5b5b] bg-[#fff7f6] text-[#ff5b5b] rounded-lg hover:bg-[#ff5b5b] hover:text-white transition-colors"
+								className={cn(
+									'px-3 py-1.5 text-sm border border-[#ff5b5b] rounded-lg transition-colors',
+									selectedQuickPreset === 'morning'
+										? 'bg-[#ff5b5b] text-white'
+										: 'bg-[#fff7f6] text-[#ff5b5b] hover:bg-[#ff5b5b] hover:text-white'
+								)}
 							>
 								{t('owner.calendar.blockTimeModal.morning')}
 							</button>
@@ -614,8 +630,14 @@ export default function BlockTimeModal({
 									const midHour = Math.ceil((endHour + 8) / 2);
 									setStartTime(`${midHour.toString().padStart(2, '0')}:00`);
 									setEndTime(`${endHour.toString().padStart(2, '0')}:00`);
+									setSelectedQuickPreset('afternoon');
 								}}
-								className="px-3 py-1.5 text-sm border border-[#ff5b5b] bg-[#fff7f6] text-[#ff5b5b] rounded-lg hover:bg-[#ff5b5b] hover:text-white transition-colors"
+								className={cn(
+									'px-3 py-1.5 text-sm border border-[#ff5b5b] rounded-lg transition-colors',
+									selectedQuickPreset === 'afternoon'
+										? 'bg-[#ff5b5b] text-white'
+										: 'bg-[#fff7f6] text-[#ff5b5b] hover:bg-[#ff5b5b] hover:text-white'
+								)}
 							>
 								{t('owner.calendar.blockTimeModal.afternoon')}
 							</button>
@@ -624,8 +646,14 @@ export default function BlockTimeModal({
 								onClick={() => {
 									setStartTime('12:00');
 									setEndTime('13:00');
+									setSelectedQuickPreset('lunch');
 								}}
-								className="px-3 py-1.5 text-sm border border-[#ff5b5b] bg-[#fff7f6] text-[#ff5b5b] rounded-lg hover:bg-[#ff5b5b] hover:text-white transition-colors"
+								className={cn(
+									'px-3 py-1.5 text-sm border border-[#ff5b5b] rounded-lg transition-colors',
+									selectedQuickPreset === 'lunch'
+										? 'bg-[#ff5b5b] text-white'
+										: 'bg-[#fff7f6] text-[#ff5b5b] hover:bg-[#ff5b5b] hover:text-white'
+								)}
 							>
 								{t('owner.calendar.blockTimeModal.lunch')}
 							</button>
@@ -693,6 +721,7 @@ export default function BlockTimeModal({
 										const timeStr = formatDateToTime(date);
 										if (timeStr) {
 											setStartTime(timeStr);
+											setSelectedQuickPreset(null);
 										}
 									}}
 									format="HH:mm"
@@ -775,6 +804,7 @@ export default function BlockTimeModal({
 										const timeStr = formatDateToTime(date);
 										if (timeStr) {
 											setEndTime(timeStr);
+											setSelectedQuickPreset(null);
 										}
 									}}
 									format="HH:mm"

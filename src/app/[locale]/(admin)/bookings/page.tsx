@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useMemo } from 'react';
 import { apiClient } from '@/lib/api-client';
-import { formatDateSafe, formatTimeSafe } from '@/utils/date';
+import { formatTimeSafe, safeParseDate } from '@/utils/date';
 import { formatVND } from '@/utils/currency';
 import {
 	Select,
@@ -18,16 +18,16 @@ interface Booking {
 	status: string;
 	notes?: string;
 	createdAt: string;
-	salon: {
+	salon?: {
 		id: string;
 		name: string;
 	};
-	user: {
+	user?: {
 		id: string;
 		name?: string;
 		email: string;
 	};
-	service: {
+	service?: {
 		id: string;
 		name: string;
 		price: number;
@@ -77,10 +77,10 @@ export default function AdminBookings() {
 			const searchLower = searchTerm.toLowerCase();
 			filtered = filtered.filter(
 				(booking) =>
-					booking.user.name?.toLowerCase().includes(searchLower) ||
-					booking.user.email.toLowerCase().includes(searchLower) ||
-					booking.salon.name.toLowerCase().includes(searchLower) ||
-					booking.service.name.toLowerCase().includes(searchLower)
+					booking.user?.name?.toLowerCase().includes(searchLower) ||
+					booking.user?.email?.toLowerCase().includes(searchLower) ||
+					booking.salon?.name?.toLowerCase().includes(searchLower) ||
+					booking.service?.name?.toLowerCase().includes(searchLower)
 			);
 		}
 
@@ -100,16 +100,16 @@ export default function AdminBookings() {
 					bValue = new Date(b.time).getTime();
 					break;
 				case 'salon':
-					aValue = a.salon.name.toLowerCase();
-					bValue = b.salon.name.toLowerCase();
+					aValue = a.salon?.name?.toLowerCase() || '';
+					bValue = b.salon?.name?.toLowerCase() || '';
 					break;
 				case 'client':
-					aValue = (a.user.name || a.user.email).toLowerCase();
-					bValue = (b.user.name || b.user.email).toLowerCase();
+					aValue = (a.user?.name || a.user?.email || '').toLowerCase();
+					bValue = (b.user?.name || b.user?.email || '').toLowerCase();
 					break;
 				case 'service':
-					aValue = a.service.name.toLowerCase();
-					bValue = b.service.name.toLowerCase();
+					aValue = a.service?.name?.toLowerCase() || '';
+					bValue = b.service?.name?.toLowerCase() || '';
 					break;
 				default:
 					aValue = new Date(a.time).getTime();
@@ -172,7 +172,7 @@ export default function AdminBookings() {
 			</div>
 
 			{/* Filters and Sorting */}
-			<div className="bg-white p-6 rounded-lg shadow-sm border">
+			<div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
 				<div className="grid grid-cols-1 md:grid-cols-5 gap-4">
 					{/* Search */}
 					<div>
@@ -320,7 +320,7 @@ export default function AdminBookings() {
 									setSortBy('date');
 									setSortOrder('desc');
 								}}
-								className="w-full px-4 py-2 text-sm text-[#ff5b5b] hover:text-[#ff4545] font-medium border border-red-300 rounded-md hover:bg-red-50 transition-colors"
+								className="w-full px-4 py-2 text-sm text-[#ff5b5b] hover:text-white hover:bg-[#ff5b5b] font-medium border border-[#ff5b5b] rounded-lg transition-colors"
 							>
 								Clear Filters
 							</button>
@@ -345,7 +345,7 @@ export default function AdminBookings() {
 						</p>
 					</div>
 				) : (
-					<div className="px-4 py-5 sm:p-6">
+					<div className="px-4 py-5 sm:p-0">
 						<div className="overflow-x-auto">
 							<table className="min-w-full divide-y divide-gray-200">
 								<thead className="bg-gray-50">
@@ -377,27 +377,42 @@ export default function AdminBookings() {
 									{filteredAndSortedBookings.map((booking) => (
 										<tr key={booking.id} className="hover:bg-gray-50">
 											<td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-												{booking.salon.name}
+												{booking.salon?.name || 'Unknown Salon'}
 											</td>
 											<td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
 												<div>
 													<div className="font-medium text-gray-900">
-														{booking.user.name || 'Unknown'}
+														{booking.user?.name || 'Anonymous Client'}
 													</div>
-													<div className="text-gray-500">
-														{booking.user.email}
-													</div>
+													{booking.user?.email &&
+														!booking.user.email.includes('@anonymous.local') &&
+														!booking.user.email.startsWith('anonymous-') && (
+															<div className="text-gray-500">
+																{booking.user.email}
+															</div>
+														)}
 												</div>
 											</td>
 											<td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-												{booking.service.name}
+												{booking.service?.name || 'Unknown Service'}
 											</td>
 											<td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
 												{booking.staff?.name || 'Any'}
 											</td>
 											<td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
 												<div>
-													<div>{formatDateSafe(booking.time)}</div>
+													<div>
+														{safeParseDate(booking.time)
+															? safeParseDate(booking.time)!.toLocaleDateString(
+																	'ru-RU',
+																	{
+																		day: '2-digit',
+																		month: '2-digit',
+																		year: 'numeric',
+																	}
+																)
+															: 'Date not available'}
+													</div>
 													<div>{formatTimeSafe(booking.time)}</div>
 												</div>
 											</td>
@@ -409,7 +424,9 @@ export default function AdminBookings() {
 												</span>
 											</td>
 											<td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-												{formatVND(booking.service.price)}
+												{booking.service?.price
+													? formatVND(booking.service.price)
+													: 'N/A'}
 											</td>
 										</tr>
 									))}

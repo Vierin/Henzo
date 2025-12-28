@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { apiClient } from '@/lib/api-client';
-import { Line } from 'react-chartjs-2';
+import { Line, Pie } from 'react-chartjs-2';
 import {
 	Select,
 	SelectContent,
@@ -18,6 +18,7 @@ import {
 	LinearScale,
 	PointElement,
 	LineElement,
+	ArcElement,
 	Title,
 	Tooltip,
 	Legend,
@@ -48,6 +49,7 @@ ChartJS.register(
 	LinearScale,
 	PointElement,
 	LineElement,
+	ArcElement,
 	Title,
 	Tooltip,
 	Legend,
@@ -141,12 +143,12 @@ export default function AdminDashboard() {
 			</div>
 
 			{/* Key Metrics for MVP Validation */}
-			<div className="bg-gradient-to-r from-red-50 to-red-100 rounded-xl p-6 border-2 border-red-200">
+			<div className="bg-gradient-to-r from-[#fff7f6] to-[#ffe5e3] rounded-xl p-6 border border-[#ff5b5b]/20">
 				<h2 className="text-lg font-bold text-gray-900 mb-4">
-					🎯 MVP Validation Metrics
+					MVP Validation Metrics
 				</h2>
 				<div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-					<div className="bg-white rounded-lg p-4 shadow-sm">
+					<div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
 						<div className="text-sm text-gray-600 mb-1">Total Salons</div>
 						<div className="text-3xl font-bold text-gray-900">
 							{data.salons.total}
@@ -155,7 +157,7 @@ export default function AdminDashboard() {
 							+{data.salons.new} new
 						</div>
 					</div>
-					<div className="bg-white rounded-lg p-4 shadow-sm">
+					<div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
 						<div className="text-sm text-gray-600 mb-1">Active Salons</div>
 						<div className="text-3xl font-bold text-gray-900">
 							{data.salons.active}
@@ -165,7 +167,7 @@ export default function AdminDashboard() {
 							total
 						</div>
 					</div>
-					<div className="bg-white rounded-lg p-4 shadow-sm">
+					<div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
 						<div className="text-sm text-gray-600 mb-1">Total Bookings</div>
 						<div className="text-3xl font-bold text-gray-900">
 							{totalBookings}
@@ -174,7 +176,7 @@ export default function AdminDashboard() {
 							{data.bookings.completed} completed
 						</div>
 					</div>
-					<div className="bg-white rounded-lg p-4 shadow-sm">
+					<div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
 						<div className="text-sm text-gray-600 mb-1">Avg per Salon</div>
 						<div className="text-3xl font-bold text-gray-900">
 							{avgBookingsPerSalon}
@@ -186,74 +188,117 @@ export default function AdminDashboard() {
 
 			{/* Booking Status Distribution */}
 			<div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-				<div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
+				<div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200 hover:shadow-md transition-shadow">
 					<h2 className="text-lg font-bold text-gray-900 mb-4">
 						Booking Status Breakdown
 					</h2>
-					<div className="space-y-3">
+					<div className="flex items-center justify-center h-64">
+						<Pie
+							data={{
+								labels: ['Pending', 'Confirmed', 'Completed', 'Canceled'],
+								datasets: [
+									{
+										data: [
+											data.bookings.pending,
+											data.bookings.confirmed,
+											data.bookings.completed,
+											data.bookings.canceled,
+										],
+										backgroundColor: [
+											'rgba(234, 179, 8, 0.8)', // yellow-500
+											'rgba(34, 197, 94, 0.8)', // green-500
+											'rgba(59, 130, 246, 0.8)', // blue-500
+											'rgba(239, 68, 68, 0.8)', // red-500
+										],
+										borderColor: [
+											'rgb(234, 179, 8)',
+											'rgb(34, 197, 94)',
+											'rgb(59, 130, 246)',
+											'rgb(239, 68, 68)',
+										],
+										borderWidth: 2,
+									},
+								],
+							}}
+							options={{
+								responsive: true,
+								maintainAspectRatio: false,
+								plugins: {
+									legend: {
+										position: 'bottom',
+										labels: {
+											padding: 15,
+											font: {
+												size: 12,
+											},
+											usePointStyle: true,
+										},
+									},
+									tooltip: {
+										backgroundColor: '#1f2937',
+										titleColor: '#fff',
+										bodyColor: '#fff',
+										padding: 12,
+										callbacks: {
+											label: (context) => {
+												const label = context.label || '';
+												const value = context.parsed || 0;
+												const total = context.dataset.data.reduce(
+													(a: number, b: number) => a + b,
+													0
+												);
+												const percentage =
+													total > 0 ? ((value / total) * 100).toFixed(1) : 0;
+												return `${label}: ${value} (${percentage}%)`;
+											},
+										},
+									},
+								},
+							}}
+						/>
+					</div>
+					<div className="mt-4 grid grid-cols-2 gap-3 text-sm">
 						<div className="flex items-center justify-between">
 							<div className="flex items-center gap-2">
 								<div className="w-3 h-3 bg-yellow-500 rounded-full"></div>
-								<span className="text-sm text-gray-700">Pending</span>
+								<span className="text-gray-700">Pending</span>
 							</div>
-							<div className="text-right">
-								<div className="text-lg font-bold text-gray-900">
-									{data.bookings.pending}
-								</div>
-								<div className="text-xs text-gray-500">
-									{((data.bookings.pending / totalBookings) * 100).toFixed(1)}%
-								</div>
-							</div>
+							<span className="font-bold text-gray-900">
+								{data.bookings.pending}
+							</span>
 						</div>
 						<div className="flex items-center justify-between">
 							<div className="flex items-center gap-2">
 								<div className="w-3 h-3 bg-green-500 rounded-full"></div>
-								<span className="text-sm text-gray-700">Confirmed</span>
+								<span className="text-gray-700">Confirmed</span>
 							</div>
-							<div className="text-right">
-								<div className="text-lg font-bold text-gray-900">
-									{data.bookings.confirmed}
-								</div>
-								<div className="text-xs text-gray-500">
-									{((data.bookings.confirmed / totalBookings) * 100).toFixed(1)}
-									%
-								</div>
-							</div>
+							<span className="font-bold text-gray-900">
+								{data.bookings.confirmed}
+							</span>
 						</div>
 						<div className="flex items-center justify-between">
 							<div className="flex items-center gap-2">
 								<div className="w-3 h-3 bg-blue-500 rounded-full"></div>
-								<span className="text-sm text-gray-700">Completed</span>
+								<span className="text-gray-700">Completed</span>
 							</div>
-							<div className="text-right">
-								<div className="text-lg font-bold text-gray-900">
-									{data.bookings.completed}
-								</div>
-								<div className="text-xs text-gray-500">
-									{((data.bookings.completed / totalBookings) * 100).toFixed(1)}
-									%
-								</div>
-							</div>
+							<span className="font-bold text-gray-900">
+								{data.bookings.completed}
+							</span>
 						</div>
 						<div className="flex items-center justify-between">
 							<div className="flex items-center gap-2">
 								<div className="w-3 h-3 bg-red-500 rounded-full"></div>
-								<span className="text-sm text-gray-700">Canceled</span>
+								<span className="text-gray-700">Canceled</span>
 							</div>
-							<div className="text-right">
-								<div className="text-lg font-bold text-gray-900">
-									{data.bookings.canceled}
-								</div>
-								<div className="text-xs text-gray-500">
-									{((data.bookings.canceled / totalBookings) * 100).toFixed(1)}%
-								</div>
-							</div>
+							<span className="font-bold text-gray-900">
+								{data.bookings.canceled}
+							</span>
 						</div>
 					</div>
 				</div>
 
 				{/* Demand Signal */}
-				<div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
+				<div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200 hover:shadow-md transition-shadow">
 					<h2 className="text-lg font-bold text-gray-900 mb-4">
 						Demand Signals
 					</h2>
@@ -434,7 +479,7 @@ export default function AdminDashboard() {
 			{/* Top Services and Salons */}
 			<div className="grid grid-cols-1 md:grid-cols-2 gap-6">
 				{/* Top Services */}
-				<div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
+				<div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200 hover:shadow-md transition-shadow">
 					<h2 className="text-lg font-bold text-gray-900 mb-4">Top Services</h2>
 					<p className="text-sm text-gray-600 mb-4">
 						Most popular services by booking count
@@ -476,7 +521,7 @@ export default function AdminDashboard() {
 				</div>
 
 				{/* Top Salons */}
-				<div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
+				<div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200 hover:shadow-md transition-shadow">
 					<h2 className="text-lg font-bold text-gray-900 mb-4">Top Salons</h2>
 					<p className="text-sm text-gray-600 mb-4">
 						Most active salons by booking volume
@@ -584,37 +629,12 @@ export default function AdminDashboard() {
 						</div>
 					</div>
 				</div>
-				<div className="mt-4 p-4 bg-blue-50 rounded-lg">
+				<div className="mt-4 p-4 bg-blue-50 rounded-lg border border-blue-100">
 					<p className="text-sm text-blue-900">
 						<strong>💡 Tip:</strong> If you hit all 4 targets in 30 days,
 						there's clear demand for the platform. Time to scale!
 					</p>
 				</div>
-			</div>
-
-			{/* Action Items */}
-			<div className="bg-red-50 rounded-xl p-6 border border-red-200">
-				<h2 className="text-lg font-bold text-gray-900 mb-3">
-					🎯 Next Steps to Validate Demand
-				</h2>
-				<ul className="space-y-2">
-					<li className="flex items-start gap-2 text-sm text-gray-700">
-						<span className="text-[#ff5b5b] font-bold">1.</span>
-						<span>Contact salons with 0 bookings - understand barriers</span>
-					</li>
-					<li className="flex items-start gap-2 text-sm text-gray-700">
-						<span className="text-[#ff5b5b] font-bold">2.</span>
-						<span>Interview salons with 10+ bookings - find what works</span>
-					</li>
-					<li className="flex items-start gap-2 text-sm text-gray-700">
-						<span className="text-[#ff5b5b] font-bold">3.</span>
-						<span>Check cancellation reasons (high cancel rate = bad fit)</span>
-					</li>
-					<li className="flex items-start gap-2 text-sm text-gray-700">
-						<span className="text-[#ff5b5b] font-bold">4.</span>
-						<span>Double down on top service categories for marketing</span>
-					</li>
-				</ul>
 			</div>
 		</div>
 	);

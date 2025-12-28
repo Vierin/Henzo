@@ -114,7 +114,7 @@ export default function CalendarView({
 				Calendar View
 			</h2>
 
-			<div className="rounded-xl border border-[#f1d9d7] bg-white p-6">
+			<div className="rounded-xl max-w-4xl mx-auto border border-[#f1d9d7] bg-white p-6">
 				{/* Calendar Header */}
 				<div className="flex items-center justify-between mb-6">
 					<h3 className="text-lg font-semibold text-gray-900">
