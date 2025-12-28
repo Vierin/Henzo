@@ -2091,11 +2091,7 @@ export default function BookingModal({
 				staffId: staffId === 'any' ? undefined : staffId,
 				time: bookingDateTime,
 				salonId: finalSalonId,
-				notes: `Booking for ${
-					serviceToUse
-						? getLocalizedServiceName(serviceToUse, language)
-						: 'service'
-				}`,
+				// Don't add default notes - only include notes if user explicitly provided them
 			};
 
 			// Если владелец создает резервацию, добавляем данные клиента
@@ -2282,11 +2278,7 @@ export default function BookingModal({
 						serviceId: selectedService?.id,
 						staffId: staffId === 'any' ? undefined : staffId,
 						time: bookingDateTime,
-						notes: `Updated booking for ${
-							selectedService
-								? getLocalizedServiceName(selectedService, language)
-								: 'service'
-						}`,
+						// Don't add default notes - only include notes if user explicitly provided them
 					}),
 				}
 			);

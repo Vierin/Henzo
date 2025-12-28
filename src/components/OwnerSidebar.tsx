@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import { useQueryClient } from '@tanstack/react-query';
 import { useAuthStore } from '@/stores/authStore';
@@ -21,6 +21,9 @@ import {
 	Menu,
 	X,
 	LogOut,
+	ChevronDown,
+	ChevronUp,
+	CreditCard,
 } from 'lucide-react';
 import { useSalonId } from '@/hooks/useSalons';
 import { bookingKeys } from '@/hooks/useBookings';
@@ -50,6 +53,17 @@ export default function OwnerSidebar({
 	// Extract locale and path without locale
 	const currentLocale = extractLocaleFromPath(pathname) ?? 'en';
 	const pathNoLocale = stripLocaleFromPath(pathname);
+
+	// Auto-open settings dropdown if on settings pages
+	const isOnSettingsPage =
+		pathNoLocale.startsWith('/salon-info') ||
+		pathNoLocale.startsWith('/profile-settings');
+	const [isSettingsOpen, setIsSettingsOpen] = useState(isOnSettingsPage);
+
+	// Update dropdown state when pathname changes
+	useEffect(() => {
+		setIsSettingsOpen(isOnSettingsPage);
+	}, [isOnSettingsPage]);
 
 	// Prefetch data for different pages on hover
 	const prefetchPageData = async (page: string) => {
@@ -150,7 +164,7 @@ export default function OwnerSidebar({
 	// Helper function to render navigation items
 	const renderNavItem = (
 		href: string,
-		icon: React.ReactNode,
+		icon: React.ReactNode | null,
 		label: string,
 		isActive: boolean,
 		prefetchKey?: string
@@ -177,7 +191,7 @@ export default function OwnerSidebar({
 					}
 				}}
 			>
-				{icon}
+				{icon && <span>{icon}</span>}
 				<span className="font-medium">{label}</span>
 			</Link>
 		);
@@ -221,6 +235,13 @@ export default function OwnerSidebar({
 						'staff'
 					)}
 
+					{renderNavItem(
+						'/subscription',
+						<CreditCard className="w-5 h-5" />,
+						t('owner.dashboard.subscription'),
+						pathNoLocale.startsWith('/subscription')
+					)}
+
 					{/* {renderNavItem(
 						'/marketing',
 						<TrendingUp className="w-5 h-5" />,
@@ -228,19 +249,48 @@ export default function OwnerSidebar({
 						pathNoLocale.startsWith('/marketing')
 					)} */}
 
-					{renderNavItem(
-						'/salon-info',
-						<Settings className="w-5 h-5" />,
-						t('owner.dashboard.salonSettings'),
-						pathNoLocale.startsWith('/salon-info')
-					)}
+					{/* Settings Dropdown */}
+					<div className="space-y-1">
+						<button
+							onClick={() => setIsSettingsOpen(!isSettingsOpen)}
+							className={`flex items-center justify-between w-full px-3 py-2 rounded-lg transition-colors ${
+								pathNoLocale.startsWith('/salon-info') ||
+								pathNoLocale.startsWith('/profile-settings')
+									? 'bg-[#ea4b4b] text-white'
+									: 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+							}`}
+						>
+							<div className="flex items-center gap-3">
+								<Settings className="w-5 h-5" />
+								<span className="font-medium">
+									{t('owner.dashboard.settings') || 'Settings'}
+								</span>
+							</div>
+							{isSettingsOpen ? (
+								<ChevronUp className="w-4 h-4" />
+							) : (
+								<ChevronDown className="w-4 h-4" />
+							)}
+						</button>
 
-					{renderNavItem(
-						'/profile-settings',
-						<UserCircle className="w-5 h-5" />,
-						t('owner.dashboard.profileSettings'),
-						pathNoLocale.startsWith('/profile-settings')
-					)}
+						{isSettingsOpen && (
+							<div className="ml-8 space-y-1">
+								{renderNavItem(
+									'/salon-info',
+									null,
+									t('owner.dashboard.salonSettings'),
+									pathNoLocale.startsWith('/salon-info')
+								)}
+
+								{renderNavItem(
+									'/profile-settings',
+									null,
+									t('owner.dashboard.profileSettings'),
+									pathNoLocale.startsWith('/profile-settings')
+								)}
+							</div>
+						)}
+					</div>
 				</nav>
 
 				{/* Logout Button */}

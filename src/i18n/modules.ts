@@ -36,6 +36,7 @@ export type TranslationModule =
 	| 'owner/staffNew'
 	| 'owner/servicesNew'
 	| 'owner/feedback'
+	| 'owner/subscription'
 	// Client modules
 	| 'client/settings'
 	| 'client/dashboard'
@@ -82,6 +83,7 @@ export const moduleDependencies: Record<TranslationModule, TranslationModule[]> 
 	'owner/staffNew': ['core/common', 'shared/forms'],
 	'owner/servicesNew': ['core/common', 'shared/forms'],
 	'owner/feedback': ['core/common', 'shared/forms'],
+	'owner/subscription': ['core/common'],
 	
 	// Client - depend on core, shared
 	'client/settings': ['core/common', 'shared/forms'],

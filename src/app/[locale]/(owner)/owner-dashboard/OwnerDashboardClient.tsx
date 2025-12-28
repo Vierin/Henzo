@@ -16,7 +16,14 @@ import BookingModal from '@/components/BookingModal';
 import { Service, Booking } from '@/types';
 import { apiClient } from '@/lib/api-client';
 import toast from 'react-hot-toast';
-import { DollarSign, Users, CalendarCheck, TrendingUp, AlertCircle, X } from 'lucide-react';
+import {
+	DollarSign,
+	Users,
+	CalendarCheck,
+	TrendingUp,
+	AlertCircle,
+	X,
+} from 'lucide-react';
 import Link from 'next/link';
 import { extractLocaleFromPath, withLocale } from '@/i18n/routing';
 import { safeParseDate } from '@/utils/date';
@@ -42,10 +49,13 @@ export default function OwnerDashboardClient() {
 	const pathname = usePathname();
 
 	const { salonId, isLoading, hasSalon, salonData } = useOwnerLayout();
-	
+
 	// Check if salon has photos - only show warning if photos array is empty or doesn't exist
-	const hasPhotos = salonData?.photos && Array.isArray(salonData.photos) && salonData.photos.length > 0;
-	
+	const hasPhotos =
+		salonData?.photos &&
+		Array.isArray(salonData.photos) &&
+		salonData.photos.length > 0;
+
 	const locale = extractLocaleFromPath(pathname) ?? 'en';
 	const settingsUrl = withLocale('/salon-info', locale as 'en' | 'ru' | 'vi');
 	const {
@@ -63,7 +73,7 @@ export default function OwnerDashboardClient() {
 	// Calculate stats using optimized hook
 	const stats = useDashboardStats(bookings, period);
 
-	// Upcoming bookings (next 7 days, not past, confirmed or pending)
+	// Upcoming bookings (next 7 days, not past, confirmed or pending, max 12)
 	const upcomingBookings = useMemo(() => {
 		const now = new Date();
 		const sevenDaysFromNow = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
@@ -84,7 +94,8 @@ export default function OwnerDashboardClient() {
 				const dateB = safeParseDate(b.time);
 				if (!dateA || !dateB) return 0;
 				return dateA.getTime() - dateB.getTime();
-			});
+			})
+			.slice(0, 12); // Limit to 12 bookings maximum
 	}, [bookings]);
 
 	// Handlers for bookings
@@ -219,7 +230,7 @@ export default function OwnerDashboardClient() {
 					</button>
 				</div>
 			)}
-			
+
 			{/* Header */}
 			<div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
 				<div>

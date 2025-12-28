@@ -127,35 +127,66 @@ export default function NewStaffPage() {
 
 			<div className="bg-white rounded-xl border border-[#f1d9d7] p-3 md:p-6">
 				<form onSubmit={handleSubmit} className="space-y-6">
-					{/* Photo Upload Section */}
-					<div>
-						<label className="block text-sm font-medium text-gray-700 mb-2">
-							{t('owner.staffNew.photo')}
-						</label>
-						<div className="flex flex-col sm:flex-row sm:items-center gap-4 sm:gap-6">
-							{/* Photo Preview */}
-							<div className="flex-shrink-0">
-								{photoPreview ? (
-									<div className="relative">
-										<Image
-											src={photoPreview}
-											alt="Staff preview"
-											width={80}
-											height={80}
-											className="w-20 h-20 rounded-full object-cover border-2 border-gray-200"
-										/>
-										<button
-											type="button"
-											onClick={removePhoto}
-											className="absolute -top-2 -right-2 w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center text-xs hover:bg-red-600"
-										>
-											×
-										</button>
-									</div>
-								) : (
-									<div className="w-20 h-20 rounded-full bg-gray-100 border-2 border-gray-200 flex items-center justify-center">
+					{/* Photo Upload Section - Hidden for beta */}
+					{false && (
+						<div>
+							<label className="block text-sm font-medium text-gray-700 mb-2">
+								{t('owner.staffNew.photo')}
+							</label>
+							<div className="flex flex-col sm:flex-row sm:items-center gap-4 sm:gap-6">
+								{/* Photo Preview */}
+								<div className="flex-shrink-0">
+									{photoPreview ? (
+										<div className="relative">
+											<Image
+												src={photoPreview}
+												alt="Staff preview"
+												width={80}
+												height={80}
+												className="w-20 h-20 rounded-full object-cover border-2 border-gray-200"
+											/>
+											<button
+												type="button"
+												onClick={removePhoto}
+												className="absolute -top-2 -right-2 w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center text-xs hover:bg-red-600"
+											>
+												×
+											</button>
+										</div>
+									) : (
+										<div className="w-20 h-20 rounded-full bg-gray-100 border-2 border-gray-200 flex items-center justify-center">
+											<svg
+												className="w-8 h-8 text-gray-400"
+												fill="none"
+												stroke="currentColor"
+												viewBox="0 0 24 24"
+											>
+												<path
+													strokeLinecap="round"
+													strokeLinejoin="round"
+													strokeWidth={2}
+													d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
+												/>
+											</svg>
+										</div>
+									)}
+								</div>
+
+								{/* Upload Button */}
+								<div className="flex-1">
+									<input
+										type="file"
+										id="photo"
+										accept="image/*"
+										onChange={handlePhotoChange}
+										className="hidden"
+									/>
+									<label
+										htmlFor="photo"
+										className="cursor-pointer inline-flex items-center justify-center gap-2 w-full sm:w-auto px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-[#ff5b5b]"
+									>
 										<svg
-											className="w-8 h-8 text-gray-400"
+											className="w-4 h-4"
 											fill="none"
 											stroke="currentColor"
 											viewBox="0 0 24 24"
@@ -164,49 +195,20 @@ export default function NewStaffPage() {
 												strokeLinecap="round"
 												strokeLinejoin="round"
 												strokeWidth={2}
-												d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
+												d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"
 											/>
 										</svg>
-									</div>
-								)}
-							</div>
-
-							{/* Upload Button */}
-							<div className="flex-1">
-								<input
-									type="file"
-									id="photo"
-									accept="image/*"
-									onChange={handlePhotoChange}
-									className="hidden"
-								/>
-								<label
-									htmlFor="photo"
-									className="cursor-pointer inline-flex items-center justify-center gap-2 w-full sm:w-auto px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-[#ff5b5b]"
-								>
-									<svg
-										className="w-4 h-4"
-										fill="none"
-										stroke="currentColor"
-										viewBox="0 0 24 24"
-									>
-										<path
-											strokeLinecap="round"
-											strokeLinejoin="round"
-											strokeWidth={2}
-											d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"
-										/>
-									</svg>
-									{photo
-										? t('owner.staffNew.changePhoto')
-										: t('owner.staffNew.uploadPhoto')}
-								</label>
-								<p className="text-xs text-gray-500 mt-1">
-									{t('owner.staffNew.photoFormat')}
-								</p>
+										{photo
+											? t('owner.staffNew.changePhoto')
+											: t('owner.staffNew.uploadPhoto')}
+									</label>
+									<p className="text-xs text-gray-500 mt-1">
+										{t('owner.staffNew.photoFormat')}
+									</p>
+								</div>
 							</div>
 						</div>
-					</div>
+					)}
 
 					<div>
 						<label className="block text-sm font-medium text-gray-700 mb-2">

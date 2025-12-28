@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 import toast from 'react-hot-toast';
 import EditServiceModal from '@/components/EditServiceModal';
 import { useServices, useDeleteService } from '@/hooks/useServices';
@@ -16,7 +16,8 @@ import { Service, ServiceGroup } from '@/types';
 import { formatVND } from '@/utils/currency';
 import { useQuery } from '@tanstack/react-query';
 import { apiClient } from '@/lib/api-client';
-import { useTranslation } from '@/contexts/LanguageContext';
+import { useTranslation, useLanguage } from '@/contexts/LanguageContext';
+import { extractLocaleFromPath } from '@/i18n/routing';
 import {
 	Select,
 	SelectContent,
@@ -27,6 +28,10 @@ import {
 
 export default function ServicesClient() {
 	const t = useTranslation();
+	const { language: contextLanguage } = useLanguage();
+	const pathname = usePathname();
+	const currentLang =
+		contextLanguage || extractLocaleFromPath(pathname) || 'en';
 	const [isEditModalOpen, setIsEditModalOpen] = useState(false);
 	const [selectedService, setSelectedService] = useState<Service | null>(null);
 	const [searchQuery, setSearchQuery] = useState('');
@@ -111,7 +116,50 @@ export default function ServicesClient() {
 	const getCategoryName = (categoryId?: number) => {
 		if (!categoryId) return null;
 		const category = categories.find((cat) => cat.id === categoryId);
-		return category?.name || null;
+		if (!category) return null;
+		return getCategoryTranslatedName(category, t);
+	};
+
+	// Helper function to get localized category name from service_categories (DB)
+	const getLocalizedCategoryName = (serviceCategory: any) => {
+		if (!serviceCategory) return null;
+		// Handle both serviceCategory and service_categories naming
+		const category = serviceCategory;
+		switch (currentLang) {
+			case 'vi':
+				return (
+					category.name_vn ||
+					category.nameVi ||
+					category.name_en ||
+					category.nameEn
+				);
+			case 'ru':
+				return (
+					category.name_ru ||
+					category.nameRu ||
+					category.name_en ||
+					category.nameEn
+				);
+			case 'en':
+				return category.name_en || category.nameEn;
+			default:
+				return category.name_en || category.nameEn;
+		}
+	};
+
+	// Helper function to get localized group name
+	const getLocalizedGroupName = (group: any) => {
+		if (!group) return '';
+		switch (currentLang) {
+			case 'vi':
+				return group.nameVi || group.name;
+			case 'ru':
+				return group.nameRu || group.name;
+			case 'en':
+				return group.nameEn || group.name;
+			default:
+				return group.name;
+		}
 	};
 
 	// Фильтрация и сортировка сервисов
@@ -319,7 +367,7 @@ export default function ServicesClient() {
 										value={group.id}
 										className="bg-white hover:bg-gray-50 focus:bg-gray-50 text-gray-900 cursor-pointer"
 									>
-										{group.name}
+										{getLocalizedGroupName(group)}
 									</SelectItem>
 								))}
 							</SelectContent>
@@ -412,7 +460,7 @@ export default function ServicesClient() {
 							{selectedCategory !== 'all' &&
 								` ${t('owner.services.inCategory')} "${getCategoryName(Number(selectedCategory)) || t('owner.services.unknown')}" ${t('owner.services.categoryLabel')}`}
 							{selectedGroup !== 'all' &&
-								` ${t('owner.services.inGroup')} "${groups.find((g) => g.id === selectedGroup)?.name || t('owner.services.unknown')}" ${t('owner.services.groupLabel')}`}
+								` ${t('owner.services.inGroup')} "${getLocalizedGroupName(groups.find((g) => g.id === selectedGroup)) || t('owner.services.unknown')}" ${t('owner.services.groupLabel')}`}
 						</p>
 					</div>
 				)}
@@ -544,7 +592,11 @@ export default function ServicesClient() {
 									>
 										<div className="font-semibold">{service.name}</div>
 										<div className="text-gray-600">
-											{getCategoryName(service.serviceCategoryId) ? (
+											{service.service_categories ? (
+												<span className="inline-flex items-center px-2 py-1 text-xs font-medium bg-gray-100 text-gray-700 rounded-full">
+													{getLocalizedCategoryName(service.service_categories)}
+												</span>
+											) : getCategoryName(service.serviceCategoryId) ? (
 												<span className="inline-flex items-center px-2 py-1 text-xs font-medium bg-gray-100 text-gray-700 rounded-full">
 													{getCategoryName(service.serviceCategoryId)}
 												</span>
@@ -557,7 +609,7 @@ export default function ServicesClient() {
 										<div className="text-gray-600">
 											{service.serviceGroup ? (
 												<span className="inline-flex items-center px-2 py-1 text-xs font-medium bg-blue-100 text-blue-700 rounded-full">
-													{service.serviceGroup.name}
+													{getLocalizedGroupName(service.serviceGroup)}
 												</span>
 											) : (
 												<span className="text-gray-400 italic">
@@ -671,14 +723,20 @@ export default function ServicesClient() {
 
 									<div className="flex items-center justify-between text-sm text-gray-600">
 										<div className="flex items-center gap-2 flex-wrap">
-											{getCategoryName(service.serviceCategoryId) && (
+											{service.service_categories ? (
 												<span className="inline-flex items-center px-2 py-1 text-xs font-medium bg-gray-100 text-gray-700 rounded-full">
-													{getCategoryName(service.serviceCategoryId)}
+													{getLocalizedCategoryName(service.service_categories)}
 												</span>
+											) : (
+												getCategoryName(service.serviceCategoryId) && (
+													<span className="inline-flex items-center px-2 py-1 text-xs font-medium bg-gray-100 text-gray-700 rounded-full">
+														{getCategoryName(service.serviceCategoryId)}
+													</span>
+												)
 											)}
 											{service.serviceGroup && (
 												<span className="inline-flex items-center px-2 py-1 text-xs font-medium bg-blue-100 text-blue-700 rounded-full">
-													{service.serviceGroup.name}
+													{getLocalizedGroupName(service.serviceGroup)}
 												</span>
 											)}
 										</div>

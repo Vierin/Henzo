@@ -32,31 +32,31 @@ export default function BookingDetailsModal({
 			case 'PENDING':
 				return (
 					<span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
-						{t('owner.pending')}
+						{t('owner.calendar.pending')}
 					</span>
 				);
 			case 'CONFIRMED':
 				return (
 					<span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-						{t('owner.confirmed')}
+						{t('owner.calendar.confirmed')}
 					</span>
 				);
 			case 'COMPLETED':
 				return (
 					<span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-100 dark:text-blue-800">
-						{t('owner.completed')}
+						{t('owner.calendar.completed')}
 					</span>
 				);
 			case 'CANCELED':
 				return (
 					<span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
-						{t('owner.cancelled')}
+						{t('owner.calendar.cancelled')}
 					</span>
 				);
 			case 'NOSHOW':
 				return (
 					<span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-orange-100 text-orange-800">
-						{t('owner.noShow')}
+						{t('owner.calendar.noShow')}
 					</span>
 				);
 			default:
@@ -196,8 +196,10 @@ export default function BookingDetailsModal({
 						)}
 					</div>
 
-					{/* Notes */}
-					{booking.notes && (
+					{/* Notes - only show if notes exist and are not default "Booking for..." notes */}
+					{booking.notes && 
+					 !booking.notes.startsWith('Booking for ') && 
+					 !booking.notes.startsWith('Updated booking for ') && (
 						<div>
 							<label className="text-xs font-medium text-gray-500 block mb-1">
 								{t('owner.calendar.notes')}
@@ -225,33 +227,33 @@ export default function BookingDetailsModal({
 							}}
 							className="px-3 py-1.5 text-xs font-medium text-white bg-[#ff5b5b] rounded-lg hover:bg-[#e04a4a] transition-colors"
 						>
-							{t('owner.edit')}
+							{t('owner.calendar.edit')}
 						</button>
 					)}
 					{canCancel && onCancel && (
 						<button
 							onClick={() => {
-								if (confirm(t('owner.areYouSureCancel'))) {
+								if (confirm(t('owner.calendar.areYouSureCancel'))) {
 									onCancel(booking.id);
 									onClose();
 								}
 							}}
 							className="px-3 py-1.5 text-xs font-medium text-white bg-red-600 rounded-lg hover:bg-red-700 transition-colors"
 						>
-							{t('owner.cancel')}
+							{t('owner.calendar.cancel')}
 						</button>
 					)}
 					{canMarkAsNoShow && onMarkAsNoShow && (
 						<button
 							onClick={() => {
-								if (confirm(t('owner.areYouSureNoShow'))) {
+								if (confirm(t('owner.calendar.areYouSureNoShow'))) {
 									onMarkAsNoShow(booking.id);
 									onClose();
 								}
 							}}
 							className="px-3 py-1.5 text-xs font-medium text-white bg-orange-600 rounded-lg hover:bg-orange-700 transition-colors"
 						>
-							{t('owner.markAsNoShow')}
+							{t('owner.calendar.markAsNoShow')}
 						</button>
 					)}
 				</div>

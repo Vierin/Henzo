@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 import { useCreateService } from '@/hooks/useServices';
 import {
 	useCategories,
@@ -17,7 +17,8 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from '@/components/ui/select';
-import { useTranslation } from '@/contexts/LanguageContext';
+import { useTranslation, useLanguage } from '@/contexts/LanguageContext';
+import { extractLocaleFromPath } from '@/i18n/routing';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -60,6 +61,9 @@ type ServiceFormData = {
 
 export default function NewServiceClient() {
 	const t = useTranslation();
+	const { language: contextLanguage } = useLanguage();
+	const pathname = usePathname();
+	const currentLang = contextLanguage || extractLocaleFromPath(pathname) || 'en';
 	const [step, setStep] = useState<1 | 2>(1);
 
 	// Form with validation
@@ -276,6 +280,21 @@ export default function NewServiceClient() {
 		(group: any) => group.id === formData.serviceGroupId
 	);
 
+	// Helper function to get localized group name
+	const getLocalizedGroupName = (group: any) => {
+		if (!group) return '';
+		switch (currentLang) {
+			case 'vi':
+				return group.nameVi || group.name;
+			case 'ru':
+				return group.nameRu || group.name;
+			case 'en':
+				return group.nameEn || group.name;
+			default:
+				return group.name;
+		}
+	};
+
 	const formatVND = (value: string | number) => {
 		const num = typeof value === 'string' ? Number(value) : value;
 		return new Intl.NumberFormat('vi-VN', {
@@ -297,11 +316,7 @@ export default function NewServiceClient() {
 	// Step 2: Confirmation screen
 	if (step === 2) {
 		return (
-			<main
-				role="main"
-				className="px-0 md:px-4 max-w-7xl mx-auto"
-				aria-labelledby="page-heading"
-			>
+			<div className="px-0 md:px-4 max-w-7xl mx-auto">
 				<div className="mb-8">
 					<button
 						onClick={() => setStep(1)}
@@ -434,7 +449,7 @@ export default function NewServiceClient() {
 									{t('owner.servicesNew.serviceGroup')}
 								</label>
 								<div className="bg-gray-50 rounded-md p-3 border border-gray-200">
-									<p className="text-gray-900">{selectedGroup.name}</p>
+									<p className="text-gray-900">{getLocalizedGroupName(selectedGroup)}</p>
 								</div>
 							</div>
 						)}
@@ -488,17 +503,13 @@ export default function NewServiceClient() {
 						</button>
 					</div>
 				</div>
-			</main>
+			</div>
 		);
 	}
 
 	// Step 1: Form
 	return (
-		<main
-			role="main"
-			aria-labelledby="page-heading"
-			className="px-0 md:px-4 max-w-7xl mx-auto"
-		>
+		<div className="px-0 md:px-4 max-w-7xl mx-auto">
 			<div className="mb-8">
 				<button
 					onClick={() => router.back()}
@@ -626,7 +637,7 @@ export default function NewServiceClient() {
 													value={group.id}
 													className="bg-white hover:bg-gray-50 focus:bg-gray-50 text-gray-900 cursor-pointer text-sm"
 												>
-													{group.name}
+													{getLocalizedGroupName(group)}
 												</SelectItem>
 											))}
 										</SelectContent>
@@ -1003,6 +1014,6 @@ export default function NewServiceClient() {
 					</div>
 				</div>
 			)}
-		</main>
+		</div>
 	);
 }

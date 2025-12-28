@@ -70,6 +70,7 @@
 	"clearSearch": "Clear search",
 	"areYouSureCancel": "Are you sure you want to cancel this booking?",
 	"areYouSureNoShow": "Are you sure you want to mark this booking as No-Show?",
+	"markAsNoShow": "Mark as No-Show",
 	"unknownService": "Unknown Service",
 	"min": "min",
 	"loadingCalendarData": "Loading calendar data...",

@@ -2,6 +2,7 @@
 
 import { ReactNode } from 'react';
 import { useTranslation } from '@/contexts/LanguageContext';
+import { ArrowDownRight, ArrowUpRight } from 'lucide-react';
 
 interface StatsCardProps {
 	title: string;
@@ -43,17 +44,25 @@ export default function StatsCard({
 				</div>
 
 				{trend && (
-					<div className="flex w-full items-center gap-1 mt-2">
-						<span
-							className={`text-xs flex items-center gap-1 sm:text-sm font-medium ${
-								trend.isPositive ? 'text-green-600' : 'text-red-600'
+					<div className="flex w-full items-center mt-2">
+						<div
+							className={`inline-flex items-center gap-1 px-2 py-1 rounded-md text-xs font-medium ${
+								trend.isPositive
+									? 'bg-green-50 text-green-700'
+									: 'bg-red-50 text-red-700'
 							}`}
 						>
-							{trend.isPositive ? '↑' : '↓'} {trend.value}
-						</span>
-						<span className="text-xs text-gray-500 hidden sm:inline">
-							{t('owner.dashboard.vsLastMonth')}
-						</span>
+							<span className="w-4 h-4">
+								{trend.isPositive ? (
+									<ArrowUpRight className="w-4 h-4 text-green-500" />
+								) : (
+									<ArrowDownRight className="w-4 h-4 text-red-500" />
+								)}
+							</span>
+							<span className="text-xs sm:text-sm font-medium">
+								{trend.value}
+							</span>
+						</div>
 					</div>
 				)}
 			</div>

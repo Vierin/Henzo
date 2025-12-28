@@ -140,7 +140,7 @@ export default function OwnerHeader() {
 									<button
 										key={language.code}
 										onClick={() => handleLanguageSelect(language)}
-										className={`w-full px-4 py-3 text-left hover:bg-gray-50 transition-colors flex items-center gap-3 first:rounded-t-lg last:rounded-b-lg ${
+										className={`w-full px-4 py-3 text-left hover:bg-[#ff5b5b]/30 transition-colors flex items-center gap-3 first:rounded-t-lg last:rounded-b-lg ${
 											currentLocale === language.code
 												? 'bg-[#ff5b5b] text-white'
 												: 'text-gray-700'

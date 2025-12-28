@@ -78,7 +78,8 @@ export function LanguageProvider({ children, initialDictionary }: LanguageProvid
 		pathNoLocale.startsWith('/staff') ||
 		pathNoLocale.startsWith('/calendar') ||
 		pathNoLocale.startsWith('/marketing') ||
-		pathNoLocale.startsWith('/profile-settings');
+		pathNoLocale.startsWith('/profile-settings') ||
+		pathNoLocale.startsWith('/subscription');
 	
 	const isClientPage = pathNoLocale.startsWith('/dashboard') ||
 		pathNoLocale.startsWith('/favorites') ||
@@ -128,6 +129,8 @@ export function LanguageProvider({ children, initialDictionary }: LanguageProvid
 		publicModules.push('core/weekdays');
 	} else if (pathNoLocale.startsWith('/marketing')) {
 		ownerModule = 'owner/marketing';
+	} else if (pathNoLocale.startsWith('/subscription')) {
+		ownerModule = 'owner/subscription';
 	}
 	
 	// Check for homepage (root path)

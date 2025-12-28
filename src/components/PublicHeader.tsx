@@ -176,7 +176,7 @@ function PublicHeaderContent() {
 												className={`w-full px-3 sm:px-4 py-2 sm:py-3 text-left transition-colors flex items-center gap-2 sm:gap-3 ${
 													selectedLanguage === language.code.toUpperCase()
 														? 'bg-[#ff5b5b] text-white hover:bg-[#e04a4a]'
-														: 'text-gray-700 hover:text-[#ff5b5b] hover:bg-[#fff7f6]'
+														: 'text-gray-700 hover:text-[#ff5b5b] hover:bg-[#ff5b5b]/30'
 												}`}
 											>
 												<span className="text-base sm:text-lg">

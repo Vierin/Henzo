@@ -1,0 +1,32 @@
+{
+	"title": "Subscription Management",
+	"subtitle": "Manage your tariffs and expand your business capabilities",
+	"loading": "Loading subscription information...",
+	"betaNotice": "Beta testing is currently underway until 03/31/2025. During this time, platform usage is completely free.",
+	"current": "CURRENT",
+	"recommended": "RECOMMENDED",
+	"perMonth": "month",
+	"activePlan": "Your active plan",
+	"switchTo": "Switch to {{plan}}",
+	"switching": "Switching...",
+	"switchSuccess": "Subscription plan updated successfully",
+	"switchError": "Failed to switch subscription plan",
+	"comingSoon": "Coming Soon",
+	"freemium": {
+		"masters": "Up to 5 masters",
+		"services": "Up to 40 services",
+		"analytics": "Basic analytics",
+		"photos": "Up to 3 salon photos",
+		"clientAccount": "Full-featured CRM system",
+		"emailSupport": "Email technical support"
+	},
+	"basic": {
+		"masters": "Up to 10 masters",
+		"services": "Up to 60 services",
+		"sms": "SMS notifications",
+		"analytics": "Financial analytics",
+		"crm": "Full-featured CRM system",
+		"prioritySupport": "Priority support"
+	}
+}
+

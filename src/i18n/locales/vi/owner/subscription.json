@@ -1,0 +1,32 @@
+{
+	"title": "Quản lý đăng ký",
+	"subtitle": "Quản lý gói dịch vụ và mở rộng khả năng kinh doanh của bạn",
+	"loading": "Đang tải thông tin đăng ký...",
+	"betaNotice": "Hiện đang trong giai đoạn thử nghiệm beta đến 31/03/2025. Trong thời gian này, việc sử dụng nền tảng hoàn toàn miễn phí.",
+	"current": "HIỆN TẠI",
+	"recommended": "ĐỀ XUẤT",
+	"perMonth": "tháng",
+	"activePlan": "Gói hiện tại của bạn",
+	"switchTo": "Chuyển sang {{plan}}",
+	"switching": "Đang chuyển...",
+	"switchSuccess": "Cập nhật gói dịch vụ thành công",
+	"switchError": "Không thể chuyển gói dịch vụ",
+	"comingSoon": "Sắp ra mắt",
+	"freemium": {
+		"masters": "Tối đa 5 thợ",
+		"services": "Tối đa 40 dịch vụ",
+		"analytics": "Phân tích cơ bản",
+		"photos": "Tối đa 3 ảnh salon",
+		"clientAccount": "Hệ thống CRM đầy đủ tính năng",
+		"emailSupport": "Hỗ trợ kỹ thuật qua email"
+	},
+	"basic": {
+		"masters": "Tối đa 10 thợ",
+		"services": "Tối đa 60 dịch vụ",
+		"sms": "Thông báo SMS",
+		"analytics": "Phân tích tài chính",
+		"crm": "Hệ thống CRM đầy đủ tính năng",
+		"prioritySupport": "Hỗ trợ ưu tiên"
+	}
+}
+

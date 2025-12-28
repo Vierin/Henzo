@@ -50,6 +50,12 @@ export interface ServiceResponseDto {
 	price: number;
 	salonId?: string;
 	serviceCategoryId?: number;
+	service_categories?: {
+		id: number;
+		name_en: string;
+		name_vn: string;
+		name_ru: string;
+	};
 	serviceSubcategoryId?: number | null;
 	tags?: Array<{
 		id: number;
