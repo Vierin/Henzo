@@ -79,5 +79,7 @@
 	"next": "Next",
 	"back": "Back",
 	"bookingSummary": "Booking Summary",
-	"staff": "Staff"
+	"staff": "Staff",
+	"anonymousClient": "Anonymous Client",
+	"staffNotAvailable": "The selected staff member is not available at this time. Please choose another time or staff member."
 }

@@ -4,6 +4,7 @@ import { Booking } from '@/types';
 import { formatDateSafe, formatDateShort, formatTimeSafe } from '@/utils/date';
 import { Search, X, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useTranslation } from '@/contexts/LanguageContext';
+import { useOwnerLayout } from '@/contexts/OwnerLayoutContext';
 import {
 	Select,
 	SelectContent,
@@ -54,6 +55,8 @@ export default function BookingList({
 	onPageChange,
 }: BookingListProps) {
 	const t = useTranslation();
+	const { salonData } = useOwnerLayout();
+	const salonTimezone = salonData?.timezone || 'Asia/Ho_Chi_Minh';
 
 	const getStatusBadge = (status: string) => {
 		switch (status) {
@@ -514,8 +517,20 @@ export default function BookingList({
 										{booking.service?.name || t('owner.unknownService')}
 									</div>
 									<div>{booking.staff?.name || t('owner.unassigned')}</div>
-									<div>{formatDateShort(booking.time)}</div>
-									<div>{formatTimeSafe(booking.time)}</div>
+									<div>
+										{formatDateShort(
+											booking.time,
+											'Date not available',
+											salonTimezone
+										)}
+									</div>
+									<div>
+										{formatTimeSafe(
+											booking.time,
+											'Time not available',
+											salonTimezone
+										)}
+									</div>
 									<div>{getStatusBadge(booking.status)}</div>
 									<div>{renderBookingActions(booking)}</div>
 								</div>
@@ -557,8 +572,16 @@ export default function BookingList({
 												{t('owner.calendar.dateAndTime')}
 											</span>
 											<p className="truncate font-semibold">
-												{formatDateShort(booking.time)}{' '}
-												{formatTimeSafe(booking.time)}
+												{formatDateShort(
+													booking.time,
+													'Date not available',
+													salonTimezone
+												)}{' '}
+												{formatTimeSafe(
+													booking.time,
+													'Time not available',
+													salonTimezone
+												)}
 											</p>
 										</div>
 									</div>

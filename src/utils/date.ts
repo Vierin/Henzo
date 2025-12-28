@@ -58,12 +58,15 @@ export function formatDateSafe(
 
 /**
  * Format a date string in short format (DD.MM.YYYY), with fallback for invalid dates
+ * @param salonTimezone - IANA timezone identifier (e.g., "Asia/Ho_Chi_Minh")
  */
 export function formatDateShort(
 	dateString: string | null | undefined,
-	fallback: string = 'Date not available'
+	fallback: string = 'Date not available',
+	salonTimezone?: string
 ): string {
-	const date = safeParseDate(dateString);
+	// Use parseBookingTimeAsLocal to treat UTC times as local times in salon's timezone
+	const date = parseBookingTimeAsLocal(dateString, salonTimezone) || safeParseDate(dateString);
 	if (!date) return fallback;
 
 	return date.toLocaleDateString('ru-RU', {
@@ -76,13 +79,15 @@ export function formatDateShort(
 /**
  * Format a time string for display, with fallback for invalid dates
  * Uses parseBookingTimeAsLocal to avoid timezone conversion issues
+ * @param salonTimezone - IANA timezone identifier (e.g., "Asia/Ho_Chi_Minh")
  */
 export function formatTimeSafe(
 	dateString: string | null | undefined,
-	fallback: string = 'Time not available'
+	fallback: string = 'Time not available',
+	salonTimezone?: string
 ): string {
-	// Use parseBookingTimeAsLocal to treat UTC times as local times
-	const date = parseBookingTimeAsLocal(dateString) || safeParseDate(dateString);
+	// Use parseBookingTimeAsLocal to treat UTC times as local times in salon's timezone
+	const date = parseBookingTimeAsLocal(dateString, salonTimezone) || safeParseDate(dateString);
 	if (!date) return fallback;
 
 	return date.toLocaleTimeString('en-US', {
@@ -254,7 +259,7 @@ export function parseBookingTimeAsLocal(
 			// The returned date will have the correct local time components for that timezone
 			const zonedDate = toZonedTime(utcDate, salonTimezone);
 			
-			// Extract components from zoned date
+			// Extract components from zoned date (these are in salon's timezone)
 			const year = zonedDate.getFullYear();
 			const month = zonedDate.getMonth();
 			const day = zonedDate.getDate();
@@ -262,14 +267,12 @@ export function parseBookingTimeAsLocal(
 			const minutes = zonedDate.getMinutes();
 			const seconds = zonedDate.getSeconds();
 			
-			// Create a Date object that represents this time as local time
-			// We adjust by browser timezone offset so that getHours() returns the correct salon time
-			const localTimestamp = Date.UTC(year, month, day, hours, minutes, seconds || 0, 0);
-			const testDate = new Date(localTimestamp);
-			const browserOffset = testDate.getTimezoneOffset() * 60 * 1000;
-			const adjustedDate = new Date(localTimestamp - browserOffset);
+			// Create a Date object that represents this time as if it were local time
+			// We create it using the local timezone constructor, which will make getHours() return the correct value
+			// This date will be displayed correctly by toLocaleTimeString
+			const localDate = new Date(year, month, day, hours, minutes, seconds || 0, 0);
 			
-			return isNaN(adjustedDate.getTime()) ? null : adjustedDate;
+			return isNaN(localDate.getTime()) ? null : localDate;
 		}
 
 		// Fallback to regular parsing

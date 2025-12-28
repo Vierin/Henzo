@@ -3,6 +3,7 @@
 import { Booking } from '@/types';
 import { formatDateSafe, formatTimeSafe } from '@/utils/date';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { useOwnerLayout } from '@/contexts/OwnerLayoutContext';
 
 interface BookingDetailsModalProps {
 	booking: Booking | null;
@@ -22,6 +23,8 @@ export default function BookingDetailsModal({
 	onMarkAsNoShow,
 }: BookingDetailsModalProps) {
 	const { t, language } = useLanguage();
+	const { salonData } = useOwnerLayout();
+	const salonTimezone = salonData?.timezone || 'Asia/Ho_Chi_Minh';
 	if (!isOpen || !booking) return null;
 
 	const getStatusBadge = (status: string) => {
@@ -133,7 +136,7 @@ export default function BookingDetailsModal({
 								{t('owner.calendar.time')}
 							</label>
 							<p className="text-sm font-semibold text-gray-900">
-								{formatTimeSafe(booking.time)}
+								{formatTimeSafe(booking.time, 'Time not available', salonTimezone)}
 							</p>
 						</div>
 					</div>

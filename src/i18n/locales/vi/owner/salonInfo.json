@@ -62,5 +62,12 @@
 	"reminder1Week": "1 tuần (168 giờ) trước",
 	"default": "Mặc định",
 	"atLeastOneReminderRequired": "Phải chọn ít nhất một tùy chọn nhắc nhở",
-	"loading": "Đang tải..."
+	"loading": "Đang tải...",
+	"salonLink": "Liên kết Salon",
+	"loadingSalonLink": "Đang tải liên kết salon...",
+	"copy": "Sao chép",
+	"share": "Chia sẻ",
+	"pleaseWaitForSalonData": "Vui lòng đợi dữ liệu salon tải",
+	"linkCopied": "Đã sao chép liên kết vào clipboard!",
+	"failedToCopy": "Không thể sao chép liên kết"
 }

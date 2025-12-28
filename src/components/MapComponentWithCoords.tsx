@@ -288,7 +288,10 @@ export default function MapComponentWithCoords({
 
 		mapInstanceRef.current = map;
 
-		logger.log('✅ Map initialized');
+		// Wait for map to be fully loaded before marking as ready
+		map.whenReady(() => {
+			logger.log('✅ Map initialized and ready');
+		});
 
 		// Cleanup on unmount only
 		return () => {
@@ -303,9 +306,8 @@ export default function MapComponentWithCoords({
 
 	// Update map when coordinates or address change
 	useEffect(() => {
-		if (!mapInstanceRef.current) {
-			logger.log('⏳ Map not initialized yet, waiting...');
-			return;
+		if (!mapInstanceRef.current || !LeafletLoader.L) {
+			return; // Silently wait if map is not ready yet
 		}
 
 		// Check if coordinates actually changed (including undefined -> defined transition)
@@ -322,19 +324,26 @@ export default function MapComponentWithCoords({
 				});
 				lastCoordsRef.current = { lat, lon };
 
-				// Update map - use small delay to ensure map is ready
-				const updateMap = () => {
-					if (mapInstanceRef.current) {
-						updateMapWithCoords(lat, lon, address, false);
-					}
-				};
-
-				// Use setTimeout to ensure map tiles are loaded and map is interactive
-				setTimeout(() => {
-					if (mapInstanceRef.current) {
-						updateMap();
-					}
-				}, 100);
+				// Update map immediately if map is ready
+				// Check if map is fully initialized (has tiles loaded)
+				if (mapInstanceRef.current && mapInstanceRef.current._loaded) {
+					updateMapWithCoords(lat, lon, address, false);
+				} else {
+					// If map is not ready yet, wait a bit but use requestAnimationFrame for better performance
+					const updateMap = () => {
+						if (mapInstanceRef.current && mapInstanceRef.current._loaded) {
+							updateMapWithCoords(lat, lon, address, false);
+						} else {
+							// Retry after a short delay if map is still not ready
+							setTimeout(() => {
+								if (mapInstanceRef.current) {
+									updateMapWithCoords(lat, lon, address, false);
+								}
+							}, 50);
+						}
+					};
+					requestAnimationFrame(updateMap);
+				}
 			}
 		} else if (
 			address &&

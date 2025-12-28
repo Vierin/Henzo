@@ -62,5 +62,12 @@
 	"reminder1Week": "1 week (168 hours) before",
 	"default": "Default",
 	"atLeastOneReminderRequired": "At least one reminder option must be selected",
-	"loading": "Loading..."
+	"loading": "Loading...",
+	"salonLink": "Salon Link",
+	"loadingSalonLink": "Loading salon link...",
+	"copy": "Copy",
+	"share": "Share",
+	"pleaseWaitForSalonData": "Please wait for salon data to load",
+	"linkCopied": "Link copied to clipboard!",
+	"failedToCopy": "Failed to copy link"
 }

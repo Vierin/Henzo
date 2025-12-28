@@ -3,6 +3,7 @@
 import { Booking } from '@/types';
 import { formatDateShort, formatTimeSafe } from '@/utils/date';
 import { useTranslation } from '@/contexts/LanguageContext';
+import { useOwnerLayout } from '@/contexts/OwnerLayoutContext';
 
 interface UpcomingBookingsListProps {
 	bookings: Booking[];
@@ -22,6 +23,8 @@ export default function UpcomingBookingsList({
 	onRejectBooking,
 }: UpcomingBookingsListProps) {
 	const t = useTranslation();
+	const { salonData } = useOwnerLayout();
+	const salonTimezone = salonData?.timezone || 'Asia/Ho_Chi_Minh';
 
 	const getStatusBadge = (status: string) => {
 		switch (status) {
@@ -210,8 +213,8 @@ export default function UpcomingBookingsList({
 								<div>
 									{booking.staff?.name || t('owner.dashboard.unassigned')}
 								</div>
-								<div>{formatDateShort(booking.time)}</div>
-								<div>{formatTimeSafe(booking.time)}</div>
+								<div>{formatDateShort(booking.time, 'Date not available', salonTimezone)}</div>
+								<div>{formatTimeSafe(booking.time, 'Time not available', salonTimezone)}</div>
 								<div>{getStatusBadge(booking.status)}</div>
 								<div className="flex gap-2">
 									{booking.status === 'PENDING' ? (
@@ -351,8 +354,8 @@ export default function UpcomingBookingsList({
 											{t('owner.dashboard.dateAndTime')}
 										</span>
 										<p className="font-semibold">
-											{formatDateShort(booking.time)}{' '}
-											{formatTimeSafe(booking.time)}
+											{formatDateShort(booking.time, 'Date not available', salonTimezone)}{' '}
+											{formatTimeSafe(booking.time, 'Time not available', salonTimezone)}
 										</p>
 									</div>
 								</div>

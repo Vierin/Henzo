@@ -718,6 +718,88 @@ export default function BookingModal({
 		availabilityCache,
 	]);
 
+	// Filter available staff members based on selected time
+	const availableStaffMembers = useMemo(() => {
+		if (!selectedTime || !selectedDate || !selectedService) {
+			return staffMembers; // Show all staff if no time selected
+		}
+
+		const serviceDuration = selectedService.duration;
+		const [slotHour, slotMinute] = selectedTime.split(':').map(Number);
+		const slotStartMinutes = slotHour * 60 + slotMinute;
+		const slotEndMinutes = slotStartMinutes + serviceDuration;
+
+		// Find bookings that conflict with selected time
+		const conflictingBookings = existingBookings.filter((booking) => {
+			const bookingDateTime = parseBookingTimeAsLocal(
+				booking.time || booking.dateTime,
+				salonTimezone
+			);
+			if (!bookingDateTime) return false;
+
+			// Check if booking is on the same date
+			const bookingDate = bookingDateTime.toISOString().split('T')[0];
+			if (bookingDate !== selectedDate) return false;
+
+			const bookingStartMinutes =
+				bookingDateTime.getHours() * 60 + bookingDateTime.getMinutes();
+			const bookingEndMinutes =
+				bookingStartMinutes + (booking.service?.duration || 60);
+
+			// Check if time slots overlap
+			return (
+				slotStartMinutes < bookingEndMinutes &&
+				slotEndMinutes > bookingStartMinutes
+			);
+		});
+
+		// Get busy staff IDs
+		const busyStaffIds = new Set(
+			conflictingBookings.map((booking) => booking.staffId).filter(Boolean)
+		);
+
+		// Filter out busy staff members
+		return staffMembers.filter((staff) => !busyStaffIds.has(staff.id));
+	}, [
+		selectedTime,
+		selectedDate,
+		selectedService,
+		existingBookings,
+		staffMembers,
+		salonTimezone,
+	]);
+
+	// Filter available time slots based on selected staff
+	const getAvailableTimeSlots = useMemo(() => {
+		return (
+			timeSlots: Array<string | { time: string; available: boolean }>
+		): Array<string | { time: string; available: boolean }> => {
+			if (
+				!selectedStaff ||
+				selectedStaff === t('booking.anyStaff') ||
+				!selectedService
+			) {
+				// If no staff selected or "Any Staff", filter by availability
+				return timeSlots.filter((slot) => {
+					const time = typeof slot === 'string' ? slot : slot.time;
+					return isTimeSlotAvailable(time, undefined);
+				});
+			}
+
+			// Find selected staff ID
+			const staffMember = staffMembers.find(
+				(staff) => staff.name === selectedStaff
+			);
+			if (!staffMember) return timeSlots;
+
+			// Filter time slots that are available for this staff member
+			return timeSlots.filter((slot) => {
+				const time = typeof slot === 'string' ? slot : slot.time;
+				return isTimeSlotAvailable(time, staffMember.id);
+			});
+		};
+	}, [selectedStaff, selectedService, staffMembers, isTimeSlotAvailable, t]);
+
 	// Calculate global time range from all working days
 	const getGlobalTimeRange = (): { startHour: number; endHour: number } => {
 		const currentWorkingHours = workingHours || salonWorkingHours;
@@ -893,7 +975,7 @@ export default function BookingModal({
 		return slots;
 	};
 
-	const timeSlots = useMemo(
+	const generatedTimeSlots = useMemo(
 		() => generateTimeSlots(selectedDate),
 		[
 			workingHours,
@@ -905,6 +987,11 @@ export default function BookingModal({
 			staffMembers,
 		]
 	);
+
+	// Filter time slots based on selected staff
+	const timeSlots = useMemo(() => {
+		return getAvailableTimeSlots(generatedTimeSlots);
+	}, [generatedTimeSlots, getAvailableTimeSlots]);
 
 	// Calendar functions
 	const getDaysInMonth = (date: Date) => {
@@ -1410,7 +1497,9 @@ export default function BookingModal({
 
 			// Find the closest available time slot
 			const [bookingHour, bookingMinute] = timeString.split(':').map(Number);
-			let closestTime = timeSlots[0]?.time || timeSlots[0]; // Default to first available slot
+			const firstSlot = timeSlots[0];
+			let closestTime =
+				typeof firstSlot === 'string' ? firstSlot : firstSlot?.time || ''; // Default to first available slot
 
 			for (const slot of timeSlots) {
 				const slotTime = typeof slot === 'string' ? slot : slot.time;
@@ -1419,8 +1508,7 @@ export default function BookingModal({
 				const slotMinutes = slotHour * 60 + slotMinute;
 
 				// If this slot is closer to the booking time, use it
-				const closestTimeStr =
-					typeof closestTime === 'string' ? closestTime : closestTime.time;
+				const closestTimeStr = closestTime;
 				if (
 					Math.abs(slotMinutes - bookingMinutes) <
 					Math.abs(
@@ -1433,9 +1521,7 @@ export default function BookingModal({
 				}
 			}
 
-			setSelectedTime(
-				typeof closestTime === 'string' ? closestTime : closestTime.time
-			);
+			setSelectedTime(closestTime);
 
 			// Set selected service
 			if (editingBooking.service) {
@@ -1499,6 +1585,12 @@ export default function BookingModal({
 	}, []);
 
 	// Add "Any Staff" option to the beginning of staff list
+	// Use availableStaffMembers if time is selected, otherwise use all staff
+	const staffToShow =
+		selectedTime && selectedDate && selectedService
+			? availableStaffMembers
+			: staffMembers;
+
 	const allStaffMembers = [
 		{
 			id: 'any',
@@ -1506,7 +1598,7 @@ export default function BookingModal({
 			accessLevel: 'EMPLOYEE' as const,
 			salonId: salonId || '', // Добавляем salonId для соответствия типу Staff
 		},
-		...staffMembers,
+		...staffToShow,
 	];
 
 	// Block body scroll when modal is open
@@ -1585,17 +1677,21 @@ export default function BookingModal({
 		}
 
 		// IMPORTANT: All bookings are interpreted in salon's timezone
-		// The selected time (e.g., 20:15) should be interpreted as local time in salon's timezone
+		// The selected time (e.g., 9:15) should be interpreted as local time in salon's timezone
 		// We use date-fns-tz to properly convert from salon timezone to UTC
-		// Example: 20:15 in Asia/Ho_Chi_Minh → UTC
+		// Example: 9:15 in Asia/Ho_Chi_Minh → UTC
 
-		// Create a date string in format: "YYYY-MM-DD HH:mm:ss"
-		const localDateTimeString = `${dateStr} ${timeStr.padStart(5, '0')}:00`;
+		// Create a date object with the time components
+		// fromZonedTime interprets the date's components (year, month, day, hour, minute)
+		// as being in the specified timezone and converts them to UTC
+		// We create the date with local components (not UTC), and fromZonedTime treats them as salon timezone
+		const localDate = new Date(year, month - 1, day, hours, minutes, 0, 0);
 
-		// Convert from salon timezone to UTC using date-fns-tz
-		// fromZonedTime interprets the date/time as being in the specified timezone
-		// and converts it to UTC
-		const localDate = new Date(`${dateStr}T${timeStr.padStart(5, '0')}:00`);
+		// fromZonedTime takes a date and interprets its components as being in the specified timezone
+		// It extracts year, month, day, hour, minute from the date and treats them as local time
+		// in the specified timezone, then converts to UTC
+		// This works correctly because fromZonedTime ignores the timezone of the input date
+		// and only uses its components
 		const utcDate = fromZonedTime(localDate, salonTimezone);
 		const utcDateString = utcDate.toISOString();
 
@@ -1604,7 +1700,7 @@ export default function BookingModal({
 			timeStr,
 			salonTimezone,
 			selectedTime: `${hours}:${minutes}`,
-			localDateTimeString,
+			localDateComponents: { year, month, day, hours, minutes },
 			utcTime: utcDateString,
 			note: `Selected time is interpreted as local time in ${salonTimezone} and converted to UTC`,
 		});
@@ -2003,12 +2099,19 @@ export default function BookingModal({
 			};
 
 			// Если владелец создает резервацию, добавляем данные клиента
-			if (isOwner && clientEmail) {
-				requestBody.clientEmail = clientEmail.trim();
-				if (clientName) {
-					requestBody.clientName = clientName.trim();
+			// Бэкенд проверит, является ли это его салоном
+			if (isOwner) {
+				// Email отправляем только если он введен
+				if (clientEmail && clientEmail.trim()) {
+					requestBody.clientEmail = clientEmail.trim();
 				}
-				if (clientPhone) {
+				// Имя: всегда передаем, если не введено - используем "Анонимный клиент"
+				requestBody.clientName =
+					clientName && clientName.trim()
+						? clientName.trim()
+						: t('booking.anonymousClient');
+				// Телефон отправляем только если он введен
+				if (clientPhone && clientPhone.trim()) {
 					requestBody.clientPhone = clientPhone.trim();
 				}
 			}
@@ -2019,6 +2122,10 @@ export default function BookingModal({
 				time: requestBody.time,
 				hasStaffId: !!requestBody.staffId,
 				hasClientEmail: !!requestBody.clientEmail,
+				clientName: requestBody.clientName,
+				clientPhone: requestBody.clientPhone,
+				isOwner: isOwner,
+				isOwnerOfThisSalon: isOwnerOfThisSalon(),
 			});
 
 			const response = await fetch(`${API_BASE_URL}/bookings`, {
@@ -2041,8 +2148,12 @@ export default function BookingModal({
 				});
 
 				// Extract detailed error message
-				let errorMessage = 'Failed to create booking';
-				if (result.message) {
+				let errorMessage = t('booking.failedToBookAppointment');
+
+				// Check for backend error message in different formats
+				if (result.msg) {
+					errorMessage = result.msg;
+				} else if (result.message) {
 					errorMessage = result.message;
 				} else if (result.error) {
 					errorMessage = result.error;
@@ -2051,6 +2162,13 @@ export default function BookingModal({
 					errorMessage = result.message.join(', ');
 				} else if (typeof result === 'string') {
 					errorMessage = result;
+				}
+
+				// Translate common error messages
+				if (errorMessage.includes('not available at this time')) {
+					errorMessage = t('booking.staffNotAvailable') || errorMessage;
+				} else if (errorMessage.includes('Selected staff member')) {
+					errorMessage = t('booking.staffNotAvailable') || errorMessage;
 				}
 
 				throw new Error(errorMessage);
@@ -2494,9 +2612,11 @@ export default function BookingModal({
 											</div>
 										)}
 										<BookingTimeSelector
-											timeSlots={timeSlots.map((slot) => slot.time)}
-											filteredTimeSlots={filteredTimeSlots.map(
-												(slot) => slot.time
+											timeSlots={timeSlots.map((slot) =>
+												typeof slot === 'string' ? slot : slot.time
+											)}
+											filteredTimeSlots={filteredTimeSlots.map((slot) =>
+												typeof slot === 'string' ? slot : slot.time
 											)}
 											selectedTime={selectedTime}
 											onTimeSelect={setSelectedTime}
@@ -2649,8 +2769,12 @@ export default function BookingModal({
 									</div>
 								)}
 								<BookingTimeSelector
-									timeSlots={timeSlots.map((slot) => slot.time)}
-									filteredTimeSlots={filteredTimeSlots.map((slot) => slot.time)}
+									timeSlots={timeSlots.map((slot) =>
+										typeof slot === 'string' ? slot : slot.time
+									)}
+									filteredTimeSlots={filteredTimeSlots.map((slot) =>
+										typeof slot === 'string' ? slot : slot.time
+									)}
 									selectedTime={selectedTime}
 									onTimeSelect={setSelectedTime}
 									timeFilter={timeFilter}

@@ -9,6 +9,7 @@ import {
 	lazy,
 	Suspense,
 } from 'react';
+import dynamic from 'next/dynamic';
 import { useRouter } from 'next/navigation';
 import toast from 'react-hot-toast';
 import LoadingSpinner from '@/components/LoadingSpinner';
@@ -17,8 +18,10 @@ import LoadingSpinner from '@/components/LoadingSpinner';
 const AddressAutocomplete = lazy(
 	() => import('@/components/AddressAutocomplete')
 );
-const MapComponentWithCoords = lazy(
-	() => import('@/components/MapComponentWithCoords')
+// MapComponentWithCoords - динамический импорт с ssr: false для оптимизации
+const MapComponentWithCoords = dynamic(
+	() => import('@/components/MapComponentWithCoords'),
+	{ ssr: false }
 );
 const EnhancedFileUpload = lazy(
 	() => import('@/components/EnhancedFileUpload')
@@ -30,9 +33,10 @@ const WorkingHoursSection = lazy(
 	() => import('@/components/WorkingHoursSection')
 );
 import { useSalon } from '@/hooks/useSalons';
+import { useSalonSlug } from '@/hooks/useSalonSlug';
 import { apiClient } from '@/lib/api-client';
 import { logger } from '@/lib/logger';
-import { Clock4 } from 'lucide-react';
+import { Clock4, Copy, Share2 } from 'lucide-react';
 import { useTranslation } from '@/contexts/LanguageContext';
 
 export default function SalonInfoPage() {
@@ -71,6 +75,8 @@ export default function SalonInfoPage() {
 	const [isUpdatingAddress, setIsUpdatingAddress] = useState(false);
 	const addressUpdateTimerRef = useRef<NodeJS.Timeout | null>(null);
 	const router = useRouter();
+	const { getSalonUrl } = useSalonSlug();
+	const [salonUrl, setSalonUrl] = useState<string>('');
 
 	// Используем оптимизированный хук для получения данных салона
 	const {
@@ -242,16 +248,65 @@ export default function SalonInfoPage() {
 		};
 	}, []);
 
+	// Generate salon URL when salon data is loaded
+	useEffect(() => {
+		if (salon && hasExistingSalon) {
+			const baseUrl =
+				process.env.NEXT_PUBLIC_FRONTEND_URL || 'https://henzo.app';
+			const url = `${baseUrl}${getSalonUrl(salon)}`;
+			setSalonUrl(url);
+		} else {
+			setSalonUrl('');
+		}
+	}, [salon, hasExistingSalon, getSalonUrl]);
+
 	// Memoize map props to prevent unnecessary re-renders
+	// Only update when coordinates actually change, not when address text changes
 	const mapProps = useMemo(() => {
 		const props = {
 			lat: selectedCoords?.lat,
 			lon: selectedCoords?.lon,
 			address: formData.address,
 		};
-		console.log('🗺️ Map props updated:', props);
 		return props;
 	}, [selectedCoords?.lat, selectedCoords?.lon, formData.address]);
+
+	const copyToClipboard = async () => {
+		if (!salonUrl) {
+			toast.error(t('owner.salonInfo.pleaseWaitForSalonData'));
+			return;
+		}
+
+		try {
+			await navigator.clipboard.writeText(salonUrl);
+			toast.success(t('owner.salonInfo.linkCopied'));
+		} catch (err) {
+			toast.error(t('owner.salonInfo.failedToCopy'));
+		}
+	};
+
+	const shareLink = async () => {
+		if (!salonUrl) {
+			toast.error(t('owner.salonInfo.pleaseWaitForSalonData'));
+			return;
+		}
+
+		if (navigator.share) {
+			try {
+				await navigator.share({
+					title: `${salon?.name || formData.salonName || t('owner.salonInfo.title')} - ${t('common.bookNow')}`,
+					text: `${t('common.checkOut') || 'Check out'} ${salon?.name || formData.salonName || t('owner.salonInfo.title')} ${t('common.andBookAppointment') || 'and book your appointment!'}`,
+					url: salonUrl,
+				});
+			} catch (err) {
+				// User cancelled sharing or error occurred
+				copyToClipboard(); // Fallback to copy
+			}
+		} else {
+			// Fallback for browsers that don't support Web Share API
+			copyToClipboard();
+		}
+	};
 
 	const handleSubmit = async (e: React.FormEvent) => {
 		e.preventDefault();
@@ -417,6 +472,46 @@ export default function SalonInfoPage() {
 								/>
 							</Suspense>
 						</div>
+
+						{/* Salon Link - only show if salon exists */}
+						{hasExistingSalon && (
+							<div>
+								<label className="block text-sm font-medium text-gray-700 mb-2">
+									{t('owner.salonInfo.salonLink')}
+								</label>
+								<div className="space-y-2">
+									<input
+										type="text"
+										value={salonUrl}
+										readOnly
+										className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-50 text-gray-900 cursor-default text-sm"
+										placeholder={t('owner.salonInfo.loadingSalonLink')}
+									/>
+									<div className="flex gap-2">
+										<button
+											type="button"
+											onClick={copyToClipboard}
+											disabled={!salonUrl}
+											className="flex-1 px-3 py-2 bg-gray-100 text-gray-700 rounded-md font-medium hover:bg-gray-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 flex items-center justify-center gap-2 text-sm"
+											title={t('owner.salonInfo.copy')}
+										>
+											<Copy className="w-4 h-4" />
+											{t('owner.salonInfo.copy')}
+										</button>
+										<button
+											type="button"
+											onClick={shareLink}
+											disabled={!salonUrl}
+											className="flex-1 px-3 py-2 bg-gray-100 text-gray-700 rounded-md font-medium hover:bg-gray-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 flex items-center justify-center gap-2 text-sm"
+											title={t('owner.salonInfo.share')}
+										>
+											<Share2 className="w-4 h-4" />
+											{t('owner.salonInfo.share')}
+										</button>
+									</div>
+								</div>
+							</div>
+						)}
 					</div>
 				</div>
 
@@ -427,20 +522,18 @@ export default function SalonInfoPage() {
 							{t('owner.salonInfo.locationPreview')}
 						</h2>
 						<div className="w-full rounded-lg overflow-hidden border border-gray-200 shadow-sm">
-							<Suspense fallback={<LoadingSpinner />}>
-								<MapComponentWithCoords
-									lat={mapProps.lat}
-									lon={mapProps.lon}
-									address={mapProps.address}
-									height="450px"
-									zoom={16}
-									interactive={true}
-									showPopup={false}
-									editable={true}
-									onMarkerMove={handleMarkerMove}
-									className="w-full h-full"
-								/>
-							</Suspense>
+							<MapComponentWithCoords
+								lat={mapProps.lat}
+								lon={mapProps.lon}
+								address={mapProps.address}
+								height="450px"
+								zoom={16}
+								interactive={true}
+								showPopup={false}
+								editable={true}
+								onMarkerMove={handleMarkerMove}
+								className="w-full h-full"
+							/>
 						</div>
 					</div>
 				)}

@@ -9,6 +9,7 @@ import {
 } from '@/utils/date';
 import { ChevronLeft, ChevronRight, X } from 'lucide-react';
 import { useTranslation } from '@/contexts/LanguageContext';
+import { useOwnerLayout } from '@/contexts/OwnerLayoutContext';
 
 interface DayScheduleProps {
 	selectedDate: Date;
@@ -44,6 +45,8 @@ export default function DaySchedule({
 	onNextDay,
 }: DayScheduleProps) {
 	const t = useTranslation();
+	const { salonData } = useOwnerLayout();
+	const salonTimezone = salonData?.timezone || 'Asia/Ho_Chi_Minh';
 	const [selectedStaffIds, setSelectedStaffIds] = useState<string[]>([]);
 	const [selectedMobileStaffId, setSelectedMobileStaffId] = useState<
 		string | null
@@ -706,7 +709,7 @@ export default function DaySchedule({
 																			}
 																			role="button"
 																			tabIndex={clickable ? 0 : -1}
-																			aria-label={`View details for appointment: ${startingAppointment.service?.name} with ${startingAppointment.user?.name || `Client ID: ${startingAppointment.userId}`} at ${formatTimeSafe(startingAppointment.time)}`}
+																			aria-label={`View details for appointment: ${startingAppointment.service?.name} with ${startingAppointment.user?.name || `Client ID: ${startingAppointment.userId}`} at ${formatTimeSafe(startingAppointment.time, 'Time not available', salonTimezone)}`}
 																		>
 																			{position.duration < 40 || isMobile ? (
 																				<div
@@ -738,7 +741,9 @@ export default function DaySchedule({
 																						className={`${styles.textSecondaryClassName} truncate`}
 																					>
 																						{formatTimeSafe(
-																							startingAppointment.time
+																							startingAppointment.time,
+																							'Time not available',
+																							salonTimezone
 																						)}{' '}
 																						-{' '}
 																						{formatTimeSafe(
@@ -747,7 +752,9 @@ export default function DaySchedule({
 																									startingAppointment.time
 																								).getTime() +
 																									position.duration * 60000
-																							).toISOString()
+																							).toISOString(),
+																							'Time not available',
+																							salonTimezone
 																						)}
 																					</div>
 																				</div>

@@ -87,5 +87,7 @@
 	"next": "Tiếp theo",
 	"back": "Quay lại",
 	"bookingSummary": "Tóm tắt đặt lịch",
-	"staff": "Nhân viên"
+	"staff": "Nhân viên",
+	"anonymousClient": "Khách hàng ẩn danh",
+	"staffNotAvailable": "Nhân viên đã chọn không có sẵn vào thời gian này. Vui lòng chọn thời gian khác hoặc nhân viên khác."
 }
