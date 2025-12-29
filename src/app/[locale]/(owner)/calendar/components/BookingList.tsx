@@ -32,6 +32,7 @@ interface BookingListProps {
 	onViewBookingDetails: (booking: Booking) => void;
 	onRetry: () => void;
 	onPageChange: (page: number) => void;
+	onMarkAsNoShow?: (bookingId: string) => void;
 }
 
 export default function BookingList({
@@ -53,6 +54,7 @@ export default function BookingList({
 	onViewBookingDetails,
 	onRetry,
 	onPageChange,
+	onMarkAsNoShow,
 }: BookingListProps) {
 	const t = useTranslation();
 	const { salonData } = useOwnerLayout();
@@ -165,6 +167,23 @@ export default function BookingList({
 								d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
 							/>
 						</svg>
+					</button>
+				</div>
+			);
+		} else if (booking.status === 'COMPLETED' && onMarkAsNoShow) {
+			return (
+				<div className="flex gap-2" role="group" aria-label="Booking actions">
+					<button
+						onClick={() => {
+							if (confirm(t('owner.calendar.areYouSureNoShow'))) {
+								onMarkAsNoShow(booking.id);
+							}
+						}}
+						className="flex-1 sm:flex-none px-3 py-1 text-sm font-medium text-white bg-orange-600 hover:bg-orange-700 rounded transition-colors focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2"
+						title={t('owner.calendar.markAsNoShow')}
+						aria-label={`${t('owner.calendar.markAsNoShow')} booking for ${booking.user?.name || t('owner.calendar.client')}`}
+					>
+						{t('owner.calendar.markAsNoShow')}
 					</button>
 				</div>
 			);

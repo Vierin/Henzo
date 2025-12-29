@@ -164,7 +164,7 @@ export default function ProfitPage() {
 									{/* Прибыль с подписок */}
 									<div className="bg-green-50 rounded-md p-3 border border-green-100">
 										<div className="text-xs text-gray-600 mb-0.5">
-											Прибыль с подписок
+											Revenue with subscriptions
 										</div>
 										<div className="text-lg font-bold text-green-700">
 											{formatCurrency(report.revenue)}
@@ -173,7 +173,7 @@ export default function ProfitPage() {
 
 									{/* Расходы */}
 									<div className="bg-red-50 rounded-md p-3 border border-red-100">
-										<div className="text-xs text-gray-600 mb-0.5">Расходы</div>
+										<div className="text-xs text-gray-600 mb-0.5">Expenses</div>
 										<div className="text-lg font-bold text-red-700">
 											{formatCurrency(report.expenses)}
 										</div>
@@ -188,7 +188,7 @@ export default function ProfitPage() {
 										}`}
 									>
 										<div className="text-xs text-gray-600 mb-0.5">
-											Чистая прибыль
+											Net profit
 										</div>
 										<div
 											className={`text-lg font-bold ${
@@ -213,7 +213,7 @@ export default function ProfitPage() {
 				<div className="grid grid-cols-1 md:grid-cols-3 gap-6">
 					<div className="bg-white rounded-lg p-4 shadow-sm">
 						<div className="text-sm text-gray-600 mb-1">
-							Общая прибыль с подписок
+							Total revenue with subscriptions
 						</div>
 						<div className="text-2xl font-bold text-gray-900">
 							{formatCurrency(
@@ -222,7 +222,7 @@ export default function ProfitPage() {
 						</div>
 					</div>
 					<div className="bg-white rounded-lg p-4 shadow-sm">
-						<div className="text-sm text-gray-600 mb-1">Общие расходы</div>
+						<div className="text-sm text-gray-600 mb-1">Total expenses</div>
 						<div className="text-2xl font-bold text-gray-900">
 							{formatCurrency(
 								Object.values(reports).reduce((sum, r) => sum + r.expenses, 0)
@@ -230,9 +230,7 @@ export default function ProfitPage() {
 						</div>
 					</div>
 					<div className="bg-white rounded-lg p-4 shadow-sm">
-						<div className="text-sm text-gray-600 mb-1">
-							Общая чистая прибыль
-						</div>
+						<div className="text-sm text-gray-600 mb-1">Total net profit</div>
 						<div className="text-2xl font-bold text-gray-900">
 							{formatCurrency(
 								Object.values(reports).reduce(

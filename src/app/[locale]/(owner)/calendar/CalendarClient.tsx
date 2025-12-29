@@ -641,6 +641,7 @@ export default function CalendarClient() {
 									onViewBookingDetails={handleViewBookingDetails}
 									onRetry={fetchBookings}
 									onPageChange={handlePageChange}
+									onMarkAsNoShow={handleMarkAsNoShow}
 								/>
 							) : (
 								<CalendarView

@@ -92,7 +92,7 @@ export default function AdminLayout({
 			),
 		},
 		{
-			name: 'Прибыль',
+			name: 'Profit',
 			href: '/profit',
 			icon: (
 				<svg
