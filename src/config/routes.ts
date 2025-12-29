@@ -69,6 +69,7 @@ export const adminRoutes = [
 	'/admin/customers',
 	'/admin/salons-data',
 	'/admin/subscriptions',
+	'/profit',
 ] as const;
 
 /**

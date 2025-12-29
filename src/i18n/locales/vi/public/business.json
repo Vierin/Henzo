@@ -18,9 +18,9 @@
 	},
 	"hero": {
 		"badge": "✨ Miễn phí Beta Testing",
-		"title": "Đơn giản hóa đặt lịch,",
-		"titleHighlight": "Làm hài lòng khách hàng",
-		"subtitle": "Nền tảng tất cả trong một cho doanh nghiệp làm đẹp của bạn. Quản lý cuộc hẹn, khách hàng và thanh toán ở một nơi.",
+		"title": "Mất khách hàng do bỏ lỡ cuộc gọi?",
+		"titleHighlight": "Quên cuộc hẹn?",
+		"subtitle": "Tăng doanh thu 15% với đặt lịch trực tuyến 24/7. Nền tảng tất cả trong một cho doanh nghiệp làm đẹp của bạn.",
 		"joinBeta": "Tham gia Beta Testing",
 		"signIn": "Đăng nhập",
 		"free": "100% Miễn phí",
@@ -37,9 +37,9 @@
 			"title": "Lịch trình thông minh",
 			"description": "Lịch thông minh ngăn chặn đặt lịch trùng và tự động tối ưu hóa thời gian của nhóm bạn."
 		},
-		"clientManagement": {
-			"title": "Quản lý khách hàng",
-			"description": "Lưu trữ hồ sơ khách hàng chi tiết, sở thích và lịch sử dịch vụ ở một nơi."
+		"onlineBooking": {
+			"title": "Đặt lịch trực tuyến 24/7",
+			"description": "Chấp nhận đặt lịch bất cứ lúc nào, ngay cả khi salon của bạn đóng cửa. Không bao giờ mất khách hàng nữa."
 		},
 		"emailReminders": {
 			"title": "Nhắc nhở qua Email",
@@ -62,11 +62,18 @@
 		"benefit5": "Đưa ra quyết định dựa trên dữ liệu với phân tích mạnh mẽ",
 		"benefit6": "Thanh toán diễn ra tại chỗ - không có sự phức tạp của thanh toán trực tuyến"
 	},
+	"dashboard": {
+		"badge": "Bảng điều khiển",
+		"title": "Xem bảng điều khiển",
+		"titleBreak": "doanh nghiệp của bạn hoạt động",
+		"subtitle": "Quản lý mọi thứ từ một bảng điều khiển trực quan. Theo dõi cuộc hẹn, doanh thu và thống kê khách hàng trong nháy mắt.",
+		"cta": "Nhận quyền truy cập miễn phí"
+	},
 	"cta": {
 		"title": "Sẵn sàng thay đổi",
 		"titleBreak": "salon của bạn?",
 		"subtitle": "Tham gia chương trình beta testing của Henzo. Hoàn toàn miễn phí trong thời gian beta, không cần cam kết.",
-		"startForFree": "Bắt đầu miễn phí",
+		"startForFree": "Nhận quyền truy cập miễn phí trong 3 tháng",
 		"joinBetaTesters": "Tham gia các beta tester của chúng tôi và nhận quyền truy cập miễn phí"
 	},
 	"betaForm": {

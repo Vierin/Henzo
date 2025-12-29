@@ -129,8 +129,19 @@ export function useAdminBookings() {
 		queryKey: ['admin-bookings'],
 		queryFn: async (): Promise<AdminBooking[]> => {
 			try {
-				const response = await apiClient.get<AdminBooking[]>('/admin/bookings');
-				return response;
+				const response = await apiClient.get<
+					| AdminBooking[]
+					| { data: AdminBooking[]; pagination: any }
+				>('/admin/bookings');
+				// Handle both array response and paginated response
+				if (Array.isArray(response)) {
+					return response;
+				}
+				// Handle paginated response
+				if (response && typeof response === 'object' && 'data' in response) {
+					return Array.isArray(response.data) ? response.data : [];
+				}
+				return [];
 			} catch (error) {
 				console.error('Error fetching admin bookings:', error);
 				throw error;

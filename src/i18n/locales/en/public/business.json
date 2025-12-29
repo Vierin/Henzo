@@ -8,9 +8,9 @@
 	},
 	"hero": {
 		"badge": "✨ Free Beta Testing",
-		"title": "Simplify Bookings,",
-		"titleHighlight": "Delight Clients",
-		"subtitle": "The all-in-one platform for your beauty business. Manage appointments, clients, and payments all in one place.",
+		"title": "Losing clients due to missed calls?",
+		"titleHighlight": "Forgetting appointments?",
+		"subtitle": "Increase revenue by 15% with 24/7 online booking. The all-in-one platform for your beauty business.",
 		"joinBeta": "Join Beta Testing",
 		"signIn": "Sign In",
 		"free": "100% Free",
@@ -27,9 +27,9 @@
 			"title": "Smart Scheduling",
 			"description": "Intelligent calendar that prevents double bookings and automatically optimizes your team's time."
 		},
-		"clientManagement": {
-			"title": "Client Management",
-			"description": "Keep detailed client profiles, preferences, and service history all in one place."
+		"onlineBooking": {
+			"title": "24/7 Online Booking",
+			"description": "Accept bookings anytime, even when your salon is closed. Never miss a client again."
 		},
 		"emailReminders": {
 			"title": "Email Reminders",
@@ -52,11 +52,18 @@
 		"benefit5": "Make data-driven decisions with powerful analytics",
 		"benefit6": "Payment happens on-site - no online payment complexities"
 	},
+	"dashboard": {
+		"badge": "Dashboard",
+		"title": "See Your Business",
+		"titleBreak": "Dashboard in Action",
+		"subtitle": "Manage everything from one intuitive dashboard. Track appointments, revenue, and client statistics at a glance.",
+		"cta": "Get Free Access"
+	},
 	"cta": {
 		"title": "Ready to Transform",
 		"titleBreak": "Your Salon?",
 		"subtitle": "Join Henzo's beta testing program. Completely free during beta, no commitments required.",
-		"startForFree": "Start for Free",
+		"startForFree": "Get Free Access for 3 Months",
 		"joinBetaTesters": "Join our beta testers and get free access"
 	},
 	"betaForm": {

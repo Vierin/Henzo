@@ -412,46 +412,6 @@ export default function AdminSalons() {
 							<div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
 								{/* Left Column - Basic Info */}
 								<div className="space-y-6">
-									{/* Salon Logo and Basic Info */}
-									<div className="flex items-start space-x-4">
-										<div className="flex-1">
-											<h3 className="text-lg font-semibold text-gray-900 mb-2">
-												{selectedSalon.name}
-											</h3>
-											{selectedSalon.description && (
-												<p className="text-gray-600 text-sm mb-3">
-													{selectedSalon.description}
-												</p>
-											)}
-											<div className="flex flex-wrap gap-2">
-												<span
-													className={`px-2 py-1 text-xs font-medium rounded-full ${
-														(selectedSalon._count?.bookings ?? 0) > 0
-															? 'bg-green-100 text-green-800'
-															: 'bg-gray-100 text-gray-800'
-													}`}
-												>
-													{(selectedSalon._count?.bookings ?? 0) > 0
-														? 'Active'
-														: 'Inactive'}
-												</span>
-												{selectedSalon.subscription && (
-													<span
-														className={`px-2 py-1 text-xs font-medium rounded-full ${
-															selectedSalon.subscription.type === 'ENTERPRISE'
-																? 'bg-purple-100 text-purple-800'
-																: selectedSalon.subscription.type === 'BASIC'
-																	? 'bg-blue-100 text-blue-800'
-																	: 'bg-gray-100 text-gray-800'
-														}`}
-													>
-														{selectedSalon.subscription.type}
-													</span>
-												)}
-											</div>
-										</div>
-									</div>
-
 									{/* Contact Information */}
 									<div className="bg-gray-50 rounded-lg p-4">
 										<h4 className="text-sm font-medium text-gray-900 mb-3">
@@ -647,32 +607,6 @@ export default function AdminSalons() {
 											</div>
 										</div>
 									)}
-
-									{/* Additional Info */}
-									<div className="bg-gray-50 rounded-lg p-4">
-										<h4 className="text-sm font-medium text-gray-900 mb-3">
-											Additional Information
-										</h4>
-										<div className="space-y-2 text-sm text-gray-600">
-											<div>
-												<span className="font-medium">Created:</span>{' '}
-												{new Date(selectedSalon.createdAt).toLocaleDateString(
-													'en-GB',
-													{
-														year: 'numeric',
-														month: 'long',
-														day: 'numeric',
-														hour: '2-digit',
-														minute: '2-digit',
-													}
-												)}
-											</div>
-											<div>
-												<span className="font-medium">Salon ID:</span>{' '}
-												{selectedSalon.id}
-											</div>
-										</div>
-									</div>
 								</div>
 							</div>
 

@@ -26,7 +26,9 @@ export default function AdminBookings() {
 
 	// Filter and sort bookings
 	const filteredAndSortedBookings = useMemo(() => {
-		let filtered = [...bookings];
+		// Ensure bookings is always an array
+		const bookingsArray = Array.isArray(bookings) ? bookings : [];
+		let filtered = [...bookingsArray];
 
 		// Search filter
 		if (searchTerm) {
@@ -90,6 +92,8 @@ export default function AdminBookings() {
 				return 'bg-yellow-100 text-yellow-800';
 			case 'CANCELED':
 				return 'bg-red-100 text-red-800';
+			case 'NOSHOW':
+				return 'bg-orange-100 text-orange-800';
 			default:
 				return 'bg-gray-100 text-gray-800';
 		}
@@ -184,6 +188,12 @@ export default function AdminBookings() {
 									className="bg-white hover:bg-gray-50 focus:bg-gray-50 text-gray-900 cursor-pointer"
 								>
 									Completed
+								</SelectItem>
+								<SelectItem
+									value="NOSHOW"
+									className="bg-white hover:bg-gray-50 focus:bg-gray-50 text-gray-900 cursor-pointer"
+								>
+									No Show
 								</SelectItem>
 							</SelectContent>
 						</Select>

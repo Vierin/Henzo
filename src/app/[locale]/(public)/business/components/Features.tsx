@@ -15,8 +15,8 @@ export function Features() {
 		},
 		{
 			icon: Users,
-			title: t('business.features.clientManagement.title'),
-			description: t('business.features.clientManagement.description'),
+			title: t('business.features.onlineBooking.title'),
+			description: t('business.features.onlineBooking.description'),
 		},
 		{
 			icon: Bell,
