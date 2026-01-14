@@ -69,5 +69,9 @@
 	"share": "Share",
 	"pleaseWaitForSalonData": "Please wait for salon data to load",
 	"linkCopied": "Link copied to clipboard!",
-	"failedToCopy": "Failed to copy link"
+	"failedToCopy": "Failed to copy link",
+	"selectAddress": "Select Address",
+	"enterAddress": "Enter address...",
+	"selectAddressToSeeMap": "Select an address to view on the map",
+	"addressPlaceholder": "Select address"
 }

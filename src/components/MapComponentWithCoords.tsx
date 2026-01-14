@@ -118,6 +118,13 @@ export default function MapComponentWithCoords({
 					markerOptions
 				).addTo(mapInstanceRef.current);
 
+				// Force map to invalidate size to ensure marker is visible
+				setTimeout(() => {
+					if (mapInstanceRef.current) {
+						mapInstanceRef.current.invalidateSize();
+					}
+				}, 100);
+
 				// Handle marker drag events if editable
 				if (editable && onMarkerMove) {
 					markerRef.current?.on('dragend', async (e: any) => {
@@ -291,6 +298,10 @@ export default function MapComponentWithCoords({
 		// Wait for map to be fully loaded before marking as ready
 		map.whenReady(() => {
 			logger.log('✅ Map initialized and ready');
+			// Invalidate size to ensure proper rendering
+			setTimeout(() => {
+				map.invalidateSize();
+			}, 100);
 		});
 
 		// Cleanup on unmount only
@@ -324,25 +335,42 @@ export default function MapComponentWithCoords({
 				});
 				lastCoordsRef.current = { lat, lon };
 
-				// Update map immediately if map is ready
-				// Check if map is fully initialized (has tiles loaded)
-				if (mapInstanceRef.current && mapInstanceRef.current._loaded) {
-					updateMapWithCoords(lat, lon, address, false);
-				} else {
-					// If map is not ready yet, wait a bit but use requestAnimationFrame for better performance
-					const updateMap = () => {
-						if (mapInstanceRef.current && mapInstanceRef.current._loaded) {
+				// Update map - wait for map to be ready
+				const updateMap = () => {
+					if (mapInstanceRef.current) {
+						updateMapWithCoords(lat, lon, address, false);
+					}
+				};
+				
+				// Use whenReady if available, otherwise try with delay
+				if (mapInstanceRef.current.whenReady) {
+					mapInstanceRef.current.whenReady(() => {
+						setTimeout(() => {
 							updateMapWithCoords(lat, lon, address, false);
-						} else {
-							// Retry after a short delay if map is still not ready
+						}, 200);
+					});
+				} else if (mapInstanceRef.current._loaded) {
+					setTimeout(() => {
+						updateMapWithCoords(lat, lon, address, false);
+					}, 200);
+				} else {
+					// Wait for map to load
+					const checkLoaded = setInterval(() => {
+						if (mapInstanceRef.current && mapInstanceRef.current._loaded) {
+							clearInterval(checkLoaded);
 							setTimeout(() => {
-								if (mapInstanceRef.current) {
-									updateMapWithCoords(lat, lon, address, false);
-								}
-							}, 50);
+								updateMapWithCoords(lat, lon, address, false);
+							}, 200);
 						}
-					};
-					requestAnimationFrame(updateMap);
+					}, 50);
+					
+					// Timeout after 2 seconds
+					setTimeout(() => {
+						clearInterval(checkLoaded);
+						if (mapInstanceRef.current) {
+							updateMapWithCoords(lat, lon, address, false);
+						}
+					}, 2000);
 				}
 			}
 		} else if (

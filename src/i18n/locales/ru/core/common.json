@@ -21,5 +21,6 @@
 	"gettingLocation": "Определяем ваше местоположение...",
 	"toggleMenu": "Переключить меню",
 	"minutesShort": "мин",
-	"goHome": "На главную"
+	"goHome": "На главную",
+	"select": "Выбрать"
 }

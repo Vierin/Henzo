@@ -69,5 +69,9 @@
 	"share": "Поделиться",
 	"pleaseWaitForSalonData": "Пожалуйста, подождите загрузки данных салона",
 	"linkCopied": "Ссылка скопирована в буфер обмена!",
-	"failedToCopy": "Не удалось скопировать ссылку"
+	"failedToCopy": "Не удалось скопировать ссылку",
+	"selectAddress": "Выберите адрес",
+	"enterAddress": "Введите адрес...",
+	"selectAddressToSeeMap": "Выберите адрес для просмотра на карте",
+	"addressPlaceholder": "Выберите адрес"
 }

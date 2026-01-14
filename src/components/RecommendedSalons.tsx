@@ -225,6 +225,7 @@ export default function RecommendedSalons() {
 									<Link
 										key={salon.id}
 										href={salon.url}
+										prefetch={true}
 										className="bg-white rounded-2xl overflow-hidden shadow-md hover:shadow-xl transition-all duration-300 block"
 									>
 										<div className="relative aspect-[4/3] bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center">
@@ -316,6 +317,7 @@ export default function RecommendedSalons() {
 										<Link
 											key={salon.id}
 											href={salon.url}
+											prefetch={true}
 											className="bg-white rounded-2xl overflow-hidden shadow-md hover:shadow-xl transition-all duration-300 block flex-shrink-0"
 											style={{ width: 'calc(66.666vw - 2rem)' }}
 										>

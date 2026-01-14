@@ -253,12 +253,7 @@ export default function OwnerSidebar({
 					<div className="space-y-1">
 						<button
 							onClick={() => setIsSettingsOpen(!isSettingsOpen)}
-							className={`flex items-center justify-between w-full px-3 py-2 rounded-lg transition-colors ${
-								pathNoLocale.startsWith('/salon-info') ||
-								pathNoLocale.startsWith('/profile-settings')
-									? 'bg-[#ea4b4b] text-white'
-									: 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
-							}`}
+							className={`flex items-center justify-between w-full px-3 py-2 rounded-lg transition-colors`}
 						>
 							<div className="flex items-center gap-3">
 								<Settings className="w-5 h-5" />

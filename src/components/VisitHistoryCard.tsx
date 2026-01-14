@@ -120,6 +120,7 @@ function VisitHistoryCard({
 							{visit.salonId ? (
 								<Link
 									href={`/salon/${visit.salonId}`}
+									prefetch={true}
 									className="text-base sm:text-lg font-semibold text-gray-900 truncate flex-1 hover:text-[#ff5b5b] transition-colors"
 								>
 									{visit.salonName}

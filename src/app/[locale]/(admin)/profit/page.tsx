@@ -19,7 +19,9 @@ interface MonthlyReport {
 }
 
 interface ExpensesData {
-	[key: string]: number;
+	[key: string]: {
+		[key: string]: number; // Категории расходов (Digital ocean, Supabase, и т.д.)
+	};
 }
 
 export default function ProfitPage() {
@@ -73,8 +75,12 @@ export default function ProfitPage() {
 			// Конвертируем прибыль из донгов в доллары
 			const revenueVND = monthlyRevenue?.[key] || 0;
 			const revenue = convertToUSD(revenueVND);
-			// Расходы уже должны быть в долларах в JSON, но на всякий случай конвертируем
-			const expensesAmount = expenses?.[key] || 0;
+			// Суммируем все категории расходов для месяца
+			const monthExpenses = expenses?.[key] || {};
+			const expensesAmount = Object.values(monthExpenses).reduce(
+				(sum, value) => sum + (typeof value === 'number' ? value : 0),
+				0
+			);
 			result[key] = {
 				month,
 				revenue,

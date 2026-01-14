@@ -10,10 +10,11 @@ import { Salon } from '@/types';
  */
 export function useSalonSlug() {
 	/**
-	 * Генерирует slug для салона
+	 * Генерирует slug для салона (использует slug из БД или генерирует)
 	 */
 	const getSalonSlug = (salon: Salon): string => {
-		return generateSalonSlug(salon.name, salon.id, salon.address);
+		// Используем slug из БД, если есть, иначе генерируем
+		return salon.slug || generateSalonSlug(salon.name, salon.id, salon.address);
 	};
 
 	/**
@@ -31,7 +32,7 @@ export function useSalonSlug() {
 	};
 
 	/**
-	 * Создает URL для салона с slug
+	 * Создает URL для салона с slug (использует slug из БД)
 	 */
 	const getSalonUrl = (salon: Salon): string => {
 		const slug = getSalonSlug(salon);

@@ -37,9 +37,23 @@ export default function AdditionalMetrics({
 			? Math.round((noShowCount / totalPastBookings) * 100)
 			: 0;
 
-	// Calculate Repeat Clients
-	const clientBookingCount = bookings
-		.filter((b) => b.status === 'COMPLETED')
+	// Calculate Repeat Clients (Loyalty Metrics)
+	// Исключаем анонимных пользователей и считаем только завершенные бронирования
+	const isAnonymousUser = (user: Booking['user']) => {
+		if (!user) return true;
+		const email = user.email || '';
+		return (
+			email.includes('@anonymous.local') ||
+			email.startsWith('anonymous-') ||
+			user.isGuest === true
+		);
+	};
+
+	const completedBookings = bookings.filter((b) => b.status === 'COMPLETED');
+	
+	// Подсчитываем количество бронирований для каждого клиента (исключая анонимов)
+	const clientBookingCount = completedBookings
+		.filter((b) => !isAnonymousUser(b.user))
 		.reduce(
 			(acc, booking) => {
 				acc[booking.userId] = (acc[booking.userId] || 0) + 1;
@@ -48,16 +62,34 @@ export default function AdditionalMetrics({
 			{} as Record<string, number>
 		);
 
-	const repeatClients = Object.values(clientBookingCount).filter(
-		(count) => count > 1
+	// Постоянные клиенты: >= 3 бронирований
+	const loyalClients = Object.values(clientBookingCount).filter(
+		(count) => count >= 3
 	).length;
+	
+	// Клиенты с 2 бронированиями (потенциально постоянные)
+	const potentialLoyalClients = Object.values(clientBookingCount).filter(
+		(count) => count === 2
+	).length;
+	
+	// Всего уникальных клиентов (исключая анонимов)
 	const totalClients = Object.keys(clientBookingCount).length;
-	const repeatClientRate =
-		totalClients > 0 ? Math.round((repeatClients / totalClients) * 100) : 0;
+	
+	// Процент постоянных клиентов
+	const loyalClientRate =
+		totalClients > 0 ? Math.round((loyalClients / totalClients) * 100) : 0;
+	
+	// Среднее количество визитов на клиента
+	const totalVisits = Object.values(clientBookingCount).reduce(
+		(sum, count) => sum + count,
+		0
+	);
+	const avgVisitsPerClient =
+		totalClients > 0 ? (totalVisits / totalClients).toFixed(1) : '0.0';
 
-	// Calculate Average Revenue per Client
-	const totalRevenue = bookings
-		.filter((b) => b.status === 'COMPLETED')
+	// Calculate Average Revenue per Client (только для не-анонимных клиентов)
+	const totalRevenue = completedBookings
+		.filter((b) => !isAnonymousUser(b.user))
 		.reduce((sum, b) => sum + (b.service?.price || 0), 0);
 	const avgRevenuePerClient =
 		totalClients > 0 ? Math.round(totalRevenue / totalClients) : 0;
@@ -73,8 +105,8 @@ export default function AdditionalMetrics({
 		},
 		{
 			title: t('owner.dashboard.repeatClients'),
-			value: `${repeatClientRate}%`,
-			subtitle: `${repeatClients} ${t('owner.dashboard.of')} ${totalClients}`,
+			value: `${loyalClientRate}%`,
+			subtitle: `${loyalClients} ${t('owner.dashboard.of')} ${totalClients} (≥3 визитов)`,
 			icon: <Users className="w-6 h-6" />,
 			color: 'text-blue-600',
 			bgColor: 'bg-blue-50',
@@ -88,6 +120,14 @@ export default function AdditionalMetrics({
 			bgColor: 'bg-green-50',
 		},
 	];
+
+	// Дополнительная информация для постоянных клиентов
+	const loyaltyDetails = {
+		loyalClients,
+		potentialLoyalClients,
+		totalClients,
+		avgVisitsPerClient,
+	};
 
 	return (
 		<div className="bg-white rounded-xl border border-[#f1d9d7] p-4 md:p-6">
@@ -118,6 +158,18 @@ export default function AdditionalMetrics({
 						</div>
 						<div className="text-right">
 							<p className="text-sm text-gray-500">{metric.subtitle}</p>
+							{/* Дополнительная информация для метрики постоянных клиентов */}
+							{metric.title === t('owner.dashboard.repeatClients') &&
+								loyaltyDetails.totalClients > 0 && (
+									<div className="mt-1 text-xs text-gray-400">
+										Среднее: {loyaltyDetails.avgVisitsPerClient} визитов
+										{loyaltyDetails.potentialLoyalClients > 0 && (
+											<span className="ml-2">
+												• {loyaltyDetails.potentialLoyalClients} с 2 визитами
+											</span>
+										)}
+									</div>
+								)}
 						</div>
 					</div>
 				))}

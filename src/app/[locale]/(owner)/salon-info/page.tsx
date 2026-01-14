@@ -5,7 +5,6 @@ import {
 	useEffect,
 	useRef,
 	useCallback,
-	useMemo,
 	lazy,
 	Suspense,
 } from 'react';
@@ -14,13 +13,9 @@ import { useRouter } from 'next/navigation';
 import toast from 'react-hot-toast';
 import LoadingSpinner from '@/components/LoadingSpinner';
 
-// P1: Lazy load тяжелых компонентов для code splitting
-const AddressAutocomplete = lazy(
-	() => import('@/components/AddressAutocomplete')
-);
-// MapComponentWithCoords - динамический импорт с ssr: false для оптимизации
-const MapComponentWithCoords = dynamic(
-	() => import('@/components/MapComponentWithCoords'),
+// P1: Lazy load тяжелых компонентов для code splitting - загружаем только при необходимости
+const AddressSelectModal = dynamic(
+	() => import('@/components/AddressSelectModal'),
 	{ ssr: false }
 );
 const EnhancedFileUpload = lazy(
@@ -36,7 +31,7 @@ import { useSalon } from '@/hooks/useSalons';
 import { useSalonSlug } from '@/hooks/useSalonSlug';
 import { apiClient } from '@/lib/api-client';
 import { logger } from '@/lib/logger';
-import { Clock4, Copy, Share2 } from 'lucide-react';
+import { Clock4, Copy, QrCode, Share2, MapPin } from 'lucide-react';
 import { useTranslation } from '@/contexts/LanguageContext';
 
 export default function SalonInfoPage() {
@@ -73,6 +68,7 @@ export default function SalonInfoPage() {
 	const [showDeleteModal, setShowDeleteModal] = useState(false);
 	const [deleteLoading, setDeleteLoading] = useState(false);
 	const [isUpdatingAddress, setIsUpdatingAddress] = useState(false);
+	const [showAddressModal, setShowAddressModal] = useState(false);
 	const addressUpdateTimerRef = useRef<NodeJS.Timeout | null>(null);
 	const router = useRouter();
 	const { getSalonUrl } = useSalonSlug();
@@ -192,7 +188,7 @@ export default function SalonInfoPage() {
 		}
 	}, [salon, geocodeAddress]);
 
-	// Handle marker move with debounce for address update
+	// Handle marker move with debounce for address update (deprecated - now handled in modal)
 	const handleMarkerMove = useCallback(
 		async (lat: number, lon: number, address?: string) => {
 			// Update coordinates immediately
@@ -260,16 +256,7 @@ export default function SalonInfoPage() {
 		}
 	}, [salon, hasExistingSalon, getSalonUrl]);
 
-	// Memoize map props to prevent unnecessary re-renders
-	// Only update when coordinates actually change, not when address text changes
-	const mapProps = useMemo(() => {
-		const props = {
-			lat: selectedCoords?.lat,
-			lon: selectedCoords?.lon,
-			address: formData.address,
-		};
-		return props;
-	}, [selectedCoords?.lat, selectedCoords?.lon, formData.address]);
+	// Map props removed - map is now in modal
 
 	const copyToClipboard = async () => {
 		if (!salonUrl) {
@@ -455,22 +442,40 @@ export default function SalonInfoPage() {
 
 						{/* Categories selection removed */}
 
-						<div className="relative z-10">
+						<div>
 							<label className="block text-sm font-medium text-gray-700 mb-2">
 								{t('owner.salonInfo.address')}
 							</label>
-							<Suspense fallback={<LoadingSpinner />}>
-								<AddressAutocomplete
+							<button
+								type="button"
+								onClick={() => setShowAddressModal(true)}
+								className="w-full px-3 py-2 border border-gray-300 rounded-md text-left text-gray-900 bg-white hover:border-[#ff5b5b] focus:outline-none focus:ring-2 focus:ring-[#ff5b5b] focus:border-[#ff5b5b] flex items-center justify-between"
+							>
+								<span
+									className={
+										formData.address ? 'text-gray-900' : 'text-gray-500'
+									}
+								>
+									{formData.address ||
+										t('owner.salonInfo.addressPlaceholder') ||
+										'Выберите адрес'}
+								</span>
+								<MapPin className="w-5 h-5 text-gray-400" />
+							</button>
+							{showAddressModal && (
+								<AddressSelectModal
+									isOpen={showAddressModal}
+									onClose={() => setShowAddressModal(false)}
 									value={formData.address}
-									onChange={(address) => setFormData({ ...formData, address })}
-									onAddressSelect={(address, lat, lon) => {
-										// Update form data and coordinates
+									initialLat={selectedCoords?.lat}
+									initialLon={selectedCoords?.lon}
+									onSelect={(address, lat, lon) => {
 										setFormData({ ...formData, address });
 										setSelectedCoords({ lat, lon });
-										console.log('📍 Address selected:', { address, lat, lon });
+										setShowAddressModal(false);
 									}}
 								/>
-							</Suspense>
+							)}
 						</div>
 
 						{/* Salon Link - only show if salon exists */}
@@ -487,7 +492,7 @@ export default function SalonInfoPage() {
 										className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-50 text-gray-900 cursor-default text-sm"
 										placeholder={t('owner.salonInfo.loadingSalonLink')}
 									/>
-									<div className="flex gap-2">
+									<div className="flex gap-2 mt-4">
 										<button
 											type="button"
 											onClick={copyToClipboard}
@@ -508,35 +513,21 @@ export default function SalonInfoPage() {
 											<Share2 className="w-4 h-4" />
 											{t('owner.salonInfo.share')}
 										</button>
+										<button
+											type="button"
+											// onClick={shareLink}
+											// disabled={!salonUrl}
+											className="flex-1 px-3 py-2 bg-gray-100 text-gray-700 rounded-md font-medium hover:bg-gray-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 flex items-center justify-center gap-2 text-sm"
+										>
+											<QrCode className="w-4 h-4" />
+											QR Code
+										</button>
 									</div>
 								</div>
 							</div>
 						)}
 					</div>
 				</div>
-
-				{/* Map Section */}
-				{mapProps.lat && mapProps.lon && (
-					<div className="bg-white border border-gray-200 rounded-lg p-3 md:p-6">
-						<h2 className="text-xl md:text-2xl font-semibold text-gray-900 mb-4 md:mb-6">
-							{t('owner.salonInfo.locationPreview')}
-						</h2>
-						<div className="w-full rounded-lg overflow-hidden border border-gray-200 shadow-sm">
-							<MapComponentWithCoords
-								lat={mapProps.lat}
-								lon={mapProps.lon}
-								address={mapProps.address}
-								height="450px"
-								zoom={16}
-								interactive={true}
-								showPopup={false}
-								editable={true}
-								onMarkerMove={handleMarkerMove}
-								className="w-full h-full"
-							/>
-						</div>
-					</div>
-				)}
 
 				{/* Contact Information Section */}
 				<div className="bg-white border border-gray-200 rounded-lg p-3 md:p-6">
@@ -715,14 +706,26 @@ export default function SalonInfoPage() {
 								}
 								className="sr-only"
 							/>
-							<div className={`relative w-4 h-4 border-2 border-[#ff5b5b] rounded flex items-center justify-center transition-colors ${
-								formData.reminderSettings.intervals.includes(3)
-									? 'bg-[#ff5b5b]'
-									: 'bg-white'
-							} ${formData.reminderSettings.intervals.length === 1 && formData.reminderSettings.intervals.includes(3) ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}>
+							<div
+								className={`relative w-4 h-4 border-2 border-[#ff5b5b] rounded flex items-center justify-center transition-colors ${
+									formData.reminderSettings.intervals.includes(3)
+										? 'bg-[#ff5b5b]'
+										: 'bg-white'
+								} ${formData.reminderSettings.intervals.length === 1 && formData.reminderSettings.intervals.includes(3) ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
+							>
 								{formData.reminderSettings.intervals.includes(3) && (
-									<svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-										<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+									<svg
+										className="w-3 h-3 text-white"
+										fill="none"
+										stroke="currentColor"
+										viewBox="0 0 24 24"
+									>
+										<path
+											strokeLinecap="round"
+											strokeLinejoin="round"
+											strokeWidth={3}
+											d="M5 13l4 4L19 7"
+										/>
 									</svg>
 								)}
 							</div>
@@ -763,14 +766,26 @@ export default function SalonInfoPage() {
 								}
 								className="sr-only"
 							/>
-							<div className={`relative w-4 h-4 border-2 border-[#ff5b5b] rounded flex items-center justify-center transition-colors ${
-								formData.reminderSettings.intervals.includes(24)
-									? 'bg-[#ff5b5b]'
-									: 'bg-white'
-							} ${formData.reminderSettings.intervals.length === 1 && formData.reminderSettings.intervals.includes(24) ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}>
+							<div
+								className={`relative w-4 h-4 border-2 border-[#ff5b5b] rounded flex items-center justify-center transition-colors ${
+									formData.reminderSettings.intervals.includes(24)
+										? 'bg-[#ff5b5b]'
+										: 'bg-white'
+								} ${formData.reminderSettings.intervals.length === 1 && formData.reminderSettings.intervals.includes(24) ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
+							>
 								{formData.reminderSettings.intervals.includes(24) && (
-									<svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-										<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+									<svg
+										className="w-3 h-3 text-white"
+										fill="none"
+										stroke="currentColor"
+										viewBox="0 0 24 24"
+									>
+										<path
+											strokeLinecap="round"
+											strokeLinejoin="round"
+											strokeWidth={3}
+											d="M5 13l4 4L19 7"
+										/>
 									</svg>
 								)}
 							</div>
@@ -812,14 +827,26 @@ export default function SalonInfoPage() {
 								}
 								className="sr-only"
 							/>
-							<div className={`relative w-4 h-4 border-2 border-[#ff5b5b] rounded flex items-center justify-center transition-colors ${
-								formData.reminderSettings.intervals.includes(168)
-									? 'bg-[#ff5b5b]'
-									: 'bg-white'
-							} ${formData.reminderSettings.intervals.length === 1 && formData.reminderSettings.intervals.includes(168) ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}>
+							<div
+								className={`relative w-4 h-4 border-2 border-[#ff5b5b] rounded flex items-center justify-center transition-colors ${
+									formData.reminderSettings.intervals.includes(168)
+										? 'bg-[#ff5b5b]'
+										: 'bg-white'
+								} ${formData.reminderSettings.intervals.length === 1 && formData.reminderSettings.intervals.includes(168) ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
+							>
 								{formData.reminderSettings.intervals.includes(168) && (
-									<svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-										<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+									<svg
+										className="w-3 h-3 text-white"
+										fill="none"
+										stroke="currentColor"
+										viewBox="0 0 24 24"
+									>
+										<path
+											strokeLinecap="round"
+											strokeLinejoin="round"
+											strokeWidth={3}
+											d="M5 13l4 4L19 7"
+										/>
 									</svg>
 								)}
 							</div>
@@ -924,7 +951,7 @@ export default function SalonInfoPage() {
 							<button
 								type="button"
 								onClick={() => setShowDeleteModal(true)}
-								className="bg-red-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 transition-colors"
+								className="bg-red-600 !text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2"
 							>
 								{t('owner.salonInfo.deleteMyAccount')}
 							</button>

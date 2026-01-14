@@ -6,6 +6,7 @@ export interface User {
 	name?: string;
 	phone?: string;
 	role: 'OWNER' | 'ADMIN' | 'CLIENT';
+	isGuest?: boolean;
 	createdAt: string;
 	bookings?: Booking[];
 }
@@ -37,11 +38,13 @@ export interface Salon {
 	reviewCount?: number;
 	// Timezone (IANA timezone identifier, e.g., "Asia/Ho_Chi_Minh")
 	timezone?: string;
+	// SEO-friendly slug for salon URLs (stored in DB)
+	slug?: string;
 	_count?: {
 		reviews?: number;
 		services?: number;
 	};
-	// Метод для генерации slug (не сохраняется в БД)
+	// Метод для генерации slug (не сохраняется в БД, используется как fallback)
 	getSlug?(): string;
 }
 

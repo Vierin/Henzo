@@ -69,5 +69,9 @@
 	"share": "Chia sẻ",
 	"pleaseWaitForSalonData": "Vui lòng đợi dữ liệu salon tải",
 	"linkCopied": "Đã sao chép liên kết vào clipboard!",
-	"failedToCopy": "Không thể sao chép liên kết"
+	"failedToCopy": "Không thể sao chép liên kết",
+	"selectAddress": "Chọn địa chỉ",
+	"enterAddress": "Nhập địa chỉ...",
+	"selectAddressToSeeMap": "Chọn địa chỉ để xem trên bản đồ",
+	"addressPlaceholder": "Chọn địa chỉ"
 }

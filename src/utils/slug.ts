@@ -203,28 +203,25 @@ export function generateSalonSlug(
  * Извлекает ID салона из slug
  * @param slug - slug салона
  * @returns ID салона или null если не удалось извлечь
+ * 
+ * Оптимизированная версия: использует регулярное выражение для быстрого поиска ID в конце slug
+ * ID (cuid) обычно начинается с 'c' и имеет длину 20+ символов
  */
 export function extractSalonIdFromSlug(slug: string): string | null {
-	// Slug имеет формат: название-id
-	// ID всегда в конце и имеет стандартную длину (обычно 20+ символов для cuid)
-	const parts = slug.split('-');
-	if (parts.length < 2) {
-		return null;
+	// Оптимизация: используем регулярное выражение для поиска ID в конце
+	// Паттерн: ID начинается с 'c' и содержит 20+ букв/цифр в конце строки
+	const idMatch = slug.match(/-c[a-z0-9]{19,}$/i);
+	if (idMatch) {
+		// Убираем дефис в начале
+		return idMatch[0].substring(1);
 	}
-
-	// Ищем последнюю часть, которая похожа на ID (cuid обычно начинается с 'c' и содержит буквы/цифры)
-	for (let i = parts.length - 1; i >= 0; i--) {
-		const part = parts[i];
-		// Проверяем, что часть похожа на ID (начинается с 'c' и содержит буквы/цифры)
-		if (
-			part.length >= 20 &&
-			part.startsWith('c') &&
-			/^[a-zA-Z0-9]+$/.test(part)
-		) {
-			return part;
-		}
+	
+	// Fallback для старых форматов или если ID в начале
+	// Проверяем, может быть это просто ID без названия
+	if (/^c[a-z0-9]{19,}$/i.test(slug)) {
+		return slug;
 	}
-
+	
 	return null;
 }
 

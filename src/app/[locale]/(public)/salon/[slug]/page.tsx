@@ -18,25 +18,35 @@ async function getSalonData(
 	slug: string
 ): Promise<SalonWithDetailsResponseDto | null> {
 	try {
-		// Проверяем, является ли это старым ID (UUID) или новым slug
+		// Проверяем, является ли это старым ID (UUID)
 		const isOldId = /^[a-f0-9-]{36}$/.test(slug);
-		const salonId = isOldId ? slug : extractSalonIdFromSlug(slug);
-
-		if (!salonId) {
-			return null;
+		
+		if (isOldId) {
+			// Старый формат - используем поиск по ID
+			const response = await apiClient.get<SalonWithDetailsResponseDto>(
+				`/salons/${slug}`
+			);
+			return response;
 		}
 
-		// Валидация slug для новых URL
-		if (!isOldId && !isValidSalonSlug(slug)) {
-			return null;
+		// Новый формат - сначала пробуем найти по slug (быстрый поиск с индексом)
+		try {
+			const response = await apiClient.get<SalonWithDetailsResponseDto>(
+				`/salons/by-slug/${slug}`
+			);
+			if (response) return response;
+		} catch (error: any) {
+			// Если не нашли по slug, пробуем fallback - извлечь ID из slug
+			const salonId = extractSalonIdFromSlug(slug);
+			if (salonId && isValidSalonSlug(slug)) {
+				const response = await apiClient.get<SalonWithDetailsResponseDto>(
+					`/salons/${salonId}`
+				);
+				return response;
+			}
 		}
 
-		const response = await apiClient.get<SalonWithDetailsResponseDto>(
-			`/salons/${salonId}`
-		);
-		const salon = response;
-
-		return salon;
+		return null;
 	} catch (error: any) {
 		// Return null to trigger notFound() which shows a proper 404 page
 		return null;
@@ -108,15 +118,15 @@ export default async function SalonDetailPage({
 
 	// Проверяем, нужно ли редиректить со старого ID на новый slug
 	const isOldId = /^[a-f0-9-]{36}$/.test(slug);
-	if (isOldId && salon.id) {
-		const newSlug = generateSalonSlug(salon.name, salon.id, salon.address);
+	if (isOldId && salon.id && salon.slug) {
+		// Используем slug из БД, если есть
 		return (
 			<div className="min-h-screen bg-[#F8F5F2] flex items-center justify-center">
 				<div className="text-center">
 					<p className="text-gray-600 mb-4">
 						Redirecting to updated salon page...
 					</p>
-					<meta httpEquiv="refresh" content={`0; url=/salon/${newSlug}`} />
+					<meta httpEquiv="refresh" content={`0; url=/salon/${salon.slug}`} />
 				</div>
 			</div>
 		);
