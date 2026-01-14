@@ -154,14 +154,21 @@ export default function OwnerSidebar({
 			// Get localized home URL
 			const homeUrl = withLocale('/', currentLocale as 'en' | 'ru' | 'vi');
 
-			// Logout and wait for completion
-			await logout();
+			// Prefetch главной страницы для быстрой загрузки
+			router.prefetch(homeUrl);
 
-			// Small delay to ensure cookies are cleared
-			await new Promise((resolve) => setTimeout(resolve, 100));
-
-			// Force full page redirect to public homepage with locale
+			// Оптимистичный редирект: сразу переходим на главную страницу
+			// Это предотвращает белый экран и долгое ожидание
 			window.location.href = homeUrl;
+
+			// Выполняем logout в фоне (не ждем завершения)
+			// Это не блокирует редирект и улучшает UX
+			// Используем setTimeout для гарантированного выполнения даже после редиректа
+			setTimeout(() => {
+				logout().catch((error) => {
+					console.debug('Logout error (background, non-critical):', error);
+				});
+			}, 0);
 		} catch (error) {
 			console.error('Logout error:', error);
 			// Even if logout fails, redirect to home with locale

@@ -181,14 +181,26 @@ export const useAuthStore = create<AuthState>()(
 				}
 			},
 
-			// Logout
+			// Logout - оптимизированная версия с быстрой очисткой состояния
 			logout: async () => {
 				try {
-					// First sign out from Supabase (this clears cookies)
-					await supabase.auth.signOut();
-
-					// Then clear user from store
+					// Оптимизация: сначала очищаем локальное состояние (мгновенно)
+					// Это улучшает UX, так как пользователь сразу видит результат
 					get().clearUser();
+
+					// Затем выполняем logout из Supabase в фоне
+					// Используем Promise.race для таймаута, чтобы не ждать слишком долго
+					const logoutPromise = supabase.auth.signOut();
+					const timeoutPromise = new Promise((_, reject) =>
+						setTimeout(() => reject(new Error('Logout timeout')), 3000)
+					);
+
+					try {
+						await Promise.race([logoutPromise, timeoutPromise]);
+					} catch (error) {
+						// Игнорируем ошибки таймаута - локальное состояние уже очищено
+						console.debug('Logout timeout or error (non-critical):', error);
+					}
 				} catch (error) {
 					console.error('Logout error:', error);
 					// Clear user even if logout fails

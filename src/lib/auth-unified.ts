@@ -291,20 +291,37 @@ class AuthManager {
 				isLoggingOut: true,
 			});
 
-			const userId = this.authState.user?.id;
-			await supabase.auth.signOut();
-			// Очищаем оба хранилища (localStorage и sessionStorage)
+			// Оптимизация: сначала очищаем локальное состояние (мгновенно)
+			// Это улучшает UX, так как пользователь сразу видит результат
 			storage.removeItem('auth_user');
 			storage.session.removeItem('auth_user');
+			this.clearTokenRefresh();
+
+			// Затем выполняем logout из Supabase в фоне
+			// Используем Promise.race для таймаута, чтобы не ждать слишком долго
+			const logoutPromise = supabase.auth.signOut();
+			const timeoutPromise = new Promise((_, reject) =>
+				setTimeout(() => reject(new Error('Logout timeout')), 3000)
+			);
+
+			try {
+				await Promise.race([logoutPromise, timeoutPromise]);
+			} catch (error) {
+				// Игнорируем ошибки таймаута - локальное состояние уже очищено
+				console.debug('Logout timeout or error (non-critical):', error);
+			}
+
+			// Обновляем состояние после попытки logout
 			this.setState({
 				user: null,
 				isAuthenticated: false,
 				isLoading: false,
 				isLoggingOut: false,
 			});
-			this.clearTokenRefresh();
 		} catch (error) {
 			// Принудительная очистка даже при ошибке
+			storage.removeItem('auth_user');
+			storage.session.removeItem('auth_user');
 			this.setState({
 				user: null,
 				isAuthenticated: false,

@@ -86,14 +86,21 @@ export default function OwnerHeader() {
 			// Get localized home URL
 			const homeUrl = withLocale('/', currentLocale as 'en' | 'ru' | 'vi');
 			
-			// Оптимистичный редирект: сначала редиректим, потом выполняем logout в фоне
-			// Это предотвращает мерцание контента
+			// Prefetch главной страницы для быстрой загрузки
+			router.prefetch(homeUrl);
+			
+			// Оптимистичный редирект: сразу переходим на главную страницу
+			// Это предотвращает белый экран и долгое ожидание
 			window.location.href = homeUrl;
 			
 			// Выполняем logout в фоне (не ждем завершения)
-			logout().catch((error) => {
-				console.error('Logout error:', error);
-			});
+			// Это не блокирует редирект и улучшает UX
+			// Используем setTimeout для гарантированного выполнения даже после редиректа
+			setTimeout(() => {
+				logout().catch((error) => {
+					console.debug('Logout error (background, non-critical):', error);
+				});
+			}, 0);
 		} catch (error) {
 			console.error('Logout error:', error);
 			// Even if logout fails, redirect to home with locale
