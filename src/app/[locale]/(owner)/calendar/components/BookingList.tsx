@@ -179,7 +179,7 @@ export default function BookingList({
 								onMarkAsNoShow(booking.id);
 							}
 						}}
-						className="flex-1 sm:flex-none px-3 py-1 text-sm font-medium text-white bg-orange-600 hover:bg-orange-700 rounded transition-colors focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2"
+						className="flex-1 sm:flex-none px-3 py-1 text-sm font-medium !text-white bg-red-500 hover:bg-red-700 rounded focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2"
 						title={t('owner.calendar.markAsNoShow')}
 						aria-label={`${t('owner.calendar.markAsNoShow')} booking for ${booking.user?.name || t('owner.calendar.client')}`}
 					>

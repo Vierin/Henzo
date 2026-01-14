@@ -31,7 +31,7 @@ import { useSalon } from '@/hooks/useSalons';
 import { useSalonSlug } from '@/hooks/useSalonSlug';
 import { apiClient } from '@/lib/api-client';
 import { logger } from '@/lib/logger';
-import { Clock4, Copy, QrCode, Share2, MapPin } from 'lucide-react';
+import { Clock4, Copy, QrCode, Share2, MapPin, X } from 'lucide-react';
 import { useTranslation } from '@/contexts/LanguageContext';
 
 export default function SalonInfoPage() {
@@ -69,6 +69,8 @@ export default function SalonInfoPage() {
 	const [deleteLoading, setDeleteLoading] = useState(false);
 	const [isUpdatingAddress, setIsUpdatingAddress] = useState(false);
 	const [showAddressModal, setShowAddressModal] = useState(false);
+	const [showQrModal, setShowQrModal] = useState(false);
+	const [qrCodeUrl, setQrCodeUrl] = useState<string>('');
 	const addressUpdateTimerRef = useRef<NodeJS.Timeout | null>(null);
 	const router = useRouter();
 	const { getSalonUrl } = useSalonSlug();
@@ -251,8 +253,12 @@ export default function SalonInfoPage() {
 				process.env.NEXT_PUBLIC_FRONTEND_URL || 'https://henzo.app';
 			const url = `${baseUrl}${getSalonUrl(salon)}`;
 			setSalonUrl(url);
+			// Generate QR code URL
+			const qrApiUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(url)}`;
+			setQrCodeUrl(qrApiUrl);
 		} else {
 			setSalonUrl('');
+			setQrCodeUrl('');
 		}
 	}, [salon, hasExistingSalon, getSalonUrl]);
 
@@ -285,14 +291,28 @@ export default function SalonInfoPage() {
 					text: `${t('common.checkOut') || 'Check out'} ${salon?.name || formData.salonName || t('owner.salonInfo.title')} ${t('common.andBookAppointment') || 'and book your appointment!'}`,
 					url: salonUrl,
 				});
-			} catch (err) {
+				toast.success(
+					t('owner.salonInfo.sharedSuccessfully') || 'Ссылка успешно отправлена'
+				);
+			} catch (err: any) {
 				// User cancelled sharing or error occurred
-				copyToClipboard(); // Fallback to copy
+				if (err.name !== 'AbortError') {
+					// Only show error if it's not a user cancellation
+					copyToClipboard(); // Fallback to copy
+				}
 			}
 		} else {
 			// Fallback for browsers that don't support Web Share API
 			copyToClipboard();
 		}
+	};
+
+	const openQrModal = () => {
+		if (!salonUrl) {
+			toast.error(t('owner.salonInfo.pleaseWaitForSalonData'));
+			return;
+		}
+		setShowQrModal(true);
 	};
 
 	const handleSubmit = async (e: React.FormEvent) => {
@@ -515,12 +535,12 @@ export default function SalonInfoPage() {
 										</button>
 										<button
 											type="button"
-											// onClick={shareLink}
-											// disabled={!salonUrl}
+											onClick={openQrModal}
+											disabled={!salonUrl}
 											className="flex-1 px-3 py-2 bg-gray-100 text-gray-700 rounded-md font-medium hover:bg-gray-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 flex items-center justify-center gap-2 text-sm"
 										>
 											<QrCode className="w-4 h-4" />
-											QR Code
+											{t('owner.salonInfo.qrCode') || 'QR Code'}
 										</button>
 									</div>
 								</div>
@@ -960,9 +980,50 @@ export default function SalonInfoPage() {
 				</div>
 			</div>
 
+			{/* QR Code Modal */}
+			{showQrModal && (
+				<div className="fixed inset-0 bg-black/40 overflow-y-auto h-full w-full z-50">
+					<div className="relative top-10 md:top-20 mx-auto p-5 border w-[90vw] md:w-96 max-w-md shadow-lg rounded-md bg-white">
+						<div className="mt-3 text-center">
+							<div className="flex items-center justify-between mb-4">
+								<h3 className="text-lg font-medium text-gray-900">
+									{t('owner.salonInfo.qrCode') || 'QR Code'}
+								</h3>
+								<button
+									type="button"
+									onClick={() => setShowQrModal(false)}
+									className="text-gray-400 hover:text-gray-600 transition-colors"
+								>
+									<X className="w-6 h-6" />
+								</button>
+							</div>
+							<div className="mt-4 flex flex-col items-center">
+								{qrCodeUrl ? (
+									<div className="p-4 bg-white rounded-lg border border-gray-200">
+										<img
+											src={qrCodeUrl}
+											alt={t('owner.salonInfo.salonQRCode') || 'Salon QR Code'}
+											className="w-64 h-64"
+										/>
+									</div>
+								) : (
+									<div className="w-64 h-64 flex items-center justify-center bg-gray-100 rounded-lg">
+										<div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#ff5b5b]"></div>
+									</div>
+								)}
+								<p className="mt-4 text-sm text-gray-600">
+									{t('owner.salonInfo.qrCodeDescription') ||
+										'Отсканируйте QR-код, чтобы открыть страницу салона'}
+								</p>
+							</div>
+						</div>
+					</div>
+				</div>
+			)}
+
 			{/* Delete Confirmation Modal */}
 			{showDeleteModal && (
-				<div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+				<div className="fixed inset-0 bg-black/40 overflow-y-auto h-full w-full z-50">
 					<div className="relative top-10 md:top-20 mx-auto p-5 border w-[90vw] md:w-96 max-w-md shadow-lg rounded-md bg-white">
 						<div className="mt-3 text-center">
 							<div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-100">

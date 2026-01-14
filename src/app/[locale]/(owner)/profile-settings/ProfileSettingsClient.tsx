@@ -17,7 +17,7 @@ export default function ProfileSettingsClient() {
 	const [isSavingPassword, setIsSavingPassword] = useState(false);
 	const [showDeleteModal, setShowDeleteModal] = useState(false);
 	const [deleteLoading, setDeleteLoading] = useState(false);
-	
+
 	const [profileData, setProfileData] = useState({
 		name: '',
 		email: '',
@@ -59,11 +59,14 @@ export default function ProfileSettingsClient() {
 		setIsSavingProfile(true);
 
 		try {
-			const response = await apiClient.put<{ success: boolean; user: any }>('/auth/profile', {
-				name: profileData.name,
-				phone: profileData.phone,
-				// Email не обновляем через этот endpoint, нужен отдельный для смены email
-			});
+			const response = await apiClient.put<{ success: boolean; user: any }>(
+				'/auth/profile',
+				{
+					name: profileData.name,
+					phone: profileData.phone,
+					// Email не обновляем через этот endpoint, нужен отдельный для смены email
+				}
+			);
 
 			// Обновляем данные пользователя в store
 			if (response.user) {
@@ -109,7 +112,9 @@ export default function ProfileSettingsClient() {
 			});
 		} catch (error: any) {
 			console.error('Error changing password:', error);
-			toast.error(error.message || t('owner.profileSettings.failedToChangePassword'));
+			toast.error(
+				error.message || t('owner.profileSettings.failedToChangePassword')
+			);
 		} finally {
 			setIsSavingPassword(false);
 		}
@@ -206,7 +211,7 @@ export default function ProfileSettingsClient() {
 							<button
 								type="submit"
 								disabled={isSavingProfile}
-								className="px-6 py-2 bg-[#ff5b5b] text-white rounded-lg font-medium hover:bg-[#e04a4a] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+								className="px-6 py-2 bg-[#ff5b5b] !text-white rounded-lg font-medium hover:bg-[#e04a4a]   disabled:opacity-50 disabled:cursor-not-allowed"
 							>
 								{isSavingProfile
 									? t('owner.profileSettings.saving')
@@ -233,7 +238,9 @@ export default function ProfileSettingsClient() {
 								value={passwordData.currentPassword}
 								onChange={handlePasswordChange}
 								className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#ff5b5b] focus:border-[#ff5b5b] text-gray-900"
-								placeholder={t('owner.profileSettings.currentPasswordPlaceholder')}
+								placeholder={t(
+									'owner.profileSettings.currentPasswordPlaceholder'
+								)}
 							/>
 						</div>
 
@@ -264,7 +271,9 @@ export default function ProfileSettingsClient() {
 								value={passwordData.confirmPassword}
 								onChange={handlePasswordChange}
 								className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#ff5b5b] focus:border-[#ff5b5b] text-gray-900"
-								placeholder={t('owner.profileSettings.confirmPasswordPlaceholder')}
+								placeholder={t(
+									'owner.profileSettings.confirmPasswordPlaceholder'
+								)}
 							/>
 						</div>
 
@@ -272,7 +281,7 @@ export default function ProfileSettingsClient() {
 							<button
 								type="submit"
 								disabled={isSavingPassword}
-								className="px-6 py-2 bg-[#ff5b5b] text-white rounded-lg font-medium hover:bg-[#e04a4a] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+								className="px-6 py-2 bg-[#ff5b5b] !text-white rounded-lg font-medium hover:bg-[#e04a4a] disabled:opacity-50 disabled:cursor-not-allowed"
 							>
 								{isSavingPassword
 									? t('owner.profileSettings.changing')
@@ -296,7 +305,7 @@ export default function ProfileSettingsClient() {
 						<button
 							type="button"
 							onClick={() => setShowDeleteModal(true)}
-							className="px-6 py-2 bg-red-600 text-white rounded-lg font-medium hover:bg-red-700 transition-colors"
+							className="px-6 py-2 bg-red-600 !text-white rounded-lg font-medium hover:bg-red-700"
 						>
 							{t('owner.profileSettings.deleteAccount')}
 						</button>
@@ -340,4 +349,3 @@ export default function ProfileSettingsClient() {
 		</div>
 	);
 }
-

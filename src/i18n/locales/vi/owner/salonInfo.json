@@ -73,5 +73,10 @@
 	"selectAddress": "Chọn địa chỉ",
 	"enterAddress": "Nhập địa chỉ...",
 	"selectAddressToSeeMap": "Chọn địa chỉ để xem trên bản đồ",
-	"addressPlaceholder": "Chọn địa chỉ"
+	"addressPlaceholder": "Chọn địa chỉ",
+	"qrCode": "Mã QR",
+	"salonQRCode": "Mã QR Salon",
+	"qrCodeDescription": "Quét mã QR để mở trang salon",
+	"copyLink": "Sao chép liên kết",
+	"sharedSuccessfully": "Đã chia sẻ liên kết thành công"
 }

@@ -232,27 +232,7 @@ export default function ServicesClient() {
 		setSortOrder('asc');
 	};
 
-	if (salonLoading || servicesLoading) {
-		return (
-			<div className="min-h-screen bg-[#fff7f6] flex items-center justify-center">
-				<LoadingSpinner message={t('owner.services.loading')} />
-			</div>
-		);
-	}
-
-	if (error) {
-		return (
-			<div className="min-h-screen bg-[#fff7f6] flex items-center justify-center">
-				<ErrorDisplay
-					error={
-						error instanceof Error ? error : new Error('An error occurred')
-					}
-					onRetry={refetch}
-				/>
-			</div>
-		);
-	}
-
+	// Show UI immediately, data loads in parallel
 	return (
 		<div className="px-0 md:px-4 max-w-7xl mx-auto">
 			<div className="mb-8">
@@ -277,6 +257,18 @@ export default function ServicesClient() {
 					</button>
 				</div>
 			</div>
+
+			{/* Error Display - show at top if error */}
+			{error && (
+				<div className="mb-6">
+					<ErrorDisplay
+						error={
+							error instanceof Error ? error : new Error('An error occurred')
+						}
+						onRetry={refetch}
+					/>
+				</div>
+			)}
 
 			{/* Фильтры и сортировка */}
 			<div className="mb-6 bg-white rounded-xl border border-[#f1d9d7] p-3 md:p-6">
@@ -529,6 +521,46 @@ export default function ServicesClient() {
 						<span className="text-lg">＋</span>
 						{t('owner.services.addFirstService')}
 					</button>
+				</div>
+			) : salonLoading || servicesLoading ? (
+				// Show skeleton while loading
+				<div className="space-y-4">
+					<div className="bg-white rounded-xl border border-[#f1d9d7] overflow-hidden">
+						<div className="hidden md:block">
+							<div className="grid grid-cols-6 px-6 py-3 text-sm text-gray-700 bg-[#fff2f1] font-semibold">
+								<div>{t('owner.services.serviceName')}</div>
+								<div>{t('owner.services.category')}</div>
+								<div>{t('owner.services.group')}</div>
+								<div>{t('owner.services.duration')}</div>
+								<div>{t('owner.services.price')}</div>
+								<div>{t('owner.services.actions')}</div>
+							</div>
+							<div className="divide-y divide-[#f1d9d7]">
+								{[...Array(3)].map((_, i) => (
+									<div key={i} className="grid grid-cols-6 px-6 py-4">
+										<div className="h-4 w-32 bg-gray-200 rounded animate-pulse" />
+										<div className="h-4 w-24 bg-gray-200 rounded animate-pulse" />
+										<div className="h-4 w-20 bg-gray-200 rounded animate-pulse" />
+										<div className="h-4 w-16 bg-gray-200 rounded animate-pulse" />
+										<div className="h-4 w-20 bg-gray-200 rounded animate-pulse" />
+										<div className="h-4 w-16 bg-gray-200 rounded animate-pulse" />
+									</div>
+								))}
+							</div>
+						</div>
+						<div className="md:hidden divide-y divide-[#f1d9d7]">
+							{[...Array(3)].map((_, i) => (
+								<div key={i} className="p-4">
+									<div className="h-5 w-3/4 bg-gray-200 rounded animate-pulse mb-2" />
+									<div className="h-4 w-1/2 bg-gray-200 rounded animate-pulse mb-4" />
+									<div className="flex justify-between">
+										<div className="h-4 w-20 bg-gray-200 rounded animate-pulse" />
+										<div className="h-8 w-24 bg-gray-200 rounded animate-pulse" />
+									</div>
+								</div>
+							))}
+						</div>
+					</div>
 				</div>
 			) : (
 				<div className="space-y-4">

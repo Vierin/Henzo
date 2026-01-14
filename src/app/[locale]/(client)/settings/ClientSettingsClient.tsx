@@ -126,7 +126,10 @@ export default function ClientSettingsClient() {
 	if (isLoading) {
 		return (
 			<div className="flex items-center justify-center min-h-[400px]">
-				<LoadingSpinner size="lg" message={t('clientSettings.loadingSettings')} />
+				<LoadingSpinner
+					size="lg"
+					message={t('clientSettings.loadingSettings')}
+				/>
 			</div>
 		);
 	}
@@ -210,9 +213,11 @@ export default function ClientSettingsClient() {
 							<button
 								type="submit"
 								disabled={isSaving}
-								className="px-6 py-2 bg-[#ff5b5b] text-white rounded-lg font-medium hover:bg-[#e04a4a] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+								className="px-6 py-2 bg-[#ff5b5b] !text-white rounded-lg font-medium hover:bg-[#e04a4a] disabled:opacity-50 disabled:cursor-not-allowed"
 							>
-								{isSaving ? t('clientSettings.saving') : t('clientSettings.saveChanges')}
+								{isSaving
+									? t('clientSettings.saving')
+									: t('clientSettings.saveChanges')}
 							</button>
 						</div>
 					</form>
@@ -286,9 +291,11 @@ export default function ClientSettingsClient() {
 							<button
 								type="submit"
 								disabled={isSaving}
-								className="px-6 py-2 bg-[#ff5b5b] text-white rounded-lg font-medium hover:bg-[#e04a4a] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+								className="px-6 py-2 bg-[#ff5b5b] text-white rounded-lg font-medium hover:bg-[#e04a4a]  disabled:opacity-50 disabled:cursor-not-allowed"
 							>
-								{isSaving ? t('clientSettings.changing') : t('clientSettings.changePasswordButton')}
+								{isSaving
+									? t('clientSettings.changing')
+									: t('clientSettings.changePasswordButton')}
 							</button>
 						</div>
 					</form>

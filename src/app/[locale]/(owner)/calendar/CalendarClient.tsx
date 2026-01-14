@@ -95,6 +95,23 @@ export default function CalendarClient() {
 			: 'Failed to load bookings'
 		: null;
 
+	// Show UI immediately, data loads in parallel
+	// Only show redirect message if no salon (critical state)
+	if (!hasSalon && salonLoading) {
+		return (
+			<div
+				className="flex items-center justify-center py-12"
+				role="status"
+				aria-live="polite"
+			>
+				<LoadingSpinner
+					size="lg"
+					message={t('owner.calendar.redirectingToSetup')}
+				/>
+			</div>
+		);
+	}
+
 	const fetchBookings = useCallback(async () => {
 		try {
 			const {
@@ -466,63 +483,6 @@ export default function CalendarClient() {
 		}
 	}, [hasSalon, salonLoading, router]);
 
-	if (salonLoading) {
-		return (
-			<div
-				className="flex items-center justify-center py-12"
-				role="status"
-				aria-live="polite"
-			>
-				<LoadingSpinner
-					size="lg"
-					message={t('owner.calendar.loadingCalendarData')}
-				/>
-			</div>
-		);
-	}
-
-	if (!hasSalon) {
-		return (
-			<div
-				className="flex items-center justify-center py-12"
-				role="status"
-				aria-live="polite"
-			>
-				<LoadingSpinner
-					size="lg"
-					message={t('owner.calendar.redirectingToSetup')}
-				/>
-			</div>
-		);
-	}
-
-	if (bookingsLoading) {
-		return (
-			<div
-				className="flex items-center justify-center py-12"
-				role="status"
-				aria-live="polite"
-			>
-				<LoadingSpinner
-					size="lg"
-					message={t('owner.calendar.loadingBookings')}
-				/>
-			</div>
-		);
-	}
-
-	if (error && hasSalon) {
-		return (
-			<div className="flex items-center justify-center py-12" role="alert">
-				<ErrorDisplay
-					error={new Error(error)}
-					onRetry={fetchBookings}
-					message={t('owner.calendar.failedToLoad')}
-				/>
-			</div>
-		);
-	}
-
 	return (
 		<main
 			className="flex gap-4 md:gap-6"
@@ -530,6 +490,17 @@ export default function CalendarClient() {
 			aria-labelledby="calendar-heading"
 		>
 			<div className="w-full max-w-7xl mx-auto px-0 md:px-4">
+				{/* Error Display - show at top if error */}
+				{error && hasSalon && (
+					<div className="mb-6">
+						<ErrorDisplay
+							error={new Error(error)}
+							onRetry={fetchBookings}
+							message={t('owner.calendar.failedToLoad')}
+						/>
+					</div>
+				)}
+
 				<div className="mb-6 md:mb-8">
 					{/* Header */}
 					<div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4">

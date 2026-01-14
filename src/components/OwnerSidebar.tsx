@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useTransition } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import { useQueryClient } from '@tanstack/react-query';
 import { useAuthStore } from '@/stores/authStore';
@@ -49,6 +49,7 @@ export default function OwnerSidebar({
 	const { salonId } = useSalonId();
 	const t = useTranslation();
 	const [isLoggingOut, setIsLoggingOut] = useState(false);
+	const [isPending, startTransition] = useTransition();
 
 	// Extract locale and path without locale
 	const currentLocale = extractLocaleFromPath(pathname) ?? 'en';
@@ -65,15 +66,23 @@ export default function OwnerSidebar({
 		setIsSettingsOpen(isOnSettingsPage);
 	}, [isOnSettingsPage]);
 
-	// Prefetch data for different pages on hover
-	const prefetchPageData = async (page: string) => {
+	// Prefetch route and data for different pages on hover
+	const prefetchPageData = async (page: string, href: string) => {
 		if (!salonId) return;
 
 		try {
+			// Prefetch Next.js route first (non-blocking)
+			const hrefWithLocale = withLocale(
+				href,
+				currentLocale as 'en' | 'ru' | 'vi'
+			);
+			router.prefetch(hrefWithLocale);
+
+			// Then prefetch data in parallel
 			switch (page) {
 				case 'dashboard':
 					// Prefetch bookings for dashboard
-					await queryClient.prefetchQuery({
+					queryClient.prefetchQuery({
 						queryKey: bookingKeys.list({}),
 						queryFn: async () => {
 							const response = await apiClient.get('/bookings/owner');
@@ -84,7 +93,7 @@ export default function OwnerSidebar({
 					break;
 				case 'calendar':
 					// Prefetch bookings and time blocks for calendar
-					await Promise.all([
+					Promise.all([
 						queryClient.prefetchQuery({
 							queryKey: bookingKeys.list({}),
 							queryFn: async () => {
@@ -105,7 +114,7 @@ export default function OwnerSidebar({
 					break;
 				case 'services':
 					// Prefetch services
-					await queryClient.prefetchQuery({
+					queryClient.prefetchQuery({
 						queryKey: serviceKeys.list({ salonId }),
 						queryFn: async () => {
 							const response = await apiClient.get(
@@ -118,7 +127,7 @@ export default function OwnerSidebar({
 					break;
 				case 'staff':
 					// Prefetch staff
-					await queryClient.prefetchQuery({
+					queryClient.prefetchQuery({
 						queryKey: staffKeys.bySalon(salonId),
 						queryFn: async () => {
 							const response = await apiClient.get(`/staff?salonId=${salonId}`);
@@ -161,7 +170,7 @@ export default function OwnerSidebar({
 		}
 	};
 
-	// Helper function to render navigation items
+	// Helper function to render navigation items with optimistic navigation
 	const renderNavItem = (
 		href: string,
 		icon: React.ReactNode | null,
@@ -174,20 +183,31 @@ export default function OwnerSidebar({
 			href,
 			currentLocale as 'en' | 'ru' | 'vi'
 		);
+
+		const handleClick = (e: React.MouseEvent<HTMLAnchorElement>) => {
+			e.preventDefault();
+			setIsMobileMenuOpen?.(false);
+			
+			// Use startTransition for optimistic navigation
+			startTransition(() => {
+				router.push(hrefWithLocale);
+			});
+		};
+
 		return (
 			<Link
 				href={hrefWithLocale}
-				prefetch={true} // P3: Включаем prefetch для быстрой навигации
+				prefetch={true} // Prefetch route and data
 				className={`flex items-center gap-3 px-3 py-2 rounded-lg transition-colors ${
 					isActive
 						? 'bg-[#ea4b4b] text-white'
 						: 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
-				}`}
-				onClick={() => setIsMobileMenuOpen?.(false)}
+				} ${isPending && !isActive ? 'opacity-70' : ''}`}
+				onClick={handleClick}
 				onMouseEnter={() => {
-					// P3: Дополнительный prefetch данных при hover
+					// Prefetch route and data on hover for faster navigation
 					if (prefetchKey && !isActive) {
-						prefetchPageData(prefetchKey);
+						prefetchPageData(prefetchKey, href);
 					}
 				}}
 			>

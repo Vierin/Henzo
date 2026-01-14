@@ -73,5 +73,10 @@
 	"selectAddress": "Выберите адрес",
 	"enterAddress": "Введите адрес...",
 	"selectAddressToSeeMap": "Выберите адрес для просмотра на карте",
-	"addressPlaceholder": "Выберите адрес"
+	"addressPlaceholder": "Выберите адрес",
+	"qrCode": "QR-код",
+	"salonQRCode": "QR-код салона",
+	"qrCodeDescription": "Отсканируйте QR-код, чтобы открыть страницу салона",
+	"copyLink": "Копировать ссылку",
+	"sharedSuccessfully": "Ссылка успешно отправлена"
 }
