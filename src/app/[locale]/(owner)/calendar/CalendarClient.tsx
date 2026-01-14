@@ -95,23 +95,7 @@ export default function CalendarClient() {
 			: 'Failed to load bookings'
 		: null;
 
-	// Show UI immediately, data loads in parallel
-	// Only show redirect message if no salon (critical state)
-	if (!hasSalon && salonLoading) {
-		return (
-			<div
-				className="flex items-center justify-center py-12"
-				role="status"
-				aria-live="polite"
-			>
-				<LoadingSpinner
-					size="lg"
-					message={t('owner.calendar.redirectingToSetup')}
-				/>
-			</div>
-		);
-	}
-
+	// All hooks must be called before any conditional returns
 	const fetchBookings = useCallback(async () => {
 		try {
 			const {
@@ -326,11 +310,11 @@ export default function CalendarClient() {
 		[fetchBookings]
 	);
 
-		const getFilteredBookings = useMemo(() => {
+	const getFilteredBookings = useMemo(() => {
 		const now = new Date();
 		const today = new Date();
 		today.setHours(0, 0, 0, 0);
-		
+
 		return bookings.filter((booking) => {
 			const bookingDate = parseBookingTimeAsLocal(booking.time);
 			if (!bookingDate) return false;
@@ -338,7 +322,8 @@ export default function CalendarClient() {
 			// Check if booking is today (using Vietnam timezone)
 			const bookingDateOnly = new Date(bookingDate);
 			bookingDateOnly.setHours(0, 0, 0, 0);
-			const isTodayBooking = bookingDateOnly.toDateString() === today.toDateString();
+			const isTodayBooking =
+				bookingDateOnly.toDateString() === today.toDateString();
 			const isThisWeek =
 				bookingDate >= new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000) &&
 				bookingDate <= now;
@@ -482,6 +467,22 @@ export default function CalendarClient() {
 			router.push('/business/complete-setup');
 		}
 	}, [hasSalon, salonLoading, router]);
+
+	// Show redirect message if no salon (critical state) - after all hooks
+	if (!hasSalon && salonLoading) {
+		return (
+			<div
+				className="flex items-center justify-center py-12"
+				role="status"
+				aria-live="polite"
+			>
+				<LoadingSpinner
+					size="lg"
+					message={t('owner.calendar.redirectingToSetup')}
+				/>
+			</div>
+		);
+	}
 
 	return (
 		<main

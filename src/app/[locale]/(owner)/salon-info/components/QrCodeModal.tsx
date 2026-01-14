@@ -1,9 +1,7 @@
 'use client';
 
+import { X, Copy } from 'lucide-react';
 import { useTranslation } from '@/contexts/LanguageContext';
-// Optimized icon imports
-import X from 'lucide-react/dist/esm/icons/x';
-import Copy from 'lucide-react/dist/esm/icons/copy';
 
 interface QrCodeModalProps {
 	isOpen: boolean;

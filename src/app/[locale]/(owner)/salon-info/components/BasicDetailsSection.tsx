@@ -2,13 +2,8 @@
 
 import { useState } from 'react';
 import dynamic from 'next/dynamic';
+import { MapPin, Copy, Share2, QrCode } from 'lucide-react';
 import { useTranslation } from '@/contexts/LanguageContext';
-
-// Optimized icon imports - tree-shaking friendly
-import MapPin from 'lucide-react/dist/esm/icons/map-pin';
-import Copy from 'lucide-react/dist/esm/icons/copy';
-import Share2 from 'lucide-react/dist/esm/icons/share-2';
-import QrCode from 'lucide-react/dist/esm/icons/qr-code';
 
 // Lazy load AddressSelectModal only when needed (not on initial render)
 const AddressSelectModal = dynamic(

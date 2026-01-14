@@ -51,6 +51,7 @@ export interface SalonResponseDto {
 	workingHours?: WorkingHoursDto;
 	ownerId: string;
 	createdAt: string;
+	slug?: string;
 }
 
 export interface SalonWithDetailsResponseDto extends SalonResponseDto {
