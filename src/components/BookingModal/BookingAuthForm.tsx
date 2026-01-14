@@ -235,7 +235,7 @@ export default function BookingAuthForm({
 							disabled={magicLinkLoading}
 							className="flex-1 px-4 py-2 bg-[#ff5b5b] text-white rounded-lg hover:bg-[#e04a4a] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
 						>
-							{magicLinkLoading ? (t.contact.sending || 'Sending...') : t.auth.continueWithEmail}
+							{magicLinkLoading ? t.auth.sending : t.auth.continueWithEmail}
 						</button>
 					</div>
 
