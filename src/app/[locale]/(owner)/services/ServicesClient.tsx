@@ -312,7 +312,11 @@ export default function ServicesClient() {
 
 			{/* Фильтры и сортировка */}
 			<div className="mb-6 bg-white rounded-xl border border-[#f1d9d7] p-3 md:p-6">
-				<div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 md:gap-4">
+				<div
+					className="grid gap-3 md:gap-4 
+            grid-cols-1
+            sm:grid-cols-[repeat(4,minmax(0,1fr))_100px]"
+				>
 					{/* Поиск */}
 					<div className="flex flex-col justify-between">
 						<label className="block text-sm font-medium text-black mb-2">

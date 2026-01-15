@@ -60,7 +60,8 @@ export default function NewServiceClient() {
 	const t = useTranslation();
 	const { language: contextLanguage } = useLanguage();
 	const pathname = usePathname();
-	const currentLang = contextLanguage || extractLocaleFromPath(pathname) || 'en';
+	const currentLang =
+		contextLanguage || extractLocaleFromPath(pathname) || 'en';
 	const [step, setStep] = useState<1 | 2>(1);
 
 	// Form with validation
@@ -449,7 +450,9 @@ export default function NewServiceClient() {
 									{t('owner.servicesNew.serviceGroup')}
 								</label>
 								<div className="bg-gray-50 rounded-md p-3 border border-gray-200">
-									<p className="text-gray-900">{getLocalizedGroupName(selectedGroup)}</p>
+									<p className="text-gray-900">
+										{getLocalizedGroupName(selectedGroup)}
+									</p>
 								</div>
 							</div>
 						)}
@@ -859,7 +862,7 @@ export default function NewServiceClient() {
 									placeholder={t('owner.servicesNew.groupName')}
 									autoFocus
 								/>
-								<div className="flex justify-end gap-2">
+								<div className="flex justify-end gap-2 mt-2">
 									<button
 										type="button"
 										onClick={() => {
@@ -905,7 +908,7 @@ export default function NewServiceClient() {
 										disabled={
 											!newGroupName.trim() || isGeneratingGroupTranslations
 										}
-										className="px-3 py-2 text-sm bg-[#ff5b5b] text-white rounded-md hover:bg-[#e04a4a] disabled:opacity-50"
+										className="px-3 py-2 text-sm bg-[#ff5b5b] !text-white rounded-md hover:bg-[#e04a4a] disabled:opacity-50"
 									>
 										{isGeneratingGroupTranslations
 											? t('owner.servicesNew.generatingTranslations')
@@ -1008,7 +1011,7 @@ export default function NewServiceClient() {
 												console.error('Failed to create service group:', err);
 											}
 										}}
-										className="px-3 py-2 text-sm bg-[#ff5b5b] text-white rounded-md hover:bg-[#e04a4a]"
+										className="px-3 py-2 text-sm bg-[#ff5b5b] !text-white rounded-md hover:bg-[#e04a4a]"
 									>
 										{t('owner.servicesNew.create')}
 									</button>

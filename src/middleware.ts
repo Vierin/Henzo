@@ -76,6 +76,13 @@ export async function middleware(req: NextRequest) {
 		return res;
 	}
 
+	// Проверяем, является ли маршрут защищенным
+	// Если маршрут не является ни публичным, ни защищенным, пропускаем его
+	// и позволяем Next.js показать 404
+	if (!isProtectedRoute(pathWithoutLocale)) {
+		return res;
+	}
+
 	// Проверка специальных маршрутов business
 	// Business маршруты обрабатываются через общую проверку авторизации ниже
 

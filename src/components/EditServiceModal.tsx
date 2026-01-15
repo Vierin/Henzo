@@ -401,7 +401,7 @@ export default function EditServiceModal({
 								<button
 									type="button"
 									onClick={() => setIsGroupModalOpen(true)}
-									className="px-3 py-2 bg-[#ff5b5b] text-white rounded-lg hover:bg-[#e04a4a] transition-colors"
+									className="px-3 py-2 bg-[#ff5b5b] !text-white rounded-lg hover:bg-[#e04a4a] transition-colors"
 									title="Add new group"
 								>
 									+
@@ -477,7 +477,7 @@ export default function EditServiceModal({
 							</button>
 							<button
 								type="submit"
-								className="px-4 py-2 bg-[#ff5b5b] text-white rounded-lg font-medium hover:bg-[#e04a4a] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+								className="px-4 py-2 bg-[#ff5b5b] !text-white rounded-lg font-medium hover:bg-[#e04a4a] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
 								disabled={
 									createServiceMutation.isPending ||
 									updateServiceMutation.isPending
@@ -513,7 +513,7 @@ export default function EditServiceModal({
 							placeholder={t('owner.services.groupName')}
 							autoFocus
 						/>
-						<div className="flex justify-end gap-2">
+						<div className="flex justify-end gap-2 mt-4">
 							<button
 								type="button"
 								onClick={() => {
@@ -553,7 +553,7 @@ export default function EditServiceModal({
 										console.error('Failed to create service group:', err);
 									}
 								}}
-								className="px-3 py-2 text-sm bg-[#ff5b5b] text-white rounded-md hover:bg-[#e04a4a]"
+								className="px-3 py-2 text-sm bg-[#ff5b5b] !text-white rounded-md hover:bg-[#e04a4a]"
 							>
 								{t('owner.services.create')}
 							</button>

@@ -25,6 +25,7 @@ export type TranslationModule =
 	| 'public/business'
 	| 'public/contact'
 	| 'public/about'
+	| 'public/notFound'
 	// Owner panel
 	| 'owner/dashboard'
 	| 'owner/salonInfo'

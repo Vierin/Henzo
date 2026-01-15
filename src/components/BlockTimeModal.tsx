@@ -249,8 +249,20 @@ export default function BlockTimeModal({
 	const handleCheckConflicts = async () => {
 		if (!validateForm()) return;
 
-		const startDateTime = new Date(`${startDate}T${startTime}`).toISOString();
-		const endDateTime = new Date(`${endDate}T${endTime}`).toISOString();
+		// Handle full day (00:00 - 23:59) - set end time to end of day
+		let finalEndTime = endTime;
+		let finalEndDate = endDate;
+		if (startTime === '00:00' && endTime === '23:59' && startDate === endDate) {
+			// For full day, set end time to 23:59:59.999 to cover entire day
+			finalEndTime = '23:59';
+		}
+
+		const startDateTime = new Date(
+			`${startDate}T${startTime}:00`
+		).toISOString();
+		const endDateTime = new Date(
+			`${finalEndDate}T${finalEndTime}:59.999`
+		).toISOString();
 
 		const data: CreateTimeBlockDto = {
 			staffId: blockFor === 'staff' ? selectedStaffId : undefined,
@@ -293,9 +305,12 @@ export default function BlockTimeModal({
 		if (!startTime || !endTime) {
 			return false;
 		}
-		if (
-			new Date(`${endDate}T${endTime}`) < new Date(`${startDate}T${startTime}`)
-		) {
+		// Handle full day validation (00:00 - 23:59 is valid)
+		const startDateTime = new Date(`${startDate}T${startTime}:00`);
+		const endDateTime = new Date(
+			`${endDate}T${endTime === '23:59' ? '23:59:59.999' : endTime + ':00'}`
+		);
+		if (endDateTime <= startDateTime) {
 			return false;
 		}
 		return true;
@@ -320,8 +335,20 @@ export default function BlockTimeModal({
 	const handleSubmit = async () => {
 		if (!validateFormWithConflicts()) return;
 
-		const startDateTime = new Date(`${startDate}T${startTime}`).toISOString();
-		const endDateTime = new Date(`${endDate}T${endTime}`).toISOString();
+		// Handle full day (00:00 - 23:59) - set end time to end of day
+		let finalEndTime = endTime;
+		let finalEndDate = endDate;
+		if (startTime === '00:00' && endTime === '23:59' && startDate === endDate) {
+			// For full day, set end time to 23:59:59.999 to cover entire day
+			finalEndTime = '23:59';
+		}
+
+		const startDateTime = new Date(
+			`${startDate}T${startTime}:00`
+		).toISOString();
+		const endDateTime = new Date(
+			`${finalEndDate}T${finalEndTime}:59.999`
+		).toISOString();
 
 		const data: CreateTimeBlockDto = {
 			staffId: blockFor === 'staff' ? selectedStaffId : undefined,
@@ -605,7 +632,7 @@ export default function BlockTimeModal({
 								type="button"
 								onClick={() => {
 									setStartTime('00:00');
-									setEndTime('24:00');
+									setEndTime('23:59');
 									setSelectedQuickPreset('fullDay');
 								}}
 								className={cn(
@@ -902,7 +929,9 @@ export default function BlockTimeModal({
 							<p className="font-medium mb-1">
 								{t('owner.calendar.blockTimeModal.warningTitle')}
 							</p>
-							<p>{t('owner.calendar.blockTimeModal.warningDescription')}</p>
+							<p className="!mb-0">
+								{t('owner.calendar.blockTimeModal.warningDescription')}
+							</p>
 						</div>
 					</div>
 
@@ -1043,7 +1072,7 @@ export default function BlockTimeModal({
 						<button
 							onClick={handleCheckConflicts}
 							disabled={!validateForm() || isSubmitting}
-							className="px-4 py-2 text-sm font-medium text-white bg-[#ff5b5b] rounded-lg hover:bg-[#e04a4a] focus:outline-none focus:ring-2 focus:ring-[#ff5b5b] focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center gap-2"
+							className="px-4 py-2 text-sm font-medium !text-white bg-[#ff5b5b] rounded-lg hover:bg-[#e04a4a] focus:outline-none focus:ring-2 focus:ring-[#ff5b5b] focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center gap-2"
 						>
 							{isSubmitting && <LoadingSpinner size="sm" />}
 							{isSubmitting
@@ -1054,7 +1083,7 @@ export default function BlockTimeModal({
 						<button
 							onClick={handleSubmit}
 							disabled={isSubmitting || !validateFormWithConflicts()}
-							className="px-4 py-2 text-sm font-medium text-white bg-[#ff5b5b] rounded-lg hover:bg-[#e04a4a] focus:outline-none focus:ring-2 focus:ring-[#ff5b5b] focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center gap-2"
+							className="px-4 py-2 text-sm font-medium !text-white bg-[#ff5b5b] rounded-lg hover:bg-[#e04a4a] focus:outline-none focus:ring-2 focus:ring-[#ff5b5b] focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center gap-2"
 						>
 							{isSubmitting && <LoadingSpinner size="sm" />}
 							{isSubmitting

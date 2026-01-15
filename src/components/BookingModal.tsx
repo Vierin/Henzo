@@ -2747,18 +2747,6 @@ export default function BookingModal({
 
 							{/* Right Section - Staff Selection and Booking Button */}
 							<div className="w-full sm:w-80 flex-shrink-0 bg-gray-50 sm:bg-gray-50 p-4 sm:p-8 sm:rounded-r-2xl border-t sm:border-t-0">
-								{/* Client Information (only for owners creating new bookings in their own salon) */}
-								{isOwner && isOwnerOfThisSalon() && !editingBooking && (
-									<BookingGuestForm
-										clientEmail={clientEmail}
-										clientName={clientName}
-										clientPhone={clientPhone}
-										onEmailChange={setClientEmail}
-										onNameChange={setClientName}
-										onPhoneChange={setClientPhone}
-									/>
-								)}
-
 								{/* Select Staff Member */}
 								<BookingStaffSelector
 									selectedStaff={selectedStaff}
@@ -2775,6 +2763,18 @@ export default function BookingModal({
 									}}
 									staffLoading={staffLoading}
 								/>
+
+								{/* Client Information (only for owners creating new bookings in their own salon) */}
+								{isOwner && isOwnerOfThisSalon() && !editingBooking && (
+									<BookingGuestForm
+										clientEmail={clientEmail}
+										clientName={clientName}
+										clientPhone={clientPhone}
+										onEmailChange={setClientEmail}
+										onNameChange={setClientName}
+										onPhoneChange={setClientPhone}
+									/>
+								)}
 
 								{/* Book Appointment Button */}
 								<BookingFormFooter

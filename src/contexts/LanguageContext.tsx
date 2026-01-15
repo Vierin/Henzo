@@ -199,6 +199,12 @@ export function LanguageProvider({ children, initialDictionary }: LanguageProvid
 		publicModules.push('shared/auth');
 	}
 	
+	// Load notFound module for 404 pages (when path doesn't match any known route)
+	// This will be loaded if no other modules match
+	if (publicModules.length === 0 && !ownerModule && !isClientPage && !isOwnerPage) {
+		publicModules.push('public/notFound');
+	}
+	
 	// Use initial dictionary from server if provided, otherwise load base modules
 	// Only call useBaseTranslations if we don't have initialDictionary to avoid unnecessary loading
 	const baseTFromHook = useBaseTranslations();
