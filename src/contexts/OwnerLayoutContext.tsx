@@ -64,16 +64,9 @@ export function OwnerLayoutProvider({ children }: OwnerLayoutProviderProps) {
 		hasSalon,
 	};
 
-	// Показываем лоадер, пока идет проверка салона (и мы не на странице настройки)
-	if (isLoading && !isOnCompleteSetupPage && !isOnSalonInfoPage) {
-		return (
-			<div className="flex items-center justify-center min-h-screen bg-[#fff7f6]">
-				<div className="text-center">
-					<LoadingSpinner size="lg" message={t('owner.dashboard.loadingSalonInformation')} />
-				</div>
-			</div>
-		);
-	}
+	// Оптимистичный рендеринг: показываем UI сразу, данные загружаются в фоне
+	// React Query использует кеш, поэтому данные будут доступны быстро если есть в кеше
+	// Не блокируем UI пока идет загрузка - показываем children сразу
 
 	return (
 		<OwnerLayoutContext.Provider value={value}>

@@ -22,5 +22,10 @@
 	"addStaffMember": "Add Staff Member",
 	"loading": "Loading...",
 	"fillRequiredFields": "Please fill in all required fields",
-	"failedToCreate": "Failed to create staff member"
+	"failedToCreate": "Failed to create staff member",
+	"createdSuccessfully": "Staff member created successfully!",
+	"updatedSuccessfully": "Staff member updated successfully!",
+	"deletedSuccessfully": "Staff member deleted successfully!",
+	"failedToUpdate": "Failed to update staff member",
+	"failedToDelete": "Failed to delete staff member"
 }

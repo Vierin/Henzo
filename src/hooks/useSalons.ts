@@ -10,6 +10,7 @@ import { toast } from 'react-hot-toast';
 import { useAuth } from '@/lib/auth-unified';
 import { Salon } from '@/types';
 import { logger } from '@/lib/logger';
+import { storage } from '@/utils/storage';
 
 // Query keys
 export const salonKeys = {
@@ -83,6 +84,26 @@ export const useSalonById = (id: string) => {
 export const useSalon = () => {
 	const { user, isLoading: authLoading, isOwner } = useAuth();
 
+	// Получаем salon из кеша для мгновенного отображения
+	const getCachedSalon = (): Salon | null => {
+		if (typeof window === 'undefined') return null;
+		try {
+			// Проверяем localStorage и sessionStorage
+			let cachedSalon = storage.getItem('auth_salon');
+			if (!cachedSalon) {
+				cachedSalon = storage.session.getItem('auth_salon');
+			}
+			if (cachedSalon) {
+				return JSON.parse(cachedSalon) as Salon;
+			}
+		} catch (e) {
+			// Игнорируем ошибки парсинга
+		}
+		return null;
+	};
+
+	const cachedSalon = getCachedSalon();
+
 	return useQuery<Salon | null>({
 		queryKey: salonKeys.current(),
 		queryFn: async () => {
@@ -108,6 +129,7 @@ export const useSalon = () => {
 			}
 		},
 		enabled: !authLoading && !!user && isOwner(),
+		placeholderData: cachedSalon || undefined, // Используем кеш для мгновенного отображения
 		staleTime: 15 * 60 * 1000, // Важно: 15 минут - данные салона меняются редко
 		gcTime: 30 * 60 * 1000, // 30 минут в кеше
 		retry: 1,

@@ -49,20 +49,6 @@ export default function StaffPage() {
 		refetch(); // Обновляем данные после изменения
 	};
 
-	const getAccessLevelBadge = (accessLevel: string) => {
-		if (accessLevel === 'ADMIN') {
-			return (
-				<span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
-					{t('owner.staff.admin')}
-				</span>
-			);
-		}
-		return (
-			<span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-				{t('owner.staff.employee')}
-			</span>
-		);
-	};
 
 	if (salonLoading || loading) {
 		return (
@@ -141,9 +127,8 @@ export default function StaffPage() {
 				<div className="bg-white rounded-xl border border-[#f1d9d7] overflow-hidden">
 					{/* Desktop Table View */}
 					<div className="hidden md:block">
-						<div className="grid grid-cols-5 px-6 py-3 text-sm text-gray-700 bg-[#fff2f1] font-semibold">
+						<div className="grid grid-cols-4 px-6 py-3 text-sm text-gray-700 bg-[#fff2f1] font-semibold">
 							<div>{t('owner.staff.name')}</div>
-							<div>{t('owner.staff.accessLevel')}</div>
 							<div>{t('owner.staff.email')}</div>
 							<div>{t('owner.staff.phone')}</div>
 							<div>{t('owner.staff.actions')}</div>
@@ -152,10 +137,9 @@ export default function StaffPage() {
 							{staff.map((member) => (
 								<div
 									key={member.id}
-									className="grid grid-cols-5 px-6 py-4 text-sm text-gray-800"
+									className="grid grid-cols-4 px-6 py-4 text-sm text-gray-800"
 								>
 									<div className="font-semibold">{member.name}</div>
-									<div>{getAccessLevelBadge(member.accessLevel)}</div>
 									<div className="text-gray-600">
 										{member.email || t('owner.staff.noEmail')}
 									</div>
@@ -216,9 +200,6 @@ export default function StaffPage() {
 										<h3 className="font-semibold text-gray-900 truncate">
 											{member.name}
 										</h3>
-										<div className="mt-1">
-											{getAccessLevelBadge(member.accessLevel)}
-										</div>
 									</div>
 									<div className="flex gap-2 ml-3">
 										<button

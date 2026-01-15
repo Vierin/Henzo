@@ -22,5 +22,10 @@
 	"addStaffMember": "Добавить сотрудника",
 	"loading": "Загрузка...",
 	"fillRequiredFields": "Пожалуйста, заполните все обязательные поля",
-	"failedToCreate": "Не удалось создать сотрудника"
+	"failedToCreate": "Не удалось создать сотрудника",
+	"createdSuccessfully": "Сотрудник успешно создан!",
+	"updatedSuccessfully": "Сотрудник успешно обновлен!",
+	"deletedSuccessfully": "Сотрудник успешно удален!",
+	"failedToUpdate": "Не удалось обновить сотрудника",
+	"failedToDelete": "Не удалось удалить сотрудника"
 }

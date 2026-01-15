@@ -22,5 +22,10 @@
 	"addStaffMember": "Thêm nhân viên",
 	"loading": "Đang tải...",
 	"fillRequiredFields": "Vui lòng điền vào tất cả các trường bắt buộc",
-	"failedToCreate": "Không thể tạo nhân viên"
+	"failedToCreate": "Không thể tạo nhân viên",
+	"createdSuccessfully": "Nhân viên đã được tạo thành công!",
+	"updatedSuccessfully": "Nhân viên đã được cập nhật thành công!",
+	"deletedSuccessfully": "Nhân viên đã được xóa thành công!",
+	"failedToUpdate": "Không thể cập nhật nhân viên",
+	"failedToDelete": "Không thể xóa nhân viên"
 }

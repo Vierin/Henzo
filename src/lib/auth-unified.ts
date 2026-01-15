@@ -295,6 +295,8 @@ class AuthManager {
 			// Это улучшает UX, так как пользователь сразу видит результат
 			storage.removeItem('auth_user');
 			storage.session.removeItem('auth_user');
+			storage.removeItem('auth_salon');
+			storage.session.removeItem('auth_salon');
 			this.clearTokenRefresh();
 
 			// Затем выполняем logout из Supabase в фоне
@@ -322,6 +324,8 @@ class AuthManager {
 			// Принудительная очистка даже при ошибке
 			storage.removeItem('auth_user');
 			storage.session.removeItem('auth_user');
+			storage.removeItem('auth_salon');
+			storage.session.removeItem('auth_salon');
 			this.setState({
 				user: null,
 				isAuthenticated: false,
@@ -352,6 +356,8 @@ class AuthManager {
 				// Нет валидной сессии, очищаем кеш из обоих хранилищ
 				storage.removeItem('auth_user');
 				storage.session.removeItem('auth_user');
+				storage.removeItem('auth_salon');
+				storage.session.removeItem('auth_salon');
 				this.setState({
 					user: null,
 					isAuthenticated: false,
@@ -462,6 +468,8 @@ class AuthManager {
 				// Очищаем оба хранилища
 				storage.removeItem('auth_user');
 				storage.session.removeItem('auth_user');
+				storage.removeItem('auth_salon');
+				storage.session.removeItem('auth_salon');
 				this.clearTokenRefresh();
 			}
 		});
@@ -483,6 +491,8 @@ class AuthManager {
 					// Очищаем оба хранилища
 					storage.removeItem('auth_user');
 					storage.session.removeItem('auth_user');
+					storage.removeItem('auth_salon');
+					storage.session.removeItem('auth_salon');
 					this.clearTokenRefresh();
 				}
 				// НЕ обновляем данные пользователя автоматически - это создает циклы
@@ -540,6 +550,24 @@ class AuthManager {
 
 			if (!user) {
 				throw new Error('User data not found in response');
+			}
+
+			// Для OWNER пользователей, сохраняем salon в кеш если есть
+			if (user.role === 'OWNER' && result.salon) {
+				const hadLocalStorageCache = storage.getItem('auth_user') !== null;
+				const hadSessionStorageCache =
+					storage.session.getItem('auth_user') !== null;
+
+				if (
+					hadLocalStorageCache ||
+					(!hadSessionStorageCache && typeof window !== 'undefined')
+				) {
+					storage.setItem('auth_salon', JSON.stringify(result.salon));
+					storage.session.removeItem('auth_salon');
+				} else {
+					storage.session.setItem('auth_salon', JSON.stringify(result.salon));
+					storage.removeItem('auth_salon');
+				}
 			}
 
 			// Бэкенд автоматически синхронизирует роль в app_metadata при запросе /auth/user

@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '@/lib/api-client';
 import { Staff } from '@/types';
 import { toast } from 'react-hot-toast';
+import { useTranslation } from '@/contexts/LanguageContext';
 
 // Query keys
 export const staffKeys = {
@@ -47,6 +48,7 @@ export const useStaff = (id: string) => {
 // Create staff mutation
 export const useCreateStaff = () => {
 	const queryClient = useQueryClient();
+	const t = useTranslation();
 
 	return useMutation({
 		mutationFn: async (data: {
@@ -63,7 +65,7 @@ export const useCreateStaff = () => {
 			const queryKey = staffKeys.bySalon(data.salonId);
 			const existingStaff = queryClient.getQueryData<Staff[]>(queryKey) || [];
 			queryClient.setQueryData<Staff[]>(queryKey, [...existingStaff, data]);
-			
+
 			// Invalidate and refetch to ensure we have the latest data
 			queryClient.invalidateQueries({
 				queryKey: staffKeys.bySalon(data.salonId),
@@ -71,11 +73,11 @@ export const useCreateStaff = () => {
 			queryClient.refetchQueries({
 				queryKey: staffKeys.bySalon(data.salonId),
 			});
-			
-			toast.success('Staff member created successfully!');
+
+			toast.success(t('owner.staffNew.createdSuccessfully'));
 		},
 		onError: (error: Error) => {
-			toast.error(error.message || 'Failed to create staff member');
+			toast.error(error.message || t('owner.staffNew.failedToCreate'));
 		},
 	});
 };
@@ -83,6 +85,7 @@ export const useCreateStaff = () => {
 // Update staff mutation
 export const useUpdateStaff = () => {
 	const queryClient = useQueryClient();
+	const t = useTranslation();
 
 	return useMutation({
 		mutationFn: async ({
@@ -106,10 +109,10 @@ export const useUpdateStaff = () => {
 			queryClient.invalidateQueries({
 				queryKey: staffKeys.bySalon(data.salonId),
 			});
-			toast.success('Staff member updated successfully!');
+			toast.success(t('owner.staffNew.updatedSuccessfully'));
 		},
 		onError: (error: Error) => {
-			toast.error(error.message || 'Failed to update staff member');
+			toast.error(error.message || t('owner.staffNew.failedToUpdate'));
 		},
 	});
 };
@@ -117,6 +120,7 @@ export const useUpdateStaff = () => {
 // Delete staff mutation
 export const useDeleteStaff = () => {
 	const queryClient = useQueryClient();
+	const t = useTranslation();
 
 	return useMutation({
 		mutationFn: async (id: string): Promise<void> => {
@@ -127,10 +131,10 @@ export const useDeleteStaff = () => {
 			queryClient.removeQueries({ queryKey: staffKeys.detail(id) });
 			// Invalidate all staff lists
 			queryClient.invalidateQueries({ queryKey: staffKeys.lists() });
-			toast.success('Staff member deleted successfully!');
+			toast.success(t('owner.staffNew.deletedSuccessfully'));
 		},
 		onError: (error: Error) => {
-			toast.error(error.message || 'Failed to delete staff member');
+			toast.error(error.message || t('owner.staffNew.failedToDelete'));
 		},
 	});
 };

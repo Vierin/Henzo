@@ -49,8 +49,14 @@ export default function NewStaffPage() {
 		setError('');
 
 		// Validate form
-		if (!formData.name || !salonId) {
+		if (!formData.name) {
 			setError(t('owner.staffNew.fillRequiredFields'));
+			return;
+		}
+
+		// Если salonId еще не загружен, показываем ошибку
+		if (!salonId) {
+			setError(t('owner.staffNew.loading'));
 			return;
 		}
 
@@ -77,23 +83,6 @@ export default function NewStaffPage() {
 		setPhoto(null);
 		setPhotoPreview(null);
 	};
-
-	// Показываем загрузку пока не получили salonId или идет создание
-	if (salonLoading || createStaffMutation.isPending) {
-		return (
-			<div className="flex items-center justify-center min-h-screen">
-				<div className="text-center">
-					<div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#ff5b5b] mx-auto mb-4"></div>
-					<p className="text-gray-600">{t('owner.staffNew.loading')}</p>
-				</div>
-			</div>
-		);
-	}
-
-	// Если salonId не получен, не показываем форму
-	if (!salonId) {
-		return null;
-	}
 
 	return (
 		<div className="px-0 md:px-4 max-w-7xl mx-auto">
@@ -274,11 +263,13 @@ export default function NewStaffPage() {
 						</button>
 						<button
 							type="submit"
-							disabled={createStaffMutation.isPending}
+							disabled={createStaffMutation.isPending || salonLoading || !salonId}
 							className="flex-1 bg-[#ff5b5b] text-white px-4 py-2 rounded-md hover:bg-[#e04a4a] focus:outline-none focus:ring-2 focus:ring-[#ff5b5b] focus:ring-offset-2 disabled:opacity-50"
 						>
 							{createStaffMutation.isPending
 								? t('owner.staffNew.adding')
+								: salonLoading || !salonId
+								? t('owner.staffNew.loading')
 								: t('owner.staffNew.addStaffMember')}
 						</button>
 					</div>

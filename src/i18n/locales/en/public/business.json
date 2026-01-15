@@ -68,7 +68,7 @@
 	},
 	"betaForm": {
 		"badge": "Beta Access",
-		"title": "Request Beta Access",
+		"title": "Get Beta Access",
 		"subtitle": "Fill out the form below to join our beta testing program and get early access to Henzo.",
 		"fullName": "Full Name",
 		"salonName": "Salon Name",
@@ -84,7 +84,7 @@
 		"confirmPasswordPlaceholder": "Confirm your password",
 		"submitting": "Submitting...",
 		"requestBetaAccess": "Request Beta Access",
-		"agreement": "By submitting this form, you agree to be contacted about the beta testing program.",
+		"agreement": "By submitting this form, you agree to the service terms.",
 		"successMessage": "Thank you! We'll contact you soon about the beta program.",
 		"magicLinkSent": "Magic link sent to your email! Please check your inbox to complete registration.",
 		"errorMessage": "Failed to submit request. Please try again."

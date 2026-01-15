@@ -92,14 +92,9 @@ export default function ProtectedRoute({
 		redirectTo,
 	]);
 
-	// Показываем загрузку пока проверяем аутентификацию
-	if (isLoading || (isAuthenticated && !user)) {
-		return (
-			<div className="flex items-center justify-center min-h-screen">
-				<div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#ff5b5b]"></div>
-			</div>
-		);
-	}
+	// Оптимистичный рендеринг: показываем UI сразу, данные загружаются в фоне
+	// authManager использует кеш, поэтому user будет доступен быстро
+	// Не блокируем UI пока идет загрузка - показываем children сразу
 
 	// Если идет выход, показываем контент с легким overlay для плавного перехода
 	// Редирект происходит оптимистично, поэтому контент остается видимым

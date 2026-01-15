@@ -3,19 +3,15 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
-import { Service, Staff, WorkingHours } from '@/types';
+import { Service, WorkingHours } from '@/types';
 import { useStaffBySalon } from '@/hooks/useStaff';
 import { useServices } from '@/hooks/useServices';
 import { useAuthStore } from '@/stores/authStore';
 import { useSalonId } from '@/hooks/useSalons';
 import toast from 'react-hot-toast';
 import { safeParseDate, parseBookingTimeAsLocal } from '@/utils/date';
-import { formatVND } from '@/utils/currency';
 import { useLanguage } from '@/contexts/LanguageContext';
-import {
-	getLocalizedServiceName,
-	getLocalizedServiceDescription,
-} from '@/utils/serviceLocalization';
+import { getLocalizedServiceName } from '@/utils/serviceLocalization';
 import { logger } from '@/lib/logger';
 import { storage } from '@/utils/storage';
 import { fromZonedTime } from 'date-fns-tz';
@@ -26,8 +22,6 @@ import BookingDateSelector from './BookingModal/BookingDateSelector';
 import BookingTimeSelector from './BookingModal/BookingTimeSelector';
 import BookingStaffSelector from './BookingModal/BookingStaffSelector';
 import BookingFormFooter from './BookingModal/BookingFormFooter';
-// Swiper imports removed - using native scroll instead
-import { Clock, ChevronDown, ChevronLeft, ChevronRight } from 'lucide-react';
 
 // Custom styles for native scroll
 const scrollStyles = `
@@ -1676,22 +1670,8 @@ export default function BookingModal({
 			throw new Error(`Invalid time format: ${timeStr}`);
 		}
 
-		// IMPORTANT: All bookings are interpreted in salon's timezone
-		// The selected time (e.g., 9:15) should be interpreted as local time in salon's timezone
-		// We use date-fns-tz to properly convert from salon timezone to UTC
-		// Example: 9:15 in Asia/Ho_Chi_Minh → UTC
-
-		// Create a date object with the time components
-		// fromZonedTime interprets the date's components (year, month, day, hour, minute)
-		// as being in the specified timezone and converts them to UTC
-		// We create the date with local components (not UTC), and fromZonedTime treats them as salon timezone
 		const localDate = new Date(year, month - 1, day, hours, minutes, 0, 0);
 
-		// fromZonedTime takes a date and interprets its components as being in the specified timezone
-		// It extracts year, month, day, hour, minute from the date and treats them as local time
-		// in the specified timezone, then converts to UTC
-		// This works correctly because fromZonedTime ignores the timezone of the input date
-		// and only uses its components
 		const utcDate = fromZonedTime(localDate, salonTimezone);
 		const utcDateString = utcDate.toISOString();
 
@@ -2111,18 +2091,6 @@ export default function BookingModal({
 					requestBody.clientPhone = clientPhone.trim();
 				}
 			}
-
-			logger.log('📤 Sending booking request:', {
-				serviceId: requestBody.serviceId,
-				salonId: requestBody.salonId,
-				time: requestBody.time,
-				hasStaffId: !!requestBody.staffId,
-				hasClientEmail: !!requestBody.clientEmail,
-				clientName: requestBody.clientName,
-				clientPhone: requestBody.clientPhone,
-				isOwner: isOwner,
-				isOwnerOfThisSalon: isOwnerOfThisSalon(),
-			});
 
 			const response = await fetch(`${API_BASE_URL}/bookings`, {
 				method: 'POST',
