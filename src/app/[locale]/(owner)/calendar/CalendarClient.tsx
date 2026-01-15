@@ -49,8 +49,8 @@ export default function CalendarClient() {
 	const [viewMode, setViewMode] = useState<'list' | 'calendar'>('calendar');
 	const [currentMonth, setCurrentMonth] = useState(new Date().getMonth());
 	const [currentYear, setCurrentYear] = useState(new Date().getFullYear());
-	const [selectedDate, setSelectedDate] = useState<Date | null>(null);
-	const [showDaySchedule, setShowDaySchedule] = useState(false);
+	const [selectedDate, setSelectedDate] = useState<Date | null>(new Date()); // Default to today
+	const [showDaySchedule, setShowDaySchedule] = useState(true); // Show DaySchedule by default for calendar view
 	const [currentPage, setCurrentPage] = useState(1);
 	const [itemsPerPage] = useState(20);
 	const router = useRouter();
@@ -426,8 +426,8 @@ export default function CalendarClient() {
 	);
 
 	const handleBackToMonth = useCallback(() => {
-		setShowDaySchedule(false);
-		setSelectedDate(null);
+		// Don't hide DaySchedule, just reset to today
+		setSelectedDate(new Date());
 	}, []);
 
 	const handlePrevDay = useCallback(() => {
@@ -527,7 +527,7 @@ export default function CalendarClient() {
 									}}
 									className={`flex-1 sm:flex-none px-3 py-2 text-sm font-medium flex items-center justify-center gap-2 ${
 										viewMode === 'list'
-											? 'bg-[#ea4b4b] text-white'
+											? 'bg-[#ea4b4b] !text-white'
 											: 'bg-white text-gray-700 hover:bg-gray-50'
 									}`}
 									aria-pressed={viewMode === 'list'}
@@ -541,12 +541,13 @@ export default function CalendarClient() {
 								<button
 									onClick={() => {
 										setViewMode('calendar');
-										setShowDaySchedule(false);
+										setShowDaySchedule(true);
+										setSelectedDate(new Date()); // Set to today when switching to calendar
 										setCurrentPage(1);
 									}}
 									className={`flex-1 sm:flex-none px-3 py-2 text-sm font-medium flex items-center justify-center gap-2 ${
 										viewMode === 'calendar'
-											? 'bg-[#ea4b4b] text-white'
+											? 'bg-[#ea4b4b] !text-white'
 											: 'bg-white text-gray-700 hover:bg-gray-50'
 									}`}
 									aria-pressed={viewMode === 'calendar'}
@@ -574,7 +575,7 @@ export default function CalendarClient() {
 
 								<button
 									onClick={handleNewAppointment}
-									className="flex-1 sm:flex-none inline-flex items-center justify-center gap-2 rounded-full bg-[#ea4b4b] text-white px-3 md:px-4 py-2 text-sm shadow-sm hover:opacity-95 focus:outline-none focus:ring-2 focus:ring-[#ea4b4b] focus:ring-offset-2 whitespace-nowrap"
+									className="flex-1 sm:flex-none inline-flex items-center justify-center gap-2 rounded-full bg-[#ea4b4b] !text-white px-3 md:px-4 py-2 text-sm shadow-sm hover:opacity-95 focus:outline-none focus:ring-2 focus:ring-[#ea4b4b] focus:ring-offset-2 whitespace-nowrap"
 									aria-label={t('owner.calendar.addNewAppointment')}
 								>
 									<span className="text-lg leading-none" aria-hidden="true">
@@ -591,43 +592,28 @@ export default function CalendarClient() {
 				</div>
 
 				<div className="flex justify-between gap-6">
-					{!showDaySchedule ? (
-						<>
-							{viewMode === 'list' ? (
-								<BookingList
-									bookings={getFilteredBookings}
-									loading={loading}
-									error={error}
-									statusFilter={statusFilter}
-									dateFilter={dateFilter}
-									searchQuery={searchQuery}
-									currentPage={currentPage}
-									itemsPerPage={itemsPerPage}
-									totalPages={getTotalPages}
-									onFilterChange={handleFilterChange}
-									onSearchChange={handleSearchChange}
-									onEditBooking={handleEditBooking}
-									onCancelBooking={handleCancelBooking}
-									onConfirmBooking={handleConfirmBooking}
-									onRejectBooking={handleRejectBooking}
-									onViewBookingDetails={handleViewBookingDetails}
-									onRetry={fetchBookings}
-									onPageChange={handlePageChange}
-									onMarkAsNoShow={handleMarkAsNoShow}
-								/>
-							) : (
-								<CalendarView
-									currentMonth={currentMonth}
-									currentYear={currentYear}
-									bookings={bookings}
-									timeBlocks={timeBlocks}
-									workingHours={salonData?.workingHours}
-									onPreviousMonth={goToPreviousMonth}
-									onNextMonth={goToNextMonth}
-									onDateClick={handleDateClick}
-								/>
-							)}
-						</>
+					{viewMode === 'list' ? (
+						<BookingList
+							bookings={getFilteredBookings}
+							loading={loading}
+							error={error}
+							statusFilter={statusFilter}
+							dateFilter={dateFilter}
+							searchQuery={searchQuery}
+							currentPage={currentPage}
+							itemsPerPage={itemsPerPage}
+							totalPages={getTotalPages}
+							onFilterChange={handleFilterChange}
+							onSearchChange={handleSearchChange}
+							onEditBooking={handleEditBooking}
+							onCancelBooking={handleCancelBooking}
+							onConfirmBooking={handleConfirmBooking}
+							onRejectBooking={handleRejectBooking}
+							onViewBookingDetails={handleViewBookingDetails}
+							onRetry={fetchBookings}
+							onPageChange={handlePageChange}
+							onMarkAsNoShow={handleMarkAsNoShow}
+						/>
 					) : selectedDate ? (
 						<DaySchedule
 							selectedDate={selectedDate}
@@ -639,6 +625,9 @@ export default function CalendarClient() {
 							onViewBookingDetails={handleViewBookingDetails}
 							onPrevDay={handlePrevDay}
 							onNextDay={handleNextDay}
+							onDateChange={(date) => {
+								setSelectedDate(date);
+							}}
 						/>
 					) : null}
 				</div>

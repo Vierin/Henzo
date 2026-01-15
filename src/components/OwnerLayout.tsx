@@ -39,7 +39,7 @@ export default function OwnerLayout({ children }: OwnerLayoutProps) {
 				</div>
 
 				{/* Right side content area */}
-				<div className="flex-1 ">
+				<div className="flex-1 w-full">
 					{/* Header positioned for desktop */}
 					<div className="md:sticky md:top-0 md:z-40">
 						<OwnerHeader />

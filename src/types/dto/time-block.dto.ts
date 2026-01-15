@@ -1,7 +1,7 @@
 export interface CreateTimeBlockDto {
 	staffId?: string; // undefined = весь салон
 	type: 'TIME_OFF' | 'BUSY' | 'CLOSURE';
-	reason: string;
+	reason?: string; // Optional - can use notes instead
 	startDate: string; // ISO string
 	endDate: string; // ISO string
 	notes?: string;

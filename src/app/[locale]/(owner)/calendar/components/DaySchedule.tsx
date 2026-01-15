@@ -7,9 +7,24 @@ import {
 	formatTimeSafe,
 	parseBookingTimeAsLocal,
 } from '@/utils/date';
-import { ChevronLeft, ChevronRight, X } from 'lucide-react';
-import { useTranslation } from '@/contexts/LanguageContext';
+import {
+	ChevronLeft,
+	ChevronRight,
+	X,
+	Calendar as CalendarIcon,
+	ClockIcon,
+} from 'lucide-react';
+import { useTranslation, useLanguage } from '@/contexts/LanguageContext';
 import { useOwnerLayout } from '@/contexts/OwnerLayoutContext';
+import { Calendar } from '@/components/ui/calendar';
+import { ru, vi, enUS } from 'date-fns/locale';
+import {
+	Popover,
+	PopoverContent,
+	PopoverTrigger,
+} from '@/components/ui/popover';
+import { Button } from '@/components/ui/button';
+import { cn } from '@/lib/utils';
 
 interface DayScheduleProps {
 	selectedDate: Date;
@@ -29,6 +44,7 @@ interface DayScheduleProps {
 	onViewBookingDetails: (booking: Booking) => void;
 	onPrevDay?: () => void;
 	onNextDay?: () => void;
+	onDateChange?: (date: Date) => void; // Callback for date change
 }
 
 const DATA_WIDTH = '50px';
@@ -43,10 +59,24 @@ export default function DaySchedule({
 	onViewBookingDetails,
 	onPrevDay,
 	onNextDay,
+	onDateChange,
 }: DayScheduleProps) {
 	const t = useTranslation();
+	const { language } = useLanguage();
 	const { salonData } = useOwnerLayout();
 	const salonTimezone = salonData?.timezone || 'Asia/Ho_Chi_Minh';
+
+	// Get calendar locale
+	const getCalendarLocale = () => {
+		switch (language) {
+			case 'ru':
+				return ru;
+			case 'vi':
+				return vi;
+			default:
+				return enUS;
+		}
+	};
 	const [selectedStaffIds, setSelectedStaffIds] = useState<string[]>([]);
 	const [selectedMobileStaffId, setSelectedMobileStaffId] = useState<
 		string | null
@@ -56,6 +86,8 @@ export default function DaySchedule({
 	const [startX, setStartX] = useState(0);
 	const [scrollLeft, setScrollLeft] = useState(0);
 	const [isMobile, setIsMobile] = useState(false);
+	const [startDateIndex, setStartDateIndex] = useState(0); // Index for week navigation
+	const [showCalendarPicker, setShowCalendarPicker] = useState(false);
 
 	const monthNames = [
 		'january',
@@ -91,16 +123,7 @@ export default function DaySchedule({
 		return `${weekdayName}, ${monthName} ${day}`;
 	};
 
-	useEffect(() => {
-		const checkMobile = () => {
-			setIsMobile(window.innerWidth < 640);
-		};
-
-		checkMobile();
-		window.addEventListener('resize', checkMobile);
-		return () => window.removeEventListener('resize', checkMobile);
-	}, []);
-
+	// Get bookings for a specific date
 	const getBookingsForDate = (date: Date) => {
 		return bookings.filter((booking) => {
 			const bookingDate = parseBookingTimeAsLocal(booking.time);
@@ -135,6 +158,292 @@ export default function DaySchedule({
 		});
 	};
 
+	// Get staff members
+	const getStaffMembers = () => {
+		if (providedStaffMembers.length > 0) {
+			return providedStaffMembers;
+		}
+		// Extract unique staff from bookings
+		const staffMap = new Map<string, Staff>();
+		bookings.forEach((booking) => {
+			if (booking.staff) {
+				staffMap.set(booking.staff.id, booking.staff);
+			}
+		});
+		return Array.from(staffMap.values());
+	};
+
+	const allStaffMembers = getStaffMembers();
+
+	// Calculate load percentage for a specific date
+	const calculateDayLoad = (date: Date, staffMembersList: Staff[]): number => {
+		// Check if day is closed
+		const dayOfWeek = date.getDay();
+		const dayNameFull = weekdayNames[dayOfWeek];
+		type WorkingHoursKey = keyof NonNullable<typeof workingHours>;
+		const dayWorkingHours = workingHours?.[dayNameFull as WorkingHoursKey];
+
+		if (!dayWorkingHours || dayWorkingHours.closed) {
+			return 0; // Closed days have 0% load
+		}
+
+		if (!dayWorkingHours.open || !dayWorkingHours.close) {
+			return 0; // No working hours
+		}
+
+		// Get working hours
+		const openHour = parseInt(dayWorkingHours.open.split(':')[0]);
+		const closeHour = parseInt(dayWorkingHours.close.split(':')[0]);
+		const totalWorkingHours = closeHour - openHour;
+
+		if (totalWorkingHours <= 0 || staffMembersList.length === 0) return 0;
+
+		// Get bookings for this date
+		const dayBookings = getBookingsForDate(date);
+		const activeBookings = dayBookings.filter((b) => b.status !== 'CANCELED');
+
+		// Get time blocks for this date
+		const dayTimeBlocks = getTimeBlocksForDate(date);
+
+		// Count total available slots (hours * staff members)
+		const totalSlots = totalWorkingHours * staffMembersList.length;
+
+		// Count occupied slots
+		let occupiedSlots = 0;
+
+		// Count bookings (each booking occupies 1 slot)
+		occupiedSlots += activeBookings.length;
+
+		// Count time blocks (each hour in a time block occupies slots for affected staff)
+		dayTimeBlocks.forEach((block) => {
+			const blockStart = new Date(block.startDate);
+			const blockEnd = new Date(block.endDate);
+			const blockStartHour = blockStart.getHours();
+			const blockEndHour = blockEnd.getHours();
+			const blockHours = Math.max(1, blockEndHour - blockStartHour);
+
+			// If block is salon-wide, it affects all staff
+			// If block is for specific staff, it affects only that staff
+			if (!block.staffId) {
+				// Salon-wide block
+				occupiedSlots += blockHours * staffMembersList.length;
+			} else {
+				// Staff-specific block
+				occupiedSlots += blockHours;
+			}
+		});
+
+		// Calculate percentage (cap at 100%)
+		const loadPercentage = Math.min(100, (occupiedSlots / totalSlots) * 100);
+		return loadPercentage;
+	};
+
+	// Get load color based on percentage
+	const getLoadColor = (loadPercentage: number, isClosed: boolean): string => {
+		if (isClosed) return 'bg-gray-300'; // Gray for closed days
+		if (loadPercentage >= 90) return 'bg-red-500'; // Red for fully loaded
+		if (loadPercentage >= 50) return 'bg-yellow-500'; // Yellow for medium load
+		return 'bg-green-500'; // Green for low load
+	};
+
+	// Generate 7 days starting from today
+	const generateWeekDays = useMemo(() => {
+		const days = [];
+		const today = new Date();
+
+		for (let i = 0; i < 7; i++) {
+			const date = new Date(today);
+			date.setDate(today.getDate() + startDateIndex + i);
+
+			const dayOfWeek = date.getDay();
+			const monthIndex = date.getMonth();
+			const day = date.getDate();
+
+			const weekdayShortKeys = [
+				'sun',
+				'mon',
+				'tue',
+				'wed',
+				'thu',
+				'fri',
+				'sat',
+			];
+			const dayName = t(`weekdays.short.${weekdayShortKeys[dayOfWeek]}`);
+			const monthShort = t(`months.short.${monthNames[monthIndex]}`);
+
+			// Check if day is closed
+			const dayNameFull = weekdayNames[dayOfWeek];
+			type WorkingHoursKey = keyof NonNullable<typeof workingHours>;
+			const dayWorkingHours = workingHours?.[dayNameFull as WorkingHoursKey];
+			const isClosed = dayWorkingHours?.closed === true;
+
+			// Check if today
+			const todayOnly = new Date(
+				today.getFullYear(),
+				today.getMonth(),
+				today.getDate()
+			);
+			const dateOnly = new Date(
+				date.getFullYear(),
+				date.getMonth(),
+				date.getDate()
+			);
+			const isToday = dateOnly.getTime() === todayOnly.getTime();
+
+			// Calculate load percentage
+			const loadPercentage = calculateDayLoad(date, allStaffMembers);
+			const loadColor = getLoadColor(loadPercentage, isClosed);
+
+			days.push({
+				date,
+				day,
+				dayName,
+				monthShort,
+				isToday,
+				isClosed,
+				loadPercentage,
+				loadColor,
+			});
+		}
+
+		return days;
+	}, [
+		startDateIndex,
+		workingHours,
+		t,
+		monthNames,
+		weekdayNames,
+		bookings,
+		timeBlocks,
+		allStaffMembers,
+	]);
+
+	// Find current date index in week days
+	const currentDateIndex = useMemo(() => {
+		const selectedDateOnly = new Date(
+			selectedDate.getFullYear(),
+			selectedDate.getMonth(),
+			selectedDate.getDate()
+		);
+
+		return generateWeekDays.findIndex((day) => {
+			const dayOnly = new Date(
+				day.date.getFullYear(),
+				day.date.getMonth(),
+				day.date.getDate()
+			);
+			return dayOnly.getTime() === selectedDateOnly.getTime();
+		});
+	}, [selectedDate, generateWeekDays]);
+
+	// Update startDateIndex when selectedDate changes
+	useEffect(() => {
+		if (currentDateIndex === -1) {
+			// Selected date is not in current week, adjust startDateIndex
+			const today = new Date();
+			const selectedDateOnly = new Date(
+				selectedDate.getFullYear(),
+				selectedDate.getMonth(),
+				selectedDate.getDate()
+			);
+			const todayOnly = new Date(
+				today.getFullYear(),
+				today.getMonth(),
+				today.getDate()
+			);
+			const daysDiff = Math.floor(
+				(selectedDateOnly.getTime() - todayOnly.getTime()) /
+					(1000 * 60 * 60 * 24)
+			);
+			setStartDateIndex(Math.max(0, daysDiff));
+		}
+	}, [selectedDate, currentDateIndex]);
+
+	// Handle date selection from tabs
+	const handleDateSelect = (date: Date) => {
+		if (onDateChange) {
+			onDateChange(date);
+		}
+	};
+
+	// Handle week navigation
+	const handleScrollLeft = () => {
+		const newIndex = Math.max(0, startDateIndex - 7);
+		setStartDateIndex(newIndex);
+
+		// Calculate first day of new week
+		const today = new Date();
+		const firstDayOfNewWeek = new Date(today);
+		firstDayOfNewWeek.setDate(today.getDate() + newIndex);
+
+		// Check if selected date is in the new week
+		const selectedDateOnly = new Date(
+			selectedDate.getFullYear(),
+			selectedDate.getMonth(),
+			selectedDate.getDate()
+		);
+		const firstDayOnly = new Date(
+			firstDayOfNewWeek.getFullYear(),
+			firstDayOfNewWeek.getMonth(),
+			firstDayOfNewWeek.getDate()
+		);
+		const lastDayOfNewWeek = new Date(firstDayOnly);
+		lastDayOfNewWeek.setDate(firstDayOnly.getDate() + 6);
+
+		// If selected date is not in the new week, select the first day
+		if (
+			selectedDateOnly < firstDayOnly ||
+			selectedDateOnly > lastDayOfNewWeek
+		) {
+			handleDateSelect(firstDayOfNewWeek);
+		}
+	};
+
+	const handleScrollRight = () => {
+		const newIndex = startDateIndex + 7;
+		setStartDateIndex(newIndex);
+
+		// Calculate first day of new week
+		const today = new Date();
+		const firstDayOfNewWeek = new Date(today);
+		firstDayOfNewWeek.setDate(today.getDate() + newIndex);
+
+		// Check if selected date is in the new week
+		const selectedDateOnly = new Date(
+			selectedDate.getFullYear(),
+			selectedDate.getMonth(),
+			selectedDate.getDate()
+		);
+		const firstDayOnly = new Date(
+			firstDayOfNewWeek.getFullYear(),
+			firstDayOfNewWeek.getMonth(),
+			firstDayOfNewWeek.getDate()
+		);
+		const lastDayOfNewWeek = new Date(firstDayOnly);
+		lastDayOfNewWeek.setDate(firstDayOnly.getDate() + 6);
+
+		// If selected date is not in the new week, select the first day
+		if (
+			selectedDateOnly < firstDayOnly ||
+			selectedDateOnly > lastDayOfNewWeek
+		) {
+			handleDateSelect(firstDayOfNewWeek);
+		}
+	};
+
+	const canScrollLeft = startDateIndex > 0;
+	const canScrollRight = true; // Always can scroll right
+
+	useEffect(() => {
+		const checkMobile = () => {
+			setIsMobile(window.innerWidth < 640);
+		};
+
+		checkMobile();
+		window.addEventListener('resize', checkMobile);
+		return () => window.removeEventListener('resize', checkMobile);
+	}, []);
+
 	const getTimeBlockAtTime = (staffId: string | null, timeSlotHour: number) => {
 		const dayTimeBlocks = getTimeBlocksForDate(selectedDate);
 		return dayTimeBlocks.find((block) => {
@@ -151,36 +460,6 @@ export default function DaySchedule({
 			// Check if time slot overlaps with block
 			return timeSlotHour >= blockStartHour && timeSlotHour < blockEndHour;
 		});
-	};
-
-	// Получаем всех работников: используем переданный список или извлекаем из резерваций
-	const getStaffMembers = () => {
-		// Если передан список всех работников, используем его
-		if (providedStaffMembers && providedStaffMembers.length > 0) {
-			return providedStaffMembers.map((staff) => ({
-				id: staff.id,
-				name: staff.name,
-				role: 'Staff Member',
-			}));
-		}
-
-		// Fallback: извлекаем из резерваций (для обратной совместимости)
-		const staffSet = new Set();
-		bookings.forEach((booking) => {
-			if (booking.staff) {
-				staffSet.add(
-					JSON.stringify({
-						id: booking.staff.id,
-						name: booking.staff.name,
-						role: 'Staff Member',
-					})
-				);
-			}
-		});
-		const staffMembers = Array.from(staffSet).map((staff) =>
-			JSON.parse(staff as string)
-		);
-		return staffMembers;
 	};
 
 	// Get day name from selected date
@@ -204,6 +483,40 @@ export default function DaySchedule({
 		const dayName = getDayName(selectedDate);
 		const dayHours = workingHours[dayName];
 		return dayHours?.closed === true;
+	};
+
+	// Get working hours for selected day
+	const getSelectedDayWorkingHours = () => {
+		if (!workingHours) return null;
+		const dayName = getDayName(selectedDate);
+		const dayHours = workingHours[dayName];
+		if (!dayHours || dayHours.closed) return null;
+		if (!dayHours.open || !dayHours.close) return null;
+
+		const openHour = parseInt(dayHours.open.split(':')[0]);
+		const openMinute = parseInt(dayHours.open.split(':')[1] || '0');
+		const closeHour = parseInt(dayHours.close.split(':')[0]);
+		const closeMinute = parseInt(dayHours.close.split(':')[1] || '0');
+
+		return {
+			openHour,
+			openMinute,
+			closeHour,
+			closeMinute,
+		};
+	};
+
+	// Check if time slot is outside working hours
+	const isTimeSlotOutsideWorkingHours = (hour: number) => {
+		const dayHours = getSelectedDayWorkingHours();
+		if (!dayHours) return false; // If no working hours, don't mark as closed
+
+		// Time slot represents the start of the hour (e.g., 7:00)
+		// Check if this hour slot is completely outside working hours
+		// Slot is outside if:
+		// - Hour is before opening hour, OR
+		// - Hour is at or after closing hour (since slot starts at :00, if close is 18:00, slot 18:00 is outside)
+		return hour < dayHours.openHour || hour >= dayHours.closeHour;
 	};
 
 	// Calculate global time range from all working days
@@ -351,8 +664,68 @@ export default function DaySchedule({
 		return endTime >= now;
 	};
 
-	const allStaffMembers = getStaffMembers();
 	const timeSlots = getTimeSlots();
+
+	// State for current time to update every minute
+	const [currentTime, setCurrentTime] = useState(new Date());
+
+	// Update current time every minute
+	useEffect(() => {
+		const interval = setInterval(() => {
+			setCurrentTime(new Date());
+		}, 60000); // Update every minute
+
+		return () => clearInterval(interval);
+	}, []);
+
+	// Calculate current time position for today
+	const getCurrentTimePosition = () => {
+		const now = currentTime;
+		const selectedDateOnly = new Date(
+			selectedDate.getFullYear(),
+			selectedDate.getMonth(),
+			selectedDate.getDate()
+		);
+		const todayOnly = new Date(
+			now.getFullYear(),
+			now.getMonth(),
+			now.getDate()
+		);
+
+		// Only show current time line if selected date is today
+		if (selectedDateOnly.getTime() !== todayOnly.getTime()) {
+			return null;
+		}
+
+		const { startHour, endHour } = getGlobalTimeRange();
+		const currentHour = now.getHours();
+		const currentMinute = now.getMinutes();
+
+		// Check if current time is within the displayed range
+		if (currentHour < startHour || currentHour > endHour) {
+			return null;
+		}
+
+		// Calculate position: hour offset + minute offset within the hour
+		const hourOffset = currentHour - startHour;
+		const minuteOffset = currentMinute / 60; // 0-1 for position within hour
+		const totalOffset = hourOffset + minuteOffset;
+
+		// Calculate top position as percentage
+		// Each hour slot has height h-12 (48px) or h-16 (64px) on desktop
+		const slotHeight = isMobile ? 48 : 64; // Height in pixels
+		const totalSlots = endHour - startHour + 1;
+		const positionInPixels = totalOffset * slotHeight;
+		const totalHeight = totalSlots * slotHeight;
+		const topPercentage = (positionInPixels / totalHeight) * 100;
+
+		return {
+			top: `${topPercentage}%`,
+			time: `${currentHour.toString().padStart(2, '0')}:${currentMinute.toString().padStart(2, '0')}`,
+		};
+	};
+
+	const currentTimePosition = getCurrentTimePosition();
 
 	// Set initial mobile staff selection to first staff member
 	useEffect(() => {
@@ -448,7 +821,7 @@ export default function DaySchedule({
 
 	return (
 		<div
-			className="mt-4 md:mt-6 w-full"
+			className="mt-4 md:mt-6 w-full max-w-full overflow-x-hidden"
 			role="region"
 			aria-labelledby="day-schedule-heading"
 		>
@@ -456,60 +829,159 @@ export default function DaySchedule({
 				Day Schedule
 			</h2>
 
-			<div className="rounded-xl border border-[#f1d9d7] bg-white p-3 md:p-6">
-				{/* Header */}
-				<div className="flex flex-row items-center justify-between gap-3 mb-4 p-3 rounded-lg">
-					<div className="w-full flex items-center justify-between gap-2">
-						<div className="flex items-center gap-1">
+			<div className="rounded-xl border border-[#f1d9d7] bg-white px-2 py-3 md:p-6 w-full max-w-full overflow-hidden">
+				{/* Week Days Tabs Header */}
+				<div className="mb-1 md:mb-6">
+					<div className="flex items-center justify-between mb-3">
+						<div className="flex items-center gap-2">
 							<button
-								onClick={onPrevDay}
-								className="p-1.5 text-gray-600 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 hover:text-gray-900 transition-colors focus:outline-none focus:ring-2 focus:ring-[#ea4b4b] focus:ring-offset-2"
-								aria-label="Previous day"
-								disabled={!onPrevDay}
+								onClick={handleScrollLeft}
+								disabled={!canScrollLeft}
+								className={`w-8 h-8 rounded-full shadow-md flex items-center justify-center transition-colors ${
+									canScrollLeft
+										? 'bg-white hover:bg-gray-50 border border-gray-200'
+										: 'bg-gray-100 cursor-not-allowed border border-gray-200 opacity-50'
+								}`}
+								aria-label="Previous week"
 							>
-								<ChevronLeft className="w-4 h-4" />
+								<ChevronLeft
+									className={`w-4 h-4 ${canScrollLeft ? 'text-gray-600' : 'text-gray-400'}`}
+								/>
 							</button>
 							<button
-								onClick={onNextDay}
-								className="p-1.5 text-gray-600 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 hover:text-gray-900 transition-colors focus:outline-none focus:ring-2 focus:ring-[#ea4b4b] focus:ring-offset-2"
-								aria-label="Next day"
-								disabled={!onNextDay}
+								onClick={handleScrollRight}
+								disabled={!canScrollRight}
+								className={`w-8 h-8 rounded-full shadow-md flex items-center justify-center transition-colors ${
+									canScrollRight
+										? 'bg-white hover:bg-gray-50 border border-gray-200'
+										: 'bg-gray-100 cursor-not-allowed border border-gray-200 opacity-50'
+								}`}
+								aria-label="Next week"
 							>
-								<ChevronRight className="w-4 h-4" />
+								<ChevronRight
+									className={`w-4 h-4 ${canScrollRight ? 'text-gray-600' : 'text-gray-400'}`}
+								/>
 							</button>
 						</div>
-						<h3 className="text-base md:text-lg font-semibold text-gray-900 text-center flex-1">
-							{formatDateForDisplay(selectedDate)}
-						</h3>
 
-						<button
-							onClick={onBack}
-							className="px-3 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors flex items-center gap-2 focus:outline-none focus:ring-2 focus:ring-[#ea4b4b] focus:ring-offset-2"
-							aria-label={t('owner.calendar.backToMonth')}
+						{/* Calendar Picker Button */}
+						<Popover
+							open={showCalendarPicker}
+							onOpenChange={setShowCalendarPicker}
 						>
-							<svg
-								className="w-4 h-4"
-								fill="currentColor"
-								viewBox="0 0 20 20"
-								aria-hidden="true"
-							>
-								<path
-									fillRule="evenodd"
-									d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z"
-									clipRule="evenodd"
+							<PopoverTrigger asChild>
+								<Button
+									variant="outline"
+									className="px-3 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors flex items-center gap-2"
+									aria-label={t('owner.calendar.selectDate') || 'Select date'}
+								>
+									<CalendarIcon className="w-4 h-4" />
+									<span className="hidden sm:inline">
+										{t('owner.calendar.selectDate') || 'Select date'}
+									</span>
+								</Button>
+							</PopoverTrigger>
+							<PopoverContent className="w-auto p-0 bg-white" align="end">
+								<Calendar
+									mode="single"
+									selected={selectedDate}
+									onSelect={(date: Date | undefined) => {
+										if (date) {
+											handleDateSelect(date);
+											setShowCalendarPicker(false);
+										}
+									}}
+									fromDate={new Date()}
+									disabled={(date) => {
+										const today = new Date();
+										today.setHours(0, 0, 0, 0);
+										const dateToCheck = new Date(date);
+										dateToCheck.setHours(0, 0, 0, 0);
+										return dateToCheck < today;
+									}}
+									locale={getCalendarLocale()}
 								/>
-							</svg>
-							<span className="hidden sm:inline">
-								{t('owner.calendar.backToMonth')}
-							</span>
-							<span className="sm:hidden">{t('owner.calendar.back')}</span>
-						</button>
+							</PopoverContent>
+						</Popover>
+					</div>
+
+					{/* 7 Days Tabs */}
+					<div className="flex gap-1 sm:gap-3 overflow-x-auto pb-2">
+						{generateWeekDays.map((dayInfo, index) => {
+							const isSelected = currentDateIndex === index;
+							const actualIndex = startDateIndex + index;
+
+							return (
+								<button
+									key={`day-${dayInfo.date.getTime()}`}
+									onClick={() => {
+										if (!dayInfo.isClosed) {
+											handleDateSelect(dayInfo.date);
+										}
+									}}
+									disabled={dayInfo.isClosed}
+									className={cn(
+										'flex-1 flex flex-col items-center justify-center py-1 px-1 sm:py-2 sm:px-2 rounded-lg sm:rounded-xl border-2 transition-all min-h-[70px] sm:min-h-[80px] md:min-h-[120px] h-[50px] sm:h-[80px] md:h-[120px] min-w-[45px] sm:min-w-[70px]',
+										dayInfo.isClosed
+											? 'border-gray-200 bg-gray-50 text-gray-300 cursor-not-allowed'
+											: isSelected
+												? 'border-[#ff5b5b] bg-[#ff5b5b] text-white shadow-lg'
+												: 'border-gray-200 bg-white hover:border-[#ff5b5b] hover:shadow-md'
+									)}
+								>
+									<span
+										className={cn(
+											'text-[10px] sm:text-xs font-medium mb-0.5 sm:mb-1',
+											isSelected ? 'text-white' : 'text-gray-500'
+										)}
+									>
+										{dayInfo.dayName}
+									</span>
+									<span
+										className={cn(
+											'text-sm sm:text-lg md:text-2xl font-bold mb-0.5 sm:mb-0.5',
+											isSelected ? 'text-white' : 'text-gray-900'
+										)}
+									>
+										{dayInfo.day}
+									</span>
+									<span
+										className={cn(
+											'text-[10px] sm:text-xs',
+											isSelected ? 'text-white/80' : 'text-gray-500'
+										)}
+									>
+										{dayInfo.monthShort}
+									</span>
+									<div className="w-[80%] sm:w-[70%] h-1 mt-1 rounded-full overflow-hidden bg-gray-200">
+										{(() => {
+											const loadPercentage = calculateDayLoad(
+												dayInfo.date,
+												allStaffMembers
+											);
+											const loadColor = getLoadColor(
+												loadPercentage,
+												dayInfo.isClosed
+											);
+											return (
+												<div
+													className={`h-full ${loadColor}`}
+													style={{
+														width: `${dayInfo.isClosed ? 0 : loadPercentage}%`,
+													}}
+												/>
+											);
+										})()}
+									</div>
+								</button>
+							);
+						})}
 					</div>
 				</div>
 
 				{/* Staff Filter Pills */}
 				{allStaffMembers.length > 0 && (
-					<div className="mb-4 md:mb-6">
+					<div className="mb-4 md:mb-6 w-full max-w-full min-w-0">
 						{!isMobile && (
 							<div className="mb-2">
 								<span className="text-xs md:text-sm font-medium text-gray-600">
@@ -517,7 +989,10 @@ export default function DaySchedule({
 								</span>
 							</div>
 						)}
-						<div className="flex flex-wrap gap-2">
+						<div
+							className="flex gap-2 overflow-x-auto py-2 -mx-1 min-w-0 w-full max-w-full"
+							style={{ scrollbarWidth: 'thin' }}
+						>
 							{allStaffMembers.map((staff) => {
 								// On mobile: check if this is the selected staff
 								// On desktop: check if selected or all are shown
@@ -529,15 +1004,13 @@ export default function DaySchedule({
 									<button
 										key={staff.id}
 										onClick={() => toggleStaffSelection(staff.id)}
-										className={`inline-flex items-center gap-1.5 px-2.5 md:px-3 py-1.5 rounded-full text-xs md:text-sm font-medium transition-all focus:outline-none focus:ring-2 focus:ring-[#ea4b4b] focus:ring-offset-2 ${
+										className={`inline-flex items-center gap-1.5 px-2.5 md:px-3 py-1.5 rounded-full text-xs md:text-sm font-medium transition-all focus:outline-none focus:ring-2 focus:ring-[#ea4b4b] focus:ring-offset-2 flex-shrink-0 whitespace-nowrap ${
 											isSelected
-												? 'bg-[#ff5b5b] text-white hover:bg-[#e04a4a]'
+												? 'bg-[#ff5b5b] !text-white hover:bg-[#e04a4a]'
 												: 'bg-gray-100 text-gray-600 hover:bg-gray-200'
 										}`}
 									>
-										<span className="truncate max-w-[80px] md:max-w-none">
-											{staff.name}
-										</span>
+										<span>{staff.name}</span>
 										{!isMobile && isSelected && selectedStaffIds.length > 0 && (
 											<X className="w-3 h-3 md:w-3.5 md:h-3.5 flex-shrink-0" />
 										)}
@@ -547,7 +1020,7 @@ export default function DaySchedule({
 							{!isMobile && selectedStaffIds.length > 0 && (
 								<button
 									onClick={clearAllFilters}
-									className="text-xs md:text-sm text-gray-500 hover:text-gray-700 underline"
+									className="text-xs md:text-sm text-gray-500 hover:text-gray-700 underline flex-shrink-0 whitespace-nowrap"
 								>
 									Clear all
 								</button>
@@ -558,7 +1031,7 @@ export default function DaySchedule({
 
 				{/* Check if selected day is closed */}
 				{isSelectedDayClosed() ? (
-					<div className="flex items-center justify-center py-12 bg-gray-50 rounded-lg border border-gray-200">
+					<div className="flex items-center justify-center py-12 bg-gray-50 rounded-lg border border-gray-300">
 						<div className="text-center">
 							<div className="mb-4">
 								<svg
@@ -588,20 +1061,20 @@ export default function DaySchedule({
 					<div className="flex">
 						{/* Left sticky column - Time labels and header */}
 						<div
-							className="flex-shrink-0 sticky left-0 z-20 bg-white border-r border-gray-200"
+							className="flex-shrink-0 sticky left-0 z-20 bg-white border-r border-gray-300"
 							style={{ width: '45px' }}
 						>
 							{/* Time header */}
-							<div className="border-b border-gray-200 bg-white">
-								<div className="py-2 md:py-3 px-1 md:px-2 text-xs md:text-sm font-medium text-gray-500 text-center">
-									Time
+							<div className="border-b border-gray-300 bg-white">
+								<div className="py-2 md:py-3 px-1 md:px-2 text-xs md:text-sm flex items-center justify-center h-[50px] sm:h-auto font-medium text-gray-500 text-center">
+									<ClockIcon className="w-5 h-auto" />
 								</div>
 							</div>
 							{/* Time cells */}
 							{timeSlots.map((timeSlot) => (
 								<div
 									key={`time-${timeSlot.time}`}
-									className="flex items-center justify-center text-xs md:text-sm text-gray-600 h-12 md:h-16 border-b border-gray-200 font-medium bg-white"
+									className="flex items-center justify-center text-xs md:text-sm text-gray-600 h-12 md:h-16 border-b border-gray-300 font-medium bg-white"
 								>
 									{timeSlot.displayTime.replace(':00', '')}
 								</div>
@@ -611,7 +1084,7 @@ export default function DaySchedule({
 						{/* Right scrollable area - Staff columns with headers */}
 						<div
 							ref={scrollContainerRef}
-							className={`flex-1 ${isMobile ? 'overflow-hidden' : 'overflow-x-auto cursor-grab'}`}
+							className={`flex-1 w-full max-w-full ${isMobile ? 'overflow-hidden' : 'overflow-x-auto cursor-grab'}`}
 							onMouseDown={isMobile ? undefined : handleMouseDown}
 							onMouseMove={isMobile ? undefined : handleMouseMove}
 							onMouseUp={isMobile ? undefined : handleMouseUp}
@@ -620,15 +1093,15 @@ export default function DaySchedule({
 								WebkitOverflowScrolling: 'touch' /* iOS smooth scrolling */,
 							}}
 						>
-							<div className="flex flex-col">
+							<div className="flex flex-col relative">
 								{/* Staff headers row */}
-								<div className="flex border-b border-gray-200 bg-white">
+								<div className="flex border-b border-gray-300 bg-white h-[50px] sm:h-auto">
 									{staffMembers.map((staff) => (
 										<div
 											key={staff.id}
-											className={`${isMobile ? 'flex-1' : 'flex-1 min-w-0'} py-2 md:py-3 px-2 md:px-4 text-center border-r border-gray-200 last:border-r-0`}
+											className={`${isMobile ? 'flex-1' : 'flex-1 min-w-0'} py-2 md:py-3 px-2 md:px-4 text-center border-r border-gray-300`}
 										>
-											<div className="text-xs md:text-sm font-semibold text-gray-900 truncate">
+											<div className="text-m md:text-sm font-semibold text-gray-900 truncate">
 												{staff.name}
 											</div>
 										</div>
@@ -636,11 +1109,26 @@ export default function DaySchedule({
 								</div>
 
 								{/* Staff columns grid */}
-								<div className="flex">
+								<div className="flex relative">
+									{/* Current time indicator line - positioned absolutely across all columns */}
+									{currentTimePosition && (
+										<div
+											className="absolute left-0 right-0 z-50 pointer-events-none"
+											style={{ top: currentTimePosition.top }}
+										>
+											<div className="flex items-center h-full">
+												{/* Red line across all staff columns */}
+												<div className="flex-1 relative h-0.5">
+													<div className="absolute left-0 right-0 h-0.5 bg-[#ff5b5b]"></div>
+													<div className="absolute left-0 top-1/2 -translate-y-1/2 w-2 h-2 bg-[#ff5b5b] rounded-full -ml-1 z-50"></div>
+												</div>
+											</div>
+										</div>
+									)}
 									{staffMembers.map((staff) => (
 										<div
 											key={`staff-${staff.id}`}
-											className={`${isMobile ? 'flex-1' : 'flex-1 min-w-0'}`}
+											className={`${isMobile ? 'flex-1' : 'flex-1 min-w-0'} relative`}
 										>
 											{timeSlots.map((timeSlot) => {
 												const startingAppointment =
@@ -654,13 +1142,22 @@ export default function DaySchedule({
 													timeSlot.hour
 												);
 
+												const isOutsideWorkingHours =
+													isTimeSlotOutsideWorkingHours(timeSlot.hour);
+
 												return (
 													<div
 														key={`${staff.id}-${timeSlot.time}`}
-														className={`relative h-12 md:h-16 border-b border-r border-gray-200 last:border-r-0 ${
+														className={`relative h-12 md:h-16 border-b border-r border-gray-300 last:border-r-0 ${
 															timeBlock ? 'bg-gray-100' : ''
+														} ${
+															isOutsideWorkingHours && !timeBlock ? '100' : ''
 														}`}
 													>
+														{/* Gray overlay for non-working hours */}
+														{isOutsideWorkingHours && !timeBlock && (
+															<div className="absolute inset-0 bg-gray-200 bg-opacity-40 pointer-events-none" />
+														)}
 														{timeBlock && (
 															<div
 																className="absolute inset-0 bg-gray-300 bg-opacity-50 flex items-center justify-center"

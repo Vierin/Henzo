@@ -34,9 +34,19 @@ import {
 } from '@/components/ui/popover';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
-import { TimePicker } from 'rsuite';
-import 'rsuite/dist/rsuite-no-reset.min.css';
-import { useTranslation } from '@/contexts/LanguageContext';
+import { TimePicker } from 'antd';
+import type { Dayjs } from 'dayjs';
+import dayjs from 'dayjs';
+import 'antd/dist/reset.css';
+import { useTranslation, useLanguage } from '@/contexts/LanguageContext';
+import { extractLocaleFromPath } from '@/i18n/routing';
+import { usePathname } from 'next/navigation';
+import { ru, vi, enUS } from 'date-fns/locale';
+import {
+	ru as ruDayPicker,
+	vi as viDayPicker,
+	enUS as enUSDayPicker,
+} from 'date-fns/locale';
 
 interface BlockTimeModalProps {
 	isOpen: boolean;
@@ -56,7 +66,34 @@ export default function BlockTimeModal({
 	preselectedEndTime,
 }: BlockTimeModalProps) {
 	const t = useTranslation();
+	const { language } = useLanguage();
+	const pathname = usePathname();
+	const currentLocale = extractLocaleFromPath(pathname) ?? language ?? 'en';
 	const { salonId, salon: salonData } = useSalonId();
+
+	// Get date-fns locale for formatting
+	const getDateLocale = () => {
+		switch (currentLocale) {
+			case 'ru':
+				return ru;
+			case 'vi':
+				return vi;
+			default:
+				return enUS;
+		}
+	};
+
+	// Get react-day-picker locale
+	const getCalendarLocale = () => {
+		switch (currentLocale) {
+			case 'ru':
+				return ruDayPicker;
+			case 'vi':
+				return viDayPicker;
+			default:
+				return enUSDayPicker;
+		}
+	};
 	const { data: staff = [], isLoading: staffLoading } = useStaffBySalon(
 		salonId || ''
 	);
@@ -149,20 +186,16 @@ export default function BlockTimeModal({
 		return new Date(today.getFullYear(), today.getMonth(), today.getDate());
 	};
 
-	// Helper functions for rsuite TimePicker
-	const parseTimeToDate = (timeStr: string): Date | null => {
+	// Helper functions for antd TimePicker
+	const parseTimeToDayjs = (timeStr: string): Dayjs | null => {
 		if (!timeStr || !timeStr.includes(':')) return null;
 		const [hours, minutes] = timeStr.split(':').map(Number);
-		const date = new Date();
-		date.setHours(hours, minutes, 0, 0);
-		return date;
+		return dayjs().hour(hours).minute(minutes).second(0).millisecond(0);
 	};
 
-	const formatDateToTime = (date: Date | null): string => {
-		if (!date) return '';
-		const hours = date.getHours().toString().padStart(2, '0');
-		const minutes = date.getMinutes().toString().padStart(2, '0');
-		return `${hours}:${minutes}`;
+	const formatDayjsToTime = (time: Dayjs | null): string => {
+		if (!time) return '';
+		return time.format('HH:mm');
 	};
 
 	// Initialize form with preselected values
@@ -251,9 +284,6 @@ export default function BlockTimeModal({
 		if (blockFor === 'staff' && !selectedStaffId) {
 			return false;
 		}
-		if (!reason.trim()) {
-			return false;
-		}
 		if (!startDate || !endDate) {
 			return false;
 		}
@@ -290,7 +320,7 @@ export default function BlockTimeModal({
 		const data: CreateTimeBlockDto = {
 			staffId: blockFor === 'staff' ? selectedStaffId : undefined,
 			type: blockType,
-			reason,
+			...(reason.trim() && { reason: reason.trim() }), // Only include if not empty
 			startDate: startDateTime,
 			endDate: endDateTime,
 			notes,
@@ -451,7 +481,7 @@ export default function BlockTimeModal({
 							}}
 							className="flex gap-4"
 						>
-							<label className="flex items-center space-x-3 p-4 border-2 border-gray-300 rounded-lg hover:bg-gray-50 cursor-pointer transition-colors flex-1">
+							<label className="flex items-center gap-2 space-x-3 p-4 border-2 border-gray-300 rounded-lg hover:bg-gray-50 cursor-pointer transition-colors flex-1">
 								<RadioGroupItem
 									value="salon"
 									id="salon"
@@ -461,7 +491,7 @@ export default function BlockTimeModal({
 									{t('owner.calendar.blockTimeModal.entireSalon')}
 								</span>
 							</label>
-							<label className="flex items-center space-x-3 p-4 border-2 border-gray-300 rounded-lg hover:bg-gray-50 cursor-pointer transition-colors flex-1">
+							<label className="flex items-center gap-2 space-x-3 p-4 border-2 border-gray-300 rounded-lg hover:bg-gray-50 cursor-pointer transition-colors flex-1">
 								<RadioGroupItem
 									value="staff"
 									id="staff"
@@ -537,44 +567,26 @@ export default function BlockTimeModal({
 							<SelectContent className="bg-white border border-gray-300 shadow-lg rounded-md">
 								<SelectItem
 									value="TIME_OFF"
-									className="bg-white hover:bg-gray-50 focus:bg-gray-50 text-gray-900 cursor-pointer"
+									className="bg-white hover:bg-gray-50 focus:bg-gray-50 text-gray-600 cursor-pointer"
 								>
 									{getBlockTypeLabel('TIME_OFF')}
 								</SelectItem>
 								<SelectItem
 									value="BUSY"
-									className="bg-white hover:bg-gray-50 focus:bg-gray-50 text-gray-900 cursor-pointer"
+									className="bg-white hover:bg-gray-50 focus:bg-gray-50 text-gray-600 cursor-pointer"
 								>
 									{getBlockTypeLabel('BUSY')}
 								</SelectItem>
 								{blockFor === 'salon' && (
 									<SelectItem
 										value="CLOSURE"
-										className="bg-white hover:bg-gray-50 focus:bg-gray-50 text-gray-900 cursor-pointer"
+										className="bg-white hover:bg-gray-50 focus:bg-gray-50 text-gray-600 cursor-pointer"
 									>
 										{getBlockTypeLabel('CLOSURE')}
 									</SelectItem>
 								)}
 							</SelectContent>
 						</Select>
-					</div>
-
-					{/* Reason Description */}
-					<div>
-						<label className="block text-sm font-medium text-gray-700 mb-2">
-							{t('owner.calendar.blockTimeModal.description')}{' '}
-							<span className="text-red-500">*</span>
-						</label>
-						<input
-							type="text"
-							value={reason}
-							onChange={(e) => setReason(e.target.value)}
-							placeholder={t(
-								'owner.calendar.blockTimeModal.descriptionPlaceholder'
-							)}
-							className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#ff5b5b] focus:border-[#ff5b5b] text-gray-900"
-							required
-						/>
 					</div>
 
 					{/* Quick Time Presets */}
@@ -684,7 +696,9 @@ export default function BlockTimeModal({
 									>
 										<CalendarIcon className="mr-2 h-4 w-4" />
 										{startDate && stringToDate(startDate)
-											? format(stringToDate(startDate)!, 'PPP')
+											? format(stringToDate(startDate)!, 'dd.MM.yy', {
+													locale: getDateLocale(),
+												})
 											: t('owner.calendar.blockTimeModal.pickADate')}
 									</Button>
 								</PopoverTrigger>
@@ -692,6 +706,7 @@ export default function BlockTimeModal({
 									<Calendar
 										mode="single"
 										selected={stringToDate(startDate)}
+										locale={getCalendarLocale()}
 										onSelect={(date: Date | undefined) => {
 											if (date) {
 												const dateStr = dateToString(date);
@@ -714,32 +729,25 @@ export default function BlockTimeModal({
 								{t('owner.calendar.blockTimeModal.startTime')}{' '}
 								<span className="text-red-500">*</span>
 							</label>
-							<div className="w-full">
+							<div
+								className="w-full"
+								style={{ width: '100%', minWidth: '80px' }}
+							>
 								<TimePicker
-									value={parseTimeToDate(startTime) || null}
-									onChange={(date) => {
-										const timeStr = formatDateToTime(date);
+									value={parseTimeToDayjs(startTime)}
+									onChange={(time) => {
+										const timeStr = formatDayjsToTime(time);
 										if (timeStr) {
 											setStartTime(timeStr);
 											setSelectedQuickPreset(null);
 										}
 									}}
 									format="HH:mm"
-									cleanable={false}
 									placeholder="09:00"
-									className="w-full custom-time-picker"
-									style={
-										{
-											width: '100%',
-											'--rs-picker-toggle-border': '#d1d5db',
-											'--rs-picker-toggle-focus-border': '#ff5b5b',
-											'--rs-picker-toggle-focus-shadow':
-												'rgba(255, 91, 91, 0.2)',
-										} as React.CSSProperties
-									}
-									container={() => document.body}
-									preventOverflow={true}
-									menuStyle={{ zIndex: 9999 }}
+									minuteStep={5}
+									inputReadOnly={true}
+									className="custom-time-picker"
+									style={{ width: '100%', minWidth: '80px', maxWidth: '120px' }}
 								/>
 							</div>
 						</div>
@@ -764,7 +772,9 @@ export default function BlockTimeModal({
 									>
 										<CalendarIcon className="mr-2 h-4 w-4" />
 										{endDate && stringToDate(endDate)
-											? format(stringToDate(endDate)!, 'PPP')
+											? format(stringToDate(endDate)!, 'dd.MM.yy', {
+													locale: getDateLocale(),
+												})
 											: t('owner.calendar.blockTimeModal.pickADate')}
 									</Button>
 								</PopoverTrigger>
@@ -772,6 +782,7 @@ export default function BlockTimeModal({
 									<Calendar
 										mode="single"
 										selected={stringToDate(endDate)}
+										locale={getCalendarLocale()}
 										onSelect={(date: Date | undefined) => {
 											if (date) {
 												const dateStr = dateToString(date);
@@ -797,32 +808,25 @@ export default function BlockTimeModal({
 								{t('owner.calendar.blockTimeModal.endTime')}{' '}
 								<span className="text-red-500">*</span>
 							</label>
-							<div className="w-full">
+							<div
+								className="w-full"
+								style={{ width: '100%', minWidth: '80px' }}
+							>
 								<TimePicker
-									value={parseTimeToDate(endTime) || null}
-									onChange={(date) => {
-										const timeStr = formatDateToTime(date);
+									value={parseTimeToDayjs(endTime)}
+									onChange={(time) => {
+										const timeStr = formatDayjsToTime(time);
 										if (timeStr) {
 											setEndTime(timeStr);
 											setSelectedQuickPreset(null);
 										}
 									}}
 									format="HH:mm"
-									cleanable={false}
 									placeholder="18:00"
-									className="w-full custom-time-picker"
-									style={
-										{
-											width: '100%',
-											'--rs-picker-toggle-border': '#d1d5db',
-											'--rs-picker-toggle-focus-border': '#ff5b5b',
-											'--rs-picker-toggle-focus-shadow':
-												'rgba(255, 91, 91, 0.2)',
-										} as React.CSSProperties
-									}
-									container={() => document.body}
-									preventOverflow={true}
-									menuStyle={{ zIndex: 9999 }}
+									minuteStep={5}
+									inputReadOnly={true}
+									className="custom-time-picker"
+									style={{ width: '100%', minWidth: '80px', maxWidth: '120px' }}
 								/>
 							</div>
 						</div>

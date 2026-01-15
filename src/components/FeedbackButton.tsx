@@ -50,16 +50,18 @@ export default function FeedbackButton() {
 			{isOpen && (
 				<div className="mb-4 w-80 bg-white rounded-lg shadow-2xl border border-gray-200 overflow-hidden">
 					{/* Header */}
-					<div className="bg-[#ff5b5b] text-white px-4 py-3 flex items-center justify-between">
+					<div className="bg-[#ff5b5b] text-white px-4 py-3 flex justify-between">
 						<div className="flex-1">
-							<h3 className="font-semibold text-sm">{t('owner.feedback.title')}</h3>
+							<h3 className="font-semibold text-sm">
+								{t('owner.feedback.title')}
+							</h3>
 							<p className="text-xs text-white/90">
 								{t('owner.feedback.subtitle')}
 							</p>
 						</div>
 						<button
 							onClick={() => setIsOpen(false)}
-							className="text-white hover:text-gray-200 transition-colors ml-2 flex-shrink-0"
+							className="text-white flex hover:text-gray-200 transition-colors ml-2 flex-shrink-0"
 							aria-label={t('owner.feedback.close')}
 						>
 							<X className="w-5 h-5" />
@@ -78,7 +80,7 @@ export default function FeedbackButton() {
 						<button
 							type="submit"
 							disabled={isSubmitting || !message.trim()}
-							className="mt-3 w-full bg-[#ff5b5b] text-white px-4 py-2 rounded-lg hover:bg-[#e04a4a] transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 text-sm font-medium"
+							className="mt-3 w-full bg-[#ff5b5b] !text-white px-4 py-2 rounded-lg hover:bg-[#e04a4a] transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 text-sm font-medium"
 						>
 							{isSubmitting ? (
 								<>
@@ -99,7 +101,7 @@ export default function FeedbackButton() {
 			{/* Floating button - fixed position */}
 			<button
 				onClick={() => setIsOpen(!isOpen)}
-				className={`w-14 h-14 bg-[#ff5b5b] text-white rounded-full shadow-lg hover:bg-[#e04a4a] transition-all duration-200 flex items-center justify-center flex-shrink-0 ${
+				className={`w-14 h-14 bg-[#ff5b5b] !text-white rounded-full shadow-lg hover:bg-[#e04a4a] transition-all duration-200 flex items-center justify-center flex-shrink-0 ${
 					isOpen ? 'rotate-180' : 'hover:scale-110'
 				}`}
 				aria-label={t('owner.feedback.sendFeedback')}

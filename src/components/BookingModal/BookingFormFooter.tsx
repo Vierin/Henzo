@@ -22,7 +22,7 @@ export default function BookingFormFooter({
 			<button
 				onClick={onBooking}
 				disabled={loading}
-				className="w-full bg-[#ff5b5b] text-white py-3 sm:py-4 rounded-lg font-semibold text-base sm:text-lg hover:bg-[#e04a4a] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+				className="w-full bg-[#ff5b5b] !text-white py-3 sm:py-4 rounded-lg font-semibold text-base sm:text-lg hover:bg-[#e04a4a] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
 			>
 				{loading
 					? editingBooking

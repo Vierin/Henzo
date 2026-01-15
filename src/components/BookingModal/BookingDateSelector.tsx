@@ -273,12 +273,12 @@ export default function BookingDateSelector({
 									date.isClosed
 										? 'border-gray-200 bg-gray-50 text-gray-300 cursor-not-allowed'
 										: isSelected
-											? 'border-[#ff5b5b] bg-[#ff5b5b] text-white shadow-lg'
+											? 'border-[#ff5b5b] bg-[#ff5b5b] !text-white shadow-lg'
 											: 'border-gray-200 bg-white hover:border-[#ff5b5b] hover:shadow-md'
 								}`}
 							>
 								<span
-									className={`text-[10px] sm:text-xs font-medium mb-0.5 sm:mb-1 ${isSelected ? 'text-white' : 'text-gray-500'}`}
+									className={`text-[10px] sm:text-xs font-medium mb-0.5 sm:mb-1 ${isSelected ? '!text-white' : 'text-gray-500'}`}
 								>
 									{date.dayName}
 								</span>
@@ -286,7 +286,7 @@ export default function BookingDateSelector({
 									{date.displayDate || date.day}
 								</span>
 								<span
-									className={`text-[10px] sm:text-xs ${isSelected ? 'text-white/80' : 'text-gray-500'}`}
+									className={`text-[10px] sm:text-xs ${isSelected ? '!text-white/80' : 'text-gray-500'}`}
 								>
 									{date.displayMonth || date.monthShort}
 								</span>
