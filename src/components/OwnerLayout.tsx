@@ -68,7 +68,7 @@ export default function OwnerLayout({ children }: OwnerLayoutProps) {
 
 					{/* Main Content */}
 					<main className="p-4 md:p-8 w-full overflow-x-hidden md:pl-64 flex flex-col min-h-screen">
-						<div className="flex-1">{children}</div>
+						<div className="flex-1 mb-5 sm:mb-0">{children}</div>
 						<div className="-mx-4 md:-mx-8 mt-auto">
 							<Footer />
 						</div>

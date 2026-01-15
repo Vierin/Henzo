@@ -240,7 +240,7 @@ function SalonCard({
 			{salon.services && salon.services.length > 3 && (
 				<div className="text-center py-2">
 					<span className="text-[#ff5b5b] text-sm font-medium hover:text-[#e04a4a] transition-colors">
-						{t.categories.viewAllServices.replace(
+						{t.salon.viewAllServices.replace(
 							'{count}',
 							salon.services.length.toString()
 						)}

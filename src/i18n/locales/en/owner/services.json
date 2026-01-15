@@ -17,14 +17,14 @@
 	"priceHighToLow": "Price (High to Low)",
 	"durationShortToLong": "Duration (Short to Long)",
 	"durationLongToShort": "Duration (Long to Short)",
-	"clearFilters": "Clear Filters",
+	"clearFilters": "Clear",
 	"showing": "Showing",
 	"of": "of",
 	"matching": "matching",
 	"inCategory": "in",
-	"categoryLabel": "category",
+	"categoryLabelInText": "category",
 	"inGroup": "in",
-	"groupLabel": "group",
+	"groupLabelInText": "group",
 	"noServicesFound": "No services found",
 	"tryAdjustingFilters": "Try adjusting your search or filter criteria",
 	"noServicesYet": "No services yet",
@@ -52,5 +52,9 @@
 	"updateService": "Update Service",
 	"addService": "Add Service",
 	"saving": "Saving...",
-	"loading": "Loading..."
+	"loading": "Loading...",
+	"addServiceGroup": "Add Service Group",
+	"addServiceGroupHelp": "Create a group to organize your services (e.g., \"Hair services\", \"Nails\").",
+	"groupName": "Group name",
+	"create": "Create"
 }

@@ -46,5 +46,12 @@
 		"morning": "Утро",
 		"afternoon": "День",
 		"evening": "Вечер"
-	}
+	},
+	"sortBy": "Сортировать по",
+	"sortNameAZ": "Имя А-Я",
+	"sortNameZA": "Имя Я-А",
+	"sortMostServices": "Больше услуг",
+	"sortHighestRated": "Высший рейтинг",
+	"mapView": "Карта",
+	"viewAllServices": "Посмотреть все {count} услуг →"
 }

@@ -23,7 +23,6 @@ export interface Salon {
 	logo?: string;
 	photos?: string[];
 	workingHours?: WorkingHours;
-	categoryIds?: number[];
 	categories?: { id: string; name: string }[];
 	ownerId: string;
 	createdAt: string;

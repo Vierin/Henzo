@@ -3,13 +3,10 @@
 import { useState } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { useCreateService } from '@/hooks/useServices';
-import {
-	useCategories,
-	getCategoryTranslatedName,
-} from '@/hooks/useCategories';
 import { useOwnerLayout } from '@/contexts/OwnerLayoutContext';
 import { apiClient } from '@/lib/api-client';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { ServiceCategory } from '@/types';
 import {
 	Select,
 	SelectContent,
@@ -130,8 +127,16 @@ export default function NewServiceClient() {
 	// Используем данные салона из контекста (избегаем дублирования запросов)
 	const { salonId, isLoading: salonLoading, hasSalon } = useOwnerLayout();
 	const queryClient = useQueryClient();
+	const { language } = useLanguage();
 
-	const { data: categories = [] } = useCategories();
+	// Load categories from API (same as EditServiceModal)
+	const { data: categories = [] } = useQuery<ServiceCategory[]>({
+		queryKey: ['service-categories'],
+		queryFn: async () => {
+			return apiClient.get<ServiceCategory[]>('/services/categories');
+		},
+		staleTime: 10 * 60 * 1000,
+	});
 
 	// Load service groups for this salon
 	const { data: groups = [] } = useQuery({
@@ -266,11 +271,6 @@ export default function NewServiceClient() {
 				</div>
 			</div>
 		);
-	}
-
-	// Если salonId не получен, не показываем форму
-	if (!salonId) {
-		return null;
 	}
 
 	const selectedCategory = categories.find(
@@ -494,7 +494,7 @@ export default function NewServiceClient() {
 								e.preventDefault();
 								handleSubmit(e as any);
 							}}
-							disabled={createServiceMutation.isPending}
+							disabled={!salonId || createServiceMutation.isPending}
 							className="flex-1 bg-[#ff5b5b] text-white px-4 py-2 rounded-md hover:bg-[#e04a4a] focus:outline-none focus:ring-2 focus:ring-[#ff5b5b] focus:ring-offset-2 disabled:opacity-50"
 						>
 							{createServiceMutation.isPending
@@ -685,17 +685,19 @@ export default function NewServiceClient() {
 									</SelectTrigger>
 									<SelectContent className="bg-white border border-gray-300 shadow-lg rounded-md">
 										{categories.map((category) => {
-											const translatedName = getCategoryTranslatedName(
-												category,
-												t
-											);
+											const name =
+												language === 'ru'
+													? category.name_ru || category.name_en
+													: language === 'vi'
+														? category.name_vn || category.name_en
+														: category.name_en;
 											return (
 												<SelectItem
 													key={category.id}
 													value={category.id.toString()}
 													className="bg-white hover:bg-gray-50 focus:bg-gray-50 text-gray-900 cursor-pointer"
 												>
-													{translatedName}
+													{name}
 												</SelectItem>
 											);
 										})}
@@ -815,7 +817,9 @@ export default function NewServiceClient() {
 						<button
 							type="submit"
 							disabled={
-								createServiceMutation.isPending || isGeneratingTranslations
+								!salonId ||
+								createServiceMutation.isPending ||
+								isGeneratingTranslations
 							}
 							className="flex-1 bg-[#ff5b5b] text-white px-4 py-2 rounded-md hover:bg-[#e04a4a] focus:outline-none focus:ring-2 focus:ring-[#ff5b5b] focus:ring-offset-2 disabled:opacity-50"
 							aria-describedby="submit-status"

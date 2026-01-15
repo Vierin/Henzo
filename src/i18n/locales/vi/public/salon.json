@@ -46,5 +46,12 @@
 		"morning": "Sáng",
 		"afternoon": "Chiều",
 		"evening": "Tối"
-	}
+	},
+	"sortBy": "Sắp xếp theo",
+	"sortNameAZ": "Tên A-Z",
+	"sortNameZA": "Tên Z-A",
+	"sortMostServices": "Nhiều dịch vụ nhất",
+	"sortHighestRated": "Đánh giá cao nhất",
+	"mapView": "Xem bản đồ",
+	"viewAllServices": "Xem tất cả {count} dịch vụ →"
 }

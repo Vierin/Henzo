@@ -61,9 +61,9 @@ export default function CategoryListClient({
 	};
 
 	const sortOptions = [
-		{ value: 'name', label: t.categories.sortNameAZ },
-		{ value: 'name-desc', label: t.categories.sortNameZA },
-		{ value: 'services', label: t.categories.sortMostServices },
+		{ value: 'name', label: t.salon.sortNameAZ },
+		{ value: 'name-desc', label: t.salon.sortNameZA },
+		{ value: 'services', label: t.salon.sortMostServices },
 	];
 
 	// Filter and sort salons by category
@@ -135,7 +135,7 @@ export default function CategoryListClient({
 								<div className="flex-1 sm:flex-none sm:w-48">
 									<Select value={sortBy} onValueChange={setSortBy}>
 										<SelectTrigger className="w-full bg-white border border-gray-300 rounded-md">
-											<SelectValue placeholder={t.categories.sortBy} />
+											<SelectValue placeholder={t.salon.sortBy} />
 										</SelectTrigger>
 										<SelectContent
 											className="bg-white border border-gray-300 shadow-lg rounded-md"
@@ -163,7 +163,7 @@ export default function CategoryListClient({
 								>
 									<Map className="w-4 h-4" />{' '}
 									<span className="hidden sm:inline">
-										{t.categories.mapView}
+										{t.salon.mapView}
 									</span>
 								</Link>
 							</div>
@@ -183,7 +183,7 @@ export default function CategoryListClient({
 								// No salons found
 								<div className="text-center py-12">
 									<h3 className="text-xl font-semibold text-gray-900 mb-2">
-										{t.categories.noSalonsFound}
+										{t.salon.noSalonsFound}
 									</h3>
 									<p className="text-gray-600 mb-8">
 										{t.categories.noSalonsDescription}
@@ -193,7 +193,7 @@ export default function CategoryListClient({
 											href="/salons"
 											className="inline-flex items-center px-6 py-3 bg-[#ff5b5b] text-white rounded-lg hover:bg-[#e04a4a] transition-colors"
 										>
-											{t.categories.browseAllSalons}
+											{t.salon.browseAllSalons}
 										</Link>
 									</div>
 								</div>

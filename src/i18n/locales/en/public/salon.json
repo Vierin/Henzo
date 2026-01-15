@@ -46,5 +46,12 @@
 		"morning": "Morning",
 		"afternoon": "Afternoon",
 		"evening": "Evening"
-	}
+	},
+	"sortBy": "Sort by",
+	"sortNameAZ": "Name A-Z",
+	"sortNameZA": "Name Z-A",
+	"sortMostServices": "Most Services",
+	"sortHighestRated": "Highest Rated",
+	"mapView": "Map View",
+	"viewAllServices": "View all {count} services →"
 }

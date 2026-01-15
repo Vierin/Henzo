@@ -4,17 +4,18 @@ import { useState, useEffect, useMemo } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import toast from 'react-hot-toast';
 import EditServiceModal from '@/components/EditServiceModal';
-import { useServices, useDeleteService } from '@/hooks/useServices';
 import {
-	useCategories,
-	getCategoryTranslatedName,
-} from '@/hooks/useCategories';
+	useServices,
+	useDeleteService,
+	serviceKeys,
+} from '@/hooks/useServices';
 import { useOwnerLayout } from '@/contexts/OwnerLayoutContext';
+import { ServiceCategory } from '@/types';
 import LoadingSpinner from '@/components/LoadingSpinner';
 import ErrorDisplay from '@/components/ErrorDisplay';
 import { Service, ServiceGroup } from '@/types';
 import { formatVND } from '@/utils/currency';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '@/lib/api-client';
 import { useTranslation, useLanguage } from '@/contexts/LanguageContext';
 import { extractLocaleFromPath } from '@/i18n/routing';
@@ -57,7 +58,17 @@ export default function ServicesClient() {
 		// Убираем серверную фильтрацию - делаем всё на клиенте
 	});
 
-	const { data: categories = [] } = useCategories();
+	const { language } = useLanguage();
+
+	// Load categories from API (same as EditServiceModal and NewServiceClient)
+	const { data: categories = [] } = useQuery<ServiceCategory[]>({
+		queryKey: ['service-categories'],
+		queryFn: async () => {
+			return apiClient.get<ServiceCategory[]>('/services/categories');
+		},
+		staleTime: 10 * 60 * 1000,
+	});
+
 	const deleteServiceMutation = useDeleteService();
 
 	// Load service groups for this salon
@@ -100,7 +111,25 @@ export default function ServicesClient() {
 		deleteServiceMutation.mutate(serviceId);
 	};
 
+	const queryClient = useQueryClient();
+
 	const handleSaveService = (updatedService: Service) => {
+		// Инвалидируем кеш услуг для обновления списка
+		queryClient.invalidateQueries({
+			queryKey: ['services'],
+		});
+		// Также инвалидируем группы услуг на случай, если группа изменилась
+		if (salonId) {
+			queryClient.invalidateQueries({
+				queryKey: ['service-groups', salonId],
+			});
+		}
+		// Инвалидируем список услуг
+		if (salonId) {
+			queryClient.invalidateQueries({
+				queryKey: serviceKeys.list({ salonId }),
+			});
+		}
 		refetch(); // Обновляем данные после изменения
 	};
 
@@ -117,7 +146,12 @@ export default function ServicesClient() {
 		if (!categoryId) return null;
 		const category = categories.find((cat) => cat.id === categoryId);
 		if (!category) return null;
-		return getCategoryTranslatedName(category, t);
+		// Use same logic as EditServiceModal
+		return language === 'ru'
+			? category.name_ru || category.name_en
+			: language === 'vi'
+				? category.name_vn || category.name_en
+				: category.name_en;
 	};
 
 	// Helper function to get localized category name from service_categories (DB)
@@ -160,6 +194,12 @@ export default function ServicesClient() {
 			default:
 				return group.name;
 		}
+	};
+
+	// Helper function to get group by ID from groups list
+	const getGroupById = (groupId?: string | null) => {
+		if (!groupId) return null;
+		return groups.find((g) => g.id === groupId) || null;
 	};
 
 	// Фильтрация и сортировка сервисов
@@ -247,7 +287,7 @@ export default function ServicesClient() {
 					</div>
 					<button
 						onClick={() => router.push('/services/new')}
-						className="inline-flex items-center gap-2 rounded-full bg-[#ff5b5b] text-white px-4 py-2 text-sm shadow-sm hover:opacity-95 whitespace-nowrap"
+						className="inline-flex items-center gap-2 rounded-full bg-[#ff5b5b] !text-white px-4 py-2 text-sm shadow-sm hover:opacity-95 whitespace-nowrap"
 					>
 						<span className="text-lg leading-none">＋</span>
 						<span>{t('owner.services.addNew')}</span>
@@ -274,7 +314,7 @@ export default function ServicesClient() {
 			<div className="mb-6 bg-white rounded-xl border border-[#f1d9d7] p-3 md:p-6">
 				<div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 md:gap-4">
 					{/* Поиск */}
-					<div>
+					<div className="flex flex-col justify-between">
 						<label className="block text-sm font-medium text-black mb-2">
 							<span className="hidden sm:inline">
 								{t('owner.services.searchServices')}
@@ -314,22 +354,30 @@ export default function ServicesClient() {
 							<SelectTrigger className="w-full border border-gray-300 focus:ring-2 focus:ring-[#ff5b5b] focus:border-transparent text-black">
 								<SelectValue placeholder={t('owner.services.allCategories')} />
 							</SelectTrigger>
-							<SelectContent className="bg-white border border-gray-300 shadow-lg rounded-md">
+							<SelectContent className="bg-white border border-gray-300 shadow-lg rounded-md max-h-[280px] overflow-y-auto">
 								<SelectItem
 									value="all"
 									className="bg-white hover:bg-gray-50 focus:bg-gray-50 text-gray-900 cursor-pointer"
 								>
 									{t('owner.services.allCategories')}
 								</SelectItem>
-								{categories.map((category) => (
-									<SelectItem
-										key={category.id}
-										value={category.id.toString()}
-										className="bg-white hover:bg-gray-50 focus:bg-gray-50 text-gray-900 cursor-pointer"
-									>
-										{getCategoryTranslatedName(category, t)}
-									</SelectItem>
-								))}
+								{categories.map((category) => {
+									const name =
+										language === 'ru'
+											? category.name_ru || category.name_en
+											: language === 'vi'
+												? category.name_vn || category.name_en
+												: category.name_en;
+									return (
+										<SelectItem
+											key={category.id}
+											value={category.id.toString()}
+											className="bg-white hover:bg-gray-50 focus:bg-gray-50 text-gray-900 cursor-pointer"
+										>
+											{name}
+										</SelectItem>
+									);
+								})}
 							</SelectContent>
 						</Select>
 					</div>
@@ -436,62 +484,9 @@ export default function ServicesClient() {
 						</button>
 					</div>
 				</div>
-
-				{/* Информация о результатах */}
-				{(debouncedSearchQuery ||
-					selectedCategory !== 'all' ||
-					selectedGroup !== 'all') && (
-					<div className="mt-4 pt-4 border-t border-gray-200">
-						<p className="text-sm text-black">
-							{t('owner.services.showing')} {filteredServices.length}{' '}
-							{t('owner.services.of')} {services.length}{' '}
-							{t('owner.services.matching')}
-							{debouncedSearchQuery &&
-								debouncedSearchQuery.length > 2 &&
-								` "${debouncedSearchQuery}"`}
-							{selectedCategory !== 'all' &&
-								` ${t('owner.services.inCategory')} "${getCategoryName(Number(selectedCategory)) || t('owner.services.unknown')}" ${t('owner.services.categoryLabel')}`}
-							{selectedGroup !== 'all' &&
-								` ${t('owner.services.inGroup')} "${getLocalizedGroupName(groups.find((g) => g.id === selectedGroup)) || t('owner.services.unknown')}" ${t('owner.services.groupLabel')}`}
-						</p>
-					</div>
-				)}
 			</div>
 
-			{filteredServices.length === 0 &&
-			(debouncedSearchQuery ||
-				selectedCategory !== 'all' ||
-				selectedGroup !== 'all') ? (
-				<div className="bg-white rounded-xl border border-[#f1d9d7] p-12 text-center">
-					<div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-						<svg
-							className="w-8 h-8 text-gray-400"
-							fill="none"
-							stroke="currentColor"
-							viewBox="0 0 24 24"
-						>
-							<path
-								strokeLinecap="round"
-								strokeLinejoin="round"
-								strokeWidth={2}
-								d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-							/>
-						</svg>
-					</div>
-					<h3 className="text-lg font-medium text-gray-900 mb-2">
-						{t('owner.services.noServicesFound')}
-					</h3>
-					<p className="text-gray-500 mb-4">
-						{t('owner.services.tryAdjustingFilters')}
-					</p>
-					<button
-						onClick={clearFilters}
-						className="inline-flex items-center gap-2 rounded-full bg-[#ff5b5b] text-white px-4 py-2 text-sm shadow-sm hover:opacity-95"
-					>
-						{t('owner.services.clearFilters')}
-					</button>
-				</div>
-			) : services.length === 0 ? (
+			{services.length === 0 ? (
 				<div className="bg-white rounded-xl border border-[#f1d9d7] p-12 text-center">
 					<div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
 						<svg
@@ -561,6 +556,39 @@ export default function ServicesClient() {
 							))}
 						</div>
 					</div>
+				</div>
+			) : filteredServices.length === 0 &&
+			  (debouncedSearchQuery ||
+					selectedCategory !== 'all' ||
+					selectedGroup !== 'all') ? (
+				<div className="bg-white rounded-xl border border-[#f1d9d7] p-12 text-center">
+					<div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+						<svg
+							className="w-8 h-8 text-gray-400"
+							fill="none"
+							stroke="currentColor"
+							viewBox="0 0 24 24"
+						>
+							<path
+								strokeLinecap="round"
+								strokeLinejoin="round"
+								strokeWidth={2}
+								d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+							/>
+						</svg>
+					</div>
+					<h3 className="text-lg font-medium text-gray-900 mb-2">
+						{t('owner.services.noServicesFound')}
+					</h3>
+					<p className="text-gray-500 mb-4">
+						{t('owner.services.tryAdjustingFilters')}
+					</p>
+					<button
+						onClick={clearFilters}
+						className="inline-flex items-center gap-2 rounded-full bg-[#ff5b5b] text-white px-4 py-2 text-sm shadow-sm hover:opacity-95"
+					>
+						{t('owner.services.clearFilters')}
+					</button>
 				</div>
 			) : (
 				<div className="space-y-4">
@@ -639,15 +667,20 @@ export default function ServicesClient() {
 											)}
 										</div>
 										<div className="text-gray-600">
-											{service.serviceGroup ? (
-												<span className="inline-flex items-center px-2 py-1 text-xs font-medium bg-blue-100 text-blue-700 rounded-full">
-													{getLocalizedGroupName(service.serviceGroup)}
-												</span>
-											) : (
-												<span className="text-gray-400 italic">
-													{t('owner.services.noGroup')}
-												</span>
-											)}
+											{(() => {
+												const group =
+													service.serviceGroup ||
+													getGroupById(service.serviceGroupId);
+												return group ? (
+													<span className="inline-flex items-center px-2 py-1 text-xs font-medium bg-blue-100 text-blue-700 rounded-full">
+														{getLocalizedGroupName(group)}
+													</span>
+												) : (
+													<span className="text-gray-400 italic">
+														{t('owner.services.noGroup')}
+													</span>
+												);
+											})()}
 										</div>
 										<div>{formatDuration(service.duration)}</div>
 										<div className="font-semibold text-[#ff5b5b]">
@@ -766,11 +799,16 @@ export default function ServicesClient() {
 													</span>
 												)
 											)}
-											{service.serviceGroup && (
-												<span className="inline-flex items-center px-2 py-1 text-xs font-medium bg-blue-100 text-blue-700 rounded-full">
-													{getLocalizedGroupName(service.serviceGroup)}
-												</span>
-											)}
+											{(() => {
+												const group =
+													service.serviceGroup ||
+													getGroupById(service.serviceGroupId);
+												return group ? (
+													<span className="inline-flex items-center px-2 py-1 text-xs font-medium bg-blue-100 text-blue-700 rounded-full">
+														{getLocalizedGroupName(group)}
+													</span>
+												) : null;
+											})()}
 										</div>
 										<div className="text-right">
 											<div>{formatDuration(service.duration)}</div>

@@ -49,7 +49,6 @@ export default function StaffPage() {
 		refetch(); // Обновляем данные после изменения
 	};
 
-
 	if (salonLoading || loading) {
 		return (
 			<div className="flex items-center justify-center min-h-[400px]">
@@ -85,7 +84,7 @@ export default function StaffPage() {
 					</div>
 					<button
 						onClick={() => router.push('/staff/new')}
-						className="inline-flex items-center gap-2 rounded-full bg-[#ff5b5b] text-white px-4 py-2 text-sm shadow-sm hover:opacity-95 whitespace-nowrap"
+						className="inline-flex items-center gap-2 rounded-full bg-[#ff5b5b] !text-white px-4 py-2 text-sm shadow-sm hover:opacity-95 whitespace-nowrap"
 					>
 						<span className="text-lg leading-none">＋</span>
 						<span>{t('owner.staff.addNew')}</span>

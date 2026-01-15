@@ -16,10 +16,7 @@ export interface SalonSetupData {
 	addressLon?: number;
 	phone: string;
 
-	// Step 2: Categories
-	categories: number[];
-
-	// Step 3: Working Hours
+	// Step 2: Working Hours
 	workingHours: {
 		monday: { open: string; close: string; closed: boolean };
 		tuesday: { open: string; close: string; closed: boolean };
@@ -72,7 +69,6 @@ export function useSalonSetup() {
 		addressLat: undefined,
 		addressLon: undefined,
 		phone: '',
-		categories: [],
 		workingHours: DEFAULT_WORKING_HOURS,
 		description: '',
 		logo: null,
@@ -230,20 +226,6 @@ export function useSalonSetup() {
 		[]
 	);
 
-	const handleCategoryToggle = useCallback((categoryId: number) => {
-		setFormData((prev) => ({
-			...prev,
-			categories: prev.categories.includes(categoryId)
-				? prev.categories.filter((id) => id !== categoryId)
-				: [...prev.categories, categoryId],
-		}));
-		if (errors.categories) {
-			setErrors((prev) => ({
-				...prev,
-				categories: '',
-			}));
-		}
-	}, [errors]);
 
 	const handleLogoChange = useCallback((filePath: string) => {
 		setFormData((prev) => ({
@@ -309,8 +291,7 @@ export function useSalonSetup() {
 						newErrors.phone = t('business.completeSetup.errors.phoneRequired');
 					break;
 				case 2:
-					if (formData.categories.length === 0)
-						newErrors.categories = t('business.completeSetup.errors.categoriesRequired');
+					// No validation needed for step 2 (working hours)
 					break;
 			}
 
@@ -420,7 +401,6 @@ export function useSalonSetup() {
 		handleAddressSelect,
 		handleSocialMediaChange,
 		handleWorkingHoursChange,
-		handleCategoryToggle,
 		handleLogoChange,
 		handleLogoRemove,
 		handlePhotosChange,

@@ -22,9 +22,9 @@
 	"of": "của",
 	"matching": "khớp",
 	"inCategory": "trong",
-	"categoryLabel": "danh mục",
+	"categoryLabelInText": "danh mục",
 	"inGroup": "trong",
-	"groupLabel": "nhóm",
+	"groupLabelInText": "nhóm",
 	"noServicesFound": "Không tìm thấy dịch vụ",
 	"tryAdjustingFilters": "Thử điều chỉnh tiêu chí tìm kiếm hoặc bộ lọc của bạn",
 	"noServicesYet": "Chưa có dịch vụ",
@@ -52,5 +52,9 @@
 	"updateService": "Cập nhật dịch vụ",
 	"addService": "Thêm dịch vụ",
 	"saving": "Đang lưu...",
-	"loading": "Đang tải..."
+	"loading": "Đang tải...",
+	"addServiceGroup": "Thêm nhóm dịch vụ",
+	"addServiceGroupHelp": "Tạo nhóm để tổ chức dịch vụ của bạn (ví dụ: \"Dịch vụ tóc\", \"Móng tay\").",
+	"groupName": "Tên nhóm",
+	"create": "Tạo"
 }

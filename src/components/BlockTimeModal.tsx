@@ -255,7 +255,7 @@ export default function BlockTimeModal({
 		const data: CreateTimeBlockDto = {
 			staffId: blockFor === 'staff' ? selectedStaffId : undefined,
 			type: blockType,
-			reason,
+			...(reason.trim() && { reason: reason.trim() }), // Only include if not empty
 			startDate: startDateTime,
 			endDate: endDateTime,
 			notes,
@@ -284,7 +284,13 @@ export default function BlockTimeModal({
 		if (blockFor === 'staff' && !selectedStaffId) {
 			return false;
 		}
+		if (!blockType) {
+			return false;
+		}
 		if (!startDate || !endDate) {
+			return false;
+		}
+		if (!startTime || !endTime) {
 			return false;
 		}
 		if (
@@ -719,6 +725,12 @@ export default function BlockTimeModal({
 											}
 										}}
 										fromDate={getTodayLocal()}
+										disabled={(date) => {
+											const today = getTodayLocal();
+											const dateToCheck = new Date(date);
+											dateToCheck.setHours(0, 0, 0, 0);
+											return dateToCheck < today;
+										}}
 									/>
 								</PopoverContent>
 							</Popover>
@@ -798,6 +810,21 @@ export default function BlockTimeModal({
 												? stringToDate(startDate)
 												: getTodayLocal()
 										}
+										disabled={(date) => {
+											const today = getTodayLocal();
+											const dateToCheck = new Date(date);
+											dateToCheck.setHours(0, 0, 0, 0);
+											// Block past dates, or dates before start date if start date is set
+											if (dateToCheck < today) return true;
+											if (startDate && stringToDate(startDate)) {
+												const startDateOnly = new Date(
+													stringToDate(startDate)!
+												);
+												startDateOnly.setHours(0, 0, 0, 0);
+												return dateToCheck < startDateOnly;
+											}
+											return false;
+										}}
 									/>
 								</PopoverContent>
 							</Popover>

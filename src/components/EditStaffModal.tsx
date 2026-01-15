@@ -21,7 +21,6 @@ export default function EditStaffModal({
 	const t = useTranslation();
 	const [formData, setFormData] = useState({
 		name: '',
-		accessLevel: 'EMPLOYEE' as 'ADMIN' | 'EMPLOYEE',
 		email: '',
 		phone: '',
 	});
@@ -32,7 +31,6 @@ export default function EditStaffModal({
 		if (staff) {
 			setFormData({
 				name: staff.name,
-				accessLevel: staff.accessLevel,
 				email: staff.email || '',
 				phone: staff.phone || '',
 			});
@@ -125,31 +123,6 @@ export default function EditStaffModal({
 								className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#ff5b5b] focus:border-[#ff5b5b] text-gray-900"
 								placeholder={t('owner.staff.enterFullName')}
 							/>
-						</div>
-
-						<div>
-							<label className="block text-sm font-medium text-gray-700 mb-2">
-								{t('owner.staff.accessLevel')} *
-							</label>
-							<select
-								required
-								value={formData.accessLevel}
-								onChange={(e) =>
-									setFormData({
-										...formData,
-										accessLevel: e.target.value as 'ADMIN' | 'EMPLOYEE',
-									})
-								}
-								className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#ff5b5b] focus:border-[#ff5b5b] text-gray-900"
-							>
-								<option value="EMPLOYEE">{t('owner.staff.employeeLimitedAccess')}</option>
-								<option value="ADMIN">
-									{t('owner.staff.adminFullAccess')}
-								</option>
-							</select>
-							<p className="text-xs text-gray-500 mt-1">
-								{t('owner.staff.accessLevelDescription')}
-							</p>
 						</div>
 
 						<div>

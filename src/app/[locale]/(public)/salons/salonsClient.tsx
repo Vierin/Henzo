@@ -185,10 +185,10 @@ export default function SalonsClient() {
 	// Memoized sort options
 	const sortOptions = useMemo(
 		() => [
-			{ value: 'name', label: t.categories.sortNameAZ },
-			{ value: 'name-desc', label: t.categories.sortNameZA },
-			{ value: 'services', label: t.categories.sortMostServices },
-			{ value: 'rating', label: t.categories.sortHighestRated },
+			{ value: 'name', label: t.salon.sortNameAZ },
+			{ value: 'name-desc', label: t.salon.sortNameZA },
+			{ value: 'services', label: t.salon.sortMostServices },
+			{ value: 'rating', label: t.salon.sortHighestRated },
 		],
 		[t]
 	);
@@ -305,7 +305,7 @@ export default function SalonsClient() {
 							{/* Sort Dropdown */}
 							<Select value={sortBy} onValueChange={setSortBy}>
 								<SelectTrigger className="w-40 sm:w-48 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#ff5b5b] focus:border-[#ff5b5b]">
-									<SelectValue placeholder={t.categories.sortBy} />
+									<SelectValue placeholder={t.salon.sortBy} />
 								</SelectTrigger>
 								<SelectContent className="bg-white border border-gray-300 shadow-lg rounded-lg">
 									{sortOptions.map((option) => (

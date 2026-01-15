@@ -7,7 +7,6 @@ import { useSalonSetup } from '@/hooks/useSalonSetup';
 import LoadingFallback from '@/components/LoadingFallback';
 import WorkingHoursSection from '@/components/WorkingHoursSection';
 import SetupStep1 from './components/SetupStep1';
-import SetupStep2 from './components/SetupStep2';
 import SetupStep4 from './components/SetupStep4';
 import SetupStep5 from './components/SetupStep5';
 import SetupProgress from './components/SetupProgress';
@@ -44,7 +43,7 @@ function BusinessCompleteSetupContent() {
 
 					// Если нет loginUrl, проверяем текущую сессию
 					const { data: sessionData } = await supabase.auth.getSession();
-					
+
 					if (sessionData?.session) {
 						// Сессия уже обновлена автоматически через Supabase
 						toast.success('Email confirmed! Welcome!');
@@ -52,7 +51,9 @@ function BusinessCompleteSetupContent() {
 						router.replace('/business/complete-setup');
 					} else {
 						toast.success('Email confirmed! Please login to continue.');
-						router.push('/login?email=' + encodeURIComponent(result.user.email));
+						router.push(
+							'/login?email=' + encodeURIComponent(result.user.email)
+						);
 					}
 				}
 			} catch (error: any) {
@@ -85,7 +86,6 @@ function BusinessCompleteSetupContent() {
 		handleAddressSelect,
 		handleSocialMediaChange,
 		handleWorkingHoursChange,
-		handleCategoryToggle,
 		handleLogoChange,
 		handleLogoRemove,
 		handlePhotosChange,
@@ -116,16 +116,6 @@ function BusinessCompleteSetupContent() {
 
 			case 2:
 				return (
-					<SetupStep2
-						formData={formData}
-						errors={errors}
-						onCategoryToggle={handleCategoryToggle}
-						t={t}
-					/>
-				);
-
-			case 3:
-				return (
 					<div className="space-y-6">
 						<WorkingHoursSection
 							workingHours={formData.workingHours}
@@ -134,7 +124,7 @@ function BusinessCompleteSetupContent() {
 					</div>
 				);
 
-			case 4:
+			case 3:
 				return (
 					<SetupStep4
 						formData={formData}
@@ -147,7 +137,7 @@ function BusinessCompleteSetupContent() {
 					/>
 				);
 
-			case 5:
+			case 4:
 				return <SetupStep5 formData={formData} t={t} />;
 
 			default:

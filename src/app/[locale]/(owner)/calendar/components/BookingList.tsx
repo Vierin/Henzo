@@ -468,7 +468,7 @@ export default function BookingList({
 			</div>
 
 			{/* Bookings Table */}
-			<section className="rounded-xl overflow-hidden border border-[#f1d9d7] bg-white">
+			<section className="sm:rounded-xl overflow-hidden sm:border sm:border-[#f1d9d7] sm:bg-white">
 				{/* Desktop Table Header */}
 				<div
 					className="hidden md:grid grid-cols-7 px-6 py-3 text-[13px] text-gray-700 bg-[#fff2f1] font-semibold"
@@ -485,7 +485,10 @@ export default function BookingList({
 					<div role="columnheader">{t('owner.dashboard.actions')}</div>
 				</div>
 
-				<div className="divide-y divide-[#f1d9d7]" role="list">
+				<div
+					className="flex flex-col gap-2 sm:block sm:divide-y sm:divide-[#f1d9d7]"
+					role="list"
+				>
 					{loading ? (
 						<div
 							className="px-6 py-8 text-center"
@@ -557,14 +560,14 @@ export default function BookingList({
 								{/* Mobile Card */}
 								<div
 									key={`mobile-${booking.id}`}
-									className="md:hidden p-4"
+									className="md:hidden p-4 border border-[#f1d9d7] rounded-lg sm:border-none sm:rounded-none"
 									role="listitem"
 									aria-posinset={index + 1}
 									aria-setsize={paginatedBookings.length}
 								>
 									<div className="flex items-start justify-between mb-2">
 										<div className="flex-1 min-w-0">
-											<h3 className="font-semibold text-gray-900 text-sm truncate">
+											<h3 className="font-semibold text-gray-900 text-lg sm:text-sm truncate">
 												{booking.user?.name ||
 													`${t('owner.calendar.clientId')} ${booking.userId}`}
 											</h3>

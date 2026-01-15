@@ -86,7 +86,6 @@ export default function EditServiceModal({
 		staleTime: 10 * 60 * 1000,
 	});
 
-
 	// Load service groups for this salon
 	const { data: groups = [] } = useQuery<ServiceGroup[]>({
 		queryKey: ['service-groups', salonId],
@@ -219,10 +218,12 @@ export default function EditServiceModal({
 
 	return (
 		<>
-			<div className="fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center z-50">
+			<div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
 				<div className="bg-white rounded-lg shadow-xl p-6 w-full max-w-md mx-auto">
 					<h2 className="text-xl font-bold text-gray-900 mb-4">
-						{service ? t('owner.services.editService') : t('owner.services.addNewService')}
+						{service
+							? t('owner.services.editService')
+							: t('owner.services.addNewService')}
 					</h2>
 
 					<form onSubmit={handleSubmit}>
@@ -275,33 +276,39 @@ export default function EditServiceModal({
 							>
 								{t('owner.services.categoryLabel')}
 							</label>
-							<select
-								id="category"
-								value={formData.serviceCategoryId}
-								onChange={(e) =>
+							<Select
+								value={formData.serviceCategoryId.toString()}
+								onValueChange={(value) =>
 									setFormData((prev) => ({
 										...prev,
-										serviceCategoryId: Number(e.target.value),
+										serviceCategoryId: Number(value),
 										serviceSubcategoryId: 0,
 									}))
 								}
-								className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#ff5b5b] focus:border-transparent text-gray-900"
 							>
-								<option value="0">Select a category</option>
-								{categories.map((category) => {
-									const name =
-										language === 'ru'
-											? category.name_ru || category.name_en
-											: language === 'vi'
-												? category.name_vn || category.name_en
-												: category.name_en;
-									return (
-										<option key={category.id} value={category.id}>
-											{name}
-										</option>
-									);
-								})}
-							</select>
+								<SelectTrigger className="w-full border border-gray-300 focus:ring-2 focus:ring-[#ff5b5b] focus:border-transparent text-gray-900 text-sm">
+									<SelectValue placeholder="Select a category" />
+								</SelectTrigger>
+								<SelectContent className="bg-white border border-gray-300 shadow-lg rounded-md max-h-[280px] overflow-y-auto">
+									{categories.map((category) => {
+										const name =
+											language === 'ru'
+												? category.name_ru || category.name_en
+												: language === 'vi'
+													? category.name_vn || category.name_en
+													: category.name_en;
+										return (
+											<SelectItem
+												key={category.id}
+												value={category.id.toString()}
+												className="bg-white hover:bg-gray-50 focus:bg-gray-50 text-gray-900 cursor-pointer text-sm"
+											>
+												{name}
+											</SelectItem>
+										);
+									})}
+								</SelectContent>
+							</Select>
 						</div>
 
 						{formData.serviceCategoryId > 0 && subcategories.length > 0 && (
@@ -312,32 +319,44 @@ export default function EditServiceModal({
 								>
 									Subcategory
 								</label>
-								<select
-									id="subcategory"
-									value={formData.serviceSubcategoryId}
-									onChange={(e) =>
+								<Select
+									value={formData.serviceSubcategoryId.toString()}
+									onValueChange={(value) =>
 										setFormData((prev) => ({
 											...prev,
-											serviceSubcategoryId: Number(e.target.value),
+											serviceSubcategoryId: Number(value),
 										}))
 									}
-									className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#ff5b5b] focus:border-transparent text-gray-900"
 								>
-									<option value="0">Select a subcategory (optional)</option>
-									{subcategories.map((subcat) => {
-										const name =
-											language === 'ru'
-												? subcat.nameRu || subcat.nameEn
-												: language === 'vi'
-													? subcat.nameVi || subcat.nameEn
-													: subcat.nameEn;
-										return (
-											<option key={subcat.id} value={subcat.id}>
-												{name}
-											</option>
-										);
-									})}
-								</select>
+									<SelectTrigger className="w-full border border-gray-300 focus:ring-2 focus:ring-[#ff5b5b] focus:border-transparent text-gray-900 text-sm">
+										<SelectValue placeholder="Select a subcategory (optional)" />
+									</SelectTrigger>
+									<SelectContent className="bg-white border border-gray-300 shadow-lg rounded-md">
+										<SelectItem
+											value="0"
+											className="bg-white hover:bg-gray-50 focus:bg-gray-50 text-gray-900 cursor-pointer text-sm"
+										>
+											Select a subcategory (optional)
+										</SelectItem>
+										{subcategories.map((subcat) => {
+											const name =
+												language === 'ru'
+													? subcat.nameRu || subcat.nameEn
+													: language === 'vi'
+														? subcat.nameVi || subcat.nameEn
+														: subcat.nameEn;
+											return (
+												<SelectItem
+													key={subcat.id}
+													value={subcat.id.toString()}
+													className="bg-white hover:bg-gray-50 focus:bg-gray-50 text-gray-900 cursor-pointer text-sm"
+												>
+													{name}
+												</SelectItem>
+											);
+										})}
+									</SelectContent>
+								</Select>
 							</div>
 						)}
 
@@ -481,18 +500,17 @@ export default function EditServiceModal({
 				<div className="fixed inset-0 bg-black/40 flex items-center justify-center z-[60]">
 					<div className="bg-white rounded-lg shadow-lg p-5 w-full max-w-sm">
 						<h2 className="text-lg font-semibold text-gray-900 mb-3">
-							Add Service Group
+							{t('owner.services.addServiceGroup')}
 						</h2>
 						<p className="text-sm text-gray-600 mb-3">
-							Create a group to organize your services (e.g., "Hair services",
-							"Nails").
+							{t('owner.services.addServiceGroupHelp')}
 						</p>
 						<input
 							type="text"
 							value={newGroupName}
 							onChange={(e) => setNewGroupName(e.target.value)}
 							className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#ff5b5b] focus:border-[#ff5b5b] text-gray-900 text-sm mb-4"
-							placeholder="Group name"
+							placeholder={t('owner.services.groupName')}
 							autoFocus
 						/>
 						<div className="flex justify-end gap-2">
@@ -504,7 +522,7 @@ export default function EditServiceModal({
 								}}
 								className="px-3 py-2 text-sm border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
 							>
-								Cancel
+								{t('owner.services.cancel')}
 							</button>
 							<button
 								type="button"
@@ -537,7 +555,7 @@ export default function EditServiceModal({
 								}}
 								className="px-3 py-2 text-sm bg-[#ff5b5b] text-white rounded-md hover:bg-[#e04a4a]"
 							>
-								Create
+								{t('owner.services.create')}
 							</button>
 						</div>
 					</div>

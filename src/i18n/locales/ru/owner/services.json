@@ -17,14 +17,14 @@
 	"priceHighToLow": "Цена (От высокой к низкой)",
 	"durationShortToLong": "Длительность (От короткой к длинной)",
 	"durationLongToShort": "Длительность (От длинной к короткой)",
-	"clearFilters": "Очистить фильтры",
+	"clearFilters": "Очистить",
 	"showing": "Показано",
 	"of": "из",
 	"matching": "соответствует",
 	"inCategory": "в",
-	"categoryLabel": "категории",
+	"categoryLabelInText": "категории",
 	"inGroup": "в",
-	"groupLabel": "группе",
+	"groupLabelInText": "группе",
 	"noServicesFound": "Услуги не найдены",
 	"tryAdjustingFilters": "Попробуйте изменить критерии поиска или фильтры",
 	"noServicesYet": "Пока нет услуг",
@@ -52,5 +52,9 @@
 	"updateService": "Обновить услугу",
 	"addService": "Добавить услугу",
 	"saving": "Сохранение...",
-	"loading": "Загрузка..."
+	"loading": "Загрузка...",
+	"addServiceGroup": "Добавить группу услуг",
+	"addServiceGroupHelp": "Создайте группу для организации ваших услуг (например, \"Услуги для волос\", \"Ногти\").",
+	"groupName": "Название группы",
+	"create": "Создать"
 }
