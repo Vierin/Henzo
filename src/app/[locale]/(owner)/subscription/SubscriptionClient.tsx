@@ -6,6 +6,7 @@ import { useOwnerLayout } from '@/contexts/OwnerLayoutContext';
 import { apiClient } from '@/lib/api-client';
 import { Check, Crown } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { SUBSCRIPTION_PLANS } from '@/config/subscriptionPlans';
 
 interface Subscription {
 	id: string;
@@ -81,9 +82,7 @@ export default function SubscriptionClient() {
 
 	const plans: Plan[] = [
 		{
-			id: 'FREEMIUM',
-			name: 'Freemium',
-			price: 0,
+			...SUBSCRIPTION_PLANS.FREEMIUM,
 			features: [
 				t('owner.subscription.freemium.masters'),
 				t('owner.subscription.freemium.services'),
@@ -94,10 +93,7 @@ export default function SubscriptionClient() {
 			],
 		},
 		{
-			id: 'BASIC',
-			name: 'Basic',
-			price: 350000,
-			isRecommended: true,
+			...SUBSCRIPTION_PLANS.BASIC,
 			features: [
 				t('owner.subscription.basic.masters'),
 				t('owner.subscription.basic.services'),

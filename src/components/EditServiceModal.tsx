@@ -52,6 +52,16 @@ export default function EditServiceModal({
 	});
 	const [isGroupModalOpen, setIsGroupModalOpen] = useState(false);
 	const [newGroupName, setNewGroupName] = useState('');
+	const [groupTranslations, setGroupTranslations] = useState<{
+		nameEn: string;
+		nameVi: string;
+		nameRu: string;
+	} | null>(null);
+	const [isGeneratingGroupTranslations, setIsGeneratingGroupTranslations] =
+		useState(false);
+	const [groupModalStep, setGroupModalStep] = useState<'input' | 'preview'>(
+		'input'
+	);
 	const queryClient = useQueryClient();
 	const { language } = useLanguage();
 	const t = useTranslation();
@@ -502,62 +512,167 @@ export default function EditServiceModal({
 						<h2 className="text-lg font-semibold text-gray-900 mb-3">
 							{t('owner.services.addServiceGroup')}
 						</h2>
-						<p className="text-sm text-gray-600 mb-3">
-							{t('owner.services.addServiceGroupHelp')}
-						</p>
-						<input
-							type="text"
-							value={newGroupName}
-							onChange={(e) => setNewGroupName(e.target.value)}
-							className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#ff5b5b] focus:border-[#ff5b5b] text-gray-900 text-sm mb-4"
-							placeholder={t('owner.services.groupName')}
-							autoFocus
-						/>
-						<div className="flex justify-end gap-2 mt-4">
-							<button
-								type="button"
-								onClick={() => {
-									setIsGroupModalOpen(false);
-									setNewGroupName('');
-								}}
-								className="px-3 py-2 text-sm border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
-							>
-								{t('owner.services.cancel')}
-							</button>
-							<button
-								type="button"
-								onClick={async () => {
-									if (!salonId) return;
-									const name = newGroupName.trim();
-									if (!name) return;
-									try {
-										const created = await apiClient.post<any>(
-											'/services/groups',
-											{
-												salonId,
-												name,
+						{groupModalStep === 'input' ? (
+							<>
+								<p className="text-sm text-gray-600 mb-3">
+									{t('owner.services.addServiceGroupHelp')}
+								</p>
+								<input
+									type="text"
+									value={newGroupName}
+									onChange={(e) => setNewGroupName(e.target.value)}
+									className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#ff5b5b] focus:border-[#ff5b5b] text-gray-900 text-sm mb-4"
+									placeholder={t('owner.services.groupName')}
+									autoFocus
+								/>
+								<div className="flex justify-end gap-2 mt-2">
+									<button
+										type="button"
+										onClick={() => {
+											setIsGroupModalOpen(false);
+											setNewGroupName('');
+											setGroupTranslations(null);
+											setGroupModalStep('input');
+										}}
+										className="px-3 py-2 text-sm border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
+									>
+										{t('owner.services.cancel')}
+									</button>
+									<button
+										type="button"
+										onClick={async () => {
+											const name = newGroupName.trim();
+											if (!name) return;
+											setIsGeneratingGroupTranslations(true);
+											try {
+												// Generate translations using the same API as services
+												const generatedTranslations = await apiClient.post<{
+													nameEn: string;
+													nameVi: string;
+													nameRu: string;
+												}>('/services/translate', {
+													name: name,
+													description: '',
+												});
+												setGroupTranslations({
+													nameEn: generatedTranslations.nameEn,
+													nameVi: generatedTranslations.nameVi,
+													nameRu: generatedTranslations.nameRu,
+												});
+												setGroupModalStep('preview');
+											} catch (err) {
+												console.error('Failed to generate translations:', err);
+												// Continue to preview even if translation fails
+												setGroupModalStep('preview');
+											} finally {
+												setIsGeneratingGroupTranslations(false);
 											}
-										);
-										queryClient.invalidateQueries({
-											queryKey: ['service-groups', salonId],
-										});
-										if (created?.id) {
-											setFormData((prev) => ({
-												...prev,
-												serviceGroupId: created.id,
-											}));
+										}}
+										disabled={
+											!newGroupName.trim() || isGeneratingGroupTranslations
 										}
-										setIsGroupModalOpen(false);
-										setNewGroupName('');
-									} catch (err) {
-										console.error('Failed to create service group:', err);
-									}
-								}}
-								className="px-3 py-2 text-sm bg-[#ff5b5b] !text-white rounded-md hover:bg-[#e04a4a]"
-							>
-								{t('owner.services.create')}
-							</button>
-						</div>
+										className="px-3 py-2 text-sm bg-[#ff5b5b] !text-white rounded-md hover:bg-[#e04a4a] disabled:opacity-50"
+									>
+										{isGeneratingGroupTranslations
+											? t('owner.servicesNew.generatingTranslations')
+											: t('owner.servicesNew.continue')}
+									</button>
+								</div>
+							</>
+						) : (
+							<>
+								<div className="mb-3">
+									<p className="text-sm text-gray-600 mb-2">
+										{t('owner.servicesNew.groupName')}:
+									</p>
+									<p className="text-gray-900 font-medium">{newGroupName}</p>
+								</div>
+								{groupTranslations && (
+									<div className="mt-3 space-y-2">
+										{groupTranslations.nameEn && (
+											<div className="bg-blue-50 rounded-md p-2 border border-blue-200">
+												<span className="text-xs text-gray-500">
+													{t('owner.servicesNew.english')}{' '}
+												</span>
+												<span className="text-gray-700">
+													{groupTranslations.nameEn}
+												</span>
+											</div>
+										)}
+										{groupTranslations.nameVi && (
+											<div className="bg-green-50 rounded-md p-2 border border-green-200">
+												<span className="text-xs text-gray-500">
+													{t('owner.servicesNew.vietnamese')}{' '}
+												</span>
+												<span className="text-gray-700">
+													{groupTranslations.nameVi}
+												</span>
+											</div>
+										)}
+										{groupTranslations.nameRu && (
+											<div className="bg-purple-50 rounded-md p-2 border border-purple-200">
+												<span className="text-xs text-gray-500">
+													{t('owner.servicesNew.russian')}{' '}
+												</span>
+												<span className="text-gray-700">
+													{groupTranslations.nameRu}
+												</span>
+											</div>
+										)}
+									</div>
+								)}
+								<div className="flex justify-end gap-2 mt-4">
+									<button
+										type="button"
+										onClick={() => {
+											setGroupModalStep('input');
+											setGroupTranslations(null);
+										}}
+										className="px-3 py-2 text-sm border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
+									>
+										{t('owner.servicesNew.backToEdit')}
+									</button>
+									<button
+										type="button"
+										onClick={async () => {
+											if (!salonId) return;
+											const name = newGroupName.trim();
+											if (!name) return;
+											try {
+												const created = await apiClient.post<any>(
+													'/services/groups',
+													{
+														salonId,
+														name,
+														nameEn: groupTranslations?.nameEn,
+														nameVi: groupTranslations?.nameVi,
+														nameRu: groupTranslations?.nameRu,
+													}
+												);
+												queryClient.invalidateQueries({
+													queryKey: ['service-groups', salonId],
+												});
+												if (created?.id) {
+													setFormData((prev) => ({
+														...prev,
+														serviceGroupId: created.id,
+													}));
+												}
+												setIsGroupModalOpen(false);
+												setNewGroupName('');
+												setGroupTranslations(null);
+												setGroupModalStep('input');
+											} catch (err) {
+												console.error('Failed to create service group:', err);
+											}
+										}}
+										className="px-3 py-2 text-sm bg-[#ff5b5b] !text-white rounded-md hover:bg-[#e04a4a]"
+									>
+										{t('owner.services.create')}
+									</button>
+								</div>
+							</>
+						)}
 					</div>
 				</div>
 			)}
