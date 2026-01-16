@@ -188,17 +188,29 @@ export default function SalonDetailClient({ salon }: SalonDetailClientProps) {
 			// Get group from service.serviceGroup (should always be loaded from backend)
 			const group: Service['serviceGroup'] | undefined = service.serviceGroup;
 
+			// Get groupId - use group.id if available, otherwise fallback to serviceGroupId
+			const groupId = group?.id || service.serviceGroupId;
+
 			// Check if service has a valid active group
-			if (group && group.isActive !== false) {
-				const groupId = group.id;
+			// We need both groupId and the group object (or at least serviceGroupId)
+			if (groupId && group && group.isActive !== false) {
+				// Ensure we have a valid group object with all required fields
+				const validGroup = {
+					...group,
+					id: groupId, // Ensure ID is set
+				};
 
 				if (!groupsMap.has(groupId)) {
 					groupsMap.set(groupId, {
-						group: group as NonNullable<Service['serviceGroup']>,
+						group: validGroup as NonNullable<Service['serviceGroup']>,
 						services: [],
 					});
 				}
 				groupsMap.get(groupId)!.services.push(service);
+			} else if (groupId && !group) {
+				// Service has serviceGroupId but group object is missing
+				// This shouldn't happen, but we'll treat it as ungrouped
+				ungrouped.push(service);
 			} else {
 				// Service without group or with inactive group
 				ungrouped.push(service);

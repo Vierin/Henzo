@@ -113,21 +113,10 @@ export default function EditServiceModal({
 
 	useEffect(() => {
 		if (service) {
-			// Debug: log the entire service object to see what we're working with
-			console.log('🔧 Full service object:', JSON.stringify(service, null, 2));
-
 			// Get serviceGroupId from serviceGroup object if available, otherwise use serviceGroupId field
 			const serviceGroupObj = (service as any).serviceGroup;
 			const groupIdFromObject = serviceGroupObj?.id;
 			const groupIdFromField = service.serviceGroupId;
-
-			console.log('🔧 Group ID extraction:', {
-				hasServiceGroupObject: !!serviceGroupObj,
-				serviceGroupObject: serviceGroupObj,
-				groupIdFromObject,
-				groupIdFromField,
-				finalGroupId: groupIdFromObject || groupIdFromField || 'none',
-			});
 
 			const finalGroupId =
 				(groupIdFromObject || groupIdFromField) &&
@@ -139,14 +128,6 @@ export default function EditServiceModal({
 			const serviceCategoriesObj = (service as any).service_categories;
 			const categoryIdFromObject = serviceCategoriesObj?.id;
 			const categoryIdFromField = service.serviceCategoryId;
-
-			console.log('🔧 Category ID extraction:', {
-				hasServiceCategoriesObject: !!serviceCategoriesObj,
-				serviceCategoriesObject: serviceCategoriesObj,
-				categoryIdFromObject,
-				categoryIdFromField,
-				finalCategoryId: categoryIdFromObject || categoryIdFromField || 0,
-			});
 
 			const finalCategoryId = categoryIdFromObject || categoryIdFromField || 0;
 
@@ -199,10 +180,6 @@ export default function EditServiceModal({
 			) {
 				setFormData((prev) => {
 					if (prev.serviceGroupId !== finalGroupId) {
-						console.log('🔧 Updating serviceGroupId after groups loaded:', {
-							from: prev.serviceGroupId,
-							to: finalGroupId,
-						});
 						return { ...prev, serviceGroupId: finalGroupId };
 					}
 					return prev;
@@ -363,7 +340,6 @@ export default function EditServiceModal({
 										: undefined
 								}
 								onValueChange={(value) => {
-									console.log('🔧 Category changed:', value);
 									setFormData((prev) => ({
 										...prev,
 										serviceCategoryId: Number(value),
@@ -453,28 +429,6 @@ export default function EditServiceModal({
 								{t('owner.services.serviceGroupLabel')}
 							</label>
 							<div className="flex items-center gap-2">
-								{(() => {
-									const currentValue =
-										formData.serviceGroupId &&
-										formData.serviceGroupId !== '' &&
-										formData.serviceGroupId !== 'none'
-											? formData.serviceGroupId
-											: 'none';
-									const isValidValue =
-										currentValue === 'none' ||
-										groups.some((g) => g.id === currentValue);
-
-									console.log('🔧 Service Group Select render:', {
-										formDataServiceGroupId: formData.serviceGroupId,
-										currentValue,
-										isValidValue,
-										groupsCount: groups.length,
-										groupIds: groups.map((g) => g.id),
-										matchingGroup: groups.find((g) => g.id === currentValue),
-									});
-
-									return null;
-								})()}
 								<Select
 									key={`service-group-${service?.id || 'new'}-${formData.serviceGroupId}`}
 									value={
@@ -486,7 +440,6 @@ export default function EditServiceModal({
 											: 'none'
 									}
 									onValueChange={(value) => {
-										console.log('🔧 Service group changed:', value);
 										setFormData((prev) => ({
 											...prev,
 											serviceGroupId: value || 'none',
