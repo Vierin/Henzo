@@ -113,6 +113,43 @@ export default function EditServiceModal({
 
 	useEffect(() => {
 		if (service) {
+			// Debug: log the entire service object to see what we're working with
+			console.log('🔧 Full service object:', JSON.stringify(service, null, 2));
+
+			// Get serviceGroupId from serviceGroup object if available, otherwise use serviceGroupId field
+			const serviceGroupObj = (service as any).serviceGroup;
+			const groupIdFromObject = serviceGroupObj?.id;
+			const groupIdFromField = service.serviceGroupId;
+
+			console.log('🔧 Group ID extraction:', {
+				hasServiceGroupObject: !!serviceGroupObj,
+				serviceGroupObject: serviceGroupObj,
+				groupIdFromObject,
+				groupIdFromField,
+				finalGroupId: groupIdFromObject || groupIdFromField || 'none',
+			});
+
+			const finalGroupId =
+				(groupIdFromObject || groupIdFromField) &&
+				(groupIdFromObject || groupIdFromField).toString().trim() !== ''
+					? (groupIdFromObject || groupIdFromField).toString()
+					: 'none';
+
+			// Get serviceCategoryId from service_categories object if available, otherwise use serviceCategoryId field
+			const serviceCategoriesObj = (service as any).service_categories;
+			const categoryIdFromObject = serviceCategoriesObj?.id;
+			const categoryIdFromField = service.serviceCategoryId;
+
+			console.log('🔧 Category ID extraction:', {
+				hasServiceCategoriesObject: !!serviceCategoriesObj,
+				serviceCategoriesObject: serviceCategoriesObj,
+				categoryIdFromObject,
+				categoryIdFromField,
+				finalCategoryId: categoryIdFromObject || categoryIdFromField || 0,
+			});
+
+			const finalCategoryId = categoryIdFromObject || categoryIdFromField || 0;
+
 			setFormData({
 				name: service.name,
 				description: service.description || '',
@@ -122,9 +159,9 @@ export default function EditServiceModal({
 				descriptionVi: service.descriptionVi || '',
 				duration: service.duration,
 				price: service.price,
-				serviceCategoryId: service.serviceCategoryId || 0,
+				serviceCategoryId: finalCategoryId,
 				serviceSubcategoryId: service.serviceSubcategoryId || 0,
-				serviceGroupId: service.serviceGroupId || 'none',
+				serviceGroupId: finalGroupId,
 			});
 		} else {
 			setFormData({
@@ -142,6 +179,37 @@ export default function EditServiceModal({
 			});
 		}
 	}, [service]);
+
+	// Update serviceGroupId when groups are loaded and service has a group
+	useEffect(() => {
+		if (service && groups.length > 0) {
+			const serviceGroupObj = (service as any).serviceGroup;
+			const groupIdFromObject = serviceGroupObj?.id;
+			const groupIdFromField = service.serviceGroupId;
+			const finalGroupId =
+				(groupIdFromObject || groupIdFromField) &&
+				(groupIdFromObject || groupIdFromField).toString().trim() !== ''
+					? (groupIdFromObject || groupIdFromField).toString()
+					: 'none';
+
+			// Only update if the value is different and valid
+			if (
+				finalGroupId !== 'none' &&
+				groups.some((g) => g.id === finalGroupId)
+			) {
+				setFormData((prev) => {
+					if (prev.serviceGroupId !== finalGroupId) {
+						console.log('🔧 Updating serviceGroupId after groups loaded:', {
+							from: prev.serviceGroupId,
+							to: finalGroupId,
+						});
+						return { ...prev, serviceGroupId: finalGroupId };
+					}
+					return prev;
+				});
+			}
+		}
+	}, [service, groups]);
 
 	// Reset subcategory when category changes
 	useEffect(() => {
@@ -287,14 +355,21 @@ export default function EditServiceModal({
 								{t('owner.services.categoryLabel')}
 							</label>
 							<Select
-								value={formData.serviceCategoryId.toString()}
-								onValueChange={(value) =>
+								key={`service-category-${service?.id || 'new'}-${formData.serviceCategoryId}`}
+								value={
+									formData.serviceCategoryId > 0 &&
+									categories.some((c) => c.id === formData.serviceCategoryId)
+										? formData.serviceCategoryId.toString()
+										: undefined
+								}
+								onValueChange={(value) => {
+									console.log('🔧 Category changed:', value);
 									setFormData((prev) => ({
 										...prev,
 										serviceCategoryId: Number(value),
 										serviceSubcategoryId: 0,
-									}))
-								}
+									}));
+								}}
 							>
 								<SelectTrigger className="w-full border border-gray-300 focus:ring-2 focus:ring-[#ff5b5b] focus:border-transparent text-gray-900 text-sm">
 									<SelectValue placeholder="Select a category" />
@@ -378,14 +453,45 @@ export default function EditServiceModal({
 								{t('owner.services.serviceGroupLabel')}
 							</label>
 							<div className="flex items-center gap-2">
+								{(() => {
+									const currentValue =
+										formData.serviceGroupId &&
+										formData.serviceGroupId !== '' &&
+										formData.serviceGroupId !== 'none'
+											? formData.serviceGroupId
+											: 'none';
+									const isValidValue =
+										currentValue === 'none' ||
+										groups.some((g) => g.id === currentValue);
+
+									console.log('🔧 Service Group Select render:', {
+										formDataServiceGroupId: formData.serviceGroupId,
+										currentValue,
+										isValidValue,
+										groupsCount: groups.length,
+										groupIds: groups.map((g) => g.id),
+										matchingGroup: groups.find((g) => g.id === currentValue),
+									});
+
+									return null;
+								})()}
 								<Select
-									value={formData.serviceGroupId}
-									onValueChange={(value) =>
+									key={`service-group-${service?.id || 'new'}-${formData.serviceGroupId}`}
+									value={
+										formData.serviceGroupId &&
+										formData.serviceGroupId !== '' &&
+										formData.serviceGroupId !== 'none' &&
+										groups.some((g) => g.id === formData.serviceGroupId)
+											? formData.serviceGroupId
+											: 'none'
+									}
+									onValueChange={(value) => {
+										console.log('🔧 Service group changed:', value);
 										setFormData((prev) => ({
 											...prev,
-											serviceGroupId: value,
-										}))
-									}
+											serviceGroupId: value || 'none',
+										}));
+									}}
 								>
 									<SelectTrigger className="w-full border border-gray-300 focus:ring-2 focus:ring-[#ff5b5b] focus:border-transparent text-gray-900 text-sm">
 										<SelectValue placeholder="No group" />

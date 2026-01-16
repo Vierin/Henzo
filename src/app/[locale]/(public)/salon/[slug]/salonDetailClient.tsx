@@ -715,6 +715,16 @@ export default function SalonDetailClient({ salon }: SalonDetailClientProps) {
 								<h3 className="text-lg font-semibold text-gray-900 mb-3">
 									{t.salon.location}
 								</h3>
+								{(() => {
+									console.log('🗺️ Salon map data:', {
+										latitude: salon.latitude,
+										longitude: salon.longitude,
+										address: salon.address,
+										hasCoords: !!(salon.latitude && salon.longitude),
+										hasAddress: !!salon.address,
+									});
+									return null;
+								})()}
 								<div className="w-full rounded-lg overflow-hidden border border-gray-200">
 									<MapComponentWithCoords
 										lat={salon.latitude}

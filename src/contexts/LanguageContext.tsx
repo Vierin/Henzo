@@ -9,8 +9,15 @@ import React, {
 	ReactNode,
 } from 'react';
 import { usePathname } from 'next/navigation';
-import { extractLocaleFromPath, stripLocaleFromPath, type Locale } from '@/i18n/routing';
-import { useTranslations as useBaseTranslations, useModuleTranslations } from '@/i18n/useTranslations';
+import {
+	extractLocaleFromPath,
+	stripLocaleFromPath,
+	type Locale,
+} from '@/i18n/routing';
+import {
+	useTranslations as useBaseTranslations,
+	useModuleTranslations,
+} from '@/i18n/useTranslations';
 import type { TranslationModule } from '@/i18n/modules';
 import { storage } from '@/utils/storage';
 
@@ -47,10 +54,13 @@ interface LanguageProviderProps {
 	initialDictionary?: any; // Base dictionary loaded on server
 }
 
-export function LanguageProvider({ children, initialDictionary }: LanguageProviderProps) {
+export function LanguageProvider({
+	children,
+	initialDictionary,
+}: LanguageProviderProps) {
 	const [language, setLanguageState] = useState<Language>('en');
 	const pathname = usePathname();
-	
+
 	// Get initial dictionary from window object (set by server via script tag)
 	// Use useState to read it once on mount, before React hydration
 	const [serverDictionary] = useState(() => {
@@ -66,13 +76,14 @@ export function LanguageProvider({ children, initialDictionary }: LanguageProvid
 		}
 		return undefined;
 	});
-	
+
 	// Use initialDictionary prop if provided, otherwise try window object, otherwise undefined
 	const effectiveInitialDictionary = initialDictionary || serverDictionary;
-	
+
 	// Determine which modules to load based on current path
 	const pathNoLocale = stripLocaleFromPath(pathname);
-	const isOwnerPage = pathNoLocale.startsWith('/owner-dashboard') || 
+	const isOwnerPage =
+		pathNoLocale.startsWith('/owner-dashboard') ||
 		pathNoLocale.startsWith('/salon-info') ||
 		pathNoLocale.startsWith('/services') ||
 		pathNoLocale.startsWith('/staff') ||
@@ -80,15 +91,16 @@ export function LanguageProvider({ children, initialDictionary }: LanguageProvid
 		pathNoLocale.startsWith('/marketing') ||
 		pathNoLocale.startsWith('/profile-settings') ||
 		pathNoLocale.startsWith('/subscription');
-	
-	const isClientPage = pathNoLocale.startsWith('/dashboard') ||
+
+	const isClientPage =
+		pathNoLocale.startsWith('/dashboard') ||
 		pathNoLocale.startsWith('/favorites') ||
 		pathNoLocale.startsWith('/reviews') ||
 		pathNoLocale.startsWith('/settings');
-	
+
 	// Determine public module based on path (declare early as it may be used in owner module logic)
 	const publicModules: TranslationModule[] = [];
-	
+
 	// Determine specific owner module based on path
 	let ownerModule: TranslationModule | undefined;
 	if (pathNoLocale.startsWith('/owner-dashboard')) {
@@ -132,7 +144,7 @@ export function LanguageProvider({ children, initialDictionary }: LanguageProvid
 	} else if (pathNoLocale.startsWith('/subscription')) {
 		ownerModule = 'owner/subscription';
 	}
-	
+
 	// Check for homepage (root path)
 	if (pathNoLocale === '/' || pathNoLocale === '' || !pathNoLocale) {
 		// Categories are also used on homepage
@@ -194,30 +206,42 @@ export function LanguageProvider({ children, initialDictionary }: LanguageProvid
 		publicModules.push('public/contact');
 	} else if (pathNoLocale.startsWith('/about')) {
 		publicModules.push('public/about');
-	} else if (pathNoLocale.startsWith('/login') || pathNoLocale.startsWith('/forgot-password') || pathNoLocale.startsWith('/check-email')) {
+	} else if (
+		pathNoLocale.startsWith('/login') ||
+		pathNoLocale.startsWith('/forgot-password') ||
+		pathNoLocale.startsWith('/check-email')
+	) {
 		// Auth module needed for login, forgot-password, and check-email pages
 		publicModules.push('shared/auth');
 	}
-	
+
 	// Load notFound module for 404 pages (when path doesn't match any known route)
 	// This will be loaded if no other modules match
-	if (publicModules.length === 0 && !ownerModule && !isClientPage && !isOwnerPage) {
+	if (
+		publicModules.length === 0 &&
+		!ownerModule &&
+		!isClientPage &&
+		!isOwnerPage
+	) {
 		publicModules.push('public/notFound');
 	}
-	
+
 	// Use initial dictionary from server if provided, otherwise load base modules
 	// Only call useBaseTranslations if we don't have initialDictionary to avoid unnecessary loading
 	const baseTFromHook = useBaseTranslations();
 	const baseT = useMemo(() => {
 		// If we have initial dictionary from server (via prop or window), use it immediately
 		// This prevents the flash of translation keys
-		if (effectiveInitialDictionary && Object.keys(effectiveInitialDictionary).length > 0) {
+		if (
+			effectiveInitialDictionary &&
+			Object.keys(effectiveInitialDictionary).length > 0
+		) {
 			return effectiveInitialDictionary;
 		}
 		// Fallback to hook result (for cases where initialDictionary is not provided)
 		return baseTFromHook;
 	}, [effectiveInitialDictionary, baseTFromHook]);
-	
+
 	// Load additional modules based on page type
 	const modulesToLoad: TranslationModule[] = [];
 	if (ownerModule) {
@@ -234,28 +258,43 @@ export function LanguageProvider({ children, initialDictionary }: LanguageProvid
 	modulesToLoad.push(...publicModules);
 	if (isClientPage) {
 		// Load all client modules since ClientSidebar uses translations from all of them
-		modulesToLoad.push('client/dashboard', 'client/favorites', 'client/reviews', 'client/settings');
+		modulesToLoad.push(
+			'client/dashboard',
+			'client/favorites',
+			'client/reviews',
+			'client/settings'
+		);
 	}
 	// Load shared/auth for login, register, and check-email pages
-	if (pathNoLocale.startsWith('/login') || pathNoLocale.startsWith('/register') || pathNoLocale.startsWith('/check-email')) {
+	if (
+		pathNoLocale.startsWith('/login') ||
+		pathNoLocale.startsWith('/register') ||
+		pathNoLocale.startsWith('/check-email')
+	) {
 		modulesToLoad.push('shared/auth');
 	}
 	// Load public/salon for admin salons-data page
 	if (pathNoLocale.startsWith('/admin-panel/salons-data')) {
 		modulesToLoad.push('public/salon');
 	}
-	
+
 	const { dictionary: additionalDict } = useModuleTranslations(
 		modulesToLoad,
 		language
 	);
-	
+
 	// Deep merge function for nested objects
 	const deepMerge = (target: any, source: any) => {
 		for (const key in source) {
 			if (source.hasOwnProperty(key)) {
-				if (typeof source[key] === 'object' && source[key] !== null && !Array.isArray(source[key]) &&
-					typeof target[key] === 'object' && target[key] !== null && !Array.isArray(target[key])) {
+				if (
+					typeof source[key] === 'object' &&
+					source[key] !== null &&
+					!Array.isArray(source[key]) &&
+					typeof target[key] === 'object' &&
+					target[key] !== null &&
+					!Array.isArray(target[key])
+				) {
 					target[key] = deepMerge(target[key], source[key]);
 				} else {
 					target[key] = source[key];
@@ -270,8 +309,11 @@ export function LanguageProvider({ children, initialDictionary }: LanguageProvid
 		// baseT может быть Proxy из useBaseTranslations, поэтому используем effectiveInitialDictionary если он есть
 		// Иначе пытаемся извлечь данные из baseT
 		let baseToMerge: any = {};
-		
-		if (effectiveInitialDictionary && Object.keys(effectiveInitialDictionary).length > 0) {
+
+		if (
+			effectiveInitialDictionary &&
+			Object.keys(effectiveInitialDictionary).length > 0
+		) {
 			// Используем словарь с сервера (приоритет)
 			baseToMerge = effectiveInitialDictionary;
 		} else if (baseT) {
@@ -281,44 +323,28 @@ export function LanguageProvider({ children, initialDictionary }: LanguageProvid
 				baseToMerge.homepage = baseT.homepage;
 			}
 			// Копируем другие известные ключи из baseT
-			const knownKeys = ['common', 'meta', 'navigation', 'header', 'footer', 'forms', 'auth'];
+			const knownKeys = [
+				'common',
+				'meta',
+				'navigation',
+				'header',
+				'footer',
+				'forms',
+				'auth',
+			];
 			for (const key of knownKeys) {
 				if (baseT[key]) {
 					baseToMerge[key] = baseT[key];
 				}
 			}
 		}
-		
+
 		const merged = { ...baseToMerge };
 		if (additionalDict && Object.keys(additionalDict).length > 0) {
 			// Deep merge to preserve nested objects
 			deepMerge(merged, additionalDict);
 		}
-		// Debug: log if calendar module is loaded (only in development)
-		if (process.env.NODE_ENV === 'development' && pathNoLocale.startsWith('/calendar')) {
-			console.log('Calendar translations loaded:', {
-				hasOwner: !!merged.owner,
-				hasCalendar: !!merged.owner?.calendar,
-				calendarKeys: merged.owner?.calendar ? Object.keys(merged.owner.calendar) : [],
-				hasCannotCreateBooking: !!merged.owner?.calendar?.cannotCreateBooking,
-				cannotCreateBookingKeys: merged.owner?.calendar?.cannotCreateBooking ? Object.keys(merged.owner.calendar.cannotCreateBooking) : [],
-				noServices: merged.owner?.calendar?.cannotCreateBooking?.noServices,
-			});
-		}
-		// Debug: log if homepage module is loaded (only in development)
-		if (process.env.NODE_ENV === 'development' && pathNoLocale === '/') {
-			console.log('Homepage translations loaded:', {
-				hasHomepage: !!merged.homepage,
-				homepageKeys: merged.homepage ? Object.keys(merged.homepage) : [],
-				topRatedTitle: merged.homepage?.topRatedTitle,
-				baseTKeys: Object.keys(baseT),
-				hasBaseHomepage: !!baseT.homepage,
-				additionalDictKeys: additionalDict ? Object.keys(additionalDict) : [],
-				hasAdditionalHomepage: !!(additionalDict && additionalDict.homepage),
-				effectiveInitialDictKeys: effectiveInitialDictionary ? Object.keys(effectiveInitialDictionary) : [],
-				hasEffectiveHomepage: !!(effectiveInitialDictionary && effectiveInitialDictionary.homepage),
-			});
-		}
+
 		return merged;
 	}, [baseT, additionalDict, pathNoLocale, effectiveInitialDictionary]);
 
@@ -364,46 +390,58 @@ export function LanguageProvider({ children, initialDictionary }: LanguageProvid
 	// Create a function wrapper that supports both object access and string path access
 	// Use Proxy to automatically handle both t('path.to.key') and t.path.to.key
 	const tWrapper = useMemo(() => {
-		const baseFunction = ((path: string) => getNestedTranslation(t, path)) as any;
-		
+		const baseFunction = ((path: string) =>
+			getNestedTranslation(t, path)) as any;
+
 		const createProxy = (prefix = ''): any => {
 			return new Proxy(baseFunction, {
 				get: (_target, prop: string) => {
 					// If accessing as function, return the function
-					if (prop === 'apply' || prop === 'call' || prop === 'bind' || prop === 'toString') {
+					if (
+						prop === 'apply' ||
+						prop === 'call' ||
+						prop === 'bind' ||
+						prop === 'toString'
+					) {
 						return baseFunction[prop];
 					}
 					// Build the full path
 					const fullPath = prefix ? `${prefix}.${prop}` : prop;
 					// Try to get from translations object
-					const value = prefix 
-						? getNestedTranslation(t, fullPath)
-						: t[prop];
-					
+					const value = prefix ? getNestedTranslation(t, fullPath) : t[prop];
+
 					// If it's an object, return a proxy for nested access
-					if (value !== undefined && typeof value === 'object' && value !== null && !Array.isArray(value)) {
+					if (
+						value !== undefined &&
+						typeof value === 'object' &&
+						value !== null &&
+						!Array.isArray(value)
+					) {
 						return createProxy(fullPath);
 					}
-					
+
 					// If value exists, return it
 					if (value !== undefined) {
 						return value;
 					}
-					
+
 					// Return a proxy for nested access that will resolve on next property access
 					return createProxy(fullPath);
 				},
 			});
 		};
-		
+
 		return createProxy() as Dictionary & ((path: string) => string);
 	}, [t]);
 
-	const value: LanguageContextType = useMemo(() => ({
-		language,
-		setLanguage,
-		t: tWrapper as Dictionary & ((path: string) => string),
-	}), [language, setLanguage, tWrapper]);
+	const value: LanguageContextType = useMemo(
+		() => ({
+			language,
+			setLanguage,
+			t: tWrapper as Dictionary & ((path: string) => string),
+		}),
+		[language, setLanguage, tWrapper]
+	);
 
 	return (
 		<LanguageContext.Provider value={value}>

@@ -3,7 +3,6 @@
 import { useEffect, useRef, useCallback } from 'react';
 import 'leaflet/dist/leaflet.css';
 import '@/styles/map.css';
-import { logger } from '@/lib/logger';
 
 // Dynamically import Leaflet to avoid SSR issues
 const LeafletLoader = { L: null as any };
@@ -33,6 +32,17 @@ export default function MapComponentWithCoords({
 	editable = false,
 	onMarkerMove,
 }: MapComponentWithCoordsProps) {
+	console.log('🗺️ MapComponentWithCoords props:', {
+		lat,
+		lon,
+		address,
+		height,
+		showPopup,
+		interactive,
+		zoom,
+		editable,
+	});
+
 	const mapRef = useRef<HTMLDivElement>(null);
 	const mapInstanceRef = useRef<any>(null);
 	const markerRef = useRef<any>(null);
@@ -63,8 +73,17 @@ export default function MapComponentWithCoords({
 
 	const updateMapWithCoords = useCallback(
 		(lat: number, lon: number, address?: string, updateFromDrag = false) => {
+			console.log('🗺️ updateMapWithCoords called:', {
+				lat,
+				lon,
+				address,
+				updateFromDrag,
+			});
 			if (!mapInstanceRef.current || !LeafletLoader.L) {
-				console.error('❌ Cannot update map: map instance not available');
+				console.error('❌ Cannot update map: map instance not available', {
+					hasMapInstance: !!mapInstanceRef.current,
+					hasLeaflet: !!LeafletLoader.L,
+				});
 				return;
 			}
 
@@ -75,7 +94,6 @@ export default function MapComponentWithCoords({
 
 			// Remove existing marker
 			if (markerRef.current) {
-				logger.log('🗑️ Removing existing marker');
 				mapInstanceRef.current.removeLayer(markerRef.current);
 				markerRef.current.off('dragend'); // Remove previous event listeners
 				markerRef.current = null;
@@ -112,7 +130,6 @@ export default function MapComponentWithCoords({
 			};
 
 			try {
-				logger.log('➕ Creating marker at:', { lat, lon });
 				markerRef.current = LeafletLoader.L.marker(
 					[lat, lon],
 					markerOptions
@@ -133,8 +150,6 @@ export default function MapComponentWithCoords({
 						const newLat = position.lat;
 						const newLon = position.lng;
 
-						logger.log('🎯 Marker moved to:', { lat: newLat, lon: newLon });
-
 						// Reverse geocode to get new address
 						const newAddress = await reverseGeocode(newLat, newLon);
 
@@ -154,40 +169,6 @@ export default function MapComponentWithCoords({
 			}
 		},
 		[zoom, editable, onMarkerMove, reverseGeocode, showPopup]
-	);
-
-	const geocodeAddress = useCallback(
-		async (address: string) => {
-			try {
-				logger.log('🔍 Geocoding address:', address);
-
-				// Use our backend API for geocoding
-				const API_BASE_URL =
-					process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
-				const response = await fetch(
-					`${API_BASE_URL}/geocoding/search?address=${encodeURIComponent(address)}`
-				);
-
-				if (!response.ok) {
-					throw new Error(`HTTP error! status: ${response.status}`);
-				}
-
-				const result = await response.json();
-
-				if (result.success && result.data) {
-					const { lat, lon, display_name } = result.data;
-					updateMapWithCoords(lat, lon, address);
-				} else {
-					console.warn('⚠️ No geocoding results found for:', address);
-					showDefaultMarker();
-				}
-			} catch (error) {
-				console.error('❌ Error geocoding address:', error);
-				// Show marker at default location if geocoding fails
-				showDefaultMarker();
-			}
-		},
-		[updateMapWithCoords]
 	);
 
 	const showDefaultMarker = useCallback(() => {
@@ -229,14 +210,51 @@ export default function MapComponentWithCoords({
 		}).addTo(mapInstanceRef.current);
 	}, []);
 
+	const geocodeAddress = useCallback(
+		async (address: string) => {
+			try {
+				// Use our backend API for geocoding
+				const API_BASE_URL =
+					process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+				const response = await fetch(
+					`${API_BASE_URL}/geocoding/search?address=${encodeURIComponent(address)}`
+				);
+
+				if (!response.ok) {
+					throw new Error(`HTTP error! status: ${response.status}`);
+				}
+
+				const result = await response.json();
+
+				if (result.success && result.data) {
+					const { lat, lon, display_name } = result.data;
+					updateMapWithCoords(lat, lon, address);
+				} else {
+					console.warn('⚠️ No geocoding results found for:', address);
+					showDefaultMarker();
+				}
+			} catch (error) {
+				console.error('❌ Error geocoding address:', error);
+				// Show marker at default location if geocoding fails
+				showDefaultMarker();
+			}
+		},
+		[updateMapWithCoords, showDefaultMarker]
+	);
+
 	// Initialize Leaflet dynamically
 	useEffect(() => {
-		if (typeof window === 'undefined' || LeafletLoader.L) return;
+		if (typeof window === 'undefined' || LeafletLoader.L) {
+			console.log('🗺️ Leaflet already loaded or SSR, skipping');
+			return;
+		}
 
+		console.log('🗺️ Initializing Leaflet...');
 		const initLeaflet = async () => {
 			try {
 				const leaflet = await import('leaflet');
 				LeafletLoader.L = leaflet.default;
+				console.log('✅ Leaflet loaded successfully');
 
 				// Fix for default markers in Leaflet with Next.js
 				delete (
@@ -263,9 +281,97 @@ export default function MapComponentWithCoords({
 
 	// Initialize map once
 	useEffect(() => {
-		if (!mapRef.current || mapInstanceRef.current || !LeafletLoader.L) return;
+		if (!mapRef.current) {
+			console.log('❌ Map ref not available');
+			return;
+		}
+		if (mapInstanceRef.current) {
+			console.log('🗺️ Map already initialized');
+			return;
+		}
+		if (!LeafletLoader.L) {
+			console.log('❌ Leaflet not loaded yet');
+			return;
+		}
 
-		logger.log('🗺️ Initializing map...');
+		const containerWidth = mapRef.current.offsetWidth;
+		const containerHeight = mapRef.current.offsetHeight;
+
+		console.log('🗺️ Initializing map...', {
+			containerSize: {
+				width: containerWidth,
+				height: containerHeight,
+			},
+			zoom,
+			interactive,
+			heightProp: height,
+		});
+
+		// If container has no size, wait a bit and try again
+		if (containerWidth === 0 || containerHeight === 0) {
+			console.warn('⚠️ Container has no size, waiting 100ms...');
+			setTimeout(() => {
+				if (mapRef.current && !mapInstanceRef.current && LeafletLoader.L) {
+					const retryWidth = mapRef.current.offsetWidth;
+					const retryHeight = mapRef.current.offsetHeight;
+					console.log('🗺️ Retry container size:', {
+						width: retryWidth,
+						height: retryHeight,
+					});
+					if (retryWidth > 0 && retryHeight > 0) {
+						// Re-run initialization
+						const mapOptions: any = {
+							zoomControl: interactive,
+							dragging: interactive,
+							touchZoom: interactive,
+							doubleClickZoom: interactive,
+							scrollWheelZoom: interactive,
+							boxZoom: interactive,
+							keyboard: interactive,
+							attributionControl: false,
+						};
+
+						const map = LeafletLoader.L.map(mapRef.current, mapOptions).setView(
+							[21.0285, 105.8542],
+							zoom
+						);
+
+						LeafletLoader.L.tileLayer(
+							'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+							{
+								attribution: '© OpenStreetMap contributors',
+								maxZoom: 19,
+								className: 'grayscale-map',
+							}
+						).addTo(map);
+
+						mapInstanceRef.current = map;
+
+						map.whenReady(() => {
+							setTimeout(() => {
+								if (mapInstanceRef.current) {
+									mapInstanceRef.current.invalidateSize();
+									window.dispatchEvent(new Event('resize'));
+								}
+							}, 100);
+						});
+
+						setTimeout(() => {
+							if (mapInstanceRef.current) {
+								mapInstanceRef.current.invalidateSize();
+							}
+						}, 300);
+
+						setTimeout(() => {
+							if (mapInstanceRef.current) {
+								mapInstanceRef.current.invalidateSize();
+							}
+						}, 1000);
+					}
+				}
+			}, 100);
+			return;
+		}
 
 		const mapOptions: any = {
 			zoomControl: interactive, // Show zoom controls only if interactive
@@ -283,6 +389,8 @@ export default function MapComponentWithCoords({
 			zoom
 		); // Default to Hanoi, Vietnam
 
+		console.log('✅ Map instance created');
+
 		// Use grayscale tile layer
 		LeafletLoader.L.tileLayer(
 			'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
@@ -293,20 +401,53 @@ export default function MapComponentWithCoords({
 			}
 		).addTo(map);
 
+		console.log('✅ Tile layer added');
+
 		mapInstanceRef.current = map;
 
 		// Wait for map to be fully loaded before marking as ready
 		map.whenReady(() => {
-			logger.log('✅ Map initialized and ready');
+			console.log('🗺️ Map ready, invalidating size...');
 			// Invalidate size to ensure proper rendering
 			setTimeout(() => {
-				map.invalidateSize();
+				if (mapInstanceRef.current) {
+					const containerSize = {
+						width: mapRef.current?.offsetWidth,
+						height: mapRef.current?.offsetHeight,
+					};
+					console.log('🗺️ Invalidating size, container:', containerSize);
+					mapInstanceRef.current.invalidateSize();
+					// Force a resize event to ensure tiles load
+					window.dispatchEvent(new Event('resize'));
+				}
 			}, 100);
 		});
 
+		// Also invalidate size after a short delay to handle dynamic content
+		setTimeout(() => {
+			if (mapInstanceRef.current) {
+				console.log('🗺️ Second invalidation (300ms)');
+				mapInstanceRef.current.invalidateSize();
+			}
+		}, 300);
+
+		// Additional invalidation after longer delay for cases where container size changes
+		setTimeout(() => {
+			if (mapInstanceRef.current) {
+				const containerSize = {
+					width: mapRef.current?.offsetWidth,
+					height: mapRef.current?.offsetHeight,
+				};
+				console.log(
+					'🗺️ Third invalidation (1000ms), container:',
+					containerSize
+				);
+				mapInstanceRef.current.invalidateSize();
+			}
+		}, 1000);
+
 		// Cleanup on unmount only
 		return () => {
-			logger.log('🧹 Cleaning up map...');
 			if (mapInstanceRef.current) {
 				mapInstanceRef.current.remove();
 				mapInstanceRef.current = null;
@@ -317,7 +458,16 @@ export default function MapComponentWithCoords({
 
 	// Update map when coordinates or address change
 	useEffect(() => {
+		console.log('🗺️ Coordinates effect triggered:', {
+			lat,
+			lon,
+			address,
+			mapReady: !!mapInstanceRef.current,
+			leafletReady: !!LeafletLoader.L,
+		});
+
 		if (!mapInstanceRef.current || !LeafletLoader.L) {
+			console.log('❌ Map or Leaflet not ready yet, waiting...');
 			return; // Silently wait if map is not ready yet
 		}
 
@@ -326,32 +476,47 @@ export default function MapComponentWithCoords({
 		const prevLon = lastCoordsRef.current.lon;
 		const coordsChanged = prevLat !== lat || prevLon !== lon;
 
+		console.log('🗺️ Coordinate check:', {
+			prevLat,
+			prevLon,
+			newLat: lat,
+			newLon: lon,
+			coordsChanged,
+		});
+
+		// Normalize coordinates - handle null/undefined
+		const normalizedLat = lat != null ? Number(lat) : undefined;
+		const normalizedLon = lon != null ? Number(lon) : undefined;
+
 		// Update map with coordinates if provided
-		if (lat !== undefined && lon !== undefined && !isNaN(lat) && !isNaN(lon)) {
+		if (
+			normalizedLat !== undefined &&
+			normalizedLon !== undefined &&
+			!isNaN(normalizedLat) &&
+			!isNaN(normalizedLon) &&
+			isFinite(normalizedLat) &&
+			isFinite(normalizedLon)
+		) {
 			if (coordsChanged) {
-				logger.log('🔄 Coordinates changed, updating map:', {
-					prev: { lat: prevLat, lon: prevLon },
-					new: { lat, lon },
-				});
-				lastCoordsRef.current = { lat, lon };
+				lastCoordsRef.current = { lat: normalizedLat, lon: normalizedLon };
 
 				// Update map - wait for map to be ready
 				const updateMap = () => {
 					if (mapInstanceRef.current) {
-						updateMapWithCoords(lat, lon, address, false);
+						updateMapWithCoords(normalizedLat, normalizedLon, address, false);
 					}
 				};
-				
+
 				// Use whenReady if available, otherwise try with delay
 				if (mapInstanceRef.current.whenReady) {
 					mapInstanceRef.current.whenReady(() => {
 						setTimeout(() => {
-							updateMapWithCoords(lat, lon, address, false);
+							updateMapWithCoords(normalizedLat, normalizedLon, address, false);
 						}, 200);
 					});
 				} else if (mapInstanceRef.current._loaded) {
 					setTimeout(() => {
-						updateMapWithCoords(lat, lon, address, false);
+						updateMapWithCoords(normalizedLat, normalizedLon, address, false);
 					}, 200);
 				} else {
 					// Wait for map to load
@@ -359,16 +524,21 @@ export default function MapComponentWithCoords({
 						if (mapInstanceRef.current && mapInstanceRef.current._loaded) {
 							clearInterval(checkLoaded);
 							setTimeout(() => {
-								updateMapWithCoords(lat, lon, address, false);
+								updateMapWithCoords(
+									normalizedLat,
+									normalizedLon,
+									address,
+									false
+								);
 							}, 200);
 						}
 					}, 50);
-					
+
 					// Timeout after 2 seconds
 					setTimeout(() => {
 						clearInterval(checkLoaded);
 						if (mapInstanceRef.current) {
-							updateMapWithCoords(lat, lon, address, false);
+							updateMapWithCoords(normalizedLat, normalizedLon, address, false);
 						}
 					}, 2000);
 				}
@@ -379,7 +549,7 @@ export default function MapComponentWithCoords({
 		) {
 			// Fallback to geocoding if no coordinates provided (only once)
 			geocodeAddress(address);
-		} else if (!lat && !lon && !address) {
+		} else if (!normalizedLat && !normalizedLon && !address) {
 			// Show default marker if no address or coordinates
 			if (!markerRef.current) {
 				showDefaultMarker();
@@ -396,7 +566,8 @@ export default function MapComponentWithCoords({
 
 	return (
 		<div
-			className={`rounded-lg overflow-hidden border border-gray-200 relative w-full h-full ${className}`}
+			className={`rounded-lg overflow-hidden border border-gray-200 relative w-full ${className}`}
+			style={height ? { height, minHeight: height } : { minHeight: '300px' }}
 		>
 			{editable && (
 				<div className="absolute bottom-1 right-1 z-[1000] bg-white/90 backdrop-blur-sm px-3 py-1.5 rounded-md shadow-sm text-xs text-gray-600 border border-gray-200">
@@ -405,7 +576,12 @@ export default function MapComponentWithCoords({
 			)}
 			<div
 				ref={mapRef}
-				style={height ? { height, width: '100%' } : undefined}
+				style={{
+					height: '100%',
+					width: '100%',
+					minHeight: height || '300px',
+					position: 'relative',
+				}}
 				className="w-full h-full"
 			/>
 		</div>
