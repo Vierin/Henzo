@@ -26,6 +26,8 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from '@/components/ui/select';
+import { X } from 'lucide-react';
+import CategoryAutocomplete from '@/components/CategoryAutocomplete';
 
 export default function ServicesClient() {
 	const t = useTranslation();
@@ -44,6 +46,8 @@ export default function ServicesClient() {
 		'all'
 	);
 	const [selectedGroup, setSelectedGroup] = useState<string | 'all'>('all');
+	const [isManageGroupsModalOpen, setIsManageGroupsModalOpen] = useState(false);
+	const [newGroupName, setNewGroupName] = useState('');
 	const router = useRouter();
 
 	// Используем данные салона из контекста (избегаем дублирования запросов)
@@ -109,6 +113,44 @@ export default function ServicesClient() {
 	const handleDeleteService = async (serviceId: string) => {
 		if (!confirm(t('owner.services.areYouSureDelete'))) return;
 		deleteServiceMutation.mutate(serviceId);
+	};
+
+	const handleCreateGroup = async () => {
+		if (!newGroupName.trim() || !salonId) return;
+		try {
+			await apiClient.post('/services/groups', {
+				salonId,
+				name: newGroupName.trim(),
+			});
+			queryClient.invalidateQueries({
+				queryKey: ['service-groups', salonId],
+			});
+			setNewGroupName('');
+			toast.success('Group created successfully');
+		} catch (err: any) {
+			console.error('Failed to create group:', err);
+			toast.error(err.message || 'Failed to create group');
+		}
+	};
+
+	const handleDeleteGroup = async (groupId: string) => {
+		if (!confirm(t('owner.services.areYouSureDeleteGroup'))) return;
+		try {
+			await apiClient.delete(`/services/groups/${groupId}`);
+			queryClient.invalidateQueries({
+				queryKey: ['service-groups', salonId],
+			});
+			// Also invalidate services to update group display
+			if (salonId) {
+				queryClient.invalidateQueries({
+					queryKey: serviceKeys.list({ salonId }),
+				});
+			}
+			toast.success('Group deleted successfully');
+		} catch (err: any) {
+			console.error('Failed to delete group:', err);
+			toast.error(err.message || 'Failed to delete group');
+		}
 	};
 
 	const queryClient = useQueryClient();
@@ -285,16 +327,24 @@ export default function ServicesClient() {
 							{t('owner.services.subtitle')}
 						</p>
 					</div>
-					<button
-						onClick={() => router.push('/services/new')}
-						className="inline-flex items-center gap-2 rounded-full bg-[#ff5b5b] !text-white px-4 py-2 text-sm shadow-sm hover:opacity-95 whitespace-nowrap"
-					>
-						<span className="text-lg leading-none">＋</span>
-						<span>{t('owner.services.addNew')}</span>
-						<span className="hidden md:inline">
-							{t('owner.services.title')}
-						</span>
-					</button>
+					<div className="flex items-center gap-2">
+						<button
+							onClick={() => setIsManageGroupsModalOpen(true)}
+							className="inline-flex items-center gap-2 rounded-full bg-white border border-gray-300 !text-gray-900 px-4 py-2 text-sm shadow-sm hover:opacity-95 whitespace-nowrap"
+						>
+							<span>{t('owner.services.manageGroups')}</span>
+						</button>
+						<button
+							onClick={() => router.push('/services/new')}
+							className="inline-flex items-center gap-2 rounded-full bg-[#ff5b5b] !text-white px-4 py-2 text-sm shadow-sm hover:opacity-95 whitespace-nowrap"
+						>
+							<span className="text-lg leading-none">＋</span>
+							<span>{t('owner.services.addNew')}</span>
+							<span className="hidden md:inline">
+								{t('owner.services.title')}
+							</span>
+						</button>
+					</div>
 				</div>
 			</div>
 
@@ -343,51 +393,26 @@ export default function ServicesClient() {
 					</div>
 
 					{/* Фильтр по категории */}
-					<div>
+					<div className="flex flex-col justify-between">
 						<label className="block text-sm font-medium text-black mb-2">
 							{t('owner.services.category')}
 						</label>
-						<Select
-							value={
-								selectedCategory === 'all' ? 'all' : selectedCategory.toString()
-							}
-							onValueChange={(value) =>
-								setSelectedCategory(value === 'all' ? 'all' : Number(value))
-							}
-						>
-							<SelectTrigger className="w-full border border-gray-300 focus:ring-2 focus:ring-[#ff5b5b] focus:border-transparent text-black">
-								<SelectValue placeholder={t('owner.services.allCategories')} />
-							</SelectTrigger>
-							<SelectContent className="bg-white border border-gray-300 shadow-lg rounded-md max-h-[280px] overflow-y-auto">
-								<SelectItem
-									value="all"
-									className="bg-white hover:bg-gray-50 focus:bg-gray-50 text-gray-900 cursor-pointer"
-								>
-									{t('owner.services.allCategories')}
-								</SelectItem>
-								{categories.map((category) => {
-									const name =
-										language === 'ru'
-											? category.name_ru || category.name_en
-											: language === 'vi'
-												? category.name_vn || category.name_en
-												: category.name_en;
-									return (
-										<SelectItem
-											key={category.id}
-											value={category.id.toString()}
-											className="bg-white hover:bg-gray-50 focus:bg-gray-50 text-gray-900 cursor-pointer"
-										>
-											{name}
-										</SelectItem>
-									);
-								})}
-							</SelectContent>
-						</Select>
+						<div className="relative">
+							<CategoryAutocomplete
+								value={
+									selectedCategory === 'all' ? undefined : selectedCategory
+								}
+								onChange={(categoryId) =>
+									setSelectedCategory(categoryId || 'all')
+								}
+								categories={categories}
+								placeholder={t('owner.services.allCategories')}
+							/>
+						</div>
 					</div>
 
 					{/* Фильтр по группе */}
-					<div>
+					<div className="flex flex-col justify-between">
 						<label className="block text-sm font-medium text-black mb-2">
 							{t('owner.services.group')}
 						</label>
@@ -395,7 +420,7 @@ export default function ServicesClient() {
 							value={selectedGroup}
 							onValueChange={(value) => setSelectedGroup(value)}
 						>
-							<SelectTrigger className="w-full border border-gray-300 focus:ring-2 focus:ring-[#ff5b5b] focus:border-transparent text-black">
+							<SelectTrigger className="w-full !h-[42px] rounded-lg border border-gray-300 focus:ring-2 focus:ring-[#ff5b5b] focus:border-transparent text-black">
 								<SelectValue placeholder={t('owner.services.allGroups')} />
 							</SelectTrigger>
 							<SelectContent className="bg-white border border-gray-300 shadow-lg rounded-md">
@@ -419,7 +444,7 @@ export default function ServicesClient() {
 					</div>
 
 					{/* Сортировка */}
-					<div>
+					<div className="flex flex-col justify-between">
 						<label className="block text-sm font-medium text-black mb-2">
 							{t('owner.services.sortBy')}
 						</label>
@@ -434,7 +459,7 @@ export default function ServicesClient() {
 								setSortOrder(newSortOrder);
 							}}
 						>
-							<SelectTrigger className="w-full border border-gray-300 focus:ring-2 focus:ring-[#ff5b5b] focus:border-transparent text-black">
+							<SelectTrigger className="w-full !h-[42px] rounded-lg border border-gray-300 focus:ring-2 focus:ring-[#ff5b5b] focus:border-transparent text-black">
 								<SelectValue />
 							</SelectTrigger>
 							<SelectContent className="bg-white border border-gray-300 shadow-lg rounded-md">
@@ -482,7 +507,7 @@ export default function ServicesClient() {
 					<div className="flex items-end">
 						<button
 							onClick={clearFilters}
-							className="w-full px-4 py-2 text-sm font-medium text-black bg-gray-100 border border-gray-300 rounded-lg hover:bg-gray-200 focus:ring-2 focus:ring-[#ff5b5b] focus:border-transparent transition-colors"
+							className="w-full !h-[42px] px-4 py-2 text-sm font-medium text-black bg-gray-100 border border-gray-300 rounded-lg hover:bg-gray-200 focus:ring-2 focus:ring-[#ff5b5b] focus:border-transparent transition-colors"
 						>
 							{t('owner.services.clearFilters')}
 						</button>
@@ -835,6 +860,86 @@ export default function ServicesClient() {
 				service={selectedService}
 				onSave={handleSaveService}
 			/>
+
+			{/* Manage Groups Modal */}
+			{isManageGroupsModalOpen && (
+				<div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
+					<div className="bg-white rounded-lg shadow-lg p-6 w-full max-w-md max-h-[80vh] overflow-y-auto">
+						<h2 className="text-xl font-semibold text-gray-900 mb-4">
+							{t('owner.services.manageGroupsTitle')}
+						</h2>
+
+						{/* Add New Group Form */}
+						<div className="mb-6 pb-6 border-b border-gray-200">
+							<p className="text-sm text-gray-600 mb-3">
+								{t('owner.services.addServiceGroupHelp')}
+							</p>
+							<div className="flex gap-2">
+								<input
+									type="text"
+									value={newGroupName}
+									onChange={(e) => setNewGroupName(e.target.value)}
+									onKeyDown={(e) => {
+										if (e.key === 'Enter' && newGroupName.trim() && salonId) {
+											handleCreateGroup();
+										}
+									}}
+									className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#ff5b5b] focus:border-[#ff5b5b] text-gray-900 text-sm"
+									placeholder={t('owner.services.groupName')}
+									autoFocus
+								/>
+								<button
+									onClick={handleCreateGroup}
+									disabled={!newGroupName.trim() || !salonId}
+									className="px-4 py-2 text-sm bg-[#ff5b5b] !text-white rounded-md hover:bg-[#e04a4a] disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
+								>
+									{t('owner.services.create')}
+								</button>
+							</div>
+						</div>
+
+						{/* Groups List */}
+						<div className="space-y-2">
+							{groups.length === 0 ? (
+								<p className="text-sm text-gray-500 text-center py-4">
+									{t('owner.services.noGroupsYet')}
+								</p>
+							) : (
+								groups.map((group) => (
+									<div
+										key={group.id}
+										className="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100"
+									>
+										<span className="text-sm font-medium text-gray-900">
+											{getLocalizedGroupName(group)}
+										</span>
+										<button
+											onClick={() => handleDeleteGroup(group.id)}
+											className="p-1 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-md transition-colors"
+											title={t('owner.services.deleteGroup')}
+										>
+											<X className="w-4 h-4" />
+										</button>
+									</div>
+								))
+							)}
+						</div>
+
+						{/* Close Button */}
+						<div className="mt-6 flex justify-end">
+							<button
+								onClick={() => {
+									setIsManageGroupsModalOpen(false);
+									setNewGroupName('');
+								}}
+								className="px-4 py-2 text-sm border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
+							>
+								{t('owner.services.cancel')}
+							</button>
+						</div>
+					</div>
+				</div>
+			)}
 		</div>
 	);
 }

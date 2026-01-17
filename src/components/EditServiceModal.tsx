@@ -23,6 +23,7 @@ import {
 	SelectValue,
 } from '@/components/ui/select';
 import { useLanguage, useTranslation } from '@/contexts/LanguageContext';
+import CategoryAutocomplete from '@/components/CategoryAutocomplete';
 
 interface EditServiceModalProps {
 	isOpen: boolean;
@@ -331,45 +332,23 @@ export default function EditServiceModal({
 							>
 								{t('owner.services.categoryLabel')}
 							</label>
-							<Select
-								key={`service-category-${service?.id || 'new'}-${formData.serviceCategoryId}`}
+							<CategoryAutocomplete
 								value={
 									formData.serviceCategoryId > 0 &&
 									categories.some((c) => c.id === formData.serviceCategoryId)
-										? formData.serviceCategoryId.toString()
+										? formData.serviceCategoryId
 										: undefined
 								}
-								onValueChange={(value) => {
+								onChange={(categoryId) => {
 									setFormData((prev) => ({
 										...prev,
-										serviceCategoryId: Number(value),
+										serviceCategoryId: categoryId || 0,
 										serviceSubcategoryId: 0,
 									}));
 								}}
-							>
-								<SelectTrigger className="w-full border border-gray-300 focus:ring-2 focus:ring-[#ff5b5b] focus:border-transparent text-gray-900 text-sm">
-									<SelectValue placeholder="Select a category" />
-								</SelectTrigger>
-								<SelectContent className="bg-white border border-gray-300 shadow-lg rounded-md max-h-[280px] overflow-y-auto">
-									{categories.map((category) => {
-										const name =
-											language === 'ru'
-												? category.name_ru || category.name_en
-												: language === 'vi'
-													? category.name_vn || category.name_en
-													: category.name_en;
-										return (
-											<SelectItem
-												key={category.id}
-												value={category.id.toString()}
-												className="bg-white hover:bg-gray-50 focus:bg-gray-50 text-gray-900 cursor-pointer text-sm"
-											>
-												{name}
-											</SelectItem>
-										);
-									})}
-								</SelectContent>
-							</Select>
+								categories={categories}
+								placeholder={t('owner.services.selectCategory')}
+							/>
 						</div>
 
 						{formData.serviceCategoryId > 0 && subcategories.length > 0 && (

@@ -43,6 +43,7 @@
 	"serviceNameLabel": "Service Name",
 	"descriptionLabel": "Description",
 	"categoryLabel": "Category",
+	"selectCategory": "Select a category",
 	"serviceGroupLabel": "Service Group (optional)",
 	"serviceGroupHint": "Use groups to structure your services on the salon page.",
 	"durationLabel": "Duration (minutes)",
@@ -56,5 +57,10 @@
 	"addServiceGroup": "Add Service Group",
 	"addServiceGroupHelp": "Create a group to organize your services (e.g., \"Hair services\", \"Nails\").",
 	"groupName": "Group name",
-	"create": "Create"
+	"create": "Create",
+	"manageGroups": "Add/Delete Group",
+	"manageGroupsTitle": "Manage Service Groups",
+	"deleteGroup": "Delete Group",
+	"areYouSureDeleteGroup": "Are you sure you want to delete this group? All services in this group will be ungrouped.",
+	"noGroupsYet": "No groups yet. Create your first group to organize your services."
 }

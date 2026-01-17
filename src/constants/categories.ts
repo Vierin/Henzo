@@ -1,8 +1,11 @@
+import salonCategoriesData from './salonCategories.json';
+
 export interface Category {
 	id: number;
 	name: string;
 	slug: string;
 	description?: string;
+	descriptionTranslationKey?: string;
 }
 
 export interface PopularSearch {
@@ -10,46 +13,8 @@ export interface PopularSearch {
 	categorySlug: string;
 }
 
-export const STATIC_CATEGORIES: Category[] = [
-	{
-		id: 1,
-		name: 'Hair & Barber',
-		slug: 'hair-barber',
-		description:
-			'Professional hair styling, cutting, coloring, and barber services',
-	},
-	{
-		id: 2,
-		name: 'Tattoo & Piercing',
-		slug: 'tattoo-piercing',
-		description: 'Tattoo and body piercing services',
-	},
-	{
-		id: 3,
-		name: 'Massage & Spa',
-		slug: 'massage-spa',
-		description: 'Relaxing massages, spa treatments, and wellness services',
-	},
-	{
-		id: 4,
-		name: 'Manicure & Pedicure',
-		slug: 'manicure-pedicure',
-		description: 'Nail care, manicures, pedicures, and nail art services',
-	},
-	{
-		id: 5,
-		name: 'Cosmetic Medicine',
-		slug: 'cosmetic-medicine',
-		description:
-			'Medical aesthetic treatments, botox, fillers, and cosmetic procedures',
-	},
-	{
-		id: 6,
-		name: 'Other Services',
-		slug: 'other-services',
-		description: 'Additional beauty and wellness services',
-	},
-];
+// Static categories loaded from JSON - single source of truth
+export const STATIC_CATEGORIES: Category[] = salonCategoriesData as Category[];
 
 // Popular search terms mapped to category slugs
 export const POPULAR_SEARCHES: PopularSearch[] = [
@@ -64,10 +29,6 @@ export const POPULAR_SEARCHES: PopularSearch[] = [
 	{
 		term: 'Massage',
 		categorySlug: 'massage-spa',
-	},
-	{
-		term: 'Facial',
-		categorySlug: 'cosmetic-medicine',
 	},
 	{
 		term: 'Hair Coloring',

@@ -62,7 +62,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
 		'tattoo-piercing',
 		'massage-spa',
 		'manicure-pedicure',
-		'cosmetic-medicine',
+		'brows-lashes',
 		'other-services',
 	].flatMap((slug) =>
 		locales.map((locale) => ({

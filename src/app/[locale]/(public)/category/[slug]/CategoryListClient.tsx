@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { useSalonsWithServices } from '@/hooks/useSalons';
+import { useSalonSearch } from '@/hooks/useSalonSearch';
 import LoadingSpinner from '@/components/LoadingSpinner';
 import ErrorDisplay from '@/components/ErrorDisplay';
 import SalonCard from '@/components/SalonCard';
@@ -42,7 +42,22 @@ export default function CategoryListClient({
 		(ServiceResponseDto & { salonId: string; salonName: string }) | null
 	>(null);
 
-	const { data: salons, isLoading: loading, error } = useSalonsWithServices();
+	// Use searchSalons API with category slug filter for server-side filtering
+	const {
+		data: searchData,
+		isLoading: loading,
+		error,
+	} = useSalonSearch({
+		page: 1,
+		limit: 100, // Load enough salons for category page
+		category: category.slug, // Filter by main category slug (e.g., "hair-barber")
+		// Only pass sortBy to backend if it's supported server-side
+		// 'services' sorting is done client-side
+		sortBy: sortBy === 'services' ? undefined : sortBy,
+	});
+
+	// Extract salons from search response
+	const salons = (searchData as any)?.data || [];
 
 	// Get translated category name
 	const translatedName = getCategoryTranslatedName(category, t);
@@ -66,39 +81,20 @@ export default function CategoryListClient({
 		{ value: 'services', label: t.salon.sortMostServices },
 	];
 
-	// Filter and sort salons by category
-	const filteredSalons = (salons || [])
-		.filter((salon: Salon) => {
-			// Only show salons that have at least one service
-			if (!salon.services || salon.services.length === 0) {
-				return false;
-			}
-
-			// Filter by categoryIds if available, otherwise fallback to keyword matching
-			if (salon.categoryIds && salon.categoryIds.length > 0) {
-				return salon.categoryIds.includes(category.id);
-			}
-
-			// Fallback: filter by salon name containing category keywords
-			const categoryKeywords = translatedName.toLowerCase().split(' ');
-			return categoryKeywords.some(
-				(keyword: string) =>
-					salon.name.toLowerCase().includes(keyword) ||
-					salon.description?.toLowerCase().includes(keyword)
-			);
-		})
-		.sort((a: Salon, b: Salon) => {
-			switch (sortBy) {
-				case 'name':
-					return a.name.localeCompare(b.name);
-				case 'name-desc':
-					return b.name.localeCompare(a.name);
-				case 'services':
-					return (b.services?.length || 0) - (a.services?.length || 0);
-				default:
-					return 0;
-			}
-		});
+	// Salons are already filtered by main_category_id on the server
+	// Just apply client-side sorting
+	const sortedSalons = [...(salons || [])].sort((a: Salon, b: Salon) => {
+		switch (sortBy) {
+			case 'name':
+				return a.name.localeCompare(b.name);
+			case 'name-desc':
+				return b.name.localeCompare(a.name);
+			case 'services':
+				return (b.services?.length || 0) - (a.services?.length || 0);
+			default:
+				return 0;
+		}
+	});
 
 	if (loading) {
 		return (
@@ -128,7 +124,7 @@ export default function CategoryListClient({
 						{/* Category Header with Sort */}
 						<div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 sm:mb-8">
 							<h1 className="text-xl sm:text-2xl font-bold text-gray-900">
-								{translatedName} ({filteredSalons.length})
+								{translatedName} ({sortedSalons.length})
 							</h1>
 							<div className="flex gap-2 sm:gap-3">
 								{/* Sort Dropdown */}
@@ -171,8 +167,8 @@ export default function CategoryListClient({
 
 						{/* Salon Cards */}
 						<div className="space-y-4 sm:space-y-6">
-							{filteredSalons.length > 0 ? (
-								filteredSalons.map((salon: Salon) => (
+							{sortedSalons.length > 0 ? (
+								sortedSalons.map((salon: Salon) => (
 									<SalonCard
 										key={salon.id}
 										salon={salon}

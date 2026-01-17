@@ -25,7 +25,11 @@ export async function generateMetadata({
 	}
 
 	const title = `${category.name} Salons & Services | Henzo`;
-	const description = `Find the best ${category.name.toLowerCase()} salons near you. ${category.description || `Professional ${category.name.toLowerCase()} services and treatments.`} Book appointments online with trusted reviews and flexible scheduling.`;
+	// Use descriptionTranslationKey if available, otherwise fallback to default
+	const categoryDescription = category.descriptionTranslationKey
+		? `Professional ${category.name.toLowerCase()} services and treatments.`
+		: `Professional ${category.name.toLowerCase()} services and treatments.`;
+	const description = `Find the best ${category.name.toLowerCase()} salons near you. ${categoryDescription} Book appointments online with trusted reviews and flexible scheduling.`;
 
 	return {
 		title,
@@ -102,9 +106,15 @@ export default async function CategoryPage({ params }: CategoryPageProps) {
 					</div>
 				}
 			>
-				<CategoryListClient category={category} translatedName={translatedName} />
+				<CategoryListClient
+					category={category}
+					translatedName={translatedName}
+				/>
 			</Suspense>
-			<CategoryStructuredData category={category} translatedName={translatedName} />
+			<CategoryStructuredData
+				category={category}
+				translatedName={translatedName}
+			/>
 		</>
 	);
 }
