@@ -281,6 +281,21 @@ export default function NewServiceClient() {
 		(group: any) => group.id === formData.serviceGroupId
 	);
 
+	// Helper function to get localized category name
+	const getLocalizedCategoryName = (category: ServiceCategory | undefined) => {
+		if (!category) return '';
+		switch (currentLang) {
+			case 'vi':
+				return category.name_vn || category.name_en || '';
+			case 'ru':
+				return category.name_ru || category.name_en || '';
+			case 'en':
+				return category.name_en || '';
+			default:
+				return category.name_en || '';
+		}
+	};
+
 	// Helper function to get localized group name
 	const getLocalizedGroupName = (group: any) => {
 		if (!group) return '';
@@ -439,7 +454,7 @@ export default function NewServiceClient() {
 							<div className="bg-gray-50 rounded-md p-3 border border-gray-200">
 								<p className="text-gray-900">
 									{selectedCategory
-										? getCategoryTranslatedName(selectedCategory, t)
+										? getLocalizedCategoryName(selectedCategory)
 										: t('owner.servicesNew.notSelected')}
 								</p>
 							</div>
