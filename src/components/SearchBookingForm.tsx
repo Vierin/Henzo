@@ -212,7 +212,7 @@ export default function SearchBookingForm({
 
 	return (
 		<div
-			className={`bg-white rounded-xl p-0 pt-6 md:p-6 shadow-lg max-w-[460px] ${className}`}
+			className={`bg-white rounded-xl p-0 pt-6 md:p-6 shadow-lg w-[420px] max-w-[460px] ${className}`}
 			role="search"
 			aria-label="Appointment booking form"
 		>

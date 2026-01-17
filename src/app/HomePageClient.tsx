@@ -10,6 +10,7 @@ import CategoriesNavigation from '@/components/CategoriesNavigation';
 import { useTranslation } from '@/contexts/LanguageContext';
 import Image from 'next/image';
 import Link from 'next/link';
+import { Clock4, Timer } from 'lucide-react';
 
 interface HomePageClientProps {
 	initialDictionary?: any; // Переводы, загруженные на сервере
@@ -94,7 +95,7 @@ export default function HomePageClient({ initialDictionary }: HomePageClientProp
 						alt="Hero Image"
 						width={1000}
 						height={1000}
-						className="absolute top-0 left-0 w-full h-full object-cover opacity-30"
+						className="absolute top-0 left-0 w-full h-full object-cover"
 					/>
 
 					<div className="mx-auto max-w-7xl w-full relative z-10">
@@ -102,46 +103,56 @@ export default function HomePageClient({ initialDictionary }: HomePageClientProp
 							{/* Right Section - Image and Slogan (First on mobile, second on desktop) */}
 							<div className="relative order-1 lg:order-2 w-full max-w-md lg:max-w-none">
 								{/* Slogan */}
-								<div className="lg:absolute lg:left-0 lg:top-1/2 lg:transform lg:-translate-y-1/2 z-10 text-center lg:text-left">
+								<div className="relative z-10 mx-auto text-center lg:text-left w-[fit-content]">
 									<h1
-										className="text-3xl sm:text-4xl lg:text-5xl font-bold text-white leading-tight"
+										className="text-3xl sm:text-4xl lg:text-5xl font-bold text-black leading-tight"
 										dangerouslySetInnerHTML={{
 											__html: t('homepage.heroTitle'),
 										}}
 									/>
-									<p className="text-base sm:text-lg text-muted-foreground mt-4 max-w-md mx-auto lg:mx-0">
+									<p className="text-base sm:text-lg leading-[1.2] text-black/70 mt-4 max-w-md mx-auto lg:mx-0">
 										{t('homepage.heroSubtitle')}
 									</p>
 
 									{/* Features Stats */}
 									<div className="flex flex-wrap items-center justify-center lg:justify-start gap-4 sm:gap-8 mt-6 sm:mt-8">
-										<div className="">
-											<p className="text-2xl sm:text-3xl font-bold text-primary">
+										<div className="flex items-center gap-2">
+											<div>
+												<Clock4 className="w-8 h-8 text-primary" />
+											</div>
+											<div className='leading-[1.2]'>
+												<p className="text-2xl font-bold text-primary flex items-center gap-1">
 												24/7
-											</p>
-											<p className="text-xs sm:text-sm text-muted-foreground">
-												{t('homepage.onlineBooking')}
-											</p>
+												</p>
+												<p className="text-xs sm:text-sm text-black/70 font-medium">
+													{t('homepage.onlineBooking')}
+												</p>
+											</div>
+											
 										</div>
 										<div className="w-px h-8 sm:h-10 bg-gray-300"></div>
-										<div className="">
-											<p className="text-2xl sm:text-3xl font-bold text-primary">
-												5
-												<span className="text-lg sm:text-xl relative left-1">
-													{t('homepage.minutesShort')}
-												</span>
-											</p>
-											<p className="text-xs sm:text-sm text-muted-foreground">
-												{t('homepage.toBook')}
-											</p>
+										<div className="flex items-center gap-2">
+									    <div>
+													<Timer className="w-8 h-8 text-primary" />
+												</div>
+											<div className="leading-[1]">
+												<p className="text-xs sm:text-sm text-black/70">
+													{t('homepage.toBook')}
+												</p>
+												<p className="text-2xl font-bold text-primary flex items-center gap-1 leading-[1]">
+													5 <span className="text-lg relative">
+														{t('homepage.minutesShort')}
+													</span>
+												</p>
+											</div>
 										</div>
 										<div className="w-px h-8 sm:h-10 bg-gray-300"></div>
-										<div className="">
+										<div className="leading-[1.2]">
+											<p className="text-xs sm:text-sm text-black/70">
+												{t('homepage.booking')}
+											</p>
 											<p className="text-2xl sm:text-3xl font-bold text-primary">
 												{t('homepage.free')}
-											</p>
-											<p className="text-xs sm:text-sm text-muted-foreground">
-												{t('homepage.booking')}
 											</p>
 										</div>
 									</div>
@@ -149,7 +160,7 @@ export default function HomePageClient({ initialDictionary }: HomePageClientProp
 							</div>
 
 							{/* Left Panel - Search/Booking Form (Second on mobile, first on desktop) */}
-							<div className="order-2 lg:order-1 w-full max-w-md lg:max-w-none">
+							<div className="order-2 lg:order-1 w-full max-w-md lg:max-w-none flex justify-center">
 								{/* Mobile: Compact trigger */}
 								<div className="md:hidden">
 									<MobileSearchTrigger />
