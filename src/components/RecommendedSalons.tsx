@@ -100,39 +100,7 @@ export default function RecommendedSalons() {
 		return getCategoryTranslatedName(category, t);
 	};
 
-	// Helper function to get salon categories
-	const getSalonCategories = (
-		salon: Salon
-	): { firstCategory: string | null; additionalCount: number } => {
-		// Try multiple ways to get categoryIds
-		const categoryIds = (salon as any).categoryIds || salon.categoryIds || [];
-
-		if (categoryIds.length === 0) {
-			return { firstCategory: null, additionalCount: 0 };
-		}
-
-		// Filter out invalid category IDs and get valid ones
-		const validCategoryIds = categoryIds.filter((id: number) => {
-			const category = getCategoryById(categories, id);
-			return !!category;
-		});
-
-		if (validCategoryIds.length === 0) {
-			return { firstCategory: null, additionalCount: 0 };
-		}
-
-		const firstCategoryName = getCategoryName(validCategoryIds[0]);
-		if (!firstCategoryName) {
-			return { firstCategory: null, additionalCount: 0 };
-		}
-
-		const additionalCount = validCategoryIds.length - 1;
-
-		return {
-			firstCategory: firstCategoryName,
-			additionalCount,
-		};
-	};
+ 
 
 	return (
 		<section
@@ -144,9 +112,6 @@ export default function RecommendedSalons() {
 					<h2 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-3 sm:mb-4">
 						{t('homepage.topRatedTitle') || 'Top Rated Salons'}
 					</h2>
-					<p className="text-base sm:text-lg text-gray-600 max-w-2xl mx-auto">
-						{t('homepage.topRatedSubtitle') || 'Popular choices near you'}
-					</p>
 				</header>
 
 				{loading && salons.length === 0 ? (
@@ -273,32 +238,11 @@ export default function RecommendedSalons() {
 												</h3>
 											</div>
 
-											{/* Categories */}
-											{(() => {
-												const { firstCategory, additionalCount } =
-													getSalonCategories(salon);
-												if (!firstCategory) return null;
-
-												return (
-													<div className="flex items-center gap-2 mb-6">
-														<span className="text-sm text-gray-600">
-															{firstCategory}
-														</span>
-														{additionalCount > 0 && (
-															<span className="flex items-center justify-center w-6 h-6 rounded-full bg-gray-100 text-gray-600 text-xs font-medium">
-																+{additionalCount}
-															</span>
-														)}
-													</div>
-												);
-											})()}
+									 
 
 											{/* Footer: View Details */}
-											<div className="flex items-start justify-end">
-												<span className="text-red-500 flex gap-1 items-center text-sm font-medium hover:text-red-600 transition-colors">
+											<div className="text-white bg-[#ff5b5b] px-4 py-2 rounded-full flex items-center text-sm font-bold hover:bg-[#e04a4a] transition-colors w-fit ml-auto">
 													{t.salon.viewDetails}
-													<ChevronRight className="w-4 h-4" />
-												</span>
 											</div>
 										</div>
 									</Link>
@@ -380,26 +324,6 @@ export default function RecommendedSalons() {
 													)}
 												</div>
 
-												{/* Categories */}
-												{(() => {
-													const { firstCategory, additionalCount } =
-														getSalonCategories(salon);
-													if (!firstCategory) return null;
-
-													return (
-														<div className="flex items-center gap-2 mb-3">
-															<span className="text-xs text-gray-600">
-																{firstCategory}
-															</span>
-															{additionalCount > 0 && (
-																<span className="flex items-center justify-center w-5 h-5 rounded-full bg-gray-100 text-gray-600 text-xs font-medium">
-																	+{additionalCount}
-																</span>
-															)}
-														</div>
-													);
-												})()}
-
 												{/* Footer: Reviews and View Details */}
 												<div className="flex items-center justify-between">
 													{/* Mobile: Show only star + rating if reviews exist, Desktop: Show review count */}
@@ -424,7 +348,6 @@ export default function RecommendedSalons() {
 													)}
 													<span className="text-red-500 flex gap-1 items-center text-sm font-medium hover:text-red-600 transition-colors">
 														{t.salon.viewDetails}
-														<ChevronRight className="w-4 h-4" />
 													</span>
 												</div>
 											</div>
@@ -440,7 +363,7 @@ export default function RecommendedSalons() {
 			<div className="mx-auto max-w-6xl px-6 mt-6 sm:mt-8 text-center">
 				<Link
 					href="/salons"
-					className="inline-flex items-center gap-2 text-[#ff5b5b] hover:text-[#e04a4a] font-medium"
+					className="inline-flex items-center border border-[#ff5b5b] rounded-full px-4 py-2 gap-2 text-[#ff5b5b] hover:text-[#e04a4a] font-medium"
 				>
 					{t('homepage.seeAllSalons')}
 					<ChevronRight className="w-4 h-4" />
