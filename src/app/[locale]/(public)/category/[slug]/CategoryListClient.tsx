@@ -84,17 +84,17 @@ export default function CategoryListClient({
 	// Salons are already filtered by main_category_id on the server
 	// Just apply client-side sorting
 	const sortedSalons = [...(salons || [])].sort((a: Salon, b: Salon) => {
-		switch (sortBy) {
-			case 'name':
-				return a.name.localeCompare(b.name);
-			case 'name-desc':
-				return b.name.localeCompare(a.name);
-			case 'services':
-				return (b.services?.length || 0) - (a.services?.length || 0);
-			default:
-				return 0;
-		}
-	});
+			switch (sortBy) {
+				case 'name':
+					return a.name.localeCompare(b.name);
+				case 'name-desc':
+					return b.name.localeCompare(a.name);
+				case 'services':
+					return (b.services?.length || 0) - (a.services?.length || 0);
+				default:
+					return 0;
+			}
+		});
 
 	if (loading) {
 		return (

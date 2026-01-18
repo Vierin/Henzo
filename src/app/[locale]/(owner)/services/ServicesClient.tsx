@@ -316,9 +316,9 @@ export default function ServicesClient() {
 
 	// Show UI immediately, data loads in parallel
 	return (
-		<div className="px-0 md:px-4 max-w-7xl mx-auto">
+		<div className="px-4 md:px-8 py-6 w-full max-w-7xl mx-auto">
 			<div className="mb-8">
-				<div className="flex items-center justify-between">
+				<div className="flex flex-col sm:flex-row sm:items-center justify-between">
 					<div>
 						<h1 className="text-2xl md:text-3xl font-bold text-black md:mb-2">
 							{t('owner.services.title')}
@@ -327,7 +327,7 @@ export default function ServicesClient() {
 							{t('owner.services.subtitle')}
 						</p>
 					</div>
-					<div className="flex items-center gap-2">
+					<div className="flex items-center gap-2 mt-3 sm:mt-0">
 						<button
 							onClick={() => setIsManageGroupsModalOpen(true)}
 							className="inline-flex items-center gap-2 rounded-full bg-white border border-gray-300 !text-gray-900 px-4 py-2 text-sm shadow-sm hover:opacity-95 whitespace-nowrap"

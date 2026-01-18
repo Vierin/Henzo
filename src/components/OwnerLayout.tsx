@@ -68,7 +68,7 @@ export default function OwnerLayout({ children }: OwnerLayoutProps) {
 					)}
 
 					{/* Main Content */}
-					<main className="p-4 md:p-8 pb-0 w-full overflow-x-hidden md:pl-64 flex flex-col min-h-screen bg-[#F2F5F7]">
+					<main className="py-2 md:py-8 pb-0 w-full overflow-x-hidden md:pl-64 flex flex-col min-h-screen bg-[#F2F5F7]">
 						<div className="flex-1 mb-5 sm:mb-0">{children}</div>
 						<div className="pt-4 md:pt-8 mt-auto">
 							<p className="text-gray-400 text-center text-sm mb-0">{t('footer.allRightsReserved')}</p>

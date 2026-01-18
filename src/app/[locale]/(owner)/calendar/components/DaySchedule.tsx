@@ -1004,10 +1004,10 @@ export default function DaySchedule({
 									<button
 										key={staff.id}
 										onClick={() => toggleStaffSelection(staff.id)}
-										className={`inline-flex items-center gap-1.5 px-2.5 md:px-3 py-1.5 rounded-full text-xs md:text-sm font-medium transition-all focus:outline-none focus:ring-2 focus:ring-[#ea4b4b] focus:ring-offset-2 flex-shrink-0 whitespace-nowrap ${
+										className={`inline-flex items-center gap-1.5 px-2.5 md:px-3 py-1.5 rounded-full text-xs md:text-sm font-medium transition-all flex-shrink-0 whitespace-nowrap ${
 											isSelected
 												? 'bg-[#ff5b5b] !text-white hover:bg-[#e04a4a]'
-												: 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+												: 'border-[#ea4b4b] border-1 hover:bg-gray-200'
 										}`}
 									>
 										<span>{staff.name}</span>
@@ -1020,9 +1020,9 @@ export default function DaySchedule({
 							{!isMobile && selectedStaffIds.length > 0 && (
 								<button
 									onClick={clearAllFilters}
-									className="text-xs md:text-sm text-gray-500 hover:text-gray-700 underline flex-shrink-0 whitespace-nowrap"
+									className="text-xs md:text-sm flex items-center gap-1 text-gray-500 hover:text-gray-700 font-medium flex-shrink-0 whitespace-nowrap underline"
 								>
-									Clear all
+									{t('owner.calendar.clearAll')} <X className="w-3 h-3 md:w-4 md:h-4" />
 								</button>
 							)}
 						</div>

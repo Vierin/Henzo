@@ -36,7 +36,7 @@ export default function UpcomingBookingsList({
 				);
 			case 'CONFIRMED':
 				return (
-					<span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+					<span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-700">
 						{t('owner.dashboard.confirmed')}
 					</span>
 				);
@@ -153,8 +153,8 @@ export default function UpcomingBookingsList({
 	};
 
 	return (
-		<div className="bg-white rounded-xl border border-[#f1d9d7] overflow-hidden">
-			<div className="p-4 sm:p-6 border-b border-[#f1d9d7]">
+		<div className="bg-white rounded-xl border border-gray-200 overflow-hidden shadow-sm">
+			<div className="p-4 sm:p-6 border-b border-gray-200">
 				<h2 className="text-lg sm:text-xl font-semibold text-gray-900">
 					{t('owner.dashboard.upcomingBookings')}
 				</h2>
@@ -163,7 +163,7 @@ export default function UpcomingBookingsList({
 			{/* Desktop Table View */}
 			<div className="hidden lg:block">
 				<div
-					className="grid grid-cols-7 px-6 py-3 text-[13px] text-gray-700 bg-[#fff2f1] font-semibold"
+					className="grid grid-cols-7 px-6 py-3 text-[13px] text-gray-700 bg-gray-50 font-semibold"
 					role="rowgroup"
 				>
 					<div role="columnheader">{t('owner.dashboard.client')}</div>
@@ -177,7 +177,7 @@ export default function UpcomingBookingsList({
 					<div role="columnheader">{t('owner.dashboard.actions')}</div>
 				</div>
 
-				<div className="divide-y divide-[#f1d9d7]" role="list">
+				<div className="divide-y divide-gray-200" role="list">
 					{loading ? (
 						<div
 							className="px-6 py-8 text-center"
@@ -313,7 +313,7 @@ export default function UpcomingBookingsList({
 						</p>
 					</div>
 				) : (
-					<div className="divide-y divide-[#f1d9d7]" role="list">
+					<div className="divide-y divide-gray-200" role="list">
 						{bookings.map((booking, index) => (
 							<div
 								key={booking.id}

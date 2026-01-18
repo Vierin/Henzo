@@ -205,7 +205,8 @@ export default function OwnerDashboardClient() {
 	}
 
 	return (
-		<main className="space-y-6 px-0 md:px-4 max-w-7xl mx-auto">
+		<div className="px-4 md:px-8 py-6 w-full">
+			<div className="space-y-6 max-w-7xl mx-auto">
 			{/* Photo Warning Banner */}
 			{!hasPhotos && showPhotoWarning && (
 				<div className="w-full bg-amber-50 border border-amber-200 rounded-lg p-4 flex items-start gap-3">
@@ -289,7 +290,7 @@ export default function OwnerDashboardClient() {
 							setEditingBooking(null);
 							setIsBookingModalOpen(true);
 						}}
-						className="inline-flex items-center justify-center gap-2 rounded-full bg-[#ea4b4b] text-white px-4 py-2 text-sm shadow-sm hover:opacity-95 transition-opacity focus:outline-none focus:ring-2 focus:ring-[#ea4b4b] focus:ring-offset-2 w-full sm:w-auto"
+						className="inline-flex items-center justify-center gap-2 rounded-full bg-[#ea4b4b] !text-white px-4 py-2 text-sm shadow-sm hover:opacity-95 transition-opacity focus:outline-none focus:ring-2 focus:ring-[#ea4b4b] focus:ring-offset-2 w-full sm:w-auto"
 					>
 						<span className="text-lg leading-none">＋</span>
 						{t('owner.dashboard.newAppointment')}
@@ -372,6 +373,7 @@ export default function OwnerDashboardClient() {
 				<TopServicesCard bookings={bookings} />
 				<AdditionalMetrics bookings={bookings} />
 			</div>
+			</div>
 
 			{/* Booking Modal */}
 			<BookingModal
@@ -384,6 +386,6 @@ export default function OwnerDashboardClient() {
 				editingBooking={editingBooking}
 				onBookingUpdated={handleBookingUpdated}
 			/>
-		</main>
+		</div>
 	);
 }

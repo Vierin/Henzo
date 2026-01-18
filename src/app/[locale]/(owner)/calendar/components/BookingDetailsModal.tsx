@@ -31,37 +31,37 @@ export default function BookingDetailsModal({
 		switch (status) {
 			case 'PENDING':
 				return (
-					<span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+					<span className="inline-flex items-center px-2 py-0.5 sm:px-3 sm:py-1 rounded-full text-xs sm:text-md font-medium bg-yellow-100 text-yellow-800">
 						{t('owner.calendar.pending')}
 					</span>
 				);
 			case 'CONFIRMED':
 				return (
-					<span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+					<span className="inline-flex items-center px-2 py-0.5 sm:px-3 sm:py-1 rounded-full text-xs sm:text-md font-medium bg-green-100 text-green-800">
 						{t('owner.calendar.confirmed')}
 					</span>
 				);
 			case 'COMPLETED':
 				return (
-					<span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-100 dark:text-blue-800">
+					<span className="inline-flex items-center px-2 py-0.5 sm:px-3 sm:py-1 rounded-full text-xs sm:text-md font-medium bg-blue-100 text-blue-800 dark:bg-blue-100 dark:text-blue-800">
 						{t('owner.calendar.completed')}
 					</span>
 				);
 			case 'CANCELED':
 				return (
-					<span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
+					<span className="inline-flex items-center px-2 py-0.5 sm:px-3 sm:py-1 rounded-full text-xs sm:text-md font-medium bg-red-100 text-red-800">
 						{t('owner.calendar.cancelled')}
 					</span>
 				);
 			case 'NOSHOW':
 				return (
-					<span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-orange-100 text-orange-800">
+					<span className="inline-flex items-center px-2 py-0.5 sm:px-3 sm:py-1 rounded-full text-xs sm:text-md font-medium bg-orange-100 text-orange-800">
 						{t('owner.calendar.noShow')}
 					</span>
 				);
 			default:
 				return (
-					<span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+					<span className="inline-flex items-center px-2 py-0.5 sm:px-3 sm:py-1 rounded-full text-xs sm:text-md font-medium bg-gray-100 text-gray-800">
 						{status}
 					</span>
 				);
@@ -114,8 +114,8 @@ export default function BookingDetailsModal({
 				{/* Content */}
 				<div className="p-4 space-y-4">
 					{/* Status */}
-					<div>
-						<label className="text-xs font-medium text-gray-500 block mb-1">
+					<div className="flex justify-between items-center">
+						<label className="text-xs sm:text-sm font-medium text-gray-500 block">
 							{t('owner.calendar.status')}
 						</label>
 						{getStatusBadge(booking.status)}
@@ -124,18 +124,18 @@ export default function BookingDetailsModal({
 					{/* Date & Time */}
 					<div className="grid grid-cols-2 gap-3">
 						<div>
-							<label className="text-xs font-medium text-gray-500 block mb-1">
+							<label className="text-xs sm:text-sm font-medium text-gray-500 block mb-1">
 								{t('owner.calendar.date')}
 							</label>
-							<p className="text-sm font-semibold text-gray-900">
+							<p className="text-sm sm:text-md font-semibold text-gray-900">
 								{formatDateSafe(booking.time, 'Date not available', language)}
 							</p>
 						</div>
 						<div>
-							<label className="text-xs font-medium text-gray-500 block mb-1">
+							<label className="text-xs sm:text-md font-medium text-gray-500 block mb-1">
 								{t('owner.calendar.time')}
 							</label>
-							<p className="text-sm font-semibold text-gray-900">
+							<p className="text-sm sm:text-md font-semibold text-gray-900">
 								{formatTimeSafe(booking.time, 'Time not available', salonTimezone)}
 							</p>
 						</div>
@@ -143,18 +143,18 @@ export default function BookingDetailsModal({
 
 					{/* Service */}
 					<div>
-						<label className="text-xs font-medium text-gray-500 block mb-1">
+						<label className="text-xs sm:text-sm font-medium text-gray-500 block mb-1">
 							{t('owner.calendar.service')}
 						</label>
-						<p className="text-sm font-semibold text-gray-900">
+						<p className="text-sm sm:text-md font-semibold text-gray-900">
 							{booking.service?.name || t('owner.unknownService')}
 						</p>
 						{booking.service?.description && (
-							<p className="text-xs text-gray-600 mt-1 line-clamp-2">
+							<p className="text-xs sm:text-md text-gray-600 mt-1 line-clamp-2">
 								{booking.service.description}
 							</p>
 						)}
-						<div className="flex items-center gap-3 mt-1 text-xs text-gray-600">
+						<div className="flex items-center gap-3 mt-1 text-xs ms:text-md text-gray-600">
 							{booking.service?.duration && (
 								<span>{booking.service.duration} min</span>
 							)}
@@ -167,29 +167,29 @@ export default function BookingDetailsModal({
 					{/* Client & Staff */}
 					<div className="grid grid-cols-2 gap-3">
 						<div>
-							<label className="text-xs font-medium text-gray-500 block mb-1">
+							<label className="text-xs sm:text-sm font-medium text-gray-500 block mb-1">
 								{t('owner.calendar.client')}
 							</label>
-							<p className="text-sm font-semibold text-gray-900">
+							<p className="text-sm sm:text-md font-semibold text-gray-900">
 								{booking.user?.name ||
 									`${t('owner.calendar.clientId')} ${booking.userId}`}
 							</p>
 							{booking.user?.email && (
-								<p className="text-xs text-gray-600 mt-0.5">
+								<p className="text-xs sm:text-md text-gray-600 mt-0.5">
 									{booking.user.email}
 								</p>
 							)}
 							{booking.user?.phone && (
-								<p className="text-xs text-gray-600">{booking.user.phone}</p>
+								<p className="text-xs sm:text-md text-gray-600">{booking.user.phone}</p>
 							)}
 						</div>
 
 						{booking.staff && (
 							<div>
-								<label className="text-xs font-medium text-gray-500 block mb-1">
+								<label className="text-xs sm:text-sm font-medium text-gray-500 block mb-1">
 									{t('owner.calendar.staffMember')}
 								</label>
-								<p className="text-sm font-semibold text-gray-900">
+								<p className="text-sm sm:text-md font-semibold text-gray-900">
 									{booking.staff.name}
 								</p>
 							</div>
@@ -200,11 +200,11 @@ export default function BookingDetailsModal({
 					{booking.notes && 
 					 !booking.notes.startsWith('Booking for ') && 
 					 !booking.notes.startsWith('Updated booking for ') && (
-						<div>
-							<label className="text-xs font-medium text-gray-500 block mb-1">
+						<div className="flex justify-between items-center">
+							<label className="text-xs sm:text-sm font-medium text-gray-500 block mb-1">
 								{t('owner.calendar.notes')}
 							</label>
-							<p className="text-xs text-gray-700 bg-gray-50 p-2 rounded-lg">
+							<p className="text-xs sm:text-md text-gray-700 bg-gray-50 p-2 rounded-lg">
 								{booking.notes}
 							</p>
 						</div>
@@ -225,7 +225,7 @@ export default function BookingDetailsModal({
 								onEdit(booking);
 								onClose();
 							}}
-							className="px-3 py-1.5 text-xs font-medium text-white bg-[#ff5b5b] rounded-lg hover:bg-[#e04a4a] transition-colors"
+							className="px-3 py-1.5 text-xs font-medium !text-white bg-[#ff5b5b] rounded-lg hover:bg-[#e04a4a] transition-colors"
 						>
 							{t('owner.calendar.edit')}
 						</button>
@@ -238,7 +238,7 @@ export default function BookingDetailsModal({
 									onClose();
 								}
 							}}
-							className="px-3 py-1.5 text-xs font-medium text-white bg-red-600 rounded-lg hover:bg-red-700 transition-colors"
+							className="px-3 py-1.5 text-xs font-medium !text-white bg-red-600 rounded-lg hover:bg-red-700 transition-colors"
 						>
 							{t('owner.calendar.cancel')}
 						</button>

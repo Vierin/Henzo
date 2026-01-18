@@ -490,7 +490,7 @@ export default function CalendarClient() {
 			role="main"
 			aria-labelledby="calendar-heading"
 		>
-			<div className="w-full max-w-7xl mx-auto px-0 md:px-4">
+			<div className="px-4 md:px-8 py-6 w-full max-w-7xl mx-auto">
 				{/* Error Display - show at top if error */}
 				{error && hasSalon && (
 					<div className="mb-6">
@@ -502,7 +502,7 @@ export default function CalendarClient() {
 					</div>
 				)}
 
-				<div className="mb-6 md:mb-8">
+				<div className="mb-2 md:mb-3">
 					{/* Header */}
 					<div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4">
 						<h1

@@ -332,7 +332,7 @@ export default function NewServiceClient() {
 	// Step 2: Confirmation screen
 	if (step === 2) {
 		return (
-			<div className="px-0 md:px-4 max-w-7xl mx-auto">
+			<div className="px-4 md:px-8 py-6 w-full max-w-7xl mx-auto">
 				<div className="mb-8">
 					<button
 						onClick={() => setStep(1)}
@@ -527,7 +527,7 @@ export default function NewServiceClient() {
 
 	// Step 1: Form
 	return (
-		<div className="px-0 md:px-4 max-w-7xl mx-auto">
+		<div className="px-4 md:px-8 py-6 w-full max-w-7xl mx-auto">
 			<div className="mb-8">
 				<button
 					onClick={() => router.back()}

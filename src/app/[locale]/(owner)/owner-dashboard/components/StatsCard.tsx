@@ -20,27 +20,27 @@ export default function StatsCard({
 	trend, 
 }: StatsCardProps) { 
 	return (
-		<div className="bg-white rounded-xl border border-[#f1d9d7] p-4 sm:p-6 hover:shadow-md transition-shadow">
-			<div className="flex items-start flex-wrap justify-between">
+		<div className="bg-white rounded-xl border border-gray-200 p-4 sm:px-6 sm:py-4 hover:shadow-sm transition-shadow">
+			<div className="flex items-start flex-wrap justify-between relative">
 				<div className="flex-1 min-w-0">
-					<p className="text-xs sm:text-sm font-medium text-gray-600 mb-1 truncate">
+					<p className="text-xs sm:text-sm font-medium text-gray-600 mb-4 truncate">
 						{title}
 					</p>
-					<p className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900 mb-1 truncate">
+					<p className="text-xl sm:text-3xl lg:text-4xl font-bold text-gray-900 truncate">
 						{value}
 					</p> 
 				</div>
-				<div className="flex items-center justify-center w-10 h-10 sm:w-12 sm:h-12 rounded-lg bg-[#fff7f6] flex-shrink-0 ml-2">
-					<div className="text-[#ff5b5b] scale-75 sm:scale-100">{icon}</div>
+				<div className="flex items-center justify-center w-10 h-10 sm:w-10 sm:h-10 rounded-lg shadow-md bg-gray-50 flex-shrink-0 ml-2">
+					<div className="text-[#ff5b5b] scale-75 sm:scale-80">{icon}</div>
 				</div>
 
 				{trend && (
-					<div className="flex w-full items-center mt-2">
+					<div className="absolute bottom-0 right-0 items-center mt-2">
 						<div
 							className={`inline-flex items-center gap-1 px-2 py-1 rounded-md text-xs font-medium ${
 								trend.isPositive
-									? 'bg-green-50 text-green-700'
-									: 'bg-red-50 text-red-700'
+									? 'bg-green-50 border border-green-200 text-green-700'
+									: 'bg-red-50 border border-red-200 text-red-700'
 							}`}
 						>
 							<span className="w-4 h-4">

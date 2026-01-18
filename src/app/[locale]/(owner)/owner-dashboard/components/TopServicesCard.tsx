@@ -50,8 +50,8 @@ export default function TopServicesCard({ bookings }: TopServicesCardProps) {
 	}, [bookings]);
 
 	return (
-		<div className="bg-white rounded-xl border border-[#f1d9d7] overflow-hidden">
-			<div className="p-6 border-b border-[#f1d9d7]">
+		<div className="bg-white rounded-xl border border-gray-200 overflow-hidden shadow-sm">
+			<div className="p-6 border-b border-gray-200">
 				<h2 className="text-xl font-semibold text-gray-900">
 					{t('owner.dashboard.topSellingServices')}
 				</h2>
@@ -59,7 +59,7 @@ export default function TopServicesCard({ bookings }: TopServicesCardProps) {
 
 			{/* Table Header */}
 			<div
-				className="grid grid-cols-12 px-3 md:px-6 py-3 text-[13px] text-gray-700 bg-[#fff2f1] font-semibold"
+				className="grid grid-cols-12 px-3 md:px-6 py-3 text-[13px] text-gray-700 bg-gray-50 font-semibold"
 				role="rowgroup"
 			>
 				<div className="col-span-1" role="columnheader">
@@ -77,7 +77,7 @@ export default function TopServicesCard({ bookings }: TopServicesCardProps) {
 			</div>
 
 			{/* Table Body */}
-			<div className="divide-y divide-[#f1d9d7]" role="list">
+			<div className="divide-y divide-gray-200" role="list">
 				{topServices.length === 0 ? (
 					<div className="px-6 py-8 text-center" role="status">
 						<div className="text-gray-400 mb-2" aria-hidden="true">
@@ -91,7 +91,7 @@ export default function TopServicesCard({ bookings }: TopServicesCardProps) {
 					topServices.map((service, index) => (
 						<div
 							key={service.name}
-							className="grid grid-cols-12 px-3 md:px-6 py-3 text-[15px] text-gray-800 hover:bg-[#fffbfa] transition-colors"
+							className="grid grid-cols-12 px-3 md:px-6 py-3 text-[15px] text-gray-800 hover:bg-gray-50 transition-colors"
 							role="listitem"
 						>
 							<div className="col-span-1 flex items-center">

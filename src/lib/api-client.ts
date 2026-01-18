@@ -81,7 +81,7 @@ export class ApiClient {
 			// Handle network errors (CORS, connection refused, etc.)
 			const errorMessage =
 				error.message === 'Failed to fetch' || error.message === 'fetch failed'
-					? `Unable to connect to the server. Please check if the backend is running at ${this.baseUrl}`
+					? `Unable to connect to the server.`
 					: error.message || 'Network error occurred';
 			
 			// Only log in development to avoid cluttering production logs

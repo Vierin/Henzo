@@ -119,5 +119,6 @@
 	"page": "Page",
 	"previous": "Previous",
 	"next": "Next",
-	"goToPage": "Go to page"
+	"goToPage": "Go to page",
+	"clearAll": "Clear All"
 }
