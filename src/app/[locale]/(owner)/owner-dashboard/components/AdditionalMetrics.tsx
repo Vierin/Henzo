@@ -106,7 +106,7 @@ export default function AdditionalMetrics({
 		{
 			title: t('owner.dashboard.repeatClients'),
 			value: `${loyalClientRate}%`,
-			subtitle: `${loyalClients} ${t('owner.dashboard.of')} ${totalClients} (≥3 визитов)`,
+			subtitle: `${loyalClients} ${t('owner.dashboard.of')} ${totalClients} (≥3 visits)`,
 			icon: <Users className="w-6 h-6" />,
 			color: 'text-blue-600',
 			bgColor: 'bg-blue-50',
@@ -162,10 +162,10 @@ export default function AdditionalMetrics({
 							{metric.title === t('owner.dashboard.repeatClients') &&
 								loyaltyDetails.totalClients > 0 && (
 									<div className="mt-1 text-xs text-gray-400">
-										Среднее: {loyaltyDetails.avgVisitsPerClient} визитов
+										{t('owner.dashboard.averageVisits').replace('{avg}', loyaltyDetails.avgVisitsPerClient)}
 										{loyaltyDetails.potentialLoyalClients > 0 && (
 											<span className="ml-2">
-												• {loyaltyDetails.potentialLoyalClients} с 2 визитами
+												• {t('owner.dashboard.clientsWith2Visits').replace('{count}', loyaltyDetails.potentialLoyalClients.toString())}
 											</span>
 										)}
 									</div>

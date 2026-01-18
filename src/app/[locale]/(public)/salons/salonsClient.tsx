@@ -338,7 +338,10 @@ export default function SalonsClient() {
 										{t('salon.noSalonsFound')}
 									</h3>
 									<p className="text-gray-600">
-										{t('salon.tryAdjustingSearch')}
+										{selectedLocation 
+											? t('common.noSalonsInArea')
+											: t('salon.tryAdjustingSearch')
+										}
 									</p>
 								</div>
 							) : (

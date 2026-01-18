@@ -19,14 +19,14 @@
 	"hero": {
 		"badge": "Miễn phí Beta Testing",
 		"title": "Mất khách hàng do bỏ lỡ cuộc gọi?",
-		"titleHighlight": "Quên cuộc hẹn?",
-		"subtitle": "Tăng doanh thu 15% với đặt lịch trực tuyến 24/7. Nền tảng tất cả trong một cho doanh nghiệp làm đẹp của bạn.",
+		"titleHighlight": "Khách hàng không đến?",
+		"subtitle": "Tăng doanh thu 15% với đặt lịch trực tuyến 24/7. Giảm số lần không đến với nhắc nhở tự động qua email.",
 		"joinBeta": "Tham gia Beta Testing",
 		"signIn": "Đăng nhập",
 		"free": "100% Miễn phí",
-		"freePeriod": "Giai đoạn beta testing",
+		"freePeriod": "3 tháng đầu",
 		"quickStart": "Khởi động nhanh",
-		"quickStartTime": "Hoạt động trong 5 phút"
+		"quickStartTime": "Hoạt động trong 8 phút"
 	},
 	"features": {
 		"badge": "Tính năng",
@@ -55,12 +55,18 @@
 		"title": "Phát triển doanh nghiệp",
 		"titleBreak": "với sự tự tin",
 		"subtitle": "Nền tảng được thiết kế đặc biệt cho ngành làm đẹp. Tham gia beta testing của chúng tôi và nhận quyền truy cập miễn phí.",
-		"benefit1": "Tăng đặt lịch với lịch trình trực tuyến 24/7",
-		"benefit2": "Tiết kiệm 10+ giờ mỗi tuần cho các nhiệm vụ hành chính",
-		"benefit3": "Giảm số lần không đến với nhắc nhở tự động",
-		"benefit4": "Xây dựng lòng trung thành của khách hàng với hệ thống đặt lịch tiện lợi",
-		"benefit5": "Đưa ra quyết định dựa trên dữ liệu với phân tích mạnh mẽ",
-		"benefit6": "Thanh toán diễn ra tại chỗ - không có sự phức tạp của thanh toán trực tuyến"
+		"benefit1": "Tăng đặt lịch",
+		"benefit1Description": "(với lịch trình trực tuyến 24/7)",
+		"benefit2": "Tiết kiệm 10+ giờ mỗi tuần",
+		"benefit2Description": "(cho các nhiệm vụ hành chính)",
+		"benefit3": "Giảm số lần không đến",
+		"benefit3Description": "(với nhắc nhở tự động)",
+		"benefit4": "Xây dựng lòng trung thành của khách hàng",
+		"benefit4Description": "(với hệ thống đặt lịch tiện lợi)",
+		"benefit5": "Đưa ra quyết định dựa trên dữ liệu",
+		"benefit5Description": "(với phân tích mạnh mẽ)",
+		"benefit6": "Thanh toán diễn ra tại chỗ",
+		"benefit6Description": "(không có sự phức tạp của thanh toán trực tuyến)"
 	},
 	"dashboard": {
 		"badge": "Bảng điều khiển",

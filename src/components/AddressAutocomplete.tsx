@@ -541,53 +541,124 @@ export default function AddressAutocomplete({
 			setShowSuggestions(false);
 
 			navigator.geolocation.getCurrentPosition(
-				(position) => {
+				async (position) => {
 					const { latitude, longitude } = position.coords;
-					// Получаем детальный адрес по координатам
-					fetch(
-						`https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&addressdetails=1&zoom=18&accept-language=vi`,
-						{
-							headers: {
-								'Accept-Language': 'vi-VN,vi,en-US,en',
-								'User-Agent': 'Henzo Salon Booking App (hello@henzo.app)',
-							},
+					
+					try {
+						// Get address and country code from backend API
+						const response = await apiClient.get<{ 
+							lat: number; 
+							lon: number; 
+							address: string; 
+							country_code?: string 
+						}>(
+							`/mapbox/reverse-geocode?lat=${latitude}&lon=${longitude}`
+						);
+
+						if (response && response.country_code) {
+							// Check if location is in Vietnam
+							if (response.country_code !== 'VN') {
+								setIsGettingLocation(false);
+								setIsTyping(false);
+								// Show error message
+								alert(t('common.locationOutsideVietnam') || 'We currently only work with salons in Vietnam. Please select a location in Vietnam.');
+								return;
+							}
 						}
-					)
-						.then((response) => response.json())
-						.then((data) => {
-							// Формируем адрес из доступных компонентов
+
+						// Get structured address data from Nominatim for better formatting
+						let formattedAddress = '';
+						try {
+							const nominatimResponse = await fetch(
+								`https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&addressdetails=1&zoom=18&accept-language=vi`,
+								{
+									headers: {
+										'Accept-Language': 'vi-VN,vi,en-US,en',
+										'User-Agent': 'Henzo Salon Booking App (hello@henzo.app)',
+									},
+								}
+							);
+							const nominatimData = await nominatimResponse.json();
+							
+							if (nominatimData && nominatimData.address) {
+								const address = nominatimData.address;
+								const parts = [];
+								
+								// Add district/suburb/neighbourhood
+								if (address.suburb) parts.push(address.suburb);
+								else if (address.neighbourhood) parts.push(address.neighbourhood);
+								else if (address.quarter) parts.push(address.quarter);
+								
+								// Add city/town/village
+								if (address.city) parts.push(address.city);
+								else if (address.town) parts.push(address.town);
+								else if (address.village) parts.push(address.village);
+								
+								// If we have at least one part, use it
+								if (parts.length > 0) {
+									formattedAddress = parts.join(', ');
+								} else {
+									// Fallback to clean full address
+									formattedAddress = cleanAddressFromCountry(response.address);
+								}
+							} else {
+								formattedAddress = cleanAddressFromCountry(response.address);
+							}
+						} catch (nominatimError) {
+							console.error('Error getting structured address:', nominatimError);
+							// Fallback to clean full address
+							formattedAddress = cleanAddressFromCountry(response.address);
+						}
+
+						onChange(formattedAddress);
+						if (onAddressSelect) {
+							onAddressSelect(formattedAddress, latitude, longitude);
+						}
+					} catch (error) {
+						console.error('Error getting address from coordinates:', error);
+						// Try fallback to Nominatim for address (but still check country)
+						try {
+							const nominatimResponse = await fetch(
+								`https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&addressdetails=1&zoom=18&accept-language=vi`,
+								{
+									headers: {
+										'Accept-Language': 'vi-VN,vi,en-US,en',
+										'User-Agent': 'Henzo Salon Booking App (hello@henzo.app)',
+									},
+								}
+							);
+							const data = await nominatimResponse.json();
+							
+							// Check country code
+							if (data.address && data.address.country_code && data.address.country_code !== 'vn') {
+								setIsGettingLocation(false);
+								setIsTyping(false);
+								alert(t('common.locationOutsideVietnam') || 'We currently only work with salons in Vietnam. Please select a location in Vietnam.');
+								return;
+							}
+
+							// Format address from Nominatim response - only district and city
 							const address = data.address;
 							let formattedAddress = '';
 
-							// Собираем адрес из компонентов (улица, город, район)
 							if (address) {
 								const parts = [];
-
-								// Добавляем улицу/дорогу
-								if (address.road) parts.push(address.road);
-								if (address.house_number) parts.push(address.house_number);
-
-								// Добавляем район/квартал
+								
+								// Add district/suburb/neighbourhood
 								if (address.suburb) parts.push(address.suburb);
-								else if (address.neighbourhood)
-									parts.push(address.neighbourhood);
-
-								// Добавляем город
+								else if (address.neighbourhood) parts.push(address.neighbourhood);
+								else if (address.quarter) parts.push(address.quarter);
+								
+								// Add city/town/village
 								if (address.city) parts.push(address.city);
 								else if (address.town) parts.push(address.town);
 								else if (address.village) parts.push(address.village);
 
-								// Добавляем район/провинцию
-								if (address.state) parts.push(address.state);
-
 								formattedAddress = parts.join(', ');
-
-								// Если не удалось собрать адрес из компонентов, используем display_name
 								if (!formattedAddress || formattedAddress.trim() === '') {
 									formattedAddress = cleanAddressFromCountry(data.display_name);
 								}
 							} else {
-								// Fallback - используем display_name
 								formattedAddress = cleanAddressFromCountry(data.display_name);
 							}
 
@@ -595,29 +666,22 @@ export default function AddressAutocomplete({
 							if (onAddressSelect) {
 								onAddressSelect(formattedAddress, latitude, longitude);
 							}
-						})
-						.catch((error) => {
-							console.error('Error getting address from coordinates:', error);
-							// Fallback - используем координаты
+						} catch (fallbackError) {
+							console.error('Error with fallback geocoding:', fallbackError);
+							// Final fallback - use coordinates but warn user
 							const address = `${latitude.toFixed(4)}, ${longitude.toFixed(4)}`;
 							onChange(address);
 							if (onAddressSelect) {
 								onAddressSelect(address, latitude, longitude);
 							}
-						})
-						.finally(() => {
-							setIsGettingLocation(false);
-							setIsTyping(false);
-						});
+						}
+					} finally {
+						setIsGettingLocation(false);
+						setIsTyping(false);
+					}
 				},
 				(error) => {
 					console.error('Error getting location:', error);
-					// Fallback - используем Дананг
-					const address = 'Đà Nẵng';
-					onChange(address);
-					if (onAddressSelect) {
-						onAddressSelect(address, 16.0544, 108.2022);
-					}
 					setIsGettingLocation(false);
 					setIsTyping(false);
 				}

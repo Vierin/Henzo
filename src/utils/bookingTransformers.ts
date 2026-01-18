@@ -28,6 +28,9 @@ export const convertBookingDtoToBooking = (dto: BookingWithDetailsDto | any): Bo
 			? {
 					id: service.id,
 					name: service.name || '',
+					nameEn: service.nameEn,
+					nameVi: service.nameVi,
+					nameRu: service.nameRu,
 					description: service.description,
 					duration: service.duration,
 					price: service.price,

@@ -8,29 +8,31 @@ import { useTranslation } from '@/contexts/LanguageContext';
 import { apiClient } from '@/lib/api-client';
 import { useErrorHandler } from '@/hooks/useErrorHandler';
 
-// Zod schema для валидации формы
-const betaRequestSchema = z
-	.object({
-		fullName: z
-			.string()
-			.min(2, 'Full name must be at least 2 characters')
-			.max(100, 'Full name must be no more than 100 characters'),
-		email: z.string().email('Please enter a valid email address'),
-		password: z
-			.string()
-			.min(8, 'Password must be at least 8 characters')
-			.max(100, 'Password must be no more than 100 characters'),
-		confirmPassword: z.string(),
-	})
-	.refine((data) => data.password === data.confirmPassword, {
-		message: 'Passwords do not match',
-		path: ['confirmPassword'],
-	});
-
-type BetaRequestFormData = z.infer<typeof betaRequestSchema>;
+// Zod schema factory для валидации формы
+function createBetaRequestSchema(t: any) {
+	return z
+		.object({
+			fullName: z
+				.string()
+				.min(2, t('business.betaForm.errors.fullNameMinLength'))
+				.max(100, 'Full name must be no more than 100 characters'),
+			email: z.string().email(t('business.betaForm.errors.invalidEmail')),
+			password: z
+				.string()
+				.min(8, t('business.betaForm.errors.passwordMinLength'))
+				.max(100, 'Password must be no more than 100 characters'),
+			confirmPassword: z.string(),
+		})
+		.refine((data) => data.password === data.confirmPassword, {
+			message: t('business.register.passwordsDoNotMatch'),
+			path: ['confirmPassword'],
+		});
+}
 
 export default function BetaRequestForm() {
 	const t = useTranslation();
+	const betaRequestSchema = createBetaRequestSchema(t);
+	type BetaRequestFormData = z.infer<typeof betaRequestSchema>;
 	const { handleError } = useErrorHandler();
 	const {
 		register,
@@ -69,7 +71,7 @@ export default function BetaRequestForm() {
 				errorMessage.includes('business account')
 			) {
 				errorMessage =
-					'A business account with this email already exists. Please login instead.';
+					t('owner.profileSettings.businessAccountAlreadyExists');
 			}
 			handleError(error, errorMessage);
 		}
@@ -79,8 +81,8 @@ export default function BetaRequestForm() {
 		<section className="py-20 px-4 bg-muted/30 scroll-mt-20">
 			<div className="container mx-auto max-w-3xl">
 				<div className="text-center mb-16">
-					<div className="inline-block px-4 py-2 bg-secondary rounded-full mb-4">
-						<span className="text-primary">{t('business.betaForm.badge')}</span>
+					<div className="inline-block px-4 py-2 border border-secondary rounded-full mb-4">
+						<span className="text-primary text-medium">{t('business.betaForm.badge')}</span>
 					</div>
 					<h2 className="text-4xl lg:text-5xl tracking-tight mb-4">
 						{t('business.betaForm.title')}

@@ -9,14 +9,14 @@
 	"hero": {
 		"badge": "Free Beta Testing",
 		"title": "Losing clients due to missed calls?",
-		"titleHighlight": "Forgetting appointments?",
-		"subtitle": "Increase revenue by 15% with 24/7 online booking. The all-in-one platform for your beauty business.",
+		"titleHighlight": "Clients not showing up?",
+		"subtitle": "Increase revenue by 15% with 24/7 online booking. Reduce no-shows with automatic email appointment reminders.",
 		"joinBeta": "Join Beta Testing",
 		"signIn": "Sign In",
 		"free": "100% Free",
-		"freePeriod": "Beta testing period",
+		"freePeriod": "First 3 months",
 		"quickStart": "Quick Start",
-		"quickStartTime": "Live in 5 minutes"
+		"quickStartTime": "Live in 8 minutes"
 	},
 	"features": {
 		"badge": "Features",
@@ -45,12 +45,18 @@
 		"title": "Grow Your Business",
 		"titleBreak": "with Confidence",
 		"subtitle": "A platform designed specifically for the beauty industry. Join our beta testing and get free access.",
-		"benefit1": "Increase bookings with 24/7 online scheduling",
-		"benefit2": "Save 10+ hours per week on administrative tasks",
-		"benefit3": "Reduce no-shows with automated reminders",
-		"benefit4": "Build client loyalty with a convenient booking system",
-		"benefit5": "Make data-driven decisions with powerful analytics",
-		"benefit6": "Payment happens on-site - no online payment complexities"
+		"benefit1": "Increase bookings",
+		"benefit1Description": "(with 24/7 online scheduling)",
+		"benefit2": "Save 10+ hours per week",
+		"benefit2Description": "(on administrative tasks)",
+		"benefit3": "Reduce no-shows",
+		"benefit3Description": "(with automated reminders)",
+		"benefit4": "Build client loyalty",
+		"benefit4Description": "(with a convenient booking system)",
+		"benefit5": "Make data-driven decisions",
+		"benefit5Description": "(with powerful analytics)",
+		"benefit6": "Payment happens on-site",
+		"benefit6Description": "(no online payment complexities)"
 	},
 	"dashboard": {
 		"badge": "Dashboard",

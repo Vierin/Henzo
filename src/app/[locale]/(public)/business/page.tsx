@@ -6,8 +6,7 @@ import { Hero } from './components/Hero';
 import { Features } from './components/Features';
 import { Benefits } from './components/Benefits';
 import { Dashboard } from './components/Dashboard';
-import BetaRequestForm from './BetaRequestForm';
-import { CTA } from './components/CTA';
+import BetaRequestForm from './BetaRequestForm'; 
 import './styles.css';
 
 export const metadata: Metadata = {
@@ -90,8 +89,7 @@ export default function BusinessLandingPage() {
 				<Hero />
 				<Features />
 				<Benefits />
-				<Dashboard />
-				<CTA />
+				<Dashboard /> 
 				<div id="beta-form">
 					<BetaRequestForm />
 				</div>

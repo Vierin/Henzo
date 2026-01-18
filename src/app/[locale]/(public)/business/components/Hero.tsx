@@ -13,8 +13,8 @@ export function Hero() {
 			<div className="container mx-auto">
 				<div className="grid lg:grid-cols-2 gap-12 items-center">
 					<div className="space-y-8">
-						<div className="inline-block px-4 py-2 bg-secondary rounded-full">
-							<span className="text-primary">{t('business.hero.badge')}</span>
+						<div className="inline-block px-4 py-2 border border-secondary rounded-full">
+							<span className="text-primary text-medium">{t('business.hero.badge')}</span>
 						</div>
 
 						<h1 className="text-5xl lg:text-6xl tracking-tight">

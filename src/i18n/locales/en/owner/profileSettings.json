@@ -36,6 +36,7 @@
 	"confirmDeleteButton": "Delete Account",
 	"deleting": "Deleting...",
 	"accountDeleted": "Account deleted successfully",
-	"failedToDelete": "Failed to delete account"
+	"failedToDelete": "Failed to delete account",
+	"businessAccountAlreadyExists": "A business account with this email already exists. Please login instead."
 }
 

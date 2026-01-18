@@ -36,6 +36,7 @@
 	"confirmDeleteButton": "Удалить аккаунт",
 	"deleting": "Удаление...",
 	"accountDeleted": "Аккаунт успешно удален",
-	"failedToDelete": "Не удалось удалить аккаунт"
+	"failedToDelete": "Не удалось удалить аккаунт",
+	"businessAccountAlreadyExists": "Бизнес-аккаунт с этим email уже существует. Пожалуйста, войдите в систему."
 }
 

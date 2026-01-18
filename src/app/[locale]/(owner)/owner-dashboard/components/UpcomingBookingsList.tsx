@@ -2,8 +2,9 @@
 
 import { Booking } from '@/types';
 import { formatDateShort, formatTimeSafe } from '@/utils/date';
-import { useTranslation } from '@/contexts/LanguageContext';
+import { useTranslation, useLanguage } from '@/contexts/LanguageContext';
 import { useOwnerLayout } from '@/contexts/OwnerLayoutContext';
+import { getLocalizedServiceName } from '@/utils/serviceLocalization';
 
 interface UpcomingBookingsListProps {
 	bookings: Booking[];
@@ -23,8 +24,32 @@ export default function UpcomingBookingsList({
 	onRejectBooking,
 }: UpcomingBookingsListProps) {
 	const t = useTranslation();
+	const { language } = useLanguage();
 	const { salonData } = useOwnerLayout();
 	const salonTimezone = salonData?.timezone || 'Asia/Ho_Chi_Minh';
+
+	// Helper function to check if user is anonymous
+	const isAnonymousUser = (user: Booking['user']) => {
+		if (!user) return true;
+		const email = user.email || '';
+		return (
+			email.includes('@anonymous.local') ||
+			email.startsWith('anonymous-') ||
+			user.isGuest === true ||
+			!user.name || user.name.trim() === '' ||
+			user.name === 'Anonymous Client' ||
+			user.name === 'Анонимный клиент' ||
+			user.name === 'Khách hàng ẩn danh'
+		);
+	};
+
+	// Helper function to get user display name
+	const getUserDisplayName = (booking: Booking) => {
+		if (booking.user?.name && !isAnonymousUser(booking.user)) {
+			return booking.user.name;
+		}
+		return t('booking.anonymousClient');
+	};
 
 	const getStatusBadge = (status: string) => {
 		switch (status) {
@@ -205,10 +230,12 @@ export default function UpcomingBookingsList({
 								aria-setsize={bookings.length}
 							>
 								<div className="font-semibold">
-									{booking.user?.name || `Client ID: ${booking.userId}`}
+									{getUserDisplayName(booking)}
 								</div>
 								<div>
-									{booking.service?.name || t('owner.dashboard.unknownService')}
+									{booking.service
+										? getLocalizedServiceName(booking.service, language as 'vi' | 'en' | 'ru')
+										: t('owner.dashboard.unknownService')}
 								</div>
 								<div>
 									{booking.staff?.name || t('owner.dashboard.unassigned')}
@@ -325,11 +352,12 @@ export default function UpcomingBookingsList({
 								<div className="flex items-start justify-between mb-2">
 									<div className="flex-1 min-w-0">
 										<h3 className="font-semibold text-gray-900 text-sm truncate">
-											{booking.user?.name || `Client ID: ${booking.userId}`}
+											{getUserDisplayName(booking)}
 										</h3>
 										<p className="text-sm text-gray-600 truncate">
-											{booking.service?.name ||
-												t('owner.dashboard.unknownService')}
+											{booking.service
+												? getLocalizedServiceName(booking.service, language as 'vi' | 'en' | 'ru')
+												: t('owner.dashboard.unknownService')}
 										</p>
 									</div>
 									<div className="ml-3 flex-shrink-0">

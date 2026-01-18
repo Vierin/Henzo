@@ -76,5 +76,7 @@
 	"bookingMarkedNoShow": "Booking marked as No-Show",
 	"failedToMarkNoShow": "Failed to mark booking as No-Show",
 	"noPhotosWarning": "Salon is displayed in search and categories with a default image.",
-	"addPhotoLink": "Add at least one salon photo on the settings page"
+	"addPhotoLink": "Add at least one salon photo on the settings page",
+	"averageVisits": "Average: {avg} visits",
+	"clientsWith2Visits": "{count} with 2 visits"
 }

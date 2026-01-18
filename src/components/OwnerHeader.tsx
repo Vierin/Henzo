@@ -111,21 +111,8 @@ export default function OwnerHeader() {
 
 	return (
 		<header className="sticky w-full top-0 bg-white/80 backdrop-blur border-b border-[#f1d9d7] z-[300]">
-			<div className="mx-auto max-w-7xl md:px-6 px-4 py-2 flex items-center justify-between">
-				<Link
-					href={withLocale('/', currentLocale as 'en' | 'ru' | 'vi')}
-					className="flex max-w-20 md:max-w-full md:h-12 h-10 items-center gap-3 hover:opacity-80 transition-opacity"
-				>
-					<Image
-						src="/logo.png"
-						alt="Henzo Logo"
-						width={88}
-						height={40}
-						className="h-full object-contain"
-						style={{ width: 'auto', height: 'auto' }}
-					/>
-				</Link>
-
+			<div className="mx-auto max-w-7xl md:px-6 px-4 py-2 flex items-center justify-end">
+			 
 				<div className="flex items-center gap-4 ml-auto mr-10 md:mr-0">
 					{/* Language Dropdown */}
 					<div className="relative" ref={languageDropdownRef}>

@@ -1,9 +1,10 @@
 'use client';
 
 import { useMemo } from 'react';
-import { Booking } from '@/types';
-import { useTranslation } from '@/contexts/LanguageContext';
+import { Booking, Service } from '@/types';
+import { useTranslation, useLanguage } from '@/contexts/LanguageContext';
 import { formatVND } from '@/utils/currency';
+import { getLocalizedServiceName } from '@/utils/serviceLocalization';
 
 interface TopServicesCardProps {
 	bookings: Booking[];
@@ -11,6 +12,7 @@ interface TopServicesCardProps {
 
 export default function TopServicesCard({ bookings }: TopServicesCardProps) {
 	const t = useTranslation();
+	const { language } = useLanguage();
 
 	// Calculate top services with memoization
 	const topServices = useMemo(() => {
@@ -18,26 +20,26 @@ export default function TopServicesCard({ bookings }: TopServicesCardProps) {
 			.filter((b) => b.status === 'COMPLETED' && b.service)
 			.reduce(
 				(acc, booking) => {
-					const serviceName = booking.service!.name;
+					const serviceId = booking.service!.id;
 					const servicePrice = booking.service!.price || 0;
 
-					if (!acc[serviceName]) {
-						acc[serviceName] = {
-							name: serviceName,
+					if (!acc[serviceId]) {
+						acc[serviceId] = {
+							service: booking.service!,
 							count: 0,
 							revenue: 0,
 						};
 					}
 
-					acc[serviceName].count += 1;
-					acc[serviceName].revenue += servicePrice;
+					acc[serviceId].count += 1;
+					acc[serviceId].revenue += servicePrice;
 
 					return acc;
 				},
 				{} as Record<
 					string,
 					{
-						name: string;
+						service: Service;
 						count: number;
 						revenue: number;
 					}
@@ -88,9 +90,9 @@ export default function TopServicesCard({ bookings }: TopServicesCardProps) {
 						</p>
 					</div>
 				) : (
-					topServices.map((service, index) => (
+					topServices.map((serviceItem, index) => (
 						<div
-							key={service.name}
+							key={serviceItem.service.id}
 							className="grid grid-cols-12 px-3 md:px-6 py-3 text-[15px] text-gray-800 hover:bg-gray-50 transition-colors"
 							role="listitem"
 						>
@@ -100,13 +102,13 @@ export default function TopServicesCard({ bookings }: TopServicesCardProps) {
 								</div>
 							</div>
 							<div className="col-span-5 text-xs font-medium flex items-center justify-center">
-								{service.name}
+								{getLocalizedServiceName(serviceItem.service, language as 'vi' | 'en' | 'ru')}
 							</div>
 							<div className="col-span-3 flex justify-center items-center text-gray-600 text-xs md:text-base">
-								{service.count}
+								{serviceItem.count}
 							</div>
 							<div className="col-span-3 text-right font-semibold flex items-center justify-end">
-								{formatVND(service.revenue)}
+								{formatVND(serviceItem.revenue)}
 							</div>
 						</div>
 					))
