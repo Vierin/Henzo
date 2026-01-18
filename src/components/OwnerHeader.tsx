@@ -201,23 +201,55 @@ export default function OwnerHeader() {
 									<div className="font-medium">{user.name || user.email?.split('@')[0] || user.email}</div>
 									<div className="text-xs text-gray-500">{t('header.owner')}</div>
 								</div>
-									<button
-										onClick={handleLogout}
-										disabled={isLoggingOut}
-										className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 flex items-center gap-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-									>
-										{isLoggingOut ? (
-											<>
-												<div className="w-4 h-4 border-2 border-red-600 border-t-transparent rounded-full animate-spin" />
-												<span>{t('header.loggingOut') || 'Logging out...'}</span>
-											</>
-										) : (
-											<>
-												<LogOut className="w-4 h-4" />
-												{t('header.logout')}
-											</>
-										)}
-									</button>
+								
+								{/* Profile Settings Link */}
+								<Link
+									href={withLocale('/profile-settings', currentLocale as 'en' | 'ru' | 'vi')}
+									onClick={() => setShowProfileDropdown(false)}
+									className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2 transition-colors"
+								>
+									{t('header.profileSettings') || 'Profile Settings'}
+								</Link>
+								
+								<div className="border-t border-gray-100 my-1"></div>
+
+								{/* Terms and Policy Links */}
+								<Link
+									href={withLocale('/terms-of-service', currentLocale as 'en' | 'ru' | 'vi')}
+									onClick={() => setShowProfileDropdown(false)}
+									className="w-full block text-left px-4 py-1 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+								>
+									{t('footer.termsOfService') || 'Terms of Service'}
+								</Link>
+								<Link
+									href={withLocale('/privacy-policy', currentLocale as 'en' | 'ru' | 'vi')}
+									onClick={() => setShowProfileDropdown(false)}
+									className="w-full block text-left px-4 py-1 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+								>
+									{t('footer.privacyPolicy') || 'Privacy Policy'}
+								</Link>
+
+								<div className="border-t border-gray-100 my-1"></div>
+								
+								<button
+									onClick={handleLogout}
+									disabled={isLoggingOut}
+									className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 flex items-center gap-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+								>
+									{isLoggingOut ? (
+										<>
+											<div className="w-4 h-4 border-2 border-red-600 border-t-transparent rounded-full animate-spin" />
+											<span>{t('header.loggingOut') || 'Logging out...'}</span>
+										</>
+									) : (
+										<>
+											<LogOut className="w-4 h-4" />
+											{t('header.logout')}
+										</>
+									)}
+								</button>
+								
+								
 								</div>
 							)}
 						</div>

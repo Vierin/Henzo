@@ -6,6 +6,7 @@ import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { cleanAddressFromCountry } from '@/constants/locations';
 import { useTranslation } from '@/contexts/LanguageContext';
+import { apiClient } from '@/lib/api-client';
 
 interface AddressSuggestion {
 	display_name: string;
@@ -36,6 +37,7 @@ export default function AddressAutocomplete({
 }: AddressAutocompleteProps) {
 	const t = useTranslation();
 	const [suggestions, setSuggestions] = useState<AddressSuggestion[]>([]);
+	const [allCities, setAllCities] = useState<AddressSuggestion[]>([]);
 	const [showSuggestions, setShowSuggestions] = useState(false);
 	const [loading, setLoading] = useState(false);
 	const [isTyping, setIsTyping] = useState(false);
@@ -45,6 +47,29 @@ export default function AddressAutocomplete({
 
 	// Cache for address search results
 	const addressCache = useRef<Map<string, AddressSuggestion[]>>(new Map());
+
+	// Load cities from database on mount (MVP: only cities from table)
+	useEffect(() => {
+		const loadCities = async () => {
+			try {
+				const citiesResponse = await apiClient.get<Array<{ id: string; address: string; lat: number; lon: number }>>(
+					'/mapbox/cities'
+				);
+				if (citiesResponse && citiesResponse.length > 0) {
+					// Transform to AddressSuggestion format
+					const cities: AddressSuggestion[] = citiesResponse.map(city => ({
+						display_name: city.address,
+						lat: city.lat.toString(),
+						lon: city.lon.toString(),
+					}));
+					setAllCities(cities);
+				}
+			} catch (error) {
+				console.error('Error loading cities:', error);
+			}
+		};
+		loadCities();
+	}, []);
 
 	// Предустановленные подсказки
 	const defaultSuggestions: AddressSuggestion[] = [
@@ -335,19 +360,26 @@ export default function AddressAutocomplete({
 		}
 	};
 
-	// Debounce the search
+	// Filter cities based on input (MVP: only cities from database, no geocoding)
 	useEffect(() => {
 		const timeoutId = setTimeout(() => {
-			if (value && isTyping) {
-				fetchSuggestions(value);
+			if (value && isTyping && allCities.length > 0) {
+				// Filter cities by input value
+				const lowerValue = value.toLowerCase().trim();
+				const filteredCities = allCities.filter(city => 
+					city.display_name.toLowerCase().includes(lowerValue)
+				);
+				setSuggestions([...defaultSuggestions, ...filteredCities]);
+				setShowSuggestions(filteredCities.length > 0 || defaultSuggestions.length > 0);
 			} else if (!value) {
-				setSuggestions([]);
+				// Show all cities when input is empty
+				setSuggestions([...defaultSuggestions, ...allCities]);
 				setIsTyping(false);
 			}
-		}, 300);
+		}, 100);
 
 		return () => clearTimeout(timeoutId);
-	}, [value, isTyping]);
+	}, [value, isTyping, allCities]);
 
 	// Close suggestions when clicking outside
 	useEffect(() => {
@@ -443,9 +475,19 @@ export default function AddressAutocomplete({
 	};
 
 	const handleInputFocus = () => {
-		// При фокусе показываем предустановленные подсказки, если пользователь не печатает
+		// При фокусе показываем города из таблицы + "Use current location"
 		if (!isTyping) {
-			setSuggestions(defaultSuggestions);
+			// Filter cities if user has typed something
+			let citySuggestions = allCities;
+			if (value && value.trim().length > 0) {
+				const lowerValue = value.toLowerCase().trim();
+				citySuggestions = allCities.filter(city => 
+					city.display_name.toLowerCase().includes(lowerValue)
+				);
+			}
+			
+			// Combine cities with "Use current location" option
+			setSuggestions([...defaultSuggestions, ...citySuggestions]);
 			setShowSuggestions(true);
 		} else if (suggestions.length > 0) {
 			setShowSuggestions(true);

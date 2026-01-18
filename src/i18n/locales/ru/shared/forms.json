@@ -4,7 +4,7 @@
 	"invalidPhone": "Некорректный телефон",
 	"passwordTooShort": "Пароль слишком короткий",
 	"passwordsDoNotMatch": "Пароли не совпадают",
-	"termsAndConditions": "Условия использования",
-	"privacyPolicy": "Политика конфиденциальности",
+	"termsAndConditions": "Правила сервиса",
+	"privacyPolicy": "Конфиденциальность",
 	"agreeToTerms": "Я согласен с условиями"
 }

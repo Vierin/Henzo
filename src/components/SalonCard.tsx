@@ -189,7 +189,7 @@ function SalonCard({
 			{/* Services */}
 			{salon.services && salon.services.length > 0 ? (
 				<div className="mt-4">
-					<div className="flex flex-col md:flex-row md:justify-between gap-2 md:gap-3">
+					<div className="flex flex-col md:flex-row gap-2 md:gap-3">
 						{salon.services
 							.slice(0, 3)
 							.map((service: Service, index: number) => {

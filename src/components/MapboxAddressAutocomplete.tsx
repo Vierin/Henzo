@@ -36,37 +36,50 @@ export default function MapboxAddressAutocomplete({
 }: MapboxAddressAutocompleteProps) {
 	const t = useTranslation();
 	const [suggestions, setSuggestions] = useState<AddressSuggestion[]>([]);
+	const [allCities, setAllCities] = useState<AddressSuggestion[]>([]);
 	const [showSuggestions, setShowSuggestions] = useState(false);
 	const [loading, setLoading] = useState(false);
 	const inputRef = useRef<HTMLInputElement>(null);
 	const suggestionsRef = useRef<HTMLDivElement>(null);
 	const debounceTimer = useRef<NodeJS.Timeout | null>(null);
 
-	// Fetch suggestions from backend Mapbox API
-	const fetchSuggestions = useCallback(async (query: string) => {
-		if (!query || query.trim().length < 2) {
-			setSuggestions([]);
-			setShowSuggestions(false);
-			return;
-		}
-
+	// Fetch cities from backend (MVP: only cities from database)
+	const fetchCities = useCallback(async () => {
 		setLoading(true);
 		try {
-			const response = await apiClient.get<AddressSuggestion[]>(
-				`/mapbox/autocomplete?q=${encodeURIComponent(query)}&country=VN&limit=5`
+			const citiesResponse = await apiClient.get<AddressSuggestion[]>(
+				'/mapbox/cities'
 			);
-			setSuggestions(response || []);
-			setShowSuggestions(true);
+			if (citiesResponse && citiesResponse.length > 0) {
+				setAllCities(citiesResponse);
+				return citiesResponse;
+			}
+			return [];
 		} catch (error) {
-			console.error('Error fetching address suggestions:', error);
-			setSuggestions([]);
-			setShowSuggestions(false);
+			console.error('Error fetching cities:', error);
+			return [];
 		} finally {
 			setLoading(false);
 		}
 	}, []);
 
-	// Debounced search
+	// Load cities on mount
+	useEffect(() => {
+		fetchCities();
+	}, [fetchCities]);
+
+	// Filter cities by query
+	const filterCitiesByQuery = useCallback((query: string, cities: AddressSuggestion[]) => {
+		if (!query || query.trim().length < 1) {
+			return cities;
+		}
+		const lowerQuery = query.toLowerCase().trim();
+		return cities.filter(city => 
+			city.address.toLowerCase().includes(lowerQuery)
+		);
+	}, []);
+
+	// Filter cities by input value
 	const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
 		const newValue = e.target.value;
 		onChange(newValue);
@@ -76,10 +89,12 @@ export default function MapboxAddressAutocomplete({
 			clearTimeout(debounceTimer.current);
 		}
 
-		// Set new timer for debounced search
+		// Filter cities based on input
 		debounceTimer.current = setTimeout(() => {
-			fetchSuggestions(newValue);
-		}, 300);
+			const filtered = filterCitiesByQuery(newValue, allCities);
+			setSuggestions(filtered);
+			setShowSuggestions(filtered.length > 0);
+		}, 100);
 	};
 
 	const handleSelect = (suggestion: AddressSuggestion) => {
@@ -100,9 +115,10 @@ export default function MapboxAddressAutocomplete({
 	}, []);
 
 	const handleFocus = () => {
-		if (value && value.trim().length >= 2) {
-			fetchSuggestions(value);
-		}
+		// Show filtered cities based on current value
+		const filtered = filterCitiesByQuery(value || '', allCities);
+		setSuggestions(filtered);
+		setShowSuggestions(filtered.length > 0);
 	};
 
 	// Close suggestions when clicking outside

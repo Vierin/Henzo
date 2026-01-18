@@ -341,7 +341,7 @@ export default function HomePageClient({ initialDictionary }: HomePageClientProp
 						<div className="grid grid-cols-1 md:grid-cols-3 gap-6 sm:gap-8 mb-10">
 							{/* Easy Booking */}
 							<article className="bg-white rounded-xl p-8 shadow-sm">
-								<div className="flex items-start gap-4 mb-4">
+								<div className="flex items-start gap-4">
 									<div className="w-12 h-12 rounded-lg border-1 border-gray-300 flex items-center justify-center flex-shrink-0">
 										<svg
 											className="w-6 h-6 text-[#ff5b5b]"
@@ -370,7 +370,7 @@ export default function HomePageClient({ initialDictionary }: HomePageClientProp
 
 							{/* Flexible Schedule */}
 							<article className="bg-white rounded-xl p-8 shadow-sm">
-								<div className="flex items-start gap-4 mb-4">
+								<div className="flex items-start gap-4">
 									<div className="w-12 h-12 rounded-lg border-1 border-gray-300 flex items-center justify-center flex-shrink-0">
 										<svg
 											className="w-6 h-6 text-[#ff5b5b]"
@@ -399,7 +399,7 @@ export default function HomePageClient({ initialDictionary }: HomePageClientProp
 
 							{/* Reliable Reviews */}
 							<article className="bg-white rounded-xl p-8 shadow-sm">
-								<div className="flex items-start gap-4 mb-4">
+								<div className="flex items-start gap-4">
 									<div className="w-12 h-12 rounded-lg border-1 border-gray-300 flex items-center justify-center flex-shrink-0">
 										<svg
 											className="w-6 h-6 text-[#ff5b5b]"

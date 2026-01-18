@@ -3,9 +3,9 @@
 import { ReactNode, useState } from 'react';
 import OwnerHeader from './OwnerHeader';
 import OwnerSidebar from './OwnerSidebar';
-import FeedbackButton from './FeedbackButton';
-import Footer from './Footer';
+import FeedbackButton from './FeedbackButton'; 
 import { Menu, X } from 'lucide-react';
+import { useTranslation } from '@/contexts/LanguageContext';
 
 interface OwnerLayoutProps {
 	children: ReactNode;
@@ -13,6 +13,7 @@ interface OwnerLayoutProps {
 
 export default function OwnerLayout({ children }: OwnerLayoutProps) {
 	const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+	const t = useTranslation();
 
 	const toggleMobileMenu = () => {
 		setIsMobileMenuOpen(!isMobileMenuOpen);
@@ -22,7 +23,7 @@ export default function OwnerLayout({ children }: OwnerLayoutProps) {
 		<div className="min-h-screen bg-[#fff7f6] w-full overflow-x-hidden">
 			<div className="flex">
 				{/* Desktop Sidebar - Fixed */}
-				<div className="hidden md:block fixed left-0 top-0 h-full z-30">
+				<div className="hidden md:block fixed left-0 top-0 h-full z-90">
 					<OwnerSidebar />
 				</div>
 
@@ -67,10 +68,10 @@ export default function OwnerLayout({ children }: OwnerLayoutProps) {
 					)}
 
 					{/* Main Content */}
-					<main className="p-4 md:p-8 w-full overflow-x-hidden md:pl-64 flex flex-col min-h-screen">
+					<main className="p-4 md:p-8 pb-0 w-full overflow-x-hidden md:pl-64 flex flex-col min-h-screen bg-[#F2F5F7]">
 						<div className="flex-1 mb-5 sm:mb-0">{children}</div>
-						<div className="-mx-4 md:-mx-8 mt-auto">
-							<Footer />
+						<div className="pt-4 md:pt-8 mt-auto">
+							<p className="text-gray-400 text-center text-sm mb-0">{t('footer.allRightsReserved')}</p>
 						</div>
 					</main>
 				</div>

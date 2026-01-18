@@ -303,13 +303,7 @@ export default function OwnerDashboardClient() {
 					title={t('owner.dashboard.totalRevenue')}
 					value={formatVND(stats.revenue)}
 					icon={<DollarSign className="w-6 h-6" />}
-					subtitle={
-						period === '7d'
-							? t('owner.dashboard.last7Days')
-							: period === '30d'
-								? t('owner.dashboard.last30Days')
-								: t('owner.dashboard.last1Year')
-					}
+				 
 					trend={
 						stats.revenueTrend !== 0
 							? {
@@ -323,13 +317,7 @@ export default function OwnerDashboardClient() {
 					title={t('owner.dashboard.totalClients')}
 					value={stats.clients}
 					icon={<Users className="w-6 h-6" />}
-					subtitle={
-						period === '7d'
-							? t('owner.dashboard.last7Days')
-							: period === '30d'
-								? t('owner.dashboard.last30Days')
-								: t('owner.dashboard.last1Year')
-					}
+				 
 					trend={
 						stats.clientsTrend !== 0
 							? {
@@ -343,13 +331,7 @@ export default function OwnerDashboardClient() {
 					title={t('owner.dashboard.bookings')}
 					value={stats.bookings}
 					icon={<CalendarCheck className="w-6 h-6" />}
-					subtitle={
-						period === '7d'
-							? t('owner.dashboard.last7Days')
-							: period === '30d'
-								? t('owner.dashboard.last30Days')
-								: t('owner.dashboard.last1Year')
-					}
+				 
 					trend={
 						stats.bookingsTrend !== 0
 							? {
@@ -363,13 +345,7 @@ export default function OwnerDashboardClient() {
 					title={t('owner.dashboard.completionRate')}
 					value={`${stats.completionRate}%`}
 					icon={<TrendingUp className="w-6 h-6" />}
-					subtitle={
-						period === '7d'
-							? t('owner.dashboard.last7Days')
-							: period === '30d'
-								? t('owner.dashboard.last30Days')
-								: t('owner.dashboard.last1Year')
-					}
+				 
 					trend={
 						stats.completionTrend !== 0
 							? {
