@@ -493,11 +493,9 @@ export default function AdminSalons() {
 												{selectedSalon.subscription?.type ? (
 													<span
 														className={`px-2 py-0.5 text-xs font-medium rounded ${
-															selectedSalon.subscription.type === 'ENTERPRISE'
-																? 'bg-purple-100 text-purple-800'
-																: selectedSalon.subscription.type === 'BASIC'
-																	? 'bg-blue-100 text-blue-800'
-																	: 'bg-gray-100 text-gray-800'
+															selectedSalon.subscription.type === 'BASIC'
+																? 'bg-blue-100 text-blue-800'
+																: 'bg-gray-100 text-gray-800'
 														}`}
 													>
 														{selectedSalon.subscription.type}

@@ -29,7 +29,7 @@ export function Dashboard() {
 							<span className="text-primary text-medium">{t('business.dashboard.badge')}</span>
 						</div>
 
-						<h2 className="text-4xl lg:text-5xl tracking-tight">
+						<h2 className="text-4xl lg:text-5xl tracking-tight leading-[1.2]">
 							{t('business.dashboard.title')} <br />
 							<span className="text-primary">{t('business.dashboard.titleBreak')}</span>
 						</h2>

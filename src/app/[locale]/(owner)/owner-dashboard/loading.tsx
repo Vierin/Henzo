@@ -1,6 +1,6 @@
 export default function OwnerDashboardLoading() {
 	return (
-		<div className="min-h-screen bg-[#fff7f6] p-4 md:p-8">
+		<div className="min-h-screen p-4 md:p-8">
 			<div className="max-w-7xl mx-auto">
 				{/* Header Skeleton */}
 				<div className="mb-8">

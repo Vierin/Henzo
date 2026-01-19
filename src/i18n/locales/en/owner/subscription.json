@@ -2,8 +2,7 @@
 	"title": "Subscription Management",
 	"subtitle": "Manage your tariffs and expand your business capabilities",
 	"loading": "Loading subscription information...",
-	"betaNotice": "Beta testing is currently underway until 03/31/2025. During this time, platform usage is completely free.",
-	"current": "CURRENT",
+	 "current": "CURRENT",
 	"recommended": "RECOMMENDED",
 	"perMonth": "month",
 	"activePlan": "Your active plan",
@@ -23,7 +22,7 @@
 	"basic": {
 		"masters": "Up to 10 masters",
 		"services": "Up to 60 services",
-		"sms": "SMS notifications",
+		"marketing": "Marketing tools",
 		"analytics": "Financial analytics",
 		"crm": "Full-featured CRM system",
 		"prioritySupport": "Priority support"

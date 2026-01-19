@@ -60,9 +60,9 @@
 	},
 	"dashboard": {
 		"badge": "Dashboard",
-		"title": "See Your Business",
-		"titleBreak": "Dashboard in Action",
-		"subtitle": "Manage everything from one intuitive dashboard. Track appointments, revenue, and client statistics at a glance.",
+		"title": "All salon work",
+		"titleBreak": "in one interface",
+		"subtitle": "Track appointments, schedules, and staff workload without tables and chaos.",
 		"cta": "Get Free Access"
 	},
 	"cta": {
@@ -93,7 +93,12 @@
 		"agreement": "By submitting this form, you agree to the service terms.",
 		"successMessage": "Thank you! We'll contact you soon about the beta program.",
 		"magicLinkSent": "Magic link sent to your email! Please check your inbox to complete registration.",
-		"errorMessage": "Failed to submit request. Please try again."
+		"errorMessage": "Failed to submit request. Please try again.",
+		"errors": {
+			"fullNameMinLength": "Full name must be at least 2 characters",
+			"invalidEmail": "Please enter a valid email address",
+			"passwordMinLength": "Password must be at least 8 characters"
+		}
 	},
 	"register": {
 		"title": "Create your business account",

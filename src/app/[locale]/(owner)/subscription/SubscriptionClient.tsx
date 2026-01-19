@@ -11,16 +11,17 @@ import { SUBSCRIPTION_PLANS } from '@/config/subscriptionPlans';
 interface Subscription {
 	id: string;
 	salonId: string;
-	type: 'FREEMIUM' | 'BASIC' | 'ENTERPRISE';
+	type: 'BASIC';
 	status: 'ACTIVE' | 'INACTIVE' | 'CANCELLED' | 'EXPIRED';
 	startDate: string;
 	endDate?: string;
 	nextPaymentDate?: string;
+	trialEndDate?: string;
 	amount: number;
 }
 
 interface Plan {
-	id: 'FREEMIUM' | 'BASIC' | 'ENTERPRISE';
+	id: 'BASIC';
 	name: string;
 	description?: string;
 	price: number;
@@ -59,7 +60,7 @@ export default function SubscriptionClient() {
 		}
 	};
 
-	const handleSwitchPlan = async (planId: 'BASIC' | 'ENTERPRISE') => {
+	const handleSwitchPlan = async (planId: 'BASIC') => {
 		try {
 			setSwitching(planId);
 			await apiClient.post('/subscriptions/switch', { planType: planId });
@@ -82,22 +83,11 @@ export default function SubscriptionClient() {
 
 	const plans: Plan[] = [
 		{
-			...SUBSCRIPTION_PLANS.FREEMIUM,
-			features: [
-				t('owner.subscription.freemium.masters'),
-				t('owner.subscription.freemium.services'),
-				t('owner.subscription.freemium.analytics'),
-				t('owner.subscription.freemium.photos'),
-				t('owner.subscription.freemium.clientAccount'),
-				t('owner.subscription.freemium.emailSupport'),
-			],
-		},
-		{
 			...SUBSCRIPTION_PLANS.BASIC,
 			features: [
 				t('owner.subscription.basic.masters'),
 				t('owner.subscription.basic.services'),
-				t('owner.subscription.basic.sms'),
+				t('owner.subscription.basic.marketing'),
 				t('owner.subscription.basic.analytics'),
 				t('owner.subscription.basic.crm'),
 				t('owner.subscription.basic.prioritySupport'),
@@ -105,7 +95,7 @@ export default function SubscriptionClient() {
 		},
 	];
 
-	const currentPlanType = currentSubscription?.type || 'FREEMIUM';
+	const currentPlanType = currentSubscription?.type || 'BASIC';
 
 	if (loading) {
 		return (
@@ -119,7 +109,7 @@ export default function SubscriptionClient() {
 	}
 
 	return (
-		<div className="min-h-screen bg-[#fff7f6] p-0 sm:p-6 lg:p-8">
+		<div className="min-h-screen p-0 sm:p-6 lg:p-8">
 			<div className="max-w-6xl mx-auto">
 				{/* Header */}
 				<div className="mb-8">
@@ -130,37 +120,59 @@ export default function SubscriptionClient() {
 						{t('owner.subscription.subtitle')}
 					</p>
 				</div>
+ 
 
-				{/* Beta Testing Notice */}
-				<div className="mb-6 p-4 bg-[#fff7f6] border border-[#ff5b5b] rounded-lg">
-					<p className="text-base text-gray-700 text-center">
-						{t('owner.subscription.betaNotice')}
-					</p>
-				</div>
+				{/* Trial Info */}
+				{currentSubscription?.trialEndDate && (
+					<div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+						<div className="flex items-center justify-between">
+							<div>
+								<p className="text-sm font-medium text-blue-900">
+									{t('owner.subscription.trialActive') || 'Trial Period Active'}
+								</p>
+								<p className="text-xs text-blue-700 mt-1">
+									{(() => {
+										const trialEnd = new Date(currentSubscription.trialEndDate);
+										const now = new Date();
+										const daysLeft = Math.ceil((trialEnd.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+										if (daysLeft > 0) {
+											const daysText = t('owner.subscription.trialDaysLeft') || '{{days}} days left in trial';
+											return daysText.replace('{{days}}', daysLeft.toString());
+										}
+										return t('owner.subscription.trialEnded') || 'Trial period has ended';
+									})()}
+								</p>
+							</div>
+							{currentSubscription.trialEndDate && (
+								<div className="text-right">
+									<p className="text-xs text-blue-600">
+										{new Date(currentSubscription.trialEndDate).toLocaleDateString()}
+									</p>
+								</div>
+							)}
+						</div>
+					</div>
+				)}
 
 				{/* Plans Grid */}
 				<div className="grid grid-cols-1 md:grid-cols-2 gap-6">
 					{plans.map((plan) => {
 						const isCurrent = plan.id === currentPlanType;
 						const isRecommended = plan.isRecommended && !isCurrent;
-						const isBasic = plan.id === 'BASIC';
-						const isDisabled = isBasic; // Basic plan is disabled during beta
 
 						return (
 							<div
 								key={plan.id}
 								className={`relative bg-white rounded-2xl p-6 sm:p-8 shadow-sm border-2 transition-all ${
-									isDisabled
-										? 'opacity-60 border-gray-300'
-										: isRecommended
-											? 'border-[#ff5b5b] shadow-lg'
-											: isCurrent
-												? 'border-[#ff5b5b]'
-												: 'border-gray-200'
+									isRecommended
+										? 'border-[#ff5b5b] shadow-lg'
+										: isCurrent
+											? 'border-[#ff5b5b]'
+											: 'border-gray-200'
 								}`}
 							>
 								{/* Recommended Badge */}
-								{isRecommended && !isDisabled && (
+								{isRecommended && (
 									<div className="absolute -top-3 left-1/2 transform -translate-x-1/2">
 										<span className="bg-[#ff5b5b] text-white px-4 py-1 rounded-full text-xs font-bold uppercase">
 											{t('owner.subscription.recommended')}
@@ -229,17 +241,10 @@ export default function SubscriptionClient() {
 									>
 										{t('owner.subscription.activePlan')}
 									</button>
-								) : isDisabled ? (
-									<button
-										disabled
-										className="w-full py-3 px-4 rounded-lg bg-gray-100 text-gray-400 font-medium cursor-not-allowed border border-gray-300"
-									>
-										{t('owner.subscription.comingSoon')}
-									</button>
 								) : (
 									<button
 										onClick={() =>
-											handleSwitchPlan(plan.id as 'BASIC' | 'ENTERPRISE')
+											handleSwitchPlan(plan.id as 'BASIC')
 										}
 										disabled={switching === plan.id}
 										className={`w-full py-3 px-4 rounded-lg font-medium transition-colors ${

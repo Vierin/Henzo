@@ -56,7 +56,7 @@ export interface AdminSalon {
 		services: number;
 	};
 	subscription?: {
-		type: 'FREEMIUM' | 'BASIC' | 'ENTERPRISE';
+		type:   'BASIC'  ;
 		status: string;
 	};
 	createdAt: string;

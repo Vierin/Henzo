@@ -70,9 +70,9 @@
 	},
 	"dashboard": {
 		"badge": "Bảng điều khiển",
-		"title": "Xem bảng điều khiển",
-		"titleBreak": "doanh nghiệp của bạn hoạt động",
-		"subtitle": "Quản lý mọi thứ từ một bảng điều khiển trực quan. Theo dõi cuộc hẹn, doanh thu và thống kê khách hàng trong nháy mắt.",
+		"title": "Tất cả công việc salon",
+		"titleBreak": "trong một giao diện",
+		"subtitle": "Theo dõi lịch hẹn, lịch trình và tải công việc của nhân viên mà không cần bảng và sự hỗn loạn.",
 		"cta": "Nhận quyền truy cập miễn phí"
 	},
 	"cta": {
