@@ -4,7 +4,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import type React from 'react';
 import { apiClient } from '@/lib/api-client';
 import { useTranslation } from '@/contexts/LanguageContext';
-import { MapPin as MapPinIcon } from 'lucide-react';
+import { MapPin as MapPinIcon, X } from 'lucide-react';
 
 interface AddressSuggestion {
 	id: string;
@@ -36,50 +36,37 @@ export default function MapboxAddressAutocomplete({
 }: MapboxAddressAutocompleteProps) {
 	const t = useTranslation();
 	const [suggestions, setSuggestions] = useState<AddressSuggestion[]>([]);
-	const [allCities, setAllCities] = useState<AddressSuggestion[]>([]);
 	const [showSuggestions, setShowSuggestions] = useState(false);
 	const [loading, setLoading] = useState(false);
 	const inputRef = useRef<HTMLInputElement>(null);
 	const suggestionsRef = useRef<HTMLDivElement>(null);
 	const debounceTimer = useRef<NodeJS.Timeout | null>(null);
 
-	// Fetch cities from backend (MVP: only cities from database)
-	const fetchCities = useCallback(async () => {
+	// Fetch address suggestions from Mapbox API
+	const fetchSuggestions = useCallback(async (query: string) => {
+		if (!query || query.trim().length < 2) {
+			setSuggestions([]);
+			setShowSuggestions(false);
+			return;
+		}
+
 		setLoading(true);
 		try {
-			const citiesResponse = await apiClient.get<AddressSuggestion[]>(
-				'/mapbox/cities'
+			const response = await apiClient.get<AddressSuggestion[]>(
+				`/mapbox/autocomplete?q=${encodeURIComponent(query.trim())}&country=VN&limit=5`
 			);
-			if (citiesResponse && citiesResponse.length > 0) {
-				setAllCities(citiesResponse);
-				return citiesResponse;
-			}
-			return [];
+			setSuggestions(response || []);
+			setShowSuggestions((response || []).length > 0);
 		} catch (error) {
-			console.error('Error fetching cities:', error);
-			return [];
+			console.error('Error fetching address suggestions:', error);
+			setSuggestions([]);
+			setShowSuggestions(false);
 		} finally {
 			setLoading(false);
 		}
 	}, []);
 
-	// Load cities on mount
-	useEffect(() => {
-		fetchCities();
-	}, [fetchCities]);
-
-	// Filter cities by query
-	const filterCitiesByQuery = useCallback((query: string, cities: AddressSuggestion[]) => {
-		if (!query || query.trim().length < 1) {
-			return cities;
-		}
-		const lowerQuery = query.toLowerCase().trim();
-		return cities.filter(city => 
-			city.address.toLowerCase().includes(lowerQuery)
-		);
-	}, []);
-
-	// Filter cities by input value
+	// Handle input change with debounce
 	const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
 		const newValue = e.target.value;
 		onChange(newValue);
@@ -89,12 +76,10 @@ export default function MapboxAddressAutocomplete({
 			clearTimeout(debounceTimer.current);
 		}
 
-		// Filter cities based on input
+		// Set new timer for debounced search
 		debounceTimer.current = setTimeout(() => {
-			const filtered = filterCitiesByQuery(newValue, allCities);
-			setSuggestions(filtered);
-			setShowSuggestions(filtered.length > 0);
-		}, 100);
+			fetchSuggestions(newValue);
+		}, 300);
 	};
 
 	const handleSelect = (suggestion: AddressSuggestion) => {
@@ -107,6 +92,15 @@ export default function MapboxAddressAutocomplete({
 		}
 	};
 
+	const handleClear = () => {
+		onChange('');
+		setSuggestions([]);
+		setShowSuggestions(false);
+		if (inputRef.current) {
+			inputRef.current.focus();
+		}
+	};
+
 	const handleBlur = useCallback(() => {
 		// Delay hiding suggestions to allow click events
 		setTimeout(() => {
@@ -115,10 +109,10 @@ export default function MapboxAddressAutocomplete({
 	}, []);
 
 	const handleFocus = () => {
-		// Show filtered cities based on current value
-		const filtered = filterCitiesByQuery(value || '', allCities);
-		setSuggestions(filtered);
-		setShowSuggestions(filtered.length > 0);
+		// Fetch suggestions if there's a value
+		if (value && value.trim().length >= 2) {
+			fetchSuggestions(value);
+		}
 	};
 
 	// Close suggestions when clicking outside
@@ -168,9 +162,21 @@ export default function MapboxAddressAutocomplete({
 					placeholder={placeholder}
 					className={`${className} ${
 						showIcon ? 'pl-10' : ''
-					} w-full px-4 py-3 border border-gray-300 rounded-lg text-gray-900 placeholder-gray-500 focus:ring-2 bg-white focus:ring-[#F8F5F2] focus:border-transparent`}
+					} ${value && !loading ? 'pr-10' : ''} w-full px-4 py-3 border border-gray-300 rounded-lg text-gray-900 placeholder-gray-500 focus:ring-2 bg-white focus:ring-[#F8F5F2] focus:border-transparent`}
 					autoComplete="off"
 				/>
+				{/* Clear button */}
+				{value && !loading && (
+					<button
+						onClick={handleClear}
+						className="absolute right-3 top-1/2 transform -translate-y-1/2 p-1 hover:bg-gray-100 rounded-full transition-colors"
+						type="button"
+						aria-label="Clear address"
+					>
+						<X className="w-4 h-4 text-gray-400 hover:text-gray-600" />
+					</button>
+				)}
+				{/* Loading spinner */}
 				{loading && (
 					<div className="absolute right-3 top-1/2 transform -translate-y-1/2">
 						<div className="animate-spin rounded-full h-4 w-4 border-b-2 border-gray-400"></div>

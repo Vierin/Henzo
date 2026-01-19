@@ -14,7 +14,6 @@ interface SetupStep1Props {
 	mapProps: { lat?: number; lon?: number; address: string };
 	isUpdatingAddress: boolean;
 	nameInputRef: RefObject<HTMLInputElement | null>;
-	phoneInputRef: RefObject<HTMLInputElement | null>;
 	onInputChange: (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => void;
 	onMarkerMove: (lat: number, lon: number, address?: string) => void;
 	onAddressChange: (address: string) => void;
@@ -28,7 +27,6 @@ export default function SetupStep1({
 	mapProps,
 	isUpdatingAddress,
 	nameInputRef,
-	phoneInputRef,
 	onInputChange,
 	onMarkerMove,
 	onAddressChange,
@@ -74,6 +72,7 @@ export default function SetupStep1({
 				{mapProps.lat && mapProps.lon ? (
 					<div className="mb-4 w-full aspect-[4/3] rounded-lg overflow-hidden border border-gray-200 shadow-sm">
 						<MapComponentWithCoords
+							key={`${mapProps.lat}-${mapProps.lon}`}
 							lat={mapProps.lat}
 							lon={mapProps.lon}
 							address={mapProps.address}
@@ -112,31 +111,6 @@ export default function SetupStep1({
 				{errors.address && (
 					<p className="absolute -bottom-[1.4rem] right-0 text-sm text-red-400">
 						{errors.address}
-					</p>
-				)}
-			</div>
-
-			{/* Salon Phone Number */}
-			<div className="relative">
-				<label
-					htmlFor="phone"
-					className="block text-sm font-medium text-gray-900 mb-2"
-				>
-					{t('business.completeSetup.step1.salonPhone')}
-				</label>
-				<input
-					ref={phoneInputRef}
-					type="tel"
-					id="phone"
-					name="phone"
-					value={formData.phone}
-					onChange={onInputChange}
-					className="w-full px-4 py-3 border border-gray-300 rounded-lg text-gray-900 placeholder-gray-500 focus:ring-2 bg-white focus:ring-[#F8F5F2] focus:border-transparent"
-					placeholder={t('business.completeSetup.step1.phonePlaceholder')}
-				/>
-				{errors.phone && (
-					<p className="absolute -bottom-[1.4rem] right-0 text-sm text-red-400">
-						{errors.phone}
 					</p>
 				)}
 			</div>

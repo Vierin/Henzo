@@ -1,8 +1,3 @@
-import {
-	useCategories,
-	getCategoryById,
-	getCategoryTranslatedName,
-} from '@/hooks/useCategories';
 import { SalonSetupData } from '@/hooks/useSalonSetup';
 
 const WEEKDAYS = [
@@ -15,19 +10,12 @@ const WEEKDAYS = [
 	{ key: 'sunday' },
 ];
 
-interface SetupStep5Props {
+interface SetupStep3Props {
 	formData: SalonSetupData;
 	t: (key: string) => string;
 }
 
-export default function SetupStep5({ formData, t }: SetupStep5Props) {
-	const { data: categories = [] } = useCategories();
-
-	const getCategoryName = (categoryId: number): string => {
-		const category = getCategoryById(categories, categoryId);
-		if (!category) return '';
-		return getCategoryTranslatedName(category, t);
-	};
+export default function SetupStep3({ formData, t }: SetupStep3Props) {
 
 	return (
 		<div className="space-y-6">
@@ -49,31 +37,6 @@ export default function SetupStep5({ formData, t }: SetupStep5Props) {
 						</span>
 						<span className="text-gray-900 ml-2">{formData.address}</span>
 					</div>
-					<div>
-						<span className="text-gray-500">
-							{t('business.completeSetup.step5.phone')}
-						</span>
-						<span className="text-gray-900 ml-2">{formData.phone}</span>
-					</div>
-					<div>
-						<span className="text-gray-500">
-							{t('business.completeSetup.step5.categories')}
-						</span>
-						<span className="text-gray-900 ml-2">
-							{formData.categories
-								.map((id) => getCategoryName(id))
-								.filter(Boolean)
-								.join(', ')}
-						</span>
-					</div>
-					{formData.description && (
-						<div>
-							<span className="text-gray-500">
-								{t('business.completeSetup.step5.description')}
-							</span>
-							<span className="text-gray-900 ml-2">{formData.description}</span>
-						</div>
-					)}
 				</div>
 			</div>
 
@@ -106,3 +69,4 @@ export default function SetupStep5({ formData, t }: SetupStep5Props) {
 		</div>
 	);
 }
+

@@ -116,15 +116,68 @@ export default function MapComponentWithCoords({
 			};
 
 			try {
-				console.log('🗺️ Creating marker at:', [lat, lon]);
+				console.log('🗺️ Creating marker at:', [lat, lon], 'Map instance:', !!mapInstanceRef.current);
+				
+				// Ensure map is ready
+				if (!mapInstanceRef.current._loaded) {
+					console.warn('⚠️ Map not loaded yet, waiting...');
+					// Wait a bit and try again
+					setTimeout(() => {
+						if (mapInstanceRef.current && LeafletLoader.L) {
+							markerRef.current = LeafletLoader.L.marker(
+								[lat, lon],
+								markerOptions
+							).addTo(mapInstanceRef.current);
+							console.log('🗺️ Marker created after delay:', !!markerRef.current);
+						}
+					}, 200);
+					return;
+				}
+
 				markerRef.current = LeafletLoader.L.marker(
 					[lat, lon],
 					markerOptions
 				).addTo(mapInstanceRef.current);
 
+				// Verify marker was added
+				if (!markerRef.current) {
+					console.error('❌ Failed to create marker');
+					return;
+				}
+
+				// Force marker to be visible and update its position
+				setTimeout(() => {
+					if (markerRef.current && mapInstanceRef.current) {
+						// Update marker position to ensure it's correct
+						markerRef.current.setLatLng([lat, lon]);
+						
+						// Force marker element to be visible
+						if (markerRef.current.getElement) {
+							const markerElement = markerRef.current.getElement();
+							if (markerElement) {
+								markerElement.style.zIndex = '1000';
+								markerElement.style.pointerEvents = 'auto';
+								markerElement.style.display = 'block';
+							}
+						}
+						
+						// Bring marker to front
+						markerRef.current.bringToFront();
+						
+						console.log('🗺️ Marker visibility forced');
+					}
+				}, 100);
+
+				const markerPos = markerRef.current.getLatLng();
 				console.log(
-					'🗺️ Marker created successfully, current map center:',
-					mapInstanceRef.current.getCenter()
+					'🗺️ Marker created successfully:',
+					{
+						markerPosition: [markerPos.lat, markerPos.lng],
+						requestedPosition: [lat, lon],
+						currentMapCenter: mapInstanceRef.current.getCenter(),
+						mapBounds: mapInstanceRef.current.getBounds(),
+						markerElement: !!markerRef.current.getElement?.(),
+					}
 				);
 
 				// Center map on marker after it's added (only if not from drag)
@@ -404,23 +457,30 @@ export default function MapComponentWithCoords({
 						mapInstanceRef.current.invalidateSize();
 						window.dispatchEvent(new Event('resize'));
 
-						// If we have valid coordinates, store them for useEffect to pick up
+						// If we have valid coordinates, add marker immediately
 						if (
 							hasValidCoords &&
 							normalizedLat !== undefined &&
-							normalizedLon !== undefined
+							normalizedLon !== undefined &&
+							LeafletLoader.L
 						) {
 							lastCoordsRef.current = {
 								lat: normalizedLat,
 								lon: normalizedLon,
 							};
 							console.log(
-								'🗺️ Map initialized with coords, useEffect will add marker:',
+								'🗺️ Map initialized with coords, adding marker immediately:',
 								{
 									lat: normalizedLat,
 									lon: normalizedLon,
 								}
 							);
+							// Add marker immediately after map is ready
+							setTimeout(() => {
+								if (mapInstanceRef.current && LeafletLoader.L && !markerRef.current) {
+									updateMapWithCoords(normalizedLat, normalizedLon, address, false);
+								}
+							}, 200);
 						}
 					}
 				}, 100);
@@ -513,46 +573,51 @@ export default function MapComponentWithCoords({
 
 				// Update map - wait for map to be ready
 				const updateMap = () => {
-					if (mapInstanceRef.current) {
+					if (mapInstanceRef.current && LeafletLoader.L) {
 						console.log('🗺️ Updating map with coords:', {
 							lat: normalizedLat,
 							lon: normalizedLon,
 							address,
 							mapLoaded: mapInstanceRef.current._loaded,
+							markerExists: !!markerRef.current,
 						});
 						updateMapWithCoords(normalizedLat, normalizedLon, address, false);
 					}
 				};
 
-				// Use whenReady if available, otherwise try with delay
-				if (mapInstanceRef.current.whenReady) {
-					mapInstanceRef.current.whenReady(() => {
-						setTimeout(() => {
-							updateMap();
-						}, 200);
-					});
-				} else if (mapInstanceRef.current._loaded) {
+				// Check if map is already loaded
+				if (mapInstanceRef.current._loaded) {
+					// Map is loaded, update immediately
 					setTimeout(() => {
 						updateMap();
-					}, 200);
+					}, 50);
 				} else {
 					// Wait for map to load
-					const checkLoaded = setInterval(() => {
-						if (mapInstanceRef.current && mapInstanceRef.current._loaded) {
-							clearInterval(checkLoaded);
+					if (mapInstanceRef.current.whenReady) {
+						mapInstanceRef.current.whenReady(() => {
 							setTimeout(() => {
 								updateMap();
-							}, 200);
-						}
-					}, 50);
+							}, 100);
+						});
+					} else {
+						// Poll for map to be ready
+						const checkLoaded = setInterval(() => {
+							if (mapInstanceRef.current && mapInstanceRef.current._loaded) {
+								clearInterval(checkLoaded);
+								setTimeout(() => {
+									updateMap();
+								}, 100);
+							}
+						}, 50);
 
-					// Timeout after 2 seconds
-					setTimeout(() => {
-						clearInterval(checkLoaded);
-						if (mapInstanceRef.current) {
-							updateMap();
-						}
-					}, 2000);
+						// Timeout after 2 seconds
+						setTimeout(() => {
+							clearInterval(checkLoaded);
+							if (mapInstanceRef.current) {
+								updateMap();
+							}
+						}, 2000);
+					}
 				}
 			}
 		} else if (

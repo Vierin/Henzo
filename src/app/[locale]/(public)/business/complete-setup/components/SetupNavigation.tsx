@@ -61,7 +61,7 @@ export default function SetupNavigation({
 				type="button"
 				onClick={onPrevStep}
 				disabled={currentStep === 1}
-				className="px-6 py-3 bg-gray-600 text-white rounded-lg font-medium hover:bg-gray-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+				className="px-6 py-3 bg-gray-600 !text-white rounded-lg font-medium hover:bg-gray-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
 			>
 				{t('business.completeSetup.navigation.previous')}
 			</button>
@@ -71,7 +71,7 @@ export default function SetupNavigation({
 					type="button"
 					onClick={onSubmit}
 					disabled={loading}
-					className="px-6 py-3 bg-[#ff5b5b] text-white rounded-lg font-medium hover:bg-red-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+					className="px-6 py-3 bg-[#ff5b5b] !text-white rounded-lg font-medium hover:bg-red-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
 				>
 					{loading
 						? t('business.completeSetup.navigation.creatingSalon')
@@ -81,7 +81,7 @@ export default function SetupNavigation({
 				<button
 					type="button"
 					onClick={onNextStep}
-					className="px-6 py-3 bg-[#ff5b5b] text-white rounded-lg font-medium hover:bg-red-600 transition-colors"
+					className="px-6 py-3 bg-[#ff5b5b] !text-white rounded-lg font-medium hover:bg-red-600 transition-colors"
 				>
 					{t('business.completeSetup.navigation.next')}:{' '}
 					{nextStepTitle || t('business.completeSetup.navigation.continue')}

@@ -7,8 +7,7 @@ import { useSalonSetup } from '@/hooks/useSalonSetup';
 import LoadingFallback from '@/components/LoadingFallback';
 import WorkingHoursSection from '@/components/WorkingHoursSection';
 import SetupStep1 from './components/SetupStep1';
-import SetupStep4 from './components/SetupStep4';
-import SetupStep5 from './components/SetupStep5';
+import SetupStep3 from './components/SetupStep3';
 import SetupProgress from './components/SetupProgress';
 import SetupNavigation from './components/SetupNavigation';
 import { apiClient } from '@/lib/api-client';
@@ -79,16 +78,11 @@ function BusinessCompleteSetupContent() {
 		steps,
 		mapProps,
 		nameInputRef,
-		phoneInputRef,
 		handleInputChange,
 		handleMarkerMove,
 		handleAddressChange,
 		handleAddressSelect,
-		handleSocialMediaChange,
 		handleWorkingHoursChange,
-		handleLogoChange,
-		handleLogoRemove,
-		handlePhotosChange,
 		nextStep,
 		prevStep,
 		skipStep,
@@ -105,7 +99,6 @@ function BusinessCompleteSetupContent() {
 						mapProps={mapProps}
 						isUpdatingAddress={isUpdatingAddress}
 						nameInputRef={nameInputRef}
-						phoneInputRef={phoneInputRef}
 						onInputChange={handleInputChange}
 						onMarkerMove={handleMarkerMove}
 						onAddressChange={handleAddressChange}
@@ -125,20 +118,7 @@ function BusinessCompleteSetupContent() {
 				);
 
 			case 3:
-				return (
-					<SetupStep4
-						formData={formData}
-						onInputChange={handleInputChange}
-						onSocialMediaChange={handleSocialMediaChange}
-						onLogoChange={handleLogoChange}
-						onLogoRemove={handleLogoRemove}
-						onPhotosChange={handlePhotosChange}
-						t={t}
-					/>
-				);
-
-			case 4:
-				return <SetupStep5 formData={formData} t={t} />;
+				return <SetupStep3 formData={formData} t={t} />;
 
 			default:
 				return null;

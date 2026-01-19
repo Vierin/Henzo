@@ -14,7 +14,6 @@ export interface SalonSetupData {
 	address: string;
 	addressLat?: number;
 	addressLon?: number;
-	phone: string;
 
 	// Step 2: Working Hours
 	workingHours: {
@@ -25,15 +24,6 @@ export interface SalonSetupData {
 		friday: { open: string; close: string; closed: boolean };
 		saturday: { open: string; close: string; closed: boolean };
 		sunday: { open: string; close: string; closed: boolean };
-	};
-
-	// Step 4: Branding
-	description: string;
-	logo: string | null;
-	photos: string[];
-	socialMedia: {
-		website: string;
-		instagram: string;
 	};
 }
 
@@ -61,31 +51,20 @@ export function useSalonSetup() {
 	const [isUpdatingAddress, setIsUpdatingAddress] = useState(false);
 	const addressUpdateTimerRef = useRef<NodeJS.Timeout | null>(null);
 	const nameInputRef = useRef<HTMLInputElement>(null);
-	const phoneInputRef = useRef<HTMLInputElement>(null);
 
 	const [formData, setFormData] = useState<SalonSetupData>({
 		name: '',
 		address: '',
 		addressLat: undefined,
 		addressLon: undefined,
-		phone: '',
 		workingHours: DEFAULT_WORKING_HOURS,
-		description: '',
-		logo: null,
-		photos: [],
-		socialMedia: {
-			website: '',
-			instagram: '',
-		},
 	});
 
 	const steps = useMemo(
 		() => [
 			{ number: 1, title: t('business.completeSetup.steps.1') },
 			{ number: 2, title: t('business.completeSetup.steps.2') },
-			{ number: 3, title: t('business.completeSetup.steps.3') },
-			{ number: 4, title: t('business.completeSetup.steps.4') },
-			{ number: 5, title: t('business.completeSetup.steps.5') },
+			{ number: 3, title: t('business.completeSetup.steps.5') },
 		],
 		[t]
 	);
@@ -206,15 +185,6 @@ export function useSalonSetup() {
 		[errors]
 	);
 
-	const handleSocialMediaChange = useCallback((platform: string, value: string) => {
-		setFormData((prev) => ({
-			...prev,
-			socialMedia: {
-				...prev.socialMedia,
-				[platform]: value,
-			},
-		}));
-	}, []);
 
 	const handleWorkingHoursChange = useCallback(
 		(workingHours: typeof formData.workingHours) => {
@@ -227,26 +197,6 @@ export function useSalonSetup() {
 	);
 
 
-	const handleLogoChange = useCallback((filePath: string) => {
-		setFormData((prev) => ({
-			...prev,
-			logo: filePath,
-		}));
-	}, []);
-
-	const handleLogoRemove = useCallback(() => {
-		setFormData((prev) => ({
-			...prev,
-			logo: null,
-		}));
-	}, []);
-
-	const handlePhotosChange = useCallback((photos: string[]) => {
-		setFormData((prev) => ({
-			...prev,
-			photos,
-		}));
-	}, []);
 
 	const handleAddressChange = useCallback((address: string) => {
 		if (addressUpdateTimerRef.current) {
@@ -287,8 +237,6 @@ export function useSalonSetup() {
 						newErrors.name = t('business.completeSetup.errors.nameRequired');
 					if (!formData.address.trim())
 						newErrors.address = t('business.completeSetup.errors.addressRequired');
-					if (!formData.phone.trim())
-						newErrors.phone = t('business.completeSetup.errors.phoneRequired');
 					break;
 				case 2:
 					// No validation needed for step 2 (working hours)
@@ -309,8 +257,6 @@ export function useSalonSetup() {
 						if (addressInput) {
 							addressInput.focus();
 						}
-					} else if (firstErrorField === 'phone' && phoneInputRef.current) {
-						phoneInputRef.current.focus();
 					}
 				}, 100);
 			}
@@ -344,16 +290,10 @@ export function useSalonSetup() {
 		try {
 			const salonData = {
 				name: formData.name.trim(),
-				description: formData.description.trim() || null,
 				address: formData.address.trim(),
 				latitude: formData.addressLat || undefined,
 				longitude: formData.addressLon || undefined,
-				phone: formData.phone.trim(),
-				website: formData.socialMedia.website.trim() || null,
-				instagram: formData.socialMedia.instagram.trim() || null,
 				workingHours: formData.workingHours,
-				logo: formData.logo || null,
-				photos: formData.photos,
 			};
 
 			await apiClient.post('/salons/current', salonData);
@@ -392,18 +332,13 @@ export function useSalonSetup() {
 
 		// Refs
 		nameInputRef,
-		phoneInputRef,
 
 		// Handlers
 		handleInputChange,
 		handleMarkerMove,
 		handleAddressChange,
 		handleAddressSelect,
-		handleSocialMediaChange,
 		handleWorkingHoursChange,
-		handleLogoChange,
-		handleLogoRemove,
-		handlePhotosChange,
 		nextStep,
 		prevStep,
 		skipStep,
