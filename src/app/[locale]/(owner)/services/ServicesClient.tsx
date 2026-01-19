@@ -381,8 +381,19 @@ export default function ServicesClient() {
 								placeholder={t('owner.services.searchByName')}
 								value={searchQuery}
 								onChange={(e) => setSearchQuery(e.target.value)}
-								className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#ff5b5b] focus:border-transparent text-black placeholder-gray-500"
+								className="w-full px-3 py-2 pr-10 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#ff5b5b] focus:border-transparent text-black placeholder-gray-500"
 							/>
+							{/* Кнопка очистки */}
+							{searchQuery && !isSearching && (
+								<button
+									onClick={() => setSearchQuery('')}
+									className="absolute right-3 top-1/2 transform -translate-y-1/2 p-1 hover:bg-gray-100 rounded-full transition-colors"
+									type="button"
+									aria-label="Clear search"
+								>
+									<X className="w-4 h-4 text-gray-400 hover:text-gray-600" />
+								</button>
+							)}
 							{/* Индикатор поиска */}
 							{isSearching && (
 								<div className="absolute right-3 top-1/2 transform -translate-y-1/2">

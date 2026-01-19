@@ -228,7 +228,7 @@ export default function OwnerSidebar({
 	// Helper function to render sidebar content
 	const renderSidebarContent = () => (
 		<div className="w-64 bg-white shadow-sm border-r border-gray-200 h-screen  overflow-y-auto">
-			<Link href={withLocale('/', currentLocale as 'en' | 'ru' | 'vi')} className="flex pt-10 py-2 px-4 sm:px-6 items-center gap-2 cursor-pointer">
+			<Link href={withLocale('/', currentLocale as 'en' | 'ru' | 'vi')} className="flex pt-4 sm:pt-10 py-2 px-4 sm:px-6 items-center gap-2 cursor-pointer">
 				<Image
 					src="/logo.png"
 					alt="Henzo Logo"

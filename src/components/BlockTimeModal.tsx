@@ -251,7 +251,7 @@ export default function BlockTimeModal({
 
 		// Handle full day (00:00 - 23:59) - set end time to end of day
 		let finalEndTime = endTime;
-		let finalEndDate = endDate;
+		const finalEndDate = endDate;
 		if (startTime === '00:00' && endTime === '23:59' && startDate === endDate) {
 			// For full day, set end time to 23:59:59.999 to cover entire day
 			finalEndTime = '23:59';
@@ -337,7 +337,7 @@ export default function BlockTimeModal({
 
 		// Handle full day (00:00 - 23:59) - set end time to end of day
 		let finalEndTime = endTime;
-		let finalEndDate = endDate;
+		const finalEndDate = endDate;
 		if (startTime === '00:00' && endTime === '23:59' && startDate === endDate) {
 			// For full day, set end time to 23:59:59.999 to cover entire day
 			finalEndTime = '23:59';

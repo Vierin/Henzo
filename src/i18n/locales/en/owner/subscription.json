@@ -2,7 +2,7 @@
 	"title": "Subscription Management",
 	"subtitle": "Manage your tariffs and expand your business capabilities",
 	"loading": "Loading subscription information...",
-	 "current": "CURRENT",
+	"current": "Current",
 	"recommended": "RECOMMENDED",
 	"perMonth": "month",
 	"activePlan": "Your active plan",
@@ -11,6 +11,18 @@
 	"switchSuccess": "Subscription plan updated successfully",
 	"switchError": "Failed to switch subscription plan",
 	"comingSoon": "Coming Soon",
+	"trialPeriod": "Trial Period",
+	"trialValidUntil": "Valid until",
+	"goToFullTariff": "Go to full tariff",
+	"specialOffer": "Special Offer",
+	"henzoPro": "Henzo Basic",
+	"threeMonthsFree": "3 months free",
+	"thenPrice": "Then",
+	"maxOpportunities": "Maximum opportunities for your business growth without limits.",
+	"startFreePeriod": "Start free period",
+	"trialActive": "Trial period active",
+	"trialDaysLeft": "{{days}} days left in trial",
+	"trialEnded": "Trial period ended",
 	"freemium": {
 		"masters": "Up to 5 masters",
 		"services": "Up to 40 services",
@@ -20,12 +32,12 @@
 		"emailSupport": "Email technical support"
 	},
 	"basic": {
-		"masters": "Up to 10 masters",
-		"services": "Up to 60 services",
+		"masters": "Unlimited number of masters",
+		"services": "Unlimited number of services",
 		"marketing": "Marketing tools",
-		"analytics": "Financial analytics",
-		"crm": "Full-featured CRM system",
-		"prioritySupport": "Priority support"
+		"analytics": "Advanced analytics",
+		"crm": "API access",
+		"prioritySupport": "Personal manager"
 	}
 }
 

@@ -4,9 +4,10 @@ import { useState, useEffect } from 'react';
 import { useTranslation } from '@/contexts/LanguageContext';
 import { useOwnerLayout } from '@/contexts/OwnerLayoutContext';
 import { apiClient } from '@/lib/api-client';
-import { Check, Crown } from 'lucide-react';
+import { Check, ArrowRight } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { SUBSCRIPTION_PLANS } from '@/config/subscriptionPlans';
+import LoadingSpinner from '@/components/LoadingSpinner';
 
 interface Subscription {
 	id: string;
@@ -99,178 +100,114 @@ export default function SubscriptionClient() {
 
 	if (loading) {
 		return (
-			<div className="flex items-center justify-center min-h-screen">
-				<div className="text-center">
-					<div className="w-8 h-8 border-4 border-[#ff5b5b] border-t-transparent rounded-full animate-spin mx-auto mb-4" />
-					<p className="text-gray-600">{t('owner.subscription.loading')}</p>
-				</div>
+			<div className="min-h-screen bg-[#F0F4F8] flex items-center justify-center">
+				<LoadingSpinner
+					fullScreen={false}
+					message={t('owner.subscription.loading')}
+				/>
 			</div>
 		);
 	}
 
+	const trialEndDate = currentSubscription?.trialEndDate
+		? new Date(currentSubscription.trialEndDate)
+		: null;
+	const trialEndDateFormatted = trialEndDate
+		? trialEndDate.toLocaleDateString('ru-RU', {
+				day: '2-digit',
+				month: '2-digit',
+				year: 'numeric',
+			})
+		: null;
+
 	return (
-		<div className="min-h-screen p-0 sm:p-6 lg:p-8">
-			<div className="max-w-6xl mx-auto">
+		<div className="min-h-screen bg-[#F0F4F8] relative overflow-hidden">
+			<main className="container mx-auto px-4 py-6 max-w-5xl relative z-0">
 				{/* Header */}
-				<div className="mb-8">
-					<h1 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-2">
+				<header className="text-center mb-12">
+					<h1 className="text-3xl md:text-4xl font-bold !mb-2 text-gray-900 tracking-tight">
 						{t('owner.subscription.title')}
 					</h1>
-					<p className="text-gray-600 text-sm sm:text-base">
+					<p className="text-gray-500 text-lg font-medium">
 						{t('owner.subscription.subtitle')}
 					</p>
-				</div>
- 
+				</header>
 
-				{/* Trial Info */}
+				{/* Trial Period Card */}
 				{currentSubscription?.trialEndDate && (
-					<div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-						<div className="flex items-center justify-between">
-							<div>
-								<p className="text-sm font-medium text-blue-900">
-									{t('owner.subscription.trialActive') || 'Trial Period Active'}
-								</p>
-								<p className="text-xs text-blue-700 mt-1">
-									{(() => {
-										const trialEnd = new Date(currentSubscription.trialEndDate);
-										const now = new Date();
-										const daysLeft = Math.ceil((trialEnd.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
-										if (daysLeft > 0) {
-											const daysText = t('owner.subscription.trialDaysLeft') || '{{days}} days left in trial';
-											return daysText.replace('{{days}}', daysLeft.toString());
-										}
-										return t('owner.subscription.trialEnded') || 'Trial period has ended';
-									})()}
-								</p>
-							</div>
-							{currentSubscription.trialEndDate && (
-								<div className="text-right">
-									<p className="text-xs text-blue-600">
-										{new Date(currentSubscription.trialEndDate).toLocaleDateString()}
-									</p>
+					<section className="mb-10">
+						<div
+							className="relative w-full max-w-3xl mx-auto backdrop-blur-[12px] bg-white/65 border border-white/50 shadow-md rounded-2xl p-8 transition-all hover:shadow-lg"
+						>
+							 <span className="absolute top-3 right-3 md:top-4 md:right-4 flex items-center px-3 py-2 rounded-full text-xs font-bold uppercase tracking-wide bg-[#ff5b5b]/10 text-[#ff5b5b]">
+									{t('owner.subscription.current')}
+								</span>
+
+
+						 
+								<div className='text-left'>
+									<h2 className="text-2xl font-bold text-gray-800 max-w-[70%] sm:max-w-full mb-2">
+										{t('owner.subscription.trialPeriod')} {t('owner.subscription.henzoPro')}
+									</h2>
+
+									<p className="text-gray-500 text-sm font-medium">Сейчас у вас есть полный доступ ко всем функциям платформы.</p>
+									<div className='mt-2'>
+										<p className="text-gray-700 text-sm font-medium">
+											{t('owner.subscription.trialValidUntil')} {trialEndDateFormatted}
+										</p> 
+									</div>
 								</div>
-							)}
+							  
 						</div>
-					</div>
+					</section>
 				)}
 
-				{/* Plans Grid */}
-				<div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-					{plans.map((plan) => {
-						const isCurrent = plan.id === currentPlanType;
-						const isRecommended = plan.isRecommended && !isCurrent;
-
-						return (
-							<div
-								key={plan.id}
-								className={`relative bg-white rounded-2xl p-6 sm:p-8 shadow-sm border-2 transition-all ${
-									isRecommended
-										? 'border-[#ff5b5b] shadow-lg'
-										: isCurrent
-											? 'border-[#ff5b5b]'
-											: 'border-gray-200'
-								}`}
-							>
-								{/* Recommended Badge */}
-								{isRecommended && (
-									<div className="absolute -top-3 left-1/2 transform -translate-x-1/2">
-										<span className="bg-[#ff5b5b] text-white px-4 py-1 rounded-full text-xs font-bold uppercase">
-											{t('owner.subscription.recommended')}
-										</span>
-									</div>
-								)}
-
-								{/* Current Badge */}
-								{isCurrent && (
-									<div className="absolute top-4 right-4">
-										<span className="bg-[#fff7f6] text-[#ff5b5b] px-3 py-1 rounded-full text-xs font-medium">
-											{t('owner.subscription.current')}
-										</span>
-									</div>
-								)}
-
-								{/* Plan Header */}
-								<div className="mb-6">
-									<div className="flex items-center gap-2 mb-2">
-										{plan.id === 'BASIC' && (
-											<Crown className="w-5 h-5 text-[#ff5b5b]" />
-										)}
-										<h2 className="text-2xl font-bold text-gray-900">
-											{plan.name}
-										</h2>
-									</div>
-									{plan.description && (
-										<p className="text-sm text-gray-500 mb-4">
-											{plan.description}
-										</p>
-									)}
-									<div className="flex items-baseline gap-1">
-										<span className="text-3xl sm:text-4xl font-bold text-gray-900">
-											{plan.price === 0
-												? '0'
-												: plan.price.toLocaleString('ru-RU')}
-										</span>
-										{plan.price > 0 && (
-											<span className="text-gray-500 text-lg">
-												₫/{t('owner.subscription.perMonth')}
-											</span>
-										)}
-										{plan.price === 0 && (
-											<span className="text-gray-500 text-lg">
-												₫/{t('owner.subscription.perMonth')}
-											</span>
-										)}
-									</div>
+				{/* Henzo Pro Card */}
+				<section className="relative">
+					<div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-3/4 h-3/4 bg-[#ff5b5b]/20 blur-[60px] rounded-full -z-10"></div>
+					<div
+						className="w-full max-w-4xl mx-auto backdrop-blur-[12px] bg-white/80 border-2 border-white/60 shadow-md rounded-3xl p-8 md:p-12 overflow-hidden"
+						style={{ backdropFilter: 'blur(12px)' }}
+					>
+						<div className="flex flex-col md:flex-row gap-6 items-center justify-between mt-4">
+							<div className="flex-1 text-left">
+								<h3 className="text-4xl md:text-5xl !font-bold text-gray-900 tracking-tight !mb-2">
+									{t('owner.subscription.henzoPro')}
+								</h3>
+								<div className="">
+									<p className="text-2xl md:text-3xl font-bold text-[#ff5b5b] mb-6">
+										{t('owner.subscription.threeMonthsFree')}
+									</p>
+									<p className="text-gray-500 text-md">
+										{t('owner.subscription.thenPrice')}{' '}
+										{SUBSCRIPTION_PLANS.BASIC.price.toLocaleString('vi-VN')} VND/
+										{t('owner.subscription.perMonth')}
+									</p>
 								</div>
-
-								{/* Features */}
-								<ul className="space-y-3 mb-6">
-									{plan.features.map((feature, index) => (
-										<li key={index} className="flex items-start gap-3">
-											<Check className="w-5 h-5 text-[#ff5b5b] flex-shrink-0 mt-0.5" />
-											<span className="text-gray-700 text-sm">{feature}</span>
-										</li>
-									))}
-								</ul>
-
-								{/* Action Button */}
-								{isCurrent ? (
-									<button
-										disabled
-										className="w-full py-3 px-4 rounded-lg bg-[#fff7f6] text-[#ff5b5b] font-medium cursor-not-allowed"
-									>
-										{t('owner.subscription.activePlan')}
-									</button>
-								) : (
-									<button
-										onClick={() =>
-											handleSwitchPlan(plan.id as 'BASIC')
-										}
-										disabled={switching === plan.id}
-										className={`w-full py-3 px-4 rounded-lg font-medium transition-colors ${
-											isRecommended
-												? 'bg-[#ff5b5b] text-white hover:bg-[#ea4b4b]'
-												: 'bg-[#fff7f6] text-[#ff5b5b] hover:bg-[#ffe0de] border border-[#ff5b5b]'
-										} disabled:opacity-50 disabled:cursor-not-allowed`}
-									>
-										{switching === plan.id ? (
-											<span className="flex items-center justify-center gap-2">
-												<div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
-												{t('owner.subscription.switching')}
-											</span>
-										) : (
-											t('owner.subscription.switchTo').replace(
-												/\{\{plan\}\}/g,
-												plan.name
-											)
-										)}
-									</button>
-								)}
+								<p className="text-gray-600 max-w-sm mx-auto md:mx-0 pt-2">
+									{t('owner.subscription.maxOpportunities')}
+								</p>
 							</div>
-						);
-					})}
-				</div>
-			</div>
+							<div className="flex-1 w-full">
+								<div className="py-4 md:py-6">
+									<ul className="grid grid-cols-1 sm:grid-cols-2 gap-y-4 gap-x-6">
+										{plans[0]?.features.map((feature, index) => (
+											<li key={index} className="flex items-start space-x-3">
+												<span className="flex-shrink-0 w-6 h-6 rounded-full bg-[#ff5b5b]/10 flex items-center justify-center mt-0.5">
+													<Check className="w-4 h-4 text-[#ff5b5b] font-bold" />
+												</span>
+												<span className="text-gray-700 font-medium text-sm">
+													{feature}
+												</span>
+											</li>
+										))}
+									</ul>
+								</div>
+							</div>
+						</div>
+					</div>
+				</section>
+			</main>
 		</div>
 	);
 }

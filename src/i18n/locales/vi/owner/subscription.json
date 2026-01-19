@@ -2,7 +2,7 @@
 	"title": "Quản lý đăng ký",
 	"subtitle": "Quản lý gói dịch vụ và mở rộng khả năng kinh doanh của bạn",
 	"loading": "Đang tải thông tin đăng ký...",
- 	"current": "HIỆN TẠI",
+	"current": "Hiện tại",
 	"recommended": "ĐỀ XUẤT",
 	"perMonth": "tháng",
 	"activePlan": "Gói hiện tại của bạn",
@@ -11,6 +11,18 @@
 	"switchSuccess": "Cập nhật gói dịch vụ thành công",
 	"switchError": "Không thể chuyển gói dịch vụ",
 	"comingSoon": "Sắp ra mắt",
+	"trialPeriod": "Giai đoạn dùng thử",
+	"trialValidUntil": "Có hiệu lực đến",
+	"goToFullTariff": "Chuyển sang gói đầy đủ",
+	"specialOffer": "Ưu đãi đặc biệt",
+	"henzoPro": "Henzo Basic",
+	"threeMonthsFree": "3 tháng miễn phí",
+	"thenPrice": "Sau đó",
+	"maxOpportunities": "Cơ hội tối đa để phát triển kinh doanh của bạn không giới hạn.",
+	"startFreePeriod": "Bắt đầu giai đoạn miễn phí",
+	"trialActive": "Giai đoạn dùng thử đang hoạt động",
+	"trialDaysLeft": "Còn {{days}} ngày trong giai đoạn dùng thử",
+	"trialEnded": "Giai đoạn dùng thử đã kết thúc",
 	"freemium": {
 		"masters": "Tối đa 5 thợ",
 		"services": "Tối đa 40 dịch vụ",
@@ -20,10 +32,10 @@
 		"emailSupport": "Hỗ trợ kỹ thuật qua email"
 	},
 	"basic": {
-		"masters": "Tối đa 10 thợ",
-		"services": "Tối đa 60 dịch vụ",
+		"masters": "Số lượng thợ không giới hạn",
+		"services": "Số lượng dịch vụ không giới hạn",
 		"marketing": "Công cụ tiếp thị",
-		"analytics": "Phân tích tài chính",
+		"analytics": "Phân tích nâng cao",
 		"crm": "Hệ thống CRM đầy đủ tính năng",
 		"prioritySupport": "Hỗ trợ ưu tiên"
 	}
