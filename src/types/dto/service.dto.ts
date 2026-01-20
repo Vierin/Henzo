@@ -17,6 +17,7 @@ export interface CreateServiceDto {
 	serviceSubcategoryId?: number;
 	serviceGroupId?: string;
 	tagIds?: number[];
+	staffIds?: string[];
 }
 
 export interface UpdateServiceDto {

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { Check, X, ExternalLink,  ChevronRight, ChevronDown } from 'lucide-react';
 import { useTranslation, useLanguage } from '@/contexts/LanguageContext';
 import { useRouter } from 'next/navigation';
@@ -43,6 +43,17 @@ export default function OnboardingChecklist({
 	const [isCollapsed, setIsCollapsed] = useState(false);
 	const [bookingPageViewed, setBookingPageViewed] = useState(false);
 	const [localSalonStatus, setLocalSalonStatus] = useState<'DRAFT' | 'READY' | 'ACTIVE' | null>(null);
+	const [isDismissed, setIsDismissed] = useState(false);
+
+	// Check if onboarding was dismissed
+	useEffect(() => {
+		if (typeof window !== 'undefined') {
+			const dismissed = localStorage.getItem(`onboarding_dismissed_${salonId}`);
+			if (dismissed === 'true') {
+				setIsDismissed(true);
+			}
+		}
+	}, [salonId]);
 	const { salonData } = useOwnerLayout();
 	const { user } = useAuth();
 	const { data: services = [] } = useServices(salonId || '', {});
@@ -50,6 +61,13 @@ export default function OnboardingChecklist({
 	const { getSalonUrl } = useSalonSlug();
 	const createStaffMutation = useCreateStaff();
 	const queryClient = useQueryClient();
+
+	// Синхронизируем localSalonStatus с реальным статусом салона после загрузки данных
+	useEffect(() => {
+		if (salonData?.status && salonData.status !== localSalonStatus) {
+			setLocalSalonStatus(salonData.status as 'DRAFT' | 'READY' | 'ACTIVE');
+		}
+	}, [salonData?.status, localSalonStatus]);
 
 	const salonStatus = localSalonStatus || (salonData?.status as 'DRAFT' | 'READY' | 'ACTIVE') || 'DRAFT';
 	const hasSchedule = salonData?.workingHours && Object.keys(salonData.workingHours).length > 0;
@@ -104,8 +122,10 @@ export default function OnboardingChecklist({
 			// Update local status immediately
 			setLocalSalonStatus('ACTIVE');
 			// Invalidate and refetch salon data
-			queryClient.invalidateQueries({ queryKey: salonKeys.current() });
-			queryClient.invalidateQueries({ queryKey: salonKeys.all });
+			await queryClient.invalidateQueries({ queryKey: salonKeys.current() });
+			await queryClient.invalidateQueries({ queryKey: salonKeys.all });
+			// Explicitly refetch to ensure data is updated
+			await queryClient.refetchQueries({ queryKey: salonKeys.current() });
 			// Show congratulations
 			setShowCongratulations(true);
 			toast.success(t('owner.onboarding.salonPublished'));
@@ -229,8 +249,14 @@ export default function OnboardingChecklist({
 							</div>
 							<button
 								onClick={() => {
+									// Hide onboarding completely
+									if (typeof window !== 'undefined') {
+										localStorage.setItem(`onboarding_dismissed_${salonId}`, 'true');
+									}
+									setIsDismissed(true);
 									setShowCongratulations(false);
-									router.push('/salon-info');
+									// Redirect to salon-info with photos anchor
+									router.push('/salon-info#photos');
 								}}
 								className="w-full bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium mb-3"
 							>
@@ -250,7 +276,7 @@ export default function OnboardingChecklist({
 		);
 	}
 
-	if (salonStatus === 'ACTIVE') {
+	if (salonStatus === 'ACTIVE' || isDismissed) {
 		return null;
 	}
 

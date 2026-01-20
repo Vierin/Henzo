@@ -23,7 +23,7 @@ export default function PhotosSection({
 	const t = useTranslation();
 
 	return (
-		<div className="bg-white border border-gray-200 rounded-lg p-3 md:p-6">
+		<div id="photos" className="bg-white border border-gray-200 rounded-lg p-3 md:p-6 scroll-mt-20">
 			<h2 className="text-xl md:text-2xl font-semibold text-gray-900 mb-4 md:mb-6">
 				{t('owner.salonInfo.salonPhotos')}
 			</h2>

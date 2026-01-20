@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef, useCallback, useMemo, lazy, Suspense } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 import { toast } from 'react-hot-toast';
 import LoadingSpinner from '@/components/LoadingSpinner';
 import { useSalon } from '@/hooks/useSalons';
@@ -70,6 +70,35 @@ export default function SalonInfoClient() {
 		error: salonError,
 	} = useSalon();
 	const hasExistingSalon = !!salon?.id;
+
+	const pathname = usePathname();
+
+	// Scroll to anchor on page load (e.g., from onboarding)
+	useEffect(() => {
+		if (typeof window !== 'undefined') {
+			const hash = window.location.hash;
+			if (hash === '#photos') {
+				// Wait for page to render and DOM to be ready
+				const scrollToPhotos = () => {
+					const element = document.getElementById('photos');
+					if (element) {
+						// Use requestAnimationFrame to ensure DOM is ready
+						requestAnimationFrame(() => {
+							setTimeout(() => {
+								element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+								// Clean up hash from URL after scrolling
+								window.history.replaceState(null, '', window.location.pathname);
+							}, 100);
+						});
+					} else {
+						// Retry if element not found yet
+						setTimeout(scrollToPhotos, 100);
+					}
+				};
+				scrollToPhotos();
+			}
+		}
+	}, [pathname]);
 
 	// Memoize salon URL and QR code URL
 	const { salonUrl, qrCodeUrl } = useMemo(() => {
