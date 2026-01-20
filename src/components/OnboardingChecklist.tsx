@@ -65,16 +65,12 @@ export default function OnboardingChecklist({
 		}
 	}, [salonData?.status]);
 
-	// Ранняя проверка: скрываем онбординг для активных салонов ДО загрузки других данных
-	// Проверяем статус из salonData напрямую, затем из localSalonStatus
-	const salonStatusFromData = salonData?.status as string | undefined;
-	const currentStatus = salonStatusFromData || localSalonStatus;
-	const isActive = currentStatus && String(currentStatus).toUpperCase() === 'ACTIVE';
-	
-	// Если статус ACTIVE или чеклист был закрыт, не показываем компонент
-	if (isActive || isDismissed) {
-		return null;
-	}
+	// Все хуки должны вызываться до раннего return
+	const { data: services = [] } = useServices(salonId || '', {});
+	const { data: staffMembers = [] } = useStaffBySalon(salonId || '');
+	const { getSalonUrl } = useSalonSlug();
+	const createStaffMutation = useCreateStaff();
+	const queryClient = useQueryClient();
 
 	// Используем статус из salonData напрямую, если localSalonStatus еще не установлен
 	const getSalonStatus = (): 'DRAFT' | 'READY' | 'ACTIVE' => {
@@ -88,12 +84,8 @@ export default function OnboardingChecklist({
 		return 'DRAFT';
 	};
 	const salonStatus = getSalonStatus();
-	
-	const { data: services = [] } = useServices(salonId || '', {});
-	const { data: staffMembers = [] } = useStaffBySalon(salonId || '');
-	const { getSalonUrl } = useSalonSlug();
-	const createStaffMutation = useCreateStaff();
-	const queryClient = useQueryClient();
+
+	// Вычисляем значения, которые используются в useMemo
 	const hasSchedule = salonData?.workingHours && Object.keys(salonData.workingHours).length > 0;
 	const salonPublicUrl = salonData ? getSalonUrl(salonData) : (salonSlug ? `/salon/${salonSlug}` : undefined);
 
@@ -138,6 +130,53 @@ export default function OnboardingChecklist({
 			stepNumber: 5,
 		},
 	], [services.length, staffMembers.length, hasSchedule, salonPublicUrl, salonStatus, router, t]);
+
+	const allStepsCompleted = steps.slice(0, 4).every((step) => step.completed || step.id === 'booking-page');
+	const canPublish = allStepsCompleted && salonStatus !== 'ACTIVE';
+
+	// Determine current active step (first incomplete step in order)
+	const activeStepIndex = useMemo(() => {
+		// Find first incomplete step that should be shown next
+		for (let i = 0; i < steps.length; i++) {
+			const step = steps[i];
+			// For booking-page, we consider it completed if all previous steps are done
+			if (step.id === 'booking-page') {
+				const previousStepsCompleted = steps.slice(0, i).every((s) => s.completed);
+				if (previousStepsCompleted && !bookingPageViewed) {
+					return i;
+				}
+				// If booking page was viewed, skip to next step
+				if (bookingPageViewed) {
+					continue;
+				}
+			} else if (!step.completed) {
+				return i;
+			}
+		}
+		// If all steps are completed, show publish step
+		return steps.length - 1;
+	}, [steps, bookingPageViewed]);
+
+	const currentStep = steps[activeStepIndex];
+	const isLastStep = activeStepIndex === steps.length - 1;
+	const totalSteps = steps.length;
+	const remainingSteps = Math.max(0, totalSteps - (activeStepIndex + 1));
+
+	// Calculate progress: if we're on the last step and all previous steps are completed, progress = 100%
+	const completedStepsCount = steps.filter((step) => step.completed || step.id === 'booking-page').length;
+	const progressPercentage = isLastStep && allStepsCompleted 
+		? 100 
+		: (completedStepsCount / totalSteps) * 100;
+
+	// Проверка статуса: скрываем онбординг для активных салонов
+	const salonStatusFromData = salonData?.status as string | undefined;
+	const currentStatus = salonStatusFromData || localSalonStatus;
+	const isActive = currentStatus && String(currentStatus).toUpperCase() === 'ACTIVE';
+	
+	// Если статус ACTIVE или чеклист был закрыт, не показываем компонент
+	if (isActive || isDismissed) {
+		return null;
+	}
 
 	const handlePublish = async () => {
 		setIsPublishing(true);
@@ -206,43 +245,6 @@ export default function OnboardingChecklist({
 			router.push('/staff/new');
 		}
 	};
-
-	const allStepsCompleted = steps.slice(0, 4).every((step) => step.completed || step.id === 'booking-page');
-	const canPublish = allStepsCompleted && salonStatus !== 'ACTIVE';
-
-	// Determine current active step (first incomplete step in order)
-	const activeStepIndex = useMemo(() => {
-		// Find first incomplete step that should be shown next
-		for (let i = 0; i < steps.length; i++) {
-			const step = steps[i];
-			// For booking-page, we consider it completed if all previous steps are done
-			if (step.id === 'booking-page') {
-				const previousStepsCompleted = steps.slice(0, i).every((s) => s.completed);
-				if (previousStepsCompleted && !bookingPageViewed) {
-					return i;
-				}
-				// If booking page was viewed, skip to next step
-				if (bookingPageViewed) {
-					continue;
-				}
-			} else if (!step.completed) {
-				return i;
-			}
-		}
-		// If all steps are completed, show publish step
-		return steps.length - 1;
-	}, [steps, bookingPageViewed]);
-
-	const currentStep = steps[activeStepIndex];
-	const isLastStep = activeStepIndex === steps.length - 1;
-	const totalSteps = steps.length;
-	const remainingSteps = Math.max(0, totalSteps - (activeStepIndex + 1));
-
-	// Calculate progress: if we're on the last step and all previous steps are completed, progress = 100%
-	const completedStepsCount = steps.filter((step) => step.completed || step.id === 'booking-page').length;
-	const progressPercentage = isLastStep && allStepsCompleted 
-		? 100 
-		: (completedStepsCount / totalSteps) * 100;
 
 	if (showCongratulations) {
 		const hasPhotos = salonData?.photos && Array.isArray(salonData.photos) && salonData.photos.length > 0;

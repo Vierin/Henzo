@@ -32,7 +32,7 @@ export default function RecommendedSalons() {
 	// Filter salons to only show those with at least one service
 	const salonsWithServices = useMemo(
 		() =>
-			(salons as Salon[]).filter((salon) => {
+			(salons as unknown as Salon[]).filter((salon) => {
 				// Check multiple ways: _count, services array, or Service array (Prisma naming)
 				const serviceCount =
 					(salon._count as any)?.Service ||

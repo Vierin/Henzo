@@ -73,6 +73,7 @@ export const moduleDependencies: Record<TranslationModule, TranslationModule[]> 
 	'public/business': ['core/common', 'core/navigation', 'ui/header', 'ui/footer'],
 	'public/contact': ['core/common', 'shared/forms', 'ui/header', 'ui/footer'],
 	'public/about': ['core/common', 'core/navigation', 'ui/header', 'ui/footer'],
+	'public/notFound': ['core/common', 'ui/header', 'ui/footer'],
 	
 	// Owner - depend on core, shared
 	'owner/dashboard': ['core/common', 'shared/emptyStates'],
