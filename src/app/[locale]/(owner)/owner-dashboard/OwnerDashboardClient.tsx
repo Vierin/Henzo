@@ -1,7 +1,6 @@
 'use client';
 
 import { useMemo, useState, useCallback } from 'react';
-import { usePathname } from 'next/navigation';
 import { useBookings } from '@/hooks/useBookings';
 import { useOwnerLayout } from '@/contexts/OwnerLayoutContext';
 import { useServices } from '@/hooks/useServices';
@@ -41,7 +40,6 @@ export default function OwnerDashboardClient() {
 	const [selectedService, setSelectedService] = useState<Service | undefined>();
 	const [editingBooking, setEditingBooking] = useState<Booking | null>(null);
 	const t = useTranslation();
-	const pathname = usePathname();
 
 	const { salonId, isLoading, hasSalon, salonData } = useOwnerLayout();
 

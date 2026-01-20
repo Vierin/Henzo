@@ -1,7 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useMemo, useRef } from 'react';
-import { useRouter } from 'next/navigation';
+import React, { useState, useEffect, useMemo } from 'react';
 import { supabase } from '@/lib/supabase';
 import { Service, WorkingHours } from '@/types';
 import { useStaffBySalon } from '@/hooks/useStaff';
@@ -14,7 +13,6 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { getLocalizedServiceName } from '@/utils/serviceLocalization';
 import { logger } from '@/lib/logger';
 import { storage } from '@/utils/storage';
-import { fromZonedTime } from 'date-fns-tz';
 import BookingGuestForm from './BookingModal/BookingGuestForm';
 import BookingAuthForm from './BookingModal/BookingAuthForm';
 import BookingServiceSelector from './BookingModal/BookingServiceSelector';
@@ -22,6 +20,13 @@ import BookingDateSelector from './BookingModal/BookingDateSelector';
 import BookingTimeSelector from './BookingModal/BookingTimeSelector';
 import BookingStaffSelector from './BookingModal/BookingStaffSelector';
 import BookingFormFooter from './BookingModal/BookingFormFooter';
+// Custom hooks
+import { useBookingState } from '@/hooks/useBookingState';
+import { useBookingData } from '@/hooks/useBookingData';
+import { useBookingAvailability } from '@/hooks/useBookingAvailability';
+import { useBookingTimeSlots } from '@/hooks/useBookingTimeSlots';
+import { useBookingScroll } from '@/hooks/useBookingScroll';
+import { useBookingAuth } from '@/hooks/useBookingAuth';
 
 // Custom styles for native scroll
 const scrollStyles = `
@@ -71,51 +76,86 @@ export default function BookingModal({
 	onBookingUpdated,
 }: BookingModalProps) {
 	const { language, t } = useLanguage();
-	const [selectedDate, setSelectedDate] = useState('');
-	const [selectedTime, setSelectedTime] = useState('');
-	const [selectedStaff, setSelectedStaff] = useState(
-		t('booking.anyStaff') || 'Any Staff Member'
-	);
+	
+	// Используем переданный salonId
+	const currentSalonId = salonId;
+
+	// Получаем salonId владельца для проверки
+	const { salonId: ownerSalonId } = useSalonId();
+
+	// Используем Zustand store для аутентификации
+	const { user, isClient, isOwner, refreshUser } = useAuthStore();
+
+	// Используем новые хуки для получения данных
+	const {
+		data: staffMembers = [],
+		isLoading: staffLoading,
+	} = useStaffBySalon(currentSalonId || '');
+
+	const {
+		data: services = [],
+	} = useServices(currentSalonId || '');
+
+	// Custom hooks для управления состоянием
+	const bookingState = useBookingState({
+		salonId: currentSalonId,
+		initialService: service,
+		initialWorkingHours: workingHours,
+	});
+
+	const {
+		selectedService,
+		setSelectedService,
+		selectedDate,
+		setSelectedDate,
+		selectedTime,
+		setSelectedTime,
+		selectedStaff,
+		setSelectedStaff,
+		salonWorkingHours,
+		setSalonWorkingHours,
+		restoreBookingState,
+	} = bookingState;
+
+	const bookingData = useBookingData({
+		salonId: currentSalonId,
+		isOpen,
+		selectedDate,
+	});
+
+	const {
+		salonWorkingHours: dataSalonWorkingHours,
+		salonTimezone,
+		existingBookings,
+		bookingsLoadError,
+	} = bookingData;
+
+	// Синхронизируем salonWorkingHours из bookingData с bookingState
+	useEffect(() => {
+		if (dataSalonWorkingHours) {
+			setSalonWorkingHours(dataSalonWorkingHours);
+		}
+	}, [dataSalonWorkingHours, setSalonWorkingHours]);
+
+	// Local UI states
 	const [isStaffDropdownOpen, setIsStaffDropdownOpen] = useState(false);
 	const [currentDateIndex, setCurrentDateIndex] = useState(0);
 	const [startDateIndex, setStartDateIndex] = useState(0);
-	const [salonWorkingHours, setSalonWorkingHours] =
-		useState<WorkingHours | null>(null);
-	const [salonTimezone, setSalonTimezone] =
-		useState<string>('Asia/Ho_Chi_Minh');
 	const [loading, setLoading] = useState(false);
-	const [selectedService, setSelectedService] = useState<Service | null>(null);
 	const [isServiceDropdownOpen, setIsServiceDropdownOpen] = useState(false);
 	const [isInitialized, setIsInitialized] = useState(false);
-	const [currentMonth, setCurrentMonth] = useState(new Date());
-	const [existingBookings, setExistingBookings] = useState<any[]>([]);
-	const [bookingsLoaded, setBookingsLoaded] = useState(true);
-	const [bookingsLoadError, setBookingsLoadError] = useState(false);
-	const [showLoginModal, setShowLoginModal] = useState(false);
-	const [showMagicLinkSent, setShowMagicLinkSent] = useState(false);
-	const [guestEmail, setGuestEmail] = useState('');
-	const [clientEmail, setClientEmail] = useState('');
-	const [clientName, setClientName] = useState('');
-	const [clientPhone, setClientPhone] = useState('');
-	const [pendingBookingData, setPendingBookingData] = useState<{
-		service: Service;
-		date: string;
-		time: string;
-		staff: string;
-		notes?: string;
-	} | null>(null);
 	const [bookingSuccess, setBookingSuccess] = useState<{
 		status: 'PENDING' | 'CONFIRMED';
 		serviceName: string;
 		date: string;
 		time: string;
 	} | null>(null);
-
-	// Multi-step form state for mobile
-	const [currentStep, setCurrentStep] = useState<'booking' | 'client'>(
-		'booking'
-	);
+	const [currentStep, setCurrentStep] = useState<'booking' | 'client'>('booking');
 	const [isMobile, setIsMobile] = useState(false);
+	const [timeFilter, setTimeFilter] = useState<'morning' | 'afternoon' | 'evening'>('morning');
+	const [clientEmail, setClientEmail] = useState('');
+	const [clientName, setClientName] = useState('');
+	const [clientPhone, setClientPhone] = useState('');
 
 	// Check if mobile device
 	useEffect(() => {
@@ -133,7 +173,6 @@ export default function BookingModal({
 		if (isOpen) {
 			setCurrentStep('booking');
 		} else {
-			// Reset step when modal closes
 			setCurrentStep('booking');
 		}
 	}, [isOpen]);
@@ -144,70 +183,23 @@ export default function BookingModal({
 		onClose();
 	};
 
-	// New states for improved UX
-	const [timeFilter, setTimeFilter] = useState<
-		'morning' | 'afternoon' | 'evening'
-	>('morning');
-	const [loadedDaysCount, setLoadedDaysCount] = useState(90); // Начальное количество дней
-	const [isLoadingMoreDays, setIsLoadingMoreDays] = useState(false);
-	const [canScrollLeft, setCanScrollLeft] = useState(false);
-	const [canScrollRight, setCanScrollRight] = useState(false);
-	const [canScrollDateLeft, setCanScrollDateLeft] = useState(false);
-	const [canScrollDateRight, setCanScrollDateRight] = useState(false);
-	const INITIAL_DAYS = 90;
-	const LOAD_MORE_DAYS = 40; // Загружаем по 40 дней за раз
-
-	// Refs for native scroll
-	const timeScrollRef = useRef<HTMLDivElement>(null);
-	const dateScrollRef = useRef<HTMLDivElement>(null);
-
-	// Drag-to-scroll states for time scroll
-	const [isDragging, setIsDragging] = useState(false);
-	const [startX, setStartX] = useState(0);
-	const [scrollLeft, setScrollLeft] = useState(0);
-	const [hasMoved, setHasMoved] = useState(false);
-
-	// Drag-to-scroll states for date scroll
-	const [isDateDragging, setIsDateDragging] = useState(false);
-	const [dateStartX, setDateStartX] = useState(0);
-	const [dateScrollLeft, setDateScrollLeft] = useState(0);
-
-	// Используем Zustand store для аутентификации
-	const { user, isClient, isOwner, login, refreshUser } = useAuthStore();
-	const router = useRouter();
-
-	// Используем переданный salonId
-	const currentSalonId = salonId;
-
-	// Получаем salonId владельца для проверки
-	const { salonId: ownerSalonId } = useSalonId();
-
-	// Используем новые хуки для получения данных (только если salonId передан)
-	const {
-		data: staffMembers = [],
-		isLoading: staffLoading,
-		error: staffError,
-	} = useStaffBySalon(currentSalonId || '');
+	// Scroll hook
+	const scroll = useBookingScroll({
+		isOpen,
+		initialDaysCount: 90,
+		loadMoreDaysCount: 40,
+	});
 
 	const {
-		data: services = [],
-		isLoading: servicesLoading,
-		error: servicesError,
-	} = useServices(currentSalonId || '');
-
-	// Load salon data when modal opens
-	useEffect(() => {
-		if (isOpen && currentSalonId) {
-			fetchSalonData();
-		}
-	}, [isOpen, currentSalonId]);
-
-	// Load existing bookings when date changes
-	useEffect(() => {
-		if (selectedDate && currentSalonId) {
-			fetchExistingBookings(selectedDate);
-		}
-	}, [selectedDate, currentSalonId]);
+		timeScrollRef,
+		dateScrollRef,
+		loadedDaysCount,
+		isLoadingMoreDays,
+		canScrollDateLeft,
+		canScrollDateRight,
+		checkScrollPosition,
+		checkDateScrollPosition,
+	} = scroll;
 
 
 	// Reset selected staff if they can't perform the selected service
@@ -369,15 +361,7 @@ export default function BookingModal({
 									return;
 								}
 
-								// Directly call createBooking with data from bookingData to avoid state issues
-								logger.log('🚀 Creating booking directly with data:', {
-									service: finalService?.name,
-									serviceId: finalService?.id,
-									date: finalDate,
-									time: finalTime,
-									staff: bookingData.staff,
-									salonId: currentSalonId,
-								});
+						 
 								await createBooking({
 									service: finalService,
 									date: finalDate,
@@ -405,7 +389,7 @@ export default function BookingModal({
 	useEffect(() => {
 		if (isOpen && user && isClient) {
 			// Regular restore for non-OAuth flows
-			restoreBookingState();
+			restoreBookingStateWrapper();
 		}
 	}, [isOpen, user, isClient]);
 
@@ -417,327 +401,67 @@ export default function BookingModal({
 		return ownerSalonId === currentSalonId;
 	};
 
-	// Функция для проверки авторизации клиента
-	// Если пользователь - владелец СВОЕГО салона, авторизация не требуется
-	const checkClientAuth = () => {
-		// Владелец может создавать резервации без авторизации клиента только в своем салоне
-		if (isOwner && isOwnerOfThisSalon()) {
-			return true;
-		}
-		// Если владелец пытается забронировать в чужом салоне, нужно залогиниться как клиент
-		if (isOwner && !isOwnerOfThisSalon()) {
-			return false;
-		}
-		return isClient;
-	};
-
-	// Функция для сохранения состояния бронирования
-	const saveBookingState = () => {
-		const bookingState = {
-			service: selectedService,
-			date: selectedDate,
-			time: selectedTime,
-			staff: selectedStaff,
-			salonId: currentSalonId,
-			salonName: salonName,
-			workingHours: salonWorkingHours,
-			timestamp: Date.now(),
-			returnUrl: window.location.href,
-		};
-		storage.setItem('pendingBooking', JSON.stringify(bookingState));
-	};
-
-	// Функция для восстановления состояния бронирования
-	const restoreBookingState = () => {
-		const pendingBooking = storage.getItem('pendingBooking');
-		if (pendingBooking) {
-			try {
-				const bookingData = JSON.parse(pendingBooking);
-				// Проверяем, что данные не старше 1 часа
-				const isExpired = Date.now() - bookingData.timestamp > 60 * 60 * 1000;
-
-				if (!isExpired && bookingData.salonId === currentSalonId) {
-					setSelectedService(bookingData.service);
-					setSelectedDate(bookingData.date);
-					setSelectedTime(bookingData.time);
-					setSelectedStaff(bookingData.staff);
-					setSalonWorkingHours(bookingData.workingHours);
-
-					// Показываем уведомление о восстановлении
-					toast.success('Booking details restored!');
-
-					// Удаляем сохраненные данные
-					storage.removeItem('pendingBooking');
-					return true;
-				} else {
-					// Удаляем устаревшие данные
-					storage.removeItem('pendingBooking');
-				}
-			} catch (error) {
-				logger.error('Error restoring booking state:', error);
-				storage.removeItem('pendingBooking');
-			}
-		}
-		return false;
-	};
-
-	const fetchSalonData = async () => {
-		try {
-			const API_BASE_URL =
-				process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
-
-			// If salonId is provided, use it; otherwise try to get current user's salon
-			if (salonId) {
-				const response = await fetch(`${API_BASE_URL}/salons/${salonId}`);
-				if (response.ok) {
-					const data = await response.json();
-					if (data) {
-						if (data.workingHours) {
-							setSalonWorkingHours(data.workingHours);
-						}
-						if (data.timezone) {
-							setSalonTimezone(data.timezone);
-						}
-					}
-				}
-			} else {
-				// Fallback to current user's salon
-				const {
-					data: { session },
-				} = await supabase.auth.getSession();
-
-				if (!session?.access_token) {
-					logger.warn('No session found for fetching salon data');
-					return;
-				}
-
-				const response = await fetch(`${API_BASE_URL}/salons/current`, {
-					headers: {
-						Authorization: `Bearer ${session.access_token}`,
-					},
-				});
-
-				if (!response.ok) {
-					logger.warn('Could not fetch salon data, using defaults');
-					return;
-				}
-
-				const responseData = await response.json();
-				if (responseData.success && responseData.data) {
-					if (responseData.data.workingHours) {
-						setSalonWorkingHours(responseData.data.workingHours);
-					}
-					if (responseData.data.timezone) {
-						setSalonTimezone(responseData.data.timezone);
-					}
-				}
-			}
-		} catch (error) {
-			logger.error('Error fetching salon data:', error);
-		}
-	};
-
-	// Load existing bookings for the selected date
-	const fetchExistingBookings = async (date: string) => {
-		if (!salonId || !date) return;
-
-		try {
-			const API_BASE_URL =
-				process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
-
-			// Get session for authorization
-			const { data: session } = await supabase.auth.getSession();
-
-			const headers: HeadersInit = {
-				'Content-Type': 'application/json',
-			};
-
-			// Add authorization header if session exists
-			if (session?.session?.access_token) {
-				headers.Authorization = `Bearer ${session.session.access_token}`;
-			}
-
-			const response = await fetch(
-				`${API_BASE_URL}/bookings?salonId=${salonId}&date=${date}`,
-				{
-					method: 'GET',
-					headers,
-				}
-			);
-
-			if (response.ok) {
-				const bookings = await response.json();
-				logger.log('Fetched existing bookings:', bookings);
-				setExistingBookings(bookings);
-				setBookingsLoaded(true);
-				setBookingsLoadError(false);
-			} else if (response.status === 401) {
-				// If unauthorized, try without auth (for public bookings)
-				logger.warn('Unauthorized, trying to fetch public bookings...');
-				const publicResponse = await fetch(
-					`${API_BASE_URL}/bookings/public?salonId=${salonId}&date=${date}`
-				);
-
-				if (publicResponse.ok) {
-					const bookings = await publicResponse.json();
-					setExistingBookings(bookings);
-					setBookingsLoaded(true);
-					setBookingsLoadError(false);
-				} else {
-					logger.warn('Could not fetch public bookings either');
-					setExistingBookings([]);
-					setBookingsLoadError(true);
-				}
-			} else {
-				logger.warn('Could not fetch existing bookings:', response.status);
-				// Set empty array if we can't fetch bookings
-				setExistingBookings([]);
-				setBookingsLoadError(true);
-			}
-		} catch (error) {
-			logger.error('Error fetching existing bookings:', error);
-			// Set empty array on error to prevent blocking
-			setExistingBookings([]);
-			setBookingsLoadError(true);
-		}
-	};
-
-	// Memoized availability map to avoid recalculating for the same slots
-	const availabilityCache = useMemo(() => {
-		const cache = new Map<string, boolean>();
-
-		if (!selectedService || bookingsLoadError) {
-			return cache; // Return empty cache, all slots will be available
-		}
-
-		const serviceDuration = selectedService.duration;
-		const allStaffIds = new Set(staffMembers.map((staff) => staff.id));
-
-		// Pre-calculate availability for all time slots
-		// This runs once when dependencies change, not on every render
-		return cache;
-	}, [
+	// Booking auth hook
+	const bookingAuth = useBookingAuth({
+		salonId: currentSalonId,
+		salonName,
+		salonTimezone,
+		salonWorkingHours,
 		selectedService,
+		selectedDate,
+		selectedTime,
+		selectedStaff,
+		clientEmail,
+		clientName,
+		clientPhone,
+		isOwner,
+		isOwnerOfThisSalon,
+		editingBooking,
+		t,
+	});
+
+	const {
+		showLoginModal,
+		setShowLoginModal,
+		showMagicLinkSent,
+		setShowMagicLinkSent,
+		guestEmail,
+		setGuestEmail,
+		pendingBookingData,
+		setPendingBookingData,
+		checkClientAuth,
+		handleSendMagicLink,
+		createBookingDateTimeUTC,
+	} = bookingAuth;
+
+	// Функция для восстановления состояния бронирования (используем из хука)
+	const restoreBookingStateWrapper = () => {
+		return restoreBookingState();
+	};
+
+	// Availability hook
+	const { isTimeSlotAvailable } = useBookingAvailability({
+		selectedService,
+		selectedDate,
+		selectedStaff,
 		existingBookings,
 		staffMembers,
 		bookingsLoadError,
+	});
+
+	// Time slots hook
+	const { timeSlots } = useBookingTimeSlots({
 		selectedDate,
-		selectedStaff,
-	]);
-
-	// Check if a time slot is available
-	const isTimeSlotAvailable = useMemo(() => {
-		return (timeSlot: string, selectedStaffId?: string): boolean => {
-			if (!selectedService) return true;
-
-			// If bookings couldn't be loaded due to error, show all slots as available but with warning
-			if (bookingsLoadError) {
-				return true;
-			}
-
-			const serviceDuration = selectedService.duration;
-			const [slotHour, slotMinute] = timeSlot.split(':').map(Number);
-			const slotStartMinutes = slotHour * 60 + slotMinute;
-			const slotEndMinutes = slotStartMinutes + serviceDuration;
-
-			// Create cache key
-			const cacheKey = `${timeSlot}-${selectedStaffId || 'any'}-${selectedDate}`;
-
-			// Check cache first
-			if (availabilityCache.has(cacheKey)) {
-				return availabilityCache.get(cacheKey)!;
-			}
-
-			// If specific staff is selected, check only that staff's conflicts
-			if (selectedStaffId && selectedStaffId !== 'Any Staff') {
-				const hasConflict = existingBookings.some((booking) => {
-					// Use parseBookingTimeAsLocal to avoid timezone conversion issues
-					const bookingDateTime = parseBookingTimeAsLocal(
-						booking.time || booking.dateTime
-					);
-					if (!bookingDateTime) return false; // Skip invalid dates
-
-					const bookingStartMinutes =
-						bookingDateTime.getHours() * 60 + bookingDateTime.getMinutes();
-					const bookingEndMinutes =
-						bookingStartMinutes + (booking.service?.duration || 60);
-
-					// Check if time slots overlap
-					const timeConflict =
-						slotStartMinutes < bookingEndMinutes &&
-						slotEndMinutes > bookingStartMinutes;
-
-					// Only block if it's the same staff AND time conflicts
-					const staffConflict = booking.staffId === selectedStaffId;
-					return staffConflict && timeConflict;
-				});
-
-				const result = !hasConflict;
-				// Cache the result
-				availabilityCache.set(cacheKey, result);
-				return result;
-			}
-
-			// If "Any Staff" is selected, check if ALL staff members are busy
-			// The slot is available if at least one staff member is free
-			const conflictingBookings = existingBookings.filter((booking) => {
-				const bookingDateTime = parseBookingTimeAsLocal(
-					booking.time || booking.dateTime
-				);
-				if (!bookingDateTime) return false;
-
-				const bookingStartMinutes =
-					bookingDateTime.getHours() * 60 + bookingDateTime.getMinutes();
-				const bookingEndMinutes =
-					bookingStartMinutes + (booking.service?.duration || 60);
-
-				// Check if time slots overlap
-				const timeConflict =
-					slotStartMinutes < bookingEndMinutes &&
-					slotEndMinutes > bookingStartMinutes;
-
-				// Removed excessive logging
-
-				return timeConflict;
-			});
-
-			// Get all staff IDs that are busy during this time slot
-			const busyStaffIds = new Set(
-				conflictingBookings.map((booking) => booking.staffId).filter(Boolean)
-			);
-
-			// Get all available staff IDs
-			const allStaffIds = new Set(staffMembers.map((staff) => staff.id));
-
-			// Check if there are any free staff members
-			const hasFreeStaff = Array.from(allStaffIds).some(
-				(staffId) => !busyStaffIds.has(staffId)
-			);
-
-			// Removed excessive logging - only log in development and limit frequency
-			if (process.env.NODE_ENV === 'development' && Math.random() < 0.01) {
-				logger.log('Any staff availability check (sampled):', {
-					busyStaffIds: Array.from(busyStaffIds),
-					allStaffIds: Array.from(allStaffIds),
-					hasFreeStaff,
-					conflictingBookingsCount: conflictingBookings.length,
-				});
-			}
-
-			const result = hasFreeStaff;
-			// Cache the result
-			availabilityCache.set(cacheKey, result);
-			return result;
-		};
-	}, [
 		selectedService,
+		selectedStaff,
+		workingHours,
+		salonWorkingHours,
 		existingBookings,
 		staffMembers,
-		bookingsLoadError,
-		selectedDate,
-		selectedStaff,
-		availabilityCache,
-	]);
+		isTimeSlotAvailable,
+		salonTimezone,
+		t,
+	});
 
 	// Filter services by selected staff (which services the staff can perform)
 	const servicesForStaff = useMemo(() => {
@@ -840,339 +564,7 @@ export default function BookingModal({
 		salonTimezone,
 	]);
 
-	// Filter available time slots based on selected staff
-	const getAvailableTimeSlots = useMemo(() => {
-		return (
-			timeSlots: Array<string | { time: string; available: boolean }>
-		): Array<string | { time: string; available: boolean }> => {
-			if (
-				!selectedStaff ||
-				selectedStaff === t('booking.anyStaff') ||
-				!selectedService
-			) {
-				// If no staff selected or "Any Staff", filter by availability
-				return timeSlots.filter((slot) => {
-					const time = typeof slot === 'string' ? slot : slot.time;
-					return isTimeSlotAvailable(time, undefined);
-				});
-			}
-
-			// Find selected staff ID
-			const staffMember = staffMembers.find(
-				(staff) => staff.name === selectedStaff
-			);
-			if (!staffMember) return timeSlots;
-
-			// Filter time slots that are available for this staff member
-			return timeSlots.filter((slot) => {
-				const time = typeof slot === 'string' ? slot : slot.time;
-				return isTimeSlotAvailable(time, staffMember.id);
-			});
-		};
-	}, [selectedStaff, selectedService, staffMembers, isTimeSlotAvailable, t]);
-
-	// Calculate global time range from all working days
-	const getGlobalTimeRange = (): { startHour: number; endHour: number } => {
-		const currentWorkingHours = workingHours || salonWorkingHours;
-
-		if (!currentWorkingHours) {
-			return { startHour: 6, endHour: 23 }; // Extended default range
-		}
-
-		let minStartHour = 23; // Start with latest possible hour
-		let maxEndHour = 0; // Start with earliest possible hour
-
-		const days: (keyof WorkingHours)[] = [
-			'monday',
-			'tuesday',
-			'wednesday',
-			'thursday',
-			'friday',
-			'saturday',
-			'sunday',
-		];
-
-		days.forEach((dayName) => {
-			const dayHours = currentWorkingHours[dayName];
-			if (dayHours && !dayHours.closed && dayHours.open && dayHours.close) {
-				const openHour = parseInt(dayHours.open.split(':')[0]);
-				const closeHour = parseInt(dayHours.close.split(':')[0]);
-
-				minStartHour = Math.min(minStartHour, openHour);
-				maxEndHour = Math.max(maxEndHour, closeHour);
-			}
-		});
-
-		// If no working hours found, use extended default
-		if (minStartHour === 23 || maxEndHour === 0) {
-			return { startHour: 6, endHour: 23 };
-		}
-
-		return { startHour: minStartHour, endHour: maxEndHour };
-	};
-
-	// Generate time slots based on salon working hours for selected date
-	const generateTimeSlots = (
-		date?: string
-	): Array<{ time: string; available: boolean }> => {
-		const slots: Array<{ time: string; available: boolean }> = [];
-
-		// Use selected date or today
-		let targetDate: Date;
-		if (date) {
-			// Parse date string correctly to avoid timezone issues
-			const [year, month, day] = date.split('-').map(Number);
-			targetDate = new Date(year, month - 1, day); // month is 0-indexed
-		} else {
-			targetDate = new Date();
-		}
-
-		const dayOfWeek = targetDate.getDay();
-		const dayNames: (keyof WorkingHours)[] = [
-			'sunday', // 0 - JavaScript getDay() still returns 0 for Sunday
-			'monday', // 1
-			'tuesday', // 2
-			'wednesday', // 3
-			'thursday', // 4
-			'friday', // 5
-			'saturday', // 6
-		];
-		const dayName = dayNames[dayOfWeek];
-
-		// Get global time range for all working days
-		const globalRange = getGlobalTimeRange();
-		const startHour = globalRange.startHour;
-		const endHour = globalRange.endHour;
-
-		// Use passed workingHours or fallback to salonWorkingHours
-		const currentWorkingHours = workingHours || salonWorkingHours;
-
-		// Get working hours for the selected day to check availability
-		let dayOpenHour = startHour;
-		let dayCloseHour = endHour;
-		let isDayClosed = false;
-
-		if (currentWorkingHours && currentWorkingHours[dayName]) {
-			if (currentWorkingHours[dayName].closed) {
-				isDayClosed = true;
-			} else if (
-				currentWorkingHours[dayName].open &&
-				currentWorkingHours[dayName].close
-			) {
-				dayOpenHour = parseInt(
-					currentWorkingHours[dayName].open!.split(':')[0]
-				);
-				dayCloseHour = parseInt(
-					currentWorkingHours[dayName].close!.split(':')[0]
-				);
-			}
-		}
-
-		// If salon is closed on this day, return empty slots
-		if (isDayClosed) {
-			return [];
-		}
-
-		// Generate time slots in 24-hour format (every 15 minutes)
-		for (let hour = startHour; hour < endHour; hour++) {
-			const timeSlots = [
-				`${hour.toString().padStart(2, '0')}:00`,
-				`${hour.toString().padStart(2, '0')}:15`,
-				`${hour.toString().padStart(2, '0')}:30`,
-				`${hour.toString().padStart(2, '0')}:45`,
-			];
-
-			// Add time slots with availability info
-			timeSlots.forEach((timeSlot) => {
-				// Check if this time slot is within the day's working hours
-				const timeHour = parseInt(timeSlot.split(':')[0]);
-				const timeMinute = parseInt(timeSlot.split(':')[1]);
-				const timeInMinutes = timeHour * 60 + timeMinute;
-
-				const dayOpenInMinutes = dayOpenHour * 60;
-				const dayCloseInMinutes = dayCloseHour * 60;
-
-				const isWithinWorkingHours =
-					timeInMinutes >= dayOpenInMinutes &&
-					timeInMinutes < dayCloseInMinutes;
-
-				if (!isWithinWorkingHours) {
-					// Skip this slot if it's outside working hours
-					return;
-				}
-
-				// Check if the selected date is today and filter out past time slots
-				const now = new Date();
-				const today = new Date(
-					now.getFullYear(),
-					now.getMonth(),
-					now.getDate()
-				);
-				const selectedDay = new Date(
-					targetDate.getFullYear(),
-					targetDate.getMonth(),
-					targetDate.getDate()
-				);
-				const isToday = today.getTime() === selectedDay.getTime();
-
-				if (isToday) {
-					// Get current time in minutes
-					const currentHour = now.getHours();
-					const currentMinute = now.getMinutes();
-					const currentTimeInMinutes = currentHour * 60 + currentMinute;
-
-					// Skip past time slots (add 15 minutes buffer to allow booking for current time slot)
-					if (timeInMinutes < currentTimeInMinutes + 15) {
-						return;
-					}
-				}
-
-				// Determine staff ID for availability check
-				let staffIdForCheck: string | undefined;
-				if (selectedStaff && selectedStaff !== t('booking.anyStaff')) {
-					// Find the staff member by name to get their ID
-					const staffMember = staffMembers.find(
-						(staff) => staff.name === selectedStaff
-					);
-					staffIdForCheck = staffMember?.id;
-				}
-
-				slots.push({
-					time: timeSlot,
-					available: isTimeSlotAvailable(timeSlot, staffIdForCheck),
-				});
-			});
-		}
-		return slots;
-	};
-
-	const generatedTimeSlots = useMemo(
-		() => generateTimeSlots(selectedDate),
-		[
-			workingHours,
-			salonWorkingHours,
-			selectedDate,
-			selectedService,
-			selectedStaff,
-			existingBookings,
-			staffMembers,
-		]
-	);
-
-	// Filter time slots based on selected staff
-	const timeSlots = useMemo(() => {
-		return getAvailableTimeSlots(generatedTimeSlots);
-	}, [generatedTimeSlots, getAvailableTimeSlots]);
-
-	// Calendar functions
-	const getDaysInMonth = (date: Date) => {
-		return new Date(date.getFullYear(), date.getMonth() + 1, 0).getDate();
-	};
-
-	const getFirstDayOfMonth = (date: Date) => {
-		const firstDay = new Date(date.getFullYear(), date.getMonth(), 1).getDay();
-		// Convert Sunday (0) to 7, and shift Monday (1) to 0
-		return firstDay === 0 ? 6 : firstDay - 1;
-	};
-
-	const goToPreviousMonth = () => {
-		setCurrentMonth(
-			(prev) => new Date(prev.getFullYear(), prev.getMonth() - 1, 1)
-		);
-	};
-
-	const goToNextMonth = () => {
-		setCurrentMonth(
-			(prev) => new Date(prev.getFullYear(), prev.getMonth() + 1, 1)
-		);
-	};
-
-	const getMonthName = (date: Date) => {
-		return date.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
-	};
-
-	const handleCalendarDateClick = (day: number) => {
-		const clickedDate = new Date(
-			currentMonth.getFullYear(),
-			currentMonth.getMonth(),
-			day
-		);
-		const today = new Date();
-
-		// Only allow clicking on today or future dates
-		if (
-			clickedDate >=
-			new Date(today.getFullYear(), today.getMonth(), today.getDate())
-		) {
-			// Format date as YYYY-MM-DD without timezone conversion
-			const year = clickedDate.getFullYear();
-			const month = String(clickedDate.getMonth() + 1).padStart(2, '0');
-			const dayStr = String(clickedDate.getDate()).padStart(2, '0');
-			const dateString = `${year}-${month}-${dayStr}`;
-
-			logger.log('Date click debug:', {
-				clickedDate: clickedDate.toDateString(),
-				dayOfWeek: clickedDate.getDay(),
-				formattedDate: dateString,
-			});
-
-			setSelectedDate(dateString);
-		}
-	};
-
-	const isDateSelected = (day: number) => {
-		const date = new Date(
-			currentMonth.getFullYear(),
-			currentMonth.getMonth(),
-			day
-		);
-		// Format date as YYYY-MM-DD without timezone conversion
-		const year = date.getFullYear();
-		const month = String(date.getMonth() + 1).padStart(2, '0');
-		const dayStr = String(date.getDate()).padStart(2, '0');
-		const dateString = `${year}-${month}-${dayStr}`;
-		return selectedDate === dateString;
-	};
-
-	const isDateToday = (day: number) => {
-		const date = new Date(
-			currentMonth.getFullYear(),
-			currentMonth.getMonth(),
-			day
-		);
-		const today = new Date();
-		return date.toDateString() === today.toDateString();
-	};
-
-	const isDateDisabled = (day: number) => {
-		const date = new Date(
-			currentMonth.getFullYear(),
-			currentMonth.getMonth(),
-			day
-		);
-		const today = new Date();
-		const isPast =
-			date < new Date(today.getFullYear(), today.getMonth(), today.getDate());
-
-		// Check if it's a day off
-		const dayOfWeek = date.getDay();
-		const dayNames: (keyof WorkingHours)[] = [
-			'sunday', // 0
-			'monday', // 1
-			'tuesday', // 2
-			'wednesday', // 3
-			'thursday', // 4
-			'friday', // 5
-			'saturday', // 6
-		];
-		const dayName = dayNames[dayOfWeek];
-
-		const currentWorkingHours = workingHours || salonWorkingHours;
-		const isDayOff =
-			currentWorkingHours && currentWorkingHours[dayName]?.closed === true;
-
-		return isPast || !!isDayOff;
-	};
+	// Time slots are now generated by useBookingTimeSlots hook
 
 	// Generate days for Date Pills with lazy loading
 	const getAvailableDays = () => {
@@ -1248,204 +640,6 @@ export default function BookingModal({
 
 		return days;
 	};
-
-	// Load more days when user clicks next arrow
-	const loadMoreDays = () => {
-		if (isLoadingMoreDays) return; // Prevent multiple calls
-
-		setIsLoadingMoreDays(true);
-		setLoadedDaysCount((prev) => prev + LOAD_MORE_DAYS);
-
-		// Reset loading state after a short delay
-		setTimeout(() => {
-			setIsLoadingMoreDays(false);
-		}, 1000);
-	};
-
-	// Check scroll position for navigation buttons
-	const checkScrollPosition = () => {
-		if (timeScrollRef.current) {
-			const { scrollLeft, scrollWidth, clientWidth } = timeScrollRef.current;
-			setCanScrollLeft(scrollLeft > 0);
-			setCanScrollRight(scrollLeft < scrollWidth - clientWidth - 1);
-		}
-	};
-
-	// Native scroll functions for time slots
-	const scrollTimeLeft = () => {
-		if (timeScrollRef.current) {
-			timeScrollRef.current.scrollBy({
-				left: -200,
-				behavior: 'smooth',
-			});
-			// Check position after scroll animation completes
-			setTimeout(() => {
-				checkScrollPosition();
-			}, 300);
-		}
-	};
-
-	const scrollTimeRight = () => {
-		if (timeScrollRef.current) {
-			timeScrollRef.current.scrollBy({
-				left: 200,
-				behavior: 'smooth',
-			});
-			// Check position after scroll animation completes
-			setTimeout(() => {
-				checkScrollPosition();
-			}, 300);
-		}
-	};
-
-	// Drag-to-scroll functions for desktop
-	const handleMouseDown = (e: React.MouseEvent) => {
-		if (!timeScrollRef.current) return;
-		setIsDragging(true);
-		setHasMoved(false);
-		setStartX(e.pageX - timeScrollRef.current.offsetLeft);
-		setScrollLeft(timeScrollRef.current.scrollLeft);
-		timeScrollRef.current.style.cursor = 'grabbing';
-		timeScrollRef.current.style.userSelect = 'none';
-	};
-
-	const handleMouseLeave = () => {
-		setIsDragging(false);
-		setHasMoved(false);
-		if (timeScrollRef.current) {
-			timeScrollRef.current.style.cursor = 'grab';
-			timeScrollRef.current.style.userSelect = 'auto';
-		}
-	};
-
-	const handleMouseUp = () => {
-		setIsDragging(false);
-		if (timeScrollRef.current) {
-			timeScrollRef.current.style.cursor = 'grab';
-			timeScrollRef.current.style.userSelect = 'auto';
-		}
-		checkScrollPosition();
-		// Reset hasMoved after a short delay to allow click events
-		setTimeout(() => setHasMoved(false), 100);
-	};
-
-	const handleMouseMove = (e: React.MouseEvent) => {
-		if (!isDragging || !timeScrollRef.current) return;
-		e.preventDefault();
-		const x = e.pageX - timeScrollRef.current.offsetLeft;
-		const walk = (x - startX) * 2; // Multiply for faster scroll
-		timeScrollRef.current.scrollLeft = scrollLeft - walk;
-
-		// Mark as moved if moved more than 5 pixels
-		if (Math.abs(walk) > 5) {
-			setHasMoved(true);
-		}
-	};
-
-	// Check scroll position for date navigation buttons
-	const checkDateScrollPosition = () => {
-		if (dateScrollRef.current) {
-			const { scrollLeft, scrollWidth, clientWidth } = dateScrollRef.current;
-			setCanScrollDateLeft(scrollLeft > 0);
-			setCanScrollDateRight(scrollLeft < scrollWidth - clientWidth - 1);
-		}
-	};
-
-	// Date scroll functions
-	const scrollDateLeft = () => {
-		if (dateScrollRef.current) {
-			dateScrollRef.current.scrollBy({
-				left: -200,
-				behavior: 'smooth',
-			});
-			setTimeout(() => {
-				checkDateScrollPosition();
-			}, 300);
-		}
-	};
-
-	const scrollDateRight = () => {
-		if (dateScrollRef.current) {
-			dateScrollRef.current.scrollBy({
-				left: 200,
-				behavior: 'smooth',
-			});
-			setTimeout(() => {
-				checkDateScrollPosition();
-			}, 300);
-		}
-	};
-
-	// Drag-to-scroll functions for date scroll
-	const handleDateMouseDown = (e: React.MouseEvent) => {
-		if (!dateScrollRef.current) return;
-		setIsDateDragging(true);
-		setDateStartX(e.pageX - dateScrollRef.current.offsetLeft);
-		setDateScrollLeft(dateScrollRef.current.scrollLeft);
-		dateScrollRef.current.style.cursor = 'grabbing';
-		dateScrollRef.current.style.userSelect = 'none';
-	};
-
-	const handleDateMouseLeave = () => {
-		setIsDateDragging(false);
-		if (dateScrollRef.current) {
-			dateScrollRef.current.style.cursor = 'grab';
-			dateScrollRef.current.style.userSelect = 'auto';
-		}
-	};
-
-	const handleDateMouseUp = () => {
-		setIsDateDragging(false);
-		if (dateScrollRef.current) {
-			dateScrollRef.current.style.cursor = 'grab';
-			dateScrollRef.current.style.userSelect = 'auto';
-		}
-		checkDateScrollPosition();
-	};
-
-	const handleDateMouseMove = (e: React.MouseEvent) => {
-		if (!isDateDragging || !dateScrollRef.current) return;
-		e.preventDefault();
-		const x = e.pageX - dateScrollRef.current.offsetLeft;
-		const walk = (x - dateStartX) * 2;
-		dateScrollRef.current.scrollLeft = dateScrollLeft - walk;
-
-		// Check if we need to load more days (similar to swiper logic)
-		const { scrollLeft, scrollWidth, clientWidth } = dateScrollRef.current;
-		if (scrollLeft + clientWidth > scrollWidth - 200 && !isLoadingMoreDays) {
-			loadMoreDays();
-		}
-	};
-
-	// Memoize availability for all time slots to avoid recalculating on every render
-	const timeSlotAvailability = useMemo(() => {
-		const availabilityMap = new Map<string, boolean>();
-
-		if (!selectedService || bookingsLoadError) {
-			// If no service or error, all slots are available
-			return availabilityMap;
-		}
-
-		// Pre-calculate availability for all time slots
-		timeSlots.forEach((slot) => {
-			const time = typeof slot === 'string' ? slot : slot.time;
-			const cacheKey = `${time}-${selectedStaff || 'any'}-${selectedDate}`;
-			if (!availabilityMap.has(cacheKey)) {
-				// Calculate availability once and cache it
-				const available = isTimeSlotAvailable(time, selectedStaff);
-				availabilityMap.set(cacheKey, available);
-			}
-		});
-
-		return availabilityMap;
-	}, [
-		timeSlots,
-		selectedStaff,
-		selectedDate,
-		selectedService,
-		bookingsLoadError,
-		isTimeSlotAvailable,
-	]);
 
 	// Filter time slots by time of day
 	const filteredTimeSlots = useMemo(() => {
@@ -1561,11 +755,6 @@ export default function BookingModal({
 			const dateString = `${year}-${month}-${day}`;
 			setSelectedDate(dateString);
 
-			// Set the current month to show the booking date
-			setCurrentMonth(
-				new Date(bookingDate.getFullYear(), bookingDate.getMonth(), 1)
-			);
-
 			// Find the closest available time slot
 			const [bookingHour, bookingMinute] = timeString.split(':').map(Number);
 			const firstSlot = timeSlots[0];
@@ -1622,38 +811,21 @@ export default function BookingModal({
 	useEffect(() => {
 		if (!isOpen) {
 			setIsInitialized(false);
-			setBookingsLoadError(false);
 			setShowLoginModal(false);
 			setPendingBookingData(null);
 			setBookingSuccess(null);
 			setSelectedDate(''); // Reset selected date to trigger auto-selection on next open
 			setSelectedTime(''); // Reset selected time
 			setTimeFilter('morning'); // Reset time filter to morning
-			setLoadedDaysCount(INITIAL_DAYS); // Reset loaded days count
 			setClientEmail(''); // Reset client email
 			setClientName(''); // Reset client name
 			setClientPhone(''); // Reset client phone
 			setSelectedStaff(t('booking.anyStaff') || 'Any Staff Member');
 			setStartDateIndex(0); // Reset start date index to show first 7 days
+			// Note: bookingsLoadError and loadedDaysCount are managed by hooks
 		}
-	}, [isOpen, t]);
+	}, [isOpen, t, setShowLoginModal, setPendingBookingData, setSelectedDate, setSelectedTime, setSelectedStaff]);
 
-	// Test date creation function after dates are available
-	const testDateCreation = () => {
-		try {
-			// Test with today's date in YYYY-MM-DD format
-			const today = new Date();
-			const todayString = today.toISOString().split('T')[0];
-			const testDate = createBookingDateTime(todayString, '09:00');
-		} catch (error) {
-			logger.error('❌ Test date creation failed:', error);
-		}
-	};
-
-	// Run test when component mounts
-	React.useEffect(() => {
-		testDateCreation();
-	}, []);
 
 	// Add "Any Staff" option to the beginning of staff list
 	// Use availableStaffMembers if time is selected, otherwise use staff filtered by service
@@ -1701,156 +873,7 @@ export default function BookingModal({
 		}
 	}, [isOpen, editingBooking, selectedDate]);
 
-	// Helper function to create a proper DateTime from date and time selections
-	const createBookingDateTime = (dateStr: string, timeStr: string): Date => {
-		// Parse the date string (YYYY-MM-DD format)
-		const [year, month, day] = dateStr.split('-').map(Number);
-		const [hours, minutes] = timeStr.split(':').map(Number);
-
-		if (isNaN(year) || isNaN(month) || isNaN(day)) {
-			throw new Error(`Invalid date format: ${dateStr}`);
-		}
-
-		if (isNaN(hours) || isNaN(minutes)) {
-			throw new Error(`Invalid time format: ${timeStr}`);
-		}
-
-		// Create a new Date object using the selected date and time
-		// This creates a local date/time
-		const bookingDateTime = new Date(
-			year,
-			month - 1,
-			day,
-			hours,
-			minutes,
-			0,
-			0
-		);
-
-		return bookingDateTime;
-	};
-
-	// Helper function to create a UTC DateTime string for API
-	const createBookingDateTimeUTC = (
-		dateStr: string,
-		timeStr: string,
-		salonTimezone: string = 'Asia/Ho_Chi_Minh'
-	): string => {
-		const [year, month, day] = dateStr.split('-').map(Number);
-		const [hours, minutes] = timeStr.split(':').map(Number);
-
-		if (isNaN(year) || isNaN(month) || isNaN(day)) {
-			throw new Error(`Invalid date format: ${dateStr}`);
-		}
-
-		if (isNaN(hours) || isNaN(minutes)) {
-			throw new Error(`Invalid time format: ${timeStr}`);
-		}
-
-		const localDate = new Date(year, month - 1, day, hours, minutes, 0, 0);
-
-		const utcDate = fromZonedTime(localDate, salonTimezone);
-		const utcDateString = utcDate.toISOString();
-
-		logger.log('Creating UTC date string (salon timezone):', {
-			dateStr,
-			timeStr,
-			salonTimezone,
-			selectedTime: `${hours}:${minutes}`,
-			localDateComponents: { year, month, day, hours, minutes },
-			utcTime: utcDateString,
-			note: `Selected time is interpreted as local time in ${salonTimezone} and converted to UTC`,
-		});
-
-		return utcDateString;
-	};
-
-	// Handle magic link sending
-	const handleSendMagicLink = async (email: string) => {
-		try {
-			setLoading(true);
-			const API_BASE_URL =
-				process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
-
-			// Prepare booking data for magic link
-			const bookingData = {
-				serviceId: pendingBookingData?.service?.id || selectedService?.id,
-				staffId:
-					pendingBookingData?.staff === t('booking.anyStaff')
-						? undefined
-						: staffMembers.find((s) => s.name === pendingBookingData?.staff)
-								?.id,
-				time: createBookingDateTimeUTC(
-					pendingBookingData?.date || selectedDate,
-					pendingBookingData?.time || selectedTime,
-					salonTimezone
-				),
-				salonId: currentSalonId,
-				clientEmail: email.trim(),
-				clientName: '',
-				clientPhone: '',
-			};
-
-			const response = await fetch(`${API_BASE_URL}/bookings/send-magic-link`, {
-				method: 'POST',
-				headers: {
-					'Content-Type': 'application/json',
-				},
-				body: JSON.stringify({
-					email: email.trim(),
-					bookingData,
-				}),
-			});
-
-			if (!response.ok) {
-				const error = await response.json();
-
-				// If user already exists (409 Conflict), switch to login form
-				// Check both error.code and error.error_code for compatibility
-				if (
-					response.status === 409 &&
-					(error.code === 'USER_EXISTS' || error.error_code === 'USER_EXISTS')
-				) {
-					// Throw error with special code for BookingAuthForm to handle
-					const userExistsError: any = new Error(
-						error.msg ||
-							error.message ||
-							'An account with this email already exists. Please login with your password.'
-					);
-					userExistsError.code = 'USER_EXISTS';
-					userExistsError.email = email.trim();
-					throw userExistsError;
-				}
-
-				throw new Error(
-					error.msg || error.message || 'Failed to send magic link'
-				);
-			}
-
-			setGuestEmail(email.trim());
-			setShowMagicLinkSent(true);
-			toast.success(t('booking.confirmationEmailSent'));
-		} catch (error: any) {
-			logger.error('Error sending magic link:', error);
-
-			// If user exists, re-throw with special code for BookingAuthForm to handle
-			if (
-				error &&
-				typeof error === 'object' &&
-				'code' in error &&
-				error.code === 'USER_EXISTS'
-			) {
-				throw error; // Re-throw to let BookingAuthForm handle it
-			}
-
-			// For other errors, show toast and don't re-throw
-			toast.error(
-				error instanceof Error ? error.message : t('booking.failedToSendEmail')
-			);
-		} finally {
-			setLoading(false);
-		}
-	};
+	// createBookingDateTimeUTC and handleSendMagicLink are now in useBookingAuth hook
 
 	// Handle login success and complete booking
 	const handleLoginSuccess = async () => {
@@ -2142,28 +1165,22 @@ export default function BookingModal({
 				throw new Error('Salon ID is required to create a booking');
 			}
 
-			// Если владелец создает резервацию, передаем email клиента
 			const requestBody: any = {
 				serviceId: serviceToUse.id,
 				staffId: staffId === 'any' ? undefined : staffId,
 				time: bookingDateTime,
 				salonId: finalSalonId,
-				// Don't add default notes - only include notes if user explicitly provided them
 			};
 
-			// Если владелец создает резервацию, добавляем данные клиента
-			// Бэкенд проверит, является ли это его салоном
 			if (isOwner) {
 				// Email отправляем только если он введен
 				if (clientEmail && clientEmail.trim()) {
 					requestBody.clientEmail = clientEmail.trim();
 				}
-				// Имя: всегда передаем, если не введено - используем "Анонимный клиент"
 				requestBody.clientName =
 					clientName && clientName.trim()
 						? clientName.trim()
 						: t('booking.anonymousClient');
-				// Телефон отправляем только если он введен
 				if (clientPhone && clientPhone.trim()) {
 					requestBody.clientPhone = clientPhone.trim();
 				}
@@ -2205,7 +1222,6 @@ export default function BookingModal({
 					errorMessage = result;
 				}
 
-				// Translate common error messages
 				if (errorMessage.includes('not available at this time')) {
 					errorMessage = t('booking.staffNotAvailable') || errorMessage;
 				} else if (errorMessage.includes('Selected staff member')) {
@@ -2215,12 +1231,9 @@ export default function BookingModal({
 				throw new Error(errorMessage);
 			}
 
-			// Clean up storage after successful booking
 			storage.removeItem('pendingBooking');
 			setPendingBookingData(null);
 
-			// Show success message in modal
-			// If owner created booking, it's always CONFIRMED
 			const bookingStatus = isOwner
 				? 'CONFIRMED'
 				: result.booking?.status || 'PENDING';
@@ -2632,12 +1645,12 @@ export default function BookingModal({
 											currentDateIndex={currentDateIndex}
 											onDateIndexChange={setCurrentDateIndex}
 											loadedDaysCount={loadedDaysCount}
-											onLoadMoreDays={loadMoreDays}
+											onLoadMoreDays={scroll.loadMoreDays}
 											isLoadingMoreDays={isLoadingMoreDays}
 											canScrollLeft={canScrollDateLeft}
 											canScrollRight={canScrollDateRight}
-											onScrollLeft={setCanScrollDateLeft}
-											onScrollRight={setCanScrollDateRight}
+											onScrollLeft={checkDateScrollPosition}
+											onScrollRight={checkDateScrollPosition}
 											startDateIndex={startDateIndex}
 											onStartDateIndexChange={setStartDateIndex}
 										/>
@@ -2789,12 +1802,12 @@ export default function BookingModal({
 									currentDateIndex={currentDateIndex}
 									onDateIndexChange={setCurrentDateIndex}
 									loadedDaysCount={loadedDaysCount}
-									onLoadMoreDays={loadMoreDays}
+									onLoadMoreDays={scroll.loadMoreDays}
 									isLoadingMoreDays={isLoadingMoreDays}
 									canScrollLeft={canScrollDateLeft}
 									canScrollRight={canScrollDateRight}
-									onScrollLeft={setCanScrollDateLeft}
-									onScrollRight={setCanScrollDateRight}
+									onScrollLeft={() => {}}
+									onScrollRight={() => {}}
 									startDateIndex={startDateIndex}
 									onStartDateIndexChange={setStartDateIndex}
 								/>

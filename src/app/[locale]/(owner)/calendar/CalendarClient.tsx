@@ -5,16 +5,8 @@ import { useRouter } from 'next/navigation';
 import BookingModal from '@/components/BookingModal';
 import { Service, Booking } from '@/types';
 import { apiClient } from '@/lib/api-client';
-import { supabase } from '@/lib/supabase';
 import toast from 'react-hot-toast';
-import {
-	safeParseDate,
-	formatDateSafe,
-	formatTimeSafe,
-	isToday,
-	getDatePart,
-	parseBookingTimeAsLocal,
-} from '@/utils/date';
+import { parseBookingTimeAsLocal } from '@/utils/date';
 import LoadingSpinner from '@/components/LoadingSpinner';
 import ErrorDisplay from '@/components/ErrorDisplay';
 import { useOwnerLayout } from '@/contexts/OwnerLayoutContext';
@@ -22,12 +14,10 @@ import { useBookings } from '@/hooks/useBookings';
 import { useTimeBlocks } from '@/hooks/useTimeBlocks';
 import { useStaffBySalon } from '@/hooks/useStaff';
 import { useServices } from '@/hooks/useServices';
-import { BookingWithDetailsDto } from '@/types/dto/booking.dto';
 import { convertBookingDtoArray } from '@/utils/bookingTransformers';
 
 // Import calendar components
 import BookingList from './components/BookingList';
-import CalendarView from './components/CalendarView';
 import BookingDetailsModal from './components/BookingDetailsModal';
 import DaySchedule from './components/DaySchedule';
 import BlockTimeModal from '@/components/BlockTimeModal';
@@ -71,21 +61,12 @@ export default function CalendarClient() {
 		refetch: refetchBookings,
 	} = useBookings();
 
-	const {
-		data: timeBlocks = [],
-		isLoading: timeBlocksLoading,
-		error: timeBlocksError,
-	} = useTimeBlocks();
+	const { data: timeBlocks = [] } = useTimeBlocks();
 
 	// Staff и Services зависят от salonId, но загружаются параллельно друг с другом
-	const { data: staffMembers = [], isLoading: staffLoading } = useStaffBySalon(
-		salonId || ''
-	);
+	const { data: staffMembers = [] } = useStaffBySalon(salonId || '');
 
-	const { data: services = [], isLoading: servicesLoading } = useServices(
-		salonId || '',
-		{}
-	);
+	const { data: services = [] } = useServices(salonId || '', {});
 
 	const bookings = convertBookingDtoArray(bookingsData);
 	const loading = bookingsLoading;
@@ -98,71 +79,19 @@ export default function CalendarClient() {
 	// All hooks must be called before any conditional returns
 	const fetchBookings = useCallback(async () => {
 		try {
-			const {
-				data: { session },
-			} = await supabase.auth.getSession();
 			await refetchBookings();
 		} catch (err) {
 			console.error('Error refetching bookings:', err);
 			toast.error(t('owner.dashboard.failedToRefresh'));
 		}
-	}, [refetchBookings]);
+	}, [refetchBookings, t]);
 
-	const updateCompletedBookings = useCallback(
-		async (bookings: Booking[]): Promise<Booking[]> => {
-			const now = new Date();
-			const bookingsToUpdate: string[] = [];
-
-			bookings.forEach((booking) => {
-				// Only auto-complete CONFIRMED bookings that have passed
-				// Don't change NOSHOW or already COMPLETED bookings
-				if (booking.status === 'CONFIRMED') {
-					const bookingTime = parseBookingTimeAsLocal(booking.time);
-					if (!bookingTime) return;
-
-					const serviceDuration = booking.service?.duration || 60;
-					const endTime = new Date(
-						bookingTime.getTime() + serviceDuration * 60000
-					);
-
-					if (endTime < now) {
-						bookingsToUpdate.push(booking.id);
-					}
-				}
-			});
-
-			if (bookingsToUpdate.length > 0) {
-				try {
-					await apiClient.put('/bookings/update-completed', {
-						bookingIds: bookingsToUpdate,
-					});
-				} catch (error) {
-					console.error('Error updating completed bookings:', error);
-				}
-			}
-
-			return bookings.map((booking) => {
-				if (bookingsToUpdate.includes(booking.id)) {
-					return { ...booking, status: 'COMPLETED' as const };
-				}
-				return booking;
-			});
-		},
-		[]
-	);
 
 	useEffect(() => {
 		if (!salonLoading && !hasSalon) {
 			router.push('/business/complete-setup');
 		}
-	}, [
-		router,
-		salonLoading,
-		hasSalon,
-		salonId,
-		bookingsLoading,
-		bookings.length,
-	]);
+	}, [router, salonLoading, hasSalon]);
 
 	// Open booking modal if there's a pending booking after OAuth
 	useEffect(() => {
@@ -468,8 +397,7 @@ export default function CalendarClient() {
 		}
 	}, [hasSalon, salonLoading, router]);
 
-	// Show redirect message if no salon (critical state) - after all hooks
-	if (!hasSalon && salonLoading) {
+	if (salonLoading || (!hasSalon && !salonLoading)) {
 		return (
 			<div
 				className="flex items-center justify-center py-12"

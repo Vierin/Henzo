@@ -12,7 +12,6 @@ import { useAuthStore } from '@/stores/authStore';
 export default function ProfileSettingsClient() {
 	const { user } = useAuth();
 	const t = useTranslation();
-	const [isLoading, setIsLoading] = useState(false);
 	const [isSavingProfile, setIsSavingProfile] = useState(false);
 	const [isSavingPassword, setIsSavingPassword] = useState(false);
 	const [showDeleteModal, setShowDeleteModal] = useState(false);
@@ -135,14 +134,6 @@ export default function ProfileSettingsClient() {
 			setDeleteLoading(false);
 		}
 	};
-
-	if (isLoading) {
-		return (
-			<div className="flex items-center justify-center min-h-[400px]">
-				<LoadingSpinner message={t('owner.profileSettings.loading')} />
-			</div>
-		);
-	}
 
 	return (
 		<div className="px-4 md:px-8 py-6 w-full max-w-7xl mx-auto">

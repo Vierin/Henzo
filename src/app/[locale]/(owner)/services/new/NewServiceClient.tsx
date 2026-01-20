@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { useCreateService } from '@/hooks/useServices';
 import { useOwnerLayout } from '@/contexts/OwnerLayoutContext';
@@ -73,7 +73,6 @@ export default function NewServiceClient() {
 		handleSubmit: handleFormSubmit,
 		control,
 		formState: { errors },
-		getValues,
 		setValue,
 		watch,
 	} = useForm<ServiceFormData>({
@@ -804,59 +803,6 @@ export default function NewServiceClient() {
 								{t('owner.servicesNew.priceHelp')}
 							</p>
 						</div>
-					</div>
-
-					<div>
-						<label
-							htmlFor="service-group"
-							className="block text-sm font-medium text-gray-700 mb-2"
-						>
-							{t('owner.servicesNew.serviceGroup')}
-						</label>
-						<div className="flex items-center gap-2">
-							<Controller
-								name="serviceGroupId"
-								control={control}
-								defaultValue="none"
-								render={({ field }) => (
-									<Select value={field.value} onValueChange={field.onChange}>
-										<SelectTrigger className="w-full border border-gray-300 focus:ring-2 focus:ring-[#ff5b5b] focus:border-transparent text-gray-900 text-sm">
-											<SelectValue
-												placeholder={t('owner.servicesNew.noGroup')}
-											/>
-										</SelectTrigger>
-										<SelectContent className="bg-white border border-gray-300 shadow-lg rounded-md">
-											<SelectItem
-												value="none"
-												className="bg-white hover:bg-gray-50 focus:bg-gray-50 text-gray-900 cursor-pointer text-sm"
-											>
-												{t('owner.servicesNew.noGroup')}
-											</SelectItem>
-											{groups.map((group: any) => (
-												<SelectItem
-													key={group.id}
-													value={group.id}
-													className="bg-white hover:bg-gray-50 focus:bg-gray-50 text-gray-900 cursor-pointer text-sm"
-												>
-													{getLocalizedGroupName(group)}
-												</SelectItem>
-											))}
-										</SelectContent>
-									</Select>
-								)}
-							/>
-							<button
-								type="button"
-								onClick={() => setIsGroupModalOpen(true)}
-								className="px-3 py-2 bg-[#ff5b5b] text-white rounded-md hover:bg-[#e04a4a] text-sm"
-								title={t('owner.servicesNew.addNewGroup')}
-							>
-								+
-							</button>
-						</div>
-						<p className="text-xs text-gray-500 mt-1">
-							{t('owner.servicesNew.serviceGroupHelp')}
-						</p>
 					</div>
 
 					<div

@@ -4,8 +4,7 @@ import { useState, useEffect } from 'react';
 import { useTranslation } from '@/contexts/LanguageContext';
 import { useOwnerLayout } from '@/contexts/OwnerLayoutContext';
 import { apiClient } from '@/lib/api-client';
-import { Check, ArrowRight } from 'lucide-react';
-import toast from 'react-hot-toast';
+import { Check } from 'lucide-react';
 import { SUBSCRIPTION_PLANS } from '@/config/subscriptionPlans';
 import LoadingSpinner from '@/components/LoadingSpinner';
 
@@ -36,7 +35,6 @@ export default function SubscriptionClient() {
 	const [currentSubscription, setCurrentSubscription] =
 		useState<Subscription | null>(null);
 	const [loading, setLoading] = useState(true);
-	const [switching, setSwitching] = useState<string | null>(null);
 
 	useEffect(() => {
 		if (salonId) {
@@ -61,27 +59,6 @@ export default function SubscriptionClient() {
 		}
 	};
 
-	const handleSwitchPlan = async (planId: 'BASIC') => {
-		try {
-			setSwitching(planId);
-			await apiClient.post('/subscriptions/switch', { planType: planId });
-			toast.success(t('owner.subscription.switchSuccess'));
-			await fetchSubscription();
-		} catch (error: any) {
-			// If API endpoint doesn't exist yet, show a message
-			if (error?.status === 404 || error?.code === 404) {
-				toast.error(
-					t('owner.subscription.switchError') +
-						' (API endpoint not implemented yet)'
-				);
-			} else {
-				toast.error(error?.message || t('owner.subscription.switchError'));
-			}
-		} finally {
-			setSwitching(null);
-		}
-	};
-
 	const plans: Plan[] = [
 		{
 			...SUBSCRIPTION_PLANS.BASIC,
@@ -95,8 +72,6 @@ export default function SubscriptionClient() {
 			],
 		},
 	];
-
-	const currentPlanType = currentSubscription?.type || 'BASIC';
 
 	if (loading) {
 		return (
