@@ -62,5 +62,12 @@
 	"manageGroupsTitle": "Quản lý nhóm dịch vụ",
 	"deleteGroup": "Xóa nhóm",
 	"areYouSureDeleteGroup": "Bạn có chắc muốn xóa nhóm này? Tất cả dịch vụ trong nhóm sẽ được bỏ nhóm.",
-	"noGroupsYet": "Chưa có nhóm. Tạo nhóm đầu tiên để tổ chức dịch vụ của bạn."
+	"noGroupsYet": "Chưa có nhóm. Tạo nhóm đầu tiên để tổ chức dịch vụ của bạn.",
+	"staff": "Nhân viên",
+	"staffOptional": "tùy chọn",
+	"allStaff": "Tất cả nhân viên",
+	"staffSelected": "nhân viên được chọn",
+	"staffHelp": "Chọn nhân viên có thể thực hiện dịch vụ này. Nếu không chọn ai, dịch vụ sẽ có sẵn cho tất cả nhân viên.",
+	"selectStaff": "Chọn nhân viên",
+	"searchStaff": "Tìm kiếm nhân viên..."
 }

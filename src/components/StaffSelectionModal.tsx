@@ -102,11 +102,17 @@ export default function StaffSelectionModal({
 
 	const allSelected = tempSelectedIds.length === staffMembers.length && staffMembers.length > 0;
 	const someSelected = tempSelectedIds.length > 0 && tempSelectedIds.length < staffMembers.length;
+	
+	// Try to get translations from owner.services first, fallback to owner.servicesNew
+	const allStaffText = t('owner.services.allStaff') || t('owner.servicesNew.allStaff');
+	const staffSelectedText = t('owner.services.staffSelected') || t('owner.servicesNew.staffSelected');
+	const noStaffText = t('owner.servicesNew.noStaff');
+	
 	const displayText = allSelected
-		? t('owner.servicesNew.allStaff')
+		? allStaffText
 		: someSelected
-			? `${tempSelectedIds.length} ${t('owner.servicesNew.staffSelected')}`
-			: t('owner.servicesNew.noStaff');
+			? `${tempSelectedIds.length} ${staffSelectedText}`
+			: noStaffText;
 
 	return (
 		<div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
@@ -114,7 +120,7 @@ export default function StaffSelectionModal({
 				{/* Header */}
 				<div className="flex items-center justify-between p-4 border-b border-gray-200">
 					<h2 className="text-lg font-semibold text-gray-900">
-						{t('owner.servicesNew.selectStaff')}
+						{t('owner.services.selectStaff') || t('owner.servicesNew.selectStaff') || 'Select Staff'}
 					</h2>
 					<button
 						onClick={handleCancel}
@@ -133,7 +139,7 @@ export default function StaffSelectionModal({
 							type="text"
 							value={searchQuery}
 							onChange={(e) => setSearchQuery(e.target.value)}
-							placeholder={t('owner.servicesNew.searchStaff')}
+							placeholder={t('owner.services.searchStaff') || t('owner.servicesNew.searchStaff') || 'Search staff...'}
 							className={`w-full py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#ff5b5b] focus:border-transparent text-gray-900 text-sm ${searchQuery ? 'pl-10 pr-10' : 'pl-10 pr-3'}`}
 						/>
 						{searchQuery && (
@@ -160,7 +166,7 @@ export default function StaffSelectionModal({
 							className="w-4 h-4 text-[#ff5b5b] border-gray-300 rounded focus:ring-[#ff5b5b]"
 						/>
 						<span className="text-sm font-medium text-gray-900">
-							{t('owner.servicesNew.allStaff')}
+							{t('owner.services.allStaff') || t('owner.servicesNew.allStaff')}
 						</span>
 					</label>
 
@@ -187,7 +193,7 @@ export default function StaffSelectionModal({
 						</div>
 					) : (
 						<div className="text-center py-8 text-gray-500 text-sm">
-							{t('owner.servicesNew.noStaffFound')}
+							{t('owner.servicesNew.noStaffFound') || 'No staff found'}
 						</div>
 					)}
 				</div>

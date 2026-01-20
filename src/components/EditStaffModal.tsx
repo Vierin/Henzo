@@ -6,6 +6,7 @@ import { Staff } from '@/types';
 import { useTranslation } from '@/contexts/LanguageContext';
 import { useServices } from '@/hooks/useServices';
 import { apiClient } from '@/lib/api-client';
+import ServiceSelector from './ServiceSelector';
 
 interface EditStaffModalProps {
 	isOpen: boolean;
@@ -42,8 +43,11 @@ export default function EditStaffModal({
 				phone: staff.phone || '',
 			});
 			// Set selected service IDs from staff.Service array
+			// If no services assigned, default to all services (empty array means all)
 			const staffServices = (staff as any).Service || [];
-			setSelectedServiceIds(staffServices.map((service: any) => service.id));
+			const serviceIds = staffServices.map((service: any) => service.id);
+			// If staff has no services assigned, set empty array (means all services)
+			setSelectedServiceIds(serviceIds.length > 0 ? serviceIds : []);
 		}
 	}, [staff]);
 
@@ -57,7 +61,7 @@ export default function EditStaffModal({
 		try {
 			if (!staff) return;
 
-			const updatedStaff = await apiClient.put(`/staff/${staff.id}`, {
+			const updatedStaff = await apiClient.put<Staff>(`/staff/${staff.id}`, {
 				...formData,
 				serviceIds: selectedServiceIds.length > 0 ? selectedServiceIds : [],
 			});
@@ -154,46 +158,14 @@ export default function EditStaffModal({
 							/>
 						</div>
 
-						{services.length > 0 && (
-							<div>
-								<label
-									htmlFor="staff-services"
-									className="block text-sm font-medium text-gray-700 mb-2"
-								>
-									{t('owner.staff.services')}
-									<span className="text-xs text-gray-500 ml-1">
-										({t('owner.staff.servicesOptional')})
-									</span>
-								</label>
-								<div className="border border-gray-300 rounded-md p-3 max-h-48 overflow-y-auto bg-white">
-									{services.map((service) => (
-										<label
-											key={service.id}
-											className="flex items-center space-x-2 py-1 hover:bg-gray-50 px-2 rounded cursor-pointer"
-										>
-											<input
-												type="checkbox"
-												checked={selectedServiceIds.includes(service.id)}
-												onChange={(e) => {
-													if (e.target.checked) {
-														setSelectedServiceIds([...selectedServiceIds, service.id]);
-													} else {
-														setSelectedServiceIds(
-															selectedServiceIds.filter((id) => id !== service.id)
-														);
-													}
-												}}
-												className="w-4 h-4 text-[#ff5b5b] border-gray-300 rounded focus:ring-[#ff5b5b]"
-											/>
-											<span className="text-sm text-gray-900">{service.name}</span>
-										</label>
-									))}
-								</div>
-								<p className="text-xs text-gray-500 mt-1">
-									{t('owner.staff.servicesHelp')}
-								</p>
-							</div>
-						)}
+					{services.length > 0 && (
+						<ServiceSelector
+							services={services}
+							selectedServiceIds={selectedServiceIds}
+							onChange={setSelectedServiceIds}
+							helpText={t('owner.staff.servicesHelp')}
+						/>
+					)}
 
 						{error && (
 							<div className="text-red-600 text-sm text-center bg-red-50 border border-red-200 rounded-md p-3">

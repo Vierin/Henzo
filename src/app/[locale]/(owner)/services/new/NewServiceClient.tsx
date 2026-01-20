@@ -9,7 +9,7 @@ import { apiClient } from '@/lib/api-client';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { ServiceCategory } from '@/types';
 import CategoryAutocomplete from '@/components/CategoryAutocomplete';
-import StaffSelectionModal from '@/components/StaffSelectionModal';
+import StaffSelector from '@/components/StaffSelector';
 import {
 	Select,
 	SelectContent,
@@ -127,7 +127,6 @@ export default function NewServiceClient() {
 		'input'
 	);
 	const [selectedStaffIds, setSelectedStaffIds] = useState<string[]>([]);
-	const [isStaffModalOpen, setIsStaffModalOpen] = useState(false);
 	const router = useRouter();
 
 	// Используем данные салона из контекста (избегаем дублирования запросов)
@@ -718,31 +717,14 @@ export default function NewServiceClient() {
 							</p>
 						</div>
 
-						{staffMembers.length > 0 && (
-							<div className='w-full'>
-								<label
-									htmlFor="service-staff"
-									className="block text-sm font-medium text-gray-700 mb-2"
-								>
-									{t('owner.servicesNew.staff')}
-									<span className="text-xs text-gray-500 ml-1">
-										({t('owner.servicesNew.staffOptional')})
-									</span>
-								</label>
-								<button
-									type="button"
-									onClick={() => setIsStaffModalOpen(true)}
-									className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#ff5b5b] focus:border-transparent text-gray-900 text-sm text-left bg-white hover:bg-gray-50 transition-colors"
-								>
-									{selectedStaffIds.length === 0 || (selectedStaffIds.length === staffMembers.length && staffMembers.length > 0)
-										? t('owner.servicesNew.allStaff')
-										: `${selectedStaffIds.length} ${t('owner.servicesNew.staffSelected')}`}
-								</button>
-								<p className="text-xs text-gray-500 mt-1">
-									{t('owner.servicesNew.staffHelp')}
-								</p>
-							</div>
-						)}
+						<StaffSelector
+							staffMembers={staffMembers}
+							selectedStaffIds={selectedStaffIds}
+							onChange={setSelectedStaffIds}
+							label={t('owner.servicesNew.staff')}
+							helpText={t('owner.servicesNew.staffHelp')}
+							optional={true}
+						/>
 					</div>
 
 					<div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -1095,16 +1077,6 @@ export default function NewServiceClient() {
 				</div>
 			)}
 
-			{/* Staff Selection Modal */}
-			{staffMembers.length > 0 && (
-				<StaffSelectionModal
-					isOpen={isStaffModalOpen}
-					onClose={() => setIsStaffModalOpen(false)}
-					staffMembers={staffMembers}
-					selectedStaffIds={selectedStaffIds}
-					onChange={(staffIds) => setSelectedStaffIds(staffIds)}
-				/>
-			)}
 		</div>
 	);
 }

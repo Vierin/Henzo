@@ -62,5 +62,12 @@
 	"manageGroupsTitle": "Manage Service Groups",
 	"deleteGroup": "Delete Group",
 	"areYouSureDeleteGroup": "Are you sure you want to delete this group? All services in this group will be ungrouped.",
-	"noGroupsYet": "No groups yet. Create your first group to organize your services."
+	"noGroupsYet": "No groups yet. Create your first group to organize your services.",
+	"staff": "Staff",
+	"staffOptional": "optional",
+	"allStaff": "All staff",
+	"staffSelected": "staff selected",
+	"staffHelp": "Select staff members who can perform this service. If none are selected, the service will be available to all staff.",
+	"selectStaff": "Select staff",
+	"searchStaff": "Search staff..."
 }

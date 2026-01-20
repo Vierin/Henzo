@@ -28,5 +28,14 @@
 	"phonePlaceholder": "+1 (555) 123-4567",
 	"saveChanges": "Сохранить",
 	"saving": "Сохранение...",
-	"loading": "Загрузка..."
+	"loading": "Загрузка...",
+	"services": "Услуги",
+	"servicesOptional": "необязательно",
+	"servicesHelp": "Выберите услуги, которые может выполнять этот сотрудник.",
+	"allServices": "Все услуги",
+	"servicesSelected": "услуг выбрано",
+	"noServices": "Нет услуг",
+	"selectServices": "Выбрать услуги",
+	"searchServices": "Поиск услуг...",
+	"noServicesFound": "Услуги не найдены"
 }

@@ -6,6 +6,7 @@ import { useOwnerLayout } from '@/contexts/OwnerLayoutContext';
 import { useCreateStaff } from '@/hooks/useStaff';
 import { useServices } from '@/hooks/useServices';
 import { useTranslation } from '@/contexts/LanguageContext';
+import ServiceSelector from '@/components/ServiceSelector';
 
 export default function NewStaffPage() {
 	const t = useTranslation();
@@ -24,6 +25,7 @@ export default function NewStaffPage() {
 
 	// Load services for this salon
 	const { data: services = [] } = useServices(salonId || '', {});
+	// selectedServiceIds starts as empty array, which means "all services" by default
 
 	// Хук для создания работника
 	const createStaffMutation = useCreateStaff();
@@ -151,44 +153,12 @@ export default function NewStaffPage() {
 					</div>
 
 					{services.length > 0 && (
-						<div>
-							<label
-								htmlFor="staff-services"
-								className="block text-sm font-medium text-gray-700 mb-2"
-							>
-								{t('owner.staffNew.services')}
-								<span className="text-xs text-gray-500 ml-1">
-									({t('owner.staffNew.servicesOptional')})
-								</span>
-							</label>
-							<div className="border border-gray-300 rounded-md p-3 max-h-48 overflow-y-auto bg-white">
-								{services.map((service) => (
-									<label
-										key={service.id}
-										className="flex items-center space-x-2 py-1 hover:bg-gray-50 px-2 rounded cursor-pointer"
-									>
-										<input
-											type="checkbox"
-											checked={selectedServiceIds.includes(service.id)}
-											onChange={(e) => {
-												if (e.target.checked) {
-													setSelectedServiceIds([...selectedServiceIds, service.id]);
-												} else {
-													setSelectedServiceIds(
-														selectedServiceIds.filter((id) => id !== service.id)
-													);
-												}
-											}}
-											className="w-4 h-4 text-[#ff5b5b] border-gray-300 rounded focus:ring-[#ff5b5b]"
-										/>
-										<span className="text-sm text-gray-900">{service.name}</span>
-									</label>
-								))}
-							</div>
-							<p className="text-xs text-gray-500 mt-1">
-								{t('owner.staffNew.servicesHelp')}
-							</p>
-						</div>
+						<ServiceSelector
+							services={services}
+							selectedServiceIds={selectedServiceIds}
+							onChange={setSelectedServiceIds}
+							helpText={t('owner.staffNew.servicesHelp')}
+						/>
 					)}
 
 					{error && (

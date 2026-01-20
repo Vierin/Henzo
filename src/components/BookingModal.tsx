@@ -209,15 +209,42 @@ export default function BookingModal({
 		}
 	}, [selectedDate, currentSalonId]);
 
-	// Initialize selected service
+
+	// Reset selected staff if they can't perform the selected service
 	useEffect(() => {
-		if (service) {
-			setSelectedService(service);
-		} else if (showServiceSelector && services.length > 0) {
-			// Если показываем селектор услуг и есть услуги, выбираем первую
-			setSelectedService(services[0]);
+		if (selectedService && selectedStaff && selectedStaff !== t('booking.anyStaff')) {
+			const staffMember = staffMembers.find((staff) => staff.name === selectedStaff);
+			if (staffMember) {
+				const staffServices = staffMember.Service || [];
+				// If staff has services assigned, check if they can perform selected service
+				if (staffServices.length > 0) {
+					const canPerform = staffServices.some((service) => service.id === selectedService.id);
+					if (!canPerform) {
+						// Reset to "Any Staff" if current staff can't perform the service
+						setSelectedStaff(t('booking.anyStaff') || 'Any Staff Member');
+					}
+				}
+			}
 		}
-	}, [service, showServiceSelector, services]);
+	}, [selectedService, selectedStaff, staffMembers, t]);
+
+	// Reset selected service if it can't be performed by the selected staff
+	useEffect(() => {
+		if (selectedService && selectedStaff && selectedStaff !== t('booking.anyStaff')) {
+			const staffMember = staffMembers.find((staff) => staff.name === selectedStaff);
+			if (staffMember) {
+				const staffServices = staffMember.Service || [];
+				// If staff has services assigned, check if they can perform selected service
+				if (staffServices.length > 0) {
+					const canPerform = staffServices.some((service) => service.id === selectedService.id);
+					if (!canPerform) {
+						// Reset selected service if current staff can't perform it
+						setSelectedService(null);
+					}
+				}
+			}
+		}
+	}, [selectedStaff, selectedService, staffMembers, t]);
 
 	// Check for pending booking after OAuth (even if modal is closed)
 	useEffect(() => {
@@ -712,10 +739,60 @@ export default function BookingModal({
 		availabilityCache,
 	]);
 
+	// Filter services by selected staff (which services the staff can perform)
+	const servicesForStaff = useMemo(() => {
+		if (!selectedStaff || selectedStaff === t('booking.anyStaff')) {
+			return services; // Show all services if no staff selected or "Any Staff"
+		}
+
+		const staffMember = staffMembers.find((staff) => staff.name === selectedStaff);
+		if (!staffMember) {
+			return services; // Show all services if staff not found
+		}
+
+		const staffServices = staffMember.Service || [];
+		// If staff has no services assigned (empty array), they can perform all services
+		if (staffServices.length === 0) {
+			return services; // Can perform all services
+		}
+
+		// Filter services to show only those that the staff can perform
+		const staffServiceIds = new Set(staffServices.map((service) => service.id));
+		return services.filter((service) => staffServiceIds.has(service.id));
+	}, [selectedStaff, staffMembers, services, t]);
+
+	// Initialize selected service (after servicesForStaff is defined)
+	useEffect(() => {
+		if (service) {
+			setSelectedService(service);
+		} else if (showServiceSelector && servicesForStaff.length > 0) {
+			// Если показываем селектор услуг и есть услуги, выбираем первую из доступных для работника
+			setSelectedService(servicesForStaff[0]);
+		}
+	}, [service, showServiceSelector, servicesForStaff]);
+
+	// Filter staff members by selected service (which services they can perform)
+	const staffMembersForService = useMemo(() => {
+		if (!selectedService) {
+			return staffMembers; // Show all staff if no service selected
+		}
+
+		return staffMembers.filter((staff) => {
+			// If staff has no services assigned (empty array or undefined), they can perform all services
+			const staffServices = staff.Service || [];
+			if (staffServices.length === 0) {
+				return true; // Can perform all services
+			}
+
+			// Check if staff can perform the selected service
+			return staffServices.some((service) => service.id === selectedService.id);
+		});
+	}, [selectedService, staffMembers]);
+
 	// Filter available staff members based on selected time
 	const availableStaffMembers = useMemo(() => {
 		if (!selectedTime || !selectedDate || !selectedService) {
-			return staffMembers; // Show all staff if no time selected
+			return staffMembersForService; // Show staff filtered by service if no time selected
 		}
 
 		const serviceDuration = selectedService.duration;
@@ -752,14 +829,14 @@ export default function BookingModal({
 			conflictingBookings.map((booking) => booking.staffId).filter(Boolean)
 		);
 
-		// Filter out busy staff members
-		return staffMembers.filter((staff) => !busyStaffIds.has(staff.id));
+		// Filter out busy staff members from service-filtered list
+		return staffMembersForService.filter((staff) => !busyStaffIds.has(staff.id));
 	}, [
 		selectedTime,
 		selectedDate,
 		selectedService,
 		existingBookings,
-		staffMembers,
+		staffMembersForService,
 		salonTimezone,
 	]);
 
@@ -1579,11 +1656,11 @@ export default function BookingModal({
 	}, []);
 
 	// Add "Any Staff" option to the beginning of staff list
-	// Use availableStaffMembers if time is selected, otherwise use all staff
+	// Use availableStaffMembers if time is selected, otherwise use staff filtered by service
 	const staffToShow =
 		selectedTime && selectedDate && selectedService
 			? availableStaffMembers
-			: staffMembers;
+			: staffMembersForService;
 
 	const allStaffMembers = [
 		{
@@ -2530,7 +2607,7 @@ export default function BookingModal({
 										{/* Service Details */}
 										<BookingServiceSelector
 											selectedService={selectedService}
-											services={services}
+											services={servicesForStaff}
 											showServiceSelector={showServiceSelector}
 											isServiceDropdownOpen={isServiceDropdownOpen}
 											onServiceSelect={(service) => {
@@ -2687,7 +2764,7 @@ export default function BookingModal({
 								{/* Service Details */}
 								<BookingServiceSelector
 									selectedService={selectedService}
-									services={services}
+									services={servicesForStaff}
 									showServiceSelector={showServiceSelector}
 									isServiceDropdownOpen={isServiceDropdownOpen}
 									onServiceSelect={(service) => {

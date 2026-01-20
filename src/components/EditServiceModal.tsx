@@ -8,6 +8,7 @@ import {
 } from '@/hooks/useServices';
 import { useSalonId } from '@/hooks/useSalons';
 import { useStaffBySalon } from '@/hooks/useStaff';
+import StaffSelector from './StaffSelector';
 import {
 	Service,
 	ServiceGroup,
@@ -138,8 +139,11 @@ export default function EditServiceModal({
 			const finalCategoryId = categoryIdFromObject || categoryIdFromField || 0;
 
 			// Set selected staff IDs from service.Staff array
+			// If Staff is empty or undefined, it means "all staff" (empty array)
 			const serviceStaff = (service as any).Staff || [];
-			setSelectedStaffIds(serviceStaff.map((staff: any) => staff.id));
+			// If service has no staff assigned, it means all staff (empty array)
+			// If service has specific staff, use their IDs
+			setSelectedStaffIds(serviceStaff.length > 0 ? serviceStaff.map((staff: any) => staff.id) : []);
 
 			setFormData({
 				name: service.name,
@@ -238,7 +242,7 @@ export default function EditServiceModal({
 						formData.serviceGroupId && formData.serviceGroupId !== 'none'
 							? formData.serviceGroupId
 							: undefined,
-					staffIds: selectedStaffIds.length > 0 ? selectedStaffIds : [],
+					staffIds: selectedStaffIds.length > 0 ? selectedStaffIds : undefined,
 				};
 				const updatedService = await updateServiceMutation.mutateAsync({
 					id: service.id,
@@ -471,46 +475,14 @@ export default function EditServiceModal({
 							</p>
 						</div>
 
-						{staffMembers.length > 0 && (
-							<div className="mb-4">
-								<label
-									htmlFor="service-staff"
-									className="block text-sm font-medium text-gray-700 mb-2"
-								>
-									{t('owner.services.staff')}
-									<span className="text-xs text-gray-500 ml-1">
-										({t('owner.services.staffOptional')})
-									</span>
-								</label>
-								<div className="border border-gray-300 rounded-md p-3 max-h-48 overflow-y-auto bg-white">
-									{staffMembers.map((staff) => (
-										<label
-											key={staff.id}
-											className="flex items-center space-x-2 py-1 hover:bg-gray-50 px-2 rounded cursor-pointer"
-										>
-											<input
-												type="checkbox"
-												checked={selectedStaffIds.includes(staff.id)}
-												onChange={(e) => {
-													if (e.target.checked) {
-														setSelectedStaffIds([...selectedStaffIds, staff.id]);
-													} else {
-														setSelectedStaffIds(
-															selectedStaffIds.filter((id) => id !== staff.id)
-														);
-													}
-												}}
-												className="w-4 h-4 text-[#ff5b5b] border-gray-300 rounded focus:ring-[#ff5b5b]"
-											/>
-											<span className="text-sm text-gray-900">{staff.name}</span>
-										</label>
-									))}
-								</div>
-								<p className="text-xs text-gray-500 mt-1">
-									{t('owner.services.staffHelp')}
-								</p>
-							</div>
-						)}
+						<StaffSelector
+							staffMembers={staffMembers}
+							selectedStaffIds={selectedStaffIds}
+							onChange={setSelectedStaffIds}
+							label={t('owner.services.staff')}
+							helpText={t('owner.services.staffHelp')}
+							optional={true}
+						/>
 
 						<div className="grid grid-cols-2 gap-4 mb-4">
 							<div>

@@ -120,6 +120,7 @@ export interface Staff {
 	role?: string;
 	accessLevel: 'ADMIN' | 'EMPLOYEE';
 	salonId: string;
+	Service?: Service[]; // Services that this staff member can perform
 }
 
 export interface Booking {

@@ -56,20 +56,38 @@ export default function OnboardingChecklist({
 	}, [salonId]);
 	const { salonData } = useOwnerLayout();
 	const { user } = useAuth();
+	
+	// Синхронизируем localSalonStatus с реальным статусом салона после загрузки данных
+	useEffect(() => {
+		if (salonData?.status) {
+			setLocalSalonStatus(salonData.status as 'DRAFT' | 'READY' | 'ACTIVE');
+		}
+	}, [salonData?.status]);
+
+	// Используем статус из salonData напрямую, если localSalonStatus еще не установлен
+	const getSalonStatus = (): 'DRAFT' | 'READY' | 'ACTIVE' => {
+		const dataStatus = salonData?.status as string | undefined;
+		if (dataStatus === 'ACTIVE' || dataStatus === 'READY' || dataStatus === 'DRAFT') {
+			return dataStatus as 'DRAFT' | 'READY' | 'ACTIVE';
+		}
+		if (localSalonStatus) {
+			return localSalonStatus;
+		}
+		return 'DRAFT';
+	};
+	const salonStatus = getSalonStatus();
+	
+	// Ранняя проверка: скрываем онбординг для активных салонов ДО загрузки других данных
+	const currentStatus = (salonData?.status as string) || salonStatus;
+	if (currentStatus === 'ACTIVE' || isDismissed) {
+		return null;
+	}
+	
 	const { data: services = [] } = useServices(salonId || '', {});
 	const { data: staffMembers = [] } = useStaffBySalon(salonId || '');
 	const { getSalonUrl } = useSalonSlug();
 	const createStaffMutation = useCreateStaff();
 	const queryClient = useQueryClient();
-
-	// Синхронизируем localSalonStatus с реальным статусом салона после загрузки данных
-	useEffect(() => {
-		if (salonData?.status && salonData.status !== localSalonStatus) {
-			setLocalSalonStatus(salonData.status as 'DRAFT' | 'READY' | 'ACTIVE');
-		}
-	}, [salonData?.status, localSalonStatus]);
-
-	const salonStatus = localSalonStatus || (salonData?.status as 'DRAFT' | 'READY' | 'ACTIVE') || 'DRAFT';
 	const hasSchedule = salonData?.workingHours && Object.keys(salonData.workingHours).length > 0;
 	const salonPublicUrl = salonData ? getSalonUrl(salonData) : (salonSlug ? `/salon/${salonSlug}` : undefined);
 
@@ -276,9 +294,6 @@ export default function OnboardingChecklist({
 		);
 	}
 
-	if (salonStatus === 'ACTIVE' || isDismissed) {
-		return null;
-	}
 
 	return (
 		<div className="fixed bottom-4 left-4 z-[500] bg-white rounded-lg shadow-lg p-3 max-w-md border border-gray-200">
