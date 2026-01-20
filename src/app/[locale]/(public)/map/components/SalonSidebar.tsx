@@ -18,6 +18,7 @@ import {
 	getCategoryBySlug,
 	getCategoryTranslatedName,
 } from '@/hooks/useCategories';
+import SalonImagePlaceholder from '@/components/SalonImagePlaceholder';
 
 interface SalonSidebarProps {
 	onSalonSelect: (salon: Salon) => void;
@@ -237,33 +238,11 @@ export default function SalonSidebar({
 														/>
 													);
 												} catch {
-													return (
-														<div className="w-full h-full bg-gradient-to-br from-[#fff7f6] to-[#ffe8e6] flex items-center justify-center overflow-hidden">
-															<Image
-																src="/images/placeholder.webp"
-																alt={salon.name || 'Salon placeholder'}
-																width={80}
-																height={80}
-																className="w-full h-full object-cover"
-																loading="lazy"
-																sizes="80px"
-															/>
-														</div>
-													);
+													return <SalonImagePlaceholder size={80} />;
 												}
 											})()
 										) : (
-											<div className="w-full h-full bg-gradient-to-br from-[#fff7f6] to-[#ffe8e6] flex items-center justify-center overflow-hidden">
-												<Image
-													src="/images/placeholder.webp"
-													alt={salon.name || 'Salon placeholder'}
-													width={80}
-													height={80}
-													className="w-full h-full object-cover"
-													loading="lazy"
-													sizes="80px"
-												/>
-											</div>
+											<SalonImagePlaceholder size={80} />
 										)}
 									</div>
 

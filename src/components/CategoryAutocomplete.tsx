@@ -10,6 +10,7 @@ interface CategoryAutocompleteProps {
 	categories: ServiceCategory[];
 	placeholder?: string;
 	className?: string;
+	error?: boolean; // для отображения состояния ошибки
 }
 
 export default function CategoryAutocomplete({
@@ -18,6 +19,7 @@ export default function CategoryAutocomplete({
 	categories,
 	placeholder = 'Select or type a category...',
 	className = '',
+	error = false,
 }: CategoryAutocompleteProps) {
 	const { language } = useLanguage();
 	const [inputValue, setInputValue] = useState('');
@@ -25,6 +27,7 @@ export default function CategoryAutocomplete({
 	const [filteredCategories, setFilteredCategories] = useState<
 		ServiceCategory[]
 	>([]);
+	const [isSelecting, setIsSelecting] = useState(false); // Флаг для отслеживания выбора из списка
 	const inputRef = useRef<HTMLInputElement>(null);
 	const suggestionsRef = useRef<HTMLDivElement>(null);
 	const containerRef = useRef<HTMLDivElement>(null);
@@ -56,12 +59,16 @@ export default function CategoryAutocomplete({
 
 	// Update input value when category changes externally
 	useEffect(() => {
-		if (currentCategory) {
-			setInputValue(currentCategoryName);
-		} else {
+		const category = categories.find((c) => c.id === value);
+		if (category) {
+			const name = getCategoryName(category);
+			// Всегда обновляем inputValue при изменении value, чтобы отобразить выбранную категорию
+			setInputValue(name);
+		} else if (value === undefined || value === null) {
+			// Если значение очищено извне, очищаем input
 			setInputValue('');
 		}
-	}, [currentCategory, currentCategoryName]);
+	}, [value, categories, getCategoryName]);
 
 	// Filter categories based on input
 	useEffect(() => {
@@ -96,9 +103,19 @@ export default function CategoryAutocomplete({
 	};
 
 	const handleSelectCategory = (category: ServiceCategory) => {
+		const name = getCategoryName(category);
+		// Устанавливаем флаг, что происходит выбор из списка
+		setIsSelecting(true);
+		// Сначала обновляем значение в форме
 		onChange(category.id);
-		setInputValue(getCategoryName(category));
+		// Затем обновляем inputValue
+		setInputValue(name);
+		// Скрываем подсказки
 		setShowSuggestions(false);
+		// Сбрасываем флаг после небольшой задержки
+		setTimeout(() => {
+			setIsSelecting(false);
+		}, 300);
 	};
 
 	const handleFocus = () => {
@@ -108,16 +125,39 @@ export default function CategoryAutocomplete({
 	const handleBlur = useCallback(() => {
 		// Delay hiding suggestions to allow click events
 		setTimeout(() => {
+			// Если только что выбрали категорию из списка, не обрабатываем blur
+			if (isSelecting) {
+				return;
+			}
+			
 			setShowSuggestions(false);
-			// If input doesn't match any category, reset to selected category name
-			if (currentCategory && inputValue !== currentCategoryName) {
-				setInputValue(currentCategoryName);
-			} else if (!currentCategory && inputValue) {
-				setInputValue('');
-				onChange(undefined);
+			// Если есть выбранная категория, убеждаемся, что input показывает ее название
+			if (value && currentCategory) {
+				const name = getCategoryName(currentCategory);
+				if (inputValue !== name) {
+					setInputValue(name);
+				}
+			} else if (!value && inputValue.trim()) {
+				// Если категория не выбрана, но пользователь что-то ввел
+				// Пытаемся найти категорию по имени
+				const matchingCategory = categories.find((cat) => {
+					const name = getCategoryName(cat);
+					return name.toLowerCase() === inputValue.toLowerCase().trim();
+				});
+				if (matchingCategory) {
+					// Если нашли, выбираем ее
+					onChange(matchingCategory.id);
+					setInputValue(getCategoryName(matchingCategory));
+				} else if (inputValue !== '') {
+					// Если не нашли и поле не пустое, очищаем только input (не трогаем значение)
+					// Это позволяет пользователю видеть выбранную категорию
+					if (!value) {
+						setInputValue('');
+					}
+				}
 			}
 		}, 200);
-	}, [currentCategory, currentCategoryName, inputValue, onChange]);
+	}, [value, currentCategory, inputValue, categories, getCategoryName, onChange, isSelecting]);
 
 	const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
 		if (e.key === 'Escape') {
@@ -163,9 +203,11 @@ export default function CategoryAutocomplete({
 				onBlur={handleBlur}
 				onKeyDown={handleKeyDown}
 				placeholder={placeholder}
-				className={`w-full py-2 border border-gray-300 h-[42px] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#ff5b5b] focus:border-transparent text-gray-900 text-sm ${
-					inputValue ? 'pl-3 pr-10' : 'px-3'
-				}`}
+				className={`w-full py-2 border h-[42px] rounded-lg focus:outline-none focus:ring-2 text-gray-900 text-sm ${
+					error
+						? 'border-red-500 focus:border-red-500 focus:ring-red-500'
+						: 'border-gray-300 focus:ring-[#ff5b5b] focus:border-transparent'
+				} ${inputValue ? 'pl-3 pr-10' : 'px-3'} ${className}`}
 			/>
 
 			{/* Clear button */}
@@ -192,21 +234,26 @@ export default function CategoryAutocomplete({
 				</button>
 			)}
 
-			{/* Suggestions dropdown */}
+			{/* Suggestions dropdown - ограничено до 6 элементов */}
 			{showSuggestions && filteredCategories.length > 0 && (
 				<div
 					ref={suggestionsRef}
-					className="absolute z-50 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-[280px] overflow-y-auto"
+					className="absolute z-50 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg overflow-y-auto"
 					role="listbox"
+					style={{ maxHeight: '240px' }}
 				>
-					{filteredCategories.map((category) => {
+					{filteredCategories.slice(0, 100).map((category) => {
 						const name = getCategoryName(category);
 						const isSelected = category.id === value;
 						return (
 							<button
 								key={category.id}
 								type="button"
-								onClick={() => handleSelectCategory(category)}
+								onMouseDown={(e) => {
+									// Prevent input blur before click
+									e.preventDefault();
+									handleSelectCategory(category);
+								}}
 								className={`w-full text-left px-3 py-2 text-sm hover:bg-gray-50 focus:bg-gray-50 cursor-pointer transition-colors ${
 									isSelected
 										? 'bg-[#ff5b5b]/10 text-[#ff5b5b] font-medium'

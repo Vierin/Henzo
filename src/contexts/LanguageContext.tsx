@@ -253,6 +253,8 @@ export function LanguageProvider({
 		// Load services and staff modules for navigation (sidebar uses them)
 		modulesToLoad.push('owner/services', 'owner/staff');
 		modulesToLoad.push('owner/feedback');
+		// Load onboarding module for OnboardingChecklist component on dashboard
+		modulesToLoad.push('owner/onboarding');
 		// Load servicesNew module for EditServiceModal translations on /services page
 		if (pathNoLocale.startsWith('/services') && !pathNoLocale.includes('/new')) {
 			modulesToLoad.push('owner/servicesNew');

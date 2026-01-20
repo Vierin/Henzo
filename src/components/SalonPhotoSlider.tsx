@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { supabase } from '@/lib/supabase';
 import Image from 'next/image';
+import SalonImagePlaceholder from './SalonImagePlaceholder';
 
 interface SalonPhotoSliderProps {
 	photos: string[];
@@ -107,30 +108,22 @@ export default function SalonPhotoSlider({
 							}}
 						/>
 						<div
-							className="placeholder w-full h-full bg-gradient-to-br from-pink-100 to-pink-200 rounded-xl flex items-center justify-center overflow-hidden"
+							className="placeholder w-full h-full rounded-xl overflow-hidden"
 							style={{ display: 'none' }}
 						>
-							<Image
-								src="/images/placeholder.webp"
-								alt={salonName || 'Salon placeholder'}
-								width={400}
-								height={320}
-								className="w-full h-full object-cover rounded-xl"
-								loading="lazy"
-								sizes="(max-width: 768px) 100vw, 50vw"
+							<SalonImagePlaceholder 
+								className="rounded-xl"
+								showText={true}
+								variant="large"
 							/>
 						</div>
 					</>
 				) : (
-					<div className="w-full h-full bg-gradient-to-br from-pink-100 to-pink-200 rounded-xl flex items-center justify-center overflow-hidden">
-						<Image
-							src="/images/placeholder.webp"
-							alt={salonName || 'Salon placeholder'}
-							width={400}
-							height={320}
-							className="w-full h-full object-cover rounded-xl"
-							loading="lazy"
-							sizes="(max-width: 768px) 100vw, 50vw"
+					<div className="w-full h-full rounded-xl overflow-hidden">
+						<SalonImagePlaceholder 
+							className="rounded-xl"
+							showText={true}
+							variant="large"
 						/>
 					</div>
 				)}
@@ -161,17 +154,13 @@ export default function SalonPhotoSlider({
 					}}
 				/>
 				<div
-					className="w-full h-full bg-gradient-to-br from-pink-100 to-pink-200 rounded-xl flex items-center justify-center overflow-hidden"
+					className="w-full h-full rounded-xl overflow-hidden"
 					style={{ display: 'none' }}
 				>
-					<Image
-						src="/images/placeholder.webp"
-						alt={salonName || 'Salon placeholder'}
-						width={400}
-						height={320}
-						className="w-full h-full object-cover rounded-xl"
-						loading="lazy"
-						sizes="(max-width: 768px) 100vw, 50vw"
+					<SalonImagePlaceholder 
+						className="rounded-xl"
+						showText={true}
+						variant="large"
 					/>
 				</div>
 			</div>
@@ -203,17 +192,13 @@ export default function SalonPhotoSlider({
 					}}
 				/>
 				<div
-					className="w-full h-full bg-gradient-to-br from-pink-100 to-pink-200 rounded-xl flex items-center justify-center overflow-hidden"
+					className="w-full h-full rounded-xl overflow-hidden"
 					style={{ display: 'none' }}
 				>
-					<Image
-						src="/images/placeholder.webp"
-						alt={salonName || 'Salon placeholder'}
-						width={400}
-						height={320}
-						className="w-full h-full object-cover rounded-xl"
-						loading="lazy"
-						sizes="(max-width: 768px) 100vw, 50vw"
+					<SalonImagePlaceholder 
+						className="rounded-xl"
+						showText={true}
+						variant="large"
 					/>
 				</div>
 			</div>

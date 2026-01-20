@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useOwnerLayout } from '@/contexts/OwnerLayoutContext';
 import { useCreateStaff } from '@/hooks/useStaff';
-import Image from 'next/image';
+import { useServices } from '@/hooks/useServices';
 import { useTranslation } from '@/contexts/LanguageContext';
 
 export default function NewStaffPage() {
@@ -15,13 +15,15 @@ export default function NewStaffPage() {
 		email: '',
 		phone: '',
 	});
-	const [photo, setPhoto] = useState<File | null>(null);
-	const [photoPreview, setPhotoPreview] = useState<string | null>(null);
+	const [selectedServiceIds, setSelectedServiceIds] = useState<string[]>([]);
 	const [error, setError] = useState('');
 	const router = useRouter();
 
 	// Используем данные салона из контекста (избегаем дублирования запросов)
 	const { salonId, isLoading: salonLoading, hasSalon } = useOwnerLayout();
+
+	// Load services for this salon
+	const { data: services = [] } = useServices(salonId || '', {});
 
 	// Хук для создания работника
 	const createStaffMutation = useCreateStaff();
@@ -31,18 +33,6 @@ export default function NewStaffPage() {
 		router.push('/salon-info');
 		return null;
 	}
-
-	const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-		const file = e.target.files?.[0];
-		if (file) {
-			setPhoto(file);
-			const reader = new FileReader();
-			reader.onload = (e) => {
-				setPhotoPreview(e.target?.result as string);
-			};
-			reader.readAsDataURL(file);
-		}
-	};
 
 	const handleSubmit = async (e: React.FormEvent) => {
 		e.preventDefault();
@@ -66,6 +56,7 @@ export default function NewStaffPage() {
 				...formData,
 				salonId,
 				accessLevel: formData.accessLevel as 'ADMIN' | 'EMPLOYEE',
+				serviceIds: selectedServiceIds.length > 0 ? selectedServiceIds : undefined,
 			});
 
 			// Redirect to staff page after successful creation
@@ -77,11 +68,6 @@ export default function NewStaffPage() {
 				err instanceof Error ? err.message : t('owner.staffNew.failedToCreate');
 			setError(errorMessage);
 		}
-	};
-
-	const removePhoto = () => {
-		setPhoto(null);
-		setPhotoPreview(null);
 	};
 
 	return (
@@ -116,89 +102,6 @@ export default function NewStaffPage() {
 
 			<div className="bg-white rounded-xl border border-[#f1d9d7] p-3 md:p-6">
 				<form onSubmit={handleSubmit} className="space-y-6">
-					{/* Photo Upload Section - Hidden for beta */}
-					{false && (
-						<div>
-							<label className="block text-sm font-medium text-gray-700 mb-2">
-								{t('owner.staffNew.photo')}
-							</label>
-							<div className="flex flex-col sm:flex-row sm:items-center gap-4 sm:gap-6">
-								{/* Photo Preview */}
-								<div className="flex-shrink-0">
-									{photoPreview ? (
-										<div className="relative">
-											<Image
-												src={photoPreview as string}
-												alt="Staff preview"
-												width={80}
-												height={80}
-												className="w-20 h-20 rounded-full object-cover border-2 border-gray-200"
-											/>
-											<button
-												type="button"
-												onClick={removePhoto}
-												className="absolute -top-2 -right-2 w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center text-xs hover:bg-red-600"
-											>
-												×
-											</button>
-										</div>
-									) : (
-										<div className="w-20 h-20 rounded-full bg-gray-100 border-2 border-gray-200 flex items-center justify-center">
-											<svg
-												className="w-8 h-8 text-gray-400"
-												fill="none"
-												stroke="currentColor"
-												viewBox="0 0 24 24"
-											>
-												<path
-													strokeLinecap="round"
-													strokeLinejoin="round"
-													strokeWidth={2}
-													d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
-												/>
-											</svg>
-										</div>
-									)}
-								</div>
-
-								{/* Upload Button */}
-								<div className="flex-1">
-									<input
-										type="file"
-										id="photo"
-										accept="image/*"
-										onChange={handlePhotoChange}
-										className="hidden"
-									/>
-									<label
-										htmlFor="photo"
-										className="cursor-pointer inline-flex items-center justify-center gap-2 w-full sm:w-auto px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-[#ff5b5b]"
-									>
-										<svg
-											className="w-4 h-4"
-											fill="none"
-											stroke="currentColor"
-											viewBox="0 0 24 24"
-										>
-											<path
-												strokeLinecap="round"
-												strokeLinejoin="round"
-												strokeWidth={2}
-												d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"
-											/>
-										</svg>
-										{photo
-											? t('owner.staffNew.changePhoto')
-											: t('owner.staffNew.uploadPhoto')}
-									</label>
-									<p className="text-xs text-gray-500 mt-1">
-										{t('owner.staffNew.photoFormat')}
-									</p>
-								</div>
-							</div>
-						</div>
-					)}
-
 					<div>
 						<label className="block text-sm font-medium text-gray-700 mb-2">
 							{t('owner.staffNew.fullName')}
@@ -246,6 +149,47 @@ export default function NewStaffPage() {
 							/>
 						</div>
 					</div>
+
+					{services.length > 0 && (
+						<div>
+							<label
+								htmlFor="staff-services"
+								className="block text-sm font-medium text-gray-700 mb-2"
+							>
+								{t('owner.staffNew.services')}
+								<span className="text-xs text-gray-500 ml-1">
+									({t('owner.staffNew.servicesOptional')})
+								</span>
+							</label>
+							<div className="border border-gray-300 rounded-md p-3 max-h-48 overflow-y-auto bg-white">
+								{services.map((service) => (
+									<label
+										key={service.id}
+										className="flex items-center space-x-2 py-1 hover:bg-gray-50 px-2 rounded cursor-pointer"
+									>
+										<input
+											type="checkbox"
+											checked={selectedServiceIds.includes(service.id)}
+											onChange={(e) => {
+												if (e.target.checked) {
+													setSelectedServiceIds([...selectedServiceIds, service.id]);
+												} else {
+													setSelectedServiceIds(
+														selectedServiceIds.filter((id) => id !== service.id)
+													);
+												}
+											}}
+											className="w-4 h-4 text-[#ff5b5b] border-gray-300 rounded focus:ring-[#ff5b5b]"
+										/>
+										<span className="text-sm text-gray-900">{service.name}</span>
+									</label>
+								))}
+							</div>
+							<p className="text-xs text-gray-500 mt-1">
+								{t('owner.staffNew.servicesHelp')}
+							</p>
+						</div>
+					)}
 
 					{error && (
 						<div className="text-red-600 text-sm text-center bg-red-50 border border-red-200 rounded-md p-3">

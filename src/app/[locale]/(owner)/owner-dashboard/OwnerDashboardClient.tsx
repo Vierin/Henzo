@@ -21,11 +21,7 @@ import {
 	Users,
 	CalendarCheck,
 	TrendingUp,
-	AlertCircle,
-	X,
 } from 'lucide-react';
-import Link from 'next/link';
-import { extractLocaleFromPath, withLocale } from '@/i18n/routing';
 import { safeParseDate } from '@/utils/date';
 import { formatVND } from '@/utils/currency';
 import { convertBookingDtoArray } from '@/utils/bookingTransformers';
@@ -44,20 +40,11 @@ export default function OwnerDashboardClient() {
 	const [isBookingModalOpen, setIsBookingModalOpen] = useState(false);
 	const [selectedService, setSelectedService] = useState<Service | undefined>();
 	const [editingBooking, setEditingBooking] = useState<Booking | null>(null);
-	const [showPhotoWarning, setShowPhotoWarning] = useState(true);
 	const t = useTranslation();
 	const pathname = usePathname();
 
 	const { salonId, isLoading, hasSalon, salonData } = useOwnerLayout();
 
-	// Check if salon has photos - only show warning if photos array is empty or doesn't exist
-	const hasPhotos =
-		salonData?.photos &&
-		Array.isArray(salonData.photos) &&
-		salonData.photos.length > 0;
-
-	const locale = extractLocaleFromPath(pathname) ?? 'en';
-	const settingsUrl = withLocale('/salon-info', locale as 'en' | 'ru' | 'vi');
 	const {
 		data: bookingsData = [],
 		isLoading: bookingsLoading,
@@ -205,33 +192,8 @@ export default function OwnerDashboardClient() {
 	}
 
 	return (
-		<div className="px-4 md:px-8 py-6 w-full">
+		<div className="px-4 md:px-8 py-6 w-full relative">
 			<div className="space-y-6 max-w-7xl mx-auto">
-			{/* Photo Warning Banner */}
-			{!hasPhotos && showPhotoWarning && (
-				<div className="w-full bg-amber-50 border border-amber-200 rounded-lg p-4 flex items-start gap-3">
-					<AlertCircle className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
-					<div className="flex-1">
-						<p className="text-sm text-amber-800">
-							{t('owner.dashboard.noPhotosWarning')}{' '}
-							<Link
-								href={settingsUrl}
-								className="text-amber-700 hover:text-amber-900 underline font-medium"
-							>
-								{t('owner.dashboard.addPhotoLink')}
-							</Link>
-						</p>
-					</div>
-					<button
-						onClick={() => setShowPhotoWarning(false)}
-						className="text-amber-600 hover:text-amber-800 flex-shrink-0"
-						aria-label="Close"
-					>
-						<X className="w-5 h-5" />
-					</button>
-				</div>
-			)}
-
 			{/* Header */}
 			<div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
 				<div>

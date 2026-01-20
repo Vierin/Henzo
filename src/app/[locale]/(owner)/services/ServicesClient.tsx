@@ -339,10 +339,7 @@ export default function ServicesClient() {
 							className="inline-flex items-center gap-2 rounded-full bg-[#ff5b5b] !text-white px-4 py-2 text-sm shadow-sm hover:opacity-95 whitespace-nowrap"
 						>
 							<span className="text-lg leading-none">＋</span>
-							<span>{t('owner.services.addNew')}</span>
-							<span className="hidden md:inline">
-								{t('owner.services.title')}
-							</span>
+							<span>{t('owner.services.addService')}</span>
 						</button>
 					</div>
 				</div>

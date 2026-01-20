@@ -4,6 +4,8 @@ import { useState, useEffect } from 'react';
 import toast from 'react-hot-toast';
 import { Staff } from '@/types';
 import { useTranslation } from '@/contexts/LanguageContext';
+import { useServices } from '@/hooks/useServices';
+import { apiClient } from '@/lib/api-client';
 
 interface EditStaffModalProps {
 	isOpen: boolean;
@@ -24,8 +26,13 @@ export default function EditStaffModal({
 		email: '',
 		phone: '',
 	});
+	const [selectedServiceIds, setSelectedServiceIds] = useState<string[]>([]);
 	const [loading, setLoading] = useState(false);
 	const [error, setError] = useState('');
+
+	// Load services for this salon
+	const salonId = staff?.salonId;
+	const { data: services = [] } = useServices(salonId || '', {});
 
 	useEffect(() => {
 		if (staff) {
@@ -34,6 +41,9 @@ export default function EditStaffModal({
 				email: staff.email || '',
 				phone: staff.phone || '',
 			});
+			// Set selected service IDs from staff.Service array
+			const staffServices = (staff as any).Service || [];
+			setSelectedServiceIds(staffServices.map((service: any) => service.id));
 		}
 	}, [staff]);
 
@@ -47,23 +57,12 @@ export default function EditStaffModal({
 		try {
 			if (!staff) return;
 
-			const API_URL =
-				process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
-			const response = await fetch(`${API_URL}/staff/${staff.id}`, {
-				method: 'PUT',
-				headers: {
-					'Content-Type': 'application/json',
-				},
-				body: JSON.stringify(formData),
+			const updatedStaff = await apiClient.put(`/staff/${staff.id}`, {
+				...formData,
+				serviceIds: selectedServiceIds.length > 0 ? selectedServiceIds : [],
 			});
 
-			if (!response.ok) {
-				const errorData = await response.json();
-				throw new Error(errorData.error || 'Failed to update staff member');
-			}
-
-			const updatedStaff = await response.json();
-			onSave(updatedStaff.staff || updatedStaff);
+			onSave(updatedStaff);
 			toast.success('Staff member updated successfully!', { id: updateToast });
 			onClose();
 		} catch (err: unknown) {
@@ -154,6 +153,47 @@ export default function EditStaffModal({
 								placeholder={t('owner.staff.phonePlaceholder')}
 							/>
 						</div>
+
+						{services.length > 0 && (
+							<div>
+								<label
+									htmlFor="staff-services"
+									className="block text-sm font-medium text-gray-700 mb-2"
+								>
+									{t('owner.staff.services')}
+									<span className="text-xs text-gray-500 ml-1">
+										({t('owner.staff.servicesOptional')})
+									</span>
+								</label>
+								<div className="border border-gray-300 rounded-md p-3 max-h-48 overflow-y-auto bg-white">
+									{services.map((service) => (
+										<label
+											key={service.id}
+											className="flex items-center space-x-2 py-1 hover:bg-gray-50 px-2 rounded cursor-pointer"
+										>
+											<input
+												type="checkbox"
+												checked={selectedServiceIds.includes(service.id)}
+												onChange={(e) => {
+													if (e.target.checked) {
+														setSelectedServiceIds([...selectedServiceIds, service.id]);
+													} else {
+														setSelectedServiceIds(
+															selectedServiceIds.filter((id) => id !== service.id)
+														);
+													}
+												}}
+												className="w-4 h-4 text-[#ff5b5b] border-gray-300 rounded focus:ring-[#ff5b5b]"
+											/>
+											<span className="text-sm text-gray-900">{service.name}</span>
+										</label>
+									))}
+								</div>
+								<p className="text-xs text-gray-500 mt-1">
+									{t('owner.staff.servicesHelp')}
+								</p>
+							</div>
+						)}
 
 						{error && (
 							<div className="text-red-600 text-sm text-center bg-red-50 border border-red-200 rounded-md p-3">

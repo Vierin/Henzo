@@ -24,5 +24,6 @@
 	"goHome": "Go to Homepage",
 	"select": "Select",
 	"locationOutsideVietnam": "We currently only work with salons in Vietnam. Please select a location in Vietnam.",
-	"noSalonsInArea": "We currently don't have any salons in your area within 50km radius. Please try selecting a different location."
+	"noSalonsInArea": "We currently don't have any salons in your area within 50km radius. Please try selecting a different location.",
+	"photoComingSoon": "Salon photo coming soon"
 }

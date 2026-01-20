@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import Image from 'next/image';
 import { supabase } from '@/lib/supabase';
+import SalonImagePlaceholder from './SalonImagePlaceholder';
 
 interface SalonImageProps {
 	src?: string;
@@ -30,21 +31,11 @@ export default function SalonImage({
 	// If no src or image failed to load, show placeholder
 	if (!src || imageError) {
 		return (
-			<div
-				className={`bg-gradient-to-br from-pink-100 to-pink-200 flex items-center justify-center overflow-hidden ${className}`}
-			>
-				<Image
-					src="/images/placeholder.webp"
-					alt={alt || 'Salon placeholder'}
-					width={width}
-					height={height}
-					className="w-full h-full object-cover"
-					loading="lazy"
-					sizes={
-						sizes || '(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw'
-					}
-				/>
-			</div>
+			<SalonImagePlaceholder 
+				className={className}
+				showText={width > 200 || height > 200}
+				variant={width > 200 || height > 200 ? 'large' : 'small'}
+			/>
 		);
 	}
 

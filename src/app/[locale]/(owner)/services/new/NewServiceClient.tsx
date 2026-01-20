@@ -1,12 +1,15 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { useCreateService } from '@/hooks/useServices';
 import { useOwnerLayout } from '@/contexts/OwnerLayoutContext';
+import { useStaffBySalon } from '@/hooks/useStaff';
 import { apiClient } from '@/lib/api-client';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { ServiceCategory } from '@/types';
+import CategoryAutocomplete from '@/components/CategoryAutocomplete';
+import StaffSelectionModal from '@/components/StaffSelectionModal';
 import {
 	Select,
 	SelectContent,
@@ -123,12 +126,19 @@ export default function NewServiceClient() {
 	const [groupModalStep, setGroupModalStep] = useState<'input' | 'preview'>(
 		'input'
 	);
+	const [selectedStaffIds, setSelectedStaffIds] = useState<string[]>([]);
+	const [isStaffModalOpen, setIsStaffModalOpen] = useState(false);
 	const router = useRouter();
 
 	// Используем данные салона из контекста (избегаем дублирования запросов)
 	const { salonId, isLoading: salonLoading, hasSalon } = useOwnerLayout();
 	const queryClient = useQueryClient();
 	const { language } = useLanguage();
+
+	// Load staff for this salon
+	const { data: staffMembers = [] } = useStaffBySalon(salonId || '');
+
+	// Empty selectedStaffIds array means "all staff" (default behavior)
 
 	// Load categories from API (same as EditServiceModal)
 	const { data: categories = [] } = useQuery<ServiceCategory[]>({
@@ -247,6 +257,7 @@ export default function NewServiceClient() {
 					formData.serviceGroupId && formData.serviceGroupId !== 'none'
 						? formData.serviceGroupId
 						: undefined,
+				staffIds: selectedStaffIds.length > 0 ? selectedStaffIds : undefined,
 			});
 
 			// Wait a bit for cache invalidation, then redirect
@@ -445,32 +456,18 @@ export default function NewServiceClient() {
 						</div>
 					)}
 
-					{/* Category and Group */}
-					<div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-						<div>
-							<label className="block text-sm font-medium text-gray-700 mb-2">
-								{t('owner.servicesNew.category')}
-							</label>
-							<div className="bg-gray-50 rounded-md p-3 border border-gray-200">
-								<p className="text-gray-900">
-									{selectedCategory
-										? getLocalizedCategoryName(selectedCategory)
-										: t('owner.servicesNew.notSelected')}
-								</p>
-							</div>
+					{/* Category */}
+					<div>
+						<label className="block text-sm font-medium text-gray-700 mb-2">
+							{t('owner.servicesNew.category')}
+						</label>
+						<div className="bg-gray-50 rounded-md p-3 border border-gray-200">
+							<p className="text-gray-900">
+								{selectedCategory
+									? getLocalizedCategoryName(selectedCategory)
+									: t('owner.servicesNew.notSelected')}
+							</p>
 						</div>
-						{selectedGroup && (
-							<div>
-								<label className="block text-sm font-medium text-gray-700 mb-2">
-									{t('owner.servicesNew.serviceGroup')}
-								</label>
-								<div className="bg-gray-50 rounded-md p-3 border border-gray-200">
-									<p className="text-gray-900">
-										{getLocalizedGroupName(selectedGroup)}
-									</p>
-								</div>
-							</div>
-						)}
 					</div>
 
 					{/* Duration and Price */}
@@ -676,68 +673,76 @@ export default function NewServiceClient() {
 						</p>
 					</div>
 
-					<div>
-						<label
-							htmlFor="service-category"
-							className="block text-sm font-medium text-gray-700 mb-2"
-						>
-							{t('owner.servicesNew.category')}
-						</label>
-						<Controller
-							name="serviceCategoryId"
-							control={control}
-							defaultValue="none"
-							render={({ field }) => (
-								<Select value={field.value} onValueChange={field.onChange}>
-									<SelectTrigger
-										className={`w-full border focus:ring-2 focus:ring-[#ff5b5b] text-gray-900 ${
-											errors.serviceCategoryId
-												? 'border-red-500 focus:border-red-500'
-												: 'border-gray-300 focus:border-transparent'
-										}`}
-										aria-invalid={!!errors.serviceCategoryId}
-									>
-										<SelectValue
-											placeholder={t('owner.servicesNew.selectCategory')}
-										/>
-									</SelectTrigger>
-									<SelectContent className="bg-white border border-gray-300 shadow-lg rounded-md">
-										{categories.map((category) => {
-											const name =
-												language === 'ru'
-													? category.name_ru || category.name_en
-													: language === 'vi'
-														? category.name_vn || category.name_en
-														: category.name_en;
-											return (
-												<SelectItem
-													key={category.id}
-													value={category.id.toString()}
-													className="bg-white hover:bg-gray-50 focus:bg-gray-50 text-gray-900 cursor-pointer"
-												>
-													{name}
-												</SelectItem>
-											);
-										})}
-									</SelectContent>
-								</Select>
-							)}
-						/>
-						{errors.serviceCategoryId && (
-							<p
-								id="service-category-error"
-								className="mt-1 text-sm text-red-600"
-								role="alert"
+					<div className='grid grid-cols-1 md:grid-cols-2 gap-6'>
+						<div className='w-full'>
+							<label
+								htmlFor="service-category"
+								className="block text-sm font-medium text-gray-700 mb-2"
 							>
-								{errors.serviceCategoryId.message}
+								{t('owner.servicesNew.category')}
+							</label>
+							<Controller
+								name="serviceCategoryId"
+								control={control}
+								defaultValue="none"
+								render={({ field }) => (
+									<CategoryAutocomplete
+										value={
+											field.value && field.value !== 'none'
+												? Number(field.value)
+												: undefined
+										}
+										onChange={(categoryId) => {
+											field.onChange(categoryId ? categoryId.toString() : 'none');
+										}}
+										categories={categories}
+										placeholder={t('owner.servicesNew.selectCategory')}
+										error={!!errors.serviceCategoryId}
+									/>
+								)}
+							/>
+							{errors.serviceCategoryId && (
+								<p
+									id="service-category-error"
+									className="mt-1 text-sm text-red-600"
+									role="alert"
+								>
+									{errors.serviceCategoryId.message}
+								</p>
+							)}
+							<p
+								id="service-category-help"
+								className="text-xs text-gray-500 mt-1"
+							>
+								{t('owner.servicesNew.categoryHelp')}
 							</p>
+						</div>
+
+						{staffMembers.length > 0 && (
+							<div className='w-full'>
+								<label
+									htmlFor="service-staff"
+									className="block text-sm font-medium text-gray-700 mb-2"
+								>
+									{t('owner.servicesNew.staff')}
+									<span className="text-xs text-gray-500 ml-1">
+										({t('owner.servicesNew.staffOptional')})
+									</span>
+								</label>
+								<button
+									type="button"
+									onClick={() => setIsStaffModalOpen(true)}
+									className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#ff5b5b] focus:border-transparent text-gray-900 text-sm text-left bg-white hover:bg-gray-50 transition-colors"
+								>
+									{selectedStaffIds.length === 0 || (selectedStaffIds.length === staffMembers.length && staffMembers.length > 0)
+										? t('owner.servicesNew.allStaff')
+										: `${selectedStaffIds.length} ${t('owner.servicesNew.staffSelected')}`}
+								</button>
+								<p className="text-xs text-gray-500 mt-1">
+									{t('owner.servicesNew.staffHelp')}
+								</p>
+							</div>
 						)}
-						<p
-							id="service-category-help"
-							className="text-xs text-gray-500 mt-1"
-						>
-							{t('owner.servicesNew.categoryHelp')}
-						</p>
 					</div>
 
 					<div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -817,6 +822,59 @@ export default function NewServiceClient() {
 								{t('owner.servicesNew.priceHelp')}
 							</p>
 						</div>
+					</div>
+
+					<div>
+						<label
+							htmlFor="service-group"
+							className="block text-sm font-medium text-gray-700 mb-2"
+						>
+							{t('owner.servicesNew.serviceGroup')}
+						</label>
+						<div className="flex items-center gap-2">
+							<Controller
+								name="serviceGroupId"
+								control={control}
+								defaultValue="none"
+								render={({ field }) => (
+									<Select value={field.value} onValueChange={field.onChange}>
+										<SelectTrigger className="w-full border border-gray-300 focus:ring-2 focus:ring-[#ff5b5b] focus:border-transparent text-gray-900 text-sm">
+											<SelectValue
+												placeholder={t('owner.servicesNew.noGroup')}
+											/>
+										</SelectTrigger>
+										<SelectContent className="bg-white border border-gray-300 shadow-lg rounded-md">
+											<SelectItem
+												value="none"
+												className="bg-white hover:bg-gray-50 focus:bg-gray-50 text-gray-900 cursor-pointer text-sm"
+											>
+												{t('owner.servicesNew.noGroup')}
+											</SelectItem>
+											{groups.map((group: any) => (
+												<SelectItem
+													key={group.id}
+													value={group.id}
+													className="bg-white hover:bg-gray-50 focus:bg-gray-50 text-gray-900 cursor-pointer text-sm"
+												>
+													{getLocalizedGroupName(group)}
+												</SelectItem>
+											))}
+										</SelectContent>
+									</Select>
+								)}
+							/>
+							<button
+								type="button"
+								onClick={() => setIsGroupModalOpen(true)}
+								className="px-3 py-2 bg-[#ff5b5b] text-white rounded-md hover:bg-[#e04a4a] text-sm"
+								title={t('owner.servicesNew.addNewGroup')}
+							>
+								+
+							</button>
+						</div>
+						<p className="text-xs text-gray-500 mt-1">
+							{t('owner.servicesNew.serviceGroupHelp')}
+						</p>
 					</div>
 
 					<div
@@ -1035,6 +1093,17 @@ export default function NewServiceClient() {
 						)}
 					</div>
 				</div>
+			)}
+
+			{/* Staff Selection Modal */}
+			{staffMembers.length > 0 && (
+				<StaffSelectionModal
+					isOpen={isStaffModalOpen}
+					onClose={() => setIsStaffModalOpen(false)}
+					staffMembers={staffMembers}
+					selectedStaffIds={selectedStaffIds}
+					onChange={(staffIds) => setSelectedStaffIds(staffIds)}
+				/>
 			)}
 		</div>
 	);

@@ -1,0 +1,47 @@
+{
+	"setupChecklist": "Danh sách thiết lập",
+	"progress": "Tiến trình thiết lập",
+	"steps": {
+		"addServices": {
+			"title": "Thêm dịch vụ",
+			"description": "Tạo danh mục dịch vụ với giá và thời lượng. Điều này giúp khách hàng hiểu những gì bạn cung cấp và đặt lịch dễ dàng."
+		},
+		"addStaff": {
+			"title": "Thêm nhân viên",
+			"description": "Thêm các thành viên trong team để khách hàng có thể chọn thợ ưa thích. Mỗi nhân viên có thể có lịch trình và dịch vụ riêng.",
+			"question": "Bạn có thực hiện dịch vụ trong salon không?",
+			"yesIAmStaff": "Có, tôi là nhân viên",
+			"noAddOther": "Không (thêm người khác)"
+		},
+		"checkSchedule": {
+			"title": "Kiểm tra lịch trình",
+			"description": "Xem lại và cấu hình giờ làm việc. Thiết lập các khối thời gian cho ngày nghỉ hoặc thời kỳ bận rộn để quản lý khả dụng."
+		},
+		"checkBookingPage": {
+			"title": "Kiểm tra trang đặt lịch",
+			"description": "Xem trước cách salon của bạn hiển thị cho khách hàng. Đảm bảo tất cả thông tin chính xác và quy trình đặt lịch hoạt động trơn tru."
+		},
+		"publishSalon": {
+			"title": "Xuất bản salon",
+			"description": "Làm cho salon của bạn hiển thị với khách hàng. Sau khi xuất bản, salon của bạn sẽ xuất hiện trong kết quả tìm kiếm và danh sách danh mục."
+		}
+	},
+	"publishSalon": "Xuất bản salon",
+	"publishing": "Đang xuất bản...",
+	"salonPublished": "Salon đã được xuất bản thành công!",
+	"publishError": "Không thể xuất bản salon",
+	"congratulations": "Chúc mừng!",
+	"salonPublishedSuccess": "Salon của bạn đã được xuất bản và giờ đây khách hàng có thể thấy!",
+	"goToStep": "Đi tới bước",
+	"goToPage": "Đi tới trang",
+	"viewPage": "Xem trang",
+	"ownerStaffCreated": "Nhân viên đã được tạo thành công!",
+	"failedToCreateOwnerStaff": "Không thể tạo nhân viên",
+	"stepsRemaining": "Đến khách hàng đầu tiên: {count} bước",
+	"photoTip": {
+		"title": "💡 Mẹo để tăng lượt đặt lịch",
+		"description": "Thêm ảnh salon để tăng niềm tin của khách hàng 40% và số lượt đặt lịch 35%",
+		"addPhotos": "Thêm ảnh"
+	}
+}
+

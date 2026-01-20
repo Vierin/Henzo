@@ -15,6 +15,7 @@ import Link from 'next/link';
 import { ChevronRight, Star } from 'lucide-react';
 import { useTranslation } from '@/contexts/LanguageContext';
 import { Salon } from '@/types';
+import SalonImagePlaceholder from '@/components/SalonImagePlaceholder';
 
 export default function RecommendedSalons() {
 	const t = useTranslation();
@@ -209,14 +210,9 @@ export default function RecommendedSalons() {
 														unoptimized={imageData.isExternal}
 													/>
 												) : (
-													<Image
-														src="/images/placeholder.webp"
-														alt={salon.name}
-														width={400}
-														height={240}
-														className="w-full h-full object-cover"
-														loading="lazy"
-														sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+													<SalonImagePlaceholder
+														showText={true}
+														variant="large"
 													/>
 												);
 											})()}
@@ -285,14 +281,9 @@ export default function RecommendedSalons() {
 															unoptimized={imageData.isExternal}
 														/>
 													) : (
-														<Image
-															src="/images/placeholder.webp"
-															alt={salon.name}
-															width={400}
-															height={240}
-															className="w-full h-full object-cover"
-															loading="lazy"
-															sizes="(max-width: 768px) 100vw, 50vw"
+														<SalonImagePlaceholder 
+															showText={true}
+															variant="large"
 														/>
 													);
 												})()}

@@ -57,6 +57,7 @@ export const useCreateStaff = () => {
 			phone?: string;
 			accessLevel: 'ADMIN' | 'EMPLOYEE';
 			salonId: string;
+			serviceIds?: string[];
 		}): Promise<Staff> => {
 			return apiClient.post<Staff>('/staff', data);
 		},
@@ -98,6 +99,7 @@ export const useUpdateStaff = () => {
 				email?: string;
 				phone?: string;
 				accessLevel?: 'ADMIN' | 'EMPLOYEE';
+				serviceIds?: string[];
 			};
 		}): Promise<Staff> => {
 			return apiClient.put<Staff>(`/staff/${id}`, data);

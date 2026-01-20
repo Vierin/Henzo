@@ -3,9 +3,11 @@
 import { ReactNode, useState } from 'react';
 import OwnerHeader from './OwnerHeader';
 import OwnerSidebar from './OwnerSidebar';
-import FeedbackButton from './FeedbackButton'; 
+import FeedbackButton from './FeedbackButton';
+import OnboardingChecklist from './OnboardingChecklist';
 import { Menu, X } from 'lucide-react';
 import { useTranslation } from '@/contexts/LanguageContext';
+import { useOwnerLayout } from '@/contexts/OwnerLayoutContext';
 
 interface OwnerLayoutProps {
 	children: ReactNode;
@@ -14,6 +16,7 @@ interface OwnerLayoutProps {
 export default function OwnerLayout({ children }: OwnerLayoutProps) {
 	const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 	const t = useTranslation();
+	const { salonId, salonData } = useOwnerLayout();
 
 	const toggleMobileMenu = () => {
 		setIsMobileMenuOpen(!isMobileMenuOpen);
@@ -76,6 +79,14 @@ export default function OwnerLayout({ children }: OwnerLayoutProps) {
 					</main>
 				</div>
 			</div>
+
+			{/* Onboarding Checklist - Fixed in top right corner */}
+			{salonId && (
+				<OnboardingChecklist
+					salonId={salonId}
+					salonSlug={salonData?.slug || undefined}
+				/>
+			)}
 
 			{/* Feedback Button */}
 			<FeedbackButton />
