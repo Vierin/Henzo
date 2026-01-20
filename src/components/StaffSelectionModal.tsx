@@ -119,7 +119,7 @@ export default function StaffSelectionModal({
 			<div className="bg-white rounded-lg shadow-xl w-full max-w-md max-h-[90vh] flex flex-col">
 				{/* Header */}
 				<div className="flex items-center justify-between p-4 border-b border-gray-200">
-					<h2 className="text-lg font-semibold text-gray-900">
+					<h2 className="text-lg text-gray-900">
 						{t('owner.services.selectStaff') || t('owner.servicesNew.selectStaff') || 'Select Staff'}
 					</h2>
 					<button

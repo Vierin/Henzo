@@ -1,6 +1,5 @@
 import React from 'react';
 import { seoConfig } from '@/constants/seoConfig';
-import PublicHeader from '@/components/PublicHeader';
 import { AboutHeroSection } from './components/AboutHeroSection';
 import { OurStorySection } from './components/OurStorySection';
 import { ValuesSection } from './components/ValuesSection';

@@ -6,7 +6,6 @@ import LoadingSpinner from '@/components/LoadingSpinner';
 import ErrorDisplay from '@/components/ErrorDisplay';
 import SalonCard from '@/components/SalonCard';
 import BookingModal from '@/components/BookingModal';
-import MobileSearchTrigger from '@/components/MobileSearchTrigger';
 import { Salon, Service } from '@/types';
 import { ServiceResponseDto } from '@/types/dto/service.dto';
 import Link from 'next/link';
@@ -33,7 +32,7 @@ interface CategoryListClientProps {
 
 export default function CategoryListClient({
 	category,
-	translatedName: _translatedName, // Keep for backward compatibility but use translation instead
+	translatedName: _translatedName,
 }: CategoryListClientProps) {
 	const t = useTranslation();
 	const [sortBy, setSortBy] = useState('name');
@@ -41,8 +40,7 @@ export default function CategoryListClient({
 	const [selectedService, setSelectedService] = useState<
 		(ServiceResponseDto & { salonId: string; salonName: string }) | null
 	>(null);
-
-	// Use searchSalons API with category slug filter for server-side filtering
+ 
 	const {
 		data: searchData,
 		isLoading: loading,

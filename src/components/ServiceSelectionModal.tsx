@@ -117,7 +117,7 @@ export default function ServiceSelectionModal({
 			<div className="bg-white rounded-lg shadow-xl w-full max-w-md max-h-[90vh] flex flex-col">
 				{/* Header */}
 				<div className="flex items-center justify-between p-4 border-b border-gray-200">
-					<h2 className="text-lg font-semibold text-gray-900">
+					<h2 className="text-lg text-gray-900">
 						{t('owner.staff.selectServices') || t('owner.staffNew.selectServices') || 'Выбрать услуги'}
 					</h2>
 					<button
@@ -158,7 +158,7 @@ export default function ServiceSelectionModal({
 					{/* Select All */}
 					<label className="flex items-center space-x-3 p-3 mb-2 border-b border-gray-200 hover:bg-gray-50 rounded-lg cursor-pointer transition-colors">
 						<input
-							type="checkbox"
+							type="checkbox" 
 							checked={allSelected}
 							onChange={handleSelectAll}
 							className="w-4 h-4 text-[#ff5b5b] border-gray-300 rounded focus:ring-[#ff5b5b]"

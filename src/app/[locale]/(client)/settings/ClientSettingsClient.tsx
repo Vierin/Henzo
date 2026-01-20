@@ -4,14 +4,12 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '@/lib/auth-unified';
 import { supabase } from '@/lib/supabase';
 import toast from 'react-hot-toast';
-import LoadingSpinner from '@/components/LoadingSpinner';
 import { apiClient } from '@/lib/api-client';
 import { useTranslation } from '@/contexts/LanguageContext';
 
 export default function ClientSettingsClient() {
 	const { user } = useAuth();
 	const t = useTranslation();
-	const [isLoading, setIsLoading] = useState(false);
 	const [isSaving, setIsSaving] = useState(false);
 	const [showDeleteModal, setShowDeleteModal] = useState(false);
 	const [deleteLoading, setDeleteLoading] = useState(false);
@@ -122,17 +120,6 @@ export default function ClientSettingsClient() {
 			setDeleteLoading(false);
 		}
 	};
-
-	if (isLoading) {
-		return (
-			<div className="flex items-center justify-center min-h-[400px]">
-				<LoadingSpinner
-					size="lg"
-					message={t('clientSettings.loadingSettings')}
-				/>
-			</div>
-		);
-	}
 
 	return (
 		<main role="main" aria-labelledby="settings-heading">

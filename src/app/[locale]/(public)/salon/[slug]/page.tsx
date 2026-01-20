@@ -1,10 +1,8 @@
 import { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { apiClient } from '@/lib/api-client';
-import { Salon } from '@/types';
 import SalonDetailClient from './salonDetailClient';
 import {
-	generateSalonSlug,
 	extractSalonIdFromSlug,
 	isValidSalonSlug,
 } from '@/utils/slug';
@@ -18,18 +16,15 @@ async function getSalonData(
 	slug: string
 ): Promise<SalonWithDetailsResponseDto | null> {
 	try {
-		// Проверяем, является ли это старым ID (UUID)
 		const isOldId = /^[a-f0-9-]{36}$/.test(slug);
 		
 		if (isOldId) {
-			// Старый формат - используем поиск по ID
 			const response = await apiClient.get<SalonWithDetailsResponseDto>(
 				`/salons/${slug}`
 			);
 			return response;
 		}
 
-		// Новый формат - сначала пробуем найти по slug (быстрый поиск с индексом)
 		try {
 			const response = await apiClient.get<SalonWithDetailsResponseDto>(
 				`/salons/by-slug/${slug}`
@@ -116,10 +111,8 @@ export default async function SalonDetailPage({
 		notFound();
 	}
 
-	// Проверяем, нужно ли редиректить со старого ID на новый slug
 	const isOldId = /^[a-f0-9-]{36}$/.test(slug);
 	if (isOldId && salon.id && salon.slug) {
-		// Используем slug из БД, если есть
 		return (
 			<div className="min-h-screen bg-[#F8F5F2] flex items-center justify-center">
 				<div className="text-center">

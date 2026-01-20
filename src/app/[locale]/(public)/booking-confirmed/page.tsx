@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState, Suspense } from 'react';
-import { useSearchParams, useRouter } from 'next/navigation';
+import { useSearchParams } from 'next/navigation';
 import { apiClient } from '@/lib/api-client';
 import toast from 'react-hot-toast';
 import Link from 'next/link';
@@ -13,7 +13,6 @@ import { sessionStorage } from '@/utils/storage';
 
 function BookingConfirmedContent() {
 	const searchParams = useSearchParams();
-	const router = useRouter();
 	const token = searchParams.get('token');
 	const t = useTranslation();
 	const [loading, setLoading] = useState(true);
@@ -41,9 +40,7 @@ function BookingConfirmedContent() {
 				setBookingConfirmed(true);
 				setLoading(false);
 				return;
-			} catch (e) {
-				// Если данные повреждены, продолжаем с подтверждением
-				// Data parsing failed, continue with confirmation
+			} catch (e) { 
 			}
 		}
 

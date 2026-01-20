@@ -13,6 +13,7 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { getLocalizedServiceName } from '@/utils/serviceLocalization';
 import { logger } from '@/lib/logger';
 import { storage } from '@/utils/storage';
+import { weekdayFullMap, weekdayShortKeys, monthMap } from '@/utils/dateConstants';
 import BookingGuestForm from './BookingModal/BookingGuestForm';
 import BookingAuthForm from './BookingModal/BookingAuthForm';
 import BookingServiceSelector from './BookingModal/BookingServiceSelector';
@@ -570,36 +571,6 @@ export default function BookingModal({
 	const getAvailableDays = () => {
 		const days = [];
 		const today = new Date();
-
-		// Map for weekday full names (for working hours)
-		const weekdayFullMap: { [key: number]: keyof WorkingHours } = {
-			0: 'sunday',
-			1: 'monday',
-			2: 'tuesday',
-			3: 'wednesday',
-			4: 'thursday',
-			5: 'friday',
-			6: 'saturday',
-		};
-
-		// Weekday short keys for translations (matches weekdays.json short keys)
-		const weekdayShortKeys = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'];
-
-		// Map for month translations
-		const monthMap: { [key: number]: string } = {
-			0: 'january',
-			1: 'february',
-			2: 'march',
-			3: 'april',
-			4: 'may',
-			5: 'june',
-			6: 'july',
-			7: 'august',
-			8: 'september',
-			9: 'october',
-			10: 'november',
-			11: 'december',
-		};
 
 		for (let i = 0; i < loadedDaysCount; i++) {
 			const date = new Date(today);
@@ -1177,10 +1148,10 @@ export default function BookingModal({
 				if (clientEmail && clientEmail.trim()) {
 					requestBody.clientEmail = clientEmail.trim();
 				}
-				requestBody.clientName =
-					clientName && clientName.trim()
-						? clientName.trim()
-						: t('booking.anonymousClient');
+				// Имя отправляем только если оно введено, иначе бэкенд создаст анонимного клиента
+				if (clientName && clientName.trim()) {
+					requestBody.clientName = clientName.trim();
+				}
 				if (clientPhone && clientPhone.trim()) {
 					requestBody.clientPhone = clientPhone.trim();
 				}

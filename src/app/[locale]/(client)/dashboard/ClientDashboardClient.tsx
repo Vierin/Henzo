@@ -9,7 +9,7 @@ import {
 import Link from 'next/link';
 import VisitHistoryCard from '@/components/VisitHistoryCard';
 import ReviewModal from '@/components/ReviewModal';
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useState } from 'react';
 import { useTranslation } from '@/contexts/LanguageContext';
 
 export default function ClientDashboardClient() {
@@ -328,30 +328,24 @@ export default function ClientDashboardClient() {
 											id: booking.id,
 											salonName:
 												booking.salon?.name ||
-												booking.salon?.name ||
 												t('client.dashboard.unknownSalon'),
 											serviceName:
-												booking.service?.name ||
 												booking.service?.name ||
 												t('client.dashboard.unknownService'),
 											date: booking.time,
 											image:
 												booking.salon?.logo ||
-												booking.salon?.logo ||
-												booking.salon?.photos?.[0] ||
 												booking.salon?.photos?.[0] ||
 												'',
 											time: booking.time,
 											status: booking.status,
 											salonId:
 												booking.salon?.id ||
-												booking.salon?.id ||
 												booking.salonId,
 											serviceId:
 												booking.service?.id ||
-												booking.service?.id ||
 												booking.serviceId,
-											staffName: booking.staff?.name || booking.staff?.name,
+											staffName: booking.staff?.name,
 										}}
 										onCancel={handleCancel}
 										isUpcoming={true}
@@ -392,47 +386,37 @@ export default function ClientDashboardClient() {
 											id: booking.id,
 											salonName:
 												booking.salon?.name ||
-												booking.salon?.name ||
 												t('client.dashboard.unknownSalon'),
 											serviceName:
 												booking.service?.name ||
-												booking.service?.name ||
 												t('client.dashboard.unknownService'),
-											date: booking.time, // Pass raw time for proper formatting
+											date: booking.time,
 											image:
 												booking.salon?.logo ||
-												booking.salon?.logo ||
-												booking.salon?.photos?.[0] ||
 												booking.salon?.photos?.[0] ||
 												'',
 											time: booking.time,
 											status: 'COMPLETED',
 											salonId:
 												booking.salon?.id ||
-												booking.salon?.id ||
 												booking.salonId,
 											serviceId:
 												booking.service?.id ||
-												booking.service?.id ||
 												booking.serviceId,
-											staffName: booking.staff?.name || booking.staff?.name,
+											staffName: booking.staff?.name,
 											salon: {
 												id:
 													booking.salon?.id ||
-													booking.salon?.id ||
 													booking.salonId,
 												name:
-													booking.salon?.name ||
 													booking.salon?.name ||
 													t('client.dashboard.unknownSalon'),
 											},
 											service: {
 												id:
 													booking.service?.id ||
-													booking.service?.id ||
 													booking.serviceId,
 												name:
-													booking.service?.name ||
 													booking.service?.name ||
 													t('client.dashboard.unknownService'),
 											},

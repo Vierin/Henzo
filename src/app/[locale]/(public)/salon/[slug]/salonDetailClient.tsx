@@ -4,23 +4,18 @@ import { useState, useCallback, useMemo, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import dynamic from 'next/dynamic';
 import BookingModal from '@/components/BookingModal';
-import LoadingSpinner from '@/components/LoadingSpinner';
-import ErrorDisplay from '@/components/ErrorDisplay';
 
 // Dynamically import MapComponentWithCoords to avoid SSR issues with Leaflet
 const MapComponentWithCoords = dynamic(
 	() => import('@/components/MapComponentWithCoords'),
 	{ ssr: false }
 );
-import MobileSearchTrigger from '@/components/MobileSearchTrigger';
 import { Service, WorkingHours, Salon } from '@/types';
 import { supabase } from '@/lib/supabase';
 import SalonPhotoSlider from '@/components/SalonPhotoSlider';
-import { generateSalonSlug } from '@/utils/slug';
 import ReviewsSection from '@/components/ReviewsSection';
 import {
 	Clock,
-	Clock1,
 	Globe,
 	Instagram,
 	MapPin,
@@ -42,6 +37,7 @@ import {
 	getLocalizedServiceName,
 	getLocalizedServiceDescription,
 } from '@/utils/serviceLocalization';
+import { weekdaysOrder } from '@/utils/dateConstants';
 
 interface SalonDetailClientProps {
 	salon: Salon;
@@ -141,16 +137,6 @@ export default function SalonDetailClient({ salon }: SalonDetailClientProps) {
 	const formatWorkingHours = useCallback(
 		(workingHours: WorkingHours | undefined) => {
 			if (!workingHours) return t.salon.hoursNotSpecified;
-
-			const days: (keyof WorkingHours)[] = [
-				'monday',
-				'tuesday',
-				'wednesday',
-				'thursday',
-				'friday',
-				'saturday',
-				'sunday',
-			];
 			const dayNames = [
 				t('weekdays.short.mon'),
 				t('weekdays.short.tue'),
@@ -161,7 +147,7 @@ export default function SalonDetailClient({ salon }: SalonDetailClientProps) {
 				t('weekdays.short.sun'),
 			];
 
-			return days
+			return weekdaysOrder
 				.map((day, index) => {
 					const hours = workingHours[day];
 					if (!hours || hours.closed) {

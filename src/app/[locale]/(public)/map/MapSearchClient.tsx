@@ -6,8 +6,6 @@ import InteractiveMap from './components/InteractiveMap';
 import { Salon } from '@/types';
 import {
 	MapBounds,
-	filterSalonsByBounds,
-	sortSalonsByDistance,
 } from '@/utils/mapUtils';
 import { List, X } from 'lucide-react';
 import { useTranslation } from '@/contexts/LanguageContext';
