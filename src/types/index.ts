@@ -38,6 +38,8 @@ export interface Salon {
 	timezone?: string;
 	// SEO-friendly slug for salon URLs (stored in DB)
 	slug?: string;
+	// Salon publication status
+	status?: 'DRAFT' | 'READY' | 'ACTIVE';
 	_count?: {
 		reviews?: number;
 		services?: number;

@@ -49,6 +49,7 @@ export interface SalonResponseDto {
 	ownerId: string;
 	createdAt: string;
 	slug?: string;
+	status?: 'DRAFT' | 'READY' | 'ACTIVE';
 }
 
 export interface SalonWithDetailsResponseDto extends SalonResponseDto {

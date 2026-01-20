@@ -60,9 +60,21 @@ export default function OnboardingChecklist({
 	// Синхронизируем localSalonStatus с реальным статусом салона после загрузки данных
 	useEffect(() => {
 		if (salonData?.status) {
-			setLocalSalonStatus(salonData.status as 'DRAFT' | 'READY' | 'ACTIVE');
+			const newStatus = salonData.status as 'DRAFT' | 'READY' | 'ACTIVE';
+			setLocalSalonStatus(newStatus);
 		}
 	}, [salonData?.status]);
+
+	// Ранняя проверка: скрываем онбординг для активных салонов ДО загрузки других данных
+	// Проверяем статус из salonData напрямую, затем из localSalonStatus
+	const salonStatusFromData = salonData?.status as string | undefined;
+	const currentStatus = salonStatusFromData || localSalonStatus;
+	const isActive = currentStatus && String(currentStatus).toUpperCase() === 'ACTIVE';
+	
+	// Если статус ACTIVE или чеклист был закрыт, не показываем компонент
+	if (isActive || isDismissed) {
+		return null;
+	}
 
 	// Используем статус из salonData напрямую, если localSalonStatus еще не установлен
 	const getSalonStatus = (): 'DRAFT' | 'READY' | 'ACTIVE' => {
@@ -76,12 +88,6 @@ export default function OnboardingChecklist({
 		return 'DRAFT';
 	};
 	const salonStatus = getSalonStatus();
-	
-	// Ранняя проверка: скрываем онбординг для активных салонов ДО загрузки других данных
-	const currentStatus = (salonData?.status as string) || salonStatus;
-	if (currentStatus === 'ACTIVE' || isDismissed) {
-		return null;
-	}
 	
 	const { data: services = [] } = useServices(salonId || '', {});
 	const { data: staffMembers = [] } = useStaffBySalon(salonId || '');
@@ -293,7 +299,6 @@ export default function OnboardingChecklist({
 			</div>
 		);
 	}
-
 
 	return (
 		<div className="fixed bottom-4 left-4 z-[500] bg-white rounded-lg shadow-lg p-3 max-w-md border border-gray-200">
