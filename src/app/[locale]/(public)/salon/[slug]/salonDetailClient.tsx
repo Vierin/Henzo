@@ -298,7 +298,6 @@ export default function SalonDetailClient({ salon }: SalonDetailClientProps) {
 						<div className="mb-8">
 							<SalonPhotoSlider
 								photos={salon.photos || []}
-								logo={salon.logo}
 								salonName={salon.name}
 							/>
 						</div>

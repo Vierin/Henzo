@@ -7,13 +7,11 @@ import SalonImagePlaceholder from './SalonImagePlaceholder';
 
 interface SalonPhotoSliderProps {
 	photos: string[];
-	logo?: string;
 	salonName: string;
 }
 
 export default function SalonPhotoSlider({
 	photos,
-	logo,
 	salonName,
 }: SalonPhotoSliderProps) {
 	const [currentIndex, setCurrentIndex] = useState(0);
@@ -81,52 +79,17 @@ export default function SalonPhotoSlider({
 		};
 	}, [prevSlide, nextSlide]);
 
-	// Если нет фотографий, показываем логотип или placeholder
+	// Если нет фотографий, показываем placeholder
 	if (allImages.length === 0) {
 		return (
 			<div className="w-full h-80 bg-gradient-to-br from-pink-100 to-pink-200 rounded-xl flex items-center justify-center overflow-hidden">
-				{logo ? (
-					<>
-						<Image
-							src={getImageSrc(logo)}
-							alt={salonName}
-							width={400}
-							height={320}
-							className="w-full h-full object-cover rounded-xl"
-							priority
-							sizes="(max-width: 768px) 100vw, 50vw"
-							unoptimized={isExternalUrl(logo)}
-							onError={(e) => {
-								e.currentTarget.style.display = 'none';
-								const placeholder =
-									e.currentTarget.parentElement?.querySelector(
-										'.placeholder'
-									) as HTMLElement;
-								if (placeholder) {
-									placeholder.style.display = 'flex';
-								}
-							}}
-						/>
-						<div
-							className="placeholder w-full h-full rounded-xl overflow-hidden"
-							style={{ display: 'none' }}
-						>
-							<SalonImagePlaceholder 
-								className="rounded-xl"
-								showText={true}
-								variant="large"
-							/>
-						</div>
-					</>
-				) : (
-					<div className="w-full h-full rounded-xl overflow-hidden">
-						<SalonImagePlaceholder 
-							className="rounded-xl"
-							showText={true}
-							variant="large"
-						/>
-					</div>
-				)}
+				<div className="w-full h-full rounded-xl overflow-hidden">
+					<SalonImagePlaceholder 
+						className="rounded-xl"
+						showText={true}
+						variant="large"
+					/>
+				</div>
 			</div>
 		);
 	}

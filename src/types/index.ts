@@ -20,7 +20,6 @@ export interface Salon {
 	email?: string;
 	website?: string;
 	instagram?: string;
-	logo?: string;
 	photos?: string[];
 	workingHours?: WorkingHours;
 	categories?: { id: string; name: string }[];

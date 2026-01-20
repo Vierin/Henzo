@@ -19,7 +19,6 @@ export interface CreateSalonDto {
 	email?: string;
 	website?: string;
 	instagram?: string;
-	logo?: string;
 	photos?: string[];
 	workingHours?: WorkingHoursDto;
 }
@@ -32,7 +31,6 @@ export interface UpdateSalonDto {
 	email?: string;
 	website?: string;
 	instagram?: string;
-	logo?: string;
 	photos?: string[];
 	workingHours?: WorkingHoursDto;
 }
@@ -46,7 +44,6 @@ export interface SalonResponseDto {
 	email?: string;
 	website?: string;
 	instagram?: string;
-	logo?: string;
 	photos?: string[];
 	workingHours?: WorkingHoursDto;
 	ownerId: string;

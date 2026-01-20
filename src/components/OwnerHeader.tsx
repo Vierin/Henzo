@@ -31,14 +31,6 @@ export default function OwnerHeader() {
 	const currentLocale = extractLocaleFromPath(pathname) ?? 'en';
 	const pathNoLocale = stripLocaleFromPath(pathname);
 
-	// Функция для получения URL логотипа салона
-	const getSalonLogoUrl = (logoPath?: string) => {
-		if (!logoPath) return null;
-		const { data } = supabase.storage
-			.from('salon-files')
-			.getPublicUrl(logoPath);
-		return data.publicUrl;
-	};
 
 	// Языки
 	const languages = [
@@ -156,18 +148,7 @@ export default function OwnerHeader() {
 								className="flex items-center gap-2 text-sm text-gray-700 font-medium hover:text-gray-900 transition-colors"
 							>
 								<div className="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center">
-									{salon?.logo ? (
-										<Image
-											src={getSalonLogoUrl(salon.logo) || ''}
-											alt={salon.name || 'Salon logo'}
-											width={40}
-											height={40}
-											className="w-full h-full object-cover"
-											style={{ width: 'auto', height: 'auto' }}
-										/>
-									) : (
-										<User className="w-4 h-4 text-gray-600" />
-									)}
+									<User className="w-4 h-4 text-gray-600" />
 								</div>
 								<span>{t('header.profile')}</span>
 								<ChevronDown

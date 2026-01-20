@@ -17,7 +17,6 @@ const WorkingHoursSection = lazy(
 // Import optimized section components
 import BasicDetailsSection from './components/BasicDetailsSection';
 import ContactInfoSection from './components/ContactInfoSection';
-import LogoSection from './components/LogoSection';
 import PhotosSection from './components/PhotosSection';
 import ReminderSettingsSection from './components/ReminderSettingsSection';
 import DeleteAccountSection from './components/DeleteAccountSection';
@@ -38,7 +37,6 @@ export default function SalonInfoClient() {
 		email: '',
 		website: '',
 		instagram: '',
-		logo: '',
 		photos: [] as string[],
 		operatingHours: {
 			monday: { open: '09:00', close: '18:00', closed: false },
@@ -146,7 +144,6 @@ export default function SalonInfoClient() {
 			email: salon.email || '',
 			website: salon.website || '',
 			instagram: salon.instagram || '',
-			logo: salon.logo || '',
 			photos: salon.photos || [],
 			reminderSettings: (salon as any).reminderSettings || {
 				intervals: [24],
@@ -322,7 +319,6 @@ export default function SalonInfoClient() {
 					email: formData.email,
 					website: formData.website,
 					instagram: formData.instagram,
-					logo: formData.logo,
 					photos: formData.photos,
 					workingHours: formData.operatingHours,
 					reminderSettings: formData.reminderSettings,
@@ -435,13 +431,6 @@ export default function SalonInfoClient() {
 						instagram: formData.instagram,
 					}}
 					onChange={handleFieldChange}
-				/>
-
-				<LogoSection
-					logo={formData.logo}
-					onUpload={(filePath) => handleFieldChange('logo', filePath)}
-					onRemove={() => handleFieldChange('logo', '')}
-					loading={loading}
 				/>
 
 				<PhotosSection

@@ -96,10 +96,10 @@ function SalonCard({
 				<div className="w-full md:w-[360px] aspect-[4/3] flex-shrink-0 overflow-hidden rounded-xl">
 					<SalonImage
 						src={
-							// Use first photo if available, otherwise use logo
+							// Use first photo if available
 							salon.photos && salon.photos.length > 0
 								? salon.photos[0]
-								: salon.logo
+								: undefined
 						}
 						alt={salon.name}
 						width={360}

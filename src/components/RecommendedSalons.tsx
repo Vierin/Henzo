@@ -81,13 +81,6 @@ export default function RecommendedSalons() {
 				isExternal: isExternalUrl(salon.photos[0]),
 			};
 		}
-		// If no photos but has logo, use logo
-		if (salon.logo) {
-			return {
-				url: getImageSrc(salon.logo),
-				isExternal: isExternalUrl(salon.logo),
-			};
-		}
 		// No images available
 		return { url: undefined, isExternal: false };
 	};
