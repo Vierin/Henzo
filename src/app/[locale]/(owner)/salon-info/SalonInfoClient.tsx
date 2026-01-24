@@ -145,8 +145,10 @@ export default function SalonInfoClient() {
 			website: salon.website || '',
 			instagram: salon.instagram || '',
 			photos: salon.photos || [],
-			reminderSettings: (salon as any).reminderSettings || {
-				intervals: [24],
+			reminderSettings: {
+				intervals: ((salon as any).reminderSettings?.intervals || [24]).filter(
+					(interval: number) => interval !== 168
+				),
 			},
 			operatingHours: salon.workingHours
 				? {

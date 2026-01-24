@@ -122,50 +122,6 @@ export default function ReminderSettingsSection({
 						({t('owner.salonInfo.default') || 'Default'})
 					</span>
 				</label>
-
-				{/* 168 hours (1 week) option */}
-				<label className="flex items-center space-x-3 cursor-pointer group">
-					<input
-						type="checkbox"
-						checked={intervals.includes(168)}
-						onChange={() => handleToggle(168)}
-						disabled={
-							intervals.length === 1 && intervals.includes(168)
-						}
-						className="sr-only"
-					/>
-					<div
-						className={`relative w-4 h-4 border-2 border-[#ff5b5b] rounded flex items-center justify-center transition-colors ${
-							intervals.includes(168)
-								? 'bg-[#ff5b5b]'
-								: 'bg-white'
-						} ${
-							intervals.length === 1 && intervals.includes(168)
-								? 'opacity-50 cursor-not-allowed'
-								: 'cursor-pointer'
-						}`}
-					>
-						{intervals.includes(168) && (
-							<svg
-								className="w-3 h-3 text-white"
-								fill="none"
-								stroke="currentColor"
-								viewBox="0 0 24 24"
-							>
-								<path
-									strokeLinecap="round"
-									strokeLinejoin="round"
-									strokeWidth={3}
-									d="M5 13l4 4L19 7"
-								/>
-							</svg>
-						)}
-					</div>
-					<span className="text-gray-700">
-						{t('owner.salonInfo.reminder1Week') ||
-							'1 week (168 hours) before'}
-					</span>
-				</label>
 			</div>
 			{intervals.length === 0 && (
 				<p className="mt-2 text-sm text-red-600">
