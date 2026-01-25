@@ -16,6 +16,7 @@ import { ChevronRight, Star } from 'lucide-react';
 import { useTranslation } from '@/contexts/LanguageContext';
 import { Salon } from '@/types';
 import SalonImagePlaceholder from '@/components/SalonImagePlaceholder';
+import RatingBadge from '@/components/RatingBadge';
 
 export default function RecommendedSalons() {
 	const t = useTranslation();
@@ -177,8 +178,6 @@ export default function RecommendedSalons() {
 						{/* Desktop grid view */}
 						<div className="hidden md:grid md:grid-cols-3 gap-6 px-6">
 							{salonsWithUrls.slice(0, 3).map((salon, index: number) => {
-								const avgRating = salon.avgRating || 0;
-								const reviewCount = salon._count?.reviews || 0;
 
 								return (
 									<Link
@@ -210,14 +209,7 @@ export default function RecommendedSalons() {
 												);
 											})()}
 											{/* Average rating badge (replaces price range) */}
-											{avgRating > 0 && (
-												<div className="absolute top-3 right-3 bg-white rounded-full px-3 py-1 shadow-md flex items-center gap-1">
-													<Star className="w-4 h-4 text-[#ff5b5b] fill-[#ff5b5b]" />
-													<span className="text-sm font-semibold text-gray-900">
-														{avgRating.toFixed(1)} ({reviewCount})
-													</span>
-												</div>
-											)}
+											<RatingBadge salon={salon} variant="badge" />
 										</div>
 										<div className="p-5">
 											{/* Title and Rating */}
@@ -243,8 +235,6 @@ export default function RecommendedSalons() {
 						<div className="md:hidden overflow-x-auto scrollbar-hide px-4 pb-2">
 							<div className="flex gap-4" style={{ width: 'max-content' }}>
 								{salonsWithUrls.slice(0, 3).map((salon, index: number) => {
-									const avgRating = salon.avgRating || 0;
-									const reviewCount = salon._count?.reviews || 0;
 
 									return (
 										<Link
@@ -281,14 +271,7 @@ export default function RecommendedSalons() {
 													);
 												})()}
 												{/* Average rating badge (replaces price range) */}
-												{avgRating > 0 && (
-													<div className="absolute top-3 right-3 bg-white rounded-full px-3 py-0.5 shadow-sm flex items-center gap-1">
-														<Star className="w-4 h-4 text-[#ff5b5b] fill-[#ff5b5b]" />
-														<span className="text-sm font-semibold text-gray-900">
-															{avgRating.toFixed(1)} ({reviewCount})
-														</span>
-													</div>
-												)}
+												<RatingBadge salon={salon} variant="badge" />
 											</div>
 											<div className="p-3">
 												{/* Title and Rating */}
@@ -296,40 +279,31 @@ export default function RecommendedSalons() {
 													<h3 className="text-lg font-bold text-gray-900 flex-1">
 														{salon.name}
 													</h3>
-													{avgRating > 0 && (
-														<div className="flex items-center gap-1 ml-2 flex-shrink-0">
-															<span className="text-red-500">
-																<Star className="w-4 h-4 text-[#ff5b5b] fill-[#ff5b5b]" />
-															</span>
-															<span className="text-sm font-semibold text-gray-900">
-																{avgRating.toFixed(1)}
-															</span>
-														</div>
-													)}
+													<RatingBadge salon={salon} variant="inline" showReviewCount={false} />
 												</div>
 
 												{/* Footer: Reviews and View Details */}
 												<div className="flex items-center justify-between">
 													{/* Mobile: Show only star + rating if reviews exist, Desktop: Show review count */}
-													{reviewCount > 0 ? (
-														<>
-															{/* Mobile: Star + rating only */}
-															<div className="md:hidden flex items-center gap-1">
-																<Star className="w-4 h-4 text-[#ff5b5b] fill-[#ff5b5b]" />
-																<span className="text-sm font-semibold text-gray-900">
-																	{avgRating.toFixed(1)}
+													{(() => {
+														const reviewCount = (salon._count as any)?.Review || (salon._count as any)?.reviews || 0;
+														return reviewCount > 0 ? (
+															<>
+																{/* Mobile: Star + rating only */}
+																<div className="md:hidden">
+																	<RatingBadge salon={salon} variant="inline" showReviewCount={false} />
+																</div>
+																{/* Desktop: Review count */}
+																<span className="hidden md:block text-gray-500 text-sm">
+																	{reviewCount} {t.salon.reviewsCount}
 																</span>
-															</div>
-															{/* Desktop: Review count */}
+															</>
+														) : (
 															<span className="hidden md:block text-gray-500 text-sm">
 																{reviewCount} {t.salon.reviewsCount}
 															</span>
-														</>
-													) : (
-														<span className="hidden md:block text-gray-500 text-sm">
-															{reviewCount} {t.salon.reviewsCount}
-														</span>
-													)}
+														);
+													})()}
 													<span className="text-red-500 flex gap-1 items-center text-sm font-medium hover:text-red-600 transition-colors">
 														{t.salon.viewDetails}
 													</span>

@@ -1,14 +1,24 @@
 'use client';
 
+import { useState } from 'react';
 import Link from 'next/link';
 import { useUserReviews } from '@/hooks/useClient';
 import LoadingSpinner from '@/components/LoadingSpinner';
-import { Star } from 'lucide-react';
+import ReviewModal from '@/components/ReviewModal';
+import { Star, Edit2 } from 'lucide-react';
 import { useTranslation } from '@/contexts/LanguageContext';
 
 export default function ClientReviewsClient() {
 	const t = useTranslation();
 	const { data: reviews = [], isLoading: loading, error } = useUserReviews();
+	const [editingReview, setEditingReview] = useState<{
+		id: string;
+		salonId: string;
+		salonName: string;
+		serviceName?: string;
+		rating: number;
+		comment?: string;
+	} | null>(null);
 
 	const renderStars = (rating: number) => {
 		return Array.from({ length: 5 }, (_, i) => (
@@ -84,21 +94,41 @@ export default function ClientReviewsClient() {
 							<div className="flex items-start justify-between mb-3">
 								<div>
 									<h3 className="text-lg font-semibold text-gray-900">
-										{review.salon.name}
+										{review.salon?.name || t('client.reviews.unknownSalon')}
 									</h3>
-									{review.booking && (
+									{review.booking?.service?.name && (
 										<p className="text-sm text-gray-600">
 											{review.booking.service.name}
 										</p>
 									)}
 								</div>
-								<div className="text-sm text-gray-500">
+								<div>
+									<div className="text-sm text-gray-500 text-right">
 									{new Date(review.createdAt).toLocaleDateString('en-US', {
 										month: 'short',
 										day: 'numeric',
 										year: 'numeric',
 									})}
 								</div>
+								<div className="flex justify-end">
+								<button
+									onClick={() =>
+										setEditingReview({
+											id: review.id,
+											salonId: review.salonId,
+											salonName: review.salon?.name || t('client.reviews.unknownSalon'),
+											serviceName: review.booking?.service?.name,
+											rating: review.rating,
+											comment: review.comment,
+										})
+									}
+									className="flex items-center gap-2 px-4 py-2 text-sm text-gray-600 hover:text-[#ff5b5b] transition-colors"
+								>
+									<Edit2 className="w-4 h-4" />
+									{t('client.reviews.editReview')}
+								</button>
+							</div>
+									</div>
 							</div>
 
 							<div className="flex items-center gap-1 mb-3">
@@ -111,6 +141,20 @@ export default function ClientReviewsClient() {
 						</div>
 					))}
 				</div>
+			)}
+
+			{/* Edit Review Modal */}
+			{editingReview && (
+				<ReviewModal
+					isOpen={!!editingReview}
+					onClose={() => setEditingReview(null)}
+					salonId={editingReview.salonId}
+					salonName={editingReview.salonName}
+					serviceName={editingReview.serviceName}
+					reviewId={editingReview.id}
+					initialRating={editingReview.rating}
+					initialComment={editingReview.comment}
+				/>
 			)}
 		</main>
 	);

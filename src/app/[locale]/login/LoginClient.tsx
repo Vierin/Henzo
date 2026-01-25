@@ -9,14 +9,12 @@ import { useTranslation } from '@/contexts/LanguageContext';
 import { withLocale, extractLocaleFromPath } from '@/i18n/routing';
 import Link from 'next/link';
 import { apiClient } from '@/lib/api-client';
-import TelegramLoginButton from '@/components/TelegramLoginButton';
 
 export default function LoginClient() {
 	const [email, setEmail] = useState('');
 	const [password, setPassword] = useState('');
 	const [rememberMe, setRememberMe] = useState(false);
 	const [loading, setLoading] = useState(false);
-	const [telegramBotId, setTelegramBotId] = useState<string | null>(null);
 	const router = useRouter();
 	const pathname = usePathname();
 	const searchParams = useSearchParams();
@@ -147,163 +145,6 @@ export default function LoginClient() {
 		} catch (error: any) {
 			console.error('Google login error:', error);
 			toast.error(error.message || t('auth.googleSignInFailed'));
-			setLoading(false);
-		}
-	};
-
-	// Загружаем bot_id при монтировании компонента
-	useEffect(() => {
-		const fetchBotId = async () => {
-			try {
-				const apiUrl =
-					process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
-				const response = await fetch(`${apiUrl}/auth/telegram/bot-id`);
-
-				if (response.ok) {
-					const data = await response.json();
-					const botId = data?.botId;
-					if (botId) {
-						console.log('✅ Telegram bot ID loaded:', botId);
-						setTelegramBotId(botId);
-					} else {
-						console.warn(
-							'⚠️ Telegram bot ID is null or undefined in response:',
-							data
-						);
-					}
-				} else {
-					const errorData = await response
-						.json()
-						.catch(() => ({ message: 'Unknown error' }));
-					console.error('❌ Failed to get Telegram bot ID:', {
-						status: response.status,
-						statusText: response.statusText,
-						error: errorData,
-					});
-				}
-			} catch (error) {
-				console.error('❌ Failed to get Telegram bot ID:', error);
-			}
-		};
-
-		fetchBotId();
-	}, []);
-
-	// Обработчик авторизации через Telegram Widget
-	const handleTelegramAuth = async (telegramData: {
-		id: number;
-		first_name: string;
-		last_name?: string;
-		username?: string;
-		photo_url?: string;
-		auth_date: number;
-		hash: string;
-	}) => {
-		console.log('🚀 handleTelegramAuth called');
-		console.log('📱 Telegram data received:', telegramData);
-		console.log('📱 Data type check:', {
-			id: typeof telegramData.id,
-			first_name: typeof telegramData.first_name,
-			hash: typeof telegramData.hash,
-			auth_date: typeof telegramData.auth_date,
-		});
-		console.log('📱 Data validation:', {
-			hasId: !!telegramData.id,
-			hasFirstName: !!telegramData.first_name,
-			hasHash: !!telegramData.hash,
-			hasAuthDate: !!telegramData.auth_date,
-			idValue: telegramData.id,
-			firstNameValue: telegramData.first_name,
-			hashValue: telegramData.hash,
-			authDateValue: telegramData.auth_date,
-		});
-
-		if (
-			!telegramData.id ||
-			!telegramData.first_name ||
-			!telegramData.hash ||
-			!telegramData.auth_date
-		) {
-			console.error(
-				'❌ Missing required Telegram data in handleTelegramAuth:',
-				{
-					id: telegramData.id,
-					first_name: telegramData.first_name,
-					hash: telegramData.hash,
-					auth_date: telegramData.auth_date,
-				}
-			);
-			toast.error('Missing required Telegram authentication data');
-			return;
-		}
-
-		setLoading(true);
-		try {
-			console.log('📱 Sending Telegram data to backend...');
-
-			// Отправляем данные на бэкенд
-			const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
-			const response = await fetch(`${apiUrl}/auth/telegram`, {
-				method: 'POST',
-				headers: {
-					'Content-Type': 'application/json',
-				},
-				body: JSON.stringify({
-					id: telegramData.id,
-					first_name: telegramData.first_name,
-					last_name: telegramData.last_name || undefined,
-					username: telegramData.username || undefined,
-					photo_url: telegramData.photo_url || undefined,
-					auth_date: telegramData.auth_date,
-					hash: telegramData.hash,
-				}),
-			});
-
-			if (!response.ok) {
-				const errorData = await response.json();
-				throw new Error(errorData.message || 'Telegram authentication failed');
-			}
-
-			const result = await response.json();
-			console.log('📱 Backend response:', {
-				success: result.success,
-				hasSession: !!result.session,
-				hasAccessToken: !!result.session?.access_token,
-				user: result.user,
-			});
-
-			if (result.success && result.session?.access_token) {
-				console.log('✅ Authentication successful, setting session...');
-				// Сохраняем сессию в Supabase
-				const { error: sessionError } = await supabase.auth.setSession({
-					access_token: result.session.access_token,
-					refresh_token: result.session.refresh_token || '',
-				});
-
-				if (sessionError) {
-					throw sessionError;
-				}
-
-				toast.success('Successfully logged in with Telegram!');
-
-				// Обновляем состояние авторизации через authManager
-				const { authManager } = await import('@/lib/auth-unified');
-				await authManager.updateUser(result.session.access_token);
-
-				// Редирект
-				if (returnTo && result.user.role === 'CLIENT') {
-					router.push(returnTo);
-				} else {
-					const locale = extractLocaleFromPath(pathname) ?? 'en';
-					router.push(withLocale('/dashboard', locale as 'en' | 'ru' | 'vi'));
-				}
-			} else {
-				throw new Error('Invalid response from server');
-			}
-		} catch (error: any) {
-			console.error('Telegram auth error:', error);
-			toast.error(error.message || 'Failed to authenticate with Telegram');
-		} finally {
 			setLoading(false);
 		}
 	};
@@ -450,25 +291,6 @@ export default function LoginClient() {
 							Google
 						</button>
 					</div>
-
-					{/* Telegram Login Button - Hidden for now */}
-					{false && telegramBotId && (
-						<div className="flex justify-center">
-							<TelegramLoginButton
-								botId={telegramBotId as string}
-								onAuth={handleTelegramAuth}
-								buttonSize="large"
-								requestAccess="write"
-								usePic={false}
-								lang={
-									(extractLocaleFromPath(pathname) ?? 'en') as
-										| 'en'
-										| 'ru'
-										| 'vi'
-								}
-							/>
-						</div>
-					)}
 
 					<div className="text-center space-y-4">
 						<p className="text-sm text-gray-600">

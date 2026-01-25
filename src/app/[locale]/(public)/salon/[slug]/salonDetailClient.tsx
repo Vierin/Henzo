@@ -285,6 +285,7 @@ export default function SalonDetailClient({ salon }: SalonDetailClientProps) {
 							<SalonPhotoSlider
 								photos={salon.photos || []}
 								salonName={salon.name}
+								salon={salon}
 							/>
 						</div>
 

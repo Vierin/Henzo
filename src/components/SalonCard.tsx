@@ -11,6 +11,7 @@ import {
 	getReviewCount,
 	getAvailableTimeSlots,
 } from '@/utils/salonUtils';
+import RatingBadge from '@/components/RatingBadge';
 import { formatVND } from '@/utils/currency';
 import {
 	useAddFavorite,
@@ -117,25 +118,7 @@ function SalonCard({
 						</h2>
 						<div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
 							{/* Rating */}
-							{(() => {
-								const rating = calculateAverageRating(salon);
-								const reviewCount = getReviewCount(salon);
-
-								if (rating > 0) {
-									return (
-										<div className="flex items-center space-x-1">
-											<Star className="w-4 h-4 fill-[#ff5b5b] text-[#ff5b5b]" />
-											<span className="text-sm font-medium text-gray-900">
-												{rating}
-											</span>
-											<span className="text-sm text-gray-500">
-												({reviewCount})
-											</span>
-										</div>
-									);
-								}
-								return null;
-							})()}
+							<RatingBadge salon={salon} variant="inline" />
 							{/* Favorite Button */}
 							<button
 								onClick={handleFavoriteClick}

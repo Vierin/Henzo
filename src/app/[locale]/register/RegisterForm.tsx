@@ -90,11 +90,10 @@ export default function RegisterForm() {
 			});
 
 			if (result.success) {
-				toast.success(t.auth.registrationSuccessful);
-				
 				// Если email уже подтвержден (например, при подтверждении бронирования),
-				// перенаправляем на dashboard вместо страницы проверки email
+				// показываем соответствующее сообщение
 				if (result.emailConfirmed) {
+					toast.success(t.auth.registrationSuccessfulEmailConfirmed);
 					router.push(
 						withLocale(
 							'/dashboard',
@@ -102,6 +101,7 @@ export default function RegisterForm() {
 						)
 					);
 				} else {
+					toast.success(t.auth.registrationSuccessful);
 					router.push(
 						withLocale(
 							'/check-email?email=' + encodeURIComponent(formData.email),

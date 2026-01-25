@@ -103,13 +103,13 @@ function VisitHistoryCard({
 			<div className="relative bg-white rounded-xl p-4 sm:p-6 shadow-sm hover:shadow-md transition-shadow">
 				<div className="flex flex-col sm:flex-row items-start gap-3 sm:gap-4">
 					{/* Service Image */}
-					<div className="w-full sm:w-32 aspect-[4/3] rounded-lg flex-shrink-0">
+					<div className="w-full sm:w-32 rounded-lg flex-shrink-0">
 						<SalonImage
 							src={visit.image}
 							alt={visit.salonName}
 							width={128}
 							height={96}
-							className="w-full h-full object-cover rounded-lg"
+							className="w-full h-full object-cover rounded-lg aspect-[4/3]"
 							priority={false} // P3: Lazy loading для изображений в списке
 						/>
 					</div>
@@ -130,11 +130,7 @@ function VisitHistoryCard({
 									{visit.salonName}
 								</h3>
 							)}
-							{dateBadge && (
-								<span className="bg-blue-100 text-blue-800 text-xs font-medium px-2.5 py-0.5 rounded-full flex-shrink-0">
-									{dateBadge}
-								</span>
-							)}
+						 
 							{statusBadge && (
 								<span
 									className={`sm:hidden text-xs font-medium px-2 py-0.5 rounded-full flex-shrink-0 ${statusBadge.className}`}

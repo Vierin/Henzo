@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
 import { supabase } from '@/lib/supabase';
-import { Service, WorkingHours } from '@/types';
+import { Service, WorkingHours, Staff } from '@/types';
 import { useStaffBySalon } from '@/hooks/useStaff';
 import { useServices } from '@/hooks/useServices';
 import { useAuthStore } from '@/stores/authStore';
@@ -14,6 +14,7 @@ import { getLocalizedServiceName } from '@/utils/serviceLocalization';
 import { logger } from '@/lib/logger';
 import { storage } from '@/utils/storage';
 import { weekdayFullMap, weekdayShortKeys, monthMap } from '@/utils/dateConstants';
+import { useIsWithinWorkingHours } from '@/hooks/useIsWithinWorkingHours';
 import BookingGuestForm from './BookingModal/BookingGuestForm';
 import BookingAuthForm from './BookingModal/BookingAuthForm';
 import BookingServiceSelector from './BookingModal/BookingServiceSelector';
@@ -138,6 +139,12 @@ export default function BookingModal({
 		}
 	}, [dataSalonWorkingHours, setSalonWorkingHours]);
 
+	// Check if current time is within working hours
+	const isWithinWorkingHours = useIsWithinWorkingHours(
+		salonWorkingHours,
+		salonTimezone
+	);
+
 	// Local UI states
 	const [isStaffDropdownOpen, setIsStaffDropdownOpen] = useState(false);
 	const [currentDateIndex, setCurrentDateIndex] = useState(0);
@@ -150,6 +157,7 @@ export default function BookingModal({
 		serviceName: string;
 		date: string;
 		time: string;
+		isWithinWorkingHours?: boolean;
 	} | null>(null);
 	const [currentStep, setCurrentStep] = useState<'booking' | 'client'>('booking');
 	const [isMobile, setIsMobile] = useState(false);
@@ -206,7 +214,7 @@ export default function BookingModal({
 	// Reset selected staff if they can't perform the selected service
 	useEffect(() => {
 		if (selectedService && selectedStaff && selectedStaff !== t('booking.anyStaff')) {
-			const staffMember = staffMembers.find((staff) => staff.name === selectedStaff);
+			const staffMember = staffMembers.find((staff: Staff) => staff.name === selectedStaff);
 			if (staffMember) {
 				const staffServices = staffMember.Service || [];
 				// If staff has services assigned, check if they can perform selected service
@@ -224,7 +232,7 @@ export default function BookingModal({
 	// Reset selected service if it can't be performed by the selected staff
 	useEffect(() => {
 		if (selectedService && selectedStaff && selectedStaff !== t('booking.anyStaff')) {
-			const staffMember = staffMembers.find((staff) => staff.name === selectedStaff);
+			const staffMember = staffMembers.find((staff: Staff) => staff.name === selectedStaff);
 			if (staffMember) {
 				const staffServices = staffMember.Service || [];
 				// If staff has services assigned, check if they can perform selected service
@@ -1208,6 +1216,7 @@ export default function BookingModal({
 			const bookingStatus = isOwner
 				? 'CONFIRMED'
 				: result.booking?.status || 'PENDING';
+			
 			setBookingSuccess({
 				status: bookingStatus as 'PENDING' | 'CONFIRMED',
 				serviceName: serviceToUse
@@ -1215,6 +1224,7 @@ export default function BookingModal({
 					: '',
 				date: dateToUse,
 				time: timeToUse,
+				isWithinWorkingHours,
 			});
 
 			// Очищаем поля клиента после успешного создания
@@ -1229,13 +1239,13 @@ export default function BookingModal({
 
 			// Show toast notification for user feedback (especially after OAuth redirect)
 			if (bookingStatus === 'PENDING') {
-				toast.success(
-					`${t('booking.thankYouForReservation')} ${t('booking.awaitingConfirmation')}`,
-					{
-						duration: 6000,
-						icon: '⏳',
-					}
-				);
+				const message = isWithinWorkingHours !== false
+					? `${t('booking.thankYouForReservation')} ${t('booking.awaitingConfirmation')}`
+					: `${t('booking.thankYouForReservation')} ${t('booking.salonWillConfirmWhenOpen') || 'The salon will confirm your booking when they open.'}`;
+				toast.success(message, {
+					duration: 6000,
+					icon: '⏳',
+				});
 			} else {
 				toast.success(t('booking.bookingConfirmedTitle'), {
 					duration: 5000,
@@ -1453,10 +1463,20 @@ export default function BookingModal({
 														/>
 													</svg>
 													<div className="text-sm text-gray-700">
-														<strong className="font-semibold">
-															{t.booking.usuallyConfirmsWithin}
-														</strong>
-														<p className="mt-1">{t.booking.willReceiveEmail}</p>
+														{bookingSuccess.isWithinWorkingHours !== false ? (
+															<>
+																<strong className="font-semibold">
+																	{t.booking.usuallyConfirmsWithin}
+																</strong>
+																<p className="mt-1">{t.booking.willReceiveEmail}</p>
+															</>
+														) : (
+															<>
+																<strong className="font-semibold">
+																	{t('booking.salonWillConfirmWhenOpen') || 'The salon will confirm your booking when they open.'}
+																</strong>
+															</>
+														)}
 													</div>
 												</div>
 

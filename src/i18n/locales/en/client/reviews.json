@@ -18,6 +18,9 @@
 	"commentPlaceholder": "Tell others about your experience...",
 	"submitting": "Submitting...",
 	"submitReview": "Submit Review",
-	"pleaseSelectRating": "Please select a rating"
+	"pleaseSelectRating": "Please select a rating",
+	"unknownSalon": "Unknown Salon",
+	"editReview": "Edit Review",
+	"updateReview": "Update Review"
 }
 

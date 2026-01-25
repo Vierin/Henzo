@@ -1,8 +1,8 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Star, X } from 'lucide-react';
-import { useCreateReview } from '@/hooks/useClient';
+import { useCreateReview, useUpdateReview } from '@/hooks/useClient';
 import { toast } from 'react-hot-toast';
 import { useTranslation } from '@/contexts/LanguageContext';
 
@@ -13,6 +13,9 @@ interface ReviewModalProps {
 	salonName: string;
 	bookingId?: string;
 	serviceName?: string;
+	reviewId?: string; // For editing existing review
+	initialRating?: number; // For editing existing review
+	initialComment?: string; // For editing existing review
 }
 
 export default function ReviewModal({
@@ -22,15 +25,37 @@ export default function ReviewModal({
 	salonName,
 	bookingId,
 	serviceName,
+	reviewId,
+	initialRating,
+	initialComment,
 }: ReviewModalProps) {
 	const t = useTranslation();
-	const [rating, setRating] = useState(0);
-	const [comment, setComment] = useState('');
+	const [rating, setRating] = useState(initialRating || 0);
+	const [hoveredRating, setHoveredRating] = useState(0);
+	const [comment, setComment] = useState(initialComment || '');
 	const [isSubmitting, setIsSubmitting] = useState(false);
 	const createReviewMutation = useCreateReview();
+	const updateReviewMutation = useUpdateReview();
+	const isEditing = !!reviewId;
+
+	// Update form when initial values change
+	useEffect(() => {
+		if (isOpen) {
+			setRating(initialRating || 0);
+			setComment(initialComment || '');
+		}
+	}, [isOpen, initialRating, initialComment]);
 
 	const handleRatingClick = (newRating: number) => {
 		setRating(newRating);
+	};
+
+	const handleStarHover = (starValue: number) => {
+		setHoveredRating(starValue);
+	};
+
+	const handleStarLeave = () => {
+		setHoveredRating(0);
 	};
 
 	const handleSubmit = async (e: React.FormEvent) => {
@@ -43,18 +68,28 @@ export default function ReviewModal({
 
 		setIsSubmitting(true);
 		try {
-			await createReviewMutation.mutateAsync({
-				salonId,
-				bookingId,
-				rating,
-				comment: comment.trim() || undefined,
-			});
+			if (isEditing && reviewId) {
+				await updateReviewMutation.mutateAsync({
+					reviewId,
+					rating,
+					comment: comment.trim() || undefined,
+				});
+			} else {
+				await createReviewMutation.mutateAsync({
+					salonId,
+					bookingId,
+					rating,
+					comment: comment.trim() || undefined,
+				});
+			}
 
 			onClose();
 
 			// Reset form
-			setRating(0);
-			setComment('');
+			if (!isEditing) {
+				setRating(0);
+				setComment('');
+			}
 		} catch (error) {
 			console.error('Failed to submit review:', error);
 		} finally {
@@ -65,9 +100,11 @@ export default function ReviewModal({
 	const handleClose = () => {
 		if (!isSubmitting) {
 			onClose();
-			// Reset form when closing
-			setRating(0);
-			setComment('');
+			// Reset form when closing (only if not editing)
+			if (!isEditing) {
+				setRating(0);
+				setComment('');
+			}
 		}
 	};
 
@@ -79,7 +116,9 @@ export default function ReviewModal({
 				{/* Header */}
 				<div className="flex items-center justify-between p-6 border-b border-gray-200">
 					<h2 className="text-xl font-semibold text-gray-900">
-						{t('client.reviews.leaveReview')}
+						{isEditing
+							? t('client.reviews.editReview')
+							: t('client.reviews.leaveReview')}
 					</h2>
 					<button
 						onClick={handleClose}
@@ -101,31 +140,37 @@ export default function ReviewModal({
 					</div>
 
 					{/* Rating */}
-					<div className="mb-6">
+					<div className="mb-6 relative">
 						<label className="block text-sm font-medium text-gray-700 mb-3">
 							{t('client.reviews.howWasYourExperience')} *
 						</label>
-						<div className="flex gap-1">
-							{[1, 2, 3, 4, 5].map((star) => (
-								<button
-									key={star}
-									type="button"
-									onClick={() => handleRatingClick(star)}
-									disabled={isSubmitting}
-									className="transition-colors disabled:opacity-50"
-								>
-									<Star
-										className={`w-8 h-8 ${
-											star <= rating
-												? 'text-[#ff5b5b] fill-[#ff5b5b]'
-												: 'text-gray-300'
-										} hover:text-[#ff5b5b] hover:fill-[#ff5b5b]`}
-									/>
-								</button>
-							))}
+						<div className="flex">
+							{[1, 2, 3, 4, 5].map((star) => {
+								const displayRating = hoveredRating || rating;
+								const isFilled = star <= displayRating;
+								return (
+									<button
+										key={star}
+										type="button"
+										onClick={() => handleRatingClick(star)}
+										onMouseEnter={() => handleStarHover(star)}
+										onMouseLeave={handleStarLeave}
+										disabled={isSubmitting}
+										className="transition-colors px-[2px] disabled:opacity-50"
+									>
+										<Star
+											className={`w-8 h-8 ${
+												isFilled
+													? 'text-[#ff5b5b] fill-[#ff5b5b]'
+													: 'text-gray-300'
+											}`}
+										/>
+									</button>
+								);
+							})}
 						</div>
 						{rating > 0 && (
-							<p className="text-sm text-gray-600 mt-2">
+							<p className="text-sm text-gray-600 absolute top-0 right-0">
 								{rating === 1 && t('client.reviews.rating1')}
 								{rating === 2 && t('client.reviews.rating2')}
 								{rating === 3 && t('client.reviews.rating3')}
@@ -178,6 +223,8 @@ export default function ReviewModal({
 									<div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
 									{t('client.reviews.submitting')}
 								</>
+							) : isEditing ? (
+								t('client.reviews.updateReview')
 							) : (
 								t('client.reviews.submitReview')
 							)}

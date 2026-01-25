@@ -18,6 +18,9 @@
 	"commentPlaceholder": "Расскажите другим о своем опыте...",
 	"submitting": "Отправка...",
 	"submitReview": "Отправить отзыв",
-	"pleaseSelectRating": "Пожалуйста, выберите оценку"
+	"pleaseSelectRating": "Пожалуйста, выберите оценку",
+	"unknownSalon": "Неизвестный салон",
+	"editReview": "Редактировать отзыв",
+	"updateReview": "Обновить отзыв"
 }
 

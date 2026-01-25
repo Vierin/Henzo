@@ -183,3 +183,28 @@ export function useCreateReview() {
 		},
 	});
 }
+
+// Hook to update a review
+export function useUpdateReview() {
+	const queryClient = useQueryClient();
+
+	return useMutation({
+		mutationFn: async (data: {
+			reviewId: string;
+			rating?: number;
+			comment?: string;
+		}) => {
+			const { reviewId, ...updateData } = data;
+			const response = await apiClient.put(`/reviews/${reviewId}`, updateData);
+			return response;
+		},
+		onSuccess: () => {
+			// Invalidate and refetch reviews
+			queryClient.invalidateQueries({ queryKey: ['user-reviews'] });
+			toast.success('Review updated successfully!');
+		},
+		onError: (error: Error) => {
+			toast.error(error.message || 'Failed to update review');
+		},
+	});
+}

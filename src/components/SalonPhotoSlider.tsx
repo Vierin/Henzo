@@ -4,15 +4,19 @@ import { useState, useEffect, useCallback, useMemo } from 'react';
 import { supabase } from '@/lib/supabase';
 import Image from 'next/image';
 import SalonImagePlaceholder from './SalonImagePlaceholder';
+import RatingBadge from './RatingBadge';
+import { Salon } from '@/types';
 
 interface SalonPhotoSliderProps {
 	photos: string[];
 	salonName: string;
+	salon?: Salon;
 }
 
 export default function SalonPhotoSlider({
 	photos,
 	salonName,
+	salon,
 }: SalonPhotoSliderProps) {
 	const [currentIndex, setCurrentIndex] = useState(0);
 
@@ -97,7 +101,7 @@ export default function SalonPhotoSlider({
 	// Если только одно изображение, показываем его без слайдера
 	if (allImages.length === 1) {
 		return (
-			<div className="w-full h-80 bg-gradient-to-br from-pink-100 to-pink-200 rounded-xl overflow-hidden">
+			<div className="relative w-full h-80 bg-gradient-to-br from-pink-100 to-pink-200 rounded-xl overflow-hidden">
 				<Image
 					src={allImages[0].url}
 					alt={salonName}
@@ -126,6 +130,7 @@ export default function SalonPhotoSlider({
 						variant="large"
 					/>
 				</div>
+				{salon && <RatingBadge salon={salon} variant="badge" />}
 			</div>
 		);
 	}
@@ -134,6 +139,8 @@ export default function SalonPhotoSlider({
 
 	return (
 		<div className="relative w-full h-80 bg-gradient-to-br from-pink-100 to-pink-200 rounded-xl overflow-hidden group">
+			{/* Rating Badge */}
+			{salon && <RatingBadge salon={salon} variant="badge" />}
 			{/* Main Image */}
 			<div className="relative w-full h-full">
 				<Image

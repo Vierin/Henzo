@@ -18,6 +18,9 @@
 	"commentPlaceholder": "Kể cho người khác về trải nghiệm của bạn...",
 	"submitting": "Đang gửi...",
 	"submitReview": "Gửi đánh giá",
-	"pleaseSelectRating": "Vui lòng chọn đánh giá"
+	"pleaseSelectRating": "Vui lòng chọn đánh giá",
+	"unknownSalon": "Salon không xác định",
+	"editReview": "Chỉnh sửa đánh giá",
+	"updateReview": "Cập nhật đánh giá"
 }
 
