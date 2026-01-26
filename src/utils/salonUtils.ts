@@ -167,8 +167,20 @@ function isTimeRangeOverlapping(
 
 /**
  * Calculate average rating for a salon
+ * Prefers avgRating from backend if available, otherwise calculates from reviews array
  */
 export function calculateAverageRating(salon: Salon): number {
+	// Prefer avgRating from backend (optimized)
+	if (salon.avgRating !== undefined && salon.avgRating !== null) {
+		return salon.avgRating;
+	}
+	
+	// Fallback to rating field
+	if (salon.rating !== undefined && salon.rating !== null) {
+		return salon.rating;
+	}
+
+	// Fallback to calculating from reviews array (for backward compatibility)
 	if (!salon.reviews || salon.reviews.length === 0) {
 		return 0;
 	}
@@ -182,8 +194,20 @@ export function calculateAverageRating(salon: Salon): number {
 
 /**
  * Get number of reviews for a salon
+ * Prefers reviewCount from backend if available, otherwise uses _count or reviews array
  */
 export function getReviewCount(salon: Salon): number {
+	// Prefer reviewCount from backend (optimized)
+	if (salon.reviewCount !== undefined && salon.reviewCount !== null) {
+		return salon.reviewCount;
+	}
+
+	// Fallback to _count.Review (from Prisma)
+	if ((salon as any)._count?.Review !== undefined) {
+		return (salon as any)._count.Review;
+	}
+
+	// Fallback to reviews array length (for backward compatibility)
 	return salon.reviews?.length || 0;
 }
 

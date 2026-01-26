@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useSalonSearch } from '@/hooks/useSalonSearch';
 import LoadingSpinner from '@/components/LoadingSpinner';
 import ErrorDisplay from '@/components/ErrorDisplay';
@@ -41,21 +41,55 @@ export default function CategoryListClient({
 		(ServiceResponseDto & { salonId: string; salonName: string }) | null
 	>(null);
  
+	const [currentPage, setCurrentPage] = useState(1);
+	const [accumulatedSalons, setAccumulatedSalons] = useState<Salon[]>([]);
+	const [currentPagination, setCurrentPagination] = useState<any>(null);
+
 	const {
 		data: searchData,
 		isLoading: loading,
 		error,
 	} = useSalonSearch({
-		page: 1,
-		limit: 100, // Load enough salons for category page
+		page: currentPage,
+		limit: 20, // Optimized: reduced from 100 to 20 per page
 		category: category.slug, // Filter by main category slug (e.g., "hair-barber")
 		// Only pass sortBy to backend if it's supported server-side
 		// 'services' sorting is done client-side
 		sortBy: sortBy === 'services' ? undefined : sortBy,
 	});
 
-	// Extract salons from search response
-	const salons = (searchData as any)?.data || [];
+	// Accumulate salon results for pagination
+	useEffect(() => {
+		const result = searchData as any;
+		if (result?.data && result?.pagination) {
+			if (result.pagination.page === 1) {
+				// Reset accumulated results for new search/sort
+				setAccumulatedSalons(result.data);
+			} else {
+				// Append new results for pagination (dedupe by id)
+				setAccumulatedSalons((prev) => {
+					const existing = new Set(prev.map((s) => s.id));
+					const merged = [...prev];
+					for (const s of result.data as Salon[]) {
+						if (!existing.has(s.id)) merged.push(s);
+					}
+					return merged;
+				});
+			}
+			setCurrentPagination(result.pagination);
+		}
+	}, [searchData]);
+
+	// Reset accumulated results when sort changes
+	useEffect(() => {
+		setAccumulatedSalons([]);
+		setCurrentPagination(null);
+		setCurrentPage(1);
+	}, [sortBy]);
+
+	// Extract salons and pagination from accumulated state
+	const salons = accumulatedSalons;
+	const pagination = currentPagination;
 
 	// Get translated category name
 	const translatedName = getCategoryTranslatedName(category, t);
@@ -73,6 +107,17 @@ export default function CategoryListClient({
 		setIsBookingModalOpen(true);
 	};
 
+	const handleLoadMore = () => {
+		if (pagination?.hasNextPage) {
+			setCurrentPage((prev) => prev + 1);
+		}
+	};
+
+	// Reset page when sort changes
+	useEffect(() => {
+		setCurrentPage(1);
+	}, [sortBy]);
+
 	const sortOptions = [
 		{ value: 'name', label: t.salon.sortNameAZ },
 		{ value: 'name-desc', label: t.salon.sortNameZA },
@@ -80,7 +125,7 @@ export default function CategoryListClient({
 	];
 
 	// Salons are already filtered by main_category_id on the server
-	// Just apply client-side sorting
+	// Just apply client-side sorting for 'services' (others are server-side)
 	const sortedSalons = [...(salons || [])].sort((a: Salon, b: Salon) => {
 			switch (sortBy) {
 				case 'name':
@@ -88,7 +133,10 @@ export default function CategoryListClient({
 				case 'name-desc':
 					return b.name.localeCompare(a.name);
 				case 'services':
-					return (b.services?.length || 0) - (a.services?.length || 0);
+					// Use _count.Service if available, otherwise fallback to services.length
+					const aCount = (a as any)._count?.Service || a.services?.length || 0;
+					const bCount = (b as any)._count?.Service || b.services?.length || 0;
+					return bCount - aCount;
 				default:
 					return 0;
 			}
@@ -122,7 +170,7 @@ export default function CategoryListClient({
 						{/* Category Header with Sort */}
 						<div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 sm:mb-8">
 							<h1 className="text-xl sm:text-2xl font-bold text-gray-900">
-								{translatedName} ({sortedSalons.length})
+								{translatedName} ({pagination?.total || sortedSalons.length})
 							</h1>
 							<div className="flex gap-2 sm:gap-3">
 								{/* Sort Dropdown */}
@@ -193,6 +241,21 @@ export default function CategoryListClient({
 								</div>
 							)}
 						</div>
+
+						{/* Load More Button */}
+						{pagination?.hasNextPage && (
+							<div className="text-center mt-8">
+								<button
+									onClick={handleLoadMore}
+									className="bg-[#ff5b5b] text-white px-8 py-4 rounded-2xl font-medium hover:bg-[#e04a4a] transition-colors focus:outline-none focus:ring-2 focus:ring-[#ff5b5b] focus:ring-offset-2"
+									aria-label={`Load more salons (page ${pagination.page + 1})`}
+								>
+									{t.salon.loadMore || 'Load more'} (
+									{pagination.total - pagination.page * pagination.limit}{' '}
+									{t.salon.remaining || 'remaining'})
+								</button>
+							</div>
+						)}
 					</div>
 				</main>
 			</div>
