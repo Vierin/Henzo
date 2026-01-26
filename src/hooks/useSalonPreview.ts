@@ -9,7 +9,6 @@ interface SalonPreview {
 	logo: string;
 	photos: string[];
 	avgRating?: number;
-	priceRange?: string;
 	categoryIds?: number[];
 	_count: {
 		reviews: number;
