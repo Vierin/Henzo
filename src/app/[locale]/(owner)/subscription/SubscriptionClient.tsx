@@ -139,7 +139,6 @@ export default function SubscriptionClient() {
 
 				{/* Henzo Pro Card */}
 				<section className="relative">
-					<div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-3/4 h-3/4 bg-[#ff5b5b]/20 blur-[60px] rounded-full -z-10"></div>
 					<div
 						className="w-full max-w-4xl mx-auto backdrop-blur-[12px] bg-white/80 border-2 border-white/60 shadow-md rounded-3xl p-8 md:p-12 overflow-hidden"
 						style={{ backdropFilter: 'blur(12px)' }}
