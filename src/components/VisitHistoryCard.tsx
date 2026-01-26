@@ -148,13 +148,11 @@ function VisitHistoryCard({
 							</p>
 						)}
 
-						<div className="flex items-center gap-4 mb-3 sm:mb-0">
-							<div>
-								<p className="text-gray-500 text-xs">{formattedDate}</p>
-								<p className="text-gray-700 text-sm font-medium">
-									{formattedTime}
-								</p>
-							</div>
+						<div className="flex justify-between sm:justify-start items-center gap-4 mb-3 sm:mb-0">
+							<p className="text-gray-500 text-sm sm:text-xs">{formattedDate}</p>
+							<p className="text-gray-700 text-sm font-medium">
+								{formattedTime}
+							</p>
 						</div>
 
 						{statusBadge && (
