@@ -34,7 +34,7 @@ export default function PublicLayoutClient({
 	return (
 		<div className={`min-h-screen ${!isBusinessPage ? 'bg-[#fff7f6]' : ''}`}>
 			{!isBusinessPage && <PublicHeader />}
-			<main className={shouldShowSearch && isScrolled ? 'pt-20' : ''}>
+			<main>
 				{children}
 			</main>
 		</div>

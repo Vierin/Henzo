@@ -288,11 +288,11 @@ function PublicHeaderContent() {
 				</div>
 			</header>
 
-			{/* Booksy Search Section - Fixed on scroll */}
+			{/* Booksy Search Section - Sticky on scroll (prevents layout shift) */}
 			{shouldShowSearch && (
 				<div
-					className={`bg-white shadow-sm transition-all duration-300 ${
-						isScrolled ? 'fixed top-0 left-0 right-0 z-[999]' : ''
+					className={`bg-white shadow-sm transition-shadow duration-300 ${
+						isScrolled ? 'sticky top-0 z-[999] shadow-md' : ''
 					}`}
 				>
 					<div className="mx-auto max-w-7xl px-4 sm:px-6 py-2 sm:py-4">

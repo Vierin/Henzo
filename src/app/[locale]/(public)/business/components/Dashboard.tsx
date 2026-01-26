@@ -16,7 +16,7 @@ export function Dashboard() {
 				
 				<div className="grid lg:grid-cols-2 gap-12 items-center max-w-7xl mx-auto">
 					{/* Left side - Dashboard panel Henzo */}
-					<div className="relative w-[50vw] left-[-50%] top-0">
+					<div className="relative w-full sm:w-[50vw] left-0 sm:left-[-50%] top-0">
 						<ImageWithFallback
 							src="/images/mockup-1.webp"
 							alt="Business dashboard panel Henzo"

@@ -36,6 +36,7 @@ import { useTranslation, useLanguage } from '@/contexts/LanguageContext';
 import {
 	getLocalizedServiceName,
 	getLocalizedServiceDescription,
+	getLocalizedGroupName,
 } from '@/utils/serviceLocalization';
 import { weekdaysOrder } from '@/utils/dateConstants';
 
@@ -344,7 +345,7 @@ export default function SalonDetailClient({ salon }: SalonDetailClientProps) {
 														aria-controls={`group-${group.id}`}
 													>
 														<h2 className="text-xl font-bold text-gray-900">
-															{group.name}
+															{getLocalizedGroupName(group, language)}
 														</h2>
 														<div className="flex items-center gap-2">
 															<span className="text-sm text-gray-500">

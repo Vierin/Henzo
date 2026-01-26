@@ -53,9 +53,30 @@ export const getLocalizedServiceDescription = (
 	return service.description;
 };
 
+// Type for service groups that can have localized fields
+type LocalizableServiceGroup = {
+	name: string;
+	nameEn?: string | null;
+	nameVi?: string | null;
+	nameRu?: string | null;
+};
 
-
-
+// Helper function to get localized service group name
+export const getLocalizedGroupName = (
+	group: LocalizableServiceGroup,
+	language: 'vi' | 'en' | 'ru'
+): string => {
+	switch (language) {
+		case 'vi':
+			return group.nameVi || group.name;
+		case 'ru':
+			return group.nameRu || group.name;
+		case 'en':
+			return group.nameEn || group.name;
+		default:
+			return group.name;
+	}
+};
 
 
 
