@@ -91,6 +91,13 @@ export default function InteractiveMap({
 		// Filter by categories if any selected
 		if (selectedCategories.length > 0) {
 			filtered = filtered.filter((salon: any) => {
+				// First try serviceCategoryIds (from optimized findFeaturedSalons)
+				if (salon.serviceCategoryIds && Array.isArray(salon.serviceCategoryIds)) {
+					return salon.serviceCategoryIds.some((id: number) =>
+						selectedCategories.includes(id)
+					);
+				}
+				// Fallback: check services array if available
 				const salonServices = salon.services || salon.Service || [];
 				return salonServices.some(
 					(service: any) =>

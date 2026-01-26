@@ -14,6 +14,7 @@ const BASE_MODULES: TranslationModule[] = [
 	'ui/cookieBanner',
 	'shared/forms',
 	'shared/emptyStates',
+	'public/booking', // Always load booking module as BookingModal can be used on any page
 ];
 
 /**

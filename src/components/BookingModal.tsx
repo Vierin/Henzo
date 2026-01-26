@@ -1239,9 +1239,15 @@ export default function BookingModal({
 
 			// Show toast notification for user feedback (especially after OAuth redirect)
 			if (bookingStatus === 'PENDING') {
+				const thankYouMsg = t('booking.thankYouForReservation') !== 'booking.thankYouForReservation' 
+					? t('booking.thankYouForReservation')
+					: (t.booking?.thankYouForReservation || 'Thank you for your reservation!');
+				const awaitingMsg = t('booking.awaitingConfirmation') !== 'booking.awaitingConfirmation'
+					? t('booking.awaitingConfirmation')
+					: (t.booking?.awaitingConfirmation || 'Awaiting confirmation from the salon');
 				const message = isWithinWorkingHours !== false
-					? `${t('booking.thankYouForReservation')} ${t('booking.awaitingConfirmation')}`
-					: `${t('booking.thankYouForReservation')} ${t('booking.salonWillConfirmWhenOpen') || 'The salon will confirm your booking when they open.'}`;
+					? `${thankYouMsg} ${awaitingMsg}`
+					: `${thankYouMsg} ${t('booking.salonWillConfirmWhenOpen') || t.booking?.salonWillConfirmWhenOpen || 'The salon will confirm your booking when they open.'}`;
 				toast.success(message, {
 					duration: 6000,
 					icon: '⏳',
@@ -1441,10 +1447,10 @@ export default function BookingModal({
 												</svg>
 											</div>
 											<h2 className="text-2xl font-bold text-gray-900 mb-2">
-												{t.booking.thankYouForReservation}
+												{t.booking?.thankYouForReservation || t('booking.thankYouForReservation') !== 'booking.thankYouForReservation' ? t('booking.thankYouForReservation') : 'Thank you for your reservation!'}
 											</h2>
 											<p className="text-gray-600 text-lg mb-4">
-												{t.booking.awaitingConfirmation}
+												{t.booking?.awaitingConfirmation || t('booking.awaitingConfirmation') !== 'booking.awaitingConfirmation' ? t('booking.awaitingConfirmation') : 'Awaiting confirmation from the salon'}
 											</p>
 										</div>
 

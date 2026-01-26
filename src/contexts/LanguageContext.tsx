@@ -270,6 +270,9 @@ export function LanguageProvider({
 			'client/reviews',
 			'client/settings'
 		);
+		// Booking module needed for BookingModal component on client pages
+		publicModules.push('public/booking');
+		publicModules.push('shared/auth');
 	}
 	// Load shared/auth for login, register, and check-email pages
 	if (

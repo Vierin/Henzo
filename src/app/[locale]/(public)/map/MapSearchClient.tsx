@@ -14,8 +14,8 @@ export default function MapSearchClient() {
 	const t = useTranslation();
 	const [selectedSalon, setSelectedSalon] = useState<Salon | null>(null);
 	const [mapCenter, setMapCenter] = useState<{ lat: number; lng: number }>({
-		lat: 12.2388, // Nha Trang coordinates (fallback if geolocation denied)
-		lng: 109.1967,
+		lat: 16.0544, // Da Nang coordinates (fallback if geolocation denied)
+		lng: 108.2022,
 	});
 	const [zoom, setZoom] = useState(13);
 	const [mapBounds, setMapBounds] = useState<MapBounds | null>(null);
@@ -66,10 +66,10 @@ export default function MapSearchClient() {
 				(error) => {
 					// Don't log user denial (PERMISSION_DENIED = 1) as an error - it's expected behavior
 					// Only handle other errors like TIMEOUT or POSITION_UNAVAILABLE
-					// Fallback to Nha Trang coordinates (already set as default)
+					// Fallback to Da Nang coordinates (already set as default)
 					setMapCenter({
-						lat: 12.2388, // Nha Trang coordinates
-						lng: 109.1967,
+						lat: 16.0544, // Da Nang coordinates
+						lng: 108.2022,
 					});
 					setIsLoadingLocation(false);
 				},
