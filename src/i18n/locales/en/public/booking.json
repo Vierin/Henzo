@@ -81,5 +81,6 @@
 	"bookingSummary": "Booking Summary",
 	"staff": "Staff",
 	"anonymousClient": "Anonymous Client",
-	"staffNotAvailable": "The selected staff member is not available at this time. Please choose another time or staff member."
+	"staffNotAvailable": "The selected staff member is not available at this time. Please choose another time or staff member.",
+	"salonWillConfirmWhenOpen": "The salon will confirm your booking when they open."
 }

@@ -89,5 +89,6 @@
 	"bookingSummary": "Tóm tắt đặt lịch",
 	"staff": "Nhân viên",
 	"anonymousClient": "Khách hàng ẩn danh",
-	"staffNotAvailable": "Nhân viên đã chọn không có sẵn vào thời gian này. Vui lòng chọn thời gian khác hoặc nhân viên khác."
+	"staffNotAvailable": "Nhân viên đã chọn không có sẵn vào thời gian này. Vui lòng chọn thời gian khác hoặc nhân viên khác.",
+	"salonWillConfirmWhenOpen": "Salon sẽ xác nhận đặt lịch của bạn khi họ mở cửa."
 }
