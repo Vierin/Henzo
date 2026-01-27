@@ -53,7 +53,7 @@ export default function BookingStaffSelector({
 				</button>
 
 				{isStaffDropdownOpen && (
-					<div className="absolute bottom-full sm:top-full left-0 right-0 mb-1 sm:mb-0 sm:mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-10 max-h-[240px] overflow-y-auto scrollbar-hide">
+					<div className="absolute bottom-full sm:top-full left-0 right-0 mb-1 sm:mb-0 sm:mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-50 max-h-[225px] min-h-[112px] overflow-y-auto scrollbar-hide">
 						{staffLoading ? (
 							<div className="p-4 text-center text-gray-500 text-sm">
 								{t('booking.loadingStaff')}
