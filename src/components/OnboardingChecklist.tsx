@@ -172,11 +172,6 @@ export default function OnboardingChecklist({
 	const salonStatusFromData = salonData?.status as string | undefined;
 	const currentStatus = salonStatusFromData || localSalonStatus;
 	const isActive = currentStatus && String(currentStatus).toUpperCase() === 'ACTIVE';
-	
-	// Если статус ACTIVE или чеклист был закрыт, не показываем компонент
-	if (isActive || isDismissed) {
-		return null;
-	}
 
 	const handlePublish = async () => {
 		setIsPublishing(true);
@@ -246,6 +241,7 @@ export default function OnboardingChecklist({
 		}
 	};
 
+	// Показываем поздравление ПЕРЕД проверкой isActive, чтобы оно отображалось даже после публикации
 	if (showCongratulations) {
 		const hasPhotos = salonData?.photos && Array.isArray(salonData.photos) && salonData.photos.length > 0;
 		
@@ -292,7 +288,16 @@ export default function OnboardingChecklist({
 					)}
 					
 					<button
-						onClick={() => setShowCongratulations(false)}
+						onClick={() => {
+							setShowCongratulations(false);
+							// Если салон уже ACTIVE, скрываем онбординг полностью
+							if (isActive) {
+								if (typeof window !== 'undefined') {
+									localStorage.setItem(`onboarding_dismissed_${salonId}`, 'true');
+								}
+								setIsDismissed(true);
+							}
+						}}
 						className={`w-full bg-[#ff5b5b] text-white px-4 py-2 rounded-lg hover:bg-[#e04a4a] transition-colors ${!hasPhotos ? '' : 'mt-4'}`}
 					>
 						{t('common.close')}
@@ -300,6 +305,11 @@ export default function OnboardingChecklist({
 				</div>
 			</div>
 		);
+	}
+
+	// Если статус ACTIVE или чеклист был закрыт, не показываем компонент (но поздравление уже показано выше)
+	if (isActive || isDismissed) {
+		return null;
 	}
 
 	return (
