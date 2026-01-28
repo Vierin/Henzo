@@ -9,11 +9,13 @@ import {
 import Link from 'next/link';
 import VisitHistoryCard from '@/components/VisitHistoryCard';
 import ReviewModal from '@/components/ReviewModal';
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from '@/contexts/LanguageContext';
+import { useSearchParams } from 'next/navigation';
 
 export default function ClientDashboardClient() {
 	const t = useTranslation();
+	const searchParams = useSearchParams();
 	const {
 		data: upcomingBookings,
 		isLoading: upcomingLoading,
@@ -247,6 +249,27 @@ export default function ClientDashboardClient() {
 			</p>
 		</div>
 	);
+
+	// Show success message when redirected after booking creation
+	useEffect(() => {
+		const bookingCreated = searchParams.get('bookingCreated');
+		if (bookingCreated === '1') {
+			const msg =
+				t('client.dashboard.reservationCreated') ||
+				'Your reservation has been created';
+			setShowSuccessMessage(msg);
+
+			// Clean query param from URL
+			if (typeof window !== 'undefined') {
+				const url = new URL(window.location.href);
+				url.searchParams.delete('bookingCreated');
+				window.history.replaceState(null, '', url.toString());
+			}
+
+			const timer = setTimeout(() => setShowSuccessMessage(null), 4000);
+			return () => clearTimeout(timer);
+		}
+	}, [searchParams, t]);
 
 	// Success message
 	const SuccessMessage = () => {

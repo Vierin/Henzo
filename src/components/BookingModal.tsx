@@ -1239,15 +1239,28 @@ export default function BookingModal({
 
 			// Show toast notification for user feedback (especially after OAuth redirect)
 			if (bookingStatus === 'PENDING') {
-				const thankYouMsg = t('booking.thankYouForReservation') !== 'booking.thankYouForReservation' 
-					? t('booking.thankYouForReservation')
-					: (t.booking?.thankYouForReservation || 'Thank you for your reservation!');
-				const awaitingMsg = t('booking.awaitingConfirmation') !== 'booking.awaitingConfirmation'
-					? t('booking.awaitingConfirmation')
-					: (t.booking?.awaitingConfirmation || 'Awaiting confirmation from the salon');
-				const message = isWithinWorkingHours !== false
-					? `${thankYouMsg} ${awaitingMsg}`
-					: `${thankYouMsg} ${t('booking.salonWillConfirmWhenOpen') || t.booking?.salonWillConfirmWhenOpen || 'The salon will confirm your booking when they open.'}`;
+				const thankYouMsg =
+					t('booking.thankYouForReservation') !==
+					'booking.thankYouForReservation'
+						? t('booking.thankYouForReservation')
+						: t.booking?.thankYouForReservation ||
+							'Thank you for your reservation!';
+				const awaitingMsg =
+					t('booking.awaitingConfirmation') !==
+					'booking.awaitingConfirmation'
+						? t('booking.awaitingConfirmation')
+						: t.booking?.awaitingConfirmation ||
+							'Awaiting confirmation from the salon';
+				const message =
+					isWithinWorkingHours !== false
+						? `${thankYouMsg} ${awaitingMsg}`
+						: `${
+								thankYouMsg
+						  } ${
+								t('booking.salonWillConfirmWhenOpen') ||
+								t.booking?.salonWillConfirmWhenOpen ||
+								'The salon will confirm your booking when they open.'
+						  }`;
 				toast.success(message, {
 					duration: 6000,
 					icon: '⏳',
@@ -1257,6 +1270,22 @@ export default function BookingModal({
 					duration: 5000,
 					icon: '✅',
 				});
+			}
+
+			// For clients (not owners), redirect to client dashboard so they clearly see the reservation
+			if (!isOwner) {
+				try {
+					const pathname = window.location.pathname;
+					const localeMatch = pathname.match(/^\/(en|ru|vi)/);
+					const locale = localeMatch ? localeMatch[1] : 'en';
+
+					// Small delay so the toast is visible before redirect
+					setTimeout(() => {
+						window.location.href = `/${locale}/dashboard?bookingCreated=1`;
+					}, 800);
+				} catch (e) {
+					// In case window is not available for some reason, just ignore
+				}
 			}
 		} catch (error: unknown) {
 			logger.error('Booking error:', error);

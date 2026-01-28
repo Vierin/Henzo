@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
-import { ChevronDown, Star, MapPin, Phone } from 'lucide-react';
+import { Star, MapPin, Phone } from 'lucide-react';
 import { Salon } from '@/types';
 import { useFeaturedSalons } from '@/hooks/useSalonPreview';
 import {
@@ -19,6 +19,13 @@ import {
 	getCategoryTranslatedName,
 } from '@/hooks/useCategories';
 import SalonImagePlaceholder from '@/components/SalonImagePlaceholder';
+import {
+	Select,
+	SelectContent,
+	SelectItem,
+	SelectTrigger,
+	SelectValue,
+} from '@/components/ui/select';
 
 interface SalonSidebarProps {
 	onSalonSelect: (salon: Salon) => void;
@@ -147,6 +154,13 @@ export default function SalonSidebar({
 		return slug;
 	};
 
+	const sortOptions = [
+		{ value: 'recommended', label: t.map.sortByRecommended },
+		{ value: 'rating', label: t.map.highestRated },
+		{ value: 'distance', label: t.map.nearest },
+		{ value: 'reviews', label: t.map.mostReviews },
+	];
+
 	return (
 		<div className="h-full flex flex-col">
 			{/* Sort Header */}
@@ -185,18 +199,28 @@ export default function SalonSidebar({
 						<p className="text-sm text-gray-500">{t.map.showingSalonsInView}</p>
 					)}
 				</div>
-				<div className="relative">
-					<select
-						value={sortBy}
-						onChange={(e) => setSortBy(e.target.value)}
-						className="appearance-none bg-white border border-gray-300 rounded-lg px-4 py-2 pr-8 w-full focus:ring-2 focus:ring-[#ff5b5b] focus:border-[#ff5b5b] outline-none"
-					>
-						<option value="recommended">{t.map.sortByRecommended}</option>
-						<option value="rating">{t.map.highestRated}</option>
-						<option value="distance">{t.map.nearest}</option>
-						<option value="reviews">{t.map.mostReviews}</option>
-					</select>
-					<ChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
+				<div className="w-full">
+					<Select value={sortBy} onValueChange={setSortBy}>
+						<SelectTrigger className="w-full bg-white border border-gray-300 rounded-md focus:ring-2 focus:ring-[#ff5b5b] focus:border-[#ff5b5b]">
+							<SelectValue placeholder={t.map.sortByRecommended} />
+						</SelectTrigger>
+						<SelectContent
+							className="bg-white border border-gray-300 shadow-lg rounded-md"
+							style={{ zIndex: 1001 }}
+							side="bottom"
+							align="start"
+						>
+							{sortOptions.map((option) => (
+								<SelectItem
+									key={option.value}
+									value={option.value}
+									className="bg-white hover:bg-gray-50 focus:bg-gray-50 text-gray-900 cursor-pointer"
+								>
+									{option.label}
+								</SelectItem>
+							))}
+						</SelectContent>
+					</Select>
 				</div>
 			</div>
 
@@ -264,32 +288,35 @@ export default function SalonSidebar({
 											<span className="text-sm truncate">{salon.address}</span>
 										</div>
 
-										{/* Rating */}
-										{((salon.avgRating || salon.rating || 0) > 0 ||
-											(salon.reviewCount || salon._count?.reviews || 0) >
-												0) && (
-											<div className="flex items-center space-x-2 mb-3">
-												<Star
-													size={14}
-													className="text-[#ff5b5b] fill-[#ff5b5b]"
-												/>
-												<span className="text-sm font-medium text-gray-900">
-													{(salon.avgRating || salon.rating || 0).toFixed(1)}
-												</span>
-												<span className="text-sm text-gray-500">
-													({salon.reviewCount || salon._count?.reviews || 0}{' '}
-													{t.salon.reviewsCount})
-												</span>
-											</div>
-										)}
 
-										{/* Action Button */}
-										<button
-											onClick={(e) => handleViewSalon(salon, e)}
-											className="w-full bg-[#fff7f6] text-[#ff5b5b] px-4 py-2 rounded-lg text-sm font-medium hover:bg-[#ffe8e6] transition-colors"
-										>
-											{t.map.viewSalon}
-										</button>
+										<div className="flex items-center justify-between gap-2">
+											{/* Rating */}
+											{((salon.avgRating || salon.rating || 0) > 0 ||
+												(salon.reviewCount || salon._count?.reviews || 0) >
+													0) && (
+												<div className="flex items-center space-x-2">
+													<Star
+														size={14}
+														className="text-[#ff5b5b] fill-[#ff5b5b]"
+													/>
+													<span className="text-sm font-medium text-gray-900">
+														{(salon.avgRating || salon.rating || 0).toFixed(1)}
+													</span>
+													<span className="text-sm font-medium text-gray-700">
+														({salon.reviewCount || salon._count?.reviews || 0})
+													</span>
+												</div>
+											)}
+
+											{/* Action Button */}
+											<button
+												onClick={(e) => handleViewSalon(salon, e)}
+												className="w-full border border-[#ff4545] bg-[#fff7f6] text-[#ff5b5b] max-w-[60%] px-4 py-2 rounded-lg text-sm font-medium hover:bg-[#ffe8e6] transition-colors"
+											>
+												{t.map.viewSalon}
+											</button>
+										</div>
+										
 									</div>
 								</div>
 							</div>
