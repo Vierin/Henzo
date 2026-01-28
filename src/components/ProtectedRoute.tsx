@@ -26,6 +26,11 @@ export default function ProtectedRoute({
 			return; // Ждем загрузки
 		}
 
+		// Если идет явный процесс logout, не делаем никаких редиректов
+		if (isLoggingOut) {
+			return;
+		}
+
 		if (!isAuthenticated || !user) {
 			// Пользователь не аутентифицирован - редирект на логин
 			const locale = extractLocaleFromPath(pathname) ?? 'en';
