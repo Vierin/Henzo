@@ -1,10 +1,16 @@
-import { RefObject } from 'react';
+import { RefObject, useState } from 'react';
 import dynamic from 'next/dynamic';
-import MapboxAddressAutocomplete from '@/components/MapboxAddressAutocomplete';
+import { MapPin } from 'lucide-react';
 import { SalonSetupData } from '@/hooks/useSalonSetup';
 
 const MapComponentWithCoords = dynamic(
 	() => import('@/components/MapComponentWithCoords'),
+	{ ssr: false }
+);
+
+// Lazy load AddressSelectModal only when needed (not on initial render)
+const AddressSelectModal = dynamic(
+	() => import('@/components/AddressSelectModal'),
 	{ ssr: false }
 );
 
@@ -33,6 +39,8 @@ export default function SetupStep1({
 	onAddressSelect,
 	t,
 }: SetupStep1Props) {
+	const [showAddressModal, setShowAddressModal] = useState(false);
+
 	return (
 		<div className="space-y-6">
 			{/* Salon Name */}
@@ -92,16 +100,37 @@ export default function SetupStep1({
 						</p>
 					</div>
 				)}
-				{/* Address input field below map */}
+				{/* Address button field below map */}
 				<div className="relative">
-					<MapboxAddressAutocomplete
-						value={formData.address}
-						onChange={onAddressChange}
-						onAddressSelect={onAddressSelect}
-						placeholder={t('business.completeSetup.step1.selectSalonAddress')}
-						className="w-full h-13 px-4 py-3 rounded-lg text-gray-900 placeholder-gray-300 focus:ring-2 bg-white focus:ring-[#F8F5F2] focus:border-transparent"
-						showIcon={false}
-					/>
+					<button
+						type="button"
+						onClick={() => setShowAddressModal(true)}
+						className="w-full px-4 py-3 border border-gray-300 rounded-lg text-left text-gray-900 bg-white hover:border-[#ff5b5b] focus:outline-none focus:ring-2 focus:ring-[#ff5b5b] focus:border-[#ff5b5b] flex items-center justify-between"
+					>
+						<span
+							className={
+								formData.address ? 'text-gray-900' : 'text-gray-500'
+							}
+						>
+							{formData.address ||
+								t('business.completeSetup.step1.selectSalonAddress') ||
+								'Выберите адрес'}
+						</span>
+						<MapPin className="w-5 h-5 text-gray-400 flex-shrink-0 ml-2" />
+					</button>
+					{showAddressModal && (
+						<AddressSelectModal
+							isOpen={showAddressModal}
+							onClose={() => setShowAddressModal(false)}
+							value={formData.address}
+							initialLat={mapProps.lat}
+							initialLon={mapProps.lon}
+							onSelect={(address: string, lat: number, lon: number) => {
+								onAddressSelect(address, lat, lon);
+								setShowAddressModal(false);
+							}}
+						/>
+					)}
 					{isUpdatingAddress && (
 						<div className="absolute right-3 top-1/2 transform -translate-y-1/2">
 							<div className="animate-spin rounded-full h-4 w-4 border-b-2 border-gray-400"></div>
