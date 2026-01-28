@@ -31,6 +31,7 @@ import { serviceKeys } from '@/hooks/useServices';
 import { staffKeys } from '@/hooks/useStaff';
 import { timeBlockKeys } from '@/hooks/useTimeBlocks';
 import { apiClient } from '@/lib/api-client';
+import { useAuth } from '@/lib/auth-unified';
 import { useTranslation } from '@/contexts/LanguageContext';
 import Image from 'next/image';
 
@@ -45,7 +46,8 @@ export default function OwnerSidebar({
 }: OwnerSidebarProps = {}) {
 	const pathname = usePathname();
 	const router = useRouter();
-	const { logout } = useAuthStore();
+	// Use unified auth system for consistent logout across public and owner parts
+	const { logout } = useAuth();
 	const queryClient = useQueryClient();
 	const { salonId } = useSalonId();
 	const t = useTranslation();
