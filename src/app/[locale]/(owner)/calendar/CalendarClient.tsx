@@ -15,6 +15,7 @@ import { useTimeBlocks } from '@/hooks/useTimeBlocks';
 import { useStaffBySalon } from '@/hooks/useStaff';
 import { useServices } from '@/hooks/useServices';
 import { convertBookingDtoArray } from '@/utils/bookingTransformers';
+import { useAuthStore } from '@/stores/authStore';
 
 // Import calendar components
 import BookingList from './components/BookingList';
@@ -44,6 +45,7 @@ export default function CalendarClient() {
 	const [currentPage, setCurrentPage] = useState(1);
 	const [itemsPerPage] = useState(20);
 	const router = useRouter();
+	const { isOwner } = useAuthStore();
 
 	const {
 		salonId,
@@ -93,8 +95,11 @@ export default function CalendarClient() {
 		}
 	}, [router, salonLoading, hasSalon]);
 
-	// Open booking modal if there's a pending booking after OAuth
+	// Owner calendar: do NOT auto-open BookingModal from pendingBooking (client OAuth flow)
 	useEffect(() => {
+		// This page is for owners; skip client pending booking logic entirely
+		if (isOwner) return;
+
 		const checkPendingBooking = () => {
 			const pendingBooking = localStorage.getItem('pendingBooking');
 			if (pendingBooking && !isBookingModalOpen) {
@@ -119,7 +124,7 @@ export default function CalendarClient() {
 		// Also check after a short delay to catch OAuth redirects
 		const timeout = setTimeout(checkPendingBooking, 500);
 		return () => clearTimeout(timeout);
-	}, [isBookingModalOpen]);
+	}, [isBookingModalOpen, isOwner]);
 
 	const handleNewAppointment = useCallback(() => {
 		// Check if salon has services and staff
