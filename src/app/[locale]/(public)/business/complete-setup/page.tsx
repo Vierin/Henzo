@@ -173,8 +173,6 @@ function BusinessCompleteSetupContent() {
 						isUpdatingAddress={isUpdatingAddress}
 						nameInputRef={nameInputRef}
 						onInputChange={handleInputChange}
-						onMarkerMove={handleMarkerMove}
-						onAddressChange={handleAddressChange}
 						onAddressSelect={handleAddressSelect}
 						t={t}
 					/>

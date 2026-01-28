@@ -3,11 +3,6 @@ import dynamic from 'next/dynamic';
 import { MapPin } from 'lucide-react';
 import { SalonSetupData } from '@/hooks/useSalonSetup';
 
-const MapComponentWithCoords = dynamic(
-	() => import('@/components/MapComponentWithCoords'),
-	{ ssr: false }
-);
-
 // Lazy load AddressSelectModal only when needed (not on initial render)
 const AddressSelectModal = dynamic(
 	() => import('@/components/AddressSelectModal'),
@@ -21,8 +16,6 @@ interface SetupStep1Props {
 	isUpdatingAddress: boolean;
 	nameInputRef: RefObject<HTMLInputElement | null>;
 	onInputChange: (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => void;
-	onMarkerMove: (lat: number, lon: number, address?: string) => void;
-	onAddressChange: (address: string) => void;
 	onAddressSelect: (address: string, lat: number, lon: number) => void;
 	t: (key: string) => string;
 }
@@ -34,8 +27,6 @@ export default function SetupStep1({
 	isUpdatingAddress,
 	nameInputRef,
 	onInputChange,
-	onMarkerMove,
-	onAddressChange,
 	onAddressSelect,
 	t,
 }: SetupStep1Props) {
@@ -76,31 +67,7 @@ export default function SetupStep1({
 				>
 					{t('business.completeSetup.step1.salonAddress')}
 				</label>
-				{/* Map above address field */}
-				{mapProps.lat && mapProps.lon ? (
-					<div className="mb-4 w-full aspect-[4/3] rounded-lg overflow-hidden border border-gray-200 shadow-sm">
-						<MapComponentWithCoords
-							key={`${mapProps.lat}-${mapProps.lon}`}
-							lat={mapProps.lat}
-							lon={mapProps.lon}
-							address={mapProps.address}
-							height="100%"
-							zoom={16}
-							interactive={true}
-							showPopup={false}
-							editable={true}
-							onMarkerMove={onMarkerMove}
-							className="w-full h-full"
-						/>
-					</div>
-				) : (
-					<div className="mb-4 w-full aspect-[4/3] rounded-lg border border-gray-200 bg-gray-50 flex items-center justify-center">
-						<p className="text-sm text-gray-400">
-							{t('business.completeSetup.step1.selectAddressToSeeMap')}
-						</p>
-					</div>
-				)}
-				{/* Address button field below map */}
+				{/* Address button field (opens modal with map) */}
 				<div className="relative">
 					<button
 						type="button"
