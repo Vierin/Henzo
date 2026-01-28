@@ -323,7 +323,6 @@ export default function OwnerSidebar({
 					>
 						{isLoggingOut ? (
 							<>
-								<div className="w-5 h-5 border-2 border-red-600 border-t-transparent rounded-full animate-spin" />
 								<span className="font-medium">
 									{t('owner.dashboard.loggingOut') || 'Logging out...'}
 								</span>
