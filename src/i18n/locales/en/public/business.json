@@ -126,7 +126,12 @@
 		"registrationSuccessful": "Business account created! Complete your salon setup.",
 		"registrationSuccessfulEmail": "Business account created! Please check your email to verify your account.",
 		"failedToRegister": "Failed to register business account",
-		"failedToRegisterGoogle": "Failed to register with Google"
+		"failedToRegisterGoogle": "Failed to register with Google",
+		"magicLinkExpired": "Magic link has expired. Please request a new one.",
+		"invalidMagicLink": "Invalid magic link. Please request a new one.",
+		"verificationFailed": "Failed to verify magic link. Please try again.",
+		"authFailed": "Failed to authenticate. Please try again.",
+		"errorOccurred": "An error occurred. Please try again."
 	},
 	"completeSetup": {
 		"title": "Complete Your Salon Setup",

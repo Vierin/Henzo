@@ -1242,18 +1242,18 @@ export default function BookingModal({
 				const thankYouMsg =
 					t('booking.thankYouForReservation') !==
 					'booking.thankYouForReservation'
-						? t('booking.thankYouForReservation')
+					? t('booking.thankYouForReservation')
 						: t.booking?.thankYouForReservation ||
 							'Thank you for your reservation!';
 				const awaitingMsg =
 					t('booking.awaitingConfirmation') !==
 					'booking.awaitingConfirmation'
-						? t('booking.awaitingConfirmation')
+					? t('booking.awaitingConfirmation')
 						: t.booking?.awaitingConfirmation ||
 							'Awaiting confirmation from the salon';
 				const message =
 					isWithinWorkingHours !== false
-						? `${thankYouMsg} ${awaitingMsg}`
+					? `${thankYouMsg} ${awaitingMsg}`
 						: `${
 								thankYouMsg
 						  } ${

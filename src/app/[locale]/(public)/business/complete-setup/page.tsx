@@ -46,8 +46,8 @@ function BusinessCompleteSetupContent() {
 					if (sessionError) {
 						console.error('❌ Failed to set session from hash:', sessionError);
 						toast.error('Failed to authenticate. Please try again.');
-						// Очищаем hash и редиректим
-						window.history.replaceState(null, '', '/business/complete-setup');
+						// Очищаем hash и редиректим на страницу с ошибкой
+						window.history.replaceState(null, '', '/business/register?error=auth_failed');
 						return;
 					}
 
@@ -60,8 +60,9 @@ function BusinessCompleteSetupContent() {
 					}
 				} catch (error) {
 					console.error('❌ Error handling hash tokens:', error);
-					// Очищаем hash при ошибке
-					window.history.replaceState(null, '', '/business/complete-setup');
+					toast.error('Failed to authenticate. Please try again.');
+					// Очищаем hash при ошибке и редиректим
+					window.history.replaceState(null, '', '/business/register?error=auth_failed');
 				}
 			}
 		};
@@ -75,42 +76,61 @@ function BusinessCompleteSetupContent() {
 			if (!token) return;
 
 			try {
+				console.log('🔍 Verifying business magic link token...');
+				
 				// Проверяем токен и подтверждаем email
 				const result = await apiClient.get<{
 					success: boolean;
 					user: any;
 					emailConfirmed: boolean;
-					loginUrl?: string;
+					magicLinkUrl?: string;
 				}>(`/auth/verify-business-magic-link?token=${token}`);
 
 				if (result.success && result.emailConfirmed) {
-					// Если есть loginUrl, НЕ используем его напрямую (он ведет на hash токены)
-					// Вместо этого проверяем текущую сессию
+					console.log('✅ Magic link verified successfully');
+					
+					// Проверяем текущую сессию
 					const { data: sessionData } = await supabase.auth.getSession();
 
 					if (sessionData?.session) {
-						// Сессия уже установлена
+						// Сессия уже установлена (возможно, через hash токены)
+						console.log('✅ Session already exists');
 						toast.success('Email confirmed! Welcome!');
 						// Убираем токен из URL
 						router.replace('/business/complete-setup');
-					} else if (result.loginUrl) {
-						// Если сессии нет, но есть loginUrl, используем его
-						// Но это должно быть редко, так как пользователь уже должен быть создан
-						console.log('⚠️ No session found, redirecting to loginUrl');
-						window.location.href = result.loginUrl;
 						return;
-					} else {
-						toast.success('Email confirmed! Please login to continue.');
-						router.push(
-							'/login?email=' + encodeURIComponent(result.user.email)
-						);
 					}
+
+					// Если сессии нет, но есть magicLinkUrl, редиректим на него
+					// Magic link от Supabase редиректит обратно на эту страницу с токенами в hash
+					if (result.magicLinkUrl) {
+						console.log('🔄 Redirecting to Supabase magic link...');
+						// Редиректим на magic link URL от Supabase
+						// Он вернет пользователя обратно на эту страницу с токенами в hash
+						window.location.href = result.magicLinkUrl;
+						return;
+					}
+
+					// Если нет magicLinkUrl, просим пользователя войти
+					console.log('⚠️ No magic link URL, redirecting to login');
+					toast.success('Email confirmed! Please login to continue.');
+					router.push(
+						'/login?email=' + encodeURIComponent(result.user.email)
+					);
 				}
 			} catch (error: any) {
-				console.error('Error verifying magic link:', error);
-				toast.error(error.message || 'Failed to verify magic link');
-				// Убираем токен из URL при ошибке
-				router.replace('/business/complete-setup');
+				console.error('❌ Error verifying magic link:', error);
+				const errorMessage = error.message || 'Failed to verify magic link';
+				toast.error(errorMessage);
+				
+				// Определяем тип ошибки для лучшего UX
+				if (errorMessage.includes('expired')) {
+					router.replace('/business/register?error=link_expired');
+				} else if (errorMessage.includes('Invalid')) {
+					router.replace('/business/register?error=invalid_link');
+				} else {
+					router.replace('/business/register?error=verification_failed');
+				}
 			}
 		};
 

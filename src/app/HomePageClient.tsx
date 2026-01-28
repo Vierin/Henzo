@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { useQueryClient } from '@tanstack/react-query';
 import PublicHeader from '@/components/PublicHeader';
 import SearchBookingForm from '@/components/SearchBookingForm';
@@ -8,6 +9,8 @@ import MobileSearchTrigger from '@/components/MobileSearchTrigger';
 import RecommendedSalons from '@/components/RecommendedSalons';
 import CategoriesNavigation from '@/components/CategoriesNavigation';
 import { useTranslation } from '@/contexts/LanguageContext';
+import { supabase } from '@/lib/supabase';
+import { extractLocaleFromPath, withLocale } from '@/i18n/routing';
 import Image from 'next/image';
 import Link from 'next/link';
 import { ArrowRight, CalendarDays, Clock4, Timer } from 'lucide-react';
@@ -42,6 +45,74 @@ export default function HomePageClient({ initialDictionary }: HomePageClientProp
 	}, [effectiveInitialDictionary]);
 	
 	const t = useTranslation();
+	const router = useRouter();
+
+	// Обработка hash токенов от Supabase magic link на главной странице
+	useEffect(() => {
+		const handleHashTokens = async () => {
+			// Проверяем hash фрагмент на наличие токенов
+			const hash = window.location.hash.substring(1);
+			if (!hash) return;
+
+			const hashParams = new URLSearchParams(hash);
+			const accessToken = hashParams.get('access_token');
+			const refreshToken = hashParams.get('refresh_token');
+			const type = hashParams.get('type');
+
+			// Если это magic link токены
+			if (accessToken && refreshToken && type === 'magiclink') {
+				try {
+					console.log('✅ Found magic link tokens in hash on homepage, setting session...');
+					
+					// Устанавливаем сессию
+					const { data: sessionData, error: sessionError } =
+						await supabase.auth.setSession({
+							access_token: accessToken,
+							refresh_token: refreshToken,
+						});
+
+					if (sessionError) {
+						console.error('❌ Failed to set session from hash:', sessionError);
+						// Очищаем hash и редиректим на страницу регистрации с ошибкой
+						window.history.replaceState(null, '', '/business/register?error=auth_failed');
+						return;
+					}
+
+					if (sessionData?.session) {
+						console.log('✅ Session set successfully from hash tokens');
+						
+						// Проверяем роль пользователя для редиректа
+						const userRole = sessionData.session.user.app_metadata?.role || 
+							sessionData.session.user.user_metadata?.role;
+						
+						// Очищаем hash из URL
+						window.history.replaceState(null, '', '/');
+						
+						// Редиректим в зависимости от роли с учетом локали
+						const currentPath = window.location.pathname;
+						const locale = extractLocaleFromPath(currentPath) ?? 'en';
+						
+						if (userRole === 'OWNER') {
+							console.log('🔄 Redirecting OWNER to complete-setup');
+							router.push(withLocale('/business/complete-setup', locale as 'en' | 'ru' | 'vi'));
+						} else if (userRole === 'CLIENT') {
+							console.log('🔄 Redirecting CLIENT to dashboard');
+							router.push(withLocale('/dashboard', locale as 'en' | 'ru' | 'vi'));
+						} else {
+							// Обновляем страницу для применения изменений
+							router.refresh();
+						}
+					}
+				} catch (error) {
+					console.error('❌ Error handling hash tokens:', error);
+					// Очищаем hash при ошибке и редиректим
+					window.history.replaceState(null, '', '/business/register?error=auth_failed');
+				}
+			}
+		};
+
+		handleHashTokens();
+	}, [router]);
 
 	// Preload critical data for better performance
 	useEffect(() => {

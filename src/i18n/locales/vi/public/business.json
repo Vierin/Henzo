@@ -137,7 +137,12 @@
 		"registrationSuccessful": "Tài khoản doanh nghiệp đã được tạo! Hoàn tất thiết lập salon của bạn.",
 		"registrationSuccessfulEmail": "Tài khoản doanh nghiệp đã được tạo! Vui lòng kiểm tra email để xác minh tài khoản của bạn.",
 		"failedToRegister": "Không thể đăng ký tài khoản doanh nghiệp",
-		"failedToRegisterGoogle": "Không thể đăng ký bằng Google"
+		"failedToRegisterGoogle": "Không thể đăng ký bằng Google",
+		"magicLinkExpired": "Liên kết đăng ký đã hết hạn. Vui lòng yêu cầu liên kết mới.",
+		"invalidMagicLink": "Liên kết đăng ký không hợp lệ. Vui lòng yêu cầu liên kết mới.",
+		"verificationFailed": "Không thể xác minh liên kết. Vui lòng thử lại.",
+		"authFailed": "Không thể xác thực. Vui lòng thử lại.",
+		"errorOccurred": "Đã xảy ra lỗi. Vui lòng thử lại."
 	},
 	"completeSetup": {
 		"title": "Hoàn tất thiết lập salon của bạn",

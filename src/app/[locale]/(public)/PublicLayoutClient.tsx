@@ -27,8 +27,14 @@ export default function PublicLayoutClient({
 	const isBusinessPage = pathWithoutLocale === '/business';
 
 	// Обработка hash токенов от Supabase magic link (если пользователь попал на главную с токенами)
+	// Исключаем complete-setup, так как там своя обработка
 	useEffect(() => {
 		const handleHashTokens = async () => {
+			// Пропускаем обработку для complete-setup (там своя логика)
+			if (pathWithoutLocale === '/business/complete-setup') {
+				return;
+			}
+
 			// Проверяем hash фрагмент на наличие токенов
 			const hash = window.location.hash.substring(1);
 			if (!hash) return;
@@ -86,7 +92,7 @@ export default function PublicLayoutClient({
 		};
 
 		handleHashTokens();
-	}, [pathname, router]);
+	}, [pathname, pathWithoutLocale, router]);
 
 	useEffect(() => {
 		const handleScroll = () => {

@@ -86,6 +86,35 @@ function BusinessRegisterForm() {
 		}
 	}, [tokenFromUrl, emailFromUrl, nameFromUrl, router]);
 
+	// Обработка ошибок из query параметров
+	useEffect(() => {
+		const errorParam = searchParams.get('error');
+		if (errorParam) {
+			let errorMessage = '';
+			switch (errorParam) {
+				case 'link_expired':
+					errorMessage = t('business.register.magicLinkExpired') || 'Magic link has expired. Please request a new one.';
+					break;
+				case 'invalid_link':
+					errorMessage = t('business.register.invalidMagicLink') || 'Invalid magic link. Please request a new one.';
+					break;
+				case 'verification_failed':
+					errorMessage = t('business.register.verificationFailed') || 'Failed to verify magic link. Please try again.';
+					break;
+				case 'auth_failed':
+					errorMessage = t('business.register.authFailed') || 'Failed to authenticate. Please try again.';
+					break;
+				default:
+					errorMessage = t('business.register.errorOccurred') || 'An error occurred. Please try again.';
+			}
+			if (errorMessage) {
+				toast.error(errorMessage);
+				// Убираем error из URL
+				router.replace('/business/register');
+			}
+		}
+	}, [searchParams, router, t]);
+
 	// Редирект если уже авторизован
 	useEffect(() => {
 		if (isAuthenticated && user) {
