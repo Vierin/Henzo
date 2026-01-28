@@ -105,30 +105,15 @@ function PublicHeaderContent() {
 	const handleLogout = async () => {
 		try {
 			setShowProfileDropdown(false);
-			
-			// Get localized home URL
-			const homeUrl = withLocale('/', currentLocale as 'en' | 'ru' | 'vi');
-			
-			// Prefetch главной страницы для быстрой загрузки
-			router.prefetch(homeUrl);
-			
-			// Оптимистичный редирект: сразу переходим на главную страницу
-			// Это предотвращает белый экран и долгое ожидание
-			window.location.href = homeUrl;
-			
-			// Выполняем logout в фоне (не ждем завершения)
-			// Это не блокирует редирект и улучшает UX
-			// Используем setTimeout для гарантированного выполнения даже после редиректа
-			setTimeout(() => {
-				logout().catch((error) => {
-					console.debug('Logout error (background, non-critical):', error);
-				});
-			}, 0);
+
+			// Корректно выходим и ждём очистки сессии,
+			// чтобы на мобильных не оставалась активная Supabase-сессия
+			await logout();
 		} catch (error) {
 			console.error('Logout error:', error);
-			// Even if logout fails, redirect to home with locale
+		} finally {
 			const homeUrl = withLocale('/', currentLocale as 'en' | 'ru' | 'vi');
-			window.location.href = homeUrl;
+			router.replace(homeUrl);
 		}
 	};
 

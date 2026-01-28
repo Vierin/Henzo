@@ -70,34 +70,19 @@ export default function OwnerHeader() {
 
 	const handleLogout = async () => {
 		if (isLoggingOut) return; // Prevent double logout
-		
+
 		try {
 			setIsLoggingOut(true);
 			setShowProfileDropdown(false);
-			
-			// Get localized home URL
-			const homeUrl = withLocale('/', currentLocale as 'en' | 'ru' | 'vi');
-			
-			// Prefetch главной страницы для быстрой загрузки
-			router.prefetch(homeUrl);
-			
-			// Оптимистичный редирект: сразу переходим на главную страницу
-			// Это предотвращает белый экран и долгое ожидание
-			window.location.href = homeUrl;
-			
-			// Выполняем logout в фоне (не ждем завершения)
-			// Это не блокирует редирект и улучшает UX
-			// Используем setTimeout для гарантированного выполнения даже после редиректа
-			setTimeout(() => {
-				logout().catch((error) => {
-					console.debug('Logout error (background, non-critical):', error);
-				});
-			}, 0);
+
+			// Сначала корректно выходим из Supabase/локального стейта,
+			// чтобы middleware и Login не считали пользователя залогиненным
+			await logout();
 		} catch (error) {
 			console.error('Logout error:', error);
-			// Even if logout fails, redirect to home with locale
+		} finally {
 			const homeUrl = withLocale('/', currentLocale as 'en' | 'ru' | 'vi');
-			window.location.href = homeUrl;
+			router.replace(homeUrl);
 		}
 	};
 
