@@ -13,6 +13,7 @@ import SetupNavigation from './components/SetupNavigation';
 import { apiClient } from '@/lib/api-client';
 import toast from 'react-hot-toast';
 import { supabase } from '@/lib/supabase';
+import { extractLocaleFromPath } from '@/i18n/routing';
 
 function BusinessCompleteSetupContent() {
 	const searchParams = useSearchParams();
@@ -77,6 +78,7 @@ function BusinessCompleteSetupContent() {
 
 			try {
 				console.log('🔍 Verifying business magic link token...');
+				const locale = extractLocaleFromPath(window.location.pathname) ?? 'vi';
 				
 				// Проверяем токен и подтверждаем email
 				const result = await apiClient.get<{
@@ -84,7 +86,7 @@ function BusinessCompleteSetupContent() {
 					user: any;
 					emailConfirmed: boolean;
 					magicLinkUrl?: string;
-				}>(`/auth/verify-business-magic-link?token=${token}`);
+				}>(`/auth/verify-business-magic-link?token=${token}&locale=${encodeURIComponent(locale)}`);
 
 				if (result.success && result.emailConfirmed) {
 					console.log('✅ Magic link verified successfully');

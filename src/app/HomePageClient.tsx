@@ -85,8 +85,8 @@ export default function HomePageClient({ initialDictionary }: HomePageClientProp
 						const userRole = sessionData.session.user.app_metadata?.role || 
 							sessionData.session.user.user_metadata?.role;
 						
-						// Очищаем hash из URL
-						window.history.replaceState(null, '', '/');
+						// Очищаем hash из URL (сохраняем текущий path, иначе потеряем locale)
+						window.history.replaceState(null, '', window.location.pathname);
 						
 						// Редиректим в зависимости от роли с учетом локали
 						const currentPath = window.location.pathname;
