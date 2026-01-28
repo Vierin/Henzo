@@ -103,7 +103,13 @@
 		"agreement": "Bằng cách gửi biểu mẫu này, bạn đồng ý với các điều khoản dịch vụ.",
 		"successMessage": "Cảm ơn! Chúng tôi sẽ sớm liên hệ với bạn về chương trình beta.",
 		"magicLinkSent": "Liên kết đăng ký đã được gửi đến email của bạn! Vui lòng kiểm tra hộp thư để hoàn tất đăng ký.",
-		"errorMessage": "Không thể gửi yêu cầu. Vui lòng thử lại."
+		"errorMessage": "Không thể gửi yêu cầu. Vui lòng thử lại.",
+		"errors": {
+			"fullNameMinLength": "Họ và tên phải có ít nhất 2 ký tự",
+			"invalidEmail": "Vui lòng nhập địa chỉ email hợp lệ",
+			"passwordMinLength": "Mật khẩu phải có ít nhất 8 ký tự"
+		},
+		"businessAccountAlreadyExists": "Tài khoản doanh nghiệp với email này đã tồn tại. Vui lòng đăng nhập thay vì đăng ký."
 	},
 	"register": {
 		"title": "Tạo tài khoản doanh nghiệp của bạn",

@@ -18,7 +18,58 @@ function BusinessCompleteSetupContent() {
 	const searchParams = useSearchParams();
 	const router = useRouter();
 	const token = searchParams.get('token');
-	// Обработка magic link токена
+	
+	// Обработка hash фрагмента с токенами от Supabase (если пользователь попал сюда через Supabase magic link)
+	useEffect(() => {
+		const handleHashTokens = async () => {
+			// Проверяем hash фрагмент на наличие токенов
+			const hash = window.location.hash.substring(1);
+			if (!hash) return;
+
+			const hashParams = new URLSearchParams(hash);
+			const accessToken = hashParams.get('access_token');
+			const refreshToken = hashParams.get('refresh_token');
+			const type = hashParams.get('type');
+
+			// Если это magic link для бизнес-регистрации
+			if (accessToken && refreshToken && type === 'magiclink') {
+				try {
+					console.log('✅ Found tokens in hash, setting session...');
+					
+					// Устанавливаем сессию
+					const { data: sessionData, error: sessionError } =
+						await supabase.auth.setSession({
+							access_token: accessToken,
+							refresh_token: refreshToken,
+						});
+
+					if (sessionError) {
+						console.error('❌ Failed to set session from hash:', sessionError);
+						toast.error('Failed to authenticate. Please try again.');
+						// Очищаем hash и редиректим
+						window.history.replaceState(null, '', '/business/complete-setup');
+						return;
+					}
+
+					if (sessionData?.session) {
+						console.log('✅ Session set successfully from hash tokens');
+						// Очищаем hash из URL
+						window.history.replaceState(null, '', '/business/complete-setup');
+						// Обновляем страницу для применения изменений
+						router.refresh();
+					}
+				} catch (error) {
+					console.error('❌ Error handling hash tokens:', error);
+					// Очищаем hash при ошибке
+					window.history.replaceState(null, '', '/business/complete-setup');
+				}
+			}
+		};
+
+		handleHashTokens();
+	}, [router]);
+
+	// Обработка magic link токена из query параметров
 	useEffect(() => {
 		const handleMagicLink = async () => {
 			if (!token) return;
@@ -33,21 +84,21 @@ function BusinessCompleteSetupContent() {
 				}>(`/auth/verify-business-magic-link?token=${token}`);
 
 				if (result.success && result.emailConfirmed) {
-					// Если есть loginUrl, используем его для автоматического логина
-					if (result.loginUrl) {
-						// Редиректим на magic link для автоматического логина
-						window.location.href = result.loginUrl;
-						return;
-					}
-
-					// Если нет loginUrl, проверяем текущую сессию
+					// Если есть loginUrl, НЕ используем его напрямую (он ведет на hash токены)
+					// Вместо этого проверяем текущую сессию
 					const { data: sessionData } = await supabase.auth.getSession();
 
 					if (sessionData?.session) {
-						// Сессия уже обновлена автоматически через Supabase
+						// Сессия уже установлена
 						toast.success('Email confirmed! Welcome!');
 						// Убираем токен из URL
 						router.replace('/business/complete-setup');
+					} else if (result.loginUrl) {
+						// Если сессии нет, но есть loginUrl, используем его
+						// Но это должно быть редко, так как пользователь уже должен быть создан
+						console.log('⚠️ No session found, redirecting to loginUrl');
+						window.location.href = result.loginUrl;
+						return;
 					} else {
 						toast.success('Email confirmed! Please login to continue.');
 						router.push(

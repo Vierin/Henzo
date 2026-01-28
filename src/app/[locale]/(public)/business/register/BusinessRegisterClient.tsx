@@ -34,8 +34,29 @@ function BusinessRegisterForm() {
 	const router = useRouter();
 	const { registerOwner, isAuthenticated, user } = useAuth();
 
-	// Обновляем форму при изменении параметров URL
+	// Восстанавливаем данные формы из sessionStorage или URL параметров
 	useEffect(() => {
+		// Сначала проверяем sessionStorage (данные из бета-формы)
+		try {
+			const savedData = sessionStorage.getItem('businessRegistrationData');
+			if (savedData) {
+				const parsed = JSON.parse(savedData);
+				// Проверяем, что данные не старше 24 часов
+				if (parsed.timestamp && Date.now() - parsed.timestamp < 24 * 60 * 60 * 1000) {
+					setFormData((prev) => ({
+						...prev,
+						email: parsed.email || prev.email,
+						name: parsed.name || prev.name,
+					}));
+					// Удаляем сохраненные данные после использования
+					sessionStorage.removeItem('businessRegistrationData');
+				}
+			}
+		} catch (e) {
+			console.error('Error reading saved registration data:', e);
+		}
+
+		// Затем обновляем из URL параметров (приоритет выше)
 		if (emailFromUrl) {
 			setFormData((prev) => ({
 				...prev,

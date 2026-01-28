@@ -98,7 +98,8 @@
 			"fullNameMinLength": "Full name must be at least 2 characters",
 			"invalidEmail": "Please enter a valid email address",
 			"passwordMinLength": "Password must be at least 8 characters"
-		}
+		},
+		"businessAccountAlreadyExists": "A business account with this email already exists. Please login instead."
 	},
 	"register": {
 		"title": "Create your business account",

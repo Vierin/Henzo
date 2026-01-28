@@ -51,6 +51,13 @@ export default function BetaRequestForm() {
 
 	const onSubmit = async (data: BetaRequestFormData) => {
 		try {
+			// Сохраняем данные формы в sessionStorage для восстановления после magic link
+			sessionStorage.setItem('businessRegistrationData', JSON.stringify({
+				name: data.fullName,
+				email: data.email,
+				timestamp: Date.now(),
+			}));
+
 			await apiClient.post('/auth/send-business-magic-link', {
 				name: data.fullName,
 				email: data.email,
@@ -71,7 +78,7 @@ export default function BetaRequestForm() {
 				errorMessage.includes('business account')
 			) {
 				errorMessage =
-					t('owner.profileSettings.businessAccountAlreadyExists');
+					t('business.betaForm.businessAccountAlreadyExists');
 			}
 			handleError(error, errorMessage);
 		}
