@@ -13,7 +13,6 @@
 	"salonSettings": "Cài đặt salon",
 	"profileSettings": "Cài đặt hồ sơ",
 	"logOut": "Đăng xuất",
-	"loggingOut": "Đang đăng xuất...",
 	"welcomeBack": "Chào mừng trở lại!",
 	"businessOverview": "Đây là tổng quan doanh nghiệp của bạn",
 	"totalRevenue": "Tổng doanh thu",
@@ -79,5 +78,6 @@
 	"noPhotosWarning": "Salon được hiển thị trong tìm kiếm và danh mục với hình ảnh mặc định.",
 	"addPhotoLink": "Thêm ít nhất một ảnh salon trên trang cài đặt",
 	"averageVisits": "Trung bình: {avg} lần thăm",
-	"clientsWith2Visits": "{count} với 2 lần thăm"
+	"clientsWith2Visits": "{count} với 2 lần thăm",
+	"clients": "Khách hàng"
 }

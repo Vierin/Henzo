@@ -455,10 +455,11 @@ export default function SalonInfoClient() {
 					</Suspense>
 				</div>
 
-				<ReminderSettingsSection
+				{/* ReminderSettingsSection скрыт */}
+				{/* <ReminderSettingsSection
 					intervals={formData.reminderSettings.intervals}
 					onChange={handleReminderChange}
-				/>
+				/> */}
 
 				{/* Submit Button */}
 				<div className="flex justify-end">

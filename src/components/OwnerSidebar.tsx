@@ -24,6 +24,7 @@ import {
 	ChevronDown,
 	ChevronUp,
 	CreditCard,
+	UserCheck,
 } from 'lucide-react';
 import { useSalonId } from '@/hooks/useSalons';
 import { bookingKeys } from '@/hooks/useBookings';
@@ -259,6 +260,14 @@ export default function OwnerSidebar({
 						t('owner.staff.title'),
 						pathNoLocale.startsWith('/staff'),
 						'staff'
+					)}
+
+					{renderNavItem(
+						'/clients',
+						<UserCheck className="w-5 h-5" />,
+						t('owner.dashboard.clients'),
+						pathNoLocale.startsWith('/clients'),
+						'clients'
 					)}
 
 					{renderNavItem(

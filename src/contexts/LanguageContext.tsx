@@ -90,7 +90,8 @@ export function LanguageProvider({
 		pathNoLocale.startsWith('/calendar') ||
 		pathNoLocale.startsWith('/marketing') ||
 		pathNoLocale.startsWith('/profile-settings') ||
-		pathNoLocale.startsWith('/subscription');
+		pathNoLocale.startsWith('/subscription') ||
+		pathNoLocale.startsWith('/clients');
 
 	const isClientPage =
 		pathNoLocale.startsWith('/dashboard') ||
@@ -143,6 +144,8 @@ export function LanguageProvider({
 		ownerModule = 'owner/marketing';
 	} else if (pathNoLocale.startsWith('/subscription')) {
 		ownerModule = 'owner/subscription';
+	} else if (pathNoLocale.startsWith('/clients')) {
+		ownerModule = 'owner/clients';
 	}
 
 	// Check for homepage (root path)

@@ -13,7 +13,6 @@
 	"salonSettings": "Salon Settings",
 	"profileSettings": "Profile Settings",
 	"logOut": "Log Out",
-	"loggingOut": "Logging out...",
 	"welcomeBack": "Welcome back!",
 	"businessOverview": "Here's your business overview",
 	"totalRevenue": "Total Revenue",
@@ -79,5 +78,6 @@
 	"noPhotosWarning": "Salon is displayed in search and categories with a default image.",
 	"addPhotoLink": "Add at least one salon photo on the settings page",
 	"averageVisits": "Average: {avg} visits",
-	"clientsWith2Visits": "{count} with 2 visits"
+	"clientsWith2Visits": "{count} with 2 visits",
+	"clients": "Clients"
 }
