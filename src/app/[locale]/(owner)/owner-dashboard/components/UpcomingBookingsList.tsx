@@ -9,6 +9,8 @@ import { getLocalizedServiceName } from '@/utils/serviceLocalization';
 interface UpcomingBookingsListProps {
 	bookings: Booking[];
 	loading: boolean;
+	title?: string;
+	emptyMessage?: string;
 	onEditBooking: (booking: Booking) => void;
 	onCancelBooking: (bookingId: string) => void;
 	onConfirmBooking: (bookingId: string) => void;
@@ -18,6 +20,8 @@ interface UpcomingBookingsListProps {
 export default function UpcomingBookingsList({
 	bookings,
 	loading,
+	title,
+	emptyMessage,
 	onEditBooking,
 	onCancelBooking,
 	onConfirmBooking,
@@ -177,11 +181,14 @@ export default function UpcomingBookingsList({
 		return null;
 	};
 
+	const sectionTitle = title ?? t('owner.dashboard.upcomingBookings');
+	const sectionEmptyMessage = emptyMessage ?? t('owner.dashboard.noUpcomingBookingsNext7Days');
+
 	return (
 		<div className="bg-white rounded-xl border border-gray-200 overflow-hidden shadow-sm">
 			<div className="p-4 sm:p-6 border-b border-gray-200">
 				<h2 className="text-lg sm:text-xl font-semibold text-gray-900">
-					{t('owner.dashboard.upcomingBookings')}
+					{sectionTitle}
 				</h2>
 			</div>
 
@@ -217,7 +224,7 @@ export default function UpcomingBookingsList({
 					) : bookings.length === 0 ? (
 						<div className="px-6 py-8 text-center" role="status">
 							<p className="text-gray-600">
-								{t('owner.dashboard.noUpcomingBookingsNext7Days')}
+								{sectionEmptyMessage}
 							</p>
 						</div>
 					) : (
@@ -336,7 +343,7 @@ export default function UpcomingBookingsList({
 				) : bookings.length === 0 ? (
 					<div className="px-4 py-8 text-center" role="status">
 						<p className="text-gray-600">
-							{t('owner.dashboard.noUpcomingBookingsNext7Days')}
+							{sectionEmptyMessage}
 						</p>
 					</div>
 				) : (

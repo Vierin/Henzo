@@ -238,6 +238,21 @@ export default function ServicesClient() {
 		}
 	};
 
+	// Helper function to get localized service name
+	const getLocalizedServiceName = (service: Service) => {
+		if (!service) return '';
+		switch (currentLang) {
+			case 'vi':
+				return service.nameVi || service.name;
+			case 'ru':
+				return service.nameRu || service.name;
+			case 'en':
+				return service.nameEn || service.name;
+			default:
+				return service.name;
+		}
+	};
+
 	// Helper function to get group by ID from groups list
 	const getGroupById = (groupId?: string | null) => {
 		if (!groupId) return null;
@@ -250,7 +265,8 @@ export default function ServicesClient() {
 			.filter((service) => {
 				// Фильтр по поиску (только если больше 2 символов или пустой)
 				if (debouncedSearchQuery && debouncedSearchQuery.length > 2) {
-					const matchesSearch = service.name
+					const serviceName = getLocalizedServiceName(service);
+					const matchesSearch = serviceName
 						.toLowerCase()
 						.includes(debouncedSearchQuery.toLowerCase());
 					if (!matchesSearch) return false;
@@ -273,7 +289,9 @@ export default function ServicesClient() {
 
 				switch (sortBy) {
 					case 'name':
-						comparison = a.name.localeCompare(b.name);
+						const nameA = getLocalizedServiceName(a);
+						const nameB = getLocalizedServiceName(b);
+						comparison = nameA.localeCompare(nameB);
 						break;
 					case 'price':
 						comparison = a.price - b.price;
@@ -294,6 +312,7 @@ export default function ServicesClient() {
 		selectedGroup,
 		sortBy,
 		sortOrder,
+		currentLang,
 	]);
 
 	// Функции для управления фильтрами
@@ -362,7 +381,7 @@ export default function ServicesClient() {
 				<div
 					className="grid gap-3 md:gap-4 
             grid-cols-1
-            sm:grid-cols-[repeat(4,minmax(0,1fr))_100px]"
+            sm:grid-cols-[repeat(4,minmax(0,1fr))_150px]"
 				>
 					{/* Поиск */}
 					<div className="flex flex-col justify-between">
@@ -687,7 +706,7 @@ export default function ServicesClient() {
 										key={service.id}
 										className="grid grid-cols-6 px-6 py-4 text-sm text-gray-800"
 									>
-										<div className="font-semibold">{service.name}</div>
+										<div className="font-semibold">{getLocalizedServiceName(service)}</div>
 										<div className="text-gray-600">
 											{service.service_categories ? (
 												<span className="inline-flex items-center px-2 py-1 text-xs font-medium bg-gray-100 text-gray-700 rounded-full">
@@ -771,12 +790,12 @@ export default function ServicesClient() {
 						{/* Mobile Card View */}
 						<div className="md:hidden divide-y divide-[#f1d9d7]">
 							{filteredServices.map((service) => (
-								<div key={service.id} className="p-4">
-									<div className="flex items-start justify-between mb-3">
-										<div className="flex-1 min-w-0">
-											<h3 className="font-semibold text-gray-900 truncate">
-												{service.name}
-											</h3>
+									<div key={service.id} className="p-4">
+										<div className="flex items-start justify-between mb-3">
+											<div className="flex-1 min-w-0">
+												<h3 className="font-semibold text-gray-900 truncate">
+													{getLocalizedServiceName(service)}
+												</h3>
 											<div className="text-lg font-bold text-[#ff5b5b] mt-1">
 												{formatVND(service.price)}
 											</div>

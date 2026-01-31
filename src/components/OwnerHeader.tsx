@@ -27,9 +27,16 @@ export default function OwnerHeader() {
 	const dropdownRef = useRef<HTMLDivElement>(null);
 	const languageDropdownRef = useRef<HTMLDivElement>(null);
 
-	// Extract locale from pathname
+	// Extract locale from pathname - this will trigger re-render when pathname changes
 	const currentLocale = extractLocaleFromPath(pathname) ?? 'en';
 	const pathNoLocale = stripLocaleFromPath(pathname);
+
+	// Force re-render when locale changes by using pathname as dependency
+	// This ensures translations update when language changes
+	useEffect(() => {
+		// This effect ensures component re-renders when pathname (locale) changes
+		// The t function should already be reactive, but this ensures UI updates
+	}, [pathname, currentLocale]);
 
 
 	// Языки

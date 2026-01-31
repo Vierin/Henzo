@@ -125,7 +125,7 @@ export default function SubscriptionClient() {
 										{t('owner.subscription.trialPeriod')} {t('owner.subscription.henzoPro')}
 									</h2>
 
-									<p className="text-gray-500 text-sm font-medium">Сейчас у вас есть полный доступ ко всем функциям платформы.</p>
+									<p className="text-gray-500 text-sm font-medium">{t('owner.subscription.fullAccessToAllFeatures')}</p>
 									<div className='mt-2'>
 										<p className="text-gray-700 text-sm font-medium">
 											{t('owner.subscription.trialValidUntil')} {trialEndDateFormatted}

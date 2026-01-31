@@ -58,6 +58,23 @@ export default function OwnerDashboardClient() {
 	// Calculate stats using optimized hook
 	const stats = useDashboardStats(bookings, period);
 
+	// Pending bookings (all PENDING in fetched window — same as mobile, for confirm/reject)
+	const pendingBookings = useMemo(() => {
+		const now = new Date();
+		return bookings
+			.filter((booking) => {
+				const bookingDate = safeParseDate(booking.time);
+				if (!bookingDate) return false;
+				return booking.status === 'PENDING' && bookingDate >= now;
+			})
+			.sort((a, b) => {
+				const dateA = safeParseDate(a.time);
+				const dateB = safeParseDate(b.time);
+				if (!dateA || !dateB) return 0;
+				return dateA.getTime() - dateB.getTime();
+			});
+	}, [bookings]);
+
 	// Upcoming bookings (next 7 days, not past, confirmed or pending, max 12)
 	const upcomingBookings = useMemo(() => {
 		const now = new Date();
@@ -317,6 +334,20 @@ export default function OwnerDashboardClient() {
 					}
 				/>
 			</div>
+
+			{/* Pending confirmations (all PENDING — same data as mobile dashboard) */}
+			{pendingBookings.length > 0 && (
+				<UpcomingBookingsList
+					bookings={pendingBookings}
+					loading={bookingsLoading}
+					title={t('owner.dashboard.pendingConfirmations')}
+					emptyMessage={t('owner.dashboard.noPendingBookings')}
+					onEditBooking={handleEditBooking}
+					onCancelBooking={handleCancelBooking}
+					onConfirmBooking={handleConfirmBooking}
+					onRejectBooking={handleRejectBooking}
+				/>
+			)}
 
 			{/* Upcoming Bookings List */}
 			<UpcomingBookingsList

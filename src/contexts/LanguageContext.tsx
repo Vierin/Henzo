@@ -258,6 +258,10 @@ export function LanguageProvider({
 		modulesToLoad.push('owner/feedback');
 		// Load onboarding module for OnboardingChecklist component on dashboard
 		modulesToLoad.push('owner/onboarding');
+		// Load header module for OwnerHeader component
+		modulesToLoad.push('ui/header');
+		// Load footer module for footer links in header dropdown
+		modulesToLoad.push('ui/footer');
 		// Load servicesNew module for EditServiceModal translations on /services page
 		if (pathNoLocale.startsWith('/services') && !pathNoLocale.includes('/new')) {
 			modulesToLoad.push('owner/servicesNew');

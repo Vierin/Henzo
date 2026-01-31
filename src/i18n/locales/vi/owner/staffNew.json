@@ -27,5 +27,6 @@
 	"updatedSuccessfully": "Nhân viên đã được cập nhật thành công!",
 	"deletedSuccessfully": "Nhân viên đã được xóa thành công!",
 	"failedToUpdate": "Không thể cập nhật nhân viên",
-	"failedToDelete": "Không thể xóa nhân viên"
+	"failedToDelete": "Không thể xóa nhân viên",
+	"servicesHelp": "Chọn các dịch vụ mà nhân viên này có thể thực hiện."
 }

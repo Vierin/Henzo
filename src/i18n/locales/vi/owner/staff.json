@@ -28,5 +28,8 @@
 	"phonePlaceholder": "+1 (555) 123-4567",
 	"saveChanges": "Lưu thay đổi",
 	"saving": "Đang lưu...",
-	"loading": "Đang tải..."
+	"loading": "Đang tải...",
+	"services": "Dịch vụ",
+	"servicesOptional": "tùy chọn",
+	"allServices": "Tất cả dịch vụ"
 }

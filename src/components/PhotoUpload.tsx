@@ -201,12 +201,12 @@ export default function PhotoUpload({
 								alt={`Salon photo ${index + 1}`}
 								width={100}
 								height={96}
-								className="w-full h-24 object-cover rounded-lg"
+								className="w-full aspect-[4/3] object-cover rounded-lg"
 							/>
 							{!disabled && (
 								<button
 									onClick={() => removePhoto(index)}
-									className="absolute top-2 right-2 p-1 bg-red-600 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+									className="absolute top-2 right-2 p-1 bg-red-400 !text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
 								>
 									<svg
 										className="h-4 w-4"
@@ -230,8 +230,8 @@ export default function PhotoUpload({
 
 			{/* Progress indicator */}
 			{photos.length > 0 && (
-				<p className="text-sm text-gray-500 text-center">
-					{photos.length} of {maxPhotos} photos uploaded
+				<p className="text-sm text-gray-500 text-center font-medium">
+					{photos.length} / {maxPhotos} 
 				</p>
 			)}
 		</div>

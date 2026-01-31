@@ -26,6 +26,8 @@
 	"upcomingBookings": "Предстоящие записи",
 	"noUpcomingBookings": "Нет предстоящих записей",
 	"noUpcomingBookingsNext7Days": "Нет предстоящих записей в ближайшие 7 дней",
+	"pendingConfirmations": "Ожидают подтверждения",
+	"noPendingBookings": "Нет записей, ожидающих подтверждения",
 	"loadingBookings": "Загрузка записей...",
 	"topSellingServices": "Популярные услуги",
 	"noCompletedServices": "Пока нет завершенных услуг",

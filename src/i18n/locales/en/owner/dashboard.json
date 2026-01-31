@@ -26,6 +26,8 @@
 	"upcomingBookings": "Upcoming Bookings",
 	"noUpcomingBookings": "No upcoming bookings",
 	"noUpcomingBookingsNext7Days": "No upcoming bookings in the next 7 days",
+	"pendingConfirmations": "Pending confirmations",
+	"noPendingBookings": "No pending bookings to confirm",
 	"loadingBookings": "Loading bookings...",
 	"topSellingServices": "Top Selling Services",
 	"noCompletedServices": "No completed services yet",

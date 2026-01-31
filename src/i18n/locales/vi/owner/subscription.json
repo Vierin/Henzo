@@ -23,6 +23,7 @@
 	"trialActive": "Giai đoạn dùng thử đang hoạt động",
 	"trialDaysLeft": "Còn {{days}} ngày trong giai đoạn dùng thử",
 	"trialEnded": "Giai đoạn dùng thử đã kết thúc",
+	"fullAccessToAllFeatures": "Hiện tại bạn có quyền truy cập đầy đủ vào tất cả các tính năng của nền tảng.",
 	"freemium": {
 		"masters": "Tối đa 5 thợ",
 		"services": "Tối đa 40 dịch vụ",

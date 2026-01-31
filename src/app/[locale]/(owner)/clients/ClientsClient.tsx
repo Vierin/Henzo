@@ -56,13 +56,7 @@ export default function ClientsClient() {
 		};
 	}, [searchQuery]);
 
-	// Redirect if no salon
-	if (!salonLoading && !hasSalon) {
-		router.push('/salon-info');
-		return null;
-	}
-
-	// Сортировка клиентов
+	// Сортировка клиентов — хук до любого раннего return
 	const sortedClients = useMemo(() => {
 		return [...clients].sort((a, b) => {
 			let comparison = 0;
@@ -94,6 +88,12 @@ export default function ClientsClient() {
 			return sortOrder === 'asc' ? comparison : -comparison;
 		});
 	}, [clients, sortBy, sortOrder]);
+
+	// Redirect if no salon — после всех хуков
+	if (!salonLoading && !hasSalon) {
+		router.push('/salon-info');
+		return null;
+	}
 
 	return (
 		<div className="px-4 md:px-8 py-6 w-full max-w-7xl mx-auto">

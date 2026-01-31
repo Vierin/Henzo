@@ -26,6 +26,8 @@
 	"upcomingBookings": "Đặt chỗ sắp tới",
 	"noUpcomingBookings": "Không có đặt chỗ sắp tới",
 	"noUpcomingBookingsNext7Days": "Không có đặt chỗ sắp tới trong 7 ngày tới",
+	"pendingConfirmations": "Chờ xác nhận",
+	"noPendingBookings": "Không có đặt chỗ chờ xác nhận",
 	"loadingBookings": "Đang tải đặt chỗ...",
 	"topSellingServices": "Dịch vụ bán chạy nhất",
 	"noCompletedServices": "Chưa có dịch vụ hoàn thành",

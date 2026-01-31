@@ -28,5 +28,8 @@
 	"phonePlaceholder": "+1 (555) 123-4567",
 	"saveChanges": "Save",
 	"saving": "Saving...",
-	"loading": "Loading..."
+	"loading": "Loading...",
+	"services": "Services",
+	"servicesOptional": "optional",
+	"allServices": "All services"
 }

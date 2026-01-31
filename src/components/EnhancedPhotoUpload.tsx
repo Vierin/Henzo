@@ -22,9 +22,6 @@ export default function EnhancedPhotoUpload({
 }: EnhancedPhotoUploadProps) {
 	const [isDragging, setIsDragging] = useState(false);
 	const [isUploading, setIsUploading] = useState(false);
-	const [showUrlInput, setShowUrlInput] = useState(false);
-	const [urlInput, setUrlInput] = useState('');
-	const [isValidatingUrl, setIsValidatingUrl] = useState(false);
 
 	const uploadPhoto = async (file: File) => {
 		if (photos.length >= maxPhotos) {
@@ -70,63 +67,19 @@ export default function EnhancedPhotoUpload({
 		}
 	};
 
-	const addPhotoUrl = async (url: string) => {
-		if (photos.length >= maxPhotos) {
-			toast.error(`Maximum ${maxPhotos} photos allowed`);
-			return;
-		}
-
-		setIsValidatingUrl(true);
-		const validateToast = toast.loading('Validating image URL...');
-
-		try {
-			// Validate URL format
-			const urlObj = new URL(url);
-			if (!['http:', 'https:'].includes(urlObj.protocol)) {
-				throw new Error('Invalid URL protocol');
-			}
-
-			// Check if URL is an image by trying to load it
-			const img = document.createElement('img');
-			img.crossOrigin = 'anonymous';
-
-			await new Promise((resolve, reject) => {
-				img.onload = () => resolve(null);
-				img.onerror = () => reject(new Error('Invalid image URL'));
-				img.src = url;
-			});
-
-			toast.success('Image URL added successfully!', { id: validateToast });
-			onPhotosChange([...photos, url]);
-			setUrlInput('');
-			setShowUrlInput(false);
-		} catch (error: unknown) {
-			console.error('URL validation error:', error);
-			toast.error(
-				error instanceof Error ? error.message : 'Invalid image URL',
-				{
-					id: validateToast,
-				}
-			);
-		} finally {
-			setIsValidatingUrl(false);
-		}
-	};
 
 	const removePhoto = async (index: number) => {
 		const photoToRemove = photos[index];
 		const removeToast = toast.loading('Removing photo...');
 
 		try {
-			// Only try to remove from Supabase if it's a file path (not a URL)
-			if (!photoToRemove.startsWith('http')) {
-				const { error } = await supabase.storage
-					.from('salon-files')
-					.remove([photoToRemove]);
+			// Remove from Supabase Storage
+			const { error } = await supabase.storage
+				.from('salon-files')
+				.remove([photoToRemove]);
 
-				if (error) {
-					throw error;
-				}
+			if (error) {
+				throw error;
 			}
 
 			// Remove from array
@@ -175,25 +128,11 @@ export default function EnhancedPhotoUpload({
 		}
 	};
 
-	const handleUrlSubmit = (e: React.FormEvent) => {
-		e.preventDefault();
-		if (urlInput.trim()) {
-			addPhotoUrl(urlInput.trim());
-		}
-	};
 
 	const getImageSrc = (photo: string) => {
-		// If it's a URL, return it directly
-		if (photo.startsWith('http')) {
-			return photo;
-		}
-		// If it's a file path, get the public URL from Supabase
+		// Get the public URL from Supabase
 		const { data } = supabase.storage.from('salon-files').getPublicUrl(photo);
 		return data.publicUrl;
-	};
-
-	const isUrl = (photo: string) => {
-		return photo.startsWith('http');
 	};
 
 	return (
@@ -253,54 +192,6 @@ export default function EnhancedPhotoUpload({
 							</div>
 						)}
 					</div>
-
-					{/* URL Input Section */}
-					<div className="border-t border-gray-200 pt-3">
-						{!showUrlInput ? (
-							<button
-								type="button"
-								onClick={() => setShowUrlInput(true)}
-								disabled={disabled}
-								className="w-full text-sm text-[#ff5b5b] hover:text-[#e04a4a] font-medium transition-colors disabled:opacity-50"
-							>
-								+ Add image from URL
-							</button>
-						) : (
-							<form onSubmit={handleUrlSubmit} className="space-y-2">
-								<div className="flex gap-2">
-									<input
-										type="url"
-										value={urlInput}
-										onChange={(e) => setUrlInput(e.target.value)}
-										placeholder="Enter image URL (https://...)"
-										className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#ff5b5b] focus:border-transparent text-sm"
-										disabled={disabled || isValidatingUrl}
-									/>
-									<button
-										type="submit"
-										disabled={disabled || isValidatingUrl || !urlInput.trim()}
-										className="px-4 py-2 bg-[#ff5b5b] text-white rounded-md hover:bg-[#e04a4a] transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-sm"
-									>
-										{isValidatingUrl ? 'Adding...' : 'Add'}
-									</button>
-									<button
-										type="button"
-										onClick={() => {
-											setShowUrlInput(false);
-											setUrlInput('');
-										}}
-										disabled={disabled || isValidatingUrl}
-										className="px-3 py-2 text-gray-500 hover:text-gray-700 transition-colors disabled:opacity-50"
-									>
-										Cancel
-									</button>
-								</div>
-								<p className="text-xs text-gray-500">
-									Enter a direct link to an image (JPG, PNG, GIF, etc.)
-								</p>
-							</form>
-						)}
-					</div>
 				</div>
 			)}
 
@@ -314,27 +205,14 @@ export default function EnhancedPhotoUpload({
 								alt={`Salon photo ${index + 1}`}
 								width={100}
 								height={96}
-								className="w-full h-24 object-cover rounded-lg"
+								className="w-full aspect-[4/3] object-cover rounded-lg"
 								loading="lazy"
 								sizes="(max-width: 768px) 33vw, 100px"
-								unoptimized={isUrl(photo)}
 							/>
-							{/* Photo type indicator */}
-							<div className="absolute top-1 left-1">
-								{isUrl(photo) ? (
-									<span className="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800">
-										URL
-									</span>
-								) : (
-									<span className="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800">
-										File
-									</span>
-								)}
-							</div>
 							{!disabled && (
 								<button
 									onClick={() => removePhoto(index)}
-									className="absolute top-2 right-2 p-1 bg-red-600 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+									className="absolute top-2 right-2 p-1 bg-red-400 !text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
 								>
 									<svg
 										className="h-4 w-4"
@@ -358,8 +236,8 @@ export default function EnhancedPhotoUpload({
 
 			{/* Progress indicator */}
 			{photos.length > 0 && (
-				<p className="text-sm text-gray-500 text-center">
-					{photos.length} of {maxPhotos} photos uploaded
+				<p className="text-sm text-gray-500 text-center font-medium">
+					{photos.length} / {maxPhotos}  
 				</p>
 			)}
 		</div>

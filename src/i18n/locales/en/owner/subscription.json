@@ -23,6 +23,7 @@
 	"trialActive": "Trial period active",
 	"trialDaysLeft": "{{days}} days left in trial",
 	"trialEnded": "Trial period ended",
+	"fullAccessToAllFeatures": "You currently have full access to all platform features.",
 	"freemium": {
 		"masters": "Up to 5 masters",
 		"services": "Up to 40 services",
