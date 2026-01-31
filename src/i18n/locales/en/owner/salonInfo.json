@@ -65,6 +65,8 @@
 	"loading": "Loading...",
 	"salonLink": "Salon Link",
 	"loadingSalonLink": "Loading salon link...",
+	"autoConfirmBookings": "Auto-confirm new bookings",
+	"autoConfirmBookingsDescription": "New bookings will be confirmed automatically without manual approval",
 	"copy": "Copy",
 	"share": "Share",
 	"pleaseWaitForSalonData": "Please wait for salon data to load",

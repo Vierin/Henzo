@@ -38,6 +38,7 @@ export default function SalonInfoClient() {
 		website: '',
 		instagram: '',
 		photos: [] as string[],
+		autoConfirmBookings: false,
 		operatingHours: {
 			monday: { open: '09:00', close: '18:00', closed: false },
 			tuesday: { open: '09:00', close: '18:00', closed: false },
@@ -145,6 +146,7 @@ export default function SalonInfoClient() {
 			website: salon.website || '',
 			instagram: salon.instagram || '',
 			photos: salon.photos || [],
+			autoConfirmBookings: (salon as { autoConfirmBookings?: boolean }).autoConfirmBookings ?? false,
 			reminderSettings: {
 				intervals: ((salon as any).reminderSettings?.intervals || [24]).filter(
 					(interval: number) => interval !== 168
@@ -243,6 +245,10 @@ export default function SalonInfoClient() {
 		[]
 	);
 
+	const handleAutoConfirmChange = useCallback((checked: boolean) => {
+		setFormData((prev) => ({ ...prev, autoConfirmBookings: checked }));
+	}, []);
+
 	const copyToClipboard = useCallback(async () => {
 		if (!salonUrl) {
 			toast.error(t('owner.salonInfo.pleaseWaitForSalonData'));
@@ -322,6 +328,7 @@ export default function SalonInfoClient() {
 					website: formData.website,
 					instagram: formData.instagram,
 					photos: formData.photos,
+					autoConfirmBookings: formData.autoConfirmBookings,
 					workingHours: formData.operatingHours,
 					reminderSettings: formData.reminderSettings,
 				};
@@ -423,6 +430,8 @@ export default function SalonInfoClient() {
 					onCopy={copyToClipboard}
 					onShare={shareLink}
 					onQrCode={openQrModal}
+					autoConfirmBookings={formData.autoConfirmBookings}
+					onAutoConfirmChange={handleAutoConfirmChange}
 				/>
 
 				<ContactInfoSection

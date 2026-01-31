@@ -25,6 +25,8 @@ interface BasicDetailsSectionProps {
 	onCopy: () => void;
 	onShare: () => void;
 	onQrCode: () => void;
+	autoConfirmBookings?: boolean;
+	onAutoConfirmChange?: (checked: boolean) => void;
 }
 
 export default function BasicDetailsSection({
@@ -37,6 +39,8 @@ export default function BasicDetailsSection({
 	onCopy,
 	onShare,
 	onQrCode,
+	autoConfirmBookings = false,
+	onAutoConfirmChange,
 }: BasicDetailsSectionProps) {
 	const t = useTranslation();
 	const [showAddressModal, setShowAddressModal] = useState(false);
@@ -156,6 +160,35 @@ export default function BasicDetailsSection({
 								</button>
 							</div>
 						</div>
+					</div>
+				)}
+
+				{/* Auto-confirm new bookings - only when salon exists */}
+				{hasExistingSalon && onAutoConfirmChange && (
+					<div className="flex items-center justify-between gap-4 p-4 border border-gray-200 rounded-lg bg-gray-50/50">
+						<div>
+							<label className="block text-sm font-medium text-gray-900">
+								{t('owner.salonInfo.autoConfirmBookings')}
+							</label>
+							<p className="text-xs text-gray-500 mt-0.5">
+								{t('owner.salonInfo.autoConfirmBookingsDescription')}
+							</p>
+						</div>
+						<button
+							type="button"
+							role="switch"
+							aria-checked={autoConfirmBookings}
+							onClick={() => onAutoConfirmChange(!autoConfirmBookings)}
+							className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors focus:outline-none focus:ring-2 focus:ring-[#ff5b5b] focus:ring-offset-2 ${
+								autoConfirmBookings ? 'bg-[#ff5b5b]' : 'bg-gray-200'
+							}`}
+						>
+							<span
+								className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition ${
+									autoConfirmBookings ? 'translate-x-5' : 'translate-x-1'
+								}`}
+							/>
+						</button>
 					</div>
 				)}
 			</div>

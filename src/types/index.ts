@@ -40,6 +40,7 @@ export interface Salon {
 	slug?: string;
 	// Salon publication status
 	status?: 'DRAFT' | 'READY' | 'ACTIVE';
+	autoConfirmBookings?: boolean;
 	_count?: {
 		reviews?: number;
 		services?: number;

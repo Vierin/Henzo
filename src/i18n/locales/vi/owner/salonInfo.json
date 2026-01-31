@@ -65,6 +65,8 @@
 	"loading": "Đang tải...",
 	"salonLink": "Liên kết Salon",
 	"loadingSalonLink": "Đang tải liên kết salon...",
+	"autoConfirmBookings": "Tự động xác nhận đặt chỗ mới",
+	"autoConfirmBookingsDescription": "Các đặt chỗ mới sẽ được xác nhận tự động mà không cần phê duyệt thủ công",
 	"copy": "Sao chép",
 	"share": "Chia sẻ",
 	"pleaseWaitForSalonData": "Vui lòng đợi dữ liệu salon tải",
