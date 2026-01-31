@@ -283,3 +283,64 @@ export function parseBookingTimeAsLocal(
 		return null;
 	}
 }
+
+/**
+ * Get a time block's range on a specific date in minutes from midnight (salon timezone).
+ * Returns null if the block does not overlap the date.
+ */
+export function getTimeBlockRangeOnDate(
+	startDate: string,
+	endDate: string,
+	selectedDateStr: string,
+	salonTimezone: string = 'Asia/Ho_Chi_Minh'
+): { startMinutes: number; endMinutes: number } | null {
+	try {
+		const blockStart = new Date(startDate);
+		const blockEnd = new Date(endDate);
+		if (isNaN(blockStart.getTime()) || isNaN(blockEnd.getTime())) return null;
+
+		const zonedStart = toZonedTime(blockStart, salonTimezone);
+		const zonedEnd = toZonedTime(blockEnd, salonTimezone);
+
+		const selectedYear = parseInt(selectedDateStr.slice(0, 4), 10);
+		const selectedMonth = parseInt(selectedDateStr.slice(5, 7), 10) - 1;
+		const selectedDay = parseInt(selectedDateStr.slice(8, 10), 10);
+
+		const startDateMatch =
+			zonedStart.getFullYear() === selectedYear &&
+			zonedStart.getMonth() === selectedMonth &&
+			zonedStart.getDate() === selectedDay;
+		const endDateMatch =
+			zonedEnd.getFullYear() === selectedYear &&
+			zonedEnd.getMonth() === selectedMonth &&
+			zonedEnd.getDate() === selectedDay;
+
+		const startMinutes = startDateMatch
+			? zonedStart.getHours() * 60 + zonedStart.getMinutes()
+			: 0;
+		const endMinutes = endDateMatch
+			? zonedEnd.getHours() * 60 + zonedEnd.getMinutes()
+			: 24 * 60;
+
+		// Block doesn't touch this date if selected date is before block start or after block end
+		const selectedDateOnly = new Date(selectedYear, selectedMonth, selectedDay);
+		const blockStartDateOnly = new Date(
+			zonedStart.getFullYear(),
+			zonedStart.getMonth(),
+			zonedStart.getDate()
+		);
+		const blockEndDateOnly = new Date(
+			zonedEnd.getFullYear(),
+			zonedEnd.getMonth(),
+			zonedEnd.getDate()
+		);
+		if (selectedDateOnly < blockStartDateOnly || selectedDateOnly > blockEndDateOnly) {
+			return null;
+		}
+
+		return { startMinutes, endMinutes };
+	} catch (error) {
+		console.error('Error getting time block range:', error);
+		return null;
+	}
+}

@@ -1,7 +1,6 @@
 export interface CreateTimeBlockDto {
 	staffId?: string; // undefined = весь салон
 	type: 'TIME_OFF' | 'BUSY' | 'CLOSURE';
-	reason?: string; // Optional - can use notes instead
 	startDate: string; // ISO string
 	endDate: string; // ISO string
 	notes?: string;
@@ -11,7 +10,6 @@ export interface CreateTimeBlockDto {
 
 export interface UpdateTimeBlockDto {
 	type?: 'TIME_OFF' | 'BUSY' | 'CLOSURE';
-	reason?: string;
 	startDate?: string;
 	endDate?: string;
 	notes?: string;
@@ -24,7 +22,7 @@ export interface TimeBlockDto {
 	salonId: string;
 	staffId?: string;
 	type: 'TIME_OFF' | 'BUSY' | 'CLOSURE';
-	reason: string;
+	reason?: string; // deprecated, use notes
 	startDate: string;
 	endDate: string;
 	notes?: string;

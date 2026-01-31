@@ -25,7 +25,6 @@ const convertTimeBlockDtoToTimeBlock = (dto: TimeBlockDto): TimeBlock => {
 		salonId: dto.salonId,
 		staffId: dto.staffId,
 		type: dto.type,
-		reason: dto.reason,
 		startDate: dto.startDate,
 		endDate: dto.endDate,
 		notes: dto.notes,

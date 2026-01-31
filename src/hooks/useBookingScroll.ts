@@ -67,6 +67,10 @@ export function useBookingScroll({
 		}
 	}, []);
 
+	// Used by BookingDateSelector (index-based, no scroll ref): child reports canScroll state
+	const onDateScrollLeftReport = useCallback((can: boolean) => setCanScrollDateLeft(can), []);
+	const onDateScrollRightReport = useCallback((can: boolean) => setCanScrollDateRight(can), []);
+
 	// Native scroll functions for time slots
 	const scrollTimeLeft = useCallback(() => {
 		if (timeScrollRef.current) {
@@ -251,6 +255,8 @@ export function useBookingScroll({
 		scrollDateRight,
 		checkScrollPosition,
 		checkDateScrollPosition,
+		onDateScrollLeftReport,
+		onDateScrollRightReport,
 
 		// Drag handlers - time
 		handleTimeMouseDown,

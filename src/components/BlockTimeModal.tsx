@@ -41,6 +41,7 @@ import 'antd/dist/reset.css';
 import { useTranslation, useLanguage } from '@/contexts/LanguageContext';
 import { extractLocaleFromPath } from '@/i18n/routing';
 import { usePathname } from 'next/navigation';
+import { parseBookingTimeAsLocal } from '@/utils/date';
 import { ru, vi, enUS } from 'date-fns/locale';
 import {
 	ru as ruDayPicker,
@@ -142,7 +143,6 @@ export default function BlockTimeModal({
 	const [blockType, setBlockType] = useState<'TIME_OFF' | 'BUSY' | 'CLOSURE'>(
 		'TIME_OFF'
 	);
-	const [reason, setReason] = useState('');
 	const [startDate, setStartDate] = useState('');
 	const [startDatePickerOpen, setStartDatePickerOpen] = useState(false);
 	const [startTime, setStartTime] = useState('09:00');
@@ -231,7 +231,6 @@ export default function BlockTimeModal({
 			setBlockFor('staff');
 			setSelectedStaffId('');
 			setBlockType('TIME_OFF');
-			setReason('');
 			setStartDate('');
 			setStartTime('09:00');
 			setEndDate('');
@@ -267,7 +266,6 @@ export default function BlockTimeModal({
 		const data: CreateTimeBlockDto = {
 			staffId: blockFor === 'staff' ? selectedStaffId : undefined,
 			type: blockType,
-			...(reason.trim() && { reason: reason.trim() }), // Only include if not empty
 			startDate: startDateTime,
 			endDate: endDateTime,
 			notes,
@@ -282,6 +280,7 @@ export default function BlockTimeModal({
 			const result = await checkConflictsMutation.mutateAsync(data);
 			if (result.conflictingBookings && result.conflictingBookings.length > 0) {
 				setConflicts(result.conflictingBookings);
+				if (blockFor === 'salon') setConflictAction('CANCEL');
 				setShowConflicts(true);
 			} else {
 				// No conflicts, proceed directly
@@ -321,9 +320,10 @@ export default function BlockTimeModal({
 		if (!basicValidation) {
 			return false;
 		}
-		// If rescheduling conflicts, need to select staff member
+		// If rescheduling to another staff (only when blocking one staff), need to select staff
 		if (
 			showConflicts &&
+			blockFor === 'staff' &&
 			conflictAction === 'RESCHEDULE' &&
 			!selectedStaffIdForReschedule
 		) {
@@ -353,7 +353,6 @@ export default function BlockTimeModal({
 		const data: CreateTimeBlockDto = {
 			staffId: blockFor === 'staff' ? selectedStaffId : undefined,
 			type: blockType,
-			...(reason.trim() && { reason: reason.trim() }), // Only include if not empty
 			startDate: startDateTime,
 			endDate: endDateTime,
 			notes,
@@ -499,597 +498,629 @@ export default function BlockTimeModal({
 
 				{/* Body */}
 				<div className="p-6 space-y-6 overflow-y-auto flex-1">
-					{/* Block For */}
-					<div>
-						<label className="block text-sm font-medium text-gray-700 mb-3">
-							{t('owner.calendar.blockTimeModal.blockFor')}
-						</label>
-						<RadioGroup
-							value={blockFor}
-							onValueChange={(value: 'salon' | 'staff') => {
-								setBlockFor(value);
-								if (value === 'salon') {
-									setSelectedStaffId('');
-								}
-							}}
-							className="flex gap-4"
-						>
-							<label className="flex items-center gap-2 space-x-3 p-4 border-2 border-gray-300 rounded-lg hover:bg-gray-50 cursor-pointer transition-colors flex-1">
-								<RadioGroupItem
-									value="salon"
-									id="salon"
-									className="text-[#ff5b5b] border-gray-300 focus:ring-[#ff5b5b]"
-								/>
-								<span className="text-sm font-medium text-gray-900">
-									{t('owner.calendar.blockTimeModal.entireSalon')}
-								</span>
-							</label>
-							<label className="flex items-center gap-2 space-x-3 p-4 border-2 border-gray-300 rounded-lg hover:bg-gray-50 cursor-pointer transition-colors flex-1">
-								<RadioGroupItem
-									value="staff"
-									id="staff"
-									className="text-[#ff5b5b] border-gray-300 focus:ring-[#ff5b5b]"
-								/>
-								<span className="text-sm font-medium text-gray-900">
-									{t('owner.calendar.blockTimeModal.specificStaffMember')}
-								</span>
-							</label>
-						</RadioGroup>
-					</div>
+					{showConflicts && conflicts.length > 0 ? (
+						/* Step 2: Conflicts view */
+						<div className="space-y-4">
+							<div className="bg-red-50 border border-red-200 rounded-lg p-4">
+								<div className="flex items-start gap-3 mb-3">
+									<AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
+									<div>
+										<p className="text-sm font-medium text-red-900 mb-1">
+											{conflicts.length}{' '}
+											{t(
+												'owner.calendar.blockTimeModal.conflictingBookingsFound'
+											)}
+										</p>
+										<p className="text-sm text-red-700">
+											{t(
+												'owner.calendar.blockTimeModal.followingBookingsScheduled'
+											)}
+										</p>
+									</div>
+								</div>
 
-					{/* Staff Selection */}
-					{blockFor === 'staff' && (
-						<div>
-							<label className="block text-sm font-medium text-gray-700 mb-2">
-								{t('owner.calendar.blockTimeModal.selectStaffMember')}{' '}
-								<span className="text-red-500">*</span>
-							</label>
-							{staffLoading ? (
-								<div className="flex items-center justify-center py-4">
-									<LoadingSpinner size="sm" />
+								<div className="space-y-2 mb-4 max-h-48 overflow-y-auto">
+									{conflicts.map((conflict, index) => (
+										<div
+											key={index}
+											className="bg-white rounded p-3 text-sm border border-red-100"
+										>
+											<div className="font-medium text-gray-900">
+												{conflict.user?.name ||
+													t('owner.calendar.blockTimeModal.unknownClient')}
+											</div>
+											<div className="text-gray-600 text-xs mt-1">
+												{conflict.service?.name} •{' '}
+												{(() => {
+													const salonTz =
+														salonData?.timezone || 'Asia/Ho_Chi_Minh';
+													const date = parseBookingTimeAsLocal(
+														conflict.time,
+														salonTz
+													);
+													if (!date) return conflict.time;
+													const locale =
+														currentLocale === 'ru'
+															? 'ru-RU'
+															: currentLocale === 'vi'
+																? 'vi-VN'
+																: 'en-US';
+													return date.toLocaleString(locale, {
+														month: 'short',
+														day: 'numeric',
+														hour: '2-digit',
+														minute: '2-digit',
+													});
+												})()}
+											</div>
+										</div>
+									))}
 								</div>
-							) : staff.length === 0 ? (
-								<div className="flex items-center justify-center py-4 text-gray-500">
-									{t('owner.calendar.blockTimeModal.noStaffMembersFound')}
+
+								<div>
+									<label className="block text-sm font-medium text-red-900 mb-2">
+										{t('owner.calendar.blockTimeModal.whatToDoWithBookings')}
+									</label>
+									<div className="space-y-2">
+										{/* Option: Transfer to another staff — only when blocking one staff */}
+										{blockFor === 'staff' && (
+											<label className="flex items-center space-x-3 p-3 border border-blue-200 rounded-lg hover:bg-blue-50 gap-2 cursor-pointer transition-colors bg-white">
+												<input
+													type="radio"
+													name="conflictAction"
+													value="RESCHEDULE"
+													checked={conflictAction === 'RESCHEDULE'}
+													onChange={() => setConflictAction('RESCHEDULE')}
+													className="w-4 h-4 text-[#ff5b5b] border-gray-300 focus:ring-[#ff5b5b]"
+												/>
+												<div className="flex-1">
+													<div className="text-sm font-medium text-gray-900">
+														{t(
+															'owner.calendar.blockTimeModal.transferBookings'
+														)}
+													</div>
+													{conflictAction === 'RESCHEDULE' && (
+														<div className="mt-2">
+															<Select
+																value={selectedStaffIdForReschedule}
+																onValueChange={setSelectedStaffIdForReschedule}
+															>
+																<SelectTrigger className="w-full border border-gray-300 focus:ring-2 focus:ring-[#ff5b5b] focus:border-[#ff5b5b] text-gray-900">
+																	<SelectValue
+																		placeholder={t(
+																			'owner.calendar.blockTimeModal.selectAStaffMember'
+																		)}
+																	/>
+																</SelectTrigger>
+																<SelectContent className="bg-white border border-gray-300 shadow-lg rounded-md">
+																	{staff
+																		.filter(
+																			(staffMember) =>
+																				staffMember.id !== selectedStaffId
+																		)
+																		.map((staffMember) => (
+																			<SelectItem
+																				key={staffMember.id}
+																				value={staffMember.id}
+																				className="bg-white hover:bg-gray-50 focus:bg-gray-50 text-gray-900 cursor-pointer"
+																			>
+																				{staffMember.name}
+																			</SelectItem>
+																		))}
+																</SelectContent>
+															</Select>
+														</div>
+													)}
+												</div>
+											</label>
+										)}
+
+										{/* Option: Cancel all bookings (always shown; for salon closure it's the only option) */}
+										<label className="flex items-center space-x-3 p-3 border border-red-200 rounded-lg gap-2 hover:bg-red-50 cursor-pointer transition-colors bg-white">
+											<input
+												type="radio"
+												name="conflictAction"
+												value="CANCEL"
+												checked={conflictAction === 'CANCEL'}
+												onChange={() => setConflictAction('CANCEL')}
+												className="w-4 h-4 text-[#ff5b5b] border-gray-300 focus:ring-[#ff5b5b]"
+											/>
+											<div>
+												<div className="text-sm font-medium text-gray-900">
+													{t('owner.calendar.blockTimeModal.cancelAllBookings')}
+												</div>
+											</div>
+										</label>
+									</div>
 								</div>
-							) : (
+							</div>
+						</div>
+					) : (
+						<>
+							{/* Step 1: Form */}
+							{/* Block For */}
+							<div>
+								<label className="block text-sm font-medium text-gray-700 mb-3">
+									{t('owner.calendar.blockTimeModal.blockFor')}
+								</label>
+								<RadioGroup
+									value={blockFor}
+									onValueChange={(value: 'salon' | 'staff') => {
+										setBlockFor(value);
+										if (value === 'salon') {
+											setSelectedStaffId('');
+										}
+									}}
+									className="flex gap-4"
+								>
+									<label className="flex items-center gap-2 space-x-3 p-4 border-2 border-gray-300 rounded-lg hover:bg-gray-50 cursor-pointer transition-colors flex-1">
+										<RadioGroupItem
+											value="salon"
+											id="salon"
+											className="text-[#ff5b5b] border-gray-300 focus:ring-[#ff5b5b]"
+										/>
+										<span className="text-sm font-medium text-gray-900">
+											{t('owner.calendar.blockTimeModal.entireSalon')}
+										</span>
+									</label>
+									<label className="flex items-center gap-2 space-x-3 p-4 border-2 border-gray-300 rounded-lg hover:bg-gray-50 cursor-pointer transition-colors flex-1">
+										<RadioGroupItem
+											value="staff"
+											id="staff"
+											className="text-[#ff5b5b] border-gray-300 focus:ring-[#ff5b5b]"
+										/>
+										<span className="text-sm font-medium text-gray-900">
+											{t('owner.calendar.blockTimeModal.specificStaffMember')}
+										</span>
+									</label>
+								</RadioGroup>
+							</div>
+
+							{/* Staff Selection */}
+							{blockFor === 'staff' && (
+								<div>
+									<label className="block text-sm font-medium text-gray-700 mb-2">
+										{t('owner.calendar.blockTimeModal.selectStaffMember')}{' '}
+										<span className="text-red-500">*</span>
+									</label>
+									{staffLoading ? (
+										<div className="flex items-center justify-center py-4">
+											<LoadingSpinner size="sm" />
+										</div>
+									) : staff.length === 0 ? (
+										<div className="flex items-center justify-center py-4 text-gray-500">
+											{t('owner.calendar.blockTimeModal.noStaffMembersFound')}
+										</div>
+									) : (
+										<Select
+											value={selectedStaffId}
+											onValueChange={setSelectedStaffId}
+										>
+											<SelectTrigger className="w-full border border-gray-300 focus:ring-2 focus:ring-[#ff5b5b] focus:border-[#ff5b5b] text-gray-900">
+												<SelectValue
+													placeholder={t(
+														'owner.calendar.blockTimeModal.selectAStaffMember'
+													)}
+												/>
+											</SelectTrigger>
+											<SelectContent className="bg-white border border-gray-300 shadow-lg rounded-md">
+												{staff.map((member) => (
+													<SelectItem
+														key={member.id}
+														value={member.id}
+														className="bg-white hover:bg-gray-50 focus:bg-gray-50 text-gray-900 cursor-pointer"
+													>
+														{member.name}
+													</SelectItem>
+												))}
+											</SelectContent>
+										</Select>
+									)}
+								</div>
+							)}
+
+							{/* Block Type */}
+							<div>
+								<label className="block text-sm font-medium text-gray-700 mb-2">
+									{t('owner.calendar.blockTimeModal.blockType')}
+								</label>
 								<Select
-									value={selectedStaffId}
-									onValueChange={setSelectedStaffId}
+									value={blockType}
+									onValueChange={(value: 'TIME_OFF' | 'BUSY' | 'CLOSURE') =>
+										setBlockType(value)
+									}
 								>
 									<SelectTrigger className="w-full border border-gray-300 focus:ring-2 focus:ring-[#ff5b5b] focus:border-[#ff5b5b] text-gray-900">
 										<SelectValue
 											placeholder={t(
-												'owner.calendar.blockTimeModal.selectAStaffMember'
+												'owner.calendar.blockTimeModal.selectBlockType'
 											)}
 										/>
 									</SelectTrigger>
 									<SelectContent className="bg-white border border-gray-300 shadow-lg rounded-md">
-										{staff.map((member) => (
+										<SelectItem
+											value="TIME_OFF"
+											className="bg-white hover:bg-gray-50 focus:bg-gray-50 text-gray-600 cursor-pointer"
+										>
+											{getBlockTypeLabel('TIME_OFF')}
+										</SelectItem>
+										<SelectItem
+											value="BUSY"
+											className="bg-white hover:bg-gray-50 focus:bg-gray-50 text-gray-600 cursor-pointer"
+										>
+											{getBlockTypeLabel('BUSY')}
+										</SelectItem>
+										{blockFor === 'salon' && (
 											<SelectItem
-												key={member.id}
-												value={member.id}
-												className="bg-white hover:bg-gray-50 focus:bg-gray-50 text-gray-900 cursor-pointer"
+												value="CLOSURE"
+												className="bg-white hover:bg-gray-50 focus:bg-gray-50 text-gray-600 cursor-pointer"
 											>
-												{member.name}
+												{getBlockTypeLabel('CLOSURE')}
 											</SelectItem>
-										))}
+										)}
 									</SelectContent>
 								</Select>
-							)}
-						</div>
-					)}
-
-					{/* Block Type */}
-					<div>
-						<label className="block text-sm font-medium text-gray-700 mb-2">
-							{t('owner.calendar.blockTimeModal.reason')}{' '}
-							<span className="text-red-500">*</span>
-						</label>
-						<Select
-							value={blockType}
-							onValueChange={(value: 'TIME_OFF' | 'BUSY' | 'CLOSURE') =>
-								setBlockType(value)
-							}
-						>
-							<SelectTrigger className="w-full border border-gray-300 focus:ring-2 focus:ring-[#ff5b5b] focus:border-[#ff5b5b] text-gray-900">
-								<SelectValue
-									placeholder={t('owner.calendar.blockTimeModal.selectAReason')}
-								/>
-							</SelectTrigger>
-							<SelectContent className="bg-white border border-gray-300 shadow-lg rounded-md">
-								<SelectItem
-									value="TIME_OFF"
-									className="bg-white hover:bg-gray-50 focus:bg-gray-50 text-gray-600 cursor-pointer"
-								>
-									{getBlockTypeLabel('TIME_OFF')}
-								</SelectItem>
-								<SelectItem
-									value="BUSY"
-									className="bg-white hover:bg-gray-50 focus:bg-gray-50 text-gray-600 cursor-pointer"
-								>
-									{getBlockTypeLabel('BUSY')}
-								</SelectItem>
-								{blockFor === 'salon' && (
-									<SelectItem
-										value="CLOSURE"
-										className="bg-white hover:bg-gray-50 focus:bg-gray-50 text-gray-600 cursor-pointer"
-									>
-										{getBlockTypeLabel('CLOSURE')}
-									</SelectItem>
-								)}
-							</SelectContent>
-						</Select>
-					</div>
-
-					{/* Quick Time Presets */}
-					<div>
-						<label className="block text-sm font-medium text-gray-700 mb-2">
-							{t('owner.calendar.blockTimeModal.quickPresets')}
-						</label>
-						<div className="flex flex-wrap gap-2">
-							<button
-								type="button"
-								onClick={() => {
-									setStartTime('00:00');
-									setEndTime('23:59');
-									setSelectedQuickPreset('fullDay');
-								}}
-								className={cn(
-									'px-3 py-1.5 text-sm border border-[#ff5b5b] rounded-lg transition-colors',
-									selectedQuickPreset === 'fullDay'
-										? 'bg-[#ff5b5b] text-white'
-										: 'bg-[#fff7f6] text-[#ff5b5b] hover:bg-[#ff5b5b] hover:text-white'
-								)}
-							>
-								{t('owner.calendar.blockTimeModal.fullDay')}
-							</button>
-							<button
-								type="button"
-								onClick={() => {
-									const { startHour } = getWorkingHoursForDateRange(
-										startDate,
-										endDate
-									);
-									const midHour = Math.floor((startHour + 12) / 2);
-									setStartTime(`${startHour.toString().padStart(2, '0')}:00`);
-									setEndTime(`${midHour.toString().padStart(2, '0')}:00`);
-									setSelectedQuickPreset('morning');
-								}}
-								className={cn(
-									'px-3 py-1.5 text-sm border border-[#ff5b5b] rounded-lg transition-colors',
-									selectedQuickPreset === 'morning'
-										? 'bg-[#ff5b5b] text-white'
-										: 'bg-[#fff7f6] text-[#ff5b5b] hover:bg-[#ff5b5b] hover:text-white'
-								)}
-							>
-								{t('owner.calendar.blockTimeModal.morning')}
-							</button>
-							<button
-								type="button"
-								onClick={() => {
-									const { endHour } = getWorkingHoursForDateRange(
-										startDate,
-										endDate
-									);
-									const midHour = Math.ceil((endHour + 8) / 2);
-									setStartTime(`${midHour.toString().padStart(2, '0')}:00`);
-									setEndTime(`${endHour.toString().padStart(2, '0')}:00`);
-									setSelectedQuickPreset('afternoon');
-								}}
-								className={cn(
-									'px-3 py-1.5 text-sm border border-[#ff5b5b] rounded-lg transition-colors',
-									selectedQuickPreset === 'afternoon'
-										? 'bg-[#ff5b5b] text-white'
-										: 'bg-[#fff7f6] text-[#ff5b5b] hover:bg-[#ff5b5b] hover:text-white'
-								)}
-							>
-								{t('owner.calendar.blockTimeModal.afternoon')}
-							</button>
-							<button
-								type="button"
-								onClick={() => {
-									setStartTime('12:00');
-									setEndTime('13:00');
-									setSelectedQuickPreset('lunch');
-								}}
-								className={cn(
-									'px-3 py-1.5 text-sm border border-[#ff5b5b] rounded-lg transition-colors',
-									selectedQuickPreset === 'lunch'
-										? 'bg-[#ff5b5b] text-white'
-										: 'bg-[#fff7f6] text-[#ff5b5b] hover:bg-[#ff5b5b] hover:text-white'
-								)}
-							>
-								{t('owner.calendar.blockTimeModal.lunch')}
-							</button>
-						</div>
-					</div>
-
-					{/* Date Range */}
-
-					<div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-						<div>
-							<label className="block text-sm font-medium text-gray-700 mb-2">
-								<CalendarIcon className="w-4 h-4 inline mr-1" />
-								{t('owner.calendar.blockTimeModal.startDate')}{' '}
-								<span className="text-red-500">*</span>
-							</label>
-							<Popover
-								open={startDatePickerOpen}
-								onOpenChange={setStartDatePickerOpen}
-							>
-								<PopoverTrigger asChild>
-									<Button
-										variant="outline"
-										className={cn(
-											'w-full justify-start text-left font-normal pl-3',
-											!startDate && 'text-muted-foreground'
-										)}
-										type="button"
-									>
-										<CalendarIcon className="mr-2 h-4 w-4" />
-										{startDate && stringToDate(startDate)
-											? format(stringToDate(startDate)!, 'dd.MM.yy', {
-													locale: getDateLocale(),
-												})
-											: t('owner.calendar.blockTimeModal.pickADate')}
-									</Button>
-								</PopoverTrigger>
-								<PopoverContent className="w-auto p-0 bg-white" align="start">
-									<Calendar
-										mode="single"
-										selected={stringToDate(startDate)}
-										locale={getCalendarLocale()}
-										onSelect={(date: Date | undefined) => {
-											if (date) {
-												const dateStr = dateToString(date);
-												setStartDate(dateStr);
-												// Auto-set end date only if it's currently empty or before the new start date
-												if (!endDate || endDate < dateStr) {
-													setEndDate(dateStr);
-												}
-												setStartDatePickerOpen(false);
-											}
-										}}
-										fromDate={getTodayLocal()}
-										disabled={(date) => {
-											const today = getTodayLocal();
-											const dateToCheck = new Date(date);
-											dateToCheck.setHours(0, 0, 0, 0);
-											return dateToCheck < today;
-										}}
-									/>
-								</PopoverContent>
-							</Popover>
-						</div>
-						<div>
-							<label className="block text-sm font-medium text-gray-700 mb-2">
-								<Clock className="w-4 h-4 inline mr-1" />
-								{t('owner.calendar.blockTimeModal.startTime')}{' '}
-								<span className="text-red-500">*</span>
-							</label>
-							<div
-								className="w-full"
-								style={{ width: '100%', minWidth: '80px' }}
-							>
-								<TimePicker
-									value={parseTimeToDayjs(startTime)}
-									onChange={(time) => {
-										const timeStr = formatDayjsToTime(time);
-										if (timeStr) {
-											setStartTime(timeStr);
-											setSelectedQuickPreset(null);
-										}
-									}}
-									format="HH:mm"
-									placeholder="09:00"
-									minuteStep={5}
-									inputReadOnly={true}
-									className="custom-time-picker"
-									style={{ width: '100%', minWidth: '80px', maxWidth: '120px' }}
-								/>
-							</div>
-						</div>
-						<div>
-							<label className="block text-sm font-medium text-gray-700 mb-2">
-								<CalendarIcon className="w-4 h-4 inline mr-1" />
-								{t('owner.calendar.blockTimeModal.endDate')}{' '}
-								<span className="text-red-500">*</span>
-							</label>
-							<Popover
-								open={endDatePickerOpen}
-								onOpenChange={setEndDatePickerOpen}
-							>
-								<PopoverTrigger asChild>
-									<Button
-										variant="outline"
-										className={cn(
-											'w-full justify-start text-left font-normal pl-3',
-											!endDate && 'text-muted-foreground'
-										)}
-										type="button"
-									>
-										<CalendarIcon className="mr-2 h-4 w-4" />
-										{endDate && stringToDate(endDate)
-											? format(stringToDate(endDate)!, 'dd.MM.yy', {
-													locale: getDateLocale(),
-												})
-											: t('owner.calendar.blockTimeModal.pickADate')}
-									</Button>
-								</PopoverTrigger>
-								<PopoverContent className="w-auto p-0 bg-white" align="start">
-									<Calendar
-										mode="single"
-										selected={stringToDate(endDate)}
-										locale={getCalendarLocale()}
-										onSelect={(date: Date | undefined) => {
-											if (date) {
-												const dateStr = dateToString(date);
-												// Ensure end date is not before start date
-												if (!startDate || dateStr >= startDate) {
-													setEndDate(dateStr);
-													setEndDatePickerOpen(false);
-												}
-											}
-										}}
-										fromDate={
-											startDate && stringToDate(startDate)
-												? stringToDate(startDate)
-												: getTodayLocal()
-										}
-										disabled={(date) => {
-											const today = getTodayLocal();
-											const dateToCheck = new Date(date);
-											dateToCheck.setHours(0, 0, 0, 0);
-											// Block past dates, or dates before start date if start date is set
-											if (dateToCheck < today) return true;
-											if (startDate && stringToDate(startDate)) {
-												const startDateOnly = new Date(
-													stringToDate(startDate)!
-												);
-												startDateOnly.setHours(0, 0, 0, 0);
-												return dateToCheck < startDateOnly;
-											}
-											return false;
-										}}
-									/>
-								</PopoverContent>
-							</Popover>
-						</div>
-						<div>
-							<label className="block text-sm font-medium text-gray-700 mb-2">
-								<Clock className="w-4 h-4 inline mr-1" />
-								{t('owner.calendar.blockTimeModal.endTime')}{' '}
-								<span className="text-red-500">*</span>
-							</label>
-							<div
-								className="w-full"
-								style={{ width: '100%', minWidth: '80px' }}
-							>
-								<TimePicker
-									value={parseTimeToDayjs(endTime)}
-									onChange={(time) => {
-										const timeStr = formatDayjsToTime(time);
-										if (timeStr) {
-											setEndTime(timeStr);
-											setSelectedQuickPreset(null);
-										}
-									}}
-									format="HH:mm"
-									placeholder="18:00"
-									minuteStep={5}
-									inputReadOnly={true}
-									className="custom-time-picker"
-									style={{ width: '100%', minWidth: '80px', maxWidth: '120px' }}
-								/>
-							</div>
-						</div>
-					</div>
-
-					{/* Date Range Info */}
-					{startDate && endDate && startDate !== endDate && (
-						<div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
-							<p className="text-sm text-blue-800">
-								<strong>
-									{t('owner.calendar.blockTimeModal.multipleDaysSelected')}
-								</strong>{' '}
-								{t('owner.calendar.blockTimeModal.thisWillBlockTimeFrom')}{' '}
-								{formatDateForDisplay(startDate)} {t('common.to') || 'to'}{' '}
-								{formatDateForDisplay(endDate)} (
-								{Math.ceil(
-									(new Date(endDate).getTime() -
-										new Date(startDate).getTime()) /
-										(1000 * 60 * 60 * 24)
-								) + 1}{' '}
-								{t('owner.calendar.blockTimeModal.toDays')})
-							</p>
-						</div>
-					)}
-
-					{/* Notes */}
-					<div>
-						<label className="block text-sm font-medium text-gray-700 mb-2">
-							{t('owner.calendar.blockTimeModal.additionalNotes')}
-						</label>
-						<textarea
-							value={notes}
-							onChange={(e) => setNotes(e.target.value)}
-							rows={3}
-							placeholder={t(
-								'owner.calendar.blockTimeModal.additionalNotesPlaceholder'
-							)}
-							className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#ff5b5b] focus:border-[#ff5b5b] text-gray-900"
-						/>
-					</div>
-
-					{/* Warning */}
-					<div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 flex items-start gap-3">
-						<AlertCircle className="w-5 h-5 text-yellow-600 flex-shrink-0 mt-0.5" />
-						<div className="text-sm text-yellow-800">
-							<p className="font-medium mb-1">
-								{t('owner.calendar.blockTimeModal.warningTitle')}
-							</p>
-							<p className="!mb-0">
-								{t('owner.calendar.blockTimeModal.warningDescription')}
-							</p>
-						</div>
-					</div>
-
-					{/* Conflicts Section */}
-					{showConflicts && conflicts.length > 0 && (
-						<div className="bg-red-50 border border-red-200 rounded-lg p-4">
-							<div className="flex items-start gap-3 mb-3">
-								<AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
-								<div>
-									<p className="text-sm font-medium text-red-900 mb-1">
-										{conflicts.length}{' '}
-										{t(
-											'owner.calendar.blockTimeModal.conflictingBookingsFound'
-										)}
-									</p>
-									<p className="text-sm text-red-700">
-										{t(
-											'owner.calendar.blockTimeModal.followingBookingsScheduled'
-										)}
-									</p>
-								</div>
 							</div>
 
-							<div className="space-y-2 mb-4 max-h-40 overflow-y-auto">
-								{conflicts.map((conflict, index) => (
-									<div
-										key={index}
-										className="bg-white rounded p-3 text-sm border border-red-100"
-									>
-										<div className="font-medium text-gray-900">
-											{conflict.user?.name ||
-												t('owner.calendar.blockTimeModal.unknownClient')}
-										</div>
-										<div className="text-gray-600 text-xs mt-1">
-											{conflict.service?.name} •{' '}
-											{new Date(conflict.time).toLocaleString('en-US', {
-												month: 'short',
-												day: 'numeric',
-												hour: '2-digit',
-												minute: '2-digit',
-											})}
-										</div>
-									</div>
-								))}
-							</div>
-
+							{/* Quick Time Presets */}
 							<div>
-								<label className="block text-sm font-medium text-red-900 mb-2">
-									{t('owner.calendar.blockTimeModal.whatToDoWithBookings')}
+								<label className="block text-sm font-medium text-gray-700 mb-2">
+									{t('owner.calendar.blockTimeModal.quickPresets')}
 								</label>
-								<div className="space-y-2">
-									{/* Option 1: Reschedule to another staff member */}
-									<label className="flex items-center space-x-3 p-3 border border-blue-200 rounded-lg hover:bg-blue-50 cursor-pointer transition-colors bg-white">
-										<input
-											type="radio"
-											name="conflictAction"
-											value="RESCHEDULE"
-											checked={conflictAction === 'RESCHEDULE'}
-											onChange={() => setConflictAction('RESCHEDULE')}
-											className="w-4 h-4 text-[#ff5b5b] border-gray-300 focus:ring-[#ff5b5b]"
-										/>
-										<div className="flex-1">
-											<div className="text-sm font-medium text-gray-900">
-												{t('owner.calendar.blockTimeModal.transferBookings')}
-											</div>
-											<div className="text-xs text-gray-600">
-												{t('owner.calendar.blockTimeModal.moveBookings')}
-											</div>
-											{conflictAction === 'RESCHEDULE' && (
-												<div className="mt-2">
-													<Select
-														value={selectedStaffIdForReschedule}
-														onValueChange={setSelectedStaffIdForReschedule}
-													>
-														<SelectTrigger className="w-full border border-gray-300 focus:ring-2 focus:ring-[#ff5b5b] focus:border-[#ff5b5b] text-gray-900">
-															<SelectValue
-																placeholder={t(
-																	'owner.calendar.blockTimeModal.selectAStaffMember'
-																)}
-															/>
-														</SelectTrigger>
-														<SelectContent>
-															{staff
-																.filter(
-																	(staffMember) =>
-																		staffMember.id !== selectedStaffId
-																)
-																.map((staffMember) => (
-																	<SelectItem
-																		key={staffMember.id}
-																		value={staffMember.id}
-																	>
-																		{staffMember.name}
-																	</SelectItem>
-																))}
-														</SelectContent>
-													</Select>
-												</div>
-											)}
-										</div>
-									</label>
-
-									{/* Option 2: Cancel all bookings */}
-									<label className="flex items-center space-x-3 p-3 border border-red-200 rounded-lg hover:bg-red-50 cursor-pointer transition-colors bg-white">
-										<input
-											type="radio"
-											name="conflictAction"
-											value="CANCEL"
-											checked={conflictAction === 'CANCEL'}
-											onChange={() => setConflictAction('CANCEL')}
-											className="w-4 h-4 text-[#ff5b5b] border-gray-300 focus:ring-[#ff5b5b]"
-										/>
-										<div>
-											<div className="text-sm font-medium text-gray-900">
-												{t('owner.calendar.blockTimeModal.cancelAllBookings')}
-											</div>
-											<div className="text-xs text-gray-600">
-												{t('owner.calendar.blockTimeModal.cancelAllAndNotify')}
-											</div>
-										</div>
-									</label>
+								<div className="flex flex-wrap gap-2">
+									<button
+										type="button"
+										onClick={() => {
+											setStartTime('00:00');
+											setEndTime('23:59');
+											setSelectedQuickPreset('fullDay');
+										}}
+										className={cn(
+											'px-3 py-1.5 text-sm border border-[#ff5b5b] rounded-lg transition-colors',
+											selectedQuickPreset === 'fullDay'
+												? 'bg-[#ff5b5b] text-white'
+												: 'bg-[#fff7f6] text-[#ff5b5b] hover:bg-[#ff5b5b] hover:text-white'
+										)}
+									>
+										{t('owner.calendar.blockTimeModal.fullDay')}
+									</button>
+									<button
+										type="button"
+										onClick={() => {
+											const { startHour } = getWorkingHoursForDateRange(
+												startDate,
+												endDate
+											);
+											const midHour = Math.floor((startHour + 12) / 2);
+											setStartTime(
+												`${startHour.toString().padStart(2, '0')}:00`
+											);
+											setEndTime(`${midHour.toString().padStart(2, '0')}:00`);
+											setSelectedQuickPreset('morning');
+										}}
+										className={cn(
+											'px-3 py-1.5 text-sm border border-[#ff5b5b] rounded-lg transition-colors',
+											selectedQuickPreset === 'morning'
+												? 'bg-[#ff5b5b] text-white'
+												: 'bg-[#fff7f6] text-[#ff5b5b] hover:bg-[#ff5b5b] hover:text-white'
+										)}
+									>
+										{t('owner.calendar.blockTimeModal.morning')}
+									</button>
+									<button
+										type="button"
+										onClick={() => {
+											const { endHour } = getWorkingHoursForDateRange(
+												startDate,
+												endDate
+											);
+											const midHour = Math.ceil((endHour + 8) / 2);
+											setStartTime(`${midHour.toString().padStart(2, '0')}:00`);
+											setEndTime(`${endHour.toString().padStart(2, '0')}:00`);
+											setSelectedQuickPreset('afternoon');
+										}}
+										className={cn(
+											'px-3 py-1.5 text-sm border border-[#ff5b5b] rounded-lg transition-colors',
+											selectedQuickPreset === 'afternoon'
+												? 'bg-[#ff5b5b] text-white'
+												: 'bg-[#fff7f6] text-[#ff5b5b] hover:bg-[#ff5b5b] hover:text-white'
+										)}
+									>
+										{t('owner.calendar.blockTimeModal.afternoon')}
+									</button>
 								</div>
 							</div>
-						</div>
+
+							{/* Date Range */}
+
+							<div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+								<div>
+									<label className="block text-sm font-medium text-gray-700 mb-2">
+										<CalendarIcon className="w-4 h-4 inline mr-1" />
+										{t('owner.calendar.blockTimeModal.startDate')}{' '}
+										<span className="text-red-500">*</span>
+									</label>
+									<Popover
+										open={startDatePickerOpen}
+										onOpenChange={setStartDatePickerOpen}
+									>
+										<PopoverTrigger asChild>
+											<Button
+												variant="outline"
+												className={cn(
+													'w-full justify-start text-left font-normal pl-3',
+													!startDate && 'text-muted-foreground'
+												)}
+												type="button"
+											>
+												<CalendarIcon className="mr-2 h-4 w-4" />
+												{startDate && stringToDate(startDate)
+													? format(stringToDate(startDate)!, 'dd.MM.yy', {
+															locale: getDateLocale(),
+														})
+													: t('owner.calendar.blockTimeModal.pickADate')}
+											</Button>
+										</PopoverTrigger>
+										<PopoverContent
+											className="w-auto p-0 bg-white"
+											align="start"
+										>
+											<Calendar
+												mode="single"
+												selected={stringToDate(startDate)}
+												locale={getCalendarLocale()}
+												onSelect={(date: Date | undefined) => {
+													if (date) {
+														const dateStr = dateToString(date);
+														setStartDate(dateStr);
+														// Auto-set end date only if it's currently empty or before the new start date
+														if (!endDate || endDate < dateStr) {
+															setEndDate(dateStr);
+														}
+														setStartDatePickerOpen(false);
+													}
+												}}
+												fromDate={getTodayLocal()}
+												disabled={(date) => {
+													const today = getTodayLocal();
+													const dateToCheck = new Date(date);
+													dateToCheck.setHours(0, 0, 0, 0);
+													return dateToCheck < today;
+												}}
+											/>
+										</PopoverContent>
+									</Popover>
+								</div>
+								<div>
+									<label className="block text-sm font-medium text-gray-700 mb-2">
+										<Clock className="w-4 h-4 inline mr-1" />
+										{t('owner.calendar.blockTimeModal.startTime')}{' '}
+										<span className="text-red-500">*</span>
+									</label>
+									<div
+										className="w-full"
+										style={{ width: '100%', minWidth: '80px' }}
+									>
+										<TimePicker
+											value={parseTimeToDayjs(startTime)}
+											onChange={(time) => {
+												const timeStr = formatDayjsToTime(time);
+												if (timeStr) {
+													setStartTime(timeStr);
+													setSelectedQuickPreset(null);
+												}
+											}}
+											format="HH:mm"
+											placeholder="09:00"
+											minuteStep={5}
+											inputReadOnly={true}
+											className="custom-time-picker"
+											style={{
+												width: '100%',
+												minWidth: '80px',
+												maxWidth: '120px',
+											}}
+										/>
+									</div>
+								</div>
+								<div>
+									<label className="block text-sm font-medium text-gray-700 mb-2">
+										<CalendarIcon className="w-4 h-4 inline mr-1" />
+										{t('owner.calendar.blockTimeModal.endDate')}{' '}
+										<span className="text-red-500">*</span>
+									</label>
+									<Popover
+										open={endDatePickerOpen}
+										onOpenChange={setEndDatePickerOpen}
+									>
+										<PopoverTrigger asChild>
+											<Button
+												variant="outline"
+												className={cn(
+													'w-full justify-start text-left font-normal pl-3',
+													!endDate && 'text-muted-foreground'
+												)}
+												type="button"
+											>
+												<CalendarIcon className="mr-2 h-4 w-4" />
+												{endDate && stringToDate(endDate)
+													? format(stringToDate(endDate)!, 'dd.MM.yy', {
+															locale: getDateLocale(),
+														})
+													: t('owner.calendar.blockTimeModal.pickADate')}
+											</Button>
+										</PopoverTrigger>
+										<PopoverContent
+											className="w-auto p-0 bg-white"
+											align="start"
+										>
+											<Calendar
+												mode="single"
+												selected={stringToDate(endDate)}
+												locale={getCalendarLocale()}
+												onSelect={(date: Date | undefined) => {
+													if (date) {
+														const dateStr = dateToString(date);
+														// Ensure end date is not before start date
+														if (!startDate || dateStr >= startDate) {
+															setEndDate(dateStr);
+															setEndDatePickerOpen(false);
+														}
+													}
+												}}
+												fromDate={
+													startDate && stringToDate(startDate)
+														? stringToDate(startDate)
+														: getTodayLocal()
+												}
+												disabled={(date) => {
+													const today = getTodayLocal();
+													const dateToCheck = new Date(date);
+													dateToCheck.setHours(0, 0, 0, 0);
+													// Block past dates, or dates before start date if start date is set
+													if (dateToCheck < today) return true;
+													if (startDate && stringToDate(startDate)) {
+														const startDateOnly = new Date(
+															stringToDate(startDate)!
+														);
+														startDateOnly.setHours(0, 0, 0, 0);
+														return dateToCheck < startDateOnly;
+													}
+													return false;
+												}}
+											/>
+										</PopoverContent>
+									</Popover>
+								</div>
+								<div>
+									<label className="block text-sm font-medium text-gray-700 mb-2">
+										<Clock className="w-4 h-4 inline mr-1" />
+										{t('owner.calendar.blockTimeModal.endTime')}{' '}
+										<span className="text-red-500">*</span>
+									</label>
+									<div
+										className="w-full"
+										style={{ width: '100%', minWidth: '80px' }}
+									>
+										<TimePicker
+											value={parseTimeToDayjs(endTime)}
+											onChange={(time) => {
+												const timeStr = formatDayjsToTime(time);
+												if (timeStr) {
+													setEndTime(timeStr);
+													setSelectedQuickPreset(null);
+												}
+											}}
+											format="HH:mm"
+											placeholder="18:00"
+											minuteStep={5}
+											inputReadOnly={true}
+											className="custom-time-picker"
+											style={{
+												width: '100%',
+												minWidth: '80px',
+												maxWidth: '120px',
+											}}
+										/>
+									</div>
+								</div>
+							</div>
+
+							{/* Date Range Info */}
+							{startDate && endDate && startDate !== endDate && (
+								<div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+									<p className="text-sm text-blue-800">
+										<strong>
+											{t('owner.calendar.blockTimeModal.multipleDaysSelected')}
+										</strong>{' '}
+										{t('owner.calendar.blockTimeModal.thisWillBlockTimeFrom')}{' '}
+										{formatDateForDisplay(startDate)} {t('common.to') || 'to'}{' '}
+										{formatDateForDisplay(endDate)} (
+										{Math.ceil(
+											(new Date(endDate).getTime() -
+												new Date(startDate).getTime()) /
+												(1000 * 60 * 60 * 24)
+										) + 1}{' '}
+										{t('owner.calendar.blockTimeModal.toDays')})
+									</p>
+								</div>
+							)}
+
+							{/* Notes */}
+							<div>
+								<label className="block text-sm font-medium text-gray-700 mb-2">
+									{t('owner.calendar.blockTimeModal.additionalNotes')}
+								</label>
+								<textarea
+									value={notes}
+									onChange={(e) => setNotes(e.target.value)}
+									rows={3}
+									placeholder={t(
+										'owner.calendar.blockTimeModal.additionalNotesPlaceholder'
+									)}
+									className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#ff5b5b] focus:border-[#ff5b5b] text-gray-900"
+								/>
+							</div>
+
+							{/* Warning */}
+							<div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 flex items-start gap-3">
+								<AlertCircle className="w-5 h-5 text-yellow-600 flex-shrink-0 mt-0.5" />
+								<div className="text-sm text-yellow-800">
+									<p className="font-medium mb-1">
+										{t('owner.calendar.blockTimeModal.warningTitle')}
+									</p>
+									<p className="!mb-0">
+										{t('owner.calendar.blockTimeModal.warningDescription')}
+									</p>
+								</div>
+							</div>
+						</>
 					)}
 				</div>
 
 				{/* Footer */}
 				<div className="flex items-center justify-end gap-3 p-6 border-t border-gray-200 bg-gray-50 flex-shrink-0">
-					<button
-						onClick={onClose}
-						disabled={isSubmitting}
-						className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-					>
-						{t('owner.calendar.blockTimeModal.cancel')}
-					</button>
-					{!showConflicts ? (
-						<button
-							onClick={handleCheckConflicts}
-							disabled={!validateForm() || isSubmitting}
-							className="px-4 py-2 text-sm font-medium !text-white bg-[#ff5b5b] rounded-lg hover:bg-[#e04a4a] focus:outline-none focus:ring-2 focus:ring-[#ff5b5b] focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center gap-2"
-						>
-							{isSubmitting && <LoadingSpinner size="sm" />}
-							{isSubmitting
-								? t('owner.calendar.blockTimeModal.checking')
-								: t('owner.calendar.blockTimeModal.checkConflictsAndBlock')}
-						</button>
+					{showConflicts ? (
+						<>
+							<button
+								type="button"
+								onClick={() => setShowConflicts(false)}
+								disabled={isSubmitting}
+								className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+							>
+								{t('owner.calendar.back')}
+							</button>
+							<button
+								onClick={handleSubmit}
+								disabled={isSubmitting || !validateFormWithConflicts()}
+								className="px-4 py-2 text-sm font-medium !text-white bg-[#ff5b5b] rounded-lg hover:bg-[#e04a4a] focus:outline-none focus:ring-2 focus:ring-[#ff5b5b] focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center gap-2"
+							>
+								{isSubmitting && <LoadingSpinner size="sm" />}
+								{isSubmitting
+									? t('owner.calendar.blockTimeModal.blocking')
+									: t('owner.calendar.blockTimeModal.confirmAndBlock')}
+							</button>
+						</>
 					) : (
-						<button
-							onClick={handleSubmit}
-							disabled={isSubmitting || !validateFormWithConflicts()}
-							className="px-4 py-2 text-sm font-medium !text-white bg-[#ff5b5b] rounded-lg hover:bg-[#e04a4a] focus:outline-none focus:ring-2 focus:ring-[#ff5b5b] focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center gap-2"
-						>
-							{isSubmitting && <LoadingSpinner size="sm" />}
-							{isSubmitting
-								? t('owner.calendar.blockTimeModal.blocking')
-								: t('owner.calendar.blockTimeModal.confirmAndBlock')}
-						</button>
+						<>
+							<button
+								onClick={onClose}
+								disabled={isSubmitting}
+								className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+							>
+								{t('owner.calendar.blockTimeModal.cancel')}
+							</button>
+							<button
+								onClick={handleCheckConflicts}
+								disabled={!validateForm() || isSubmitting}
+								className="px-4 py-2 text-sm font-medium !text-white bg-[#ff5b5b] rounded-lg hover:bg-[#e04a4a] focus:outline-none focus:ring-2 focus:ring-[#ff5b5b] focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center gap-2"
+							>
+								{isSubmitting && <LoadingSpinner size="sm" />}
+								{isSubmitting
+									? t('owner.calendar.blockTimeModal.checking')
+									: t('owner.calendar.blockTimeModal.checkConflictsAndBlock')}
+							</button>
+						</>
 					)}
 				</div>
 			</div>

@@ -25,6 +25,7 @@ import { safeParseDate } from '@/utils/date';
 import { formatVND } from '@/utils/currency';
 import { convertBookingDtoArray } from '@/utils/bookingTransformers';
 import { useDashboardStats } from '@/hooks/useDashboardStats';
+import { useClients } from '@/hooks/useClients';
 import {
 	Select,
 	SelectContent,
@@ -52,6 +53,8 @@ export default function OwnerDashboardClient() {
 
 	const { data: services = [] } = useServices(salonId || '', {});
 	const { data: staffMembers = [] } = useStaffBySalon(salonId || '');
+	const { data: clientsResponse } = useClients('', 1);
+	const totalClients = clientsResponse?.pagination?.total ?? 0;
 
 	const bookings = convertBookingDtoArray(bookingsData);
 
@@ -293,17 +296,8 @@ export default function OwnerDashboardClient() {
 				/>
 				<StatsCard
 					title={t('owner.dashboard.totalClients')}
-					value={stats.clients}
+					value={totalClients}
 					icon={<Users className="w-6 h-6" />}
-				 
-					trend={
-						stats.clientsTrend !== 0
-							? {
-									value: `${Math.abs(stats.clientsTrend)}%`,
-									isPositive: stats.clientsTrend > 0,
-								}
-							: undefined
-					}
 				/>
 				<StatsCard
 					title={t('owner.dashboard.bookings')}

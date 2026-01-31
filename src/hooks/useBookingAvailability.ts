@@ -1,6 +1,12 @@
 import { useMemo } from 'react';
 import { Service, Staff } from '@/types';
-import { parseBookingTimeAsLocal } from '@/utils/date';
+import { parseBookingTimeAsLocal, getTimeBlockRangeOnDate } from '@/utils/date';
+
+export interface TimeBlockForAvailability {
+	startDate: string;
+	endDate: string;
+	staffId?: string | null;
+}
 
 interface UseBookingAvailabilityProps {
 	selectedService: Service | null;
@@ -9,6 +15,8 @@ interface UseBookingAvailabilityProps {
 	existingBookings: any[];
 	staffMembers: Staff[];
 	bookingsLoadError: boolean;
+	timeBlocks?: TimeBlockForAvailability[];
+	salonTimezone?: string;
 }
 
 export function useBookingAvailability({
@@ -18,6 +26,8 @@ export function useBookingAvailability({
 	existingBookings,
 	staffMembers,
 	bookingsLoadError,
+	timeBlocks = [],
+	salonTimezone = 'Asia/Ho_Chi_Minh',
 }: UseBookingAvailabilityProps) {
 	// Memoized availability map to avoid recalculating for the same slots
 	const availabilityCache = useMemo(() => {
@@ -35,6 +45,8 @@ export function useBookingAvailability({
 		bookingsLoadError,
 		selectedDate,
 		selectedStaff,
+		timeBlocks,
+		salonTimezone,
 	]);
 
 	// Check if a time slot is available
@@ -55,6 +67,34 @@ export function useBookingAvailability({
 
 			if (availabilityCache.has(cacheKey)) {
 				return availabilityCache.get(cacheKey)!;
+			}
+
+			// Time blocks: salon-wide block makes slot unavailable for everyone; staff block only for that staff
+			if (selectedDate && timeBlocks.length > 0) {
+				for (const block of timeBlocks) {
+					const range = getTimeBlockRangeOnDate(
+						block.startDate,
+						block.endDate,
+						selectedDate,
+						salonTimezone
+					);
+					if (!range) continue;
+					const overlaps =
+						slotStartMinutes < range.endMinutes && slotEndMinutes > range.startMinutes;
+					if (!overlaps) continue;
+
+					const isSalonBlock = !block.staffId;
+					if (isSalonBlock) {
+						availabilityCache.set(cacheKey, false);
+						return false;
+					}
+					if (selectedStaffId && selectedStaffId !== 'Any Staff') {
+						if (block.staffId === selectedStaffId) {
+							availabilityCache.set(cacheKey, false);
+							return false;
+						}
+					}
+				}
 			}
 
 			// If specific staff is selected, check only that staff's conflicts
@@ -124,6 +164,8 @@ export function useBookingAvailability({
 		selectedDate,
 		selectedStaff,
 		availabilityCache,
+		timeBlocks,
+		salonTimezone,
 	]);
 
 	return {

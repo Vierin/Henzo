@@ -29,6 +29,8 @@ import { useBookingAvailability } from '@/hooks/useBookingAvailability';
 import { useBookingTimeSlots } from '@/hooks/useBookingTimeSlots';
 import { useBookingScroll } from '@/hooks/useBookingScroll';
 import { useBookingAuth } from '@/hooks/useBookingAuth';
+import { useTimeBlocks } from '@/hooks/useTimeBlocks';
+import { getTimeBlockRangeOnDate } from '@/utils/date';
 
 // Custom styles for native scroll
 const scrollStyles = `
@@ -132,6 +134,30 @@ export default function BookingModal({
 		bookingsLoadError,
 	} = bookingData;
 
+	const { data: allTimeBlocks = [] } = useTimeBlocks();
+
+	// Time blocks that overlap the selected date (for availability: salon closure / staff time off)
+	const timeBlocksForDate = useMemo(() => {
+		if (!selectedDate || allTimeBlocks.length === 0) return [];
+		return allTimeBlocks.filter(
+			(block) =>
+				getTimeBlockRangeOnDate(
+					block.startDate,
+					block.endDate,
+					selectedDate,
+					salonTimezone
+				) !== null
+		);
+	}, [selectedDate, allTimeBlocks, salonTimezone]);
+
+	// When editing, exclude current booking from conflict check so its time slot stays visible
+	const bookingsForAvailability = useMemo(() => {
+		if (editingBooking?.id && existingBookings?.length) {
+			return existingBookings.filter((b) => b.id !== editingBooking.id);
+		}
+		return existingBookings ?? [];
+	}, [existingBookings, editingBooking?.id]);
+
 	// Синхронизируем salonWorkingHours из bookingData с bookingState
 	useEffect(() => {
 		if (dataSalonWorkingHours) {
@@ -161,7 +187,7 @@ export default function BookingModal({
 	} | null>(null);
 	const [currentStep, setCurrentStep] = useState<'booking' | 'client'>('booking');
 	const [isMobile, setIsMobile] = useState(false);
-	const [timeFilter, setTimeFilter] = useState<'morning' | 'afternoon' | 'evening'>('morning');
+	const [timeFilter, setTimeFilter] = useState<'morning' | 'afternoon' | 'evening'>('evening');
 	const [clientEmail, setClientEmail] = useState('');
 	const [clientName, setClientName] = useState('');
 	const [clientPhone, setClientPhone] = useState('');
@@ -208,6 +234,8 @@ export default function BookingModal({
 		canScrollDateRight,
 		checkScrollPosition,
 		checkDateScrollPosition,
+		onDateScrollLeftReport,
+		onDateScrollRightReport,
 	} = scroll;
 
 
@@ -448,24 +476,30 @@ export default function BookingModal({
 		return restoreBookingState();
 	};
 
-	// Availability hook
+	// Availability hook (when editing, exclude current booking; time blocks make slots unavailable)
 	const { isTimeSlotAvailable } = useBookingAvailability({
 		selectedService,
 		selectedDate,
 		selectedStaff,
-		existingBookings,
+		existingBookings: bookingsForAvailability,
 		staffMembers,
 		bookingsLoadError,
+		timeBlocks: timeBlocksForDate.map((b) => ({
+			startDate: b.startDate,
+			endDate: b.endDate,
+			staffId: b.staffId ?? null,
+		})),
+		salonTimezone,
 	});
 
-	// Time slots hook
+	// Time slots hook (when editing, exclude current booking so its slot is shown)
 	const { timeSlots } = useBookingTimeSlots({
 		selectedDate,
 		selectedService,
 		selectedStaff,
 		workingHours,
 		salonWorkingHours,
-		existingBookings,
+		existingBookings: bookingsForAvailability,
 		staffMembers,
 		isTimeSlotAvailable,
 		salonTimezone,
@@ -533,8 +567,8 @@ export default function BookingModal({
 		const slotStartMinutes = slotHour * 60 + slotMinute;
 		const slotEndMinutes = slotStartMinutes + serviceDuration;
 
-		// Find bookings that conflict with selected time
-		const conflictingBookings = existingBookings.filter((booking) => {
+		// Find bookings that conflict with selected time (when editing, exclude current booking)
+		const conflictingBookings = bookingsForAvailability.filter((booking) => {
 			const bookingDateTime = parseBookingTimeAsLocal(
 				booking.time || booking.dateTime,
 				salonTimezone
@@ -568,7 +602,7 @@ export default function BookingModal({
 		selectedTime,
 		selectedDate,
 		selectedService,
-		existingBookings,
+		bookingsForAvailability,
 		staffMembersForService,
 		salonTimezone,
 	]);
@@ -721,63 +755,47 @@ export default function BookingModal({
 		}
 	}, [isOpen, selectedDate, workingHours, salonWorkingHours]);
 
-	// Pre-fill form data when editing booking
+	// Pre-fill date, service, staff as soon as modal opens for edit (so timeSlots can load)
 	useEffect(() => {
-		if (editingBooking && isOpen && timeSlots.length > 0 && !isInitialized) {
-			const bookingDate = new Date(editingBooking.time);
-			const timeString = bookingDate.toTimeString().slice(0, 5);
+		if (!editingBooking || !isOpen) return;
+		const bookingDate = new Date(editingBooking.time);
+		const year = bookingDate.getFullYear();
+		const month = String(bookingDate.getMonth() + 1).padStart(2, '0');
+		const day = String(bookingDate.getDate()).padStart(2, '0');
+		const dateString = `${year}-${month}-${day}`;
+		setSelectedDate(dateString);
+		if (editingBooking.service) setSelectedService(editingBooking.service);
+		if (editingBooking.staff) setSelectedStaff(editingBooking.staff.name);
+		else setSelectedStaff(t('booking.anyStaff') || 'Any Staff Member');
+	}, [editingBooking, isOpen, t]);
 
-			// Set the selected date in YYYY-MM-DD format
-			const year = bookingDate.getFullYear();
-			const month = String(bookingDate.getMonth() + 1).padStart(2, '0');
-			const day = String(bookingDate.getDate()).padStart(2, '0');
-			const dateString = `${year}-${month}-${day}`;
-			setSelectedDate(dateString);
+	// Pre-fill time once timeSlots are available (depends on date/service/staff from above)
+	useEffect(() => {
+		if (!editingBooking || !isOpen || timeSlots.length === 0 || isInitialized) return;
+		const bookingDate = new Date(editingBooking.time);
+		const timeString = bookingDate.toTimeString().slice(0, 5);
+		const [bookingHour, bookingMinute] = timeString.split(':').map(Number);
+		const bookingMinutes = bookingHour * 60 + bookingMinute;
 
-			// Find the closest available time slot
-			const [bookingHour, bookingMinute] = timeString.split(':').map(Number);
-			const firstSlot = timeSlots[0];
-			let closestTime =
-				typeof firstSlot === 'string' ? firstSlot : firstSlot?.time || ''; // Default to first available slot
+		let closestTime: string =
+			typeof timeSlots[0] === 'string' ? timeSlots[0] : (timeSlots[0] as { time: string })?.time || '';
+		let closestDiff = Math.abs(
+			parseInt(closestTime.split(':')[0]) * 60 + parseInt(closestTime.split(':')[1]) - bookingMinutes
+		);
 
-			for (const slot of timeSlots) {
-				const slotTime = typeof slot === 'string' ? slot : slot.time;
-				const [slotHour, slotMinute] = slotTime.split(':').map(Number);
-				const bookingMinutes = bookingHour * 60 + bookingMinute;
-				const slotMinutes = slotHour * 60 + slotMinute;
-
-				// If this slot is closer to the booking time, use it
-				const closestTimeStr = closestTime;
-				if (
-					Math.abs(slotMinutes - bookingMinutes) <
-					Math.abs(
-						parseInt(closestTimeStr.split(':')[0]) * 60 +
-							parseInt(closestTimeStr.split(':')[1]) -
-							bookingMinutes
-					)
-				) {
-					closestTime = slotTime;
-				}
+		for (const slot of timeSlots) {
+			const slotTime = typeof slot === 'string' ? slot : (slot as { time: string }).time;
+			const [slotHour, slotMinute] = slotTime.split(':').map(Number);
+			const slotMinutes = slotHour * 60 + slotMinute;
+			const diff = Math.abs(slotMinutes - bookingMinutes);
+			if (diff < closestDiff) {
+				closestDiff = diff;
+				closestTime = slotTime;
 			}
-
-			setSelectedTime(closestTime);
-
-			// Set selected service
-			if (editingBooking.service) {
-				setSelectedService(editingBooking.service);
-			}
-
-			// Set selected staff
-			if (editingBooking.staff) {
-				setSelectedStaff(editingBooking.staff.name);
-			} else {
-				setSelectedStaff(t('booking.anyStaff'));
-			}
-
-			// Mark as initialized
-			setIsInitialized(true);
 		}
-	}, [editingBooking, isOpen, isInitialized]);
+		setSelectedTime(closestTime);
+		setIsInitialized(true);
+	}, [editingBooking, isOpen, timeSlots, isInitialized]);
 
 	// Initialize selectedStaff when modal opens
 	useEffect(() => {
@@ -795,7 +813,7 @@ export default function BookingModal({
 			setBookingSuccess(null);
 			setSelectedDate(''); // Reset selected date to trigger auto-selection on next open
 			setSelectedTime(''); // Reset selected time
-			setTimeFilter('morning'); // Reset time filter to morning
+			setTimeFilter('evening'); // Reset time filter to evening
 			setClientEmail(''); // Reset client email
 			setClientName(''); // Reset client name
 			setClientPhone(''); // Reset client phone
@@ -1675,8 +1693,8 @@ export default function BookingModal({
 											isLoadingMoreDays={isLoadingMoreDays}
 											canScrollLeft={canScrollDateLeft}
 											canScrollRight={canScrollDateRight}
-											onScrollLeft={checkDateScrollPosition}
-											onScrollRight={checkDateScrollPosition}
+											onScrollLeft={onDateScrollLeftReport}
+											onScrollRight={onDateScrollRightReport}
 											startDateIndex={startDateIndex}
 											onStartDateIndexChange={setStartDateIndex}
 										/>
@@ -1832,8 +1850,8 @@ export default function BookingModal({
 									isLoadingMoreDays={isLoadingMoreDays}
 									canScrollLeft={canScrollDateLeft}
 									canScrollRight={canScrollDateRight}
-									onScrollLeft={() => {}}
-									onScrollRight={() => {}}
+									onScrollLeft={onDateScrollLeftReport}
+									onScrollRight={onDateScrollRightReport}
 									startDateIndex={startDateIndex}
 									onStartDateIndexChange={setStartDateIndex}
 								/>

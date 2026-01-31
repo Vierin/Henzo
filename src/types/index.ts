@@ -200,7 +200,6 @@ export interface TimeBlock {
 	salonId: string;
 	staffId?: string; // null/undefined = весь салон
 	type: 'TIME_OFF' | 'BUSY' | 'CLOSURE';
-	reason: string;
 	startDate: string; // ISO string
 	endDate: string; // ISO string
 	notes?: string;
