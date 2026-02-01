@@ -8,6 +8,7 @@
 	"bookAService": "Đặt dịch vụ",
 	"noPastReservations": "Không có đặt chỗ trong quá khứ",
 	"noPastDescription": "Các cuộc hẹn đã hoàn thành của bạn sẽ xuất hiện ở đây.",
+	"reservationCreated": "Đặt chỗ đã được tạo thành công",
 	"reservationCanceled": "Đặt chỗ đã được hủy thành công",
 	"errorLoadingAppointments": "Lỗi tải cuộc hẹn",
 	"errorLoadingDescription": "Đã xảy ra lỗi khi tải các cuộc hẹn của bạn. Vui lòng thử lại sau.",

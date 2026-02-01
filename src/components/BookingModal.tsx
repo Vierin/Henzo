@@ -455,6 +455,7 @@ export default function BookingModal({
 		isOwnerOfThisSalon,
 		editingBooking,
 		t,
+		language,
 	});
 
 	const {
@@ -1167,6 +1168,7 @@ export default function BookingModal({
 				staffId: staffId === 'any' ? undefined : staffId,
 				time: bookingDateTime,
 				salonId: finalSalonId,
+				preferredLocale: language,
 			};
 
 			if (isOwner) {

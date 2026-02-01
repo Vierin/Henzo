@@ -8,6 +8,7 @@
 	"bookAService": "Забронировать услугу",
 	"noPastReservations": "Нет прошлых бронирований",
 	"noPastDescription": "Ваши завершенные записи появятся здесь.",
+	"reservationCreated": "Бронирование успешно создано",
 	"reservationCanceled": "Бронирование успешно отменено",
 	"errorLoadingAppointments": "Ошибка загрузки записей",
 	"errorLoadingDescription": "Произошла ошибка при загрузке ваших записей. Пожалуйста, попробуйте позже.",

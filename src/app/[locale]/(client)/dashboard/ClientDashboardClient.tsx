@@ -11,11 +11,14 @@ import VisitHistoryCard from '@/components/VisitHistoryCard';
 import ReviewModal from '@/components/ReviewModal';
 import { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from '@/contexts/LanguageContext';
-import { useSearchParams } from 'next/navigation';
+import { useSearchParams, useParams, useRouter } from 'next/navigation';
 
 export default function ClientDashboardClient() {
 	const t = useTranslation();
 	const searchParams = useSearchParams();
+	const params = useParams();
+	const router = useRouter();
+	const locale = (params?.locale as string) || 'en';
 	const {
 		data: upcomingBookings,
 		isLoading: upcomingLoading,
@@ -52,19 +55,20 @@ export default function ClientDashboardClient() {
 		salonName: '',
 	});
 
-	const handleBookAgain = useCallback((booking: any) => {
-		// Navigate to booking page with pre-filled data
-		const salonId = booking.salonId || booking.salon?.id;
-		const serviceId = booking.serviceId || booking.service?.id;
-		if (!salonId || !serviceId) return;
-
-		const params = new URLSearchParams({
-			salonId,
-			serviceId,
-			...(booking.staffId && { staffId: booking.staffId }),
-		});
-		window.location.href = `/salons/${salonId}/book?${params.toString()}`;
-	}, []);
+	const handleBookAgain = useCallback(
+		(booking: any) => {
+			const salonId = booking.salonId || booking.salon?.id;
+			const serviceId = booking.serviceId || booking.service?.id;
+			if (!salonId || !serviceId) return;
+			const slug = booking.salon?.slug || salonId;
+			const query = new URLSearchParams({
+				serviceId,
+				...(booking.staffId && { staffId: booking.staffId }),
+			});
+			router.push(`/${locale}/salon/${slug}?${query.toString()}`);
+		},
+		[locale, router]
+	);
 
 	const handleCancel = useCallback(
 		async (booking: any) => {

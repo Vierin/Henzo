@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useCallback, useMemo, useEffect, useRef } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import dynamic from 'next/dynamic';
 import BookingModal from '@/components/BookingModal';
 
@@ -48,6 +48,7 @@ export default function SalonDetailClient({ salon }: SalonDetailClientProps) {
 	const t = useTranslation();
 	const { language } = useLanguage();
 	const router = useRouter();
+	const searchParams = useSearchParams();
 	const { user } = useAuthStore();
 	const isFavorite = useIsFavorite(salon.id, !!user);
 	const addFavoriteMutation = useAddFavorite();
@@ -60,6 +61,25 @@ export default function SalonDetailClient({ salon }: SalonDetailClientProps) {
 	const [selectedService, setSelectedService] = useState<Service | null>(null);
 	const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
 	const groupsInitialized = useRef(false);
+	const openedFromQueryRef = useRef(false);
+
+	// Open booking modal when landing with ?serviceId= (e.g. from "Book again")
+	useEffect(() => {
+		const serviceId = searchParams.get('serviceId');
+		if (
+			!openedFromQueryRef.current &&
+			serviceId &&
+			salon.services?.length
+		) {
+			const service = salon.services.find((s) => s.id === serviceId);
+			if (service) {
+				openedFromQueryRef.current = true;
+				setSelectedService(service);
+				setIsBookingModalOpen(true);
+				router.replace(window.location.pathname);
+			}
+		}
+	}, [salon.services, searchParams, router]);
 
 	const handleBookService = useCallback((service: Service) => {
 		setSelectedService(service);

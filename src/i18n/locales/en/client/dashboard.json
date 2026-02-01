@@ -8,6 +8,7 @@
 	"bookAService": "Book a Service",
 	"noPastReservations": "No past reservations",
 	"noPastDescription": "Your completed appointments will appear here.",
+	"reservationCreated": "Reservation created successfully",
 	"reservationCanceled": "Reservation canceled successfully",
 	"errorLoadingAppointments": "Error loading appointments",
 	"errorLoadingDescription": "There was an error loading your appointments. Please try again later.",

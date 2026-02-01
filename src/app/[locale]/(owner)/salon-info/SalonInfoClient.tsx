@@ -4,8 +4,9 @@ import { useState, useEffect, useRef, useCallback, useMemo, lazy, Suspense } fro
 import { useRouter, usePathname } from 'next/navigation';
 import { toast } from 'react-hot-toast';
 import LoadingSpinner from '@/components/LoadingSpinner';
-import { useSalon } from '@/hooks/useSalons';
+import { useSalon, salonKeys } from '@/hooks/useSalons';
 import { useSalonSlug } from '@/hooks/useSalonSlug';
+import { useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '@/lib/api-client';
 import { useTranslation } from '@/contexts/LanguageContext';
 
@@ -26,6 +27,7 @@ import DeleteModal from './components/DeleteModal';
 export default function SalonInfoClient() {
 	const t = useTranslation();
 	const router = useRouter();
+	const queryClient = useQueryClient();
 	const { getSalonUrl } = useSalonSlug();
 	const addressUpdateTimerRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -335,11 +337,13 @@ export default function SalonInfoClient() {
 
 				if (hasExistingSalon) {
 					await apiClient.put('/salons/current', salonData);
+					await queryClient.invalidateQueries({ queryKey: salonKeys.current() });
 					toast.success(t('owner.salonInfo.salonUpdated'), {
 						id: saveToast,
 					});
 				} else {
 					await apiClient.post('/salons/current', salonData);
+					await queryClient.invalidateQueries({ queryKey: salonKeys.current() });
 					toast.success(t('owner.salonInfo.salonCreated'), { id: saveToast });
 				}
 			} catch (err: unknown) {
@@ -355,7 +359,7 @@ export default function SalonInfoClient() {
 				setLoading(false);
 			}
 		},
-		[formData, selectedCoords, hasExistingSalon, t]
+		[formData, selectedCoords, hasExistingSalon, t, queryClient]
 	);
 
 	const handleDeleteAccount = useCallback(async () => {

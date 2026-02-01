@@ -6,6 +6,7 @@ import { isPastDate, formatBookingDateTime, getDateBadge } from '@/utils/date';
 import { useState } from 'react';
 import { useTranslation } from '@/contexts/LanguageContext';
 import Link from 'next/link';
+import { useParams } from 'next/navigation';
 
 interface VisitHistory {
 	id: string;
@@ -22,6 +23,7 @@ interface VisitHistory {
 	salon?: {
 		id: string;
 		name: string;
+		slug?: string;
 	};
 	service?: {
 		id: string;
@@ -48,6 +50,9 @@ function VisitHistoryCard({
 	hasReview = false,
 }: VisitHistoryCardProps) {
 	const t = useTranslation();
+	const params = useParams();
+	const locale = (params?.locale as string) || 'en';
+	const salonSlug = visit.salon?.slug || visit.salonId;
 	const [showCancelConfirm, setShowCancelConfirm] = useState(false);
 
 	const handleBookAgain = () => {
@@ -117,9 +122,9 @@ function VisitHistoryCard({
 					{/* Service Info */}
 					<div className="flex-1 min-w-0 w-full sm:w-auto">
 						<div className="flex items-start justify-between mb-2 gap-2">
-							{visit.salonId ? (
+							{salonSlug ? (
 								<Link
-									href={`/salon/${visit.salonId}`}
+									href={`/${locale}/salon/${salonSlug}`}
 									prefetch={true}
 									className="text-base sm:text-lg font-semibold text-gray-900 truncate flex-1 hover:text-[#ff5b5b] transition-colors"
 								>

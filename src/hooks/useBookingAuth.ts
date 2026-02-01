@@ -22,6 +22,7 @@ interface UseBookingAuthProps {
 	isOwnerOfThisSalon: () => boolean;
 	editingBooking?: any;
 	t: (key: string) => string;
+	language?: string;
 }
 
 export function useBookingAuth({
@@ -40,6 +41,7 @@ export function useBookingAuth({
 	isOwnerOfThisSalon,
 	editingBooking,
 	t,
+	language = 'en',
 }: UseBookingAuthProps) {
 	const [showLoginModal, setShowLoginModal] = useState(false);
 	const [showMagicLinkSent, setShowMagicLinkSent] = useState(false);
@@ -117,6 +119,7 @@ export function useBookingAuth({
 				clientEmail: email.trim(),
 				clientName: '',
 				clientPhone: '',
+				preferredLocale: language === 'ru' || language === 'vi' ? language : 'en',
 			};
 
 			const response = await fetch(`${API_BASE_URL}/bookings/send-magic-link`, {
