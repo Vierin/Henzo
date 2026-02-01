@@ -33,12 +33,12 @@
 		"emailSupport": "Email technical support"
 	},
 	"basic": {
-		"masters": "Unlimited number of masters",
-		"services": "Unlimited number of services",
-		"marketing": "Marketing tools",
-		"analytics": "Advanced analytics",
-		"crm": "API access",
-		"prioritySupport": "Personal manager"
+		"masters": "Online booking 24/7",
+		"services": "One calendar for all staff",
+		"marketing": "Your booking link + QR",
+		"analytics": "Revenue & reports",
+		"crm": "Client base with visit history",
+		"prioritySupport": "Email reminders — fewer no-shows"
 	}
 }
 

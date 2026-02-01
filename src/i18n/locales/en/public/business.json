@@ -2,21 +2,22 @@
 	"header": {
 		"features": "Features",
 		"benefits": "Benefits",
-		"betaAccess": "Beta Access",
+		"betaAccess": "Get 3 months free",
 		"signIn": "Sign In",
 		"startFree": "Start Free"
 	},
 	"hero": {
-		"badge": "Free Beta Testing",
+		"badge": "3 months free",
 		"title": "Losing clients due to missed calls?",
 		"titleHighlight": "Clients not showing up?",
 		"subtitle": "Increase revenue by 15% with 24/7 online booking. Reduce no-shows with automatic email appointment reminders.",
-		"joinBeta": "Join Beta Testing",
+		"joinBeta": "Get 3 months of free access",
 		"signIn": "Sign In",
 		"free": "100% Free",
 		"freePeriod": "First 3 months",
 		"quickStart": "Quick Start",
-		"quickStartTime": "Live in 8 minutes"
+		"quickStartTime": "Live in 8 minutes",
+		"onboardingNote": "We're onboarding the first businesses and help with setup personally."
 	},
 	"features": {
 		"badge": "Features",
@@ -44,7 +45,7 @@
 		"badge": "Why Henzo",
 		"title": "Grow Your Business",
 		"titleBreak": "with Confidence",
-		"subtitle": "A platform designed specifically for the beauty industry. Join our beta testing and get free access.",
+		"subtitle": "A platform designed specifically for the beauty industry. Get 3 months of free access.",
 		"benefit1": "Increase bookings",
 		"benefit1Description": "(with 24/7 online scheduling)",
 		"benefit2": "Save 10+ hours per week",
@@ -65,17 +66,34 @@
 		"subtitle": "Track appointments, schedules, and staff workload without tables and chaos.",
 		"cta": "Get Free Access"
 	},
+	"pricing": {
+		"badge": "Pricing",
+		"title": "Simple plan.",
+		"titleBreak": "No hidden fees.",
+		"subtitle": "Start with 3 months free, then one clear price per month.",
+		"threeMonthsFree": "3 months free",
+		"thenPrice": "Then",
+		"perMonth": "month",
+		"cta": "Get 3 months of free access",
+		"feature1": "Online booking 24/7",
+		"feature2": "One calendar for all staff",
+		"feature3": "Your booking link + QR",
+		"feature4": "Revenue & reports",
+		"feature5": "Client base with visit history",
+		"feature6": "Email reminders — fewer no-shows"
+	},
 	"cta": {
 		"title": "Ready to Transform",
 		"titleBreak": "Your Salon?",
-		"subtitle": "Join Henzo's beta testing program. Completely free during beta, no commitments required.",
-		"startForFree": "Get Free Access for 3 Months",
-		"joinBetaTesters": "Join our beta testers and get free access"
+		"subtitle": "Get 3 months of free access. No commitments required.",
+		"startForFree": "Get 3 months of free access",
+		"joinBetaTesters": "We're onboarding the first businesses and help with setup personally."
 	},
 	"betaForm": {
-		"badge": "Beta Access",
-		"title": "Get Beta Access",
-		"subtitle": "Fill out the form below to join our beta testing program and get early access to Henzo.",
+		"badge": "Start free",
+		"title": "Create your business account",
+		"subtitle": "Fill out the form below to get started. We'll help you with setup personally.",
+		"onboardingNote": "We're onboarding the first businesses and help with setup personally.",
 		"fullName": "Full Name",
 		"salonName": "Salon Name",
 		"optional": "(Optional)",
@@ -89,9 +107,9 @@
 		"passwordPlaceholder": "Enter your password",
 		"confirmPasswordPlaceholder": "Confirm your password",
 		"submitting": "Submitting...",
-		"requestBetaAccess": "Request Beta Access",
+		"requestBetaAccess": "Create account",
 		"agreement": "By submitting this form, you agree to the service terms.",
-		"successMessage": "Thank you! We'll contact you soon about the beta program.",
+		"successMessage": "Thank you! We'll contact you soon to help you get started.",
 		"magicLinkSent": "Magic link sent to your email! Please check your inbox to complete registration.",
 		"errorMessage": "Failed to submit request. Please try again.",
 		"errors": {

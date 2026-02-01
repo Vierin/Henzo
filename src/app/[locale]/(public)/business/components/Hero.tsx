@@ -46,6 +46,9 @@ export function Hero() {
 								</Button>
 							</Link>
 						</div>
+						<p className="text-sm text-muted-foreground mt-3">
+							{t('business.hero.onboardingNote')}
+						</p>
 
 						<div className="flex items-center gap-8 pt-4">
 							<div>

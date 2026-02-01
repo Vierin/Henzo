@@ -6,6 +6,7 @@ import { Hero } from './components/Hero';
 import { Features } from './components/Features';
 import { Benefits } from './components/Benefits';
 import { Dashboard } from './components/Dashboard';
+import { Pricing } from './components/Pricing';
 import BetaRequestForm from './BetaRequestForm'; 
 import './styles.css';
 
@@ -24,7 +25,7 @@ export default function BusinessLandingPage() {
 		name: 'Henzo cho Salon',
 		alternateName: 'Henzo for Business',
 		description:
-			'Phần mềm quản lý salon hoàn chỉnh cho Việt Nam. Đặt lịch online, quản lý khách hàng, miễn phí beta testing.',
+			'Phần mềm quản lý salon hoàn chỉnh cho Việt Nam. Đặt lịch online, quản lý khách hàng, 3 tháng dùng thử miễn phí.',
 		url: '/business',
 		applicationCategory: 'BusinessApplication',
 		operatingSystem: 'Web, iOS, Android',
@@ -32,7 +33,7 @@ export default function BusinessLandingPage() {
 			'@type': 'Offer',
 			price: '0',
 			priceCurrency: 'VND',
-			description: 'Miễn phí trong период beta testing - Free beta testing',
+			description: '3 tháng miễn phí - 3 months free',
 		},
 		featureList: [
 			'Đặt lịch online tự động',
@@ -89,7 +90,8 @@ export default function BusinessLandingPage() {
 				<Hero />
 				<Features />
 				<Benefits />
-				<Dashboard /> 
+				<Dashboard />
+				<Pricing />
 				<div id="beta-form">
 					<BetaRequestForm />
 				</div>
@@ -111,7 +113,7 @@ export default function BusinessLandingPage() {
 							'@type': 'Offer',
 							price: '0',
 							priceCurrency: 'USD',
-							description: 'Free beta testing period',
+							description: '3 months free, then subscription',
 						},
 						featureList: [
 							'Flexible scheduling',

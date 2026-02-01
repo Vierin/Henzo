@@ -33,12 +33,12 @@
 		"emailSupport": "Hỗ trợ kỹ thuật qua email"
 	},
 	"basic": {
-		"masters": "Số lượng thợ không giới hạn",
-		"services": "Số lượng dịch vụ không giới hạn",
-		"marketing": "Công cụ tiếp thị",
-		"analytics": "Phân tích nâng cao",
-		"crm": "Hệ thống CRM đầy đủ tính năng",
-		"prioritySupport": "Hỗ trợ ưu tiên"
+		"masters": "Đặt lịch trực tuyến 24/7",
+		"services": "Một lịch cho cả đội",
+		"marketing": "Link đặt lịch + QR",
+		"analytics": "Doanh thu và báo cáo",
+		"crm": "Cơ sở khách hàng kèm lịch sử ghé thăm",
+		"prioritySupport": "Nhắc nhở qua email — ít khách bỏ lỡ hẹn"
 	}
 }
 

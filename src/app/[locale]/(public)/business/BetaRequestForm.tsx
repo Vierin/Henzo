@@ -97,6 +97,9 @@ export default function BetaRequestForm() {
 					<p className="text-xl text-muted-foreground">
 						{t('business.betaForm.subtitle')}
 					</p>
+					<p className="text-base text-muted-foreground mt-3">
+						{t('business.betaForm.onboardingNote')}
+					</p>
 				</div>
 
 				<div className="bg-card rounded-lg md:rounded-2xl border border-border shadow-lg p-4 md:p-12">

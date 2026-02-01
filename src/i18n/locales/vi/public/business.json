@@ -12,21 +12,22 @@
 	"header": {
 		"features": "Tính năng",
 		"benefits": "Lợi ích",
-		"betaAccess": "Truy cập Beta",
+		"betaAccess": "Nhận 3 tháng miễn phí",
 		"signIn": "Đăng nhập",
 		"startFree": "Bắt đầu miễn phí"
 	},
 	"hero": {
-		"badge": "Miễn phí Beta Testing",
+		"badge": "3 tháng miễn phí",
 		"title": "Mất khách hàng do bỏ lỡ cuộc gọi?",
 		"titleHighlight": "Khách hàng không đến?",
 		"subtitle": "Tăng doanh thu 15% với đặt lịch trực tuyến 24/7. Giảm số lần không đến với nhắc nhở tự động qua email.",
-		"joinBeta": "Tham gia Beta Testing",
+		"joinBeta": "Nhận 3 tháng truy cập miễn phí",
 		"signIn": "Đăng nhập",
 		"free": "100% Miễn phí",
 		"freePeriod": "3 tháng đầu",
 		"quickStart": "Khởi động nhanh",
-		"quickStartTime": "Hoạt động trong 8 phút"
+		"quickStartTime": "Hoạt động trong 8 phút",
+		"onboardingNote": "Chúng tôi đang kết nối những doanh nghiệp đầu tiên và hỗ trợ thiết lập trực tiếp."
 	},
 	"features": {
 		"badge": "Tính năng",
@@ -54,7 +55,7 @@
 		"badge": "Tại sao chọn Henzo",
 		"title": "Phát triển doanh nghiệp",
 		"titleBreak": "với sự tự tin",
-		"subtitle": "Nền tảng được thiết kế đặc biệt cho ngành làm đẹp. Tham gia beta testing của chúng tôi và nhận quyền truy cập miễn phí.",
+		"subtitle": "Nền tảng được thiết kế đặc biệt cho ngành làm đẹp. Nhận 3 tháng truy cập miễn phí.",
 		"benefit1": "Tăng đặt lịch",
 		"benefit1Description": "(với lịch trình trực tuyến 24/7)",
 		"benefit2": "Tiết kiệm 10+ giờ mỗi tuần",
@@ -75,17 +76,34 @@
 		"subtitle": "Theo dõi lịch hẹn, lịch trình và tải công việc của nhân viên mà không cần bảng và sự hỗn loạn.",
 		"cta": "Nhận quyền truy cập miễn phí"
 	},
+	"pricing": {
+		"badge": "Bảng giá",
+		"title": "Một gói đơn giản.",
+		"titleBreak": "Không phí ẩn.",
+		"subtitle": "Dùng thử 3 tháng miễn phí, sau đó một mức giá rõ ràng mỗi tháng.",
+		"threeMonthsFree": "3 tháng miễn phí",
+		"thenPrice": "Sau đó",
+		"perMonth": "tháng",
+		"cta": "Nhận 3 tháng truy cập miễn phí",
+		"feature1": "Đặt lịch trực tuyến 24/7",
+		"feature2": "Một lịch cho cả đội",
+		"feature3": "Link đặt lịch + QR",
+		"feature4": "Doanh thu và báo cáo",
+		"feature5": "Cơ sở khách hàng kèm lịch sử ghé thăm",
+		"feature6": "Nhắc nhở qua email — ít khách bỏ lỡ hẹn"
+	},
 	"cta": {
 		"title": "Sẵn sàng thay đổi",
 		"titleBreak": "salon của bạn?",
-		"subtitle": "Tham gia chương trình beta testing của Henzo. Hoàn toàn miễn phí trong thời gian beta, không cần cam kết.",
-		"startForFree": "Nhận quyền truy cập miễn phí trong 3 tháng",
-		"joinBetaTesters": "Tham gia các beta tester của chúng tôi và nhận quyền truy cập miễn phí"
+		"subtitle": "Nhận 3 tháng truy cập miễn phí. Không cần cam kết.",
+		"startForFree": "Nhận 3 tháng truy cập miễn phí",
+		"joinBetaTesters": "Chúng tôi đang kết nối những doanh nghiệp đầu tiên và hỗ trợ thiết lập trực tiếp."
 	},
 	"betaForm": {
-		"badge": "Truy cập Beta",
-		"title": "Nhận Truy cập Beta",
-		"subtitle": "Điền vào biểu mẫu bên dưới để tham gia chương trình beta testing của chúng tôi và có quyền truy cập sớm vào Henzo.",
+		"badge": "Bắt đầu miễn phí",
+		"title": "Tạo tài khoản doanh nghiệp",
+		"subtitle": "Điền vào biểu mẫu bên dưới để bắt đầu. Chúng tôi sẽ hỗ trợ thiết lập trực tiếp.",
+		"onboardingNote": "Chúng tôi đang kết nối những doanh nghiệp đầu tiên và hỗ trợ thiết lập trực tiếp.",
 		"fullName": "Họ và tên",
 		"salonName": "Tên salon",
 		"optional": "(Tùy chọn)",
@@ -99,9 +117,9 @@
 		"passwordPlaceholder": "Nhập mật khẩu",
 		"confirmPasswordPlaceholder": "Xác nhận mật khẩu",
 		"submitting": "Đang gửi...",
-		"requestBetaAccess": "Yêu cầu Truy cập Beta",
+		"requestBetaAccess": "Tạo tài khoản",
 		"agreement": "Bằng cách gửi biểu mẫu này, bạn đồng ý với các điều khoản dịch vụ.",
-		"successMessage": "Cảm ơn! Chúng tôi sẽ sớm liên hệ với bạn về chương trình beta.",
+		"successMessage": "Cảm ơn! Chúng tôi sẽ sớm liên hệ để hỗ trợ bạn bắt đầu.",
 		"magicLinkSent": "Liên kết đăng ký đã được gửi đến email của bạn! Vui lòng kiểm tra hộp thư để hoàn tất đăng ký.",
 		"errorMessage": "Không thể gửi yêu cầu. Vui lòng thử lại.",
 		"errors": {
