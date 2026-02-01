@@ -22,5 +22,38 @@
 	"email": "Email",
 	"emailDescription": "Để được tư vấn chung",
 	"faqTitle": "Câu hỏi thường gặp",
-	"faqSubtitle": "Tìm câu trả lời cho các câu hỏi phổ biến về Henzo."
+	"faqSubtitle": "Câu trả lời cho các câu hỏi phổ biến.",
+	"faq": {
+		"tabGeneral": "Chung",
+		"tabBusiness": "Cho doanh nghiệp",
+		"tabAccount": "Tài khoản",
+		"general": {
+			"q1": "Henzo là gì?",
+			"a1": "Henzo là nền tảng cho salon: link đặt lịch của bạn, một lịch, cơ sở khách hàng và nhắc nhở qua email. Khách đặt lịch qua link của bạn hoặc trên trang web.",
+			"q2": "Làm thế nào để bắt đầu?",
+			"a2": "Chủ salon: nhấn \"Nhận 3 tháng miễn phí\" trên trang dành cho doanh nghiệp, điền biểu mẫu và thiết lập salon. Khách: mở link đặt lịch của salon và chọn giờ.",
+			"q3": "Henzo có sẵn ở quốc gia và ngôn ngữ nào?",
+			"a3": "Hiện tại chúng tôi chỉ hoạt động tại Việt Nam và dự kiến mở rộng sang các quốc gia khác theo thời gian. Giao diện có tiếng Anh, tiếng Nga và tiếng Việt."
+		},
+		"business": {
+			"q1": "Làm thế nào để kết nối salon?",
+			"a1": "Đăng ký trên trang dành cho doanh nghiệp, xác nhận email, sau đó điền thông tin salon: địa chỉ, dịch vụ, nhân viên và lịch làm việc.",
+			"q2": "Có dùng thử miễn phí không?",
+			"a2": "Có. 3 tháng miễn phí, sau đó gói theo tháng (390.000 ₫/tháng).",
+			"q3": "Gói subscription gồm những gì?",
+			"a3": "Đặt lịch trực tuyến 24/7, một lịch cho cả đội, cơ sở khách hàng kèm lịch sử ghé thăm, nhắc nhở qua email, link đặt lịch và QR, doanh thu và báo cáo.",
+			"q4": "Khách có thanh toán trực tuyến không?",
+			"a4": "Không. Thanh toán tại salon.",
+			"q5": "Làm thế nào để hủy subscription?",
+			"a5": "Bạn có thể hủy trong cài đặt subscription của tài khoản. Quyền truy cập giữ đến hết kỳ đã thanh toán."
+		},
+		"account": {
+			"q1": "Làm thế nào để tạo tài khoản?",
+			"a1": "Chủ salon: dùng trang dành cho doanh nghiệp, đăng ký bằng email hoặc Google. Khách: dùng link đặt lịch của salon hoặc đăng ký trên trang web.",
+			"q2": "Tôi quên mật khẩu. Làm thế nào để đặt lại?",
+			"a2": "Nhấn \"Quên mật khẩu\" trên trang đăng nhập, nhập email — chúng tôi sẽ gửi link đặt lại.",
+			"q3": "Làm thế nào để cập nhật thông tin?",
+			"a3": "Đăng nhập và vào Cài đặt hồ sơ (dữ liệu cá nhân) hoặc Thông tin salon (thông tin doanh nghiệp)."
+		}
+	}
 }
