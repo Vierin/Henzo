@@ -1168,7 +1168,6 @@ export default function BookingModal({
 				staffId: staffId === 'any' ? undefined : staffId,
 				time: bookingDateTime,
 				salonId: finalSalonId,
-				preferredLocale: language,
 			};
 
 			if (isOwner) {
@@ -1190,6 +1189,7 @@ export default function BookingModal({
 				headers: {
 					'Content-Type': 'application/json',
 					Authorization: `Bearer ${session.access_token}`,
+					'Accept-Language': language || 'en',
 				},
 				body: JSON.stringify(requestBody),
 			});
