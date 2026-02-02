@@ -3,6 +3,7 @@ import type { Locale } from './routing';
 import { loadModules, type TranslationModule } from './modules';
 
 // Base modules that are always loaded for server components
+// Include client modules so redirect to dashboard (e.g. after booking) has translations on first paint
 const BASE_MODULES: TranslationModule[] = [
 	'core/common',
 	'core/meta',
@@ -15,6 +16,10 @@ const BASE_MODULES: TranslationModule[] = [
 	'shared/forms',
 	'shared/emptyStates',
 	'public/booking', // Always load booking module as BookingModal can be used on any page
+	'client/dashboard',
+	'client/favorites',
+	'client/reviews',
+	'client/settings',
 ];
 
 /**

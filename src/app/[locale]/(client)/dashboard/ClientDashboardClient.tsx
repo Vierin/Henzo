@@ -40,9 +40,9 @@ export default function ClientDashboardClient() {
 		[userReviews]
 	);
 
-	const [showSuccessMessage, setShowSuccessMessage] = useState<string | null>(
-		null
-	);
+	const [showSuccessMessage, setShowSuccessMessage] = useState<
+		'created' | 'canceled' | null
+	>(null);
 	const [reviewModal, setReviewModal] = useState<{
 		isOpen: boolean;
 		salonId: string;
@@ -74,7 +74,7 @@ export default function ClientDashboardClient() {
 		async (booking: any) => {
 			try {
 				await cancelBookingMutation.mutateAsync(booking.id);
-				setShowSuccessMessage(t('client.dashboard.reservationCanceled'));
+				setShowSuccessMessage('canceled');
 				setTimeout(() => setShowSuccessMessage(null), 3000);
 			} catch (error) {
 				console.error('Failed to cancel booking:', error);
@@ -258,30 +258,30 @@ export default function ClientDashboardClient() {
 	useEffect(() => {
 		const bookingCreated = searchParams.get('bookingCreated');
 		if (bookingCreated === '1') {
-			const msg =
-				t('client.dashboard.reservationCreated') ||
-				'Your reservation has been created';
-			setShowSuccessMessage(msg);
-
+			setShowSuccessMessage('created');
 			// Clean query param from URL
 			if (typeof window !== 'undefined') {
 				const url = new URL(window.location.href);
 				url.searchParams.delete('bookingCreated');
 				window.history.replaceState(null, '', url.toString());
 			}
-
 			const timer = setTimeout(() => setShowSuccessMessage(null), 4000);
 			return () => clearTimeout(timer);
 		}
-	}, [searchParams, t]);
+	}, [searchParams]);
 
-	// Success message
+	// Success message — resolve translation at render so it's correct after module load
 	const SuccessMessage = () => {
 		if (!showSuccessMessage) return null;
-
+		const msg =
+			showSuccessMessage === 'created'
+				? t('client.dashboard.reservationCreated')
+				: t('client.dashboard.reservationCanceled');
+		const text =
+			msg.startsWith('client.dashboard.') ? (showSuccessMessage === 'created' ? 'Reservation created successfully' : 'Reservation canceled successfully') : msg;
 		return (
 			<div className="fixed top-4 right-4 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg z-50">
-				{showSuccessMessage}
+				{text}
 			</div>
 		);
 	};
