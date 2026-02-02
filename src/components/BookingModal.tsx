@@ -187,7 +187,7 @@ export default function BookingModal({
 	} | null>(null);
 	const [currentStep, setCurrentStep] = useState<'booking' | 'client'>('booking');
 	const [isMobile, setIsMobile] = useState(false);
-	const [timeFilter, setTimeFilter] = useState<'morning' | 'afternoon' | 'evening'>('evening');
+	const [timeFilter, setTimeFilter] = useState<'morning' | 'afternoon' | 'evening'>('afternoon');
 	const [clientEmail, setClientEmail] = useState('');
 	const [clientName, setClientName] = useState('');
 	const [clientPhone, setClientPhone] = useState('');
@@ -814,7 +814,7 @@ export default function BookingModal({
 			setBookingSuccess(null);
 			setSelectedDate(''); // Reset selected date to trigger auto-selection on next open
 			setSelectedTime(''); // Reset selected time
-			setTimeFilter('evening'); // Reset time filter to evening
+			setTimeFilter('afternoon'); // Reset time filter to day (afternoon)
 			setClientEmail(''); // Reset client email
 			setClientName(''); // Reset client name
 			setClientPhone(''); // Reset client phone
