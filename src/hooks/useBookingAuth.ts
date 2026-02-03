@@ -119,13 +119,13 @@ export function useBookingAuth({
 				clientEmail: email.trim(),
 				clientName: '',
 				clientPhone: '',
-				preferredLocale: language === 'ru' || language === 'vi' ? language : 'en',
 			};
 
 			const response = await fetch(`${API_BASE_URL}/bookings/send-magic-link`, {
 				method: 'POST',
 				headers: {
 					'Content-Type': 'application/json',
+					'Accept-Language': language === 'ru' || language === 'vi' ? language : 'en',
 				},
 				body: JSON.stringify({
 					email: email.trim(),
