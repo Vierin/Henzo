@@ -29,6 +29,8 @@ interface Subscription {
 	trialEndDate?: string;
 	amount: number;
 	stripeCustomerId?: string | null;
+	cancelAtPeriodEnd?: boolean;
+	cancelAt?: string | null;
 }
 
 interface Invoice {
@@ -39,6 +41,7 @@ interface Invoice {
 	currency: string;
 	status: string;
 	pdfUrl: string | null;
+	hostedInvoiceUrl: string | null;
 }
 
 const FEATURE_KEYS = [
@@ -60,6 +63,7 @@ export default function SubscriptionClient() {
 	const [checkoutLoading, setCheckoutLoading] =
 		useState<SubscriptionInterval | null>(null);
 	const [portalLoading, setPortalLoading] = useState(false);
+	const [cancelLoading, setCancelLoading] = useState(false);
 	const [billingInterval, setBillingInterval] =
 		useState<SubscriptionInterval>('monthly');
 	const [showDebugResponse, setShowDebugResponse] = useState(false);
@@ -192,6 +196,21 @@ export default function SubscriptionClient() {
 		}
 	};
 
+	const handleCancelSubscription = async () => {
+		if (!window.confirm(t('owner.subscription.cancelConfirm'))) return;
+		try {
+			setCancelLoading(true);
+			await apiClient.post('/subscriptions/cancel');
+			toast.success(t('owner.subscription.cancelSuccess'));
+			await fetchSubscription();
+		} catch (error: any) {
+			console.error('Cancel subscription error:', error);
+			toast.error(error?.message || t('owner.subscription.cancelError'));
+		} finally {
+			setCancelLoading(false);
+		}
+	};
+
 	const trialEndDate = currentSubscription?.trialEndDate
 		? new Date(currentSubscription.trialEndDate)
 		: null;
@@ -296,7 +315,15 @@ export default function SubscriptionClient() {
 											: t('owner.subscription.monthly')}
 									</h2>
 									<div className="mt-2 space-y-0.5 text-sm text-gray-500">
-										{nextPaymentDateFormatted && (
+										{currentSubscription?.status === 'CANCELLED' && paidEndDateFormatted && (
+											<p className="text-amber-700 font-medium">
+												{t('owner.subscription.subscriptionEndDate')}:{' '}
+												<b className="text-gray-900 text-lg">
+													{paidEndDateFormatted}
+												</b>
+											</p>
+										)}
+										{nextPaymentDateFormatted && currentSubscription?.status !== 'CANCELLED' && (
 											<p>
 												{t('owner.subscription.nextRenewalDate')}:{' '}
 												<b className="text-gray-900 text-lg">
@@ -324,8 +351,14 @@ export default function SubscriptionClient() {
 								</div>
 							</div>
 							<div className="flex items-center gap-3 flex-shrink-0">
-								<span className="px-3 py-1 rounded-full text-xs font-bold uppercase bg-[#ff5b5b]/15 text-[#ff5b5b]">
-									{t('owner.subscription.activeBadge')}
+								<span className={`px-3 py-1 rounded-full text-xs font-bold uppercase ${
+									currentSubscription?.status === 'CANCELLED'
+										? 'bg-amber-100 text-amber-700'
+										: 'bg-[#ff5b5b]/15 text-[#ff5b5b]'
+								}`}>
+									{currentSubscription?.status === 'CANCELLED'
+										? t('owner.subscription.cancelledBadge')
+										: t('owner.subscription.activeBadge')}
 								</span>
 							</div>
 						</div>
@@ -333,7 +366,7 @@ export default function SubscriptionClient() {
 						{/* Two columns: Payment Methods | Billing History */}
 						<div className="grid grid-cols-1 md:flex gap-4 justify-between items-start">
 							{/* Billing History */}
-							<div className="bg-white md:w-3/4 border border-gray-200 rounded-2xl p-4 shadow-sm">
+							<div className="bg-white md:w-3/4 border border-gray-200 rounded-2xl p-4 shadow-sm sm:min-h-[300px] flex flex-col">
 								<h3 className="font-bold text-gray-900 flex items-center gap-2 mb-4">
 									<FileText className="w-5 h-5 text-[#ff5b5b]" />
 									{t('owner.subscription.billingHistory')}
@@ -367,26 +400,46 @@ export default function SubscriptionClient() {
 													</td>
 												</tr>
 											) : (
-												invoices.map((inv) => (
-													<tr key={inv.id} className="border-b border-gray-100">
-														<td className="py-2 font-medium text-gray-900">
-															{inv.number ?? inv.id.slice(-12)}
-														</td>
-														<td className="py-2 text-gray-600">
-															{new Date(inv.date).toLocaleDateString()}
-														</td>
-														<td className="py-2 text-gray-900">
-															{inv.currency === 'VND'
-																? formatVND(inv.amount)
-																: `${inv.amount.toFixed(2)} ${inv.currency}`}
-														</td>
-														<td className="py-2">
-															<span className="px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800">
-																{inv.status}
-															</span>
-														</td>
-													</tr>
-												))
+												invoices.map((inv) => {
+													const invoiceUrl =
+														inv.hostedInvoiceUrl ?? inv.pdfUrl ?? null;
+													return (
+														<tr
+															key={inv.id}
+															className="border-b border-gray-100 hover:bg-gray-50/80 transition-colors"
+														>
+															<td className="py-2 font-medium text-gray-900">
+																{invoiceUrl ? (
+																	<a
+																		href={invoiceUrl}
+																		target="_blank"
+																		rel="noopener noreferrer"
+																		className="text-[#ff5b5b] hover:underline focus:outline-none focus:ring-2 focus:ring-[#ff5b5b] focus:ring-offset-1 rounded"
+																	>
+																		{inv.number ?? inv.id.slice(-12)}
+																	</a>
+																) : (
+																	(inv.number ?? inv.id.slice(-12))
+																)}
+															</td>
+															<td className="py-2 text-gray-600">
+																{new Date(inv.date).toLocaleDateString()}
+															</td>
+															<td className="py-2 text-gray-900">
+																{inv.currency === 'VND'
+																	? formatVND(inv.amount)
+																	: `${inv.amount.toFixed(2)} ${inv.currency}`}
+															</td>
+															<td className="py-2">
+																<span className="px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800">
+																	{inv.status === 'paid'
+																		? t('owner.subscription.paid')
+																		: inv.status}
+																</span>
+															</td>
+														</tr>
+													);
+												})
 											)}
 										</tbody>
 									</table>
@@ -395,7 +448,7 @@ export default function SubscriptionClient() {
 									type="button"
 									onClick={handleManageBilling}
 									disabled={portalLoading}
-									className="flex mt-4 text-xs mx-auto font-semibold text-gray-500 hover:text-[#ff5b5b] uppercase tracking-wide disabled:opacity-60"
+									className="flex mt-auto text-xs mx-auto font-semibold text-gray-500 hover:text-[#ff5b5b] uppercase tracking-wide disabled:opacity-60"
 								>
 									{t('owner.subscription.viewAllTransactions')}
 								</button>
@@ -414,15 +467,19 @@ export default function SubscriptionClient() {
 									>
 										{t('owner.subscription.manageBilling')}
 									</button>
-									<button
-										type="button"
-										onClick={handleManageBilling}
-										disabled={portalLoading}
-										className="flex items-center gap-2 text-gray-500 hover:text-red-600 transition-colors disabled:opacity-60"
-									>
-										<X className="w-4 h-4" />
-										{t('owner.subscription.cancelSubscription')}
-									</button>
+									{currentSubscription?.status !== 'CANCELLED' && (
+										<button
+											type="button"
+											onClick={handleCancelSubscription}
+											disabled={cancelLoading}
+											className="flex items-center gap-2 text-gray-500 hover:text-red-600 transition-colors disabled:opacity-60"
+										>
+											<X className="w-4 h-4" />
+											{cancelLoading
+												? t('owner.subscription.cancelling')
+												: t('owner.subscription.cancelSubscription')}
+										</button>
+									)}
 								</div>
 							</div>
 						</div>
