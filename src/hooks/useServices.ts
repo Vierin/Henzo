@@ -5,6 +5,7 @@ import {
 	CreateServiceDto,
 	UpdateServiceDto,
 } from '@/types/dto/service.dto';
+import { staffKeys } from './useStaff';
 import { toast } from 'react-hot-toast';
 
 // Query keys
@@ -101,6 +102,10 @@ export const useCreateService = () => {
 				queryClient.refetchQueries({
 					queryKey: serviceKeys.bySalon(data.salonId),
 				});
+				// Staff list shows staff.Service — keep in sync
+				queryClient.invalidateQueries({
+					queryKey: staffKeys.bySalon(data.salonId),
+				});
 			}
 			// Also invalidate all service lists to be safe
 			queryClient.invalidateQueries({
@@ -137,6 +142,12 @@ export const useUpdateService = () => {
 			queryClient.setQueryData(serviceKeys.detail(variables.id), data);
 			// Invalidate lists
 			queryClient.invalidateQueries({ queryKey: serviceKeys.lists() });
+			// Staff list shows staff.Service — keep in sync when service.Staff changes
+			if (data.salonId) {
+				queryClient.invalidateQueries({
+					queryKey: staffKeys.bySalon(data.salonId),
+				});
+			}
 			toast.success('Service updated successfully!');
 		},
 		onError: (error: Error) => {
@@ -158,6 +169,7 @@ export const useDeleteService = () => {
 			queryClient.removeQueries({ queryKey: serviceKeys.detail(id) });
 			// Invalidate lists
 			queryClient.invalidateQueries({ queryKey: serviceKeys.lists() });
+			queryClient.invalidateQueries({ queryKey: staffKeys.lists() });
 			toast.success('Service deleted successfully!');
 		},
 		onError: (error: Error) => {

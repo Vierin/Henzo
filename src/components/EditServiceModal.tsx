@@ -441,14 +441,14 @@ export default function EditServiceModal({
 									}}
 								>
 									<SelectTrigger className="w-full border border-gray-300 focus:ring-2 focus:ring-[#ff5b5b] focus:border-transparent text-gray-900 text-sm">
-										<SelectValue placeholder="No group" />
+										<SelectValue placeholder={t('owner.services.noGroup')} />
 									</SelectTrigger>
 									<SelectContent className="bg-white border border-gray-300 shadow-lg rounded-md">
 										<SelectItem
 											value="none"
 											className="bg-white hover:bg-gray-50 focus:bg-gray-50 text-gray-900 cursor-pointer text-sm"
 										>
-											No group
+											{t('owner.services.noGroup')}
 										</SelectItem>
 										{groups.map((group) => (
 											<SelectItem

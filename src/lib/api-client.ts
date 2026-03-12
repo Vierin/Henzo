@@ -206,7 +206,7 @@ export class ApiClient {
 	// Generic CRUD operations
 	async get<T>(
 		endpoint: string,
-		options?: { responseType?: 'blob' }
+		options?: { responseType?: 'blob'; cache?: RequestCache }
 	): Promise<T> {
 		return this.request<T>(endpoint, { method: 'GET', ...options });
 	}

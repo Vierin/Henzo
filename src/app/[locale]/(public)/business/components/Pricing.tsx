@@ -3,13 +3,13 @@
 import Link from 'next/link';
 import { Check } from 'lucide-react';
 import { useTranslation } from '@/contexts/LanguageContext';
-import { SUBSCRIPTION_PLANS } from '@/config/subscriptionPlans';
+import { SUBSCRIPTION_PLANS_LEGACY } from '@/config/subscriptionPlans';
 import { Button } from './ui/button';
 import { ArrowRight } from 'lucide-react';
 
 export function Pricing() {
 	const t = useTranslation();
-	const plan = SUBSCRIPTION_PLANS.BASIC;
+	const plan = SUBSCRIPTION_PLANS_LEGACY.BASIC;
 	const features = [
 		t('business.pricing.feature1'),
 		t('business.pricing.feature2'),
@@ -49,7 +49,7 @@ export function Pricing() {
 								</p>
 								<p className="text-gray-500 text-base">
 									{t('business.pricing.thenPrice')}{' '}
-									{plan.price.toLocaleString('vi-VN')} VND/{t('business.pricing.perMonth')}
+									{plan.price.toLocaleString('vi-VN').replace(/\./g, ' ')} ₫/{t('business.pricing.perMonth')}
 								</p>
 							</div>
 							<Link href="#beta-form" className="cursor-pointer shrink-0">

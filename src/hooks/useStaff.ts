@@ -111,6 +111,8 @@ export const useUpdateStaff = () => {
 			queryClient.invalidateQueries({
 				queryKey: staffKeys.bySalon(data.salonId),
 			});
+			// Services list shows service.Staff — keep in sync when staff.Service changes
+			queryClient.invalidateQueries({ queryKey: ['services'] });
 			toast.success(t('owner.staffNew.updatedSuccessfully'));
 		},
 		onError: (error: Error) => {
@@ -133,6 +135,8 @@ export const useDeleteStaff = () => {
 			queryClient.removeQueries({ queryKey: staffKeys.detail(id) });
 			// Invalidate all staff lists
 			queryClient.invalidateQueries({ queryKey: staffKeys.lists() });
+			// Services list shows service.Staff — keep in sync
+			queryClient.invalidateQueries({ queryKey: ['services'] });
 			toast.success(t('owner.staffNew.deletedSuccessfully'));
 		},
 		onError: (error: Error) => {

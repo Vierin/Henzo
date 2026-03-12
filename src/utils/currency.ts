@@ -1,19 +1,8 @@
 /**
- * Format Vietnamese Dong (VND) currency
- * Simplifies large numbers: 50,000 ₫ → 50K ₫, 1,000,000 ₫ → 1M ₫
+ * Format Vietnamese Dong (VND) currency — full format with thousand separator, e.g. 750.000 VND
  */
 export function formatVND(amount: number): string {
-	if (amount >= 1_000_000) {
-		const millions = amount / 1_000_000;
-		return `${millions % 1 === 0 ? Math.floor(millions) : millions.toFixed(1)}M ₫`;
-	}
-
-	if (amount >= 1_000) {
-		const thousands = amount / 1_000;
-		return `${thousands % 1 === 0 ? Math.floor(thousands) : thousands.toFixed(1)}K ₫`;
-	}
-
-	return `${amount.toFixed(0)} ₫`;
+	return `${amount.toLocaleString('vi-VN')} VND`;
 }
 
 /**
@@ -21,7 +10,7 @@ export function formatVND(amount: number): string {
  * Used in forms and detailed views
  */
 export function formatVNDFull(amount: number): string {
-	return `${amount.toLocaleString('vi-VN')} ₫`;
+	return `${amount.toLocaleString('vi-VN')} VND`;
 }
 
 /**

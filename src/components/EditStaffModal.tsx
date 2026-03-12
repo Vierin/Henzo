@@ -1,10 +1,11 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
 import { Staff } from '@/types';
 import { useTranslation } from '@/contexts/LanguageContext';
-import { useServices } from '@/hooks/useServices';
+import { useServices, serviceKeys } from '@/hooks/useServices';
 import { apiClient } from '@/lib/api-client';
 import ServiceSelector from './ServiceSelector';
 
@@ -22,6 +23,7 @@ export default function EditStaffModal({
 	onSave,
 }: EditStaffModalProps) {
 	const t = useTranslation();
+	const queryClient = useQueryClient();
 	const [formData, setFormData] = useState({
 		name: '',
 		email: '',
@@ -66,6 +68,8 @@ export default function EditStaffModal({
 				serviceIds: selectedServiceIds.length > 0 ? selectedServiceIds : [],
 			});
 
+			// Services list shows service.Staff — keep in sync when staff.Service changes
+			queryClient.invalidateQueries({ queryKey: serviceKeys.lists() });
 			onSave(updatedStaff);
 			toast.success('Staff member updated successfully!', { id: updateToast });
 			onClose();
