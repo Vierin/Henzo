@@ -56,7 +56,7 @@ export interface AdminSalon {
 		services: number;
 	};
 	subscription?: {
-		type:   'BASIC'  ;
+		type: 'TRIAL' | 'STARTER';
 		status: string;
 	};
 	createdAt: string;

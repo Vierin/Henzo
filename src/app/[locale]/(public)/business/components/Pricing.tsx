@@ -9,7 +9,7 @@ import { ArrowRight } from 'lucide-react';
 
 export function Pricing() {
 	const t = useTranslation();
-	const plan = SUBSCRIPTION_PLANS_LEGACY.BASIC;
+	const plan = SUBSCRIPTION_PLANS_LEGACY.STARTER;
 	const features = [
 		t('business.pricing.feature1'),
 		t('business.pricing.feature2'),

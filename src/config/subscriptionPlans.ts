@@ -44,8 +44,8 @@ export function formatVnd(amount: number): string {
 	return `${s.replace(/\./g, ' ')} ₫`;
 }
 
-/** Legacy single plan (BASIC) for API compatibility. */
-export type SubscriptionPlanType = 'BASIC';
+/** Legacy single plan (STARTER) for API compatibility. */
+export type SubscriptionPlanType = 'STARTER';
 export const SUBSCRIPTION_PLANS_LEGACY: Record<SubscriptionPlanType, { id: SubscriptionPlanType; name: string; price: number }> = {
-	BASIC: { id: 'BASIC', name: 'Basic', price: 390000 },
+	STARTER: { id: 'STARTER', name: 'Starter', price: 390000 },
 };

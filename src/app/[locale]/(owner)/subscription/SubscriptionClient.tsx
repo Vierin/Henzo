@@ -21,7 +21,7 @@ import toast from 'react-hot-toast';
 interface Subscription {
 	id: string;
 	salonId: string;
-	type: 'BASIC';
+	type: 'TRIAL' | 'STARTER';
 	status: 'ACTIVE' | 'INACTIVE' | 'CANCELLED' | 'EXPIRED';
 	startDate: string;
 	endDate?: string;
