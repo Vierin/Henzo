@@ -22,7 +22,7 @@ import {
 	TrendingUp,
 } from 'lucide-react';
 import { safeParseDate } from '@/utils/date';
-import { formatVND } from '@/utils/currency';
+import { formatVND, formatVNDCompact } from '@/utils/currency';
 import { convertBookingDtoArray } from '@/utils/bookingTransformers';
 import { useDashboardStats } from '@/hooks/useDashboardStats';
 import { useClients } from '@/hooks/useClients';
@@ -282,7 +282,7 @@ export default function OwnerDashboardClient() {
 			<div className="grid grid-cols-2 xl:grid-cols-4 gap-2 md:gap-6">
 				<StatsCard
 					title={t('owner.dashboard.totalRevenue')}
-					value={formatVND(stats.revenue)}
+					value={formatVNDCompact(stats.revenue)}
 					icon={<DollarSign className="w-6 h-6" />}
 				 
 					trend={

@@ -31,6 +31,16 @@ interface Subscription {
 	stripeCustomerId?: string | null;
 }
 
+interface Invoice {
+	id: string;
+	number: string | null;
+	date: string;
+	amount: number;
+	currency: string;
+	status: string;
+	pdfUrl: string | null;
+}
+
 const FEATURE_KEYS = [
 	'owner.subscription.basic.masters',
 	'owner.subscription.basic.prioritySupport',
@@ -52,11 +62,24 @@ export default function SubscriptionClient() {
 	const [portalLoading, setPortalLoading] = useState(false);
 	const [billingInterval, setBillingInterval] =
 		useState<SubscriptionInterval>('monthly');
+	const [showDebugResponse, setShowDebugResponse] = useState(false);
+	const [invoices, setInvoices] = useState<Invoice[]>([]);
 	const toastShownRef = useRef<{ success?: boolean; canceled?: boolean }>({});
 
 	useEffect(() => {
 		if (salonId) fetchSubscription();
 	}, [salonId]);
+
+	useEffect(() => {
+		if (!currentSubscription?.stripeCustomerId) {
+			setInvoices([]);
+			return;
+		}
+		apiClient
+			.get<{ invoices: Invoice[] }>('/subscriptions/invoices')
+			.then((r) => setInvoices(r.invoices ?? []))
+			.catch(() => setInvoices([]));
+	}, [currentSubscription?.stripeCustomerId]);
 
 	// After Stripe redirect: refetch, show toast once, poll until paid (webhook can be delayed)
 	useEffect(() => {
@@ -64,8 +87,25 @@ export default function SubscriptionClient() {
 		const canceled = searchParams.get('canceled');
 		if (success === '1' && !toastShownRef.current.success) {
 			toastShownRef.current.success = true;
+			setShowDebugResponse(true);
+			const sessionId = searchParams.get('session_id') ?? undefined;
 			window.history.replaceState({}, '', window.location.pathname);
 			(async () => {
+				if (sessionId) {
+					try {
+						await apiClient.post<{ ok: boolean }>(
+							'/subscriptions/confirm-checkout',
+							{
+								session_id: sessionId,
+							}
+						);
+					} catch (e) {
+						console.warn(
+							'confirm-checkout failed (webhook may have already applied):',
+							e
+						);
+					}
+				}
 				let sub = await fetchSubscription(true);
 				setTimeout(() => {
 					const msg = t('owner.subscription.switchSuccess');
@@ -75,7 +115,6 @@ export default function SubscriptionClient() {
 							: 'Тарифный план успешно обновлен'
 					);
 				}, 400);
-				// Poll: webhook may arrive with delay
 				for (let i = 0; i < 8; i++) {
 					if (sub && (sub.amount ?? 0) > 0) break;
 					await new Promise((r) => setTimeout(r, 2000));
@@ -212,7 +251,7 @@ export default function SubscriptionClient() {
 				{/* Trial banner — only when still on trial (amount === 0) */}
 				{currentSubscription?.trialEndDate && !isPaid && (
 					<section className="mb-8">
-						<div className="w-full max-w-4xl mx-auto bg-[#fef2f2] border border-[#fecaca] rounded-2xl p-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+						<div className="w-full max-w-4xl mx-auto bg-[#fef2f2] border border-[#fecaca] rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
 							<div className="flex items-start sm:items-center gap-4">
 								<div className="flex-shrink-0 w-12 h-12 rounded-xl bg-[#fecaca] flex items-center justify-center">
 									<Clock className="w-7 h-7 text-[#ff5b5b]" />
@@ -244,9 +283,9 @@ export default function SubscriptionClient() {
 
 				{/* Paid subscription: full layout as on screenshot */}
 				{isPaid && (
-					<div className="max-w-4xl mx-auto space-y-6">
+					<div className="max-w-4xl mx-auto space-y-4">
 						{/* Top card: plan name, ACTIVE, renewal, Manage Billing */}
-						<div className="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+						<div className="bg-white border border-gray-200 rounded-2xl px-4 py-6 shadow-sm flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
 							<div className="flex items-start gap-3">
 								<Check className="w-6 h-6 text-[#ff5b5b] flex-shrink-0 mt-0.5" />
 								<div>
@@ -260,22 +299,26 @@ export default function SubscriptionClient() {
 										{nextPaymentDateFormatted && (
 											<p>
 												{t('owner.subscription.nextRenewalDate')}:{' '}
-												{nextPaymentDateFormatted}
+												<b className="text-gray-900 text-lg">
+													{nextPaymentDateFormatted}
+												</b>
 											</p>
 										)}
 										<p>
 											{(currentSubscription?.amount ?? 0) >= 50
 												? t('owner.subscription.billedAnnuallyAt')
 												: t('owner.subscription.billedMonthlyAt')}{' '}
-											{formatVND(
-												(currentSubscription?.amount ?? 0) >= 50
-													? PRICE_ANNUAL_VND
-													: PRICE_MONTHLY_VND
-											)}
-											/
-											{(currentSubscription?.amount ?? 0) >= 50
-												? t('owner.subscription.perYear')
-												: t('owner.subscription.perMonth')}
+											<b className="text-gray-900 text-lg">
+												{formatVND(
+													(currentSubscription?.amount ?? 0) >= 50
+														? PRICE_ANNUAL_VND
+														: PRICE_MONTHLY_VND
+												)}
+												/
+												{(currentSubscription?.amount ?? 0) >= 50
+													? t('owner.subscription.perYear')
+													: t('owner.subscription.perMonth')}
+											</b>
 										</p>
 									</div>
 								</div>
@@ -284,38 +327,13 @@ export default function SubscriptionClient() {
 								<span className="px-3 py-1 rounded-full text-xs font-bold uppercase bg-[#ff5b5b]/15 text-[#ff5b5b]">
 									{t('owner.subscription.activeBadge')}
 								</span>
-								<button
-									type="button"
-									onClick={handleManageBilling}
-									disabled={portalLoading}
-									className="px-5 py-2.5 rounded-xl font-semibold text-sm text-white bg-[#ff5b5b] hover:bg-[#e54f4f] disabled:opacity-60 transition-colors"
-								>
-									{t('owner.subscription.manageBilling')}
-								</button>
 							</div>
 						</div>
 
 						{/* Two columns: Payment Methods | Billing History */}
-						<div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-							{/* Payment Methods */}
-							<div className="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm">
-								<h3 className="font-bold text-gray-900 flex items-center gap-2 mb-4">
-									<CreditCard className="w-5 h-5 text-[#ff5b5b]" />
-									{t('owner.subscription.paymentMethods')}
-								</h3>
-								<button
-									type="button"
-									onClick={handleManageBilling}
-									disabled={portalLoading}
-									className="w-full border-2 border-dashed border-gray-300 rounded-xl p-4 flex items-center justify-center gap-2 text-gray-600 hover:border-[#ff5b5b] hover:text-[#ff5b5b] transition-colors disabled:opacity-60"
-								>
-									<span className="text-xl font-bold">+</span>
-									{t('owner.subscription.addPaymentMethod')}
-								</button>
-							</div>
-
+						<div className="grid grid-cols-1 md:flex gap-4 justify-between items-start">
 							{/* Billing History */}
-							<div className="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm">
+							<div className="bg-white md:w-3/4 border border-gray-200 rounded-2xl p-4 shadow-sm">
 								<h3 className="font-bold text-gray-900 flex items-center gap-2 mb-4">
 									<FileText className="w-5 h-5 text-[#ff5b5b]" />
 									{t('owner.subscription.billingHistory')}
@@ -339,14 +357,37 @@ export default function SubscriptionClient() {
 											</tr>
 										</thead>
 										<tbody>
-											<tr>
-												<td
-													colSpan={4}
-													className="py-6 text-center text-gray-500"
-												>
-													{t('owner.subscription.paymentHistoryEmpty')}
-												</td>
-											</tr>
+											{invoices.length === 0 ? (
+												<tr>
+													<td
+														colSpan={4}
+														className="py-6 text-center text-gray-500"
+													>
+														{t('owner.subscription.paymentHistoryEmpty')}
+													</td>
+												</tr>
+											) : (
+												invoices.map((inv) => (
+													<tr key={inv.id} className="border-b border-gray-100">
+														<td className="py-2 font-medium text-gray-900">
+															{inv.number ?? inv.id.slice(-12)}
+														</td>
+														<td className="py-2 text-gray-600">
+															{new Date(inv.date).toLocaleDateString()}
+														</td>
+														<td className="py-2 text-gray-900">
+															{inv.currency === 'VND'
+																? formatVND(inv.amount)
+																: `${inv.amount.toFixed(2)} ${inv.currency}`}
+														</td>
+														<td className="py-2">
+															<span className="px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800">
+																{inv.status}
+															</span>
+														</td>
+													</tr>
+												))
+											)}
 										</tbody>
 									</table>
 								</div>
@@ -354,27 +395,36 @@ export default function SubscriptionClient() {
 									type="button"
 									onClick={handleManageBilling}
 									disabled={portalLoading}
-									className="mt-4 text-xs font-semibold text-gray-500 hover:text-[#ff5b5b] uppercase tracking-wide disabled:opacity-60"
+									className="flex mt-4 text-xs mx-auto font-semibold text-gray-500 hover:text-[#ff5b5b] uppercase tracking-wide disabled:opacity-60"
 								>
 									{t('owner.subscription.viewAllTransactions')}
 								</button>
 							</div>
-						</div>
 
-						{/* Account Settings */}
-						<div className="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm">
-							<p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-3">
-								{t('owner.subscription.accountSettings')}
-							</p>
-							<button
-								type="button"
-								onClick={handleManageBilling}
-								disabled={portalLoading}
-								className="flex items-center gap-2 text-gray-500 hover:text-red-600 transition-colors disabled:opacity-60"
-							>
-								<X className="w-4 h-4" />
-								{t('owner.subscription.cancelSubscription')}
-							</button>
+							<div className="bg-white md:w-1/4 border border-gray-200 rounded-2xl p-4 shadow-sm flex flex-col">
+								<p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-3">
+									{t('owner.subscription.accountSettings')}
+								</p>
+								<div className="flex flex-col gap-3 mt-4">
+									<button
+										type="button"
+										onClick={handleManageBilling}
+										disabled={portalLoading}
+										className="px-5 py-2.5 rounded-xl font-semibold text-sm text-white bg-[#ff5b5b] hover:bg-[#e54f4f] disabled:opacity-60 transition-colors"
+									>
+										{t('owner.subscription.manageBilling')}
+									</button>
+									<button
+										type="button"
+										onClick={handleManageBilling}
+										disabled={portalLoading}
+										className="flex items-center gap-2 text-gray-500 hover:text-red-600 transition-colors disabled:opacity-60"
+									>
+										<X className="w-4 h-4" />
+										{t('owner.subscription.cancelSubscription')}
+									</button>
+								</div>
+							</div>
 						</div>
 					</div>
 				)}
@@ -431,13 +481,13 @@ export default function SubscriptionClient() {
 							<p className="text-gray-500 text-sm text-center mb-3">
 								{t('owner.subscription.planTagline')}
 							</p>
-							<p className="text-4xl font-bold text-gray-900 text-center mb-3">
+							<div className="text-4xl font-bold text-gray-900 text-center mb-3">
 								{billingInterval === 'annual' && (
-									<p className="line-through text-gray-600 text-3xl">
+									<span className="block line-through text-gray-600 text-3xl">
 										{formatVND(PRICE_12_MONTHS_VND)}
-									</p>
+									</span>
 								)}
-								<p>
+								<span className="block">
 									{formatVND(
 										billingInterval === 'annual'
 											? PRICE_ANNUAL_VND
@@ -451,8 +501,8 @@ export default function SubscriptionClient() {
 												: 'owner.subscription.perMonth'
 										)}
 									</span>
-								</p>
-							</p>
+								</span>
+							</div>
 
 							<ul className="grid grid-cols-1 sm:grid-cols-2 gap-y-3 gap-x-6 mb-6">
 								{FEATURE_KEYS.map((key) => (
