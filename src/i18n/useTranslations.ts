@@ -27,7 +27,8 @@ type Dictionary = {
 
 function getInitialDictionary(): Dictionary {
 	if (typeof window === 'undefined') return {};
-	const initial = (window as Window & { __INITIAL_DICTIONARY__?: Dictionary }).__INITIAL_DICTIONARY__;
+	const initial = (window as Window & { __INITIAL_DICTIONARY__?: Dictionary })
+		.__INITIAL_DICTIONARY__;
 	return initial && typeof initial === 'object' ? initial : {};
 }
 
@@ -114,7 +115,7 @@ export function useModuleTranslations(
 	const [isLoading, setIsLoading] = useState(true);
 
 	const currentLocale = useMemo(() => {
-		return locale ?? (extractLocaleFromPath(pathname) ?? 'en');
+		return locale ?? extractLocaleFromPath(pathname) ?? 'en';
 	}, [locale, pathname]);
 
 	useEffect(() => {
