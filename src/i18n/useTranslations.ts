@@ -2,7 +2,7 @@
 
 import { usePathname } from 'next/navigation';
 import { extractLocaleFromPath, type Locale } from './routing';
-import { useMemo, useState, useEffect } from 'react';
+import { useMemo, useState, useEffect, useLayoutEffect } from 'react';
 import { loadModules, type TranslationModule } from './modules';
 
 // Base modules that are always loaded
@@ -25,14 +25,29 @@ type Dictionary = {
 	[key: string]: any;
 };
 
+function getInitialDictionary(): Dictionary {
+	if (typeof window === 'undefined') return {};
+	const initial = (window as Window & { __INITIAL_DICTIONARY__?: Dictionary }).__INITIAL_DICTIONARY__;
+	return initial && typeof initial === 'object' ? initial : {};
+}
+
 /**
  * Hook to use translations with module support
  * @param modules - Optional array of modules to load. If not provided, loads base modules only.
  */
 export function useTranslations(modules?: TranslationModule[]) {
 	const pathname = usePathname();
-	const [dictionary, setDictionary] = useState<Dictionary>({});
+	const [dictionary, setDictionary] = useState<Dictionary>(() => ({}));
 	const [isLoading, setIsLoading] = useState(true);
+
+	// Sync from server-injected dictionary before paint to avoid flashing keys
+	useLayoutEffect(() => {
+		const initial = getInitialDictionary();
+		if (Object.keys(initial).length > 0) {
+			setDictionary(initial);
+			setIsLoading(false);
+		}
+	}, []);
 
 	const locale = useMemo(() => {
 		return extractLocaleFromPath(pathname) ?? 'en';
@@ -44,9 +59,10 @@ export function useTranslations(modules?: TranslationModule[]) {
 
 	useEffect(() => {
 		let cancelled = false;
+		const hasInitial = Object.keys(getInitialDictionary()).length > 0;
 
 		async function loadDictionary() {
-			setIsLoading(true);
+			if (!hasInitial) setIsLoading(true);
 			try {
 				const loaded = await loadModules(locale, modulesToLoad);
 				if (!cancelled) {
@@ -56,7 +72,7 @@ export function useTranslations(modules?: TranslationModule[]) {
 			} catch (error) {
 				console.error('Failed to load translations:', error);
 				if (!cancelled) {
-					setDictionary({});
+					if (!hasInitial) setDictionary({});
 					setIsLoading(false);
 				}
 			}
