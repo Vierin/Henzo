@@ -30,7 +30,9 @@ export function Pricing() {
 					</div>
 					<h2 className="text-4xl lg:text-5xl font-bold tracking-tight text-gray-900 mb-4">
 						{t('business.pricing.title')} <br />
-						<span className="text-[#ff5b5b]">{t('business.pricing.titleBreak')}</span>
+						<span className="text-[#ff5b5b]">
+							{t('business.pricing.titleBreak')}
+						</span>
 					</h2>
 					<p className="text-lg text-gray-600">
 						{t('business.pricing.subtitle')}
@@ -49,7 +51,8 @@ export function Pricing() {
 								</p>
 								<p className="text-gray-500 text-base">
 									{t('business.pricing.thenPrice')}{' '}
-									{plan.price.toLocaleString('vi-VN').replace(/\./g, ' ')} ₫/{t('business.pricing.perMonth')}
+									{plan.price.toLocaleString('vi-VN').replace(/\./g, ' ')} ₫/
+									{t('business.pricing.perMonth')}
 								</p>
 							</div>
 							<Link href="#beta-form" className="cursor-pointer shrink-0">
@@ -66,9 +69,14 @@ export function Pricing() {
 							{features.map((feature, index) => (
 								<li key={index} className="flex items-start gap-3">
 									<span className="flex-shrink-0 w-6 h-6 rounded-full bg-[#ff5b5b]/10 flex items-center justify-center mt-0.5">
-										<Check className="w-4 h-4 text-[#ff5b5b]" strokeWidth={2.5} />
+										<Check
+											className="w-4 h-4 text-[#ff5b5b]"
+											strokeWidth={2.5}
+										/>
 									</span>
-									<span className="text-gray-700 font-medium text-sm">{feature}</span>
+									<span className="text-gray-700 font-medium text-sm">
+										{feature}
+									</span>
 								</li>
 							))}
 						</ul>

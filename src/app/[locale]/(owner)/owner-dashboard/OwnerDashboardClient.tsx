@@ -15,12 +15,7 @@ import BookingModal from '@/components/BookingModal';
 import { Service, Booking } from '@/types';
 import { apiClient } from '@/lib/api-client';
 import toast from 'react-hot-toast';
-import {
-	DollarSign,
-	Users,
-	CalendarCheck,
-	TrendingUp,
-} from 'lucide-react';
+import { DollarSign, Users, CalendarCheck, TrendingUp } from 'lucide-react';
 import { safeParseDate } from '@/utils/date';
 import { formatVND, formatVNDCompact } from '@/utils/currency';
 import { convertBookingDtoArray } from '@/utils/bookingTransformers';
@@ -212,152 +207,149 @@ export default function OwnerDashboardClient() {
 	return (
 		<div className="px-4 md:px-8 py-6 w-full relative">
 			<div className="space-y-6 max-w-7xl mx-auto">
-			{/* Header */}
-			<div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-				<div>
-					<h1 className="text-2xl sm:text-3xl font-bold text-black">
-						{t('owner.dashboard.dashboard')}
-					</h1>
-					<p className="text-gray-600 mt-1 text-sm sm:text-base">
-						{t('owner.dashboard.welcomeBack')}{' '}
-						{t('owner.dashboard.businessOverview')}
-					</p>
+				{/* Header */}
+				<div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+					<div>
+						<h1 className="text-2xl sm:text-3xl font-bold text-black">
+							{t('owner.dashboard.dashboard')}
+						</h1>
+						<p className="text-gray-600 mt-1 text-sm sm:text-base">
+							{t('owner.dashboard.welcomeBack')}{' '}
+							{t('owner.dashboard.businessOverview')}
+						</p>
+					</div>
+					<div className="flex flex-row items-stretch sm:items-center gap-3">
+						<Select
+							value={period}
+							onValueChange={(value: '7d' | '30d' | '1y') => setPeriod(value)}
+						>
+							<SelectTrigger className="w-full sm:w-[180px] border border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#ff5b5b] text-gray-900 bg-white">
+								<SelectValue />
+							</SelectTrigger>
+							<SelectContent className="bg-white border border-gray-300 shadow-lg rounded-md">
+								<SelectItem
+									value="7d"
+									className="bg-white hover:bg-gray-50 focus:bg-gray-50 text-gray-900 cursor-pointer"
+								>
+									{t('owner.dashboard.last7Days')}
+								</SelectItem>
+								<SelectItem
+									value="30d"
+									className="bg-white hover:bg-gray-50 focus:bg-gray-50 text-gray-900 cursor-pointer"
+								>
+									{t('owner.dashboard.last30Days')}
+								</SelectItem>
+								<SelectItem
+									value="1y"
+									className="bg-white hover:bg-gray-50 focus:bg-gray-50 text-gray-900 cursor-pointer"
+								>
+									{t('owner.dashboard.last1Year')}
+								</SelectItem>
+							</SelectContent>
+						</Select>
+						<button
+							onClick={() => {
+								// Check if salon has services and staff
+								if (!services || services.length === 0) {
+									toast.error(
+										t('owner.dashboard.cannotCreateBooking.noServices')
+									);
+									return;
+								}
+								if (!staffMembers || staffMembers.length === 0) {
+									toast.error(t('owner.dashboard.cannotCreateBooking.noStaff'));
+									return;
+								}
+
+								setSelectedService(undefined);
+								setEditingBooking(null);
+								setIsBookingModalOpen(true);
+							}}
+							className="inline-flex items-center justify-center gap-2 rounded-full bg-[#ea4b4b] !text-white px-4 py-2 text-sm shadow-sm hover:opacity-95 transition-opacity focus:outline-none focus:ring-2 focus:ring-[#ea4b4b] focus:ring-offset-2 w-full sm:w-auto"
+						>
+							<span className="text-lg leading-none">＋</span>
+							{t('owner.dashboard.newAppointment')}
+						</button>
+					</div>
 				</div>
-				<div className="flex flex-row items-stretch sm:items-center gap-3">
-					<Select
-						value={period}
-						onValueChange={(value: '7d' | '30d' | '1y') => setPeriod(value)}
-					>
-						<SelectTrigger className="w-full sm:w-[180px] border border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#ff5b5b] text-gray-900 bg-white">
-							<SelectValue />
-						</SelectTrigger>
-						<SelectContent className="bg-white border border-gray-300 shadow-lg rounded-md">
-							<SelectItem
-								value="7d"
-								className="bg-white hover:bg-gray-50 focus:bg-gray-50 text-gray-900 cursor-pointer"
-							>
-								{t('owner.dashboard.last7Days')}
-							</SelectItem>
-							<SelectItem
-								value="30d"
-								className="bg-white hover:bg-gray-50 focus:bg-gray-50 text-gray-900 cursor-pointer"
-							>
-								{t('owner.dashboard.last30Days')}
-							</SelectItem>
-							<SelectItem
-								value="1y"
-								className="bg-white hover:bg-gray-50 focus:bg-gray-50 text-gray-900 cursor-pointer"
-							>
-								{t('owner.dashboard.last1Year')}
-							</SelectItem>
-						</SelectContent>
-					</Select>
-					<button
-						onClick={() => {
-							// Check if salon has services and staff
-							if (!services || services.length === 0) {
-								toast.error(
-									t('owner.dashboard.cannotCreateBooking.noServices')
-								);
-								return;
-							}
-							if (!staffMembers || staffMembers.length === 0) {
-								toast.error(t('owner.dashboard.cannotCreateBooking.noStaff'));
-								return;
-							}
 
-							setSelectedService(undefined);
-							setEditingBooking(null);
-							setIsBookingModalOpen(true);
-						}}
-						className="inline-flex items-center justify-center gap-2 rounded-full bg-[#ea4b4b] !text-white px-4 py-2 text-sm shadow-sm hover:opacity-95 transition-opacity focus:outline-none focus:ring-2 focus:ring-[#ea4b4b] focus:ring-offset-2 w-full sm:w-auto"
-					>
-						<span className="text-lg leading-none">＋</span>
-						{t('owner.dashboard.newAppointment')}
-					</button>
+				{/* Stats Cards */}
+				<div className="grid grid-cols-2 xl:grid-cols-4 gap-2 md:gap-6">
+					<StatsCard
+						title={t('owner.dashboard.totalRevenue')}
+						value={formatVNDCompact(stats.revenue)}
+						icon={<DollarSign className="w-6 h-6" />}
+						trend={
+							stats.revenueTrend !== 0
+								? {
+										value: `${Math.abs(stats.revenueTrend)}%`,
+										isPositive: stats.revenueTrend > 0,
+									}
+								: undefined
+						}
+					/>
+					<StatsCard
+						title={t('owner.dashboard.totalClients')}
+						value={totalClients}
+						icon={<Users className="w-6 h-6" />}
+					/>
+					<StatsCard
+						title={t('owner.dashboard.bookings')}
+						value={stats.bookings}
+						icon={<CalendarCheck className="w-6 h-6" />}
+						trend={
+							stats.bookingsTrend !== 0
+								? {
+										value: `${Math.abs(stats.bookingsTrend)}%`,
+										isPositive: stats.bookingsTrend > 0,
+									}
+								: undefined
+						}
+					/>
+					<StatsCard
+						title={t('owner.dashboard.completionRate')}
+						value={`${stats.completionRate}%`}
+						icon={<TrendingUp className="w-6 h-6" />}
+						trend={
+							stats.completionTrend !== 0
+								? {
+										value: `${Math.abs(stats.completionTrend)}%`,
+										isPositive: stats.completionTrend > 0,
+									}
+								: undefined
+						}
+					/>
 				</div>
-			</div>
 
-			{/* Stats Cards */}
-			<div className="grid grid-cols-2 xl:grid-cols-4 gap-2 md:gap-6">
-				<StatsCard
-					title={t('owner.dashboard.totalRevenue')}
-					value={formatVNDCompact(stats.revenue)}
-					icon={<DollarSign className="w-6 h-6" />}
-				 
-					trend={
-						stats.revenueTrend !== 0
-							? {
-									value: `${Math.abs(stats.revenueTrend)}%`,
-									isPositive: stats.revenueTrend > 0,
-								}
-							: undefined
-					}
-				/>
-				<StatsCard
-					title={t('owner.dashboard.totalClients')}
-					value={totalClients}
-					icon={<Users className="w-6 h-6" />}
-				/>
-				<StatsCard
-					title={t('owner.dashboard.bookings')}
-					value={stats.bookings}
-					icon={<CalendarCheck className="w-6 h-6" />}
-				 
-					trend={
-						stats.bookingsTrend !== 0
-							? {
-									value: `${Math.abs(stats.bookingsTrend)}%`,
-									isPositive: stats.bookingsTrend > 0,
-								}
-							: undefined
-					}
-				/>
-				<StatsCard
-					title={t('owner.dashboard.completionRate')}
-					value={`${stats.completionRate}%`}
-					icon={<TrendingUp className="w-6 h-6" />}
-				 
-					trend={
-						stats.completionTrend !== 0
-							? {
-									value: `${Math.abs(stats.completionTrend)}%`,
-									isPositive: stats.completionTrend > 0,
-								}
-							: undefined
-					}
-				/>
-			</div>
+				{/* Pending confirmations (all PENDING — same data as mobile dashboard) */}
+				{pendingBookings.length > 0 && (
+					<UpcomingBookingsList
+						bookings={pendingBookings}
+						loading={bookingsLoading}
+						title={t('owner.dashboard.pendingConfirmations')}
+						emptyMessage={t('owner.dashboard.noPendingBookings')}
+						onEditBooking={handleEditBooking}
+						onCancelBooking={handleCancelBooking}
+						onConfirmBooking={handleConfirmBooking}
+						onRejectBooking={handleRejectBooking}
+					/>
+				)}
 
-			{/* Pending confirmations (all PENDING — same data as mobile dashboard) */}
-			{pendingBookings.length > 0 && (
+				{/* Upcoming Bookings List */}
 				<UpcomingBookingsList
-					bookings={pendingBookings}
+					bookings={upcomingBookings}
 					loading={bookingsLoading}
-					title={t('owner.dashboard.pendingConfirmations')}
-					emptyMessage={t('owner.dashboard.noPendingBookings')}
 					onEditBooking={handleEditBooking}
 					onCancelBooking={handleCancelBooking}
 					onConfirmBooking={handleConfirmBooking}
 					onRejectBooking={handleRejectBooking}
 				/>
-			)}
 
-			{/* Upcoming Bookings List */}
-			<UpcomingBookingsList
-				bookings={upcomingBookings}
-				loading={bookingsLoading}
-				onEditBooking={handleEditBooking}
-				onCancelBooking={handleCancelBooking}
-				onConfirmBooking={handleConfirmBooking}
-				onRejectBooking={handleRejectBooking}
-			/>
-
-			{/* Two Column Grid for Top Services and Additional Metrics */}
-			<div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-				<TopServicesCard bookings={bookings} />
-				<AdditionalMetrics bookings={bookings} />
-			</div>
+				{/* Two Column Grid for Top Services and Additional Metrics */}
+				<div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+					<TopServicesCard bookings={bookings} />
+					<AdditionalMetrics bookings={bookings} />
+				</div>
 			</div>
 
 			{/* Booking Modal */}

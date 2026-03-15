@@ -130,8 +130,7 @@ export function useAdminBookings() {
 		queryFn: async (): Promise<AdminBooking[]> => {
 			try {
 				const response = await apiClient.get<
-					| AdminBooking[]
-					| { data: AdminBooking[]; pagination: any }
+					AdminBooking[] | { data: AdminBooking[]; pagination: any }
 				>('/admin/bookings');
 				// Handle both array response and paginated response
 				if (Array.isArray(response)) {
