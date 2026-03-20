@@ -95,13 +95,15 @@ export default function ServiceAutocomplete({
 				}
 
 				const groups: SuggestionGroup[] = [];
+				const recommendedServices = result.data?.recommendedServices ?? [];
+				const salons = result.data?.salons ?? [];
 
 				// Add recommended services group
-				if (result.data?.recommendedServices?.length > 0) {
+				if (recommendedServices.length > 0) {
 					groups.push({
 						type: 'recommended',
 						title: t('homepage.recommendedServices') || 'Recommended Services',
-						suggestions: result.data.recommendedServices.map((item: any) => ({
+						suggestions: recommendedServices.map((item: any) => ({
 							id: item.id,
 							name: item.name,
 							type: 'recommended' as const,
@@ -110,11 +112,11 @@ export default function ServiceAutocomplete({
 				}
 
 				// Add salons group
-				if (result.data?.salons?.length > 0) {
+				if (salons.length > 0) {
 					groups.push({
 						type: 'salon',
 						title: t.navigation.salons,
-						suggestions: result.data.salons.map((salon: any) => ({
+						suggestions: salons.map((salon: any) => ({
 							id: salon.id,
 							name: salon.name,
 							type: 'salon' as const,
@@ -156,13 +158,14 @@ export default function ServiceAutocomplete({
 			const result = await apiClient.get<{ success?: boolean; data?: any[] }>(
 				`/search/popular/recommended?lang=${apiLang}&limit=10`
 			);
+			const popularServices = result?.data ?? [];
 
-			if (result?.success && result?.data?.length > 0) {
+			if (result?.success && popularServices.length > 0) {
 				setSuggestionGroups([
 					{
 						type: 'recommended',
 						title: t('homepage.popularServices') || 'Popular Services',
-						suggestions: result.data.map((item: any) => ({
+						suggestions: popularServices.map((item: any) => ({
 							id: item.id,
 							name: item.name,
 							type: 'recommended' as const,
