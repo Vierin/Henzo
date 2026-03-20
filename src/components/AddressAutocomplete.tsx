@@ -106,9 +106,8 @@ export default function AddressAutocomplete({
 				};
 			}>(`/geocoding/search?address=${encodeURIComponent(query)}`);
 			if (result?.success && result?.data) {
-				const cleanAddress = cleanAddressFromCountry(
-					result.data.display_name || result.data.address
-				);
+				const addressSource = result.data.display_name ?? result.data.address ?? '';
+				const cleanAddress = cleanAddressFromCountry(addressSource);
 				const cleanedData = {
 					...result.data,
 					display_name: cleanAddress,
@@ -428,11 +427,15 @@ export default function AddressAutocomplete({
 						};
 					}>(`/geocoding/search?address=${encodeURIComponent(pastedValue)}`);
 					if (result?.success && result?.data) {
-						const cleanAddress = cleanAddressFromCountry(
-							result.data.display_name || result.data.address
-						);
+						const addressSource =
+							result.data.display_name ?? result.data.address ?? pastedValue;
+						const cleanAddress = cleanAddressFromCountry(addressSource);
 						onChange(cleanAddress);
-						if (onAddressSelect) {
+						if (
+							onAddressSelect &&
+							typeof result.data.lat === 'number' &&
+							typeof result.data.lon === 'number'
+						) {
 							onAddressSelect(cleanAddress, result.data.lat, result.data.lon);
 						}
 						setShowSuggestions(false);
@@ -513,11 +516,15 @@ export default function AddressAutocomplete({
 						};
 					}>(`/geocoding/search?address=${encodeURIComponent(value)}`);
 					if (result?.success && result?.data) {
-						const cleanAddress = cleanAddressFromCountry(
-							result.data.display_name || result.data.address
-						);
+						const addressSource =
+							result.data.display_name ?? result.data.address ?? value;
+						const cleanAddress = cleanAddressFromCountry(addressSource);
 						onChange(cleanAddress);
-						if (onAddressSelect) {
+						if (
+							onAddressSelect &&
+							typeof result.data.lat === 'number' &&
+							typeof result.data.lon === 'number'
+						) {
 							onAddressSelect(cleanAddress, result.data.lat, result.data.lon);
 						}
 					}
