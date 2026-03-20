@@ -108,10 +108,16 @@ export default function AddressAutocomplete({
 			if (result?.success && result?.data) {
 				const addressSource = result.data.display_name ?? result.data.address ?? '';
 				const cleanAddress = cleanAddressFromCountry(addressSource);
-				const cleanedData = {
-					...result.data,
+				const cleanedData: AddressSuggestion = {
 					display_name: cleanAddress,
-					address: cleanAddress,
+					lat:
+						typeof result.data.lat === 'number'
+							? result.data.lat.toString()
+							: '',
+					lon:
+						typeof result.data.lon === 'number'
+							? result.data.lon.toString()
+							: '',
 				};
 				setSuggestions([cleanedData]);
 				return;
