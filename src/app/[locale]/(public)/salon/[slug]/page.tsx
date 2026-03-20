@@ -1,11 +1,8 @@
 import { Metadata } from 'next';
 import { notFound } from 'next/navigation';
-import { apiClient } from '@/lib/api-client';
+import { serverApiGet } from '@/lib/api-server';
 import SalonDetailClient from './salonDetailClient';
-import {
-	extractSalonIdFromSlug,
-	isValidSalonSlug,
-} from '@/utils/slug';
+import { extractSalonIdFromSlug, isValidSalonSlug } from '@/utils/slug';
 import { SalonWithDetailsResponseDto } from '@/types/dto/salon.dto';
 
 interface SalonDetailPageProps {
@@ -15,37 +12,29 @@ interface SalonDetailPageProps {
 async function getSalonData(
 	slug: string
 ): Promise<SalonWithDetailsResponseDto | null> {
-	try {
-		const isOldId = /^[a-f0-9-]{36}$/.test(slug);
-		
-		if (isOldId) {
-			const response = await apiClient.get<SalonWithDetailsResponseDto>(
-				`/salons/${slug}`
-			);
-			return response;
-		}
+	const isOldId = /^[a-f0-9-]{36}$/.test(slug);
 
-		try {
-			const response = await apiClient.get<SalonWithDetailsResponseDto>(
-				`/salons/by-slug/${slug}`
-			);
-			if (response) return response;
-		} catch (error: any) {
-			// Если не нашли по slug, пробуем fallback - извлечь ID из slug
-			const salonId = extractSalonIdFromSlug(slug);
-			if (salonId && isValidSalonSlug(slug)) {
-				const response = await apiClient.get<SalonWithDetailsResponseDto>(
-					`/salons/${salonId}`
-				);
-				return response;
-			}
-		}
-
-		return null;
-	} catch (error: any) {
-		// Return null to trigger notFound() which shows a proper 404 page
-		return null;
+	if (isOldId) {
+		const response = await serverApiGet<SalonWithDetailsResponseDto>(
+			`/salons/${slug}`
+		);
+		return response ?? null;
 	}
+
+	const bySlug = await serverApiGet<SalonWithDetailsResponseDto>(
+		`/salons/by-slug/${slug}`
+	);
+	if (bySlug) return bySlug;
+
+	const salonId = extractSalonIdFromSlug(slug);
+	if (salonId && isValidSalonSlug(slug)) {
+		const byId = await serverApiGet<SalonWithDetailsResponseDto>(
+			`/salons/${salonId}`
+		);
+		return byId ?? null;
+	}
+
+	return null;
 }
 
 // ISR: Revalidate every hour (3600 seconds)

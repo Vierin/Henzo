@@ -3,6 +3,7 @@ import { supabase } from './supabase';
 import { apiClient } from './api-client';
 import { useAuthStore } from '@/stores/authStore';
 import { storage } from '@/utils/storage';
+import { extractLocaleFromPath, withLocale } from '@/i18n/routing';
 
 export interface User {
 	id: string;
@@ -237,6 +238,9 @@ class AuthManager {
 				// Обычная регистрация через Supabase signUp
 				const frontendUrl =
 					process.env.NEXT_PUBLIC_FRONTEND_URL || window.location.origin;
+				const locale =
+					extractLocaleFromPath(window.location.pathname) ?? 'en';
+				const callbackPath = withLocale('/auth/callback?type=business', locale);
 				const { data: signUpData, error } = await supabase.auth.signUp({
 					email: data.email,
 					password: data.password,
@@ -245,7 +249,7 @@ class AuthManager {
 							name: data.name,
 							role: 'OWNER',
 						},
-						emailRedirectTo: `${frontendUrl}/auth/callback?type=business`,
+						emailRedirectTo: `${frontendUrl}${callbackPath}`,
 					},
 				});
 
@@ -529,31 +533,19 @@ class AuthManager {
 
 	private async fetchUserWithRole(accessToken: string): Promise<User> {
 		try {
-			const API_BASE_URL =
-				process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
-			const response = await fetch(`${API_BASE_URL}/auth/user`, {
-				headers: {
-					Authorization: `Bearer ${accessToken}`,
-					'Content-Type': 'application/json',
-				},
-			});
-
-			if (!response.ok) {
-				const errorText = await response.text();
-				throw new Error(
-					`Failed to fetch user data: ${response.status} ${response.statusText}`
-				);
-			}
-
-			const result = await response.json();
-			const user = result.user;
+			const result = await apiClient.get<{ user: User; salon?: unknown }>(
+				'/auth/user',
+				{
+					headers: { Authorization: `Bearer ${accessToken}` },
+				}
+			);
+			const user = result?.user;
 
 			if (!user) {
 				throw new Error('User data not found in response');
 			}
 
-			// Для OWNER пользователей, сохраняем salon в кеш если есть
-			if (user.role === 'OWNER' && result.salon) {
+			if (user.role === 'OWNER' && result?.salon) {
 				const hadLocalStorageCache = storage.getItem('auth_user') !== null;
 				const hadSessionStorageCache =
 					storage.session.getItem('auth_user') !== null;

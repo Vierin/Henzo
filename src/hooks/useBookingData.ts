@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
+import { apiClient } from '@/lib/api-client';
 import { WorkingHours } from '@/types';
 import { logger } from '@/lib/logger';
 
@@ -9,9 +10,15 @@ interface UseBookingDataProps {
 	selectedDate: string;
 }
 
-export function useBookingData({ salonId, isOpen, selectedDate }: UseBookingDataProps) {
-	const [salonWorkingHours, setSalonWorkingHours] = useState<WorkingHours | null>(null);
-	const [salonTimezone, setSalonTimezone] = useState<string>('Asia/Ho_Chi_Minh');
+export function useBookingData({
+	salonId,
+	isOpen,
+	selectedDate,
+}: UseBookingDataProps) {
+	const [salonWorkingHours, setSalonWorkingHours] =
+		useState<WorkingHours | null>(null);
+	const [salonTimezone, setSalonTimezone] =
+		useState<string>('Asia/Ho_Chi_Minh');
 	const [existingBookings, setExistingBookings] = useState<any[]>([]);
 	const [bookingsLoaded, setBookingsLoaded] = useState(true);
 	const [bookingsLoadError, setBookingsLoadError] = useState(false);
@@ -32,55 +39,29 @@ export function useBookingData({ salonId, isOpen, selectedDate }: UseBookingData
 
 	const fetchSalonData = async () => {
 		try {
-			const API_BASE_URL =
-				process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
-
 			if (salonId) {
-				const response = await fetch(`${API_BASE_URL}/salons/${salonId}`);
-				if (response.ok) {
-					const data = await response.json();
-					if (data) {
-						if (data.workingHours) {
-							setSalonWorkingHours(data.workingHours);
-						}
-						if (data.timezone) {
-							setSalonTimezone(data.timezone);
-						}
-					}
+				const data = await apiClient.get<{
+					workingHours?: WorkingHours;
+					timezone?: string;
+				}>(`/salons/${salonId}`);
+				if (data) {
+					if (data.workingHours) setSalonWorkingHours(data.workingHours);
+					if (data.timezone) setSalonTimezone(data.timezone);
 				}
 			} else {
-				const {
-					data: { session },
-				} = await supabase.auth.getSession();
-
-				if (!session?.access_token) {
-					logger.warn('No session found for fetching salon data');
-					return;
-				}
-
-				const response = await fetch(`${API_BASE_URL}/salons/current`, {
-					headers: {
-						Authorization: `Bearer ${session.access_token}`,
-					},
-				});
-
-				if (!response.ok) {
-					logger.warn('Could not fetch salon data, using defaults');
-					return;
-				}
-
-				const responseData = await response.json();
-				if (responseData.success && responseData.data) {
-					if (responseData.data.workingHours) {
+				const responseData = await apiClient.get<{
+					success?: boolean;
+					data?: { workingHours?: WorkingHours; timezone?: string };
+				}>('/salons/current');
+				if (responseData?.success && responseData.data) {
+					if (responseData.data.workingHours)
 						setSalonWorkingHours(responseData.data.workingHours);
-					}
-					if (responseData.data.timezone) {
+					if (responseData.data.timezone)
 						setSalonTimezone(responseData.data.timezone);
-					}
 				}
 			}
 		} catch (error) {
-			logger.error('Error fetching salon data:', error);
+			logger.warn('Could not fetch salon data, using defaults', error);
 		}
 	};
 
@@ -88,58 +69,30 @@ export function useBookingData({ salonId, isOpen, selectedDate }: UseBookingData
 		if (!salonId || !date) return;
 
 		try {
-			const API_BASE_URL =
-				process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
-
-			const { data: session } = await supabase.auth.getSession();
-
-			const headers: HeadersInit = {
-				'Content-Type': 'application/json',
-			};
-
-			if (session?.session?.access_token) {
-				headers.Authorization = `Bearer ${session.session.access_token}`;
-			}
-
-			const response = await fetch(
-				`${API_BASE_URL}/bookings?salonId=${salonId}&date=${date}`,
-				{
-					method: 'GET',
-					headers,
-				}
+			const bookings = await apiClient.get<any[]>(
+				`/bookings?salonId=${salonId}&date=${date}`
 			);
-
-			if (response.ok) {
-				const bookings = await response.json();
-				logger.log('Fetched existing bookings:', bookings);
-				setExistingBookings(bookings);
-				setBookingsLoaded(true);
-				setBookingsLoadError(false);
-			} else if (response.status === 401) {
-				logger.warn('Unauthorized, trying to fetch public bookings...');
-				const publicResponse = await fetch(
-					`${API_BASE_URL}/bookings/public?salonId=${salonId}&date=${date}`
-				);
-
-				if (publicResponse.ok) {
-					const bookings = await publicResponse.json();
-					setExistingBookings(bookings);
+			setExistingBookings(bookings ?? []);
+			setBookingsLoaded(true);
+			setBookingsLoadError(false);
+		} catch (error: any) {
+			if (error?.status === 401) {
+				try {
+					const publicBookings = await apiClient.get<any[]>(
+						`/bookings/public?salonId=${salonId}&date=${date}`
+					);
+					setExistingBookings(publicBookings ?? []);
 					setBookingsLoaded(true);
 					setBookingsLoadError(false);
-				} else {
-					logger.warn('Could not fetch public bookings either');
+				} catch {
 					setExistingBookings([]);
 					setBookingsLoadError(true);
 				}
 			} else {
-				logger.warn('Could not fetch existing bookings:', response.status);
+				logger.error('Error fetching existing bookings:', error);
 				setExistingBookings([]);
 				setBookingsLoadError(true);
 			}
-		} catch (error) {
-			logger.error('Error fetching existing bookings:', error);
-			setExistingBookings([]);
-			setBookingsLoadError(true);
 		}
 	};
 
@@ -152,4 +105,3 @@ export function useBookingData({ salonId, isOpen, selectedDate }: UseBookingData
 		bookingsLoadError,
 	};
 }
-

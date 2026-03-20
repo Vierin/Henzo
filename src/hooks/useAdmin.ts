@@ -106,64 +106,137 @@ export function useAdminDashboard() {
 	});
 }
 
-// Hook to get all salons
-export function useAdminSalons() {
+export interface PaginationMeta {
+	page: number;
+	limit: number;
+	total: number;
+	totalPages: number;
+	hasNextPage: boolean;
+	hasPreviousPage: boolean;
+}
+
+// Hook to get all salons (paginated)
+export function useAdminSalons(params?: { page?: number; limit?: number }) {
+	const page = params?.page ?? 1;
+	const limit = params?.limit ?? 50;
 	return useQuery({
-		queryKey: ['admin-salons'],
-		queryFn: async (): Promise<AdminSalon[]> => {
-			try {
-				const response = await apiClient.get<AdminSalon[]>('/admin/salons');
-				return response;
-			} catch (error) {
-				console.error('Error fetching admin salons:', error);
-				throw error;
-			}
+		queryKey: ['admin-salons', page, limit],
+		queryFn: async (): Promise<{
+			data: AdminSalon[];
+			pagination: PaginationMeta;
+		}> => {
+			const response = await apiClient.get<{
+				data: AdminSalon[];
+				pagination: PaginationMeta;
+			}>(`/admin/salons?page=${page}&limit=${limit}`);
+			return Array.isArray(response)
+				? {
+						data: response,
+						pagination: {
+							page: 1,
+							limit: response.length,
+							total: response.length,
+							totalPages: 1,
+							hasNextPage: false,
+							hasPreviousPage: false,
+						},
+					}
+				: response;
 		},
-		staleTime: 5 * 60 * 1000, // 5 minutes
+		staleTime: 5 * 60 * 1000,
 	});
 }
 
-// Hook to get all bookings
-export function useAdminBookings() {
+// Hook to get all bookings (paginated)
+export function useAdminBookings(params?: {
+	page?: number;
+	limit?: number;
+	status?: string;
+	search?: string;
+	sortBy?: string;
+	sortOrder?: 'asc' | 'desc';
+}) {
+	const {
+		page = 1,
+		limit = 20,
+		status,
+		search,
+		sortBy,
+		sortOrder,
+	} = params ?? {};
+	const query = new URLSearchParams({
+		page: String(page),
+		limit: String(limit),
+	});
+	if (status) query.set('status', status);
+	if (search) query.set('search', search);
+	if (sortBy) query.set('sortBy', sortBy);
+	if (sortOrder) query.set('sortOrder', sortOrder);
 	return useQuery({
-		queryKey: ['admin-bookings'],
-		queryFn: async (): Promise<AdminBooking[]> => {
-			try {
-				const response = await apiClient.get<
-					AdminBooking[] | { data: AdminBooking[]; pagination: any }
-				>('/admin/bookings');
-				// Handle both array response and paginated response
-				if (Array.isArray(response)) {
-					return response;
-				}
-				// Handle paginated response
-				if (response && typeof response === 'object' && 'data' in response) {
-					return Array.isArray(response.data) ? response.data : [];
-				}
-				return [];
-			} catch (error) {
-				console.error('Error fetching admin bookings:', error);
-				throw error;
+		queryKey: [
+			'admin-bookings',
+			page,
+			limit,
+			status,
+			search,
+			sortBy,
+			sortOrder,
+		],
+		queryFn: async (): Promise<{
+			data: AdminBooking[];
+			pagination: PaginationMeta;
+		}> => {
+			const response = await apiClient.get<
+				{ data: AdminBooking[]; pagination: PaginationMeta } | AdminBooking[]
+			>(`/admin/bookings?${query}`);
+			if (Array.isArray(response)) {
+				return {
+					data: response,
+					pagination: {
+						page: 1,
+						limit: response.length,
+						total: response.length,
+						totalPages: 1,
+						hasNextPage: false,
+						hasPreviousPage: false,
+					},
+				};
 			}
+			return response as { data: AdminBooking[]; pagination: PaginationMeta };
 		},
-		staleTime: 1 * 60 * 1000, // 1 minute
+		staleTime: 1 * 60 * 1000,
 	});
 }
 
-// Hook to get subscriptions
-export function useAdminSubscriptions() {
+// Hook to get subscriptions (paginated)
+export function useAdminSubscriptions(params?: {
+	page?: number;
+	limit?: number;
+}) {
+	const page = params?.page ?? 1;
+	const limit = params?.limit ?? 50;
 	return useQuery({
-		queryKey: ['admin-subscriptions'],
-		queryFn: async () => {
-			try {
-				const response = await apiClient.get<any>('/admin/subscriptions');
-				return response;
-			} catch (error) {
-				console.error('Error fetching admin subscriptions:', error);
-				throw error;
-			}
+		queryKey: ['admin-subscriptions', page, limit],
+		queryFn: async (): Promise<{ data: any[]; pagination: PaginationMeta }> => {
+			const response = await apiClient.get<{
+				data: any[];
+				pagination: PaginationMeta;
+			}>(`/admin/subscriptions?page=${page}&limit=${limit}`);
+			return Array.isArray(response)
+				? {
+						data: response,
+						pagination: {
+							page: 1,
+							limit: response.length,
+							total: response.length,
+							totalPages: 1,
+							hasNextPage: false,
+							hasPreviousPage: false,
+						},
+					}
+				: response;
 		},
-		staleTime: 5 * 60 * 1000, // 5 minutes
+		staleTime: 5 * 60 * 1000,
 	});
 }
 
@@ -184,19 +257,34 @@ export function useAdminSmsUsage() {
 	});
 }
 
-// Hook to get customers
-export function useAdminCustomers() {
+// Hook to get customers (paginated)
+export function useAdminCustomers(params?: { page?: number; limit?: number }) {
+	const page = params?.page ?? 1;
+	const limit = params?.limit ?? 50;
 	return useQuery({
-		queryKey: ['admin-customers'],
-		queryFn: async () => {
-			try {
-				const response = await apiClient.get<any>('/admin/customers');
-				return response;
-			} catch (error) {
-				console.error('Error fetching admin customers:', error);
-				throw error;
-			}
+		queryKey: ['admin-customers', page, limit],
+		queryFn: async (): Promise<{
+			data: Array<{ salon: string; totalCustomers: number }>;
+			pagination: PaginationMeta;
+		}> => {
+			const response = await apiClient.get<{
+				data: any[];
+				pagination: PaginationMeta;
+			}>(`/admin/customers?page=${page}&limit=${limit}`);
+			return Array.isArray(response)
+				? {
+						data: response,
+						pagination: {
+							page: 1,
+							limit: response.length,
+							total: response.length,
+							totalPages: 1,
+							hasNextPage: false,
+							hasPreviousPage: false,
+						},
+					}
+				: response;
 		},
-		staleTime: 5 * 60 * 1000, // 5 minutes
+		staleTime: 5 * 60 * 1000,
 	});
 }

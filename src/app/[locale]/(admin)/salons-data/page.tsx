@@ -26,7 +26,8 @@ import {
 
 export default function AdminSalons() {
 	const t = useTranslation();
-	const { data: salons = [], isLoading, error } = useAdminSalons();
+	const { data: salonsResponse, isLoading, error } = useAdminSalons();
+	const salons = salonsResponse?.data ?? [];
 
 	// Filter and sort states
 	const [searchTerm, setSearchTerm] = useState('');

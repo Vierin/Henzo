@@ -14,7 +14,8 @@ import {
 import LoadingSpinner from '@/components/LoadingSpinner';
 
 export default function AdminBookings() {
-	const { data: bookings = [], isLoading, error } = useAdminBookings();
+	const { data: bookingsResponse, isLoading, error } = useAdminBookings();
+	const bookings = bookingsResponse?.data ?? [];
 
 	// Filter and search states
 	const [searchTerm, setSearchTerm] = useState('');

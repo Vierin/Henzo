@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Service, WorkingHours } from '@/types';
 import { useAuthStore } from '@/stores/authStore';
 import { supabase } from '@/lib/supabase';
+import { apiClient } from '@/lib/api-client';
 import { logger } from '@/lib/logger';
 import toast from 'react-hot-toast';
 import { fromZonedTime } from 'date-fns-tz';
@@ -102,14 +103,12 @@ export function useBookingAuth({
 	// Handle magic link sending
 	const handleSendMagicLink = async (email: string) => {
 		try {
-			const API_BASE_URL =
-				process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
-
 			const bookingData = {
 				serviceId: pendingBookingData?.service?.id || selectedService?.id,
-				staffId: pendingBookingData?.staff === t('booking.anyStaff')
-					? undefined
-					: undefined, // Will be resolved from staff name
+				staffId:
+					pendingBookingData?.staff === t('booking.anyStaff')
+						? undefined
+						: undefined, // Will be resolved from staff name
 				time: createBookingDateTimeUTC(
 					pendingBookingData?.date || selectedDate,
 					pendingBookingData?.time || selectedTime,
@@ -121,39 +120,16 @@ export function useBookingAuth({
 				clientPhone: '',
 			};
 
-			const response = await fetch(`${API_BASE_URL}/bookings/send-magic-link`, {
-				method: 'POST',
-				headers: {
-					'Content-Type': 'application/json',
-					'Accept-Language': language === 'ru' || language === 'vi' ? language : 'en',
-				},
-				body: JSON.stringify({
-					email: email.trim(),
-					bookingData,
-				}),
-			});
-
-			if (!response.ok) {
-				const error = await response.json();
-
-				if (
-					response.status === 409 &&
-					(error.code === 'USER_EXISTS' || error.error_code === 'USER_EXISTS')
-				) {
-					const userExistsError: any = new Error(
-						error.msg ||
-							error.message ||
-							'An account with this email already exists. Please login with your password.'
-					);
-					userExistsError.code = 'USER_EXISTS';
-					userExistsError.email = email.trim();
-					throw userExistsError;
+			await apiClient.post(
+				'/bookings/send-magic-link',
+				{ email: email.trim(), bookingData },
+				{
+					headers: {
+						'Accept-Language':
+							language === 'ru' || language === 'vi' ? language : 'en',
+					},
 				}
-
-				throw new Error(
-					error.msg || error.message || 'Failed to send magic link'
-				);
-			}
+			);
 
 			setGuestEmail(email.trim());
 			setShowMagicLinkSent(true);
@@ -161,13 +137,20 @@ export function useBookingAuth({
 		} catch (error: any) {
 			logger.error('Error sending magic link:', error);
 
+			const errorData = error?.errorData || {};
 			if (
-				error &&
-				typeof error === 'object' &&
-				'code' in error &&
-				error.code === 'USER_EXISTS'
+				error?.status === 409 &&
+				(errorData.code === 'USER_EXISTS' ||
+					errorData.error_code === 'USER_EXISTS')
 			) {
-				throw error;
+				const userExistsError: any = new Error(
+					errorData.msg ||
+						errorData.message ||
+						'An account with this email already exists. Please login with your password.'
+				);
+				userExistsError.code = 'USER_EXISTS';
+				userExistsError.email = email.trim();
+				throw userExistsError;
 			}
 
 			toast.error(
@@ -222,4 +205,3 @@ export function useBookingAuth({
 		refreshUser,
 	};
 }
-

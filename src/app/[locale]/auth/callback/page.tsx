@@ -3,9 +3,11 @@
 import { useEffect } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
+import { apiClient } from '@/lib/api-client';
 import { useAuthStore } from '@/stores/authStore';
 import { withLocale, extractLocaleFromPath } from '@/i18n/routing';
 import { authManager } from '@/lib/auth-unified';
+import { consumeBusinessOAuthContext } from '@/utils/oauth';
 
 export default function AuthCallbackPage() {
 	const router = useRouter();
@@ -122,7 +124,8 @@ export default function AuthCallbackPage() {
 					if (shouldRetry) {
 						console.log('⚠️ Retrying after network/server error...');
 						// Одна быстрая попытка без задержки
-						const retryResult = await supabase.auth.exchangeCodeForSession(code);
+						const retryResult =
+							await supabase.auth.exchangeCodeForSession(code);
 						if (retryResult.data?.session) {
 							session = retryResult.data.session;
 							sessionError = null;
@@ -195,91 +198,42 @@ export default function AuthCallbackPage() {
 		};
 
 		// Вспомогательная функция для синхронизации пользователя в фоне
-		const syncUserInBackground = async (
-			session: any,
-			tempUser: any,
-			isBusinessRegistration: boolean = false
-		) => {
-			const API_BASE_URL =
-				process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
-
+		const syncUserInBackground = async (session: any, tempUser: any) => {
 			try {
-				// Параллельные запросы: регистрация (если нужно) + получение пользователя
 				const promises: Promise<any>[] = [];
 
-				// Если бизнес-регистрация, добавляем запрос регистрации
-				if (isBusinessRegistration) {
-					const magicLinkToken = sessionStorage.getItem('magicLinkToken');
-					promises.push(
-						fetch(`${API_BASE_URL}/auth/register`, {
-							method: 'POST',
-							headers: {
-								'Content-Type': 'application/json',
-							},
-							body: JSON.stringify({
-								userId: session.user.id,
-								email: session.user.email || '',
-								name:
-									session.user.user_metadata?.name ||
-									session.user.user_metadata?.full_name ||
-									'',
-								role: 'OWNER',
-								magicLinkToken: magicLinkToken || undefined,
-							}),
-						}).then(async (res) => {
-							if (res.ok) {
-								if (magicLinkToken) {
-									sessionStorage.removeItem('magicLinkToken');
+				promises.push(
+					apiClient
+						.get<{ user: any }>('/auth/user', {
+							headers: { Authorization: `Bearer ${session.access_token}` },
+						})
+						.then(async (userData) => {
+							if (userData?.user) {
+								const cacheData = {
+									...userData.user,
+									_cachedAt: Date.now(),
+									_ttl: 30000,
+								};
+								sessionStorage.setItem(
+									'auth_user_cache',
+									JSON.stringify(cacheData)
+								);
+								localStorage.setItem(
+									'auth_user',
+									JSON.stringify(userData.user)
+								);
+								setUser(userData.user);
+								if (session?.access_token) {
+									await authManager.updateUser(
+										session.access_token,
+										userData.user as any
+									);
 								}
-								console.log('✅ User registered with OWNER role (background)');
-							} else {
-								// Если пользователь уже существует, это нормально
-								const errorText = await res.text();
-								const errorData = errorText ? JSON.parse(errorText) : {};
-								if (
-									errorData.message?.includes('already exists') ||
-									errorData.message?.includes('already been registered')
-								) {
-									console.log('ℹ️ User already exists (background)');
-								}
+								console.log('✅ User synced from backend (background)');
 							}
 						})
-					);
-				}
-
-				// Всегда получаем пользователя
-				promises.push(
-					fetch(`${API_BASE_URL}/auth/user`, {
-						headers: {
-							Authorization: `Bearer ${session.access_token}`,
-							'Content-Type': 'application/json',
-						},
-					}).then(async (res) => {
-						if (res.ok) {
-							const userData = await res.json();
-							// Обновляем кэш и состояние с актуальными данными
-							const cacheData = {
-								...userData.user,
-								_cachedAt: Date.now(),
-								_ttl: 30000,
-							};
-							sessionStorage.setItem('auth_user_cache', JSON.stringify(cacheData));
-							localStorage.setItem('auth_user', JSON.stringify(userData.user));
-							setUser(userData.user);
-							
-							// Обновляем authManager
-							if (session?.access_token) {
-								await authManager.updateUser(
-									session.access_token,
-									userData.user as any
-								);
-							}
-							console.log('✅ User synced from backend (background)');
-						}
-					})
 				);
 
-				// Выполняем все запросы параллельно
 				await Promise.allSettled(promises);
 			} catch (error) {
 				console.error('⚠️ Background sync error:', error);
@@ -303,7 +257,10 @@ export default function AuthCallbackPage() {
 					return withLocale('/admin-panel', locale as 'en' | 'ru' | 'vi');
 				case 'OWNER':
 					if (isBusinessRegistration) {
-						return withLocale('/business/complete-setup', locale as 'en' | 'ru' | 'vi');
+						return withLocale(
+							'/business/complete-setup',
+							locale as 'en' | 'ru' | 'vi'
+						);
 					}
 					return withLocale('/owner-dashboard', locale as 'en' | 'ru' | 'vi');
 				case 'CLIENT':
@@ -370,33 +327,117 @@ export default function AuthCallbackPage() {
 				return;
 			}
 
-			// Определяем тип регистрации
-			const urlType = type;
-			const localStorageType = localStorage.getItem('registrationType');
-			const sessionStorageType = sessionStorage.getItem('registrationType');
+			// Business flow is valid only when callback type=business and nonce is valid.
+			const oauthContext = consumeBusinessOAuthContext();
 			const isBusinessRegistration =
-				urlType === 'business' ||
-				localStorageType === 'business' ||
-				sessionStorageType === 'business';
+				type === 'business' && oauthContext.isValid;
 
-			// Clean up storage after use
-			if (localStorageType) {
-				localStorage.removeItem('registrationType');
+			if (type === 'business' && !oauthContext.isValid) {
+				if (
+					typeof window !== 'undefined' &&
+					typeof window.gtag === 'function'
+				) {
+					window.gtag('event', 'business_oauth_callback_role_upgrade_failed', {
+						reason: 'invalid_oauth_nonce',
+					});
+				}
+				router.push(
+					withLocale(
+						'/login?error=invalid_business_oauth_context',
+						locale as 'en' | 'ru' | 'vi'
+					)
+				);
+				return;
 			}
-			if (sessionStorageType) {
-				sessionStorage.removeItem('registrationType');
+
+			// Business Google OAuth: direct OWNER upsert; no magicLinkToken (email verified by Google).
+			if (isBusinessRegistration) {
+				try {
+					await apiClient.post('/auth/register', {
+						userId: session.user.id,
+						email: session.user.email || '',
+						name:
+							session.user.user_metadata?.name ||
+							session.user.user_metadata?.full_name ||
+							'',
+						role: 'OWNER',
+					});
+					if (
+						typeof window !== 'undefined' &&
+						typeof window.gtag === 'function'
+					) {
+						window.gtag('event', 'business_oauth_callback_success', {
+							source: oauthContext.source || 'unknown',
+						});
+					}
+				} catch (err: any) {
+					const msg = err?.message || err?.errorData?.message || '';
+					const normalizedMsg =
+						typeof msg === 'string' ? msg.toLowerCase() : '';
+					const isEmailMismatch =
+						normalizedMsg.includes('email') &&
+						(normalizedMsg.includes('match') ||
+							normalizedMsg.includes('mismatch'));
+
+					if (
+						typeof window !== 'undefined' &&
+						typeof window.gtag === 'function'
+					) {
+						window.gtag(
+							'event',
+							'business_oauth_callback_role_upgrade_failed',
+							{
+								reason: isEmailMismatch ? 'email_mismatch' : 'register_failed',
+							}
+						);
+					}
+
+					if (isEmailMismatch) {
+						if (
+							typeof window !== 'undefined' &&
+							typeof window.gtag === 'function'
+						) {
+							window.gtag('event', 'business_magic_link_email_mismatch', {
+								source: oauthContext.source || 'unknown',
+							});
+						}
+						router.push(
+							withLocale(
+								'/business/register?error=email_mismatch',
+								locale as 'en' | 'ru' | 'vi'
+							)
+						);
+						return;
+					}
+
+					router.push(
+						withLocale(
+							'/business/register?error=oauth_register_failed',
+							locale as 'en' | 'ru' | 'vi'
+						)
+					);
+					return;
+				}
 			}
 
 			// ОПТИМИСТИЧНЫЙ РЕДИРЕКТ: Редиректим сразу на основе временного пользователя
 			// Синхронизация с бэкендом происходит в фоне
-			const finalRole = tempUser.role || (isBusinessRegistration ? 'OWNER' : 'CLIENT');
-			const redirectPath = getRedirectPath(finalRole, isBusinessRegistration, pendingBooking, returnUrl, locale);
-			
+			const finalRole = isBusinessRegistration
+				? 'OWNER'
+				: tempUser.role || 'CLIENT';
+			const redirectPath = getRedirectPath(
+				finalRole,
+				isBusinessRegistration,
+				pendingBooking,
+				returnUrl,
+				locale
+			);
+
 			console.log('🚀 Optimistic redirect to:', redirectPath);
 			router.push(redirectPath);
 
 			// Синхронизация с бэкендом в фоне (не блокирует редирект)
-			syncUserInBackground(session, tempUser, isBusinessRegistration).catch((err) => {
+			syncUserInBackground(session, tempUser).catch((err) => {
 				console.log('⚠️ Background sync failed (non-critical):', err);
 			});
 		};

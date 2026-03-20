@@ -2,15 +2,14 @@
 
 import Link from 'next/link';
 import { useState, useEffect, Suspense } from 'react';
-import { supabase } from '@/lib/supabase';
 import { useRouter, useSearchParams } from 'next/navigation';
 import toast from 'react-hot-toast';
 import { useAuth } from '@/lib/auth-unified';
 import { useTranslation } from '@/contexts/LanguageContext';
-import { getOAuthRedirectUrl } from '@/utils/oauth';
+import { startBusinessGoogleOAuth } from '@/utils/oauth';
 import LoadingFallback from '@/components/LoadingFallback';
 import { useErrorHandler } from '@/hooks/useErrorHandler';
-import { sessionStorage, localStorage } from '@/utils/storage';
+import { sessionStorage } from '@/utils/storage';
 
 function BusinessRegisterForm() {
 	const t = useTranslation();
@@ -42,7 +41,10 @@ function BusinessRegisterForm() {
 			if (savedData) {
 				const parsed = JSON.parse(savedData);
 				// Проверяем, что данные не старше 24 часов
-				if (parsed.timestamp && Date.now() - parsed.timestamp < 24 * 60 * 60 * 1000) {
+				if (
+					parsed.timestamp &&
+					Date.now() - parsed.timestamp < 24 * 60 * 60 * 1000
+				) {
 					setFormData((prev) => ({
 						...prev,
 						email: parsed.email || prev.email,
@@ -93,19 +95,39 @@ function BusinessRegisterForm() {
 			let errorMessage = '';
 			switch (errorParam) {
 				case 'link_expired':
-					errorMessage = t('business.register.magicLinkExpired') || 'Magic link has expired. Please request a new one.';
+					errorMessage =
+						t('business.register.magicLinkExpired') ||
+						'Magic link has expired. Please request a new one.';
 					break;
 				case 'invalid_link':
-					errorMessage = t('business.register.invalidMagicLink') || 'Invalid magic link. Please request a new one.';
+					errorMessage =
+						t('business.register.invalidMagicLink') ||
+						'Invalid magic link. Please request a new one.';
 					break;
 				case 'verification_failed':
-					errorMessage = t('business.register.verificationFailed') || 'Failed to verify magic link. Please try again.';
+					errorMessage =
+						t('business.register.verificationFailed') ||
+						'Failed to verify magic link. Please try again.';
 					break;
 				case 'auth_failed':
-					errorMessage = t('business.register.authFailed') || 'Failed to authenticate. Please try again.';
+					errorMessage =
+						t('business.register.authFailed') ||
+						'Failed to authenticate. Please try again.';
+					break;
+				case 'email_mismatch':
+					errorMessage =
+						t('business.register.magicLinkEmailMismatch') ||
+						'Google account email does not match your business invitation email.';
+					break;
+				case 'oauth_register_failed':
+					errorMessage =
+						t('business.register.oauthRegisterFailed') ||
+						'Could not finish business signup after Google. Try again or use email and password.';
 					break;
 				default:
-					errorMessage = t('business.register.errorOccurred') || 'An error occurred. Please try again.';
+					errorMessage =
+						t('business.register.errorOccurred') ||
+						'An error occurred. Please try again.';
 			}
 			if (errorMessage) {
 				toast.error(errorMessage);
@@ -191,34 +213,10 @@ function BusinessRegisterForm() {
 	};
 
 	const handleGoogleRegister = async () => {
-		if (isMagicLink && !formData.token) {
-			toast.error(
-				'Invalid registration link. Please request a new magic link.'
-			);
-			return;
-		}
-
 		setLoading(true);
 		try {
-			// Store magic link token for OAuth flow if present
-			if (formData.token) {
-				sessionStorage.setItem('magicLinkToken', formData.token);
-			}
-			localStorage.setItem('registrationType', 'business');
-			sessionStorage.setItem('registrationType', 'business');
-
-			// Get redirect URL based on platform (web or mobile app)
-			const redirectUrl = getOAuthRedirectUrl('/auth/callback?type=business');
-
-			const { data, error } = await supabase.auth.signInWithOAuth({
-				provider: 'google',
-				options: {
-					redirectTo: redirectUrl,
-					queryParams: {
-						access_type: 'offline',
-						prompt: 'consent',
-					},
-				},
+			const { error } = await startBusinessGoogleOAuth({
+				source: 'business_register',
 			});
 
 			if (error) {
@@ -379,7 +377,7 @@ function BusinessRegisterForm() {
 						<button
 							type="button"
 							onClick={handleGoogleRegister}
-							disabled={loading || (isMagicLink && !formData.token)}
+							disabled={loading}
 							className="w-full flex justify-center items-center py-2 px-4 border border-gray-300 rounded-md shadow-sm bg-white text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#ff5b5b] disabled:opacity-50 disabled:cursor-not-allowed"
 						>
 							<svg className="w-5 h-5 mr-2" viewBox="0 0 24 24">

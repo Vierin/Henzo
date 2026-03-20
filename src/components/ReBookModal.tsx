@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { apiClient } from '@/lib/api-client';
 
 interface Salon {
 	id: string;
@@ -123,35 +124,11 @@ export default function ReBookModal({
 		try {
 			const bookingDateTime = new Date(`${selectedDate}T${selectedTime}`);
 
-			// Get auth token
-			const { supabase } = await import('@/lib/supabase');
-			const {
-				data: { session },
-			} = await supabase.auth.getSession();
-
-			if (!session?.access_token) {
-				throw new Error('You must be logged in to book an appointment');
-			}
-
-			const response = await fetch(
-				`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/bookings`,
-				{
-					method: 'POST',
-					headers: {
-						'Content-Type': 'application/json',
-						Authorization: `Bearer ${session.access_token}`,
-					},
-					body: JSON.stringify({
-						salonId: salon.id,
-						serviceId: service.id,
-						time: bookingDateTime.toISOString(),
-					}),
-				}
-			);
-
-			if (!response.ok) {
-				throw new Error('Failed to create booking');
-			}
+			await apiClient.post('/bookings', {
+				salonId: salon.id,
+				serviceId: service.id,
+				time: bookingDateTime.toISOString(),
+			});
 
 			onSuccess?.();
 			onClose();

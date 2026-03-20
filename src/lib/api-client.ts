@@ -53,7 +53,10 @@ export class ApiClient {
 
 		// Create AbortController for timeout
 		const controller = new AbortController();
-		const timeoutId = setTimeout(() => controller.abort(), this.REQUEST_TIMEOUT);
+		const timeoutId = setTimeout(
+			() => controller.abort(),
+			this.REQUEST_TIMEOUT
+		);
 
 		const config: RequestInit = {
 			...fetchOptions,
@@ -83,7 +86,7 @@ export class ApiClient {
 				error.message === 'Failed to fetch' || error.message === 'fetch failed'
 					? `Unable to connect to the server.`
 					: error.message || 'Network error occurred';
-			
+
 			// Only log in development to avoid cluttering production logs
 			if (process.env.NODE_ENV === 'development') {
 				console.error('Network Error:', {
@@ -92,7 +95,7 @@ export class ApiClient {
 					baseUrl: this.baseUrl,
 				});
 			}
-			
+
 			// Create a more specific error that can be caught and handled gracefully
 			const networkError = new Error(errorMessage);
 			(networkError as any).isNetworkError = true;
@@ -110,7 +113,10 @@ export class ApiClient {
 					if (typeof window !== 'undefined') {
 						const currentPath = window.location.pathname;
 						// Don't redirect if already on login/register pages
-						if (!currentPath.includes('/login') && !currentPath.includes('/register')) {
+						if (
+							!currentPath.includes('/login') &&
+							!currentPath.includes('/register')
+						) {
 							window.location.href = '/login?session=expired';
 						}
 					}
@@ -119,7 +125,9 @@ export class ApiClient {
 					logger.error('Failed to logout on 401:', logoutError);
 				}
 
-				const authError = new Error('Your session has expired. Please log in again.');
+				const authError = new Error(
+					'Your session has expired. Please log in again.'
+				);
 				(authError as any).status = 401;
 				(authError as any).isAuthError = true;
 				throw authError;
@@ -131,7 +139,7 @@ export class ApiClient {
 			}
 
 			const errorData = await response.json().catch(() => ({}));
-			
+
 			// Log error details for debugging
 			if (process.env.NODE_ENV === 'development') {
 				console.error('API Error:', {
@@ -176,6 +184,7 @@ export class ApiClient {
 
 			const error = new Error(errorMessage);
 			(error as any).status = response.status;
+			(error as any).errorData = errorData;
 			throw error;
 		}
 
@@ -206,29 +215,48 @@ export class ApiClient {
 	// Generic CRUD operations
 	async get<T>(
 		endpoint: string,
-		options?: { responseType?: 'blob'; cache?: RequestCache }
+		options?: {
+			responseType?: 'blob';
+			cache?: RequestCache;
+			headers?: HeadersInit;
+		}
 	): Promise<T> {
 		return this.request<T>(endpoint, { method: 'GET', ...options });
 	}
 
-	async post<T>(endpoint: string, data?: unknown): Promise<T> {
+	async post<T>(
+		endpoint: string,
+		data?: unknown,
+		options?: { headers?: HeadersInit }
+	): Promise<T> {
 		return this.request<T>(endpoint, {
 			method: 'POST',
 			body: data ? JSON.stringify(data) : undefined,
+			...options,
 		});
 	}
 
-	async put<T>(endpoint: string, data?: unknown): Promise<T> {
+	async put<T>(
+		endpoint: string,
+		data?: unknown,
+		options?: { headers?: HeadersInit }
+	): Promise<T> {
 		return this.request<T>(endpoint, {
 			method: 'PUT',
 			body: data ? JSON.stringify(data) : undefined,
+			...options,
 		});
 	}
 
-	async patch<T>(endpoint: string, data?: unknown): Promise<T> {
+	async patch<T>(
+		endpoint: string,
+		data?: unknown,
+		options?: { headers?: HeadersInit }
+	): Promise<T> {
 		return this.request<T>(endpoint, {
 			method: 'PATCH',
 			body: data ? JSON.stringify(data) : undefined,
+			...options,
 		});
 	}
 

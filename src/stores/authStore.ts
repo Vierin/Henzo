@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { supabase } from '@/lib/supabase';
+import { apiClient } from '@/lib/api-client';
 import { User } from '@/types';
 import { logger } from '@/lib/logger';
 
@@ -104,24 +105,13 @@ export const useAuthStore = create<AuthState>()(
 				try {
 					set({ isLoading: true });
 
-					const API_BASE_URL =
-						process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
-					const response = await fetch(`${API_BASE_URL}/auth/login-client`, {
-						method: 'POST',
-						headers: {
-							'Content-Type': 'application/json',
-						},
-						body: JSON.stringify({ email, password }),
-					});
-
-					const result = await response.json();
-
-					if (!response.ok) {
-						throw new Error(result.message || 'Login failed');
-					}
+					const result = await apiClient.post<{ session?: any; user?: any }>(
+						'/auth/login-client',
+						{ email, password }
+					);
 
 					// Set Supabase session
-					if (result.session) {
+					if (result?.session) {
 						const { error } = await supabase.auth.setSession(result.session);
 						if (error) throw error;
 					}
@@ -132,8 +122,12 @@ export const useAuthStore = create<AuthState>()(
 					return { success: true };
 				} catch (error: unknown) {
 					get().clearUser();
+					const err = error as {
+						message?: string;
+						errorData?: { message?: string };
+					};
 					const errorMessage =
-						error instanceof Error ? error.message : 'Unknown error occurred';
+						err?.message || err?.errorData?.message || 'Unknown error occurred';
 					return { success: false, error: errorMessage };
 				} finally {
 					set({ isLoading: false });
@@ -145,36 +139,27 @@ export const useAuthStore = create<AuthState>()(
 				try {
 					set({ isLoading: true });
 
-					const API_BASE_URL =
-						process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
-					const response = await fetch(`${API_BASE_URL}/auth/register-client`, {
-						method: 'POST',
-						headers: {
-							'Content-Type': 'application/json',
-						},
-						body: JSON.stringify(data),
-					});
+					const result = await apiClient.post<{ session?: any; user?: any }>(
+						'/auth/register-client',
+						data
+					);
 
-					const result = await response.json();
-
-					if (!response.ok) {
-						throw new Error(result.message || 'Registration failed');
-					}
-
-					// Set Supabase session
-					if (result.session) {
+					if (result?.session) {
 						const { error } = await supabase.auth.setSession(result.session);
 						if (error) throw error;
 					}
 
-					// Update user in store
 					get().setUser(result.user);
 
 					return { success: true };
 				} catch (error: unknown) {
 					get().clearUser();
+					const err = error as {
+						message?: string;
+						errorData?: { message?: string };
+					};
 					const errorMessage =
-						error instanceof Error ? error.message : 'Unknown error occurred';
+						err?.message || err?.errorData?.message || 'Unknown error occurred';
 					return { success: false, error: errorMessage };
 				} finally {
 					set({ isLoading: false });
@@ -211,30 +196,9 @@ export const useAuthStore = create<AuthState>()(
 			// Refresh user data from API
 			refreshUser: async () => {
 				try {
-					const {
-						data: { session },
-					} = await supabase.auth.getSession();
-
-					if (!session?.access_token) {
-						get().clearUser();
-						return;
-					}
-
-					const API_BASE_URL =
-						process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
-					const response = await fetch(`${API_BASE_URL}/auth/user`, {
-						headers: {
-							Authorization: `Bearer ${session.access_token}`,
-						},
-					});
-
-					if (!response.ok) {
-						get().clearUser();
-						return;
-					}
-
-					const result = await response.json();
-					get().setUser(result.user);
+					const result = await apiClient.get<{ user: any }>('/auth/user');
+					if (result?.user) get().setUser(result.user);
+					else get().clearUser();
 				} catch (error) {
 					console.error('Error refreshing user:', error);
 					get().clearUser();
@@ -244,9 +208,7 @@ export const useAuthStore = create<AuthState>()(
 			// Check authentication on app start (only if not initialized)
 			checkAuth: async () => {
 				const state = get();
-				if (state.isInitialized) {
-					return; // Already initialized, no need to check again
-				}
+				if (state.isInitialized) return;
 
 				try {
 					set({ isLoading: true });
@@ -254,34 +216,19 @@ export const useAuthStore = create<AuthState>()(
 					const {
 						data: { session },
 					} = await supabase.auth.getSession();
-
 					if (!session?.access_token) {
 						get().clearUser();
 						return;
 					}
 
-					// Get user data from API
-					const API_BASE_URL =
-						process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
-
-					const response = await fetch(`${API_BASE_URL}/auth/user`, {
-						headers: {
-							Authorization: `Bearer ${session.access_token}`,
-						},
-					});
-
-					if (!response.ok) {
-						// Если API недоступен, не очищаем пользователя
+					const result = await apiClient.get<{ user: any }>('/auth/user');
+					if (result?.user) get().setUser(result.user);
+					else {
 						console.warn('API not available, keeping current auth state');
-						set({ isLoading: false, isInitialized: true });
-						return;
 					}
-
-					const result = await response.json();
-					get().setUser(result.user);
 				} catch (error) {
 					console.error('Auth check error:', error);
-					// Не очищаем пользователя при ошибке сети
+				} finally {
 					set({ isLoading: false, isInitialized: true });
 				}
 			},

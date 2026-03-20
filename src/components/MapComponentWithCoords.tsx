@@ -3,6 +3,7 @@
 import { useEffect, useRef, useCallback } from 'react';
 import 'leaflet/dist/leaflet.css';
 import '@/styles/map.css';
+import { apiClient } from '@/lib/api-client';
 
 // Dynamically import Leaflet to avoid SSR issues
 const LeafletLoader = { L: null as any };
@@ -40,17 +41,9 @@ export default function MapComponentWithCoords({
 	const reverseGeocode = useCallback(
 		async (lat: number, lon: number): Promise<string | undefined> => {
 			try {
-				const API_BASE_URL =
-					process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
-				const response = await fetch(
-					`${API_BASE_URL}/mapbox/reverse-geocode?lat=${lat}&lon=${lon}`
+				const result = await apiClient.get<{ address?: string }>(
+					`/mapbox/reverse-geocode?lat=${lat}&lon=${lon}`
 				);
-
-				if (!response.ok) {
-					return undefined;
-				}
-
-				const result = await response.json();
 				return result?.address;
 			} catch (error) {
 				console.error('❌ Error reverse geocoding:', error);
@@ -116,8 +109,13 @@ export default function MapComponentWithCoords({
 			};
 
 			try {
-				console.log('🗺️ Creating marker at:', [lat, lon], 'Map instance:', !!mapInstanceRef.current);
-				
+				console.log(
+					'🗺️ Creating marker at:',
+					[lat, lon],
+					'Map instance:',
+					!!mapInstanceRef.current
+				);
+
 				// Ensure map is ready
 				if (!mapInstanceRef.current._loaded) {
 					console.warn('⚠️ Map not loaded yet, waiting...');
@@ -128,7 +126,10 @@ export default function MapComponentWithCoords({
 								[lat, lon],
 								markerOptions
 							).addTo(mapInstanceRef.current);
-							console.log('🗺️ Marker created after delay:', !!markerRef.current);
+							console.log(
+								'🗺️ Marker created after delay:',
+								!!markerRef.current
+							);
 						}
 					}, 200);
 					return;
@@ -150,7 +151,7 @@ export default function MapComponentWithCoords({
 					if (markerRef.current && mapInstanceRef.current) {
 						// Update marker position to ensure it's correct
 						markerRef.current.setLatLng([lat, lon]);
-						
+
 						// Force marker element to be visible
 						if (markerRef.current.getElement) {
 							const markerElement = markerRef.current.getElement();
@@ -160,25 +161,22 @@ export default function MapComponentWithCoords({
 								markerElement.style.display = 'block';
 							}
 						}
-						
+
 						// Bring marker to front
 						markerRef.current.bringToFront();
-						
+
 						console.log('🗺️ Marker visibility forced');
 					}
 				}, 100);
 
 				const markerPos = markerRef.current.getLatLng();
-				console.log(
-					'🗺️ Marker created successfully:',
-					{
-						markerPosition: [markerPos.lat, markerPos.lng],
-						requestedPosition: [lat, lon],
-						currentMapCenter: mapInstanceRef.current.getCenter(),
-						mapBounds: mapInstanceRef.current.getBounds(),
-						markerElement: !!markerRef.current.getElement?.(),
-					}
-				);
+				console.log('🗺️ Marker created successfully:', {
+					markerPosition: [markerPos.lat, markerPos.lng],
+					requestedPosition: [lat, lon],
+					currentMapCenter: mapInstanceRef.current.getCenter(),
+					mapBounds: mapInstanceRef.current.getBounds(),
+					markerElement: !!markerRef.current.getElement?.(),
+				});
 
 				// Center map on marker after it's added (only if not from drag)
 				// Use a small delay to ensure map is ready and marker is visible
@@ -316,29 +314,18 @@ export default function MapComponentWithCoords({
 	const geocodeAddress = useCallback(
 		async (address: string) => {
 			try {
-				// Use our backend API for geocoding
-				const API_BASE_URL =
-					process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
-				const response = await fetch(
-					`${API_BASE_URL}/geocoding/search?address=${encodeURIComponent(address)}`
-				);
-
-				if (!response.ok) {
-					throw new Error(`HTTP error! status: ${response.status}`);
-				}
-
-				const result = await response.json();
-
-				if (result.success && result.data) {
-					const { lat, lon, display_name } = result.data;
+				const result = await apiClient.get<{
+					success?: boolean;
+					data?: { lat: number; lon: number; display_name?: string };
+				}>(`/geocoding/search?address=${encodeURIComponent(address)}`);
+				if (result?.success && result?.data) {
+					const { lat, lon } = result.data;
 					updateMapWithCoords(lat, lon, address);
 				} else {
-					console.warn('⚠️ No geocoding results found for:', address);
 					showDefaultMarker();
 				}
 			} catch (error) {
 				console.error('❌ Error geocoding address:', error);
-				// Show marker at default location if geocoding fails
 				showDefaultMarker();
 			}
 		},
@@ -477,8 +464,17 @@ export default function MapComponentWithCoords({
 							);
 							// Add marker immediately after map is ready
 							setTimeout(() => {
-								if (mapInstanceRef.current && LeafletLoader.L && !markerRef.current) {
-									updateMapWithCoords(normalizedLat, normalizedLon, address, false);
+								if (
+									mapInstanceRef.current &&
+									LeafletLoader.L &&
+									!markerRef.current
+								) {
+									updateMapWithCoords(
+										normalizedLat,
+										normalizedLon,
+										address,
+										false
+									);
 								}
 							}, 200);
 						}

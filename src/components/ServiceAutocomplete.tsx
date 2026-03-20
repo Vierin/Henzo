@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import type React from 'react';
 import { useTranslation, useLanguage } from '@/contexts/LanguageContext';
+import { apiClient } from '@/lib/api-client';
 
 interface ServiceSuggestion {
 	id: number | string;
@@ -79,35 +80,15 @@ export default function ServiceAutocomplete({
 
 			setLoading(true);
 			try {
-				const API_BASE_URL =
-					process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
-
-				const safeJson = async (res: Response) => {
-					try {
-						if (!res) return null;
-						const text = await res.text();
-						if (!text) return null;
-						return JSON.parse(text);
-					} catch {
-						return null;
-					}
-				};
-
-				// Unified suggest: RecommendedServices + Salon names (3+ chars)
-				// Map language: 'vi' -> 'vn', 'ru' -> 'ru', 'en' -> 'en'
 				const apiLang =
 					language === 'vi' ? 'vn' : language === 'ru' ? 'ru' : 'en';
-				const response = await fetch(
-					`${API_BASE_URL}/search/unified/suggest?q=${encodeURIComponent(query)}&lang=${apiLang}&limit=10`,
-					{ signal: controller.signal }
+				const result = await apiClient.get<{
+					success?: boolean;
+					data?: { recommendedServices?: any[]; salons?: any[] };
+				}>(
+					`/search/unified/suggest?q=${encodeURIComponent(query)}&lang=${apiLang}&limit=10`
 				);
 
-				if (!response.ok) {
-					setSuggestionGroups([]);
-					return;
-				}
-
-				const result = await safeJson(response);
 				if (!result?.success) {
 					setSuggestionGroups([]);
 					return;
@@ -167,36 +148,27 @@ export default function ServiceAutocomplete({
 		[t]
 	);
 
-	// Fetch initial suggestions on focus (popular recommended services)
 	const fetchInitialSuggestions = useCallback(async () => {
 		setLoading(true);
 		try {
-			const API_BASE_URL =
-				process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
-
-			// Fetch popular recommended services (0-2 chars)
-			// Map language: 'vi' -> 'vn', 'ru' -> 'ru', 'en' -> 'en'
 			const apiLang =
 				language === 'vi' ? 'vn' : language === 'ru' ? 'ru' : 'en';
-			const response = await fetch(
-				`${API_BASE_URL}/search/popular/recommended?lang=${apiLang}&limit=10`
+			const result = await apiClient.get<{ success?: boolean; data?: any[] }>(
+				`/search/popular/recommended?lang=${apiLang}&limit=10`
 			);
 
-			if (response.ok) {
-				const result = await response.json();
-				if (result.success && result.data?.length > 0) {
-					setSuggestionGroups([
-						{
-							type: 'recommended',
-							title: t('homepage.popularServices') || 'Popular Services',
-							suggestions: result.data.map((item: any) => ({
-								id: item.id,
-								name: item.name,
-								type: 'recommended' as const,
-							})),
-						},
-					]);
-				}
+			if (result?.success && result?.data?.length > 0) {
+				setSuggestionGroups([
+					{
+						type: 'recommended',
+						title: t('homepage.popularServices') || 'Popular Services',
+						suggestions: result.data.map((item: any) => ({
+							id: item.id,
+							name: item.name,
+							type: 'recommended' as const,
+						})),
+					},
+				]);
 			}
 		} catch (error) {
 			console.error('Error fetching initial suggestions:', error);

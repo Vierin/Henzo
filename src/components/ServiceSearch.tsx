@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from 'react';
 import { Search, X, Clock, MapPin, Star } from 'lucide-react';
 import Link from 'next/link';
 import Image from 'next/image';
+import { apiClient } from '@/lib/api-client';
 
 interface ServiceCategory {
 	id: number;
@@ -89,18 +90,10 @@ export default function ServiceSearch({
 
 	const searchCategories = async (searchQuery: string) => {
 		try {
-			const API_BASE_URL =
-				process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
-			const response = await fetch(
-				`${API_BASE_URL}/search/categories?q=${encodeURIComponent(searchQuery)}`
+			const result = await apiClient.get<{ success?: boolean; data?: any[] }>(
+				`/search/categories?q=${encodeURIComponent(searchQuery)}`
 			);
-
-			if (response.ok) {
-				const result = await response.json();
-				if (result.success) {
-					setSuggestions(result.data);
-				}
-			}
+			if (result?.success && result?.data) setSuggestions(result.data);
 		} catch (error) {
 			console.error('Error searching categories:', error);
 		}
@@ -109,18 +102,12 @@ export default function ServiceSearch({
 	const searchServices = async (searchQuery: string) => {
 		setLoading(true);
 		try {
-			const API_BASE_URL =
-				process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
-			const response = await fetch(
-				`${API_BASE_URL}/search/services?q=${encodeURIComponent(searchQuery)}`
+			const result = await apiClient.get<{ success?: boolean; data?: any[] }>(
+				`/search/services?q=${encodeURIComponent(searchQuery)}`
 			);
-
-			if (response.ok) {
-				const result = await response.json();
-				if (result.success) {
-					setServices(result.data);
-					setShowResults(true);
-				}
+			if (result?.success && result?.data) {
+				setServices(result.data);
+				setShowResults(true);
 			}
 		} catch (error) {
 			console.error('Error searching services:', error);

@@ -52,12 +52,13 @@ export default function AddressAutocomplete({
 	useEffect(() => {
 		const loadCities = async () => {
 			try {
-				const citiesResponse = await apiClient.get<Array<{ id: string; address: string; lat: number; lon: number }>>(
-					'/mapbox/cities'
-				);
+				const citiesResponse =
+					await apiClient.get<
+						Array<{ id: string; address: string; lat: number; lon: number }>
+					>('/mapbox/cities');
 				if (citiesResponse && citiesResponse.length > 0) {
 					// Transform to AddressSuggestion format
-					const cities: AddressSuggestion[] = citiesResponse.map(city => ({
+					const cities: AddressSuggestion[] = citiesResponse.map((city) => ({
 						display_name: city.address,
 						lat: city.lat.toString(),
 						lon: city.lon.toString(),
@@ -95,33 +96,27 @@ export default function AddressAutocomplete({
 
 		setLoading(true);
 		try {
-			// Try our backend API first
-			const API_BASE_URL =
-				process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
-			const response = await fetch(
-				`${API_BASE_URL}/geocoding/search?address=${encodeURIComponent(query)}`
-			);
-
-			if (response.ok) {
-				const result = await response.json();
-				if (result.success && result.data) {
-					// Clean the address from country name
-					const cleanAddress = cleanAddressFromCountry(
-						result.data.display_name || result.data.address
-					);
-
-					const cleanedData = {
-						...result.data,
-						display_name: cleanAddress,
-						address: cleanAddress,
-					};
-
-					setSuggestions([cleanedData]);
-					return;
-				}
+			const result = await apiClient.get<{
+				success?: boolean;
+				data?: {
+					display_name?: string;
+					address?: string;
+					lat?: number;
+					lon?: number;
+				};
+			}>(`/geocoding/search?address=${encodeURIComponent(query)}`);
+			if (result?.success && result?.data) {
+				const cleanAddress = cleanAddressFromCountry(
+					result.data.display_name || result.data.address
+				);
+				const cleanedData = {
+					...result.data,
+					display_name: cleanAddress,
+					address: cleanAddress,
+				};
+				setSuggestions([cleanedData]);
+				return;
 			}
-
-			// Fallback to Nominatim with Vietnam-only search
 			await fetchNominatimSuggestions(query);
 		} catch (error) {
 			console.error('Error fetching address suggestions:', error);
@@ -353,7 +348,7 @@ export default function AddressAutocomplete({
 					};
 				})
 				.slice(0, 5); // Limit to 5 best results
-			
+
 			setSuggestions(suggestions);
 		} else {
 			setSuggestions([]);
@@ -366,11 +361,13 @@ export default function AddressAutocomplete({
 			if (value && isTyping && allCities.length > 0) {
 				// Filter cities by input value
 				const lowerValue = value.toLowerCase().trim();
-				const filteredCities = allCities.filter(city => 
+				const filteredCities = allCities.filter((city) =>
 					city.display_name.toLowerCase().includes(lowerValue)
 				);
 				setSuggestions([...defaultSuggestions, ...filteredCities]);
-				setShowSuggestions(filteredCities.length > 0 || defaultSuggestions.length > 0);
+				setShowSuggestions(
+					filteredCities.length > 0 || defaultSuggestions.length > 0
+				);
 			} else if (!value) {
 				// Show all cities when input is empty
 				setSuggestions([...defaultSuggestions, ...allCities]);
@@ -421,28 +418,27 @@ export default function AddressAutocomplete({
 			if (pastedValue && pastedValue.includes(',') && /\d+/.test(pastedValue)) {
 				setLoading(true);
 				try {
-					// Try to geocode through backend first
-					const API_BASE_URL =
-						process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
-					const response = await fetch(
-						`${API_BASE_URL}/geocoding/search?address=${encodeURIComponent(pastedValue)}`
-					);
-
-					if (response.ok) {
-						const result = await response.json();
-						if (result.success && result.data) {
-							const cleanAddress = cleanAddressFromCountry(
-								result.data.display_name || result.data.address
-							);
-							onChange(cleanAddress);
-							if (onAddressSelect) {
-								onAddressSelect(cleanAddress, result.data.lat, result.data.lon);
-							}
-							setShowSuggestions(false);
-							setIsTyping(false);
-							setLoading(false);
-							return;
+					const result = await apiClient.get<{
+						success?: boolean;
+						data?: {
+							display_name?: string;
+							address?: string;
+							lat?: number;
+							lon?: number;
+						};
+					}>(`/geocoding/search?address=${encodeURIComponent(pastedValue)}`);
+					if (result?.success && result?.data) {
+						const cleanAddress = cleanAddressFromCountry(
+							result.data.display_name || result.data.address
+						);
+						onChange(cleanAddress);
+						if (onAddressSelect) {
+							onAddressSelect(cleanAddress, result.data.lat, result.data.lon);
 						}
+						setShowSuggestions(false);
+						setIsTyping(false);
+						setLoading(false);
+						return;
 					}
 				} catch (error) {
 					console.error('Error geocoding pasted address:', error);
@@ -481,11 +477,11 @@ export default function AddressAutocomplete({
 			let citySuggestions = allCities;
 			if (value && value.trim().length > 0) {
 				const lowerValue = value.toLowerCase().trim();
-				citySuggestions = allCities.filter(city => 
+				citySuggestions = allCities.filter((city) =>
 					city.display_name.toLowerCase().includes(lowerValue)
 				);
 			}
-			
+
 			// Combine cities with "Use current location" option
 			setSuggestions([...defaultSuggestions, ...citySuggestions]);
 			setShowSuggestions(true);
@@ -505,25 +501,24 @@ export default function AddressAutocomplete({
 				!showSuggestions
 			) {
 				// Address looks complete but wasn't selected from suggestions
-				// Try to geocode it
 				setLoading(true);
 				try {
-					const API_BASE_URL =
-						process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
-					const response = await fetch(
-						`${API_BASE_URL}/geocoding/search?address=${encodeURIComponent(value)}`
-					);
-
-					if (response.ok) {
-						const result = await response.json();
-						if (result.success && result.data) {
-							const cleanAddress = cleanAddressFromCountry(
-								result.data.display_name || result.data.address
-							);
-							onChange(cleanAddress);
-							if (onAddressSelect) {
-								onAddressSelect(cleanAddress, result.data.lat, result.data.lon);
-							}
+					const result = await apiClient.get<{
+						success?: boolean;
+						data?: {
+							display_name?: string;
+							address?: string;
+							lat?: number;
+							lon?: number;
+						};
+					}>(`/geocoding/search?address=${encodeURIComponent(value)}`);
+					if (result?.success && result?.data) {
+						const cleanAddress = cleanAddressFromCountry(
+							result.data.display_name || result.data.address
+						);
+						onChange(cleanAddress);
+						if (onAddressSelect) {
+							onAddressSelect(cleanAddress, result.data.lat, result.data.lon);
 						}
 					}
 				} catch (error) {
@@ -543,17 +538,15 @@ export default function AddressAutocomplete({
 			navigator.geolocation.getCurrentPosition(
 				async (position) => {
 					const { latitude, longitude } = position.coords;
-					
+
 					try {
 						// Get address and country code from backend API
-						const response = await apiClient.get<{ 
-							lat: number; 
-							lon: number; 
-							address: string; 
-							country_code?: string 
-						}>(
-							`/mapbox/reverse-geocode?lat=${latitude}&lon=${longitude}`
-						);
+						const response = await apiClient.get<{
+							lat: number;
+							lon: number;
+							address: string;
+							country_code?: string;
+						}>(`/mapbox/reverse-geocode?lat=${latitude}&lon=${longitude}`);
 
 						if (response && response.country_code) {
 							// Check if location is in Vietnam
@@ -561,7 +554,10 @@ export default function AddressAutocomplete({
 								setIsGettingLocation(false);
 								setIsTyping(false);
 								// Show error message
-								alert(t('common.locationOutsideVietnam') || 'We currently only work with salons in Vietnam. Please select a location in Vietnam.');
+								alert(
+									t('common.locationOutsideVietnam') ||
+										'We currently only work with salons in Vietnam. Please select a location in Vietnam.'
+								);
 								return;
 							}
 						}
@@ -579,21 +575,22 @@ export default function AddressAutocomplete({
 								}
 							);
 							const nominatimData = await nominatimResponse.json();
-							
+
 							if (nominatimData && nominatimData.address) {
 								const address = nominatimData.address;
 								const parts = [];
-								
+
 								// Add district/suburb/neighbourhood
 								if (address.suburb) parts.push(address.suburb);
-								else if (address.neighbourhood) parts.push(address.neighbourhood);
+								else if (address.neighbourhood)
+									parts.push(address.neighbourhood);
 								else if (address.quarter) parts.push(address.quarter);
-								
+
 								// Add city/town/village
 								if (address.city) parts.push(address.city);
 								else if (address.town) parts.push(address.town);
 								else if (address.village) parts.push(address.village);
-								
+
 								// If we have at least one part, use it
 								if (parts.length > 0) {
 									formattedAddress = parts.join(', ');
@@ -605,7 +602,10 @@ export default function AddressAutocomplete({
 								formattedAddress = cleanAddressFromCountry(response.address);
 							}
 						} catch (nominatimError) {
-							console.error('Error getting structured address:', nominatimError);
+							console.error(
+								'Error getting structured address:',
+								nominatimError
+							);
 							// Fallback to clean full address
 							formattedAddress = cleanAddressFromCountry(response.address);
 						}
@@ -628,12 +628,19 @@ export default function AddressAutocomplete({
 								}
 							);
 							const data = await nominatimResponse.json();
-							
+
 							// Check country code
-							if (data.address && data.address.country_code && data.address.country_code !== 'vn') {
+							if (
+								data.address &&
+								data.address.country_code &&
+								data.address.country_code !== 'vn'
+							) {
 								setIsGettingLocation(false);
 								setIsTyping(false);
-								alert(t('common.locationOutsideVietnam') || 'We currently only work with salons in Vietnam. Please select a location in Vietnam.');
+								alert(
+									t('common.locationOutsideVietnam') ||
+										'We currently only work with salons in Vietnam. Please select a location in Vietnam.'
+								);
 								return;
 							}
 
@@ -643,12 +650,13 @@ export default function AddressAutocomplete({
 
 							if (address) {
 								const parts = [];
-								
+
 								// Add district/suburb/neighbourhood
 								if (address.suburb) parts.push(address.suburb);
-								else if (address.neighbourhood) parts.push(address.neighbourhood);
+								else if (address.neighbourhood)
+									parts.push(address.neighbourhood);
 								else if (address.quarter) parts.push(address.quarter);
-								
+
 								// Add city/town/village
 								if (address.city) parts.push(address.city);
 								else if (address.town) parts.push(address.town);
@@ -708,7 +716,9 @@ export default function AddressAutocomplete({
 				onPaste={handlePaste}
 				onFocus={handleInputFocus}
 				onBlur={handleInputBlur}
-				placeholder={isGettingLocation ? t('common.gettingLocation') : placeholder}
+				placeholder={
+					isGettingLocation ? t('common.gettingLocation') : placeholder
+				}
 				disabled={isGettingLocation}
 				className={
 					inline
@@ -760,8 +770,8 @@ export default function AddressAutocomplete({
 					className="absolute z-[9999] w-full mt-1 bg-white border border-gray-200 rounded-md shadow-lg max-h-60 overflow-y-auto"
 				>
 					{suggestions.map((suggestion, index) => {
-					const isDefaultSuggestion =
-						suggestion.display_name === t('common.useCurrentLocation');
+						const isDefaultSuggestion =
+							suggestion.display_name === t('common.useCurrentLocation');
 
 						return (
 							<button
@@ -772,7 +782,8 @@ export default function AddressAutocomplete({
 								}`}
 							>
 								{isDefaultSuggestion &&
-									suggestion.display_name === t('common.useCurrentLocation') && (
+									suggestion.display_name ===
+										t('common.useCurrentLocation') && (
 										<svg
 											className="w-4 h-4 text-gray-700"
 											fill="none"

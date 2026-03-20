@@ -1,6 +1,14 @@
 'use client';
 
-import { useState, useEffect, useRef, useCallback, useMemo, lazy, Suspense } from 'react';
+import {
+	useState,
+	useEffect,
+	useRef,
+	useCallback,
+	useMemo,
+	lazy,
+	Suspense,
+} from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { toast } from 'react-hot-toast';
 import LoadingSpinner from '@/components/LoadingSpinner';
@@ -113,21 +121,13 @@ export default function SalonInfoClient() {
 		return { salonUrl: '', qrCodeUrl: '' };
 	}, [salon, hasExistingSalon, getSalonUrl]);
 
-	// Helper function to geocode address (memoized)
 	const geocodeAddress = useCallback(async (address: string) => {
 		try {
-			const API_BASE_URL =
-				process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
-			const response = await fetch(
-				`${API_BASE_URL}/mapbox/geocode?address=${encodeURIComponent(address)}`
+			const data = await apiClient.get<{ lat?: number; lon?: number }>(
+				`/mapbox/geocode?address=${encodeURIComponent(address)}`
 			);
-
-			if (response.ok) {
-				const data = await response.json();
-				if (data.lat && data.lon) {
-					return { lat: data.lat, lon: data.lon };
-				}
-			}
+			if (data?.lat != null && data?.lon != null)
+				return { lat: data.lat, lon: data.lon };
 		} catch (error) {
 			console.error('Failed to geocode address:', error);
 		}
@@ -148,7 +148,9 @@ export default function SalonInfoClient() {
 			website: salon.website || '',
 			instagram: salon.instagram || '',
 			photos: salon.photos || [],
-			autoConfirmBookings: (salon as { autoConfirmBookings?: boolean }).autoConfirmBookings ?? false,
+			autoConfirmBookings:
+				(salon as { autoConfirmBookings?: boolean }).autoConfirmBookings ??
+				false,
 			reminderSettings: {
 				intervals: ((salon as any).reminderSettings?.intervals || [24]).filter(
 					(interval: number) => interval !== 168
@@ -337,13 +339,17 @@ export default function SalonInfoClient() {
 
 				if (hasExistingSalon) {
 					await apiClient.put('/salons/current', salonData);
-					await queryClient.invalidateQueries({ queryKey: salonKeys.current() });
+					await queryClient.invalidateQueries({
+						queryKey: salonKeys.current(),
+					});
 					toast.success(t('owner.salonInfo.salonUpdated'), {
 						id: saveToast,
 					});
 				} else {
 					await apiClient.post('/salons/current', salonData);
-					await queryClient.invalidateQueries({ queryKey: salonKeys.current() });
+					await queryClient.invalidateQueries({
+						queryKey: salonKeys.current(),
+					});
 					toast.success(t('owner.salonInfo.salonCreated'), { id: saveToast });
 				}
 			} catch (err: unknown) {
@@ -511,4 +517,3 @@ export default function SalonInfoClient() {
 		</div>
 	);
 }
-

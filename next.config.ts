@@ -67,11 +67,6 @@ const nextConfig: NextConfig = {
 		imageSizes: [16, 32, 48, 64, 96, 128, 256, 384],
 	},
 	webpack: (config, { isServer, dev }) => {
-		config.resolve.alias = {
-			...config.resolve.alias,
-			'@db': path.resolve(__dirname, '../../packages/db'),
-		};
-
 		// P1: Tree shaking для неиспользуемого кода
 		// usedExports удалено - конфликтует с cacheUnaffected в Next.js 15
 		// Next.js уже включает usedExports по умолчанию
@@ -90,7 +85,7 @@ const nextConfig: NextConfig = {
 		if (dev) {
 			// Next.js 15 автоматически управляет кэшем, не нужно настраивать вручную
 			// Ручная настройка может вызывать конфликты с PackFileCacheStrategy
-			
+
 			// Ускоряем компиляцию за счет уменьшения проверок
 			config.watchOptions = {
 				poll: false,

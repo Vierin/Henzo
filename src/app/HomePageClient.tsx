@@ -10,6 +10,7 @@ import RecommendedSalons from '@/components/RecommendedSalons';
 import CategoriesNavigation from '@/components/CategoriesNavigation';
 import { useTranslation } from '@/contexts/LanguageContext';
 import { supabase } from '@/lib/supabase';
+import { apiClient } from '@/lib/api-client';
 import { extractLocaleFromPath, withLocale } from '@/i18n/routing';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -19,9 +20,11 @@ interface HomePageClientProps {
 	initialDictionary?: any; // Переводы, загруженные на сервере
 }
 
-export default function HomePageClient({ initialDictionary }: HomePageClientProps = {}) {
+export default function HomePageClient({
+	initialDictionary,
+}: HomePageClientProps = {}) {
 	const queryClient = useQueryClient();
-	
+
 	// Используем переводы из window если они есть (от сервера), иначе загружаем через хук
 	const [serverDictionary] = useState(() => {
 		if (typeof window !== 'undefined') {
@@ -29,9 +32,9 @@ export default function HomePageClient({ initialDictionary }: HomePageClientProp
 		}
 		return undefined;
 	});
-	
+
 	const effectiveInitialDictionary = initialDictionary || serverDictionary;
-	
+
 	// Передаем initialDictionary в LanguageProvider через window для предотвращения мерцания
 	useEffect(() => {
 		if (effectiveInitialDictionary && typeof window !== 'undefined') {
@@ -43,7 +46,7 @@ export default function HomePageClient({ initialDictionary }: HomePageClientProp
 			};
 		}
 	}, [effectiveInitialDictionary]);
-	
+
 	const t = useTranslation();
 	const router = useRouter();
 
@@ -62,8 +65,10 @@ export default function HomePageClient({ initialDictionary }: HomePageClientProp
 			// Если это magic link токены
 			if (accessToken && refreshToken && type === 'magiclink') {
 				try {
-					console.log('✅ Found magic link tokens in hash on homepage, setting session...');
-					
+					console.log(
+						'✅ Found magic link tokens in hash on homepage, setting session...'
+					);
+
 					// Устанавливаем сессию
 					const { data: sessionData, error: sessionError } =
 						await supabase.auth.setSession({
@@ -74,30 +79,42 @@ export default function HomePageClient({ initialDictionary }: HomePageClientProp
 					if (sessionError) {
 						console.error('❌ Failed to set session from hash:', sessionError);
 						// Очищаем hash и редиректим на страницу регистрации с ошибкой
-						window.history.replaceState(null, '', '/business/register?error=auth_failed');
+						window.history.replaceState(
+							null,
+							'',
+							'/business/register?error=auth_failed'
+						);
 						return;
 					}
 
 					if (sessionData?.session) {
 						console.log('✅ Session set successfully from hash tokens');
-						
+
 						// Проверяем роль пользователя для редиректа
-						const userRole = sessionData.session.user.app_metadata?.role || 
+						const userRole =
+							sessionData.session.user.app_metadata?.role ||
 							sessionData.session.user.user_metadata?.role;
-						
+
 						// Очищаем hash из URL (сохраняем текущий path, иначе потеряем locale)
 						window.history.replaceState(null, '', window.location.pathname);
-						
+
 						// Редиректим в зависимости от роли с учетом локали
 						const currentPath = window.location.pathname;
 						const locale = extractLocaleFromPath(currentPath) ?? 'en';
-						
+
 						if (userRole === 'OWNER') {
 							console.log('🔄 Redirecting OWNER to complete-setup');
-							router.push(withLocale('/business/complete-setup', locale as 'en' | 'ru' | 'vi'));
+							router.push(
+								withLocale(
+									'/business/complete-setup',
+									locale as 'en' | 'ru' | 'vi'
+								)
+							);
 						} else if (userRole === 'CLIENT') {
 							console.log('🔄 Redirecting CLIENT to dashboard');
-							router.push(withLocale('/dashboard', locale as 'en' | 'ru' | 'vi'));
+							router.push(
+								withLocale('/dashboard', locale as 'en' | 'ru' | 'vi')
+							);
 						} else {
 							// Обновляем страницу для применения изменений
 							router.refresh();
@@ -106,7 +123,11 @@ export default function HomePageClient({ initialDictionary }: HomePageClientProp
 				} catch (error) {
 					console.error('❌ Error handling hash tokens:', error);
 					// Очищаем hash при ошибке и редиректим
-					window.history.replaceState(null, '', '/business/register?error=auth_failed');
+					window.history.replaceState(
+						null,
+						'',
+						'/business/register?error=auth_failed'
+					);
 				}
 			}
 		};
@@ -114,40 +135,24 @@ export default function HomePageClient({ initialDictionary }: HomePageClientProp
 		handleHashTokens();
 	}, [router]);
 
-	// Preload critical data for better performance
+	// Preload critical data for better performance (uses apiClient; keys match useFeaturedSalons/usePopularServices)
 	useEffect(() => {
-		const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
-
-		// Prefetch featured salons with optimized caching
 		queryClient.prefetchQuery({
 			queryKey: ['salons', 'featured', 6],
-			queryFn: async () => {
-				const response = await fetch(`${API_URL}/salons/featured?limit=6`);
-				return response.json();
-			},
-			staleTime: 60 * 60 * 1000, // 1 hour - featured salons change very rarely
-			gcTime: 24 * 60 * 60 * 1000, // 24 hours - keep in cache for a full day
+			queryFn: () => apiClient.get('/salons/featured?limit=6'),
+			staleTime: 60 * 60 * 1000,
+			gcTime: 24 * 60 * 60 * 1000,
 		});
-
-		// Prefetch exactly 3 salons for the Top-Rated section
 		queryClient.prefetchQuery({
 			queryKey: ['salons', 'featured', 3],
-			queryFn: async () => {
-				const response = await fetch(`${API_URL}/salons/featured?limit=3`);
-				return response.json();
-			},
-			staleTime: 60 * 60 * 1000, // 1 hour - featured salons change very rarely
-			gcTime: 24 * 60 * 60 * 1000, // 24 hours - keep in cache for a full day
+			queryFn: () => apiClient.get('/salons/featured?limit=3'),
+			staleTime: 60 * 60 * 1000,
+			gcTime: 24 * 60 * 60 * 1000,
 		});
-
-		// Prefetch popular services
 		queryClient.prefetchQuery({
 			queryKey: ['services', 'popular', 10],
-			queryFn: async () => {
-				const response = await fetch(`${API_URL}/services/popular?limit=10`);
-				return response.json();
-			},
-			staleTime: 15 * 60 * 1000, // 15 minutes
+			queryFn: () => apiClient.get('/services/popular?limit=10'),
+			staleTime: 15 * 60 * 1000,
 		});
 	}, [queryClient]);
 
@@ -200,27 +205,27 @@ export default function HomePageClient({ initialDictionary }: HomePageClientProp
 											<div>
 												<Clock4 className="w-6 h-6 sm:w-8 sm:h-8 text-primary" />
 											</div>
-											<div className='leading-[1.2]'>
+											<div className="leading-[1.2]">
 												<p className="text-2xl font-bold text-primary flex items-center gap-1">
-												24/7
+													24/7
 												</p>
 												<p className="text-xs sm:text-sm text-black/70 font-medium">
 													{t('homepage.onlineBooking')}
 												</p>
 											</div>
-											
 										</div>
 										<div className="w-px h-8 sm:h-10 bg-gray-300"></div>
 										<div className="flex items-center gap-2">
-									    <div>
-													<Timer className="w-6 h-6 sm:w-8 sm:h-8 text-primary" />
-												</div>
+											<div>
+												<Timer className="w-6 h-6 sm:w-8 sm:h-8 text-primary" />
+											</div>
 											<div className="leading-[1]">
 												<p className="text-xs sm:text-sm text-black/70">
 													{t('homepage.toBook')}
 												</p>
 												<p className="text-2xl font-bold text-primary flex items-center gap-1 leading-[1]">
-													5 <span className="text-lg relative">
+													5{' '}
+													<span className="text-lg relative">
 														{t('homepage.minutesShort')}
 													</span>
 												</p>
@@ -301,7 +306,9 @@ export default function HomePageClient({ initialDictionary }: HomePageClientProp
 									<div className="relative flex items-center gap-6 h-41">
 										<div className="relative z-10 flex-shrink-0">
 											<div className="w-10 h-10 border border-[#ff5b5b] bg-white rounded-full flex items-center justify-center">
-												<span className="text-[#ff5b5b] font-bold text-lg">1</span>
+												<span className="text-[#ff5b5b] font-bold text-lg">
+													1
+												</span>
 											</div>
 										</div>
 										<div className="flex-1 bg-white rounded-lg p-6 h-full">
@@ -320,10 +327,10 @@ export default function HomePageClient({ initialDictionary }: HomePageClientProp
 													/>
 												</svg>
 												<h3 className="text-xl font-bold text-black">
-												{t('homepage.step1Title')}
-											</h3>
+													{t('homepage.step1Title')}
+												</h3>
 											</div>
-											
+
 											<p className="text-gray-600 leading-relaxed">
 												{t('homepage.step1Description')}
 											</p>
@@ -334,7 +341,9 @@ export default function HomePageClient({ initialDictionary }: HomePageClientProp
 									<div className="relative flex items-center gap-6 h-41">
 										<div className="relative z-10 flex-shrink-0">
 											<div className="w-10 h-10 border border-[#ff5b5b] bg-white rounded-full flex items-center justify-center">
-												<span className="text-[#ff5b5b] font-bold text-lg">2</span>
+												<span className="text-[#ff5b5b] font-bold text-lg">
+													2
+												</span>
 											</div>
 										</div>
 										<div className="flex-1 bg-white rounded-lg p-6 h-full">
@@ -354,7 +363,9 @@ export default function HomePageClient({ initialDictionary }: HomePageClientProp
 									<div className="relative flex items-center gap-6 h-41">
 										<div className="relative z-10 flex-shrink-0">
 											<div className="w-10 h-10 border border-[#ff5b5b] bg-white rounded-full flex items-center justify-center">
-												<span className="text-[#ff5b5b] font-bold text-lg">3</span>
+												<span className="text-[#ff5b5b] font-bold text-lg">
+													3
+												</span>
 											</div>
 										</div>
 										<div className="flex-1 bg-white rounded-lg p-6 h-full">
@@ -504,7 +515,8 @@ export default function HomePageClient({ initialDictionary }: HomePageClientProp
 								href="/salons"
 								className="flex justify-center w-fit mx-auto items-center gap-2 text-[#ff5b5b] hover:text-[#e04a4a] font-medium text-lg transition-colors "
 							>
-								{t('homepage.startExploring')} <ArrowRight className="w-4 h-4" />
+								{t('homepage.startExploring')}{' '}
+								<ArrowRight className="w-4 h-4" />
 							</Link>
 						</div>
 					</div>

@@ -3,7 +3,6 @@
 import ProtectedRoute from '@/components/ProtectedRoute';
 import { usePathname } from 'next/navigation';
 import Link from 'next/link';
-import { useEffect } from 'react';
 import { useAuthStore } from '@/stores/authStore';
 
 export default function AdminLayout({
@@ -12,16 +11,6 @@ export default function AdminLayout({
 	children: React.ReactNode;
 }) {
 	const pathname = usePathname();
-	const { checkAuth, isInitialized } = useAuthStore();
-
-	// Проверяем аутентификацию для админ панели
-	useEffect(() => {
-		if (!isInitialized) {
-			checkAuth().catch((error) => {
-				console.warn('Auth check failed:', error);
-			});
-		}
-	}, [checkAuth, isInitialized]);
 
 	const navigationItems = [
 		{

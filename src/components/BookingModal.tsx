@@ -12,8 +12,13 @@ import { safeParseDate, parseBookingTimeAsLocal } from '@/utils/date';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { getLocalizedServiceName } from '@/utils/serviceLocalization';
 import { logger } from '@/lib/logger';
+import { apiClient } from '@/lib/api-client';
 import { storage } from '@/utils/storage';
-import { weekdayFullMap, weekdayShortKeys, monthMap } from '@/utils/dateConstants';
+import {
+	weekdayFullMap,
+	weekdayShortKeys,
+	monthMap,
+} from '@/utils/dateConstants';
 import { useIsWithinWorkingHours } from '@/hooks/useIsWithinWorkingHours';
 import BookingGuestForm from './BookingModal/BookingGuestForm';
 import BookingAuthForm from './BookingModal/BookingAuthForm';
@@ -80,7 +85,7 @@ export default function BookingModal({
 	onBookingUpdated,
 }: BookingModalProps) {
 	const { language, t } = useLanguage();
-	
+
 	// Используем переданный salonId
 	const currentSalonId = salonId;
 
@@ -91,14 +96,11 @@ export default function BookingModal({
 	const { user, isClient, isOwner, refreshUser } = useAuthStore();
 
 	// Используем новые хуки для получения данных
-	const {
-		data: staffMembers = [],
-		isLoading: staffLoading,
-	} = useStaffBySalon(currentSalonId || '');
+	const { data: staffMembers = [], isLoading: staffLoading } = useStaffBySalon(
+		currentSalonId || ''
+	);
 
-	const {
-		data: services = [],
-	} = useServices(currentSalonId || '');
+	const { data: services = [] } = useServices(currentSalonId || '');
 
 	// Custom hooks для управления состоянием
 	const bookingState = useBookingState({
@@ -185,9 +187,13 @@ export default function BookingModal({
 		time: string;
 		isWithinWorkingHours?: boolean;
 	} | null>(null);
-	const [currentStep, setCurrentStep] = useState<'booking' | 'client'>('booking');
+	const [currentStep, setCurrentStep] = useState<'booking' | 'client'>(
+		'booking'
+	);
 	const [isMobile, setIsMobile] = useState(false);
-	const [timeFilter, setTimeFilter] = useState<'morning' | 'afternoon' | 'evening'>('afternoon');
+	const [timeFilter, setTimeFilter] = useState<
+		'morning' | 'afternoon' | 'evening'
+	>('afternoon');
 	const [clientEmail, setClientEmail] = useState('');
 	const [clientName, setClientName] = useState('');
 	const [clientPhone, setClientPhone] = useState('');
@@ -238,16 +244,23 @@ export default function BookingModal({
 		onDateScrollRightReport,
 	} = scroll;
 
-
 	// Reset selected staff if they can't perform the selected service
 	useEffect(() => {
-		if (selectedService && selectedStaff && selectedStaff !== t('booking.anyStaff')) {
-			const staffMember = staffMembers.find((staff: Staff) => staff.name === selectedStaff);
+		if (
+			selectedService &&
+			selectedStaff &&
+			selectedStaff !== t('booking.anyStaff')
+		) {
+			const staffMember = staffMembers.find(
+				(staff: Staff) => staff.name === selectedStaff
+			);
 			if (staffMember) {
 				const staffServices = staffMember.Service || [];
 				// If staff has services assigned, check if they can perform selected service
 				if (staffServices.length > 0) {
-					const canPerform = staffServices.some((service) => service.id === selectedService.id);
+					const canPerform = staffServices.some(
+						(service) => service.id === selectedService.id
+					);
 					if (!canPerform) {
 						// Reset to "Any Staff" if current staff can't perform the service
 						setSelectedStaff(t('booking.anyStaff') || 'Any Staff Member');
@@ -259,13 +272,21 @@ export default function BookingModal({
 
 	// Reset selected service if it can't be performed by the selected staff
 	useEffect(() => {
-		if (selectedService && selectedStaff && selectedStaff !== t('booking.anyStaff')) {
-			const staffMember = staffMembers.find((staff: Staff) => staff.name === selectedStaff);
+		if (
+			selectedService &&
+			selectedStaff &&
+			selectedStaff !== t('booking.anyStaff')
+		) {
+			const staffMember = staffMembers.find(
+				(staff: Staff) => staff.name === selectedStaff
+			);
 			if (staffMember) {
 				const staffServices = staffMember.Service || [];
 				// If staff has services assigned, check if they can perform selected service
 				if (staffServices.length > 0) {
-					const canPerform = staffServices.some((service) => service.id === selectedService.id);
+					const canPerform = staffServices.some(
+						(service) => service.id === selectedService.id
+					);
 					if (!canPerform) {
 						// Reset selected service if current staff can't perform it
 						setSelectedService(null);
@@ -398,7 +419,6 @@ export default function BookingModal({
 									return;
 								}
 
-						 
 								await createBooking({
 									service: finalService,
 									date: finalDate,
@@ -513,7 +533,9 @@ export default function BookingModal({
 			return services; // Show all services if no staff selected or "Any Staff"
 		}
 
-		const staffMember = staffMembers.find((staff) => staff.name === selectedStaff);
+		const staffMember = staffMembers.find(
+			(staff) => staff.name === selectedStaff
+		);
 		if (!staffMember) {
 			return services; // Show all services if staff not found
 		}
@@ -598,7 +620,9 @@ export default function BookingModal({
 		);
 
 		// Filter out busy staff members from service-filtered list
-		return staffMembersForService.filter((staff) => !busyStaffIds.has(staff.id));
+		return staffMembersForService.filter(
+			(staff) => !busyStaffIds.has(staff.id)
+		);
 	}, [
 		selectedTime,
 		selectedDate,
@@ -772,20 +796,26 @@ export default function BookingModal({
 
 	// Pre-fill time once timeSlots are available (depends on date/service/staff from above)
 	useEffect(() => {
-		if (!editingBooking || !isOpen || timeSlots.length === 0 || isInitialized) return;
+		if (!editingBooking || !isOpen || timeSlots.length === 0 || isInitialized)
+			return;
 		const bookingDate = new Date(editingBooking.time);
 		const timeString = bookingDate.toTimeString().slice(0, 5);
 		const [bookingHour, bookingMinute] = timeString.split(':').map(Number);
 		const bookingMinutes = bookingHour * 60 + bookingMinute;
 
 		let closestTime: string =
-			typeof timeSlots[0] === 'string' ? timeSlots[0] : (timeSlots[0] as { time: string })?.time || '';
+			typeof timeSlots[0] === 'string'
+				? timeSlots[0]
+				: (timeSlots[0] as { time: string })?.time || '';
 		let closestDiff = Math.abs(
-			parseInt(closestTime.split(':')[0]) * 60 + parseInt(closestTime.split(':')[1]) - bookingMinutes
+			parseInt(closestTime.split(':')[0]) * 60 +
+				parseInt(closestTime.split(':')[1]) -
+				bookingMinutes
 		);
 
 		for (const slot of timeSlots) {
-			const slotTime = typeof slot === 'string' ? slot : (slot as { time: string }).time;
+			const slotTime =
+				typeof slot === 'string' ? slot : (slot as { time: string }).time;
 			const [slotHour, slotMinute] = slotTime.split(':').map(Number);
 			const slotMinutes = slotHour * 60 + slotMinute;
 			const diff = Math.abs(slotMinutes - bookingMinutes);
@@ -822,8 +852,15 @@ export default function BookingModal({
 			setStartDateIndex(0); // Reset start date index to show first 7 days
 			// Note: bookingsLoadError and loadedDaysCount are managed by hooks
 		}
-	}, [isOpen, t, setShowLoginModal, setPendingBookingData, setSelectedDate, setSelectedTime, setSelectedStaff]);
-
+	}, [
+		isOpen,
+		t,
+		setShowLoginModal,
+		setPendingBookingData,
+		setSelectedDate,
+		setSelectedTime,
+		setSelectedStaff,
+	]);
 
 	// Add "Any Staff" option to the beginning of staff list
 	// Use availableStaffMembers if time is selected, otherwise use staff filtered by service
@@ -1018,19 +1055,6 @@ export default function BookingModal({
 			);
 			const staffId = staffMember?.id || 'any';
 
-			// Get current session for access token
-			const {
-				data: { session },
-			} = await supabase.auth.getSession();
-
-			if (!session?.access_token) {
-				throw new Error('No valid session found');
-			}
-
-			// Create booking with user data
-			const API_BASE_URL =
-				process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
-
 			// Validate date and time before creating booking
 			if (!dateToUse || !timeToUse) {
 				logger.error('❌ Missing date or time:', {
@@ -1184,51 +1208,11 @@ export default function BookingModal({
 				}
 			}
 
-			const response = await fetch(`${API_BASE_URL}/bookings`, {
-				method: 'POST',
-				headers: {
-					'Content-Type': 'application/json',
-					Authorization: `Bearer ${session.access_token}`,
-					'Accept-Language': language || 'en',
-				},
-				body: JSON.stringify(requestBody),
-			});
-
-			const result = await response.json();
-
-			if (!response.ok) {
-				logger.error('❌ Booking request failed:', {
-					status: response.status,
-					statusText: response.statusText,
-					result,
-					requestBody,
-				});
-
-				// Extract detailed error message
-				let errorMessage = t('booking.failedToBookAppointment');
-
-				// Check for backend error message in different formats
-				if (result.msg) {
-					errorMessage = result.msg;
-				} else if (result.message) {
-					errorMessage = result.message;
-				} else if (result.error) {
-					errorMessage = result.error;
-				} else if (Array.isArray(result.message)) {
-					// Validation errors from class-validator
-					errorMessage = result.message.join(', ');
-				} else if (typeof result === 'string') {
-					errorMessage = result;
-				}
-
-				if (errorMessage.includes('not available at this time')) {
-					errorMessage = t('booking.staffNotAvailable') || errorMessage;
-				} else if (errorMessage.includes('Selected staff member')) {
-					errorMessage = t('booking.staffNotAvailable') || errorMessage;
-				}
-
-				throw new Error(errorMessage);
-			}
+			const result = await apiClient.post<{ booking?: { status?: string } }>(
+				'/bookings',
+				requestBody,
+				{ headers: { 'Accept-Language': language || 'en' } }
+			);
 
 			storage.removeItem('pendingBooking');
 			setPendingBookingData(null);
@@ -1236,7 +1220,7 @@ export default function BookingModal({
 			const bookingStatus = isOwner
 				? 'CONFIRMED'
 				: result.booking?.status || 'PENDING';
-			
+
 			setBookingSuccess({
 				status: bookingStatus as 'PENDING' | 'CONFIRMED',
 				serviceName: serviceToUse
@@ -1262,25 +1246,22 @@ export default function BookingModal({
 				const thankYouMsg =
 					t('booking.thankYouForReservation') !==
 					'booking.thankYouForReservation'
-					? t('booking.thankYouForReservation')
+						? t('booking.thankYouForReservation')
 						: t.booking?.thankYouForReservation ||
 							'Thank you for your reservation!';
 				const awaitingMsg =
-					t('booking.awaitingConfirmation') !==
-					'booking.awaitingConfirmation'
-					? t('booking.awaitingConfirmation')
+					t('booking.awaitingConfirmation') !== 'booking.awaitingConfirmation'
+						? t('booking.awaitingConfirmation')
 						: t.booking?.awaitingConfirmation ||
 							'Awaiting confirmation from the salon';
 				const message =
 					isWithinWorkingHours !== false
-					? `${thankYouMsg} ${awaitingMsg}`
-						: `${
-								thankYouMsg
-						  } ${
+						? `${thankYouMsg} ${awaitingMsg}`
+						: `${thankYouMsg} ${
 								t('booking.salonWillConfirmWhenOpen') ||
 								t.booking?.salonWillConfirmWhenOpen ||
 								'The salon will confirm your booking when they open.'
-						  }`;
+							}`;
 				toast.success(message, {
 					duration: 6000,
 					icon: '⏳',
@@ -1309,11 +1290,27 @@ export default function BookingModal({
 			}
 		} catch (error: unknown) {
 			logger.error('Booking error:', error);
-			toast.error(
-				error instanceof Error
-					? error.message
-					: t('booking.failedToBookAppointment')
-			);
+			let errorMessage = t('booking.failedToBookAppointment');
+			if (error instanceof Error) {
+				errorMessage = error.message;
+				const err = error as any;
+				if (err.errorData) {
+					const r = err.errorData;
+					if (r.msg) errorMessage = r.msg;
+					else if (r.message)
+						errorMessage = Array.isArray(r.message)
+							? r.message.join(', ')
+							: r.message;
+					else if (r.error) errorMessage = r.error;
+				}
+				if (
+					errorMessage.includes('not available at this time') ||
+					errorMessage.includes('Selected staff member')
+				) {
+					errorMessage = t('booking.staffNotAvailable') || errorMessage;
+				}
+			}
+			toast.error(errorMessage);
 		} finally {
 			setLoading(false);
 		}
@@ -1333,19 +1330,6 @@ export default function BookingModal({
 			);
 			const staffId = staffMember?.id || 'any';
 
-			// Get current session for access token
-			const {
-				data: { session },
-			} = await supabase.auth.getSession();
-
-			if (!session?.access_token) {
-				throw new Error('No valid session found');
-			}
-
-			// Create booking datetime
-			const API_BASE_URL =
-				process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
-
 			let bookingDateTime: string;
 			try {
 				bookingDateTime = createBookingDateTimeUTC(
@@ -1360,28 +1344,11 @@ export default function BookingModal({
 				);
 			}
 
-			const response = await fetch(
-				`${API_BASE_URL}/bookings/${editingBooking.id}`,
-				{
-					method: 'PUT',
-					headers: {
-						'Content-Type': 'application/json',
-						Authorization: `Bearer ${session.access_token}`,
-					},
-					body: JSON.stringify({
-						serviceId: selectedService?.id,
-						staffId: staffId === 'any' ? undefined : staffId,
-						time: bookingDateTime,
-						// Don't add default notes - only include notes if user explicitly provided them
-					}),
-				}
-			);
-
-			const result = await response.json();
-
-			if (!response.ok) {
-				throw new Error(result.error || 'Failed to update booking');
-			}
+			await apiClient.put(`/bookings/${editingBooking.id}`, {
+				serviceId: selectedService?.id,
+				staffId: staffId === 'any' ? undefined : staffId,
+				time: bookingDateTime,
+			});
 
 			// Show success message
 			toast.success('Appointment updated successfully!');
@@ -1496,10 +1463,18 @@ export default function BookingModal({
 												</svg>
 											</div>
 											<h2 className="text-2xl font-bold text-gray-900 mb-2">
-												{t.booking?.thankYouForReservation || t('booking.thankYouForReservation') !== 'booking.thankYouForReservation' ? t('booking.thankYouForReservation') : 'Thank you for your reservation!'}
+												{t.booking?.thankYouForReservation ||
+												t('booking.thankYouForReservation') !==
+													'booking.thankYouForReservation'
+													? t('booking.thankYouForReservation')
+													: 'Thank you for your reservation!'}
 											</h2>
 											<p className="text-gray-600 text-lg mb-4">
-												{t.booking?.awaitingConfirmation || t('booking.awaitingConfirmation') !== 'booking.awaitingConfirmation' ? t('booking.awaitingConfirmation') : 'Awaiting confirmation from the salon'}
+												{t.booking?.awaitingConfirmation ||
+												t('booking.awaitingConfirmation') !==
+													'booking.awaitingConfirmation'
+													? t('booking.awaitingConfirmation')
+													: 'Awaiting confirmation from the salon'}
 											</p>
 										</div>
 
@@ -1523,12 +1498,15 @@ export default function BookingModal({
 																<strong className="font-semibold">
 																	{t.booking.usuallyConfirmsWithin}
 																</strong>
-																<p className="mt-1">{t.booking.willReceiveEmail}</p>
+																<p className="mt-1">
+																	{t.booking.willReceiveEmail}
+																</p>
 															</>
 														) : (
 															<>
 																<strong className="font-semibold">
-																	{t('booking.salonWillConfirmWhenOpen') || 'The salon will confirm your booking when they open.'}
+																	{t('booking.salonWillConfirmWhenOpen') ||
+																		'The salon will confirm your booking when they open.'}
 																</strong>
 															</>
 														)}

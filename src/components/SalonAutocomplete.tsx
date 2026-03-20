@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
+import { apiClient } from '@/lib/api-client';
 
 interface SalonSuggestion {
 	id: string;
@@ -48,29 +49,18 @@ export default function SalonAutocomplete({
 
 		setLoading(true);
 		try {
-			const API_BASE_URL =
-				process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
-
-			const response = await fetch(
-				`${API_BASE_URL}/salons/search?search=${encodeURIComponent(normalized)}&limit=10`,
-				{ signal: controller.signal }
-			);
-
-			if (response.ok) {
-				const result = await response.json();
-				if (result.success && result.data && result.data.length > 0) {
-					// Transform salons data to match our interface
-					const transformedSuggestions = result.data.map((salon: any) => ({
-						id: salon.id,
-						name: salon.name,
-						address: salon.address,
-					}));
-					setSuggestions(transformedSuggestions);
-					setActiveIndex(-1);
-				} else {
-					setSuggestions([]);
-					setActiveIndex(-1);
-				}
+			const result = await apiClient.get<{
+				success?: boolean;
+				data?: Array<{ id: string; name: string; address?: string }>;
+			}>(`/salons/search?search=${encodeURIComponent(normalized)}&limit=10`);
+			if (result?.success && result?.data && result.data.length > 0) {
+				const transformedSuggestions = result.data.map((salon) => ({
+					id: salon.id,
+					name: salon.name,
+					address: salon.address,
+				}));
+				setSuggestions(transformedSuggestions);
+				setActiveIndex(-1);
 			} else {
 				setSuggestions([]);
 				setActiveIndex(-1);
