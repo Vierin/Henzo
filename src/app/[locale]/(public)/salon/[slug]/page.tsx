@@ -1,21 +1,26 @@
-import { Metadata } from 'next';
+import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { serverApiGet } from '@/lib/api-server';
 import SalonDetailClient from './salonDetailClient';
 import { extractSalonIdFromSlug, isValidSalonSlug } from '@/utils/slug';
 import { SalonWithDetailsResponseDto } from '@/types/dto/salon.dto';
+import { resolveLocale } from '@/seo';
+import { generateSalonMetadata } from '@/utils/seoHelpers';
 
+/** Next-generated `params` typing may omit `locale`; runtime includes all `[segment]` values. */
 interface SalonDetailPageProps {
-	params: Promise<{ slug: string }>;
+	params: Promise<{ slug: string; locale?: string }>;
 }
 
-/** Public salon page: shorter cache so new photos/name show up without waiting an hour. */
-const SALON_PAGE_REVALIDATE_SEC = 120;
+/** Public salon page: shorter cache so new photos/name show up without waiting an hour.
+ * Must be a numeric literal on the export — Next.js static analysis rejects `export const revalidate = SOME_CONST`.
+ */
+export const revalidate = 120;
 
 async function getSalonData(
 	slug: string
 ): Promise<SalonWithDetailsResponseDto | null> {
-	const cacheOpts = { revalidate: SALON_PAGE_REVALIDATE_SEC } as const;
+	const cacheOpts = { revalidate } as const;
 	const isOldId = /^[a-f0-9-]{36}$/.test(slug);
 
 	if (isOldId) {
@@ -44,12 +49,11 @@ async function getSalonData(
 	return null;
 }
 
-export const revalidate = SALON_PAGE_REVALIDATE_SEC;
-
 export async function generateMetadata({
 	params,
 }: SalonDetailPageProps): Promise<Metadata> {
-	const { slug } = await params;
+	const { slug, locale: raw } = await params;
+	const locale = resolveLocale(raw ?? 'en');
 	const salon = await getSalonData(slug);
 
 	if (!salon) {
@@ -59,41 +63,16 @@ export async function generateMetadata({
 		};
 	}
 
-	const title = `${salon.name} - Beauty Salon`;
-	const description =
-		salon.description ||
-		`Professional beauty services at ${salon.name}. Book your appointment today!`;
-
-	return {
-		title,
-		description,
-		keywords: [
-			'beauty salon',
-			'hair salon',
-			'nail salon',
-			'spa services',
-			salon.name,
-			salon.address || '',
-		].filter(Boolean),
-		openGraph: {
-			title,
-			description,
-			type: 'website',
-			url: `/salon/${slug}`,
-			images:
-				salon.photos && salon.photos.length > 0 ? salon.photos : undefined,
+	return generateSalonMetadata(
+		{
+			name: salon.name,
+			description: salon.description,
+			photos: salon.photos,
+			address: salon.address,
+			slug: salon.slug ?? slug,
 		},
-		twitter: {
-			card: 'summary_large_image',
-			title,
-			description,
-			images:
-				salon.photos && salon.photos.length > 0 ? salon.photos : undefined,
-		},
-		alternates: {
-			canonical: `/salon/${slug}`,
-		},
-	};
+		locale
+	);
 }
 
 export default async function SalonDetailPage({

@@ -14,6 +14,7 @@ import { useAuthStore } from '@/stores/authStore';
 export default function ProfileSettingsClient() {
 	const { user } = useAuth();
 	const t = useTranslation();
+	const { language } = useLanguage();
 	const [isSavingProfile, setIsSavingProfile] = useState(false);
 	const [isSavingPassword, setIsSavingPassword] = useState(false);
 	const [showDeleteModal, setShowDeleteModal] = useState(false);

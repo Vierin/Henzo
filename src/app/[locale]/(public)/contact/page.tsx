@@ -1,9 +1,17 @@
 import React, { Suspense } from 'react';
-import { seoConfig } from '@/constants/seoConfig';
+import type { Metadata } from 'next';
+import { buildStaticPageMetadata, resolveLocale } from '@/seo';
 import ContactPageClient from './ContactPageClient';
 import LoadingFallback from '@/components/LoadingFallback';
 
-export const metadata = seoConfig.contact;
+export async function generateMetadata({
+	params,
+}: {
+	params: Promise<{ locale: string }>;
+}): Promise<Metadata> {
+	const { locale: raw } = await params;
+	return buildStaticPageMetadata('contact', resolveLocale(raw));
+}
 
 export default function ContactPage() {
 	return (

@@ -1,8 +1,19 @@
 import { Suspense } from 'react';
+import type { Metadata } from 'next';
 import HomePageClient from '../HomePageClient';
 import { isLocale, type Locale } from '@/i18n/routing';
 import { getDictionary } from '@/i18n/dictionaries';
 import type { TranslationModule } from '@/i18n/modules';
+import { buildStaticPageMetadata, resolveLocale } from '@/seo';
+
+export async function generateMetadata({
+	params,
+}: {
+	params: Promise<{ locale: string }>;
+}): Promise<Metadata> {
+	const { locale: raw } = await params;
+	return buildStaticPageMetadata('home', resolveLocale(raw));
+}
 
 export default async function HomePage({
 	params,

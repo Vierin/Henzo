@@ -23,9 +23,6 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-	title: 'Henzo - Đặt Lịch Salon Tóc, Spa, Massage Online | Hà Nội, TP.HCM',
-	description:
-		'Đặt lịch hẹn làm đẹp online với Henzo tại Việt Nam. Tìm và đặt salon tóc, spa, massage, nail tại Hà Nội, TP.HCM. Đặt lịch dễ dàng, đánh giá tin cậy, giá cả minh bạch.',
 	metadataBase: new URL(
 		process.env.NEXT_PUBLIC_FRONTEND_URL || 'https://henzo.app'
 	),
@@ -53,46 +50,6 @@ export const metadata: Metadata = {
 				type: 'image/png',
 			},
 		],
-	},
-	keywords: [
-		'đặt lịch salon',
-		'salon tóc Hà Nội',
-		'spa TP.HCM',
-		'massage Việt Nam',
-		'làm nail online',
-		'beauty booking Vietnam',
-	],
-	alternates: {
-		canonical: '/',
-		languages: {
-			'vi-VN': '/',
-			'en-US': '/en',
-		},
-	},
-	openGraph: {
-		title: 'Henzo - Đặt Lịch Salon, Spa Online Việt Nam',
-		description:
-			'Tìm và đặt lịch các dịch vụ làm đẹp tốt nhất tại Việt Nam. Salon tóc, spa, massage, nail. Đặt lịch online dễ dàng.',
-		url: '/',
-		siteName: 'Henzo',
-		images: [
-			{
-				url: '/og-image.jpg',
-				width: 1200,
-				height: 630,
-				alt: 'Henzo - Nền tảng đặt lịch làm đẹp Việt Nam',
-			},
-		],
-		locale: 'vi_VN',
-		type: 'website',
-	},
-	twitter: {
-		card: 'summary_large_image',
-		title: 'Henzo - Đặt Lịch Salon, Spa Online Việt Nam',
-		description:
-			'Tìm và đặt lịch dịch vụ làm đẹp tốt nhất gần bạn. Đặt lịch online dễ dàng.',
-		images: ['/og-image.jpg'],
-		creator: '@henzo',
 	},
 	verification: {
 		google: 'your-google-verification-code',

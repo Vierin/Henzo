@@ -20,6 +20,7 @@ import { useUpcomingBookings } from '@/hooks/useClient';
 import { apiClient } from '@/lib/api-client';
 import {
 	extractLocaleFromPath,
+	hardNavigateToLocalePath,
 	stripLocaleFromPath,
 	withLocale,
 } from '@/i18n/routing';

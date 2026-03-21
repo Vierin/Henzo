@@ -11,7 +11,13 @@ import CategoriesNavigation from '@/components/CategoriesNavigation';
 import { useTranslation } from '@/contexts/LanguageContext';
 import { supabase } from '@/lib/supabase';
 import { apiClient } from '@/lib/api-client';
-import { extractLocaleFromPath, withLocale } from '@/i18n/routing';
+import {
+	defaultLocale,
+	extractLocaleFromPath,
+	isLocale,
+	withLocale,
+} from '@/i18n/routing';
+import { isBusinessOAuthPending } from '@/utils/oauth';
 import Image from 'next/image';
 import Link from 'next/link';
 import { ArrowRight, CalendarDays, Clock4, Timer } from 'lucide-react';

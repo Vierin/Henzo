@@ -1,8 +1,9 @@
 import { Suspense } from 'react';
 import HomePageClient from './HomePageClient';
-import { seoConfig } from '@/constants/seoConfig';
+import { buildStaticPageMetadata } from '@/seo';
 
-export const metadata = seoConfig.home;
+/** Rare direct hit (middleware usually redirects to `/en`); align with English home SEO. */
+export const metadata = buildStaticPageMetadata('home', 'en');
 
 export default function HomePage() {
 	// Structured data for SEO - Optimized for Vietnam

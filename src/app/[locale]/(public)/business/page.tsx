@@ -1,21 +1,27 @@
-import { seoConfig } from '@/constants/seoConfig';
-import { Metadata } from 'next';
+import type { Metadata } from 'next';
 import { Suspense } from 'react';
+import { buildStaticPageMetadata, resolveLocale } from '@/seo';
 import { Header } from './components/Header';
 import { Hero } from './components/Hero';
 import { Features } from './components/Features';
 import { Benefits } from './components/Benefits';
 import { Dashboard } from './components/Dashboard';
 import { Pricing } from './components/Pricing';
-import BetaRequestForm from './BetaRequestForm'; 
+import BetaRequestForm from './BetaRequestForm';
 import './styles.css';
 
-export const metadata: Metadata = {
-	...seoConfig.business,
-	other: {
-		'google-site-verification': 'your-verification-code',
-	},
-};
+export async function generateMetadata({
+	params,
+}: {
+	params: Promise<{ locale: string }>;
+}): Promise<Metadata> {
+	const { locale: raw } = await params;
+	return buildStaticPageMetadata('business', resolveLocale(raw), {
+		other: {
+			'google-site-verification': 'your-verification-code',
+		},
+	});
+}
 
 export default function BusinessLandingPage() {
 	// Structured data for Business page - Vietnamese market

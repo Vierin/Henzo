@@ -1,8 +1,15 @@
-import { Metadata } from 'next';
-import { seoConfig } from '@/constants/seoConfig';
+import type { Metadata } from 'next';
 import Link from 'next/link';
+import { buildStaticPageMetadata, resolveLocale } from '@/seo';
 
-export const metadata: Metadata = seoConfig.privacy;
+export async function generateMetadata({
+	params,
+}: {
+	params: Promise<{ locale: string }>;
+}): Promise<Metadata> {
+	const { locale: raw } = await params;
+	return buildStaticPageMetadata('privacy', resolveLocale(raw));
+}
 
 export default function PrivacyPolicy() {
 	return (

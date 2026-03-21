@@ -1,20 +1,20 @@
-import { Metadata } from 'next';
+import type { Metadata } from 'next';
 import { getCategoryBySlug } from '@/constants/categories';
 import CategoryListClient from './CategoryListClient';
 import CategoryStructuredData from './CategoryStructuredData';
 import Link from 'next/link';
 import { Suspense } from 'react';
+import { buildDynamicPageMetadata, resolveLocale } from '@/seo';
 
 interface CategoryPageProps {
-	params: Promise<{
-		slug: string;
-	}>;
+	params: Promise<{ slug: string; locale?: string }>;
 }
 
 export async function generateMetadata({
 	params,
 }: CategoryPageProps): Promise<Metadata> {
-	const { slug } = await params;
+	const { slug, locale: raw } = await params;
+	const locale = resolveLocale(raw ?? 'en');
 	const category = getCategoryBySlug(slug);
 
 	if (!category) {
@@ -24,43 +24,15 @@ export async function generateMetadata({
 		};
 	}
 
-	const title = `${category.name} Salons & Services | Henzo`;
-	// Use descriptionTranslationKey if available, otherwise fallback to default
-	const categoryDescription = category.descriptionTranslationKey
-		? `Professional ${category.name.toLowerCase()} services and treatments.`
-		: `Professional ${category.name.toLowerCase()} services and treatments.`;
-	const description = `Find the best ${category.name.toLowerCase()} salons near you. ${categoryDescription} Book appointments online with trusted reviews and flexible scheduling.`;
+	const title = `${category.name} — Henzo`;
+	const description = `Find top ${category.name.toLowerCase()} salons near you. Book on Henzo with reviews and flexible times.`;
 
-	return {
+	return buildDynamicPageMetadata(locale, {
+		pathAfterLocale: `/category/${slug}`,
 		title,
 		description,
-		alternates: {
-			canonical: `/category/${slug}`,
-		},
-		openGraph: {
-			title,
-			description,
-			url: `/category/${slug}`,
-			siteName: 'Henzo',
-			images: [
-				{
-					url: '/og-image.jpg',
-					width: 1200,
-					height: 630,
-					alt: `${category.name} Salons | Henzo`,
-				},
-			],
-			locale: 'en_US',
-			type: 'website',
-		},
-		twitter: {
-			card: 'summary_large_image',
-			title,
-			description,
-			images: ['/og-image.jpg'],
-			creator: '@henzo',
-		},
-	};
+		images: ['/og-image.jpg'],
+	});
 }
 
 export default async function CategoryPage({ params }: CategoryPageProps) {
