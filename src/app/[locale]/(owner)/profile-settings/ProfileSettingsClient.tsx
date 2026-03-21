@@ -6,7 +6,9 @@ import { supabase } from '@/lib/supabase';
 import toast from 'react-hot-toast';
 import LoadingSpinner from '@/components/LoadingSpinner';
 import { apiClient } from '@/lib/api-client';
-import { useTranslation } from '@/contexts/LanguageContext';
+import Link from 'next/link';
+import { useTranslation, useLanguage } from '@/contexts/LanguageContext';
+import { withLocale } from '@/i18n/routing';
 import { useAuthStore } from '@/stores/authStore';
 
 export default function ProfileSettingsClient() {
@@ -144,6 +146,12 @@ export default function ProfileSettingsClient() {
 				<p className="text-sm md:text-lg text-gray-600 px-4 md:px-0">
 					{t('owner.profileSettings.subtitle')}
 				</p>
+				<Link
+					href={withLocale('/owner-help', language)}
+					className="inline-block mt-3 text-sm font-medium text-[#ff5b5b] hover:text-[#e04a4a] underline underline-offset-2"
+				>
+					{t('owner.profileSettings.quickGuideCta')}
+				</Link>
 			</div>
 
 			<div className="space-y-6 md:space-y-8">

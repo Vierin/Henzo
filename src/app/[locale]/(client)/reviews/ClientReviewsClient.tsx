@@ -27,7 +27,10 @@ export default function ClientReviewsClient() {
 	if (loading) {
 		return (
 			<div className="flex items-center justify-center min-h-[400px]">
-				<LoadingSpinner size="lg" message={t('client.reviews.loadingYourReviews')} />
+				<LoadingSpinner
+					size="lg"
+					message={t('client.reviews.loadingYourReviews')}
+				/>
 			</div>
 		);
 	}
@@ -42,7 +45,9 @@ export default function ClientReviewsClient() {
 					{t('client.reviews.errorLoadingReviews')}
 				</h3>
 				<p className="text-gray-600">
-					{error instanceof Error ? error.message : t('client.reviews.failedToLoadReviews')}
+					{error instanceof Error
+						? error.message
+						: t('client.reviews.failedToLoadReviews')}
 				</p>
 			</div>
 		);
@@ -54,9 +59,7 @@ export default function ClientReviewsClient() {
 				<h1 id="reviews-heading" className="text-3xl font-bold text-gray-900">
 					{t('client.reviews.title')}
 				</h1>
-				<p className="text-gray-600 mt-2">
-					{t('client.reviews.subtitle')}
-				</p>
+				<p className="text-gray-600 mt-2">{t('client.reviews.subtitle')}</p>
 			</header>
 
 			{reviews.length === 0 ? (
@@ -99,25 +102,27 @@ export default function ClientReviewsClient() {
 									<div className="text-sm text-gray-500 text-right">
 										{formatReviewDate(review.createdAt)}
 									</div>
-								<div className="flex justify-end">
-								<button
-									onClick={() =>
-										setEditingReview({
-											id: review.id,
-											salonId: review.salonId,
-											salonName: review.salon?.name || t('client.reviews.unknownSalon'),
-											serviceName: review.booking?.service?.name,
-											rating: review.rating,
-											comment: review.comment,
-										})
-									}
-									className="flex items-center gap-2 px-4 py-2 text-sm text-gray-600 hover:text-[#ff5b5b] transition-colors"
-								>
-									<Edit2 className="w-4 h-4" />
-									{t('client.reviews.editReview')}
-								</button>
-							</div>
+									<div className="flex justify-end">
+										<button
+											onClick={() =>
+												setEditingReview({
+													id: review.id,
+													salonId: review.salonId,
+													salonName:
+														review.salon?.name ||
+														t('client.reviews.unknownSalon'),
+													serviceName: review.booking?.service?.name,
+													rating: review.rating,
+													comment: review.comment,
+												})
+											}
+											className="flex items-center gap-2 px-4 py-2 text-sm text-gray-600 hover:text-[#ff5b5b] transition-colors"
+										>
+											<Edit2 className="w-4 h-4" />
+											{t('client.reviews.editReview')}
+										</button>
 									</div>
+								</div>
 							</div>
 
 							<div className="flex items-center gap-1 mb-3">

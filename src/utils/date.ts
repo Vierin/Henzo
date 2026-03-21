@@ -87,7 +87,9 @@ export function formatDateShort(
 	salonTimezone?: string
 ): string {
 	// Use parseBookingTimeAsLocal to treat UTC times as local times in salon's timezone
-	const date = parseBookingTimeAsLocal(dateString, salonTimezone) || safeParseDate(dateString);
+	const date =
+		parseBookingTimeAsLocal(dateString, salonTimezone) ||
+		safeParseDate(dateString);
 	if (!date) return fallback;
 
 	return date.toLocaleDateString('ru-RU', {
@@ -108,7 +110,9 @@ export function formatTimeSafe(
 	salonTimezone?: string
 ): string {
 	// Use parseBookingTimeAsLocal to treat UTC times as local times in salon's timezone
-	const date = parseBookingTimeAsLocal(dateString, salonTimezone) || safeParseDate(dateString);
+	const date =
+		parseBookingTimeAsLocal(dateString, salonTimezone) ||
+		safeParseDate(dateString);
 	if (!date) return fallback;
 
 	return date.toLocaleTimeString('en-US', {
@@ -268,18 +272,18 @@ export function parseBookingTimeAsLocal(
 		// IMPORTANT: All bookings are stored in UTC but represent salon's local time
 		// When displaying, we need to convert from UTC to salon's timezone
 		// Example: 13:15 UTC in Asia/Ho_Chi_Minh = 20:15 local time
-		
+
 		// If it's a UTC string like "2024-01-15T13:00:00.000Z"
 		if (dateString.includes('Z')) {
 			// Parse the UTC date
 			const utcDate = new Date(dateString);
 			if (isNaN(utcDate.getTime())) return null;
-			
+
 			// Use date-fns-tz to convert from UTC to salon's timezone
 			// toZonedTime converts a UTC date to the equivalent date in the specified timezone
 			// The returned date will have the correct local time components for that timezone
 			const zonedDate = toZonedTime(utcDate, salonTimezone);
-			
+
 			// Extract components from zoned date (these are in salon's timezone)
 			const year = zonedDate.getFullYear();
 			const month = zonedDate.getMonth();
@@ -287,12 +291,20 @@ export function parseBookingTimeAsLocal(
 			const hours = zonedDate.getHours();
 			const minutes = zonedDate.getMinutes();
 			const seconds = zonedDate.getSeconds();
-			
+
 			// Create a Date object that represents this time as if it were local time
 			// We create it using the local timezone constructor, which will make getHours() return the correct value
 			// This date will be displayed correctly by toLocaleTimeString
-			const localDate = new Date(year, month, day, hours, minutes, seconds || 0, 0);
-			
+			const localDate = new Date(
+				year,
+				month,
+				day,
+				hours,
+				minutes,
+				seconds || 0,
+				0
+			);
+
 			return isNaN(localDate.getTime()) ? null : localDate;
 		}
 
@@ -355,7 +367,10 @@ export function getTimeBlockRangeOnDate(
 			zonedEnd.getMonth(),
 			zonedEnd.getDate()
 		);
-		if (selectedDateOnly < blockStartDateOnly || selectedDateOnly > blockEndDateOnly) {
+		if (
+			selectedDateOnly < blockStartDateOnly ||
+			selectedDateOnly > blockEndDateOnly
+		) {
 			return null;
 		}
 

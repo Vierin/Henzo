@@ -72,7 +72,7 @@ export default function ClientSidebar() {
 	// P2: Prefetch данные для dashboard при hover
 	const prefetchDashboardData = async () => {
 		if (!isAuthenticated) return;
-		
+
 		try {
 			await Promise.all([
 				queryClient.prefetchQuery({

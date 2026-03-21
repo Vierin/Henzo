@@ -33,7 +33,9 @@ export default function ReviewsSection({
 	return (
 		<div className={`${className}`}>
 			<div className="flex items-center justify-between mb-6">
-				<h3 className="text-lg font-semibold text-gray-900">{t.salon.reviews}</h3>
+				<h3 className="text-lg font-semibold text-gray-900">
+					{t.salon.reviews}
+				</h3>
 				<div className="flex items-center space-x-2">
 					<div className="flex items-center space-x-1">
 						{renderStars(averageRating)}
@@ -42,7 +44,8 @@ export default function ReviewsSection({
 						{averageRating.toFixed(1)}
 					</span>
 					<span className="text-sm text-gray-500">
-						({reviewCount} {reviewCount === 1 ? t.salon.reviews : t.salon.reviewsCount})
+						({reviewCount}{' '}
+						{reviewCount === 1 ? t.salon.reviews : t.salon.reviewsCount})
 					</span>
 				</div>
 			</div>

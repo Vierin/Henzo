@@ -1,6 +1,7 @@
 {
 	"title": "Profile Settings",
 	"subtitle": "Manage your account profile and security settings",
+	"quickGuideCta": "Quick guide — tips for services, staff, and hours",
 	"loading": "Loading settings...",
 	"personalInformation": "Personal Information",
 	"fullName": "Full Name",

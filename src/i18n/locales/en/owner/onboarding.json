@@ -14,8 +14,10 @@
 			"noAddOther": "No (add another person)"
 		},
 		"checkSchedule": {
-			"title": "Check Schedule",
-			"description": "Review and configure your working hours. Set up time blocks for days off or busy periods to manage availability."
+			"title": "Salon hours & calendar",
+			"description": "Set opening hours in Salon settings — that controls online booking slots. Use Calendar to see visits and block time off when you're closed or busy.",
+			"primaryCta": "Set operating hours",
+			"secondaryCta": "Open calendar"
 		},
 		"checkBookingPage": {
 			"title": "Check Booking Page",

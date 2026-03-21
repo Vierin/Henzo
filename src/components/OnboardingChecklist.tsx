@@ -25,6 +25,9 @@ interface OnboardingStep {
 	description: string;
 	completed: boolean;
 	action?: () => void;
+	secondaryAction?: () => void;
+	primaryCta?: string;
+	secondaryCta?: string;
 	externalLink?: string;
 	stepNumber: number;
 }
@@ -111,7 +114,8 @@ export default function OnboardingChecklist({
 			title: t('owner.onboarding.steps.checkSchedule.title'),
 			description: t('owner.onboarding.steps.checkSchedule.description'),
 			completed: !!hasSchedule,
-			action: () => router.push('/calendar'),
+			action: () => router.push('/salon-info'),
+			secondaryAction: () => router.push('/calendar'),
 			stepNumber: 3,
 		},
 		{
@@ -439,26 +443,47 @@ export default function OnboardingChecklist({
 								</div>
 							</div>
 
-							{/* Action Button for non-publish steps */}
-							{currentStep.id !== 'publish' && 
-							 !(currentStep.id === 'staff' && !currentStep.completed) && (
-								<button
-									onClick={() => handleStepClick(currentStep)}
-									className="mt-3 w-full flex items-center justify-center gap-2 text-sm text-[#ff5b5b] hover:text-[#e04a4a] font-medium transition-colors border border-[#ff5b5b] rounded-lg px-4 py-2 hover:bg-red-50"
-								>
-									{currentStep.externalLink ? (
-										<>
-											{t('owner.onboarding.viewPage')}
-											<ExternalLink className="h-4 w-4" />
-										</>
-									) : (
-										<>
-											{t('owner.onboarding.goToPage')}
+							{/* Action Button(s) for non-publish steps */}
+							{currentStep.id !== 'publish' &&
+								!(currentStep.id === 'staff' && !currentStep.completed) &&
+								(currentStep.secondaryAction ? (
+									<div className="mt-3 flex flex-col gap-2">
+										<button
+											type="button"
+											onClick={() => currentStep.action?.()}
+											className="w-full flex items-center justify-center gap-2 text-sm text-[#ff5b5b] hover:text-[#e04a4a] font-medium transition-colors border border-[#ff5b5b] rounded-lg px-4 py-2 hover:bg-red-50"
+										>
+											{currentStep.primaryCta}
 											<ChevronRight className="h-4 w-4" />
-										</>
-									)}
-								</button>
-							)}
+										</button>
+										<button
+											type="button"
+											onClick={() => currentStep.secondaryAction?.()}
+											className="w-full flex items-center justify-center gap-2 text-sm text-gray-700 font-medium transition-colors border border-gray-300 rounded-lg px-4 py-2 hover:bg-gray-50"
+										>
+											{currentStep.secondaryCta}
+											<ChevronRight className="h-4 w-4" />
+										</button>
+									</div>
+								) : (
+									<button
+										type="button"
+										onClick={() => handleStepClick(currentStep)}
+										className="mt-3 w-full flex items-center justify-center gap-2 text-sm text-[#ff5b5b] hover:text-[#e04a4a] font-medium transition-colors border border-[#ff5b5b] rounded-lg px-4 py-2 hover:bg-red-50"
+									>
+										{currentStep.externalLink ? (
+											<>
+												{t('owner.onboarding.viewPage')}
+												<ExternalLink className="h-4 w-4" />
+											</>
+										) : (
+											<>
+												{t('owner.onboarding.goToPage')}
+												<ChevronRight className="h-4 w-4" />
+											</>
+										)}
+									</button>
+								))}
 						</div>
 					</div>
 				</div>

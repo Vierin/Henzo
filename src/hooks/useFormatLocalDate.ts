@@ -2,10 +2,7 @@
 
 import { useCallback, useMemo } from 'react';
 import { useLanguage } from '@/contexts/LanguageContext';
-import {
-	formatDateSafe,
-	type FormatDateSafeOptions,
-} from '@/utils/date';
+import { formatDateSafe, type FormatDateSafeOptions } from '@/utils/date';
 
 export type UseFormatLocalDateOptions = {
 	fallback?: string;

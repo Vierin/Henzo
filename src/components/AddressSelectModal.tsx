@@ -2,9 +2,10 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react';
 import dynamic from 'next/dynamic';
-import { X, MapPin, Search } from 'lucide-react';
+import { X, MapPin, Search, LocateFixed } from 'lucide-react';
 import { apiClient } from '@/lib/api-client';
 import { useTranslation } from '@/contexts/LanguageContext';
+import toast from 'react-hot-toast';
 
 // Lazy load map component
 const MapComponentWithCoords = dynamic(
@@ -49,6 +50,7 @@ export default function AddressSelectModal({
 	);
 	const [isUpdatingAddress, setIsUpdatingAddress] = useState(false);
 	const [mapLoading, setMapLoading] = useState(true);
+	const [isLocating, setIsLocating] = useState(false);
 	const inputRef = useRef<HTMLInputElement>(null);
 	const debounceTimer = useRef<NodeJS.Timeout | null>(null);
 
@@ -140,31 +142,69 @@ export default function AddressSelectModal({
 
 	// Handle marker move on map
 	const handleMarkerMove = useCallback(
-		async (lat: number, lon: number, address?: string) => {
+		async (lat: number, lon: number, address?: string): Promise<void> => {
 			setSelectedLat(lat);
 			setSelectedLon(lon);
 
 			if (address) {
 				setInputValue(address);
 				setIsUpdatingAddress(false);
-			} else {
-				setIsUpdatingAddress(true);
-				try {
-					const response = await apiClient.get<{ address: string }>(
-						`/mapbox/reverse-geocode?lat=${lat}&lon=${lon}`
-					);
-					if (response?.address) {
-						setInputValue(response.address);
-					}
-				} catch (error) {
-					console.error('Failed to reverse geocode:', error);
-				} finally {
-					setIsUpdatingAddress(false);
+				return;
+			}
+
+			setIsUpdatingAddress(true);
+			try {
+				const response = await apiClient.get<{ address: string }>(
+					`/mapbox/reverse-geocode?lat=${lat}&lon=${lon}`
+				);
+				if (response?.address) {
+					setInputValue(response.address);
 				}
+			} catch (error) {
+				console.error('Failed to reverse geocode:', error);
+			} finally {
+				setIsUpdatingAddress(false);
 			}
 		},
 		[]
 	);
+
+	const handleGetCurrentLocation = useCallback(() => {
+		if (!navigator.geolocation) {
+			toast.error(t('owner.salonInfo.geolocationNotSupported'));
+			return;
+		}
+
+		setIsLocating(true);
+		navigator.geolocation.getCurrentPosition(
+			async (position) => {
+				try {
+					await handleMarkerMove(
+						position.coords.latitude,
+						position.coords.longitude,
+						undefined
+					);
+					setShowSuggestions(false);
+					setSuggestions([]);
+				} finally {
+					setIsLocating(false);
+				}
+			},
+			(err: GeolocationPositionError) => {
+				setIsLocating(false);
+				if (err.code === 1) {
+					toast.error(t('owner.salonInfo.geolocationDenied'));
+				} else if (err.code === 2) {
+					toast.error(t('owner.salonInfo.geolocationUnavailable'));
+				} else if (err.code === 3) {
+					toast.error(t('owner.salonInfo.geolocationTimeout'));
+				} else {
+					toast.error(t('owner.salonInfo.geolocationError'));
+				}
+			},
+			{ enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
+		);
+	}, [handleMarkerMove, t]);
 
 	// Handle confirm
 	const handleConfirm = () => {
@@ -211,61 +251,79 @@ export default function AddressSelectModal({
 
 					{/* Content */}
 					<div className="flex-1 overflow-y-auto p-4 space-y-4">
-						{/* Search Input */}
+						{/* Search row: input + current location */}
 						<div className="relative z-[9999]">
-							<div className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 pointer-events-none">
-								<Search className="w-5 h-5" />
-							</div>
-							<input
-								ref={inputRef}
-								type="text"
-								value={inputValue}
-								onChange={handleInputChange}
-								onFocus={() => {
-									if (suggestions.length > 0) {
-										setShowSuggestions(true);
-									}
-								}}
-								placeholder={
-									t('owner.salonInfo.enterAddress') || 'Введите адрес...'
-								}
-								className="w-full pl-10 pr-10 py-3 border border-gray-300 rounded-lg text-gray-900 placeholder-gray-500 focus:ring-2 focus:ring-[#ff5b5b] focus:border-transparent"
-								autoComplete="off"
-							/>
-							{loading && (
-								<div className="absolute right-3 top-1/2 transform -translate-y-1/2">
-									<div className="animate-spin rounded-full h-5 w-5 border-b-2 border-[#ff5b5b]"></div>
-								</div>
-							)}
-							{isUpdatingAddress && (
-								<div className="absolute right-3 top-1/2 transform -translate-y-1/2">
-									<div className="animate-spin rounded-full h-5 w-5 border-b-2 border-gray-400"></div>
-								</div>
-							)}
+							<div className="flex gap-2 items-stretch">
+								<div className="relative flex-1 min-w-0">
+									<div className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 pointer-events-none">
+										<Search className="w-5 h-5" />
+									</div>
+									<input
+										ref={inputRef}
+										type="text"
+										value={inputValue}
+										onChange={handleInputChange}
+										onFocus={() => {
+											if (suggestions.length > 0) {
+												setShowSuggestions(true);
+											}
+										}}
+										placeholder={
+											t('owner.salonInfo.enterAddress') || 'Введите адрес...'
+										}
+										className="w-full pl-10 pr-10 py-3 border border-gray-300 rounded-lg text-gray-900 placeholder-gray-500 focus:ring-2 focus:ring-[#ff5b5b] focus:border-transparent"
+										autoComplete="off"
+									/>
+									{loading && (
+										<div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+											<div className="animate-spin rounded-full h-5 w-5 border-b-2 border-[#ff5b5b]"></div>
+										</div>
+									)}
+									{isUpdatingAddress && !loading && (
+										<div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+											<div className="animate-spin rounded-full h-5 w-5 border-b-2 border-gray-400"></div>
+										</div>
+									)}
 
-							{/* Suggestions dropdown - high z-index to appear above map */}
-							{showSuggestions && suggestions.length > 0 && (
-								<div className="absolute z-[9999] w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-60 overflow-auto">
-									{suggestions.map((suggestion) => (
-										<button
-											key={suggestion.id}
-											type="button"
-											onClick={() => handleSelectSuggestion(suggestion)}
-											className="w-full px-4 py-3 text-left hover:bg-gray-50 focus:bg-gray-50 focus:outline-none transition-colors border-b border-gray-100 last:border-b-0"
-										>
-											<div className="flex items-start gap-2">
-												<MapPin
-													size={16}
-													className="text-gray-400 mt-0.5 flex-shrink-0"
-												/>
-												<span className="text-sm text-gray-900">
-													{suggestion.address}
-												</span>
-											</div>
-										</button>
-									))}
+									{/* Suggestions — same width as input column */}
+									{showSuggestions && suggestions.length > 0 && (
+										<div className="absolute z-[9999] left-0 right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-60 overflow-auto">
+											{suggestions.map((suggestion) => (
+												<button
+													key={suggestion.id}
+													type="button"
+													onClick={() => handleSelectSuggestion(suggestion)}
+													className="w-full px-4 py-3 text-left hover:bg-gray-50 focus:bg-gray-50 focus:outline-none transition-colors border-b border-gray-100 last:border-b-0"
+												>
+													<div className="flex items-start gap-2">
+														<MapPin
+															size={16}
+															className="text-gray-400 mt-0.5 flex-shrink-0"
+														/>
+														<span className="text-sm text-gray-900">
+															{suggestion.address}
+														</span>
+													</div>
+												</button>
+											))}
+										</div>
+									)}
 								</div>
-							)}
+								<button
+									type="button"
+									onClick={handleGetCurrentLocation}
+									disabled={isLocating || loading}
+									className="shrink-0 flex items-center justify-center w-11 h-[46px] self-center border border-gray-300 rounded-lg text-gray-600 hover:bg-gray-50 hover:border-[#ff5b5b] hover:text-[#ff5b5b] focus:outline-none focus:ring-2 focus:ring-[#ff5b5b] focus:ring-offset-1 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+									aria-label={t('owner.salonInfo.getCurrentLocation')}
+									title={t('owner.salonInfo.getCurrentLocation')}
+								>
+									{isLocating ? (
+										<div className="animate-spin rounded-full h-5 w-5 border-b-2 border-[#ff5b5b]" />
+									) : (
+										<LocateFixed className="w-5 h-5" aria-hidden />
+									)}
+								</button>
+							</div>
 						</div>
 
 						{/* Map Preview */}

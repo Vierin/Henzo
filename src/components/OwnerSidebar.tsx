@@ -26,6 +26,7 @@ import {
 	ChevronUp,
 	CreditCard,
 	UserCheck,
+	HelpCircle,
 } from 'lucide-react';
 import { useSalonId } from '@/hooks/useSalons';
 import { bookingKeys } from '@/hooks/useBookings';
@@ -267,6 +268,13 @@ export default function OwnerSidebar({
 						t('owner.dashboard.clients'),
 						pathNoLocale.startsWith('/clients'),
 						'clients'
+					)}
+
+					{renderNavItem(
+						'/owner-help',
+						<HelpCircle className="w-5 h-5" />,
+						t('owner.dashboard.quickGuide'),
+						pathNoLocale.startsWith('/owner-help')
 					)}
 
 					{renderNavItem(

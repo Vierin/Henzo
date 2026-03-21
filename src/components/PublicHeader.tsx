@@ -216,9 +216,13 @@ function PublicHeaderContent() {
 												onMouseEnter={() => setShowProfileDropdown(true)}
 												onMouseLeave={() => setShowProfileDropdown(false)}
 											>
-											<div className="px-4 py-2 text-sm text-gray-700 border-b border-gray-100">
-												<div className="font-medium">{user.name || user.email?.split('@')[0] || user.email}</div>
-											</div>
+												<div className="px-4 py-2 text-sm text-gray-700 border-b border-gray-100">
+													<div className="font-medium">
+														{user.name ||
+															user.email?.split('@')[0] ||
+															user.email}
+													</div>
+												</div>
 												<Link
 													href={withLocale(
 														isClient()

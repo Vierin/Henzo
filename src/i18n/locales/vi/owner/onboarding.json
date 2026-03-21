@@ -14,8 +14,10 @@
 			"noAddOther": "Không (thêm người khác)"
 		},
 		"checkSchedule": {
-			"title": "Kiểm tra lịch trình",
-			"description": "Xem lại và cấu hình giờ làm việc. Thiết lập các khối thời gian cho ngày nghỉ hoặc thời kỳ bận rộn để quản lý khả dụng."
+			"title": "Giờ mở cửa & lịch",
+			"description": "Đặt giờ mở cửa trong Cài đặt salon — quyết định khung giờ đặt online. Lịch hiển thị lịch hẹn; thêm khối thời gian khi nghỉ hoặc bận.",
+			"primaryCta": "Cài giờ hoạt động",
+			"secondaryCta": "Mở lịch"
 		},
 		"checkBookingPage": {
 			"title": "Kiểm tra trang đặt lịch",

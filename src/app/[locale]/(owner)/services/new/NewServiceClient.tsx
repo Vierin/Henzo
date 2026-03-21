@@ -902,7 +902,11 @@ export default function NewServiceClient() {
 												setGroupModalStep('preview');
 											} catch (err) {
 												console.error('Failed to generate translations:', err);
-												// Continue to preview even if translation fails
+												setGroupTranslations({
+													nameEn: name,
+													nameVi: name,
+													nameRu: name,
+												});
 												setGroupModalStep('preview');
 											} finally {
 												setIsGeneratingGroupTranslations(false);

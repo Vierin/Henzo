@@ -19,8 +19,7 @@ export function useRatingStars(size: number = 16) {
 				} else if (starIndex - 0.5 <= rating && rating < starIndex) {
 					starClass = 'text-gray-300';
 					style = {
-						background:
-							'linear-gradient(90deg, #ff5b5b 50%, transparent 50%)',
+						background: 'linear-gradient(90deg, #ff5b5b 50%, transparent 50%)',
 						WebkitBackgroundClip: 'text',
 						WebkitTextFillColor: 'transparent',
 						backgroundClip: 'text',

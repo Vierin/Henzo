@@ -48,6 +48,7 @@ export default function ServicesClient() {
 	const [selectedGroup, setSelectedGroup] = useState<string | 'all'>('all');
 	const [isManageGroupsModalOpen, setIsManageGroupsModalOpen] = useState(false);
 	const [newGroupName, setNewGroupName] = useState('');
+	const [isCreatingGroup, setIsCreatingGroup] = useState(false);
 	const router = useRouter();
 
 	// Используем данные салона из контекста (избегаем дублирования запросов)
@@ -912,7 +913,12 @@ export default function ServicesClient() {
 									value={newGroupName}
 									onChange={(e) => setNewGroupName(e.target.value)}
 									onKeyDown={(e) => {
-										if (e.key === 'Enter' && newGroupName.trim() && salonId) {
+										if (
+											e.key === 'Enter' &&
+											newGroupName.trim() &&
+											salonId &&
+											!isCreatingGroup
+										) {
 											handleCreateGroup();
 										}
 									}}
@@ -963,6 +969,7 @@ export default function ServicesClient() {
 								onClick={() => {
 									setIsManageGroupsModalOpen(false);
 									setNewGroupName('');
+									setIsCreatingGroup(false);
 								}}
 								className="px-4 py-2 text-sm border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
 							>
