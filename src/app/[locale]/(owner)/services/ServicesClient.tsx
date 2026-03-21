@@ -948,9 +948,7 @@ export default function ServicesClient() {
 								/>
 								<button
 									onClick={handleCreateGroup}
-									disabled={
-										!newGroupName.trim() || !salonId || isCreatingGroup
-									}
+									disabled={!newGroupName.trim() || !salonId || isCreatingGroup}
 									className="px-4 py-2 text-sm bg-[#ff5b5b] !text-white rounded-md hover:bg-[#e04a4a] disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
 								>
 									{isCreatingGroup

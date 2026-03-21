@@ -1,7 +1,13 @@
 'use client';
 
 import { useState, useMemo, useEffect } from 'react';
-import { Check, X, ExternalLink,  ChevronRight, ChevronDown } from 'lucide-react';
+import {
+	Check,
+	X,
+	ExternalLink,
+	ChevronRight,
+	ChevronDown,
+} from 'lucide-react';
 import { useTranslation, useLanguage } from '@/contexts/LanguageContext';
 import { useRouter } from 'next/navigation';
 import { apiClient } from '@/lib/api-client';
@@ -45,7 +51,9 @@ export default function OnboardingChecklist({
 	const [isCreatingOwnerStaff, setIsCreatingOwnerStaff] = useState(false);
 	const [isCollapsed, setIsCollapsed] = useState(false);
 	const [bookingPageViewed, setBookingPageViewed] = useState(false);
-	const [localSalonStatus, setLocalSalonStatus] = useState<'DRAFT' | 'READY' | 'ACTIVE' | null>(null);
+	const [localSalonStatus, setLocalSalonStatus] = useState<
+		'DRAFT' | 'READY' | 'ACTIVE' | null
+	>(null);
 	const [isDismissed, setIsDismissed] = useState(false);
 
 	// Check if onboarding was dismissed
@@ -59,7 +67,7 @@ export default function OnboardingChecklist({
 	}, [salonId]);
 	const { salonData } = useOwnerLayout();
 	const { user } = useAuth();
-	
+
 	// Синхронизируем localSalonStatus с реальным статусом салона после загрузки данных
 	useEffect(() => {
 		if (salonData?.status) {
@@ -78,7 +86,11 @@ export default function OnboardingChecklist({
 	// Используем статус из salonData напрямую, если localSalonStatus еще не установлен
 	const getSalonStatus = (): 'DRAFT' | 'READY' | 'ACTIVE' => {
 		const dataStatus = salonData?.status as string | undefined;
-		if (dataStatus === 'ACTIVE' || dataStatus === 'READY' || dataStatus === 'DRAFT') {
+		if (
+			dataStatus === 'ACTIVE' ||
+			dataStatus === 'READY' ||
+			dataStatus === 'DRAFT'
+		) {
 			return dataStatus as 'DRAFT' | 'READY' | 'ACTIVE';
 		}
 		if (localSalonStatus) {
@@ -89,53 +101,71 @@ export default function OnboardingChecklist({
 	const salonStatus = getSalonStatus();
 
 	// Вычисляем значения, которые используются в useMemo
-	const hasSchedule = salonData?.workingHours && Object.keys(salonData.workingHours).length > 0;
-	const salonPublicUrl = salonData ? getSalonUrl(salonData) : (salonSlug ? `/salon/${salonSlug}` : undefined);
+	const hasSchedule =
+		salonData?.workingHours && Object.keys(salonData.workingHours).length > 0;
+	const salonPublicUrl = salonData
+		? getSalonUrl(salonData)
+		: salonSlug
+			? `/salon/${salonSlug}`
+			: undefined;
 
-	const steps: OnboardingStep[] = useMemo(() => [
-		{
-			id: 'staff',
-			title: t('owner.onboarding.steps.addStaff.title'),
-			description: t('owner.onboarding.steps.addStaff.description'),
-			completed: staffMembers.length > 0,
-			action: () => router.push('/staff'),
-			stepNumber: 1,
-		},
-		{
-			id: 'services',
-			title: t('owner.onboarding.steps.addServices.title'),
-			description: t('owner.onboarding.steps.addServices.description'),
-			completed: services.length > 0,
-			action: () => router.push('/services/new'),
-			stepNumber: 2,
-		},
-		{
-			id: 'schedule',
-			title: t('owner.onboarding.steps.checkSchedule.title'),
-			description: t('owner.onboarding.steps.checkSchedule.description'),
-			completed: !!hasSchedule,
-			action: () => router.push('/salon-info'),
-			secondaryAction: () => router.push('/calendar'),
-			stepNumber: 3,
-		},
-		{
-			id: 'booking-page',
-			title: t('owner.onboarding.steps.checkBookingPage.title'),
-			description: t('owner.onboarding.steps.checkBookingPage.description'),
-			completed: false,
-			externalLink: salonPublicUrl,
-			stepNumber: 4,
-		},
-		{
-			id: 'publish',
-			title: t('owner.onboarding.steps.publishSalon.title'),
-			description: t('owner.onboarding.steps.publishSalon.description'),
-			completed: salonStatus === 'ACTIVE',
-			stepNumber: 5,
-		},
-	], [services.length, staffMembers.length, hasSchedule, salonPublicUrl, salonStatus, router, t]);
+	const steps: OnboardingStep[] = useMemo(
+		() => [
+			{
+				id: 'staff',
+				title: t('owner.onboarding.steps.addStaff.title'),
+				description: t('owner.onboarding.steps.addStaff.description'),
+				completed: staffMembers.length > 0,
+				action: () => router.push('/staff'),
+				stepNumber: 1,
+			},
+			{
+				id: 'services',
+				title: t('owner.onboarding.steps.addServices.title'),
+				description: t('owner.onboarding.steps.addServices.description'),
+				completed: services.length > 0,
+				action: () => router.push('/services/new'),
+				stepNumber: 2,
+			},
+			{
+				id: 'schedule',
+				title: t('owner.onboarding.steps.checkSchedule.title'),
+				description: t('owner.onboarding.steps.checkSchedule.description'),
+				completed: !!hasSchedule,
+				action: () => router.push('/salon-info'),
+				secondaryAction: () => router.push('/calendar'),
+				stepNumber: 3,
+			},
+			{
+				id: 'booking-page',
+				title: t('owner.onboarding.steps.checkBookingPage.title'),
+				description: t('owner.onboarding.steps.checkBookingPage.description'),
+				completed: false,
+				externalLink: salonPublicUrl,
+				stepNumber: 4,
+			},
+			{
+				id: 'publish',
+				title: t('owner.onboarding.steps.publishSalon.title'),
+				description: t('owner.onboarding.steps.publishSalon.description'),
+				completed: salonStatus === 'ACTIVE',
+				stepNumber: 5,
+			},
+		],
+		[
+			services.length,
+			staffMembers.length,
+			hasSchedule,
+			salonPublicUrl,
+			salonStatus,
+			router,
+			t,
+		]
+	);
 
-	const allStepsCompleted = steps.slice(0, 4).every((step) => step.completed || step.id === 'booking-page');
+	const allStepsCompleted = steps
+		.slice(0, 4)
+		.every((step) => step.completed || step.id === 'booking-page');
 	const canPublish = allStepsCompleted && salonStatus !== 'ACTIVE';
 
 	// Determine current active step (first incomplete step in order)
@@ -145,7 +175,9 @@ export default function OnboardingChecklist({
 			const step = steps[i];
 			// For booking-page, we consider it completed if all previous steps are done
 			if (step.id === 'booking-page') {
-				const previousStepsCompleted = steps.slice(0, i).every((s) => s.completed);
+				const previousStepsCompleted = steps
+					.slice(0, i)
+					.every((s) => s.completed);
 				if (previousStepsCompleted && !bookingPageViewed) {
 					return i;
 				}
@@ -167,15 +199,19 @@ export default function OnboardingChecklist({
 	const remainingSteps = Math.max(0, totalSteps - (activeStepIndex + 1));
 
 	// Calculate progress: if we're on the last step and all previous steps are completed, progress = 100%
-	const completedStepsCount = steps.filter((step) => step.completed || step.id === 'booking-page').length;
-	const progressPercentage = isLastStep && allStepsCompleted 
-		? 100 
-		: (completedStepsCount / totalSteps) * 100;
+	const completedStepsCount = steps.filter(
+		(step) => step.completed || step.id === 'booking-page'
+	).length;
+	const progressPercentage =
+		isLastStep && allStepsCompleted
+			? 100
+			: (completedStepsCount / totalSteps) * 100;
 
 	// Проверка статуса: скрываем онбординг для активных салонов
 	const salonStatusFromData = salonData?.status as string | undefined;
 	const currentStatus = salonStatusFromData || localSalonStatus;
-	const isActive = currentStatus && String(currentStatus).toUpperCase() === 'ACTIVE';
+	const isActive =
+		currentStatus && String(currentStatus).toUpperCase() === 'ACTIVE';
 
 	const handlePublish = async () => {
 		setIsPublishing(true);
@@ -234,7 +270,9 @@ export default function OnboardingChecklist({
 				}, 500);
 			} catch (error: any) {
 				console.error('Error creating owner staff:', error);
-				toast.error(error.message || t('owner.onboarding.failedToCreateOwnerStaff'));
+				toast.error(
+					error.message || t('owner.onboarding.failedToCreateOwnerStaff')
+				);
 				setOwnerIsStaff(null);
 			} finally {
 				setIsCreatingOwnerStaff(false);
@@ -247,8 +285,11 @@ export default function OnboardingChecklist({
 
 	// Показываем поздравление ПЕРЕД проверкой isActive, чтобы оно отображалось даже после публикации
 	if (showCongratulations) {
-		const hasPhotos = salonData?.photos && Array.isArray(salonData.photos) && salonData.photos.length > 0;
-		
+		const hasPhotos =
+			salonData?.photos &&
+			Array.isArray(salonData.photos) &&
+			salonData.photos.length > 0;
+
 		return (
 			<div className="fixed bottom-4 left-4 z-[500] bg-white rounded-lg shadow-lg p-6 max-w-sm border border-gray-200">
 				<div className="text-center">
@@ -261,7 +302,7 @@ export default function OnboardingChecklist({
 					<p className="text-sm text-gray-600 mb-4">
 						{t('owner.onboarding.salonPublishedSuccess')}
 					</p>
-					
+
 					{/* Photo tip section - показываем только если нет фотографий */}
 					{!hasPhotos && (
 						<div className="mt-4 pt-4 border-t border-gray-200">
@@ -277,7 +318,10 @@ export default function OnboardingChecklist({
 								onClick={() => {
 									// Hide onboarding completely
 									if (typeof window !== 'undefined') {
-										localStorage.setItem(`onboarding_dismissed_${salonId}`, 'true');
+										localStorage.setItem(
+											`onboarding_dismissed_${salonId}`,
+											'true'
+										);
 									}
 									setIsDismissed(true);
 									setShowCongratulations(false);
@@ -290,14 +334,17 @@ export default function OnboardingChecklist({
 							</button>
 						</div>
 					)}
-					
+
 					<button
 						onClick={() => {
 							setShowCongratulations(false);
 							// Если салон уже ACTIVE, скрываем онбординг полностью
 							if (isActive) {
 								if (typeof window !== 'undefined') {
-									localStorage.setItem(`onboarding_dismissed_${salonId}`, 'true');
+									localStorage.setItem(
+										`onboarding_dismissed_${salonId}`,
+										'true'
+									);
 								}
 								setIsDismissed(true);
 							}
@@ -366,7 +413,6 @@ export default function OnboardingChecklist({
 						})()}
 					</span>
 				</div>
-				
 			</div>
 
 			{/* Current Step Display */}
@@ -412,7 +458,9 @@ export default function OnboardingChecklist({
 											<div className="space-y-2">
 												<button
 													onClick={() => handleOwnerIsStaffChoice(true)}
-													disabled={isCreatingOwnerStaff || ownerIsStaff !== null}
+													disabled={
+														isCreatingOwnerStaff || ownerIsStaff !== null
+													}
 													className="w-full text-left px-4 py-3 border-2 border-[#ff5b5b] rounded-lg hover:bg-red-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed bg-white"
 												>
 													<div className="flex items-center justify-between">
@@ -426,7 +474,9 @@ export default function OnboardingChecklist({
 												</button>
 												<button
 													onClick={() => handleOwnerIsStaffChoice(false)}
-													disabled={isCreatingOwnerStaff || ownerIsStaff !== null}
+													disabled={
+														isCreatingOwnerStaff || ownerIsStaff !== null
+													}
 													className="w-full text-left px-4 py-3 border-2 border-gray-300 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed bg-white"
 												>
 													<span className="text-sm font-medium text-gray-900">
@@ -496,10 +546,11 @@ export default function OnboardingChecklist({
 					disabled={isPublishing || !canPublish}
 					className="w-full bg-[#ff5b5b] text-white px-4 py-2 rounded-lg hover:bg-[#e04a4a] transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-sm font-medium"
 				>
-					{isPublishing ? t('owner.onboarding.publishing') : t('owner.onboarding.publishSalon')}
+					{isPublishing
+						? t('owner.onboarding.publishing')
+						: t('owner.onboarding.publishSalon')}
 				</button>
 			)}
 		</div>
 	);
 }
-

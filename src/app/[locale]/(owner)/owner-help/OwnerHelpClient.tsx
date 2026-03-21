@@ -45,7 +45,9 @@ export default function OwnerHelpClient() {
 			<h1 className="text-2xl font-semibold text-gray-900 mb-1">
 				{t('owner.help.pageTitle')}
 			</h1>
-			<p className="text-sm text-gray-600 mb-8">{t('owner.help.pageSubtitle')}</p>
+			<p className="text-sm text-gray-600 mb-8">
+				{t('owner.help.pageSubtitle')}
+			</p>
 
 			<div className="space-y-2">
 				{SECTION_IDS.map((id) => {

@@ -48,35 +48,55 @@ export type TranslationModule =
 	| 'client/reviews';
 
 // Module dependencies - which modules should be loaded together
-export const moduleDependencies: Record<TranslationModule, TranslationModule[]> = {
+export const moduleDependencies: Record<
+	TranslationModule,
+	TranslationModule[]
+> = {
 	// Core - independent
 	'core/common': [],
 	'core/meta': [],
 	'core/navigation': [],
 	'core/weekdays': [],
 	'core/months': [],
-	
+
 	// UI - depend on core
 	'ui/header': ['core/common', 'core/navigation'],
 	'ui/footer': ['core/common'],
 	'ui/cookieBanner': ['core/common'],
-	
+
 	// Shared - depend on core
 	'shared/forms': ['core/common'],
 	'shared/auth': ['core/common', 'shared/forms'],
 	'shared/emptyStates': ['core/common'],
-	
+
 	// Public - depend on core, ui, shared
-	'public/homepage': ['core/common', 'core/navigation', 'ui/header', 'ui/footer'],
+	'public/homepage': [
+		'core/common',
+		'core/navigation',
+		'ui/header',
+		'ui/footer',
+	],
 	'public/salon': ['core/common', 'core/navigation', 'ui/header', 'ui/footer'],
-	'public/booking': ['core/common', 'core/weekdays', 'core/months', 'shared/forms', 'ui/header', 'ui/footer'],
+	'public/booking': [
+		'core/common',
+		'core/weekdays',
+		'core/months',
+		'shared/forms',
+		'ui/header',
+		'ui/footer',
+	],
 	'public/categories': ['core/common', 'ui/header', 'ui/footer'],
 	'public/map': ['core/common', 'ui/header', 'ui/footer'],
-	'public/business': ['core/common', 'core/navigation', 'ui/header', 'ui/footer'],
+	'public/business': [
+		'core/common',
+		'core/navigation',
+		'ui/header',
+		'ui/footer',
+	],
 	'public/contact': ['core/common', 'shared/forms', 'ui/header', 'ui/footer'],
 	'public/about': ['core/common', 'core/navigation', 'ui/header', 'ui/footer'],
 	'public/notFound': ['core/common', 'ui/header', 'ui/footer'],
-	
+
 	// Owner - depend on core, shared
 	'owner/dashboard': ['core/common', 'shared/emptyStates'],
 	'owner/salonInfo': ['core/common', 'shared/forms'],
@@ -92,7 +112,7 @@ export const moduleDependencies: Record<TranslationModule, TranslationModule[]> 
 	'owner/onboarding': ['core/common'],
 	'owner/help': ['core/common'],
 	'owner/clients': ['core/common'],
-	
+
 	// Client - depend on core, shared
 	'client/settings': ['core/common', 'shared/forms'],
 	'client/dashboard': ['core/common'],
@@ -119,22 +139,25 @@ export async function loadModule(
 
 	try {
 		// Load the module - support nested paths like 'core/common', 'ui/header', etc.
-		const moduleData = await import(
-			`./locales/${locale}/${module}.json`
-		).then((m) => m.default);
+		const moduleData = await import(`./locales/${locale}/${module}.json`).then(
+			(m) => m.default
+		);
 
 		// Cache it
 		moduleCache.set(cacheKey, moduleData);
 
 		return moduleData;
 	} catch (error) {
-		console.warn(`Failed to load module ${module} for locale ${locale}:`, error);
+		console.warn(
+			`Failed to load module ${module} for locale ${locale}:`,
+			error
+		);
 		// Fallback to English if module doesn't exist
 		if (locale !== 'en') {
 			try {
-				const fallback = await import(
-					`./locales/en/${module}.json`
-				).then((m) => m.default);
+				const fallback = await import(`./locales/en/${module}.json`).then(
+					(m) => m.default
+				);
 				moduleCache.set(`en:${module}`, fallback);
 				return fallback;
 			} catch {
@@ -155,7 +178,7 @@ export async function loadModules(
 ): Promise<any> {
 	// Get all required modules including dependencies
 	const requiredModules = new Set<TranslationModule>();
-	
+
 	for (const mod of modules) {
 		requiredModules.add(mod);
 		// Add dependencies
@@ -183,10 +206,10 @@ export async function loadModules(
 	const merged: any = {};
 	for (const { module: modName, data } of loadedModules) {
 		const keys = modName.split('/');
-		
+
 		if (keys.length === 2) {
 			const [namespace, moduleName] = keys;
-			
+
 			// Map namespaces to flat structure for backward compatibility
 			if (namespace === 'core') {
 				// core/common → common, core/meta → meta, etc.
@@ -219,7 +242,11 @@ export async function loadModules(
 			}
 		} else if (keys.length === 1) {
 			// Legacy single-level paths
-			if (merged[keys[0]] && typeof merged[keys[0]] === 'object' && typeof data === 'object') {
+			if (
+				merged[keys[0]] &&
+				typeof merged[keys[0]] === 'object' &&
+				typeof data === 'object'
+			) {
 				merged[keys[0]] = { ...merged[keys[0]], ...data };
 			} else {
 				merged[keys[0]] = data;
@@ -236,4 +263,3 @@ export async function loadModules(
 export function clearModuleCache() {
 	moduleCache.clear();
 }
-

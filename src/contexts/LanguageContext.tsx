@@ -266,7 +266,10 @@ export function LanguageProvider({
 		// Load footer module for footer links in header dropdown
 		modulesToLoad.push('ui/footer');
 		// Load servicesNew module for EditServiceModal translations on /services page
-		if (pathNoLocale.startsWith('/services') && !pathNoLocale.includes('/new')) {
+		if (
+			pathNoLocale.startsWith('/services') &&
+			!pathNoLocale.includes('/new')
+		) {
 			modulesToLoad.push('owner/servicesNew');
 		}
 	}

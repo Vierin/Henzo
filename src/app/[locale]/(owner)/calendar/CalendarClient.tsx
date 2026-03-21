@@ -88,7 +88,6 @@ export default function CalendarClient() {
 		}
 	}, [refetchBookings, t]);
 
-
 	useEffect(() => {
 		if (!salonLoading && !hasSalon) {
 			router.push('/business/complete-setup');
