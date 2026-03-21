@@ -28,6 +28,7 @@ import {
 } from '@/components/ui/select';
 import { FolderPen, X } from 'lucide-react';
 import CategoryAutocomplete from '@/components/CategoryAutocomplete';
+import { getLocalizedGroupName } from '@/utils/serviceLocalization';
 
 export default function ServicesClient() {
 	const t = useTranslation();
@@ -35,6 +36,8 @@ export default function ServicesClient() {
 	const pathname = usePathname();
 	const currentLang =
 		contextLanguage || extractLocaleFromPath(pathname) || 'en';
+	const ownerUiLang: 'en' | 'vi' | 'ru' =
+		currentLang === 'vi' ? 'vi' : currentLang === 'ru' ? 'ru' : 'en';
 	const [isEditModalOpen, setIsEditModalOpen] = useState(false);
 	const [selectedService, setSelectedService] = useState<Service | null>(null);
 	const [searchQuery, setSearchQuery] = useState('');
@@ -83,9 +86,19 @@ export default function ServicesClient() {
 			if (!salonId) return [];
 			const params = new URLSearchParams();
 			params.append('salonId', salonId);
-			return apiClient.get<ServiceGroup[]>(
-				`/services/groups/by-salon?${params.toString()}`
-			);
+			const raw = await apiClient.get<
+				(ServiceGroup & {
+					name_en?: string;
+					name_vi?: string;
+					name_ru?: string;
+				})[]
+			>(`/services/groups/by-salon?${params.toString()}`);
+			return (raw || []).map((g) => ({
+				...g,
+				nameEn: g.nameEn ?? (g as { name_en?: string }).name_en,
+				nameVi: g.nameVi ?? (g as { name_vi?: string }).name_vi,
+				nameRu: g.nameRu ?? (g as { name_ru?: string }).name_ru,
+			}));
 		},
 		enabled: !!salonId,
 		staleTime: 5 * 60 * 1000,
@@ -118,10 +131,30 @@ export default function ServicesClient() {
 
 	const handleCreateGroup = async () => {
 		if (!newGroupName.trim() || !salonId) return;
+		const name = newGroupName.trim();
+		setIsCreatingGroup(true);
 		try {
+			let nameEn = name;
+			let nameVi = name;
+			let nameRu = name;
+			try {
+				const tr = await apiClient.post<{
+					nameEn: string;
+					nameVi: string;
+					nameRu: string;
+				}>('/services/translate', { name, description: '' });
+				if (tr.nameEn?.trim()) nameEn = tr.nameEn.trim();
+				if (tr.nameVi?.trim()) nameVi = tr.nameVi.trim();
+				if (tr.nameRu?.trim()) nameRu = tr.nameRu.trim();
+			} catch (e) {
+				console.error('Group name translation failed:', e);
+			}
 			await apiClient.post('/services/groups', {
 				salonId,
-				name: newGroupName.trim(),
+				name,
+				nameEn,
+				nameVi,
+				nameRu,
 			});
 			queryClient.invalidateQueries({
 				queryKey: ['service-groups', salonId],
@@ -131,6 +164,8 @@ export default function ServicesClient() {
 		} catch (err: any) {
 			console.error('Failed to create group:', err);
 			toast.error(err.message || 'Failed to create group');
+		} finally {
+			setIsCreatingGroup(false);
 		}
 	};
 
@@ -221,21 +256,6 @@ export default function ServicesClient() {
 				return category.name_en || category.nameEn;
 			default:
 				return category.name_en || category.nameEn;
-		}
-	};
-
-	// Helper function to get localized group name
-	const getLocalizedGroupName = (group: any) => {
-		if (!group) return '';
-		switch (currentLang) {
-			case 'vi':
-				return group.nameVi || group.name;
-			case 'ru':
-				return group.nameRu || group.name;
-			case 'en':
-				return group.nameEn || group.name;
-			default:
-				return group.name;
 		}
 	};
 
@@ -467,7 +487,7 @@ export default function ServicesClient() {
 										value={group.id}
 										className="bg-white hover:bg-gray-50 focus:bg-gray-50 text-gray-900 cursor-pointer"
 									>
-										{getLocalizedGroupName(group)}
+										{getLocalizedGroupName(group, ownerUiLang)}
 									</SelectItem>
 								))}
 							</SelectContent>
@@ -735,7 +755,7 @@ export default function ServicesClient() {
 													getGroupById(service.serviceGroupId);
 												return group ? (
 													<span className="inline-flex items-center px-2 py-1 text-xs font-medium bg-blue-100 text-blue-700 rounded-full">
-														{getLocalizedGroupName(group)}
+														{getLocalizedGroupName(group, ownerUiLang)}
 													</span>
 												) : (
 													<span className="text-gray-400 italic">
@@ -867,7 +887,7 @@ export default function ServicesClient() {
 													getGroupById(service.serviceGroupId);
 												return group ? (
 													<span className="inline-flex items-center px-2 py-1 text-xs font-medium bg-blue-100 text-blue-700 rounded-full">
-														{getLocalizedGroupName(group)}
+														{getLocalizedGroupName(group, ownerUiLang)}
 													</span>
 												) : null;
 											})()}
@@ -928,10 +948,14 @@ export default function ServicesClient() {
 								/>
 								<button
 									onClick={handleCreateGroup}
-									disabled={!newGroupName.trim() || !salonId}
+									disabled={
+										!newGroupName.trim() || !salonId || isCreatingGroup
+									}
 									className="px-4 py-2 text-sm bg-[#ff5b5b] !text-white rounded-md hover:bg-[#e04a4a] disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
 								>
-									{t('owner.services.create')}
+									{isCreatingGroup
+										? t('owner.servicesNew.generatingTranslations')
+										: t('owner.services.create')}
 								</button>
 							</div>
 						</div>
@@ -946,14 +970,15 @@ export default function ServicesClient() {
 								groups.map((group) => (
 									<div
 										key={group.id}
-										className="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100"
+										className="flex items-center justify-between gap-2 p-3 bg-gray-50 rounded-lg hover:bg-gray-100"
 									>
-										<span className="text-sm font-medium text-gray-900">
-											{getLocalizedGroupName(group)}
+										<span className="text-sm font-medium text-gray-900 truncate">
+											{getLocalizedGroupName(group, ownerUiLang)}
 										</span>
 										<button
+											type="button"
 											onClick={() => handleDeleteGroup(group.id)}
-											className="p-1 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-md transition-colors"
+											className="shrink-0 p-1 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-md transition-colors"
 											title={t('owner.services.deleteGroup')}
 										>
 											<X className="w-4 h-4" />

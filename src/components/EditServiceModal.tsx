@@ -26,6 +26,7 @@ import {
 } from '@/components/ui/select';
 import { useLanguage, useTranslation } from '@/contexts/LanguageContext';
 import CategoryAutocomplete from '@/components/CategoryAutocomplete';
+import { getLocalizedGroupName } from '@/utils/serviceLocalization';
 
 interface EditServiceModalProps {
 	isOpen: boolean;
@@ -68,6 +69,8 @@ export default function EditServiceModal({
 	const [selectedStaffIds, setSelectedStaffIds] = useState<string[]>([]);
 	const queryClient = useQueryClient();
 	const { language } = useLanguage();
+	const ownerUiLang: 'en' | 'vi' | 'ru' =
+		language === 'vi' ? 'vi' : language === 'ru' ? 'ru' : 'en';
 	const t = useTranslation();
 
 	// Используем оптимизированный хук для получения данных салона
@@ -110,9 +113,19 @@ export default function EditServiceModal({
 			if (!salonId) return [];
 			const params = new URLSearchParams();
 			params.append('salonId', salonId);
-			return apiClient.get<ServiceGroup[]>(
-				`/services/groups/by-salon?${params.toString()}`
-			);
+			const raw = await apiClient.get<
+				(ServiceGroup & {
+					name_en?: string;
+					name_vi?: string;
+					name_ru?: string;
+				})[]
+			>(`/services/groups/by-salon?${params.toString()}`);
+			return (raw || []).map((g) => ({
+				...g,
+				nameEn: g.nameEn ?? g.name_en,
+				nameVi: g.nameVi ?? g.name_vi,
+				nameRu: g.nameRu ?? g.name_ru,
+			}));
 		},
 		enabled: !!salonId,
 		staleTime: 5 * 60 * 1000,
@@ -460,7 +473,7 @@ export default function EditServiceModal({
 												value={group.id}
 												className="bg-white hover:bg-gray-50 focus:bg-gray-50 text-gray-900 cursor-pointer text-sm"
 											>
-												{group.name}
+												{getLocalizedGroupName(group, ownerUiLang)}
 											</SelectItem>
 										))}
 									</SelectContent>
