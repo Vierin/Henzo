@@ -13,6 +13,16 @@ export const convertBookingDtoToBooking = (dto: BookingWithDetailsDto | any): Bo
 	const user = dto.user || dto.User;
 	const salon = dto.salon || dto.Salon;
 
+	const rawTime = dto.time ?? dto.dateTime;
+	let timeStr = '';
+	if (rawTime instanceof Date) {
+		timeStr = rawTime.toISOString();
+	} else if (typeof rawTime === 'string') {
+		timeStr = rawTime;
+	} else if (rawTime != null) {
+		timeStr = String(rawTime);
+	}
+
 	return {
 		id: dto.id,
 		salonId: dto.salonId,
@@ -20,7 +30,7 @@ export const convertBookingDtoToBooking = (dto: BookingWithDetailsDto | any): Bo
 		clientId: dto.clientId || dto.userId,
 		serviceId: dto.serviceId,
 		staffId: dto.staffId,
-		time: dto.time || dto.dateTime,
+		time: timeStr,
 		status: dto.status,
 		notes: dto.notes,
 		createdAt: dto.createdAt,

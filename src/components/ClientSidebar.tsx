@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { usePathname, useRouter } from 'next/navigation';
+import { usePathname } from 'next/navigation';
 import { useState } from 'react';
 import { useAuth } from '@/lib/auth-unified';
 import {
@@ -27,7 +27,6 @@ import { useTranslation } from '@/contexts/LanguageContext';
 
 export default function ClientSidebar() {
 	const pathname = usePathname();
-	const router = useRouter();
 	const { logout, user } = useAuth();
 	const t = useTranslation();
 	const queryClient = useQueryClient();
@@ -62,8 +61,7 @@ export default function ClientSidebar() {
 		} catch (error) {
 			console.error('Logout error:', error);
 		} finally {
-			const homeUrl = withLocale('/', currentLocale as 'en' | 'ru' | 'vi');
-			router.replace(homeUrl);
+			hardNavigateToLocalePath('/', currentLocale as 'en' | 'ru' | 'vi');
 		}
 	};
 

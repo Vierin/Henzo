@@ -9,6 +9,7 @@ import AdaptiveSearch from './AdaptiveSearch';
 import { User, LogOut, ChevronDown } from 'lucide-react';
 import {
 	extractLocaleFromPath,
+	hardNavigateToLocalePath,
 	stripLocaleFromPath,
 	withLocale,
 } from '@/i18n/routing';
@@ -112,8 +113,7 @@ function PublicHeaderContent() {
 		} catch (error) {
 			console.error('Logout error:', error);
 		} finally {
-			const homeUrl = withLocale('/', currentLocale as 'en' | 'ru' | 'vi');
-			router.replace(homeUrl);
+			hardNavigateToLocalePath('/', currentLocale as 'en' | 'ru' | 'vi');
 		}
 	};
 

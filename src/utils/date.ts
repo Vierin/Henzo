@@ -4,11 +4,21 @@ import { toZonedTime } from 'date-fns-tz';
  * Safely parse a date string and return a Date object or null if invalid
  */
 export function safeParseDate(
-	dateString: string | null | undefined
+	input: string | Date | number | null | undefined
 ): Date | null {
-	if (!dateString) return null;
+	if (input == null) return null;
 
 	try {
+		if (input instanceof Date) {
+			return isNaN(input.getTime()) ? null : input;
+		}
+		if (typeof input === 'number') {
+			const d = new Date(input);
+			return isNaN(d.getTime()) ? null : d;
+		}
+		if (typeof input !== 'string') return null;
+
+		const dateString = input;
 		// If it's in YYYY-MM-DD format, parse as local date to avoid timezone issues
 		if (/^\d{4}-\d{2}-\d{2}$/.test(dateString)) {
 			const [year, month, day] = dateString.split('-').map(Number);
@@ -20,10 +30,15 @@ export function safeParseDate(
 		const date = new Date(dateString);
 		return isNaN(date.getTime()) ? null : date;
 	} catch (error) {
-		console.error('Error parsing date:', error, dateString);
+		console.error('Error parsing date:', error, input);
 		return null;
 	}
 }
+
+export type FormatDateSafeOptions = {
+	/** When false, omits weekday (e.g. review cards). @default true */
+	includeWeekday?: boolean;
+};
 
 /**
  * Format a date string for display, with fallback for invalid dates
@@ -34,7 +49,8 @@ export function safeParseDate(
 export function formatDateSafe(
 	dateString: string | null | undefined,
 	fallback: string = 'Date not available',
-	locale: string = 'en'
+	locale: string = 'en',
+	options?: FormatDateSafeOptions
 ): string {
 	const date = safeParseDate(dateString);
 	if (!date) return fallback;
@@ -48,12 +64,17 @@ export function formatDateSafe(
 
 	const intlLocale = localeMap[locale] || locale;
 
-	return date.toLocaleDateString(intlLocale, {
-		weekday: 'long',
+	const includeWeekday = options?.includeWeekday !== false;
+	const intlOptions: Intl.DateTimeFormatOptions = {
 		year: 'numeric',
 		month: 'long',
 		day: 'numeric',
-	});
+	};
+	if (includeWeekday) {
+		intlOptions.weekday = 'long';
+	}
+
+	return date.toLocaleDateString(intlLocale, intlOptions);
 }
 
 /**

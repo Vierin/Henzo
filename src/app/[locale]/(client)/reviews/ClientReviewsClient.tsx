@@ -7,10 +7,14 @@ import LoadingSpinner from '@/components/LoadingSpinner';
 import ReviewModal from '@/components/ReviewModal';
 import { Star, Edit2 } from 'lucide-react';
 import { useTranslation } from '@/contexts/LanguageContext';
+import { useRatingStars } from '@/hooks/useRatingStars';
+import { useFormatLocalDate } from '@/hooks/useFormatLocalDate';
 
 export default function ClientReviewsClient() {
 	const t = useTranslation();
 	const { data: reviews = [], isLoading: loading, error } = useUserReviews();
+	const renderStars = useRatingStars(20);
+	const formatReviewDate = useFormatLocalDate();
 	const [editingReview, setEditingReview] = useState<{
 		id: string;
 		salonId: string;
@@ -19,17 +23,6 @@ export default function ClientReviewsClient() {
 		rating: number;
 		comment?: string;
 	} | null>(null);
-
-	const renderStars = (rating: number) => {
-		return Array.from({ length: 5 }, (_, i) => (
-			<Star
-				key={i}
-				className={`w-5 h-5 ${
-					i < rating ? 'fill-[#ff5b5b] text-[#ff5b5b]' : 'text-gray-300'
-				}`}
-			/>
-		));
-	};
 
 	if (loading) {
 		return (
@@ -104,12 +97,8 @@ export default function ClientReviewsClient() {
 								</div>
 								<div>
 									<div className="text-sm text-gray-500 text-right">
-									{new Date(review.createdAt).toLocaleDateString('en-US', {
-										month: 'short',
-										day: 'numeric',
-										year: 'numeric',
-									})}
-								</div>
+										{formatReviewDate(review.createdAt)}
+									</div>
 								<div className="flex justify-end">
 								<button
 									onClick={() =>

@@ -1,6 +1,7 @@
 'use client';
 
 import { Booking } from '@/types';
+import { safeParseDate } from '@/utils/date';
 import { AlertCircle, Users, TrendingUp } from 'lucide-react';
 import { formatVND } from '@/utils/currency';
 import { useTranslation } from '@/contexts/LanguageContext';
@@ -17,8 +18,8 @@ export default function AdditionalMetrics({
 	// Calculate No-Show Rate - only for past bookings
 	const now = new Date();
 	const pastBookings = bookings.filter((b) => {
-		const bookingTime = new Date(b.time);
-		return bookingTime < now;
+		const bookingTime = safeParseDate(b.time);
+		return bookingTime != null && bookingTime < now;
 	});
 
 	// Count bookings that could result in no-show (CONFIRMED, COMPLETED, or NOSHOW)

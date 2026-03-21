@@ -40,7 +40,7 @@ export default function CategoryListClient({
 	const [selectedService, setSelectedService] = useState<
 		(ServiceResponseDto & { salonId: string; salonName: string }) | null
 	>(null);
- 
+
 	const [currentPage, setCurrentPage] = useState(1);
 	const [accumulatedSalons, setAccumulatedSalons] = useState<Salon[]>([]);
 	const [currentPagination, setCurrentPagination] = useState<any>(null);
@@ -127,20 +127,20 @@ export default function CategoryListClient({
 	// Salons are already filtered by main_category_id on the server
 	// Just apply client-side sorting for 'services' (others are server-side)
 	const sortedSalons = [...(salons || [])].sort((a: Salon, b: Salon) => {
-			switch (sortBy) {
-				case 'name':
-					return a.name.localeCompare(b.name);
-				case 'name-desc':
-					return b.name.localeCompare(a.name);
-				case 'services':
-					// Use _count.Service if available, otherwise fallback to services.length
-					const aCount = (a as any)._count?.Service || a.services?.length || 0;
-					const bCount = (b as any)._count?.Service || b.services?.length || 0;
-					return bCount - aCount;
-				default:
-					return 0;
-			}
-		});
+		switch (sortBy) {
+			case 'name':
+				return a.name.localeCompare(b.name);
+			case 'name-desc':
+				return b.name.localeCompare(a.name);
+			case 'services':
+				// Use _count.Service if available, otherwise fallback to services.length
+				const aCount = (a as any)._count?.Service || a.services?.length || 0;
+				const bCount = (b as any)._count?.Service || b.services?.length || 0;
+				return bCount - aCount;
+			default:
+				return 0;
+		}
+	});
 
 	if (loading) {
 		return (
@@ -204,9 +204,7 @@ export default function CategoryListClient({
 									className="px-3 sm:px-4 py-2 sm:h-9 flex gap-1 items-center bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#ff5b5b] focus:border-transparent text-gray-900 text-sm whitespace-nowrap"
 								>
 									<Map className="w-4 h-4" />{' '}
-									<span className="hidden sm:inline">
-										{t.salon.mapView}
-									</span>
+									<span className="hidden sm:inline">{t.salon.mapView}</span>
 								</Link>
 							</div>
 						</div>
@@ -269,6 +267,14 @@ export default function CategoryListClient({
 				}}
 				salonId={selectedService?.salonId}
 				salonName={selectedService?.salonName}
+				service={
+					selectedService
+						? (() => {
+								const { salonName: _salonName, ...svc } = selectedService;
+								return svc as Service;
+							})()
+						: undefined
+				}
 				showServiceSelector={true}
 			/>
 		</>

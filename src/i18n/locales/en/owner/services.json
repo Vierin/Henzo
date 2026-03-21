@@ -58,7 +58,7 @@
 	"addServiceGroupHelp": "Create a group to organize your services (e.g., \"Hair services\", \"Nails\").",
 	"groupName": "Group name",
 	"create": "Create",
-	"manageGroups": "Add/Delete Group",
+	"manageGroups": "Manage Groups",
 	"manageGroupsTitle": "Manage Service Groups",
 	"deleteGroup": "Delete Group",
 	"areYouSureDeleteGroup": "Are you sure you want to delete this group? All services in this group will be ungrouped.",

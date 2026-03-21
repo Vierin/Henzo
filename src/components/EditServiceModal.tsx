@@ -143,7 +143,11 @@ export default function EditServiceModal({
 			const serviceStaff = (service as any).Staff || [];
 			// If service has no staff assigned, it means all staff (empty array)
 			// If service has specific staff, use their IDs
-			setSelectedStaffIds(serviceStaff.length > 0 ? serviceStaff.map((staff: any) => staff.id) : []);
+			setSelectedStaffIds(
+				serviceStaff.length > 0
+					? serviceStaff.map((staff: any) => staff.id)
+					: []
+			);
 
 			setFormData({
 				name: service.name,
@@ -290,7 +294,7 @@ export default function EditServiceModal({
 	return (
 		<>
 			<div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
-				<div className="bg-white rounded-lg shadow-xl p-6 w-full max-w-md mx-auto">
+				<div className="bg-white rounded-lg shadow-xl p-6 w-full max-w-xl mx-auto">
 					<h2 className="text-xl font-bold text-gray-900 mb-4">
 						{service
 							? t('owner.services.editService')

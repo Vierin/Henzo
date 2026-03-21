@@ -38,6 +38,20 @@ export const BUSINESS_OAUTH_SOURCE_KEY = 'businessOAuthSource';
 
 const BUSINESS_OAUTH_TTL_MS = 15 * 60 * 1000;
 
+/** True if business Google OAuth was started recently (nonce not consumed). */
+export function isBusinessOAuthPending(): boolean {
+	if (typeof window === 'undefined') return false;
+	const nonce = sessionStorage.getItem(BUSINESS_OAUTH_NONCE_KEY);
+	const nonceTs = sessionStorage.getItem(BUSINESS_OAUTH_NONCE_TS_KEY);
+	const createdAt = nonceTs ? Number(nonceTs) : 0;
+	return (
+		!!nonce &&
+		!!createdAt &&
+		Number.isFinite(createdAt) &&
+		Date.now() - createdAt <= BUSINESS_OAUTH_TTL_MS
+	);
+}
+
 function trackBusinessEvent(
 	eventName: string,
 	params?: Record<string, unknown>

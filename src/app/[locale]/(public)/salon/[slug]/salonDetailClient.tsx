@@ -20,7 +20,6 @@ import {
 	Instagram,
 	MapPin,
 	Phone,
-	Star,
 	Heart,
 	ChevronDown,
 } from 'lucide-react';
@@ -33,6 +32,7 @@ import {
 } from '@/hooks/useFavorites';
 import { useAuthStore } from '@/stores/authStore';
 import { useTranslation, useLanguage } from '@/contexts/LanguageContext';
+import { useRatingStars } from '@/hooks/useRatingStars';
 import {
 	getLocalizedServiceName,
 	getLocalizedServiceDescription,
@@ -66,11 +66,7 @@ export default function SalonDetailClient({ salon }: SalonDetailClientProps) {
 	// Open booking modal when landing with ?serviceId= (e.g. from "Book again")
 	useEffect(() => {
 		const serviceId = searchParams.get('serviceId');
-		if (
-			!openedFromQueryRef.current &&
-			serviceId &&
-			salon.services?.length
-		) {
+		if (!openedFromQueryRef.current && serviceId && salon.services?.length) {
 			const service = salon.services.find((s) => s.id === serviceId);
 			if (service) {
 				openedFromQueryRef.current = true;
@@ -116,44 +112,36 @@ export default function SalonDetailClient({ salon }: SalonDetailClientProps) {
 	]);
 
 	const handleGetDirections = useCallback(() => {
+		const lat = Number(salon.latitude);
+		const lng = Number(salon.longitude);
+		const hasCoords =
+			salon.latitude != null &&
+			salon.longitude != null &&
+			Number.isFinite(lat) &&
+			Number.isFinite(lng);
+
+		if (hasCoords) {
+			// Directions to exact point — pin + route; address-only search is often ambiguous
+			const dest = encodeURIComponent(`${lat},${lng}`);
+			window.open(
+				`https://www.google.com/maps/dir/?api=1&destination=${dest}`,
+				'_blank',
+				'noopener,noreferrer'
+			);
+			return;
+		}
+
 		if (salon.address) {
 			const encodedAddress = encodeURIComponent(salon.address);
-			const googleMapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodedAddress}`;
-			window.open(googleMapsUrl, '_blank', 'noopener,noreferrer');
-		}
-	}, [salon.address]);
-
-	const renderStars = useCallback((rating: number) => {
-		return Array.from({ length: 5 }, (_, i) => {
-			const starIndex = i + 1;
-			let className = 'text-gray-300';
-			let style = {};
-
-			if (starIndex <= Math.floor(rating)) {
-				// Полная звезда
-				className = 'text-[#ff5b5b] fill-[#ff5b5b]';
-			} else if (starIndex - 0.5 <= rating && rating < starIndex) {
-				// Половина звезды - используем градиент
-				className = 'text-gray-300';
-				style = {
-					background: 'linear-gradient(90deg, #ff5b5b 50%, transparent 50%)',
-					WebkitBackgroundClip: 'text',
-					WebkitTextFillColor: 'transparent',
-					backgroundClip: 'text',
-				};
-			}
-
-			return (
-				<Star
-					key={i}
-					size={16}
-					className={className}
-					style={style}
-					aria-hidden="true"
-				/>
+			window.open(
+				`https://www.google.com/maps/search/?api=1&query=${encodedAddress}`,
+				'_blank',
+				'noopener,noreferrer'
 			);
-		});
-	}, []);
+		}
+	}, [salon.address, salon.latitude, salon.longitude]);
+
+	const renderStars = useRatingStars(16);
 
 	const formatWorkingHours = useCallback(
 		(workingHours: WorkingHours | undefined) => {

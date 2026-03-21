@@ -1,5 +1,8 @@
+'use client';
+
 import { Review } from '@/types';
-import { Star } from 'lucide-react';
+import { useRatingStars } from '@/hooks/useRatingStars';
+import { useFormatLocalDate } from '@/hooks/useFormatLocalDate';
 
 interface ReviewCardProps {
 	review: Review;
@@ -10,37 +13,8 @@ export default function ReviewCard({
 	review,
 	className = '',
 }: ReviewCardProps) {
-	const renderStars = (rating: number) => {
-		return Array.from({ length: 5 }, (_, i) => {
-			const starIndex = i + 1;
-			let className = 'text-gray-300';
-			let style = {};
-
-			if (starIndex <= Math.floor(rating)) {
-				// Полная звезда
-				className = 'text-[#ff5b5b] fill-[#ff5b5b]';
-			} else if (starIndex - 0.5 <= rating && rating < starIndex) {
-				// Половина звезды - используем градиент
-				className = 'text-gray-300';
-				style = {
-					background: 'linear-gradient(90deg, #ff5b5b 50%, transparent 50%)',
-					WebkitBackgroundClip: 'text',
-					WebkitTextFillColor: 'transparent',
-					backgroundClip: 'text',
-				};
-			}
-
-			return <Star key={i} size={16} className={className} style={style} />;
-		});
-	};
-
-	const formatDate = (dateString: string) => {
-		return new Date(dateString).toLocaleDateString('en-US', {
-			year: 'numeric',
-			month: 'long',
-			day: 'numeric',
-		});
-	};
+	const renderStars = useRatingStars(16);
+	const formatLocalDate = useFormatLocalDate({ includeWeekday: false });
 
 	return (
 		<div className={`bg-white rounded-lg p-4 shadow-sm ${className}`}>
@@ -61,12 +35,12 @@ export default function ReviewCard({
 					</div>
 				</div>
 				<span className="text-xs text-gray-500">
-					{formatDate(review.createdAt)}
+					{formatLocalDate(review.createdAt)}
 				</span>
 			</div>
 
 			{review.comment && (
-				<p className="text-sm text-gray-700 mt-2">{review.comment}</p>
+				<p className="text-sm text-gray-700 mt-3">{review.comment}</p>
 			)}
 		</div>
 	);

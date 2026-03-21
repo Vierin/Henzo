@@ -25,3 +25,14 @@ export function withLocale(pathname: string, locale: Locale) {
 	const stripped = stripLocaleFromPath(pathname);
 	return `/${locale}${stripped}`;
 }
+
+/**
+ * Full document navigation (not Next.js soft navigation).
+ * After leaving owner/admin-style shells, client-side route transitions can leave
+ * global CSS (e.g. Tailwind) out of sync; a hard navigation reloads styles reliably.
+ */
+export function hardNavigateToLocalePath(pathname: string, locale: Locale) {
+	if (typeof window === 'undefined') return;
+	const path = withLocale(pathname, locale);
+	window.location.assign(`${window.location.origin}${path}`);
+}

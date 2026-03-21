@@ -58,7 +58,7 @@
 	"addServiceGroupHelp": "Tạo nhóm để tổ chức dịch vụ của bạn (ví dụ: \"Dịch vụ tóc\", \"Móng tay\").",
 	"groupName": "Tên nhóm",
 	"create": "Tạo",
-	"manageGroups": "Thêm/Xóa nhóm",
+	"manageGroups": "Quản lý nhóm",
 	"manageGroupsTitle": "Quản lý nhóm dịch vụ",
 	"deleteGroup": "Xóa nhóm",
 	"areYouSureDeleteGroup": "Bạn có chắc muốn xóa nhóm này? Tất cả dịch vụ trong nhóm sẽ được bỏ nhóm.",

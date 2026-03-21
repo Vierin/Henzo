@@ -341,7 +341,7 @@ export default function NewServiceClient() {
 	// Step 2: Confirmation screen
 	if (step === 2) {
 		return (
-			<div className="px-4 md:px-8 py-6 w-full max-w-7xl mx-auto">
+			<div className="px-4 md:px-8 py-6 w-full max-w-4xl mx-auto">
 				<div className="mb-8">
 					<button
 						onClick={() => setStep(1)}
@@ -522,7 +522,7 @@ export default function NewServiceClient() {
 
 	// Step 1: Form
 	return (
-		<div className="px-4 md:px-8 py-6 w-full max-w-7xl mx-auto">
+		<div className="px-4 md:px-8 py-6 w-full max-w-4xl mx-auto">
 			<div className="mb-8">
 				<button
 					onClick={() => router.back()}
@@ -671,8 +671,8 @@ export default function NewServiceClient() {
 						</p>
 					</div>
 
-					<div className='grid grid-cols-1 md:grid-cols-2 gap-6'>
-						<div className='w-full'>
+					<div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+						<div className="w-full">
 							<label
 								htmlFor="service-category"
 								className="block text-sm font-medium text-gray-700 mb-2"
@@ -691,7 +691,9 @@ export default function NewServiceClient() {
 												: undefined
 										}
 										onChange={(categoryId) => {
-											field.onChange(categoryId ? categoryId.toString() : 'none');
+											field.onChange(
+												categoryId ? categoryId.toString() : 'none'
+											);
 										}}
 										categories={categories}
 										placeholder={t('owner.servicesNew.selectCategory')}
@@ -1022,7 +1024,6 @@ export default function NewServiceClient() {
 					</div>
 				</div>
 			)}
-
 		</div>
 	);
 }

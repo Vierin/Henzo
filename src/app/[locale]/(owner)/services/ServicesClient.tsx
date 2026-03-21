@@ -26,7 +26,7 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from '@/components/ui/select';
-import { X } from 'lucide-react';
+import { FolderPen, X } from 'lucide-react';
 import CategoryAutocomplete from '@/components/CategoryAutocomplete';
 
 export default function ServicesClient() {
@@ -351,6 +351,9 @@ export default function ServicesClient() {
 							onClick={() => setIsManageGroupsModalOpen(true)}
 							className="inline-flex items-center gap-2 rounded-full bg-white border border-gray-300 !text-gray-900 px-4 py-2 text-sm shadow-sm hover:opacity-95 whitespace-nowrap"
 						>
+							<span>
+								<FolderPen className="w-4 h-4" />
+							</span>
 							<span>{t('owner.services.manageGroups')}</span>
 						</button>
 						<button
@@ -706,7 +709,9 @@ export default function ServicesClient() {
 										key={service.id}
 										className="grid grid-cols-6 px-6 py-4 text-sm text-gray-800"
 									>
-										<div className="font-semibold">{getLocalizedServiceName(service)}</div>
+										<div className="font-semibold">
+											{getLocalizedServiceName(service)}
+										</div>
 										<div className="text-gray-600">
 											{service.service_categories ? (
 												<span className="inline-flex items-center px-2 py-1 text-xs font-medium bg-gray-100 text-gray-700 rounded-full">
@@ -790,12 +795,12 @@ export default function ServicesClient() {
 						{/* Mobile Card View */}
 						<div className="md:hidden divide-y divide-[#f1d9d7]">
 							{filteredServices.map((service) => (
-									<div key={service.id} className="p-4">
-										<div className="flex items-start justify-between mb-3">
-											<div className="flex-1 min-w-0">
-												<h3 className="font-semibold text-gray-900 truncate">
-													{getLocalizedServiceName(service)}
-												</h3>
+								<div key={service.id} className="p-4">
+									<div className="flex items-start justify-between mb-3">
+										<div className="flex-1 min-w-0">
+											<h3 className="font-semibold text-gray-900 truncate">
+												{getLocalizedServiceName(service)}
+											</h3>
 											<div className="text-lg font-bold text-[#ff5b5b] mt-1">
 												{formatVND(service.price)}
 											</div>

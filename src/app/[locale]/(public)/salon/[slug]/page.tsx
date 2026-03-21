@@ -9,27 +9,34 @@ interface SalonDetailPageProps {
 	params: Promise<{ slug: string }>;
 }
 
+/** Public salon page: shorter cache so new photos/name show up without waiting an hour. */
+const SALON_PAGE_REVALIDATE_SEC = 120;
+
 async function getSalonData(
 	slug: string
 ): Promise<SalonWithDetailsResponseDto | null> {
+	const cacheOpts = { revalidate: SALON_PAGE_REVALIDATE_SEC } as const;
 	const isOldId = /^[a-f0-9-]{36}$/.test(slug);
 
 	if (isOldId) {
 		const response = await serverApiGet<SalonWithDetailsResponseDto>(
-			`/salons/${slug}`
+			`/salons/${slug}`,
+			cacheOpts
 		);
 		return response ?? null;
 	}
 
 	const bySlug = await serverApiGet<SalonWithDetailsResponseDto>(
-		`/salons/by-slug/${slug}`
+		`/salons/by-slug/${slug}`,
+		cacheOpts
 	);
 	if (bySlug) return bySlug;
 
 	const salonId = extractSalonIdFromSlug(slug);
 	if (salonId && isValidSalonSlug(slug)) {
 		const byId = await serverApiGet<SalonWithDetailsResponseDto>(
-			`/salons/${salonId}`
+			`/salons/${salonId}`,
+			cacheOpts
 		);
 		return byId ?? null;
 	}
@@ -37,8 +44,7 @@ async function getSalonData(
 	return null;
 }
 
-// ISR: Revalidate every hour (3600 seconds)
-export const revalidate = 3600;
+export const revalidate = SALON_PAGE_REVALIDATE_SEC;
 
 export async function generateMetadata({
 	params,

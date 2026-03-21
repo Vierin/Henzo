@@ -28,5 +28,8 @@
 	"deletedSuccessfully": "Staff member deleted successfully!",
 	"failedToUpdate": "Failed to update staff member",
 	"failedToDelete": "Failed to delete staff member",
-	"servicesHelp": "Select services that this staff member can perform."
+	"servicesHelp": "Select services that this staff member can perform.",
+	"selectServices": "Select services",
+	"searchServices": "Search services...",
+	"servicesSelected": "services selected"
 }

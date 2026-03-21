@@ -17,6 +17,7 @@
 	"businessOverview": "Here's your business overview",
 	"totalRevenue": "Total Revenue",
 	"totalClients": "Total Clients",
+	"clientsInPeriod": "Clients (period)",
 	"bookings": "Bookings",
 	"completionRate": "Completion Rate",
 	"last7Days": "Last 7 days",

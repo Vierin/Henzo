@@ -338,10 +338,9 @@ export default function SalonsClient() {
 										{t('salon.noSalonsFound')}
 									</h3>
 									<p className="text-gray-600">
-										{selectedLocation 
+										{selectedLocation
 											? t('common.noSalonsInArea')
-											: t('salon.tryAdjustingSearch')
-										}
+											: t('salon.tryAdjustingSearch')}
 									</p>
 								</div>
 							) : (
@@ -385,6 +384,14 @@ export default function SalonsClient() {
 						onClose={handleCloseBookingModal}
 						salonId={selectedService?.salonId || ''}
 						salonName={selectedService?.salonName || ''}
+						service={
+							selectedService
+								? (() => {
+										const { salonName: _salonName, ...svc } = selectedService;
+										return svc as Service;
+									})()
+								: undefined
+						}
 						showServiceSelector={true}
 					/>
 				</Suspense>

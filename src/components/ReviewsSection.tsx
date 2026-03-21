@@ -3,8 +3,8 @@
 import { Review } from '@/types';
 import ReviewCard from './ReviewCard';
 import { calculateAverageRating, getReviewCount } from '@/utils/salonUtils';
-import { Star } from 'lucide-react';
 import { useTranslation } from '@/contexts/LanguageContext';
+import { useRatingStars } from '@/hooks/useRatingStars';
 
 interface ReviewsSectionProps {
 	reviews: Review[];
@@ -16,6 +16,7 @@ export default function ReviewsSection({
 	className = '',
 }: ReviewsSectionProps) {
 	const t = useTranslation();
+	const renderStars = useRatingStars(18);
 	const averageRating = calculateAverageRating({ reviews } as any);
 	const reviewCount = getReviewCount({ reviews } as any);
 
@@ -28,30 +29,6 @@ export default function ReviewsSection({
 			</div>
 		);
 	}
-
-	const renderStars = (rating: number) => {
-		return Array.from({ length: 5 }, (_, i) => {
-			const starIndex = i + 1;
-			let className = 'text-gray-300';
-			let style = {};
-
-			if (starIndex <= Math.floor(rating)) {
-				// Полная звезда
-				className = 'text-[#ff5b5b] fill-[#ff5b5b]';
-			} else if (starIndex - 0.5 <= rating && rating < starIndex) {
-				// Половина звезды - используем градиент
-				className = 'text-gray-300';
-				style = {
-					background: 'linear-gradient(90deg, #ff5b5b 50%, transparent 50%)',
-					WebkitBackgroundClip: 'text',
-					WebkitTextFillColor: 'transparent',
-					backgroundClip: 'text',
-				};
-			}
-
-			return <Star key={i} size={18} className={className} style={style} />;
-		});
-	};
 
 	return (
 		<div className={`${className}`}>

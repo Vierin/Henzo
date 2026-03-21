@@ -26,6 +26,7 @@
 	"areYouSureNoShow": "Вы уверены, что хотите отметить эту запись как неявку?",
 	"markAsNoShow": "Неявка",
 	"unknownService": "Неизвестная услуга",
+	"anonymousClient": "Анонимный клиент",
 	"min": "мин",
 	"loadingCalendarData": "Загрузка данных календаря...",
 	"redirectingToSetup": "Перенаправление на настройку салона...",

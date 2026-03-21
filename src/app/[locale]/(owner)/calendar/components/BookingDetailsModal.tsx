@@ -2,8 +2,10 @@
 
 import { Booking } from '@/types';
 import { formatDateSafe, formatTimeSafe } from '@/utils/date';
+import { getLocalizedServiceName } from '@/utils/serviceLocalization';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useOwnerLayout } from '@/contexts/OwnerLayoutContext';
+import { User, X } from 'lucide-react';
 
 interface BookingDetailsModalProps {
 	booking: Booking | null;
@@ -12,6 +14,27 @@ interface BookingDetailsModalProps {
 	onEdit?: (booking: Booking) => void;
 	onCancel?: (bookingId: string) => void;
 	onMarkAsNoShow?: (bookingId: string) => void;
+}
+
+function isAnonymousBooking(booking: Booking): boolean {
+	const email = booking.user?.email || '';
+	const name = booking.user?.name || '';
+	return (
+		email.includes('@anonymous.local') ||
+		email.startsWith('anonymous-') ||
+		name.toLowerCase().includes('anonymous') ||
+		name === 'Anonymous Client'
+	);
+}
+
+function getClientLabel(booking: Booking, t: (key: string) => string): string {
+	if (isAnonymousBooking(booking)) {
+		return t('owner.calendar.anonymousClient');
+	}
+	if (booking.user?.name?.trim()) {
+		return booking.user.name;
+	}
+	return `${t('owner.calendar.clientId')} ${booking.userId}`;
 }
 
 export default function BookingDetailsModal({
@@ -25,43 +48,62 @@ export default function BookingDetailsModal({
 	const { t, language } = useLanguage();
 	const { salonData } = useOwnerLayout();
 	const salonTimezone = salonData?.timezone || 'Asia/Ho_Chi_Minh';
+	const lang = (language === 'vi' || language === 'ru' ? language : 'en') as
+		| 'vi'
+		| 'en'
+		| 'ru';
+
 	if (!isOpen || !booking) return null;
 
 	const getStatusBadge = (status: string) => {
+		const base =
+			'inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold';
 		switch (status) {
 			case 'PENDING':
 				return (
-					<span className="inline-flex items-center px-2 py-0.5 sm:px-3 sm:py-1 rounded-full text-xs sm:text-md font-medium bg-yellow-100 text-yellow-800">
+					<span
+						className={`${base} bg-amber-50 text-amber-800 ring-1 ring-amber-200/60`}
+					>
 						{t('owner.calendar.pending')}
 					</span>
 				);
 			case 'CONFIRMED':
 				return (
-					<span className="inline-flex items-center px-2 py-0.5 sm:px-3 sm:py-1 rounded-full text-xs sm:text-md font-medium bg-green-100 text-green-800">
+					<span
+						className={`${base} bg-emerald-50 text-emerald-800 ring-1 ring-emerald-200/60`}
+					>
 						{t('owner.calendar.confirmed')}
 					</span>
 				);
 			case 'COMPLETED':
 				return (
-					<span className="inline-flex items-center px-2 py-0.5 sm:px-3 sm:py-1 rounded-full text-xs sm:text-md font-medium bg-blue-100 text-blue-800 dark:bg-blue-100 dark:text-blue-800">
+					<span
+						className={`${base} bg-sky-50 text-sky-800 ring-1 ring-sky-200/60`}
+					>
 						{t('owner.calendar.completed')}
 					</span>
 				);
 			case 'CANCELED':
 				return (
-					<span className="inline-flex items-center px-2 py-0.5 sm:px-3 sm:py-1 rounded-full text-xs sm:text-md font-medium bg-red-100 text-red-800">
+					<span
+						className={`${base} bg-red-50 text-red-800 ring-1 ring-red-200/60`}
+					>
 						{t('owner.calendar.cancelled')}
 					</span>
 				);
 			case 'NOSHOW':
 				return (
-					<span className="inline-flex items-center px-2 py-0.5 sm:px-3 sm:py-1 rounded-full text-xs sm:text-md font-medium bg-orange-100 text-orange-800">
+					<span
+						className={`${base} bg-orange-50 text-orange-800 ring-1 ring-orange-200/60`}
+					>
 						{t('owner.calendar.noShow')}
 					</span>
 				);
 			default:
 				return (
-					<span className="inline-flex items-center px-2 py-0.5 sm:px-3 sm:py-1 rounded-full text-xs sm:text-md font-medium bg-gray-100 text-gray-800">
+					<span
+						className={`${base} bg-gray-100 text-gray-800 ring-1 ring-gray-200/60`}
+					>
 						{status}
 					</span>
 				);
@@ -76,186 +118,206 @@ export default function BookingDetailsModal({
 		booking.status === 'CONFIRMED' || booking.status === 'PENDING';
 	const canMarkAsNoShow = booking.status === 'COMPLETED';
 
+	const serviceName = booking.service
+		? getLocalizedServiceName(booking.service, lang)
+		: t('owner.calendar.unknownService');
+
+	const priceWithSymbol =
+		booking.service?.price != null
+			? `${booking.service.price.toLocaleString('vi-VN')}₫`
+			: null;
+
+	const durationPriceLine =
+		booking.service?.duration != null && priceWithSymbol
+			? `${booking.service.duration} ${t('owner.calendar.min')} · ${priceWithSymbol}`
+			: booking.service?.duration != null
+				? `${booking.service.duration} ${t('owner.calendar.min')}`
+				: priceWithSymbol;
+
 	return (
 		<div
-			className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4"
+			className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-[2px]"
 			onClick={onClose}
+			role="presentation"
 		>
 			<div
-				className="bg-white rounded-xl max-w-lg w-full max-h-[85vh] overflow-y-auto shadow-xl"
+				className="relative w-full max-w-xl overflow-hidden rounded-3xl border border-white/70 bg-white shadow-2xl shadow-black/10"
 				onClick={(e) => e.stopPropagation()}
+				role="dialog"
+				aria-labelledby="booking-details-title"
 			>
 				{/* Header */}
-				<div className="flex items-center justify-between p-4 border-b border-gray-200">
-					<h2 className="text-lg font-semibold text-gray-900">
+				<div className="flex items-start justify-between gap-3 px-6 pt-6 pb-2">
+					<h2
+						id="booking-details-title"
+						className="text-xl font-bold tracking-tight text-gray-900"
+					>
 						{t('owner.calendar.bookingDetails')}
 					</h2>
 					<button
+						type="button"
 						onClick={onClose}
-						className="p-1.5 hover:bg-gray-100 rounded-full transition-colors"
+						className="rounded-full p-2 text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-800"
 						aria-label={t('owner.calendar.closeModal')}
 					>
-						<svg
-							className="w-5 h-5 text-gray-500"
-							fill="none"
-							stroke="currentColor"
-							viewBox="0 0 24 24"
-						>
-							<path
-								strokeLinecap="round"
-								strokeLinejoin="round"
-								strokeWidth={2}
-								d="M6 18L18 6M6 6l12 12"
-							/>
-						</svg>
+						<X className="h-5 w-5" strokeWidth={2} />
 					</button>
 				</div>
 
-				{/* Content */}
-				<div className="p-4 space-y-4">
-					{/* Status */}
-					<div className="flex justify-between items-center">
-						<label className="text-xs sm:text-sm font-medium text-gray-500 block">
-							{t('owner.calendar.status')}
-						</label>
-						{getStatusBadge(booking.status)}
-					</div>
+				{/* Status — right-aligned under header */}
+				<div className="flex justify-end px-6 pb-4">
+					{getStatusBadge(booking.status)}
+				</div>
 
-					{/* Date & Time */}
-					<div className="grid grid-cols-2 gap-3">
-						<div>
-							<label className="text-xs sm:text-sm font-medium text-gray-500 block mb-1">
+				<div className="space-y-6 px-6 pb-2">
+					{/* Date | Time */}
+					<div className="flex divide-x divide-gray-200/90">
+						<div className="min-w-0 flex-1 pr-4">
+							<p className="text-xs font-medium uppercase tracking-wide text-gray-500">
 								{t('owner.calendar.date')}
-							</label>
-							<p className="text-sm sm:text-md font-semibold text-gray-900">
-								{formatDateSafe(booking.time, 'Date not available', language)}
+							</p>
+							<p className="mt-1 mb-0 text-sm font-bold leading-snug text-gray-900 sm:text-base">
+								{formatDateSafe(booking.time, '—', language)}
 							</p>
 						</div>
-						<div>
-							<label className="text-xs sm:text-md font-medium text-gray-500 block mb-1">
+						<div className="min-w-0 flex-1 pl-4">
+							<p className="text-xs font-medium uppercase tracking-wide text-gray-500">
 								{t('owner.calendar.time')}
-							</label>
-							<p className="text-sm sm:text-md font-semibold text-gray-900">
-								{formatTimeSafe(booking.time, 'Time not available', salonTimezone)}
+							</p>
+							<p className="mt-1 !mb-0 text-sm font-bold leading-snug text-gray-900 sm:text-base">
+								{formatTimeSafe(booking.time, '—', salonTimezone)}
 							</p>
 						</div>
 					</div>
 
 					{/* Service */}
 					<div>
-						<label className="text-xs sm:text-sm font-medium text-gray-500 block mb-1">
+						<p className="text-xs  font-medium uppercase tracking-wide text-gray-500">
 							{t('owner.calendar.service')}
-						</label>
-						<p className="text-sm sm:text-md font-semibold text-gray-900">
-							{booking.service?.name || t('owner.unknownService')}
 						</p>
-						{booking.service?.description && (
-							<p className="text-xs sm:text-md text-gray-600 mt-1 line-clamp-2">
-								{booking.service.description}
+						<div className="flex justify-between">
+							<p className="mt-1 text-base font-bold text-gray-900">
+								{serviceName}
 							</p>
-						)}
-						<div className="flex items-center gap-3 mt-1 text-xs ms:text-md text-gray-600">
-							{booking.service?.duration && (
-								<span>{booking.service.duration} min</span>
-							)}
-							{booking.service?.price && (
-								<span>{booking.service.price.toLocaleString()}₫</span>
+
+							{durationPriceLine && (
+								<p className="mt-1 font-bold text-md text-gray-900">
+									{durationPriceLine}
+								</p>
 							)}
 						</div>
 					</div>
 
 					{/* Client & Staff */}
-					<div className="grid grid-cols-2 gap-3">
-						<div>
-							<label className="text-xs sm:text-sm font-medium text-gray-500 block mb-1">
-								{t('owner.calendar.client')}
-							</label>
-							<p className="text-sm sm:text-md font-semibold text-gray-900">
-								{booking.user?.name ||
-									`${t('owner.calendar.clientId')} ${booking.userId}`}
-							</p>
-							{booking.user?.email && (
-								<p className="text-xs sm:text-md text-gray-600 mt-0.5">
-									{booking.user.email}
+					<div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
+						<div className="flex gap-3">
+							<div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[#fff0ee] ring-1 ring-[#ff5b5b]/15">
+								<User className="h-5 w-5 text-[#ff5b5b]" strokeWidth={1.75} />
+							</div>
+							<div className="min-w-0">
+								<p className="text-xs !mb-0.5 font-medium uppercase tracking-wide text-gray-500">
+									{t('owner.calendar.client')}
 								</p>
-							)}
-							{booking.user?.phone && (
-								<p className="text-xs sm:text-md text-gray-600">{booking.user.phone}</p>
-							)}
+								<p className="mt-0.5 !mb-0.5 text-md font-bold text-gray-900">
+									{getClientLabel(booking, t)}
+								</p>
+								{booking.user?.email &&
+									!booking.user.email.includes('@anonymous.local') && (
+										<p className="mt-0.5 !mb-0.5 truncate text-xs text-gray-600">
+											{booking.user.email}
+										</p>
+									)}
+								{booking.user?.phone && (
+									<p className="text-xs !mb-0.5 text-gray-600">
+										{booking.user.phone}
+									</p>
+								)}
+							</div>
 						</div>
 
-						{booking.staff && (
-							<div>
-								<label className="text-xs sm:text-sm font-medium text-gray-500 block mb-1">
+						<div className="flex gap-3">
+							<div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[#fff0ee] ring-1 ring-[#ff5b5b]/15">
+								<User className="h-5 w-5 text-[#ff5b5b]" strokeWidth={1.75} />
+							</div>
+							<div className="min-w-0">
+								<p className="text-xs !mb-0.5 font-medium uppercase tracking-wide text-gray-500">
 									{t('owner.calendar.staffMember')}
-								</label>
-								<p className="text-sm sm:text-md font-semibold text-gray-900">
-									{booking.staff.name}
+								</p>
+								<p className="mt-0.5 text-md font-bold text-gray-900">
+									{booking.staff?.name ?? '—'}
+								</p>
+							</div>
+						</div>
+					</div>
+
+					{booking.notes &&
+						!booking.notes.startsWith('Booking for ') &&
+						!booking.notes.startsWith('Updated booking for ') && (
+							<div>
+								<p className="text-xs font-medium uppercase tracking-wide text-gray-500">
+									{t('owner.calendar.notes')}
+								</p>
+								<p className="mt-1 rounded-xl bg-gray-50/90 p-3 text-sm text-gray-700 ring-1 ring-gray-100">
+									{booking.notes}
 								</p>
 							</div>
 						)}
-					</div>
-
-					{/* Notes - only show if notes exist and are not default "Booking for..." notes */}
-					{booking.notes && 
-					 !booking.notes.startsWith('Booking for ') && 
-					 !booking.notes.startsWith('Updated booking for ') && (
-						<div className="flex justify-between items-center">
-							<label className="text-xs sm:text-sm font-medium text-gray-500 block mb-1">
-								{t('owner.calendar.notes')}
-							</label>
-							<p className="text-xs sm:text-md text-gray-700 bg-gray-50 p-2 rounded-lg">
-								{booking.notes}
-							</p>
-						</div>
-					)}
 				</div>
 
-				{/* Actions */}
-				<div className="flex items-center justify-end gap-2 p-4 border-t border-gray-200 bg-gray-50">
-					<button
-						onClick={onClose}
-						className="px-3 py-1.5 text-xs font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
-					>
-						{t('owner.calendar.close')}
-					</button>
-					{canEdit && onEdit && (
-						<button
-							onClick={() => {
-								onEdit(booking);
-								onClose();
-							}}
-							className="px-3 py-1.5 text-xs font-medium !text-white bg-[#ff5b5b] rounded-lg hover:bg-[#e04a4a] transition-colors"
-						>
-							{t('owner.calendar.edit')}
-						</button>
-					)}
-					{canCancel && onCancel && (
-						<button
-							onClick={() => {
-								if (confirm(t('owner.calendar.areYouSureCancel'))) {
-									onCancel(booking.id);
+				{/* Footer */}
+				<div className="mt-6 flex flex-col gap-3 border-t border-gray-200/80 bg-[#fafafa]/80 px-6 py-4 backdrop-blur-sm sm:flex-row sm:items-center sm:justify-between">
+					<div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+						{canCancel && onCancel && (
+							<button
+								type="button"
+								onClick={() => {
+									if (confirm(t('owner.calendar.areYouSureCancel'))) {
+										onCancel(booking.id);
+										onClose();
+									}
+								}}
+								className="text-sm font-semibold text-red-600 transition-colors hover:text-red-700"
+							>
+								{t('owner.calendar.cancel')}
+							</button>
+						)}
+						{canMarkAsNoShow && onMarkAsNoShow && (
+							<button
+								type="button"
+								onClick={() => {
+									if (confirm(t('owner.calendar.areYouSureNoShow'))) {
+										onMarkAsNoShow(booking.id);
+										onClose();
+									}
+								}}
+								className="text-sm font-semibold text-orange-600 transition-colors hover:text-orange-700"
+							>
+								{t('owner.calendar.markAsNoShow')}
+							</button>
+						)}
+					</div>
+
+					<div className="flex items-center justify-end gap-2 sm:ml-auto">
+						{canEdit && onEdit && (
+							<button
+								type="button"
+								onClick={() => {
+									onEdit(booking);
 									onClose();
-								}
-							}}
-							className="px-3 py-1.5 text-xs font-medium !text-white bg-red-600 rounded-lg hover:bg-red-700 transition-colors"
-						>
-							{t('owner.calendar.cancel')}
-						</button>
-					)}
-					{canMarkAsNoShow && onMarkAsNoShow && (
+								}}
+								className="rounded-full bg-gradient-to-r from-[#ff5b5b] to-[#ea4b4b] px-5 py-2.5 text-sm font-semibold !text-white shadow-md shadow-[#ff5b5b]/25"
+							>
+								{t('owner.calendar.edit')}
+							</button>
+						)}
 						<button
-							onClick={() => {
-								if (confirm(t('owner.calendar.areYouSureNoShow'))) {
-									onMarkAsNoShow(booking.id);
-									onClose();
-								}
-							}}
-							className="px-3 py-1.5 text-xs font-medium text-white bg-orange-600 rounded-lg hover:bg-orange-700 transition-colors"
+							type="button"
+							onClick={onClose}
+							className="rounded-full border border-gray-200/90 bg-white/90 px-5 py-2.5 text-sm font-semibold text-gray-800 shadow-sm transition hover:bg-gray-50"
 						>
-							{t('owner.calendar.markAsNoShow')}
+							{t('owner.calendar.close')}
 						</button>
-					)}
+					</div>
 				</div>
 			</div>
 		</div>

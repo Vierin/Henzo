@@ -50,6 +50,34 @@ export default function HomePageClient({
 	const t = useTranslation();
 	const router = useRouter();
 
+	// Если Supabase не принял redirectTo (нет в Allow list), отдаёт Site URL + ?code= на корне локали.
+	// Тогда нет /auth/callback и теряется type=business — чиним редиректом на callback.
+	useEffect(() => {
+		if (typeof window === 'undefined') return;
+		const params = new URLSearchParams(window.location.search);
+		const code = params.get('code');
+		if (!code) return;
+
+		const path = window.location.pathname.replace(/\/$/, '') || '/';
+		const segments = path.split('/').filter(Boolean);
+
+		let locale: string | null = null;
+		if (segments.length === 1 && isLocale(segments[0])) {
+			locale = segments[0];
+		} else if (segments.length === 0 || path === '/') {
+			locale = defaultLocale;
+		}
+		if (!locale) return;
+
+		if (isBusinessOAuthPending() && !params.get('type')) {
+			params.set('type', 'business');
+		}
+		const qs = params.toString();
+		const target = `/${locale}/auth/callback${qs ? `?${qs}` : ''}`;
+		window.history.replaceState(null, '', target);
+		router.replace(target);
+	}, [router]);
+
 	// Обработка hash токенов от Supabase magic link на главной странице
 	useEffect(() => {
 		const handleHashTokens = async () => {

@@ -340,16 +340,18 @@ export default function SalonInfoClient() {
 				if (hasExistingSalon) {
 					await apiClient.put('/salons/current', salonData);
 					await queryClient.invalidateQueries({
-						queryKey: salonKeys.current(),
+						queryKey: salonKeys.all,
 					});
+					router.refresh();
 					toast.success(t('owner.salonInfo.salonUpdated'), {
 						id: saveToast,
 					});
 				} else {
 					await apiClient.post('/salons/current', salonData);
 					await queryClient.invalidateQueries({
-						queryKey: salonKeys.current(),
+						queryKey: salonKeys.all,
 					});
+					router.refresh();
 					toast.success(t('owner.salonInfo.salonCreated'), { id: saveToast });
 				}
 			} catch (err: unknown) {
@@ -365,7 +367,7 @@ export default function SalonInfoClient() {
 				setLoading(false);
 			}
 		},
-		[formData, selectedCoords, hasExistingSalon, t, queryClient]
+		[formData, selectedCoords, hasExistingSalon, t, queryClient, router]
 	);
 
 	const handleDeleteAccount = useCallback(async () => {

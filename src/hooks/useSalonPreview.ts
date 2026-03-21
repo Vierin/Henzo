@@ -51,8 +51,8 @@ export function useSalonPreview(params: PreviewParams = {}) {
 			);
 			return response;
 		},
-		staleTime: 10 * 60 * 1000, // 10 minutes - preview data changes less frequently
-		gcTime: 30 * 60 * 1000, // 30 minutes
+		staleTime: 3 * 60 * 1000,
+		gcTime: 15 * 60 * 1000,
 	});
 }
 
@@ -65,11 +65,9 @@ export function useFeaturedSalons(limit: number = 6) {
 			);
 			return response;
 		},
-		staleTime: 24 * 60 * 60 * 1000, // 24 hours - featured salons change very rarely
-		gcTime: 24 * 60 * 60 * 1000, // 24 hours - keep in cache for a full day
-		refetchOnWindowFocus: false, // Don't refetch when user focuses window
-		refetchOnReconnect: false, // Don't refetch when reconnecting
-		refetchOnMount: false, // Don't refetch on component mount if data is fresh
+		// Was 24h + no refetch on mount — salon photos/updates never appeared on homepage cards.
+		staleTime: 2 * 60 * 1000,
+		gcTime: 15 * 60 * 1000,
 	});
 }
 

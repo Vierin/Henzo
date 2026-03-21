@@ -31,5 +31,8 @@
 	"loading": "Loading...",
 	"services": "Services",
 	"servicesOptional": "optional",
-	"allServices": "All services"
+	"allServices": "All services",
+	"selectServices": "Select services",
+	"searchServices": "Search services...",
+	"servicesSelected": "services selected"
 }

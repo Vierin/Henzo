@@ -185,11 +185,7 @@ export const useUpdateSalon = () => {
 			return apiClient.put<SalonResponseDto>('/salons/current', data);
 		},
 		onSuccess: () => {
-			// Invalidate current user salon and lists
-			queryClient.invalidateQueries({
-				queryKey: salonKeys.current(),
-			});
-			queryClient.invalidateQueries({ queryKey: salonKeys.lists() });
+			queryClient.invalidateQueries({ queryKey: salonKeys.all });
 			toast.success('Salon updated successfully!');
 		},
 		onError: (error: Error) => {

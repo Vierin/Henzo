@@ -70,10 +70,8 @@ const nextConfig: NextConfig = {
 		// P1: Tree shaking для неиспользуемого кода
 		// usedExports удалено - конфликтует с cacheUnaffected в Next.js 15
 		// Next.js уже включает usedExports по умолчанию
-		config.optimization = {
-			...config.optimization,
-			sideEffects: false,
-		};
+		// Do not set optimization.sideEffects: false — it can break CSS extraction
+		// on client navigations between route groups (Tailwind / global styles).
 
 		// P1: Lazy load puppeteer только на сервере
 		if (isServer) {

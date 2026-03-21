@@ -19,8 +19,10 @@ import { DollarSign, Users, CalendarCheck, TrendingUp } from 'lucide-react';
 import { safeParseDate } from '@/utils/date';
 import { formatVND, formatVNDCompact } from '@/utils/currency';
 import { convertBookingDtoArray } from '@/utils/bookingTransformers';
-import { useDashboardStats } from '@/hooks/useDashboardStats';
-import { useClients } from '@/hooks/useClients';
+import {
+	computeDashboardStats,
+	filterBookingsByDashboardPeriod,
+} from '@/hooks/useDashboardStats';
 import {
 	Select,
 	SelectContent,
@@ -44,17 +46,25 @@ export default function OwnerDashboardClient() {
 		isLoading: bookingsLoading,
 		error: bookingsError,
 		refetch: refetchBookings,
-	} = useBookings();
+	} = useBookings({ limit: 1500 });
 
 	const { data: services = [] } = useServices(salonId || '', {});
 	const { data: staffMembers = [] } = useStaffBySalon(salonId || '');
-	const { data: clientsResponse } = useClients('', 1);
-	const totalClients = clientsResponse?.pagination?.total ?? 0;
 
-	const bookings = convertBookingDtoArray(bookingsData);
+	const bookings = useMemo(
+		() => convertBookingDtoArray(bookingsData),
+		[bookingsData]
+	);
 
-	// Calculate stats using optimized hook
-	const stats = useDashboardStats(bookings, period);
+	const stats = useMemo(
+		() => computeDashboardStats(bookings, period),
+		[bookings, period]
+	);
+
+	const bookingsInSelectedPeriod = useMemo(
+		() => filterBookingsByDashboardPeriod(bookings, period),
+		[bookings, period]
+	);
 
 	// Pending bookings (all PENDING in fetched window — same as mobile, for confirm/reject)
 	const pendingBookings = useMemo(() => {
@@ -221,7 +231,11 @@ export default function OwnerDashboardClient() {
 					<div className="flex flex-row items-stretch sm:items-center gap-3">
 						<Select
 							value={period}
-							onValueChange={(value: '7d' | '30d' | '1y') => setPeriod(value)}
+							onValueChange={(value) => {
+								if (value === '7d' || value === '30d' || value === '1y') {
+									setPeriod(value);
+								}
+							}}
 						>
 							<SelectTrigger className="w-full sm:w-[180px] border border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#ff5b5b] text-gray-900 bg-white">
 								<SelectValue />
@@ -273,8 +287,11 @@ export default function OwnerDashboardClient() {
 					</div>
 				</div>
 
-				{/* Stats Cards */}
-				<div className="grid grid-cols-2 xl:grid-cols-4 gap-2 md:gap-6">
+				{/* Stats Cards — key forces refresh if Radix/child memo ever desyncs */}
+				<div
+					key={period}
+					className="grid grid-cols-2 xl:grid-cols-4 gap-2 md:gap-6"
+				>
 					<StatsCard
 						title={t('owner.dashboard.totalRevenue')}
 						value={formatVNDCompact(stats.revenue)}
@@ -289,9 +306,17 @@ export default function OwnerDashboardClient() {
 						}
 					/>
 					<StatsCard
-						title={t('owner.dashboard.totalClients')}
-						value={totalClients}
+						title={t('owner.dashboard.clientsInPeriod')}
+						value={stats.clients}
 						icon={<Users className="w-6 h-6" />}
+						trend={
+							stats.clientsTrend !== 0
+								? {
+										value: `${Math.abs(stats.clientsTrend)}%`,
+										isPositive: stats.clientsTrend > 0,
+									}
+								: undefined
+						}
 					/>
 					<StatsCard
 						title={t('owner.dashboard.bookings')}
@@ -347,8 +372,8 @@ export default function OwnerDashboardClient() {
 
 				{/* Two Column Grid for Top Services and Additional Metrics */}
 				<div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-					<TopServicesCard bookings={bookings} />
-					<AdditionalMetrics bookings={bookings} />
+					<TopServicesCard bookings={bookingsInSelectedPeriod} />
+					<AdditionalMetrics bookings={bookingsInSelectedPeriod} />
 				</div>
 			</div>
 

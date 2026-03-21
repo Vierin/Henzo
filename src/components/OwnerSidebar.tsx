@@ -9,6 +9,7 @@ import {
 	stripLocaleFromPath,
 	extractLocaleFromPath,
 	withLocale,
+	hardNavigateToLocalePath,
 } from '@/i18n/routing';
 import {
 	LayoutDashboard,
@@ -161,9 +162,7 @@ export default function OwnerSidebar({
 		} catch (error) {
 			console.error('Logout error:', error);
 		} finally {
-			// После logout всегда ведём на главную с локалью
-			const homeUrl = withLocale('/', currentLocale as 'en' | 'ru' | 'vi');
-			router.replace(homeUrl);
+			hardNavigateToLocalePath('/', currentLocale as 'en' | 'ru' | 'vi');
 		}
 	};
 

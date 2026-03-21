@@ -103,6 +103,7 @@
 	"noBookingsWithFilters": "No bookings found with the current filters",
 	"tryAgain": "Try again",
 	"edit": "Edit",
+	"anonymousClient": "Anonymous client",
 	"cancel": "Cancel",
 	"confirmed": "Confirmed",
 	"cancelled": "Cancelled",

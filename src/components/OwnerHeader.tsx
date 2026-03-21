@@ -8,6 +8,7 @@ import { useSalon } from '@/hooks/useSalons';
 import { supabase } from '@/lib/supabase';
 import {
 	extractLocaleFromPath,
+	hardNavigateToLocalePath,
 	stripLocaleFromPath,
 	withLocale,
 } from '@/i18n/routing';
@@ -88,8 +89,7 @@ export default function OwnerHeader() {
 		} catch (error) {
 			console.error('Logout error:', error);
 		} finally {
-			const homeUrl = withLocale('/', currentLocale as 'en' | 'ru' | 'vi');
-			router.replace(homeUrl);
+			hardNavigateToLocalePath('/', currentLocale as 'en' | 'ru' | 'vi');
 		}
 	};
 
