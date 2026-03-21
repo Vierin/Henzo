@@ -1,6 +1,12 @@
 'use client';
 
-import React, { useRef, useState, useCallback, useEffect, useMemo } from 'react';
+import React, {
+	useRef,
+	useState,
+	useCallback,
+	useEffect,
+	useMemo,
+} from 'react';
 import { Clock, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useTranslation } from '@/contexts/LanguageContext';
 
@@ -10,9 +16,7 @@ interface BookingTimeSelectorProps {
 	selectedTime: string;
 	onTimeSelect: (time: string) => void;
 	timeFilter: 'morning' | 'afternoon' | 'evening';
-	onTimeFilterChange: (
-		filter: 'morning' | 'afternoon' | 'evening'
-	) => void;
+	onTimeFilterChange: (filter: 'morning' | 'afternoon' | 'evening') => void;
 	isTimeSlotAvailable: (timeSlot: string, selectedStaffId?: string) => boolean;
 	selectedStaff?: string;
 	timeSlotsLoading: boolean;
@@ -93,7 +97,7 @@ export default function BookingTimeSelector({
 			if (!isDragging || !timeScrollRef.current) return;
 			const x = e.pageX - timeScrollRef.current.offsetLeft;
 			const distance = Math.abs(x - startX);
-			
+
 			// Only prevent default and scroll if moved more than 5 pixels (to distinguish from click)
 			if (distance > 5) {
 				e.preventDefault();
@@ -245,9 +249,9 @@ export default function BookingTimeSelector({
 							msOverflowStyle: 'none',
 						}}
 					>
-					{filteredTimeSlots.map((timeSlot) => {
-						const time = timeSlot; // timeSlot теперь всегда string
-						const available = availabilityMap.get(time) ?? true;
+						{filteredTimeSlots.map((timeSlot) => {
+							const time = timeSlot; // timeSlot теперь всегда string
+							const available = availabilityMap.get(time) ?? true;
 							const isSelected = selectedTime === time;
 
 							return (
@@ -274,7 +278,7 @@ export default function BookingTimeSelector({
 										!available
 											? 'bg-gray-100 text-gray-400 cursor-not-allowed'
 											: isSelected
-												? 'bg-[#ff5b5b] text-white'
+												? 'bg-[#ff5b5b] !text-white'
 												: 'bg-white text-gray-900 border border-gray-200 hover:bg-gray-50'
 									}`}
 								>
@@ -307,13 +311,3 @@ export default function BookingTimeSelector({
 		</div>
 	);
 }
-
-
-
-
-
-
-
-
-
-

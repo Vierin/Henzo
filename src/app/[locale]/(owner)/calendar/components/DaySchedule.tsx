@@ -923,7 +923,7 @@ export default function DaySchedule({
 									className={cn(
 										'flex-1 flex flex-col items-center justify-center py-1 px-1 sm:py-2 sm:px-2 rounded-lg sm:rounded-xl border-2 transition-all min-h-[70px] sm:min-h-[80px] md:min-h-[120px] h-[50px] sm:h-[80px] md:h-[120px] min-w-[45px] sm:min-w-[70px]',
 										dayInfo.isClosed
-											? 'border-gray-200 bg-gray-50 text-gray-300 cursor-not-allowed'
+											? 'border-gray-200 bg-gray-200 opacity-50 !text-gray-300 cursor-not-allowed'
 											: isSelected
 												? 'border-[#ff5b5b] bg-[#ff5b5b] text-white shadow-lg'
 												: 'border-gray-200 bg-white hover:border-[#ff5b5b] hover:shadow-md'
@@ -1022,7 +1022,8 @@ export default function DaySchedule({
 									onClick={clearAllFilters}
 									className="text-xs md:text-sm flex items-center gap-1 text-gray-500 hover:text-gray-700 font-medium flex-shrink-0 whitespace-nowrap underline"
 								>
-									{t('owner.calendar.clearAll')} <X className="w-3 h-3 md:w-4 md:h-4" />
+									{t('owner.calendar.clearAll')}{' '}
+									<X className="w-3 h-3 md:w-4 md:h-4" />
 								</button>
 							)}
 						</div>

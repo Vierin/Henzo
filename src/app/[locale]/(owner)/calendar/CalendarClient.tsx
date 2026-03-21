@@ -571,6 +571,7 @@ export default function CalendarClient() {
 				onClose={handleBookingModalClose}
 				service={selectedService}
 				showServiceSelector={true}
+				noDefaultService
 				salonId={salonId || undefined}
 				workingHours={salonData?.workingHours}
 				editingBooking={editingBooking}

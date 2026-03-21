@@ -271,7 +271,7 @@ export default function BookingDateSelector({
 								disabled={!!date.isClosed}
 								className={`flex-1 flex flex-col items-center justify-center py-1 px-1 sm:py-3 sm:px-2 rounded-xl border-2 transition-all min-h-[50px] sm:min-h-[80px] ${
 									date.isClosed
-										? 'border-gray-200 bg-gray-50 text-gray-300 cursor-not-allowed'
+										? 'border-gray-200 bg-gray-200 opacity-50 !text-gray-300 cursor-not-allowed'
 										: isSelected
 											? 'border-[#ff5b5b] bg-[#ff5b5b] !text-white shadow-lg'
 											: 'border-gray-200 bg-white hover:border-[#ff5b5b] hover:shadow-md'

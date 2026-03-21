@@ -66,6 +66,8 @@ interface BookingModalProps {
 	onClose: () => void;
 	service?: Service;
 	showServiceSelector?: boolean; // Новый пропс для показа выпадающего списка услуг
+	/** Не подставлять первую услугу — выбор только вручную (календарь владельца) */
+	noDefaultService?: boolean;
 	salonId?: string; // ID салона для загрузки услуг и персонала
 	salonName?: string; // Название салона для отображения
 	workingHours?: WorkingHours; // Рабочие часы салона
@@ -78,6 +80,7 @@ export default function BookingModal({
 	onClose,
 	service,
 	showServiceSelector = false,
+	noDefaultService = false,
 	salonId,
 	salonName,
 	workingHours,
@@ -555,11 +558,26 @@ export default function BookingModal({
 	useEffect(() => {
 		if (service) {
 			setSelectedService(service);
-		} else if (showServiceSelector && servicesForStaff.length > 0) {
-			// Если показываем селектор услуг и есть услуги, выбираем первую из доступных для работника
-			setSelectedService(servicesForStaff[0]);
+			return;
 		}
-	}, [service, showServiceSelector, servicesForStaff]);
+		if (editingBooking) {
+			return;
+		}
+		if (showServiceSelector) {
+			if (noDefaultService) {
+				setSelectedService(null);
+			} else if (servicesForStaff.length > 0) {
+				setSelectedService(servicesForStaff[0]);
+			}
+		}
+	}, [
+		service,
+		showServiceSelector,
+		noDefaultService,
+		servicesForStaff,
+		editingBooking,
+		setSelectedService,
+	]);
 
 	// Filter staff members by selected service (which services they can perform)
 	const staffMembersForService = useMemo(() => {
