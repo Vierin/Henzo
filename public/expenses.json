@@ -1,0 +1,35 @@
+{
+	"2025-10": {
+		"Digital ocean": 7,
+		"Supabase": 0,
+		"Vercel": 0,
+		"Brevo": 0,
+		"Email (Hostinger)": 2,
+		"Other": 0,
+		"Domain (OVH)": 9
+	},
+	"2025-11": {
+		"Digital ocean": 7,
+		"Supabase": 0,
+		"Vercel": 0,
+		"Brevo": 0,
+		"Email (Hostinger)": 2,
+		"Other": 0
+	},
+	"2025-12": {
+		"Digital ocean": 7,
+		"Supabase": 0,
+		"Vercel": 0,
+		"Brevo": 0,
+		"Email (Hostinger)": 2,
+		"Other": 0
+	},
+	"2026-01": {
+		"Digital ocean": 7,
+		"Supabase": 0,
+		"Vercel": 0,
+		"Brevo": 0,
+		"Email (Hostinger)": 0,
+		"Other": 0
+	}
+}

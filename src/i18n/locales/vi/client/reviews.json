@@ -1,0 +1,26 @@
+{
+	"title": "Đánh giá của bạn",
+	"subtitle": "Xem tất cả các đánh giá bạn đã để lại cho salon",
+	"noReviewsYet": "Chưa có đánh giá",
+	"noReviewsDescription": "Hoàn thành đặt chỗ để để lại đánh giá đầu tiên của bạn",
+	"viewYourBookings": "Xem đặt chỗ của bạn",
+	"errorLoadingReviews": "Lỗi tải đánh giá",
+	"failedToLoadReviews": "Không thể tải đánh giá",
+	"loadingYourReviews": "Đang tải đánh giá của bạn...",
+	"leaveReview": "Để lại đánh giá",
+	"howWasYourExperience": "Trải nghiệm của bạn như thế nào?",
+	"rating1": "Kém",
+	"rating2": "Tạm được",
+	"rating3": "Tốt",
+	"rating4": "Rất tốt",
+	"rating5": "Xuất sắc",
+	"shareYourExperience": "Chia sẻ trải nghiệm của bạn (tùy chọn)",
+	"commentPlaceholder": "Kể cho người khác về trải nghiệm của bạn...",
+	"submitting": "Đang gửi...",
+	"submitReview": "Gửi đánh giá",
+	"pleaseSelectRating": "Vui lòng chọn đánh giá",
+	"unknownSalon": "Salon không xác định",
+	"editReview": "Chỉnh sửa đánh giá",
+	"updateReview": "Cập nhật đánh giá"
+}
+

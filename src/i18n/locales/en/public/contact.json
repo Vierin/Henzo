@@ -1,0 +1,59 @@
+{
+	"title": "CONTACT US",
+	"heroTitle": "We're here to help",
+	"heroSubtitle": "Have a question, comment, or concern? Our team is ready to assist you.",
+	"formTitle": "Send us a message",
+	"formSubtitle": "Fill out the form and we'll get back to you.",
+	"nameLabel": "Your name",
+	"namePlaceholder": "Your name",
+	"emailLabel": "Your email",
+	"emailPlaceholder": "Your email",
+	"messageLabel": "Your message",
+	"messagePlaceholder": "Your message",
+	"sending": "Sending...",
+	"sendMessage": "Send Message",
+	"sendingStatus": "Sending your message...",
+	"readyStatus": "Ready to send message",
+	"successMessage": "Your message has been sent successfully! We'll get back to you soon.",
+	"errorMessage": "Failed to send message. Please try again.",
+	"networkError": "Network error. Please check your connection and try again.",
+	"contactInfoTitle": "Contact Information",
+	"contactInfoSubtitle": "Reach out to us via email or phone.",
+	"email": "Email",
+	"emailDescription": "For general inquiries",
+	"faqTitle": "Frequently Asked Questions",
+	"faqSubtitle": "Answers to popular questions.",
+	"faq": {
+		"tabGeneral": "General",
+		"tabBusiness": "For business",
+		"tabAccount": "Account",
+		"general": {
+			"q1": "What is Henzo?",
+			"a1": "Henzo is a platform for salons: your own booking link, one calendar, client base, and email reminders. Clients book via your link or on the site.",
+			"q2": "How do I get started?",
+			"a2": "Salon owner: click \"Get 3 months free\" on the business page, fill in the form, and set up your salon. Client: open your salon's booking link and choose a time.",
+			"q3": "In which countries and languages is Henzo available?",
+			"a3": "We currently operate in Vietnam and plan to expand to other countries over time. The interface is available in English, Russian and Vietnamese."
+		},
+		"business": {
+			"q1": "How do I connect my salon?",
+			"a1": "Register on the business page, confirm your email, then fill in your salon details: address, services, staff and schedule.",
+			"q2": "Is there a free trial?",
+			"a2": "Yes. 3 months free, then a monthly subscription (390,000 VND/month).",
+			"q3": "What's included in the subscription?",
+			"a3": "Online booking 24/7, one calendar for all staff, client base with visit history, email reminders, your booking link and QR, revenue and reports.",
+			"q4": "Do clients pay online?",
+			"a4": "No. Payment is made at the salon.",
+			"q5": "How do I cancel my subscription?",
+			"a5": "You can cancel in your account subscription settings. Access continues until the end of the paid period."
+		},
+		"account": {
+			"q1": "How do I create an account?",
+			"a1": "For salon owners: use the business page and sign up with email or Google. For clients: use the salon's booking link or register on the site.",
+			"q2": "I forgot my password. How do I reset it?",
+			"a2": "Click \"Forgot password\" on the login page, enter your email, and we'll send you a reset link.",
+			"q3": "How do I update my information?",
+			"a3": "Log in and go to Profile settings (for personal data) or Salon info (for business details)."
+		}
+	}
+}

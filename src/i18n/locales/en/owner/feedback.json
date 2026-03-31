@@ -1,0 +1,12 @@
+{
+	"title": "Send Feedback",
+	"subtitle": "Report an issue or suggest an improvement",
+	"placeholder": "Describe the issue or your suggestion...",
+	"send": "Send",
+	"sending": "Sending...",
+	"pleaseEnterMessage": "Please enter a message",
+	"thankYou": "Thank you for your feedback!",
+	"failedToSend": "Failed to send feedback. Please try again.",
+	"sendFeedback": "Send feedback",
+	"close": "Close"
+}

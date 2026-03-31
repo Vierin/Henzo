@@ -59,3 +59,9 @@ turbo-*.log
 .cursorrules
 # Local notes
 apps/frontend/TODO.txt
+# Legacy / additional local patterns
+/.pnp
+.pnp.js
+*.pem
+.vercel
+next-env.d.ts
