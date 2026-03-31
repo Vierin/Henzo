@@ -13,6 +13,10 @@ import { useTranslation } from '@/contexts/LanguageContext';
 export default function MapSearchClient() {
 	const t = useTranslation();
 	const [selectedSalon, setSelectedSalon] = useState<Salon | null>(null);
+	const [userLocation, setUserLocation] = useState<{
+		lat: number;
+		lng: number;
+	} | null>(null);
 	const [mapCenter, setMapCenter] = useState<{ lat: number; lng: number }>({
 		lat: 16.0544, // Da Nang coordinates (fallback if geolocation denied)
 		lng: 108.2022,
@@ -56,9 +60,14 @@ export default function MapSearchClient() {
 			setIsLoadingLocation(true);
 			navigator.geolocation.getCurrentPosition(
 				(position) => {
-					setMapCenter({
+					const coords = {
 						lat: position.coords.latitude,
 						lng: position.coords.longitude,
+					};
+					setUserLocation(coords);
+					setMapCenter({
+						lat: coords.lat,
+						lng: coords.lng,
 					});
 					setZoom(14);
 					setIsLoadingLocation(false);
@@ -146,6 +155,7 @@ export default function MapSearchClient() {
 					selectedSalon={selectedSalon}
 					onMapBoundsChange={handleMapBoundsChange}
 					selectedCategories={selectedCategories}
+					userLocation={userLocation}
 				/>
 
 				{/* Mobile: Button to open bottom sheet */}

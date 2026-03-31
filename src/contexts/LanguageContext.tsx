@@ -20,6 +20,7 @@ import {
 } from '@/i18n/useTranslations';
 import type { TranslationModule } from '@/i18n/modules';
 import { storage } from '@/utils/storage';
+import LoadingFallback from '@/components/LoadingFallback';
 
 type Language = Locale;
 
@@ -300,7 +301,8 @@ export function LanguageProvider({
 		modulesToLoad.push('public/salon');
 	}
 
-	const { dictionary: additionalDict } = useModuleTranslations(
+	const { dictionary: additionalDict, isLoading: isAdditionalLoading } =
+		useModuleTranslations(
 		modulesToLoad,
 		language
 	);
@@ -465,9 +467,17 @@ export function LanguageProvider({
 		[language, setLanguage, tWrapper]
 	);
 
+	const isPublicPage = !isOwnerPage && !isClientPage;
+	const shouldShowTranslationLoader =
+		isPublicPage && modulesToLoad.length > 0 && isAdditionalLoading;
+
 	return (
 		<LanguageContext.Provider value={value}>
-			{children}
+			{shouldShowTranslationLoader ? (
+				<LoadingFallback message="" fullScreen={true} />
+			) : (
+				children
+			)}
 		</LanguageContext.Provider>
 	);
 }

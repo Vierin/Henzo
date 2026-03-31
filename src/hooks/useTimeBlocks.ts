@@ -7,6 +7,7 @@ import {
 	TimeBlockDto,
 } from '@/types/dto/time-block.dto';
 import toast from 'react-hot-toast';
+import { useAuth } from '@/lib/auth-unified';
 
 // Query keys
 export const timeBlockKeys = {
@@ -76,7 +77,11 @@ export const useTimeBlocks = (filters?: {
 	type?: 'TIME_OFF' | 'BUSY' | 'CLOSURE';
 	startDate?: string;
 	endDate?: string;
-}) => {
+}, options?: { enabled?: boolean }) => {
+	const { user, isLoading: authLoading, isOwner } = useAuth();
+	const isQueryEnabled =
+		(options?.enabled ?? true) && !authLoading && !!user && isOwner();
+
 	return useQuery({
 		queryKey: timeBlockKeys.list(filters || {}),
 		queryFn: async (): Promise<TimeBlock[]> => {
@@ -94,6 +99,7 @@ export const useTimeBlocks = (filters?: {
 			const response = await apiClient.get<TimeBlockDto[]>(endpoint);
 			return (response || []).map(convertTimeBlockDtoToTimeBlock);
 		},
+		enabled: isQueryEnabled,
 		staleTime: 15 * 60 * 1000, // P2: 15 minutes - блокировки времени меняются редко
 		refetchOnMount: false, // Не перезапрашивать если данные свежие
 		refetchOnWindowFocus: false, // Не перезапрашивать при фокусе окна

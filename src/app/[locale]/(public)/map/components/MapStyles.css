@@ -52,3 +52,27 @@
 	background-color: #f9fafb !important;
 	color: #111827 !important;
 }
+
+.user-location-marker {
+	background: transparent !important;
+	border: none !important;
+}
+
+.user-location-dot {
+	width: 14px;
+	height: 14px;
+	border-radius: 50%;
+	background: #ff5b5b;
+	border: 2px solid #ffffff;
+	animation: pulseDot 1.7s infinite cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@keyframes pulseDot {
+	0%,
+	100% {
+		box-shadow: 0 0 0 0px rgba(255, 91, 91, 0.2);
+	}
+	50% {
+		box-shadow: 0 0 0 12px rgba(255, 91, 91, 0.2);
+	}
+}

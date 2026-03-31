@@ -51,6 +51,7 @@ export default function ServiceAutocomplete({
 
 	// Cache for search results
 	const searchCache = useRef<Map<string, SuggestionGroup[]>>(new Map());
+	const popularCacheRef = useRef<Map<string, SuggestionGroup[]>>(new Map());
 
 	// request abort controller
 	const abortRef = useRef<AbortController | null>(null);
@@ -151,6 +152,39 @@ export default function ServiceAutocomplete({
 	);
 
 	const fetchInitialSuggestions = useCallback(async () => {
+		const cacheKey = `${language}-popular-10`;
+		const localStorageKey = `service-autocomplete:${cacheKey}`;
+
+		// 1) Fast in-memory cache for current session
+		if (popularCacheRef.current.has(cacheKey)) {
+			setSuggestionGroups(popularCacheRef.current.get(cacheKey) || []);
+			return;
+		}
+
+		// 2) Persistent client cache for 24h
+		if (typeof window !== 'undefined') {
+			try {
+				const raw = window.localStorage.getItem(localStorageKey);
+				if (raw) {
+					const parsed = JSON.parse(raw) as {
+						at: number;
+						data: SuggestionGroup[];
+					};
+					if (
+						parsed &&
+						Array.isArray(parsed.data) &&
+						Date.now() - parsed.at < 24 * 60 * 60 * 1000
+					) {
+						popularCacheRef.current.set(cacheKey, parsed.data);
+						setSuggestionGroups(parsed.data);
+						return;
+					}
+				}
+			} catch {
+				// ignore malformed local cache
+			}
+		}
+
 		setLoading(true);
 		try {
 			const apiLang =
@@ -161,7 +195,7 @@ export default function ServiceAutocomplete({
 			const popularServices = result?.data ?? [];
 
 			if (result?.success && popularServices.length > 0) {
-				setSuggestionGroups([
+				const groups: SuggestionGroup[] = [
 					{
 						type: 'recommended',
 						title: t('homepage.popularServices') || 'Popular Services',
@@ -171,7 +205,19 @@ export default function ServiceAutocomplete({
 							type: 'recommended' as const,
 						})),
 					},
-				]);
+				];
+				setSuggestionGroups(groups);
+				popularCacheRef.current.set(cacheKey, groups);
+				if (typeof window !== 'undefined') {
+					try {
+						window.localStorage.setItem(
+							localStorageKey,
+							JSON.stringify({ at: Date.now(), data: groups })
+						);
+					} catch {
+						// ignore localStorage quota issues
+					}
+				}
 			}
 		} catch (error) {
 			console.error('Error fetching initial suggestions:', error);

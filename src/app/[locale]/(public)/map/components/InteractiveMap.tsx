@@ -31,6 +31,7 @@ const Marker = dynamic(
 
 interface InteractiveMapProps {
 	center: { lat: number; lng: number };
+	userLocation?: { lat: number; lng: number } | null;
 	zoom: number;
 	onMarkerClick: (salon: Salon) => void;
 	selectedSalon: Salon | null;
@@ -45,6 +46,7 @@ interface InteractiveMapProps {
 
 export default function InteractiveMap({
 	center,
+	userLocation = null,
 	zoom,
 	onMarkerClick,
 	selectedSalon,
@@ -170,6 +172,22 @@ export default function InteractiveMap({
 		});
 	}, [leafletLoaded, L, displaySalons, onMarkerClick, createCustomIcon]);
 
+	const userMarker = useMemo(() => {
+		if (!leafletLoaded || !L || !userLocation) return null;
+		return (
+			<Marker
+				key="user-location"
+				position={[userLocation.lat, userLocation.lng]}
+				icon={L.divIcon({
+					className: 'user-location-marker',
+					html: '<div class="user-location-dot"></div>',
+					iconSize: [18, 18],
+					iconAnchor: [9, 9],
+				})}
+			/>
+		);
+	}, [leafletLoaded, userLocation]);
+
 	// Update map center when center prop changes
 	useEffect(() => {
 		if (mapInstance && center) {
@@ -251,6 +269,8 @@ export default function InteractiveMap({
 
 				{/* Salon markers */}
 				{salonMarkers}
+				{/* Current user location marker */}
+				{userMarker}
 			</MapContainer>
 		</div>
 	);

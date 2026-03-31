@@ -4,7 +4,6 @@ import Link from 'next/link';
 import { useState, useEffect, useTransition } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import { useQueryClient } from '@tanstack/react-query';
-import { useAuthStore } from '@/stores/authStore';
 import {
 	stripLocaleFromPath,
 	extractLocaleFromPath,
@@ -16,11 +15,7 @@ import {
 	CalendarDays,
 	Scissors,
 	Users,
-	TrendingUp,
 	Settings,
-	UserCircle,
-	Menu,
-	X,
 	LogOut,
 	ChevronDown,
 	ChevronUp,
@@ -50,7 +45,7 @@ export default function OwnerSidebar({
 	const pathname = usePathname();
 	const router = useRouter();
 	// Use unified auth system for consistent logout across public and owner parts
-	const { logout } = useAuth();
+	const { logout, user, isLoading: authLoading, isOwner } = useAuth();
 	const queryClient = useQueryClient();
 	const { salonId } = useSalonId();
 	const t = useTranslation();
@@ -83,6 +78,11 @@ export default function OwnerSidebar({
 				currentLocale as 'en' | 'ru' | 'vi'
 			);
 			router.prefetch(hrefWithLocale);
+
+			// Protected APIs need Bearer — skip until session + owner are ready
+			if (authLoading || !user || !isOwner()) {
+				return;
+			}
 
 			// Then prefetch data in parallel
 			switch (page) {

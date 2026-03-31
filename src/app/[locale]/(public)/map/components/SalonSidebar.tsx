@@ -10,7 +10,6 @@ import {
 	sortSalonsByDistance,
 } from '@/utils/mapUtils';
 import { generateSalonSlug } from '@/utils/slug';
-import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { useTranslation } from '@/contexts/LanguageContext';
 import {
@@ -19,6 +18,7 @@ import {
 	getCategoryTranslatedName,
 } from '@/hooks/useCategories';
 import SalonImagePlaceholder from '@/components/SalonImagePlaceholder';
+import SalonImage from '@/components/SalonImage';
 import {
 	Select,
 	SelectContent,
@@ -61,7 +61,10 @@ export default function SalonSidebar({
 			filteredSalons = allSalons.filter((salon: any) => {
 				// Check if salon has services in selected categories
 				// First try serviceCategoryIds (from optimized findFeaturedSalons)
-				if (salon.serviceCategoryIds && Array.isArray(salon.serviceCategoryIds)) {
+				if (
+					salon.serviceCategoryIds &&
+					Array.isArray(salon.serviceCategoryIds)
+				) {
 					return salon.serviceCategoryIds.some((id: number) =>
 						selectedCategories.includes(id)
 					);
@@ -244,7 +247,7 @@ export default function SalonSidebar({
 							<div
 								key={salon.id}
 								onClick={() => onSalonSelect(salon)}
-								className={`bg-white border-2 rounded-lg p-4 cursor-pointer transition-all duration-200 ${
+								className={`bg-white border-2 rounded-lg p-2.5 cursor-pointer transition-all duration-200 ${
 									selectedSalon?.id === salon.id
 										? 'border-[#ff5b5b] shadow-lg ring-1 ring-[#ff5b5b] ring-opacity-20 bg-[#fff7f6]'
 										: 'border-gray-200 hover:shadow-md hover:border-[#ff5b5b]'
@@ -256,22 +259,13 @@ export default function SalonSidebar({
 										{salon.photos &&
 										salon.photos.length > 0 &&
 										salon.photos[0] ? (
-											(() => {
-												try {
-													new URL(salon.photos[0]);
-													return (
-														<Image
-															src={salon.photos[0]}
-															alt={salon.name}
-															width={80}
-															height={80}
-															className="w-full h-full object-cover"
-														/>
-													);
-												} catch {
-													return <SalonImagePlaceholder size={80} />;
-												}
-											})()
+											<SalonImage
+												src={salon.photos[0]}
+												alt={salon.name}
+												width={80}
+												height={80}
+												className="w-full h-full object-cover"
+											/>
 										) : (
 											<SalonImagePlaceholder size={80} />
 										)}
@@ -287,7 +281,6 @@ export default function SalonSidebar({
 											<MapPin size={12} />
 											<span className="text-sm truncate">{salon.address}</span>
 										</div>
-
 
 										<div className="flex items-center justify-between gap-2">
 											{/* Rating */}
@@ -311,12 +304,11 @@ export default function SalonSidebar({
 											{/* Action Button */}
 											<button
 												onClick={(e) => handleViewSalon(salon, e)}
-												className="w-full border border-[#ff4545] bg-[#fff7f6] text-[#ff5b5b] max-w-[60%] px-4 py-2 rounded-lg text-sm font-medium hover:bg-[#ffe8e6] transition-colors"
+												className="w-full ml-auto border border-[#ff4545] bg-[#fff7f6] text-[#ff5b5b] max-w-[60%] px-4 py-2 rounded-lg text-sm font-medium hover:bg-[#ffe8e6] transition-colors"
 											>
 												{t.map.viewSalon}
 											</button>
 										</div>
-										
 									</div>
 								</div>
 							</div>
