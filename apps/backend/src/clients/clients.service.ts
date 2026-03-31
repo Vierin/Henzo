@@ -44,9 +44,7 @@ export class ClientsService {
       const searchPattern = search ? `%${search}%` : '%';
 
       // Total count of distinct clients (with optional search)
-      const countResult = await this.prisma.$queryRawUnsafe<
-        [{ count: bigint }]
-      >(
+      const countResult = (await this.prisma.$queryRawUnsafe(
         `SELECT COUNT(*)::int as count FROM (
           SELECT b."userId" FROM "Booking" b
           INNER JOIN "User" u ON u.id = b."userId"
@@ -56,7 +54,7 @@ export class ClientsService {
         ) sub`,
         salonIds,
         searchPattern,
-      );
+      )) as Array<{ count: bigint | number }>;
       const total = Number(countResult[0]?.count ?? 0);
 
       if (total === 0) {
@@ -74,9 +72,7 @@ export class ClientsService {
       }
 
       // One page of userIds ordered by last booking date desc
-      const userIdRows = await this.prisma.$queryRawUnsafe<
-        { userId: string }[]
-      >(
+      const userIdRows = (await this.prisma.$queryRawUnsafe(
         `SELECT b."userId" FROM "Booking" b
          INNER JOIN "User" u ON u.id = b."userId"
          WHERE b."salonId" = ANY($1::text[]) AND u.email NOT LIKE '%@anonymous.local%'
@@ -88,7 +84,7 @@ export class ClientsService {
         searchPattern,
         limit,
         skip,
-      );
+      )) as Array<{ userId: string }>;
 
       const userIds = userIdRows.map((r) => r.userId);
       if (userIds.length === 0) {

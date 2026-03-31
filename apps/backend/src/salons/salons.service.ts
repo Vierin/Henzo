@@ -1813,7 +1813,10 @@ export class SalonsService {
     });
 
     // Create maps for quick lookup
-    const ratingMap = new Map(
+    const ratingMap = new Map<
+      string,
+      { avgRating: number; reviewCount: number }
+    >(
       ratingAggregates.map((agg) => [
         agg.salonId,
         {
@@ -1836,8 +1839,8 @@ export class SalonsService {
         categoryMap.set(item.salonId, new Set());
         categoryIdsMap.set(item.salonId, new Set());
       }
-      categoryMap.get(item.salonId)!.add(categoryName);
-      categoryIdsMap.get(item.salonId)!.add(item.serviceCategoryId);
+      categoryMap.get(item.salonId)?.add(categoryName);
+      categoryIdsMap.get(item.salonId)?.add(item.serviceCategoryId);
     });
 
     // Enrich salons with aggregated data
