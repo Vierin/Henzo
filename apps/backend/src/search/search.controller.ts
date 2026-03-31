@@ -109,9 +109,9 @@ export class SearchController {
       );
       return { success: true, data: results };
     } catch (error) {
-      console.error('❌ Core suggest failed:', (error as any).message);
+      console.error('❌ Core suggest failed:', error.message);
       throw new HttpException(
-        (error as any).message || 'Core suggest failed',
+        error.message || 'Core suggest failed',
         HttpStatus.BAD_REQUEST,
       );
     }
@@ -119,7 +119,10 @@ export class SearchController {
 
   @Public()
   @Get('popular/recommended')
-  @Header('Cache-Control', 'public, max-age=86400, stale-while-revalidate=43200')
+  @Header(
+    'Cache-Control',
+    'public, max-age=86400, stale-while-revalidate=43200',
+  )
   async getPopularRecommended(
     @Query('lang') language: string = 'en',
     @Query('limit') limit?: string,
@@ -134,9 +137,9 @@ export class SearchController {
       );
       return { success: true, data: results };
     } catch (error) {
-      console.error('❌ Get popular recommended failed:', (error as any).message);
+      console.error('❌ Get popular recommended failed:', error.message);
       throw new HttpException(
-        (error as any).message || 'Failed to get popular recommended',
+        error.message || 'Failed to get popular recommended',
         HttpStatus.BAD_REQUEST,
       );
     }
@@ -157,9 +160,9 @@ export class SearchController {
       const results = await this.searchService.unifiedSuggest(q, lang, take);
       return { success: true, data: results };
     } catch (error) {
-      console.error('❌ Unified suggest failed:', (error as any).message);
+      console.error('❌ Unified suggest failed:', error.message);
       throw new HttpException(
-        (error as any).message || 'Unified suggest failed',
+        error.message || 'Unified suggest failed',
         HttpStatus.BAD_REQUEST,
       );
     }

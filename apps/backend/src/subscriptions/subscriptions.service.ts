@@ -259,7 +259,7 @@ export class SubscriptionsService {
     if (session.status !== 'complete') {
       return { ok: false, error: 'Session not complete' };
     }
-    const metaUserId = session.metadata?.userId as string | undefined;
+    const metaUserId = session.metadata?.userId;
     if (metaUserId && metaUserId !== userId) {
       return { ok: false, error: 'Session does not belong to this user' };
     }

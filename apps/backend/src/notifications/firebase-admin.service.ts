@@ -15,7 +15,7 @@ export class FirebaseAdminService implements OnModuleInit {
 
   private initializeFirebase() {
     this.logger.log('🔧 Initializing Firebase Admin SDK...');
-    
+
     try {
       // Check if Firebase is already initialized
       if (admin.apps.length > 0) {
@@ -25,23 +25,34 @@ export class FirebaseAdminService implements OnModuleInit {
       }
 
       // Try to get service account from environment
-      this.logger.log('📋 Checking FIREBASE_SERVICE_ACCOUNT environment variable...');
+      this.logger.log(
+        '📋 Checking FIREBASE_SERVICE_ACCOUNT environment variable...',
+      );
       const serviceAccountJson = this.configService.get<string>(
         'FIREBASE_SERVICE_ACCOUNT',
       );
 
       if (serviceAccountJson) {
-        this.logger.log(`📋 FIREBASE_SERVICE_ACCOUNT found (length: ${serviceAccountJson.length} chars)`);
+        this.logger.log(
+          `📋 FIREBASE_SERVICE_ACCOUNT found (length: ${serviceAccountJson.length} chars)`,
+        );
         try {
           const serviceAccount = JSON.parse(serviceAccountJson);
-          this.logger.log(`📋 Parsed Service Account JSON, project_id: ${serviceAccount.project_id || 'N/A'}`);
+          this.logger.log(
+            `📋 Parsed Service Account JSON, project_id: ${serviceAccount.project_id || 'N/A'}`,
+          );
           this.app = admin.initializeApp({
             credential: admin.credential.cert(serviceAccount),
           });
-          this.logger.log('✅ Firebase Admin initialized with Service Account (from env variable)');
+          this.logger.log(
+            '✅ Firebase Admin initialized with Service Account (from env variable)',
+          );
           return;
         } catch (error) {
-          this.logger.error('❌ Failed to parse FIREBASE_SERVICE_ACCOUNT JSON:', error);
+          this.logger.error(
+            '❌ Failed to parse FIREBASE_SERVICE_ACCOUNT JSON:',
+            error,
+          );
           this.logger.warn('⚠️ Trying file path instead...');
         }
       } else {
@@ -49,17 +60,21 @@ export class FirebaseAdminService implements OnModuleInit {
       }
 
       // Try to get service account file path
-      this.logger.log('📋 Checking FIREBASE_SERVICE_ACCOUNT_PATH environment variable...');
+      this.logger.log(
+        '📋 Checking FIREBASE_SERVICE_ACCOUNT_PATH environment variable...',
+      );
       const serviceAccountPath = this.configService.get<string>(
         'FIREBASE_SERVICE_ACCOUNT_PATH',
       );
 
       if (serviceAccountPath) {
-        this.logger.log(`📋 FIREBASE_SERVICE_ACCOUNT_PATH found: ${serviceAccountPath}`);
+        this.logger.log(
+          `📋 FIREBASE_SERVICE_ACCOUNT_PATH found: ${serviceAccountPath}`,
+        );
         try {
           const fs = require('fs');
           const path = require('path');
-          
+
           // Try multiple path resolutions
           const pathsToTry = [
             path.resolve(process.cwd(), serviceAccountPath),
@@ -67,7 +82,7 @@ export class FirebaseAdminService implements OnModuleInit {
             path.resolve(__dirname, '../../../', serviceAccountPath),
             serviceAccountPath, // Try as absolute path
           ];
-          
+
           let fullPath: string | null = null;
           for (const tryPath of pathsToTry) {
             this.logger.log(`📋 Trying path: ${tryPath}`);
@@ -77,7 +92,7 @@ export class FirebaseAdminService implements OnModuleInit {
               break;
             }
           }
-          
+
           if (fullPath) {
             this.app = admin.initializeApp({
               credential: admin.credential.cert(fullPath),
@@ -87,8 +102,10 @@ export class FirebaseAdminService implements OnModuleInit {
             );
             return;
           } else {
-            this.logger.error(`❌ Service Account file not found. Tried paths:`);
-            pathsToTry.forEach(p => this.logger.error(`   - ${p}`));
+            this.logger.error(
+              `❌ Service Account file not found. Tried paths:`,
+            );
+            pathsToTry.forEach((p) => this.logger.error(`   - ${p}`));
           }
         } catch (error) {
           this.logger.error('❌ Failed to load Service Account file:', error);
@@ -97,11 +114,16 @@ export class FirebaseAdminService implements OnModuleInit {
           }
         }
       } else {
-        this.logger.log('⚠️ FIREBASE_SERVICE_ACCOUNT_PATH not found in environment');
+        this.logger.log(
+          '⚠️ FIREBASE_SERVICE_ACCOUNT_PATH not found in environment',
+        );
         // Try default path
         const fs = require('fs');
         const path = require('path');
-        const defaultPath = path.resolve(process.cwd(), 'config/firebase-service-account.json');
+        const defaultPath = path.resolve(
+          process.cwd(),
+          'config/firebase-service-account.json',
+        );
         this.logger.log(`📋 Trying default path: ${defaultPath}`);
         if (fs.existsSync(defaultPath)) {
           this.logger.log('✅ Found Service Account file at default location');
@@ -114,7 +136,10 @@ export class FirebaseAdminService implements OnModuleInit {
             );
             return;
           } catch (error) {
-            this.logger.error('❌ Failed to initialize with default path:', error);
+            this.logger.error(
+              '❌ Failed to initialize with default path:',
+              error,
+            );
           }
         }
       }
@@ -125,18 +150,27 @@ export class FirebaseAdminService implements OnModuleInit {
         this.app = admin.initializeApp({
           credential: admin.credential.applicationDefault(),
         });
-        this.logger.log('✅ Firebase Admin initialized with default credentials');
+        this.logger.log(
+          '✅ Firebase Admin initialized with default credentials',
+        );
         return;
       } catch (error) {
-        this.logger.warn('⚠️ Default credentials not available:', error.message);
+        this.logger.warn(
+          '⚠️ Default credentials not available:',
+          error.message,
+        );
       }
 
       // Final warning
-      this.logger.warn('⚠️ Firebase Admin not initialized: No credentials found');
+      this.logger.warn(
+        '⚠️ Firebase Admin not initialized: No credentials found',
+      );
       this.logger.warn('   To enable Firebase Admin SDK, set one of:');
       this.logger.warn('   - FIREBASE_SERVICE_ACCOUNT (JSON string)');
       this.logger.warn('   - FIREBASE_SERVICE_ACCOUNT_PATH (file path)');
-      this.logger.warn('   See apps/backend/FIREBASE_ADMIN_SETUP.md for details');
+      this.logger.warn(
+        '   See apps/backend/FIREBASE_ADMIN_SETUP.md for details',
+      );
     } catch (error) {
       this.logger.error('❌ Failed to initialize Firebase Admin:', error);
       if (error instanceof Error) {
@@ -177,10 +211,13 @@ export class FirebaseAdminService implements OnModuleInit {
         body: notification.body,
       },
       data: data
-        ? Object.keys(data).reduce((acc, key) => {
-            acc[key] = String(data[key]);
-            return acc;
-          }, {} as Record<string, string>)
+        ? Object.keys(data).reduce(
+            (acc, key) => {
+              acc[key] = String(data[key]);
+              return acc;
+            },
+            {} as Record<string, string>,
+          )
         : undefined,
       android: {
         priority: options?.priority || 'high',
@@ -233,10 +270,13 @@ export class FirebaseAdminService implements OnModuleInit {
         body: notification.body,
       },
       data: data
-        ? Object.keys(data).reduce((acc, key) => {
-            acc[key] = String(data[key]);
-            return acc;
-          }, {} as Record<string, string>)
+        ? Object.keys(data).reduce(
+            (acc, key) => {
+              acc[key] = String(data[key]);
+              return acc;
+            },
+            {} as Record<string, string>,
+          )
         : undefined,
       android: {
         priority: options?.priority || 'high',
@@ -250,7 +290,10 @@ export class FirebaseAdminService implements OnModuleInit {
           aps: {
             sound: 'default',
             badge: 1,
-            category: options?.actions && options.actions.length > 0 ? 'BOOKING_ACTIONS' : undefined,
+            category:
+              options?.actions && options.actions.length > 0
+                ? 'BOOKING_ACTIONS'
+                : undefined,
           },
         },
       },
@@ -273,4 +316,3 @@ export class FirebaseAdminService implements OnModuleInit {
     }
   }
 }
-

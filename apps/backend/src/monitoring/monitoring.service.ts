@@ -72,16 +72,3 @@ export class MonitoringService {
     return promClient.register.metrics();
   }
 }
-
-
-
-
-
-
-
-
-
-
-
-
-

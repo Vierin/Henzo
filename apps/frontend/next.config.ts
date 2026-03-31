@@ -1,9 +1,10 @@
 import type { NextConfig } from 'next';
 import path from 'path';
 import { withSentryConfig } from '@sentry/nextjs';
+import bundleAnalyzer from '@next/bundle-analyzer';
 
 // P1: Bundle analyzer (optional, enable with ANALYZE=true)
-const withBundleAnalyzer = require('@next/bundle-analyzer')({
+const withBundleAnalyzer = bundleAnalyzer({
 	enabled: process.env.ANALYZE === 'true',
 });
 

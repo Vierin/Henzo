@@ -10,14 +10,13 @@ export function initSentry() {
     return;
   }
 
-  const isEnabled = environment !== 'development' || !!process.env.ENABLE_SENTRY_IN_DEV;
+  const isEnabled =
+    environment !== 'development' || !!process.env.ENABLE_SENTRY_IN_DEV;
 
   Sentry.init({
     dsn,
     environment,
-    integrations: [
-      nodeProfilingIntegration(),
-    ],
+    integrations: [nodeProfilingIntegration()],
     // Performance Monitoring
     tracesSampleRate: environment === 'production' ? 0.1 : 1.0, // 10% in prod, 100% in dev
     // Profiling
@@ -32,4 +31,3 @@ export function initSentry() {
 
   // Sentry initialized silently
 }
-

@@ -6,4 +6,3 @@ export class UpdateClientNoteDto {
   @MaxLength(5000)
   note: string;
 }
-

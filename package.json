@@ -9,6 +9,8 @@
     "dev:backend": "turbo run dev --filter=backend",
     "dev:health": "node ./scripts/dev-health-check.mjs",
     "lint": "turbo run lint",
+    "lint:backend": "pnpm --filter backend run lint",
+    "lint:backend:check": "pnpm --filter backend run lint:check",
     "format": "prettier --write \"**/*.{ts,tsx,md}\"",
     "check-types": "turbo run check-types"
   },

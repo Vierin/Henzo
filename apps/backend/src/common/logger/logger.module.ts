@@ -7,12 +7,3 @@ import { AppLoggerService } from './logger.service';
   exports: [AppLoggerService],
 })
 export class LoggerModule {}
-
-
-
-
-
-
-
-
-

@@ -63,7 +63,7 @@ export class RemindersService {
       for (const intervalHours of possibleIntervals) {
         const intervalMs = intervalHours * 60 * 60 * 1000;
         const windowMs = windowMinutes * 60 * 1000;
-        
+
         // Calculate a wider window to account for timezone differences
         // We'll filter more precisely later for each booking's timezone
         // Use a wider window: ±2 hours to account for timezone offsets (max ±12 hours)
@@ -156,22 +156,22 @@ export class RemindersService {
             // Calculate time until booking in UTC (dateTime is stored in UTC)
             const timeUntilBooking = booking.dateTime.getTime() - now.getTime();
             const hoursUntilBooking = timeUntilBooking / (1000 * 60 * 60);
-            
+
             // Get salon timezone
             const salonTimezone = booking.Salon?.timezone || 'Asia/Ho_Chi_Minh';
-            
+
             // IMPORTANT: dateTime is stored in UTC but represents the appointment time in salon's timezone
             // We need to check if the time difference matches the reminder interval
             // The interval should be calculated from the current time to the booking time
             const targetIntervalMs = intervalMs;
             const minIntervalMs = targetIntervalMs - windowMs;
             const maxIntervalMs = targetIntervalMs + windowMs;
-            
+
             // Check if the time until booking is within the reminder window
-            const isWithinWindow = 
-              timeUntilBooking >= minIntervalMs && 
+            const isWithinWindow =
+              timeUntilBooking >= minIntervalMs &&
               timeUntilBooking <= maxIntervalMs;
-            
+
             console.log(
               `🔍 Processing booking ${booking.id}: dateTime=${booking.dateTime.toISOString()}, hoursUntil=${hoursUntilBooking.toFixed(2)}, interval=${intervalHours}h, timezone=${salonTimezone}, withinWindow=${isWithinWindow}, targetInterval=${(targetIntervalMs / (1000 * 60 * 60)).toFixed(2)}h, window=[${(minIntervalMs / (1000 * 60 * 60)).toFixed(2)}h, ${(maxIntervalMs / (1000 * 60 * 60)).toFixed(2)}h]`,
             );
@@ -185,7 +185,7 @@ export class RemindersService {
             }
 
             // Get salon reminder settings
-            const reminderSettings = (booking.Salon.reminderSettings as any) || {
+            const reminderSettings = booking.Salon.reminderSettings || {
               intervals: [24],
             };
             const salonIntervals = reminderSettings.intervals || [24];
@@ -229,14 +229,22 @@ export class RemindersService {
             // Format date and time for display - convert from UTC to salon's timezone
             // Use date-fns-tz for proper timezone conversion
             // salonTimezone already defined above
-            
+
             const bookingDate = new Date(booking.dateTime);
             const zonedDate = toZonedTime(bookingDate, salonTimezone);
-            
-            const dateStr = formatInTimeZone(bookingDate, salonTimezone, 'EEEE, MMMM d, yyyy');
-            
+
+            const dateStr = formatInTimeZone(
+              bookingDate,
+              salonTimezone,
+              'EEEE, MMMM d, yyyy',
+            );
+
             // Format time in salon's timezone
-            const timeStr = formatInTimeZone(bookingDate, salonTimezone, 'hh:mm a');
+            const timeStr = formatInTimeZone(
+              bookingDate,
+              salonTimezone,
+              'hh:mm a',
+            );
 
             // Prepare booking data for email
             const bookingData = {

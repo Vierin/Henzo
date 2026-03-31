@@ -288,7 +288,7 @@ export class GeocodingService {
     const postalCode = postalCodeMatch ? postalCodeMatch[1] : null;
 
     // Clean address - remove country but keep postal code for now
-    let cleanedAddress = address
+    const cleanedAddress = address
       .replace(/,\s*(Vietnam|Wietnam|Việt Nam|VN)\s*$/i, '')
       .trim();
 

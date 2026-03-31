@@ -116,7 +116,7 @@ export class AdminService {
       });
 
       // Group bookings based on period
-      let groupedData = new Map();
+      const groupedData = new Map();
 
       if (period === '7d') {
         // Group by day

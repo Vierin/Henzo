@@ -82,10 +82,7 @@ export class ClientsController {
         );
       }
 
-      return this.clientsService.getClientById(
-        currentUser.user.id,
-        clientId,
-      );
+      return this.clientsService.getClientById(currentUser.user.id, clientId);
     } catch (error) {
       if (error instanceof HttpException) {
         throw error;
@@ -142,10 +139,7 @@ export class ClientsController {
         );
       }
 
-      return this.clientsService.getClientNotes(
-        currentUser.user.id,
-        clientId,
-      );
+      return this.clientsService.getClientNotes(currentUser.user.id, clientId);
     } catch (error) {
       if (error instanceof HttpException) {
         throw error;
@@ -174,10 +168,7 @@ export class ClientsController {
       }
 
       if (!createNoteDto.salonId) {
-        throw new HttpException(
-          'Salon ID is required',
-          HttpStatus.BAD_REQUEST,
-        );
+        throw new HttpException('Salon ID is required', HttpStatus.BAD_REQUEST);
       }
 
       return this.clientsService.createClientNote(
@@ -244,10 +235,7 @@ export class ClientsController {
         );
       }
 
-      return this.clientsService.deleteClientNote(
-        currentUser.user.id,
-        noteId,
-      );
+      return this.clientsService.deleteClientNote(currentUser.user.id, noteId);
     } catch (error) {
       if (error instanceof HttpException) {
         throw error;
@@ -259,4 +247,3 @@ export class ClientsController {
     }
   }
 }
-

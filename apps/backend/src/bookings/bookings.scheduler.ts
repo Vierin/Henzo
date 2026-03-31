@@ -18,7 +18,7 @@ export class BookingsScheduler {
 
     try {
       const now = new Date();
-      
+
       // Находим все салоны
       const salons = await this.prisma.salon.findMany({
         select: { id: true },
@@ -49,12 +49,3 @@ export class BookingsScheduler {
     }
   }
 }
-
-
-
-
-
-
-
-
-

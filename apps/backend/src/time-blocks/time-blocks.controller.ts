@@ -1,15 +1,15 @@
 import {
-	Controller,
-	Get,
-	Post,
-	Put,
-	Delete,
-	Param,
-	Body,
-	Query,
-	Headers,
-	HttpException,
-	HttpStatus,
+  Controller,
+  Get,
+  Post,
+  Put,
+  Delete,
+  Param,
+  Body,
+  Query,
+  Headers,
+  HttpException,
+  HttpStatus,
 } from '@nestjs/common';
 import { TimeBlocksService } from './time-blocks.service';
 import { CreateTimeBlockDto } from './dto/create-time-block.dto';
@@ -19,11 +19,11 @@ import { PrismaService } from '../prisma/prisma.service';
 
 @Controller('time-blocks')
 export class TimeBlocksController {
-	constructor(
-		private readonly timeBlocksService: TimeBlocksService,
-		private readonly authService: AuthService,
-		private readonly prisma: PrismaService,
-	) {}
+  constructor(
+    private readonly timeBlocksService: TimeBlocksService,
+    private readonly authService: AuthService,
+    private readonly prisma: PrismaService,
+  ) {}
 
   /**
    * Get all time blocks for current user's salon
@@ -37,13 +37,13 @@ export class TimeBlocksController {
     @Query('endDate') endDate?: string,
   ) {
     try {
-			const currentUser = await this.authService.getCurrentUser(authHeader);
+      const currentUser = await this.authService.getCurrentUser(authHeader);
 
-			// Get user's salon
-			const userSalon = await this.prisma.salon.findFirst({
-				where: { ownerId: currentUser.user.id },
-				select: { id: true },
-			});
+      // Get user's salon
+      const userSalon = await this.prisma.salon.findFirst({
+        where: { ownerId: currentUser.user.id },
+        select: { id: true },
+      });
 
       if (!userSalon) {
         throw new HttpException('Salon not found', HttpStatus.NOT_FOUND);

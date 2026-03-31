@@ -2,11 +2,14 @@ import { Injectable, OnModuleInit, OnModuleDestroy } from '@nestjs/common';
 import { PrismaClient } from '@prisma/client';
 
 @Injectable()
-export class PrismaService extends PrismaClient implements OnModuleInit, OnModuleDestroy {
+export class PrismaService
+  extends PrismaClient
+  implements OnModuleInit, OnModuleDestroy
+{
   constructor() {
     // Настраиваем connection pool для работы с Supabase pooler
     const databaseUrl = process.env.DATABASE_URL;
-    
+
     // Добавляем параметры пула соединений, если их нет в URL
     // Увеличено для масштабирования на тысячи пользователей
     let connectionUrl = databaseUrl;
@@ -21,7 +24,8 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
           url: connectionUrl,
         },
       },
-      log: process.env.NODE_ENV === 'development' ? ['error', 'warn'] : ['error'],
+      log:
+        process.env.NODE_ENV === 'development' ? ['error', 'warn'] : ['error'],
     });
   }
 

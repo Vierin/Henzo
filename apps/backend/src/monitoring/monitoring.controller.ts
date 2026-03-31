@@ -11,16 +11,3 @@ export class MonitoringController {
     return metrics;
   }
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
