@@ -1,0 +1,61 @@
+# Monorepo dependencies / caches
+**/node_modules/
+.turbo/
+**/.next/
+**/dist/
+**/build/
+**/out/
+**/coverage/
+**/*.tsbuildinfo
+
+# Local environment / secrets
+**/.env
+**/.env.local
+**/.env.production
+**/.env.staging
+**/.env.*.local
+!**/.env.example
+!**/.env.staging.example
+
+# Runtime / tooling logs
+*.log
+npm-debug.log*
+pnpm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+turbo-*.log
+
+# Flutter / Android / iOS generated
+**/.dart_tool/
+**/.flutter-plugins
+**/.flutter-plugins-dependencies
+**/.pub-cache/
+**/.pub/
+**/.metadata
+**/android/.gradle/
+**/android/local.properties
+**/ios/Flutter/.last_build_id
+**/android/app/debug/
+**/android/app/profile/
+**/android/app/release/
+
+# Common DB / local artifacts
+**/.nyc_output/
+**/prisma/dev.db
+**/prisma/dev.db-journal
+
+# OS / IDE
+**/.DS_Store
+**/Thumbs.db
+.idea/
+*.iml
+.vscode/
+
+# Local-only / secrets
+.npmrc
+**/google-services.json
+# Cursor local config (если не хочешь хранить в репо)
+.cursor/
+.cursorrules
+# Local notes
+apps/frontend/TODO.txt

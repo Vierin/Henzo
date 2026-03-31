@@ -1,0 +1,159 @@
+import 'package:firebase_core/firebase_core.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:provider/provider.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+
+import 'config/app_config.dart';
+import 'firebase_options.dart';
+import 'l10n/locale_provider.dart';
+import 'screens/login_screen.dart';
+import 'screens/main_shell.dart';
+import 'screens/non_owner_gate_screen.dart';
+import 'services/auth_service.dart';
+import 'services/cache/bookings_cache.dart';
+import 'services/cache/salon_cache.dart';
+import 'services/cache/services_staff_cache.dart';
+import 'services/notifications_store.dart';
+import 'services/push_notification_service.dart';
+import 'theme/app_theme.dart';
+
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  try {
+    await dotenv.load(fileName: 'assets/.env');
+  } catch (_) {
+    await dotenv.load(fileName: 'assets/.env.example');
+  }
+  final notificationsStore = NotificationsStore();
+  await notificationsStore.load();
+  try {
+    await Firebase.initializeApp(
+      options: DefaultFirebaseOptions.currentPlatform,
+    );
+    await PushNotificationService.initialize(
+      onNotificationReceived: notificationsStore.addFromPush,
+    );
+  } catch (e) {
+    assert(() {
+      // ignore: avoid_print
+      print('Firebase init skipped: $e');
+      return true;
+    }());
+  }
+  await Supabase.initialize(
+    url: AppConfig.supabaseUrl,
+    anonKey: AppConfig.supabaseAnonKey,
+  );
+  runApp(MyApp(notificationsStore: notificationsStore));
+}
+
+class MyApp extends StatelessWidget {
+  const MyApp({super.key, this.notificationsStore});
+
+  final NotificationsStore? notificationsStore;
+
+  @override
+  Widget build(BuildContext context) {
+    return MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (_) => AuthService()),
+        ChangeNotifierProvider(create: (_) => LocaleProvider()),
+        ChangeNotifierProvider(create: (_) => SalonCache()),
+        ChangeNotifierProvider(create: (_) => BookingsCache()),
+        ChangeNotifierProvider(create: (_) => ServicesStaffCache()),
+        if (notificationsStore != null)
+          ChangeNotifierProvider.value(value: notificationsStore!),
+      ],
+      child: Consumer<LocaleProvider>(
+        builder: (context, locale, _) {
+          if (!locale.isLoaded) {
+            return MaterialApp(
+              title: 'Henzo',
+              theme: AppTheme.light,
+              localizationsDelegates: const [
+                GlobalMaterialLocalizations.delegate,
+                GlobalWidgetsLocalizations.delegate,
+                GlobalCupertinoLocalizations.delegate,
+              ],
+              supportedLocales: const [
+                Locale('en'),
+                Locale('ru'),
+                Locale('vi'),
+              ],
+              home: const Scaffold(
+                body: Center(child: CircularProgressIndicator()),
+              ),
+            );
+          }
+          return MaterialApp(
+            title: 'Henzo',
+            theme: AppTheme.light,
+            themeMode: ThemeMode.light,
+            locale: Locale(locale.languageTag),
+            localizationsDelegates: const [
+              GlobalMaterialLocalizations.delegate,
+              GlobalWidgetsLocalizations.delegate,
+              GlobalCupertinoLocalizations.delegate,
+            ],
+            supportedLocales: const [
+              Locale('en'),
+              Locale('ru'),
+              Locale('vi'),
+            ],
+            home: const AuthWrapper(),
+          );
+        },
+      ),
+    );
+  }
+}
+
+class AuthWrapper extends StatefulWidget {
+  const AuthWrapper({super.key});
+
+  @override
+  State<AuthWrapper> createState() => _AuthWrapperState();
+}
+
+class _AuthWrapperState extends State<AuthWrapper> {
+  bool _lastAllowedInApp = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return Consumer<AuthService>(
+      builder: (context, auth, _) {
+        if (auth.isLoading) {
+          return const Scaffold(
+            body: Center(child: CircularProgressIndicator()),
+          );
+        }
+
+        final allowedInApp = auth.isAuthenticated && auth.isSalonOwner;
+
+        if (!auth.isLoading) {
+          if (_lastAllowedInApp && !allowedInApp) {
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              if (!context.mounted) return;
+              context.read<SalonCache>().invalidate();
+              context.read<BookingsCache>().invalidate();
+              context.read<ServicesStaffCache>().invalidateAll();
+            });
+          }
+          _lastAllowedInApp = allowedInApp;
+        }
+
+        if (allowedInApp) {
+          return const MainShell();
+        }
+
+        if (auth.isAuthenticated && !auth.isSalonOwner) {
+          return const NonOwnerGateScreen();
+        }
+
+        return const LoginScreen();
+      },
+    );
+  }
+}

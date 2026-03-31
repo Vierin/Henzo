@@ -1,0 +1,395 @@
+import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import '../../constants/colors.dart';
+import '../../l10n/locale_provider.dart';
+import '../../models/booking.dart';
+import '../../utils/show_api_error.dart';
+import '../../models/salon.dart';
+import '../../services/auth_service.dart';
+import '../../services/cache/bookings_cache.dart';
+import '../../services/cache/salon_cache.dart';
+import '../../services/dashboard_api_service.dart';
+import '../../services/notifications_store.dart';
+import '../../widgets/dashboard/booking_detail_modal.dart';
+import '../../widgets/dashboard/dashboard_header_pill.dart';
+import '../../widgets/dashboard/dashboard_link_card.dart';
+import '../../widgets/dashboard/dashboard_setup_card.dart';
+import '../../widgets/dashboard/upcoming_bookings_list.dart';
+import '../app_settings_screen.dart';
+import '../notifications_screen.dart';
+import '../salon_setup_screen.dart';
+import '../../widgets/dashboard/new_booking_modal.dart';
+
+enum BookingAction {
+  confirm,
+  cancel,
+  reject;
+
+  Future<bool> apiCall(String token, String bookingId) {
+    switch (this) {
+      case confirm:
+        return DashboardApiService.confirmBooking(token, bookingId);
+      case cancel:
+        return DashboardApiService.cancelBooking(token, bookingId);
+      case reject:
+        return DashboardApiService.rejectBooking(token, bookingId);
+    }
+  }
+
+  String successMessage(LocaleProvider locale) {
+    switch (this) {
+      case confirm:
+        return locale.t('booking.confirmed');
+      case cancel:
+        return locale.t('booking.cancelled');
+      case reject:
+        return locale.t('booking.rejected');
+    }
+  }
+
+  String failureMessage(LocaleProvider locale) {
+    switch (this) {
+      case confirm:
+        return locale.t('booking.failedToConfirm');
+      case cancel:
+        return locale.t('booking.failedToCancel');
+      case reject:
+        return locale.t('booking.failedToReject');
+    }
+  }
+
+  Color get snackBarColor {
+    switch (this) {
+      case confirm:
+        return Colors.green;
+      case cancel:
+      case reject:
+        return Colors.orange;
+    }
+  }
+}
+
+class DashboardScreen extends StatefulWidget {
+  const DashboardScreen({super.key});
+
+  @override
+  State<DashboardScreen> createState() => _DashboardScreenState();
+}
+
+class _DashboardScreenState extends State<DashboardScreen> {
+  Salon? _salon;
+  List<Booking> _bookings = [];
+  bool _isLoading = false;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) => _loadData());
+  }
+
+  Future<void> _loadData() async {
+    if (!mounted) return;
+    setState(() => _isLoading = true);
+    final auth = context.read<AuthService>();
+    final token = auth.accessToken;
+    if (token == null || token.isEmpty) {
+      if (mounted) {
+        setState(() {
+          _salon = null;
+          _bookings = [];
+          _isLoading = false;
+        });
+      }
+      return;
+    }
+    try {
+      final salon = await context.read<SalonCache>().getSalon(token);
+      final bookings = await context.read<BookingsCache>().getBookings(token);
+      if (mounted) {
+        setState(() {
+          _salon = salon;
+          _bookings = bookings;
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _salon = null;
+          _bookings = [];
+          _isLoading = false;
+        });
+        showApiError(context, e);
+      }
+    }
+  }
+
+  Future<void> _handleRefresh() async {
+    await _loadData();
+  }
+
+  Future<void> _handleBookingAction(
+    BookingAction action,
+    String bookingId,
+  ) async {
+    final token = context.read<AuthService>().accessToken;
+    if (token == null || token.isEmpty) return;
+    try {
+      final ok = await action.apiCall(token, bookingId);
+      if (!mounted) return;
+      if (ok) {
+        context.read<BookingsCache>().invalidate();
+        await _loadData();
+        showSuccess(
+          context,
+          action.successMessage(context.read<LocaleProvider>()),
+          backgroundColor: action.snackBarColor,
+        );
+      } else {
+        showApiError(
+          context,
+          action.failureMessage(context.read<LocaleProvider>()),
+        );
+      }
+    } catch (e) {
+      if (!mounted) return;
+      showApiError(context, e);
+    }
+  }
+
+  Future<void> _handleEditBooking(Booking booking) async {
+    final token = context.read<AuthService>().accessToken;
+    if (token == null || token.isEmpty) return;
+    await NewBookingModal.show(
+      context,
+      accessToken: token,
+      onSaved: _loadData,
+      getAccessToken: () async {
+        await context.read<AuthService>().refreshSession();
+        return context.read<AuthService>().accessToken;
+      },
+      existingBooking: booking,
+    );
+  }
+
+  List<Booking> _getTodayBookings() {
+    final now = DateTime.now();
+    final todayStart = DateTime(now.year, now.month, now.day);
+    final todayEnd = todayStart.add(const Duration(days: 1));
+
+    return _bookings.where((booking) {
+      return !booking.dateTime.isBefore(todayStart) &&
+          booking.dateTime.isBefore(todayEnd) &&
+          booking.status != BookingStatus.canceled;
+    }).toList()..sort((a, b) => a.dateTime.compareTo(b.dateTime));
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final todayBookings = _getTodayBookings();
+
+    return Scaffold(
+      backgroundColor: AppColors.backgroundSecondary,
+      body: SafeArea(
+        child: RefreshIndicator(
+          onRefresh: _handleRefresh,
+          color: AppColors.primary500,
+          child: SingleChildScrollView(
+            physics: const AlwaysScrollableScrollPhysics(),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Header
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(12, 16, 12, 16),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      Expanded(
+                        child: Text(
+                          _isLoading || _salon == null
+                              ? context.watch<LocaleProvider>().t(
+                                  'nav.dashboard',
+                                )
+                              : (_salon!.name ?? ''),
+                          style: const TextStyle(
+                            fontSize: 24,
+                            fontWeight: FontWeight.bold,
+                            color: AppColors.textPrimary,
+                          ),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 4,
+                        alignment: WrapAlignment.end,
+                        children: [
+                          if (_salon != null)
+                            DashboardHeaderPill(
+                              icon: Icons.star_rounded,
+                              label: _salon!.rating != null
+                                  ? _salon!.rating!.toStringAsFixed(1)
+                                  : '—',
+                              onTap: null,
+                            ),
+                          Consumer<NotificationsStore>(
+                            builder: (_, store, __) {
+                              final count = store.unreadCount;
+                              return Stack(
+                                clipBehavior: Clip.none,
+                                children: [
+                                  DashboardHeaderIconPill(
+                                    icon: Icons.notifications_outlined,
+                                    onTap: () => Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (_) =>
+                                            const NotificationsScreen(),
+                                      ),
+                                    ),
+                                  ),
+                                  if (count > 0)
+                                    Positioned(
+                                      top: -4,
+                                      right: -4,
+                                      child: Container(
+                                        padding: const EdgeInsets.all(4),
+                                        constraints: const BoxConstraints(
+                                          minWidth: 18,
+                                          minHeight: 18,
+                                        ),
+                                        decoration: const BoxDecoration(
+                                          color: AppColors.primary500,
+                                          shape: BoxShape.circle,
+                                        ),
+                                        alignment: Alignment.center,
+                                        child: Text(
+                                          count > 99 ? '99+' : '$count',
+                                          style: const TextStyle(
+                                            fontSize: 10,
+                                            fontWeight: FontWeight.w600,
+                                            color: Colors.white,
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                ],
+                              );
+                            },
+                          ),
+                          DashboardHeaderIconPill(
+                            icon: Icons.settings_outlined,
+                            onTap: () => Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => const AppSettingsScreen(),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 16),
+                // Link cards: Клиенты, Online booking
+                if (!_isLoading && _salon != null) ...[
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 12),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: DashboardLinkCard(
+                            title: context.read<LocaleProvider>().t('dashboard.clients'),
+                            icon: Icons.people_outline,
+                            color: AppColors.primary100,
+                            onTap: () =>
+                                Navigator.of(context).pushNamed('/clients'),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: DashboardLinkCard(
+                            title: context.read<LocaleProvider>().t(
+                              'dashboard.onlineBooking',
+                            ),
+                            icon: Icons.calendar_month_outlined,
+                            color: AppColors.secondary100,
+                            onTap: () => Navigator.of(
+                              context,
+                            ).pushNamed('/online-booking'),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                ],
+                if (_isLoading)
+                  const SizedBox(
+                    height: 120,
+                    child: Center(
+                      child: CircularProgressIndicator(
+                        color: AppColors.primary500,
+                      ),
+                    ),
+                  )
+                else if (_salon == null)
+                  DashboardSetupCard(
+                    onSetupTap: () => Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => SalonSetupScreen(
+                          onSaved: () {
+                            Navigator.pop(context);
+                            _loadData();
+                          },
+                        ),
+                      ),
+                    ),
+                  )
+                else
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 12),
+                    child: UpcomingBookingsList(
+                      title: context.read<LocaleProvider>().t(
+                        'dashboard.upcomingBookings',
+                      ),
+                      bookings: todayBookings,
+                      loading: _isLoading,
+                      onViewAll: () =>
+                          Navigator.of(context).pushNamed('/all-bookings'),
+                      onEditBooking: _handleEditBooking,
+                      onCancelBooking: (id) =>
+                          _handleBookingAction(BookingAction.cancel, id),
+                      onConfirmBooking: (id) =>
+                          _handleBookingAction(BookingAction.confirm, id),
+                      onRejectBooking: (id) =>
+                          _handleBookingAction(BookingAction.reject, id),
+                      onBookingPress: (booking) {
+                        BookingDetailModal.show(
+                          context,
+                          booking: booking,
+                          onEdit: _handleEditBooking,
+                          onCancel: (id) =>
+                              _handleBookingAction(BookingAction.cancel, id),
+                          onConfirm: (id) =>
+                              _handleBookingAction(BookingAction.confirm, id),
+                          onReject: (id) =>
+                              _handleBookingAction(BookingAction.reject, id),
+                        );
+                      },
+                    ),
+                  ),
+                const SizedBox(height: 24),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}

@@ -1,0 +1,81 @@
+name: Deploy Backend (staging) to DigitalOcean
+
+on:
+  push:
+    branches:
+      - develop
+    paths:
+      - 'apps/backend/**'
+      - '.github/workflows/deploy-backend-staging.yml'
+
+env:
+  REGISTRY: ghcr.io
+
+jobs:
+  build-and-push:
+    name: Build and push staging image
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set image base (lowercase)
+        run: |
+          BASE="${{ env.REGISTRY }}/$(echo ${{ github.repository }} | tr '[:upper:]' '[:lower:]')/backend"
+          echo "IMAGE_BASE=${BASE}" >> $GITHUB_ENV
+
+      - name: Login to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push
+        uses: docker/build-push-action@v6
+        with:
+          context: apps/backend
+          file: apps/backend/Dockerfile
+          push: true
+          tags: ${{ env.IMAGE_BASE }}:staging
+
+  deploy:
+    name: Deploy staging to server
+    needs: build-and-push
+    runs-on: ubuntu-latest
+    env:
+      REGISTRY: ghcr.io
+    steps:
+      - name: Set image base
+        run: |
+          BASE="${{ env.REGISTRY }}/$(echo ${{ github.repository }} | tr '[:upper:]' '[:lower:]')/backend"
+          echo "IMAGE_BASE=${BASE}" >> $GITHUB_ENV
+
+      - name: Deploy to DigitalOcean
+        uses: appleboy/ssh-action@v1.0.0
+        with:
+          host: ${{ secrets.DO_HOST }}
+          username: ${{ secrets.DO_USERNAME }}
+          key: ${{ secrets.DO_SSH_KEY }}
+          port: 22
+          script: |
+            cd /var/www/henzo
+            git pull origin develop
+            cd apps/backend
+            if [ -n "${{ secrets.GHCR_TOKEN }}" ]; then
+              echo "${{ secrets.GHCR_TOKEN }}" | docker login ${{ env.REGISTRY }} -u ${{ github.actor }} --password-stdin
+            fi
+            export BACKEND_STAGING_IMAGE=${{ env.IMAGE_BASE }}:staging
+            echo "🔄 Pulling staging image..."
+            docker compose pull backend_staging
+            echo "🔄 Restarting staging backend + nginx..."
+            docker compose up -d --no-deps backend_staging
+            docker compose up -d --no-deps nginx
+            echo "⏳ Waiting for startup..."
+            sleep 10
+            echo "🔍 Staging health check..."
+            curl -fsS -H "Host: api-staging.henzo.app" http://127.0.0.1/health || exit 1
+            echo "✅ Staging deployment complete!"

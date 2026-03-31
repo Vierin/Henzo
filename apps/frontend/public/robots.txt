@@ -1,0 +1,30 @@
+# Henzo Robots.txt
+# Allow all search engines
+
+User-agent: *
+Allow: /
+Disallow: /admin/
+Disallow: /owner-dashboard/
+Disallow: /dashboard/
+Disallow: /api/
+Disallow: /_next/
+Disallow: /private/
+
+# Special rules for specific bots
+User-agent: Googlebot
+Allow: /
+Disallow: /admin/
+Disallow: /owner-dashboard/
+Disallow: /dashboard/
+Disallow: /api/
+
+User-agent: bingbot
+Allow: /
+Disallow: /admin/
+Disallow: /owner-dashboard/
+Disallow: /dashboard/
+Disallow: /api/
+
+# Sitemap location
+Sitemap: https://henzo.app/sitemap.xml
+

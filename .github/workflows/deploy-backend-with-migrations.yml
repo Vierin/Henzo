@@ -1,0 +1,81 @@
+name: Deploy Backend with Migrations
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Target environment (staging = Neon branch DB + develop on server)'
+        required: true
+        type: choice
+        options:
+          - staging
+          - production
+      run_migrations:
+        description: 'Run database migrations?'
+        required: true
+        type: boolean
+        default: true
+
+jobs:
+  deploy:
+    name: Deploy with migrations
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Deploy to DigitalOcean
+        uses: appleboy/ssh-action@v1.0.0
+        with:
+          host: ${{ secrets.DO_HOST }}
+          username: ${{ secrets.DO_USERNAME }}
+          key: ${{ secrets.DO_SSH_KEY }}
+          port: 22
+          script: |
+            set -e
+            cd /var/www/henzo
+
+            if [ "${{ inputs.environment }}" = "staging" ]; then
+              BRANCH=develop
+              SERVICE=backend_staging
+              HEALTH='curl -fsS -H "Host: api-staging.henzo.app" http://127.0.0.1/health'
+            else
+              BRANCH=main
+              SERVICE=backend
+              HEALTH='curl -fsS http://127.0.0.1/health'
+            fi
+
+            echo "🔄 Pulling $BRANCH..."
+            git fetch origin "$BRANCH"
+            git checkout "$BRANCH"
+            git pull origin "$BRANCH"
+
+            cd apps/backend
+
+            if [ "${{ inputs.run_migrations }}" = "true" ]; then
+              echo "📊 Running migrations ($SERVICE)..."
+              docker compose run --rm "$SERVICE" npx prisma migrate deploy
+            fi
+
+            echo "🔄 Recreating stack..."
+            docker compose up -d
+
+            echo "⏳ Waiting for startup..."
+            sleep 15
+
+            echo "🔍 Health check..."
+            eval "$HEALTH"
+
+            echo "✅ Done ($SERVICE / $BRANCH)"
+            docker compose ps
+
+      - name: Send notification on success
+        if: success()
+        run: echo "✅ Deploy with migrations succeeded (${{ inputs.environment }})"
+
+      - name: Send notification on failure
+        if: failure()
+        run: |
+          echo "❌ Deploy with migrations failed!"
+          exit 1

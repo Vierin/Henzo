@@ -1,0 +1,19 @@
+{
+	"monday": "Thứ Hai",
+	"tuesday": "Thứ Ba",
+	"wednesday": "Thứ Tư",
+	"thursday": "Thứ Năm",
+	"friday": "Thứ Sáu",
+	"saturday": "Thứ Bảy",
+	"sunday": "Chủ Nhật",
+	"closed": "Đóng cửa",
+	"short": {
+		"sun": "CN",
+		"mon": "T2",
+		"tue": "T3",
+		"wed": "T4",
+		"thu": "T5",
+		"fri": "T6",
+		"sat": "T7"
+	}
+}

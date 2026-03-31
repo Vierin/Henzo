@@ -1,0 +1,462 @@
+'use client';
+
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
+import type React from 'react';
+import { useTranslation, useLanguage } from '@/contexts/LanguageContext';
+import { apiClient } from '@/lib/api-client';
+
+interface ServiceSuggestion {
+	id: number | string;
+	name: string;
+	type: 'category' | 'salon' | 'recommended';
+	category?: { name: string };
+	salon?: { name: string };
+	address?: string;
+}
+
+interface SuggestionGroup {
+	type: 'category' | 'salon' | 'recommended';
+	title: string;
+	suggestions: ServiceSuggestion[];
+}
+
+interface ServiceAutocompleteProps {
+	value: string;
+	onChange: (service: string) => void;
+	onServiceSelect?: (service: ServiceSuggestion) => void;
+	placeholder?: string;
+	className?: string;
+	inline?: boolean;
+	onKeyDown?: React.KeyboardEventHandler<HTMLInputElement>;
+}
+
+export default function ServiceAutocomplete({
+	value,
+	onChange,
+	onServiceSelect,
+	placeholder = 'Search for treatments',
+	className = '',
+	inline = false,
+	onKeyDown,
+}: ServiceAutocompleteProps) {
+	const t = useTranslation();
+	const { language } = useLanguage();
+	const [suggestionGroups, setSuggestionGroups] = useState<SuggestionGroup[]>(
+		[]
+	);
+	const [showSuggestions, setShowSuggestions] = useState(false);
+	const [loading, setLoading] = useState(false);
+	const inputRef = useRef<HTMLInputElement>(null);
+	const suggestionsRef = useRef<HTMLDivElement>(null);
+
+	// Cache for search results
+	const searchCache = useRef<Map<string, SuggestionGroup[]>>(new Map());
+	const popularCacheRef = useRef<Map<string, SuggestionGroup[]>>(new Map());
+
+	// request abort controller
+	const abortRef = useRef<AbortController | null>(null);
+
+	// Fetch suggestions from unified endpoint (Booksy style)
+	const fetchSuggestions = useCallback(
+		async (query: string) => {
+			// Check cache first (with language in key)
+			const cacheKey = `${language}-${query.toLowerCase().trim()}`;
+			if (searchCache.current.has(cacheKey)) {
+				setSuggestionGroups(searchCache.current.get(cacheKey) || []);
+				return;
+			}
+
+			// 0-2 chars: show popular recommended services
+			if (query.length === 0 || query.length < 3) {
+				setSuggestionGroups([]);
+				return;
+			}
+
+			// cancel previous in-flight
+			if (abortRef.current) {
+				abortRef.current.abort();
+			}
+			const controller = new AbortController();
+			abortRef.current = controller;
+
+			setLoading(true);
+			try {
+				const apiLang =
+					language === 'vi' ? 'vn' : language === 'ru' ? 'ru' : 'en';
+				const result = await apiClient.get<{
+					success?: boolean;
+					data?: { recommendedServices?: any[]; salons?: any[] };
+				}>(
+					`/search/unified/suggest?q=${encodeURIComponent(query)}&lang=${apiLang}&limit=10`
+				);
+
+				if (!result?.success) {
+					setSuggestionGroups([]);
+					return;
+				}
+
+				const groups: SuggestionGroup[] = [];
+				const recommendedServices = result.data?.recommendedServices ?? [];
+				const salons = result.data?.salons ?? [];
+
+				// Add recommended services group
+				if (recommendedServices.length > 0) {
+					groups.push({
+						type: 'recommended',
+						title: t('homepage.recommendedServices') || 'Recommended Services',
+						suggestions: recommendedServices.map((item: any) => ({
+							id: item.id,
+							name: item.name,
+							type: 'recommended' as const,
+						})),
+					});
+				}
+
+				// Add salons group
+				if (salons.length > 0) {
+					groups.push({
+						type: 'salon',
+						title: t.navigation.salons,
+						suggestions: salons.map((salon: any) => ({
+							id: salon.id,
+							name: salon.name,
+							type: 'salon' as const,
+							salon: { name: salon.name },
+							address: salon.address,
+						})),
+					});
+				}
+
+				setSuggestionGroups(groups);
+
+				// Cache the results (with language in key)
+				searchCache.current.set(cacheKey, groups);
+
+				// Limit cache size (per language)
+				if (searchCache.current.size > 100) {
+					const firstKey = searchCache.current.keys().next().value;
+					if (firstKey !== undefined) {
+						searchCache.current.delete(firstKey);
+					}
+				}
+			} catch (error: any) {
+				if (error?.name !== 'AbortError') {
+					console.error('Error fetching suggestions:', error);
+				}
+				setSuggestionGroups([]);
+			} finally {
+				setLoading(false);
+			}
+		},
+		[t]
+	);
+
+	const fetchInitialSuggestions = useCallback(async () => {
+		const cacheKey = `${language}-popular-10`;
+		const localStorageKey = `service-autocomplete:${cacheKey}`;
+
+		// 1) Fast in-memory cache for current session
+		if (popularCacheRef.current.has(cacheKey)) {
+			setSuggestionGroups(popularCacheRef.current.get(cacheKey) || []);
+			return;
+		}
+
+		// 2) Persistent client cache for 24h
+		if (typeof window !== 'undefined') {
+			try {
+				const raw = window.localStorage.getItem(localStorageKey);
+				if (raw) {
+					const parsed = JSON.parse(raw) as {
+						at: number;
+						data: SuggestionGroup[];
+					};
+					if (
+						parsed &&
+						Array.isArray(parsed.data) &&
+						Date.now() - parsed.at < 24 * 60 * 60 * 1000
+					) {
+						popularCacheRef.current.set(cacheKey, parsed.data);
+						setSuggestionGroups(parsed.data);
+						return;
+					}
+				}
+			} catch {
+				// ignore malformed local cache
+			}
+		}
+
+		setLoading(true);
+		try {
+			const apiLang =
+				language === 'vi' ? 'vn' : language === 'ru' ? 'ru' : 'en';
+			const result = await apiClient.get<{ success?: boolean; data?: any[] }>(
+				`/search/popular/recommended?lang=${apiLang}&limit=10`
+			);
+			const popularServices = result?.data ?? [];
+
+			if (result?.success && popularServices.length > 0) {
+				const groups: SuggestionGroup[] = [
+					{
+						type: 'recommended',
+						title: t('homepage.popularServices') || 'Popular Services',
+						suggestions: popularServices.map((item: any) => ({
+							id: item.id,
+							name: item.name,
+							type: 'recommended' as const,
+						})),
+					},
+				];
+				setSuggestionGroups(groups);
+				popularCacheRef.current.set(cacheKey, groups);
+				if (typeof window !== 'undefined') {
+					try {
+						window.localStorage.setItem(
+							localStorageKey,
+							JSON.stringify({ at: Date.now(), data: groups })
+						);
+					} catch {
+						// ignore localStorage quota issues
+					}
+				}
+			}
+		} catch (error) {
+			console.error('Error fetching initial suggestions:', error);
+		} finally {
+			setLoading(false);
+		}
+	}, [t, language]);
+
+	// Debounce the search with improved performance
+	useEffect(() => {
+		const timeoutId = setTimeout(() => {
+			if (value && value.length >= 3) {
+				fetchSuggestions(value);
+			} else if (value.length === 0) {
+				setSuggestionGroups([]);
+			} else {
+				// 1-2 chars: don't show suggestions yet
+				setSuggestionGroups([]);
+			}
+		}, 300);
+
+		return () => clearTimeout(timeoutId);
+	}, [value, fetchSuggestions]);
+
+	// Clear cache and refetch suggestions when language changes
+	useEffect(() => {
+		// Clear cache on language change to force fresh requests with new language
+		searchCache.current.clear();
+
+		// Refetch suggestions if they were shown
+		if (showSuggestions) {
+			if (value.length === 0) {
+				fetchInitialSuggestions();
+			} else if (value.length >= 3) {
+				fetchSuggestions(value);
+			}
+		}
+	}, [language]); // Only depend on language to avoid infinite loops
+
+	// Close suggestions when clicking outside
+	useEffect(() => {
+		const handleClickOutside = (event: MouseEvent) => {
+			if (
+				suggestionsRef.current &&
+				!suggestionsRef.current.contains(event.target as Node) &&
+				inputRef.current &&
+				!inputRef.current.contains(event.target as Node)
+			) {
+				setShowSuggestions(false);
+			}
+		};
+
+		document.addEventListener('mousedown', handleClickOutside);
+		return () => document.removeEventListener('mousedown', handleClickOutside);
+	}, []);
+
+	const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+		const newValue = e.target.value;
+		onChange(newValue);
+		setShowSuggestions(true);
+	};
+
+	const handleSuggestionClick = (suggestion: ServiceSuggestion) => {
+		onChange(suggestion.name);
+		setShowSuggestions(false);
+
+		// Call the callback if provided
+		if (onServiceSelect) {
+			onServiceSelect(suggestion);
+		}
+	};
+
+	const handleInputFocus = () => {
+		if (value.length === 0) {
+			// Show initial suggestions when focusing on empty input
+			fetchInitialSuggestions();
+		}
+		setShowSuggestions(true);
+	};
+
+	const handleClear = () => {
+		onChange('');
+		setShowSuggestions(false);
+		if (inputRef.current) {
+			inputRef.current.focus();
+		}
+	};
+
+	const inputClasses = inline
+		? `w-full h-full px-3 py-2 text-sm pl-10 bg-white placeholder:text-gray-500 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#ff5b5b] focus:border-transparent text-gray-900 ${className}`
+		: `w-full h-13 px-4 py-3 pl-12 bg-white placeholder:text-gray-900 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#ff5b5b] focus:border-transparent text-gray-900 ${className}`;
+
+	const iconClasses = inline
+		? 'absolute left-3 top-2.5 h-5 w-5 text-gray-400'
+		: 'absolute left-4 top-3.5 h-6 w-6 text-gray-400';
+
+	return (
+		<div className="relative h-full">
+			<input
+				ref={inputRef}
+				type="text"
+				value={value}
+				onChange={handleInputChange}
+				onFocus={handleInputFocus}
+				placeholder={placeholder}
+				className={inputClasses}
+				onKeyDown={onKeyDown}
+			/>
+
+			{/* Search Icon */}
+			<svg
+				className={iconClasses}
+				fill="none"
+				stroke="currentColor"
+				viewBox="0 0 24 24"
+			>
+				<path
+					strokeLinecap="round"
+					strokeLinejoin="round"
+					strokeWidth={2}
+					d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+				/>
+			</svg>
+
+			{/* Clear button */}
+			{value && !loading && (
+				<button
+					onClick={handleClear}
+					className="absolute right-3 top-1/2 transform -translate-y-1/2 p-1 hover:bg-gray-100 rounded-full transition-colors"
+					type="button"
+				>
+					<svg
+						className="w-4 h-4 text-gray-400 hover:text-gray-600"
+						fill="none"
+						stroke="currentColor"
+						viewBox="0 0 24 24"
+					>
+						<path
+							strokeLinecap="round"
+							strokeLinejoin="round"
+							strokeWidth={2}
+							d="M6 18L18 6M6 6l12 12"
+						/>
+					</svg>
+				</button>
+			)}
+
+			{loading && (
+				<div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+					<div className="animate-spin rounded-full h-4 w-4 border-b-2 border-[#ff5b5b]"></div>
+				</div>
+			)}
+
+			{showSuggestions && suggestionGroups.length > 0 && (
+				<div
+					ref={suggestionsRef}
+					className="absolute z-50 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-80 overflow-y-auto"
+				>
+					{suggestionGroups.map((group, groupIndex) => (
+						<div key={`${group.type}-${groupIndex}`}>
+							{/* Group Header */}
+							<div className="px-3 py-2 bg-gray-50 border-b border-gray-100">
+								<div className="flex items-center gap-2">
+									{group.type === 'recommended' && (
+										<svg
+											className="w-4 h-4 text-primary"
+											fill="none"
+											stroke="currentColor"
+											viewBox="0 0 24 24"
+										>
+											<path
+												strokeLinecap="round"
+												strokeLinejoin="round"
+												strokeWidth={2}
+												d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"
+											/>
+										</svg>
+									)}
+									{group.type === 'category' && (
+										<svg
+											className="w-4 h-4 text-primary"
+											fill="none"
+											stroke="currentColor"
+											viewBox="0 0 24 24"
+										>
+											<path
+												strokeLinecap="round"
+												strokeLinejoin="round"
+												strokeWidth={2}
+												d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"
+											/>
+										</svg>
+									)}
+									{group.type === 'salon' && (
+										<svg
+											className="w-4 h-4 text-primary"
+											fill="none"
+											stroke="currentColor"
+											viewBox="0 0 24 24"
+										>
+											<path
+												strokeLinecap="round"
+												strokeLinejoin="round"
+												strokeWidth={2}
+												d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"
+											/>
+										</svg>
+									)}
+									<span className="text-xs font-semibold text-gray-600 uppercase tracking-wide">
+										{group.title}
+									</span>
+								</div>
+							</div>
+
+							{/* Group Suggestions */}
+							{group.suggestions.map((suggestion, suggestionIndex) => (
+								<button
+									key={`${suggestion.type}-${suggestion.id}-${suggestionIndex}`}
+									onClick={() => handleSuggestionClick(suggestion)}
+									className="w-full px-3 py-2.5 text-left hover:bg-gray-50 border-b border-gray-100 last:border-b-0 text-sm text-gray-700 transition-colors"
+								>
+									<div className="flex items-center justify-between">
+										<div className="flex-1 min-w-0">
+											<div className="font-medium text-gray-900 truncate">
+												{suggestion.name}
+											</div>
+											{suggestion.type === 'salon' && suggestion.address && (
+												<div className="text-xs text-gray-500 truncate mt-0.5">
+													{suggestion.address}
+												</div>
+											)}
+										</div>
+									</div>
+								</button>
+							))}
+						</div>
+					))}
+				</div>
+			)}
+		</div>
+	);
+}

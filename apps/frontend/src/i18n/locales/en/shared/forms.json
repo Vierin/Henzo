@@ -1,0 +1,10 @@
+{
+	"required": "This field is required",
+	"invalidEmail": "Invalid email address",
+	"invalidPhone": "Invalid phone number",
+	"passwordTooShort": "Password too short",
+	"passwordsDoNotMatch": "Passwords do not match",
+	"termsAndConditions": "Terms and Conditions",
+	"privacyPolicy": "Privacy Policy",
+	"agreeToTerms": "I agree to the terms"
+}
