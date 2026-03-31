@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       environment:
-        description: 'Target environment (staging = Neon branch DB + develop on server)'
+        description: 'Target environment (staging branch or main branch)'
         required: true
         type: choice
         options:
@@ -37,7 +37,7 @@ jobs:
             cd /var/www/henzo
 
             if [ "${{ inputs.environment }}" = "staging" ]; then
-              BRANCH=develop
+              BRANCH=staging
               SERVICE=backend_staging
               HEALTH='curl -fsS -H "Host: api-staging.henzo.app" http://127.0.0.1/health'
             else

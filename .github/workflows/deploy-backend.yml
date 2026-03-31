@@ -1,19 +1,31 @@
 name: Deploy Backend to DigitalOcean
 
 on:
-  push:
-    branches:
-      - main
-    paths:
-      - 'apps/backend/**'
-      - '.github/workflows/deploy-backend.yml'
+  workflow_dispatch:
+    inputs:
+      confirm:
+        description: 'Type DEPLOY to confirm production deploy'
+        required: true
+        type: string
 
 env:
   REGISTRY: ghcr.io
 
 jobs:
+  validate:
+    name: Validate manual confirmation
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check confirm value
+        run: |
+          if [ "${{ inputs.confirm }}" != "DEPLOY" ]; then
+            echo "Invalid confirmation value. Type DEPLOY to continue."
+            exit 1
+          fi
+
   build-and-push:
     name: Build and push image
+    needs: validate
     runs-on: ubuntu-latest
     permissions:
       contents: read

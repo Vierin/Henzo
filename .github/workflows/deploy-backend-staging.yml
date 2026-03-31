@@ -3,7 +3,7 @@ name: Deploy Backend (staging) to DigitalOcean
 on:
   push:
     branches:
-      - develop
+      - staging
     paths:
       - 'apps/backend/**'
       - '.github/workflows/deploy-backend-staging.yml'
@@ -63,7 +63,9 @@ jobs:
           port: 22
           script: |
             cd /var/www/henzo
-            git pull origin develop
+            git fetch origin staging
+            git checkout staging
+            git pull origin staging
             cd apps/backend
             if [ -n "${{ secrets.GHCR_TOKEN }}" ]; then
               echo "${{ secrets.GHCR_TOKEN }}" | docker login ${{ env.REGISTRY }} -u ${{ github.actor }} --password-stdin
