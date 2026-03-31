@@ -11,10 +11,3 @@ import { AuthModule } from '../auth/auth.module';
   exports: [TimeBlocksService],
 })
 export class TimeBlocksModule {}
-
-
-
-
-
-
-

@@ -19,8 +19,7 @@ export class FeedbackService {
       });
 
       // Get feedback email from environment or use default
-      const feedbackEmail =
-        process.env.FEEDBACK_EMAIL || 'hello@henzo.app';
+      const feedbackEmail = process.env.FEEDBACK_EMAIL || 'hello@henzo.app';
 
       // Send email via EmailService
       await this.emailService.sendContactMessage({
@@ -30,9 +29,7 @@ export class FeedbackService {
         context: {
           name: userName || 'Anonymous User',
           email: userEmail || 'No email provided',
-          message: this.formatFeedbackMessage(
-            message,
-          ),
+          message: this.formatFeedbackMessage(message),
           timestamp,
         },
       });
@@ -49,10 +46,8 @@ export class FeedbackService {
     }
   }
 
-  private formatFeedbackMessage(
-    message: string,
-  ): string {
-    let formattedMessage = message;
+  private formatFeedbackMessage(message: string): string {
+    const formattedMessage = message;
 
     return formattedMessage;
   }

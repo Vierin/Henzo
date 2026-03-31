@@ -18,10 +18,7 @@ export class AuthService {
   private readonly CACHE_TTL = 30000; // 30 seconds cache (увеличено с 1 секунды)
 
   // Кэш для синхронизации app_metadata (ленивая синхронизация)
-  private roleSyncCache = new Map<
-    string,
-    { lastSync: number; role: string }
-  >();
+  private roleSyncCache = new Map<string, { lastSync: number; role: string }>();
   private readonly ROLE_SYNC_TTL = 5 * 60 * 1000; // 5 минут между синхронизациями
 
   constructor(
@@ -772,7 +769,7 @@ export class AuthService {
       try {
         console.log('🔍 Verifying token locally (JWT)...');
         decodedToken = await this.jwtVerifier.verifyToken(token);
-        
+
         // Создаем объект user из decoded token для совместимости
         user = {
           id: this.jwtVerifier.getUserIdFromToken(decodedToken),
@@ -785,9 +782,12 @@ export class AuthService {
       } catch (jwtError: any) {
         // Fallback на Supabase API если локальная верификация не удалась
         // (например, ключи еще не загружены или токен использует другой алгоритм)
-        console.log('⚠️ Local JWT verification failed, falling back to Supabase API:', jwtError.message);
+        console.log(
+          '⚠️ Local JWT verification failed, falling back to Supabase API:',
+          jwtError.message,
+        );
         console.log('🔍 Verifying token with Supabase API (fallback)...');
-        
+
         const {
           data: { user: supabaseUser },
           error,
@@ -804,7 +804,11 @@ export class AuthService {
         }
 
         user = supabaseUser;
-        console.log('✅ User verified via Supabase API (fallback):', user.id, user.email);
+        console.log(
+          '✅ User verified via Supabase API (fallback):',
+          user.id,
+          user.email,
+        );
       }
 
       // Get user data from our database
@@ -1118,9 +1122,7 @@ export class AuthService {
           role: role,
         },
       });
-      console.log(
-        `✅ Role synced to app_metadata for user ${userId}: ${role}`,
-      );
+      console.log(`✅ Role synced to app_metadata for user ${userId}: ${role}`);
     } catch (error) {
       console.error('⚠️ Failed to sync role to app_metadata:', error);
       throw error;
@@ -1820,7 +1822,7 @@ export class AuthService {
   async verifyBusinessMagicLink(token: string, locale?: string) {
     try {
       console.log('🔍 Verifying business magic link with token:', token);
-      
+
       // Находим pending registration
       const pendingReg =
         await this.prisma.pendingBusinessRegistration.findFirst({
@@ -1835,9 +1837,10 @@ export class AuthService {
       if (!pendingReg) {
         console.log('❌ Pending registration not found for token:', token);
         // Проверяем, может токен истек или уже использован
-        const expiredReg = await this.prisma.pendingBusinessRegistration.findFirst({
-          where: { token },
-        });
+        const expiredReg =
+          await this.prisma.pendingBusinessRegistration.findFirst({
+            where: { token },
+          });
         if (expiredReg) {
           console.log('⚠️ Token found but expired or already used:', {
             token,
@@ -1845,20 +1848,26 @@ export class AuthService {
             now: new Date(),
             isExpired: expiredReg.expiresAt < new Date(),
           });
-          throw new BadRequestException('Magic link has expired. Please request a new one.');
+          throw new BadRequestException(
+            'Magic link has expired. Please request a new one.',
+          );
         }
-        
+
         // Проверяем все токены для отладки
-        const allPendingRegs = await this.prisma.pendingBusinessRegistration.findMany({
-          take: 5,
-          orderBy: { createdAt: 'desc' },
-        });
-        console.log('📋 Recent pending registrations:', allPendingRegs.map(r => ({
-          token: r.token.substring(0, 10) + '...',
-          email: r.email,
-          expiresAt: r.expiresAt,
-        })));
-        
+        const allPendingRegs =
+          await this.prisma.pendingBusinessRegistration.findMany({
+            take: 5,
+            orderBy: { createdAt: 'desc' },
+          });
+        console.log(
+          '📋 Recent pending registrations:',
+          allPendingRegs.map((r) => ({
+            token: r.token.substring(0, 10) + '...',
+            email: r.email,
+            expiresAt: r.expiresAt,
+          })),
+        );
+
         throw new BadRequestException('Invalid or expired magic link');
       }
 

@@ -24,7 +24,9 @@ export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
   @Post('send-business-magic-link')
-  async sendBusinessMagicLink(@Body() data: { email: string; name: string; password: string }) {
+  async sendBusinessMagicLink(
+    @Body() data: { email: string; name: string; password: string },
+  ) {
     try {
       console.log('📧 Send business magic link request:', {
         email: data.email,
@@ -375,7 +377,6 @@ export class AuthController {
     }
   }
 
-
   @Get('verify-business-magic-link')
   async verifyBusinessMagicLink(
     @Query('token') token: string,
@@ -385,7 +386,10 @@ export class AuthController {
       if (!token) {
         throw new HttpException('Token is required', HttpStatus.BAD_REQUEST);
       }
-      const result = await this.authService.verifyBusinessMagicLink(token, locale);
+      const result = await this.authService.verifyBusinessMagicLink(
+        token,
+        locale,
+      );
       return result;
     } catch (error) {
       console.error('❌ Verify business magic link failed:', error.message);
@@ -407,8 +411,12 @@ export class AuthController {
       if (!token) {
         const frontendUrl =
           process.env.FRONTEND_URL ||
-          (process.env.NODE_ENV === 'production' ? 'https://henzo.app' : 'http://localhost:3000');
-        return res.redirect(`${frontendUrl}/en/business/register?error=invalid_link`);
+          (process.env.NODE_ENV === 'production'
+            ? 'https://henzo.app'
+            : 'http://localhost:3000');
+        return res.redirect(
+          `${frontendUrl}/en/business/register?error=invalid_link`,
+        );
       }
 
       // Определяем locale: из query параметра, из Accept-Language заголовка, или дефолтный 'en'
@@ -419,13 +427,23 @@ export class AuthController {
           detectedLocale = lang;
         }
       }
-      if (!detectedLocale || (detectedLocale !== 'ru' && detectedLocale !== 'en' && detectedLocale !== 'vi')) {
+      if (
+        !detectedLocale ||
+        (detectedLocale !== 'ru' &&
+          detectedLocale !== 'en' &&
+          detectedLocale !== 'vi')
+      ) {
         detectedLocale = 'en';
       }
 
-      console.log(`🔍 Processing business magic link with locale: ${detectedLocale}`);
+      console.log(
+        `🔍 Processing business magic link with locale: ${detectedLocale}`,
+      );
 
-      const result = await this.authService.verifyBusinessMagicLink(token, detectedLocale);
+      const result = await this.authService.verifyBusinessMagicLink(
+        token,
+        detectedLocale,
+      );
 
       if (result.success && result.magicLinkUrl) {
         // Редиректим напрямую на Supabase magic link
@@ -436,7 +454,9 @@ export class AuthController {
       // Если нет magicLinkUrl, редиректим на страницу регистрации с ошибкой
       const frontendUrl =
         process.env.FRONTEND_URL ||
-        (process.env.NODE_ENV === 'production' ? 'https://henzo.app' : 'http://localhost:3000');
+        (process.env.NODE_ENV === 'production'
+          ? 'https://henzo.app'
+          : 'http://localhost:3000');
       return res.redirect(
         `${frontendUrl}/${detectedLocale}/business/register?error=verification_failed`,
       );
@@ -444,8 +464,10 @@ export class AuthController {
       console.error('❌ Redirect business magic link failed:', error.message);
       const frontendUrl =
         process.env.FRONTEND_URL ||
-        (process.env.NODE_ENV === 'production' ? 'https://henzo.app' : 'http://localhost:3000');
-      
+        (process.env.NODE_ENV === 'production'
+          ? 'https://henzo.app'
+          : 'http://localhost:3000');
+
       // Определяем locale для ошибки
       let detectedLocale = locale;
       if (!detectedLocale && acceptLanguage) {
@@ -454,10 +476,15 @@ export class AuthController {
           detectedLocale = lang;
         }
       }
-      if (!detectedLocale || (detectedLocale !== 'ru' && detectedLocale !== 'en' && detectedLocale !== 'vi')) {
+      if (
+        !detectedLocale ||
+        (detectedLocale !== 'ru' &&
+          detectedLocale !== 'en' &&
+          detectedLocale !== 'vi')
+      ) {
         detectedLocale = 'en';
       }
-      
+
       let errorParam = 'verification_failed';
       if (error.message?.includes('expired')) {
         errorParam = 'link_expired';
@@ -465,7 +492,9 @@ export class AuthController {
         errorParam = 'invalid_link';
       }
 
-      return res.redirect(`${frontendUrl}/${detectedLocale}/business/register?error=${errorParam}`);
+      return res.redirect(
+        `${frontendUrl}/${detectedLocale}/business/register?error=${errorParam}`,
+      );
     }
   }
 }

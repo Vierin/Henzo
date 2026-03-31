@@ -87,7 +87,15 @@ async function bootstrap() {
 
     // Filter unsupported HTTP methods (WebDAV, etc.) to reduce log noise
     app.use((req, res, next) => {
-      const unsupportedMethods = ['PROPFIND', 'PROPPATCH', 'MKCOL', 'COPY', 'MOVE', 'LOCK', 'UNLOCK'];
+      const unsupportedMethods = [
+        'PROPFIND',
+        'PROPPATCH',
+        'MKCOL',
+        'COPY',
+        'MOVE',
+        'LOCK',
+        'UNLOCK',
+      ];
       if (unsupportedMethods.includes(req.method)) {
         // Return 405 Method Not Allowed without logging
         return res.status(405).json({
@@ -144,7 +152,7 @@ async function bootstrap() {
           }
           return compression.filter(req, res);
         },
-      })
+      }),
     );
     console.log('✅ Compression enabled with optimized settings');
 

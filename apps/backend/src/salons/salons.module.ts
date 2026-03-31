@@ -8,7 +8,13 @@ import { ServicesModule } from '../services/services.module';
 import { CacheModule } from '../cache/cache.module';
 
 @Module({
-  imports: [PrismaModule, AuthModule, MapboxModule, ServicesModule, CacheModule],
+  imports: [
+    PrismaModule,
+    AuthModule,
+    MapboxModule,
+    ServicesModule,
+    CacheModule,
+  ],
   controllers: [SalonsController],
   providers: [SalonsService],
 })

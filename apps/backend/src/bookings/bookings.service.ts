@@ -1231,9 +1231,8 @@ export class BookingsService {
 
         // Send email to client about pending booking
         try {
-          const salonTimezone =
-            (booking.Salon as any)?.timezone || 'Asia/Ho_Chi_Minh';
-          const workingHours = (booking.Salon as any)?.workingHours;
+          const salonTimezone = booking.Salon?.timezone || 'Asia/Ho_Chi_Minh';
+          const workingHours = booking.Salon?.workingHours;
           const isWithinWorkingHours = this.isWithinWorkingHours(
             workingHours,
             salonTimezone,

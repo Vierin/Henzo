@@ -26,5 +26,3 @@ export class UpdateTimeBlockDto {
   @IsString()
   rescheduleStaffId?: string;
 }
-
-

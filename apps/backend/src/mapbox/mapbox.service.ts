@@ -102,7 +102,12 @@ export class MapboxService {
   async reverseGeocode(
     lat: number,
     lon: number,
-  ): Promise<{ lat: number; lon: number; address: string; country_code?: string } | null> {
+  ): Promise<{
+    lat: number;
+    lon: number;
+    address: string;
+    country_code?: string;
+  } | null> {
     try {
       if (!this.accessToken) {
         throw new Error('MAPBOX_ACCESS_TOKEN is not configured');
@@ -127,9 +132,9 @@ export class MapboxService {
         const feature = response.body.features[0];
         const placeName = feature.place_name || '';
         // Extract country code from feature context
-        const countryCode = feature.context?.find(
-          (ctx: any) => ctx.id?.startsWith('country')
-        )?.short_code?.toUpperCase();
+        const countryCode = feature.context
+          ?.find((ctx: any) => ctx.id?.startsWith('country'))
+          ?.short_code?.toUpperCase();
 
         console.log('✅ Mapbox reverse geocoding successful:', {
           lat,

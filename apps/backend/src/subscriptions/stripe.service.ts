@@ -68,7 +68,7 @@ export class StripeService {
       customer_email: params.customerEmail,
       line_items: [
         {
-          price: priceId!,
+          price: priceId,
           quantity: 1,
         },
       ],
@@ -158,7 +158,7 @@ export class StripeService {
     const statusOk = ['active', 'trialing', 'past_due', 'incomplete'] as const;
     const sub = list.data.find((s) =>
       statusOk.includes((s as { status?: string }).status as any),
-    ) as Stripe.Subscription | undefined;
+    );
     if (!sub?.id) {
       if (list.data.length > 0) {
         console.warn(

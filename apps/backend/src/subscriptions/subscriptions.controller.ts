@@ -248,7 +248,7 @@ export class SubscriptionsController {
     }
     console.log(`[Stripe webhook] event.type=${event.type} id=${event.id}`);
     if (event.type === 'checkout.session.completed') {
-      const session = event.data.object as Stripe.Checkout.Session;
+      const session = event.data.object;
       const sessionForLog = {
         id: session.id,
         customer: session.customer,
@@ -262,7 +262,7 @@ export class SubscriptionsController {
         '[Stripe webhook] checkout.session.completed FULL SESSION:',
         JSON.stringify(sessionForLog, null, 2),
       );
-      const userId = session.metadata?.userId as string | undefined;
+      const userId = session.metadata?.userId;
       const interval = session.metadata?.interval as
         | 'monthly'
         | 'annual'

@@ -8,16 +8,3 @@ import { MonitoringController } from './monitoring.controller';
   exports: [MonitoringService],
 })
 export class MonitoringModule {}
-
-
-
-
-
-
-
-
-
-
-
-
-

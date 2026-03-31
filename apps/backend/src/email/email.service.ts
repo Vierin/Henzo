@@ -141,7 +141,7 @@ export class EmailService {
     // dateTime is stored as UTC in DB
     // We pass it as-is to Google Calendar with the salon's timezone in ctz parameter
     // Google Calendar will automatically convert and display it correctly to the user
-    
+
     let dateTimeStr: string;
     if (bookingData.dateTime instanceof Date) {
       dateTimeStr = bookingData.dateTime.toISOString();
@@ -151,7 +151,7 @@ export class EmailService {
 
     // Parse UTC date
     const utcDate = new Date(dateTimeStr);
-    
+
     // Extract UTC components for dates parameter (must be in UTC)
     const year = utcDate.getUTCFullYear();
     const month = utcDate.getUTCMonth() + 1; // getUTCMonth() returns 0-11
@@ -178,22 +178,8 @@ export class EmailService {
       return `${y}${String(m).padStart(2, '0')}${String(d).padStart(2, '0')}T${String(h).padStart(2, '0')}${String(min).padStart(2, '0')}${String(sec).padStart(2, '0')}Z`;
     };
 
-    const start = formatDateTime(
-      year,
-      month,
-      day,
-      hours,
-      minutes,
-      seconds,
-    );
-    const end = formatDateTime(
-      year,
-      month,
-      day,
-      endHours,
-      endMins,
-      seconds,
-    );
+    const start = formatDateTime(year, month, day, hours, minutes, seconds);
+    const end = formatDateTime(year, month, day, endHours, endMins, seconds);
 
     const title = encodeURIComponent(
       `${bookingData.serviceName} at ${bookingData.salonName}`,
@@ -206,7 +192,7 @@ export class EmailService {
     const location = encodeURIComponent(
       bookingData.salonAddress || bookingData.salonName,
     );
-    
+
     // Use salon timezone or default to Asia/Ho_Chi_Minh
     const salonTimezone = bookingData.salonTimezone || 'Asia/Ho_Chi_Minh';
     const ctz = encodeURIComponent(salonTimezone);
@@ -230,7 +216,8 @@ export class EmailService {
     en: {
       title: 'Booking Confirmed!',
       subtitle: 'Your appointment at {salonName} has been confirmed',
-      thankYou: 'Thank you for booking with us. Here are your appointment details:',
+      thankYou:
+        'Thank you for booking with us. Here are your appointment details:',
       appointmentDetails: 'Appointment Details',
       service: 'Service',
       dateTime: 'Date & Time',
@@ -244,10 +231,12 @@ export class EmailService {
       phone: 'Phone',
       notProvided: 'Not provided',
       important: 'Please arrive 5-10 minutes before your appointment time.',
-      rescheduleNote: 'If you need to reschedule or cancel, please contact the salon directly.',
+      rescheduleNote:
+        'If you need to reschedule or cancel, please contact the salon directly.',
       addToCalendar: 'Add to Google Calendar',
       getDirections: 'Get Directions',
-      footer: 'This is an automated message. Please do not reply to this email.',
+      footer:
+        'This is an automated message. Please do not reply to this email.',
       subject: 'Booking Confirmation - {salonName}',
     },
     ru: {
@@ -267,10 +256,12 @@ export class EmailService {
       phone: 'Телефон',
       notProvided: 'Не указано',
       important: 'Пожалуйста, приходите за 5–10 минут до времени записи.',
-      rescheduleNote: 'Чтобы перенести или отменить запись, свяжитесь с салоном напрямую.',
+      rescheduleNote:
+        'Чтобы перенести или отменить запись, свяжитесь с салоном напрямую.',
       addToCalendar: 'Добавить в Google Календарь',
       getDirections: 'Как добраться',
-      footer: 'Это автоматическое сообщение. Пожалуйста, не отвечайте на это письмо.',
+      footer:
+        'Это автоматическое сообщение. Пожалуйста, не отвечайте на это письмо.',
       subject: 'Подтверждение бронирования - {salonName}',
     },
     vi: {
@@ -290,7 +281,8 @@ export class EmailService {
       phone: 'Điện thoại',
       notProvided: 'Chưa cung cấp',
       important: 'Vui lòng đến trước 5-10 phút so với giờ hẹn.',
-      rescheduleNote: 'Nếu cần đổi lịch hoặc hủy, vui lòng liên hệ trực tiếp với salon.',
+      rescheduleNote:
+        'Nếu cần đổi lịch hoặc hủy, vui lòng liên hệ trực tiếp với salon.',
       addToCalendar: 'Thêm vào Google Calendar',
       getDirections: 'Chỉ đường',
       footer: 'Đây là tin nhắn tự động. Vui lòng không trả lời email này.',
@@ -447,7 +439,7 @@ export class EmailService {
               </div>
               `
                   : ''
-                }
+              }
             </div>
             
             <div class="footer">
@@ -903,7 +895,9 @@ export class EmailService {
 
       const baseUrl =
         this.configService.get<string>('FRONTEND_URL') ||
-        (process.env.NODE_ENV === 'production' ? 'https://henzo.app' : 'http://localhost:3000');
+        (process.env.NODE_ENV === 'production'
+          ? 'https://henzo.app'
+          : 'http://localhost:3000');
       const confirmUrl = `${baseUrl}/bookings/${bookingData.bookingId}/confirm`;
       const rejectUrl = `${baseUrl}/bookings/${bookingData.bookingId}/reject`;
 
@@ -1106,7 +1100,7 @@ export class EmailService {
                 <p>Your booking request has been sent to <strong>${bookingData.salonName}</strong>.</p>
                 ${
                   bookingData.isWithinWorkingHours !== false
-                    ? '<p>Usually the salon confirms the booking within 2 hours. We\'ll notify you as soon as the salon confirms your appointment.</p>'
+                    ? "<p>Usually the salon confirms the booking within 2 hours. We'll notify you as soon as the salon confirms your appointment.</p>"
                     : '<p><strong>The salon will confirm your booking when they open.</strong></p>'
                 }
               </div>

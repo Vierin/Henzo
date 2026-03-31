@@ -100,7 +100,7 @@ export class BookingsController {
       if (isOwnerCreated && isOwnerOfSalon) {
         // Owner is creating booking in their own salon
         const hasClientEmail = data.clientEmail && data.clientEmail.trim();
-        
+
         if (hasClientEmail) {
           // Owner is creating booking on behalf of a client with email
           const clientEmail = data.clientEmail!.trim(); // Safe because hasClientEmail is true
@@ -118,19 +118,29 @@ export class BookingsController {
         } else {
           // Owner creating booking without client email - MUST create anonymous client user
           // This ensures owner's data is NEVER used for the booking
-          console.log('📧 Owner creating booking for anonymous client (no email provided):', {
-            clientName: data.clientName || 'Anonymous Client',
-            clientPhone: data.clientPhone,
-            hasClientEmail: false,
-            willCreateAnonymousUser: true,
-          });
+          console.log(
+            '📧 Owner creating booking for anonymous client (no email provided):',
+            {
+              clientName: data.clientName || 'Anonymous Client',
+              clientPhone: data.clientPhone,
+              hasClientEmail: false,
+              willCreateAnonymousUser: true,
+            },
+          );
           bookingUserId = await this.bookingsService.createAnonymousClientUser(
             data.salonId,
             data.clientName || 'Anonymous Client',
             data.clientPhone,
           );
-          console.log('✅ Created anonymous client user ID for booking:', bookingUserId);
-          console.log('⚠️ Owner ID was:', currentUser.user.id, '- NOT using it for booking');
+          console.log(
+            '✅ Created anonymous client user ID for booking:',
+            bookingUserId,
+          );
+          console.log(
+            '⚠️ Owner ID was:',
+            currentUser.user.id,
+            '- NOT using it for booking',
+          );
         }
       } else if (isOwnerCreated && !isOwnerOfSalon) {
         // Owner trying to book in another salon - this should be blocked on frontend
@@ -142,7 +152,9 @@ export class BookingsController {
         // Even in this case, if no client email provided, create anonymous client
         // This prevents owner's data from being used incorrectly
         if (!data.clientEmail || !data.clientEmail.trim()) {
-          console.log('📧 Creating anonymous client even for wrong salon to prevent owner data usage');
+          console.log(
+            '📧 Creating anonymous client even for wrong salon to prevent owner data usage',
+          );
           bookingUserId = await this.bookingsService.createAnonymousClientUser(
             data.salonId,
             data.clientName || 'Anonymous Client',
@@ -707,18 +719,19 @@ export class BookingsController {
       };
     } catch (error) {
       console.error('❌ Send magic link failed:', error.message);
-      
+
       // If user already exists, return specific error code
       if (error.message === 'USER_EXISTS') {
         throw new HttpException(
           {
             code: 'USER_EXISTS',
-            message: 'An account with this email already exists. Please login with your password.',
+            message:
+              'An account with this email already exists. Please login with your password.',
           },
           HttpStatus.CONFLICT, // 409 Conflict
         );
       }
-      
+
       throw new HttpException(
         error.message || 'Failed to send magic link',
         HttpStatus.BAD_REQUEST,

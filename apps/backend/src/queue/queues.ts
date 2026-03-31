@@ -3,16 +3,3 @@ export const QUEUE_NAMES = {
   REMINDERS: 'reminders',
   NOTIFICATIONS: 'notifications',
 } as const;
-
-
-
-
-
-
-
-
-
-
-
-
-
