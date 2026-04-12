@@ -30,7 +30,8 @@ export class ClientBookingEmailService {
   private defaultSender() {
     return {
       email:
-        this.configService.get<string>('BREVO_FROM_EMAIL') || 'noreply@henzo.app',
+        this.configService.get<string>('BREVO_FROM_EMAIL') ||
+        'noreply@henzo.app',
       name: 'Henzo Booking System',
     };
   }

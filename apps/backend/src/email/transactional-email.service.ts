@@ -61,7 +61,8 @@ export class TransactionalEmailService {
 
     const loc = resolveClientEmailLocale(data.locale);
     const L =
-      MAGIC_LINK_CONFIRMATION_STRINGS[loc] || MAGIC_LINK_CONFIRMATION_STRINGS.en;
+      MAGIC_LINK_CONFIRMATION_STRINGS[loc] ||
+      MAGIC_LINK_CONFIRMATION_STRINGS.en;
     const htmlContent = renderMagicLinkConfirmationHtml(
       {
         confirmUrl: data.confirmUrl,

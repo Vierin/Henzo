@@ -193,9 +193,7 @@ export class EmailService {
 
   async sendMagicLinkConfirmation(
     clientEmail: string,
-    data: Parameters<
-      TransactionalEmailService['sendMagicLinkConfirmation']
-    >[1],
+    data: Parameters<TransactionalEmailService['sendMagicLinkConfirmation']>[1],
   ) {
     try {
       const result = await this.transactional.sendMagicLinkConfirmation(

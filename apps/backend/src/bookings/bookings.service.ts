@@ -1305,8 +1305,7 @@ export class BookingsService {
             salonPhone: booking.Salon?.phone || null,
             staffName: booking.Staff?.name,
             dateTime: booking.dateTime,
-            salonTimezone:
-              booking.Salon?.timezone || 'Asia/Ho_Chi_Minh',
+            salonTimezone: booking.Salon?.timezone || 'Asia/Ho_Chi_Minh',
             locale: clientLocale,
           },
         );
@@ -2291,10 +2290,11 @@ export class BookingsService {
       });
 
       const bookingDateTime = new Date(bookingData.time);
-      const { formattedDate, formattedTime } = this.formatMagicLinkEmailDateTime(
-        bookingDateTime.toISOString(),
-        (salon as any)?.timezone || 'Asia/Ho_Chi_Minh',
-      );
+      const { formattedDate, formattedTime } =
+        this.formatMagicLinkEmailDateTime(
+          bookingDateTime.toISOString(),
+          (salon as any)?.timezone || 'Asia/Ho_Chi_Minh',
+        );
 
       // Send magic link email
       await this.emailService.sendMagicLinkConfirmation(email, {

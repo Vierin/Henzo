@@ -52,8 +52,7 @@ export const BOOKING_CONFIRMATION_STRINGS: Record<
     addToCalendar: 'Add to Google Calendar',
     getDirections: 'Get Directions',
     importantLabel: 'Important:',
-    footer:
-      'This is an automated message. Please do not reply to this email.',
+    footer: 'This is an automated message. Please do not reply to this email.',
     subject: 'Booking Confirmation - {salonName}',
   },
   ru: {

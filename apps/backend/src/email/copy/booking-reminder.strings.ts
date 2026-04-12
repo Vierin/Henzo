@@ -42,8 +42,7 @@ export const BOOKING_REMINDER_STRINGS: Record<
     appointmentDetails: 'Appointment Details',
     salonInfo: 'Salon Information',
     importantLabel: 'Important:',
-    importantBody:
-      'Please arrive 5-10 minutes before your appointment time.',
+    importantBody: 'Please arrive 5-10 minutes before your appointment time.',
     rescheduleLine:
       'If you need to reschedule or cancel, please contact the salon directly as soon as possible.',
     footer: 'This is an automated reminder. Please do not reply to this email.',
@@ -69,8 +68,7 @@ export const BOOKING_REMINDER_STRINGS: Record<
     appointmentDetails: 'Детали записи',
     salonInfo: 'Информация о салоне',
     importantLabel: 'Важно:',
-    importantBody:
-      'Пожалуйста, приходите за 5–10 минут до времени записи.',
+    importantBody: 'Пожалуйста, приходите за 5–10 минут до времени записи.',
     rescheduleLine:
       'Чтобы перенести или отменить запись, свяжитесь с салоном как можно скорее.',
     footer:
