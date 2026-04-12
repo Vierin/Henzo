@@ -106,7 +106,7 @@ export default function BookingTimeSelector({
 				setHasMoved(true);
 			}
 		},
-		[isDragging, startX, scrollLeft]
+		[isDragging, startX, scrollLeft],
 	);
 
 	useEffect(() => {
@@ -178,7 +178,7 @@ export default function BookingTimeSelector({
 	] as const;
 
 	return (
-		<div className="mt-10">
+		<div>
 			<div className="flex items-center justify-between mb-2">
 				<h3 className="text-base sm:text-lg font-bold text-gray-900">
 					{t.booking.selectATime}

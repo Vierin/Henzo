@@ -38,6 +38,7 @@ export interface TimeBlockDto {
 	};
 	conflictingBookings?: Array<{
 		id: string;
+		serviceId?: string;
 		time: string;
 		userId: string;
 		user?: {
@@ -45,7 +46,9 @@ export interface TimeBlockDto {
 			email?: string;
 		};
 		service?: {
+			id?: string;
 			name: string;
+			Staff?: { id: string }[];
 		};
 	}>;
 }

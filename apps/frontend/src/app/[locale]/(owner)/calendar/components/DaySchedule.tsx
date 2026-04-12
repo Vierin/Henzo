@@ -26,6 +26,26 @@ import {
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 
+/** Monday of the calendar week containing `d` (Mon–Sun). */
+function getMondayOfWeek(d: Date): Date {
+	const x = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+	const day = x.getDay();
+	const diff = day === 0 ? -6 : 1 - day;
+	x.setDate(x.getDate() + diff);
+	return x;
+}
+
+function dateOnlyUTC(d: Date): number {
+	return Date.UTC(d.getFullYear(), d.getMonth(), d.getDate());
+}
+
+/** Weeks from `anchorMonday` (a Monday) to the Monday of the week containing `d`. */
+function weekOffsetFromAnchorMonday(anchorMonday: Date, d: Date): number {
+	const mon = getMondayOfWeek(d);
+	const days = (dateOnlyUTC(mon) - dateOnlyUTC(anchorMonday)) / 86400000;
+	return Math.round(days / 7);
+}
+
 interface DayScheduleProps {
 	selectedDate: Date;
 	bookings: Booking[];
@@ -86,7 +106,7 @@ export default function DaySchedule({
 	const [startX, setStartX] = useState(0);
 	const [scrollLeft, setScrollLeft] = useState(0);
 	const [isMobile, setIsMobile] = useState(false);
-	const [startDateIndex, setStartDateIndex] = useState(0); // Index for week navigation
+	const [weekOffset, setWeekOffset] = useState(0); // Weeks from this week's Monday
 	const [showCalendarPicker, setShowCalendarPicker] = useState(false);
 
 	const monthNames = [
@@ -202,36 +222,11 @@ export default function DaySchedule({
 		const dayBookings = getBookingsForDate(date);
 		const activeBookings = dayBookings.filter((b) => b.status !== 'CANCELED');
 
-		// Get time blocks for this date
-		const dayTimeBlocks = getTimeBlocksForDate(date);
-
 		// Count total available slots (hours * staff members)
 		const totalSlots = totalWorkingHours * staffMembersList.length;
 
-		// Count occupied slots
-		let occupiedSlots = 0;
-
-		// Count bookings (each booking occupies 1 slot)
-		occupiedSlots += activeBookings.length;
-
-		// Count time blocks (each hour in a time block occupies slots for affected staff)
-		dayTimeBlocks.forEach((block) => {
-			const blockStart = new Date(block.startDate);
-			const blockEnd = new Date(block.endDate);
-			const blockStartHour = blockStart.getHours();
-			const blockEndHour = blockEnd.getHours();
-			const blockHours = Math.max(1, blockEndHour - blockStartHour);
-
-			// If block is salon-wide, it affects all staff
-			// If block is for specific staff, it affects only that staff
-			if (!block.staffId) {
-				// Salon-wide block
-				occupiedSlots += blockHours * staffMembersList.length;
-			} else {
-				// Staff-specific block
-				occupiedSlots += blockHours;
-			}
-		});
+		// Bookings only — breaks / time-off blocks are not "client load" for this bar
+		const occupiedSlots = activeBookings.length;
 
 		// Calculate percentage (cap at 100%)
 		const loadPercentage = Math.min(100, (occupiedSlots / totalSlots) * 100);
@@ -246,14 +241,17 @@ export default function DaySchedule({
 		return 'bg-green-500'; // Green for low load
 	};
 
-	// Generate 7 days starting from today
+	// Generate Mon–Sun for the visible week
 	const generateWeekDays = useMemo(() => {
 		const days = [];
 		const today = new Date();
+		const thisWeekMonday = getMondayOfWeek(today);
+		const displayMonday = new Date(thisWeekMonday);
+		displayMonday.setDate(thisWeekMonday.getDate() + weekOffset * 7);
 
 		for (let i = 0; i < 7; i++) {
-			const date = new Date(today);
-			date.setDate(today.getDate() + startDateIndex + i);
+			const date = new Date(displayMonday);
+			date.setDate(displayMonday.getDate() + i);
 
 			const dayOfWeek = date.getDay();
 			const monthIndex = date.getMonth();
@@ -308,13 +306,12 @@ export default function DaySchedule({
 
 		return days;
 	}, [
-		startDateIndex,
+		weekOffset,
 		workingHours,
 		t,
 		monthNames,
 		weekdayNames,
 		bookings,
-		timeBlocks,
 		allStaffMembers,
 	]);
 
@@ -336,26 +333,13 @@ export default function DaySchedule({
 		});
 	}, [selectedDate, generateWeekDays]);
 
-	// Update startDateIndex when selectedDate changes
+	// Jump to the week that contains selectedDate when it leaves the strip
 	useEffect(() => {
 		if (currentDateIndex === -1) {
-			// Selected date is not in current week, adjust startDateIndex
 			const today = new Date();
-			const selectedDateOnly = new Date(
-				selectedDate.getFullYear(),
-				selectedDate.getMonth(),
-				selectedDate.getDate()
-			);
-			const todayOnly = new Date(
-				today.getFullYear(),
-				today.getMonth(),
-				today.getDate()
-			);
-			const daysDiff = Math.floor(
-				(selectedDateOnly.getTime() - todayOnly.getTime()) /
-					(1000 * 60 * 60 * 24)
-			);
-			setStartDateIndex(Math.max(0, daysDiff));
+			const thisWeekMonday = getMondayOfWeek(today);
+			const off = weekOffsetFromAnchorMonday(thisWeekMonday, selectedDate);
+			setWeekOffset(Math.max(0, off));
 		}
 	}, [selectedDate, currentDateIndex]);
 
@@ -368,70 +352,70 @@ export default function DaySchedule({
 
 	// Handle week navigation
 	const handleScrollLeft = () => {
-		const newIndex = Math.max(0, startDateIndex - 7);
-		setStartDateIndex(newIndex);
-
-		// Calculate first day of new week
 		const today = new Date();
-		const firstDayOfNewWeek = new Date(today);
-		firstDayOfNewWeek.setDate(today.getDate() + newIndex);
+		const thisWeekMonday = getMondayOfWeek(today);
+		const newOffset = Math.max(0, weekOffset - 1);
+		setWeekOffset(newOffset);
 
-		// Check if selected date is in the new week
+		const displayMonday = new Date(thisWeekMonday);
+		displayMonday.setDate(thisWeekMonday.getDate() + newOffset * 7);
+		const lastDayOfNewWeek = new Date(displayMonday);
+		lastDayOfNewWeek.setDate(displayMonday.getDate() + 6);
+
 		const selectedDateOnly = new Date(
 			selectedDate.getFullYear(),
 			selectedDate.getMonth(),
 			selectedDate.getDate()
 		);
 		const firstDayOnly = new Date(
-			firstDayOfNewWeek.getFullYear(),
-			firstDayOfNewWeek.getMonth(),
-			firstDayOfNewWeek.getDate()
+			displayMonday.getFullYear(),
+			displayMonday.getMonth(),
+			displayMonday.getDate()
 		);
-		const lastDayOfNewWeek = new Date(firstDayOnly);
-		lastDayOfNewWeek.setDate(firstDayOnly.getDate() + 6);
+		const lastDayOnly = new Date(
+			lastDayOfNewWeek.getFullYear(),
+			lastDayOfNewWeek.getMonth(),
+			lastDayOfNewWeek.getDate()
+		);
 
-		// If selected date is not in the new week, select the first day
-		if (
-			selectedDateOnly < firstDayOnly ||
-			selectedDateOnly > lastDayOfNewWeek
-		) {
-			handleDateSelect(firstDayOfNewWeek);
+		if (selectedDateOnly < firstDayOnly || selectedDateOnly > lastDayOnly) {
+			handleDateSelect(new Date(displayMonday));
 		}
 	};
 
 	const handleScrollRight = () => {
-		const newIndex = startDateIndex + 7;
-		setStartDateIndex(newIndex);
-
-		// Calculate first day of new week
 		const today = new Date();
-		const firstDayOfNewWeek = new Date(today);
-		firstDayOfNewWeek.setDate(today.getDate() + newIndex);
+		const thisWeekMonday = getMondayOfWeek(today);
+		const newOffset = weekOffset + 1;
+		setWeekOffset(newOffset);
 
-		// Check if selected date is in the new week
+		const displayMonday = new Date(thisWeekMonday);
+		displayMonday.setDate(thisWeekMonday.getDate() + newOffset * 7);
+		const lastDayOfNewWeek = new Date(displayMonday);
+		lastDayOfNewWeek.setDate(displayMonday.getDate() + 6);
+
 		const selectedDateOnly = new Date(
 			selectedDate.getFullYear(),
 			selectedDate.getMonth(),
 			selectedDate.getDate()
 		);
 		const firstDayOnly = new Date(
-			firstDayOfNewWeek.getFullYear(),
-			firstDayOfNewWeek.getMonth(),
-			firstDayOfNewWeek.getDate()
+			displayMonday.getFullYear(),
+			displayMonday.getMonth(),
+			displayMonday.getDate()
 		);
-		const lastDayOfNewWeek = new Date(firstDayOnly);
-		lastDayOfNewWeek.setDate(firstDayOnly.getDate() + 6);
+		const lastDayOnly = new Date(
+			lastDayOfNewWeek.getFullYear(),
+			lastDayOfNewWeek.getMonth(),
+			lastDayOfNewWeek.getDate()
+		);
 
-		// If selected date is not in the new week, select the first day
-		if (
-			selectedDateOnly < firstDayOnly ||
-			selectedDateOnly > lastDayOfNewWeek
-		) {
-			handleDateSelect(firstDayOfNewWeek);
+		if (selectedDateOnly < firstDayOnly || selectedDateOnly > lastDayOnly) {
+			handleDateSelect(new Date(displayMonday));
 		}
 	};
 
-	const canScrollLeft = startDateIndex > 0;
+	const canScrollLeft = weekOffset > 0;
 	const canScrollRight = true; // Always can scroll right
 
 	useEffect(() => {
@@ -909,7 +893,6 @@ export default function DaySchedule({
 					<div className="flex gap-1 sm:gap-3 overflow-x-auto pb-2">
 						{generateWeekDays.map((dayInfo, index) => {
 							const isSelected = currentDateIndex === index;
-							const actualIndex = startDateIndex + index;
 
 							return (
 								<button
@@ -923,7 +906,7 @@ export default function DaySchedule({
 									className={cn(
 										'flex-1 flex flex-col items-center justify-center py-1 px-1 sm:py-2 sm:px-2 rounded-lg sm:rounded-xl border-2 transition-all min-h-[70px] sm:min-h-[80px] md:min-h-[120px] h-[50px] sm:h-[80px] md:h-[120px] min-w-[45px] sm:min-w-[70px]',
 										dayInfo.isClosed
-											? 'border-gray-200 bg-gray-200 opacity-50 !text-gray-300 cursor-not-allowed'
+											? 'border-gray-200 bg-gray-200 opacity-90 cursor-not-allowed text-gray-700'
 											: isSelected
 												? 'border-[#ff5b5b] bg-[#ff5b5b] text-white shadow-lg'
 												: 'border-gray-200 bg-white hover:border-[#ff5b5b] hover:shadow-md'
@@ -932,7 +915,11 @@ export default function DaySchedule({
 									<span
 										className={cn(
 											'text-[10px] sm:text-xs font-medium mb-0.5 sm:mb-1',
-											isSelected ? 'text-white' : 'text-gray-500'
+											dayInfo.isClosed
+												? 'text-gray-600'
+												: isSelected
+													? 'text-white'
+													: 'text-gray-500'
 										)}
 									>
 										{dayInfo.dayName}
@@ -940,7 +927,11 @@ export default function DaySchedule({
 									<span
 										className={cn(
 											'text-sm sm:text-lg md:text-2xl font-bold mb-0.5 sm:mb-0.5',
-											isSelected ? 'text-white' : 'text-gray-900'
+											dayInfo.isClosed
+												? 'text-gray-800'
+												: isSelected
+													? 'text-white'
+													: 'text-gray-900'
 										)}
 									>
 										{dayInfo.day}
@@ -948,7 +939,11 @@ export default function DaySchedule({
 									<span
 										className={cn(
 											'text-[10px] sm:text-xs',
-											isSelected ? 'text-white/80' : 'text-gray-500'
+											dayInfo.isClosed
+												? 'text-gray-600'
+												: isSelected
+													? 'text-white/80'
+													: 'text-gray-500'
 										)}
 									>
 										{dayInfo.monthShort}

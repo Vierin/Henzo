@@ -64,7 +64,7 @@ export function useSalonSetup() {
 		() => [
 			{ number: 1, title: t('business.completeSetup.steps.1') },
 			{ number: 2, title: t('business.completeSetup.steps.2') },
-			{ number: 3, title: t('business.completeSetup.steps.5') },
+			{ number: 3, title: t('business.completeSetup.steps.3') },
 		],
 		[t]
 	);
@@ -276,10 +276,6 @@ export function useSalonSetup() {
 		setCurrentStep((prev) => Math.max(prev - 1, 1));
 	}, []);
 
-	const skipStep = useCallback(() => {
-		setCurrentStep((prev) => Math.min(prev + 1, steps.length));
-	}, [steps.length]);
-
 	const handleSubmit = useCallback(async () => {
 		if (!validateStep(currentStep)) {
 			return;
@@ -341,7 +337,6 @@ export function useSalonSetup() {
 		handleWorkingHoursChange,
 		nextStep,
 		prevStep,
-		skipStep,
 		handleSubmit,
 		validateStep,
 	};

@@ -162,11 +162,9 @@
 		"step": "Step",
 		"of": "of",
 		"steps": {
-			"1": "General Information",
-			"2": "Categories",
-			"3": "Working Hours",
-			"4": "Branding",
-			"5": "Confirmation & Review"
+			"1": "Basics",
+			"2": "Working hours",
+			"3": "Review"
 		},
 		"step1": {
 			"salonName": "Salon Name",

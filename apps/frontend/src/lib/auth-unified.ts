@@ -257,18 +257,30 @@ class AuthManager {
 
 				authData = signUpData;
 
-				// Создание пользователя в API
+				// Создание пользователя в API (требуется Bearer — см. backend registerOwner)
 				if (authData.user) {
-					const response = await apiClient.post<{
-						user: any;
-						emailConfirmed?: boolean;
-					}>('/auth/register', {
-						userId: authData.user.id,
-						email: data.email,
-						magicLinkToken: (data as any).magicLinkToken,
-						name: data.name,
-						role: 'OWNER',
-					});
+					const accessToken = authData.session?.access_token;
+					if (accessToken) {
+						await apiClient.post<{
+							user: any;
+							emailConfirmed?: boolean;
+						}>(
+							'/auth/register',
+							{
+								userId: authData.user.id,
+								email: data.email,
+								magicLinkToken: (data as any).magicLinkToken,
+								name: data.name,
+								role: 'OWNER',
+							},
+							{
+								headers: {
+									Authorization: `Bearer ${accessToken}`,
+								},
+							}
+						);
+					}
+					// Если сессии нет (ожидание подтверждения email) — дозапись в БД на /auth/callback?type=business
 				}
 			}
 

@@ -82,6 +82,7 @@ export class JwtVerifierService implements OnModuleInit {
           {
             algorithms: ['RS256'],
             issuer: `${this.supabaseUrl}/auth/v1`,
+            audience: 'authenticated',
           },
           (err, decoded) => {
             if (err) {

@@ -11,6 +11,9 @@ import {
 import { format } from 'date-fns';
 import { useStaffBySalon } from '@/hooks/useStaff';
 import { useSalonId } from '@/hooks/useSalons';
+import { useServices } from '@/hooks/useServices';
+import type { Staff } from '@/types';
+import type { ServiceResponseDto } from '@/types/dto/service.dto';
 import { WorkingHours } from '@/types';
 import {
 	useCreateTimeBlock,
@@ -48,6 +51,33 @@ import {
 	vi as viDayPicker,
 	enUS as enUSDayPicker,
 } from 'date-fns/locale';
+
+/** Same rules as booking: staff.Service empty = all services; service.Staff empty = all staff. */
+function staffCanTakeServiceForTransfer(
+	staffMember: Staff,
+	serviceId: string,
+	salonServices: ServiceResponseDto[],
+): boolean {
+	const svc = salonServices.find((s) => s.id === serviceId);
+	if (!svc) return false;
+
+	const staffServices = staffMember.Service || [];
+	if (
+		staffServices.length > 0 &&
+		!staffServices.some((s) => s.id === serviceId)
+	) {
+		return false;
+	}
+
+	const allowedOnService = svc.Staff || [];
+	if (
+		allowedOnService.length > 0 &&
+		!allowedOnService.some((s) => s.id === staffMember.id)
+	) {
+		return false;
+	}
+	return true;
+}
 
 interface BlockTimeModalProps {
 	isOpen: boolean;
@@ -98,6 +128,7 @@ export default function BlockTimeModal({
 	const { data: staff = [], isLoading: staffLoading } = useStaffBySalon(
 		salonId || ''
 	);
+	const { data: salonServices = [] } = useServices(salonId || '', {});
 
 	const monthNames = [
 		'january',
@@ -162,6 +193,54 @@ export default function BlockTimeModal({
 	// Conflict detection state
 	const [showConflicts, setShowConflicts] = useState(false);
 	const [conflicts, setConflicts] = useState<any[]>([]);
+
+	const staffEligibleForReschedule = useMemo(() => {
+		const others = staff.filter((m) => m.id !== selectedStaffId);
+		const idsNeeded = new Set<string>();
+		for (const c of conflicts) {
+			const sid =
+				(c as { serviceId?: string }).serviceId || c.service?.id;
+			if (sid) idsNeeded.add(sid);
+		}
+		if (idsNeeded.size === 0) {
+			return others;
+		}
+		return others.filter((member) => {
+			for (const sid of idsNeeded) {
+				if (!staffCanTakeServiceForTransfer(member, sid, salonServices)) {
+					return false;
+				}
+			}
+			return true;
+		});
+	}, [staff, conflicts, selectedStaffId, salonServices]);
+
+	useEffect(() => {
+		if (
+			showConflicts &&
+			blockFor === 'staff' &&
+			conflictAction === 'RESCHEDULE' &&
+			staffEligibleForReschedule.length === 0
+		) {
+			setConflictAction('CANCEL');
+		}
+	}, [
+		showConflicts,
+		blockFor,
+		conflictAction,
+		staffEligibleForReschedule.length,
+	]);
+
+	useEffect(() => {
+		if (
+			selectedStaffIdForReschedule &&
+			!staffEligibleForReschedule.some(
+				(s) => s.id === selectedStaffIdForReschedule,
+			)
+		) {
+			setSelectedStaffIdForReschedule('');
+		}
+	}, [selectedStaffIdForReschedule, staffEligibleForReschedule]);
 
 	// Helper functions for date conversion
 	const stringToDate = (dateStr: string): Date | undefined => {
@@ -318,6 +397,14 @@ export default function BlockTimeModal({
 	const validateFormWithConflicts = () => {
 		const basicValidation = validateForm();
 		if (!basicValidation) {
+			return false;
+		}
+		if (
+			showConflicts &&
+			blockFor === 'staff' &&
+			conflictAction === 'RESCHEDULE' &&
+			staffEligibleForReschedule.length === 0
+		) {
 			return false;
 		}
 		// If rescheduling to another staff (only when blocking one staff), need to select staff
@@ -564,22 +651,38 @@ export default function BlockTimeModal({
 									<div className="space-y-2">
 										{/* Option: Transfer to another staff — only when blocking one staff */}
 										{blockFor === 'staff' && (
-											<label className="flex items-center space-x-3 p-3 border border-blue-200 rounded-lg hover:bg-blue-50 gap-2 cursor-pointer transition-colors bg-white">
+											<label
+												className={cn(
+													'flex items-center space-x-3 p-3 border border-blue-200 rounded-lg gap-2 transition-colors bg-white',
+													staffEligibleForReschedule.length === 0
+														? 'opacity-60 cursor-not-allowed'
+														: 'hover:bg-blue-50 cursor-pointer',
+												)}
+											>
 												<input
 													type="radio"
 													name="conflictAction"
 													value="RESCHEDULE"
 													checked={conflictAction === 'RESCHEDULE'}
 													onChange={() => setConflictAction('RESCHEDULE')}
-													className="w-4 h-4 text-[#ff5b5b] border-gray-300 focus:ring-[#ff5b5b]"
+													disabled={staffEligibleForReschedule.length === 0}
+													className="w-4 h-4 text-[#ff5b5b] border-gray-300 focus:ring-[#ff5b5b] disabled:opacity-50"
 												/>
-												<div className="flex-1">
+												<div className="flex-1 min-w-0">
 													<div className="text-sm font-medium text-gray-900">
 														{t(
 															'owner.calendar.blockTimeModal.transferBookings'
 														)}
 													</div>
-													{conflictAction === 'RESCHEDULE' && (
+													{staffEligibleForReschedule.length === 0 && (
+														<p className="text-xs text-amber-800 mt-1">
+															{t(
+																'owner.calendar.blockTimeModal.transferNoEligibleStaff',
+															)}
+														</p>
+													)}
+													{conflictAction === 'RESCHEDULE' &&
+														staffEligibleForReschedule.length > 0 && (
 														<div className="mt-2">
 															<Select
 																value={selectedStaffIdForReschedule}
@@ -593,12 +696,8 @@ export default function BlockTimeModal({
 																	/>
 																</SelectTrigger>
 																<SelectContent className="bg-white border border-gray-300 shadow-lg rounded-md">
-																	{staff
-																		.filter(
-																			(staffMember) =>
-																				staffMember.id !== selectedStaffId
-																		)
-																		.map((staffMember) => (
+																	{staffEligibleForReschedule.map(
+																		(staffMember) => (
 																			<SelectItem
 																				key={staffMember.id}
 																				value={staffMember.id}
@@ -606,7 +705,8 @@ export default function BlockTimeModal({
 																			>
 																				{staffMember.name}
 																			</SelectItem>
-																		))}
+																		),
+																	)}
 																</SelectContent>
 															</Select>
 														</div>
@@ -1095,7 +1195,7 @@ export default function BlockTimeModal({
 								disabled={isSubmitting || !validateFormWithConflicts()}
 								className="px-4 py-2 text-sm font-medium !text-white bg-[#ff5b5b] rounded-lg hover:bg-[#e04a4a] focus:outline-none focus:ring-2 focus:ring-[#ff5b5b] focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center gap-2"
 							>
-								{isSubmitting && <LoadingSpinner size="sm" />}
+								{isSubmitting && <LoadingSpinner size="sm" inline />}
 								{isSubmitting
 									? t('owner.calendar.blockTimeModal.blocking')
 									: t('owner.calendar.blockTimeModal.confirmAndBlock')}
@@ -1115,7 +1215,7 @@ export default function BlockTimeModal({
 								disabled={!validateForm() || isSubmitting}
 								className="px-4 py-2 text-sm font-medium !text-white bg-[#ff5b5b] rounded-lg hover:bg-[#e04a4a] focus:outline-none focus:ring-2 focus:ring-[#ff5b5b] focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center gap-2"
 							>
-								{isSubmitting && <LoadingSpinner size="sm" />}
+								{isSubmitting && <LoadingSpinner size="sm" inline />}
 								{isSubmitting
 									? t('owner.calendar.blockTimeModal.checking')
 									: t('owner.calendar.blockTimeModal.checkConflictsAndBlock')}

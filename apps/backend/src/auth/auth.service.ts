@@ -1,4 +1,8 @@
-import { Injectable, BadRequestException } from '@nestjs/common';
+import {
+  Injectable,
+  BadRequestException,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { supabase } from '../lib/supabase';
 import { UpdateProfileDto } from './dto/update-profile.dto';
@@ -28,22 +32,76 @@ export class AuthService {
     private jwtVerifier: JwtVerifierService,
   ) {}
 
-  async registerOwner(data: {
-    userId: string | null;
-    email: string;
-    password?: string;
-    name?: string;
-    role?: string;
-    magicLinkToken?: string;
-  }) {
+  /**
+   * Owner registration must prove Supabase identity when userId is sent:
+   * JWT sub === userId and email matches (magic-link-only path creates user server-side without this).
+   */
+  private async assertRegistrationJwtMatchesUser(
+    authHeader: string | undefined,
+    userId: string,
+    email: string,
+  ): Promise<void> {
+    if (!authHeader?.startsWith('Bearer ')) {
+      throw new UnauthorizedException(
+        'Authorization required to complete business registration',
+      );
+    }
+    const token = authHeader.substring(7);
+    const normalizedEmail = email.toLowerCase().trim();
+
+    let resolvedId: string;
+    let resolvedEmail: string | null | undefined;
+
     try {
-      console.log('🔐 registerOwner called with:', {
-        userId: data.userId,
-        email: data.email,
-        hasPassword: !!data.password,
-        hasMagicLinkToken: !!data.magicLinkToken,
-        role: data.role,
-      });
+      const decoded = await this.jwtVerifier.verifyToken(token);
+      resolvedId = this.jwtVerifier.getUserIdFromToken(decoded);
+      resolvedEmail = this.jwtVerifier.getEmailFromToken(decoded);
+      if (!resolvedEmail) {
+        const { data, error } = await supabase.auth.getUser(token);
+        if (error || !data.user) {
+          throw new UnauthorizedException('Invalid or expired token');
+        }
+        resolvedId = data.user.id;
+        resolvedEmail = data.user.email;
+      }
+    } catch (e: any) {
+      if (
+        e instanceof UnauthorizedException ||
+        e instanceof BadRequestException
+      ) {
+        throw e;
+      }
+      const { data, error } = await supabase.auth.getUser(token);
+      if (error || !data.user) {
+        throw new UnauthorizedException('Invalid or expired token');
+      }
+      resolvedId = data.user.id;
+      resolvedEmail = data.user.email;
+    }
+
+    if (resolvedId !== userId) {
+      throw new UnauthorizedException('Token does not match user');
+    }
+    if (resolvedEmail?.toLowerCase().trim() !== normalizedEmail) {
+      throw new BadRequestException('Email does not match authenticated user');
+    }
+  }
+
+  async registerOwner(
+    data: {
+      userId: string | null;
+      email: string;
+      password?: string;
+      name?: string;
+      role?: string;
+      magicLinkToken?: string;
+    },
+    options?: { authHeader?: string },
+  ) {
+    try {
+      if (data.role && data.role !== 'OWNER') {
+        throw new BadRequestException('Invalid role for business registration');
+      }
 
       // Проверяем magic link token
       let emailConfirmed = false;
@@ -123,6 +181,12 @@ export class AuthService {
           throw error;
         }
       } else if (userId) {
+        await this.assertRegistrationJwtMatchesUser(
+          options?.authHeader,
+          userId,
+          data.email,
+        );
+
         // Проверяем, существует ли пользователь в нашей базе данных
         const existingUser = await this.prisma.user.findUnique({
           where: { id: userId },

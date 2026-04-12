@@ -46,6 +46,16 @@ export function formatVnd(amount: number): string {
 	return `${s.replace(/\./g, ' ')} ₫`;
 }
 
+/** Feature bullets on the owner subscription plan card (translation keys). */
+export const SUBSCRIPTION_FEATURE_KEYS = [
+	'owner.subscription.basic.masters',
+	'owner.subscription.basic.prioritySupport',
+	'owner.subscription.basic.marketing',
+	'owner.subscription.basic.analytics',
+	'owner.subscription.basic.crm',
+	'owner.subscription.basic.services',
+] as const;
+
 /** Legacy single plan (STARTER) for API compatibility. */
 export type SubscriptionPlanType = 'STARTER';
 export const SUBSCRIPTION_PLANS_LEGACY: Record<

@@ -273,29 +273,30 @@ export default function OwnerSidebar({
 						'clients'
 					)}
 
-					{renderNavItem(
-						'/owner-help',
-						<HelpCircle className="w-5 h-5" />,
-						t('owner.dashboard.quickGuide'),
-						pathNoLocale.startsWith('/owner-help')
-					)}
+					<div className="mt-6 pt-6 border-t border-gray-200 space-y-2">
+						{renderNavItem(
+							'/owner-help',
+							<HelpCircle className="w-5 h-5" />,
+							t('owner.dashboard.quickGuide'),
+							pathNoLocale.startsWith('/owner-help')
+						)}
 
-					{renderNavItem(
-						'/subscription',
-						<CreditCard className="w-5 h-5" />,
-						t('owner.dashboard.subscription'),
-						pathNoLocale.startsWith('/subscription')
-					)}
+						{renderNavItem(
+							'/subscription',
+							<CreditCard className="w-5 h-5" />,
+							t('owner.dashboard.subscription'),
+							pathNoLocale.startsWith('/subscription')
+						)}
 
-					{/* {renderNavItem(
+						{/* {renderNavItem(
 						'/marketing',
 						<TrendingUp className="w-5 h-5" />,
 						t('owner.dashboard.marketing'),
 						pathNoLocale.startsWith('/marketing')
 					)} */}
 
-					{/* Settings Dropdown */}
-					<div className="space-y-1">
+						{/* Settings Dropdown */}
+						<div className="space-y-1">
 						<button
 							onClick={() => setIsSettingsOpen(!isSettingsOpen)}
 							className={`flex items-center justify-between w-full px-3 py-2 rounded-lg transition-colors`}
@@ -330,6 +331,7 @@ export default function OwnerSidebar({
 								)}
 							</div>
 						)}
+						</div>
 					</div>
 				</nav>
 

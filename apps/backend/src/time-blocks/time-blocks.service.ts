@@ -156,7 +156,11 @@ export class TimeBlocksService {
       include: {
         Service: {
           select: {
+            id: true,
             name: true,
+            Staff: {
+              select: { id: true },
+            },
           },
         },
         User: {
@@ -173,11 +177,55 @@ export class TimeBlocksService {
 
     return conflictingBookings.map((booking) => ({
       id: booking.id,
+      serviceId: booking.serviceId,
       time: booking.dateTime,
       userId: booking.userId,
       user: booking.User,
       service: booking.Service,
     }));
+  }
+
+  /**
+   * Target staff must be allowed for each service (staff.Service ∩ service.Staff rules).
+   */
+  private async validateRescheduleTargetStaff(
+    salonId: string,
+    targetStaffId: string,
+    rows: Array<{ serviceId: string }>,
+  ) {
+    const serviceIds = [...new Set(rows.map((r) => r.serviceId))];
+    const staff = await this.prisma.staff.findFirst({
+      where: { id: targetStaffId, salonId },
+      include: { Service: { select: { id: true, name: true } } },
+    });
+    if (!staff) {
+      throw new BadRequestException('Target staff not found');
+    }
+    const services = await this.prisma.service.findMany({
+      where: { id: { in: serviceIds }, salonId },
+      include: { Staff: { select: { id: true } } },
+    });
+    if (services.length !== serviceIds.length) {
+      throw new BadRequestException('One or more services are invalid');
+    }
+    for (const service of services) {
+      if (
+        staff.Service.length > 0 &&
+        !staff.Service.some((s) => s.id === service.id)
+      ) {
+        throw new BadRequestException(
+          `This staff member is not assigned to perform: ${service.name}`,
+        );
+      }
+      if (
+        service.Staff.length > 0 &&
+        !service.Staff.some((s) => s.id === staff.id)
+      ) {
+        throw new BadRequestException(
+          `Service "${service.name}" is not offered by this staff member`,
+        );
+      }
+    }
   }
 
   /**
@@ -217,6 +265,11 @@ export class TimeBlocksService {
         data.conflictAction === ConflictAction.RESCHEDULE &&
         data.rescheduleStaffId
       ) {
+        await this.validateRescheduleTargetStaff(
+          salonId,
+          data.rescheduleStaffId,
+          conflictingBookings.map((b) => ({ serviceId: b.serviceId })),
+        );
         // Move conflicting bookings to another staff member
         await this.prisma.booking.updateMany({
           where: {

@@ -51,7 +51,8 @@ export const useBookings = (filters?: { status?: string; date?: string; page?: n
 			return response || [];
 		},
 		enabled: !authLoading && !!user && isOwner(),
-		staleTime: 10 * 60 * 1000, // P2: 10 minutes - увеличили для редко меняющихся данных
+		// Owner dashboard: fresher stats after booking actions (was 10m)
+		staleTime: 2 * 60 * 1000,
 		gcTime: 30 * 60 * 1000, // P2: 30 minutes в кэше
 		refetchOnMount: false, // Не перезапрашивать если данные свежие
 		refetchOnWindowFocus: false, // Не перезапрашивать при фокусе окна

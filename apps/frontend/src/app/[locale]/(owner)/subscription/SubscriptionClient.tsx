@@ -13,9 +13,10 @@ import {
 	PRICE_12_MONTHS_VND,
 	SAVE_ANNUAL_PERCENT,
 	SAVE_ANNUAL_VND,
+	SUBSCRIPTION_FEATURE_KEYS,
 } from '@/config/subscriptionPlans';
 import { formatVND } from '@/utils/currency';
-import LoadingSpinner from '@/components/LoadingSpinner';
+import SubscriptionPageSkeleton from './SubscriptionPageSkeleton';
 import toast from 'react-hot-toast';
 
 interface Subscription {
@@ -43,15 +44,6 @@ interface Invoice {
 	pdfUrl: string | null;
 	hostedInvoiceUrl: string | null;
 }
-
-const FEATURE_KEYS = [
-	'owner.subscription.basic.masters',
-	'owner.subscription.basic.prioritySupport',
-	'owner.subscription.basic.marketing',
-	'owner.subscription.basic.analytics',
-	'owner.subscription.basic.crm',
-	'owner.subscription.basic.services',
-] as const;
 
 export default function SubscriptionClient() {
 	const t = useTranslation();
@@ -245,14 +237,7 @@ export default function SubscriptionClient() {
 		: null;
 
 	if (loading) {
-		return (
-			<div className="min-h-screen bg-[#F0F4F8] flex items-center justify-center">
-				<LoadingSpinner
-					fullScreen={false}
-					message={t('owner.subscription.loading')}
-				/>
-			</div>
-		);
+		return <SubscriptionPageSkeleton />;
 	}
 
 	return (
@@ -562,7 +547,7 @@ export default function SubscriptionClient() {
 							</div>
 
 							<ul className="grid grid-cols-1 sm:grid-cols-2 gap-y-3 gap-x-6 mb-6">
-								{FEATURE_KEYS.map((key) => (
+								{SUBSCRIPTION_FEATURE_KEYS.map((key) => (
 									<li key={key} className="flex items-start gap-2">
 										<Check className="w-5 h-5 flex-shrink-0 text-[#ff5b5b] mt-0.5" />
 										<span className="text-gray-700 text-sm">{t(key)}</span>

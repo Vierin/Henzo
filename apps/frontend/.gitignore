@@ -10,6 +10,7 @@
 
 # next.js
 /.next/
+/.henzo-next-dev-cache/
 /out/
 
 # production

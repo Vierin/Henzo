@@ -353,6 +353,7 @@ export function LanguageProvider({
 				'navigation',
 				'header',
 				'footer',
+				'cookieBanner',
 				'forms',
 				'auth',
 			];

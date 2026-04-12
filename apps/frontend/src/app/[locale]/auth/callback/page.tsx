@@ -327,42 +327,33 @@ export default function AuthCallbackPage() {
 				return;
 			}
 
-			// Business flow is valid only when callback type=business and nonce is valid.
+			// Google business OAuth sets a nonce; email-confirm links use type=business without nonce.
 			const oauthContext = consumeBusinessOAuthContext();
 			const isBusinessRegistration =
 				type === 'business' && oauthContext.isValid;
 
-			if (type === 'business' && !oauthContext.isValid) {
-				if (
-					typeof window !== 'undefined' &&
-					typeof window.gtag === 'function'
-				) {
-					window.gtag('event', 'business_oauth_callback_role_upgrade_failed', {
-						reason: 'invalid_oauth_nonce',
-					});
-				}
-				router.push(
-					withLocale(
-						'/login?error=invalid_business_oauth_context',
-						locale as 'en' | 'ru' | 'vi'
-					)
-				);
-				return;
-			}
-
-			// Business Google OAuth: direct OWNER upsert; no magicLinkToken (email verified by Google).
-			if (isBusinessRegistration) {
+			// Backend requires Bearer for /auth/register when userId is set (see registerOwner).
+			if (type === 'business' && session.access_token) {
 				try {
-					await apiClient.post('/auth/register', {
-						userId: session.user.id,
-						email: session.user.email || '',
-						name:
-							session.user.user_metadata?.name ||
-							session.user.user_metadata?.full_name ||
-							'',
-						role: 'OWNER',
-					});
+					await apiClient.post(
+						'/auth/register',
+						{
+							userId: session.user.id,
+							email: session.user.email || '',
+							name:
+								session.user.user_metadata?.name ||
+								session.user.user_metadata?.full_name ||
+								'',
+							role: 'OWNER',
+						},
+						{
+							headers: {
+								Authorization: `Bearer ${session.access_token}`,
+							},
+						}
+					);
 					if (
+						isBusinessRegistration &&
 						typeof window !== 'undefined' &&
 						typeof window.gtag === 'function'
 					) {
@@ -422,12 +413,13 @@ export default function AuthCallbackPage() {
 
 			// ОПТИМИСТИЧНЫЙ РЕДИРЕКТ: Редиректим сразу на основе временного пользователя
 			// Синхронизация с бэкендом происходит в фоне
-			const finalRole = isBusinessRegistration
-				? 'OWNER'
-				: tempUser.role || 'CLIENT';
+			const finalRole =
+				type === 'business'
+					? 'OWNER'
+					: tempUser.role || 'CLIENT';
 			const redirectPath = getRedirectPath(
 				finalRole,
-				isBusinessRegistration,
+				type === 'business',
 				pendingBooking,
 				returnUrl,
 				locale

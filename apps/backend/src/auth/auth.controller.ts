@@ -12,15 +12,20 @@ import {
   Res,
   HttpException,
   HttpStatus,
+  Logger,
 } from '@nestjs/common';
+import { Throttle } from '@nestjs/throttler';
 import { Response } from 'express';
 import { AuthService } from './auth.service';
 import { RegisterClientDto } from './dto/register-client.dto';
 import { UpdateProfileDto } from './dto/update-profile.dto';
 import { GetUserRoleDto } from './dto/get-user-role.dto';
 
+@Throttle({ short: { limit: 25, ttl: 60000 } })
 @Controller('auth')
 export class AuthController {
+  private readonly logger = new Logger(AuthController.name);
+
   constructor(private readonly authService: AuthService) {}
 
   @Post('send-business-magic-link')
@@ -28,22 +33,22 @@ export class AuthController {
     @Body() data: { email: string; name: string; password: string },
   ) {
     try {
-      console.log('📧 Send business magic link request:', {
-        email: data.email,
-        name: data.name,
-        hasPassword: !!data.password,
-      });
+      this.logger.log(
+        `Send business magic link (hasPassword=${!!data.password})`,
+      );
       const result = await this.authService.sendBusinessMagicLink(
         data.email,
         data.name,
         data.password,
       );
-      console.log('✅ Business magic link sent successfully');
+      this.logger.log('Business magic link sent');
       return result;
     } catch (error) {
-      console.error('❌ Send business magic link failed:', error.message);
+      this.logger.warn(
+        `Send business magic link failed: ${error instanceof Error ? error.message : String(error)}`,
+      );
       throw new HttpException(
-        error.message || 'Failed to send magic link',
+        error instanceof Error ? error.message : 'Failed to send magic link',
         HttpStatus.BAD_REQUEST,
       );
     }
@@ -60,45 +65,37 @@ export class AuthController {
       role?: string;
       magicLinkToken?: string;
     },
+    @Headers('authorization') authHeader?: string,
   ) {
     try {
-      console.log('📝 POST /auth/register called with:', {
-        userId: data.userId,
-        email: data.email,
-        hasPassword: !!data.password,
-        role: data.role,
+      const result = await this.authService.registerOwner(data, {
+        authHeader,
       });
-      const result = await this.authService.registerOwner(data);
-      console.log('✅ Registration successful');
       return result;
-    } catch (error: any) {
-      console.error('❌ Registration error:', {
-        message: error.message,
-        stack: error.stack,
-        code: error.code,
-      });
-      throw new HttpException(
-        error.message || 'Registration failed',
-        error.status || HttpStatus.BAD_REQUEST,
-      );
+    } catch (error: unknown) {
+      if (error instanceof HttpException) {
+        throw error;
+      }
+      const msg =
+        error instanceof Error ? error.message : 'Registration failed';
+      this.logger.warn(`Registration error: ${msg}`);
+      throw new HttpException(msg, HttpStatus.BAD_REQUEST);
     }
   }
 
   @Post('register-client')
   async registerClient(@Body() data: RegisterClientDto) {
     try {
-      console.log('📝 Received client registration request:', {
-        email: data.email,
-        name: data.name,
-      });
+      this.logger.log('Client registration request');
       const result = await this.authService.registerClient(data);
-      console.log('✅ Client registration successful:', {
-        email: data.email,
-        userId: result.user.id,
-      });
+      this.logger.log(
+        `Client registration ok userId=${result.user.id.slice(0, 8)}…`,
+      );
       return result;
     } catch (error) {
-      console.error('❌ Client registration failed:', error.message);
+      this.logger.warn(
+        `Client registration failed: ${error instanceof Error ? error.message : String(error)}`,
+      );
       throw new HttpException(
         error.message || 'Registration failed',
         HttpStatus.BAD_REQUEST,
@@ -122,15 +119,16 @@ export class AuthController {
   @Get('user')
   async getUser(@Headers('authorization') authHeader: string) {
     try {
-      console.log(
-        '📝 Received get user request, authHeader:',
-        authHeader ? 'Present' : 'Missing',
+      this.logger.log(
+        `Get user authHeader=${authHeader ? 'present' : 'missing'}`,
       );
       const result = await this.authService.getCurrentUser(authHeader);
-      console.log('✅ Get user successful:', result.user.email);
+      this.logger.log(`Get user ok id=${result.user.id.slice(0, 8)}…`);
       return result;
     } catch (error) {
-      console.error('❌ Get user failed:', error.message);
+      this.logger.warn(
+        `Get user failed: ${error instanceof Error ? error.message : String(error)}`,
+      );
       throw new HttpException(
         error.message || 'Failed to get user data',
         HttpStatus.UNAUTHORIZED,
@@ -144,14 +142,16 @@ export class AuthController {
     @Query('includeSalon') includeSalon?: string,
   ) {
     try {
-      console.log('📝 Received initialize request');
+      this.logger.log('Initialize request');
       const result = await this.authService.initializeUser(authHeader, {
         includeSalon: includeSalon === 'true',
       });
-      console.log('✅ Initialize successful:', result.user.email);
+      this.logger.log(`Initialize ok id=${result.user.id.slice(0, 8)}…`);
       return result;
     } catch (error) {
-      console.error('❌ Initialize failed:', error.message);
+      this.logger.warn(
+        `Initialize failed: ${error instanceof Error ? error.message : String(error)}`,
+      );
       throw new HttpException(
         error.message || 'Failed to initialize user',
         HttpStatus.UNAUTHORIZED,
@@ -177,7 +177,9 @@ export class AuthController {
         user: updatedUser,
       };
     } catch (error) {
-      console.error('❌ Update profile failed:', error.message);
+      this.logger.warn(
+        `Update profile failed: ${error instanceof Error ? error.message : String(error)}`,
+      );
       throw new HttpException(
         error.message || 'Failed to update profile',
         HttpStatus.BAD_REQUEST,
@@ -191,7 +193,9 @@ export class AuthController {
       const role = await this.authService.getUserRole(data.userId);
       return { role };
     } catch (error) {
-      console.error('❌ Get user role failed:', error.message);
+      this.logger.warn(
+        `Get user role failed: ${error instanceof Error ? error.message : String(error)}`,
+      );
       throw new HttpException(
         error.message || 'Failed to get user role',
         HttpStatus.BAD_REQUEST,
@@ -218,7 +222,9 @@ export class AuthController {
         user: updatedUser,
       };
     } catch (error) {
-      console.error('❌ Update own role failed:', error.message);
+      this.logger.warn(
+        `Update own role failed: ${error instanceof Error ? error.message : String(error)}`,
+      );
       throw new HttpException(
         error.message || 'Failed to update role',
         HttpStatus.BAD_REQUEST,
@@ -247,7 +253,9 @@ export class AuthController {
         user: updatedUser,
       };
     } catch (error) {
-      console.error('❌ Update user role failed:', error.message);
+      this.logger.warn(
+        `Update user role failed: ${error instanceof Error ? error.message : String(error)}`,
+      );
       throw new HttpException(
         error.message || 'Failed to update user role',
         HttpStatus.BAD_REQUEST,
@@ -273,7 +281,9 @@ export class AuthController {
         user,
       };
     } catch (error) {
-      console.error('❌ Sync user failed:', error.message);
+      this.logger.warn(
+        `Sync user failed: ${error instanceof Error ? error.message : String(error)}`,
+      );
       throw new HttpException(
         error.message || 'Failed to sync user',
         HttpStatus.BAD_REQUEST,
@@ -296,7 +306,9 @@ export class AuthController {
         data: result,
       };
     } catch (error) {
-      console.error('❌ Delete account failed:', error.message);
+      this.logger.warn(
+        `Delete account failed: ${error instanceof Error ? error.message : String(error)}`,
+      );
       throw new HttpException(
         error.message || 'Failed to delete account',
         HttpStatus.BAD_REQUEST,
@@ -317,7 +329,9 @@ export class AuthController {
         favorites,
       };
     } catch (error) {
-      console.error('❌ Get favorites failed:', error.message);
+      this.logger.warn(
+        `Get favorites failed: ${error instanceof Error ? error.message : String(error)}`,
+      );
       throw new HttpException(
         error.message || 'Failed to get favorite salons',
         HttpStatus.BAD_REQUEST,
@@ -343,7 +357,9 @@ export class AuthController {
         favoriteSalons: updatedUser.favoriteSalons,
       };
     } catch (error) {
-      console.error('❌ Add favorite failed:', error.message);
+      this.logger.warn(
+        `Add favorite failed: ${error instanceof Error ? error.message : String(error)}`,
+      );
       throw new HttpException(
         error.message || 'Failed to add salon to favorites',
         HttpStatus.BAD_REQUEST,
@@ -369,7 +385,9 @@ export class AuthController {
         favoriteSalons: updatedUser.favoriteSalons,
       };
     } catch (error) {
-      console.error('❌ Remove favorite failed:', error.message);
+      this.logger.warn(
+        `Remove favorite failed: ${error instanceof Error ? error.message : String(error)}`,
+      );
       throw new HttpException(
         error.message || 'Failed to remove salon from favorites',
         HttpStatus.BAD_REQUEST,
@@ -392,7 +410,9 @@ export class AuthController {
       );
       return result;
     } catch (error) {
-      console.error('❌ Verify business magic link failed:', error.message);
+      this.logger.warn(
+        `Verify business magic link failed: ${error instanceof Error ? error.message : String(error)}`,
+      );
       throw new HttpException(
         error.message || 'Failed to verify magic link',
         HttpStatus.BAD_REQUEST,
@@ -436,9 +456,7 @@ export class AuthController {
         detectedLocale = 'en';
       }
 
-      console.log(
-        `🔍 Processing business magic link with locale: ${detectedLocale}`,
-      );
+      this.logger.log(`Business magic link redirect locale=${detectedLocale}`);
 
       const result = await this.authService.verifyBusinessMagicLink(
         token,
@@ -446,8 +464,7 @@ export class AuthController {
       );
 
       if (result.success && result.magicLinkUrl) {
-        // Редиректим напрямую на Supabase magic link
-        console.log('✅ Redirecting to Supabase magic link');
+        this.logger.log('Redirecting to Supabase magic link');
         return res.redirect(result.magicLinkUrl);
       }
 
@@ -461,7 +478,9 @@ export class AuthController {
         `${frontendUrl}/${detectedLocale}/business/register?error=verification_failed`,
       );
     } catch (error) {
-      console.error('❌ Redirect business magic link failed:', error.message);
+      this.logger.warn(
+        `Redirect business magic link failed: ${error instanceof Error ? error.message : String(error)}`,
+      );
       const frontendUrl =
         process.env.FRONTEND_URL ||
         (process.env.NODE_ENV === 'production'

@@ -15,6 +15,10 @@
 			"title": "Change salon opening hours",
 			"body": "Salon settings → Operating hours. Set open/close times per weekday. This controls which slots clients can book online."
 		},
+		"autoConfirm": {
+			"title": "Auto-confirm new bookings",
+			"body": "Salon settings → Basic details: turn on “Auto-confirm new bookings”. When enabled, online bookings are confirmed immediately; when off, they stay pending until you approve them."
+		},
 		"calendar": {
 			"title": "Calendar and time off",
 			"body": "Use Calendar to see bookings. Block time for breaks, days off, or closures — blocks reduce available slots for clients."

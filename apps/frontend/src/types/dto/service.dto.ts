@@ -66,6 +66,8 @@ export interface ServiceResponseDto {
 	}>;
 	serviceGroupId?: string | null;
 	serviceGroup?: ServiceGroup;
+	/** If empty, any staff can perform; else only these staff (salon list API). */
+	Staff?: { id: string; name?: string }[];
 }
 
 export interface ServiceWithStaffDto extends ServiceResponseDto {

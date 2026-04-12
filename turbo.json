@@ -1,6 +1,30 @@
 {
   "$schema": "https://turborepo.com/schema.json",
   "ui": "tui",
+  "globalPassThroughEnv": [
+    "DATABASE_URL",
+    "DIRECT_URL",
+    "SUPABASE_URL",
+    "SUPABASE_KEY",
+    "SUPABASE_ANON_KEY",
+    "SUPABASE_SERVICE_ROLE_KEY",
+    "JWT_SECRET",
+    "BREVO_API_KEY",
+    "EMAIL_FROM",
+    "EMAIL_FROM_NAME",
+    "PORT",
+    "NODE_ENV",
+    "FRONTEND_URL",
+    "MAPBOX_ACCESS_TOKEN",
+    "SENTRY_DSN",
+    "ENABLE_SENTRY_IN_DEV",
+    "STRIPE_SECRET_KEY",
+    "STRIPE_MONTHLY_PRICE_ID",
+    "STRIPE_ANNUAL_PRICE_ID",
+    "STRIPE_YEARLY_PRICE_ID",
+    "STRIPE_WEBHOOK_SECRET",
+    "HENZO_NEXT_DIST_DIR"
+  ],
   "tasks": {
     "build": {
       "dependsOn": ["^build"],

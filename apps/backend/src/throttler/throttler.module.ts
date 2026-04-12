@@ -12,7 +12,7 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
           {
             name: 'short',
             ttl: 60000, // 1 minute
-            limit: 100, // 100 requests per minute for public endpoints
+            limit: 100, // default; AuthController uses @Throttle({ short: … }) for 25/min
           },
           {
             name: 'medium',
