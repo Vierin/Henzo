@@ -46,6 +46,7 @@
 		"unknownClient": "Unknown Client",
 		"whatToDoWithBookings": "What would you like to do with these bookings?",
 		"transferBookings": "Transfer bookings to another staff member",
+		"transferNoEligibleStaff": "No other staff member can perform all affected services (check staff and service assignments). Use cancel or change the block.",
 		"moveBookings": "Move existing bookings to a different staff member",
 		"cancelAllBookings": "Cancel all conflicting bookings",
 		"cancelAllAndNotify": "Cancel all bookings and notify clients automatically",

@@ -401,7 +401,22 @@ export default function CalendarClient() {
 		}
 	}, [hasSalon, salonLoading, router]);
 
-	if (salonLoading || (!hasSalon && !salonLoading)) {
+	if (salonLoading) {
+		return (
+			<div
+				className="flex items-center justify-center py-12"
+				role="status"
+				aria-live="polite"
+			>
+				<LoadingSpinner
+					size="lg"
+					message={t('owner.calendar.loadingCalendarData')}
+				/>
+			</div>
+		);
+	}
+
+	if (!hasSalon) {
 		return (
 			<div
 				className="flex items-center justify-center py-12"

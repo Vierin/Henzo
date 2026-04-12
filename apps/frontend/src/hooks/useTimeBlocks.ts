@@ -46,7 +46,7 @@ const convertTimeBlockDtoToTimeBlock = (dto: TimeBlockDto): TimeBlock => {
 			salonId: dto.salonId,
 			userId: booking.userId,
 			clientId: booking.userId,
-			serviceId: '',
+			serviceId: booking.serviceId || booking.service?.id || '',
 			time: booking.time,
 			status: 'CONFIRMED' as const,
 			createdAt: '',
@@ -61,7 +61,7 @@ const convertTimeBlockDtoToTimeBlock = (dto: TimeBlockDto): TimeBlock => {
 				: undefined,
 			service: booking.service
 				? {
-						id: '',
+						id: booking.service.id || booking.serviceId || '',
 						name: booking.service.name,
 						duration: 60,
 						price: 0,

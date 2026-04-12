@@ -86,6 +86,7 @@
 		"unknownClient": "Khách hàng không xác định",
 		"whatToDoWithBookings": "Bạn muốn làm gì với các đặt chỗ này?",
 		"transferBookings": "Chuyển đặt chỗ cho nhân viên khác",
+		"transferNoEligibleStaff": "Không có nhân viên nào khác có thể thực hiện tất cả dịch vụ bị ảnh hưởng (kiểm tra gán nhân viên/dịch vụ). Hãy hủy đặt chỗ hoặc đổi khối thời gian chặn.",
 		"moveBookings": "Di chuyển các đặt chỗ hiện có cho nhân viên khác",
 		"cancelAllBookings": "Hủy tất cả đặt chỗ xung đột",
 		"cancelAllAndNotify": "Hủy tất cả đặt chỗ và tự động thông báo cho khách hàng",

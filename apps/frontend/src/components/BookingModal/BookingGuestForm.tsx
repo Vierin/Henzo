@@ -11,6 +11,8 @@ interface BookingGuestFormProps {
 	onEmailChange: (email: string) => void;
 	onNameChange: (name: string) => void;
 	onPhoneChange: (phone: string) => void;
+	/** Invalid email format (owner flow) — red ring on email field */
+	emailFieldError?: boolean;
 }
 
 export default function BookingGuestForm({
@@ -20,6 +22,7 @@ export default function BookingGuestForm({
 	onEmailChange,
 	onNameChange,
 	onPhoneChange,
+	emailFieldError = false,
 }: BookingGuestFormProps) {
 	const { t } = useLanguage();
 	const hasEmail = clientEmail && clientEmail.trim().length > 0;
@@ -38,8 +41,13 @@ export default function BookingGuestForm({
 						type="email"
 						value={clientEmail}
 						onChange={(e) => onEmailChange(e.target.value)}
-						className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#ff5b5b] focus:border-transparent text-sm"
+						className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#ff5b5b] focus:border-transparent text-sm ${
+							emailFieldError
+								? 'border-red-500 ring-2 ring-red-500/40'
+								: 'border-gray-300'
+						}`}
 						placeholder={t('booking.clientEmailPlaceholder') || 'client@example.com'}
+						aria-invalid={emailFieldError}
 					/>
 					{!hasEmail && (
 						<div className="mt-2 flex items-start gap-2 p-2 bg-amber-50 border border-amber-200 rounded-lg">

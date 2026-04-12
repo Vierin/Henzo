@@ -148,9 +148,31 @@ export function useBookingAvailability({
 
 			const allStaffIds = new Set(staffMembers.map((staff) => staff.id));
 
-			const hasFreeStaff = Array.from(allStaffIds).some(
-				(staffId) => !busyStaffIds.has(staffId)
-			);
+			const staffHasTimeBlockConflict = (staffId: string): boolean => {
+				if (!selectedDate || timeBlocks.length === 0) return false;
+				for (const block of timeBlocks) {
+					const range = getTimeBlockRangeOnDate(
+						block.startDate,
+						block.endDate,
+						selectedDate,
+						salonTimezone
+					);
+					if (!range) continue;
+					const overlaps =
+						slotStartMinutes < range.endMinutes &&
+						slotEndMinutes > range.startMinutes;
+					if (!overlaps) continue;
+					if (!block.staffId) return true;
+					if (block.staffId === staffId) return true;
+				}
+				return false;
+			};
+
+			const hasFreeStaff = Array.from(allStaffIds).some((staffId) => {
+				if (busyStaffIds.has(staffId)) return false;
+				if (staffHasTimeBlockConflict(staffId)) return false;
+				return true;
+			});
 
 			const result = hasFreeStaff;
 			availabilityCache.set(cacheKey, result);

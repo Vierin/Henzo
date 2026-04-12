@@ -201,6 +201,12 @@ export class BookingsService {
             }
           }
         }
+
+        if (!selectedStaffId) {
+          throw new Error(
+            'No staff members are available at this time. Please choose another time.',
+          );
+        }
       } else {
         // Validate that selected staff is available at this time
         const isStaffAvailable = await this.checkStaffAvailability(
@@ -764,7 +770,9 @@ export class BookingsService {
   ) {
     try {
       const page = options?.page || 1;
-      const limit = Math.min(options?.limit || 50, 100); // Max 100 per page
+      /** Owner dashboard requests up to ~1500 rows; cap protects DB/API from abuse */
+      const maxOwnerWindow = 2000;
+      const limit = Math.min(options?.limit || 50, maxOwnerWindow);
       const skip = (page - 1) * limit;
 
       this.logger.log('Fetching bookings for owner', {
@@ -972,57 +980,28 @@ export class BookingsService {
         return null;
       }
 
-      // OPTIMIZED: Get all conflicting bookings in one query instead of N+1
-      const staffIds = allStaff.map((s) => s.id);
-      const conflictingBookings = await this.prisma.booking.findMany({
-        where: {
-          salonId,
-          staffId: { in: staffIds },
-          status: {
-            in: ['PENDING', 'CONFIRMED'],
-          },
-          OR: [
-            // Booking starts during our booking time
-            {
-              dateTime: {
-                gte: bookingTime,
-                lt: bookingEndTime,
-              },
-            },
-            // Booking ends during our booking time
-            {
-              dateTime: {
-                lte: bookingTime,
-                gte: new Date(bookingTime.getTime() - 60 * 60 * 1000), // Check 1 hour before
-              },
-            },
-          ],
-        },
-        select: { staffId: true },
-      });
-
-      // Create a set of busy staff IDs for O(1) lookup
-      const busyStaffIds = new Set(
-        conflictingBookings.map((b) => b.staffId).filter(Boolean),
-      );
-
-      // Filter available staff
-      const availableStaff = allStaff.filter(
-        (staff) => !busyStaffIds.has(staff.id),
-      );
-
-      if (availableStaff.length === 0) {
-        this.logger.warn('No available staff found, using first staff member', {
-          salonId,
-        });
-        return allStaff[0].id;
+      const availableStaff: (typeof allStaff)[number][] = [];
+      for (const staff of allStaff) {
+        if (
+          await this.checkStaffAvailability(
+            staff.id,
+            bookingTime,
+            bookingEndTime,
+          )
+        ) {
+          availableStaff.push(staff);
+        }
       }
 
-      // Randomly select from available staff
-      const randomIndex = Math.floor(Math.random() * availableStaff.length);
-      const selectedStaff = availableStaff[randomIndex];
+      if (availableStaff.length === 0) {
+        this.logger.warn('No available staff found (bookings or time blocks)', {
+          salonId,
+        });
+        return null;
+      }
 
-      return selectedStaff.id;
+      const randomIndex = Math.floor(Math.random() * availableStaff.length);
+      return availableStaff[randomIndex].id;
     } catch (error) {
       this.logger.error('Error finding available staff', error);
       // Fallback to first staff member if error occurs
@@ -1041,8 +1020,35 @@ export class BookingsService {
     staffId: string,
     bookingStartTime: Date,
     bookingEndTime: Date,
+    excludeBookingId?: string,
   ): Promise<boolean> {
     try {
+      const staff = await this.prisma.staff.findUnique({
+        where: { id: staffId },
+        select: { salonId: true },
+      });
+      if (!staff) {
+        return false;
+      }
+
+      const timeBlockConflict = await this.prisma.timeBlock.findFirst({
+        where: {
+          salonId: staff.salonId,
+          OR: [{ staffId: null }, { staffId }],
+          startDate: { lt: bookingEndTime },
+          endDate: { gt: bookingStartTime },
+        },
+      });
+      if (timeBlockConflict) {
+        this.logger.warn('Staff unavailable: overlapping time block', {
+          staffId,
+          bookingStartTime,
+          bookingEndTime,
+          timeBlockId: timeBlockConflict.id,
+        });
+        return false;
+      }
+
       // Get all existing bookings for this staff member that might conflict
       const existingBookings = await this.prisma.booking.findMany({
         where: {
@@ -1062,6 +1068,9 @@ export class BookingsService {
 
       // Check each existing booking for overlap
       for (const existingBooking of existingBookings) {
+        if (excludeBookingId && existingBooking.id === excludeBookingId) {
+          continue;
+        }
         const existingStartTime = existingBooking.dateTime;
         const existingEndTime = new Date(
           existingStartTime.getTime() +
@@ -1569,6 +1578,41 @@ export class BookingsService {
       const statusChanged =
         data.status && data.status !== existingBooking.status;
       const oldStatus = existingBooking.status;
+
+      let effectiveDuration = existingBooking.Service?.duration ?? 60;
+      if (data.serviceId) {
+        const svcForDuration = await this.prisma.service.findFirst({
+          where: {
+            id: data.serviceId,
+            salonId: existingBooking.salonId,
+          },
+        });
+        if (svcForDuration) {
+          effectiveDuration = svcForDuration.duration;
+        }
+      }
+
+      const effectiveStaffId = data.staffId ?? existingBooking.staffId;
+      const effectiveStart = data.time
+        ? new Date(data.time)
+        : existingBooking.dateTime;
+      const effectiveEnd = new Date(
+        effectiveStart.getTime() + effectiveDuration * 60000,
+      );
+
+      if (effectiveStaffId) {
+        const slotOk = await this.checkStaffAvailability(
+          effectiveStaffId,
+          effectiveStart,
+          effectiveEnd,
+          existingBooking.id,
+        );
+        if (!slotOk) {
+          throw new Error(
+            'Selected staff member is not available at this time. Please choose another time or staff member.',
+          );
+        }
+      }
 
       // Update the booking
       const updatedBooking = await this.prisma.booking.update({

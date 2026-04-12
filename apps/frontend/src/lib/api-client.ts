@@ -1,6 +1,7 @@
 import { plainToClass } from 'class-transformer';
 import { supabase } from './supabase';
 import { logger } from './logger';
+import { extractLocaleFromPath, withLocale, type Locale } from '@/i18n/routing';
 
 export interface ApiResponse<T> {
 	data?: T;
@@ -117,7 +118,12 @@ export class ApiClient {
 							!currentPath.includes('/login') &&
 							!currentPath.includes('/register')
 						) {
-							window.location.href = '/login?session=expired';
+							const locale =
+								extractLocaleFromPath(currentPath) ?? ('en' as Locale);
+							window.location.href = withLocale(
+								'/login?session=expired',
+								locale
+							);
 						}
 					}
 				} catch (logoutError) {

@@ -10,6 +10,7 @@ import {
   HttpStatus,
   Query,
   Header,
+  Logger,
 } from '@nestjs/common';
 import { BookingsService } from './bookings.service';
 import { CreateBookingDto } from './dto/create-booking.dto';
@@ -18,6 +19,8 @@ import { AuthService } from '../auth/auth.service';
 
 @Controller('bookings')
 export class BookingsController {
+  private readonly logger = new Logger(BookingsController.name);
+
   constructor(
     private readonly bookingsService: BookingsService,
     private readonly authService: AuthService,
@@ -352,7 +355,7 @@ export class BookingsController {
     @Query('date') date?: string,
   ) {
     try {
-      console.log('📅 Fetching owner bookings:', {
+      this.logger.log('Fetching owner bookings', {
         hasAuthHeader: !!authHeader,
         page,
         limit,
@@ -361,9 +364,8 @@ export class BookingsController {
       });
 
       const currentUser = await this.authService.getCurrentUser(authHeader);
-      console.log(
-        '✅ User authenticated for fetching owner bookings:',
-        currentUser.user.email,
+      this.logger.log(
+        `Owner bookings: authenticated userId=${currentUser.user.id.slice(0, 8)}…`,
       );
 
       // Проверяем, что пользователь является владельцем
@@ -375,7 +377,7 @@ export class BookingsController {
       }
 
       const pageNum = page ? parseInt(page, 10) : 1;
-      const limitNum = limit ? parseInt(limit, 10) : 500; // Dashboard needs a wide window
+      const limitNum = limit ? parseInt(limit, 10) : 1500;
 
       const bookings = await this.bookingsService.getOwnerBookings(
         currentUser.user.id,
@@ -387,12 +389,16 @@ export class BookingsController {
         },
       );
 
-      console.log('✅ Owner bookings fetched successfully:', bookings.length);
+      this.logger.log(`Owner bookings returned count=${bookings.length}`);
       return bookings;
     } catch (error) {
-      console.error('❌ Fetch owner bookings failed:', error.message);
+      this.logger.warn(
+        `Fetch owner bookings failed: ${error instanceof Error ? error.message : String(error)}`,
+      );
       throw new HttpException(
-        error.message || 'Failed to fetch owner bookings',
+        error instanceof Error
+          ? error.message
+          : 'Failed to fetch owner bookings',
         HttpStatus.BAD_REQUEST,
       );
     }
