@@ -173,11 +173,9 @@
 		"step": "Bước",
 		"of": "của",
 		"steps": {
-			"1": "Thông tin chung",
-			"2": "Danh mục",
-			"3": "Giờ làm việc",
-			"4": "Thương hiệu",
-			"5": "Xác nhận và xem lại"
+			"1": "Thông tin cơ bản",
+			"2": "Giờ làm việc",
+			"3": "Xem lại"
 		},
 		"step1": {
 			"salonName": "Tên salon",

@@ -35,8 +35,6 @@ function BusinessCompleteSetupContent() {
 			// Если это magic link для бизнес-регистрации
 			if (accessToken && refreshToken && type === 'magiclink') {
 				try {
-					console.log('✅ Found tokens in hash, setting session...');
-					
 					// Устанавливаем сессию
 					const { data: sessionData, error: sessionError } =
 						await supabase.auth.setSession({
@@ -53,7 +51,6 @@ function BusinessCompleteSetupContent() {
 					}
 
 					if (sessionData?.session) {
-						console.log('✅ Session set successfully from hash tokens');
 						// Очищаем hash из URL
 						window.history.replaceState(null, '', '/business/complete-setup');
 						// Обновляем страницу для применения изменений
@@ -77,7 +74,6 @@ function BusinessCompleteSetupContent() {
 			if (!token) return;
 
 			try {
-				console.log('🔍 Verifying business magic link token...');
 				const locale = extractLocaleFromPath(window.location.pathname) ?? 'vi';
 				
 				// Проверяем токен и подтверждаем email
@@ -89,14 +85,11 @@ function BusinessCompleteSetupContent() {
 				}>(`/auth/verify-business-magic-link?token=${token}&locale=${encodeURIComponent(locale)}`);
 
 				if (result.success && result.emailConfirmed) {
-					console.log('✅ Magic link verified successfully');
-					
 					// Проверяем текущую сессию
 					const { data: sessionData } = await supabase.auth.getSession();
 
 					if (sessionData?.session) {
 						// Сессия уже установлена (возможно, через hash токены)
-						console.log('✅ Session already exists');
 						toast.success('Email confirmed! Welcome!');
 						// Убираем токен из URL
 						router.replace('/business/complete-setup');
@@ -106,7 +99,6 @@ function BusinessCompleteSetupContent() {
 					// Если сессии нет, но есть magicLinkUrl, редиректим на него
 					// Magic link от Supabase редиректит обратно на эту страницу с токенами в hash
 					if (result.magicLinkUrl) {
-						console.log('🔄 Redirecting to Supabase magic link...');
 						// Редиректим на magic link URL от Supabase
 						// Он вернет пользователя обратно на эту страницу с токенами в hash
 						window.location.href = result.magicLinkUrl;
@@ -114,7 +106,6 @@ function BusinessCompleteSetupContent() {
 					}
 
 					// Если нет magicLinkUrl, просим пользователя войти
-					console.log('⚠️ No magic link URL, redirecting to login');
 					toast.success('Email confirmed! Please login to continue.');
 					router.push(
 						'/login?email=' + encodeURIComponent(result.user.email)
@@ -158,7 +149,6 @@ function BusinessCompleteSetupContent() {
 		handleWorkingHoursChange,
 		nextStep,
 		prevStep,
-		skipStep,
 		handleSubmit,
 	} = useSalonSetup();
 
@@ -233,7 +223,6 @@ function BusinessCompleteSetupContent() {
 							loading={loading}
 							onPrevStep={prevStep}
 							onNextStep={nextStep}
-							onSkipStep={skipStep}
 							onSubmit={handleSubmit}
 							nextStepTitle={steps[currentStep]?.title}
 							t={t}
