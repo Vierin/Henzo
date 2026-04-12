@@ -6,7 +6,9 @@ import { join, sep } from 'path';
  * `apps/backend`, or via compiled `dist/src/*.js`. Avoids picking up a
  * root-level or frontend-only `.env` first.
  */
-export function resolveBackendEnvPath(entryDirname: string): string | undefined {
+export function resolveBackendEnvPath(
+  entryDirname: string,
+): string | undefined {
   const inDist = entryDirname.includes(`${sep}dist${sep}`);
   const relativeToEntry = inDist
     ? join(entryDirname, '..', '..', '.env')
