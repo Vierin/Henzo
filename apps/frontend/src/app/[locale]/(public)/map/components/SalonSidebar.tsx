@@ -1,12 +1,12 @@
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
-import { Star, MapPin, Phone } from 'lucide-react';
+import { Star, MapPin } from 'lucide-react';
 import { Salon } from '@/types';
-import { useFeaturedSalons } from '@/hooks/useSalonPreview';
 import {
 	MapBounds,
 	filterSalonsByBounds,
+	haversineDistanceKm,
 	sortSalonsByDistance,
 } from '@/utils/mapUtils';
 import { generateSalonSlug } from '@/utils/slug';
@@ -34,6 +34,17 @@ interface SalonSidebarProps {
 	selectedCategories: number[];
 	onCategoriesChange: (categories: number[]) => void;
 	onSalonCountChange?: (count: number) => void;
+	salons: Salon[];
+	isLoadingSalons: boolean;
+	/** Used for client-side distance sort when API returns bbox results */
+	sortCenter?: { lat: number; lng: number };
+	/** When set, show approximate distance from user to salon before the address */
+	userLocation?: { lat: number; lng: number } | null;
+	/**
+	 * When true (default), do not filter by map bounds — results already come from bbox API.
+	 * Set false for non-bbox salon lists that still pass mapBounds for UI.
+	 */
+	skipBoundsFilter?: boolean;
 }
 
 export default function SalonSidebar({
@@ -43,88 +54,61 @@ export default function SalonSidebar({
 	selectedCategories,
 	onCategoriesChange,
 	onSalonCountChange,
+	salons,
+	isLoadingSalons,
+	sortCenter,
+	userLocation = null,
+	skipBoundsFilter = true,
 }: SalonSidebarProps) {
 	const router = useRouter();
 	const t = useTranslation();
 	const { data: categories = [] } = useCategories();
 	const [sortBy, setSortBy] = useState('recommended');
-	const { data, isLoading } = useFeaturedSalons(20);
-	const salons = (data as unknown as Salon[]) || [];
 
-	// Filter and sort salons based on map bounds, categories, and sort criteria
 	const displaySalons = useMemo(() => {
-		const allSalons = salons;
+		let list = [...salons];
 
-		// Filter by categories if any selected
-		let filteredSalons = allSalons;
-		if (selectedCategories.length > 0) {
-			filteredSalons = allSalons.filter((salon: any) => {
-				// Check if salon has services in selected categories
-				// First try serviceCategoryIds (from optimized findFeaturedSalons)
-				if (
-					salon.serviceCategoryIds &&
-					Array.isArray(salon.serviceCategoryIds)
-				) {
-					return salon.serviceCategoryIds.some((id: number) =>
-						selectedCategories.includes(id)
-					);
-				}
-				// Fallback: check services array if available
-				const salonServices = salon.services || salon.Service || [];
-				return salonServices.some(
-					(service: any) =>
-						service.serviceCategoryId &&
-						selectedCategories.includes(service.serviceCategoryId)
-				);
-			});
+		if (!skipBoundsFilter && mapBounds) {
+			list = filterSalonsByBounds(list, mapBounds);
 		}
 
-		// Filter by map bounds if available
-		if (mapBounds) {
-			filteredSalons = filterSalonsByBounds(filteredSalons, mapBounds);
-		}
-
-		// Sort based on selected criteria
-		const sortedSalons = [...filteredSalons];
 		switch (sortBy) {
 			case 'rating':
-				sortedSalons.sort(
-					(a: any, b: any) =>
+				list.sort(
+					(a, b) =>
 						(b.avgRating || b.rating || 0) - (a.avgRating || a.rating || 0)
 				);
 				break;
 			case 'distance':
-				// Sort by distance from map center (if we had it)
+				if (sortCenter) {
+					list = sortSalonsByDistance(list, sortCenter);
+				}
 				break;
 			case 'reviews':
-				sortedSalons.sort(
-					(a: any, b: any) =>
-						(b.reviewCount || b._count?.reviews || 0) -
-						(a.reviewCount || a._count?.reviews || 0)
+				list.sort(
+					(a, b) =>
+						(b.reviewCount || (b as { _count?: { reviews?: number } })._count?.reviews || 0) -
+						(a.reviewCount || (a as { _count?: { reviews?: number } })._count?.reviews || 0)
 				);
 				break;
 			case 'recommended':
 			default:
-				// Keep original order
 				break;
 		}
-		return sortedSalons;
-	}, [salons, mapBounds, sortBy, selectedCategories]);
+		return list;
+	}, [salons, mapBounds, sortBy, sortCenter, skipBoundsFilter]);
 
-	// Notify parent about salon count change
 	useEffect(() => {
-		if (onSalonCountChange) {
-			onSalonCountChange(displaySalons.length);
-		}
+		onSalonCountChange?.(displaySalons.length);
 	}, [displaySalons.length, onSalonCountChange]);
 
-	const handleViewSalon = (salon: any, e: React.MouseEvent) => {
+	const handleViewSalon = (salon: Salon, e: React.MouseEvent) => {
 		e.stopPropagation();
 		const slug = generateSalonSlug(salon.name, salon.id);
 		router.push(`/salon/${slug}`);
 	};
 
-	if (isLoading) {
+	if (isLoadingSalons) {
 		return (
 			<div className="p-6">
 				<div className="animate-pulse">
@@ -147,14 +131,30 @@ export default function SalonSidebar({
 		);
 	};
 
-	// Get translated category name
 	const getCategoryName = (slug: string) => {
 		const category = getCategoryBySlug(categories, slug);
 		if (category) {
 			return getCategoryTranslatedName(category, t);
 		}
-		// Fallback to slug if category not found
 		return slug;
+	};
+
+	const formatAddressWithDistance = (salon: Salon) => {
+		const addr = salon.address?.trim() ?? '';
+		if (
+			!userLocation ||
+			salon.latitude == null ||
+			salon.longitude == null
+		) {
+			return addr;
+		}
+		const km = haversineDistanceKm(userLocation, {
+			lat: salon.latitude,
+			lng: salon.longitude,
+		});
+		const prefix = `${km.toFixed(1)} ${t.map.km}`;
+		if (!addr) return prefix;
+		return `${prefix} — ${addr}`;
 	};
 
 	const sortOptions = [
@@ -166,9 +166,7 @@ export default function SalonSidebar({
 
 	return (
 		<div className="h-full flex flex-col">
-			{/* Sort Header */}
 			<div className="p-6 border-b border-gray-200">
-				{/* Category Filters */}
 				<div className="mb-4">
 					<div className="flex flex-wrap gap-2">
 						{categories.map((category) => {
@@ -227,7 +225,6 @@ export default function SalonSidebar({
 				</div>
 			</div>
 
-			{/* Salon List */}
 			<div className="flex-1 overflow-y-auto">
 				<div className="p-6 space-y-4">
 					{displaySalons.length === 0 ? (
@@ -243,7 +240,7 @@ export default function SalonSidebar({
 							</p>
 						</div>
 					) : (
-						displaySalons.map((salon: any) => (
+						displaySalons.map((salon: Salon) => (
 							<div
 								key={salon.id}
 								onClick={() => onSalonSelect(salon)}
@@ -254,7 +251,6 @@ export default function SalonSidebar({
 								}`}
 							>
 								<div className="flex items-start space-x-4">
-									{/* Salon Image */}
 									<div className="w-20 h-20 bg-gray-100 rounded-lg overflow-hidden flex-shrink-0">
 										{salon.photos &&
 										salon.photos.length > 0 &&
@@ -271,22 +267,24 @@ export default function SalonSidebar({
 										)}
 									</div>
 
-									{/* Salon Info */}
 									<div className="flex-1 min-w-0">
 										<h3 className="text-lg font-bold text-gray-900 mb-1 truncate">
 											{salon.name}
 										</h3>
 
 										<div className="flex items-center space-x-1 text-gray-600 mb-2">
-											<MapPin size={12} />
-											<span className="text-sm truncate">{salon.address}</span>
+											<MapPin size={12} className="flex-shrink-0" />
+											<span className="text-sm truncate">
+												{formatAddressWithDistance(salon)}
+											</span>
 										</div>
 
 										<div className="flex items-center justify-between gap-2">
-											{/* Rating */}
 											{((salon.avgRating || salon.rating || 0) > 0 ||
-												(salon.reviewCount || salon._count?.reviews || 0) >
-													0) && (
+												(salon.reviewCount ||
+													(salon as { _count?: { reviews?: number } })._count
+														?.reviews ||
+													0) > 0) && (
 												<div className="flex items-center space-x-2">
 													<Star
 														size={14}
@@ -296,12 +294,16 @@ export default function SalonSidebar({
 														{(salon.avgRating || salon.rating || 0).toFixed(1)}
 													</span>
 													<span className="text-sm font-medium text-gray-700">
-														({salon.reviewCount || salon._count?.reviews || 0})
+														(
+														{salon.reviewCount ||
+															(salon as { _count?: { reviews?: number } })._count
+																?.reviews ||
+															0}
+														)
 													</span>
 												</div>
 											)}
 
-											{/* Action Button */}
 											<button
 												onClick={(e) => handleViewSalon(salon, e)}
 												className="w-full ml-auto border border-[#ff4545] bg-[#fff7f6] text-[#ff5b5b] max-w-[60%] px-4 py-2 rounded-lg text-sm font-medium hover:bg-[#ffe8e6] transition-colors"

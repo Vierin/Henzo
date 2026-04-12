@@ -34,6 +34,24 @@ export function filterSalonsByBounds(
 }
 
 /**
+ * Расстояние по поверхности сферы (км) между двумя точками WGS84
+ */
+export function haversineDistanceKm(
+	a: { lat: number; lng: number },
+	b: { lat: number; lng: number }
+): number {
+	const R = 6371;
+	const dLat = toRad(b.lat - a.lat);
+	const dLon = toRad(b.lng - a.lng);
+	const lat1 = toRad(a.lat);
+	const lat2 = toRad(b.lat);
+	const h =
+		Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+		Math.cos(lat1) * Math.cos(lat2) * Math.sin(dLon / 2) * Math.sin(dLon / 2);
+	return R * (2 * Math.atan2(Math.sqrt(h), Math.sqrt(1 - h)));
+}
+
+/**
  * Сортировать салоны по расстоянию от центра карты
  */
 export function sortSalonsByDistance(
@@ -53,7 +71,7 @@ export function sortSalonsByDistance(
 }
 
 /**
- * Вычислить расстояние от салона до центра карты (в километрах)
+ * Вычислить расстояние от салона до точки (в километрах)
  */
 function getDistanceFromCenter(
 	salon: Salon,
@@ -63,18 +81,10 @@ function getDistanceFromCenter(
 		return Infinity;
 	}
 
-	const R = 6371; // Радиус Земли в километрах
-	const dLat = toRad(salon.latitude - center.lat);
-	const dLon = toRad(salon.longitude - center.lng);
-	const lat1 = toRad(center.lat);
-	const lat2 = toRad(salon.latitude);
-
-	const a =
-		Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-		Math.sin(dLon / 2) * Math.sin(dLon / 2) * Math.cos(lat1) * Math.cos(lat2);
-	const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-
-	return R * c;
+	return haversineDistanceKm(center, {
+		lat: salon.latitude,
+		lng: salon.longitude,
+	});
 }
 
 /**

@@ -52,6 +52,7 @@
 	"sortNameZA": "Name Z-A",
 	"sortMostServices": "Most Services",
 	"sortHighestRated": "Highest Rated",
+	"km": "km",
 	"mapView": "Map View",
 	"viewAllServices": "View all {count} services →"
 }

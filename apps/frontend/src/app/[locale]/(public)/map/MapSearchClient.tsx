@@ -1,52 +1,72 @@
 'use client';
 
-import { useState, useMemo, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useMemo } from 'react';
 import SalonSidebar from './components/SalonSidebar';
 import InteractiveMap from './components/InteractiveMap';
 import { Salon } from '@/types';
-import {
-	MapBounds,
-} from '@/utils/mapUtils';
+import { MapBounds } from '@/utils/mapUtils';
 import { List, X } from 'lucide-react';
 import { useTranslation } from '@/contexts/LanguageContext';
+import { useMediaQuery } from '@/hooks/useMediaQuery';
+import { useMapSalonSearch } from '@/hooks/useMapSalonSearch';
+import { useCategories, getCategoryById } from '@/hooks/useCategories';
 
 export default function MapSearchClient() {
 	const t = useTranslation();
+	const isMd = useMediaQuery('(min-width: 768px)');
+	const { data: categories = [] } = useCategories();
+
 	const [selectedSalon, setSelectedSalon] = useState<Salon | null>(null);
 	const [userLocation, setUserLocation] = useState<{
 		lat: number;
 		lng: number;
 	} | null>(null);
 	const [mapCenter, setMapCenter] = useState<{ lat: number; lng: number }>({
-		lat: 16.0544, // Da Nang coordinates (fallback if geolocation denied)
+		lat: 16.0544,
 		lng: 108.2022,
 	});
+	const SALON_FOCUS_ZOOM = 17;
 	const [zoom, setZoom] = useState(13);
 	const [mapBounds, setMapBounds] = useState<MapBounds | null>(null);
-	const [isLoadingLocation, setIsLoadingLocation] = useState(false);
 	const [selectedCategories, setSelectedCategories] = useState<number[]>([]);
 	const [isBottomSheetOpen, setIsBottomSheetOpen] = useState(false);
 	const [salonCount, setSalonCount] = useState(0);
 	const [touchStartY, setTouchStartY] = useState(0);
 	const [touchCurrentY, setTouchCurrentY] = useState(0);
 
+	const categoriesCsv = useMemo(() => {
+		return selectedCategories
+			.map((id) => getCategoryById(categories, id)?.slug)
+			.filter((slug): slug is string => Boolean(slug))
+			.join(',');
+	}, [selectedCategories, categories]);
+
+	const { data: searchData, isLoading: searchLoading } = useMapSalonSearch({
+		mapBounds,
+		categories: categoriesCsv || undefined,
+	});
+
+	const salons = useMemo(
+		() => (searchData?.data as Salon[] | undefined) ?? [],
+		[searchData]
+	);
+
+	const isLoadingSalons = !mapBounds || searchLoading;
+
 	const handleSalonSelect = (salon: Salon) => {
 		setSelectedSalon(salon);
-		// Center map on selected salon
 		if (salon.latitude && salon.longitude) {
 			setMapCenter({
 				lat: salon.latitude,
 				lng: salon.longitude,
 			});
-			setZoom(15);
+			setZoom(SALON_FOCUS_ZOOM);
 		}
-		// Close bottom sheet on mobile when salon is selected
 		setIsBottomSheetOpen(false);
 	};
 
 	const handleMapMarkerClick = (salon: Salon) => {
 		setSelectedSalon(salon);
-		// Open bottom sheet on mobile when marker is clicked
 		setIsBottomSheetOpen(true);
 	};
 
@@ -54,10 +74,8 @@ export default function MapSearchClient() {
 		setMapBounds(bounds);
 	}, []);
 
-	// Request user's geolocation on mount
 	useEffect(() => {
 		if (typeof window !== 'undefined' && navigator.geolocation) {
-			setIsLoadingLocation(true);
 			navigator.geolocation.getCurrentPosition(
 				(position) => {
 					const coords = {
@@ -70,41 +88,23 @@ export default function MapSearchClient() {
 						lng: coords.lng,
 					});
 					setZoom(14);
-					setIsLoadingLocation(false);
 				},
-				(error) => {
-					// Don't log user denial (PERMISSION_DENIED = 1) as an error - it's expected behavior
-					// Only handle other errors like TIMEOUT or POSITION_UNAVAILABLE
-					// Fallback to Da Nang coordinates (already set as default)
+				() => {
 					setMapCenter({
-						lat: 16.0544, // Da Nang coordinates
+						lat: 16.0544,
 						lng: 108.2022,
 					});
-					setIsLoadingLocation(false);
 				},
 				{
 					enableHighAccuracy: false,
 					timeout: 5000,
-					maximumAge: 0,
+					maximumAge: 600000,
 				}
 			);
 		}
 	}, []);
 
-	// Filter salons based on current map bounds
-	const visibleSalons = useMemo(() => {
-		if (!mapBounds) {
-			return []; // No bounds yet, show empty list
-		}
-
-		// This will be populated by SalonSidebar with actual salon data
-		// For now, we'll pass the bounds to SalonSidebar
-		return [];
-	}, [mapBounds]);
-
-	// Handle swipe down to close bottom sheet
 	const handleTouchStart = (e: React.TouchEvent) => {
-		// Only start tracking if touch starts on the drag handle or top area
 		const target = e.target as HTMLElement;
 		if (
 			target.closest('.drag-handle') ||
@@ -123,7 +123,6 @@ export default function MapSearchClient() {
 	const handleTouchEnd = () => {
 		if (touchStartY > 0) {
 			const deltaY = touchCurrentY - touchStartY;
-			// If swiped down more than 100px, close the sheet
 			if (deltaY > 100) {
 				setIsBottomSheetOpen(false);
 			}
@@ -132,33 +131,42 @@ export default function MapSearchClient() {
 		setTouchCurrentY(0);
 	};
 
+	const sidebarProps = {
+		onSalonSelect: handleSalonSelect,
+		selectedSalon,
+		mapBounds,
+		selectedCategories,
+		onCategoriesChange: setSelectedCategories,
+		onSalonCountChange: setSalonCount,
+		salons,
+		isLoadingSalons,
+		sortCenter: userLocation ?? undefined,
+		userLocation,
+		skipBoundsFilter: true as const,
+	};
+
 	return (
 		<div className="flex h-[calc(100svh-64px)] bg-white relative">
-			{/* Desktop Sidebar - 30% width */}
-			<div className="hidden md:block w-[30%] min-w-[350px] border-r border-gray-200 bg-white">
-				<SalonSidebar
-					onSalonSelect={handleSalonSelect}
-					selectedSalon={selectedSalon}
-					mapBounds={mapBounds}
-					selectedCategories={selectedCategories}
-					onCategoriesChange={setSelectedCategories}
-					onSalonCountChange={setSalonCount}
-				/>
-			</div>
+			{isMd && (
+				<div className="w-[30%] min-w-[350px] border-r border-gray-200 bg-white">
+					<SalonSidebar {...sidebarProps} />
+				</div>
+			)}
 
-			{/* Map - Full width on mobile, 70% on desktop */}
-			<div className="flex-1 relative w-full md:w-[70%]">
+			<div
+				className={`flex-1 relative ${isMd ? 'w-[70%]' : 'w-full'}`}
+			>
 				<InteractiveMap
 					center={mapCenter}
 					zoom={zoom}
 					onMarkerClick={handleMapMarkerClick}
 					selectedSalon={selectedSalon}
 					onMapBoundsChange={handleMapBoundsChange}
-					selectedCategories={selectedCategories}
+					salons={salons}
+					isLoadingSalons={isLoadingSalons}
 					userLocation={userLocation}
 				/>
 
-				{/* Mobile: Button to open bottom sheet */}
 				{!isBottomSheetOpen && (
 					<button
 						onClick={() => setIsBottomSheetOpen(true)}
@@ -176,18 +184,15 @@ export default function MapSearchClient() {
 				)}
 			</div>
 
-			{/* Mobile: Bottom Sheet */}
-			{isBottomSheetOpen && (
+			{!isMd && isBottomSheetOpen && (
 				<>
-					{/* Overlay */}
 					<div
-						className="md:hidden fixed inset-0 bg-black/50 z-40 transition-opacity"
+						className="fixed inset-0 bg-black/50 z-40 transition-opacity"
 						onClick={() => setIsBottomSheetOpen(false)}
 					/>
 
-					{/* Bottom Sheet */}
 					<div
-						className="md:hidden fixed bottom-0 left-0 right-0 bg-white rounded-t-3xl shadow-2xl z-50 max-h-[70vh] flex flex-col transition-transform duration-300 ease-out"
+						className="fixed bottom-0 left-0 right-0 bg-white rounded-t-3xl shadow-2xl z-50 max-h-[70vh] flex flex-col transition-transform duration-300 ease-out"
 						style={{
 							transform:
 								touchCurrentY > touchStartY && touchStartY > 0
@@ -198,13 +203,11 @@ export default function MapSearchClient() {
 						onTouchMove={handleTouchMove}
 						onTouchEnd={handleTouchEnd}
 					>
-						{/* Drag Handle and Header */}
 						<div className="drag-handle bottom-sheet-header flex-shrink-0">
 							<div className="flex justify-center pt-3 pb-2 cursor-grab active:cursor-grabbing">
 								<div className="w-12 h-1.5 bg-gray-300 rounded-full" />
 							</div>
 
-							{/* Close Button */}
 							<button
 								onClick={() => setIsBottomSheetOpen(false)}
 								className="absolute top-4 right-4 p-2 hover:bg-gray-100 rounded-full transition-colors z-10"
@@ -214,16 +217,8 @@ export default function MapSearchClient() {
 							</button>
 						</div>
 
-						{/* Sidebar Content */}
 						<div className="flex-1 overflow-y-auto">
-							<SalonSidebar
-								onSalonSelect={handleSalonSelect}
-								selectedSalon={selectedSalon}
-								mapBounds={mapBounds}
-								selectedCategories={selectedCategories}
-								onCategoriesChange={setSelectedCategories}
-								onSalonCountChange={setSalonCount}
-							/>
+							<SalonSidebar {...sidebarProps} />
 						</div>
 					</div>
 				</>
