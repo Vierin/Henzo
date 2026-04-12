@@ -6,6 +6,7 @@ import { EmailService } from '../email/email.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import { nanoid } from 'nanoid';
 import { toZonedTime, format } from 'date-fns-tz';
+import { getLocalizedServiceName } from '../common/utils/localized-service-name';
 
 @Injectable()
 export class BookingsService {
@@ -233,6 +234,8 @@ export class BookingsService {
       const bookingStatus =
         isOwnerCreated || autoConfirm ? 'CONFIRMED' : 'PENDING';
 
+      const clientEmailLocale = this.normalizeEmailLocale(emailLocale);
+
       // Create booking
       const booking = await this.prisma.booking.create({
         data: {
@@ -243,6 +246,7 @@ export class BookingsService {
           dateTime: new Date(data.time),
           status: bookingStatus,
           notes: data.notes,
+          clientEmailLocale,
         },
         include: {
           Service: true,
@@ -1202,6 +1206,18 @@ export class BookingsService {
         userEmail: booking.User?.email,
       });
 
+      const clientLocale = this.normalizeEmailLocale(
+        booking.clientEmailLocale ?? preferredLocale,
+      );
+      const clientServiceName = getLocalizedServiceName(
+        booking.Service,
+        clientLocale,
+      );
+      const salonServiceNameForEmail = getLocalizedServiceName(
+        booking.Service,
+        'en',
+      );
+
       // For PENDING bookings, send notification to salon and client
       if (booking.status === 'PENDING') {
         // Send email to salon owner - prefer salon email, fallback to owner email
@@ -1215,7 +1231,7 @@ export class BookingsService {
             booking.Salon?.name || '',
             {
               bookingId: booking.id,
-              serviceName: booking.Service?.name || '',
+              serviceName: salonServiceNameForEmail,
               date: formattedDate,
               time: formattedTime,
               duration: booking.Service?.duration || 0,
@@ -1248,7 +1264,7 @@ export class BookingsService {
           );
 
           await this.emailService.sendBookingPending(clientEmail, clientName, {
-            serviceName: booking.Service?.name || '',
+            serviceName: clientServiceName,
             date: formattedDate,
             time: formattedTime,
             duration: booking.Service?.duration || 0,
@@ -1260,6 +1276,7 @@ export class BookingsService {
             dateTime: booking.dateTime,
             salonTimezone: salonTimezone,
             isWithinWorkingHours: isWithinWorkingHours,
+            locale: clientLocale,
           });
           this.logger.log('Client pending booking email sent', { clientEmail });
         } catch (clientEmailError) {
@@ -1278,7 +1295,7 @@ export class BookingsService {
           clientEmail,
           clientName,
           {
-            serviceName: booking.Service?.name || '',
+            serviceName: clientServiceName,
             date: formattedDate,
             time: formattedTime,
             duration: booking.Service?.duration || 0,
@@ -1288,6 +1305,8 @@ export class BookingsService {
             salonPhone: booking.Salon?.phone || null,
             staffName: booking.Staff?.name,
             dateTime: booking.dateTime,
+            salonTimezone: booking.Salon?.timezone || 'Asia/Ho_Chi_Minh',
+            locale: clientLocale,
           },
         );
         this.logger.log('Client confirmation email sent', { clientEmail });
@@ -1302,7 +1321,7 @@ export class BookingsService {
             salonEmail,
             booking.Salon?.name || '',
             {
-              serviceName: booking.Service?.name || '',
+              serviceName: salonServiceNameForEmail,
               date: formattedDate,
               time: formattedTime,
               duration: booking.Service?.duration || 0,
@@ -1651,6 +1670,9 @@ export class BookingsService {
             select: {
               id: true,
               name: true,
+              address: true,
+              phone: true,
+              timezone: true,
             },
           },
         },
@@ -1675,21 +1697,32 @@ export class BookingsService {
             .padStart(2, '0');
           const formattedTime = `${hours}:${minutes}`;
 
+          const emailLocale = this.normalizeEmailLocale(
+            data.locale ?? updatedBooking.clientEmailLocale,
+          );
+
           if (data.status === 'CONFIRMED') {
             // Send confirmation email to client
             await this.emailService.sendBookingConfirmation(
               updatedBooking.User?.email || '',
               updatedBooking.User?.name || 'Client',
               {
-                serviceName: updatedBooking.Service?.name || '',
+                serviceName: getLocalizedServiceName(
+                  updatedBooking.Service,
+                  emailLocale,
+                ),
                 date: formattedDate,
                 time: formattedTime,
                 duration: updatedBooking.Service?.duration || 0,
                 price: updatedBooking.Service?.price || 0,
                 salonName: updatedBooking.Salon?.name || '',
+                salonAddress: updatedBooking.Salon?.address ?? undefined,
+                salonPhone: updatedBooking.Salon?.phone ?? undefined,
+                staffName: updatedBooking.Staff?.name,
+                dateTime: updatedBooking.dateTime,
                 salonTimezone:
-                  (updatedBooking.Salon as any)?.timezone || 'Asia/Ho_Chi_Minh',
-                locale: this.normalizeEmailLocale(data.locale),
+                  updatedBooking.Salon?.timezone || 'Asia/Ho_Chi_Minh',
+                locale: emailLocale,
               },
             );
           } else if (data.status === 'CANCELED') {
@@ -1698,12 +1731,18 @@ export class BookingsService {
               updatedBooking.User?.email || '',
               updatedBooking.User?.name || 'Client',
               {
-                serviceName: updatedBooking.Service?.name || '',
+                serviceName: getLocalizedServiceName(
+                  updatedBooking.Service,
+                  emailLocale,
+                ),
                 date: formattedDate,
                 time: formattedTime,
                 duration: updatedBooking.Service?.duration || 0,
                 price: updatedBooking.Service?.price || 0,
                 salonName: updatedBooking.Salon?.name || '',
+                salonPhone: updatedBooking.Salon?.phone ?? undefined,
+                staffName: updatedBooking.Staff?.name,
+                locale: emailLocale,
               },
             );
           }
@@ -1888,11 +1927,18 @@ export class BookingsService {
         salonTimezone,
       );
 
+      const confirmLocaleResolved = this.normalizeEmailLocale(
+        confirmLocale ?? booking.clientEmailLocale,
+      );
+
       await this.emailService.sendBookingConfirmation(
         updatedBooking.User?.email || '',
         updatedBooking.User?.name || 'Client',
         {
-          serviceName: updatedBooking.Service?.name || '',
+          serviceName: getLocalizedServiceName(
+            updatedBooking.Service,
+            confirmLocaleResolved,
+          ),
           date: formattedDate,
           time: formattedTime,
           duration: updatedBooking.Service?.duration || 0,
@@ -1904,7 +1950,7 @@ export class BookingsService {
           dateTime: updatedBooking.dateTime, // Pass dateTime for Google Calendar
           salonTimezone:
             (updatedBooking.Salon as any)?.timezone || 'Asia/Ho_Chi_Minh',
-          locale: this.normalizeEmailLocale(confirmLocale),
+          locale: confirmLocaleResolved,
         },
       );
 
@@ -2007,11 +2053,16 @@ export class BookingsService {
         salonTimezone,
       );
 
+      const rejectLocale = this.normalizeEmailLocale(booking.clientEmailLocale);
+
       await this.emailService.sendBookingRejection(
         updatedBooking.User?.email || '',
         updatedBooking.User?.name || 'Client',
         {
-          serviceName: updatedBooking.Service?.name || '',
+          serviceName: getLocalizedServiceName(
+            updatedBooking.Service,
+            rejectLocale,
+          ),
           date: formattedDate,
           time: formattedTime,
           duration: updatedBooking.Service?.duration || 0,
@@ -2021,8 +2072,8 @@ export class BookingsService {
           salonPhone: updatedBooking.Salon?.phone ?? undefined,
           staffName: updatedBooking.Staff?.name,
           reason,
-          salonTimezone: salonTimezone,
-        } as any,
+          locale: rejectLocale,
+        },
       );
 
       this.logger.log('Booking rejected successfully', { bookingId });
@@ -2146,7 +2197,35 @@ export class BookingsService {
     }
   }
 
-  async sendMagicLink(email: string, bookingData: CreateBookingDto) {
+  /** Magic-link email only: compact date/time e.g. 15.04.2026 - 13.00 (salon TZ) */
+  private formatMagicLinkEmailDateTime(
+    dateTimeString: string,
+    salonTimezone: string = 'Asia/Ho_Chi_Minh',
+  ): { formattedDate: string; formattedTime: string } {
+    try {
+      const utcDate = new Date(dateTimeString);
+      if (isNaN(utcDate.getTime())) {
+        throw new Error(`Invalid date string: ${dateTimeString}`);
+      }
+      const zonedDate = toZonedTime(utcDate, salonTimezone);
+      const formattedDate = format(zonedDate, 'dd.MM.yyyy', {
+        timeZone: salonTimezone,
+      });
+      const formattedTime = format(zonedDate, 'HH.mm', {
+        timeZone: salonTimezone,
+      });
+      return { formattedDate, formattedTime };
+    } catch (error) {
+      this.logger.error('Error formatting magic link email datetime', error);
+      return { formattedDate: '—', formattedTime: '—' };
+    }
+  }
+
+  async sendMagicLink(
+    email: string,
+    bookingData: CreateBookingDto,
+    emailLocale?: string,
+  ) {
     try {
       const normalizedEmail = email.toLowerCase().trim();
 
@@ -2192,14 +2271,14 @@ export class BookingsService {
         },
       });
 
-      // Generate confirmation URL
+      // Generate confirmation URL (locale segment matches email/UI)
       const frontendUrl =
         this.configService.get<string>('FRONTEND_URL') ||
         (process.env.NODE_ENV === 'production'
           ? 'https://henzo.app'
           : 'http://localhost:3000');
-      // Default to 'en' locale, but can be customized
-      const confirmUrl = `${frontendUrl}/en/booking-confirmed?token=${token}`;
+      const loc = this.normalizeEmailLocale(emailLocale);
+      const confirmUrl = `${frontendUrl}/${loc}/booking-confirmed?token=${token}`;
 
       // Format booking data for email
       const service = await this.prisma.service.findUnique({
@@ -2211,18 +2290,20 @@ export class BookingsService {
       });
 
       const bookingDateTime = new Date(bookingData.time);
-      const { formattedDate, formattedTime } = this.formatBookingDateTime(
-        bookingDateTime.toISOString(),
-        (salon as any)?.timezone || 'Asia/Ho_Chi_Minh',
-      );
+      const { formattedDate, formattedTime } =
+        this.formatMagicLinkEmailDateTime(
+          bookingDateTime.toISOString(),
+          (salon as any)?.timezone || 'Asia/Ho_Chi_Minh',
+        );
 
       // Send magic link email
       await this.emailService.sendMagicLinkConfirmation(email, {
         confirmUrl,
-        serviceName: service?.name || 'Service',
+        serviceName: getLocalizedServiceName(service, loc),
         salonName: salon?.name || 'Salon',
         date: formattedDate,
         time: formattedTime,
+        locale: loc,
       });
 
       this.logger.log('Magic link sent', { email });

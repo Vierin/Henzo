@@ -3,6 +3,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { EmailService } from '../email/email.service';
 import { InputJsonValue } from '@prisma/client/runtime/library';
 import { toZonedTime, formatInTimeZone } from 'date-fns-tz';
+import { getLocalizedServiceName } from '../common/utils/localized-service-name';
 
 type BookingWithRelations = {
   id: string;
@@ -11,6 +12,7 @@ type BookingWithRelations = {
   reminderSent: boolean;
   remindersSentIntervals?: number[] | null;
   salonId: string;
+  clientEmailLocale: string;
   User: {
     id: string;
     name: string | null;
@@ -19,6 +21,9 @@ type BookingWithRelations = {
   Service: {
     id: string;
     name: string;
+    nameEn?: string | null;
+    nameVi?: string | null;
+    nameRu?: string | null;
     duration: number;
     price: number;
   };
@@ -100,6 +105,7 @@ export class RemindersService {
               reminderSent: true,
               remindersSentIntervals: true,
               salonId: true,
+              clientEmailLocale: true,
               User: {
                 select: {
                   id: true,
@@ -111,6 +117,9 @@ export class RemindersService {
                 select: {
                   id: true,
                   name: true,
+                  nameEn: true,
+                  nameVi: true,
+                  nameRu: true,
                   duration: true,
                   price: true,
                 },
@@ -246,9 +255,18 @@ export class RemindersService {
               'hh:mm a',
             );
 
+            const reminderLocale =
+              booking.clientEmailLocale === 'ru' ||
+              booking.clientEmailLocale === 'vi'
+                ? booking.clientEmailLocale
+                : 'en';
+
             // Prepare booking data for email
             const bookingData = {
-              serviceName: booking.Service.name,
+              serviceName: getLocalizedServiceName(
+                booking.Service,
+                reminderLocale,
+              ),
               date: dateStr,
               time: timeStr,
               duration: booking.Service.duration,
@@ -257,6 +275,8 @@ export class RemindersService {
               salonAddress: booking.Salon.address || undefined,
               salonPhone: booking.Salon.phone || undefined,
               staffName: booking.Staff?.name || undefined,
+              salonTimezone,
+              locale: booking.clientEmailLocale as 'en' | 'ru' | 'vi',
             };
 
             // Send reminder email

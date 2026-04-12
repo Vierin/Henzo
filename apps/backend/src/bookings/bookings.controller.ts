@@ -166,7 +166,10 @@ export class BookingsController {
         }
       }
 
-      const emailLocale = this.parseEmailLocale(acceptLanguage);
+      const emailLocale =
+        data.locale && ['en', 'ru', 'vi'].includes(data.locale)
+          ? data.locale
+          : this.parseEmailLocale(acceptLanguage);
       const booking = await this.bookingsService.createBooking(
         data,
         bookingUserId,
@@ -706,16 +709,26 @@ export class BookingsController {
   }
 
   @Post('send-magic-link')
-  async sendMagicLink(@Body() data: SendMagicLinkDto) {
+  async sendMagicLink(
+    @Body() data: SendMagicLinkDto,
+    @Headers('accept-language') acceptLanguage?: string,
+  ) {
     try {
       console.log('🔗 Send magic link request:', {
         email: data.email,
         hasBookingData: !!data.bookingData,
       });
 
+      const emailLocale =
+        data.bookingData.locale &&
+        ['en', 'ru', 'vi'].includes(data.bookingData.locale)
+          ? data.bookingData.locale
+          : this.parseEmailLocale(acceptLanguage);
+
       const result = await this.bookingsService.sendMagicLink(
         data.email,
         data.bookingData,
+        emailLocale,
       );
 
       console.log('✅ Magic link sent successfully');

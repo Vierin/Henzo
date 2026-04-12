@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { apiClient } from '@/lib/api-client';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 interface Salon {
 	id: string;
@@ -33,6 +34,7 @@ export default function ReBookModal({
 	service,
 	onSuccess,
 }: ReBookModalProps) {
+	const { language } = useLanguage();
 	const [selectedDate, setSelectedDate] = useState('');
 	const [selectedTime, setSelectedTime] = useState('');
 	const [availableSlots, setAvailableSlots] = useState<string[]>([]);
@@ -124,11 +126,16 @@ export default function ReBookModal({
 		try {
 			const bookingDateTime = new Date(`${selectedDate}T${selectedTime}`);
 
-			await apiClient.post('/bookings', {
-				salonId: salon.id,
-				serviceId: service.id,
-				time: bookingDateTime.toISOString(),
-			});
+			await apiClient.post(
+				'/bookings',
+				{
+					salonId: salon.id,
+					serviceId: service.id,
+					time: bookingDateTime.toISOString(),
+					locale: language,
+				},
+				{ headers: { 'Accept-Language': language } }
+			);
 
 			onSuccess?.();
 			onClose();

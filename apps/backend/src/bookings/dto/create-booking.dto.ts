@@ -1,4 +1,10 @@
-import { IsString, IsOptional, IsDateString, IsEmail } from 'class-validator';
+import {
+  IsString,
+  IsOptional,
+  IsDateString,
+  IsEmail,
+  IsIn,
+} from 'class-validator';
 
 export class CreateBookingDto {
   @IsString()
@@ -30,4 +36,9 @@ export class CreateBookingDto {
   @IsOptional()
   @IsString()
   clientPhone?: string;
+
+  /** Preferred locale for client booking emails; overrides Accept-Language when set */
+  @IsOptional()
+  @IsIn(['en', 'ru', 'vi'])
+  locale?: 'en' | 'ru' | 'vi';
 }

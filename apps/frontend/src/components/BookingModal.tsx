@@ -103,7 +103,7 @@ export default function BookingModal({
 
 	// Используем новые хуки для получения данных
 	const { data: staffMembers = [], isLoading: staffLoading } = useStaffBySalon(
-		currentSalonId || ''
+		currentSalonId || '',
 	);
 
 	const { data: services = [] } = useServices(currentSalonId || '');
@@ -153,8 +153,8 @@ export default function BookingModal({
 					block.startDate,
 					block.endDate,
 					selectedDate,
-					salonTimezone
-				) !== null
+					salonTimezone,
+				) !== null,
 		);
 	}, [selectedDate, allTimeBlocks, salonTimezone]);
 
@@ -176,7 +176,7 @@ export default function BookingModal({
 	// Check if current time is within working hours
 	const isWithinWorkingHours = useIsWithinWorkingHours(
 		salonWorkingHours,
-		salonTimezone
+		salonTimezone,
 	);
 
 	// Local UI states
@@ -194,7 +194,7 @@ export default function BookingModal({
 		isWithinWorkingHours?: boolean;
 	} | null>(null);
 	const [currentStep, setCurrentStep] = useState<'booking' | 'client'>(
-		'booking'
+		'booking',
 	);
 	const [isMobile, setIsMobile] = useState(false);
 	const [timeFilter, setTimeFilter] = useState<
@@ -261,14 +261,14 @@ export default function BookingModal({
 			selectedStaff !== t('booking.anyStaff')
 		) {
 			const staffMember = staffMembers.find(
-				(staff: Staff) => staff.name === selectedStaff
+				(staff: Staff) => staff.name === selectedStaff,
 			);
 			if (staffMember) {
 				const staffServices = staffMember.Service || [];
 				// If staff has services assigned, check if they can perform selected service
 				if (staffServices.length > 0) {
 					const canPerform = staffServices.some(
-						(service) => service.id === selectedService.id
+						(service) => service.id === selectedService.id,
 					);
 					if (!canPerform) {
 						// Reset to "Any Staff" if current staff can't perform the service
@@ -287,14 +287,14 @@ export default function BookingModal({
 			selectedStaff !== t('booking.anyStaff')
 		) {
 			const staffMember = staffMembers.find(
-				(staff: Staff) => staff.name === selectedStaff
+				(staff: Staff) => staff.name === selectedStaff,
 			);
 			if (staffMember) {
 				const staffServices = staffMember.Service || [];
 				// If staff has services assigned, check if they can perform selected service
 				if (staffServices.length > 0) {
 					const canPerform = staffServices.some(
-						(service) => service.id === selectedService.id
+						(service) => service.id === selectedService.id,
 					);
 					if (!canPerform) {
 						// Reset selected service if current staff can't perform it
@@ -338,7 +338,7 @@ export default function BookingModal({
 						if (!dateRegex.test(bookingData.date)) {
 							logger.error(
 								'❌ Invalid date format in localStorage:',
-								bookingData.date
+								bookingData.date,
 							);
 							storage.removeItem('pendingBooking');
 							toast.error('Invalid date format. Please try again.');
@@ -350,7 +350,7 @@ export default function BookingModal({
 						if (!timeRegex.test(bookingData.time)) {
 							logger.error(
 								'❌ Invalid time format in localStorage:',
-								bookingData.time
+								bookingData.time,
 							);
 							storage.removeItem('pendingBooking');
 							toast.error('Invalid time format. Please try again.');
@@ -439,7 +439,7 @@ export default function BookingModal({
 								toast.error(
 									error instanceof Error
 										? error.message
-										: 'Failed to complete booking. Please try again.'
+										: 'Failed to complete booking. Please try again.',
 								);
 							}
 						}, 2000);
@@ -543,7 +543,7 @@ export default function BookingModal({
 		}
 
 		const staffMember = staffMembers.find(
-			(staff) => staff.name === selectedStaff
+			(staff) => staff.name === selectedStaff,
 		);
 		if (!staffMember) {
 			return services; // Show all services if staff not found
@@ -610,7 +610,7 @@ export default function BookingModal({
 		}
 
 		return staffMembersForService.filter((staff) =>
-			isTimeSlotAvailable(selectedTime, staff.id)
+			isTimeSlotAvailable(selectedTime, staff.id),
 		);
 	}, [
 		selectedTime,
@@ -636,7 +636,7 @@ export default function BookingModal({
 			const dayName = weekdayFullMap[dayOfWeek];
 			const currentWorkingHours = workingHours || salonWorkingHours;
 			const isClosed = Boolean(
-				currentWorkingHours && currentWorkingHours[dayName]?.closed === true
+				currentWorkingHours && currentWorkingHours[dayName]?.closed === true,
 			);
 
 			const year = date.getFullYear();
@@ -723,7 +723,7 @@ export default function BookingModal({
 
 		const availableDays = getAvailableDays();
 		const currentSelectedDateInfo = availableDays.find(
-			(day) => day.dateString === selectedDate
+			(day) => day.dateString === selectedDate,
 		);
 
 		// Determine if a new date needs to be selected
@@ -784,7 +784,7 @@ export default function BookingModal({
 		let closestDiff = Math.abs(
 			parseInt(closestTime.split(':')[0]) * 60 +
 				parseInt(closestTime.split(':')[1]) -
-				bookingMinutes
+				bookingMinutes,
 		);
 
 		for (const slot of timeSlots) {
@@ -856,7 +856,7 @@ export default function BookingModal({
 	const handleClientEmailChange = (value: string) => {
 		setClientEmail(value);
 		setBookingFieldErrors((p) =>
-			p.clientEmail ? { ...p, clientEmail: false } : p
+			p.clientEmail ? { ...p, clientEmail: false } : p,
 		);
 	};
 
@@ -1001,7 +1001,7 @@ export default function BookingModal({
 		if (isOwner && !isOwnerOfThisSalon() && !editingBooking) {
 			toast.error(
 				t('booking.ownerCannotBookOtherSalon') ||
-					'To book in another salon, please log in as a client account.'
+					'To book in another salon, please log in as a client account.',
 			);
 			return;
 		}
@@ -1071,7 +1071,7 @@ export default function BookingModal({
 
 			// Find the selected staff member
 			const staffMember = staffMembers.find(
-				(staff) => staff.name === staffToUse
+				(staff) => staff.name === staffToUse,
 			);
 			const staffId = staffMember?.id || 'any';
 
@@ -1092,7 +1092,7 @@ export default function BookingModal({
 			if (!dateRegex.test(dateToUse)) {
 				logger.error('❌ Invalid date format:', dateToUse);
 				throw new Error(
-					`Invalid date format: ${dateToUse}. Expected YYYY-MM-DD`
+					`Invalid date format: ${dateToUse}. Expected YYYY-MM-DD`,
 				);
 			}
 
@@ -1110,19 +1110,19 @@ export default function BookingModal({
 				const today = new Date(
 					now.getFullYear(),
 					now.getMonth(),
-					now.getDate()
+					now.getDate(),
 				);
 				const selectedDateOnly = new Date(
 					selectedDateObj.getFullYear(),
 					selectedDateObj.getMonth(),
-					selectedDateObj.getDate()
+					selectedDateObj.getDate(),
 				);
 
 				if (selectedDateOnly < today) {
 					logger.error('❌ Selected date is in the past:', dateToUse);
 					throw new Error(
 						t.booking.dateInPast ||
-							'Selected date is in the past. Please select a future date.'
+							'Selected date is in the past. Please select a future date.',
 					);
 				}
 
@@ -1134,14 +1134,14 @@ export default function BookingModal({
 						now.getMonth(),
 						now.getDate(),
 						hours,
-						minutes
+						minutes,
 					);
 
 					if (selectedDateTime < now) {
 						logger.error('❌ Selected time is in the past:', timeToUse);
 						throw new Error(
 							t.booking.timeInPast ||
-								'Selected time is in the past. Please select a future time.'
+								'Selected time is in the past. Please select a future time.',
 						);
 					}
 				}
@@ -1158,7 +1158,7 @@ export default function BookingModal({
 				bookingDateTime = createBookingDateTimeUTC(
 					dateToUse,
 					timeToUse,
-					salonTimezone
+					salonTimezone,
 				);
 				logger.log('✅ Booking date time created:', bookingDateTime);
 			} catch (dateError) {
@@ -1170,7 +1170,7 @@ export default function BookingModal({
 					selectedTime,
 				});
 				throw new Error(
-					`Invalid date/time selection: ${dateError instanceof Error ? dateError.message : 'Unknown error'}`
+					`Invalid date/time selection: ${dateError instanceof Error ? dateError.message : 'Unknown error'}`,
 				);
 			}
 
@@ -1210,7 +1210,7 @@ export default function BookingModal({
 			if (staffMember?.id && !isTimeSlotAvailable(timeToUse, staffMember.id)) {
 				toast.error(
 					t.booking.staffNotAvailable ||
-						'The selected staff member is not available at this time.'
+						'The selected staff member is not available at this time.',
 				);
 				setLoading(false);
 				return;
@@ -1221,6 +1221,7 @@ export default function BookingModal({
 				staffId: staffId === 'any' ? undefined : staffId,
 				time: bookingDateTime,
 				salonId: finalSalonId,
+				locale: language,
 			};
 
 			if (isOwner) {
@@ -1240,7 +1241,7 @@ export default function BookingModal({
 			const result = await apiClient.post<{ booking?: { status?: string } }>(
 				'/bookings',
 				requestBody,
-				{ headers: { 'Accept-Language': language || 'en' } }
+				{ headers: { 'Accept-Language': language || 'en' } },
 			);
 
 			storage.removeItem('pendingBooking');
@@ -1355,7 +1356,7 @@ export default function BookingModal({
 
 			// Find the selected staff member
 			const staffMember = staffMembers.find(
-				(staff) => staff.name === selectedStaff
+				(staff) => staff.name === selectedStaff,
 			);
 			const staffId = staffMember?.id || 'any';
 
@@ -1364,19 +1365,22 @@ export default function BookingModal({
 				bookingDateTime = createBookingDateTimeUTC(
 					selectedDate,
 					selectedTime,
-					salonTimezone
+					salonTimezone,
 				);
 			} catch (dateError) {
 				console.error('❌ Error creating booking date time:', dateError);
 				throw new Error(
-					`Invalid date/time selection: ${dateError instanceof Error ? dateError.message : 'Unknown error'}`
+					`Invalid date/time selection: ${dateError instanceof Error ? dateError.message : 'Unknown error'}`,
 				);
 			}
 
-			if (staffMember?.id && !isTimeSlotAvailable(selectedTime, staffMember.id)) {
+			if (
+				staffMember?.id &&
+				!isTimeSlotAvailable(selectedTime, staffMember.id)
+			) {
 				toast.error(
 					t.booking.staffNotAvailable ||
-						'The selected staff member is not available at this time.'
+						'The selected staff member is not available at this time.',
 				);
 				setLoading(false);
 				return;
@@ -1399,7 +1403,7 @@ export default function BookingModal({
 		} catch (error: unknown) {
 			console.error('Update booking error:', error);
 			toast.error(
-				error instanceof Error ? error.message : 'Failed to update appointment'
+				error instanceof Error ? error.message : 'Failed to update appointment',
 			);
 		} finally {
 			setLoading(false);
@@ -1563,7 +1567,7 @@ export default function BookingModal({
 														<li>
 															<strong>{t.booking.date}</strong>{' '}
 															{new Date(
-																bookingSuccess.date
+																bookingSuccess.date,
 															).toLocaleDateString()}
 														</li>
 														<li>
@@ -1684,7 +1688,7 @@ export default function BookingModal({
 											className={cn(
 												'rounded-xl p-1 -m-1 transition-shadow',
 												bookingFieldErrors.service &&
-													'ring-2 ring-red-500 ring-offset-2'
+													'ring-2 ring-red-500 ring-offset-2',
 											)}
 										>
 											<BookingServiceSelector
@@ -1710,7 +1714,7 @@ export default function BookingModal({
 											className={cn(
 												'rounded-xl p-1 -m-1 transition-shadow',
 												bookingFieldErrors.date &&
-													'ring-2 ring-red-500 ring-offset-2'
+													'ring-2 ring-red-500 ring-offset-2',
 											)}
 										>
 											<BookingDateSelector
@@ -1738,7 +1742,7 @@ export default function BookingModal({
 											className={cn(
 												'rounded-xl p-1 -m-1 transition-shadow',
 												bookingFieldErrors.time &&
-													'ring-2 ring-red-500 ring-offset-2'
+													'ring-2 ring-red-500 ring-offset-2',
 											)}
 										>
 											{!selectedDate && (
@@ -1748,10 +1752,10 @@ export default function BookingModal({
 											)}
 											<BookingTimeSelector
 												timeSlots={timeSlots.map((slot) =>
-													typeof slot === 'string' ? slot : slot.time
+													typeof slot === 'string' ? slot : slot.time,
 												)}
 												filteredTimeSlots={filteredTimeSlots.map((slot) =>
-													typeof slot === 'string' ? slot : slot.time
+													typeof slot === 'string' ? slot : slot.time,
 												)}
 												selectedTime={selectedTime}
 												onTimeSelect={setSelectedTime}
@@ -1866,7 +1870,7 @@ export default function BookingModal({
 									className={cn(
 										'rounded-xl p-1 -m-1 mb-2 transition-shadow',
 										bookingFieldErrors.service &&
-											'ring-2 ring-red-500 ring-offset-2'
+											'ring-2 ring-red-500 ring-offset-2',
 									)}
 								>
 									<BookingServiceSelector
@@ -1892,7 +1896,7 @@ export default function BookingModal({
 									className={cn(
 										'rounded-xl p-1 -m-1 mb-2 transition-shadow',
 										bookingFieldErrors.date &&
-											'ring-2 ring-red-500 ring-offset-2'
+											'ring-2 ring-red-500 ring-offset-2',
 									)}
 								>
 									<BookingDateSelector
@@ -1920,7 +1924,7 @@ export default function BookingModal({
 									className={cn(
 										'rounded-xl p-1 -m-1 transition-shadow',
 										bookingFieldErrors.time &&
-											'ring-2 ring-red-500 ring-offset-2'
+											'ring-2 ring-red-500 ring-offset-2',
 									)}
 								>
 									{!selectedDate && (
@@ -1930,10 +1934,10 @@ export default function BookingModal({
 									)}
 									<BookingTimeSelector
 										timeSlots={timeSlots.map((slot) =>
-											typeof slot === 'string' ? slot : slot.time
+											typeof slot === 'string' ? slot : slot.time,
 										)}
 										filteredTimeSlots={filteredTimeSlots.map((slot) =>
-											typeof slot === 'string' ? slot : slot.time
+											typeof slot === 'string' ? slot : slot.time,
 										)}
 										selectedTime={selectedTime}
 										onTimeSelect={setSelectedTime}
@@ -1991,7 +1995,7 @@ export default function BookingModal({
 
 				{/* Login Modal */}
 				{showLoginModal && (
-					<div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[1000] p-4">
+					<div className="absolute inset-0 bg-black/60 flex items-center justify-center z-[1000] p-4">
 						<div
 							className="bg-white rounded-xl shadow-2xl w-full max-w-md p-6"
 							onClick={(e) => e.stopPropagation()}

@@ -17,6 +17,8 @@ model Booking {
   staffId                String?
   status                 BookingStatus @default(PENDING)
   notes                  String?
+  /// Locale for client-facing booking emails (en, ru, vi)
+  clientEmailLocale      String        @default("en")
   createdAt              DateTime      @default(now())
   dateTime               DateTime
   reminderSent           Boolean       @default(false)

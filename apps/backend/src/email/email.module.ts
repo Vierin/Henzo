@@ -1,11 +1,20 @@
 import { Module } from '@nestjs/common';
-import { EmailService } from './email.service';
 import { ConfigModule } from '@nestjs/config';
+import { EmailService } from './email.service';
+import { BrevoEmailDeliveryService } from './brevo-email-delivery.service';
+import { ClientBookingEmailService } from './client-booking-email.service';
+import { SalonEmailService } from './salon-email.service';
+import { TransactionalEmailService } from './transactional-email.service';
 
 @Module({
   imports: [ConfigModule],
-  providers: [EmailService],
+  providers: [
+    BrevoEmailDeliveryService,
+    ClientBookingEmailService,
+    SalonEmailService,
+    TransactionalEmailService,
+    EmailService,
+  ],
   exports: [EmailService],
-  // EmailProcessor removed - email will be sent synchronously for MVP
 })
 export class EmailModule {}
