@@ -118,6 +118,8 @@ export function useBookingAuth({
 				clientEmail: email.trim(),
 				clientName: '',
 				clientPhone: '',
+				locale:
+					language === 'ru' || language === 'vi' ? language : ('en' as const),
 			};
 
 			await apiClient.post(

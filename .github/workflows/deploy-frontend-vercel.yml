@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - staging
+      - main
     paths:
       - 'apps/frontend/**'
       - '.github/workflows/deploy-frontend-vercel.yml'
@@ -24,7 +25,9 @@ concurrency:
 jobs:
   deploy-staging:
     name: Deploy frontend staging
-    if: github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && inputs.environment == 'staging')
+    if: |
+      (github.event_name == 'push' && github.ref == 'refs/heads/staging') ||
+      (github.event_name == 'workflow_dispatch' && inputs.environment == 'staging')
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -67,7 +70,9 @@ jobs:
 
   deploy-production:
     name: Deploy frontend production
-    if: github.event_name == 'workflow_dispatch' && inputs.environment == 'production'
+    if: |
+      (github.event_name == 'push' && github.ref == 'refs/heads/main') ||
+      (github.event_name == 'workflow_dispatch' && inputs.environment == 'production')
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
