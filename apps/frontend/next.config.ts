@@ -8,12 +8,24 @@ const withBundleAnalyzer = bundleAnalyzer({
 	enabled: process.env.ANALYZE === 'true',
 });
 
+// Windows dev: `.next/trace` often hits EPERM (AV / locked tree). Use a separate dev distDir.
+// Must be relative — Next resolves distDir with path.join on Windows; absolute paths break.
+const isDevScript =
+	process.env.NODE_ENV === 'development' ||
+	process.env.npm_lifecycle_event === 'dev';
+const distDirDev =
+	process.env.HENZO_NEXT_DIST_DIR ||
+	(process.platform === 'win32' && isDevScript && !process.env.VERCEL
+		? '.henzo-next-dev-cache'
+		: undefined);
+
 const nextConfig: NextConfig = {
 	// Указываем корень workspace для правильного определения lockfile
 	// На Vercel это может вызывать проблемы с путями, поэтому делаем условно
 	...(process.env.VERCEL
 		? {}
 		: { outputFileTracingRoot: path.join(__dirname, '../..') }),
+	...(distDirDev ? { distDir: distDirDev } : {}),
 	eslint: {
 		// Enable ESLint during builds to catch errors
 		ignoreDuringBuilds: false,

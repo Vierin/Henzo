@@ -60,16 +60,12 @@ export class AuthController {
       role?: string;
       magicLinkToken?: string;
     },
+    @Headers('authorization') authHeader?: string,
   ) {
     try {
-      console.log('📝 POST /auth/register called with:', {
-        userId: data.userId,
-        email: data.email,
-        hasPassword: !!data.password,
-        role: data.role,
+      const result = await this.authService.registerOwner(data, {
+        authHeader,
       });
-      const result = await this.authService.registerOwner(data);
-      console.log('✅ Registration successful');
       return result;
     } catch (error: any) {
       console.error('❌ Registration error:', {

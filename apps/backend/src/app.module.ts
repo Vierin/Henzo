@@ -28,6 +28,9 @@ import { validate } from './config/env.validation';
 import { LoggerModule } from './common/logger/logger.module';
 import { SubscriptionsModule } from './subscriptions/subscriptions.module';
 import { ClientsModule } from './clients/clients.module';
+import { resolveBackendEnvPath } from './config/resolve-backend-env-path';
+
+const backendEnvFile = resolveBackendEnvPath(__dirname);
 
 @Module({
   imports: [
@@ -35,6 +38,7 @@ import { ClientsModule } from './clients/clients.module';
       isGlobal: true,
       validate,
       cache: true,
+      ...(backendEnvFile ? { envFilePath: backendEnvFile } : {}),
     }),
     LoggerModule,
     CacheModule,

@@ -8,29 +8,16 @@ import { MonitoringService } from './monitoring/monitoring.service';
 import * as compression from 'compression';
 import helmet from 'helmet';
 import { initSentry } from './config/sentry.config';
-import { resolve } from 'path';
+import { resolveBackendEnvPath } from './config/resolve-backend-env-path';
 
 // Load environment variables before initializing Sentry
 // This ensures ENABLE_SENTRY_IN_DEV and SENTRY_DSN are available
 // Use require to avoid TypeScript import issues with dotenv
 try {
   const dotenv = require('dotenv');
-  const envPaths = [
-    resolve(process.cwd(), '.env'), // Root of backend app
-    resolve(__dirname, '../.env'), // One level up from dist
-    resolve(__dirname, '../../.env'), // Two levels up (if running from dist/src)
-  ];
-
-  // Load the first .env file that exists
-  for (const envPath of envPaths) {
-    try {
-      const result = dotenv.config({ path: envPath });
-      if (!result.error) {
-        break;
-      }
-    } catch (error) {
-      // Continue to next path
-    }
+  const envPath = resolveBackendEnvPath(__dirname);
+  if (envPath) {
+    dotenv.config({ path: envPath });
   }
 } catch (error) {
   // Silently fall back to system environment variables
