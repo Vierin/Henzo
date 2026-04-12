@@ -1,6 +1,9 @@
 import { Injectable, OnModuleInit, OnModuleDestroy } from '@nestjs/common';
 import { PrismaClient } from '@prisma/client';
 
+/** Merged with class so instance type exposes Prisma delegates (`booking`, `salon`, …). */
+export interface PrismaService extends PrismaClient {}
+
 @Injectable()
 export class PrismaService
   extends PrismaClient

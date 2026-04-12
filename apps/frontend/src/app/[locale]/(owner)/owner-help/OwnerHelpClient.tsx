@@ -12,6 +12,7 @@ const SECTION_IDS = [
 	'addService',
 	'addStaff',
 	'salonHours',
+	'autoConfirm',
 	'calendar',
 	'walkIn',
 	'bookingPage',
@@ -23,6 +24,7 @@ const INTERNAL_HREF: Partial<Record<SectionId, string>> = {
 	addService: '/services/new',
 	addStaff: '/staff/new',
 	salonHours: '/salon-info',
+	autoConfirm: '/salon-info',
 	calendar: '/calendar',
 	walkIn: '/calendar',
 };

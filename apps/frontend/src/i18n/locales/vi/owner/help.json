@@ -15,6 +15,10 @@
 			"title": "Đổi giờ mở cửa salon",
 			"body": "Cài đặt salon → Giờ hoạt động. Giờ mở/đóng theo từng ngày. Quyết định khung giờ khách có thể đặt online."
 		},
+		"autoConfirm": {
+			"title": "Tự động xác nhận đặt chỗ mới",
+			"body": "Cài đặt salon → Thông tin cơ bản: bật “Tự động xác nhận đặt chỗ mới”. Khi bật, đặt chỗ online được xác nhận ngay; khi tắt, vẫn ở trạng thái chờ bạn duyệt."
+		},
 		"calendar": {
 			"title": "Lịch và chặn thời gian",
 			"body": "Lịch hiển thị booking. Chặn giờ cho nghỉ, bận hoặc đóng cửa — các khối này làm giảm slot cho khách."
