@@ -88,7 +88,9 @@ export class AuthController {
     try {
       this.logger.log('Client registration request');
       const result = await this.authService.registerClient(data);
-      this.logger.log(`Client registration ok userId=${result.user.id.slice(0, 8)}…`);
+      this.logger.log(
+        `Client registration ok userId=${result.user.id.slice(0, 8)}…`,
+      );
       return result;
     } catch (error) {
       this.logger.warn(
@@ -121,9 +123,7 @@ export class AuthController {
         `Get user authHeader=${authHeader ? 'present' : 'missing'}`,
       );
       const result = await this.authService.getCurrentUser(authHeader);
-      this.logger.log(
-        `Get user ok id=${result.user.id.slice(0, 8)}…`,
-      );
+      this.logger.log(`Get user ok id=${result.user.id.slice(0, 8)}…`);
       return result;
     } catch (error) {
       this.logger.warn(
@@ -146,9 +146,7 @@ export class AuthController {
       const result = await this.authService.initializeUser(authHeader, {
         includeSalon: includeSalon === 'true',
       });
-      this.logger.log(
-        `Initialize ok id=${result.user.id.slice(0, 8)}…`,
-      );
+      this.logger.log(`Initialize ok id=${result.user.id.slice(0, 8)}…`);
       return result;
     } catch (error) {
       this.logger.warn(
