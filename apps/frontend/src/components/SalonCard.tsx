@@ -21,6 +21,7 @@ import {
 import { useAuthStore } from '@/stores/authStore';
 import { useLanguage, useTranslation } from '@/contexts/LanguageContext';
 import { getLocalizedServiceName } from '@/utils/serviceLocalization';
+import { haversineDistanceKm } from '@/utils/mapUtils';
 
 interface SalonCardProps {
 	salon: Salon;
@@ -33,6 +34,8 @@ interface SalonCardProps {
 	selectedDate?: Date | null;
 	selectedTimeInterval?: string;
 	priority?: boolean;
+	/** When set, show approximate distance from user before the address */
+	userLocation?: { lat: number; lng: number } | null;
 }
 
 function SalonCard({
@@ -42,6 +45,7 @@ function SalonCard({
 	selectedDate,
 	selectedTimeInterval,
 	priority = false,
+	userLocation = null,
 }: SalonCardProps) {
 	const router = useRouter();
 	const { getSalonUrl } = useSalonSlug();
@@ -51,6 +55,21 @@ function SalonCard({
 	const isFavorite = useIsFavorite(salon.id, !!user);
 	const addFavoriteMutation = useAddFavorite();
 	const removeFavoriteMutation = useRemoveFavorite();
+
+	const addr = salon.address?.trim() ?? '';
+	let addressLine = addr;
+	if (
+		userLocation &&
+		salon.latitude != null &&
+		salon.longitude != null
+	) {
+		const km = haversineDistanceKm(userLocation, {
+			lat: salon.latitude,
+			lng: salon.longitude,
+		});
+		const prefix = `${km.toFixed(1)} ${t.salon.km}`;
+		addressLine = addr ? `${prefix} — ${addr}` : prefix;
+	}
 
 	// Мемоизируем URL салона
 	const salonUrl = useMemo(
@@ -135,7 +154,7 @@ function SalonCard({
 							</button>
 						</div>
 					</div>
-					<p className="text-gray-600 text-sm mb-2 truncate">{salon.address}</p>
+					<p className="text-gray-600 text-sm mb-2 truncate">{addressLine}</p>
 					{salon.phone && (
 						<p className="text-gray-500 text-sm mb-3 flex gap-1 items-center">
 							<Phone className="w-3.5 h-3.5 flex-shrink-0" />

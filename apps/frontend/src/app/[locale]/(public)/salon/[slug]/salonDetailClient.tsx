@@ -8,7 +8,7 @@ import BookingModal from '@/components/BookingModal';
 // Dynamically import MapComponentWithCoords to avoid SSR issues with Leaflet
 const MapComponentWithCoords = dynamic(
 	() => import('@/components/MapComponentWithCoords'),
-	{ ssr: false }
+	{ ssr: false },
 );
 import { Service, WorkingHours, Salon } from '@/types';
 import { supabase } from '@/lib/supabase';
@@ -91,7 +91,7 @@ export default function SalonDetailClient({ salon }: SalonDetailClientProps) {
 		// Check if user is logged in
 		if (!user) {
 			router.push(
-				`/login?returnTo=${encodeURIComponent(window.location.href)}`
+				`/login?returnTo=${encodeURIComponent(window.location.href)}`,
 			);
 			return;
 		}
@@ -126,7 +126,7 @@ export default function SalonDetailClient({ salon }: SalonDetailClientProps) {
 			window.open(
 				`https://www.google.com/maps/dir/?api=1&destination=${dest}`,
 				'_blank',
-				'noopener,noreferrer'
+				'noopener,noreferrer',
 			);
 			return;
 		}
@@ -136,7 +136,7 @@ export default function SalonDetailClient({ salon }: SalonDetailClientProps) {
 			window.open(
 				`https://www.google.com/maps/search/?api=1&query=${encodedAddress}`,
 				'_blank',
-				'noopener,noreferrer'
+				'noopener,noreferrer',
 			);
 		}
 	}, [salon.address, salon.latitude, salon.longitude]);
@@ -166,7 +166,7 @@ export default function SalonDetailClient({ salon }: SalonDetailClientProps) {
 				})
 				.join('\n');
 		},
-		[t.salon.closed, t.salon.hoursNotSpecified]
+		[t.salon.closed, t.salon.hoursNotSpecified],
 	);
 
 	// Group services by serviceGroup
@@ -214,7 +214,7 @@ export default function SalonDetailClient({ salon }: SalonDetailClientProps) {
 
 		// Sort groups by position
 		const groups = Array.from(groupsMap.values()).sort(
-			(a, b) => a.group.position - b.group.position
+			(a, b) => a.group.position - b.group.position,
 		);
 
 		return { groups, ungrouped };
@@ -384,16 +384,16 @@ export default function SalonDetailClient({ salon }: SalonDetailClientProps) {
 														</div>
 													</button>
 													{isExpanded && (
-														<div id={`group-${group.id}`} className="space-y-4">
+														<div id={`group-${group.id}`} className="">
 															{services.map((service) => {
 																const localizedName = getLocalizedServiceName(
 																	service,
-																	language
+																	language,
 																);
 																const localizedDescription =
 																	getLocalizedServiceDescription(
 																		service,
-																		language
+																		language,
 																	);
 																return (
 																	<article
@@ -459,7 +459,7 @@ export default function SalonDetailClient({ salon }: SalonDetailClientProps) {
 													{serviceGroups.ungrouped.map((service) => {
 														const localizedName = getLocalizedServiceName(
 															service,
-															language
+															language,
 														);
 														const localizedDescription =
 															getLocalizedServiceDescription(service, language);

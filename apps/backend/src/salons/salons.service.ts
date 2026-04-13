@@ -227,11 +227,17 @@ export class SalonsService {
     search?: string;
     location?: string;
     category?: string;
+    /** Comma-separated main category slugs (e.g. hair-barber,massage-spa) for map filters */
+    categories?: string;
     sortBy?: string;
     minRating?: number;
     isOpenNow?: boolean;
     date?: string;
     time?: string;
+    north?: number;
+    south?: number;
+    east?: number;
+    west?: number;
   }) {
     const {
       page = 1,
@@ -239,12 +245,26 @@ export class SalonsService {
       search = '',
       location = '',
       category = '',
+      categories: categoriesCsv = '',
       sortBy = 'name',
       minRating = 0,
       isOpenNow = false,
       date,
       time,
+      north: northIn,
+      south: southIn,
+      east: eastIn,
+      west: westIn,
     } = params;
+
+    const north =
+      northIn !== undefined && !Number.isNaN(northIn) ? northIn : undefined;
+    const south =
+      southIn !== undefined && !Number.isNaN(southIn) ? southIn : undefined;
+    const east =
+      eastIn !== undefined && !Number.isNaN(eastIn) ? eastIn : undefined;
+    const west =
+      westIn !== undefined && !Number.isNaN(westIn) ? westIn : undefined;
 
     // P0: Максимальный лимит для предотвращения огромных payloads
     const limit = Math.min(requestedLimit, 50);
@@ -267,7 +287,22 @@ export class SalonsService {
 
     // Build category service filter first (needed for combining with search)
     let categoryServiceFilter: any = null;
-    if (category && category !== 'all') {
+    const csvSlugs = categoriesCsv
+      .split(',')
+      .map((s) => s.trim())
+      .filter(Boolean);
+    if (csvSlugs.length > 0) {
+      const mainCats = this.getSalonCategories().filter((c) =>
+        csvSlugs.includes(c.slug),
+      );
+      if (mainCats.length > 0) {
+        categoryServiceFilter = {
+          service_categories: {
+            main_category_id: { in: mainCats.map((c) => c.id) },
+          },
+        };
+      }
+    } else if (category && category !== 'all') {
       const categoryId = parseInt(category, 10);
 
       if (!Number.isNaN(categoryId)) {
@@ -423,6 +458,24 @@ export class SalonsService {
       };
     }
 
+    const hasValidBbox =
+      north !== undefined &&
+      south !== undefined &&
+      east !== undefined &&
+      west !== undefined &&
+      north >= south &&
+      east >= west;
+
+    const whereFinal = hasValidBbox
+      ? {
+          AND: [
+            where,
+            { latitude: { gte: south, lte: north } },
+            { longitude: { gte: west, lte: east } },
+          ],
+        }
+      : where;
+
     // Build orderBy clause
     let orderBy: any = { createdAt: 'desc' };
     switch (sortBy) {
@@ -448,11 +501,11 @@ export class SalonsService {
     }
 
     // Get total count for pagination
-    const total = await this.prisma.salon.count({ where });
+    const total = await this.prisma.salon.count({ where: whereFinal });
 
     // Get paginated results with optimized select (only fields needed for cards)
     const salons = await this.prisma.salon.findMany({
-      where,
+      where: whereFinal,
       select: {
         id: true,
         name: true,
@@ -1740,8 +1793,8 @@ export class SalonsService {
 
   async findFeaturedSalons(limit: number) {
     // Cache key includes limit to cache different limits separately
-    // Version 5: added serviceCategoryIds for category filtering
-    const cacheKey = `salons:featured:v5:${limit}`;
+    // Version 6: mainCategoryIds (matches /salons/categories id = main category 1–6)
+    const cacheKey = `salons:featured:v6:${limit}`;
 
     // Try to get from cache first (24 hours TTL)
     const cached = await this.cacheService.get<any[]>(cacheKey);
@@ -1806,6 +1859,7 @@ export class SalonsService {
           select: {
             name_en: true,
             name_vn: true,
+            main_category_id: true,
           },
         },
       },
@@ -1826,9 +1880,10 @@ export class SalonsService {
       ]),
     );
 
-    // Group categories by salonId (both names and IDs)
+    // Group categories by salonId (names, leaf service category IDs, main category IDs)
     const categoryMap = new Map<string, Set<string>>();
     const categoryIdsMap = new Map<string, Set<number>>();
+    const mainCategoryIdsMap = new Map<string, Set<number>>();
     categoryData.forEach((item) => {
       if (!item.service_categories || !item.serviceCategoryId) return;
       const categoryName =
@@ -1838,9 +1893,14 @@ export class SalonsService {
       if (!categoryMap.has(item.salonId)) {
         categoryMap.set(item.salonId, new Set());
         categoryIdsMap.set(item.salonId, new Set());
+        mainCategoryIdsMap.set(item.salonId, new Set());
       }
       categoryMap.get(item.salonId)?.add(categoryName);
       categoryIdsMap.get(item.salonId)?.add(item.serviceCategoryId);
+      const mid = item.service_categories.main_category_id;
+      if (mid != null) {
+        mainCategoryIdsMap.get(item.salonId)?.add(mid);
+      }
     });
 
     // Enrich salons with aggregated data
@@ -1852,6 +1912,9 @@ export class SalonsService {
 
       const categories = Array.from(categoryMap.get(salon.id) || []);
       const serviceCategoryIds = Array.from(categoryIdsMap.get(salon.id) || []);
+      const mainCategoryIds = Array.from(
+        mainCategoryIdsMap.get(salon.id) || [],
+      );
 
       return {
         id: salon.id,
@@ -1862,7 +1925,8 @@ export class SalonsService {
         photos: salon.photos,
         avgRating: Math.round(ratingData.avgRating * 10) / 10, // Round to 1 decimal
         categories,
-        serviceCategoryIds, // Add category IDs for filtering
+        serviceCategoryIds,
+        mainCategoryIds,
         _count: {
           Service: salon._count?.Service || 0,
           Review: ratingData.reviewCount,

@@ -52,6 +52,7 @@
 	"sortNameZA": "Имя Я-А",
 	"sortMostServices": "Больше услуг",
 	"sortHighestRated": "Высший рейтинг",
+	"km": "км",
 	"mapView": "Карта",
 	"viewAllServices": "Посмотреть все {count} услуг →"
 }

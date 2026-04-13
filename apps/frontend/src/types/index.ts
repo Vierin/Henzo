@@ -41,6 +41,9 @@ export interface Salon {
 	// Salon publication status
 	status?: 'DRAFT' | 'READY' | 'ACTIVE';
 	autoConfirmBookings?: boolean;
+	/** Main category ids (1–6), same ids as /salons/categories — use for map/category filters */
+	mainCategoryIds?: number[];
+	serviceCategoryIds?: number[];
 	_count?: {
 		reviews?: number;
 		services?: number;

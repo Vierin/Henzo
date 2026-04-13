@@ -51,11 +51,16 @@ export class SalonsController {
     @Query('search') search?: string,
     @Query('location') location?: string,
     @Query('category') category?: string,
+    @Query('categories') categories?: string,
     @Query('sortBy') sortBy?: string,
     @Query('minRating') minRating?: string,
     @Query('isOpenNow') isOpenNow?: string,
     @Query('date') date?: string,
     @Query('time') time?: string,
+    @Query('north') north?: string,
+    @Query('south') south?: string,
+    @Query('east') east?: string,
+    @Query('west') west?: string,
   ) {
     const params = {
       page: page ? parseInt(page, 10) : undefined,
@@ -63,11 +68,16 @@ export class SalonsController {
       search,
       location,
       category,
+      categories,
       sortBy,
       minRating: minRating ? parseInt(minRating, 10) : undefined,
       isOpenNow: isOpenNow === 'true',
       date,
       time,
+      north: north !== undefined ? parseFloat(north) : undefined,
+      south: south !== undefined ? parseFloat(south) : undefined,
+      east: east !== undefined ? parseFloat(east) : undefined,
+      west: west !== undefined ? parseFloat(west) : undefined,
     };
 
     const result = await this.salonsService.searchSalons(params);

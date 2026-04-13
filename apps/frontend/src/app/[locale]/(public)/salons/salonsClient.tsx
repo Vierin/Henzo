@@ -85,6 +85,10 @@ export default function SalonsClient() {
 	const [selectedService, setSelectedService] = useState<
 		(ServiceResponseDto & { salonId: string; salonName: string }) | null
 	>(null);
+	const [userLocation, setUserLocation] = useState<{
+		lat: number;
+		lng: number;
+	} | null>(null);
 
 	// Debounce search query
 	useEffect(() => {
@@ -93,6 +97,26 @@ export default function SalonsClient() {
 		}, 300);
 		return () => clearTimeout(timer);
 	}, [searchQuery]);
+
+	useEffect(() => {
+		if (typeof window === 'undefined' || !navigator.geolocation) return;
+		navigator.geolocation.getCurrentPosition(
+			(position) => {
+				setUserLocation({
+					lat: position.coords.latitude,
+					lng: position.coords.longitude,
+				});
+			},
+			() => {
+				// denied / unavailable — cards show address without distance
+			},
+			{
+				enableHighAccuracy: false,
+				timeout: 5000,
+				maximumAge: 600000,
+			}
+		);
+	}, []);
 
 	// Use optimized search instead of loading all salons
 	const {
@@ -353,6 +377,7 @@ export default function SalonsClient() {
 										selectedDate={selectedDate}
 										selectedTimeInterval={selectedTimeInterval}
 										priority={index < 3} // Критично: Priority для первых 3 изображений
+										userLocation={userLocation}
 									/>
 								))
 							)}
