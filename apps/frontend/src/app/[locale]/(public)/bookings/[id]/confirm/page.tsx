@@ -49,7 +49,6 @@ export default function ConfirmBookingPage() {
 		if (bookingId) {
 			confirmBooking();
 		}
-		// eslint-disable-next-line react-hooks/exhaustive-deps -- t.booking strings stable per locale load
 	}, [bookingId, router, handleError, homePath]);
 
 	if (status === 'loading') {

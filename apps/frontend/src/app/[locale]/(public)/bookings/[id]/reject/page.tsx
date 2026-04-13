@@ -52,7 +52,6 @@ export default function RejectBookingPage() {
 		if (bookingId) {
 			rejectBooking();
 		}
-		// eslint-disable-next-line react-hooks/exhaustive-deps -- t.booking strings stable per locale load
 	}, [bookingId, router, handleError, homePath]);
 
 	if (status === 'loading') {
