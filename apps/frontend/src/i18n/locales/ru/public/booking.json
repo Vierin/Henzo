@@ -82,5 +82,17 @@
 	"staff": "Мастер",
 	"anonymousClient": "Анонимный клиент",
 	"staffNotAvailable": "Выбранный мастер недоступен в это время. Пожалуйста, выберите другое время или другого мастера.",
-	"salonWillConfirmWhenOpen": "Салон подтвердит вашу запись, когда откроется."
+	"salonWillConfirmWhenOpen": "Салон подтвердит вашу запись, когда откроется.",
+	"ownerConfirmLoading": "Подтверждение записи...",
+	"ownerConfirmSuccessTitle": "Запись подтверждена!",
+	"ownerConfirmSuccessMessage": "Запись успешно подтверждена! Клиент уведомлён по email.",
+	"ownerConfirmSuccessDetail": "Клиент получит письмо с деталями визита. Сейчас вы будете перенаправлены на главную страницу.",
+	"ownerConfirmErrorTitle": "Не удалось подтвердить",
+	"ownerConfirmErrorFallback": "Не удалось подтвердить запись. Попробуйте снова или свяжитесь с поддержкой.",
+	"ownerRejectLoading": "Обработка отказа...",
+	"ownerRejectSuccessTitle": "Запись отклонена",
+	"ownerRejectSuccessMessage": "Запись отклонена. Клиент уведомлён по email и может выбрать другое время или салон.",
+	"ownerRejectSuccessDetail": "Клиент может забронировать другое время или другой салон. Сейчас вы будете перенаправлены на главную страницу.",
+	"ownerRejectErrorTitle": "Не удалось отклонить",
+	"ownerRejectErrorFallback": "Не удалось отклонить запись. Попробуйте снова или свяжитесь с поддержкой."
 }

@@ -107,7 +107,7 @@ export default function InteractiveMap({
 		boundsDebounceRef.current = window.setTimeout(() => {
 			boundsDebounceRef.current = null;
 			emitBounds();
-		}, 150);
+		}, 380);
 	}, [mapInstance, onMapBoundsChange, emitBounds]);
 
 	useEffect(() => {

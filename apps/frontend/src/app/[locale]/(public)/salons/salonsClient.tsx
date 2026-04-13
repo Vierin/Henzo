@@ -8,7 +8,9 @@ import {
 	lazy,
 	Suspense,
 } from 'react';
-import { useSearchParams } from 'next/navigation';
+import Link from 'next/link';
+import { useParams, useSearchParams } from 'next/navigation';
+import { Map } from 'lucide-react';
 const BookingModal = lazy(() => import('@/components/BookingModal'));
 import LoadingSpinner from '@/components/LoadingSpinner';
 import ErrorDisplay from '@/components/ErrorDisplay';
@@ -24,11 +26,28 @@ import {
 	SelectValue,
 } from '@/components/ui/select';
 import { useTranslation, useLanguage } from '@/contexts/LanguageContext';
+import {
+	useCategories,
+	getCategoryById,
+	getCategoryBySlug,
+} from '@/hooks/useCategories';
+import { withLocale, type Locale, isLocale } from '@/i18n/routing';
+
+function categoryFromSearchParams(sp: { get: (name: string) => string | null }) {
+	const raw = sp.get('category');
+	if (!raw || raw === 'all') return 'all';
+	return raw.trim();
+}
 
 export default function SalonsClient() {
 	const searchParams = useSearchParams();
+	const routeParams = useParams();
 	const t = useTranslation();
 	const { language } = useLanguage();
+	const { data: categories = [] } = useCategories();
+	const routeLocale = routeParams?.locale;
+	const locale: Locale =
+		typeof routeLocale === 'string' && isLocale(routeLocale) ? routeLocale : 'en';
 
 	// Initialize state from URL parameters immediately
 	const getInitialParams = useCallback(() => {
@@ -59,6 +78,7 @@ export default function SalonsClient() {
 			selectedLocation: location || '',
 			selectedDate,
 			selectedTimeInterval: time || '',
+			categoryFilter: categoryFromSearchParams(searchParams),
 		};
 	}, [searchParams]);
 
@@ -78,7 +98,7 @@ export default function SalonsClient() {
 	const [selectedTimeInterval, setSelectedTimeInterval] = useState<string>(
 		initialParams.selectedTimeInterval
 	);
-	const [activeFilter, setActiveFilter] = useState('all');
+	const [activeFilter, setActiveFilter] = useState(initialParams.categoryFilter);
 	const [sortBy, setSortBy] = useState('name');
 	const [currentPage, setCurrentPage] = useState(1);
 	const [isBookingModalOpen, setIsBookingModalOpen] = useState(false);
@@ -167,7 +187,14 @@ export default function SalonsClient() {
 	useEffect(() => {
 		setAccumulatedSalons([]);
 		setCurrentPagination(null);
-	}, [debouncedSearchQuery, selectedLocation, activeFilter, sortBy]);
+	}, [
+		debouncedSearchQuery,
+		selectedLocation,
+		activeFilter,
+		sortBy,
+		selectedDate,
+		selectedTimeInterval,
+	]);
 
 	const salons = accumulatedSalons;
 	const pagination = currentPagination;
@@ -204,6 +231,10 @@ export default function SalonsClient() {
 			}
 			return prevTime;
 		});
+
+		setActiveFilter((prev) =>
+			newParams.categoryFilter !== prev ? newParams.categoryFilter : prev
+		);
 	}, [getInitialParams]);
 
 	// Memoized sort options
@@ -257,7 +288,14 @@ export default function SalonsClient() {
 	// Reset page when search parameters change
 	useEffect(() => {
 		setCurrentPage(1);
-	}, [debouncedSearchQuery, selectedLocation, activeFilter, sortBy]);
+	}, [
+		debouncedSearchQuery,
+		selectedLocation,
+		activeFilter,
+		sortBy,
+		selectedDate,
+		selectedTimeInterval,
+	]);
 
 	// Generate results header text
 	const resultsHeaderText = useMemo(() => {
@@ -316,6 +354,20 @@ export default function SalonsClient() {
 		return '0';
 	}, [pagination]);
 
+	const mapHref = useMemo(() => {
+		const q = new URLSearchParams();
+		if (activeFilter && activeFilter !== 'all') {
+			const id = parseInt(activeFilter, 10);
+			const cat =
+				!Number.isNaN(id) && id > 0
+					? getCategoryById(categories, id)
+					: getCategoryBySlug(categories, activeFilter);
+			if (cat?.slug) q.set('categories', cat.slug);
+		}
+		const qs = q.toString();
+		return qs ? `${withLocale('/map', locale)}?${qs}` : withLocale('/map', locale);
+	}, [activeFilter, categories, locale]);
+
 	return (
 		<div className="min-h-screen bg-[#F8F5F2]">
 			<main className="py-8 px-6" role="main">
@@ -326,6 +378,13 @@ export default function SalonsClient() {
 							{resultsHeaderText} ({resultsCountText})
 						</h1>
 						<div className="flex items-center gap-4 flex-shrink-0">
+							<Link
+								href={mapHref}
+								className="px-3 sm:px-4 py-2 sm:h-9 flex gap-1 items-center bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#ff5b5b] focus:border-transparent text-gray-900 text-sm whitespace-nowrap"
+							>
+								<Map className="w-4 h-4" />
+								<span className="hidden sm:inline">{t.salon.mapView}</span>
+							</Link>
 							{/* Sort Dropdown */}
 							<Select value={sortBy} onValueChange={setSortBy}>
 								<SelectTrigger className="w-40 sm:w-48 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#ff5b5b] focus:border-[#ff5b5b]">

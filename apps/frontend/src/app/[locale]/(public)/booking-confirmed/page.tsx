@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState, Suspense } from 'react';
-import { useSearchParams } from 'next/navigation';
+import { useParams, useSearchParams } from 'next/navigation';
 import { apiClient } from '@/lib/api-client';
 import toast from 'react-hot-toast';
 import Link from 'next/link';
@@ -10,11 +10,18 @@ import { useTranslation } from '@/contexts/LanguageContext';
 import LoadingFallback from '@/components/LoadingFallback';
 import ErrorFallback from '@/components/ErrorFallback';
 import { sessionStorage } from '@/utils/storage';
+import { withLocale, isLocale, type Locale } from '@/i18n/routing';
 
 function BookingConfirmedContent() {
 	const searchParams = useSearchParams();
+	const routeParams = useParams();
 	const token = searchParams.get('token');
 	const t = useTranslation();
+	const localeRaw = routeParams?.locale as string | undefined;
+	const locale: Locale =
+		localeRaw && isLocale(localeRaw) ? localeRaw : 'en';
+	const homeHref = withLocale('/', locale);
+	const registerBase = withLocale('/register', locale);
 	const [loading, setLoading] = useState(true);
 	const [bookingConfirmed, setBookingConfirmed] = useState(false);
 	const [error, setError] = useState<string | null>(null);
@@ -171,8 +178,8 @@ function BookingConfirmedContent() {
 								<Link
 									href={
 										email
-											? `/register?email=${encodeURIComponent(email)}&verified=true`
-											: '/register'
+											? `${registerBase}?email=${encodeURIComponent(email)}&verified=true`
+											: registerBase
 									}
 									className="inline-flex items-center gap-2 text-sm font-medium text-[#ff5b5b] hover:text-[#e04a4a] transition-colors"
 								>
@@ -187,7 +194,7 @@ function BookingConfirmedContent() {
 				{/* Actions */}
 				<div className="flex gap-3 mt-6">
 					<Link
-						href="/"
+						href={homeHref}
 						className="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors text-center"
 					>
 						{t.common.goHome}

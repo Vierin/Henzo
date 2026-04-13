@@ -7,6 +7,39 @@ export interface MapBounds {
 	west: number;
 }
 
+export function boundsReady(b: MapBounds | null): b is MapBounds {
+	if (!b) return false;
+	return [b.north, b.south, b.east, b.west].every((n) => Number.isFinite(n));
+}
+
+/** Расширить bbox относительно его размера (для запроса с запасом). */
+export function expandBounds(
+	bounds: MapBounds,
+	paddingFraction: number
+): MapBounds {
+	const latPad = (bounds.north - bounds.south) * paddingFraction;
+	const lngPad = (bounds.east - bounds.west) * paddingFraction;
+	return {
+		north: bounds.north + latPad,
+		south: bounds.south - latPad,
+		east: bounds.east + lngPad,
+		west: bounds.west - lngPad,
+	};
+}
+
+/** Проверка: весь viewport `inner` лежит внутри `outer` (уже «расширенный» bbox последнего запроса). */
+export function isViewportContainedIn(
+	inner: MapBounds,
+	outer: MapBounds
+): boolean {
+	return (
+		inner.south >= outer.south &&
+		inner.north <= outer.north &&
+		inner.west >= outer.west &&
+		inner.east <= outer.east
+	);
+}
+
 /**
  * Проверить, находится ли салон в видимых границах карты
  */

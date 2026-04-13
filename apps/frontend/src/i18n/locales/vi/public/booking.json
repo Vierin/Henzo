@@ -90,5 +90,17 @@
 	"staff": "Nhân viên",
 	"anonymousClient": "Khách hàng ẩn danh",
 	"staffNotAvailable": "Nhân viên đã chọn không có sẵn vào thời gian này. Vui lòng chọn thời gian khác hoặc nhân viên khác.",
-	"salonWillConfirmWhenOpen": "Salon sẽ xác nhận đặt lịch của bạn khi họ mở cửa."
+	"salonWillConfirmWhenOpen": "Salon sẽ xác nhận đặt lịch của bạn khi họ mở cửa.",
+	"ownerConfirmLoading": "Đang xác nhận đặt lịch...",
+	"ownerConfirmSuccessTitle": "Đã xác nhận đặt lịch!",
+	"ownerConfirmSuccessMessage": "Đặt lịch đã được xác nhận! Khách hàng đã được thông báo qua email.",
+	"ownerConfirmSuccessDetail": "Khách hàng sẽ nhận email xác nhận với đầy đủ chi tiết. Bạn sẽ được chuyển về trang chủ sau giây lát.",
+	"ownerConfirmErrorTitle": "Xác nhận thất bại",
+	"ownerConfirmErrorFallback": "Không thể xác nhận đặt lịch. Vui lòng thử lại hoặc liên hệ hỗ trợ.",
+	"ownerRejectLoading": "Đang xử lý từ chối...",
+	"ownerRejectSuccessTitle": "Đã từ chối đặt lịch",
+	"ownerRejectSuccessMessage": "Đặt lịch đã bị từ chối. Khách hàng đã được thông báo qua email và có thể chọn giờ hoặc salon khác.",
+	"ownerRejectSuccessDetail": "Khách hàng đã được thông báo và có thể đặt khung giờ khác hoặc tìm salon khác. Bạn sẽ được chuyển về trang chủ sau giây lát.",
+	"ownerRejectErrorTitle": "Từ chối thất bại",
+	"ownerRejectErrorFallback": "Không thể từ chối đặt lịch. Vui lòng thử lại hoặc liên hệ hỗ trợ."
 }

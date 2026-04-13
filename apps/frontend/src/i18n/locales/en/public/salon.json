@@ -42,6 +42,8 @@
 	"loadingSalons": "Loading salons...",
 	"failedToLoadSalons": "Failed to load salons",
 	"available": "Available",
+	"worksOnSelectedDay": "Hours:",
+	"closedOnSelectedDay": "Closed",
 	"timeSlots": {
 		"morning": "Morning",
 		"afternoon": "Afternoon",
