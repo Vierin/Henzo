@@ -10,6 +10,10 @@ interface SalonPreview {
 	photos: string[];
 	avgRating?: number;
 	categoryIds?: number[];
+	/** Main salon category ids (1–6), same as /salons/categories */
+	mainCategoryIds?: number[];
+	/** Leaf service category names from API (often English) */
+	categories?: string[];
 	_count: {
 		reviews: number;
 		services: number;

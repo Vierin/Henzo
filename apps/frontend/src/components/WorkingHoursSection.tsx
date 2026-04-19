@@ -1,53 +1,8 @@
 'use client';
 
-import { TimePicker } from 'antd';
-import type { Dayjs } from 'dayjs';
-import dayjs from 'dayjs';
 import { useTranslation } from '@/contexts/LanguageContext';
+import AntdTimePicker24 from '@/components/AntdTimePicker24';
 import 'antd/dist/reset.css';
-
-// Wrapper для ant design TimePicker
-const TimePicker24h = ({
-	value,
-	onChange,
-	className = '',
-}: {
-	value: string;
-	onChange: (value: string) => void;
-	className?: string;
-}) => {
-	// Конвертируем строку HH:MM в dayjs
-	const parseTimeToDayjs = (timeStr: string): Dayjs | null => {
-		if (!timeStr || !timeStr.includes(':')) return null;
-		const [hours, minutes] = timeStr.split(':').map(Number);
-		return dayjs().hour(hours).minute(minutes).second(0).millisecond(0);
-	};
-
-	// Конвертируем dayjs обратно в строку HH:MM
-	const formatDayjsToTime = (time: Dayjs | null): string => {
-		if (!time) return '';
-		return time.format('HH:mm');
-	};
-
-	const handleChange = (time: Dayjs | null) => {
-		onChange(formatDayjsToTime(time));
-	};
-
-	return (
-		<div className={className} style={{ width: '100%', minWidth: '80px' }}>
-			<TimePicker
-				value={parseTimeToDayjs(value)}
-				onChange={handleChange}
-				format="HH:mm"
-				placeholder="09:00"
-				minuteStep={5}
-				inputReadOnly={true}
-				className="custom-time-picker"
-				style={{ width: '100%', minWidth: '80px', maxWidth: '120px' }}
-			/>
-		</div>
-	);
-};
 
 interface WorkingHours {
 	monday: { open: string; close: string; closed: boolean };
@@ -71,7 +26,7 @@ export default function WorkingHoursSection({
 	className = '',
 }: WorkingHoursSectionProps) {
 	const t = useTranslation();
-	
+
 	const days = [
 		{ key: 'monday', label: t('weekdays.monday') },
 		{ key: 'tuesday', label: t('weekdays.tuesday') },
@@ -97,7 +52,7 @@ export default function WorkingHoursSection({
 	const handleTimeChange = (
 		day: string,
 		field: 'open' | 'close',
-		value: string
+		value: string,
 	) => {
 		const newWorkingHours = {
 			...workingHours,
@@ -142,7 +97,9 @@ export default function WorkingHoursSection({
 							{/* Show closed status on mobile */}
 							{dayData.closed && (
 								<span className="text-[#ff5b5b] font-medium sm:hidden">
-									{t('owner.salonInfo.closed') || t('business.completeSetup.step5.closed') || 'Closed'}
+									{t('owner.salonInfo.closed') ||
+										t('business.completeSetup.step5.closed') ||
+										'Closed'}
 								</span>
 							)}
 						</div>
@@ -151,7 +108,7 @@ export default function WorkingHoursSection({
 						{!dayData.closed && (
 							<div className="flex items-center gap-2 md:gap-4 w-full sm:w-auto">
 								<div className="flex-1 sm:flex-none">
-									<TimePicker24h
+									<AntdTimePicker24
 										value={dayData.open}
 										onChange={(value) =>
 											handleTimeChange(day.key, 'open', value)
@@ -160,7 +117,7 @@ export default function WorkingHoursSection({
 								</div>
 								<span className="text-gray-400 font-medium">-</span>
 								<div className="flex-1 sm:flex-none">
-									<TimePicker24h
+									<AntdTimePicker24
 										value={dayData.close}
 										onChange={(value) =>
 											handleTimeChange(day.key, 'close', value)
@@ -173,7 +130,9 @@ export default function WorkingHoursSection({
 						{/* Closed status for desktop */}
 						{dayData.closed && (
 							<span className="text-[#ff5b5b] font-medium hidden sm:block">
-								{t('owner.salonInfo.closed') || t('business.completeSetup.step5.closed') || 'Closed'}
+								{t('owner.salonInfo.closed') ||
+									t('business.completeSetup.step5.closed') ||
+									'Closed'}
 							</span>
 						)}
 					</div>

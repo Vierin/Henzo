@@ -102,6 +102,16 @@ export default function SalonSidebar({
 		onSalonCountChange?.(displaySalons.length);
 	}, [displaySalons.length, onSalonCountChange]);
 
+	const sortOptions = useMemo(
+		() => [
+			{ value: 'recommended', label: t('map.sortByRecommended') },
+			{ value: 'rating', label: t('map.highestRated') },
+			{ value: 'distance', label: t('map.nearest') },
+			{ value: 'reviews', label: t('map.mostReviews') },
+		],
+		[t]
+	);
+
 	const handleViewSalon = (salon: Salon, e: React.MouseEvent) => {
 		e.stopPropagation();
 		const slug = generateSalonSlug(salon.name, salon.id);
@@ -152,17 +162,10 @@ export default function SalonSidebar({
 			lat: salon.latitude,
 			lng: salon.longitude,
 		});
-		const prefix = `${km.toFixed(1)} ${t.map.km}`;
+		const prefix = `${km.toFixed(1)} ${t('map.km')}`;
 		if (!addr) return prefix;
 		return `${prefix} — ${addr}`;
 	};
-
-	const sortOptions = [
-		{ value: 'recommended', label: t.map.sortByRecommended },
-		{ value: 'rating', label: t.map.highestRated },
-		{ value: 'distance', label: t.map.nearest },
-		{ value: 'reviews', label: t.map.mostReviews },
-	];
 
 	return (
 		<div className="h-full flex flex-col">
@@ -190,20 +193,22 @@ export default function SalonSidebar({
 				<div className="mb-3">
 					<h2 className="text-lg font-semibold text-gray-900">
 						{mapBounds
-							? t.map.salonsInView.replace(
+							? t('map.salonsInView').replace(
 									'{count}',
 									displaySalons.length.toString()
 								)
-							: t.map.allSalons}
+							: t('map.allSalons')}
 					</h2>
 					{mapBounds && (
-						<p className="text-sm text-gray-500">{t.map.showingSalonsInView}</p>
+						<p className="text-sm text-gray-500">
+							{t('map.showingSalonsInView')}
+						</p>
 					)}
 				</div>
 				<div className="w-full">
 					<Select value={sortBy} onValueChange={setSortBy}>
 						<SelectTrigger className="w-full bg-white border border-gray-300 rounded-md focus:ring-2 focus:ring-[#ff5b5b] focus:border-[#ff5b5b]">
-							<SelectValue placeholder={t.map.sortByRecommended} />
+							<SelectValue placeholder={t('map.sortByRecommended')} />
 						</SelectTrigger>
 						<SelectContent
 							className="bg-white border border-gray-300 shadow-lg rounded-md"
@@ -233,10 +238,12 @@ export default function SalonSidebar({
 								<MapPin size={48} className="mx-auto" />
 							</div>
 							<h3 className="text-lg font-medium text-gray-900 mb-2">
-								{t.map.noSalonsInView}
+								{t('map.noSalonsInView')}
 							</h3>
 							<p className="text-gray-500">
-								{mapBounds ? t.map.tryZoomingOut : t.map.loadingSalons}
+								{mapBounds
+									? t('map.tryZoomingOut')
+									: t('map.loadingSalons')}
 							</p>
 						</div>
 					) : (
@@ -308,7 +315,7 @@ export default function SalonSidebar({
 												onClick={(e) => handleViewSalon(salon, e)}
 												className="w-full ml-auto border border-[#ff4545] bg-[#fff7f6] text-[#ff5b5b] max-w-[60%] px-4 py-2 rounded-lg text-sm font-medium hover:bg-[#ffe8e6] transition-colors"
 											>
-												{t.map.viewSalon}
+												{t('map.viewSalon')}
 											</button>
 										</div>
 									</div>

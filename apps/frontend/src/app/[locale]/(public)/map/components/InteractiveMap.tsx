@@ -154,7 +154,7 @@ export default function InteractiveMap({
 		<div className="relative w-full h-full">
 			{isLoadingSalons && (
 				<div className="absolute top-3 right-3 z-[500] rounded-md bg-white/90 px-2.5 py-1.5 text-xs font-medium text-gray-700 shadow-md backdrop-blur-sm">
-					{t.map.loadingSalons}
+					{t('map.loadingSalons')}
 				</div>
 			)}
 

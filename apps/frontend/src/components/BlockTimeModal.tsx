@@ -37,9 +37,7 @@ import {
 } from '@/components/ui/popover';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
-import { TimePicker } from 'antd';
-import type { Dayjs } from 'dayjs';
-import dayjs from 'dayjs';
+import AntdTimePicker24 from '@/components/AntdTimePicker24';
 import 'antd/dist/reset.css';
 import { useTranslation, useLanguage } from '@/contexts/LanguageContext';
 import { extractLocaleFromPath } from '@/i18n/routing';
@@ -263,18 +261,6 @@ export default function BlockTimeModal({
 	const getTodayLocal = (): Date => {
 		const today = new Date();
 		return new Date(today.getFullYear(), today.getMonth(), today.getDate());
-	};
-
-	// Helper functions for antd TimePicker
-	const parseTimeToDayjs = (timeStr: string): Dayjs | null => {
-		if (!timeStr || !timeStr.includes(':')) return null;
-		const [hours, minutes] = timeStr.split(':').map(Number);
-		return dayjs().hour(hours).minute(minutes).second(0).millisecond(0);
-	};
-
-	const formatDayjsToTime = (time: Dayjs | null): string => {
-		if (!time) return '';
-		return time.format('HH:mm');
 	};
 
 	// Initialize form with preselected values
@@ -1001,24 +987,15 @@ export default function BlockTimeModal({
 										className="w-full"
 										style={{ width: '100%', minWidth: '80px' }}
 									>
-										<TimePicker
-											value={parseTimeToDayjs(startTime)}
-											onChange={(time) => {
-												const timeStr = formatDayjsToTime(time);
+										<AntdTimePicker24
+											value={startTime}
+											placeholder="09:00"
+											minuteStep={5}
+											onChange={(timeStr) => {
 												if (timeStr) {
 													setStartTime(timeStr);
 													setSelectedQuickPreset(null);
 												}
-											}}
-											format="HH:mm"
-											placeholder="09:00"
-											minuteStep={5}
-											inputReadOnly={true}
-											className="custom-time-picker"
-											style={{
-												width: '100%',
-												minWidth: '80px',
-												maxWidth: '120px',
 											}}
 										/>
 									</div>
@@ -1102,24 +1079,15 @@ export default function BlockTimeModal({
 										className="w-full"
 										style={{ width: '100%', minWidth: '80px' }}
 									>
-										<TimePicker
-											value={parseTimeToDayjs(endTime)}
-											onChange={(time) => {
-												const timeStr = formatDayjsToTime(time);
+										<AntdTimePicker24
+											value={endTime}
+											placeholder="18:00"
+											minuteStep={5}
+											onChange={(timeStr) => {
 												if (timeStr) {
 													setEndTime(timeStr);
 													setSelectedQuickPreset(null);
 												}
-											}}
-											format="HH:mm"
-											placeholder="18:00"
-											minuteStep={5}
-											inputReadOnly={true}
-											className="custom-time-picker"
-											style={{
-												width: '100%',
-												minWidth: '80px',
-												maxWidth: '120px',
 											}}
 										/>
 									</div>

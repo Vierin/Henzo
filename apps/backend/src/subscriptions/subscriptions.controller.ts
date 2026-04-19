@@ -15,6 +15,7 @@ import Stripe from 'stripe';
 import { SubscriptionsService } from './subscriptions.service';
 import { StripeService } from './stripe.service';
 import { AuthService } from '../auth/auth.service';
+import { PromotionCouponService } from './promotion-coupon.service';
 
 @Controller('subscriptions')
 export class SubscriptionsController {
@@ -23,6 +24,7 @@ export class SubscriptionsController {
     private readonly stripeService: StripeService,
     private readonly authService: AuthService,
     private readonly configService: ConfigService,
+    private readonly promotionCouponService: PromotionCouponService,
   ) {}
 
   @Get('invoices')
@@ -72,7 +74,18 @@ export class SubscriptionsController {
           currentUser.user.id,
         );
 
-      return subscription;
+      const configurationExpansionAllowed =
+        this.subscriptionsService.isSalonConfigurationExpansionAllowed(
+          subscription,
+        );
+      const annualPromotionPercent =
+        await this.promotionCouponService.getAnnualPromotionPercentForOwnerUi();
+
+      return {
+        ...subscription,
+        configurationExpansionAllowed,
+        annualPromotionPercent,
+      };
     } catch (error) {
       console.error('❌ Get current subscription failed:', error.message);
       throw new HttpException(
@@ -147,6 +160,11 @@ export class SubscriptionsController {
           ? 'https://henzo.app'
           : 'http://localhost:3000');
 
+      const stripeCouponIdForAnnual =
+        interval === 'annual'
+          ? await this.promotionCouponService.getActiveAutoAnnualStripeCouponId()
+          : null;
+
       const { url } = await this.stripeService.createCheckoutSession({
         customerEmail: currentUser.user.email,
         interval,
@@ -155,6 +173,7 @@ export class SubscriptionsController {
         metadata: {
           userId: currentUser.user.id,
         },
+        stripeCouponIdForAnnual,
       });
 
       return { url };

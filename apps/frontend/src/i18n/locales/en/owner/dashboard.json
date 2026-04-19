@@ -83,5 +83,15 @@
 	"addPhotoLink": "Add at least one salon photo on the settings page",
 	"averageVisits": "Average: {avg} visits",
 	"clientsWith2Visits": "{count} with 2 visits",
-	"clients": "Clients"
+	"clients": "Clients",
+	"trialPromoTitle": "Your trial is ending soon",
+	"trialPromoBody": "Your trial ends on {{date}}. Subscribe now and get {{percent}}% off the annual plan.",
+	"trialPromoAnnualPrice": "Annual plan from {{price}}",
+	"trialPromoCtaAnnual": "Subscribe yearly & save",
+	"trialPromoCtaPlans": "All plans",
+	"trialPromoLoading": "Opening checkout…",
+	"trialPromoCheckoutError": "Could not start checkout",
+	"subscriptionLockedTitle": "Subscription required",
+	"subscriptionLockedBody": "Your trial has ended. Subscribe to add services, staff, or calendar blocks. You can still manage existing bookings.",
+	"subscriptionLockedCta": "View plans"
 }

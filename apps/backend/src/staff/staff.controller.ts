@@ -7,12 +7,21 @@ import {
   Param,
   Body,
   Query,
+  Headers,
+  HttpException,
+  HttpStatus,
 } from '@nestjs/common';
 import { StaffService } from './staff.service';
+import { AuthService } from '../auth/auth.service';
+import { SubscriptionsService } from '../subscriptions/subscriptions.service';
 
 @Controller('staff')
 export class StaffController {
-  constructor(private readonly staffService: StaffService) {}
+  constructor(
+    private readonly staffService: StaffService,
+    private readonly authService: AuthService,
+    private readonly subscriptionsService: SubscriptionsService,
+  ) {}
 
   @Get()
   async getStaffBySalon(@Query('salonId') salonId: string) {
@@ -29,6 +38,7 @@ export class StaffController {
 
   @Post()
   async createStaff(
+    @Headers('authorization') authHeader: string,
     @Body()
     data: {
       name: string;
@@ -39,6 +49,14 @@ export class StaffController {
       serviceIds?: string[];
     },
   ) {
+    const currentUser = await this.authService.getCurrentUser(authHeader);
+    if (currentUser.user.role !== 'OWNER') {
+      throw new HttpException('Forbidden', HttpStatus.FORBIDDEN);
+    }
+    await this.subscriptionsService.assertSalonOwnerMayExpandConfiguration(
+      currentUser.user.id,
+      data.salonId,
+    );
     return this.staffService.create(data);
   }
 

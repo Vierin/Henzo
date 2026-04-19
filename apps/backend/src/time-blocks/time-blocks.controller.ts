@@ -16,6 +16,7 @@ import { CreateTimeBlockDto } from './dto/create-time-block.dto';
 import { UpdateTimeBlockDto } from './dto/update-time-block.dto';
 import { AuthService } from '../auth/auth.service';
 import { PrismaService } from '../prisma/prisma.service';
+import { SubscriptionsService } from '../subscriptions/subscriptions.service';
 
 @Controller('time-blocks')
 export class TimeBlocksController {
@@ -23,6 +24,7 @@ export class TimeBlocksController {
     private readonly timeBlocksService: TimeBlocksService,
     private readonly authService: AuthService,
     private readonly prisma: PrismaService,
+    private readonly subscriptionsService: SubscriptionsService,
   ) {}
 
   /**
@@ -173,6 +175,14 @@ export class TimeBlocksController {
       if (!userSalon) {
         throw new HttpException('Salon not found', HttpStatus.NOT_FOUND);
       }
+
+      if (currentUser.user.role !== 'OWNER') {
+        throw new HttpException('Forbidden', HttpStatus.FORBIDDEN);
+      }
+
+      await this.subscriptionsService.assertSalonConfigurationExpansionAllowed(
+        currentUser.user.id,
+      );
 
       // Validate staffId if provided
       if (data.staffId) {

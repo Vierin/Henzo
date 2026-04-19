@@ -31,6 +31,7 @@ import {
 	SelectValue,
 } from '@/components/ui/select';
 import { useTranslation } from '@/contexts/LanguageContext';
+import DashboardSubscriptionBanners from './components/DashboardSubscriptionBanners';
 
 export default function OwnerDashboardClient() {
 	const [period, setPeriod] = useState<'7d' | '30d' | '1y'>('30d');
@@ -217,6 +218,7 @@ export default function OwnerDashboardClient() {
 	return (
 		<div className="px-4 md:px-8 py-6 w-full relative">
 			<div className="space-y-6 max-w-7xl mx-auto">
+				<DashboardSubscriptionBanners />
 				{/* Header */}
 				<div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
 					<div>

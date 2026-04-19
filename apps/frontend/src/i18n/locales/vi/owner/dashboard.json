@@ -83,5 +83,15 @@
 	"addPhotoLink": "Thêm ít nhất một ảnh salon trên trang cài đặt",
 	"averageVisits": "Trung bình: {avg} lần thăm",
 	"clientsWith2Visits": "{count} với 2 lần thăm",
-	"clients": "Khách hàng"
+	"clients": "Khách hàng",
+	"trialPromoTitle": "Thời gian dùng thử sắp kết thúc",
+	"trialPromoBody": "Dùng thử kết thúc vào {{date}}. Đăng ký ngay để được giảm {{percent}}% gói năm.",
+	"trialPromoAnnualPrice": "Gói năm từ {{price}}",
+	"trialPromoCtaAnnual": "Đăng ký gói năm",
+	"trialPromoCtaPlans": "Tất cả gói",
+	"trialPromoLoading": "Đang mở thanh toán…",
+	"trialPromoCheckoutError": "Không thể bắt đầu thanh toán",
+	"subscriptionLockedTitle": "Cần đăng ký",
+	"subscriptionLockedBody": "Hết thời gian dùng thử. Đăng ký để thêm dịch vụ, nhân viên hoặc khối lịch. Bạn vẫn có thể quản lý đặt chỗ hiện có.",
+	"subscriptionLockedCta": "Xem gói"
 }
