@@ -58,6 +58,11 @@ export interface AdminSalon {
 	subscription?: {
 		type: 'TRIAL' | 'STARTER';
 		status: string;
+		startDate?: string;
+		endDate?: string;
+		trialEndDate?: string;
+		nextPaymentDate?: string;
+		amount?: number;
 	};
 	createdAt: string;
 }

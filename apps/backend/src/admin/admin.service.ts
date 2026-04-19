@@ -275,6 +275,7 @@ export class AdminService {
                 amount: true,
                 startDate: true,
                 endDate: true,
+                trialEndDate: true,
                 nextPaymentDate: true,
               },
             },
@@ -332,6 +333,10 @@ export class AdminService {
                   salon.Subscription.endDate instanceof Date
                     ? salon.Subscription.endDate.toISOString()
                     : salon.Subscription.endDate || undefined,
+                trialEndDate:
+                  salon.Subscription.trialEndDate instanceof Date
+                    ? salon.Subscription.trialEndDate.toISOString()
+                    : salon.Subscription.trialEndDate || undefined,
                 nextPaymentDate:
                   salon.Subscription.nextPaymentDate instanceof Date
                     ? salon.Subscription.nextPaymentDate.toISOString()

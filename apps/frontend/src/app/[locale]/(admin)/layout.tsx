@@ -127,7 +127,7 @@ export default function AdminLayout({
 					<aside className="fixed left-0 top-0 w-64 h-screen bg-white shadow-sm border-r border-gray-200 z-10 flex flex-col">
 						{/* Logo */}
 						<div className="px-6 py-6 border-b border-gray-200">
-							<h1 className="text-2xl font-bold text-gray-900">Henzo Admin</h1>
+							<h1 className="text-2xl font-bold text-gray-900">Admin Panel</h1>
 						</div>
 
 						{/* Navigation */}
