@@ -83,5 +83,15 @@
 	"addPhotoLink": "Добавьте хотя бы одну фотографию салона на странице настроек",
 	"averageVisits": "Среднее: {avg} визитов",
 	"clientsWith2Visits": "{count} с 2 визитами",
-	"clients": "Клиенты"
+	"clients": "Клиенты",
+	"trialPromoTitle": "Пробный период скоро закончится",
+	"trialPromoBody": "Окончание пробного периода — {{date}}. Оформите подписку сейчас и получите {{percent}}% скидку на годовой тариф.",
+	"trialPromoAnnualPrice": "Годовой тариф от {{price}}",
+	"trialPromoCtaAnnual": "Годовая подписка со скидкой",
+	"trialPromoCtaPlans": "Все тарифы",
+	"trialPromoLoading": "Открываем оплату…",
+	"trialPromoCheckoutError": "Не удалось начать оплату",
+	"subscriptionLockedTitle": "Нужна подписка",
+	"subscriptionLockedBody": "Пробный период закончился. Оформите подписку, чтобы добавлять услуги, сотрудников и блоки в календаре. Существующие записи по-прежнему можно вести.",
+	"subscriptionLockedCta": "Тарифы"
 }

@@ -9,7 +9,8 @@ import { Phone, Star, Clock, Clock8, Heart } from 'lucide-react';
 import {
 	calculateAverageRating,
 	getReviewCount,
-	getAvailableTimeSlots,
+	getWorkingHoursOnSelectedDate,
+	formatWorkingHoursRange,
 } from '@/utils/salonUtils';
 import RatingBadge from '@/components/RatingBadge';
 import { formatVND } from '@/utils/currency';
@@ -43,7 +44,7 @@ function SalonCard({
 	onBookService,
 	className = '',
 	selectedDate,
-	selectedTimeInterval,
+	selectedTimeInterval: _selectedTimeInterval,
 	priority = false,
 	userLocation = null,
 }: SalonCardProps) {
@@ -55,6 +56,11 @@ function SalonCard({
 	const isFavorite = useIsFavorite(salon.id, !!user);
 	const addFavoriteMutation = useAddFavorite();
 	const removeFavoriteMutation = useRemoveFavorite();
+
+	const scheduleForSelectedDay = useMemo(() => {
+		if (!selectedDate) return null;
+		return getWorkingHoursOnSelectedDate(salon, selectedDate);
+	}, [salon, selectedDate]);
 
 	const addr = salon.address?.trim() ?? '';
 	let addressLine = addr;
@@ -162,29 +168,28 @@ function SalonCard({
 						</p>
 					)}
 
-					{/* Available Time Slots */}
-					{selectedDate &&
-						(() => {
-							const availableSlots = getAvailableTimeSlots(
-								salon,
-								selectedDate,
-								selectedTimeInterval
-							);
-							if (availableSlots.length > 0) {
-								const translatedSlots = availableSlots.map((slot) =>
-									t(`salon.timeSlots.${slot}`)
-								);
-								return (
-									<div className="flex items-center space-x-1 mb-3 items-center">
-										<Clock className="w-4 h-4 text-green-600" />
-										<span className="text-sm text-green-600 font-medium">
-											{t('salon.available')}: {translatedSlots.join(', ')}
-										</span>
-									</div>
-								);
-							}
-							return null;
-						})()}
+					{/* Working hours on user-selected search date */}
+					{selectedDate && scheduleForSelectedDay && (
+						<div
+							className={`flex items-center gap-1 mb-3 ${
+								scheduleForSelectedDay.status === 'open'
+									? 'text-green-600'
+									: 'text-gray-500'
+							}`}
+						>
+							<Clock className="w-4 h-4 flex-shrink-0" />
+							<span className="text-sm font-medium">
+								{t('salon.worksOnSelectedDay')}{' '}
+								{scheduleForSelectedDay.status === 'open'
+									? formatWorkingHoursRange(
+											scheduleForSelectedDay.open,
+											scheduleForSelectedDay.close,
+											language
+										)
+									: t('salon.closedOnSelectedDay')}
+							</span>
+						</div>
+					)}
 				</div>
 			</div>
 

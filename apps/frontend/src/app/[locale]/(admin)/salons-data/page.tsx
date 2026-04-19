@@ -2,7 +2,8 @@
 
 import { useState, useMemo } from 'react';
 import { useAdminSalons, type AdminSalon } from '@/hooks/useAdmin';
-import { useTranslation } from '@/contexts/LanguageContext';
+import { useTranslation, useLanguage } from '@/contexts/LanguageContext';
+import { AdminSalonSubscriptionPills } from '@/components/admin/AdminSalonSubscriptionPills';
 import {
 	Select,
 	SelectContent,
@@ -26,6 +27,7 @@ import {
 
 export default function AdminSalons() {
 	const t = useTranslation();
+	const { language } = useLanguage();
 	const { data: salonsResponse, isLoading, error } = useAdminSalons();
 	const salons = salonsResponse?.data ?? [];
 
@@ -56,7 +58,7 @@ export default function AdminSalons() {
 					salon.owner?.email
 						?.toLowerCase()
 						.includes(searchTerm.toLowerCase()) ||
-					salon.address?.toLowerCase().includes(searchTerm.toLowerCase())
+					salon.address?.toLowerCase().includes(searchTerm.toLowerCase()),
 			);
 		}
 
@@ -65,7 +67,7 @@ export default function AdminSalons() {
 			filtered = filtered.filter((salon) => (salon._count?.bookings || 0) > 0);
 		} else if (statusFilter === 'inactive') {
 			filtered = filtered.filter(
-				(salon) => (salon._count?.bookings || 0) === 0
+				(salon) => (salon._count?.bookings || 0) === 0,
 			);
 		}
 
@@ -184,7 +186,7 @@ export default function AdminSalons() {
 									| 'bookings'
 									| 'services'
 									| 'staff'
-									| 'reviews'
+									| 'reviews',
 							) => setSortBy(value)}
 						>
 							<SelectTrigger className="w-full border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#ff5b5b] focus:border-transparent text-gray-900">
@@ -339,12 +341,18 @@ export default function AdminSalons() {
 								<div className="px-4 py-4 sm:px-6">
 									<div className="flex items-center justify-between">
 										<div className="flex items-center">
-											<div className="ml-4">
-												<div className="flex items-center">
-													<p className="text-sm font-medium text-gray-900 truncate">
+											<div className="ml-4 min-w-0 flex-1">
+												<p className="flex items-center gap-2">
+													<span className="text-xl font-700 text-gray-900 truncate">
 														{salon.name}
-													</p>
-												</div>
+													</span>
+													<span>
+														<AdminSalonSubscriptionPills
+															subscription={salon.subscription}
+															language={language}
+														/>
+													</span>
+												</p>
 												<div className="mt-1">
 													<p className="text-xs text-gray-500">
 														Owner:{' '}
@@ -367,7 +375,7 @@ export default function AdminSalons() {
 											<div className="text-sm text-gray-500">
 												<div>
 													{new Date(salon.createdAt).toLocaleDateString(
-														'en-GB'
+														'en-GB',
 													)}
 												</div>
 											</div>
@@ -489,21 +497,11 @@ export default function AdminSalons() {
 											Subscription
 										</h4>
 										<div className="space-y-2">
-											<div className="text-sm text-gray-600">
-												<span className="font-medium">Type:</span>{' '}
-												{selectedSalon.subscription?.type ? (
-													<span
-														className={`px-2 py-0.5 text-xs font-medium rounded ${
-															selectedSalon.subscription.type === 'STARTER'
-																? 'bg-blue-100 text-blue-800'
-																: 'bg-gray-100 text-gray-800'
-														}`}
-													>
-														{selectedSalon.subscription.type}
-													</span>
-												) : (
-													<span className="text-gray-400">Not assigned</span>
-												)}
+											<div className="flex flex-wrap items-center gap-2">
+												<AdminSalonSubscriptionPills
+													subscription={selectedSalon.subscription}
+													language={language}
+												/>
 											</div>
 											<div className="text-sm text-gray-600">
 												<span className="font-medium">Status:</span>{' '}
@@ -524,6 +522,34 @@ export default function AdminSalons() {
 													<span className="text-gray-400">Unknown</span>
 												)}
 											</div>
+											{selectedSalon.subscription?.trialEndDate && (
+												<div className="text-sm text-gray-600">
+													<span className="font-medium">Trial ends:</span>{' '}
+													{new Date(
+														selectedSalon.subscription.trialEndDate,
+													).toLocaleDateString(
+														language === 'vi'
+															? 'vi-VN'
+															: language === 'ru'
+																? 'ru-RU'
+																: 'en-GB',
+													)}
+												</div>
+											)}
+											{selectedSalon.subscription?.endDate && (
+												<div className="text-sm text-gray-600">
+													<span className="font-medium">Period ends:</span>{' '}
+													{new Date(
+														selectedSalon.subscription.endDate,
+													).toLocaleDateString(
+														language === 'vi'
+															? 'vi-VN'
+															: language === 'ru'
+																? 'ru-RU'
+																: 'en-GB',
+													)}
+												</div>
+											)}
 										</div>
 									</div>
 								</div>
@@ -596,7 +622,7 @@ export default function AdminSalons() {
 																		: 'Closed'}
 																</span>
 															</div>
-														)
+														),
 													)
 												) : (
 													<div className="text-gray-500">

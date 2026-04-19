@@ -286,6 +286,13 @@ main {
 	z-index: 9999 !important;
 }
 
+/* Убрать градиентные маски колонок времени (::before / ::after) */
+.ant-picker-dropdown .ant-picker-time-panel-column::before,
+.ant-picker-dropdown .ant-picker-time-panel-column::after {
+	display: none !important;
+	content: none !important;
+}
+
 .ant-picker-time-panel-column > li.ant-picker-time-panel-cell-selected {
 	background-color: #ff5b5b !important;
 	color: white !important;

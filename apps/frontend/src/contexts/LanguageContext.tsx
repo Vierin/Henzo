@@ -170,6 +170,8 @@ export function LanguageProvider({
 		publicModules.push('public/homepage');
 		// Categories module needed for category-related components
 		publicModules.push('public/categories');
+	} else if (pathNoLocale.startsWith('/bookings/')) {
+		publicModules.push('public/booking');
 	} else if (pathNoLocale.startsWith('/booking')) {
 		publicModules.push('public/booking');
 		// Auth module needed for booking-confirmed page

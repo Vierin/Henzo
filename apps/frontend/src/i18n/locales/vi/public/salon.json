@@ -42,6 +42,8 @@
 	"loadingSalons": "Đang tải salon...",
 	"failedToLoadSalons": "Không thể tải salon",
 	"available": "Có sẵn",
+	"worksOnSelectedDay": "Giờ mở cửa:",
+	"closedOnSelectedDay": "Đóng cửa",
 	"timeSlots": {
 		"morning": "Sáng",
 		"afternoon": "Chiều",

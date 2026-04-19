@@ -47,12 +47,26 @@ export class StripeService {
     return !!(this.stripe && this.monthlyPriceId && this.annualPriceId);
   }
 
+  async retrieveCoupon(couponId: string): Promise<Stripe.Coupon> {
+    if (!this.stripe) {
+      throw new HttpException(
+        'Stripe is not configured',
+        HttpStatus.SERVICE_UNAVAILABLE,
+      );
+    }
+    return this.stripe.coupons.retrieve(couponId);
+  }
+
   async createCheckoutSession(params: {
     customerEmail: string;
     interval: CheckoutInterval;
     successUrl: string;
     cancelUrl: string;
     metadata?: { salonId?: string; userId?: string };
+    /** Stripe Coupon id for annual plan when configured in admin. */
+    stripeCouponIdForAnnual?: string | null;
+    /** Set true to omit coupon (e.g. tests). */
+    skipAnnualPromotionCoupon?: boolean;
   }): Promise<{ url: string }> {
     if (!this.stripe || !this.monthlyPriceId || !this.annualPriceId) {
       throw new HttpException(
@@ -63,6 +77,13 @@ export class StripeService {
 
     const priceId =
       params.interval === 'annual' ? this.annualPriceId : this.monthlyPriceId;
+
+    const couponId = params.stripeCouponIdForAnnual?.trim() || null;
+    const applyAnnualPromo =
+      params.interval === 'annual' &&
+      !!couponId &&
+      !params.skipAnnualPromotionCoupon;
+
     const session = await this.stripe.checkout.sessions.create({
       mode: 'subscription',
       customer_email: params.customerEmail,
@@ -72,6 +93,11 @@ export class StripeService {
           quantity: 1,
         },
       ],
+      ...(applyAnnualPromo
+        ? {
+            discounts: [{ coupon: couponId! }],
+          }
+        : {}),
       success_url: params.successUrl,
       cancel_url: params.cancelUrl,
       metadata: {

@@ -7,17 +7,24 @@ import {
   Param,
   Body,
   Query,
+  Headers,
+  HttpException,
+  HttpStatus,
 } from '@nestjs/common';
 import { ServicesService } from './services.service';
 import { TranslationService } from './translation.service';
 import { CreateServiceDto } from './dto/create-service.dto';
 import { UpdateServiceDto } from './dto/update-service.dto';
+import { AuthService } from '../auth/auth.service';
+import { SubscriptionsService } from '../subscriptions/subscriptions.service';
 
 @Controller('services')
 export class ServicesController {
   constructor(
     private readonly servicesService: ServicesService,
     private readonly translationService: TranslationService,
+    private readonly authService: AuthService,
+    private readonly subscriptionsService: SubscriptionsService,
   ) {}
 
   @Get()
@@ -107,7 +114,18 @@ export class ServicesController {
   }
 
   @Post()
-  async createService(@Body() createServiceDto: CreateServiceDto) {
+  async createService(
+    @Headers('authorization') authHeader: string,
+    @Body() createServiceDto: CreateServiceDto,
+  ) {
+    const currentUser = await this.authService.getCurrentUser(authHeader);
+    if (currentUser.user.role !== 'OWNER') {
+      throw new HttpException('Forbidden', HttpStatus.FORBIDDEN);
+    }
+    await this.subscriptionsService.assertSalonOwnerMayExpandConfiguration(
+      currentUser.user.id,
+      createServiceDto.salonId,
+    );
     return this.servicesService.create(createServiceDto);
   }
 
@@ -135,6 +153,7 @@ export class ServicesController {
 
   @Post('groups')
   async createGroup(
+    @Headers('authorization') authHeader: string,
     @Body()
     body: {
       salonId: string;
@@ -144,6 +163,14 @@ export class ServicesController {
       nameRu?: string;
     },
   ) {
+    const currentUser = await this.authService.getCurrentUser(authHeader);
+    if (currentUser.user.role !== 'OWNER') {
+      throw new HttpException('Forbidden', HttpStatus.FORBIDDEN);
+    }
+    await this.subscriptionsService.assertSalonOwnerMayExpandConfiguration(
+      currentUser.user.id,
+      body.salonId,
+    );
     return this.servicesService.createGroup(body);
   }
 

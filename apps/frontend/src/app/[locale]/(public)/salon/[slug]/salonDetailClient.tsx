@@ -1,9 +1,18 @@
 'use client';
 
-import { useState, useCallback, useMemo, useEffect, useRef } from 'react';
+import {
+	useState,
+	useCallback,
+	useMemo,
+	useEffect,
+	useRef,
+	lazy,
+	Suspense,
+} from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import dynamic from 'next/dynamic';
-import BookingModal from '@/components/BookingModal';
+
+const BookingModal = lazy(() => import('@/components/BookingModal'));
 
 // Dynamically import MapComponentWithCoords to avoid SSR issues with Leaflet
 const MapComponentWithCoords = dynamic(
@@ -860,14 +869,18 @@ export default function SalonDetailClient({ salon }: SalonDetailClientProps) {
 			</div>
 
 			{/* Booking Modal */}
-			<BookingModal
-				isOpen={isBookingModalOpen}
-				onClose={handleCloseBookingModal}
-				salonId={salon.id}
-				service={selectedService || undefined}
-				salonName={salon.name}
-				workingHours={salon.workingHours}
-			/>
+			{isBookingModalOpen && (
+				<Suspense fallback={null}>
+					<BookingModal
+						isOpen={isBookingModalOpen}
+						onClose={handleCloseBookingModal}
+						salonId={salon.id}
+						service={selectedService || undefined}
+						salonName={salon.name}
+						workingHours={salon.workingHours}
+					/>
+				</Suspense>
+			)}
 		</main>
 	);
 }

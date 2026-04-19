@@ -115,6 +115,54 @@ function getDayOfWeek(date: Date): string {
 	return days[date.getDay()];
 }
 
+export type WorkingHoursOnDate =
+	| { status: 'open'; open: string; close: string }
+	| { status: 'closed' };
+
+/**
+ * Opening hours for the calendar day of `date` (from salon.workingHours).
+ * Returns `null` if there is no schedule data — caller should not invent times.
+ */
+export function getWorkingHoursOnSelectedDate(
+	salon: Salon,
+	date: Date
+): WorkingHoursOnDate | null {
+	const wh = normalizeWorkingHours(salon.workingHours);
+	if (!wh) return null;
+
+	const dayOfWeek = getDayOfWeek(date);
+	const dayHours = wh[dayOfWeek as keyof WorkingHours];
+
+	if (!dayHours || dayHours.closed) {
+		return { status: 'closed' };
+	}
+	return { status: 'open', open: dayHours.open, close: dayHours.close };
+}
+
+/** Format stored "HH:mm" for display using language (24h-style). */
+export function formatWorkingTimeHm(hm: string, language: string): string {
+	const parts = hm.trim().split(':');
+	const h = parseInt(parts[0] ?? '', 10);
+	const m = parseInt(parts[1] ?? '0', 10);
+	if (Number.isNaN(h)) return hm.trim();
+	const d = new Date(2000, 0, 1, h, Number.isNaN(m) ? 0 : m);
+	const locale =
+		language === 'vi' ? 'vi-VN' : language === 'ru' ? 'ru-RU' : 'en-GB';
+	return d.toLocaleTimeString(locale, {
+		hour: 'numeric',
+		minute: '2-digit',
+		hour12: false,
+	});
+}
+
+export function formatWorkingHoursRange(
+	open: string,
+	close: string,
+	language: string
+): string {
+	return `${formatWorkingTimeHm(open, language)}–${formatWorkingTimeHm(close, language)}`;
+}
+
 /**
  * Convert time interval string to time range
  */

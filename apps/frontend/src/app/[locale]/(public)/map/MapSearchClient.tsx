@@ -1,18 +1,29 @@
 'use client';
 
 import { useState, useCallback, useEffect, useMemo } from 'react';
+import { useSearchParams } from 'next/navigation';
 import SalonSidebar from './components/SalonSidebar';
 import InteractiveMap from './components/InteractiveMap';
 import { Salon } from '@/types';
-import { MapBounds } from '@/utils/mapUtils';
+import {
+	MapBounds,
+	expandBounds,
+	filterSalonsByBounds,
+	isSalonInBounds,
+} from '@/utils/mapUtils';
 import { List, X } from 'lucide-react';
 import { useTranslation } from '@/contexts/LanguageContext';
 import { useMediaQuery } from '@/hooks/useMediaQuery';
 import { useMapSalonSearch } from '@/hooks/useMapSalonSearch';
-import { useCategories, getCategoryById } from '@/hooks/useCategories';
+import {
+	useCategories,
+	getCategoryById,
+	getCategoryBySlug,
+} from '@/hooks/useCategories';
 
 export default function MapSearchClient() {
 	const t = useTranslation();
+	const searchParams = useSearchParams();
 	const isMd = useMediaQuery('(min-width: 768px)');
 	const { data: categories = [] } = useCategories();
 
@@ -41,17 +52,83 @@ export default function MapSearchClient() {
 			.join(',');
 	}, [selectedCategories, categories]);
 
+	// Deep link: /map?categories=hair-barber,massage-spa or numeric ids
+	useEffect(() => {
+		if (categories.length === 0) return;
+		const raw = searchParams.get('categories');
+		if (!raw?.trim()) return;
+		const parts = raw
+			.split(',')
+			.map((s) => s.trim())
+			.filter(Boolean);
+		const ids: number[] = [];
+		for (const p of parts) {
+			const n = parseInt(p, 10);
+			if (!Number.isNaN(n) && n > 0) {
+				if (getCategoryById(categories, n)) ids.push(n);
+			} else {
+				const bySlug = getCategoryBySlug(categories, p);
+				if (bySlug) ids.push(bySlug.id);
+			}
+		}
+		if (ids.length > 0) {
+			setSelectedCategories(ids);
+		}
+	}, [searchParams, categories]);
+
 	const { data: searchData, isLoading: searchLoading } = useMapSalonSearch({
 		mapBounds,
 		categories: categoriesCsv || undefined,
 	});
 
-	const salons = useMemo(
-		() => (searchData?.data as Salon[] | undefined) ?? [],
-		[searchData]
-	);
+	const [salonById, setSalonById] = useState(() => new Map<string, Salon>());
 
-	const isLoadingSalons = !mapBounds || searchLoading;
+	useEffect(() => {
+		setSalonById(new Map());
+	}, [categoriesCsv]);
+
+	useEffect(() => {
+		const list = (searchData?.data as Salon[] | undefined) ?? [];
+		if (list.length === 0) return;
+		setSalonById((prev) => {
+			const next = new Map(prev);
+			for (const s of list) {
+				next.set(s.id, s);
+			}
+			return next;
+		});
+	}, [searchData]);
+
+	/** Удаляем из кэша то, что далеко за пределами вида (память). */
+	useEffect(() => {
+		if (!mapBounds) return;
+		const keepWithin = expandBounds(mapBounds, 0.42);
+		setSalonById((prev) => {
+			let changed = false;
+			const next = new Map(prev);
+			for (const [id, salon] of next) {
+				if (!isSalonInBounds(salon, keepWithin)) {
+					next.delete(id);
+					changed = true;
+				}
+			}
+			return changed ? next : prev;
+		});
+	}, [mapBounds]);
+
+	const salonsInView = useMemo(() => {
+		if (!mapBounds) return [];
+		const filtered = filterSalonsByBounds(
+			Array.from(salonById.values()),
+			mapBounds
+		);
+		return filtered.sort(
+			(a, b) =>
+				(b.rating ?? b.avgRating ?? 0) - (a.rating ?? a.avgRating ?? 0)
+		);
+	}, [salonById, mapBounds]);
+
+	const isLoadingSalons = !mapBounds || (searchLoading && salonById.size === 0);
 
 	const handleSalonSelect = (salon: Salon) => {
 		setSelectedSalon(salon);
@@ -65,10 +142,10 @@ export default function MapSearchClient() {
 		setIsBottomSheetOpen(false);
 	};
 
-	const handleMapMarkerClick = (salon: Salon) => {
+	const handleMapMarkerClick = useCallback((salon: Salon) => {
 		setSelectedSalon(salon);
 		setIsBottomSheetOpen(true);
-	};
+	}, []);
 
 	const handleMapBoundsChange = useCallback((bounds: MapBounds) => {
 		setMapBounds(bounds);
@@ -138,7 +215,7 @@ export default function MapSearchClient() {
 		selectedCategories,
 		onCategoriesChange: setSelectedCategories,
 		onSalonCountChange: setSalonCount,
-		salons,
+		salons: salonsInView,
 		isLoadingSalons,
 		sortCenter: userLocation ?? undefined,
 		userLocation,
@@ -162,7 +239,7 @@ export default function MapSearchClient() {
 					onMarkerClick={handleMapMarkerClick}
 					selectedSalon={selectedSalon}
 					onMapBoundsChange={handleMapBoundsChange}
-					salons={salons}
+					salons={salonsInView}
 					isLoadingSalons={isLoadingSalons}
 					userLocation={userLocation}
 				/>

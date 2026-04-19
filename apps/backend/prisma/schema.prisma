@@ -215,6 +215,20 @@ model Subscription {
   Salon             Salon              @relation(fields: [salonId], references: [id])
 }
 
+/// Discount coupons tracked in admin; `stripeCouponId` is Stripe Coupon id (e.g. zAb1CD2e).
+model PlatformStripeCoupon {
+  id               String   @id @default(cuid())
+  label            String
+  stripeCouponId   String   @unique
+  isActive         Boolean  @default(true)
+  /// Auto-applied to owner annual subscription Checkout (only one should be active).
+  useForAutoAnnual Boolean  @default(false)
+  /// Cached from Stripe for UI (percent off subscription).
+  percentOff       Int?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+}
+
 model TimeBlock {
   id                                       String         @id
   salonId                                  String

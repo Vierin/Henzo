@@ -1,6 +1,7 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
+import { useParams } from 'next/navigation';
 import { useSalonSearch } from '@/hooks/useSalonSearch';
 import LoadingSpinner from '@/components/LoadingSpinner';
 import ErrorDisplay from '@/components/ErrorDisplay';
@@ -19,6 +20,7 @@ import {
 } from '@/components/ui/select';
 import { useTranslation } from '@/contexts/LanguageContext';
 import { getCategoryTranslatedName } from '@/hooks/useCategories';
+import { withLocale, isLocale, type Locale } from '@/i18n/routing';
 
 interface CategoryListClientProps {
 	category: {
@@ -35,6 +37,14 @@ export default function CategoryListClient({
 	translatedName: _translatedName,
 }: CategoryListClientProps) {
 	const t = useTranslation();
+	const routeParams = useParams();
+	const localeRaw = routeParams?.locale as string | undefined;
+	const locale: Locale =
+		localeRaw && isLocale(localeRaw) ? localeRaw : 'en';
+	const mapHref = useMemo(() => {
+		const q = new URLSearchParams({ categories: category.slug });
+		return `${withLocale('/map', locale)}?${q.toString()}`;
+	}, [category.slug, locale]);
 	const [sortBy, setSortBy] = useState('name');
 	const [isBookingModalOpen, setIsBookingModalOpen] = useState(false);
 	const [selectedService, setSelectedService] = useState<
@@ -200,7 +210,7 @@ export default function CategoryListClient({
 
 								{/* map button */}
 								<Link
-									href="/map"
+									href={mapHref}
 									className="px-3 sm:px-4 py-2 sm:h-9 flex gap-1 items-center bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#ff5b5b] focus:border-transparent text-gray-900 text-sm whitespace-nowrap"
 								>
 									<Map className="w-4 h-4" />{' '}

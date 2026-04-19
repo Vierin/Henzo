@@ -42,6 +42,8 @@
 	"loadingSalons": "Загрузка салонов...",
 	"failedToLoadSalons": "Не удалось загрузить салоны",
 	"available": "Доступно",
+	"worksOnSelectedDay": "Работает:",
+	"closedOnSelectedDay": "Выходной",
 	"timeSlots": {
 		"morning": "Утро",
 		"afternoon": "День",

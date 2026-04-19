@@ -24,6 +24,24 @@ export const SAVE_ANNUAL_PERCENT = Math.round(
 	(SAVE_ANNUAL_VND / PRICE_12_MONTHS_VND) * 100
 );
 
+/** Fallback % only if API does not send annualPromotionPercent (legacy). */
+export const ANNUAL_LAUNCH_PROMO_PERCENT = 10;
+
+/** Discounted annual total in VND from percent off (e.g. admin-configured Stripe coupon). */
+export function annualPriceAfterPercentOff(
+	baseAnnualVnd: number,
+	percentOff: number
+): number {
+	if (!percentOff || percentOff <= 0 || percentOff >= 100) return baseAnnualVnd;
+	return Math.round((baseAnnualVnd * (100 - percentOff)) / 100);
+}
+
+export function annualPriceAfterLaunchPromo(
+	baseAnnualVnd: number = PRICE_ANNUAL_VND
+): number {
+	return annualPriceAfterPercentOff(baseAnnualVnd, ANNUAL_LAUNCH_PROMO_PERCENT);
+}
+
 export const SUBSCRIPTION_PLANS: SubscriptionPlanConfig[] = [
 	{
 		id: 'monthly',

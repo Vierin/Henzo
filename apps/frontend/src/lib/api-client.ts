@@ -191,6 +191,9 @@ export class ApiClient {
 			const error = new Error(errorMessage);
 			(error as any).status = response.status;
 			(error as any).errorData = errorData;
+			if (errorData?.code != null) {
+				(error as any).code = errorData.code;
+			}
 			throw error;
 		}
 

@@ -1,5 +1,5 @@
 import type { Metadata } from 'next';
-import { notFound } from 'next/navigation';
+import { notFound, redirect } from 'next/navigation';
 import { serverApiGet } from '@/lib/api-server';
 import SalonDetailClient from './salonDetailClient';
 import { extractSalonIdFromSlug, isValidSalonSlug } from '@/utils/slug';
@@ -78,7 +78,8 @@ export async function generateMetadata({
 export default async function SalonDetailPage({
 	params,
 }: SalonDetailPageProps) {
-	const { slug } = await params;
+	const { slug, locale: rawLocale } = await params;
+	const locale = resolveLocale(rawLocale ?? 'en');
 	const salon = await getSalonData(slug);
 
 	if (!salon) {
@@ -87,16 +88,7 @@ export default async function SalonDetailPage({
 
 	const isOldId = /^[a-f0-9-]{36}$/.test(slug);
 	if (isOldId && salon.id && salon.slug) {
-		return (
-			<div className="min-h-screen bg-[#F8F5F2] flex items-center justify-center">
-				<div className="text-center">
-					<p className="text-gray-600 mb-4">
-						Redirecting to updated salon page...
-					</p>
-					<meta httpEquiv="refresh" content={`0; url=/salon/${salon.slug}`} />
-				</div>
-			</div>
-		);
+		redirect(`/${locale}/salon/${salon.slug}`);
 	}
 
 	return <SalonDetailClient salon={salon} />;

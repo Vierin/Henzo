@@ -31,6 +31,7 @@
 	"mostPopular": "Lựa chọn phổ biến",
 	"startProPlan": "Bắt đầu gói Pro",
 	"noLongTermContracts": "Không ràng buộc dài hạn. Hủy bất cứ lúc nào.",
+	"launchAnnualPromoNote": "Đã gồm giảm {{percent}}% khi thanh toán gói năm",
 	"planName": "Starter",
 	"trialValidUntil": "Có hiệu lực đến",
 	"trialWasUntil": "Giai đoạn dùng thử đến",

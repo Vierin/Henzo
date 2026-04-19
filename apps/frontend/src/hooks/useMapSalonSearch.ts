@@ -1,7 +1,13 @@
 import { useQuery } from '@tanstack/react-query';
+import { useEffect, useRef, useState } from 'react';
 import { apiClient } from '@/lib/api-client';
 import type { SearchResponse } from '@/hooks/useSalonSearch';
-import type { MapBounds } from '@/utils/mapUtils';
+import {
+	type MapBounds,
+	boundsReady,
+	expandBounds,
+	isViewportContainedIn,
+} from '@/utils/mapUtils';
 
 export interface UseMapSalonSearchParams {
 	mapBounds: MapBounds | null;
@@ -10,53 +16,84 @@ export interface UseMapSalonSearchParams {
 	enabled?: boolean;
 }
 
-function boundsReady(b: MapBounds | null): b is MapBounds {
-	if (!b) return false;
-	return [b.north, b.south, b.east, b.west].every((n) => Number.isFinite(n));
-}
+/** Запас вокруг видимой области: пока центр не выходит за него — не дёргаем API. */
+const FETCH_BOUNDS_PADDING = 0.1;
 
 /**
  * Map viewport search: bbox + optional category slugs, fixed page/limit/sort for listing UX.
+ * Не запрашивает заново, пока видимая область полностью внутри bbox последнего успешного ответа
+ * (с запасом FETCH_BOUNDS_PADDING).
  */
 export function useMapSalonSearch(params: UseMapSalonSearchParams) {
 	const { mapBounds, categories, enabled = true } = params;
 	const ready = boundsReady(mapBounds);
+	const categoriesKey = categories?.trim() ?? '';
 
-	return useQuery({
+	const lastCoverBoundsRef = useRef<MapBounds | null>(null);
+	const [fetchBounds, setFetchBounds] = useState<MapBounds | null>(null);
+
+	useEffect(() => {
+		lastCoverBoundsRef.current = null;
+	}, [categoriesKey]);
+
+	useEffect(() => {
+		if (!ready || !mapBounds) return;
+		const cover = lastCoverBoundsRef.current;
+		const padded = expandBounds(mapBounds, FETCH_BOUNDS_PADDING);
+		if (!cover) {
+			setFetchBounds(padded);
+			return;
+		}
+		if (isViewportContainedIn(mapBounds, cover)) {
+			return;
+		}
+		setFetchBounds(padded);
+	}, [mapBounds, ready, categoriesKey]);
+
+	const fetchReady = boundsReady(fetchBounds);
+
+	const query = useQuery({
 		queryKey: [
 			'salons',
 			'search',
 			'map',
 			{
-				north: mapBounds?.north,
-				south: mapBounds?.south,
-				east: mapBounds?.east,
-				west: mapBounds?.west,
-				categories: categories || '',
+				north: fetchBounds?.north,
+				south: fetchBounds?.south,
+				east: fetchBounds?.east,
+				west: fetchBounds?.west,
+				categories: categoriesKey,
 			},
 		],
 		queryFn: async (): Promise<SearchResponse & { success?: boolean }> => {
-			if (!mapBounds || !ready) {
+			if (!fetchBounds || !fetchReady) {
 				throw new Error('Map bounds required');
 			}
 			const searchParams = new URLSearchParams();
 			searchParams.set('page', '1');
 			searchParams.set('limit', '50');
 			searchParams.set('sortBy', 'rating');
-			searchParams.set('north', String(mapBounds.north));
-			searchParams.set('south', String(mapBounds.south));
-			searchParams.set('east', String(mapBounds.east));
-			searchParams.set('west', String(mapBounds.west));
-			if (categories?.trim()) {
-				searchParams.set('categories', categories.trim());
+			searchParams.set('north', String(fetchBounds.north));
+			searchParams.set('south', String(fetchBounds.south));
+			searchParams.set('east', String(fetchBounds.east));
+			searchParams.set('west', String(fetchBounds.west));
+			if (categoriesKey) {
+				searchParams.set('categories', categoriesKey);
 			}
-			return apiClient.get(
-				`/salons/search?${searchParams.toString()}`
-			);
+			return apiClient.get(`/salons/search?${searchParams.toString()}`);
 		},
-		enabled: enabled && ready,
+		enabled: enabled && ready && fetchReady,
 		staleTime: 10 * 60 * 1000,
 		gcTime: 30 * 60 * 1000,
 		refetchOnWindowFocus: false,
+		placeholderData: (previousData) => previousData,
 	});
+
+	useEffect(() => {
+		if (query.data && fetchBounds) {
+			lastCoverBoundsRef.current = fetchBounds;
+		}
+	}, [query.data, fetchBounds]);
+
+	return query;
 }

@@ -31,6 +31,7 @@
 	"mostPopular": "Популярный выбор",
 	"startProPlan": "Оформить подписку",
 	"noLongTermContracts": "Без долгосрочных обязательств. Отмена в любой момент.",
+	"launchAnnualPromoNote": "Включена стартовая скидка {{percent}}% на годовую оплату",
 	"trialValidUntil": "Действует до",
 	"trialWasUntil": "Пробный период был до",
 	"paidPlan": "Оплаченная подписка",

@@ -14,6 +14,7 @@ import {
 	SAVE_ANNUAL_PERCENT,
 	SAVE_ANNUAL_VND,
 	SUBSCRIPTION_FEATURE_KEYS,
+	annualPriceAfterPercentOff,
 } from '@/config/subscriptionPlans';
 import { formatVND } from '@/utils/currency';
 import SubscriptionPageSkeleton from './SubscriptionPageSkeleton';
@@ -32,6 +33,8 @@ interface Subscription {
 	stripeCustomerId?: string | null;
 	cancelAtPeriodEnd?: boolean;
 	cancelAt?: string | null;
+	configurationExpansionAllowed?: boolean;
+	annualPromotionPercent?: number | null;
 }
 
 interface Invoice {
@@ -215,6 +218,11 @@ export default function SubscriptionClient() {
 		: null;
 
 	const isPaid = (currentSubscription?.amount ?? 0) > 0;
+	const promoPct = currentSubscription?.annualPromotionPercent ?? 0;
+	const annualLaunchPromoActive = promoPct > 0 && !isPaid;
+	const annualDisplayPrice = annualLaunchPromoActive
+		? annualPriceAfterPercentOff(PRICE_ANNUAL_VND, promoPct)
+		: PRICE_ANNUAL_VND;
 	const paidEndDate = currentSubscription?.endDate
 		? new Date(currentSubscription.endDate)
 		: null;
@@ -526,13 +534,15 @@ export default function SubscriptionClient() {
 							<div className="text-4xl font-bold text-gray-900 text-center mb-3">
 								{billingInterval === 'annual' && (
 									<span className="block line-through text-gray-600 text-3xl">
-										{formatVND(PRICE_12_MONTHS_VND)}
+										{annualLaunchPromoActive
+											? formatVND(PRICE_ANNUAL_VND)
+											: formatVND(PRICE_12_MONTHS_VND)}
 									</span>
 								)}
 								<span className="block">
 									{formatVND(
 										billingInterval === 'annual'
-											? PRICE_ANNUAL_VND
+											? annualDisplayPrice
 											: PRICE_MONTHLY_VND
 									)}
 									<span className="text-lg font-normal text-gray-500">
@@ -544,6 +554,15 @@ export default function SubscriptionClient() {
 										)}
 									</span>
 								</span>
+								{annualLaunchPromoActive &&
+									billingInterval === 'annual' && (
+										<span className="block text-sm font-semibold text-[#ff5b5b] mt-1">
+											{t('owner.subscription.launchAnnualPromoNote').replace(
+												'{{percent}}',
+												String(promoPct)
+											)}
+										</span>
+									)}
 							</div>
 
 							<ul className="grid grid-cols-1 sm:grid-cols-2 gap-y-3 gap-x-6 mb-6">

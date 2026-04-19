@@ -122,7 +122,7 @@
 		"googleRedirecting": "Đang chuyển tới Google…",
 		"agreement": "Bằng cách gửi biểu mẫu này, bạn đồng ý với các điều khoản dịch vụ.",
 		"successMessage": "Cảm ơn! Chúng tôi sẽ sớm liên hệ để hỗ trợ bạn bắt đầu.",
-		"magicLinkSent": "Liên kết đăng ký đã được gửi đến email của bạn! Vui lòng kiểm tra hộp thư để hoàn tất đăng ký.",
+		"magicLinkSent": "Chúng tôi đã gửi email có liên kết để hoàn tất đăng ký. Kiểm tra hộp thư đến và thư rác.",
 		"errorMessage": "Không thể gửi yêu cầu. Vui lòng thử lại.",
 		"errors": {
 			"fullNameMinLength": "Họ và tên phải có ít nhất 2 ký tự",

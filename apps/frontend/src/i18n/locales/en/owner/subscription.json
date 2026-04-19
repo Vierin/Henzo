@@ -31,6 +31,7 @@
 	"mostPopular": "Most Popular Choice",
 	"startProPlan": "Start Your Pro Plan",
 	"noLongTermContracts": "No long term contracts. Cancel anytime.",
+	"launchAnnualPromoNote": "Includes {{percent}}% launch discount on yearly billing",
 	"trialValidUntil": "Valid until",
 	"trialWasUntil": "Trial was until",
 	"paidPlan": "Paid subscription",

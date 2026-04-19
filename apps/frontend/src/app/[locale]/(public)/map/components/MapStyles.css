@@ -1,3 +1,26 @@
+/* Кластеры — бренд #ff5b5b вместо дефолтного зелёного leaflet.markercluster */
+.marker-cluster-small {
+	background-color: rgba(255, 91, 91, 0.45) !important;
+}
+.marker-cluster-small div {
+	background-color: rgba(255, 91, 91, 0.92) !important;
+	color: #fff !important;
+}
+.marker-cluster-medium {
+	background-color: rgba(224, 74, 74, 0.45) !important;
+}
+.marker-cluster-medium div {
+	background-color: rgba(224, 74, 74, 0.95) !important;
+	color: #fff !important;
+}
+.marker-cluster-large {
+	background-color: rgba(200, 55, 55, 0.45) !important;
+}
+.marker-cluster-large div {
+	background-color: rgba(200, 55, 55, 0.98) !important;
+	color: #fff !important;
+}
+
 /* Leaflet custom marker styles */
 .custom-marker {
 	background: transparent !important;

@@ -12,11 +12,12 @@ import { supabase } from '@/lib/supabase';
 import ErrorDisplay from './ErrorDisplay';
 import Image from 'next/image';
 import Link from 'next/link';
-import { ChevronRight, Star } from 'lucide-react';
+import { ChevronRight } from 'lucide-react';
 import { useTranslation } from '@/contexts/LanguageContext';
 import { Salon } from '@/types';
 import SalonImagePlaceholder from '@/components/SalonImagePlaceholder';
 import RatingBadge from '@/components/RatingBadge';
+import { simplifySalonCardAddress } from '@/lib/simplifySalonCardAddress';
 
 export default function RecommendedSalons() {
 	const t = useTranslation();
@@ -43,7 +44,7 @@ export default function RecommendedSalons() {
 					0;
 				return serviceCount > 0;
 			}),
-		[salons]
+		[salons],
 	);
 
 	// Мемоизируем URL для каждого салона
@@ -53,7 +54,7 @@ export default function RecommendedSalons() {
 				...salon,
 				url: getSalonUrl(salon),
 			})),
-		[salonsWithServices, getSalonUrl]
+		[salonsWithServices, getSalonUrl],
 	);
 
 	const getImageSrc = (imageSrc: string) => {
@@ -73,7 +74,7 @@ export default function RecommendedSalons() {
 	};
 
 	const getSalonImage = (
-		salon: Salon
+		salon: Salon,
 	): { url: string | undefined; isExternal: boolean } => {
 		// If salon has photos, use the first photo
 		if (salon.photos && salon.photos.length > 0) {
@@ -95,7 +96,19 @@ export default function RecommendedSalons() {
 		return getCategoryTranslatedName(category, t);
 	};
 
- 
+	const getFeaturedCategoryLabel = (salon: Salon): string => {
+		const mainId = (salon as Salon & { mainCategoryIds?: number[] })
+			.mainCategoryIds?.[0];
+		if (mainId != null) {
+			const name = getCategoryName(mainId);
+			if (name) return name;
+		}
+		const leaf = (salon as Salon & { categories?: string[] }).categories?.[0];
+		return leaf?.trim() || '';
+	};
+
+	const getFeaturedAddress = (salon: Salon) =>
+		simplifySalonCardAddress(salon.address) || '';
 
 	return (
 		<section
@@ -121,7 +134,8 @@ export default function RecommendedSalons() {
 									<div className="h-[15rem] bg-gray-200"></div>
 									<div className="p-5">
 										<div className="h-6 bg-gray-200 rounded mb-2"></div>
-										<div className="h-4 bg-gray-200 rounded w-2/3 mb-8"></div>
+										<div className="h-3 bg-gray-200 rounded w-4/5 mb-1"></div>
+										<div className="h-3 bg-gray-200 rounded w-full mb-4"></div>
 										<div className="h-4 bg-gray-200 rounded w-1/3 ml-auto"></div>
 									</div>
 								</div>
@@ -139,7 +153,8 @@ export default function RecommendedSalons() {
 										<div className="h-[12rem] bg-gray-200"></div>
 										<div className="p-3">
 											<div className="h-5 bg-gray-200 rounded mb-2"></div>
-											<div className="h-4 bg-gray-200 rounded w-2/3 mb-4"></div>
+											<div className="h-3 bg-gray-200 rounded w-4/5 mb-1"></div>
+											<div className="h-3 bg-gray-200 rounded w-full mb-3"></div>
 											<div className="flex items-center justify-between">
 												<div className="h-4 bg-gray-200 rounded w-1/3"></div>
 												<div className="h-4 bg-gray-200 rounded w-1/4"></div>
@@ -178,7 +193,6 @@ export default function RecommendedSalons() {
 						{/* Desktop grid view */}
 						<div className="hidden md:grid md:grid-cols-3 gap-6 px-6">
 							{salonsWithUrls.slice(0, 3).map((salon, index: number) => {
-
 								return (
 									<Link
 										key={salon.id}
@@ -211,19 +225,33 @@ export default function RecommendedSalons() {
 											{/* Average rating badge (replaces price range) */}
 											<RatingBadge salon={salon} variant="badge" />
 										</div>
-										<div className="p-5">
-											{/* Title and Rating */}
+										<div className="p-4">
 											<div className="flex items-start justify-between mb-2">
-												<h3 className="text-xl font-bold text-gray-900 flex-1">
+												<h3 className="text-2xl font-bold text-gray-900 flex-1">
 													{salon.name}
 												</h3>
 											</div>
-
-									 
-
-											{/* Footer: View Details */}
+											{(() => {
+												const categoryLabel = getFeaturedCategoryLabel(salon);
+												const addr = getFeaturedAddress(salon);
+												if (!categoryLabel && !addr) return null;
+												return (
+													<div className="mb-4 space-y-2">
+														{categoryLabel ? (
+															<span className="inline-flex max-w-full min-w-0 rounded-full bg-[#fff5f5] px-2.5 py-1 text-xs font-semibold leading-tight text-[#ff5b5b] ring-1 ring-inset ring-[#ffd5d5] sm:text-sm">
+																<span className="truncate">{categoryLabel}</span>
+															</span>
+														) : null}
+														{addr ? (
+															<p className="text-sm text-gray-500 line-clamp-2 leading-snug">
+																{addr}
+															</p>
+														) : null}
+													</div>
+												);
+											})()}
 											<div className="text-white bg-[#ff5b5b] px-4 py-2 rounded-full flex items-center text-sm font-bold hover:bg-[#e04a4a] transition-colors w-fit ml-auto">
-													{t.salon.viewDetails}
+												{t.salon.viewDetails}
 											</div>
 										</div>
 									</Link>
@@ -235,7 +263,6 @@ export default function RecommendedSalons() {
 						<div className="md:hidden overflow-x-auto scrollbar-hide px-4 pb-2">
 							<div className="flex gap-4" style={{ width: 'max-content' }}>
 								{salonsWithUrls.slice(0, 3).map((salon, index: number) => {
-
 									return (
 										<Link
 											key={salon.id}
@@ -264,7 +291,7 @@ export default function RecommendedSalons() {
 															unoptimized={imageData.isExternal}
 														/>
 													) : (
-														<SalonImagePlaceholder 
+														<SalonImagePlaceholder
 															showText={true}
 															variant="large"
 														/>
@@ -274,24 +301,52 @@ export default function RecommendedSalons() {
 												<RatingBadge salon={salon} variant="badge" />
 											</div>
 											<div className="p-3">
-												{/* Title and Rating */}
-												<div className="flex items-start justify-between mb-2">
-													<h3 className="text-lg font-bold text-gray-900 flex-1">
+												<div className="flex items-start justify-between mb-2 gap-2">
+													<h3 className="text-lg font-bold text-gray-900 flex-1 min-w-0">
 														{salon.name}
 													</h3>
-													<RatingBadge salon={salon} variant="inline" showReviewCount={false} />
+													<RatingBadge
+														salon={salon}
+														variant="inline"
+														showReviewCount={false}
+													/>
 												</div>
+												{(() => {
+													const categoryLabel = getFeaturedCategoryLabel(salon);
+													const addr = getFeaturedAddress(salon);
+													if (!categoryLabel && !addr) return null;
+													return (
+														<div className="mb-3 space-y-2">
+															{categoryLabel ? (
+																<span className="inline-flex max-w-full min-w-0 rounded-full bg-[#fff5f5] px-2 py-0.5 text-xs font-semibold leading-tight text-[#ff5b5b] ring-1 ring-inset ring-[#ffd5d5]">
+																	<span className="truncate">{categoryLabel}</span>
+																</span>
+															) : null}
+															{addr ? (
+																<p className="text-xs text-gray-500 line-clamp-2 leading-snug">
+																	{addr}
+																</p>
+															) : null}
+														</div>
+													);
+												})()}
 
-												{/* Footer: Reviews and View Details */}
 												<div className="flex items-center justify-between">
 													{/* Mobile: Show only star + rating if reviews exist, Desktop: Show review count */}
 													{(() => {
-														const reviewCount = (salon._count as any)?.Review || (salon._count as any)?.reviews || 0;
+														const reviewCount =
+															(salon._count as any)?.Review ||
+															(salon._count as any)?.reviews ||
+															0;
 														return reviewCount > 0 ? (
 															<>
 																{/* Mobile: Star + rating only */}
 																<div className="md:hidden">
-																	<RatingBadge salon={salon} variant="inline" showReviewCount={false} />
+																	<RatingBadge
+																		salon={salon}
+																		variant="inline"
+																		showReviewCount={false}
+																	/>
 																</div>
 																{/* Desktop: Review count */}
 																<span className="hidden md:block text-gray-500 text-sm">

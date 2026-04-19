@@ -112,7 +112,7 @@
 		"googleRedirecting": "Redirecting to Google…",
 		"agreement": "By submitting this form, you agree to the service terms.",
 		"successMessage": "Thank you! We'll contact you soon to help you get started.",
-		"magicLinkSent": "Magic link sent to your email! Please check your inbox to complete registration.",
+		"magicLinkSent": "We sent you an email with a link to finish signing up. Check your inbox and spam folder.",
 		"errorMessage": "Failed to submit request. Please try again.",
 		"errors": {
 			"fullNameMinLength": "Full name must be at least 2 characters",

@@ -1,11 +1,23 @@
 'use client';
 
-import { useState, useRef, useTransition } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState, useTransition, useEffect, useMemo, Suspense } from 'react';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import AddressAutocomplete from './AddressAutocomplete';
 import ServiceAutocomplete from './ServiceAutocomplete';
 import DateTimePicker from './DateTimePicker';
 import { useTranslation } from '@/contexts/LanguageContext';
+import {
+	extractLocaleFromPath,
+	withLocale,
+	isLocale,
+	stripLocaleFromPath,
+	type Locale,
+} from '@/i18n/routing';
+import {
+	useCategories,
+	getCategoryById,
+	getCategoryTranslatedName,
+} from '@/hooks/useCategories';
 
 interface SearchBookingFormProps {
 	className?: string;
@@ -13,13 +25,23 @@ interface SearchBookingFormProps {
 	onSearchSuccess?: () => void;
 }
 
-export default function SearchBookingForm({
+function SearchBookingFormInner({
 	className = '',
 	inline = false,
 	onSearchSuccess,
 }: SearchBookingFormProps) {
 	const router = useRouter();
+	const pathname = usePathname();
+	const searchParams = useSearchParams();
 	const t = useTranslation();
+	const { data: categories = [] } = useCategories();
+	const pathNoLocale = useMemo(() => stripLocaleFromPath(pathname), [pathname]);
+	const salonsQueryKey = useMemo(() => {
+		if (!pathNoLocale.startsWith('/salons')) return '';
+		return searchParams.toString();
+	}, [pathNoLocale, searchParams]);
+	const localeRaw = extractLocaleFromPath(pathname);
+	const locale: Locale = localeRaw && isLocale(localeRaw) ? localeRaw : 'en';
 	const [isPending, startTransition] = useTransition();
 	const [searchQuery, setSearchQuery] = useState('');
 	const [selectedCategoryId, setSelectedCategoryId] = useState<number | null>(
@@ -36,6 +58,61 @@ export default function SearchBookingForm({
 		setValidationError('');
 		setErrorField('');
 	};
+
+	// Подставляем в форму хедера критерии с URL (после поиска с главной и т.д.)
+	useEffect(() => {
+		if (!pathNoLocale.startsWith('/salons')) return;
+
+		const sp = new URLSearchParams(salonsQueryKey);
+		const location = sp.get('location') ?? '';
+		const dateStr = sp.get('date');
+		const time = sp.get('time') ?? '';
+		const categoryParam = sp.get('category');
+		const search = sp.get('search');
+		const salon = sp.get('salon');
+		const service = sp.get('service');
+
+		let nextCategoryId: number | null = null;
+		let nextSearch = '';
+
+		if (categoryParam && categoryParam !== 'all') {
+			const n = parseInt(categoryParam, 10);
+			if (!Number.isNaN(n)) {
+				nextCategoryId = n;
+				const cat = getCategoryById(categories, n);
+				if (cat) {
+					nextSearch = getCategoryTranslatedName(cat, t);
+				}
+			}
+		}
+
+		if (nextCategoryId === null) {
+			if (service) nextSearch = service;
+			else if (salon) nextSearch = salon;
+			else if (search) nextSearch = search;
+		}
+
+		let nextDate: Date | null = null;
+		if (dateStr) {
+			const [y, m, d] = dateStr.split('-').map(Number);
+			if (
+				y !== undefined &&
+				m !== undefined &&
+				d !== undefined &&
+				!Number.isNaN(y) &&
+				!Number.isNaN(m) &&
+				!Number.isNaN(d)
+			) {
+				nextDate = new Date(y, m - 1, d);
+			}
+		}
+
+		setSearchQuery(nextSearch);
+		setSelectedCategoryId(nextCategoryId);
+		setSelectedLocation(location);
+		setSelectedDate(nextDate);
+		setSelectedTimeInterval(time);
+	}, [pathNoLocale, salonsQueryKey, categories, t]);
 
 	const handleKeyDown = (e: React.KeyboardEvent) => {
 		if (e.key === 'Enter' && !isLoading) {
@@ -84,8 +161,9 @@ export default function SearchBookingForm({
 			}
 			if (selectedTimeInterval) params.set('time', selectedTimeInterval);
 
-			const finalUrl = `/salons${params.toString() ? `?${params.toString()}` : ''}`;
-			
+			const salonsPath = `/salons${params.toString() ? `?${params.toString()}` : ''}`;
+			const finalUrl = withLocale(salonsPath, locale);
+
 			// Use startTransition for smooth navigation
 			startTransition(() => {
 				router.push(finalUrl);
@@ -306,5 +384,13 @@ export default function SearchBookingForm({
 				)}
 			</button>
 		</div>
+	);
+}
+
+export default function SearchBookingForm(props: SearchBookingFormProps) {
+	return (
+		<Suspense fallback={null}>
+			<SearchBookingFormInner {...props} />
+		</Suspense>
 	);
 }

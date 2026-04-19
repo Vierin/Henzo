@@ -82,5 +82,17 @@
 	"staff": "Staff",
 	"anonymousClient": "Anonymous Client",
 	"staffNotAvailable": "The selected staff member is not available at this time. Please choose another time or staff member.",
-	"salonWillConfirmWhenOpen": "The salon will confirm your booking when they open."
+	"salonWillConfirmWhenOpen": "The salon will confirm your booking when they open.",
+	"ownerConfirmLoading": "Confirming booking...",
+	"ownerConfirmSuccessTitle": "Booking confirmed!",
+	"ownerConfirmSuccessMessage": "Booking confirmed successfully! The client has been notified via email.",
+	"ownerConfirmSuccessDetail": "The client will receive a confirmation email with all the appointment details. You will be redirected to the home page shortly.",
+	"ownerConfirmErrorTitle": "Confirmation failed",
+	"ownerConfirmErrorFallback": "Failed to confirm booking. Please try again or contact support.",
+	"ownerRejectLoading": "Processing rejection...",
+	"ownerRejectSuccessTitle": "Booking rejected",
+	"ownerRejectSuccessMessage": "The booking has been rejected. The client has been notified via email and can choose a different time or salon.",
+	"ownerRejectSuccessDetail": "The client has been notified and can try booking a different time slot or explore other salons. You will be redirected to the home page shortly.",
+	"ownerRejectErrorTitle": "Rejection failed",
+	"ownerRejectErrorFallback": "Failed to reject booking. Please try again or contact support."
 }
