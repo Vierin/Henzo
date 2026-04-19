@@ -19,14 +19,17 @@ import { PromotionCouponService } from '../subscriptions/promotion-coupon.servic
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Roles('ADMIN')
 export class PromotionCouponsController {
-  constructor(private readonly promotionCouponService: PromotionCouponService) {}
+  constructor(
+    private readonly promotionCouponService: PromotionCouponService,
+  ) {}
 
   @Get()
   async list() {
     try {
       return await this.promotionCouponService.listForAdmin();
     } catch (error: unknown) {
-      const msg = error instanceof Error ? error.message : 'Failed to list coupons';
+      const msg =
+        error instanceof Error ? error.message : 'Failed to list coupons';
       throw new HttpException(msg, HttpStatus.BAD_REQUEST);
     }
   }

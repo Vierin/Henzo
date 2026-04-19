@@ -5,7 +5,8 @@ import { SUBSCRIPTION_PRICES } from './subscription-plans.constants';
 import { Subscription } from '@prisma/client';
 
 /** Exposed to API clients (e.g. owner UI) to show paywall / disable config actions. */
-export const SUBSCRIPTION_CONFIG_LOCKED_ERROR = 'TRIAL_EXPIRED_CONFIG_LOCKED' as const;
+export const SUBSCRIPTION_CONFIG_LOCKED_ERROR =
+  'TRIAL_EXPIRED_CONFIG_LOCKED' as const;
 
 @Injectable()
 export class SubscriptionsService {
@@ -132,7 +133,9 @@ export class SubscriptionsService {
     return false;
   }
 
-  async assertSalonConfigurationExpansionAllowed(userId: string): Promise<void> {
+  async assertSalonConfigurationExpansionAllowed(
+    userId: string,
+  ): Promise<void> {
     const sub = await this.getCurrentSubscription(userId);
     if (this.isSalonConfigurationExpansionAllowed(sub)) {
       return;
