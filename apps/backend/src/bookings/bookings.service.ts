@@ -11,6 +11,7 @@ import { getLocalizedServiceName } from '../common/utils/localized-service-name'
 @Injectable()
 export class BookingsService {
   private readonly logger = new Logger(BookingsService.name);
+  private readonly defaultMaxAdvanceBookingDays = 90;
 
   constructor(
     private prisma: PrismaService,
@@ -146,6 +147,7 @@ export class BookingsService {
 
       let selectedStaffId = data.staffId;
       const bookingTime = new Date(data.time);
+      this.validateBookingAdvanceWindow(bookingTime);
       const bookingEndTime = new Date(
         bookingTime.getTime() + service.duration * 60000,
       );
@@ -1114,6 +1116,35 @@ export class BookingsService {
     return s === 'ru' || s === 'vi' ? s : 'en';
   }
 
+  private validateBookingAdvanceWindow(bookingTime: Date): void {
+    if (Number.isNaN(bookingTime.getTime())) {
+      throw new Error('Invalid booking date');
+    }
+
+    const maxAdvanceDays = this.getMaxAdvanceBookingDays();
+    const now = new Date();
+    const maxAllowedDate = new Date(
+      now.getTime() + maxAdvanceDays * 24 * 60 * 60 * 1000,
+    );
+
+    if (bookingTime > maxAllowedDate) {
+      throw new Error(
+        `Bookings can only be made up to ${maxAdvanceDays} days in advance.`,
+      );
+    }
+  }
+
+  private getMaxAdvanceBookingDays(): number {
+    const envValue = this.configService.get<string>('BOOKING_MAX_ADVANCE_DAYS');
+    const parsed = envValue ? Number.parseInt(envValue, 10) : NaN;
+
+    if (Number.isFinite(parsed) && parsed > 0) {
+      return parsed;
+    }
+
+    return this.defaultMaxAdvanceBookingDays;
+  }
+
   private async sendBookingNotifications(
     booking: any,
     isOwnerCreated: boolean = false,
@@ -1615,6 +1646,9 @@ export class BookingsService {
       const effectiveStart = data.time
         ? new Date(data.time)
         : existingBooking.dateTime;
+      if (data.time) {
+        this.validateBookingAdvanceWindow(effectiveStart);
+      }
       const effectiveEnd = new Date(
         effectiveStart.getTime() + effectiveDuration * 60000,
       );

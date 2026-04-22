@@ -34,5 +34,7 @@
 	"allServices": "Tất cả dịch vụ",
 	"selectServices": "Chọn dịch vụ",
 	"searchServices": "Tìm kiếm dịch vụ...",
-	"servicesSelected": "dịch vụ đã chọn"
+	"servicesSelected": "dịch vụ đã chọn",
+	"createdSuccessfully": "Nhân viên đã được tạo thành công!",
+	"createdSucesfully": "Nhân viên đã được tạo thành công!"
 }

@@ -1629,7 +1629,12 @@ export class AuthService {
     }
   }
 
-  async sendBusinessMagicLink(email: string, name: string, password: string) {
+  async sendBusinessMagicLink(
+    email: string,
+    name: string,
+    password: string,
+    locale?: string,
+  ) {
     try {
       const normalizedEmail = email.toLowerCase().trim();
       console.log('🔍 Checking for existing user with email:', normalizedEmail);
@@ -1860,7 +1865,9 @@ export class AuthService {
         (process.env.NODE_ENV === 'production'
           ? 'https://api.henzo.app'
           : 'http://localhost:3001');
-      const magicLinkUrl = `${backendUrl}/auth/business-magic-link/${token}`;
+      const safeLocale =
+        locale === 'ru' || locale === 'en' || locale === 'vi' ? locale : 'en';
+      const magicLinkUrl = `${backendUrl}/auth/business-magic-link/${token}?locale=${encodeURIComponent(safeLocale)}`;
 
       console.log(
         '📧 Sending business registration magic link email to:',
@@ -1873,6 +1880,7 @@ export class AuthService {
         email,
         name,
         magicLinkUrl,
+        safeLocale,
       );
 
       console.log('✅ Business magic link sent:', { email });

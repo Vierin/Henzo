@@ -161,17 +161,17 @@ export default function DaySchedule({
 			const dateOnly = new Date(
 				date.getFullYear(),
 				date.getMonth(),
-				date.getDate()
+				date.getDate(),
 			);
 			const blockStartDate = new Date(
 				blockStart.getFullYear(),
 				blockStart.getMonth(),
-				blockStart.getDate()
+				blockStart.getDate(),
 			);
 			const blockEndDate = new Date(
 				blockEnd.getFullYear(),
 				blockEnd.getMonth(),
-				blockEnd.getDate()
+				blockEnd.getDate(),
 			);
 
 			return dateOnly >= blockStartDate && dateOnly <= blockEndDate;
@@ -279,12 +279,12 @@ export default function DaySchedule({
 			const todayOnly = new Date(
 				today.getFullYear(),
 				today.getMonth(),
-				today.getDate()
+				today.getDate(),
 			);
 			const dateOnly = new Date(
 				date.getFullYear(),
 				date.getMonth(),
-				date.getDate()
+				date.getDate(),
 			);
 			const isToday = dateOnly.getTime() === todayOnly.getTime();
 
@@ -320,14 +320,14 @@ export default function DaySchedule({
 		const selectedDateOnly = new Date(
 			selectedDate.getFullYear(),
 			selectedDate.getMonth(),
-			selectedDate.getDate()
+			selectedDate.getDate(),
 		);
 
 		return generateWeekDays.findIndex((day) => {
 			const dayOnly = new Date(
 				day.date.getFullYear(),
 				day.date.getMonth(),
-				day.date.getDate()
+				day.date.getDate(),
 			);
 			return dayOnly.getTime() === selectedDateOnly.getTime();
 		});
@@ -365,17 +365,17 @@ export default function DaySchedule({
 		const selectedDateOnly = new Date(
 			selectedDate.getFullYear(),
 			selectedDate.getMonth(),
-			selectedDate.getDate()
+			selectedDate.getDate(),
 		);
 		const firstDayOnly = new Date(
 			displayMonday.getFullYear(),
 			displayMonday.getMonth(),
-			displayMonday.getDate()
+			displayMonday.getDate(),
 		);
 		const lastDayOnly = new Date(
 			lastDayOfNewWeek.getFullYear(),
 			lastDayOfNewWeek.getMonth(),
-			lastDayOfNewWeek.getDate()
+			lastDayOfNewWeek.getDate(),
 		);
 
 		if (selectedDateOnly < firstDayOnly || selectedDateOnly > lastDayOnly) {
@@ -397,17 +397,17 @@ export default function DaySchedule({
 		const selectedDateOnly = new Date(
 			selectedDate.getFullYear(),
 			selectedDate.getMonth(),
-			selectedDate.getDate()
+			selectedDate.getDate(),
 		);
 		const firstDayOnly = new Date(
 			displayMonday.getFullYear(),
 			displayMonday.getMonth(),
-			displayMonday.getDate()
+			displayMonday.getDate(),
 		);
 		const lastDayOnly = new Date(
 			lastDayOfNewWeek.getFullYear(),
 			lastDayOfNewWeek.getMonth(),
-			lastDayOfNewWeek.getDate()
+			lastDayOfNewWeek.getDate(),
 		);
 
 		if (selectedDateOnly < firstDayOnly || selectedDateOnly > lastDayOnly) {
@@ -557,7 +557,7 @@ export default function DaySchedule({
 
 	const getAppointmentStartingAtTime = (
 		staffId: string,
-		timeSlotHour: number
+		timeSlotHour: number,
 	) => {
 		const dayBookings = getBookingsForDate(selectedDate);
 		const appointment = dayBookings.find((booking) => {
@@ -668,12 +668,12 @@ export default function DaySchedule({
 		const selectedDateOnly = new Date(
 			selectedDate.getFullYear(),
 			selectedDate.getMonth(),
-			selectedDate.getDate()
+			selectedDate.getDate(),
 		);
 		const todayOnly = new Date(
 			now.getFullYear(),
 			now.getMonth(),
-			now.getDate()
+			now.getDate(),
 		);
 
 		// Only show current time line if selected date is today
@@ -727,7 +727,7 @@ export default function DaySchedule({
 		if (isMobile) {
 			if (selectedMobileStaffId) {
 				const staff = allStaffMembers.find(
-					(s) => s.id === selectedMobileStaffId
+					(s) => s.id === selectedMobileStaffId,
 				);
 				return staff ? [staff] : [];
 			}
@@ -739,7 +739,7 @@ export default function DaySchedule({
 			return allStaffMembers;
 		}
 		return allStaffMembers.filter((staff) =>
-			selectedStaffIds.includes(staff.id)
+			selectedStaffIds.includes(staff.id),
 		);
 	}, [allStaffMembers, selectedStaffIds, selectedMobileStaffId, isMobile]);
 
@@ -909,7 +909,7 @@ export default function DaySchedule({
 											? 'border-gray-200 bg-gray-200 opacity-90 cursor-not-allowed text-gray-700'
 											: isSelected
 												? 'border-[#ff5b5b] bg-[#ff5b5b] text-white shadow-lg'
-												: 'border-gray-200 bg-white hover:border-[#ff5b5b] hover:shadow-md'
+												: 'border-gray-200 bg-white hover:border-[#ff5b5b] hover:shadow-md',
 									)}
 								>
 									<span
@@ -919,7 +919,7 @@ export default function DaySchedule({
 												? 'text-gray-600'
 												: isSelected
 													? 'text-white'
-													: 'text-gray-500'
+													: 'text-gray-500',
 										)}
 									>
 										{dayInfo.dayName}
@@ -931,7 +931,7 @@ export default function DaySchedule({
 												? 'text-gray-800'
 												: isSelected
 													? 'text-white'
-													: 'text-gray-900'
+													: 'text-gray-900',
 										)}
 									>
 										{dayInfo.day}
@@ -943,7 +943,7 @@ export default function DaySchedule({
 												? 'text-gray-600'
 												: isSelected
 													? 'text-white/80'
-													: 'text-gray-500'
+													: 'text-gray-500',
 										)}
 									>
 										{dayInfo.monthShort}
@@ -952,11 +952,11 @@ export default function DaySchedule({
 										{(() => {
 											const loadPercentage = calculateDayLoad(
 												dayInfo.date,
-												allStaffMembers
+												allStaffMembers,
 											);
 											const loadColor = getLoadColor(
 												loadPercentage,
-												dayInfo.isClosed
+												dayInfo.isClosed,
 											);
 											return (
 												<div
@@ -1089,7 +1089,7 @@ export default function DaySchedule({
 								WebkitOverflowScrolling: 'touch' /* iOS smooth scrolling */,
 							}}
 						>
-							<div className="flex flex-col relative">
+							<div className="flex flex-col relative overflow-hidden">
 								{/* Staff headers row */}
 								<div className="flex border-b border-gray-300 bg-white h-[50px] sm:h-auto">
 									{staffMembers.map((staff) => (
@@ -1131,11 +1131,11 @@ export default function DaySchedule({
 													getAppointmentStartingAtTime(staff.id, timeSlot.hour);
 												const position = getAppointmentPosition(
 													startingAppointment,
-													timeSlot.hour
+													timeSlot.hour,
 												);
 												const timeBlock = getTimeBlockAtTime(
 													staff.id,
-													timeSlot.hour
+													timeSlot.hour,
 												);
 
 												const isOutsideWorkingHours =
@@ -1196,7 +1196,7 @@ export default function DaySchedule({
 																				clickable
 																					? () =>
 																							onViewBookingDetails(
-																								startingAppointment
+																								startingAppointment,
 																							)
 																					: undefined
 																			}
@@ -1236,18 +1236,18 @@ export default function DaySchedule({
 																						{formatTimeSafe(
 																							startingAppointment.time,
 																							'Time not available',
-																							salonTimezone
+																							salonTimezone,
 																						)}{' '}
 																						-{' '}
 																						{formatTimeSafe(
 																							new Date(
 																								new Date(
-																									startingAppointment.time
+																									startingAppointment.time,
 																								).getTime() +
-																									position.duration * 60000
+																									position.duration * 60000,
 																							).toISOString(),
 																							'Time not available',
-																							salonTimezone
+																							salonTimezone,
 																						)}
 																					</div>
 																				</div>

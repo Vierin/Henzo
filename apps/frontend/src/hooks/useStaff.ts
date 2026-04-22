@@ -75,7 +75,11 @@ export const useCreateStaff = () => {
 				queryKey: staffKeys.bySalon(data.salonId),
 			});
 
-			toast.success(t('owner.staffNew.createdSuccessfully'));
+			toast.success(
+				t('owner.staff.createdSuccessfully') ||
+					t('owner.staff.createdSucesfully') ||
+					t('owner.staffNew.createdSuccessfully')
+			);
 		},
 		onError: (error: Error) => {
 			toast.error(error.message || t('owner.staffNew.failedToCreate'));

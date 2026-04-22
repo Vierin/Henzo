@@ -20,7 +20,7 @@ import { useTranslation } from '@/contexts/LanguageContext';
 
 // Lazy load components only when needed
 const WorkingHoursSection = lazy(
-	() => import('@/components/WorkingHoursSection')
+	() => import('@/components/WorkingHoursSection'),
 );
 
 // Import optimized section components
@@ -38,6 +38,7 @@ export default function SalonInfoClient() {
 	const queryClient = useQueryClient();
 	const { getSalonUrl } = useSalonSlug();
 	const addressUpdateTimerRef = useRef<NodeJS.Timeout | null>(null);
+	const initialSnapshotRef = useRef<string>('');
 
 	const [formData, setFormData] = useState({
 		salonName: '',
@@ -71,6 +72,27 @@ export default function SalonInfoClient() {
 	const [showDeleteModal, setShowDeleteModal] = useState(false);
 	const [deleteLoading, setDeleteLoading] = useState(false);
 	const [showQrModal, setShowQrModal] = useState(false);
+
+	const buildFormSnapshot = useCallback((data: typeof formData) => {
+		return JSON.stringify({
+			salonName: data.salonName,
+			description: data.description,
+			address: data.address,
+			phone: data.phone,
+			email: data.email,
+			website: data.website,
+			instagram: data.instagram,
+			photos: data.photos,
+			autoConfirmBookings: data.autoConfirmBookings,
+			operatingHours: data.operatingHours,
+			reminderSettings: data.reminderSettings,
+		});
+	}, []);
+
+	const isDirty = useMemo(() => {
+		if (!initialSnapshotRef.current) return false;
+		return buildFormSnapshot(formData) !== initialSnapshotRef.current;
+	}, [buildFormSnapshot, formData]);
 
 	// Get salon data - show UI immediately, data loads in parallel
 	const {
@@ -124,7 +146,7 @@ export default function SalonInfoClient() {
 	const geocodeAddress = useCallback(async (address: string) => {
 		try {
 			const data = await apiClient.get<{ lat?: number; lon?: number }>(
-				`/mapbox/geocode?address=${encodeURIComponent(address)}`
+				`/mapbox/geocode?address=${encodeURIComponent(address)}`,
 			);
 			if (data?.lat != null && data?.lon != null)
 				return { lat: data.lat, lon: data.lon };
@@ -138,64 +160,68 @@ export default function SalonInfoClient() {
 	useEffect(() => {
 		if (!salon) return;
 
-		setFormData((prev) => ({
-			...prev,
-			salonName: salon.name || '',
-			description: salon.description || '',
-			address: salon.address || '',
-			phone: salon.phone || '',
-			email: salon.email || '',
-			website: salon.website || '',
-			instagram: salon.instagram || '',
-			photos: salon.photos || [],
-			autoConfirmBookings:
-				(salon as { autoConfirmBookings?: boolean }).autoConfirmBookings ??
-				false,
-			reminderSettings: {
-				intervals: ((salon as any).reminderSettings?.intervals || [24]).filter(
-					(interval: number) => interval !== 168
-				),
-			},
-			operatingHours: salon.workingHours
-				? {
-						monday: {
-							open: salon.workingHours.monday?.open || '09:00',
-							close: salon.workingHours.monday?.close || '18:00',
-							closed: salon.workingHours.monday?.closed ?? false,
-						},
-						tuesday: {
-							open: salon.workingHours.tuesday?.open || '09:00',
-							close: salon.workingHours.tuesday?.close || '18:00',
-							closed: salon.workingHours.tuesday?.closed ?? false,
-						},
-						wednesday: {
-							open: salon.workingHours.wednesday?.open || '09:00',
-							close: salon.workingHours.wednesday?.close || '18:00',
-							closed: salon.workingHours.wednesday?.closed ?? false,
-						},
-						thursday: {
-							open: salon.workingHours.thursday?.open || '09:00',
-							close: salon.workingHours.thursday?.close || '18:00',
-							closed: salon.workingHours.thursday?.closed ?? false,
-						},
-						friday: {
-							open: salon.workingHours.friday?.open || '09:00',
-							close: salon.workingHours.friday?.close || '18:00',
-							closed: salon.workingHours.friday?.closed ?? false,
-						},
-						saturday: {
-							open: salon.workingHours.saturday?.open || '09:00',
-							close: salon.workingHours.saturday?.close || '18:00',
-							closed: salon.workingHours.saturday?.closed ?? false,
-						},
-						sunday: {
-							open: salon.workingHours.sunday?.open || '09:00',
-							close: salon.workingHours.sunday?.close || '18:00',
-							closed: salon.workingHours.sunday?.closed ?? false,
-						},
-					}
-				: prev.operatingHours,
-		}));
+		setFormData((prev) => {
+			const next = {
+				...prev,
+				salonName: salon.name || '',
+				description: salon.description || '',
+				address: salon.address || '',
+				phone: salon.phone || '',
+				email: salon.email || '',
+				website: salon.website || '',
+				instagram: salon.instagram || '',
+				photos: salon.photos || [],
+				autoConfirmBookings:
+					(salon as { autoConfirmBookings?: boolean }).autoConfirmBookings ??
+					false,
+				reminderSettings: {
+					intervals: ((salon as any).reminderSettings?.intervals || [24]).filter(
+						(interval: number) => interval !== 168,
+					),
+				},
+				operatingHours: salon.workingHours
+					? {
+							monday: {
+								open: salon.workingHours.monday?.open || '09:00',
+								close: salon.workingHours.monday?.close || '18:00',
+								closed: salon.workingHours.monday?.closed ?? false,
+							},
+							tuesday: {
+								open: salon.workingHours.tuesday?.open || '09:00',
+								close: salon.workingHours.tuesday?.close || '18:00',
+								closed: salon.workingHours.tuesday?.closed ?? false,
+							},
+							wednesday: {
+								open: salon.workingHours.wednesday?.open || '09:00',
+								close: salon.workingHours.wednesday?.close || '18:00',
+								closed: salon.workingHours.wednesday?.closed ?? false,
+							},
+							thursday: {
+								open: salon.workingHours.thursday?.open || '09:00',
+								close: salon.workingHours.thursday?.close || '18:00',
+								closed: salon.workingHours.thursday?.closed ?? false,
+							},
+							friday: {
+								open: salon.workingHours.friday?.open || '09:00',
+								close: salon.workingHours.friday?.close || '18:00',
+								closed: salon.workingHours.friday?.closed ?? false,
+							},
+							saturday: {
+								open: salon.workingHours.saturday?.open || '09:00',
+								close: salon.workingHours.saturday?.close || '18:00',
+								closed: salon.workingHours.saturday?.closed ?? false,
+							},
+							sunday: {
+								open: salon.workingHours.sunday?.open || '09:00',
+								close: salon.workingHours.sunday?.close || '18:00',
+								closed: salon.workingHours.sunday?.closed ?? false,
+							},
+						}
+					: prev.operatingHours,
+			};
+			initialSnapshotRef.current = buildFormSnapshot(next);
+			return next;
+		});
 
 		// Set coordinates - geocode only if needed
 		if (salon.latitude && salon.longitude) {
@@ -211,7 +237,69 @@ export default function SalonInfoClient() {
 				}
 			});
 		}
-	}, [salon, geocodeAddress]);
+	}, [salon, geocodeAddress, buildFormSnapshot]);
+
+	useEffect(() => {
+		if (!initialSnapshotRef.current) {
+			initialSnapshotRef.current = buildFormSnapshot(formData);
+		}
+	}, [buildFormSnapshot, formData]);
+
+	useEffect(() => {
+		const onBeforeUnload = (event: BeforeUnloadEvent) => {
+			if (!isDirty || loading) return;
+			event.preventDefault();
+			event.returnValue = '';
+		};
+
+		window.addEventListener('beforeunload', onBeforeUnload);
+		return () => window.removeEventListener('beforeunload', onBeforeUnload);
+	}, [isDirty, loading]);
+
+	useEffect(() => {
+		const onAnchorClick = (event: MouseEvent) => {
+			if (!isDirty || loading) return;
+			if (event.defaultPrevented) return;
+
+			const target = event.target as HTMLElement | null;
+			const anchor = target?.closest('a[href]') as HTMLAnchorElement | null;
+			if (!anchor) return;
+
+			if (anchor.target === '_blank' || anchor.hasAttribute('download')) return;
+			if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+			if (event.button !== 0) return;
+
+			const href = anchor.getAttribute('href');
+			if (!href || href.startsWith('#')) return;
+
+			let nextUrl: URL;
+			try {
+				nextUrl = new URL(anchor.href, window.location.href);
+			} catch {
+				return;
+			}
+
+			const currentUrl = new URL(window.location.href);
+			if (
+				nextUrl.pathname === currentUrl.pathname &&
+				nextUrl.search === currentUrl.search &&
+				nextUrl.hash === currentUrl.hash
+			) {
+				return;
+			}
+
+			const confirmed = window.confirm(
+				t('owner.salonInfo.unsavedChangesConfirm')
+			);
+			if (!confirmed) {
+				event.preventDefault();
+				event.stopPropagation();
+			}
+		};
+
+		document.addEventListener('click', onAnchorClick, true);
+		return () => document.removeEventListener('click', onAnchorClick, true);
+	}, [isDirty, loading, t]);
 
 	// Cleanup timer on unmount
 	useEffect(() => {
@@ -232,7 +320,7 @@ export default function SalonInfoClient() {
 			setFormData((prev) => ({ ...prev, address }));
 			setSelectedCoords({ lat, lon });
 		},
-		[]
+		[],
 	);
 
 	const handleReminderChange = useCallback((intervals: number[]) => {
@@ -246,7 +334,7 @@ export default function SalonInfoClient() {
 		(workingHours: typeof formData.operatingHours) => {
 			setFormData((prev) => ({ ...prev, operatingHours: workingHours }));
 		},
-		[]
+		[],
 	);
 
 	const handleAutoConfirmChange = useCallback((checked: boolean) => {
@@ -281,7 +369,8 @@ export default function SalonInfoClient() {
 					url: salonUrl,
 				});
 				toast.success(
-					t('owner.salonInfo.sharedSuccessfully') || 'Ссылка успешно отправлена'
+					t('owner.salonInfo.sharedSuccessfully') ||
+						'Ссылка успешно отправлена',
 				);
 			} catch (err: any) {
 				if (err.name !== 'AbortError') {
@@ -342,6 +431,7 @@ export default function SalonInfoClient() {
 					await queryClient.invalidateQueries({
 						queryKey: salonKeys.all,
 					});
+					initialSnapshotRef.current = buildFormSnapshot(formData);
 					router.refresh();
 					toast.success(t('owner.salonInfo.salonUpdated'), {
 						id: saveToast,
@@ -351,6 +441,7 @@ export default function SalonInfoClient() {
 					await queryClient.invalidateQueries({
 						queryKey: salonKeys.all,
 					});
+					initialSnapshotRef.current = buildFormSnapshot(formData);
 					router.refresh();
 					toast.success(t('owner.salonInfo.salonCreated'), { id: saveToast });
 				}
@@ -367,7 +458,15 @@ export default function SalonInfoClient() {
 				setLoading(false);
 			}
 		},
-		[formData, selectedCoords, hasExistingSalon, t, queryClient, router]
+		[
+			formData,
+			selectedCoords,
+			hasExistingSalon,
+			t,
+			queryClient,
+			router,
+			buildFormSnapshot,
+		],
 	);
 
 	const handleDeleteAccount = useCallback(async () => {
@@ -487,7 +586,7 @@ export default function SalonInfoClient() {
 					<button
 						type="submit"
 						disabled={loading}
-						className="w-full sm:w-auto bg-[#ff5b5b] text-white px-6 md:px-8 py-3 rounded-lg font-medium hover:bg-[#e04a4a] focus:outline-none focus:ring-2 focus:ring-[#ff5b5b] focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
+						className="w-full sm:w-auto bg-[#ff5b5b] !text-white px-6 md:px-8 py-3 rounded-lg font-medium hover:bg-[#e04a4a] focus:outline-none focus:ring-2 focus:ring-[#ff5b5b] focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
 					>
 						{loading
 							? hasExistingSalon

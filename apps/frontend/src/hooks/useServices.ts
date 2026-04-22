@@ -7,6 +7,7 @@ import {
 } from '@/types/dto/service.dto';
 import { staffKeys } from './useStaff';
 import { toast } from 'react-hot-toast';
+import { useTranslation } from '@/contexts/LanguageContext';
 
 // Query keys
 export const serviceKeys = {
@@ -76,6 +77,7 @@ export const useService = (id: string) => {
 // Create service mutation
 export const useCreateService = () => {
 	const queryClient = useQueryClient();
+	const t = useTranslation();
 
 	return useMutation({
 		mutationFn: async (data: CreateServiceDto): Promise<ServiceResponseDto> => {
@@ -111,10 +113,19 @@ export const useCreateService = () => {
 			queryClient.invalidateQueries({
 				queryKey: serviceKeys.lists(),
 			});
-			toast.success('Service created successfully!');
+			toast.success(
+				t('owner.services.createdSuccessfully') ||
+					t('owner.servicesNew.createdSuccessfully') ||
+					'Service created successfully!'
+			);
 		},
 		onError: (error: Error) => {
-			toast.error(error.message || 'Failed to create service');
+			toast.error(
+				error.message ||
+					t('owner.services.failedToCreate') ||
+					t('owner.servicesNew.failedToCreate') ||
+					'Failed to create service'
+			);
 		},
 	});
 };
@@ -122,6 +133,7 @@ export const useCreateService = () => {
 // Update service mutation
 export const useUpdateService = () => {
 	const queryClient = useQueryClient();
+	const t = useTranslation();
 
 	return useMutation({
 		mutationFn: async ({
@@ -148,10 +160,19 @@ export const useUpdateService = () => {
 					queryKey: staffKeys.bySalon(data.salonId),
 				});
 			}
-			toast.success('Service updated successfully!');
+			toast.success(
+				t('owner.services.updatedSuccessfully') ||
+					t('owner.servicesNew.updatedSuccessfully') ||
+					'Service updated successfully!'
+			);
 		},
 		onError: (error: Error) => {
-			toast.error(error.message || 'Failed to update service');
+			toast.error(
+				error.message ||
+					t('owner.services.failedToUpdate') ||
+					t('owner.servicesNew.failedToUpdate') ||
+					'Failed to update service'
+			);
 		},
 	});
 };
@@ -159,6 +180,7 @@ export const useUpdateService = () => {
 // Delete service mutation
 export const useDeleteService = () => {
 	const queryClient = useQueryClient();
+	const t = useTranslation();
 
 	return useMutation({
 		mutationFn: async (id: string): Promise<void> => {
@@ -170,10 +192,19 @@ export const useDeleteService = () => {
 			// Invalidate lists
 			queryClient.invalidateQueries({ queryKey: serviceKeys.lists() });
 			queryClient.invalidateQueries({ queryKey: staffKeys.lists() });
-			toast.success('Service deleted successfully!');
+			toast.success(
+				t('owner.services.deletedSuccessfully') ||
+					t('owner.servicesNew.deletedSuccessfully') ||
+					'Service deleted successfully!'
+			);
 		},
 		onError: (error: Error) => {
-			toast.error(error.message || 'Failed to delete service');
+			toast.error(
+				error.message ||
+					t('owner.services.failedToDelete') ||
+					t('owner.servicesNew.failedToDelete') ||
+					'Failed to delete service'
+			);
 		},
 	});
 };

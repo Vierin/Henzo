@@ -37,5 +37,7 @@
 	"noServices": "Нет услуг",
 	"selectServices": "Выбрать услуги",
 	"searchServices": "Поиск услуг...",
-	"noServicesFound": "Услуги не найдены"
+	"noServicesFound": "Услуги не найдены",
+	"createdSuccessfully": "Сотрудник успешно создан!",
+	"createdSucesfully": "Сотрудник успешно создан!"
 }

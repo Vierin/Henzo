@@ -30,7 +30,8 @@ export class AuthController {
 
   @Post('send-business-magic-link')
   async sendBusinessMagicLink(
-    @Body() data: { email: string; name: string; password: string },
+    @Body()
+    data: { email: string; name: string; password: string; locale?: string },
   ) {
     try {
       this.logger.log(
@@ -40,6 +41,7 @@ export class AuthController {
         data.email,
         data.name,
         data.password,
+        data.locale,
       );
       this.logger.log('Business magic link sent');
       return result;

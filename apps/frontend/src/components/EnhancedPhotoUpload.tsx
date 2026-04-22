@@ -4,6 +4,8 @@ import { useState } from 'react';
 import { supabase } from '@/lib/supabase';
 import toast from 'react-hot-toast';
 import Image from 'next/image';
+import { useTranslation } from '@/contexts/LanguageContext';
+import { convertImageToWebp } from '@/utils/image-upload';
 
 interface EnhancedPhotoUploadProps {
 	photos: string[];
@@ -22,6 +24,7 @@ export default function EnhancedPhotoUpload({
 }: EnhancedPhotoUploadProps) {
 	const [isDragging, setIsDragging] = useState(false);
 	const [isUploading, setIsUploading] = useState(false);
+	const t = useTranslation();
 
 	const uploadPhoto = async (file: File) => {
 		if (photos.length >= maxPhotos) {
@@ -29,8 +32,12 @@ export default function EnhancedPhotoUpload({
 			return;
 		}
 
-		if (file.size > maxSize * 1024 * 1024) {
-			toast.error(`Photo size must be less than ${maxSize}MB`);
+		const processedFile = await convertImageToWebp(file, 1400);
+
+		if (processedFile.size > maxSize * 1024 * 1024) {
+			toast.error(
+				`${t('common.photoSizeMustBeLessThan') || 'Photo size must be less than'} ${maxSize}MB`
+			);
 			return;
 		}
 
@@ -39,20 +46,23 @@ export default function EnhancedPhotoUpload({
 
 		try {
 			// Generate unique filename
-			const fileExt = file.name.split('.').pop();
+			const fileExt = processedFile.name.split('.').pop() || 'webp';
 			const fileName = `${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExt}`;
 			const filePath = `salon-photos/${fileName}`;
 
 			// Upload to Supabase Storage
 			const { error: uploadError } = await supabase.storage
 				.from('salon-files')
-				.upload(filePath, file);
+				.upload(filePath, processedFile);
 
 			if (uploadError) {
 				throw uploadError;
 			}
 
-			toast.success('Photo uploaded successfully!', { id: uploadToast });
+			toast.success(
+				t('common.photoUploadedSuccessfully') || 'Photo uploaded successfully!',
+				{ id: uploadToast }
+			);
 			onPhotosChange([...photos, filePath]);
 		} catch (error: unknown) {
 			console.error('Upload error:', error);
@@ -95,6 +105,23 @@ export default function EnhancedPhotoUpload({
 				}
 			);
 		}
+	};
+
+	const setAsCoverPhoto = (index: number) => {
+		if (index <= 0 || index >= photos.length) {
+			return;
+		}
+
+		const selectedPhoto = photos[index];
+		const reorderedPhotos = [
+			selectedPhoto,
+			...photos.filter((_, photoIndex) => photoIndex !== index),
+		];
+
+		onPhotosChange(reorderedPhotos);
+		toast.success(
+			t('owner.salonInfo.coverPhotoUpdated') || 'Cover photo updated'
+		);
 	};
 
 	const handleDragOver = (e: React.DragEvent) => {
@@ -203,14 +230,33 @@ export default function EnhancedPhotoUpload({
 							<Image
 								src={getImageSrc(photo)}
 								alt={`Salon photo ${index + 1}`}
-								width={100}
-								height={96}
+								width={640}
+								height={480}
 								className="w-full aspect-[4/3] object-cover rounded-lg"
 								loading="lazy"
-								sizes="(max-width: 768px) 33vw, 100px"
+								sizes="(max-width: 768px) 30vw, 360px"
+								quality={95}
 							/>
+							{index === 0 && (
+								<span className="absolute top-2 left-2 rounded-md bg-black/70 px-2 py-1 text-xs font-medium text-white">
+									{t('owner.salonInfo.coverPhoto') || 'Cover photo'}
+								</span>
+							)}
+							{!disabled && index > 0 && (
+								<div className="absolute inset-0 flex items-center justify-center rounded-lg bg-black/40 opacity-0 transition-opacity group-hover:opacity-100">
+									<button
+										type="button"
+										onClick={() => setAsCoverPhoto(index)}
+										className="rounded-md bg-white px-3 py-1.5 text-xs font-semibold text-gray-900 shadow-sm hover:bg-gray-100"
+									>
+										{t('owner.salonInfo.makeCoverPhoto') ||
+											'Make cover photo'}
+									</button>
+								</div>
+							)}
 							{!disabled && (
 								<button
+									type="button"
 									onClick={() => removePhoto(index)}
 									className="absolute top-2 right-2 p-1 bg-red-400 !text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
 								>

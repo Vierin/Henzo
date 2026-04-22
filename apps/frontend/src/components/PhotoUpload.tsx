@@ -4,6 +4,8 @@ import { useState } from 'react';
 import { supabase } from '@/lib/supabase';
 import toast from 'react-hot-toast';
 import Image from 'next/image';
+import { useTranslation } from '@/contexts/LanguageContext';
+import { convertImageToWebp } from '@/utils/image-upload';
 
 interface PhotoUploadProps {
 	photos: string[];
@@ -22,6 +24,7 @@ export default function PhotoUpload({
 }: PhotoUploadProps) {
 	const [isDragging, setIsDragging] = useState(false);
 	const [isUploading, setIsUploading] = useState(false);
+	const t = useTranslation();
 
 	const uploadPhoto = async (file: File) => {
 		if (photos.length >= maxPhotos) {
@@ -29,8 +32,12 @@ export default function PhotoUpload({
 			return;
 		}
 
-		if (file.size > maxSize * 1024 * 1024) {
-			toast.error(`Photo size must be less than ${maxSize}MB`);
+		const processedFile = await convertImageToWebp(file, 1400);
+
+		if (processedFile.size > maxSize * 1024 * 1024) {
+			toast.error(
+				`${t('common.photoSizeMustBeLessThan') || 'Photo size must be less than'} ${maxSize}MB`
+			);
 			return;
 		}
 
@@ -39,20 +46,23 @@ export default function PhotoUpload({
 
 		try {
 			// Generate unique filename
-			const fileExt = file.name.split('.').pop();
+			const fileExt = processedFile.name.split('.').pop() || 'webp';
 			const fileName = `${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExt}`;
 			const filePath = `salon-photos/${fileName}`;
 
 			// Upload to Supabase Storage
 			const { error: uploadError } = await supabase.storage
 				.from('salon-files')
-				.upload(filePath, file);
+				.upload(filePath, processedFile);
 
 			if (uploadError) {
 				throw uploadError;
 			}
 
-			toast.success('Photo uploaded successfully!', { id: uploadToast });
+			toast.success(
+				t('common.photoUploadedSuccessfully') || 'Photo uploaded successfully!',
+				{ id: uploadToast }
+			);
 			onPhotosChange([...photos, filePath]);
 		} catch (error: unknown) {
 			console.error('Upload error:', error);
@@ -199,9 +209,11 @@ export default function PhotoUpload({
 							<Image
 								src={getPublicUrl(photo)}
 								alt={`Salon photo ${index + 1}`}
-								width={100}
-								height={96}
+								width={640}
+								height={480}
 								className="w-full aspect-[4/3] object-cover rounded-lg"
+								sizes="(max-width: 768px) 30vw, 360px"
+								quality={95}
 							/>
 							{!disabled && (
 								<button

@@ -69,5 +69,11 @@
 	"staffSelected": "мастеров выбрано",
 	"staffHelp": "Выберите мастеров, которые могут выполнять эту услугу.",
 	"selectStaff": "Выбрать мастеров",
-	"searchStaff": "Поиск мастеров..."
+	"searchStaff": "Поиск мастеров...",
+	"createdSuccessfully": "Услуга успешно создана!",
+	"updatedSuccessfully": "Услуга успешно обновлена!",
+	"deletedSuccessfully": "Услуга успешно удалена!",
+	"failedToCreate": "Не удалось создать услугу",
+	"failedToUpdate": "Не удалось обновить услугу",
+	"failedToDelete": "Не удалось удалить услугу"
 }

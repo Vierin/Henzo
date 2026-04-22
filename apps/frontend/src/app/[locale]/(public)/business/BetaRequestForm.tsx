@@ -9,6 +9,7 @@ import { useTranslation } from '@/contexts/LanguageContext';
 import { apiClient } from '@/lib/api-client';
 import { startBusinessGoogleOAuth } from '@/utils/oauth';
 import { useErrorHandler } from '@/hooks/useErrorHandler';
+import { extractLocaleFromPath } from '@/i18n/routing';
 
 // Zod schema factory для валидации формы
 function createBetaRequestSchema(t: any) {
@@ -68,6 +69,7 @@ export default function BetaRequestForm() {
 				name: data.fullName,
 				email: data.email,
 				password: data.password,
+				locale: extractLocaleFromPath(window.location.pathname) ?? 'en',
 			});
 
 			toast.success(t('business.betaForm.magicLinkSent'), {

@@ -26,6 +26,9 @@
 	"logoPlaceholder": "Click or drag and drop logo here",
 	"salonPhotos": "Salon Photos",
 	"photosLabel": "Upload up to 3 photos of your salon",
+	"coverPhoto": "Cover photo",
+	"makeCoverPhoto": "Make cover photo",
+	"coverPhotoUpdated": "Cover photo updated",
 	"operatingHours": "Operating Hours",
 	"closed": "Closed",
 	"updatingSalon": "Updating salon information...",
@@ -86,5 +89,6 @@
 	"salonQRCode": "Salon QR Code",
 	"qrCodeDescription": "Scan the QR code to open the salon page",
 	"copyLink": "Copy Link",
-	"sharedSuccessfully": "Link shared successfully"
+	"sharedSuccessfully": "Link shared successfully",
+	"unsavedChangesConfirm": "You have unsaved changes. Leave this page without saving?"
 }

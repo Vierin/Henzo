@@ -212,12 +212,14 @@ export class EmailService {
     email: string,
     name: string,
     registerUrl: string,
+    locale?: 'en' | 'ru' | 'vi',
   ) {
     try {
       const result = await this.transactional.sendBusinessRegistrationMagicLink(
         email,
         name,
         registerUrl,
+        locale,
       );
       console.log(
         '✅ Business registration magic link sent successfully via Brevo',
