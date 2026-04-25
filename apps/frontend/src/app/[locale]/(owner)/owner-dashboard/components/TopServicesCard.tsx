@@ -43,7 +43,7 @@ export default function TopServicesCard({ bookings }: TopServicesCardProps) {
 						count: number;
 						revenue: number;
 					}
-				>
+				>,
 			);
 
 		return Object.values(serviceStats)
@@ -70,10 +70,10 @@ export default function TopServicesCard({ bookings }: TopServicesCardProps) {
 				<div className="col-span-5 text-center" role="columnheader">
 					{t('owner.dashboard.serviceName')}
 				</div>
-				<div className="col-span-3 text-center" role="columnheader">
+				<div className="col-span-2 text-center" role="columnheader">
 					{t('owner.dashboard.bookings')}
 				</div>
-				<div className="col-span-3 text-right" role="columnheader">
+				<div className="col-span-4 text-right" role="columnheader">
 					{t('owner.dashboard.totalRevenue')}
 				</div>
 			</div>
@@ -102,12 +102,15 @@ export default function TopServicesCard({ bookings }: TopServicesCardProps) {
 								</div>
 							</div>
 							<div className="col-span-5 text-xs font-medium flex items-center justify-center">
-								{getLocalizedServiceName(serviceItem.service, language as 'vi' | 'en' | 'ru')}
+								{getLocalizedServiceName(
+									serviceItem.service,
+									language as 'vi' | 'en' | 'ru',
+								)}
 							</div>
-							<div className="col-span-3 flex justify-center items-center text-gray-600 text-xs md:text-base">
+							<div className="col-span-2 flex justify-center items-center text-gray-600 text-xs md:text-base">
 								{serviceItem.count}
 							</div>
-							<div className="col-span-3 text-right font-semibold flex items-center justify-end">
+							<div className="col-span-4 text-right font-semibold flex items-center justify-end">
 								{formatVND(serviceItem.revenue)}
 							</div>
 						</div>

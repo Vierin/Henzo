@@ -17,28 +17,40 @@
 		"freePeriod": "First 3 months",
 		"quickStart": "Quick Start",
 		"quickStartTime": "Live in 8 minutes",
-		"onboardingNote": "We're onboarding the first businesses and help with setup personally."
+		"onboardingNote": "Start risk-free: no card required and no hidden charges during trial. Our team will help you set up and fill out your profile for free, so you can launch fast."
 	},
 	"features": {
 		"badge": "Features",
-		"title": "Everything You Need",
-		"titleBreak": "to Run Your Salon",
+		"title": "More clients. Fewer no-shows.",
+		"titleBreak": "Without extra busywork",
 		"subtitle": "Powerful features designed to save you time and help your business grow",
 		"smartScheduling": {
 			"title": "Smart Scheduling",
-			"description": "Intelligent calendar that prevents double bookings and automatically optimizes your team's time."
+			"description": "Intelligent calendar that prevents double bookings and automatically optimizes your team's time.",
+			"shortDescription": "A clean schedule with no overlaps or idle gaps.",
+			"resultValue": "10+ hrs/week",
+			"resultLabel": "saved on admin work"
 		},
 		"onlineBooking": {
 			"title": "24/7 Online Booking",
-			"description": "Accept bookings anytime, even when your salon is closed. Never miss a client again."
+			"description": "Accept bookings anytime, even when your salon is closed. Never miss a client again.",
+			"shortDescription": "Clients can book at night and on weekends.",
+			"resultValue": "+15%",
+			"resultLabel": "more bookings without ads"
 		},
 		"emailReminders": {
 			"title": "Email Reminders",
-			"description": "Reduce no-shows with automatic email appointment reminders."
+			"description": "Reduce no-shows with automatic email appointment reminders.",
+			"shortDescription": "Automatic reminders sent before every visit.",
+			"resultValue": "-30%",
+			"resultLabel": "fewer no-shows"
 		},
 		"analytics": {
 			"title": "Analytics",
-			"description": "Track popular services and staff performance with real-time insights."
+			"description": "Track popular services and staff performance with real-time insights.",
+			"shortDescription": "See what grows revenue and act faster.",
+			"resultValue": "-50%",
+			"resultLabel": "fewer double-booking errors"
 		}
 	},
 	"benefits": {
@@ -87,13 +99,13 @@
 		"titleBreak": "Your Salon?",
 		"subtitle": "Get 3 months of free access. No commitments required.",
 		"startForFree": "Get 3 months of free access",
-		"joinBetaTesters": "We're onboarding the first businesses and help with setup personally."
+		"joinBetaTesters": "Start risk-free: no card required and no hidden charges during trial. Our team will help you set up and fill out your profile for free, so you can launch fast."
 	},
 	"betaForm": {
 		"badge": "Start free",
 		"title": "Create your business account",
 		"subtitle": "Fill out the form below to get started. We'll help you with setup personally.",
-		"onboardingNote": "We're onboarding the first businesses and help with setup personally.",
+		"onboardingNote": "Start risk-free: no card required and no hidden charges during trial. Our team will help you set up and fill out your profile for free, so you can launch fast.",
 		"fullName": "Full Name",
 		"salonName": "Salon Name",
 		"optional": "(Optional)",

@@ -206,6 +206,7 @@ export default function HomePageClient({
 						alt="Hero Image"
 						width={1000}
 						height={1000}
+						priority
 						className="absolute top-0 left-0 w-full h-full   object-cover md:hidden"
 					/>
 					{/* Desktop Image */}

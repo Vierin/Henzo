@@ -7,10 +7,7 @@ import { Button } from './ui/button';
 import Image from 'next/image';
 import { ChevronDown } from 'lucide-react';
 import { useTranslation, useLanguage } from '@/contexts/LanguageContext';
-import {
-	extractLocaleFromPath,
-	withLocale,
-} from '@/i18n/routing';
+import { extractLocaleFromPath, withLocale } from '@/i18n/routing';
 
 export function Header() {
 	const t = useTranslation();
@@ -67,7 +64,10 @@ export function Header() {
 	return (
 		<header className="fixed top-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-md border-b border-border">
 			<div className="container mx-auto px-4 py-4 flex items-center justify-between">
-				<Link href={withLocale('/', currentLocale as 'en' | 'ru' | 'vi')} className="flex items-center gap-2 cursor-pointer">
+				<Link
+					href={withLocale('/', currentLocale as 'en' | 'ru' | 'vi')}
+					className="flex items-center gap-2 cursor-pointer"
+				>
 					<Image
 						src="/logo.png"
 						alt="Henzo Logo"
@@ -103,10 +103,8 @@ export function Header() {
 					{/* Language Dropdown */}
 					<div className="relative" ref={dropdownRef}>
 						<button
-							onClick={() =>
-								setIsLanguageDropdownOpen(!isLanguageDropdownOpen)
-							}
-							className="flex items-center gap-1 sm:gap-2 px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm text-foreground/70 hover:text-foreground font-medium transition-colors border border-border rounded-lg hover:border-primary hover:bg-primary/5"
+							onClick={() => setIsLanguageDropdownOpen(!isLanguageDropdownOpen)}
+							className="flex items-center gap-1 sm:gap-2 px-3 py-2 text-sm text-foreground/70 hover:text-foreground font-medium transition-colors border border-border rounded-lg hover:border-primary hover:bg-primary/5"
 						>
 							<span>{selectedLanguage}</span>
 							<ChevronDown
@@ -138,11 +136,6 @@ export function Header() {
 						)}
 					</div>
 
-					<Link href={withLocale('/login', currentLocale as 'en' | 'ru' | 'vi')} className="cursor-pointer">
-						<Button variant="ghost" className="hidden sm:inline-flex">
-							{t('business.header.signIn')}
-						</Button>
-					</Link>
 					<Link href="#beta-form" className="cursor-pointer">
 						<Button className="bg-primary text-white hover:bg-primary/90">
 							{t('business.header.startFree')}

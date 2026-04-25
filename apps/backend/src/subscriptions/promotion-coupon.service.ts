@@ -1,4 +1,5 @@
 import { Injectable, HttpException, HttpStatus } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { StripeService } from './stripe.service';
 
@@ -9,24 +10,52 @@ export class PromotionCouponService {
     private readonly stripeService: StripeService,
   ) {}
 
+  private isMissingCouponsTableError(error: unknown): boolean {
+    return (
+      error instanceof Prisma.PrismaClientKnownRequestError &&
+      error.code === 'P2021'
+    );
+  }
+
+  private throwCouponsTableMissing(): never {
+    throw new HttpException(
+      'Promotion coupons table is missing in the database. Run backend Prisma migrations first.',
+      HttpStatus.SERVICE_UNAVAILABLE,
+    );
+  }
+
   async getActiveAutoAnnualStripeCouponId(): Promise<string | null> {
-    const row = await this.prisma.platformStripeCoupon.findFirst({
-      where: { isActive: true, useForAutoAnnual: true },
-      select: { stripeCouponId: true },
-    });
-    return row?.stripeCouponId ?? null;
+    try {
+      const row = await this.prisma.platformStripeCoupon.findFirst({
+        where: { isActive: true, useForAutoAnnual: true },
+        select: { stripeCouponId: true },
+      });
+      return row?.stripeCouponId ?? null;
+    } catch (error) {
+      if (this.isMissingCouponsTableError(error)) {
+        return null;
+      }
+      throw error;
+    }
   }
 
   /** Percent off for GET /subscriptions/current UI when auto-annual coupon is set. */
   async getAnnualPromotionPercentForOwnerUi(): Promise<number | null> {
-    const row = await this.prisma.platformStripeCoupon.findFirst({
-      where: { isActive: true, useForAutoAnnual: true },
-      select: { percentOff: true },
-    });
-    if (row?.percentOff != null && row.percentOff > 0) {
-      return row.percentOff;
+    try {
+      const row = await this.prisma.platformStripeCoupon.findFirst({
+        where: { isActive: true, useForAutoAnnual: true },
+        select: { percentOff: true },
+      });
+      if (row?.percentOff != null && row.percentOff > 0) {
+        return row.percentOff;
+      }
+      return null;
+    } catch (error) {
+      if (this.isMissingCouponsTableError(error)) {
+        return null;
+      }
+      throw error;
     }
-    return null;
   }
 
   async listForAdmin(): Promise<
@@ -42,9 +71,17 @@ export class PromotionCouponService {
       stripeError?: string;
     }>
   > {
-    const rows = await this.prisma.platformStripeCoupon.findMany({
-      orderBy: { createdAt: 'desc' },
-    });
+    let rows;
+    try {
+      rows = await this.prisma.platformStripeCoupon.findMany({
+        orderBy: { createdAt: 'desc' },
+      });
+    } catch (error) {
+      if (this.isMissingCouponsTableError(error)) {
+        return [];
+      }
+      throw error;
+    }
     const out: Array<{
       id: string;
       label: string;
@@ -113,22 +150,29 @@ export class PromotionCouponService {
       typeof coupon.percent_off === 'number' ? coupon.percent_off : null;
 
     const useAuto = !!params.useForAutoAnnual;
-    if (useAuto) {
-      await this.prisma.platformStripeCoupon.updateMany({
-        where: { useForAutoAnnual: true },
-        data: { useForAutoAnnual: false },
-      });
-    }
+    try {
+      if (useAuto) {
+        await this.prisma.platformStripeCoupon.updateMany({
+          where: { useForAutoAnnual: true },
+          data: { useForAutoAnnual: false },
+        });
+      }
 
-    return this.prisma.platformStripeCoupon.create({
-      data: {
-        label: params.label.trim() || trimmedId,
-        stripeCouponId: trimmedId,
-        percentOff,
-        useForAutoAnnual: useAuto,
-        isActive: true,
-      },
-    });
+      return this.prisma.platformStripeCoupon.create({
+        data: {
+          label: params.label.trim() || trimmedId,
+          stripeCouponId: trimmedId,
+          percentOff,
+          useForAutoAnnual: useAuto,
+          isActive: true,
+        },
+      });
+    } catch (error) {
+      if (this.isMissingCouponsTableError(error)) {
+        this.throwCouponsTableMissing();
+      }
+      throw error;
+    }
   }
 
   async update(
@@ -139,53 +183,90 @@ export class PromotionCouponService {
       useForAutoAnnual?: boolean;
     },
   ) {
-    const existing = await this.prisma.platformStripeCoupon.findUnique({
-      where: { id },
-    });
+    let existing;
+    try {
+      existing = await this.prisma.platformStripeCoupon.findUnique({
+        where: { id },
+      });
+    } catch (error) {
+      if (this.isMissingCouponsTableError(error)) {
+        this.throwCouponsTableMissing();
+      }
+      throw error;
+    }
     if (!existing) {
       throw new HttpException('Coupon not found', HttpStatus.NOT_FOUND);
     }
 
-    if (patch.useForAutoAnnual === true) {
-      await this.prisma.platformStripeCoupon.updateMany({
-        where: { useForAutoAnnual: true, id: { not: id } },
-        data: { useForAutoAnnual: false },
-      });
-    }
+    try {
+      if (patch.useForAutoAnnual === true) {
+        await this.prisma.platformStripeCoupon.updateMany({
+          where: { useForAutoAnnual: true, id: { not: id } },
+          data: { useForAutoAnnual: false },
+        });
+      }
 
-    return this.prisma.platformStripeCoupon.update({
-      where: { id },
-      data: {
-        ...(patch.label !== undefined ? { label: patch.label.trim() } : {}),
-        ...(patch.isActive !== undefined ? { isActive: patch.isActive } : {}),
-        ...(patch.useForAutoAnnual !== undefined
-          ? { useForAutoAnnual: patch.useForAutoAnnual }
-          : {}),
-      },
-    });
+      return this.prisma.platformStripeCoupon.update({
+        where: { id },
+        data: {
+          ...(patch.label !== undefined ? { label: patch.label.trim() } : {}),
+          ...(patch.isActive !== undefined ? { isActive: patch.isActive } : {}),
+          ...(patch.useForAutoAnnual !== undefined
+            ? { useForAutoAnnual: patch.useForAutoAnnual }
+            : {}),
+        },
+      });
+    } catch (error) {
+      if (this.isMissingCouponsTableError(error)) {
+        this.throwCouponsTableMissing();
+      }
+      throw error;
+    }
   }
 
   async delete(id: string) {
-    await this.prisma.platformStripeCoupon.delete({
-      where: { id },
-    });
+    try {
+      await this.prisma.platformStripeCoupon.delete({
+        where: { id },
+      });
+    } catch (error) {
+      if (this.isMissingCouponsTableError(error)) {
+        this.throwCouponsTableMissing();
+      }
+      throw error;
+    }
     return { ok: true };
   }
 
   /** Re-sync percent from Stripe (e.g. coupon edited in Stripe). */
   async refreshFromStripe(id: string) {
-    const row = await this.prisma.platformStripeCoupon.findUnique({
-      where: { id },
-    });
+    let row;
+    try {
+      row = await this.prisma.platformStripeCoupon.findUnique({
+        where: { id },
+      });
+    } catch (error) {
+      if (this.isMissingCouponsTableError(error)) {
+        this.throwCouponsTableMissing();
+      }
+      throw error;
+    }
     if (!row) {
       throw new HttpException('Coupon not found', HttpStatus.NOT_FOUND);
     }
     const coupon = await this.stripeService.retrieveCoupon(row.stripeCouponId);
     const percentOff =
       typeof coupon.percent_off === 'number' ? coupon.percent_off : null;
-    return this.prisma.platformStripeCoupon.update({
-      where: { id },
-      data: { percentOff },
-    });
+    try {
+      return this.prisma.platformStripeCoupon.update({
+        where: { id },
+        data: { percentOff },
+      });
+    } catch (error) {
+      if (this.isMissingCouponsTableError(error)) {
+        this.throwCouponsTableMissing();
+      }
+      throw error;
+    }
   }
 }

@@ -28,8 +28,8 @@ export default function BusinessLandingPage() {
 	const businessStructuredData = {
 		'@context': 'https://schema.org',
 		'@type': 'SoftwareApplication',
-		name: 'Henzo cho Salon',
-		alternateName: 'Henzo for Business',
+		name: 'Henzo cho Beauty Business',
+		alternateName: 'Henzo for Beauty Business',
 		description:
 			'Phần mềm quản lý salon hoàn chỉnh cho Việt Nam. Đặt lịch online, quản lý khách hàng, 3 tháng dùng thử miễn phí.',
 		url: '/business',

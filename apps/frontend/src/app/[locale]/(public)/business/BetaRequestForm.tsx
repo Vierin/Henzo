@@ -62,7 +62,7 @@ export default function BetaRequestForm() {
 					name: data.fullName,
 					email: data.email,
 					timestamp: Date.now(),
-				})
+				}),
 			);
 
 			await apiClient.post('/auth/send-business-magic-link', {
@@ -266,7 +266,7 @@ export default function BetaRequestForm() {
 							<div className="w-full border-t border-border" />
 						</div>
 						<div className="relative flex justify-center text-sm">
-							<span className="px-2 bg-card text-muted-foreground">
+							<span className="px-2 bg-white text-muted-foreground">
 								{t('business.register.orContinueWith')}
 							</span>
 						</div>

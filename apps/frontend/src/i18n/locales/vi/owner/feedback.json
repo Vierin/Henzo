@@ -1,12 +1,12 @@
 {
-	"title": "Gửi phản hồi",
-	"subtitle": "Báo cáo sự cố hoặc đề xuất cải tiến",
-	"placeholder": "Mô tả sự cố hoặc đề xuất của bạn...",
+	"title": "Bạn cần hỗ trợ?",
+	"subtitle": "Đặt câu hỏi hoặc mô tả sự cố của bạn",
+	"placeholder": "Mô tả câu hỏi hoặc sự cố của bạn...",
 	"send": "Gửi",
 	"sending": "Đang gửi...",
 	"pleaseEnterMessage": "Vui lòng nhập tin nhắn",
-	"thankYou": "Cảm ơn bạn đã phản hồi!",
-	"failedToSend": "Không thể gửi phản hồi. Vui lòng thử lại.",
-	"sendFeedback": "Gửi phản hồi",
+	"thankYou": "Cảm ơn! Chúng tôi sẽ hỗ trợ bạn sớm.",
+	"failedToSend": "Không thể gửi tin nhắn. Vui lòng thử lại.",
+	"sendFeedback": "Bạn cần hỗ trợ?",
 	"close": "Đóng"
 }
