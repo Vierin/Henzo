@@ -19,21 +19,11 @@ export default function sitemap(): MetadataRoute.Sitemap {
 		} as const;
 	}
 
-	// Static pages - optimized priorities for Vietnamese market
+	// Landing-only static pages
 	const staticPaths = [
 		{ path: '/', changeFrequency: 'daily' as const, priority: 1 },
-		{ path: '/salons', changeFrequency: 'daily' as const, priority: 0.9 },
-		{ path: '/business', changeFrequency: 'weekly' as const, priority: 0.95 },
-		{
-			path: '/business/register',
-			changeFrequency: 'monthly' as const,
-			priority: 0.85,
-		},
-		{ path: '/map', changeFrequency: 'daily' as const, priority: 0.8 },
 		{ path: '/about', changeFrequency: 'monthly' as const, priority: 0.6 },
 		{ path: '/contact', changeFrequency: 'monthly' as const, priority: 0.6 },
-		{ path: '/login', changeFrequency: 'monthly' as const, priority: 0.5 },
-		{ path: '/register', changeFrequency: 'monthly' as const, priority: 0.5 },
 		{
 			path: '/terms-of-service',
 			changeFrequency: 'yearly' as const,
@@ -56,23 +46,5 @@ export default function sitemap(): MetadataRoute.Sitemap {
 		}))
 	);
 
-	// Category pages
-	const categoryPages = [
-		'hair-barber',
-		'tattoo-piercing',
-		'massage-spa',
-		'manicure-pedicure',
-		'brows-lashes',
-		'other-services',
-	].flatMap((slug) =>
-		locales.map((locale) => ({
-			url: withLocale(`/category/${slug}`, locale),
-			lastModified: new Date(),
-			changeFrequency: 'weekly' as const,
-			priority: 0.8,
-			alternates: alternatesFor(`/category/${slug}`),
-		}))
-	);
-
-	return [...staticPages, ...categoryPages];
+	return staticPages;
 }

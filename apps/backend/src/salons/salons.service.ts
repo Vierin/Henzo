@@ -748,33 +748,33 @@ export class SalonsService {
     return [
       {
         id: 1,
-        name: 'Hair & Barber',
-        slug: 'hair-barber',
+        name: 'Strength & Conditioning',
+        slug: 'strength-conditioning',
       },
       {
         id: 2,
-        name: 'Tattoo & Piercing',
-        slug: 'tattoo-piercing',
+        name: 'Cardio & HIIT',
+        slug: 'cardio-hiit',
       },
       {
         id: 3,
-        name: 'Massage & Spa',
-        slug: 'massage-spa',
+        name: 'Yoga & Mobility',
+        slug: 'yoga-mobility',
       },
       {
         id: 4,
-        name: 'Manicure & Pedicure',
-        slug: 'manicure-pedicure',
+        name: 'Pilates',
+        slug: 'pilates',
       },
       {
         id: 5,
-        name: 'Brows & Lashes',
-        slug: 'brows-lashes',
+        name: 'Personal Training',
+        slug: 'personal-training',
       },
       {
         id: 6,
-        name: 'Other Services',
-        slug: 'other-services',
+        name: 'Recovery & Rehab',
+        slug: 'recovery-rehab',
       },
     ];
   }
@@ -983,7 +983,7 @@ export class SalonsService {
           },
         });
 
-        // Create TRIAL subscription with 3-month trial for the new salon
+        // Create FREEMIUM subscription with 3-month trial for the new salon
         const now = new Date();
         const trialEndDate = new Date();
         trialEndDate.setMonth(now.getMonth() + 3); // 3 months trial
@@ -993,7 +993,7 @@ export class SalonsService {
         await prisma.subscription.create({
           data: {
             salonId: salon.id,
-            type: 'TRIAL',
+            type: 'FREEMIUM',
             status: 'ACTIVE',
             startDate: now,
             endDate: oneMonthFromTrialEnd,
@@ -1066,7 +1066,7 @@ export class SalonsService {
       (result as any).services = services;
 
       console.log(
-        `✅ Created salon "${result.name}" with TRIAL subscription and 3-month trial`,
+        `✅ Created salon "${result.name}" with FREEMIUM subscription and 3-month trial`,
       );
       return result;
     } catch (error) {

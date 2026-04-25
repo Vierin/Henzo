@@ -4,14 +4,14 @@ import 'api_client.dart';
 import '../models/service_item.dart';
 
 class ServicesApiService {
-  /// GET /services?salonId= — список услуг салона.
+  /// GET /fitness/offerings?studioId= — список offerings студии.
   static Future<List<ServiceItem>> getBySalon(
     String accessToken,
     String salonId,
   ) async {
     try {
       final body = await ApiClient.get(
-        '/services?salonId=${Uri.encodeComponent(salonId)}',
+        '/fitness/offerings?studioId=${Uri.encodeComponent(salonId)}',
         accessToken,
       );
       final list = body is List
@@ -36,7 +36,7 @@ class ServicesApiService {
     }
   }
 
-  /// POST /services — создать услугу.
+  /// POST /fitness/offerings — создать offering.
   static Future<ServiceItem?> create(
     String accessToken, {
     required String salonId,
@@ -47,7 +47,7 @@ class ServicesApiService {
     try {
       final map =
           await ApiClient.post(
-                '/services',
+                '/fitness/offerings',
                 accessToken,
                 body: {
                   'salonId': salonId,
@@ -64,7 +64,7 @@ class ServicesApiService {
     }
   }
 
-  /// PUT /services/:id — обновить услугу.
+  /// PUT /fitness/offerings/:id — обновить offering.
   static Future<ServiceItem?> update(
     String accessToken,
     String id, {
@@ -81,7 +81,7 @@ class ServicesApiService {
       if (duration != null) data['duration'] = duration;
       final map =
           await ApiClient.put(
-                '/services/$id',
+                '/fitness/offerings/$id',
                 accessToken,
                 body: data.isEmpty ? null : data,
               )

@@ -8,9 +8,9 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'config/app_config.dart';
 import 'firebase_options.dart';
 import 'l10n/locale_provider.dart';
-import 'screens/login_screen.dart';
 import 'screens/main_shell.dart';
 import 'screens/non_owner_gate_screen.dart';
+import 'screens/public_home_screen.dart';
 import 'services/auth_service.dart';
 import 'services/cache/bookings_cache.dart';
 import 'services/cache/salon_cache.dart';
@@ -130,7 +130,7 @@ class _AuthWrapperState extends State<AuthWrapper> {
           );
         }
 
-        final allowedInApp = auth.isAuthenticated && auth.isSalonOwner;
+        final allowedInApp = auth.isAuthenticated && auth.isStudioOperator;
 
         if (!auth.isLoading) {
           if (_lastAllowedInApp && !allowedInApp) {
@@ -148,11 +148,11 @@ class _AuthWrapperState extends State<AuthWrapper> {
           return const MainShell();
         }
 
-        if (auth.isAuthenticated && !auth.isSalonOwner) {
+        if (auth.isAuthenticated && !auth.isStudioOperator) {
           return const NonOwnerGateScreen();
         }
 
-        return const LoginScreen();
+        return const PublicHomeScreen();
       },
     );
   }

@@ -103,18 +103,6 @@ export class AdminController {
     }
   }
 
-  @Get('sms-usage')
-  async getSmsUsage() {
-    try {
-      return await this.adminService.getSmsUsage();
-    } catch (error) {
-      throw new HttpException(
-        error.message || 'Failed to get SMS usage',
-        HttpStatus.BAD_REQUEST,
-      );
-    }
-  }
-
   @Get('customers')
   async getCustomers(
     @Query('page') page?: string,

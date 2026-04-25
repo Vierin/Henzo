@@ -3,11 +3,12 @@
  * Centralized constants for subscription plans and pricing
  */
 
-export type SubscriptionPlanType = 'STARTER';
+export type SubscriptionPlanType = 'FREEMIUM' | 'PRO';
 
 /**
  * Subscription plan prices (in VND)
  */
 export const SUBSCRIPTION_PRICES: Record<SubscriptionPlanType, number> = {
-  STARTER: 390000,
+  FREEMIUM: 0,
+  PRO: 390000,
 } as const;

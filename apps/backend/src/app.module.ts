@@ -9,7 +9,6 @@ import { AuthModule } from './auth/auth.module';
 import { ReviewsModule } from './reviews/reviews.module';
 import { GeocodingModule } from './geocoding/geocoding.module';
 import { BookingsModule } from './bookings/bookings.module';
-import { TimeBlocksModule } from './time-blocks/time-blocks.module';
 import { EmailModule } from './email/email.module';
 import { AdminModule } from './admin/admin.module';
 import { RemindersModule } from './reminders/reminders.module';
@@ -29,6 +28,7 @@ import { LoggerModule } from './common/logger/logger.module';
 import { SubscriptionsModule } from './subscriptions/subscriptions.module';
 import { ClientsModule } from './clients/clients.module';
 import { resolveBackendEnvPath } from './config/resolve-backend-env-path';
+import { FitnessModule } from './fitness/fitness.module';
 
 const backendEnvFile = resolveBackendEnvPath(__dirname);
 
@@ -53,7 +53,6 @@ const backendEnvFile = resolveBackendEnvPath(__dirname);
     ReviewsModule,
     GeocodingModule,
     BookingsModule,
-    TimeBlocksModule,
     EmailModule,
     AdminModule,
     RemindersModule,
@@ -65,6 +64,7 @@ const backendEnvFile = resolveBackendEnvPath(__dirname);
     StorageModule,
     SubscriptionsModule,
     ClientsModule,
+    FitnessModule,
   ],
   controllers: [AppController],
   providers: [AppService],

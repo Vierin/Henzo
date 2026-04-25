@@ -19,7 +19,6 @@ import {
 	useModuleTranslations,
 } from '@/i18n/useTranslations';
 import type { TranslationModule } from '@/i18n/modules';
-import { storage } from '@/utils/storage';
 import LoadingFallback from '@/components/LoadingFallback';
 
 type Language = Locale;
@@ -378,7 +377,9 @@ export function LanguageProvider({
 	// Load language from storage on mount
 	useEffect(() => {
 		if (typeof window !== 'undefined') {
-			const savedLanguage = storage.getItem('henzo-language') as Language;
+			const savedLanguage = window.localStorage.getItem(
+				'henzo-language'
+			) as Language;
 			if (
 				savedLanguage &&
 				(savedLanguage === 'vi' ||
@@ -395,7 +396,7 @@ export function LanguageProvider({
 		if (typeof window === 'undefined') return;
 		const locale = extractLocaleFromPath(pathname) ?? 'en';
 		setLanguageState(locale);
-		storage.setItem('henzo-language', locale);
+		window.localStorage.setItem('henzo-language', locale);
 		document.documentElement.lang = locale;
 		document.documentElement.dir = 'ltr';
 	}, [pathname]);
@@ -404,7 +405,7 @@ export function LanguageProvider({
 		setLanguageState(lang);
 
 		if (typeof window !== 'undefined') {
-			storage.setItem('henzo-language', lang);
+			window.localStorage.setItem('henzo-language', lang);
 
 			// Update document language attribute
 			document.documentElement.lang = lang;

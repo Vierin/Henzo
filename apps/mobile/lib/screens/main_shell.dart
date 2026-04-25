@@ -62,7 +62,7 @@ class MainShellState extends State<MainShell> {
     }
   }
 
-  /// Переключиться на первую вкладку и открыть маршрут (например /staff, /services).
+  /// Переключиться на первую вкладку и открыть маршрут (например /trainers, /offerings).
   void navigateToTab0Route(String routeName) {
     setState(() => _currentIndex = 0);
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -78,8 +78,10 @@ class MainShellState extends State<MainShell> {
         switch (settings.name) {
           case '/':
             return MaterialPageRoute(builder: (_) => const DashboardScreen());
+          case '/offerings':
           case '/services':
             return MaterialPageRoute(builder: (_) => const ServicesScreen());
+          case '/trainers':
           case '/staff':
             return MaterialPageRoute(builder: (_) => const StaffScreen());
           case '/clients':

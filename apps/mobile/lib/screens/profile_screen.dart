@@ -290,7 +290,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 title: context.read<LocaleProvider>().t('profile.staff'),
                 count: _loadingCounts ? null : _staffCount,
                 onTap: () {
-                  context.findAncestorStateOfType<MainShellState>()?.navigateToTab0Route('/staff');
+                  context.findAncestorStateOfType<MainShellState>()?.navigateToTab0Route('/trainers');
                 },
               ),
             ),
@@ -300,7 +300,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 title: context.read<LocaleProvider>().t('profile.services'),
                 count: _loadingCounts ? null : _servicesCount,
                 onTap: () {
-                  context.findAncestorStateOfType<MainShellState>()?.navigateToTab0Route('/services');
+                  context.findAncestorStateOfType<MainShellState>()?.navigateToTab0Route('/offerings');
                 },
               ),
             ),

@@ -616,36 +616,6 @@ export class AdminService {
     }
   }
 
-  async getSmsUsage() {
-    try {
-      const rows = await this.prisma.smsUsage.findMany({
-        orderBy: [{ year: 'desc' }, { month: 'desc' }],
-        include: {
-          Salon: {
-            select: { name: true },
-          },
-        },
-      });
-
-      const bySalon = new Map<
-        string,
-        { salon: string; sent: number; balance: number }
-      >();
-      for (const row of rows) {
-        if (!bySalon.has(row.salonId)) {
-          bySalon.set(row.salonId, {
-            salon: row.Salon.name,
-            sent: row.sent,
-            balance: row.balance,
-          });
-        }
-      }
-      return Array.from(bySalon.values());
-    } catch (error) {
-      return [];
-    }
-  }
-
   async getCustomers(params?: { page?: number; limit?: number }) {
     try {
       const page = params?.page ?? 1;

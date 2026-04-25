@@ -3,7 +3,6 @@ import { AdminController } from './admin.controller';
 import { AdminService } from './admin.service';
 import { AnalyticsService } from './analytics.service';
 import { PlatformMetricsService } from './platform-metrics.service';
-import { PromotionCouponsController } from './promotion-coupons.controller';
 import { PrismaModule } from '../prisma/prisma.module';
 import { AuthModule } from '../auth/auth.module';
 import { ConfigModule } from '@nestjs/config';
@@ -13,7 +12,7 @@ import { SubscriptionsModule } from '../subscriptions/subscriptions.module';
 
 @Module({
   imports: [PrismaModule, AuthModule, ConfigModule, SubscriptionsModule],
-  controllers: [AdminController, PromotionCouponsController],
+  controllers: [AdminController],
   providers: [
     AdminService,
     AnalyticsService,

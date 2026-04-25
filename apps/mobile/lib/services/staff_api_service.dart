@@ -4,14 +4,14 @@ import 'api_client.dart';
 import '../models/staff_member.dart';
 
 class StaffApiService {
-  /// GET /staff?salonId= — список сотрудников салона.
+  /// GET /fitness/trainers?studioId= — список тренеров студии.
   static Future<List<StaffMember>> getBySalon(
     String accessToken,
     String salonId,
   ) async {
     try {
       final list = await ApiClient.get(
-        '/staff?salonId=${Uri.encodeComponent(salonId)}',
+        '/fitness/trainers?studioId=${Uri.encodeComponent(salonId)}',
         accessToken,
       );
       if (list is! List) return [];
@@ -30,7 +30,7 @@ class StaffApiService {
     }
   }
 
-  /// POST /staff — создать сотрудника.
+  /// POST /fitness/trainers — создать тренера.
   static Future<StaffMember?> create(
     String accessToken, {
     required String salonId,
@@ -51,7 +51,7 @@ class StaffApiService {
           'serviceIds': serviceIds,
       };
       final map =
-          await ApiClient.post('/staff', accessToken, body: body)
+          await ApiClient.post('/fitness/trainers', accessToken, body: body)
               as Map<String, dynamic>?;
       return map != null ? StaffMember.fromJson(map) : null;
     } on ApiException catch (e) {

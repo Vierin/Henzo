@@ -191,6 +191,67 @@ export class BookingsController {
     }
   }
 
+  @Get('sessions')
+  async getTrainingSessions(
+    @Query('salonId') salonId: string,
+    @Query('search') search?: string,
+    @Query('from') from?: string,
+    @Query('to') to?: string,
+  ) {
+    if (!salonId) {
+      throw new HttpException('salonId is required', HttpStatus.BAD_REQUEST);
+    }
+    return this.bookingsService.listTrainingSessions(salonId, {
+      search,
+      from,
+      to,
+    });
+  }
+
+  @Post('sessions')
+  async createTrainingSession(
+    @Headers('authorization') authHeader: string,
+    @Body()
+    data: {
+      salonId: string;
+      serviceId: string;
+      staffId?: string;
+      startsAt: string;
+      endsAt: string;
+      capacity: number;
+    },
+  ) {
+    const currentUser = await this.authService.getCurrentUser(authHeader);
+    if (currentUser.user.role !== 'OWNER') {
+      throw new HttpException('Only owners can create sessions', HttpStatus.FORBIDDEN);
+    }
+    return this.bookingsService.createTrainingSession(currentUser.user.id, data);
+  }
+
+  @Post('sessions/:id/enroll')
+  async enrollToTrainingSession(
+    @Param('id') sessionId: string,
+    @Headers('authorization') authHeader: string,
+  ) {
+    const currentUser = await this.authService.getCurrentUser(authHeader);
+    return this.bookingsService.enrollToTrainingSession(
+      sessionId,
+      currentUser.user.id,
+    );
+  }
+
+  @Put('sessions/:id/enroll/cancel')
+  async cancelTrainingEnrollment(
+    @Param('id') sessionId: string,
+    @Headers('authorization') authHeader: string,
+  ) {
+    const currentUser = await this.authService.getCurrentUser(authHeader);
+    return this.bookingsService.cancelTrainingEnrollment(
+      sessionId,
+      currentUser.user.id,
+    );
+  }
+
   @Get('user')
   @Header('Cache-Control', 'public, max-age=300') // P3: Кэш на 5 минут
   async getUserBookings(@Headers('authorization') authHeader: string) {

@@ -1,19 +1,11 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
-import { createServerClient } from '@supabase/ssr';
 import {
 	defaultLocale,
 	extractLocaleFromPath,
 	isLocale,
-	locales,
 	stripLocaleFromPath,
 } from './i18n/routing';
-import {
-	isPublicRoute,
-	isProtectedRoute,
-	getRequiredRole,
-	hasRouteAccess,
-} from './config/routes';
 
 export async function middleware(req: NextRequest) {
 	const { pathname } = req.nextUrl;
@@ -68,72 +60,60 @@ export async function middleware(req: NextRequest) {
 		}
 	}
 
-	// Получаем путь без локали
 	const pathWithoutLocale = stripLocaleFromPath(pathname);
+	const disabledPrefixes = [
+		'/salons',
+		'/salon',
+		'/category',
+		'/map',
+		'/business',
+		'/booking-confirmed',
+		'/bookings',
+		'/login',
+		'/register',
+		'/verify',
+		'/check-email',
+		'/forgot-password',
+		'/reset-password',
+		'/auth',
+		'/dashboard',
+		'/favorites',
+		'/reviews',
+		'/settings',
+		'/owner-dashboard',
+		'/calendar',
+		'/services',
+		'/marketing',
+		'/staff',
+		'/salon-info',
+		'/billing',
+		'/subscription',
+		'/owner-help',
+		'/profile-settings',
+		'/clients',
+		'/admin-panel',
+		'/admin',
+		'/profit',
+		'/promotion-coupons',
+		'/structure',
+		'/unauthorized',
+	];
 
-	// Проверяем, является ли маршрут публичным
-	if (isPublicRoute(pathWithoutLocale)) {
-		return res;
+	if (
+		disabledPrefixes.some(
+			(prefix) =>
+				pathWithoutLocale === prefix || pathWithoutLocale.startsWith(`${prefix}/`)
+		)
+	) {
+		const targetLocale = urlLocale ?? defaultLocale;
+		const redirectUrl = req.nextUrl.clone();
+		redirectUrl.pathname = `/${targetLocale}`;
+		return NextResponse.redirect(redirectUrl);
 	}
 
-	// Проверяем, является ли маршрут защищенным
-	// Если маршрут не является ни публичным, ни защищенным, пропускаем его
-	// и позволяем Next.js показать 404
-	if (!isProtectedRoute(pathWithoutLocale)) {
-		return res;
-	}
-
-	// Проверка специальных маршрутов business
-	// Business маршруты обрабатываются через общую проверку авторизации ниже
-
-	// Создаем Supabase клиент для middleware с поддержкой cookies
-	// Важно: создаем после проверки публичных маршрутов
-	const supabaseResponse = NextResponse.next();
-
-	const supabase = createServerClient(
-		process.env.NEXT_PUBLIC_SUPABASE_URL!,
-		process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-		{
-			cookies: {
-				getAll() {
-					return req.cookies.getAll();
-				},
-				setAll(cookiesToSet) {
-					cookiesToSet.forEach(({ name, value, options }) => {
-						req.cookies.set(name, value);
-						supabaseResponse.cookies.set(name, value, options);
-					});
-				},
-			},
-		}
-	);
-
-	// Для защищенных маршрутов проверяем только наличие сессии
-	// Проверка роли выполняется в ProtectedRoute через AuthContext
-	try {
-		// Получаем пользователя - getUser более надежен в middleware и автоматически обновляет сессию
-		const {
-			data: { user },
-			error: userError,
-		} = await supabase.auth.getUser();
-
-		if (userError || !user) {
-			// Перенаправляем на страницу логина с returnTo параметром
-			const loginUrl = new URL(`/${urlLocale}/login`, req.url);
-			loginUrl.searchParams.set('returnTo', pathname);
-			return NextResponse.redirect(loginUrl);
-		}
-
-		// Пользователь залогинен - разрешаем доступ
-		// Проверка роли будет выполнена в ProtectedRoute через AuthContext
-		// Возвращаем supabaseResponse, который содержит обновленные cookies
-		return supabaseResponse;
-	} catch (error) {
-		// В случае ошибки перенаправляем на страницу логина
-		const loginUrl = new URL(`/${urlLocale}/login`, req.url);
-		loginUrl.searchParams.set('returnTo', pathname);
-		return NextResponse.redirect(loginUrl);
-	}
+	// Web is landing-only now: no auth gating in middleware.
+	// Allow routing to continue and let Next.js handle missing pages (404).
+	return res;
 }
 
 export const config = {

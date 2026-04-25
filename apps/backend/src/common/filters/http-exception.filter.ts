@@ -7,7 +7,6 @@ import {
   Logger,
 } from '@nestjs/common';
 import { Request, Response } from 'express';
-import * as Sentry from '@sentry/node';
 
 @Catch()
 export class AllExceptionsFilter implements ExceptionFilter {
@@ -67,21 +66,6 @@ export class AllExceptionsFilter implements ExceptionFilter {
         this.logger.error('Exception stack:', exception.stack);
       }
 
-      // Send to Sentry for server errors
-      if (process.env.SENTRY_DSN && exception instanceof Error) {
-        Sentry.captureException(exception, {
-          tags: {
-            path: request.url,
-            method: request.method,
-          },
-          extra: errorDetails,
-        });
-
-        // Flush events immediately for critical errors
-        Sentry.flush(2000).catch((err) => {
-          this.logger.warn('Failed to flush Sentry events:', err);
-        });
-      }
     } else {
       // Не логируем как WARN неподдерживаемые WebDAV методы - они не критичны
       const unsupportedMethods = [

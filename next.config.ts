@@ -1,6 +1,5 @@
 import type { NextConfig } from 'next';
 import path from 'path';
-import { withSentryConfig } from '@sentry/nextjs';
 
 // P1: Bundle analyzer (optional, enable with ANALYZE=true)
 const withBundleAnalyzer = require('@next/bundle-analyzer')({
@@ -103,15 +102,4 @@ const nextConfig: NextConfig = {
 	poweredByHeader: false, // Убрать X-Powered-By header
 };
 
-// Wrap with Sentry if DSN is provided
-const configWithSentry = process.env.NEXT_PUBLIC_SENTRY_DSN
-	? withSentryConfig(withBundleAnalyzer(nextConfig), {
-			// For all available options, see:
-			// https://github.com/getsentry/sentry-webpack-plugin#options
-			silent: true,
-			org: process.env.SENTRY_ORG,
-			project: process.env.SENTRY_PROJECT,
-		})
-	: withBundleAnalyzer(nextConfig);
-
-export default configWithSentry;
+export default withBundleAnalyzer(nextConfig);

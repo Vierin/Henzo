@@ -28,7 +28,10 @@ class AuthService extends ChangeNotifier {
   bool get isLoading => _isLoading;
   bool get isAuthenticated => _isAuthenticated;
 
-  /// Salon owner app: only `OWNER` may use the main shell.
+  /// Fitness studio app: only `OWNER` may use the main shell.
+  bool get isStudioOperator => _user != null && _user!.role == 'OWNER';
+
+  /// Backward-compatible alias during pivot.
   bool get isSalonOwner => _user != null && _user!.role == 'OWNER';
 
   /// Bearer token for API calls.
@@ -268,6 +271,13 @@ class AuthService extends ChangeNotifier {
       notifyListeners();
       String msg = e is AuthException ? e.message : e.toString();
       if (kDebugMode) debugPrint('[Auth] loginWithGoogle exception: $e');
+      if (msg.contains('ApiException: 7') || msg.contains('network_error')) {
+        return (
+          success: false,
+          errorL10nKey: AuthErrorKeys.network,
+          errorRaw: null,
+        );
+      }
       if (msg.contains('ApiException: 10') || msg.contains('sign_in_failed')) {
         return (
           success: false,
@@ -338,6 +348,47 @@ class AuthService extends ChangeNotifier {
       return (success: false, errorL10nKey: null, errorRaw: e.message);
     } catch (e) {
       return (success: false, errorL10nKey: null, errorRaw: e.toString());
+    }
+  }
+
+  Future<AuthUiResult> requestBusinessRegistration({
+    required String email,
+    required String password,
+    String? locale,
+  }) async {
+    try {
+      final url = Uri.parse('${AppConfig.apiUrl}/auth/send-business-magic-link');
+      final response = await http.post(
+        url,
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: json.encode({
+          'name': email.trim(),
+          'email': email.trim(),
+          'password': password,
+          if (locale != null && locale.isNotEmpty) 'locale': locale,
+        }),
+      );
+
+      if (response.statusCode >= 200 && response.statusCode < 300) {
+        return (success: true, errorL10nKey: null, errorRaw: null);
+      }
+
+      String msg = 'HTTP ${response.statusCode}';
+      try {
+        final err = json.decode(response.body) as Map<String, dynamic>?;
+        if (err != null && err['message'] != null) {
+          msg = err['message'] as String;
+        }
+      } catch (_) {}
+      return (success: false, errorL10nKey: null, errorRaw: msg);
+    } catch (e) {
+      return (
+        success: false,
+        errorL10nKey: AuthErrorKeys.network,
+        errorRaw: e.toString(),
+      );
     }
   }
 

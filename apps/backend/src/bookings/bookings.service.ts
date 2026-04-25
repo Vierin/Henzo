@@ -1,4 +1,11 @@
-import { Injectable, Inject, forwardRef, Logger } from '@nestjs/common';
+import {
+  Injectable,
+  Inject,
+  forwardRef,
+  Logger,
+  HttpException,
+  HttpStatus,
+} from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateBookingDto } from './dto/create-booking.dto';
@@ -1034,24 +1041,6 @@ export class BookingsService {
         select: { salonId: true },
       });
       if (!staff) {
-        return false;
-      }
-
-      const timeBlockConflict = await this.prisma.timeBlock.findFirst({
-        where: {
-          salonId: staff.salonId,
-          OR: [{ staffId: null }, { staffId }],
-          startDate: { lt: bookingEndTime },
-          endDate: { gt: bookingStartTime },
-        },
-      });
-      if (timeBlockConflict) {
-        this.logger.warn('Staff unavailable: overlapping time block', {
-          staffId,
-          bookingStartTime,
-          bookingEndTime,
-          timeBlockId: timeBlockConflict.id,
-        });
         return false;
       }
 
@@ -2401,5 +2390,213 @@ export class BookingsService {
       this.logger.error('Error confirming magic link', error);
       throw error;
     }
+  }
+
+  async listTrainingSessions(
+    salonId: string,
+    options?: { search?: string; from?: string; to?: string },
+  ) {
+    const where: any = {
+      salonId,
+      status: 'ACTIVE',
+    };
+
+    if (options?.from || options?.to) {
+      where.startsAt = {};
+      if (options.from) where.startsAt.gte = new Date(options.from);
+      if (options.to) where.startsAt.lte = new Date(options.to);
+    }
+
+    if (options?.search?.trim()) {
+      const query = options.search.trim();
+      where.OR = [
+        { Service: { name: { contains: query, mode: 'insensitive' } } },
+        { Staff: { name: { contains: query, mode: 'insensitive' } } },
+      ];
+    }
+
+    return this.prisma.trainingSession.findMany({
+      where,
+      include: {
+        Service: {
+          select: {
+            id: true,
+            name: true,
+            nameEn: true,
+            nameVi: true,
+            nameRu: true,
+            duration: true,
+            price: true,
+          },
+        },
+        Staff: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
+      },
+      orderBy: { startsAt: 'asc' },
+    });
+  }
+
+  async createTrainingSession(
+    ownerId: string,
+    data: {
+      salonId: string;
+      serviceId: string;
+      staffId?: string;
+      startsAt: string;
+      endsAt: string;
+      capacity: number;
+    },
+  ) {
+    const salon = await this.prisma.salon.findFirst({
+      where: { id: data.salonId, ownerId },
+      select: { id: true },
+    });
+    if (!salon) {
+      throw new HttpException('Forbidden', HttpStatus.FORBIDDEN);
+    }
+
+    if (!Number.isInteger(data.capacity) || data.capacity < 1) {
+      throw new HttpException(
+        'capacity must be an integer >= 1',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
+    const startsAt = new Date(data.startsAt);
+    const endsAt = new Date(data.endsAt);
+    if (Number.isNaN(startsAt.getTime()) || Number.isNaN(endsAt.getTime())) {
+      throw new HttpException('Invalid session datetime', HttpStatus.BAD_REQUEST);
+    }
+    if (endsAt <= startsAt) {
+      throw new HttpException('endsAt must be after startsAt', HttpStatus.BAD_REQUEST);
+    }
+
+    const service = await this.prisma.service.findFirst({
+      where: { id: data.serviceId, salonId: data.salonId },
+      select: { id: true },
+    });
+    if (!service) {
+      throw new HttpException('Service not found', HttpStatus.NOT_FOUND);
+    }
+
+    if (data.staffId) {
+      const staff = await this.prisma.staff.findFirst({
+        where: { id: data.staffId, salonId: data.salonId },
+        select: { id: true },
+      });
+      if (!staff) {
+        throw new HttpException('Staff not found', HttpStatus.NOT_FOUND);
+      }
+    }
+
+    return this.prisma.trainingSession.create({
+      data: {
+        salonId: data.salonId,
+        serviceId: data.serviceId,
+        staffId: data.staffId,
+        startsAt,
+        endsAt,
+        capacity: data.capacity,
+      },
+    });
+  }
+
+  async enrollToTrainingSession(
+    sessionId: string,
+    userId: string,
+  ) {
+    return this.prisma.$transaction(async (tx) => {
+      const session = await tx.trainingSession.findUnique({
+        where: { id: sessionId },
+        select: {
+          id: true,
+          status: true,
+          capacity: true,
+          bookedCount: true,
+          startsAt: true,
+          endsAt: true,
+        },
+      });
+
+      if (!session || session.status !== 'ACTIVE') {
+        throw new HttpException('Session not found', HttpStatus.NOT_FOUND);
+      }
+
+      if (session.endsAt <= new Date()) {
+        throw new HttpException(
+          'Cannot enroll to a finished session',
+          HttpStatus.BAD_REQUEST,
+        );
+      }
+
+      const existing = await tx.sessionEnrollment.findUnique({
+        where: {
+          sessionId_userId: {
+            sessionId,
+            userId,
+          },
+        },
+      });
+
+      if (existing?.status === 'ACTIVE') {
+        return existing;
+      }
+
+      if (session.bookedCount >= session.capacity) {
+        throw new HttpException(
+          {
+            code: 'SESSION_FULL',
+            message: 'Training session has no available places',
+          },
+          HttpStatus.CONFLICT,
+        );
+      }
+
+      const enrollment = existing
+        ? await tx.sessionEnrollment.update({
+            where: {
+              sessionId_userId: { sessionId, userId },
+            },
+            data: { status: 'ACTIVE', cancelledAt: null },
+          })
+        : await tx.sessionEnrollment.create({
+            data: { sessionId, userId, status: 'ACTIVE' },
+          });
+
+      await tx.trainingSession.update({
+        where: { id: sessionId },
+        data: { bookedCount: { increment: 1 } },
+      });
+
+      return enrollment;
+    });
+  }
+
+  async cancelTrainingEnrollment(sessionId: string, userId: string) {
+    return this.prisma.$transaction(async (tx) => {
+      const enrollment = await tx.sessionEnrollment.findUnique({
+        where: { sessionId_userId: { sessionId, userId } },
+      });
+
+      if (!enrollment || enrollment.status !== 'ACTIVE') {
+        throw new HttpException('Active enrollment not found', HttpStatus.NOT_FOUND);
+      }
+
+      const updated = await tx.sessionEnrollment.update({
+        where: { sessionId_userId: { sessionId, userId } },
+        data: { status: 'CANCELLED', cancelledAt: new Date() },
+      });
+
+      await tx.trainingSession.update({
+        where: { id: sessionId },
+        data: { bookedCount: { decrement: 1 } },
+      });
+
+      return updated;
+    });
   }
 }

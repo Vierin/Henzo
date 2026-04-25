@@ -6,6 +6,24 @@ export class PrismaService
   extends PrismaClient
   implements OnModuleInit, OnModuleDestroy
 {
+  // Compatibility aliases after domain rename in Prisma schema.
+  // This lets legacy modules keep working while we migrate codepaths.
+  get salon(): any {
+    return (this as any).studio;
+  }
+  get service(): any {
+    return (this as any).training;
+  }
+  get staff(): any {
+    return (this as any).trainer;
+  }
+  get booking(): any {
+    return (this as any).sessionBooking;
+  }
+  get serviceGroup(): any {
+    return (this as any).trainingGroup;
+  }
+
   constructor() {
     // Настраиваем connection pool для работы с Supabase pooler
     const databaseUrl = process.env.DATABASE_URL;

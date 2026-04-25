@@ -7,10 +7,13 @@ import '../models/subscription.dart';
 import '../models/time_block.dart';
 
 class DashboardApiService {
-  /// GET /salons/current — салон владельца.
+  static bool _isRouteMissing(ApiException e) =>
+      e.statusCode == 404 && e.message.contains('Cannot GET');
+
+  /// GET /fitness/studios/current — студия владельца.
   static Future<Salon?> getCurrentSalon(String accessToken) async {
     try {
-      final body = await ApiClient.get('/salons/current', accessToken);
+      final body = await ApiClient.get('/fitness/studios/current', accessToken);
       if (body is! Map<String, dynamic>) return null;
       if (body['success'] != true) {
         if (kDebugMode) debugPrint('[DashboardAPI] salon success=false');
@@ -20,12 +23,26 @@ class DashboardApiService {
       if (data == null || data is! Map<String, dynamic>) return null;
       return Salon.fromJson(Map<String, dynamic>.from(data));
     } on ApiException catch (e) {
+      if (_isRouteMissing(e)) {
+        try {
+          final legacy = await ApiClient.get('/salons/current', accessToken);
+          if (legacy is Map<String, dynamic>) {
+            return Salon.fromJson(Map<String, dynamic>.from(legacy));
+          }
+          return null;
+        } on ApiException catch (legacyError) {
+          if (kDebugMode) {
+            debugPrint('[DashboardAPI] getCurrentSalon legacy failed: $legacyError');
+          }
+          return null;
+        }
+      }
       if (kDebugMode) debugPrint('[DashboardAPI] getCurrentSalon: $e');
       return null;
     }
   }
 
-  /// PUT /salons/current — обновить салон владельца.
+  /// PUT /salons/current — обновить студию владельца (legacy endpoint).
   static Future<Salon> updateCurrentSalon(
     String accessToken,
     Map<String, dynamic> payload,
@@ -37,7 +54,7 @@ class DashboardApiService {
     return Salon.fromJson(data);
   }
 
-  /// POST /salons/current — создать салон владельца.
+  /// POST /salons/current — создать студию владельца (legacy endpoint).
   static Future<Salon> createCurrentSalon(
     String accessToken,
     Map<String, dynamic> payload,
@@ -67,21 +84,41 @@ class DashboardApiService {
     }
   }
 
-  /// GET /bookings/owner — бронирования владельца.
+  /// GET /fitness/session-bookings/owner — бронирования владельца студии.
   static Future<List<Booking>> getOwnerBookings(String accessToken) async {
-    final list = await ApiClient.get('/bookings/owner?limit=100', accessToken);
-    if (list is! List) return [];
-    final result = <Booking>[];
-    for (final item in list) {
-      if (item is Map<String, dynamic>) {
-        try {
-          result.add(_bookingFromApi(Map<String, dynamic>.from(item)));
-        } catch (e) {
-          if (kDebugMode) debugPrint('[DashboardAPI] booking parse error: $e');
+    try {
+      final list = await ApiClient.get(
+        '/fitness/session-bookings/owner?limit=100',
+        accessToken,
+      );
+      if (list is! List) return [];
+      final result = <Booking>[];
+      for (final item in list) {
+        if (item is Map<String, dynamic>) {
+          try {
+            result.add(_bookingFromApi(Map<String, dynamic>.from(item)));
+          } catch (e) {
+            if (kDebugMode) debugPrint('[DashboardAPI] booking parse error: $e');
+          }
         }
       }
+      return result;
+    } on ApiException catch (e) {
+      if (_isRouteMissing(e)) {
+        final legacy = await ApiClient.get('/bookings/owner?limit=100', accessToken);
+        if (legacy is! List) return [];
+        final result = <Booking>[];
+        for (final item in legacy) {
+          if (item is Map<String, dynamic>) {
+            try {
+              result.add(_bookingFromApi(Map<String, dynamic>.from(item)));
+            } catch (_) {}
+          }
+        }
+        return result;
+      }
+      rethrow;
     }
-    return result;
   }
 
   /// PUT /bookings/:id/confirm — подтвердить бронирование.
@@ -128,7 +165,7 @@ class DashboardApiService {
     }
   }
 
-  /// POST /bookings — создать бронирование (владелец от имени клиента).
+  /// POST /fitness/session-bookings — создать тренировочную запись.
   static Future<Booking> createBooking(
     String accessToken, {
     required String salonId,
@@ -153,7 +190,7 @@ class DashboardApiService {
       if (notes != null && notes.isNotEmpty) 'notes': notes,
     };
     final data =
-        await ApiClient.post('/bookings', accessToken, body: body)
+        await ApiClient.post('/fitness/session-bookings', accessToken, body: body)
             as Map<String, dynamic>?;
     if (data == null) throw ApiException('Invalid response');
     final booking = data['booking'];
