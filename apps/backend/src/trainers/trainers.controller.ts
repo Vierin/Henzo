@@ -11,33 +11,33 @@ import {
   HttpException,
   HttpStatus,
 } from '@nestjs/common';
-import { StaffService } from './staff.service';
+import { TrainersService } from './trainers.service';
 import { AuthService } from '../auth/auth.service';
 import { SubscriptionsService } from '../subscriptions/subscriptions.service';
 
-@Controller('staff')
-export class StaffController {
+@Controller('trainers')
+export class TrainersController {
   constructor(
-    private readonly staffService: StaffService,
+    private readonly trainersService: TrainersService,
     private readonly authService: AuthService,
     private readonly subscriptionsService: SubscriptionsService,
   ) {}
 
   @Get()
-  async getStaffBySalon(@Query('salonId') salonId: string) {
-    if (!salonId) {
-      throw new Error('Salon ID is required');
+  async getTrainersByStudio(@Query('studioId') studioId: string) {
+    if (!studioId) {
+      throw new Error('Studio ID is required');
     }
-    return this.staffService.findBySalonId(salonId);
+    return this.trainersService.findByStudioId(studioId);
   }
 
   @Get(':id')
-  async getStaffById(@Param('id') id: string) {
-    return this.staffService.findById(id);
+  async getTrainerById(@Param('id') id: string) {
+    return this.trainersService.findTrainerById(id);
   }
 
   @Post()
-  async createStaff(
+  async createTrainer(
     @Headers('authorization') authHeader: string,
     @Body()
     data: {
@@ -45,8 +45,8 @@ export class StaffController {
       email?: string;
       phone?: string;
       accessLevel: 'ADMIN' | 'EMPLOYEE';
-      salonId: string;
-      serviceIds?: string[];
+      studioId: string;
+      trainingIds?: string[];
     },
   ) {
     const currentUser = await this.authService.getCurrentUser(authHeader);
@@ -55,13 +55,13 @@ export class StaffController {
     }
     await this.subscriptionsService.assertSalonOwnerMayExpandConfiguration(
       currentUser.user.id,
-      data.salonId,
+      data.studioId,
     );
-    return this.staffService.create(data);
+    return this.trainersService.createTrainer(data);
   }
 
   @Put(':id')
-  async updateStaff(
+  async updateTrainer(
     @Param('id') id: string,
     @Body()
     data: {
@@ -69,14 +69,14 @@ export class StaffController {
       email?: string;
       phone?: string;
       accessLevel?: 'ADMIN' | 'EMPLOYEE';
-      serviceIds?: string[];
+      trainingIds?: string[];
     },
   ) {
-    return this.staffService.update(id, data);
+    return this.trainersService.updateTrainer(id, data);
   }
 
   @Delete(':id')
-  async deleteStaff(@Param('id') id: string) {
-    return this.staffService.delete(id);
+  async deleteTrainer(@Param('id') id: string) {
+    return this.trainersService.deleteTrainer(id);
   }
 }

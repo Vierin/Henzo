@@ -237,7 +237,7 @@
 			"invalidPhone": "Vui lòng nhập số điện thoại hợp lệ"
 		},
 		"success": {
-			"salonSetupCompleted": "Thiết lập salon đã hoàn tất thành công!"
+			"salonSetupCompleted": "Thiết lập doanh nghiệp đã hoàn tất thành công!"
 		},
 		"error": {
 			"failedToCompleteSetup": "Không thể hoàn tất thiết lập salon"

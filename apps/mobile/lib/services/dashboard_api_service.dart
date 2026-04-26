@@ -19,6 +19,10 @@ class DashboardApiService {
         if (kDebugMode) debugPrint('[DashboardAPI] salon success=false');
         return null;
       }
+      if (body['needsSetup'] == true) {
+        if (kDebugMode) debugPrint('[DashboardAPI] salon needsSetup=true');
+        return null;
+      }
       final data = body['data'];
       if (data == null || data is! Map<String, dynamic>) return null;
       return Salon.fromJson(Map<String, dynamic>.from(data));
@@ -73,6 +77,12 @@ class DashboardApiService {
     try {
       final body = await ApiClient.get('/subscriptions/current', accessToken);
       if (body is! Map<String, dynamic>) return null;
+      if (body['needsSetup'] == true) {
+        if (kDebugMode) {
+          debugPrint('[DashboardAPI] subscription needsSetup=true');
+        }
+        return null;
+      }
       final data = body['data'];
       if (data is Map<String, dynamic>) {
         return Subscription.fromJson(Map<String, dynamic>.from(data));

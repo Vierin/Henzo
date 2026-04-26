@@ -75,7 +75,7 @@
 	"unknownService": "Unknown Service",
 	"min": "min",
 	"loadingCalendarData": "Loading calendar data...",
-	"redirectingToSetup": "Redirecting to salon setup...",
+	"redirectingToSetup": "Redirecting to business setup...",
 	"loadingBookings": "Loading bookings...",
 	"failedToLoad": "Failed to load calendar data.",
 	"switchToListView": "Switch to list view",

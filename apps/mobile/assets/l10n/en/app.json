@@ -22,7 +22,7 @@
 		"changesSaved": "Changes saved",
 		"saveFailed": "Failed to save",
 		"deleteFailed": "Failed to delete",
-		"setupSalonFirst": "Set up your salon first"
+		"setupSalonFirst": "Set up your business first"
 	},
 	"nav": {
 		"dashboard": "Dashboard",
@@ -103,7 +103,7 @@
 		"allBookings": "All bookings",
 		"onlineBooking": "Online booking",
 		"loading": "Loading...",
-		"setupSalonFirst": "Set up salon first",
+		"setupSalonFirst": "Set up business first",
 		"noBookingsToday": "No bookings for today",
 		"noUpcomingBookings": "No upcoming bookings"
 	},
@@ -310,7 +310,7 @@
 		"noAccess": "No access",
 		"staffMember": "staff member",
 		"error": "Error",
-		"setupSalonFirst": "Set up salon first",
+		"setupSalonFirst": "Set up business first",
 		"bookingConfirmed": "Booking confirmed",
 		"bookingRejected": "Booking rejected",
 		"bookingCancelled": "Booking cancelled"

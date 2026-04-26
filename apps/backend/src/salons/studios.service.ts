@@ -3,15 +3,15 @@ import { PrismaService } from '../prisma/prisma.service';
 import { UpdateSalonDto } from './dto/update-salon.dto';
 import { CreateSalonDto } from './dto/create-salon.dto';
 import { MapboxService } from '../mapbox/mapbox.service';
-import { TranslationService } from '../services/translation.service';
+import { TranslationService } from '../trainings/translation.service';
 import { CacheService } from '../cache/cache.service';
 import { generateSalonSlug } from '../utils/slug';
 import { nanoid } from 'nanoid';
 
 @Injectable()
-export class SalonsService {
+export class StudiosService {
   constructor(
-    private prisma: PrismaService,
+    @Inject(PrismaService) private prisma: any,
     private mapboxService: MapboxService,
     private translationService: TranslationService,
     @Inject(CacheService) private cacheService: CacheService,
@@ -781,48 +781,87 @@ export class SalonsService {
 
   async getCurrentUserSalon(userId: string) {
     console.log('🔍 Looking for salon for user:', userId);
-    const salon = await this.prisma.salon.findFirst({
-      where: {
-        ownerId: userId,
-      },
-      select: {
-        id: true,
-        name: true,
-        description: true,
-        address: true,
-        phone: true,
-        email: true,
-        website: true,
-        instagram: true,
-        photos: true,
-        workingHours: true,
-        reminderSettings: true,
-        ownerId: true,
-        createdAt: true,
-        latitude: true,
-        longitude: true,
-        descriptionEn: true,
-        descriptionVi: true,
-        descriptionRu: true,
-        slug: true,
-        timezone: true,
-        status: true,
-        autoConfirmBookings: true,
-        Service: {
-          include: {
-            ServiceGroup: true,
+    const salon = this.prisma.salon
+      ? await this.prisma.salon.findFirst({
+          where: {
+            ownerId: userId,
           },
-        },
-        Staff: true,
-        User: {
           select: {
             id: true,
             name: true,
+            description: true,
+            address: true,
+            phone: true,
             email: true,
-          },
-        },
-      } as any,
-    });
+            website: true,
+            instagram: true,
+            photos: true,
+            workingHours: true,
+            reminderSettings: true,
+            ownerId: true,
+            createdAt: true,
+            latitude: true,
+            longitude: true,
+            descriptionEn: true,
+            descriptionVi: true,
+            descriptionRu: true,
+            slug: true,
+            timezone: true,
+            status: true,
+            autoConfirmBookings: true,
+            Service: {
+              include: {
+                ServiceGroup: true,
+              },
+            },
+            Staff: true,
+            User: {
+              select: {
+                id: true,
+                name: true,
+                email: true,
+              },
+            },
+          } as any,
+        })
+      : this.prisma.studio
+        ? await this.prisma.studio.findFirst({
+            where: { ownerId: userId },
+            select: {
+              id: true,
+              name: true,
+              description: true,
+              address: true,
+              phone: true,
+              email: true,
+              website: true,
+              instagram: true,
+              photos: true,
+              workingHours: true,
+              reminderSettings: true,
+              ownerId: true,
+              createdAt: true,
+              latitude: true,
+              longitude: true,
+              descriptionEn: true,
+              descriptionVi: true,
+              descriptionRu: true,
+              slug: true,
+              timezone: true,
+              status: true,
+              autoConfirmBookings: true,
+              Training: true,
+              Trainer: true,
+              User: {
+                select: {
+                  id: true,
+                  name: true,
+                  email: true,
+                },
+              },
+            } as any,
+          })
+        : null;
 
     console.log('🔍 Salon found:', salon ? `ID: ${salon.id}` : 'None');
     if (salon) {
@@ -836,8 +875,11 @@ export class SalonsService {
       (salon as any).categories = serviceCategoryIds;
       // Average rating from reviews (как в веб — 5.0)
       const salonId = (salon as unknown as { id: string }).id;
+      const ratingWhere = this.prisma.salon
+        ? { salonId }
+        : { studioId: salonId };
       const ratingAgg = await this.prisma.review.aggregate({
-        where: { salonId },
+        where: ratingWhere,
         _avg: { rating: true },
         _count: { rating: true },
       });

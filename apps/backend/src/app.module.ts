@@ -2,9 +2,9 @@ import { Module } from '@nestjs/common';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { PrismaModule } from './prisma/prisma.module';
-import { SalonsModule } from './salons/salons.module';
-import { StaffModule } from './staff/staff.module';
-import { ServicesModule } from './services/services.module';
+import { StudiosModule } from './salons/studios.module';
+import { TrainersModule } from './trainers/trainers.module';
+import { TrainingsModule } from './trainings/trainings.module';
 import { AuthModule } from './auth/auth.module';
 import { ReviewsModule } from './reviews/reviews.module';
 import { GeocodingModule } from './geocoding/geocoding.module';
@@ -46,9 +46,9 @@ const backendEnvFile = resolveBackendEnvPath(__dirname);
     QueueModule,
     MonitoringModule,
     PrismaModule,
-    SalonsModule,
-    StaffModule,
-    ServicesModule,
+    StudiosModule,
+    TrainersModule,
+    TrainingsModule,
     AuthModule,
     ReviewsModule,
     GeocodingModule,

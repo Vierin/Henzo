@@ -2,10 +2,11 @@ import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 
 @Injectable()
-export class StaffService {
+export class TrainersService {
   constructor(private prisma: PrismaService) {}
 
-  async findBySalonId(salonId: string) {
+  async findByStudioId(studioId: string) {
+    const salonId = studioId;
     // Важно: Используем select вместо include для уменьшения payload
     return this.prisma.staff.findMany({
       where: { salonId },
@@ -32,7 +33,7 @@ export class StaffService {
     });
   }
 
-  async findById(id: string) {
+  async findTrainerById(id: string) {
     // Важно: Используем select вместо include для уменьшения payload
     return this.prisma.staff.findUnique({
       where: { id },
@@ -66,29 +67,34 @@ export class StaffService {
     });
   }
 
-  async create(data: {
+  async createTrainer(data: {
     name: string;
     email?: string;
     phone?: string;
     accessLevel: 'ADMIN' | 'EMPLOYEE';
-    salonId: string;
-    serviceIds?: string[];
+    studioId: string;
+    trainingIds?: string[];
   }) {
+    const createData = {
+      ...data,
+      salonId: data.studioId,
+      serviceIds: data.trainingIds,
+    };
     // Update salon status to READY if it's DRAFT
     const salon = await this.prisma.salon.findUnique({
-      where: { id: data.salonId },
+      where: { id: createData.salonId },
       select: { status: true },
     });
 
     if (salon?.status === 'DRAFT') {
       await this.prisma.salon.update({
-        where: { id: data.salonId },
+        where: { id: createData.salonId },
         data: { status: 'READY' },
       });
     }
 
     // Extract serviceIds from data
-    const { serviceIds, ...staffData } = data;
+    const { serviceIds, ...staffData } = createData;
 
     // If serviceIds is not provided or empty, connect to all services in the salon
     let serviceConnect: { connect: { id: string }[] } | undefined;
@@ -99,7 +105,7 @@ export class StaffService {
     } else {
       // Get all services for the salon
       const allServices = await this.prisma.service.findMany({
-        where: { salonId: data.salonId },
+        where: { salonId: createData.salonId },
         select: { id: true },
       });
       if (allServices.length > 0) {
@@ -134,18 +140,28 @@ export class StaffService {
     });
   }
 
-  async update(
+  async updateTrainer(
     id: string,
     data: {
       name?: string;
       email?: string;
       phone?: string;
       accessLevel?: 'ADMIN' | 'EMPLOYEE';
-      serviceIds?: string[];
+      trainingIds?: string[];
     },
   ) {
+    const updateData: {
+      name?: string;
+      email?: string;
+      phone?: string;
+      accessLevel?: 'ADMIN' | 'EMPLOYEE';
+      serviceIds?: string[];
+    } = {
+      ...data,
+      serviceIds: data.trainingIds,
+    };
     // Extract serviceIds from data
-    const { serviceIds, ...updateData } = data;
+    const { serviceIds, ...staffData } = updateData;
 
     // Prepare service connection if serviceIds is provided
     let serviceUpdate: { set: { id: string }[] } | undefined;
@@ -176,7 +192,7 @@ export class StaffService {
     return this.prisma.staff.update({
       where: { id },
       data: {
-        ...updateData,
+        ...staffData,
         ...(serviceUpdate && { Service: serviceUpdate }),
       },
       select: {
@@ -198,7 +214,7 @@ export class StaffService {
     });
   }
 
-  async delete(id: string) {
+  async deleteTrainer(id: string) {
     return this.prisma.staff.delete({
       where: { id },
     });

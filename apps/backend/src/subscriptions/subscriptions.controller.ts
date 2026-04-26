@@ -43,7 +43,16 @@ export class SubscriptionsController {
         ...subscription,
         configurationExpansionAllowed,
       };
-    } catch (error) {
+    } catch (error: any) {
+      // Owner without studio is a valid onboarding state, not an API failure.
+      if (error?.status === HttpStatus.NOT_FOUND) {
+        return {
+          success: true,
+          data: null,
+          needsSetup: true,
+          configurationExpansionAllowed: false,
+        };
+      }
       console.error('❌ Get current subscription failed:', error.message);
       throw new HttpException(
         error.message || 'Failed to get subscription',

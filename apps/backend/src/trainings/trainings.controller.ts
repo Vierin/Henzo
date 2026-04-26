@@ -11,54 +11,54 @@ import {
   HttpException,
   HttpStatus,
 } from '@nestjs/common';
-import { ServicesService } from './services.service';
+import { TrainingsService } from './trainings.service';
 import { TranslationService } from './translation.service';
 import { CreateServiceDto } from './dto/create-service.dto';
 import { UpdateServiceDto } from './dto/update-service.dto';
 import { AuthService } from '../auth/auth.service';
 import { SubscriptionsService } from '../subscriptions/subscriptions.service';
 
-@Controller('services')
-export class ServicesController {
+@Controller('trainings')
+export class TrainingsController {
   constructor(
-    private readonly servicesService: ServicesService,
+    private readonly trainingsService: TrainingsService,
     private readonly translationService: TranslationService,
     private readonly authService: AuthService,
     private readonly subscriptionsService: SubscriptionsService,
   ) {}
 
   @Get()
-  async getServicesBySalon(@Query('salonId') salonId: string) {
-    if (!salonId) {
-      throw new Error('Salon ID is required');
+  async getTrainingsByStudio(@Query('studioId') studioId: string) {
+    if (!studioId) {
+      throw new Error('Studio ID is required');
     }
-    return this.servicesService.findBySalonId(salonId);
+    return this.trainingsService.findByStudioId(studioId);
   }
 
   @Get('public')
-  async getPublicServices() {
-    return this.servicesService.findAllPublic();
+  async getPublicTrainings() {
+    return this.trainingsService.findAllPublicTrainings();
   }
 
   @Get('popular')
-  async getPopularServices(@Query('limit') limit?: string) {
+  async getPopularTrainings(@Query('limit') limit?: string) {
     const limitNum = limit ? parseInt(limit, 10) : 10;
-    return this.servicesService.findPopularServices(limitNum);
+    return this.trainingsService.findPopularServices(limitNum);
   }
 
   @Get('trending')
-  async getTrendingServices(@Query('limit') limit?: string) {
+  async getTrendingTrainings(@Query('limit') limit?: string) {
     const limitNum = limit ? parseInt(limit, 10) : 8;
-    return this.servicesService.findTrendingServices(limitNum);
+    return this.trainingsService.findTrendingServices(limitNum);
   }
 
   @Get('categories')
-  async getServiceCategories() {
-    return this.servicesService.getServiceCategories();
+  async getTrainingCategories() {
+    return this.trainingsService.getServiceCategories();
   }
 
   @Get('search')
-  async searchServices(@Query('q') query: string) {
+  async searchTrainings(@Query('q') query: string) {
     if (!query || query.trim().length < 3) {
       return {
         success: true,
@@ -67,7 +67,7 @@ export class ServicesController {
     }
 
     try {
-      const results = await this.servicesService.searchServices(query);
+      const results = await this.trainingsService.searchServices(query);
       return {
         success: true,
         data: results,
@@ -109,12 +109,12 @@ export class ServicesController {
   }
 
   @Get(':id')
-  async getServiceById(@Param('id') id: string) {
-    return this.servicesService.findById(id);
+  async getTrainingById(@Param('id') id: string) {
+    return this.trainingsService.findTrainingById(id);
   }
 
   @Post()
-  async createService(
+  async createTraining(
     @Headers('authorization') authHeader: string,
     @Body() createServiceDto: CreateServiceDto,
   ) {
@@ -126,20 +126,27 @@ export class ServicesController {
       currentUser.user.id,
       createServiceDto.salonId,
     );
-    return this.servicesService.create(createServiceDto);
+    return this.trainingsService.createTraining({
+      ...createServiceDto,
+      studioId: createServiceDto.salonId,
+      trainerIds: createServiceDto.staffIds,
+    });
   }
 
   @Put(':id')
-  async updateService(
+  async updateTraining(
     @Param('id') id: string,
     @Body() updateServiceDto: UpdateServiceDto,
   ) {
-    return this.servicesService.update(id, updateServiceDto);
+    return this.trainingsService.updateTraining(id, {
+      ...updateServiceDto,
+      trainerIds: updateServiceDto.staffIds,
+    });
   }
 
   @Delete(':id')
-  async deleteService(@Param('id') id: string) {
-    return this.servicesService.delete(id);
+  async deleteTraining(@Param('id') id: string) {
+    return this.trainingsService.deleteTraining(id);
   }
 
   // --- Service groups ---
@@ -148,7 +155,15 @@ export class ServicesController {
     if (!salonId) {
       throw new Error('Salon ID is required');
     }
-    return this.servicesService.findGroupsBySalon(salonId);
+    return this.trainingsService.findGroupsBySalon(salonId);
+  }
+
+  @Get('groups/by-studio')
+  async getGroupsByStudio(@Query('studioId') studioId: string) {
+    if (!studioId) {
+      throw new Error('Studio ID is required');
+    }
+    return this.trainingsService.findGroupsBySalon(studioId);
   }
 
   @Post('groups')
@@ -171,7 +186,7 @@ export class ServicesController {
       currentUser.user.id,
       body.salonId,
     );
-    return this.servicesService.createGroup(body);
+    return this.trainingsService.createGroup(body);
   }
 
   @Put('groups/:id')
@@ -187,11 +202,11 @@ export class ServicesController {
       isActive?: boolean;
     },
   ) {
-    return this.servicesService.updateGroup(id, body);
+    return this.trainingsService.updateGroup(id, body);
   }
 
   @Delete('groups/:id')
   async deleteGroup(@Param('id') id: string) {
-    return this.servicesService.deleteGroup(id);
+    return this.trainingsService.deleteGroup(id);
   }
 }

@@ -22,7 +22,7 @@
 		"changesSaved": "Изменения сохранены",
 		"saveFailed": "Не удалось сохранить",
 		"deleteFailed": "Не удалось удалить",
-		"setupSalonFirst": "Сначала настройте салон"
+		"setupSalonFirst": "Сначала настройте бизнес"
 	},
 	"nav": {
 		"dashboard": "Дашборд",
@@ -103,7 +103,7 @@
 		"allBookings": "Все записи",
 		"onlineBooking": "Онлайн-запись",
 		"loading": "Загрузка...",
-		"setupSalonFirst": "Сначала настройте салон",
+		"setupSalonFirst": "Сначала настройте бизнес",
 		"noBookingsToday": "Нет записей на сегодня",
 		"noUpcomingBookings": "Нет предстоящих записей"
 	},
@@ -310,7 +310,7 @@
 		"noAccess": "Нет доступа",
 		"staffMember": "сотрудника",
 		"error": "Ошибка",
-		"setupSalonFirst": "Сначала настройте салон",
+		"setupSalonFirst": "Сначала настройте бизнес",
 		"bookingConfirmed": "Бронирование подтверждено",
 		"bookingRejected": "Бронирование отклонено",
 		"bookingCancelled": "Запись отменена",

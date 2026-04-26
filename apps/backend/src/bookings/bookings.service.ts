@@ -21,7 +21,7 @@ export class BookingsService {
   private readonly defaultMaxAdvanceBookingDays = 90;
 
   constructor(
-    private prisma: PrismaService,
+    @Inject(PrismaService) private prisma: any,
     private emailService: EmailService,
     private configService: ConfigService,
     @Inject(forwardRef(() => NotificationsService))
@@ -796,8 +796,9 @@ export class BookingsService {
         date: options?.date,
       });
 
-      // Сначала находим салоны, принадлежащие владельцу
-      const ownerSalons = await this.prisma.salon.findMany({
+      // Сначала находим салоны/студии, принадлежащие владельцу
+      const ownerEntityRepo = this.prisma.salon ?? this.prisma.studio;
+      const ownerSalons = await ownerEntityRepo.findMany({
         where: {
           ownerId: ownerId,
         },
@@ -890,7 +891,12 @@ export class BookingsService {
 
       // P1: Оптимизация - используем select вместо include для уменьшения payload
       // Загружаем только необходимые поля
-      const bookings = await this.prisma.booking.findMany({
+      // In the new schema booking model can be named SessionBooking.
+      const bookingRepo = this.prisma.booking ?? this.prisma.sessionBooking;
+      if (!bookingRepo) {
+        return [];
+      }
+      const bookings = await bookingRepo.findMany({
         where,
         skip,
         take: limit,

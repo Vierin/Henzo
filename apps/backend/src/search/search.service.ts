@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Inject } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { Prisma } from '@prisma/client';
 import { CacheService } from '../cache/cache.service';
@@ -6,7 +6,7 @@ import { CacheService } from '../cache/cache.service';
 @Injectable()
 export class SearchService {
   constructor(
-    private prisma: PrismaService,
+    @Inject(PrismaService) private prisma: any,
     private cacheService: CacheService,
   ) {}
 

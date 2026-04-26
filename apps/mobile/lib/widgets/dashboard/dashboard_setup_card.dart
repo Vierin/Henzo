@@ -8,7 +8,7 @@ class DashboardSetupCard extends StatelessWidget {
     required this.onSetupTap,
   });
 
-  /// Called when user taps "Setup Salon"; typically pushes SalonSetupScreen and passes onSaved that pops and calls loadData.
+  /// Called when user taps "Setup Business"; typically pushes SalonSetupScreen and passes onSaved that pops and calls loadData.
   final VoidCallback onSetupTap;
 
   @override
@@ -39,7 +39,7 @@ class DashboardSetupCard extends StatelessWidget {
           ),
           const SizedBox(height: 8),
           const Text(
-            'Please complete your salon setup to start using the dashboard.',
+            'Please complete your business setup to start using the dashboard.',
             style: TextStyle(fontSize: 16, color: AppColors.textSecondary),
             textAlign: TextAlign.center,
           ),
@@ -54,7 +54,7 @@ class DashboardSetupCard extends StatelessWidget {
               ),
             ),
             child: const Text(
-              'Setup Salon',
+              'Setup Business',
               style: TextStyle(
                 color: AppColors.textInverse,
                 fontSize: 14,

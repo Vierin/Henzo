@@ -155,7 +155,7 @@
 		"registerAsClient": "Register as a client instead →",
 		"passwordsDoNotMatch": "Passwords do not match",
 		"passwordTooShort": "Password must be at least 6 characters",
-		"registrationSuccessful": "Business account created! Complete your salon setup.",
+		"registrationSuccessful": "Business account created! Complete your business setup.",
 		"registrationSuccessfulEmail": "Business account created! Please check your email to verify your account.",
 		"failedToRegister": "Failed to register business account",
 		"failedToRegisterGoogle": "Failed to register with Google",
@@ -168,7 +168,7 @@
 		"errorOccurred": "An error occurred. Please try again."
 	},
 	"completeSetup": {
-		"title": "Complete Your Salon Setup",
+		"title": "Complete Your Business Setup",
 		"subtitle": "Let's get your business ready for clients.",
 		"loading": "Loading...",
 		"step": "Step",
@@ -226,10 +226,10 @@
 			"invalidPhone": "Please enter a valid phone number"
 		},
 		"success": {
-			"salonSetupCompleted": "Salon setup completed successfully!"
+			"salonSetupCompleted": "Business setup completed successfully!"
 		},
 		"error": {
-			"failedToCompleteSetup": "Failed to complete salon setup"
+			"failedToCompleteSetup": "Failed to complete business setup"
 		}
 	}
 }

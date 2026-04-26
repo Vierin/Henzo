@@ -1,12 +1,13 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Inject } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { Prisma } from '@prisma/client';
 
 @Injectable()
-export class ServicesService {
-  constructor(private prisma: PrismaService) {}
+export class TrainingsService {
+  constructor(@Inject(PrismaService) private prisma: any) {}
 
-  async findBySalonId(salonId: string) {
+  async findByStudioId(studioId: string) {
+    const salonId = studioId;
     // Важно: Используем select вместо include для уменьшения payload
     const services = await this.prisma.service.findMany({
       where: { salonId },
@@ -66,7 +67,7 @@ export class ServicesService {
     }));
   }
 
-  async findById(id: string) {
+  async findTrainingById(id: string) {
     // Важно: Используем select вместо include для уменьшения payload
     const service = await this.prisma.service.findUnique({
       where: { id },
@@ -134,7 +135,7 @@ export class ServicesService {
     };
   }
 
-  async findAllPublic() {
+  async findAllPublicTrainings() {
     const services = await this.prisma.service.findMany({
       include: {
         Salon: {
@@ -161,7 +162,7 @@ export class ServicesService {
     }));
   }
 
-  async create(data: {
+  async createTraining(data: {
     name: string;
     description?: string;
     nameEn?: string;
@@ -172,26 +173,31 @@ export class ServicesService {
     descriptionRu?: string;
     duration: number;
     price: number;
-    salonId: string;
+    studioId: string;
     serviceCategoryId?: number;
     serviceGroupId?: string;
-    staffIds?: string[];
+    trainerIds?: string[];
   }) {
+    const createData = {
+      ...data,
+      salonId: data.studioId,
+      staffIds: data.trainerIds,
+    };
     // Update salon status to READY if it's DRAFT
     const salon = await this.prisma.salon.findUnique({
-      where: { id: data.salonId },
+      where: { id: createData.salonId },
       select: { status: true },
     });
 
     if (salon?.status === 'DRAFT') {
       await this.prisma.salon.update({
-        where: { id: data.salonId },
+        where: { id: createData.salonId },
         data: { status: 'READY' },
       });
     }
 
     // Extract staffIds from data
-    const { staffIds, ...serviceData } = data;
+    const { staffIds, ...serviceData } = createData;
 
     // If staffIds is not provided or empty, connect to all staff in the salon
     let staffConnect: { connect: { id: string }[] } | undefined;
@@ -202,7 +208,7 @@ export class ServicesService {
     } else {
       // Get all staff for the salon
       const allStaff = await this.prisma.staff.findMany({
-        where: { salonId: data.salonId },
+        where: { salonId: createData.salonId },
         select: { id: true },
       });
       if (allStaff.length > 0) {
@@ -225,7 +231,7 @@ export class ServicesService {
     });
   }
 
-  async update(
+  async updateTraining(
     id: string,
     data: {
       name?: string;
@@ -240,11 +246,29 @@ export class ServicesService {
       price?: number;
       serviceCategoryId?: number;
       serviceGroupId?: string | null;
-      staffIds?: string[];
+      trainerIds?: string[];
     },
   ) {
+    const finalData: {
+      name?: string;
+      description?: string;
+      nameEn?: string;
+      nameVi?: string;
+      nameRu?: string;
+      descriptionEn?: string;
+      descriptionVi?: string;
+      descriptionRu?: string;
+      duration?: number;
+      price?: number;
+      serviceCategoryId?: number;
+      serviceGroupId?: string | null;
+      staffIds?: string[];
+    } = {
+      ...data,
+      staffIds: data.trainerIds,
+    };
     // Extract staffIds from data
-    const { staffIds, ...updateData } = data;
+    const { staffIds, ...updateData } = finalData;
 
     // Prepare staff connection if staffIds is provided
     let staffUpdate: { set: { id: string }[] } | undefined;
@@ -285,7 +309,7 @@ export class ServicesService {
     });
   }
 
-  async delete(id: string) {
+  async deleteTraining(id: string) {
     return this.prisma.service.delete({
       where: { id },
     });

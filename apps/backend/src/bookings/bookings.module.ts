@@ -20,5 +20,6 @@ import { NotificationsModule } from '../notifications/notifications.module';
   ],
   controllers: [BookingsController],
   providers: [BookingsService, BookingsScheduler], // P2: Добавляем scheduler
+  exports: [BookingsService],
 })
 export class BookingsModule {}

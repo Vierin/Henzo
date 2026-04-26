@@ -14,17 +14,17 @@ import {
   Header,
 } from '@nestjs/common';
 import { Response } from 'express';
-import { SalonsService } from './salons.service';
+import { StudiosService } from './studios.service';
 import { UpdateSalonDto } from './dto/update-salon.dto';
 import { CreateSalonDto } from './dto/create-salon.dto';
 import { AuthService } from '../auth/auth.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { generateSalonSlug } from '../utils/slug';
 
-@Controller('salons')
-export class SalonsController {
+@Controller('studios')
+export class StudiosController {
   constructor(
-    private readonly salonsService: SalonsService,
+    private readonly studiosService: StudiosService,
     private readonly authService: AuthService,
     private readonly prisma: PrismaService,
   ) {}
@@ -33,7 +33,7 @@ export class SalonsController {
   @Header('Cache-Control', 'public, max-age=600') // P1: Кэш на 10 минут
   async getSalonsWithServices() {
     try {
-      return await this.salonsService.findSalonsWithServices();
+      return await this.studiosService.findSalonsWithServices();
     } catch (error) {
       console.error('❌ Error getting salons with services:', error);
       throw new HttpException(
@@ -80,7 +80,7 @@ export class SalonsController {
       west: west !== undefined ? parseFloat(west) : undefined,
     };
 
-    const result = await this.salonsService.searchSalons(params);
+    const result = await this.studiosService.searchSalons(params);
     return {
       success: true,
       ...result,
@@ -102,14 +102,14 @@ export class SalonsController {
       featured: featured === 'true',
     };
 
-    return this.salonsService.findSalonsPreview(params);
+    return this.studiosService.findSalonsPreview(params);
   }
 
   @Get('featured')
   @Header('Cache-Control', 'public, max-age=120, stale-while-revalidate=300')
   async getFeaturedSalons(@Query('limit') limit?: string) {
     const limitNum = limit ? parseInt(limit, 10) : 6;
-    return this.salonsService.findFeaturedSalons(limitNum);
+    return this.studiosService.findFeaturedSalons(limitNum);
   }
 
   @Get('nearby')
@@ -126,12 +126,12 @@ export class SalonsController {
       limit: limit ? parseInt(limit, 10) : 10,
     };
 
-    return this.salonsService.findNearbySalons(params);
+    return this.studiosService.findNearbySalons(params);
   }
 
   @Get(':id/stats')
   async getSalonStats(@Param('id') id: string) {
-    return this.salonsService.getSalonStats(id);
+    return this.studiosService.getSalonStats(id);
   }
 
   @Get(':id/availability')
@@ -140,20 +140,20 @@ export class SalonsController {
     @Query('date') date?: string,
     @Query('serviceId') serviceId?: string,
   ) {
-    return this.salonsService.getSalonAvailability(id, date, serviceId);
+    return this.studiosService.getSalonAvailability(id, date, serviceId);
   }
 
   @Get('categories')
   @Header('Cache-Control', 'public, max-age=86400') // Cache for 24 hours - categories rarely change
   async getSalonCategories() {
-    return this.salonsService.getSalonCategories();
+    return this.studiosService.getSalonCategories();
   }
 
   @Get('current')
   async getCurrentUserSalon(@Headers('authorization') authHeader: string) {
     try {
       const currentUser = await this.authService.getCurrentUser(authHeader);
-      const result = await this.salonsService.getCurrentUserSalon(
+      const result = await this.studiosService.getCurrentUserSalon(
         currentUser.user.id,
       );
 
@@ -182,7 +182,7 @@ export class SalonsController {
       const currentUser = await this.authService.getCurrentUser(authHeader);
       console.log('✅ User authenticated:', currentUser.user.email);
 
-      const result = await this.salonsService.createCurrentUserSalon(
+      const result = await this.studiosService.createCurrentUserSalon(
         createSalonDto,
         currentUser.user.id,
       );
@@ -209,7 +209,7 @@ export class SalonsController {
       const currentUser = await this.authService.getCurrentUser(authHeader);
       console.log('✅ User authenticated:', currentUser.user.email);
 
-      const result = await this.salonsService.updateCurrentUserSalon(
+      const result = await this.studiosService.updateCurrentUserSalon(
         updateSalonDto,
         currentUser.user.id,
       );
@@ -553,7 +553,7 @@ export class SalonsController {
   @Header('Cache-Control', 'public, max-age=120, stale-while-revalidate=300')
   async getSalonBySlug(@Param('slug') slug: string) {
     try {
-      const result = await this.salonsService.findBySlug(slug);
+      const result = await this.studiosService.findBySlug(slug);
       if (!result) {
         throw new HttpException('Salon not found', HttpStatus.NOT_FOUND);
       }
@@ -568,7 +568,7 @@ export class SalonsController {
   @Header('Cache-Control', 'public, max-age=120, stale-while-revalidate=300')
   async getSalonById(@Param('id') id: string) {
     try {
-      const result = await this.salonsService.findById(id);
+      const result = await this.studiosService.findById(id);
       if (!result) {
         throw new HttpException('Salon not found', HttpStatus.NOT_FOUND);
       }

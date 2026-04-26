@@ -12,8 +12,9 @@ export class SubscriptionsService {
 
   async getCurrentSubscription(userId: string) {
     try {
-      // Find user's salon
-      const salon = await this.prisma.salon.findFirst({
+      // Find user's salon/studio depending on active Prisma schema
+      const salonRepo = this.prisma.salon ?? this.prisma.studio;
+      const salon = await salonRepo.findFirst({
         where: {
           ownerId: userId,
         },
@@ -28,7 +29,7 @@ export class SubscriptionsService {
 
       const subscription = await this.prisma.subscription.findUnique({
         where: {
-          salonId: salon.id,
+          studioId: salon.id,
         },
       });
 
@@ -41,7 +42,7 @@ export class SubscriptionsService {
 
         const newSubscription = await this.prisma.subscription.create({
           data: {
-            salonId: salon.id,
+            studioId: salon.id,
             type: 'FREEMIUM',
             status: 'ACTIVE',
             startDate: now,
@@ -129,7 +130,7 @@ export class SubscriptionsService {
       throw new HttpException('Salon not found', HttpStatus.NOT_FOUND);
     }
     const subscription = await this.prisma.subscription.findUnique({
-      where: { salonId: salon.id },
+      where: { studioId: salon.id },
     });
     if (!subscription) {
       throw new HttpException('Subscription not found', HttpStatus.NOT_FOUND);
@@ -138,7 +139,7 @@ export class SubscriptionsService {
     const cancelDate =
       subscription.endDate ?? subscription.nextPaymentDate ?? new Date();
     await this.prisma.subscription.update({
-      where: { salonId: salon.id },
+      where: { studioId: salon.id },
       data: {
         status: 'CANCELLED',
         endDate: cancelDate,
@@ -168,7 +169,7 @@ export class SubscriptionsService {
       // Get current subscription
       const currentSubscription = await this.prisma.subscription.findUnique({
         where: {
-          salonId: salon.id,
+          studioId: salon.id,
         },
       });
 
@@ -182,7 +183,7 @@ export class SubscriptionsService {
 
       const updatedSubscription = await this.prisma.subscription.update({
         where: {
-          salonId: salon.id,
+          studioId: salon.id,
         },
         data: {
           type: planType,

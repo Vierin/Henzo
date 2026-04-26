@@ -22,7 +22,7 @@
 		"changesSaved": "Đã lưu thay đổi",
 		"saveFailed": "Lưu thất bại",
 		"deleteFailed": "Xóa thất bại",
-		"setupSalonFirst": "Hãy thiết lập salon trước"
+		"setupSalonFirst": "Hãy thiết lập doanh nghiệp trước"
 	},
 	"nav": {
 		"dashboard": "Bảng điều khiển",
@@ -103,7 +103,7 @@
 		"allBookings": "Tất cả đặt chỗ",
 		"onlineBooking": "Đặt chỗ trực tuyến",
 		"loading": "Đang tải...",
-		"setupSalonFirst": "Vui lòng thiết lập salon trước",
+		"setupSalonFirst": "Vui lòng thiết lập doanh nghiệp trước",
 		"noBookingsToday": "Không có đặt chỗ hôm nay",
 		"noUpcomingBookings": "Không có đặt chỗ sắp tới"
 	},
@@ -310,7 +310,7 @@
 		"noAccess": "Không có quyền",
 		"staffMember": "nhân viên",
 		"error": "Lỗi",
-		"setupSalonFirst": "Vui lòng thiết lập salon trước",
+		"setupSalonFirst": "Vui lòng thiết lập doanh nghiệp trước",
 		"bookingConfirmed": "Đã xác nhận đặt chỗ",
 		"bookingRejected": "Đã từ chối đặt chỗ",
 		"bookingCancelled": "Đã hủy đặt chỗ",

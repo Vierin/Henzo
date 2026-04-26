@@ -5,6 +5,7 @@ import '../services/auth_service.dart';
 import '../services/cache/salon_cache.dart';
 import '../services/dashboard_api_service.dart';
 import '../utils/show_api_error.dart';
+import '../widgets/address_picker_modal.dart';
 
 class SalonSetupScreen extends StatefulWidget {
   const SalonSetupScreen({super.key, required this.onSaved});
@@ -18,14 +19,14 @@ class SalonSetupScreen extends StatefulWidget {
 class _SalonSetupScreenState extends State<SalonSetupScreen> {
   final _nameController = TextEditingController();
   final _addressController = TextEditingController();
-  final _phoneController = TextEditingController();
+  double? _addressLat;
+  double? _addressLon;
   bool _isLoading = false;
 
   @override
   void dispose() {
     _nameController.dispose();
     _addressController.dispose();
-    _phoneController.dispose();
     super.dispose();
   }
 
@@ -34,7 +35,7 @@ class _SalonSetupScreenState extends State<SalonSetupScreen> {
     if (name.isEmpty) {
       ScaffoldMessenger.maybeOf(context)?.showSnackBar(
         const SnackBar(
-          content: Text('Введите название салона'),
+          content: Text('Введите название студии/школы'),
           backgroundColor: Colors.orange,
         ),
       );
@@ -58,15 +59,15 @@ class _SalonSetupScreenState extends State<SalonSetupScreen> {
         'name': name,
         if (_addressController.text.trim().isNotEmpty)
           'address': _addressController.text.trim(),
-        if (_phoneController.text.trim().isNotEmpty)
-          'phone': _phoneController.text.trim(),
+        if (_addressLat != null) 'latitude': _addressLat,
+        if (_addressLon != null) 'longitude': _addressLon,
       };
       await DashboardApiService.createCurrentSalon(token, payload);
       if (!mounted) return;
       context.read<SalonCache>().invalidate();
       ScaffoldMessenger.maybeOf(context)?.showSnackBar(
         const SnackBar(
-          content: Text('Салон создан'),
+          content: Text('Бизнес-аккаунт настроен'),
           backgroundColor: Colors.green,
         ),
       );
@@ -85,7 +86,7 @@ class _SalonSetupScreenState extends State<SalonSetupScreen> {
       backgroundColor: AppColors.backgroundSecondary,
       appBar: AppBar(
         title: const Text(
-          'Настройка салона',
+          'Настройка бизнес-аккаунта',
           style: TextStyle(
             fontSize: 18,
             fontWeight: FontWeight.w600,
@@ -104,34 +105,50 @@ class _SalonSetupScreenState extends State<SalonSetupScreen> {
             TextField(
               controller: _nameController,
               decoration: const InputDecoration(
-                labelText: 'Название салона *',
+                labelText: 'Название студии/школы *',
                 border: OutlineInputBorder(),
-                hintText: 'Например: Салон красоты',
+                hintText: 'Например: Fit Studio или Dance School',
               ),
               textCapitalization: TextCapitalization.words,
               enabled: !_isLoading,
             ),
             const SizedBox(height: 16),
-            TextField(
-              controller: _addressController,
-              decoration: const InputDecoration(
-                labelText: 'Адрес',
-                border: OutlineInputBorder(),
-                hintText: 'Адрес салона',
+            InkWell(
+              onTap: _isLoading
+                  ? null
+                  : () async {
+                      await AddressPickerModal.show(
+                        context,
+                        initialAddress: _addressController.text,
+                        initialLat: _addressLat,
+                        initialLon: _addressLon,
+                        onSelect: (address, lat, lon) {
+                          setState(() {
+                            _addressController.text = address;
+                            _addressLat = lat;
+                            _addressLon = lon;
+                          });
+                        },
+                      );
+                    },
+              borderRadius: BorderRadius.circular(4),
+              child: InputDecorator(
+                decoration: const InputDecoration(
+                  labelText: 'Адрес',
+                  border: OutlineInputBorder(),
+                  hintText: 'Адрес студии/школы',
+                  suffixIcon: Icon(Icons.location_on_outlined),
+                ),
+                child: Text(
+                  _addressController.text.isEmpty ? '' : _addressController.text,
+                  style: TextStyle(
+                    fontSize: 16,
+                    color: _addressController.text.isEmpty
+                        ? AppColors.textSecondary
+                        : AppColors.textPrimary,
+                  ),
+                ),
               ),
-              textCapitalization: TextCapitalization.words,
-              enabled: !_isLoading,
-            ),
-            const SizedBox(height: 16),
-            TextField(
-              controller: _phoneController,
-              decoration: const InputDecoration(
-                labelText: 'Телефон',
-                border: OutlineInputBorder(),
-                hintText: '+7 ...',
-              ),
-              keyboardType: TextInputType.phone,
-              enabled: !_isLoading,
             ),
             const SizedBox(height: 32),
             ElevatedButton(
@@ -151,7 +168,7 @@ class _SalonSetupScreenState extends State<SalonSetupScreen> {
                       child: CircularProgressIndicator(strokeWidth: 2),
                     )
                   : const Text(
-                      'Создать салон',
+                      'Сохранить настройки',
                       style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w600,

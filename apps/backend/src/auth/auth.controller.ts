@@ -356,7 +356,7 @@ export class AuthController {
       return {
         success: true,
         message: 'Salon added to favorites',
-        favoriteSalons: updatedUser.favoriteSalons,
+        favoriteSalons: updatedUser.favoriteStudios,
       };
     } catch (error) {
       this.logger.warn(
@@ -384,7 +384,7 @@ export class AuthController {
       return {
         success: true,
         message: 'Salon removed from favorites',
-        favoriteSalons: updatedUser.favoriteSalons,
+        favoriteSalons: updatedUser.favoriteStudios,
       };
     } catch (error) {
       this.logger.warn(

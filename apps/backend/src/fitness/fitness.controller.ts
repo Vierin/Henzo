@@ -8,22 +8,22 @@ import {
   Put,
   Query,
 } from '@nestjs/common';
-import { SalonsService } from '../salons/salons.service';
-import { ServicesService } from '../services/services.service';
-import { StaffService } from '../staff/staff.service';
+import { StudiosService } from '../salons/studios.service';
+import { TrainingsService } from '../trainings/trainings.service';
+import { TrainersService } from '../trainers/trainers.service';
 import { BookingsService } from '../bookings/bookings.service';
 import { AuthService } from '../auth/auth.service';
 import { SubscriptionsService } from '../subscriptions/subscriptions.service';
-import { CreateServiceDto } from '../services/dto/create-service.dto';
-import { UpdateServiceDto } from '../services/dto/update-service.dto';
+import { CreateServiceDto } from '../trainings/dto/create-service.dto';
+import { UpdateServiceDto } from '../trainings/dto/update-service.dto';
 import { CreateBookingDto } from '../bookings/dto/create-booking.dto';
 
 @Controller('fitness')
 export class FitnessController {
   constructor(
-    private readonly salonsService: SalonsService,
-    private readonly servicesService: ServicesService,
-    private readonly staffService: StaffService,
+    private readonly studiosService: StudiosService,
+    private readonly trainingsService: TrainingsService,
+    private readonly trainersService: TrainersService,
     private readonly bookingsService: BookingsService,
     private readonly authService: AuthService,
     private readonly subscriptionsService: SubscriptionsService,
@@ -33,7 +33,7 @@ export class FitnessController {
   @Get('studios/featured')
   async getFeaturedStudios(@Query('limit') limit?: string) {
     const limitNum = limit ? parseInt(limit, 10) : 6;
-    return this.salonsService.findFeaturedSalons(limitNum);
+    return this.studiosService.findFeaturedSalons(limitNum);
   }
 
   @Get('studios/search')
@@ -50,7 +50,7 @@ export class FitnessController {
     @Query('date') date?: string,
     @Query('time') time?: string,
   ) {
-    return this.salonsService.searchSalons({
+    return this.studiosService.searchSalons({
       page: page ? parseInt(page, 10) : undefined,
       limit: limit ? parseInt(limit, 10) : undefined,
       search,
@@ -67,31 +67,31 @@ export class FitnessController {
 
   @Get('studios/categories')
   async getStudioCategories() {
-    return this.salonsService.getSalonCategories();
+    return this.studiosService.getSalonCategories();
   }
 
   @Get('studios/current')
   async getCurrentStudio(@Headers('authorization') authHeader: string) {
     const currentUser = await this.authService.getCurrentUser(authHeader);
-    const data = await this.salonsService.getCurrentUserSalon(currentUser.user.id);
-    return { success: !!data, data };
+    const data = await this.studiosService.getCurrentUserSalon(currentUser.user.id);
+    return { success: true, data, needsSetup: !data };
   }
 
   // ---- Offerings (alias of services) ----
   @Get('offerings')
   async getOfferingsByStudio(@Query('studioId') studioId: string) {
-    return this.servicesService.findBySalonId(studioId);
+    return this.trainingsService.findByStudioId(studioId);
   }
 
   @Get('offerings/popular')
   async getPopularOfferings(@Query('limit') limit?: string) {
     const limitNum = limit ? parseInt(limit, 10) : 10;
-    return this.servicesService.findPopularServices(limitNum);
+    return this.trainingsService.findPopularServices(limitNum);
   }
 
   @Get('offerings/categories')
   async getOfferingCategories() {
-    return this.servicesService.getServiceCategories();
+    return this.trainingsService.getServiceCategories();
   }
 
   @Post('offerings')
@@ -104,18 +104,22 @@ export class FitnessController {
       currentUser.user.id,
       dto.salonId,
     );
-    return this.servicesService.create(dto);
+    return this.trainingsService.createTraining({
+      ...dto,
+      studioId: dto.salonId,
+      trainerIds: dto.staffIds,
+    });
   }
 
   @Put('offerings/:id')
   async updateOffering(@Param('id') id: string, @Body() dto: UpdateServiceDto) {
-    return this.servicesService.update(id, dto);
+    return this.trainingsService.updateTraining(id, dto as any);
   }
 
-  // ---- Trainers (alias of staff) ----
+  // ---- Trainers ----
   @Get('trainers')
   async getTrainers(@Query('studioId') studioId: string) {
-    return this.staffService.findBySalonId(studioId);
+    return this.trainersService.findByStudioId(studioId);
   }
 
   @Post('trainers')
@@ -127,16 +131,16 @@ export class FitnessController {
       email?: string;
       phone?: string;
       accessLevel: 'ADMIN' | 'EMPLOYEE';
-      salonId: string;
-      serviceIds?: string[];
+      studioId: string;
+      trainingIds?: string[];
     },
   ) {
     const currentUser = await this.authService.getCurrentUser(authHeader);
     await this.subscriptionsService.assertSalonOwnerMayExpandConfiguration(
       currentUser.user.id,
-      data.salonId,
+      data.studioId,
     );
-    return this.staffService.create(data);
+    return this.trainersService.createTrainer(data);
   }
 
   // ---- Session bookings (alias of bookings) ----

@@ -1,5 +1,6 @@
 import {
   Injectable,
+  Inject,
   BadRequestException,
   UnauthorizedException,
 } from '@nestjs/common';
@@ -26,7 +27,7 @@ export class AuthService {
   private readonly ROLE_SYNC_TTL = 5 * 60 * 1000; // 5 минут между синхронизациями
 
   constructor(
-    private prisma: PrismaService,
+    @Inject(PrismaService) private prisma: any,
     private emailService: EmailService,
     private configService: ConfigService,
     private jwtVerifier: JwtVerifierService,
@@ -974,10 +975,17 @@ export class AuthService {
           const roleFromMetadata =
             user.app_metadata?.role || user.user_metadata?.role;
 
-          // Проверяем, есть ли у пользователя салоны (для восстановления роли OWNER)
-          const existingSalons = await this.prisma.salon.findMany({
-            where: { ownerId: user.id },
-          });
+          // Проверяем, есть ли у пользователя студии/салоны (для восстановления роли OWNER).
+          // Поддерживаем обе схемы (studio/salon), чтобы не падать на рассинхроне Prisma моделей.
+          const existingSalons = this.prisma.studio
+            ? await this.prisma.studio.findMany({
+                where: { ownerId: user.id },
+              })
+            : this.prisma.salon
+              ? await this.prisma.salon.findMany({
+                  where: { ownerId: user.id },
+                })
+              : [];
 
           // Определяем роль: сначала из метаданных, потом из салонов, потом CLIENT по умолчанию
           const userRole =
