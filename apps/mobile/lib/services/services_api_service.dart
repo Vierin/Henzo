@@ -2,16 +2,17 @@ import 'package:flutter/foundation.dart';
 
 import 'api_client.dart';
 import '../models/service_item.dart';
+import '../models/training_category_option.dart';
 
 class ServicesApiService {
-  /// GET /fitness/offerings?studioId= — список offerings студии.
-  static Future<List<ServiceItem>> getBySalon(
+  /// GET /trainings?studioId= — список тренировок студии.
+  static Future<List<ServiceItem>> getByStudio(
     String accessToken,
-    String salonId,
+    String studioId,
   ) async {
     try {
       final body = await ApiClient.get(
-        '/fitness/offerings?studioId=${Uri.encodeComponent(salonId)}',
+        '/trainings?studioId=${Uri.encodeComponent(studioId)}',
         accessToken,
       );
       final list = body is List
@@ -31,30 +32,69 @@ class ServicesApiService {
       }
       return result;
     } on ApiException catch (e) {
-      if (kDebugMode) debugPrint('[ServicesAPI] getBySalon: $e');
+      if (kDebugMode) debugPrint('[ServicesAPI] getByStudio: $e');
       return [];
     }
   }
 
-  /// POST /fitness/offerings — создать offering.
+  /// GET /trainings/categories — справочник категорий.
+  static Future<List<TrainingCategoryOption>> getTrainingCategories(
+    String accessToken,
+  ) async {
+    try {
+      final body = await ApiClient.get('/trainings/categories', accessToken);
+      final raw = body is List
+          ? body
+          : (body is Map && body['data'] is List
+              ? body['data'] as List
+              : <dynamic>[]);
+      final out = <TrainingCategoryOption>[];
+      for (final item in raw) {
+        if (item is! Map) continue;
+        try {
+          out.add(
+            TrainingCategoryOption.fromJson(
+              Map<String, dynamic>.from(item),
+            ),
+          );
+        } catch (e) {
+          if (kDebugMode) {
+            debugPrint('[ServicesAPI] category parse: $e');
+          }
+        }
+      }
+      out.sort((a, b) => a.nameEn.toLowerCase().compareTo(b.nameEn.toLowerCase()));
+      return out;
+    } on ApiException catch (e) {
+      if (kDebugMode) debugPrint('[ServicesAPI] getTrainingCategories: $e');
+      return [];
+    }
+  }
+
+  /// POST /trainings — создать тренировку.
   static Future<ServiceItem?> create(
     String accessToken, {
-    required String salonId,
+    required String studioId,
     required String name,
     required double price,
     required int duration,
+    int? trainingCategoryId,
   }) async {
     try {
+      final payload = <String, dynamic>{
+        'studioId': studioId,
+        'name': name,
+        'price': price,
+        'duration': duration,
+      };
+      if (trainingCategoryId != null) {
+        payload['trainingCategoryId'] = trainingCategoryId;
+      }
       final map =
           await ApiClient.post(
-                '/fitness/offerings',
+                '/trainings',
                 accessToken,
-                body: {
-                  'salonId': salonId,
-                  'name': name,
-                  'price': price,
-                  'duration': duration,
-                },
+                body: payload,
               )
               as Map<String, dynamic>?;
       return map != null ? ServiceItem.fromJson(map) : null;
@@ -64,7 +104,7 @@ class ServicesApiService {
     }
   }
 
-  /// PUT /fitness/offerings/:id — обновить offering.
+  /// PUT /trainings/:id — обновить тренировку.
   static Future<ServiceItem?> update(
     String accessToken,
     String id, {
@@ -81,7 +121,7 @@ class ServicesApiService {
       if (duration != null) data['duration'] = duration;
       final map =
           await ApiClient.put(
-                '/fitness/offerings/$id',
+                '/trainings/$id',
                 accessToken,
                 body: data.isEmpty ? null : data,
               )
@@ -93,10 +133,10 @@ class ServicesApiService {
     }
   }
 
-  /// DELETE /services/:id — удалить услугу.
+  /// DELETE /trainings/:id — удалить тренировку.
   static Future<bool> delete(String accessToken, String id) async {
     try {
-      await ApiClient.delete('/services/$id', accessToken);
+      await ApiClient.delete('/trainings/$id', accessToken);
       return true;
     } on ApiException catch (e) {
       if (kDebugMode) debugPrint('[ServicesAPI] delete: $e');

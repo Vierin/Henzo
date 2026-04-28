@@ -8,7 +8,6 @@ import '../../services/cache/bookings_cache.dart';
 import '../../services/dashboard_api_service.dart';
 import '../../utils/show_api_error.dart';
 import '../../widgets/dashboard/booking_detail_modal.dart';
-import '../../widgets/dashboard/new_booking_modal.dart';
 
 enum _BookingFilter { all, new_, pending, completed }
 
@@ -67,21 +66,6 @@ class _AllBookingsScreenState extends State<AllBookingsScreen> {
             .where((b) => b.status == BookingStatus.completed)
             .toList();
     }
-  }
-
-  Future<void> _handleEditBooking(Booking booking) async {
-    final token = context.read<AuthService>().accessToken;
-    if (token == null) return;
-    await NewBookingModal.show(
-      context,
-      accessToken: token,
-      onSaved: _loadData,
-      getAccessToken: () async {
-        await context.read<AuthService>().refreshSession();
-        return context.read<AuthService>().accessToken;
-      },
-      existingBooking: booking,
-    );
   }
 
   Future<void> _handleCancelBooking(String id) async {
@@ -202,7 +186,6 @@ class _AllBookingsScreenState extends State<AllBookingsScreen> {
                                 onTap: () => BookingDetailModal.show(
                                   context,
                                   booking: b,
-                                  onEdit: _handleEditBooking,
                                   onCancel: _handleCancelBooking,
                                   onConfirm: _handleConfirmBooking,
                                   onReject: _handleRejectBooking,

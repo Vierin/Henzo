@@ -16,7 +16,6 @@ import { TranslationService } from './translation.service';
 import { CreateServiceDto } from './dto/create-service.dto';
 import { UpdateServiceDto } from './dto/update-service.dto';
 import { AuthService } from '../auth/auth.service';
-import { SubscriptionsService } from '../subscriptions/subscriptions.service';
 
 @Controller('trainings')
 export class TrainingsController {
@@ -24,7 +23,6 @@ export class TrainingsController {
     private readonly trainingsService: TrainingsService,
     private readonly translationService: TranslationService,
     private readonly authService: AuthService,
-    private readonly subscriptionsService: SubscriptionsService,
   ) {}
 
   @Get()
@@ -54,7 +52,7 @@ export class TrainingsController {
 
   @Get('categories')
   async getTrainingCategories() {
-    return this.trainingsService.getServiceCategories();
+    return this.trainingsService.getTrainingCategories();
   }
 
   @Get('search')
@@ -122,91 +120,76 @@ export class TrainingsController {
     if (currentUser.user.role !== 'OWNER') {
       throw new HttpException('Forbidden', HttpStatus.FORBIDDEN);
     }
-    await this.subscriptionsService.assertSalonOwnerMayExpandConfiguration(
+    const isOwner = await this.trainingsService.isStudioOwnedByOwner(
+      createServiceDto.studioId,
       currentUser.user.id,
-      createServiceDto.salonId,
     );
+    if (!isOwner) {
+      throw new HttpException('Forbidden', HttpStatus.FORBIDDEN);
+    }
+    const createBody = createServiceDto as CreateServiceDto & {
+      serviceCategoryId?: number;
+    };
     return this.trainingsService.createTraining({
       ...createServiceDto,
-      studioId: createServiceDto.salonId,
+      trainingCategoryId:
+        createBody.trainingCategoryId ?? createBody.serviceCategoryId,
       trainerIds: createServiceDto.staffIds,
     });
   }
 
   @Put(':id')
   async updateTraining(
+    @Headers('authorization') authHeader: string,
     @Param('id') id: string,
     @Body() updateServiceDto: UpdateServiceDto,
-  ) {
-    return this.trainingsService.updateTraining(id, {
-      ...updateServiceDto,
-      trainerIds: updateServiceDto.staffIds,
-    });
-  }
-
-  @Delete(':id')
-  async deleteTraining(@Param('id') id: string) {
-    return this.trainingsService.deleteTraining(id);
-  }
-
-  // --- Service groups ---
-  @Get('groups/by-salon')
-  async getGroupsBySalon(@Query('salonId') salonId: string) {
-    if (!salonId) {
-      throw new Error('Salon ID is required');
-    }
-    return this.trainingsService.findGroupsBySalon(salonId);
-  }
-
-  @Get('groups/by-studio')
-  async getGroupsByStudio(@Query('studioId') studioId: string) {
-    if (!studioId) {
-      throw new Error('Studio ID is required');
-    }
-    return this.trainingsService.findGroupsBySalon(studioId);
-  }
-
-  @Post('groups')
-  async createGroup(
-    @Headers('authorization') authHeader: string,
-    @Body()
-    body: {
-      salonId: string;
-      name: string;
-      nameEn?: string;
-      nameVi?: string;
-      nameRu?: string;
-    },
   ) {
     const currentUser = await this.authService.getCurrentUser(authHeader);
     if (currentUser.user.role !== 'OWNER') {
       throw new HttpException('Forbidden', HttpStatus.FORBIDDEN);
     }
-    await this.subscriptionsService.assertSalonOwnerMayExpandConfiguration(
+    const studioId = await this.trainingsService.findTrainingStudioId(id);
+    if (!studioId) {
+      throw new HttpException('Training not found', HttpStatus.NOT_FOUND);
+    }
+    const isOwner = await this.trainingsService.isStudioOwnedByOwner(
+      studioId,
       currentUser.user.id,
-      body.salonId,
     );
-    return this.trainingsService.createGroup(body);
+    if (!isOwner) {
+      throw new HttpException('Forbidden', HttpStatus.FORBIDDEN);
+    }
+    const updateBody = updateServiceDto as UpdateServiceDto & {
+      serviceCategoryId?: number | null;
+    };
+    return this.trainingsService.updateTraining(id, {
+      ...updateServiceDto,
+      trainingCategoryId:
+        updateBody.trainingCategoryId ?? updateBody.serviceCategoryId,
+      trainerIds: updateServiceDto.staffIds,
+    });
   }
 
-  @Put('groups/:id')
-  async updateGroup(
+  @Delete(':id')
+  async deleteTraining(
+    @Headers('authorization') authHeader: string,
     @Param('id') id: string,
-    @Body()
-    body: {
-      name?: string;
-      nameEn?: string;
-      nameVi?: string;
-      nameRu?: string;
-      position?: number;
-      isActive?: boolean;
-    },
   ) {
-    return this.trainingsService.updateGroup(id, body);
-  }
-
-  @Delete('groups/:id')
-  async deleteGroup(@Param('id') id: string) {
-    return this.trainingsService.deleteGroup(id);
+    const currentUser = await this.authService.getCurrentUser(authHeader);
+    if (currentUser.user.role !== 'OWNER') {
+      throw new HttpException('Forbidden', HttpStatus.FORBIDDEN);
+    }
+    const studioId = await this.trainingsService.findTrainingStudioId(id);
+    if (!studioId) {
+      throw new HttpException('Training not found', HttpStatus.NOT_FOUND);
+    }
+    const isOwner = await this.trainingsService.isStudioOwnedByOwner(
+      studioId,
+      currentUser.user.id,
+    );
+    if (!isOwner) {
+      throw new HttpException('Forbidden', HttpStatus.FORBIDDEN);
+    }
+    return this.trainingsService.deleteTraining(id);
   }
 }

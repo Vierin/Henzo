@@ -25,6 +25,17 @@ export class AuthService {
   // Кэш для синхронизации app_metadata (ленивая синхронизация)
   private roleSyncCache = new Map<string, { lastSync: number; role: string }>();
   private readonly ROLE_SYNC_TTL = 5 * 60 * 1000; // 5 минут между синхронизациями
+  private readonly clientRegistrationOtpStore = new Map<
+    string,
+    {
+      code: string;
+      expiresAt: number;
+      attempts: number;
+      payload: { email: string; password: string; name?: string; phone?: string };
+    }
+  >();
+  private readonly CLIENT_OTP_TTL_MS = 10 * 60 * 1000;
+  private readonly CLIENT_OTP_MAX_ATTEMPTS = 5;
 
   constructor(
     @Inject(PrismaService) private prisma: any,
@@ -32,6 +43,96 @@ export class AuthService {
     private configService: ConfigService,
     private jwtVerifier: JwtVerifierService,
   ) {}
+
+  private getFrontendUrl() {
+    return (
+      this.configService.get<string>('FRONTEND_URL') ||
+      process.env.FRONTEND_URL ||
+      'https://henzo.app'
+    );
+  }
+
+  private generateOtpCode() {
+    return Math.floor(100000 + Math.random() * 900000).toString();
+  }
+
+  private normalizeEmail(email: string) {
+    return email.toLowerCase().trim();
+  }
+
+  private async sendClientRegistrationOtpEmail(email: string, code: string) {
+    await this.emailService.sendEmail({
+      to: email,
+      subject: 'Your Henzo verification code',
+      html: `
+        <div style="font-family:Arial,sans-serif;line-height:1.5;color:#111">
+          <h2 style="margin-bottom:8px">Confirm your Henzo account</h2>
+          <p style="margin:0 0 12px">Use this code in the app to finish registration:</p>
+          <div style="font-size:32px;font-weight:700;letter-spacing:6px;margin:12px 0">${code}</div>
+          <p style="margin:12px 0 0;color:#666">Code expires in 10 minutes.</p>
+        </div>
+      `,
+      fromName: 'Henzo',
+    });
+  }
+
+  async requestClientRegistrationCode(data: {
+    email: string;
+    password: string;
+    name?: string;
+    phone?: string;
+  }) {
+    const email = this.normalizeEmail(data.email);
+    if (!email || !data.password || data.password.length < 6) {
+      throw new BadRequestException('Invalid registration payload');
+    }
+
+    const existingUser = await this.prisma.user.findUnique({
+      where: { email },
+    });
+    if (existingUser && existingUser.role !== 'CLIENT') {
+      throw new BadRequestException('User with this email already exists');
+    }
+
+    const code = this.generateOtpCode();
+    this.clientRegistrationOtpStore.set(email, {
+      code,
+      expiresAt: Date.now() + this.CLIENT_OTP_TTL_MS,
+      attempts: 0,
+      payload: {
+        email,
+        password: data.password,
+        name: data.name,
+        phone: data.phone,
+      },
+    });
+    await this.sendClientRegistrationOtpEmail(email, code);
+    return { success: true };
+  }
+
+  async verifyClientRegistrationCode(data: { email: string; code: string }) {
+    const email = this.normalizeEmail(data.email);
+    const otp = this.clientRegistrationOtpStore.get(email);
+    if (!otp) {
+      throw new BadRequestException('Verification code not requested');
+    }
+    if (Date.now() > otp.expiresAt) {
+      this.clientRegistrationOtpStore.delete(email);
+      throw new BadRequestException('Verification code expired');
+    }
+    if (otp.attempts >= this.CLIENT_OTP_MAX_ATTEMPTS) {
+      this.clientRegistrationOtpStore.delete(email);
+      throw new BadRequestException('Too many attempts');
+    }
+    if ((data.code || '').trim() !== otp.code) {
+      otp.attempts += 1;
+      this.clientRegistrationOtpStore.set(email, otp);
+      throw new BadRequestException('Invalid verification code');
+    }
+
+    this.clientRegistrationOtpStore.delete(email);
+    return this.registerClient(otp.payload);
+  }
 
   /**
    * Owner registration must prove Supabase identity when userId is sent:
@@ -692,15 +793,22 @@ export class AuthService {
         '✅ User not found in database, proceeding with registration',
       );
 
-      // Создаем пользователя в Supabase (отключаем подтверждение email для разработки)
-      console.log('📧 Creating user in Supabase...');
-      const { data: authData, error: authError } = await supabase.auth.signUp({
-        email: data.email,
-        password: data.password,
-        options: {
-          emailRedirectTo: undefined, // Отключаем перенаправление
-        },
-      });
+      // Создаем пользователя через Admin API с подтвержденным email:
+      // подтверждение мы уже сделали через OTP от Henzo.
+      console.log('📧 Creating user in Supabase (admin, email confirmed)...');
+      const { data: authData, error: authError } =
+        await supabase.auth.admin.createUser({
+          email: data.email,
+          password: data.password,
+          email_confirm: true,
+          user_metadata: {
+            name: data.name,
+            phone: data.phone,
+          },
+          app_metadata: {
+            role: 'CLIENT',
+          },
+        });
 
       if (authError) {
         console.error('❌ Supabase auth error:', authError.message);
@@ -741,6 +849,16 @@ export class AuthService {
         // Не блокируем регистрацию, если не удалось обновить метаданные
       }
 
+      // Получаем session после создания (admin.createUser не возвращает её).
+      const { data: signInData, error: signInError } =
+        await supabase.auth.signInWithPassword({
+          email: data.email,
+          password: data.password,
+        });
+      if (signInError) {
+        throw new Error(signInError.message || 'Failed to create session');
+      }
+
       return {
         user: {
           id: user.id,
@@ -749,7 +867,7 @@ export class AuthService {
           phone: user.phone,
           role: user.role,
         },
-        session: authData.session,
+        session: signInData.session,
       };
     } catch (error) {
       throw new Error(`Registration failed: ${error.message}`);
@@ -1306,8 +1424,18 @@ export class AuthService {
     }
   }
 
-  async updateUserRole(userId: string, role: 'CLIENT' | 'OWNER' | 'ADMIN') {
+  async updateUserRole(
+    userId: string,
+    role: 'CLIENT' | 'OWNER' | 'ADMIN',
+    options?: { allowPrivilegeEscalation?: boolean },
+  ) {
     try {
+      if (
+        !options?.allowPrivilegeEscalation &&
+        (role === 'OWNER' || role === 'ADMIN')
+      ) {
+        throw new Error('Privilege escalation is not allowed');
+      }
       // Обновляем роль в базе данных
       const updatedUser = await this.prisma.user.update({
         where: { id: userId },
@@ -1529,7 +1657,7 @@ export class AuthService {
               name: true,
               price: true,
               duration: true,
-              // Убираем description, serviceCategoryId, serviceGroupId - не нужны для списка
+              // Убираем description при необходимости — не нужны для списка
             },
           },
           Review: {
@@ -1991,11 +2119,7 @@ export class AuthService {
       // Генерируем magic link с redirectTo на URL С ЛОКАЛЬЮ.
       // Важно: фронт middleware редиректит все пути без /{locale}/, и hash (#access_token=...)
       // при серверном редиректе теряется. Поэтому redirectTo должен содержать locale.
-      const frontendUrl =
-        this.configService.get<string>('FRONTEND_URL') ||
-        (process.env.NODE_ENV === 'production'
-          ? 'https://henzo.app'
-          : 'http://localhost:3000');
+      const frontendUrl = this.getFrontendUrl();
 
       const safeLocale =
         locale === 'ru' || locale === 'en' || locale === 'vi' ? locale : 'vi';

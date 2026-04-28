@@ -34,7 +34,11 @@ class BookingsCache extends ChangeNotifier {
       notifyListeners();
       return list;
     } catch (_) {
-      rethrow;
+      _bookings = [];
+      _tokenHint = accessToken;
+      _fetchedAt = DateTime.now();
+      notifyListeners();
+      return [];
     }
   }
 

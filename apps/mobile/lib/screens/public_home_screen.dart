@@ -5,7 +5,6 @@ import '../constants/colors.dart';
 import '../l10n/locale_provider.dart';
 import '../models/public_studio_preview.dart';
 import '../widgets/public/top_studio_card.dart';
-import 'login_screen.dart';
 
 class PublicHomeScreen extends StatefulWidget {
   const PublicHomeScreen({super.key});
@@ -64,12 +63,6 @@ class _PublicHomeScreenState extends State<PublicHomeScreen> {
     }).toList();
   }
 
-  void _openLogin() {
-    Navigator.of(context).push(
-      MaterialPageRoute(builder: (_) => const LoginScreen()),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     final locale = context.watch<LocaleProvider>();
@@ -98,14 +91,22 @@ class _PublicHomeScreenState extends State<PublicHomeScreen> {
                       ),
                     ),
                     const Spacer(),
-                    TextButton(
-                      onPressed: _openLogin,
-                      style: TextButton.styleFrom(
-                        foregroundColor: AppColors.primary500,
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 6,
                       ),
-                      child: Text(
-                        locale.t('publicHome.loginLink'),
-                        style: const TextStyle(fontWeight: FontWeight.w700),
+                      decoration: BoxDecoration(
+                        color: AppColors.neutral50,
+                        borderRadius: BorderRadius.circular(999),
+                        border: Border.all(color: AppColors.borderPrimary),
+                      ),
+                      child: const Text(
+                        'Client home',
+                        style: TextStyle(
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.textPrimary,
+                        ),
                       ),
                     ),
                   ],
@@ -243,49 +244,86 @@ class _PublicHomeScreenState extends State<PublicHomeScreen> {
                 ),
               ),
             ),
+            const SliverToBoxAdapter(child: SizedBox(height: 12)),
             SliverToBoxAdapter(
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(16, 14, 16, 24),
-                child: Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.all(18),
-                  decoration: BoxDecoration(
-                    color: AppColors.primary500,
-                    borderRadius: BorderRadius.circular(18),
+              child: Container(
+                width: double.infinity,
+                padding: const EdgeInsets.fromLTRB(16, 18, 16, 20),
+                decoration: const BoxDecoration(
+                  color: AppColors.neutral100,
+                  border: Border(
+                    top: BorderSide(color: AppColors.borderPrimary),
                   ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        locale.t('publicHome.ownerCtaTitle'),
-                        style: const TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.w800,
-                          color: Colors.white,
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        const Icon(
+                          Icons.fitness_center,
+                          size: 16,
+                          color: AppColors.primary500,
                         ),
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        locale.t('publicHome.ownerCtaBody'),
-                        style: const TextStyle(
-                          fontSize: 13,
-                          color: Colors.white,
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-                      FilledButton(
-                        onPressed: _openLogin,
-                        style: FilledButton.styleFrom(
-                          backgroundColor: Colors.white,
-                          foregroundColor: AppColors.primary500,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(10),
+                        const SizedBox(width: 8),
+                        const Text(
+                          'Henzo',
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w800,
+                            color: AppColors.textPrimary,
                           ),
                         ),
-                        child: Text(locale.t('publicHome.ownerCtaButton')),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    const Text(
+                      'Book trainings. Grow your studio.',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: AppColors.textSecondary,
                       ),
-                    ],
-                  ),
+                    ),
+                    const SizedBox(height: 12),
+                    Wrap(
+                      spacing: 16,
+                      runSpacing: 8,
+                      children: const [
+                        Text(
+                          'Privacy',
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                            color: AppColors.textSecondary,
+                          ),
+                        ),
+                        Text(
+                          'Terms',
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                            color: AppColors.textSecondary,
+                          ),
+                        ),
+                        Text(
+                          'Contact',
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                            color: AppColors.textSecondary,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 10),
+                    const Text(
+                      '© 2026 Henzo',
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: AppColors.textTertiary,
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ),

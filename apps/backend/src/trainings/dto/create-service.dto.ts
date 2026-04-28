@@ -50,15 +50,11 @@ export class CreateServiceDto {
   price: number;
 
   @IsString()
-  salonId: string;
+  studioId: string;
 
   @IsOptional()
   @IsInt()
-  serviceCategoryId?: number;
-
-  @IsOptional()
-  @IsString()
-  serviceGroupId?: string;
+  trainingCategoryId?: number;
 
   @IsOptional()
   @IsArray()

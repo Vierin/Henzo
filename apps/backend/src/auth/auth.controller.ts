@@ -105,6 +105,40 @@ export class AuthController {
     }
   }
 
+  @Post('register-client/request-code')
+  async requestClientRegistrationCode(@Body() data: RegisterClientDto) {
+    try {
+      this.logger.log('Client registration OTP request');
+      return await this.authService.requestClientRegistrationCode(data);
+    } catch (error) {
+      this.logger.warn(
+        `Client registration OTP request failed: ${error instanceof Error ? error.message : String(error)}`,
+      );
+      throw new HttpException(
+        error.message || 'Failed to send verification code',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+  }
+
+  @Post('register-client/verify-code')
+  async verifyClientRegistrationCode(
+    @Body() data: { email: string; code: string },
+  ) {
+    try {
+      this.logger.log('Client registration OTP verify');
+      return await this.authService.verifyClientRegistrationCode(data);
+    } catch (error) {
+      this.logger.warn(
+        `Client registration OTP verify failed: ${error instanceof Error ? error.message : String(error)}`,
+      );
+      throw new HttpException(
+        error.message || 'Failed to verify code',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+  }
+
   @Post('login-client')
   async loginClient(@Body() data: { email: string; password: string }) {
     try {
@@ -190,9 +224,18 @@ export class AuthController {
   }
 
   @Post('user-role')
-  async getUserRole(@Body() data: GetUserRoleDto) {
+  async getUserRole(
+    @Body() data: GetUserRoleDto,
+    @Headers('authorization') authHeader: string,
+  ) {
     try {
-      const role = await this.authService.getUserRole(data.userId);
+      const currentUser = await this.authService.getCurrentUser(authHeader);
+      const requestedUserId = data.userId?.trim() || currentUser.user.id;
+      const isAdmin = currentUser.user.role === 'ADMIN';
+      if (!isAdmin && requestedUserId !== currentUser.user.id) {
+        throw new HttpException('Forbidden', HttpStatus.FORBIDDEN);
+      }
+      const role = await this.authService.getUserRole(requestedUserId);
       return { role };
     } catch (error) {
       this.logger.warn(
@@ -211,6 +254,12 @@ export class AuthController {
     @Headers('authorization') authHeader: string,
   ) {
     try {
+      if (data.role !== 'CLIENT') {
+        throw new HttpException(
+          'Only CLIENT role is allowed for self-update',
+          HttpStatus.FORBIDDEN,
+        );
+      }
       // Получаем текущего пользователя
       const currentUser = await this.authService.getCurrentUser(authHeader);
 
@@ -249,6 +298,7 @@ export class AuthController {
       const updatedUser = await this.authService.updateUserRole(
         data.userId,
         data.role,
+        { allowPrivilegeEscalation: true },
       );
       return {
         success: true,

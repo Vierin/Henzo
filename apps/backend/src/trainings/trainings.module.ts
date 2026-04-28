@@ -4,10 +4,9 @@ import { TrainingsService } from './trainings.service';
 import { TranslationService } from './translation.service';
 import { PrismaModule } from '../prisma/prisma.module';
 import { AuthModule } from '../auth/auth.module';
-import { SubscriptionsModule } from '../subscriptions/subscriptions.module';
 
 @Module({
-  imports: [PrismaModule, AuthModule, SubscriptionsModule],
+  imports: [PrismaModule, AuthModule],
   controllers: [TrainingsController],
   providers: [TrainingsService, TranslationService],
   exports: [TrainingsService, TranslationService],

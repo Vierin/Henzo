@@ -5,6 +5,22 @@ import { PrismaService } from '../prisma/prisma.service';
 export class TrainersService {
   constructor(private prisma: PrismaService) {}
 
+  async isStudioOwnedByOwner(studioId: string, ownerId: string) {
+    const salon = await this.prisma.salon.findUnique({
+      where: { id: studioId },
+      select: { ownerId: true },
+    });
+    return salon?.ownerId === ownerId;
+  }
+
+  async findTrainerStudioId(id: string) {
+    const trainer = await this.prisma.staff.findUnique({
+      where: { id },
+      select: { salonId: true },
+    });
+    return trainer?.salonId ?? null;
+  }
+
   async findByStudioId(studioId: string) {
     const salonId = studioId;
     // Важно: Используем select вместо include для уменьшения payload

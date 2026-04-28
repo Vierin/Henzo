@@ -3,7 +3,7 @@ import 'package:provider/provider.dart';
 
 import '../constants/colors.dart';
 import '../l10n/locale_provider.dart';
-import '../screens/business_registration_screen.dart';
+import '../screens/registration_role_screen.dart';
 import '../services/auth_service.dart';
 import '../utils/auth_ui_result.dart';
 import '../utils/show_api_error.dart';
@@ -82,7 +82,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
   Future<void> _openRegister() async {
     await Navigator.of(context).push(
-      MaterialPageRoute(builder: (_) => const BusinessRegistrationScreen()),
+      MaterialPageRoute(builder: (_) => const RegistrationRoleScreen()),
     );
   }
 
@@ -302,7 +302,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                   ? null
                                   : _openRegister,
                               child: Text(
-                                locale.t('auth.registerOnWebsite'),
+                                'No account? Register',
                                 textAlign: TextAlign.center,
                               ),
                             ),

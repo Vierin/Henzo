@@ -6,7 +6,6 @@ import {
   HttpException,
   HttpStatus,
 } from '@nestjs/common';
-import { Public } from '../common/decorators/public.decorator';
 import { SearchService } from './search.service';
 
 @Controller('search')
@@ -87,7 +86,6 @@ export class SearchController {
     }
   }
 
-  @Public()
   @Get('core/suggest')
   async suggestCore(
     @Query('q') query: string,
@@ -117,7 +115,6 @@ export class SearchController {
     }
   }
 
-  @Public()
   @Get('popular/recommended')
   @Header(
     'Cache-Control',
@@ -145,7 +142,6 @@ export class SearchController {
     }
   }
 
-  @Public()
   @Get('unified/suggest')
   async unifiedSuggest(
     @Query('q') query: string,

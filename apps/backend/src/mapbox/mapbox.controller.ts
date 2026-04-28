@@ -1,5 +1,4 @@
 import { Controller, Get, Query } from '@nestjs/common';
-import { Public } from '../common/decorators/public.decorator';
 import { MapboxService } from './mapbox.service';
 import { PrismaService } from '../prisma/prisma.service';
 
@@ -10,7 +9,6 @@ export class MapboxController {
     private readonly prisma: PrismaService,
   ) {}
 
-  @Public()
   @Get('autocomplete')
   async getAutocompleteSuggestions(
     @Query('q') query: string,
@@ -31,7 +29,6 @@ export class MapboxController {
     return suggestions;
   }
 
-  @Public()
   @Get('geocode')
   async geocodeAddress(@Query('address') address: string) {
     if (!address || address.trim().length < 2) {
@@ -45,7 +42,6 @@ export class MapboxController {
     return result;
   }
 
-  @Public()
   @Get('reverse-geocode')
   async reverseGeocode(@Query('lat') lat: string, @Query('lon') lon: string) {
     const latNum = parseFloat(lat);
@@ -59,7 +55,6 @@ export class MapboxController {
     return result;
   }
 
-  @Public()
   @Get('cities')
   async getCities() {
     const cities = await this.prisma.city.findMany({

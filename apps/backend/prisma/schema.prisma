@@ -102,7 +102,6 @@ model Studio {
   Review           Review[]
   User             User          @relation(fields: [ownerId], references: [id])
   Training         Training[]
-  TrainingGroup    TrainingGroup[]
   Trainer          Trainer[]
   Subscription     Subscription?
   TrainingSession  TrainingSession[]
@@ -128,36 +127,15 @@ model Training {
   descriptionEn      String?
   descriptionVi      String?
   descriptionRu      String?
-  trainingGroupId    String?
   Booking            SessionBooking[]
   Studio             Studio              @relation(fields: [studioId], references: [id])
   trainingCategory   TrainingCategory? @relation(fields: [trainingCategoryId], references: [id]) 
-  TrainingGroup      TrainingGroup?      @relation(fields: [trainingGroupId], references: [id])
   Trainer            Trainer[]           @relation("TrainerTrainings")
   TrainingSession    TrainingSession[]
 
   @@unique([name, studioId])
   @@index([studioId])
 }
-
-model TrainingGroup {
-  id        String    @id @default(cuid())
-  studioId  String
-  name      String
-  nameEn    String?
-  nameVi    String?
-  nameRu    String?
-  position  Int       @default(0)
-  isActive  Boolean   @default(true)
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
-  Studio    Studio    @relation(fields: [studioId], references: [id], onDelete: Cascade)
-  Training  Training[]
-
-  @@index([studioId, isActive, position])
-}
-
- 
 
 model Trainer {
   id                                           String           @id @default(cuid())

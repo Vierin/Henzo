@@ -9,21 +9,17 @@ export class PrismaService
   // Compatibility aliases after domain rename in Prisma schema.
   // This lets legacy modules keep working while we migrate codepaths.
   get salon(): any {
-    return (this as any).studio;
+    return (this as any).studio ?? (this as any).Studio;
   }
   get service(): any {
-    return (this as any).training;
+    return (this as any).training ?? (this as any).Training;
   }
   get staff(): any {
-    return (this as any).trainer;
+    return (this as any).trainer ?? (this as any).Trainer;
   }
   get booking(): any {
-    return (this as any).sessionBooking;
+    return (this as any).sessionBooking ?? (this as any).SessionBooking;
   }
-  get serviceGroup(): any {
-    return (this as any).trainingGroup;
-  }
-
   constructor() {
     // Настраиваем connection pool для работы с Supabase pooler
     const databaseUrl = process.env.DATABASE_URL;

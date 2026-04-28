@@ -2,72 +2,19 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../constants/colors.dart';
 import '../../l10n/locale_provider.dart';
-import '../../models/booking.dart';
 import '../../utils/show_api_error.dart';
 import '../../models/salon.dart';
 import '../../services/auth_service.dart';
-import '../../services/cache/bookings_cache.dart';
 import '../../services/cache/salon_cache.dart';
 import '../../services/dashboard_api_service.dart';
 import '../../services/notifications_store.dart';
-import '../../widgets/dashboard/booking_detail_modal.dart';
 import '../../widgets/dashboard/dashboard_header_pill.dart';
 import '../../widgets/dashboard/dashboard_link_card.dart';
 import '../../widgets/dashboard/dashboard_setup_card.dart';
-import '../../widgets/dashboard/upcoming_bookings_list.dart';
+import '../../widgets/owner_training_session_card.dart';
 import '../app_settings_screen.dart';
 import '../notifications_screen.dart';
 import '../salon_setup_screen.dart';
-import '../../widgets/dashboard/new_booking_modal.dart';
-
-enum BookingAction {
-  confirm,
-  cancel,
-  reject;
-
-  Future<bool> apiCall(String token, String bookingId) {
-    switch (this) {
-      case confirm:
-        return DashboardApiService.confirmBooking(token, bookingId);
-      case cancel:
-        return DashboardApiService.cancelBooking(token, bookingId);
-      case reject:
-        return DashboardApiService.rejectBooking(token, bookingId);
-    }
-  }
-
-  String successMessage(LocaleProvider locale) {
-    switch (this) {
-      case confirm:
-        return locale.t('booking.confirmed');
-      case cancel:
-        return locale.t('booking.cancelled');
-      case reject:
-        return locale.t('booking.rejected');
-    }
-  }
-
-  String failureMessage(LocaleProvider locale) {
-    switch (this) {
-      case confirm:
-        return locale.t('booking.failedToConfirm');
-      case cancel:
-        return locale.t('booking.failedToCancel');
-      case reject:
-        return locale.t('booking.failedToReject');
-    }
-  }
-
-  Color get snackBarColor {
-    switch (this) {
-      case confirm:
-        return Colors.green;
-      case cancel:
-      case reject:
-        return Colors.orange;
-    }
-  }
-}
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -78,7 +25,7 @@ class DashboardScreen extends StatefulWidget {
 
 class _DashboardScreenState extends State<DashboardScreen> {
   Salon? _salon;
-  List<Booking> _bookings = [];
+  List<OwnerTrainingSession> _todaySessions = [];
   bool _isLoading = false;
 
   @override
@@ -96,7 +43,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
       if (mounted) {
         setState(() {
           _salon = null;
-          _bookings = [];
           _isLoading = false;
         });
       }
@@ -104,19 +50,32 @@ class _DashboardScreenState extends State<DashboardScreen> {
     }
     try {
       final salon = await context.read<SalonCache>().getSalon(token);
-      final bookings = await context.read<BookingsCache>().getBookings(token);
+      final now = DateTime.now();
+      final from = DateTime(now.year, now.month, now.day);
+      final to = from.add(const Duration(days: 1));
+      List<OwnerTrainingSession> sessions = [];
+      try {
+        sessions = await DashboardApiService.getOwnerTrainingSessions(
+          token,
+          fromIso: from.toUtc().toIso8601String(),
+          toIso: to.toUtc().toIso8601String(),
+        );
+        sessions.sort((a, b) => a.startsAt.compareTo(b.startsAt));
+      } catch (_) {
+        // Daily sessions are non-blocking for dashboard bootstrap.
+        sessions = [];
+      }
       if (mounted) {
         setState(() {
           _salon = salon;
-          _bookings = bookings;
+          _todaySessions = sessions;
           _isLoading = false;
         });
       }
     } catch (e) {
       if (mounted) {
         setState(() {
-          _salon = null;
-          _bookings = [];
+          _todaySessions = [];
           _isLoading = false;
         });
         showApiError(context, e);
@@ -128,66 +87,112 @@ class _DashboardScreenState extends State<DashboardScreen> {
     await _loadData();
   }
 
-  Future<void> _handleBookingAction(
-    BookingAction action,
-    String bookingId,
-  ) async {
-    final token = context.read<AuthService>().accessToken;
-    if (token == null || token.isEmpty) return;
-    try {
-      final ok = await action.apiCall(token, bookingId);
-      if (!mounted) return;
-      if (ok) {
-        context.read<BookingsCache>().invalidate();
-        await _loadData();
-        showSuccess(
-          context,
-          action.successMessage(context.read<LocaleProvider>()),
-          backgroundColor: action.snackBarColor,
-        );
-      } else {
-        showApiError(
-          context,
-          action.failureMessage(context.read<LocaleProvider>()),
-        );
-      }
-    } catch (e) {
-      if (!mounted) return;
-      showApiError(context, e);
-    }
+  String? _ownerTrainerFallback() {
+    final u = context.read<AuthService>().user;
+    if (u == null) return null;
+    final name = u.name;
+    if (name != null && name.trim().isNotEmpty) return name.trim();
+    final email = u.email.trim();
+    if (email.isNotEmpty) return email;
+    return null;
   }
 
-  Future<void> _handleEditBooking(Booking booking) async {
-    final token = context.read<AuthService>().accessToken;
-    if (token == null || token.isEmpty) return;
-    await NewBookingModal.show(
-      context,
-      accessToken: token,
-      onSaved: _loadData,
-      getAccessToken: () async {
-        await context.read<AuthService>().refreshSession();
-        return context.read<AuthService>().accessToken;
-      },
-      existingBooking: booking,
+  Widget _sessionStatusBadge(OwnerTrainingSession s) {
+    return Container(
+      padding: const EdgeInsets.symmetric(
+        horizontal: 8,
+        vertical: 4,
+      ),
+      decoration: BoxDecoration(
+        color: _statusColor(s.status).withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(999),
+      ),
+      child: Text(
+        s.status,
+        style: TextStyle(
+          fontSize: 11,
+          fontWeight: FontWeight.w700,
+          color: _statusColor(s.status),
+        ),
+      ),
     );
   }
 
-  List<Booking> _getTodayBookings() {
-    final now = DateTime.now();
-    final todayStart = DateTime(now.year, now.month, now.day);
-    final todayEnd = todayStart.add(const Duration(days: 1));
+  Color _statusColor(String status) {
+    switch (status.toUpperCase()) {
+      case 'COMPLETED':
+        return AppColors.success600;
+      case 'CANCELLED':
+      case 'CANCELED':
+        return AppColors.error600;
+      case 'PENDING':
+        return AppColors.warning600;
+      default:
+        return AppColors.primary600;
+    }
+  }
 
-    return _bookings.where((booking) {
-      return !booking.dateTime.isBefore(todayStart) &&
-          booking.dateTime.isBefore(todayEnd) &&
-          booking.status != BookingStatus.canceled;
-    }).toList()..sort((a, b) => a.dateTime.compareTo(b.dateTime));
+  Widget _buildDailySchedule() {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      margin: const EdgeInsets.symmetric(horizontal: 10),
+      decoration: BoxDecoration(
+        color: AppColors.backgroundPrimary,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: AppColors.borderPrimary),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Daily schedule',
+            style: const TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.w700,
+              color: AppColors.textPrimary,
+            ),
+          ),
+          const SizedBox(height: 12),
+          if (_todaySessions.isEmpty)
+            Text(
+              'No trainings scheduled for today',
+              style: TextStyle(fontSize: 14, color: AppColors.textSecondary),
+            )
+          else
+            ..._todaySessions.map(
+              (s) {
+                final badge = _sessionStatusBadge(s);
+                return OwnerTrainingSessionCard(
+                  session: s,
+                  margin:
+                      const EdgeInsets.only(left: 10, right: 10, bottom: 10),
+                  statusBadge: badge,
+                  trainerFallbackName: _ownerTrainerFallback(),
+                  onTap: () => OwnerTrainingSessionCard.showDetailsModal(
+                    context,
+                    s,
+                    statusBadge: badge,
+                    trainerFallbackName: _ownerTrainerFallback(),
+                    onEditTraining: s.trainingId.isNotEmpty
+                        ? () => Navigator.of(context).pushNamed(
+                              '/services',
+                              arguments: {
+                                'editTrainingId': s.trainingId,
+                              },
+                            )
+                        : null,
+                  ),
+                );
+              },
+            ),
+        ],
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
-    final todayBookings = _getTodayBookings();
-
     return Scaffold(
       backgroundColor: AppColors.backgroundSecondary,
       body: SafeArea(
@@ -236,7 +241,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                               onTap: null,
                             ),
                           Consumer<NotificationsStore>(
-                            builder: (_, store, __) {
+                            builder: (context, store, _) {
                               final count = store.unreadCount;
                               return Stack(
                                 clipBehavior: Clip.none,
@@ -295,7 +300,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   ),
                 ),
                 const SizedBox(height: 16),
-                // Link cards: Клиенты, Online booking
+                // Link cards: клиенты
                 if (!_isLoading && _salon != null) ...[
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 12),
@@ -303,24 +308,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       children: [
                         Expanded(
                           child: DashboardLinkCard(
-                            title: context.read<LocaleProvider>().t('dashboard.clients'),
+                            title: context.read<LocaleProvider>().t(
+                              'dashboard.clients',
+                            ),
                             icon: Icons.people_outline,
                             color: AppColors.primary100,
                             onTap: () =>
                                 Navigator.of(context).pushNamed('/clients'),
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: DashboardLinkCard(
-                            title: context.read<LocaleProvider>().t(
-                              'dashboard.onlineBooking',
-                            ),
-                            icon: Icons.calendar_month_outlined,
-                            color: AppColors.secondary100,
-                            onTap: () => Navigator.of(
-                              context,
-                            ).pushNamed('/online-booking'),
                           ),
                         ),
                       ],
@@ -352,38 +346,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     ),
                   )
                 else
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 12),
-                    child: UpcomingBookingsList(
-                      title: context.read<LocaleProvider>().t(
-                        'dashboard.upcomingBookings',
-                      ),
-                      bookings: todayBookings,
-                      loading: _isLoading,
-                      onViewAll: () =>
-                          Navigator.of(context).pushNamed('/all-bookings'),
-                      onEditBooking: _handleEditBooking,
-                      onCancelBooking: (id) =>
-                          _handleBookingAction(BookingAction.cancel, id),
-                      onConfirmBooking: (id) =>
-                          _handleBookingAction(BookingAction.confirm, id),
-                      onRejectBooking: (id) =>
-                          _handleBookingAction(BookingAction.reject, id),
-                      onBookingPress: (booking) {
-                        BookingDetailModal.show(
-                          context,
-                          booking: booking,
-                          onEdit: _handleEditBooking,
-                          onCancel: (id) =>
-                              _handleBookingAction(BookingAction.cancel, id),
-                          onConfirm: (id) =>
-                              _handleBookingAction(BookingAction.confirm, id),
-                          onReject: (id) =>
-                              _handleBookingAction(BookingAction.reject, id),
-                        );
-                      },
-                    ),
-                  ),
+                  _buildDailySchedule(),
                 const SizedBox(height: 24),
               ],
             ),

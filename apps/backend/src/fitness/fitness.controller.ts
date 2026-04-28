@@ -8,32 +8,26 @@ import {
   Put,
   Query,
 } from '@nestjs/common';
-import { StudiosService } from '../salons/studios.service';
-import { TrainingsService } from '../trainings/trainings.service';
-import { TrainersService } from '../trainers/trainers.service';
-import { BookingsService } from '../bookings/bookings.service';
+import { StudiosService } from '../studios/studios.service';
 import { AuthService } from '../auth/auth.service';
-import { SubscriptionsService } from '../subscriptions/subscriptions.service';
-import { CreateServiceDto } from '../trainings/dto/create-service.dto';
-import { UpdateServiceDto } from '../trainings/dto/update-service.dto';
-import { CreateBookingDto } from '../bookings/dto/create-booking.dto';
+import { FitnessSessionsService } from './fitness-sessions.service';
+import { StudioAnalyticsService } from './studio-analytics.service';
+import { CreateRecurringTrainingSessionsDto } from './dto/create-recurring-training-sessions.dto';
 
 @Controller('fitness')
 export class FitnessController {
   constructor(
     private readonly studiosService: StudiosService,
-    private readonly trainingsService: TrainingsService,
-    private readonly trainersService: TrainersService,
-    private readonly bookingsService: BookingsService,
     private readonly authService: AuthService,
-    private readonly subscriptionsService: SubscriptionsService,
+    private readonly fitnessSessionsService: FitnessSessionsService,
+    private readonly studioAnalyticsService: StudioAnalyticsService,
   ) {}
 
   // ---- Studios (alias of salons) ----
   @Get('studios/featured')
   async getFeaturedStudios(@Query('limit') limit?: string) {
     const limitNum = limit ? parseInt(limit, 10) : 6;
-    return this.studiosService.findFeaturedSalons(limitNum);
+    return this.studiosService.findFeaturedStudios(limitNum);
   }
 
   @Get('studios/search')
@@ -50,7 +44,7 @@ export class FitnessController {
     @Query('date') date?: string,
     @Query('time') time?: string,
   ) {
-    return this.studiosService.searchSalons({
+    return this.studiosService.searchStudios({
       page: page ? parseInt(page, 10) : undefined,
       limit: limit ? parseInt(limit, 10) : undefined,
       search,
@@ -67,119 +61,59 @@ export class FitnessController {
 
   @Get('studios/categories')
   async getStudioCategories() {
-    return this.studiosService.getSalonCategories();
+    return this.studiosService.getStudioCategories();
   }
 
   @Get('studios/current')
   async getCurrentStudio(@Headers('authorization') authHeader: string) {
     const currentUser = await this.authService.getCurrentUser(authHeader);
-    const data = await this.studiosService.getCurrentUserSalon(currentUser.user.id);
+    const data = await this.studiosService.getCurrentUserStudio(
+      currentUser.user.id,
+    );
     return { success: true, data, needsSetup: !data };
   }
 
-  // ---- Offerings (alias of services) ----
-  @Get('offerings')
-  async getOfferingsByStudio(@Query('studioId') studioId: string) {
-    return this.trainingsService.findByStudioId(studioId);
-  }
-
-  @Get('offerings/popular')
-  async getPopularOfferings(@Query('limit') limit?: string) {
-    const limitNum = limit ? parseInt(limit, 10) : 10;
-    return this.trainingsService.findPopularServices(limitNum);
-  }
-
-  @Get('offerings/categories')
-  async getOfferingCategories() {
-    return this.trainingsService.getServiceCategories();
-  }
-
-  @Post('offerings')
-  async createOffering(
+  /** Owner analytics for the current studio (period on session/booking startsAt). */
+  @Get('studios/current/analytics')
+  async getCurrentStudioAnalytics(
     @Headers('authorization') authHeader: string,
-    @Body() dto: CreateServiceDto,
+    @Query('from') from?: string,
+    @Query('to') to?: string,
   ) {
-    const currentUser = await this.authService.getCurrentUser(authHeader);
-    await this.subscriptionsService.assertSalonOwnerMayExpandConfiguration(
-      currentUser.user.id,
-      dto.salonId,
+    return this.studioAnalyticsService.getCurrentStudioAnalytics(
+      authHeader,
+      from,
+      to,
     );
-    return this.trainingsService.createTraining({
-      ...dto,
-      studioId: dto.salonId,
-      trainerIds: dto.staffIds,
-    });
   }
 
-  @Put('offerings/:id')
-  async updateOffering(@Param('id') id: string, @Body() dto: UpdateServiceDto) {
-    return this.trainingsService.updateTraining(id, dto as any);
-  }
-
-  // ---- Trainers ----
-  @Get('trainers')
-  async getTrainers(@Query('studioId') studioId: string) {
-    return this.trainersService.findByStudioId(studioId);
-  }
-
-  @Post('trainers')
-  async createTrainer(
+  @Post('training-sessions/recurring')
+  async createRecurringTrainingSessions(
     @Headers('authorization') authHeader: string,
-    @Body()
-    data: {
-      name: string;
-      email?: string;
-      phone?: string;
-      accessLevel: 'ADMIN' | 'EMPLOYEE';
-      studioId: string;
-      trainingIds?: string[];
-    },
+    @Body() dto: CreateRecurringTrainingSessionsDto,
   ) {
-    const currentUser = await this.authService.getCurrentUser(authHeader);
-    await this.subscriptionsService.assertSalonOwnerMayExpandConfiguration(
-      currentUser.user.id,
-      data.studioId,
+    return this.fitnessSessionsService.createRecurringSessions(authHeader, dto);
+  }
+
+  @Get('owner/training-sessions')
+  async getOwnerTrainingSessions(
+    @Headers('authorization') authHeader: string,
+    @Query('from') from?: string,
+    @Query('to') to?: string,
+  ) {
+    return this.fitnessSessionsService.getOwnerSessions(authHeader, from, to);
+  }
+
+  @Put('owner/training-sessions/:id/status')
+  async updateOwnerTrainingSessionStatus(
+    @Headers('authorization') authHeader: string,
+    @Param('id') id: string,
+    @Body() body: { status: 'ACTIVE' | 'CANCELLED' | 'COMPLETED' },
+  ) {
+    return this.fitnessSessionsService.updateOwnerSessionStatus(
+      authHeader,
+      id,
+      body.status,
     );
-    return this.trainersService.createTrainer(data);
-  }
-
-  // ---- Session bookings (alias of bookings) ----
-  @Post('session-bookings')
-  async createSessionBooking(
-    @Body() data: CreateBookingDto,
-    @Headers('authorization') authHeader: string,
-    @Headers('accept-language') acceptLanguage?: string,
-  ) {
-    const currentUser = await this.authService.getCurrentUser(authHeader);
-    const locale = acceptLanguage?.toLowerCase().includes('ru')
-      ? 'ru'
-      : acceptLanguage?.toLowerCase().includes('vi')
-        ? 'vi'
-        : 'en';
-
-    const booking = await this.bookingsService.createBooking(
-      data,
-      currentUser.user.id,
-      currentUser.user.role === 'OWNER',
-      locale,
-    );
-    return { success: true, booking };
-  }
-
-  @Get('session-bookings/owner')
-  async getOwnerSessionBookings(
-    @Headers('authorization') authHeader: string,
-    @Query('page') page?: string,
-    @Query('limit') limit?: string,
-    @Query('status') status?: string,
-    @Query('date') date?: string,
-  ) {
-    const currentUser = await this.authService.getCurrentUser(authHeader);
-    return this.bookingsService.getOwnerBookings(currentUser.user.id, {
-      page: page ? parseInt(page, 10) : 1,
-      limit: limit ? parseInt(limit, 10) : 1500,
-      status,
-      date,
-    });
   }
 }

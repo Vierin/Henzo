@@ -1,16 +1,49 @@
 import { Injectable, Inject } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import { Prisma } from '@prisma/client';
+
+/** Normalize Training payload for JSON (hide Prisma relation names where redundant). */
+function mapTrainingResponse(t: any) {
+  if (!t) return t;
+  return {
+    ...t,
+    Staff: t.Staff ?? t.Trainer,
+    Trainer: undefined,
+  };
+}
 
 @Injectable()
 export class TrainingsService {
   constructor(@Inject(PrismaService) private prisma: any) {}
 
+  async isStudioOwnedByOwner(studioId: string, ownerId: string) {
+    const studioRepo = this.prisma.studio ?? this.prisma.salon;
+    if (!studioRepo) return false;
+    const studio = await studioRepo.findUnique({
+      where: { id: studioId },
+      select: { ownerId: true },
+    });
+    return studio?.ownerId === ownerId;
+  }
+
+  async findTrainingStudioId(id: string) {
+    const row = await this.training.findUnique({
+      where: { id },
+      select: { studioId: true },
+    });
+    return row?.studioId ?? null;
+  }
+
+  private get training() {
+    return this.prisma.training ?? this.prisma.Training;
+  }
+
+  private get trainingCategory() {
+    return this.prisma.trainingCategory ?? this.prisma.TrainingCategory;
+  }
+
   async findByStudioId(studioId: string) {
-    const salonId = studioId;
-    // Важно: Используем select вместо include для уменьшения payload
-    const services = await this.prisma.service.findMany({
-      where: { salonId },
+    const items = await this.training.findMany({
+      where: { studioId },
       select: {
         id: true,
         name: true,
@@ -23,34 +56,21 @@ export class TrainingsService {
         descriptionRu: true,
         duration: true,
         price: true,
-        salonId: true,
-        serviceCategoryId: true,
-        serviceGroupId: true,
-        Staff: {
+        studioId: true,
+        trainingCategoryId: true,
+        Trainer: {
           select: {
             id: true,
             name: true,
-            // Убираем email, phone, accessLevel - не нужны для списка
           },
         },
-        service_categories: {
+        trainingCategory: {
           select: {
             id: true,
             name_en: true,
             name_vn: true,
             name_ru: true,
-            // Убираем другие поля - не нужны
-          },
-        },
-        ServiceGroup: {
-          select: {
-            id: true,
-            name: true,
-            nameEn: true,
-            nameVi: true,
-            nameRu: true,
-            position: true,
-            // Убираем другие поля - не нужны
+            main_category_id: true,
           },
         },
       },
@@ -59,17 +79,16 @@ export class TrainingsService {
       },
     });
 
-    // Transform ServiceGroup to serviceGroup for frontend compatibility
-    return services.map((service) => ({
-      ...service,
-      serviceGroup: service.ServiceGroup || null,
-      ServiceGroup: undefined,
-    }));
+    return items.map((service: any) =>
+      mapTrainingResponse({
+        ...service,
+        Staff: service.Trainer,
+      }),
+    );
   }
 
   async findTrainingById(id: string) {
-    // Важно: Используем select вместо include для уменьшения payload
-    const service = await this.prisma.service.findUnique({
+    const service = await this.training.findUnique({
       where: { id },
       select: {
         id: true,
@@ -83,28 +102,25 @@ export class TrainingsService {
         descriptionRu: true,
         duration: true,
         price: true,
-        salonId: true,
-        serviceCategoryId: true,
-        serviceGroupId: true,
-        Staff: {
+        studioId: true,
+        trainingCategoryId: true,
+        Trainer: {
           select: {
             id: true,
             name: true,
             email: true,
             phone: true,
-            // accessLevel не нужен для деталей
           },
         },
-        Salon: {
+        Studio: {
           select: {
             id: true,
             name: true,
             address: true,
             phone: true,
-            // Убираем другие поля - не нужны для деталей услуги
           },
         },
-        service_categories: {
+        trainingCategory: {
           select: {
             id: true,
             name_en: true,
@@ -112,33 +128,21 @@ export class TrainingsService {
             name_ru: true,
           },
         },
-        ServiceGroup: {
-          select: {
-            id: true,
-            name: true,
-            nameEn: true,
-            nameVi: true,
-            nameRu: true,
-            position: true,
-          },
-        },
       },
     });
 
     if (!service) return null;
 
-    // Transform ServiceGroup to serviceGroup for frontend compatibility
-    return {
+    return mapTrainingResponse({
       ...service,
-      serviceGroup: service.ServiceGroup || null,
-      ServiceGroup: undefined,
-    };
+      Staff: service.Trainer,
+    });
   }
 
   async findAllPublicTrainings() {
-    const services = await this.prisma.service.findMany({
+    const services = await this.training.findMany({
       include: {
-        Salon: {
+        Studio: {
           select: {
             id: true,
             name: true,
@@ -146,20 +150,14 @@ export class TrainingsService {
             phone: true,
           },
         },
-        service_categories: true,
-        ServiceGroup: true,
+        trainingCategory: true,
       },
       orderBy: {
         name: 'asc',
       },
     });
 
-    // Transform ServiceGroup to serviceGroup for frontend compatibility
-    return services.map((service) => ({
-      ...service,
-      serviceGroup: service.ServiceGroup || null,
-      ServiceGroup: undefined,
-    }));
+    return services.map((service: any) => mapTrainingResponse(service));
   }
 
   async createTraining(data: {
@@ -174,60 +172,76 @@ export class TrainingsService {
     duration: number;
     price: number;
     studioId: string;
-    serviceCategoryId?: number;
-    serviceGroupId?: string;
+    trainingCategoryId?: number | null;
+    /** @deprecated use trainingCategoryId */
+    serviceCategoryId?: number | null;
     trainerIds?: string[];
+    staffIds?: string[];
   }) {
-    const createData = {
-      ...data,
-      salonId: data.studioId,
-      staffIds: data.trainerIds,
-    };
-    // Update salon status to READY if it's DRAFT
-    const salon = await this.prisma.salon.findUnique({
-      where: { id: createData.salonId },
+    const studioRepo = this.prisma.studio ?? this.prisma.Studio;
+    const trainerRepo = this.prisma.trainer ?? this.prisma.Trainer;
+    if (!studioRepo || !this.training || !trainerRepo) {
+      throw new Error('Training repositories are not available');
+    }
+
+    const staffIds = data.staffIds ?? data.trainerIds;
+    const trainingCategoryId =
+      data.trainingCategoryId ?? data.serviceCategoryId ?? null;
+
+    const studio = await studioRepo.findUnique({
+      where: { id: data.studioId },
       select: { status: true },
     });
 
-    if (salon?.status === 'DRAFT') {
-      await this.prisma.salon.update({
-        where: { id: createData.salonId },
+    if (studio?.status === 'DRAFT') {
+      await studioRepo.update({
+        where: { id: data.studioId },
         data: { status: 'READY' },
       });
     }
 
-    // Extract staffIds from data
-    const { staffIds, ...serviceData } = createData;
-
-    // If staffIds is not provided or empty, connect to all staff in the salon
-    let staffConnect: { connect: { id: string }[] } | undefined;
+    let trainerConnect: { connect: { id: string }[] } | undefined;
     if (staffIds && staffIds.length > 0) {
-      staffConnect = {
-        connect: staffIds.map((id) => ({ id })),
+      trainerConnect = {
+        connect: staffIds.map((id: string) => ({ id })),
       };
     } else {
-      // Get all staff for the salon
-      const allStaff = await this.prisma.staff.findMany({
-        where: { salonId: createData.salonId },
+      const allTrainers = await trainerRepo.findMany({
+        where: { studioId: data.studioId },
         select: { id: true },
       });
-      if (allStaff.length > 0) {
-        staffConnect = {
-          connect: allStaff.map((staff) => ({ id: staff.id })),
+      if (allTrainers.length > 0) {
+        trainerConnect = {
+          connect: allTrainers.map((tr: { id: string }) => ({ id: tr.id })),
         };
       }
     }
 
-    return this.prisma.service.create({
+    const created = await this.training.create({
       data: {
-        ...serviceData,
-        Staff: staffConnect,
+        name: data.name,
+        description: data.description,
+        nameEn: data.nameEn,
+        nameVi: data.nameVi,
+        nameRu: data.nameRu,
+        descriptionEn: data.descriptionEn,
+        descriptionVi: data.descriptionVi,
+        descriptionRu: data.descriptionRu,
+        duration: data.duration,
+        price: data.price,
+        studioId: data.studioId,
+        trainingCategoryId,
+        ...(trainerConnect ? { Trainer: trainerConnect } : {}),
       },
       include: {
-        Staff: true,
-        service_categories: true,
-        ServiceGroup: true,
+        Trainer: true,
+        trainingCategory: true,
       },
+    });
+
+    return mapTrainingResponse({
+      ...created,
+      Staff: created.Trainer,
     });
   }
 
@@ -244,73 +258,86 @@ export class TrainingsService {
       descriptionRu?: string;
       duration?: number;
       price?: number;
-      serviceCategoryId?: number;
-      serviceGroupId?: string | null;
+      trainingCategoryId?: number | null;
+      /** @deprecated */
+      serviceCategoryId?: number | null;
       trainerIds?: string[];
+      staffIds?: string[];
     },
   ) {
-    const finalData: {
-      name?: string;
-      description?: string;
-      nameEn?: string;
-      nameVi?: string;
-      nameRu?: string;
-      descriptionEn?: string;
-      descriptionVi?: string;
-      descriptionRu?: string;
-      duration?: number;
-      price?: number;
-      serviceCategoryId?: number;
-      serviceGroupId?: string | null;
-      staffIds?: string[];
-    } = {
-      ...data,
-      staffIds: data.trainerIds,
-    };
-    // Extract staffIds from data
-    const { staffIds, ...updateData } = finalData;
+    const trainerRepo = this.prisma.trainer ?? this.prisma.Trainer;
+    if (!this.training || !trainerRepo) {
+      throw new Error('Training repositories are not available');
+    }
 
-    // Prepare staff connection if staffIds is provided
-    let staffUpdate: { set: { id: string }[] } | undefined;
+    const staffIds = data.staffIds ?? data.trainerIds;
+    const resolvedCategory =
+      data.trainingCategoryId !== undefined ||
+      data.serviceCategoryId !== undefined
+        ? (data.trainingCategoryId ?? data.serviceCategoryId ?? null)
+        : undefined;
+
+    const updateData: Record<string, unknown> = {};
+    const assign = <K extends keyof typeof data>(k: K) => {
+      if (data[k] !== undefined) updateData[k as string] = data[k] as unknown;
+    };
+    assign('name');
+    assign('description');
+    assign('nameEn');
+    assign('nameVi');
+    assign('nameRu');
+    assign('descriptionEn');
+    assign('descriptionVi');
+    assign('descriptionRu');
+    assign('duration');
+    assign('price');
+    if (resolvedCategory !== undefined) {
+      updateData.trainingCategoryId = resolvedCategory;
+    }
+
+    let trainerUpdate: { set: { id: string }[] } | undefined;
     if (staffIds !== undefined) {
       if (staffIds.length === 0) {
-        // If empty array, connect to all staff in the salon
-        const service = await this.prisma.service.findUnique({
+        const row = await this.training.findUnique({
           where: { id },
-          select: { salonId: true },
+          select: { studioId: true },
         });
-        if (service) {
-          const allStaff = await this.prisma.staff.findMany({
-            where: { salonId: service.salonId },
+        if (row) {
+          const allTrainers = await trainerRepo.findMany({
+            where: { studioId: row.studioId },
             select: { id: true },
           });
-          staffUpdate = {
-            set: allStaff.map((staff) => ({ id: staff.id })),
+          trainerUpdate = {
+            set: allTrainers.map((tr: { id: string }) => ({ id: tr.id })),
           };
         }
       } else {
-        staffUpdate = {
-          set: staffIds.map((staffId) => ({ id: staffId })),
+        trainerUpdate = {
+          set: staffIds.map((staffId: string) => ({ id: staffId })),
         };
       }
     }
 
-    return this.prisma.service.update({
+    const updated = await this.training.update({
       where: { id },
       data: {
         ...updateData,
-        ...(staffUpdate && { Staff: staffUpdate }),
+        ...(trainerUpdate && { Trainer: trainerUpdate }),
       },
       include: {
-        Staff: true,
-        service_categories: true,
-        ServiceGroup: true,
+        Trainer: true,
+        trainingCategory: true,
       },
+    });
+
+    return mapTrainingResponse({
+      ...updated,
+      Staff: updated.Trainer,
     });
   }
 
   async deleteTraining(id: string) {
-    return this.prisma.service.delete({
+    return this.training.delete({
       where: { id },
     });
   }
@@ -320,7 +347,7 @@ export class TrainingsService {
       return [];
     }
 
-    return this.prisma.service.findMany({
+    const rows = await this.training.findMany({
       where: {
         OR: [
           {
@@ -330,7 +357,7 @@ export class TrainingsService {
             },
           },
           {
-            service_categories: {
+            trainingCategory: {
               OR: [
                 {
                   name_en: {
@@ -356,14 +383,14 @@ export class TrainingsService {
         ],
       },
       include: {
-        service_categories: {
+        trainingCategory: {
           select: {
             name_en: true,
             name_vn: true,
             name_ru: true,
           },
         },
-        Salon: {
+        Studio: {
           select: {
             name: true,
           },
@@ -372,28 +399,28 @@ export class TrainingsService {
       orderBy: {
         name: 'asc',
       },
-      take: 10, // Limit to 10 results
+      take: 10,
     });
+
+    return rows.map((s: any) => mapTrainingResponse(s));
   }
 
   async findPopularServices(limit: number) {
-    // For MVP, return services with most bookings
-    // In production, you'd analyze booking frequency
-    return this.prisma.service.findMany({
+    const rows = await this.training.findMany({
       select: {
         id: true,
         name: true,
         description: true,
         duration: true,
         price: true,
-        Salon: {
+        Studio: {
           select: {
             id: true,
             name: true,
             address: true,
           },
         },
-        service_categories: {
+        trainingCategory: {
           select: {
             name_en: true,
           },
@@ -404,26 +431,25 @@ export class TrainingsService {
       },
       take: limit,
     });
+    return rows.map((s: any) => mapTrainingResponse(s));
   }
 
   async findTrendingServices(limit: number) {
-    // For MVP, return recently created services
-    // In production, you'd analyze recent booking trends
-    return this.prisma.service.findMany({
+    const rows = await this.training.findMany({
       select: {
         id: true,
         name: true,
         description: true,
         duration: true,
         price: true,
-        Salon: {
+        Studio: {
           select: {
             id: true,
             name: true,
             address: true,
           },
         },
-        service_categories: {
+        trainingCategory: {
           select: {
             name_en: true,
           },
@@ -434,77 +460,16 @@ export class TrainingsService {
       },
       take: limit,
     });
+    return rows.map((s: any) => mapTrainingResponse(s));
   }
 
-  async getServiceCategories() {
-    return this.prisma.service_categories.findMany({
+  async getTrainingCategories() {
+    const repo = this.trainingCategory;
+    if (!repo) {
+      throw new Error('TrainingCategory model not available');
+    }
+    return repo.findMany({
       orderBy: { name_en: 'asc' },
-    });
-  }
-
-  // --- Service groups ---
-  async findGroupsBySalon(salonId: string) {
-    return this.prisma.serviceGroup.findMany({
-      where: { salonId, isActive: true },
-      orderBy: { position: 'asc' },
-    });
-  }
-
-  async createGroup(data: {
-    salonId: string;
-    name: string;
-    nameEn?: string;
-    nameVi?: string;
-    nameRu?: string;
-  }) {
-    const count = await this.prisma.serviceGroup.count({
-      where: { salonId: data.salonId },
-    });
-    const name = data.name.trim();
-    const pick = (v: string | undefined) => {
-      const t = v?.trim();
-      return t && t.length > 0 ? t : name;
-    };
-    return this.prisma.serviceGroup.create({
-      data: {
-        salonId: data.salonId,
-        name,
-        nameEn: pick(data.nameEn),
-        nameVi: pick(data.nameVi),
-        nameRu: pick(data.nameRu),
-        position: count * 10,
-      },
-    });
-  }
-
-  async updateGroup(
-    id: string,
-    data: {
-      name?: string;
-      nameEn?: string;
-      nameVi?: string;
-      nameRu?: string;
-      position?: number;
-      isActive?: boolean;
-    },
-  ) {
-    return this.prisma.serviceGroup.update({
-      where: { id },
-      data,
-    });
-  }
-
-  async deleteGroup(id: string) {
-    // soft delete: mark inactive and detach from services
-    return this.prisma.$transaction(async (tx) => {
-      await tx.service.updateMany({
-        where: { serviceGroupId: id },
-        data: { serviceGroupId: null },
-      });
-      return tx.serviceGroup.update({
-        where: { id },
-        data: { isActive: false },
-      });
     });
   }
 }

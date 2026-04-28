@@ -3,6 +3,9 @@ import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import '../constants/colors.dart';
 import '../l10n/locale_provider.dart';
+import '../services/auth_service.dart';
+import '../services/dashboard_api_service.dart';
+import '../utils/show_api_error.dart';
 import '../utils/currency_format.dart';
 import 'period_picker_screen.dart';
 
@@ -14,10 +17,19 @@ class AnalyticsScreen extends StatefulWidget {
 }
 
 class _AnalyticsScreenState extends State<AnalyticsScreen> {
-  DateTime _rangeStart = DateTime.now();
+  DateTime _rangeStart = DateTime.now().subtract(const Duration(days: 30));
   DateTime _rangeEnd = DateTime.now();
   final PageController _pageController = PageController();
   int _currentPage = 0;
+  bool _isLoading = false;
+  String? _errorText;
+  StudioAnalytics? _analytics;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadAnalytics();
+  }
 
   @override
   void dispose() {
@@ -35,6 +47,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
         _rangeStart = picked.start;
         _rangeEnd = picked.end;
       });
+      await _loadAnalytics();
     }
   }
 
@@ -43,19 +56,49 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
     return '${fmt.format(_rangeStart)} - ${fmt.format(_rangeEnd)}';
   }
 
-  // Placeholder stats — will be wired to API later
-  int get _totalClients => 1;
-  int get _regularCount => 1;
-  int get _newCount => 0;
-  int get _sleepersCount => 0;
-  double get _income => 0;
-  double get _expenses => 0;
-  double get _netProfit => 0;
-  int get _totalVisits => 0;
-  double get _averageClientCheck => 0;
-  double get _totalSales => 0;
-  int get _totalServices => 0;
-  String get _mostPopularService => '—';
+  String get _fromIso => DateTime(
+        _rangeStart.year,
+        _rangeStart.month,
+        _rangeStart.day,
+      ).toUtc().toIso8601String();
+
+  String get _toIso => DateTime(
+        _rangeEnd.year,
+        _rangeEnd.month,
+        _rangeEnd.day,
+        23,
+        59,
+        59,
+      ).toUtc().toIso8601String();
+
+  String _asPercent(double? value) {
+    if (value == null) return '—';
+    return '${(value * 100).toStringAsFixed(1)}%';
+  }
+
+  Future<void> _loadAnalytics() async {
+    final token = context.read<AuthService>().accessToken;
+    if (token == null || token.isEmpty) return;
+    setState(() {
+      _isLoading = true;
+      _errorText = null;
+    });
+    try {
+      final data = await DashboardApiService.getCurrentStudioAnalytics(
+        token,
+        fromIso: _fromIso,
+        toIso: _toIso,
+      );
+      if (!mounted) return;
+      setState(() => _analytics = data);
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _errorText = e.toString());
+      showApiError(context, e);
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -131,56 +174,68 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                   ),
                 ],
               ),
-              const SizedBox(height: 16),
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-                decoration: BoxDecoration(
-                  color: AppColors.primary100,
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: AppColors.primary200),
-                ),
-                child: Row(
-                  children: [
-                    Icon(Icons.info_outline, size: 22, color: AppColors.primary500),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Text(
-                        locale.t('analytics.inDevelopment'),
+              const SizedBox(height: 24),
+              if (_isLoading)
+                const Center(
+                  child: Padding(
+                    padding: EdgeInsets.symmetric(vertical: 24),
+                    child: CircularProgressIndicator(),
+                  ),
+                )
+              else if (_analytics == null)
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: AppColors.backgroundPrimary,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        _errorText == null
+                            ? locale.t('analytics.noData')
+                            : locale.t('analytics.failedLoad'),
                         style: const TextStyle(
-                          fontSize: 14,
                           color: AppColors.textPrimary,
+                          fontSize: 14,
                         ),
                       ),
-                    ),
-                  ],
+                      const SizedBox(height: 12),
+                      OutlinedButton(
+                        onPressed: _loadAnalytics,
+                        child: Text(locale.t('analytics.retry')),
+                      ),
+                    ],
+                  ),
+                )
+              else ...[
+                _buildClientsCard(locale),
+                const SizedBox(height: 24),
+                SizedBox(
+                  height: 225,
+                  child: PageView(
+                    controller: _pageController,
+                    onPageChanged: (i) => setState(() => _currentPage = i),
+                    padEnds: false,
+                    children: [
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 6),
+                        child: _buildIncomeExpensesSlide(locale),
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 6),
+                        child: _buildSalesSlide(locale),
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 6),
+                        child: _buildServicesSlide(locale),
+                      ),
+                    ],
+                  ),
                 ),
-              ),
-              const SizedBox(height: 24),
-              _buildClientsCard(locale),
-              const SizedBox(height: 24),
-              SizedBox(
-                height: 225,
-                child: PageView(
-                  controller: _pageController,
-                  onPageChanged: (i) => setState(() => _currentPage = i),
-                  padEnds: false,
-                  children: [
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 6),
-                      child: _buildIncomeExpensesSlide(locale),
-                    ),
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 6),
-                      child: _buildSalesSlide(locale),
-                    ),
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 6),
-                      child: _buildServicesSlide(locale),
-                    ),
-                  ],
-                ),
-              ),
+              ],
               const SizedBox(height: 20),
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
@@ -226,8 +281,9 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
   }
 
   Widget _buildSalesSlide(LocaleProvider locale) {
+    final a = _analytics;
     return _buildSlideCard(
-      title: locale.t('analytics.sales'),
+      title: locale.t('analytics.sessions'),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         mainAxisSize: MainAxisSize.min,
@@ -236,9 +292,9 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
             children: [
               Expanded(
                 child: _buildAnalyticsMiniCard(
-                  title: locale.t('analytics.visits'),
-                  value: '$_totalVisits',
-                  icon: Icons.people_outline,
+                  title: locale.t('analytics.sessionsScheduled'),
+                  value: '${a?.trainingSessionsScheduled ?? 0}',
+                  icon: Icons.calendar_today_outlined,
                   iconBg: AppColors.analyticsTealLight,
                   iconColor: AppColors.analyticsTeal,
                 ),
@@ -246,9 +302,9 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
               const SizedBox(width: 12),
               Expanded(
                 child: _buildAnalyticsMiniCard(
-                  title: locale.t('analytics.average'),
-                  value: formatVnd(_averageClientCheck),
-                  icon: Icons.receipt_long_outlined,
+                  title: locale.t('analytics.sessionsCancelled'),
+                  value: '${a?.trainingSessionsCancelled ?? 0}',
+                  icon: Icons.event_busy_outlined,
                   iconBg: AppColors.analyticsTealLight,
                   iconColor: AppColors.analyticsTeal,
                 ),
@@ -256,13 +312,28 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
             ],
           ),
           const SizedBox(height: 12),
-          _buildAnalyticsMiniCard(
-            title: locale.t('analytics.totalSales'),
-            value: formatVnd(_totalSales),
-            fullWidth: true,
-            icon: Icons.trending_up,
-            iconBg: AppColors.analyticsPurpleLight,
-            iconColor: AppColors.analyticsPurple,
+          Row(
+            children: [
+              Expanded(
+                child: _buildAnalyticsMiniCard(
+                  title: locale.t('analytics.utilization'),
+                  value: _asPercent(a?.averageUtilization),
+                  icon: Icons.donut_small,
+                  iconBg: AppColors.analyticsPurpleLight,
+                  iconColor: AppColors.analyticsPurple,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: _buildAnalyticsMiniCard(
+                  title: locale.t('analytics.activeEnrollments'),
+                  value: '${a?.enrollmentsActive ?? 0}',
+                  icon: Icons.group_outlined,
+                  iconBg: AppColors.analyticsPurpleLight,
+                  iconColor: AppColors.analyticsPurple,
+                ),
+              ),
+            ],
           ),
         ],
       ),
@@ -270,28 +341,38 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
   }
 
   Widget _buildServicesSlide(LocaleProvider locale) {
+    final a = _analytics;
     return _buildSlideCard(
-      title: locale.t('analytics.services'),
+      title: locale.t('analytics.trainings'),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         mainAxisSize: MainAxisSize.min,
         children: [
           _buildAnalyticsMiniCard(
-            title: locale.t('analytics.totalServices'),
-            value: '$_totalServices',
+            title: locale.t('analytics.trainingsActive'),
+            value: '${a?.trainingsActiveInPeriod ?? 0}',
             fullWidth: true,
-            icon: Icons.miscellaneous_services_outlined,
+            icon: Icons.fitness_center,
             iconBg: AppColors.analyticsPurpleLight,
             iconColor: AppColors.analyticsPurple,
           ),
           const SizedBox(height: 12),
           _buildAnalyticsMiniCard(
-            title: locale.t('analytics.mostPopularService'),
-            value: _mostPopularService,
+            title: locale.t('analytics.topTraining'),
+            value: a?.topTrainingName ?? '—',
             fullWidth: true,
             icon: Icons.star_outline,
             iconBg: AppColors.analyticsPurpleLight,
             iconColor: AppColors.analyticsPurple,
+          ),
+          const SizedBox(height: 12),
+          _buildAnalyticsMiniCard(
+            title: locale.t('analytics.topTrainer'),
+            value: a?.topTrainerName ?? '—',
+            fullWidth: true,
+            icon: Icons.person_outline,
+            iconBg: AppColors.analyticsTealLight,
+            iconColor: AppColors.analyticsTeal,
           ),
         ],
       ),
@@ -390,10 +471,10 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
   }
 
   Widget _buildClientsCard(LocaleProvider locale) {
-    final total = _totalClients;
-    final regular = _regularCount;
-    final newCount = _newCount;
-    final sleepers = _sleepersCount;
+    final total = _analytics?.clientsTotal ?? 0;
+    final regular = _analytics?.clientsRegular ?? 0;
+    final newCount = _analytics?.clientsNewInPeriod ?? 0;
+    final sleepers = _analytics?.clientsInactive ?? 0;
     final regularPct = total > 0 ? regular / total : 0.0;
     final newPct = total > 0 ? newCount / total : 0.0;
     final sleepersPct = total > 0 ? sleepers / total : 0.0;
@@ -491,8 +572,8 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
               ),
               _buildLegendDot(
                 AppColors.analyticsSleepersRed.withValues(alpha: 0.5),
-                locale.t('analytics.sleepers'),
-                locale.t('analytics.noVisits3Months'),
+                locale.t('analytics.inactive'),
+                locale.t('analytics.inactiveHint'),
               ),
             ],
           ),
@@ -520,6 +601,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
   }
 
   Widget _buildIncomeExpensesCard(LocaleProvider locale) {
+    final a = _analytics;
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -537,7 +619,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            locale.t('analytics.incomeAndExpenses'),
+            locale.t('analytics.overview'),
             style: const TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.w600,
@@ -552,35 +634,53 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                   iconBg: AppColors.analyticsTealLight,
                   icon: Icons.trending_up,
                   iconColor: AppColors.analyticsTeal,
-                  title: locale.t('analytics.income'),
-                  value: _income,
-                  onTap: () {},
+                  title: locale.t('analytics.revenue'),
+                  valueText: formatVnd(a?.revenueTotal ?? 0),
                 ),
               ),
               const SizedBox(width: 12),
               Expanded(
                 child: _buildFinanceCard(
-                  iconBg: AppColors.analyticsExpensesOrange.withValues(
-                    alpha: 0.2,
-                  ),
-                  icon: Icons.trending_down,
-                  iconColor: AppColors.analyticsExpensesOrange,
-                  title: locale.t('analytics.expenses'),
-                  value: _expenses,
-                  onTap: () {},
+                  iconBg: AppColors.analyticsPurpleLight,
+                  icon: Icons.event_note_outlined,
+                  iconColor: AppColors.analyticsPurple,
+                  title: locale.t('analytics.bookings'),
+                  valueText: '${a?.bookingCount ?? 0}',
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              Expanded(
+                child: _buildFinanceCard(
+                  iconBg: AppColors.analyticsTealLight,
+                  icon: Icons.receipt_long_outlined,
+                  iconColor: AppColors.analyticsTeal,
+                  title: locale.t('analytics.averageCheck'),
+                  valueText: formatVnd(a?.averagePerBooking ?? 0),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: _buildFinanceCard(
+                  iconBg: AppColors.analyticsPurpleLight,
+                  icon: Icons.how_to_reg_outlined,
+                  iconColor: AppColors.analyticsPurple,
+                  title: locale.t('analytics.attendance'),
+                  valueText: _asPercent(a?.attendanceRate),
                 ),
               ),
             ],
           ),
           const SizedBox(height: 12),
           _buildFinanceCard(
-            iconBg: Colors.transparent,
-            icon: Icons.account_balance_wallet_outlined,
-            iconColor: AppColors.analyticsPurple,
-            useOutline: false,
-            title: locale.t('analytics.netProfit'),
-            value: _netProfit,
-            onTap: () {},
+            iconBg: AppColors.analyticsExpensesOrange.withValues(alpha: 0.2),
+            icon: Icons.person_off_outlined,
+            iconColor: AppColors.analyticsExpensesOrange,
+            title: locale.t('analytics.noShow'),
+            valueText: '${a?.noshowCount ?? 0}',
           ),
         ],
       ),
@@ -592,67 +692,47 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
     required IconData icon,
     required Color iconColor,
     required String title,
-    required double value,
-    required VoidCallback onTap,
-    bool useOutline = false,
+    required String valueText,
   }) {
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: onTap,
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: AppColors.backgroundSecondary,
         borderRadius: BorderRadius.circular(8),
-        child: Container(
-          padding: const EdgeInsets.all(12),
-          decoration: BoxDecoration(
-            color: AppColors.backgroundSecondary,
-            borderRadius: BorderRadius.circular(8),
-            border: useOutline
-                ? Border.all(
-                    color: AppColors.analyticsPurple.withValues(alpha: 0.5),
-                  )
-                : null,
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(color: iconBg, shape: BoxShape.circle),
+            child: Icon(icon, size: 20, color: iconColor),
           ),
-          child: Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: iconBg,
-                  shape: BoxShape.circle,
-                  border: useOutline
-                      ? Border.all(color: AppColors.analyticsPurple)
-                      : null,
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: const TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
+                    color: AppColors.textPrimary,
+                  ),
                 ),
-                child: Icon(icon, size: 20, color: iconColor),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      title,
-                      style: const TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w500,
-                        color: AppColors.textPrimary,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      formatVnd(value),
-                      style: const TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                        color: AppColors.textPrimary,
-                      ),
-                    ),
-                  ],
+                const SizedBox(height: 4),
+                Text(
+                  valueText,
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.textPrimary,
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
-        ),
+        ],
       ),
     );
   }

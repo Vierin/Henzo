@@ -10,6 +10,7 @@ import '../../services/cache/salon_cache.dart';
 import '../../services/cache/services_staff_cache.dart';
 import '../../services/services_api_service.dart';
 import '../../utils/show_api_error.dart';
+import 'add_training_screen.dart';
 
 enum ServicesSort {
   nameAz,
@@ -21,7 +22,14 @@ enum ServicesSort {
 }
 
 class ServicesScreen extends StatefulWidget {
-  const ServicesScreen({super.key});
+  const ServicesScreen({
+    super.key,
+    this.openCreateOnStart = false,
+    this.trainingMode = false,
+  });
+
+  final bool openCreateOnStart;
+  final bool trainingMode;
 
   @override
   State<ServicesScreen> createState() => _ServicesScreenState();
@@ -32,12 +40,13 @@ class _ServicesScreenState extends State<ServicesScreen> {
   List<ServiceItem> _services = [];
   bool _isLoading = true;
   bool _isActionLoading = false;
+  bool _didAutoOpenCreate = false;
+  bool _didOpenEditFromRouteArgs = false;
   ServicesSort _sort = ServicesSort.nameAz;
 
   final _searchController = TextEditingController();
   String _searchQuery = '';
   String? _selectedCategory;
-  String? _selectedGroup;
 
   @override
   void initState() {
@@ -85,10 +94,15 @@ class _ServicesScreenState extends State<ServicesScreen> {
               !_services.any((s) => s.categoryName == _selectedCategory)) {
             _selectedCategory = null;
           }
-          if (_selectedGroup != null &&
-              !_services.any((s) => s.groupName == _selectedGroup)) {
-            _selectedGroup = null;
-          }
+        });
+        if (widget.openCreateOnStart && !_didAutoOpenCreate && salon != null) {
+          _didAutoOpenCreate = true;
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (mounted) _openAddTrainingPage();
+          });
+        }
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) _tryOpenEditTrainingFromArguments();
         });
       }
     } catch (e) {
@@ -122,15 +136,6 @@ class _ServicesScreenState extends State<ServicesScreen> {
     return set.toList()..sort();
   }
 
-  List<String> get _uniqueGroups {
-    final set = <String>{};
-    for (final s in _services) {
-      final g = s.groupName;
-      if (g != null && g.isNotEmpty) set.add(g);
-    }
-    return set.toList()..sort();
-  }
-
   List<ServiceItem> get _filteredAndSortedServices {
     var list = List<ServiceItem>.from(_services);
     if (_searchQuery.isNotEmpty) {
@@ -141,9 +146,6 @@ class _ServicesScreenState extends State<ServicesScreen> {
     }
     if (_selectedCategory != null && _selectedCategory!.isNotEmpty) {
       list = list.where((s) => s.categoryName == _selectedCategory).toList();
-    }
-    if (_selectedGroup != null && _selectedGroup!.isNotEmpty) {
-      list = list.where((s) => s.groupName == _selectedGroup).toList();
     }
     list.sort((a, b) {
       switch (_sort) {
@@ -212,24 +214,6 @@ class _ServicesScreenState extends State<ServicesScreen> {
     );
   }
 
-  void _clearFilters() {
-    setState(() {
-      _searchController.clear();
-      _searchQuery = '';
-      _selectedCategory = null;
-      _selectedGroup = null;
-    });
-  }
-
-  void _showManageGroups() {
-    final locale = context.read<LocaleProvider>();
-    ScaffoldMessenger.maybeOf(context)?.showSnackBar(
-      SnackBar(
-        content: Text(locale.t('servicesScreen.manageGroupsWebOnly')),
-      ),
-    );
-  }
-
   Future<void> _deleteService(ServiceItem item) async {
     final locale = context.read<LocaleProvider>();
     final confirm = await showDialog<bool>(
@@ -283,118 +267,31 @@ class _ServicesScreenState extends State<ServicesScreen> {
     }
   }
 
-  void _openAddDialog() {
-    final locale = context.read<LocaleProvider>();
-    final nameController = TextEditingController();
-    final priceController = TextEditingController(text: '0');
-    final durationController = TextEditingController(text: '30');
-    showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: Text(locale.t('servicesScreen.addServiceTitle')),
-        content: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextField(
-                controller: nameController,
-                decoration: InputDecoration(
-                  labelText: locale.t('servicesScreen.nameRequired'),
-                  border: OutlineInputBorder(),
-                ),
-              ),
-              const SizedBox(height: 12),
-              TextField(
-                controller: priceController,
-                keyboardType: const TextInputType.numberWithOptions(
-                  decimal: true,
-                ),
-                decoration: InputDecoration(
-                  labelText: locale.t('servicesScreen.priceRequired'),
-                  border: OutlineInputBorder(),
-                ),
-              ),
-              const SizedBox(height: 12),
-              TextField(
-                controller: durationController,
-                keyboardType: TextInputType.number,
-                decoration: InputDecoration(
-                  labelText: locale.t('servicesScreen.durationRequired'),
-                  border: OutlineInputBorder(),
-                ),
-              ),
-            ],
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: Text(locale.t('common.cancel')),
-          ),
-          FilledButton(
-            onPressed: () async {
-              final name = nameController.text.trim();
-              if (name.isEmpty) {
-                ScaffoldMessenger.maybeOf(context)?.showSnackBar(
-                  SnackBar(content: Text(locale.t('servicesScreen.enterName'))),
-                );
-                return;
-              }
-              final price =
-                  double.tryParse(priceController.text.replaceAll(',', '.')) ??
-                  0.0;
-              final duration = int.tryParse(durationController.text) ?? 30;
-              if (price <= 0 || duration <= 0) {
-                ScaffoldMessenger.maybeOf(context)?.showSnackBar(
-                  SnackBar(
-                    content: Text(
-                      locale.t('servicesScreen.priceDurationMustBePositive'),
-                    ),
-                  ),
-                );
-                return;
-              }
-              Navigator.pop(ctx);
-              final token = context.read<AuthService>().accessToken;
-              final salonId = _salon?.id;
-              if (token == null || salonId == null) return;
-              setState(() => _isActionLoading = true);
-              try {
-                final created = await ServicesApiService.create(
-                  token,
-                  salonId: salonId,
-                  name: name,
-                  price: price,
-                  duration: duration,
-                );
-                if (!mounted) return;
-                if (created != null) {
-                  await _loadData();
-                  ScaffoldMessenger.maybeOf(context)?.showSnackBar(
-                    SnackBar(
-                      content: Text(locale.t('servicesScreen.serviceAdded')),
-                      backgroundColor: Colors.green,
-                    ),
-                  );
-                } else {
-                  ScaffoldMessenger.maybeOf(context)?.showSnackBar(
-                    SnackBar(
-                      content: Text(locale.t('servicesScreen.addFailed')),
-                      backgroundColor: Colors.red,
-                    ),
-                  );
-                }
-              } catch (e) {
-                if (mounted) showApiError(context, e);
-              } finally {
-                if (mounted) setState(() => _isActionLoading = false);
-              }
-            },
-            child: Text(locale.t('common.add')),
-          ),
-        ],
-      ),
+  void _tryOpenEditTrainingFromArguments() {
+    if (_didOpenEditFromRouteArgs || !mounted) return;
+    final raw = ModalRoute.of(context)?.settings.arguments;
+    if (raw is! Map) return;
+    final tid = raw['editTrainingId']?.toString();
+    if (tid == null || tid.isEmpty) return;
+    ServiceItem? match;
+    for (final s in _services) {
+      if (s.id == tid) {
+        match = s;
+        break;
+      }
+    }
+    if (match == null) return;
+    _didOpenEditFromRouteArgs = true;
+    _openEditDialog(match);
+  }
+
+  Future<void> _openAddTrainingPage() async {
+    final added = await Navigator.of(context).push<bool>(
+      MaterialPageRoute(builder: (_) => const AddTrainingScreen()),
     );
+    if (added == true && mounted) {
+      await _loadData();
+    }
   }
 
   void _openEditDialog(ServiceItem item) {
@@ -561,81 +458,6 @@ class _ServicesScreenState extends State<ServicesScreen> {
                             ),
                           ),
                         ),
-                      const SizedBox(height: 16),
-                      Text(
-                        locale.t('servicesScreen.serviceGroupOptional'),
-                        style: TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w500,
-                          color: AppColors.textPrimary,
-                        ),
-                      ),
-                      const SizedBox(height: 6),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 14,
-                                vertical: 12,
-                              ),
-                              decoration: BoxDecoration(
-                                color: AppColors.backgroundPrimary,
-                                borderRadius: BorderRadius.circular(12),
-                                border: Border.all(
-                                  color: AppColors.borderPrimary,
-                                ),
-                              ),
-                              child: Row(
-                                children: [
-                                  Expanded(
-                                    child: Text(
-                                      item.groupName ??
-                                          locale.t('servicesScreen.noGroup'),
-                                      style: TextStyle(
-                                        fontSize: 14,
-                                        color: item.groupName != null
-                                            ? AppColors.textPrimary
-                                            : AppColors.textSecondary,
-                                      ),
-                                    ),
-                                  ),
-                                  const Icon(
-                                    Icons.keyboard_arrow_down,
-                                    size: 20,
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          Material(
-                            color: AppColors.primary500,
-                            borderRadius: BorderRadius.circular(8),
-                            child: InkWell(
-                              onTap: () {},
-                              borderRadius: BorderRadius.circular(8),
-                              child: const SizedBox(
-                                width: 44,
-                                height: 44,
-                                child: Icon(
-                                  Icons.add,
-                                  color: Colors.white,
-                                  size: 24,
-                                ),
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        locale.t('servicesScreen.groupsHint'),
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: AppColors.textSecondary,
-                        ),
-                      ),
                       const SizedBox(height: 16),
                       Text(
                         locale.t('servicesScreen.staffOptional'),
@@ -869,14 +691,26 @@ class _ServicesScreenState extends State<ServicesScreen> {
     final locale = context.watch<LocaleProvider>();
     return Scaffold(
       backgroundColor: AppColors.backgroundSecondary,
+      floatingActionButton: _salon != null && !_isLoading
+          ? SafeArea(
+              minimum: const EdgeInsets.only(bottom: 8),
+              child: FloatingActionButton(
+                onPressed: _isActionLoading ? null : _openAddTrainingPage,
+                backgroundColor: AppColors.primary500,
+                foregroundColor: Colors.white,
+                child: const Icon(Icons.add),
+              ),
+            )
+          : null,
+      floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
       appBar: AppBar(
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
           onPressed: () => Navigator.of(context).pop(),
           color: AppColors.textPrimary,
         ),
-        title: Text(
-          locale.t('servicesScreen.title'),
+        title: const Text(
+          'Тренировки',
           style: TextStyle(
             fontSize: 24,
             fontWeight: FontWeight.w600,
@@ -903,7 +737,7 @@ class _ServicesScreenState extends State<ServicesScreen> {
           : _salon == null
           ? Center(
               child: Padding(
-                padding: const EdgeInsets.fromLTRB(12, 16, 12, 16),
+                padding: const EdgeInsets.fromLTRB(12, 16, 12, 24),
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
@@ -941,58 +775,7 @@ class _ServicesScreenState extends State<ServicesScreen> {
                 slivers: [
                   SliverToBoxAdapter(
                     child: Padding(
-                      padding: const EdgeInsets.fromLTRB(24, 16, 24, 16),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            locale.t('servicesScreen.manageServicesSubtitle'),
-                            style: TextStyle(
-                              fontSize: 14,
-                              color: AppColors.textSecondary,
-                            ),
-                          ),
-                          const SizedBox(height: 16),
-                          Row(
-                            children: [
-                              Expanded(
-                                child: OutlinedButton.icon(
-                                  onPressed: _showManageGroups,
-                                  icon: const Icon(
-                                    Icons.folder_outlined,
-                                    size: 20,
-                                  ),
-                                  label: Text(
-                                    locale.t('servicesScreen.addRemoveGroup'),
-                                  ),
-                                  style: OutlinedButton.styleFrom(
-                                    foregroundColor: AppColors.textPrimary,
-                                    side: BorderSide(
-                                      color: AppColors.borderPrimary,
-                                    ),
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(width: 12),
-                              FilledButton.icon(
-                                onPressed: _isActionLoading
-                                    ? null
-                                    : _openAddDialog,
-                                icon: const Icon(Icons.add, size: 20),
-                                label: Text(locale.t('common.add')),
-                                style: FilledButton.styleFrom(
-                                  backgroundColor: AppColors.primary500,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                  SliverToBoxAdapter(
-                    child: Padding(
-                      padding: const EdgeInsets.fromLTRB(24, 0, 24, 16),
+                      padding: const EdgeInsets.fromLTRB(12, 16, 12, 16),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
@@ -1041,100 +824,52 @@ class _ServicesScreenState extends State<ServicesScreen> {
                               ],
                             ),
                           ),
-                          const SizedBox(height: 12),
-                          Text(
-                            locale.t('servicesScreen.group'),
-                            style: TextStyle(
-                              fontSize: 12,
-                              fontWeight: FontWeight.w500,
-                              color: AppColors.textSecondary,
-                            ),
-                          ),
-                          const SizedBox(height: 6),
-                          SingleChildScrollView(
-                            scrollDirection: Axis.horizontal,
-                            padding: const EdgeInsets.only(bottom: 4),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Padding(
-                                  padding: const EdgeInsets.only(right: 8),
-                                  child: FilterChip(
-                                    label: Text(
-                                      locale.t('servicesScreen.allGroups'),
-                                    ),
-                                    selected: _selectedGroup == null,
-                                    onSelected: (_) =>
-                                        setState(() => _selectedGroup = null),
-                                    selectedColor: AppColors.primary100,
-                                    checkmarkColor: AppColors.primary500,
-                                  ),
-                                ),
-                                ..._uniqueGroups.map(
-                                  (g) => Padding(
-                                    padding: const EdgeInsets.only(right: 8),
-                                    child: FilterChip(
-                                      label: Text(g),
-                                      selected: _selectedGroup == g,
-                                      onSelected: (_) =>
-                                          setState(() => _selectedGroup = g),
-                                      selectedColor: AppColors.primary100,
-                                      checkmarkColor: AppColors.primary500,
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                          const SizedBox(height: 16),
-                          Card(
-                            elevation: 0,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                              side: const BorderSide(
-                                color: AppColors.borderPrimary,
+                          const SizedBox(height: 14),
+                          TextField(
+                            controller: _searchController,
+                            decoration: InputDecoration(
+                              hintText: locale.t(
+                                'servicesScreen.searchByName',
                               ),
-                            ),
-                            child: Padding(
-                              padding: const EdgeInsets.all(16),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.stretch,
-                                children: [
-                                  Text(
-                                    locale.t('common.search'),
-                                    style: TextStyle(
-                                      fontSize: 12,
-                                      fontWeight: FontWeight.w500,
-                                      color: AppColors.textSecondary,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 6),
-                                  TextField(
-                                    controller: _searchController,
-                                    decoration: InputDecoration(
-                                      hintText: locale.t(
-                                        'servicesScreen.searchByName',
-                                      ),
-                                      border: OutlineInputBorder(),
-                                      contentPadding: EdgeInsets.symmetric(
-                                        horizontal: 12,
-                                        vertical: 10,
-                                      ),
-                                    ),
-                                  ),
-                                  const SizedBox(height: 12),
-                                  OutlinedButton(
-                                    onPressed: _clearFilters,
-                                    style: OutlinedButton.styleFrom(
-                                      foregroundColor: AppColors.textPrimary,
-                                      side: BorderSide(
-                                        color: AppColors.borderPrimary,
-                                      ),
-                                    ),
-                                    child: Text(locale.t('common.clear')),
-                                  ),
-                                ],
+                              filled: true,
+                              fillColor: AppColors.backgroundPrimary,
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                                borderSide: const BorderSide(
+                                  color: AppColors.borderPrimary,
+                                ),
                               ),
+                              enabledBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                                borderSide: const BorderSide(
+                                  color: AppColors.borderPrimary,
+                                ),
+                              ),
+                              focusedBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                                borderSide: const BorderSide(
+                                  color: AppColors.primary500,
+                                  width: 1.5,
+                                ),
+                              ),
+                              contentPadding: const EdgeInsets.symmetric(
+                                horizontal: 14,
+                                vertical: 12,
+                              ),
+                              suffixIcon: _searchQuery.isNotEmpty
+                                  ? IconButton(
+                                      icon: const Icon(
+                                        Icons.close,
+                                        size: 20,
+                                        color: AppColors.textSecondary,
+                                      ),
+                                      onPressed: () {
+                                        _searchController.clear();
+                                        setState(() => _searchQuery = '');
+                                      },
+                                      tooltip: locale.t('common.clear'),
+                                    )
+                                  : null,
                             ),
                           ),
                         ],
@@ -1180,7 +915,7 @@ class _ServicesScreenState extends State<ServicesScreen> {
                     )
                   else
                     SliverPadding(
-                      padding: const EdgeInsets.fromLTRB(24, 0, 24, 100),
+                      padding: const EdgeInsets.fromLTRB(12, 0, 12, 96),
                       sliver: SliverList(
                         delegate: SliverChildBuilderDelegate((context, index) {
                           final item = _filteredAndSortedServices[index];
@@ -1221,107 +956,130 @@ class _ServiceCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      margin: const EdgeInsets.only(bottom: 14),
-      elevation: 0,
-      shape: RoundedRectangleBorder(
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      decoration: BoxDecoration(
+        color: AppColors.backgroundPrimary,
         borderRadius: BorderRadius.circular(14),
-        side: const BorderSide(color: AppColors.borderPrimary),
+        border: Border.all(color: AppColors.borderPrimary),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x10000000),
+            blurRadius: 10,
+            offset: Offset(0, 3),
+          ),
+        ],
       ),
-      child: Padding(
-        padding: const EdgeInsets.all(18),
+      clipBehavior: Clip.antiAlias,
+      child: IntrinsicHeight(
         child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
+            Container(
+              width: 4,
+              decoration: const BoxDecoration(color: AppColors.primary500),
+            ),
             Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    item.displayName,
-                    style: const TextStyle(
-                      fontSize: 17,
-                      fontWeight: FontWeight.bold,
-                      color: AppColors.textPrimary,
-                    ),
-                  ),
-                  if (item.tagNames.isNotEmpty) ...[
-                    const SizedBox(height: 10),
-                    Wrap(
-                      spacing: 8,
-                      runSpacing: 6,
-                      children: item.tagNames.map((tag) {
-                        return Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 10,
-                            vertical: 5,
-                          ),
-                          decoration: BoxDecoration(
-                            color: AppColors.primary50,
-                            borderRadius: BorderRadius.circular(20),
-                            border: Border.all(
-                              color: AppColors.primary200,
-                              width: 1,
-                            ),
-                          ),
-                          child: Text(
-                            tag,
-                            style: const TextStyle(
-                              fontSize: 12,
-                              fontWeight: FontWeight.w500,
-                              color: AppColors.primary700,
-                            ),
-                          ),
-                        );
-                      }).toList(),
-                    ),
-                  ],
-                  const SizedBox(height: 12),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        formatDuration(item.duration),
-                        style: const TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.bold,
-                          color: AppColors.textPrimary,
-                        ),
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(14, 14, 8, 14),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      item.displayName,
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w800,
+                        height: 1.25,
+                        color: AppColors.textPrimary,
                       ),
-                      Text(
-                        formatPrice(item.price),
-                        style: const TextStyle(
-                          fontSize: 17,
-                          fontWeight: FontWeight.bold,
-                          color: AppColors.primary500,
-                        ),
+                    ),
+                    if (item.tagNames.isNotEmpty) ...[
+                      const SizedBox(height: 8),
+                      Wrap(
+                        spacing: 6,
+                        runSpacing: 6,
+                        children: item.tagNames.map((tag) {
+                          return Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 4,
+                            ),
+                            decoration: BoxDecoration(
+                              color: AppColors.primary50,
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(
+                                color: AppColors.primary200,
+                              ),
+                            ),
+                            child: Text(
+                              tag,
+                              style: const TextStyle(
+                                fontSize: 11,
+                                fontWeight: FontWeight.w600,
+                                color: AppColors.primary700,
+                              ),
+                            ),
+                          );
+                        }).toList(),
                       ),
                     ],
-                  ),
-                ],
+                    const SizedBox(height: 10),
+                    Row(
+                      children: [
+                        Text(
+                          formatDuration(item.duration),
+                          style: TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
+                            color: AppColors.textSecondary,
+                          ),
+                        ),
+                        const Spacer(),
+                        Text(
+                          formatPrice(item.price),
+                          style: const TextStyle(
+                            fontSize: 17,
+                            fontWeight: FontWeight.w800,
+                            letterSpacing: -0.2,
+                            color: AppColors.primary600,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
               ),
             ),
             if (isActionLoading)
-              const SizedBox(
-                width: 24,
-                height: 24,
-                child: CircularProgressIndicator(strokeWidth: 2),
+              const Padding(
+                padding: EdgeInsets.only(right: 8, top: 12),
+                child: SizedBox(
+                  width: 22,
+                  height: 22,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                ),
               )
             else
-              Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  IconButton(
-                    icon: const Icon(Icons.edit_outlined),
-                    onPressed: onEdit,
-                    color: AppColors.primary500,
-                  ),
-                  IconButton(
-                    icon: const Icon(Icons.delete_outline),
-                    onPressed: onDelete,
-                    color: AppColors.error600,
-                  ),
-                ],
+              Padding(
+                padding: const EdgeInsets.only(right: 4, top: 4),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    IconButton(
+                      icon: const Icon(Icons.edit_outlined, size: 22),
+                      onPressed: onEdit,
+                      color: AppColors.primary500,
+                      visualDensity: VisualDensity.compact,
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.delete_outline, size: 22),
+                      onPressed: onDelete,
+                      color: AppColors.error600,
+                      visualDensity: VisualDensity.compact,
+                    ),
+                  ],
+                ),
               ),
           ],
         ),

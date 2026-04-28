@@ -158,7 +158,7 @@ function transliterateVietnamese(text: string): string {
  * @param address - адрес салона (не используется, оставлен для совместимости)
  * @returns сгенерированный slug
  */
-export function generateSalonSlug(
+export function generateStudioSlug(
   name: string,
   id: string,
   address?: string,

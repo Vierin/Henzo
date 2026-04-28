@@ -2,9 +2,6 @@ import { NestFactory } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
 import { NestExpressApplication } from '@nestjs/platform-express';
 import { AppModule } from './app.module';
-import { AllExceptionsFilter } from './common/filters/http-exception.filter';
-import { MonitoringInterceptor } from './common/interceptors/monitoring.interceptor';
-import { MonitoringService } from './monitoring/monitoring.service';
 import * as compression from 'compression';
 import helmet from 'helmet';
 import { resolveBackendEnvPath } from './config/resolve-backend-env-path';
@@ -127,15 +124,6 @@ async function bootstrap() {
       }),
     );
     console.log('✅ Compression enabled with optimized settings');
-
-    // Enable global exception filter
-    app.useGlobalFilters(new AllExceptionsFilter());
-    console.log('✅ Global exception filter enabled');
-
-    // Enable global monitoring interceptor
-    const monitoringService = app.get(MonitoringService);
-    app.useGlobalInterceptors(new MonitoringInterceptor(monitoringService));
-    console.log('✅ Global monitoring interceptor enabled');
 
     // Enable global validation
     app.useGlobalPipes(

@@ -3,22 +3,21 @@ import { PrismaService } from '../prisma/prisma.service';
 import { EmailService } from '../email/email.service';
 import { InputJsonValue } from '@prisma/client/runtime/library';
 import { toZonedTime, formatInTimeZone } from 'date-fns-tz';
-import { getLocalizedServiceName } from '../common/utils/localized-service-name';
 
 type BookingWithRelations = {
   id: string;
-  dateTime: Date;
+  startsAt: Date;
   status: string;
   reminderSent: boolean;
   remindersSentIntervals?: number[] | null;
-  salonId: string;
+  studioId: string;
   clientEmailLocale: string;
   User: {
     id: string;
     name: string | null;
     email: string;
   };
-  Service: {
+  Training: {
     id: string;
     name: string;
     nameEn?: string | null;
@@ -27,7 +26,7 @@ type BookingWithRelations = {
     duration: number;
     price: number;
   };
-  Salon: {
+  Studio: {
     id: string;
     name: string;
     address: string | null;
@@ -35,11 +34,20 @@ type BookingWithRelations = {
     reminderSettings?: any;
     timezone?: string; // IANA timezone identifier (e.g., "Asia/Ho_Chi_Minh")
   };
-  Staff: {
+  Trainer: {
     id: string;
     name: string;
   } | null;
 };
+
+function getLocalizedTrainingName(
+  training: BookingWithRelations['Training'],
+  locale: 'en' | 'ru' | 'vi',
+): string {
+  if (locale === 'ru') return training.nameRu || training.nameEn || training.name;
+  if (locale === 'vi') return training.nameVi || training.nameEn || training.name;
+  return training.nameEn || training.name;
+}
 
 @Injectable()
 export class RemindersService {
@@ -88,9 +96,9 @@ export class RemindersService {
         // We use a wider window and filter precisely later
         let bookings: BookingWithRelations[];
         try {
-          bookings = (await this.prisma.booking.findMany({
+          bookings = (await this.prisma.sessionBooking.findMany({
             where: {
-              dateTime: {
+              startsAt: {
                 gte: reminderWindowStart,
                 lte: reminderWindowEnd,
               },
@@ -100,11 +108,11 @@ export class RemindersService {
             },
             select: {
               id: true,
-              dateTime: true,
+              startsAt: true,
               status: true,
               reminderSent: true,
               remindersSentIntervals: true,
-              salonId: true,
+              studioId: true,
               clientEmailLocale: true,
               User: {
                 select: {
@@ -113,7 +121,7 @@ export class RemindersService {
                   email: true,
                 },
               },
-              Service: {
+              Training: {
                 select: {
                   id: true,
                   name: true,
@@ -124,7 +132,7 @@ export class RemindersService {
                   price: true,
                 },
               },
-              Salon: {
+              Studio: {
                 select: {
                   id: true,
                   name: true,
@@ -134,7 +142,7 @@ export class RemindersService {
                   timezone: true,
                 },
               },
-              Staff: {
+              Trainer: {
                 select: {
                   id: true,
                   name: true,
@@ -162,14 +170,14 @@ export class RemindersService {
         // Process each booking
         for (const booking of bookings) {
           try {
-            // Calculate time until booking in UTC (dateTime is stored in UTC)
-            const timeUntilBooking = booking.dateTime.getTime() - now.getTime();
+            // Calculate time until booking in UTC (startsAt is stored in UTC)
+            const timeUntilBooking = booking.startsAt.getTime() - now.getTime();
             const hoursUntilBooking = timeUntilBooking / (1000 * 60 * 60);
 
             // Get salon timezone
-            const salonTimezone = booking.Salon?.timezone || 'Asia/Ho_Chi_Minh';
+            const salonTimezone = booking.Studio?.timezone || 'Asia/Ho_Chi_Minh';
 
-            // IMPORTANT: dateTime is stored in UTC but represents the appointment time in salon's timezone
+            // IMPORTANT: startsAt is stored in UTC but represents the appointment time in studio timezone
             // We need to check if the time difference matches the reminder interval
             // The interval should be calculated from the current time to the booking time
             const targetIntervalMs = intervalMs;
@@ -182,7 +190,7 @@ export class RemindersService {
               timeUntilBooking <= maxIntervalMs;
 
             console.log(
-              `🔍 Processing booking ${booking.id}: dateTime=${booking.dateTime.toISOString()}, hoursUntil=${hoursUntilBooking.toFixed(2)}, interval=${intervalHours}h, timezone=${salonTimezone}, withinWindow=${isWithinWindow}, targetInterval=${(targetIntervalMs / (1000 * 60 * 60)).toFixed(2)}h, window=[${(minIntervalMs / (1000 * 60 * 60)).toFixed(2)}h, ${(maxIntervalMs / (1000 * 60 * 60)).toFixed(2)}h]`,
+              `🔍 Processing booking ${booking.id}: startsAt=${booking.startsAt.toISOString()}, hoursUntil=${hoursUntilBooking.toFixed(2)}, interval=${intervalHours}h, timezone=${salonTimezone}, withinWindow=${isWithinWindow}, targetInterval=${(targetIntervalMs / (1000 * 60 * 60)).toFixed(2)}h, window=[${(minIntervalMs / (1000 * 60 * 60)).toFixed(2)}h, ${(maxIntervalMs / (1000 * 60 * 60)).toFixed(2)}h]`,
             );
 
             // Skip if not within the precise reminder window
@@ -194,7 +202,7 @@ export class RemindersService {
             }
 
             // Get salon reminder settings
-            const reminderSettings = booking.Salon.reminderSettings || {
+            const reminderSettings = booking.Studio.reminderSettings || {
               intervals: [24],
             };
             const salonIntervals = reminderSettings.intervals || [24];
@@ -220,7 +228,7 @@ export class RemindersService {
             }
 
             // Re-fetch to avoid duplicate send when cron runs overlap or multiple workers
-            const fresh = await this.prisma.booking.findUnique({
+            const fresh = await this.prisma.sessionBooking.findUnique({
               where: { id: booking.id },
               select: { remindersSentIntervals: true },
             });
@@ -239,7 +247,7 @@ export class RemindersService {
             // Use date-fns-tz for proper timezone conversion
             // salonTimezone already defined above
 
-            const bookingDate = new Date(booking.dateTime);
+            const bookingDate = new Date(booking.startsAt);
             const zonedDate = toZonedTime(bookingDate, salonTimezone);
 
             const dateStr = formatInTimeZone(
@@ -263,18 +271,18 @@ export class RemindersService {
 
             // Prepare booking data for email
             const bookingData = {
-              serviceName: getLocalizedServiceName(
-                booking.Service,
+              serviceName: getLocalizedTrainingName(
+                booking.Training,
                 reminderLocale,
               ),
               date: dateStr,
               time: timeStr,
-              duration: booking.Service.duration,
-              price: booking.Service.price,
-              salonName: booking.Salon.name,
-              salonAddress: booking.Salon.address || undefined,
-              salonPhone: booking.Salon.phone || undefined,
-              staffName: booking.Staff?.name || undefined,
+              duration: booking.Training.duration,
+              price: booking.Training.price,
+              salonName: booking.Studio.name,
+              salonAddress: booking.Studio.address || undefined,
+              salonPhone: booking.Studio.phone || undefined,
+              staffName: booking.Trainer?.name || undefined,
               salonTimezone,
               locale: booking.clientEmailLocale as 'en' | 'ru' | 'vi',
             };
@@ -288,7 +296,7 @@ export class RemindersService {
 
             // Mark this interval as sent (use freshIntervals so we don't overwrite intervals added by another worker)
             const updatedSentIntervals = [...freshIntervals, intervalHours];
-            await this.prisma.booking.update({
+            await this.prisma.sessionBooking.update({
               where: { id: booking.id },
               data: {
                 reminderSent: true, // Keep for backward compatibility
@@ -334,7 +342,7 @@ export class RemindersService {
       const threeHoursAgo = new Date(now.getTime() - 3 * 60 * 60 * 1000);
 
       // Find pending bookings older than 3 hours
-      const pendingBookings = await this.prisma.booking.findMany({
+      const pendingBookings = await this.prisma.sessionBooking.findMany({
         where: {
           status: 'PENDING',
           createdAt: {
@@ -349,13 +357,13 @@ export class RemindersService {
               email: true,
             },
           },
-          Service: {
+          Training: {
             select: {
               id: true,
               name: true,
             },
           },
-          Salon: {
+          Studio: {
             select: {
               id: true,
               name: true,
@@ -374,7 +382,7 @@ export class RemindersService {
       // Cancel each pending booking
       for (const booking of pendingBookings) {
         try {
-          await this.prisma.booking.update({
+          await this.prisma.sessionBooking.update({
             where: { id: booking.id },
             data: { status: 'CANCELED' },
           });

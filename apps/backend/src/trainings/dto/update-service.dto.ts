@@ -54,11 +54,7 @@ export class UpdateServiceDto {
 
   @IsOptional()
   @IsInt()
-  serviceCategoryId?: number;
-
-  @IsOptional()
-  @IsString()
-  serviceGroupId?: string | null;
+  trainingCategoryId?: number | null;
 
   @IsOptional()
   @IsArray()

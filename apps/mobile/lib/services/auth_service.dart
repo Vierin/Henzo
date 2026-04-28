@@ -28,11 +28,15 @@ class AuthService extends ChangeNotifier {
   bool get isLoading => _isLoading;
   bool get isAuthenticated => _isAuthenticated;
 
+  String get normalizedRole => (_user?.role ?? '').trim().toUpperCase();
+
   /// Fitness studio app: only `OWNER` may use the main shell.
-  bool get isStudioOperator => _user != null && _user!.role == 'OWNER';
+  bool get isStudioOperator => normalizedRole == 'OWNER';
+
+  bool get isClient => normalizedRole == 'CLIENT';
 
   /// Backward-compatible alias during pivot.
-  bool get isSalonOwner => _user != null && _user!.role == 'OWNER';
+  bool get isSalonOwner => isStudioOperator;
 
   /// Bearer token for API calls.
   String? get accessToken => _supabase.auth.currentSession?.accessToken;
@@ -375,6 +379,106 @@ class AuthService extends ChangeNotifier {
         return (success: true, errorL10nKey: null, errorRaw: null);
       }
 
+      String msg = 'HTTP ${response.statusCode}';
+      try {
+        final err = json.decode(response.body) as Map<String, dynamic>?;
+        if (err != null && err['message'] != null) {
+          msg = err['message'] as String;
+        }
+      } catch (_) {}
+      return (success: false, errorL10nKey: null, errorRaw: msg);
+    } catch (e) {
+      return (
+        success: false,
+        errorL10nKey: AuthErrorKeys.network,
+        errorRaw: e.toString(),
+      );
+    }
+  }
+
+  Future<AuthUiResult> requestClientRegistration({
+    required String email,
+    required String password,
+    String? name,
+    String? phone,
+  }) async {
+    try {
+      final url = Uri.parse('${AppConfig.apiUrl}/auth/register-client/request-code');
+      final response = await http.post(
+        url,
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: json.encode({
+          'email': email.trim(),
+          'password': password,
+          if (name != null && name.trim().isNotEmpty) 'name': name.trim(),
+          if (phone != null && phone.trim().isNotEmpty) 'phone': phone.trim(),
+        }),
+      );
+
+      if (response.statusCode >= 200 && response.statusCode < 300) {
+        return (success: true, errorL10nKey: null, errorRaw: null);
+      }
+
+      String msg = 'HTTP ${response.statusCode}';
+      try {
+        final err = json.decode(response.body) as Map<String, dynamic>?;
+        if (err != null && err['message'] != null) {
+          msg = err['message'] as String;
+        }
+      } catch (_) {}
+      return (success: false, errorL10nKey: null, errorRaw: msg);
+    } catch (e) {
+      return (
+        success: false,
+        errorL10nKey: AuthErrorKeys.network,
+        errorRaw: e.toString(),
+      );
+    }
+  }
+
+  Future<AuthUiResult> verifyClientRegistrationCode({
+    required String email,
+    required String code,
+  }) async {
+    try {
+      final url = Uri.parse('${AppConfig.apiUrl}/auth/register-client/verify-code');
+      final response = await http.post(
+        url,
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: json.encode({
+          'email': email.trim(),
+          'code': code.trim(),
+        }),
+      );
+      if (response.statusCode >= 200 && response.statusCode < 300) {
+        final payload = json.decode(response.body) as Map<String, dynamic>?;
+        final session = payload?['session'];
+        final accessToken = session is Map<String, dynamic>
+            ? (session['access_token'] as String?)
+            : null;
+        if (accessToken == null || accessToken.isEmpty) {
+          return (
+            success: false,
+            errorL10nKey: AuthErrorKeys.noSession,
+            errorRaw: 'Session is missing after OTP verification',
+          );
+        }
+        final fetch = await _fetchUser(accessToken);
+        notifyListeners();
+        if (!fetch.ok || !_isAuthenticated || _user == null) {
+          return (
+            success: false,
+            errorL10nKey:
+                fetch.errorL10nKey ?? AuthErrorKeys.userNotFoundInSystem,
+            errorRaw: fetch.errorRaw,
+          );
+        }
+        return (success: true, errorL10nKey: null, errorRaw: null);
+      }
       String msg = 'HTTP ${response.statusCode}';
       try {
         final err = json.decode(response.body) as Map<String, dynamic>?;

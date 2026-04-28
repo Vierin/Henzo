@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../../constants/colors.dart';
 import '../../l10n/locale_provider.dart';
@@ -7,7 +6,6 @@ import '../../models/salon.dart';
 import '../../services/auth_service.dart';
 import '../../services/cache/salon_cache.dart';
 import '../../services/dashboard_api_service.dart';
-import '../../utils/auth_ui_result.dart';
 import '../../utils/show_api_error.dart';
 import '../../widgets/address_picker_modal.dart';
 
@@ -19,23 +17,15 @@ class SettingsScreen extends StatefulWidget {
 }
 
 class _SettingsScreenState extends State<SettingsScreen> {
-  final _profileFormKey = GlobalKey<FormState>();
-  final _passwordFormKey = GlobalKey<FormState>();
   final _salonFormKey = GlobalKey<FormState>();
-  final _nameController = TextEditingController();
-  final _phoneController = TextEditingController();
-  final _newPasswordController = TextEditingController();
-  final _confirmPasswordController = TextEditingController();
   final _salonNameController = TextEditingController();
   final _salonDescriptionController = TextEditingController();
   final _salonAddressController = TextEditingController();
   final _salonPhoneController = TextEditingController();
   final _salonEmailController = TextEditingController();
-  final _salonWebsiteController = TextEditingController();
+  final _salonFacebookController = TextEditingController();
   final _salonInstagramController = TextEditingController();
 
-  bool _isSavingProfile = false;
-  bool _isSavingPassword = false;
   Salon? _salon;
   bool _salonLoading = true;
   bool _salonSaving = false;
@@ -46,17 +36,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      _fillProfileFromUser();
       _loadSalon();
     });
-  }
-
-  void _fillProfileFromUser() {
-    final user = context.read<AuthService>().user;
-    if (user != null) {
-      _nameController.text = user.name ?? '';
-      _phoneController.text = user.phone ?? '';
-    }
   }
 
   Future<void> _loadSalon() async {
@@ -87,36 +68,20 @@ class _SettingsScreenState extends State<SettingsScreen> {
     _salonAddressController.text = s.address ?? '';
     _salonPhoneController.text = s.phone ?? '';
     _salonEmailController.text = s.email ?? '';
-    _salonWebsiteController.text = s.website ?? '';
+    _salonFacebookController.text = s.website ?? '';
     _salonInstagramController.text = s.instagram ?? '';
     _salonLat = s.latitude;
     _salonLon = s.longitude;
   }
 
   @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    final user = context.read<AuthService>().user;
-    if (user != null &&
-        _nameController.text.isEmpty &&
-        _nameController.text != (user.name ?? '')) {
-      _nameController.text = user.name ?? '';
-      _phoneController.text = user.phone ?? '';
-    }
-  }
-
-  @override
   void dispose() {
-    _nameController.dispose();
-    _phoneController.dispose();
-    _newPasswordController.dispose();
-    _confirmPasswordController.dispose();
     _salonNameController.dispose();
     _salonDescriptionController.dispose();
     _salonAddressController.dispose();
     _salonPhoneController.dispose();
     _salonEmailController.dispose();
-    _salonWebsiteController.dispose();
+    _salonFacebookController.dispose();
     _salonInstagramController.dispose();
     super.dispose();
   }
@@ -141,7 +106,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         'address': _salonAddressController.text.trim(),
         'phone': _salonPhoneController.text.trim(),
         'email': _salonEmailController.text.trim(),
-        'website': _salonWebsiteController.text.trim(),
+        'website': _salonFacebookController.text.trim(),
         'instagram': _salonInstagramController.text.trim(),
       };
       if (_salonLat != null && _salonLon != null) {
@@ -181,114 +146,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
     }
   }
 
-  Future<void> _saveProfile() async {
-    if (!(_profileFormKey.currentState?.validate() ?? false)) return;
-    setState(() => _isSavingProfile = true);
-    final auth = context.read<AuthService>();
-    final result = await auth.updateProfile(
-      name: _nameController.text.trim(),
-      phone: _phoneController.text.trim(),
-    );
-    if (!mounted) return;
-    setState(() => _isSavingProfile = false);
-    if (result.success) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('Профиль обновлён')));
-    } else {
-      final loc = context.read<LocaleProvider>();
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            resolveAuthUiMessage(
-              loc,
-              result,
-              fallbackKey: 'profileForm.updateError',
-            ),
-          ),
-        ),
-      );
-    }
-  }
-
-  Future<void> _changePassword() async {
-    if (!(_passwordFormKey.currentState?.validate() ?? false)) return;
-    final newPwd = _newPasswordController.text;
-    if (newPwd != _confirmPasswordController.text) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            context.read<LocaleProvider>().t('profileForm.passwordsDontMatch'),
-          ),
-        ),
-      );
-      return;
-    }
-    if (newPwd.length < 8) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            context.read<LocaleProvider>().t('profileForm.passwordMin8'),
-          ),
-        ),
-      );
-      return;
-    }
-    setState(() => _isSavingPassword = true);
-    final auth = context.read<AuthService>();
-    final result = await auth.updatePassword(newPwd);
-    if (!mounted) return;
-    setState(() {
-      _isSavingPassword = false;
-      _newPasswordController.clear();
-      _confirmPasswordController.clear();
-    });
-    if (result.success) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            context.read<LocaleProvider>().t('profileForm.passwordChanged'),
-          ),
-        ),
-      );
-    } else {
-      final loc = context.read<LocaleProvider>();
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            resolveAuthUiMessage(
-              loc,
-              result,
-              fallbackKey: 'profileForm.changePasswordError',
-            ),
-          ),
-        ),
-      );
-    }
-  }
-
-  Future<void> _deleteAccount() async {
-    final auth = context.read<AuthService>();
-    final result = await auth.deleteAccount();
-    if (!mounted) return;
-    if (result.success) {
-      Navigator.of(context).popUntil((route) => route.isFirst);
-    } else {
-      final loc = context.read<LocaleProvider>();
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            resolveAuthUiMessage(
-              loc,
-              result,
-              fallbackKey: 'profileForm.deleteAccountError',
-            ),
-          ),
-        ),
-      );
-    }
-  }
-
   InputDecoration _inputDecoration({
     required String hint,
     bool alignLabelWithHint = false,
@@ -325,42 +182,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
-  void _showDeleteAccountDialog() {
-    showDialog<void>(
-      context: context,
-      barrierDismissible: false,
-      builder: (dialogContext) => AlertDialog(
-        title: Text(
-          context.read<LocaleProvider>().t('profileForm.deleteAccount'),
-        ),
-        content: Text(
-          context.read<LocaleProvider>().t('profileForm.deleteAccountConfirm'),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(dialogContext).pop(),
-            child: Text(context.read<LocaleProvider>().t('common.cancel')),
-          ),
-          FilledButton(
-            onPressed: () {
-              Navigator.of(dialogContext).pop();
-              _deleteAccount();
-            },
-            style: FilledButton.styleFrom(backgroundColor: AppColors.error600),
-            child: Text(
-              context.read<LocaleProvider>().t('profileForm.deleteAccount'),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
-    final auth = context.watch<AuthService>();
-    final user = auth.user;
-
     return Consumer<LocaleProvider>(
       builder: (context, locale, _) {
         const pageBg = Color(0xFFF8F9FA);
@@ -374,9 +197,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             foregroundColor: AppColors.textPrimary,
             elevation: 0,
           ),
-          body: user == null
-              ? const Center(child: CircularProgressIndicator())
-              : Center(
+          body: Center(
                   child: ConstrainedBox(
                     constraints: const BoxConstraints(
                       maxWidth: maxContentWidth,
@@ -384,27 +205,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     child: ListView(
                       padding: const EdgeInsets.all(12),
                       children: [
-                        Center(
-                          child: Text(
-                            locale.t('profileForm.profileSettings'),
-                            style: const TextStyle(
-                              fontSize: 24,
-                              fontWeight: FontWeight.w700,
-                              color: AppColors.textPrimary,
-                            ),
-                          ),
-                        ),
                         const SizedBox(height: 8),
-                        Text(
-                          locale.t('profileForm.salonDescriptionHint'),
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                            fontSize: 14,
-                            color: AppColors.textSecondary,
-                            height: 1.4,
-                          ),
-                        ),
-                        const SizedBox(height: 24),
 
                         // Секции салона в одной форме
                         _salonLoading
@@ -607,14 +408,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                           ),
                                           const SizedBox(height: 16),
                                           _labeledField(
-                                            label: locale.t(
-                                              'profileForm.website',
-                                            ),
+                                            label: 'Facebook',
                                             child: TextFormField(
                                               controller:
-                                                  _salonWebsiteController,
+                                                  _salonFacebookController,
                                               decoration: _inputDecoration(
-                                                hint: 'https://',
+                                                hint: 'https://facebook.com/...',
                                               ),
                                               keyboardType: TextInputType.url,
                                             ),
@@ -639,222 +438,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                 ),
                               ),
                         const SizedBox(height: 24),
-
-                        Text(
-                          locale.t('profileForm.accountSettings'),
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w600,
-                            color: AppColors.textSecondary,
-                          ),
-                        ),
-                        const SizedBox(height: 12),
-
-                        _SectionCard(
-                          title: locale.t('profileForm.personalData'),
-                          child: Form(
-                            key: _profileFormKey,
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.stretch,
-                              children: [
-                                TextFormField(
-                                  controller: _nameController,
-                                  decoration: InputDecoration(
-                                    labelText: locale.t('profileForm.name'),
-                                    hintText: locale.t('profileForm.enterName'),
-                                    border: const OutlineInputBorder(),
-                                  ),
-                                  textCapitalization: TextCapitalization.words,
-                                ),
-                                const SizedBox(height: 16),
-                                TextFormField(
-                                  key: ValueKey('email_${user.email}'),
-                                  initialValue: user.email,
-                                  readOnly: true,
-                                  decoration: InputDecoration(
-                                    labelText: locale.t('profileForm.email'),
-                                    border: const OutlineInputBorder(),
-                                    filled: true,
-                                    fillColor: AppColors.backgroundTertiary,
-                                  ),
-                                ),
-                                const SizedBox(height: 8),
-                                Text(
-                                  locale.t('profileForm.emailReadOnlyHint'),
-                                  style: TextStyle(
-                                    fontSize: 12,
-                                    color: AppColors.textSecondary,
-                                  ),
-                                ),
-                                const SizedBox(height: 16),
-                                TextFormField(
-                                  controller: _phoneController,
-                                  decoration: InputDecoration(
-                                    labelText: locale.t('profileForm.phone'),
-                                    hintText: locale.t(
-                                      'profileForm.enterPhone',
-                                    ),
-                                    border: const OutlineInputBorder(),
-                                  ),
-                                  keyboardType: TextInputType.phone,
-                                ),
-                                const SizedBox(height: 20),
-                                SizedBox(
-                                  height: 44,
-                                  child: FilledButton(
-                                    onPressed: _isSavingProfile
-                                        ? null
-                                        : _saveProfile,
-                                    style: FilledButton.styleFrom(
-                                      backgroundColor: AppColors.primary500,
-                                    ),
-                                    child: _isSavingProfile
-                                        ? const SizedBox(
-                                            height: 22,
-                                            width: 22,
-                                            child: CircularProgressIndicator(
-                                              strokeWidth: 2,
-                                              color: Colors.white,
-                                            ),
-                                          )
-                                        : Text(locale.t('common.save')),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                        const SizedBox(height: 24),
-
-                        _SectionCard(
-                          title: locale.t('profileForm.security'),
-                          child: Form(
-                            key: _passwordFormKey,
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.stretch,
-                              children: [
-                                TextFormField(
-                                  controller: _newPasswordController,
-                                  obscureText: true,
-                                  decoration: InputDecoration(
-                                    labelText: locale.t(
-                                      'profileForm.newPassword',
-                                    ),
-                                    hintText: locale.t(
-                                      'profileForm.passwordMin8',
-                                    ),
-                                    border: const OutlineInputBorder(),
-                                  ),
-                                  validator: (v) {
-                                    if (v != null &&
-                                        v.isNotEmpty &&
-                                        v.length < 8) {
-                                      return locale.t(
-                                        'profileForm.passwordMin8',
-                                      );
-                                    }
-                                    return null;
-                                  },
-                                ),
-                                const SizedBox(height: 16),
-                                TextFormField(
-                                  controller: _confirmPasswordController,
-                                  obscureText: true,
-                                  decoration: InputDecoration(
-                                    labelText: locale.t(
-                                      'profileForm.confirmPassword',
-                                    ),
-                                    border: const OutlineInputBorder(),
-                                  ),
-                                  validator: (v) {
-                                    if (_newPasswordController
-                                            .text
-                                            .isNotEmpty &&
-                                        v != _newPasswordController.text) {
-                                      return locale.t(
-                                        'profileForm.passwordsDontMatch',
-                                      );
-                                    }
-                                    return null;
-                                  },
-                                ),
-                                const SizedBox(height: 20),
-                                SizedBox(
-                                  height: 44,
-                                  child: FilledButton(
-                                    onPressed: _isSavingPassword
-                                        ? null
-                                        : _changePassword,
-                                    style: FilledButton.styleFrom(
-                                      backgroundColor: AppColors.primary500,
-                                    ),
-                                    child: _isSavingPassword
-                                        ? const SizedBox(
-                                            height: 22,
-                                            width: 22,
-                                            child: CircularProgressIndicator(
-                                              strokeWidth: 2,
-                                              color: Colors.white,
-                                            ),
-                                          )
-                                        : Text(
-                                            locale.t(
-                                              'profileForm.changePassword',
-                                            ),
-                                          ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                        const SizedBox(height: 24),
-
-                        _SectionCard(
-                          title: locale.t('profileForm.dangerZone'),
-                          titleColor: AppColors.error600,
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.stretch,
-                            children: [
-                              Text(
-                                locale.t('profileForm.deleteWarning'),
-                                style: TextStyle(
-                                  fontSize: 14,
-                                  color: AppColors.textSecondary,
-                                ),
-                              ),
-                              const SizedBox(height: 16),
-                              OutlinedButton.icon(
-                                onPressed: _showDeleteAccountDialog,
-                                icon: const Icon(
-                                  Icons.delete_forever,
-                                  size: 20,
-                                ),
-                                label: Text(
-                                  locale.t('profileForm.deleteAccount'),
-                                ),
-                                style: OutlinedButton.styleFrom(
-                                  foregroundColor: AppColors.error600,
-                                  side: const BorderSide(
-                                    color: AppColors.error600,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        const SizedBox(height: 24),
-
-                        OutlinedButton.icon(
-                          onPressed: () => auth.logout(),
-                          icon: const Icon(Icons.logout),
-                          label: Text(locale.t('profileForm.logout')),
-                          style: OutlinedButton.styleFrom(
-                            foregroundColor: AppColors.primary500,
-                            side: const BorderSide(color: AppColors.primary500),
-                            padding: const EdgeInsets.symmetric(vertical: 14),
-                          ),
-                        ),
+                        
                       ],
                     ),
                   ),
@@ -869,12 +453,10 @@ class _SectionCard extends StatelessWidget {
   const _SectionCard({
     required this.title,
     required this.child,
-    this.titleColor,
   });
 
   final String title;
   final Widget child;
-  final Color? titleColor;
 
   @override
   Widget build(BuildContext context) {
@@ -901,7 +483,7 @@ class _SectionCard extends StatelessWidget {
               style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.w700,
-                color: titleColor ?? AppColors.textPrimary,
+                color: AppColors.textPrimary,
               ),
             ),
             const SizedBox(height: 16),

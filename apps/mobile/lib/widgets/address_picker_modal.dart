@@ -109,7 +109,7 @@ class _AddressPickerModalState extends State<AddressPickerModal> {
     _debounceTimer?.cancel();
     setState(() {
       _address = value;
-      _showSuggestions = false;
+      _showSuggestions = value.trim().length >= 2;
     });
     if (value.trim().length >= 2) {
       _debounceTimer = Timer(
@@ -134,6 +134,9 @@ class _AddressPickerModalState extends State<AddressPickerModal> {
   }
 
   Future<void> _onMapTap(TapPosition position, LatLng latLng) async {
+    final hasSearchInput = _searchController.text.trim().isNotEmpty;
+    if (!hasSearchInput) return;
+
     setState(() {
       _lat = latLng.latitude;
       _lon = latLng.longitude;
@@ -169,6 +172,9 @@ class _AddressPickerModalState extends State<AddressPickerModal> {
   Widget build(BuildContext context) {
     final t = context.read<LocaleProvider>().t;
     final hasCoords = _lat != null && _lon != null;
+    final hasSearchInput = _searchController.text.trim().isNotEmpty;
+    final hasEnoughCharsForMapHintHide =
+        _searchController.text.trim().length > 3;
     final screenWidth = MediaQuery.of(context).size.width;
     final screenHeight = MediaQuery.of(context).size.height;
 
@@ -214,7 +220,8 @@ class _AddressPickerModalState extends State<AddressPickerModal> {
             // Search + suggestions
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 24),
-              child: Stack(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
                 children: [
                   TextField(
                     controller: _searchController,
@@ -263,46 +270,6 @@ class _AddressPickerModalState extends State<AddressPickerModal> {
                       ),
                     ),
                   ),
-                  if (_showSuggestions && _suggestions.isNotEmpty)
-                    Positioned(
-                      top: 52,
-                      left: 0,
-                      right: 0,
-                      child: Material(
-                        elevation: 8,
-                        borderRadius: BorderRadius.circular(12),
-                        child: Container(
-                          constraints: const BoxConstraints(maxHeight: 220),
-                          decoration: BoxDecoration(
-                            color: AppColors.backgroundSecondary,
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(color: AppColors.borderPrimary),
-                          ),
-                          child: ListView.builder(
-                            shrinkWrap: true,
-                            itemCount: _suggestions.length,
-                            itemBuilder: (context, i) {
-                              final s = _suggestions[i];
-                              return ListTile(
-                                leading: Icon(
-                                  Icons.location_on_outlined,
-                                  size: 20,
-                                  color: AppColors.textSecondary,
-                                ),
-                                title: Text(
-                                  s.address,
-                                  style: const TextStyle(
-                                    fontSize: 14,
-                                    color: AppColors.textPrimary,
-                                  ),
-                                ),
-                                onTap: () => _onSelectSuggestion(s),
-                              );
-                            },
-                          ),
-                        ),
-                      ),
-                    ),
                 ],
               ),
             ),
@@ -331,10 +298,16 @@ class _AddressPickerModalState extends State<AddressPickerModal> {
                           ),
                         ),
                         children: [
-                          TileLayer(
-                            urlTemplate:
-                                'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-                            userAgentPackageName: 'com.henzo.mobile',
+                          ColorFiltered(
+                            colorFilter: ColorFilter.mode(
+                              Colors.grey.withOpacity(0.65),
+                              BlendMode.saturation,
+                            ),
+                            child: TileLayer(
+                              urlTemplate:
+                                  'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                              userAgentPackageName: 'com.henzo.mobile',
+                            ),
                           ),
                           if (hasCoords)
                             MarkerLayer(
@@ -374,6 +347,7 @@ class _AddressPickerModalState extends State<AddressPickerModal> {
                           children: [
                             _MapZoomButton(
                               icon: Icons.add,
+                              enabled: hasSearchInput,
                               onPressed: () {
                                 final zoom = _mapController.camera.zoom + 1;
                                 _mapController.move(
@@ -385,6 +359,7 @@ class _AddressPickerModalState extends State<AddressPickerModal> {
                             const SizedBox(height: 4),
                             _MapZoomButton(
                               icon: Icons.remove,
+                              enabled: hasSearchInput,
                               onPressed: () {
                                 final zoom = _mapController.camera.zoom - 1;
                                 _mapController.move(
@@ -396,6 +371,46 @@ class _AddressPickerModalState extends State<AddressPickerModal> {
                           ],
                         ),
                       ),
+                      if (_showSuggestions && _suggestions.isNotEmpty)
+                        Positioned(
+                          top: 8,
+                          left: 8,
+                          right: 8,
+                          child: Material(
+                            elevation: 8,
+                            borderRadius: BorderRadius.circular(12),
+                            child: Container(
+                              constraints: const BoxConstraints(maxHeight: 220),
+                              decoration: BoxDecoration(
+                                color: AppColors.backgroundSecondary,
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(color: AppColors.borderPrimary),
+                              ),
+                              child: ListView.builder(
+                                shrinkWrap: true,
+                                itemCount: _suggestions.length,
+                                itemBuilder: (context, i) {
+                                  final s = _suggestions[i];
+                                  return ListTile(
+                                    leading: Icon(
+                                      Icons.location_on_outlined,
+                                      size: 20,
+                                      color: AppColors.textSecondary,
+                                    ),
+                                    title: Text(
+                                      s.address,
+                                      style: const TextStyle(
+                                        fontSize: 14,
+                                        color: AppColors.textPrimary,
+                                      ),
+                                    ),
+                                    onTap: () => _onSelectSuggestion(s),
+                                  );
+                                },
+                              ),
+                            ),
+                          ),
+                        ),
                       // Hint overlay
                       if (hasCoords)
                         Positioned(
@@ -431,7 +446,38 @@ class _AddressPickerModalState extends State<AddressPickerModal> {
                             ),
                           ),
                         ),
-                      if (!hasCoords)
+                      if (!hasEnoughCharsForMapHintHide)
+                        Positioned.fill(
+                          child: Container(
+                            color: Colors.grey.withOpacity(0.4),
+                            alignment: Alignment.center,
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 12,
+                                vertical: 8,
+                              ),
+                              decoration: BoxDecoration(
+                                color: Colors.black.withOpacity(0.55),
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: Text(
+                                'Введите адрес, чтобы включить карту',
+                                style: const TextStyle(
+                                  fontSize: 12,
+                                  color: Colors.white,
+                                ),
+                                textAlign: TextAlign.center,
+                              ),
+                            ),
+                          ),
+                        ),
+                      if (!hasEnoughCharsForMapHintHide)
+                        const Positioned.fill(
+                          child: AbsorbPointer(absorbing: true, child: SizedBox()),
+                        ),
+                      if (!hasCoords &&
+                          hasSearchInput &&
+                          !(_showSuggestions && _suggestions.isNotEmpty))
                         Positioned.fill(
                           child: Center(
                             child: Column(
@@ -497,10 +543,15 @@ class _AddressPickerModalState extends State<AddressPickerModal> {
 }
 
 class _MapZoomButton extends StatelessWidget {
-  const _MapZoomButton({required this.icon, required this.onPressed});
+  const _MapZoomButton({
+    required this.icon,
+    required this.onPressed,
+    this.enabled = true,
+  });
 
   final IconData icon;
   final VoidCallback onPressed;
+  final bool enabled;
 
   @override
   Widget build(BuildContext context) {
@@ -509,13 +560,17 @@ class _MapZoomButton extends StatelessWidget {
       borderRadius: BorderRadius.circular(8),
       elevation: 2,
       child: InkWell(
-        onTap: onPressed,
+        onTap: enabled ? onPressed : null,
         borderRadius: BorderRadius.circular(8),
         child: Container(
           width: 36,
           height: 36,
           alignment: Alignment.center,
-          child: Icon(icon, size: 20, color: AppColors.textPrimary),
+          child: Icon(
+            icon,
+            size: 20,
+            color: enabled ? AppColors.textPrimary : AppColors.textTertiary,
+          ),
         ),
       ),
     );

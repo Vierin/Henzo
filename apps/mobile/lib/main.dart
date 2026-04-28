@@ -9,8 +9,9 @@ import 'config/app_config.dart';
 import 'firebase_options.dart';
 import 'l10n/locale_provider.dart';
 import 'screens/main_shell.dart';
+import 'screens/client_shell.dart';
+import 'screens/login_screen.dart';
 import 'screens/non_owner_gate_screen.dart';
-import 'screens/public_home_screen.dart';
 import 'services/auth_service.dart';
 import 'services/cache/bookings_cache.dart';
 import 'services/cache/salon_cache.dart';
@@ -118,7 +119,7 @@ class AuthWrapper extends StatefulWidget {
 }
 
 class _AuthWrapperState extends State<AuthWrapper> {
-  bool _lastAllowedInApp = false;
+  bool _lastOwnerAllowed = false;
 
   @override
   Widget build(BuildContext context) {
@@ -130,10 +131,10 @@ class _AuthWrapperState extends State<AuthWrapper> {
           );
         }
 
-        final allowedInApp = auth.isAuthenticated && auth.isStudioOperator;
+        final ownerAllowed = auth.isAuthenticated && auth.isStudioOperator;
 
         if (!auth.isLoading) {
-          if (_lastAllowedInApp && !allowedInApp) {
+          if (_lastOwnerAllowed && !ownerAllowed) {
             WidgetsBinding.instance.addPostFrameCallback((_) {
               if (!context.mounted) return;
               context.read<SalonCache>().invalidate();
@@ -141,18 +142,22 @@ class _AuthWrapperState extends State<AuthWrapper> {
               context.read<ServicesStaffCache>().invalidateAll();
             });
           }
-          _lastAllowedInApp = allowedInApp;
+          _lastOwnerAllowed = ownerAllowed;
         }
 
-        if (allowedInApp) {
+        if (ownerAllowed) {
           return const MainShell();
         }
 
-        if (auth.isAuthenticated && !auth.isStudioOperator) {
+        if (auth.isAuthenticated && auth.isClient) {
+          return const ClientShell();
+        }
+
+        if (auth.isAuthenticated) {
           return const NonOwnerGateScreen();
         }
 
-        return const PublicHomeScreen();
+        return const LoginScreen();
       },
     );
   }

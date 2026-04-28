@@ -8,6 +8,7 @@ import '../l10n/locale_provider.dart';
 import '../services/auth_service.dart';
 import '../widgets/language_selector_modal.dart';
 import '../services/push_notification_service.dart';
+import 'account_settings_screen.dart';
 
 class AppSettingsScreen extends StatelessWidget {
   const AppSettingsScreen({super.key});
@@ -88,6 +89,18 @@ class AppSettingsScreen extends StatelessWidget {
                               );
                             }
                           },
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      _buildListTile(
+                        context,
+                        locale,
+                        icon: Icons.manage_accounts_outlined,
+                        title: 'Настройка аккаунта',
+                        onTap: () => Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (_) => const AccountSettingsScreen(),
+                          ),
                         ),
                       ),
                       const SizedBox(height: 8),
@@ -180,13 +193,10 @@ class AppSettingsScreen extends StatelessWidget {
 
   Widget _buildQuickActions(BuildContext context, LocaleProvider locale) {
     final actions = [
-      (
-        icon: Icons.event_note_outlined,
-        label: locale.t('settings.howToBooking'),
-      ),
-      (icon: Icons.person_add_outlined, label: locale.t('settings.howToStaff')),
       (icon: Icons.list_alt_outlined, label: locale.t('settings.howToService')),
       (icon: Icons.public_outlined, label: locale.t('settings.howToOnline')),
+      (icon: Icons.language, label: locale.t('settings.changeLanguage')),
+      (icon: Icons.manage_accounts_outlined, label: 'Настройка\nаккаунта'),
     ];
     return SizedBox(
       height: 100,
@@ -194,7 +204,7 @@ class AppSettingsScreen extends StatelessWidget {
         scrollDirection: Axis.horizontal,
         padding: const EdgeInsets.symmetric(horizontal: 16),
         itemCount: actions.length,
-        separatorBuilder: (_, __) => const SizedBox(width: 12),
+        separatorBuilder: (_, _) => const SizedBox(width: 12),
         itemBuilder: (context, index) {
           final a = actions[index];
           return _buildQuickActionButton(

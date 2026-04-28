@@ -4,14 +4,15 @@ import 'package:provider/provider.dart';
 import '../constants/colors.dart';
 import '../l10n/locale_provider.dart';
 import '../models/subscription.dart';
+import '../models/service_item.dart';
 import '../services/auth_service.dart';
 import '../services/cache/salon_cache.dart';
 import '../services/cache/services_staff_cache.dart';
 import '../services/dashboard_api_service.dart';
-import 'main_shell.dart';
+import 'online_booking_screen.dart';
+import 'services_screen.dart';
 import 'settings_screen.dart';
 import 'subscription_screen.dart';
-import 'work_schedule_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -21,19 +22,43 @@ class ProfileScreen extends StatefulWidget {
 }
 
 class _ProfileScreenState extends State<ProfileScreen> {
-  int _staffCount = 0;
-  int _servicesCount = 0;
-  bool _loadingCounts = true;
   Subscription? _subscription;
   bool _loadingSubscription = true;
+  int _trainingsCount = 0;
+  bool _loadingTrainingsCount = true;
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      _loadCounts();
       _loadSubscription();
+      _loadTrainingsCount();
     });
+  }
+
+  Future<void> _loadTrainingsCount() async {
+    final token = context.read<AuthService>().accessToken;
+    if (token == null || token.isEmpty) {
+      if (mounted) setState(() => _loadingTrainingsCount = false);
+      return;
+    }
+    try {
+      final salon = await context.read<SalonCache>().getSalon(token);
+      final list = salon != null
+          ? await context.read<ServicesStaffCache>().getServicesForSalon(
+                token,
+                salon.id,
+              )
+          : <ServiceItem>[];
+      if (mounted) {
+        setState(() {
+          _trainingsCount = list.length;
+          _loadingTrainingsCount = false;
+        });
+      }
+    } catch (_) {
+      if (mounted) setState(() => _loadingTrainingsCount = false);
+    }
   }
 
   Future<void> _loadSubscription() async {
@@ -63,32 +88,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
     }
   }
 
-  Future<void> _loadCounts() async {
-    final token = context.read<AuthService>().accessToken;
-    if (token == null || token.isEmpty) {
-      if (mounted) setState(() { _loadingCounts = false; });
-      return;
-    }
-    try {
-      final salon = await context.read<SalonCache>().getSalon(token);
-      if (salon == null || !mounted) {
-        if (mounted) setState(() => _loadingCounts = false);
-        return;
-      }
-      final cache = context.read<ServicesStaffCache>();
-      final staff = await cache.getStaffForSalon(token, salon.id);
-      final services = await cache.getServicesForSalon(token, salon.id);
-      if (!mounted) return;
-      setState(() {
-        _staffCount = staff.length;
-        _servicesCount = services.length;
-        _loadingCounts = false;
-      });
-    } catch (_) {
-      if (mounted) setState(() => _loadingCounts = false);
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     return Consumer<LocaleProvider>(
@@ -111,8 +110,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
           ),
           body: RefreshIndicator(
             onRefresh: () async {
-              await _loadSubscription();
-              if (mounted) await _loadCounts();
+              await Future.wait([
+                _loadSubscription(),
+                _loadTrainingsCount(),
+              ]);
             },
             child: SingleChildScrollView(
               physics: const AlwaysScrollableScrollPhysics(),
@@ -287,63 +288,132 @@ class _ProfileScreenState extends State<ProfileScreen> {
           children: [
             Expanded(
               child: _ProfileGridCard(
-                title: context.read<LocaleProvider>().t('profile.staff'),
-                count: _loadingCounts ? null : _staffCount,
+                title: 'Настройки салона',
                 onTap: () {
-                  context.findAncestorStateOfType<MainShellState>()?.navigateToTab0Route('/trainers');
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const SettingsScreen()),
+                  );
                 },
               ),
             ),
             const SizedBox(width: 12),
             Expanded(
               child: _ProfileGridCard(
-                title: context.read<LocaleProvider>().t('profile.services'),
-                count: _loadingCounts ? null : _servicesCount,
+                title: 'Онлайн бронирование',
                 onTap: () {
-                  context.findAncestorStateOfType<MainShellState>()?.navigateToTab0Route('/offerings');
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => const OnlineBookingScreen(),
+                    ),
+                  );
                 },
               ),
             ),
           ],
         ),
         const SizedBox(height: 12),
-        Row(
-          children: [
-            Expanded(
-              child: _ProfileGridCard(
-                title: context.read<LocaleProvider>().t('profile.workSchedule'),
-                onTap: () => Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (_) => const WorkScheduleScreen()),
-                ),
+        _ProfileTrainingsRowCard(
+          count: _trainingsCount,
+          loading: _loadingTrainingsCount,
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => const ServicesScreen(trainingMode: true),
               ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: _ProfileGridCard(
-                title: context.read<LocaleProvider>().t('profile.profileInfo'),
-                onTap: () => Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (_) => const SettingsScreen()),
-                ),
-              ),
-            ),
-          ],
+            ).then((_) {
+              if (mounted) _loadTrainingsCount();
+            });
+          },
         ),
       ],
     );
   }
 }
 
+/// Full-width row: «Тренировки» + count of training types.
+class _ProfileTrainingsRowCard extends StatelessWidget {
+  const _ProfileTrainingsRowCard({
+    required this.count,
+    required this.loading,
+    required this.onTap,
+  });
+
+  final int count;
+  final bool loading;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(12),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+          decoration: BoxDecoration(
+            color: AppColors.backgroundPrimary,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: AppColors.borderPrimary),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.06),
+                blurRadius: 8,
+                offset: const Offset(0, 2),
+              ),
+            ],
+          ),
+          child: Row(
+            children: [
+              const Expanded(
+                child: Text(
+                  'Тренировки',
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.textPrimary,
+                  ),
+                ),
+              ),
+              if (loading)
+                const SizedBox(
+                  height: 20,
+                  width: 20,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                )
+              else
+                Text(
+                  '$count',
+                  style: const TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w800,
+                    color: AppColors.primary600,
+                  ),
+                ),
+              const SizedBox(width: 4),
+              Icon(
+                Icons.chevron_right,
+                color: AppColors.textSecondary,
+                size: 22,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 class _ProfileGridCard extends StatelessWidget {
   final String title;
-  final int? count;
   final VoidCallback onTap;
 
   const _ProfileGridCard({
     required this.title,
     required this.onTap,
-    this.count,
   });
 
   @override
@@ -373,49 +443,14 @@ class _ProfileGridCard extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              if (count != null) ...[
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Expanded(
-                      child: Text(
-                        title,
-                        style: const TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w600,
-                          color: AppColors.textPrimary,
-                        ),
-                      ),
-                    ),
-                    Container(
-                      width: 28,
-                      height: 28,
-                      decoration: BoxDecoration(
-                        color: AppColors.primary100,
-                        shape: BoxShape.circle,
-                      ),
-                      alignment: Alignment.center,
-                      child: Text(
-                        '$count',
-                        style: const TextStyle(
-                          fontSize: 13,
-                          fontWeight: FontWeight.bold,
-                          color: AppColors.primary600,
-                        ),
-                      ),
-                    ),
-                  ],
+              Text(
+                title,
+                style: const TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.textPrimary,
                 ),
-              ] else
-                Text(
-                  title,
-                  style: const TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                    color: AppColors.textPrimary,
-                  ),
-                ),
+              ),
             ],
           ),
         ),

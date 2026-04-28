@@ -13,14 +13,12 @@ import {
 } from '@nestjs/common';
 import { TrainersService } from './trainers.service';
 import { AuthService } from '../auth/auth.service';
-import { SubscriptionsService } from '../subscriptions/subscriptions.service';
 
 @Controller('trainers')
 export class TrainersController {
   constructor(
     private readonly trainersService: TrainersService,
     private readonly authService: AuthService,
-    private readonly subscriptionsService: SubscriptionsService,
   ) {}
 
   @Get()
@@ -53,15 +51,19 @@ export class TrainersController {
     if (currentUser.user.role !== 'OWNER') {
       throw new HttpException('Forbidden', HttpStatus.FORBIDDEN);
     }
-    await this.subscriptionsService.assertSalonOwnerMayExpandConfiguration(
-      currentUser.user.id,
+    const isOwner = await this.trainersService.isStudioOwnedByOwner(
       data.studioId,
+      currentUser.user.id,
     );
+    if (!isOwner) {
+      throw new HttpException('Forbidden', HttpStatus.FORBIDDEN);
+    }
     return this.trainersService.createTrainer(data);
   }
 
   @Put(':id')
   async updateTrainer(
+    @Headers('authorization') authHeader: string,
     @Param('id') id: string,
     @Body()
     data: {
@@ -72,11 +74,44 @@ export class TrainersController {
       trainingIds?: string[];
     },
   ) {
+    const currentUser = await this.authService.getCurrentUser(authHeader);
+    if (currentUser.user.role !== 'OWNER') {
+      throw new HttpException('Forbidden', HttpStatus.FORBIDDEN);
+    }
+    const studioId = await this.trainersService.findTrainerStudioId(id);
+    if (!studioId) {
+      throw new HttpException('Trainer not found', HttpStatus.NOT_FOUND);
+    }
+    const isOwner = await this.trainersService.isStudioOwnedByOwner(
+      studioId,
+      currentUser.user.id,
+    );
+    if (!isOwner) {
+      throw new HttpException('Forbidden', HttpStatus.FORBIDDEN);
+    }
     return this.trainersService.updateTrainer(id, data);
   }
 
   @Delete(':id')
-  async deleteTrainer(@Param('id') id: string) {
+  async deleteTrainer(
+    @Headers('authorization') authHeader: string,
+    @Param('id') id: string,
+  ) {
+    const currentUser = await this.authService.getCurrentUser(authHeader);
+    if (currentUser.user.role !== 'OWNER') {
+      throw new HttpException('Forbidden', HttpStatus.FORBIDDEN);
+    }
+    const studioId = await this.trainersService.findTrainerStudioId(id);
+    if (!studioId) {
+      throw new HttpException('Trainer not found', HttpStatus.NOT_FOUND);
+    }
+    const isOwner = await this.trainersService.isStudioOwnedByOwner(
+      studioId,
+      currentUser.user.id,
+    );
+    if (!isOwner) {
+      throw new HttpException('Forbidden', HttpStatus.FORBIDDEN);
+    }
     return this.trainersService.deleteTrainer(id);
   }
 }
