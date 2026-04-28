@@ -9,6 +9,8 @@ import { nanoid } from 'nanoid';
 
 @Injectable()
 export class StudiosService {
+  private static readonly MAX_STUDIO_PHOTOS = 5;
+
   constructor(
     @Inject(PrismaService) private prisma: any,
     private mapboxService: MapboxService,
@@ -30,6 +32,41 @@ export class StudiosService {
       (base as Record<string, unknown>)['intervals'] = [24];
     }
     return base;
+  }
+
+  private isAllowedPhotoValue(photo: string): boolean {
+    const trimmed = photo.trim();
+    if (!trimmed) return false;
+    if (trimmed.startsWith('data:image/')) return true;
+    if (!trimmed.startsWith('http://') && !trimmed.startsWith('https://')) {
+      return true;
+    }
+    try {
+      const parsed = new URL(trimmed);
+      return parsed.pathname.includes('/storage/v1/object/public/');
+    } catch {
+      return false;
+    }
+  }
+
+  private normalizeStudioPhotos(input: unknown): string[] {
+    if (!Array.isArray(input)) return [];
+    const photos = input
+      .filter((photo): photo is string => typeof photo === 'string')
+      .map((photo) => photo.trim())
+      .filter((photo) => photo.length > 0);
+    if (photos.length > StudiosService.MAX_STUDIO_PHOTOS) {
+      throw new Error(
+        `Maximum ${StudiosService.MAX_STUDIO_PHOTOS} studio photos are allowed.`,
+      );
+    }
+    const invalidPhoto = photos.find(
+      (photo) => !this.isAllowedPhotoValue(photo),
+    );
+    if (invalidPhoto) {
+      throw new Error('Invalid photo value. Use uploaded storage public URL.');
+    }
+    return photos;
   }
 
   async suggestStudios(params: { search: string; limit: number }) {
@@ -847,19 +884,9 @@ export class StudiosService {
         return existingStudio;
       }
 
-      // Validate photos - reject URLs
-      if (createStudioDto.photos && Array.isArray(createStudioDto.photos)) {
-        const hasUrl = createStudioDto.photos.some(
-          (photo) =>
-            typeof photo === 'string' &&
-            (photo.startsWith('http://') || photo.startsWith('https://')),
-        );
-        if (hasUrl) {
-          throw new Error(
-            'Photo URLs are not allowed. Please upload files only.',
-          );
-        }
-      }
+      const normalizedPhotos = this.normalizeStudioPhotos(
+        createStudioDto.photos,
+      );
 
       // Geocode address if provided and coordinates not provided
       let latitude = createStudioDto.latitude;
@@ -930,9 +957,7 @@ export class StudiosService {
         const studio = await studioRepo.create({
           data: {
             ...createStudioDto,
-            photos: Array.isArray(createStudioDto.photos)
-              ? createStudioDto.photos
-              : [],
+            photos: normalizedPhotos,
             reminderSettings,
             ...descriptionTranslations,
             latitude,
@@ -1101,19 +1126,10 @@ export class StudiosService {
       throw new Error('Studio not found');
     }
 
-    // Validate photos - reject URLs
-    if (updateStudioDto.photos && Array.isArray(updateStudioDto.photos)) {
-      const hasUrl = updateStudioDto.photos.some(
-        (photo) =>
-          typeof photo === 'string' &&
-          (photo.startsWith('http://') || photo.startsWith('https://')),
-      );
-      if (hasUrl) {
-        throw new Error(
-          'Photo URLs are not allowed. Please upload files only.',
-        );
-      }
-    }
+    const normalizedPhotos =
+      updateStudioDto.photos !== undefined
+        ? this.normalizeStudioPhotos(updateStudioDto.photos)
+        : undefined;
 
     // Generate new slug if name or address changed
     let slug: string | undefined;
@@ -1131,13 +1147,14 @@ export class StudiosService {
 
     const { ...StudioData } = {
       ...updateStudioDto,
+      ...(normalizedPhotos !== undefined ? { photos: normalizedPhotos } : {}),
       ...(updateStudioDto.reminderSettings !== undefined
-          ? {
-              reminderSettings: this.normalizeReminderSettings(
-                updateStudioDto.reminderSettings,
-              ),
-            }
-          : {}),
+        ? {
+            reminderSettings: this.normalizeReminderSettings(
+              updateStudioDto.reminderSettings,
+            ),
+          }
+        : {}),
     };
 
     // Geocode address if provided and coordinates not provided

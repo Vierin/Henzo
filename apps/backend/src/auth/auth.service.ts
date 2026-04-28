@@ -31,7 +31,12 @@ export class AuthService {
       code: string;
       expiresAt: number;
       attempts: number;
-      payload: { email: string; password: string; name?: string; phone?: string };
+      payload: {
+        email: string;
+        password: string;
+        name?: string;
+        phone?: string;
+      };
     }
   >();
   private readonly CLIENT_OTP_TTL_MS = 10 * 60 * 1000;

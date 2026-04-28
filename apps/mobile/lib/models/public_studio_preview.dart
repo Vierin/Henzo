@@ -5,6 +5,7 @@ class PublicStudioPreview {
     required this.category,
     required this.rating,
     required this.city,
+    this.photoUrl,
   });
 
   final String id;
@@ -12,4 +13,5 @@ class PublicStudioPreview {
   final String category;
   final double rating;
   final String city;
+  final String? photoUrl;
 }

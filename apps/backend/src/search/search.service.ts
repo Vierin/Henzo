@@ -4,9 +4,7 @@ import { Prisma } from '@prisma/client';
 
 @Injectable()
 export class SearchService {
-  constructor(
-    @Inject(PrismaService) private prisma: any,
-  ) {}
+  constructor(@Inject(PrismaService) private prisma: any) {}
 
   // Unified core suggestion (categories + tags collapsed to categories)
   async suggestCoreCategories(query: string, language: string, limit: number) {
@@ -295,9 +293,7 @@ export class SearchService {
         const cat = service.trainingCategory;
         // Бонус за совпадение в категории (с приоритетом по языку)
         if (language === 'vn') {
-          if (
-            cat?.name_vn?.toLowerCase().includes(query.toLowerCase())
-          ) {
+          if (cat?.name_vn?.toLowerCase().includes(query.toLowerCase())) {
             score += 12; // Высший приоритет для вьетнамского
           } else if (
             cat?.name_en?.toLowerCase().includes(query.toLowerCase())
@@ -305,9 +301,7 @@ export class SearchService {
             score += 8; // Меньший приоритет для английского
           }
         } else if (language === 'ru') {
-          if (
-            cat?.name_ru?.toLowerCase().includes(query.toLowerCase())
-          ) {
+          if (cat?.name_ru?.toLowerCase().includes(query.toLowerCase())) {
             score += 12;
           } else if (
             cat?.name_en?.toLowerCase().includes(query.toLowerCase())
@@ -315,9 +309,7 @@ export class SearchService {
             score += 8;
           }
         } else {
-          if (
-            cat?.name_en?.toLowerCase().includes(query.toLowerCase())
-          ) {
+          if (cat?.name_en?.toLowerCase().includes(query.toLowerCase())) {
             score += 12; // Высший приоритет для английского
           } else if (
             cat?.name_vn?.toLowerCase().includes(query.toLowerCase())

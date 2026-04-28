@@ -107,6 +107,18 @@ class _ProfileScreenState extends State<ProfileScreen> {
             backgroundColor: AppColors.backgroundPrimary,
             foregroundColor: AppColors.textPrimary,
             elevation: 0,
+            actions: [
+              IconButton(
+                tooltip: 'Настройки',
+                icon: const Icon(Icons.settings_outlined),
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const SettingsScreen()),
+                  );
+                },
+              ),
+            ],
           ),
           body: RefreshIndicator(
             onRefresh: () async {

@@ -10,47 +10,48 @@ class RegistrationRoleScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Choose Your Path'),
-        centerTitle: true,
-      ),
       backgroundColor: AppColors.backgroundSecondary,
       body: SafeArea(
         child: Padding(
-          padding: const EdgeInsets.fromLTRB(12, 12, 12, 16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              _RoleCard(
-                title: 'Client',
-                icon: Icons.self_improvement_rounded,
-                accentImage: const _CardAccent(
-                  startColor: Color(0xFFF7F7F7),
-                  endColor: Color(0xFFEFEFEF),
-                  icon: Icons.spa_rounded,
+          padding: const EdgeInsets.fromLTRB(12, 12, 12, 12),
+          child: Center(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                const Text(
+                  'Choose your path',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 36,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.textPrimary,
+                  ),
                 ),
-                onTap: () {
-                  Navigator.of(context).push(
-                    MaterialPageRoute(builder: (_) => const ClientRegistrationScreen()),
-                  );
-                },
-              ),
-              const SizedBox(height: 14),
-              _RoleCard(
-                title: 'Business',
-                icon: Icons.storefront_rounded,
-                accentImage: const _CardAccent(
-                  startColor: Color(0xFFF8F1F1),
-                  endColor: Color(0xFFEDE3E3),
-                  icon: Icons.domain_rounded,
+                const SizedBox(height: 18),
+                _RoleCard(
+                  title: 'Client',
+                  icon: Icons.self_improvement_rounded,
+                  imageAssetPath: 'assets/public/client.png',
+                  onTap: () {
+                    Navigator.of(context).push(
+                      MaterialPageRoute(builder: (_) => const ClientRegistrationScreen()),
+                    );
+                  },
                 ),
-                onTap: () {
-                  Navigator.of(context).push(
-                    MaterialPageRoute(builder: (_) => const BusinessRegistrationScreen()),
-                  );
-                },
-              ),
-            ],
+                const SizedBox(height: 14),
+                _RoleCard(
+                  title: 'Business',
+                  icon: Icons.storefront_rounded,
+                  imageAssetPath: 'assets/public/business.png',
+                  onTap: () {
+                    Navigator.of(context).push(
+                      MaterialPageRoute(builder: (_) => const BusinessRegistrationScreen()),
+                    );
+                  },
+                ),
+              ],
+            ),
           ),
         ),
       ),
@@ -62,13 +63,13 @@ class _RoleCard extends StatelessWidget {
   const _RoleCard({
     required this.title,
     required this.icon,
-    required this.accentImage,
+    required this.imageAssetPath,
     required this.onTap,
   });
 
   final String title;
   final IconData icon;
-  final Widget accentImage;
+  final String imageAssetPath;
   final VoidCallback onTap;
 
   @override
@@ -82,8 +83,8 @@ class _RoleCard extends StatelessWidget {
         onTap: onTap,
         borderRadius: BorderRadius.circular(14),
         child: Container(
-          height: 132,
-          padding: const EdgeInsets.fromLTRB(18, 14, 14, 14),
+          height: 156,
+          padding: const EdgeInsets.fromLTRB(18, 14, 0, 14),
           decoration: BoxDecoration(
             color: Colors.white,
             borderRadius: BorderRadius.circular(14),
@@ -92,30 +93,29 @@ class _RoleCard extends StatelessWidget {
           child: Row(
             children: [
               Expanded(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Icon(icon, color: AppColors.primary500, size: 34),
-                    const SizedBox(height: 8),
-                    Text(
-                      title,
-                      style: const TextStyle(
-                        fontSize: 36,
-                        fontWeight: FontWeight.w700,
-                        color: AppColors.primary500,
-                        height: 0.95,
+                child: Align(
+                  alignment: Alignment.center,
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(icon, color: AppColors.primary500, size: 34),
+                      const SizedBox(height: 8),
+                      Text(
+                        title,
+                        style: const TextStyle(
+                          fontSize: 28,
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.primary500,
+                          height: 0.95,
+                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Align(
-                  alignment: Alignment.centerRight,
-                  child: accentImage,
-                ),
+              SizedBox(
+                width: 148,
+                child: _CardPhoto(imageAssetPath: imageAssetPath),
               ),
             ],
           ),
@@ -125,36 +125,42 @@ class _RoleCard extends StatelessWidget {
   }
 }
 
-class _CardAccent extends StatelessWidget {
-  const _CardAccent({
-    required this.startColor,
-    required this.endColor,
-    required this.icon,
-  });
+class _CardPhoto extends StatelessWidget {
+  const _CardPhoto({required this.imageAssetPath});
 
-  final Color startColor;
-  final Color endColor;
-  final IconData icon;
+  final String imageAssetPath;
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: 108,
-      height: 100,
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(16),
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [startColor, endColor],
-        ),
+    return ClipRRect(
+      borderRadius: const BorderRadius.only(
+        topRight: Radius.circular(14),
+        bottomRight: Radius.circular(14),
       ),
-      child: Center(
-        child: Icon(
-          icon,
-          size: 54,
-          color: AppColors.primary500.withValues(alpha: 0.25),
-        ),
+      child: Stack(
+        fit: StackFit.expand,
+        children: [
+          Image.asset(
+            imageAssetPath,
+            fit: BoxFit.cover,
+          ),
+          const DecoratedBox(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.centerLeft,
+                end: Alignment.centerRight,
+                colors: [
+                  Colors.white,
+                  Color(0xF0FFFFFF),
+                  Color(0xA6FFFFFF),
+                  Color(0x42FFFFFF),
+                  Color(0x00FFFFFF),
+                ],
+                stops: [0, 0.33, 0.58, 0.78, 1],
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

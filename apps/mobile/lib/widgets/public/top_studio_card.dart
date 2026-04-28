@@ -28,9 +28,26 @@ class TopStudioCard extends StatelessWidget {
               color: AppColors.secondary100,
               borderRadius: BorderRadius.circular(12),
             ),
-            child: const Center(
-              child: Icon(Icons.fitness_center, size: 30, color: AppColors.primary500),
-            ),
+            clipBehavior: Clip.antiAlias,
+            child: studio.photoUrl != null && studio.photoUrl!.isNotEmpty
+                ? Image.network(
+                    studio.photoUrl!,
+                    fit: BoxFit.cover,
+                    errorBuilder: (_, _, _) => const Center(
+                      child: Icon(
+                        Icons.fitness_center,
+                        size: 30,
+                        color: AppColors.primary500,
+                      ),
+                    ),
+                  )
+                : const Center(
+                    child: Icon(
+                      Icons.fitness_center,
+                      size: 30,
+                      color: AppColors.primary500,
+                    ),
+                  ),
           ),
           const SizedBox(height: 12),
           Text(

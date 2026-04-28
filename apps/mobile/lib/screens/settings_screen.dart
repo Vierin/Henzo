@@ -1,5 +1,10 @@
+import 'dart:typed_data';
+
 import 'package:flutter/material.dart';
+import 'package:flutter_image_compress/flutter_image_compress.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../constants/colors.dart';
 import '../../l10n/locale_provider.dart';
 import '../../models/salon.dart';
@@ -17,6 +22,10 @@ class SettingsScreen extends StatefulWidget {
 }
 
 class _SettingsScreenState extends State<SettingsScreen> {
+  static const int _maxStudioPhotos = 5;
+  static const int _maxPhotoBytes = 3 * 1024 * 1024;
+  static const String _studioPhotosBucket = 'studio-photos';
+
   final _salonFormKey = GlobalKey<FormState>();
   final _salonNameController = TextEditingController();
   final _salonDescriptionController = TextEditingController();
@@ -29,8 +38,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
   Salon? _salon;
   bool _salonLoading = true;
   bool _salonSaving = false;
+  bool _photosProcessing = false;
   double? _salonLat;
   double? _salonLon;
+  List<String> _studioPhotos = <String>[];
 
   @override
   void initState() {
@@ -72,6 +83,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     _salonInstagramController.text = s.instagram ?? '';
     _salonLat = s.latitude;
     _salonLon = s.longitude;
+    _studioPhotos = List<String>.from(s.photos ?? <String>[]);
   }
 
   @override
@@ -108,6 +120,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         'email': _salonEmailController.text.trim(),
         'website': _salonFacebookController.text.trim(),
         'instagram': _salonInstagramController.text.trim(),
+        'photos': _studioPhotos,
       };
       if (_salonLat != null && _salonLon != null) {
         payload['latitude'] = _salonLat;
@@ -144,6 +157,111 @@ class _SettingsScreenState extends State<SettingsScreen> {
       setState(() => _salonSaving = false);
       showApiError(context, e);
     }
+  }
+
+  Future<void> _pickStudioPhotos() async {
+    if (_photosProcessing) return;
+    final availableSlots = _maxStudioPhotos - _studioPhotos.length;
+    if (availableSlots <= 0) {
+      _showSnack('Можно загрузить максимум $_maxStudioPhotos фото');
+      return;
+    }
+
+    final picker = ImagePicker();
+    final picked = await picker.pickMultiImage();
+    if (picked.isEmpty) return;
+
+    var filesToProcess = picked;
+    if (picked.length > availableSlots) {
+      filesToProcess = picked.take(availableSlots).toList();
+      _showSnack('Лишние фото пропущены. Лимит: $_maxStudioPhotos');
+    }
+
+    setState(() => _photosProcessing = true);
+    final uploadedUrls = <String>[];
+    var oversizedCount = 0;
+    var failedUploadsCount = 0;
+    for (final file in filesToProcess) {
+      final photoBytes = await _convertToWebpBytes(file);
+      if (photoBytes == null) {
+        oversizedCount++;
+        continue;
+      }
+      final uploadedUrl = await _uploadPhotoToStorage(photoBytes);
+      if (uploadedUrl == null) {
+        failedUploadsCount++;
+        continue;
+      }
+      uploadedUrls.add(uploadedUrl);
+    }
+
+    if (!mounted) return;
+    setState(() {
+      _studioPhotos = <String>[..._studioPhotos, ...uploadedUrls];
+      _photosProcessing = false;
+    });
+    if (oversizedCount > 0) {
+      _showSnack('$oversizedCount фото больше 3MB и не были добавлены');
+    }
+    if (failedUploadsCount > 0) {
+      _showSnack('$failedUploadsCount фото не загрузились в storage');
+    }
+  }
+
+  Future<Uint8List?> _convertToWebpBytes(XFile file) async {
+    final bytesLength = await file.length();
+    if (bytesLength > _maxPhotoBytes) {
+      return null;
+    }
+    final original = await file.readAsBytes();
+    final compressed = await FlutterImageCompress.compressWithList(
+      original,
+      minWidth: 1000,
+      quality: 82,
+      format: CompressFormat.webp,
+      keepExif: false,
+    );
+    return Uint8List.fromList(compressed.isEmpty ? original : compressed);
+  }
+
+  Future<String?> _uploadPhotoToStorage(Uint8List bytes) async {
+    try {
+      final userId = context.read<AuthService>().user?.id ?? 'unknown';
+      final fileName =
+          'owners/$userId/${DateTime.now().millisecondsSinceEpoch}_${_randomSuffix()}.webp';
+      await Supabase.instance.client.storage
+          .from(_studioPhotosBucket)
+          .uploadBinary(
+            fileName,
+            bytes,
+            fileOptions: const FileOptions(
+              cacheControl: '3600',
+              upsert: false,
+              contentType: 'image/webp',
+            ),
+          );
+      return Supabase.instance.client.storage
+          .from(_studioPhotosBucket)
+          .getPublicUrl(fileName);
+    } catch (_) {
+      return null;
+    }
+  }
+
+  String _randomSuffix() {
+    final ms = DateTime.now().microsecondsSinceEpoch.toRadixString(36);
+    return ms.substring(ms.length > 6 ? ms.length - 6 : 0);
+  }
+
+  void _removePhotoAt(int index) {
+    setState(() => _studioPhotos.removeAt(index));
+  }
+
+  void _showSnack(String message) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(message)));
   }
 
   InputDecoration _inputDecoration({
@@ -197,263 +315,369 @@ class _SettingsScreenState extends State<SettingsScreen> {
             foregroundColor: AppColors.textPrimary,
             elevation: 0,
           ),
-          body: Center(
-                  child: ConstrainedBox(
-                    constraints: const BoxConstraints(
-                      maxWidth: maxContentWidth,
-                    ),
-                    child: ListView(
-                      padding: const EdgeInsets.all(12),
-                      children: [
-                        const SizedBox(height: 8),
+          body: GestureDetector(
+            behavior: HitTestBehavior.translucent,
+            onTap: () => FocusManager.instance.primaryFocus?.unfocus(),
+            child: Center(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: maxContentWidth),
+                child: ListView(
+                  padding: const EdgeInsets.all(12),
+                  children: [
+                    const SizedBox(height: 8),
 
-                        // Секции салона в одной форме
-                        _salonLoading
-                            ? _SectionCard(
-                                title: locale.t('profileForm.mainInfo'),
-                                child: const Padding(
-                                  padding: EdgeInsets.symmetric(vertical: 24),
-                                  child: Center(
-                                    child: CircularProgressIndicator(),
-                                  ),
-                                ),
-                              )
-                            : Form(
-                                key: _salonFormKey,
-                                child: Column(
-                                  crossAxisAlignment:
-                                      CrossAxisAlignment.stretch,
-                                  children: [
-                                    _SectionCard(
-                                      title: locale.t('profileForm.mainInfo'),
-                                      child: Column(
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.stretch,
-                                        children: [
-                                          _labeledField(
-                                            label: locale.t(
-                                              'profileForm.salonName',
-                                            ),
-                                            child: TextFormField(
-                                              controller: _salonNameController,
-                                              decoration: _inputDecoration(
-                                                hint: locale.t(
-                                                  'profileForm.enterSalonName',
-                                                ),
-                                              ),
-                                              textCapitalization:
-                                                  TextCapitalization.words,
-                                              validator: (v) =>
-                                                  (v == null ||
-                                                      v.trim().isEmpty)
-                                                  ? locale.t(
-                                                      'profileForm.requiredField',
-                                                    )
-                                                  : null,
+                    // Секции салона в одной форме
+                    _salonLoading
+                        ? _SectionCard(
+                            title: locale.t('profileForm.mainInfo'),
+                            child: const Padding(
+                              padding: EdgeInsets.symmetric(vertical: 24),
+                              child: Center(child: CircularProgressIndicator()),
+                            ),
+                          )
+                        : Form(
+                            key: _salonFormKey,
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.stretch,
+                              children: [
+                                _SectionCard(
+                                  title: locale.t('profileForm.mainInfo'),
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.stretch,
+                                    children: [
+                                      _labeledField(
+                                        label: locale.t(
+                                          'profileForm.salonName',
+                                        ),
+                                        child: TextFormField(
+                                          controller: _salonNameController,
+                                          decoration: _inputDecoration(
+                                            hint: locale.t(
+                                              'profileForm.enterSalonName',
                                             ),
                                           ),
-                                          const SizedBox(height: 16),
-                                          _labeledField(
-                                            label: locale.t(
-                                              'profileForm.description',
+                                          textCapitalization:
+                                              TextCapitalization.words,
+                                          validator: (v) =>
+                                              (v == null || v.trim().isEmpty)
+                                              ? locale.t(
+                                                  'profileForm.requiredField',
+                                                )
+                                              : null,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 16),
+                                      _labeledField(
+                                        label: locale.t(
+                                          'profileForm.description',
+                                        ),
+                                        child: TextFormField(
+                                          controller:
+                                              _salonDescriptionController,
+                                          decoration: _inputDecoration(
+                                            hint: locale.t(
+                                              'profileForm.enterDescription',
                                             ),
-                                            child: TextFormField(
-                                              controller:
-                                                  _salonDescriptionController,
-                                              decoration: _inputDecoration(
-                                                hint: locale.t(
-                                                  'profileForm.enterDescription',
-                                                ),
-                                                alignLabelWithHint: true,
-                                              ),
-                                              maxLines: 4,
-                                            ),
+                                            alignLabelWithHint: true,
                                           ),
-                                          const SizedBox(height: 16),
-                                          _labeledField(
-                                            label: locale.t(
-                                              'profileForm.address',
-                                            ),
-                                            child: InkWell(
-                                              onTap: () async {
-                                                await AddressPickerModal.show(
-                                                  context,
-                                                  initialAddress:
-                                                      _salonAddressController
-                                                          .text,
-                                                  initialLat: _salonLat,
-                                                  initialLon: _salonLon,
-                                                  onSelect: (address, lat, lon) {
-                                                    setState(() {
-                                                      _salonAddressController
-                                                              .text =
-                                                          address;
-                                                      _salonLat = lat;
-                                                      _salonLon = lon;
-                                                    });
-                                                  },
-                                                );
+                                          maxLines: 4,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 16),
+                                      _labeledField(
+                                        label: locale.t('profileForm.address'),
+                                        child: InkWell(
+                                          onTap: () async {
+                                            await AddressPickerModal.show(
+                                              context,
+                                              initialAddress:
+                                                  _salonAddressController.text,
+                                              initialLat: _salonLat,
+                                              initialLon: _salonLon,
+                                              onSelect: (address, lat, lon) {
+                                                setState(() {
+                                                  _salonAddressController.text =
+                                                      address;
+                                                  _salonLat = lat;
+                                                  _salonLon = lon;
+                                                });
                                               },
-                                              borderRadius:
-                                                  BorderRadius.circular(10),
-                                              child: InputDecorator(
-                                                decoration:
-                                                    _inputDecoration(
-                                                      hint: locale.t(
-                                                        'profileForm.enterAddress',
-                                                      ),
-                                                    ).copyWith(
-                                                      suffixIcon: Icon(
-                                                        Icons
-                                                            .location_on_outlined,
-                                                        size: 20,
-                                                        color: AppColors
-                                                            .textSecondary,
-                                                      ),
-                                                    ),
-                                                child: Text(
-                                                  _salonAddressController
-                                                          .text
-                                                          .isEmpty
-                                                      ? ''
-                                                      : _salonAddressController
-                                                            .text,
-                                                  style: TextStyle(
-                                                    fontSize: 16,
+                                            );
+                                          },
+                                          borderRadius: BorderRadius.circular(
+                                            10,
+                                          ),
+                                          child: InputDecorator(
+                                            decoration:
+                                                _inputDecoration(
+                                                  hint: locale.t(
+                                                    'profileForm.enterAddress',
+                                                  ),
+                                                ).copyWith(
+                                                  suffixIcon: Icon(
+                                                    Icons.location_on_outlined,
+                                                    size: 20,
                                                     color:
-                                                        _salonAddressController
-                                                            .text
-                                                            .isEmpty
-                                                        ? AppColors
-                                                              .textSecondary
-                                                        : AppColors.textPrimary,
+                                                        AppColors.textSecondary,
                                                   ),
                                                 ),
+                                            child: Text(
+                                              _salonAddressController
+                                                      .text
+                                                      .isEmpty
+                                                  ? ''
+                                                  : _salonAddressController
+                                                        .text,
+                                              style: TextStyle(
+                                                fontSize: 16,
+                                                color:
+                                                    _salonAddressController
+                                                        .text
+                                                        .isEmpty
+                                                    ? AppColors.textSecondary
+                                                    : AppColors.textPrimary,
                                               ),
                                             ),
                                           ),
-                                          const SizedBox(height: 20),
-                                          SizedBox(
-                                            height: 44,
-                                            child: FilledButton(
-                                              onPressed: _salonSaving
-                                                  ? null
-                                                  : _saveSalon,
-                                              style: FilledButton.styleFrom(
-                                                backgroundColor:
-                                                    AppColors.primary500,
-                                              ),
-                                              child: _salonSaving
-                                                  ? const SizedBox(
-                                                      height: 22,
-                                                      width: 22,
-                                                      child:
-                                                          CircularProgressIndicator(
-                                                            strokeWidth: 2,
-                                                            color: Colors.white,
-                                                          ),
-                                                    )
-                                                  : Text(
-                                                      _salon == null
-                                                          ? locale.t(
-                                                              'profileForm.addSalon',
-                                                            )
-                                                          : locale.t(
-                                                              'common.save',
-                                                            ),
-                                                    ),
-                                            ),
+                                        ),
+                                      ),
+                                      const SizedBox(height: 20),
+                                      SizedBox(
+                                        height: 44,
+                                        child: FilledButton(
+                                          onPressed: _salonSaving
+                                              ? null
+                                              : _saveSalon,
+                                          style: FilledButton.styleFrom(
+                                            backgroundColor:
+                                                AppColors.primary500,
                                           ),
-                                        ],
-                                      ),
-                                    ),
-                                    const SizedBox(height: 24),
-                                    _SectionCard(
-                                      title: locale.t(
-                                        'profileForm.contactInfo',
-                                      ),
-                                      child: Column(
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.stretch,
-                                        children: [
-                                          _labeledField(
-                                            label: locale.t(
-                                              'profileForm.salonPhone',
-                                            ),
-                                            child: TextFormField(
-                                              controller: _salonPhoneController,
-                                              decoration: _inputDecoration(
-                                                hint: locale.t(
-                                                  'profileForm.enterPhone',
+                                          child: _salonSaving
+                                              ? const SizedBox(
+                                                  height: 22,
+                                                  width: 22,
+                                                  child:
+                                                      CircularProgressIndicator(
+                                                        strokeWidth: 2,
+                                                        color: Colors.white,
+                                                      ),
+                                                )
+                                              : Text(
+                                                  _salon == null
+                                                      ? locale.t(
+                                                          'profileForm.addSalon',
+                                                        )
+                                                      : locale.t('common.save'),
                                                 ),
-                                              ),
-                                              keyboardType: TextInputType.phone,
-                                            ),
-                                          ),
-                                          const SizedBox(height: 16),
-                                          _labeledField(
-                                            label: locale.t(
-                                              'profileForm.salonEmail',
-                                            ),
-                                            child: TextFormField(
-                                              controller: _salonEmailController,
-                                              decoration: _inputDecoration(
-                                                hint: locale.t(
-                                                  'profileForm.enterEmail',
-                                                ),
-                                              ),
-                                              keyboardType:
-                                                  TextInputType.emailAddress,
-                                            ),
-                                          ),
-                                          const SizedBox(height: 16),
-                                          _labeledField(
-                                            label: 'Facebook',
-                                            child: TextFormField(
-                                              controller:
-                                                  _salonFacebookController,
-                                              decoration: _inputDecoration(
-                                                hint: 'https://facebook.com/...',
-                                              ),
-                                              keyboardType: TextInputType.url,
-                                            ),
-                                          ),
-                                          const SizedBox(height: 16),
-                                          _labeledField(
-                                            label: locale.t(
-                                              'profileForm.instagram',
-                                            ),
-                                            child: TextFormField(
-                                              controller:
-                                                  _salonInstagramController,
-                                              decoration: _inputDecoration(
-                                                hint: '@username',
-                                              ),
-                                            ),
-                                          ),
-                                        ],
+                                        ),
                                       ),
-                                    ),
-                                  ],
+                                    ],
+                                  ),
                                 ),
-                              ),
-                        const SizedBox(height: 24),
-                        
-                      ],
-                    ),
-                  ),
+                                const SizedBox(height: 24),
+                                _SectionCard(
+                                  title: 'Фотографии студии',
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.stretch,
+                                    children: [
+                                      Text(
+                                        'До $_maxStudioPhotos фото, максимум 3MB на фото. Автоконвертация: WebP, ширина до 1000px.',
+                                        style: const TextStyle(
+                                          color: AppColors.textSecondary,
+                                          fontSize: 13,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 12),
+                                      Wrap(
+                                        spacing: 10,
+                                        runSpacing: 10,
+                                        children: [
+                                          ...List.generate(
+                                            _studioPhotos.length,
+                                            (index) => _StudioPhotoTile(
+                                              photo: _studioPhotos[index],
+                                              onRemove: () =>
+                                                  _removePhotoAt(index),
+                                            ),
+                                          ),
+                                          if (_studioPhotos.length <
+                                              _maxStudioPhotos)
+                                            _AddStudioPhotoTile(
+                                              loading: _photosProcessing,
+                                              onTap: _pickStudioPhotos,
+                                            ),
+                                        ],
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                const SizedBox(height: 24),
+                                _SectionCard(
+                                  title: locale.t('profileForm.contactInfo'),
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.stretch,
+                                    children: [
+                                      _labeledField(
+                                        label: locale.t(
+                                          'profileForm.salonPhone',
+                                        ),
+                                        child: TextFormField(
+                                          controller: _salonPhoneController,
+                                          decoration: _inputDecoration(
+                                            hint: locale.t(
+                                              'profileForm.enterPhone',
+                                            ),
+                                          ),
+                                          keyboardType: TextInputType.phone,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 16),
+                                      _labeledField(
+                                        label: locale.t(
+                                          'profileForm.salonEmail',
+                                        ),
+                                        child: TextFormField(
+                                          controller: _salonEmailController,
+                                          decoration: _inputDecoration(
+                                            hint: locale.t(
+                                              'profileForm.enterEmail',
+                                            ),
+                                          ),
+                                          keyboardType:
+                                              TextInputType.emailAddress,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 16),
+                                      _labeledField(
+                                        label: 'Facebook',
+                                        child: TextFormField(
+                                          controller: _salonFacebookController,
+                                          decoration: _inputDecoration(
+                                            hint: 'https://facebook.com/...',
+                                          ),
+                                          keyboardType: TextInputType.url,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 16),
+                                      _labeledField(
+                                        label: locale.t(
+                                          'profileForm.instagram',
+                                        ),
+                                        child: TextFormField(
+                                          controller: _salonInstagramController,
+                                          decoration: _inputDecoration(
+                                            hint: '@username',
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                    const SizedBox(height: 24),
+                  ],
                 ),
+              ),
+            ),
+          ),
         );
       },
     );
   }
 }
 
+class _StudioPhotoTile extends StatelessWidget {
+  const _StudioPhotoTile({required this.photo, required this.onRemove});
+
+  final String photo;
+  final VoidCallback onRemove;
+
+  @override
+  Widget build(BuildContext context) {
+    const tileSize = 96.0;
+    return Stack(
+      children: [
+        ClipRRect(
+          borderRadius: BorderRadius.circular(10),
+          child: Container(
+            width: tileSize,
+            height: tileSize,
+            color: AppColors.backgroundSecondary,
+            child: Image.network(
+              photo,
+              fit: BoxFit.cover,
+              errorBuilder: (_, __, ___) => const Icon(
+                Icons.broken_image_outlined,
+                color: AppColors.textSecondary,
+              ),
+            ),
+          ),
+        ),
+        Positioned(
+          top: 4,
+          right: 4,
+          child: Material(
+            color: Colors.black54,
+            shape: const CircleBorder(),
+            child: InkWell(
+              customBorder: const CircleBorder(),
+              onTap: onRemove,
+              child: const Padding(
+                padding: EdgeInsets.all(4),
+                child: Icon(Icons.close, size: 14, color: Colors.white),
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _AddStudioPhotoTile extends StatelessWidget {
+  const _AddStudioPhotoTile({required this.loading, required this.onTap});
+
+  final bool loading;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    const tileSize = 96.0;
+    return InkWell(
+      onTap: loading ? null : onTap,
+      borderRadius: BorderRadius.circular(10),
+      child: Container(
+        width: tileSize,
+        height: tileSize,
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(
+            color: AppColors.borderPrimary,
+            style: BorderStyle.solid,
+          ),
+          color: AppColors.backgroundPrimary,
+        ),
+        child: Center(
+          child: loading
+              ? const SizedBox(
+                  width: 20,
+                  height: 20,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                )
+              : const Icon(Icons.add_a_photo_outlined),
+        ),
+      ),
+    );
+  }
+}
+
 class _SectionCard extends StatelessWidget {
-  const _SectionCard({
-    required this.title,
-    required this.child,
-  });
+  const _SectionCard({required this.title, required this.child});
 
   final String title;
   final Widget child;

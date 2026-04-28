@@ -26,7 +26,8 @@ export const BUSINESS_REGISTRATION_STRINGS: Record<
     buttonLabel: 'Complete Registration',
     fallbackText: 'Or copy and paste this link into your browser:',
     expiryText: 'This link will expire in 24 hours.',
-    ignoreText: "If you didn't request this registration, please ignore this email.",
+    ignoreText:
+      "If you didn't request this registration, please ignore this email.",
     footerText:
       'This is an automated message from Henzo. Please do not reply to this email.',
     subject: 'Complete Your Business Registration - Henzo',
@@ -40,7 +41,8 @@ export const BUSINESS_REGISTRATION_STRINGS: Record<
     buttonLabel: 'Завершить регистрацию',
     fallbackText: 'Или скопируйте и вставьте эту ссылку в браузер:',
     expiryText: 'Ссылка действует 24 часа.',
-    ignoreText: 'Если вы не запрашивали регистрацию, просто проигнорируйте это письмо.',
+    ignoreText:
+      'Если вы не запрашивали регистрацию, просто проигнорируйте это письмо.',
     footerText:
       'Это автоматическое сообщение от Henzo. Пожалуйста, не отвечайте на это письмо.',
     subject: 'Завершите регистрацию бизнеса - Henzo',

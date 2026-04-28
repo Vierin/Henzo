@@ -44,8 +44,10 @@ function getLocalizedTrainingName(
   training: BookingWithRelations['Training'],
   locale: 'en' | 'ru' | 'vi',
 ): string {
-  if (locale === 'ru') return training.nameRu || training.nameEn || training.name;
-  if (locale === 'vi') return training.nameVi || training.nameEn || training.name;
+  if (locale === 'ru')
+    return training.nameRu || training.nameEn || training.name;
+  if (locale === 'vi')
+    return training.nameVi || training.nameEn || training.name;
   return training.nameEn || training.name;
 }
 
@@ -175,7 +177,8 @@ export class RemindersService {
             const hoursUntilBooking = timeUntilBooking / (1000 * 60 * 60);
 
             // Get salon timezone
-            const salonTimezone = booking.Studio?.timezone || 'Asia/Ho_Chi_Minh';
+            const salonTimezone =
+              booking.Studio?.timezone || 'Asia/Ho_Chi_Minh';
 
             // IMPORTANT: startsAt is stored in UTC but represents the appointment time in studio timezone
             // We need to check if the time difference matches the reminder interval

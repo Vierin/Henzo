@@ -38,7 +38,9 @@ export class StudioAnalyticsService {
     toIso: string | undefined,
   ) {
     if (!fromIso || !toIso) {
-      throw new BadRequestException('from and to query parameters are required');
+      throw new BadRequestException(
+        'from and to query parameters are required',
+      );
     }
     const from = new Date(fromIso);
     const to = new Date(toIso);
@@ -49,9 +51,7 @@ export class StudioAnalyticsService {
       throw new BadRequestException('from must be before or equal to to');
     }
 
-    const currentUser = await this.authService.getCurrentUser(
-      authHeader ?? '',
-    );
+    const currentUser = await this.authService.getCurrentUser(authHeader ?? '');
     if (currentUser.user.role !== 'OWNER') {
       throw new ForbiddenException('Forbidden');
     }
@@ -157,7 +157,8 @@ export class StudioAnalyticsService {
       utilizationSum += occ / cap;
       utilizationN += 1;
     }
-    const averageUtilization = utilizationN > 0 ? utilizationSum / utilizationN : 0;
+    const averageUtilization =
+      utilizationN > 0 ? utilizationSum / utilizationN : 0;
 
     const trainingBookingCounts = new Map<string, number>();
     for (const b of bookingsInPeriod) {
@@ -263,11 +264,7 @@ export class StudioAnalyticsService {
     };
   }
 
-  private async computeClientSegments(
-    studioId: string,
-    from: Date,
-    to: Date,
-  ) {
+  private async computeClientSegments(studioId: string, from: Date, to: Date) {
     const ninetyDaysMs = 90 * 24 * 60 * 60 * 1000;
     const rollingStart = new Date(to.getTime() - ninetyDaysMs);
 

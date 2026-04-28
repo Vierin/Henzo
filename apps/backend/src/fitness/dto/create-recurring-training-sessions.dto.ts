@@ -73,4 +73,3 @@ export class CreateRecurringTrainingSessionsDto {
   @IsString()
   timezone?: string;
 }
-

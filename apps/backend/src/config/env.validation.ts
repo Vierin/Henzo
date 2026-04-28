@@ -74,7 +74,6 @@ export class EnvironmentVariables {
   @IsString()
   @IsOptional()
   MAPBOX_ACCESS_TOKEN?: string;
-
 }
 
 export function validate(config: Record<string, unknown>) {

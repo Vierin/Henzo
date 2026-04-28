@@ -576,6 +576,38 @@ class AuthService extends ChangeNotifier {
     }
   }
 
+  Future<AuthUiResult> updateEmail(String email) async {
+    final trimmed = email.trim();
+    if (trimmed.isEmpty) {
+      return (success: false, errorL10nKey: null, errorRaw: 'Email is empty');
+    }
+    try {
+      final res = await _supabase.auth.updateUser(UserAttributes(email: trimmed));
+      if (res.user != null) {
+        if (_user != null) {
+          _user = UserModel(
+            id: _user!.id,
+            email: trimmed,
+            name: _user!.name,
+            phone: _user!.phone,
+            role: _user!.role,
+          );
+        }
+        notifyListeners();
+        return (success: true, errorL10nKey: null, errorRaw: null);
+      }
+      return (
+        success: false,
+        errorL10nKey: AuthErrorKeys.profileUpdateFailed,
+        errorRaw: null,
+      );
+    } on AuthException catch (e) {
+      return (success: false, errorL10nKey: null, errorRaw: e.message);
+    } catch (e) {
+      return (success: false, errorL10nKey: null, errorRaw: e.toString());
+    }
+  }
+
   Future<AuthUiResult> deleteAccount() async {
     final token = accessToken;
     if (token == null) {

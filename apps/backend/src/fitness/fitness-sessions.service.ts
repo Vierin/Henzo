@@ -49,8 +49,11 @@ export class FitnessSessionsService {
 
   private extractBookingPeriodDays(reminderSettings: unknown): number {
     const fallback = 14;
-    if (!reminderSettings || typeof reminderSettings !== 'object') return fallback;
-    const raw = (reminderSettings as Record<string, unknown>)['bookingPeriodDays'];
+    if (!reminderSettings || typeof reminderSettings !== 'object')
+      return fallback;
+    const raw = (reminderSettings as Record<string, unknown>)[
+      'bookingPeriodDays'
+    ];
     let parsed: number | null = null;
     if (typeof raw === 'number') parsed = Math.floor(raw);
     if (typeof raw === 'string') parsed = Number.parseInt(raw, 10);
@@ -296,4 +299,3 @@ export class FitnessSessionsService {
     return { success: true };
   }
 }
-
