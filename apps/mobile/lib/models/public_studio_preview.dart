@@ -2,16 +2,20 @@ class PublicStudioPreview {
   const PublicStudioPreview({
     required this.id,
     required this.name,
-    required this.category,
+    required this.categories,
     required this.rating,
-    required this.city,
+    required this.address,
+    this.distanceKm,
     this.photoUrl,
   });
 
   final String id;
   final String name;
-  final String category;
+  final List<String> categories;
   final double rating;
-  final String city;
+  final String address;
+  final double? distanceKm;
   final String? photoUrl;
+
+  String get primaryCategory => categories.isNotEmpty ? categories.first : 'Fitness';
 }

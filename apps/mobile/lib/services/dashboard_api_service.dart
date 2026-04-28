@@ -230,6 +230,33 @@ class DashboardApiService {
     }
   }
 
+  /// GET /studios/current/onboarding-checklist
+  static Future<StudioOnboardingChecklist?> getCurrentStudioOnboardingChecklist(
+    String accessToken,
+  ) async {
+    try {
+      final body = await ApiClient.get(
+        '/studios/current/onboarding-checklist',
+        accessToken,
+      );
+      if (body is! Map<String, dynamic>) return null;
+      final data = body['data'];
+      if (data is! Map<String, dynamic>) return null;
+      return StudioOnboardingChecklist.fromJson(Map<String, dynamic>.from(data));
+    } on ApiException catch (e) {
+      if (kDebugMode) {
+        debugPrint('[DashboardAPI] getCurrentStudioOnboardingChecklist: $e');
+      }
+      return null;
+    }
+  }
+
+  /// PATCH /studios/:id/publish — перевести студию в ACTIVE.
+  static Future<bool> publishStudio(String accessToken, String studioId) async {
+    await ApiClient.patch('/studios/$studioId/publish', accessToken);
+    return true;
+  }
+
   /// GET /fitness/studios/current/analytics?from=&to=
   static Future<StudioAnalytics?> getCurrentStudioAnalytics(
     String accessToken, {
@@ -559,5 +586,79 @@ class DashboardApiService {
       return RecurringCreationResult.fromJson(data);
     }
     return const RecurringCreationResult(createdCount: 0, skippedCount: 0);
+  }
+}
+
+class StudioOnboardingStep {
+  const StudioOnboardingStep({required this.required, required this.completed});
+
+  final bool required;
+  final bool completed;
+
+  factory StudioOnboardingStep.fromJson(Map<String, dynamic> json) {
+    return StudioOnboardingStep(
+      required: json['required'] == true,
+      completed: json['completed'] == true,
+    );
+  }
+}
+
+class StudioOnboardingChecklist {
+  const StudioOnboardingChecklist({
+    required this.studioId,
+    required this.status,
+    required this.requiredCompleted,
+    required this.canPublish,
+    required this.missingRequiredSteps,
+    required this.hasTraining,
+    required this.hasPhoto,
+    required this.bookingWindowConfigured,
+    required this.contactsConfigured,
+  });
+
+  final String studioId;
+  final String status;
+  final bool requiredCompleted;
+  final bool canPublish;
+  final List<String> missingRequiredSteps;
+  final StudioOnboardingStep hasTraining;
+  final StudioOnboardingStep hasPhoto;
+  final StudioOnboardingStep bookingWindowConfigured;
+  final StudioOnboardingStep contactsConfigured;
+
+  factory StudioOnboardingChecklist.fromJson(Map<String, dynamic> json) {
+    final rawSteps = json['steps'];
+    final steps = rawSteps is Map<String, dynamic>
+        ? rawSteps
+        : <String, dynamic>{};
+
+    StudioOnboardingStep parseStep(String key, bool required) {
+      final raw = steps[key];
+      if (raw is Map<String, dynamic>) {
+        return StudioOnboardingStep.fromJson(raw);
+      }
+      return StudioOnboardingStep(required: required, completed: false);
+    }
+
+    final missingRaw = json['missingRequiredSteps'];
+    final missing = <String>[];
+    if (missingRaw is List) {
+      for (final item in missingRaw) {
+        final value = item?.toString();
+        if (value != null && value.isNotEmpty) missing.add(value);
+      }
+    }
+
+    return StudioOnboardingChecklist(
+      studioId: (json['studioId'] ?? '').toString(),
+      status: (json['status'] ?? '').toString(),
+      requiredCompleted: json['requiredCompleted'] == true,
+      canPublish: json['canPublish'] == true,
+      missingRequiredSteps: missing,
+      hasTraining: parseStep('hasTraining', true),
+      hasPhoto: parseStep('hasPhoto', true),
+      bookingWindowConfigured: parseStep('bookingWindowConfigured', false),
+      contactsConfigured: parseStep('contactsConfigured', false),
+    );
   }
 }

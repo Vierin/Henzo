@@ -41,6 +41,11 @@ export default function ConditionalFooter() {
 		return null;
 	}
 
+	// Full-bleed public studio card (has its own layout)
+	if (pathname.includes('/studio/')) {
+		return null;
+	}
+
 	// Hide footer on admin and owner panel pages (they have their own footers in layout)
 	if (pathname.includes('/admin-panel') || 
 		pathname.includes('/salons-data') || 

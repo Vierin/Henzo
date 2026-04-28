@@ -298,4 +298,103 @@ export class FitnessSessionsService {
 
     return { success: true };
   }
+
+  async getClientSchedule(
+    authHeader: string,
+    fromIso?: string,
+    toIso?: string,
+  ): Promise<any[]> {
+    const currentUser = await this.authService.getCurrentUser(authHeader);
+    const userId = currentUser.user.id;
+
+    const fromDate = fromIso ? new Date(fromIso) : new Date();
+    const toDate = toIso
+      ? new Date(toIso)
+      : new Date(fromDate.getTime() + 1000 * 60 * 60 * 24 * 120);
+
+    const enrollments = await this.prisma.sessionEnrollment.findMany({
+      where: {
+        userId,
+        status: 'ACTIVE',
+        TrainingSession: {
+          status: 'ACTIVE',
+          startsAt: {
+            gte: fromDate,
+            lte: toDate,
+          },
+        },
+      },
+      select: {
+        id: true,
+        createdAt: true,
+        TrainingSession: {
+          select: {
+            id: true,
+            startsAt: true,
+            endsAt: true,
+            capacity: true,
+            bookedCount: true,
+            Training: {
+              select: {
+                id: true,
+                name: true,
+                duration: true,
+                price: true,
+              },
+            },
+            Trainer: {
+              select: {
+                id: true,
+                name: true,
+              },
+            },
+            Studio: {
+              select: {
+                id: true,
+                name: true,
+                address: true,
+              },
+            },
+          },
+        },
+      },
+      orderBy: {
+        TrainingSession: {
+          startsAt: 'asc',
+        },
+      },
+      take: 300,
+    });
+
+    return enrollments.map((e) => ({
+      enrollmentId: e.id,
+      bookedAt: e.createdAt.toISOString(),
+      sessionId: e.TrainingSession.id,
+      startsAt: e.TrainingSession.startsAt.toISOString(),
+      endsAt: e.TrainingSession.endsAt.toISOString(),
+      capacity: e.TrainingSession.capacity,
+      bookedCount: e.TrainingSession.bookedCount,
+      training: e.TrainingSession.Training
+        ? {
+            id: e.TrainingSession.Training.id,
+            name: e.TrainingSession.Training.name,
+            duration: e.TrainingSession.Training.duration,
+            price: e.TrainingSession.Training.price,
+          }
+        : null,
+      trainer: e.TrainingSession.Trainer
+        ? {
+            id: e.TrainingSession.Trainer.id,
+            name: e.TrainingSession.Trainer.name,
+          }
+        : null,
+      studio: e.TrainingSession.Studio
+        ? {
+            id: e.TrainingSession.Studio.id,
+            name: e.TrainingSession.Studio.name,
+            address: e.TrainingSession.Studio.address,
+          }
+        : null,
+    }));
+  }
 }

@@ -9,11 +9,10 @@ import '../services/auth_service.dart';
 import '../services/subscription_api_service.dart';
 import '../utils/show_api_error.dart';
 
-// Цены как в веб (VND).
-const int _priceMonthlyVnd = 390000;
-const int _priceAnnualVnd = 3150000;
+const int _priceMonthlyVnd = 349000;
+const int _priceAnnualVnd = 3490000;
 const int _price12MonthsVnd = _priceMonthlyVnd * 12;
-const int _saveAnnualPercent = 33; // округлённо
+const int _saveAnnualPercent = 17;
 
 String _formatVnd(int amount) {
   final s = amount.toString().replaceAllMapped(
@@ -41,11 +40,9 @@ class SubscriptionScreen extends StatefulWidget {
 
 class _SubscriptionScreenState extends State<SubscriptionScreen> {
   Subscription? _subscription;
-  List<SubscriptionInvoice> _invoices = [];
   bool _loading = true;
   String? _checkoutLoading; // 'monthly' | 'annual'
-  bool _portalLoading = false;
-  bool _cancelLoading = false;
+  String _billingInterval = 'monthly';
 
   @override
   void initState() {
@@ -66,16 +63,12 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
         _subscription = sub;
         _loading = false;
       });
-      if (sub?.stripeCustomerId != null && sub!.stripeCustomerId!.isNotEmpty) {
-        final invoices = await SubscriptionApiService.getInvoices(token);
-        if (mounted) setState(() => _invoices = invoices);
-      }
     } catch (_) {
       if (mounted) setState(() => _loading = false);
     }
   }
 
-  bool get _isPaid => (_subscription?.amount ?? 0) > 0;
+  bool get _isPro => _subscription?.type.toUpperCase() == 'PRO';
 
   Future<void> _openUrl(String? url) async {
     if (url == null || url.isEmpty) return;
@@ -107,78 +100,6 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
     } finally {
       if (mounted) setState(() => _checkoutLoading = null);
     }
-  }
-
-  Future<void> _handleManageBilling() async {
-    final token = context.read<AuthService>().accessToken;
-    if (token == null) return;
-    setState(() => _portalLoading = true);
-    try {
-      final url = await SubscriptionApiService.createPortalSession(token);
-      if (mounted && url != null) {
-        await _openUrl(url);
-      } else if (mounted) {
-        ScaffoldMessenger.maybeOf(context)?.showSnackBar(
-          SnackBar(
-            content: Text(
-              context.read<LocaleProvider>().t('subscription.noBilling'),
-            ),
-          ),
-        );
-      }
-    } catch (e) {
-      if (mounted) showApiError(context, e);
-    } finally {
-      if (mounted) setState(() => _portalLoading = false);
-    }
-  }
-
-  Future<void> _handleCancelSubscription() async {
-    final ok = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Отменить подписку?'),
-        content: const Text(
-          'Вы уверены? Доступ сохранится до конца оплаченного периода.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Нет'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Да'),
-          ),
-        ],
-      ),
-    );
-    if (ok != true) return;
-    final token = context.read<AuthService>().accessToken;
-    if (token == null) return;
-    setState(() => _cancelLoading = true);
-    try {
-      await SubscriptionApiService.cancel(token);
-      if (mounted) {
-        ScaffoldMessenger.maybeOf(context)?.showSnackBar(
-          const SnackBar(
-            content: Text('Подписка будет отменена в конце периода.'),
-          ),
-        );
-        await _load();
-      }
-    } catch (e) {
-      if (mounted) showApiError(context, e);
-    } finally {
-      if (mounted) setState(() => _cancelLoading = false);
-    }
-  }
-
-  String? _formatDate(String? iso) {
-    if (iso == null || iso.isEmpty) return null;
-    final d = DateTime.tryParse(iso);
-    if (d == null) return iso;
-    return '${d.day.toString().padLeft(2, '0')}.${d.month.toString().padLeft(2, '0')}.${d.year}';
   }
 
   @override
@@ -229,45 +150,9 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
                           ),
                         ),
                         const SizedBox(height: 20),
-                        // Триал-баннер
-                        if (_subscription?.trialEndDate != null &&
-                            !_isPaid) ...[
-                          _TrialBanner(
-                            trialEndDateFormatted:
-                                _formatDate(_subscription!.trialEndDate) ?? '',
-                            onGoToPlan: () => _handleSelectPlan('monthly'),
-                            isLoading: _checkoutLoading != null,
-                          ),
-                          const SizedBox(height: 20),
-                        ],
-                        // Оплаченная подписка
-                        if (_isPaid) ...[
-                          _PaidPlanCard(
-                            subscription: _subscription!,
-                            formatDate: _formatDate,
-                            formatVnd: _formatVnd,
-                            onTap: _handleManageBilling,
-                            portalLoading: _portalLoading,
-                          ),
-                          const SizedBox(height: 12),
-                          _BillingHistorySection(
-                            invoices: _invoices,
-                            formatVnd: _formatVnd,
-                            onManageBilling: _handleManageBilling,
-                            portalLoading: _portalLoading,
-                          ),
-                          const SizedBox(height: 12),
-                          _AccountActionsCard(
-                            onManageBilling: _handleManageBilling,
-                            onCancel: _subscription?.status != 'CANCELLED'
-                                ? _handleCancelSubscription
-                                : null,
-                            portalLoading: _portalLoading,
-                            cancelLoading: _cancelLoading,
-                          ),
-                        ],
-                        // Выбор плана (нет оплаты)
-                        if (!_isPaid) ...[
+                        _CurrentPlanCard(isPro: _isPro),
+                        const SizedBox(height: 16),
+                        if (!_isPro) ...[
                           _BillingToggle(
                             billingInterval: _billingInterval,
                             onChanged: (v) =>
@@ -281,7 +166,8 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
                             checkoutLoading: _checkoutLoading,
                             formatVnd: _formatVnd,
                           ),
-                        ],
+                        ] else
+                          const _ProEnabledCard(),
                       ],
                     ),
                   ),
@@ -290,96 +176,16 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
       },
     );
   }
-
-  String _billingInterval = 'monthly';
 }
 
-class _TrialBanner extends StatelessWidget {
-  final String trialEndDateFormatted;
-  final VoidCallback onGoToPlan;
-  final bool isLoading;
+class _CurrentPlanCard extends StatelessWidget {
+  final bool isPro;
 
-  const _TrialBanner({
-    required this.trialEndDateFormatted,
-    required this.onGoToPlan,
-    required this.isLoading,
-  });
+  const _CurrentPlanCard({required this.isPro});
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: AppColors.error50,
-        border: Border.all(color: AppColors.primary200),
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Icon(Icons.schedule, color: AppColors.primary500, size: 28),
-              const SizedBox(width: 12),
-              const Expanded(
-                child: Text(
-                  'Сейчас у вас пробный период',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    color: AppColors.textPrimary,
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'Истекает $trialEndDateFormatted',
-            style: const TextStyle(fontSize: 14, color: AppColors.textPrimary),
-          ),
-          const SizedBox(height: 12),
-          SizedBox(
-            width: double.infinity,
-            child: FilledButton(
-              onPressed: isLoading ? null : onGoToPlan,
-              style: FilledButton.styleFrom(
-                backgroundColor: AppColors.primary500,
-                foregroundColor: Colors.white,
-              ),
-              child: Text(isLoading ? 'Загрузка...' : 'Продлить подписку'),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _PaidPlanCard extends StatelessWidget {
-  final Subscription subscription;
-  final String? Function(String?) formatDate;
-  final String Function(int) formatVnd;
-  final VoidCallback? onTap;
-  final bool portalLoading;
-
-  const _PaidPlanCard({
-    required this.subscription,
-    required this.formatDate,
-    required this.formatVnd,
-    this.onTap,
-    this.portalLoading = false,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final isAnnual =
-        (subscription.amount ?? 0) >= 1000000; // годовой тариф в VND
-    final nextPayment = formatDate(subscription.nextPaymentDate);
-    final endDate = formatDate(subscription.endDate);
-    final isCancelled = subscription.status == 'CANCELLED';
-
-    final content = Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: AppColors.backgroundPrimary,
@@ -399,14 +205,18 @@ class _PaidPlanCard extends StatelessWidget {
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Icon(Icons.check_circle, color: AppColors.primary500, size: 24),
+              Icon(
+                isPro ? Icons.workspace_premium : Icons.verified_outlined,
+                color: AppColors.primary500,
+                size: 24,
+              ),
               const SizedBox(width: 12),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Starter – ${isAnnual ? 'Годовой' : 'Месячный'}',
+                      'Текущий план: ${isPro ? 'Pro' : 'Free'}',
                       style: const TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
@@ -414,149 +224,43 @@ class _PaidPlanCard extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(height: 8),
-                    if (isCancelled && endDate != null)
-                      Text(
-                        'Подписка до: $endDate',
-                        style: const TextStyle(
-                          fontSize: 13,
-                          color: AppColors.warning700,
-                          fontWeight: FontWeight.w500,
-                        ),
+                    Text(
+                      isPro
+                          ? 'У вас подключен расширенный функционал Pro.'
+                          : 'Сейчас у вас бесплатный план. Вы можете перейти на Pro в любой момент.',
+                      style: const TextStyle(
+                        fontSize: 13,
+                        color: AppColors.textSecondary,
                       ),
-                    if (nextPayment != null && !isCancelled)
-                      Text(
-                        'Дата продления: $nextPayment',
-                        style: const TextStyle(
-                          fontSize: 13,
-                          color: AppColors.textSecondary,
-                        ),
-                      ),
-                    if (!isCancelled)
-                      Text(
-                        '${isAnnual ? 'Списание раз в год' : 'Списание раз в месяц'} ${formatVnd(isAnnual ? _priceAnnualVnd : _priceMonthlyVnd)}/${isAnnual ? 'год' : 'мес'}',
-                        style: const TextStyle(
-                          fontSize: 13,
-                          color: AppColors.textSecondary,
-                        ),
-                      ),
+                    ),
                   ],
                 ),
               ),
-              if (portalLoading)
-                const SizedBox(
-                  width: 20,
-                  height: 20,
-                  child: CircularProgressIndicator(strokeWidth: 2),
-                )
-              else
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 10,
-                    vertical: 4,
-                  ),
-                  decoration: BoxDecoration(
-                    color: isCancelled
-                        ? AppColors.warning100
-                        : AppColors.primary500.withValues(alpha: 0.15),
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: Text(
-                    isCancelled ? 'ОТМЕНЕНА' : 'АКТИВЕН',
-                    style: TextStyle(
-                      fontSize: 11,
-                      fontWeight: FontWeight.bold,
-                      color: isCancelled
-                          ? AppColors.warning700
-                          : AppColors.primary500,
-                    ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                decoration: BoxDecoration(
+                  color: AppColors.primary500.withValues(alpha: 0.15),
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Text(
+                  isPro ? 'PRO' : 'FREE',
+                  style: const TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.primary500,
                   ),
                 ),
+              ),
             ],
           ),
         ],
       ),
     );
-
-    if (onTap != null) {
-      return Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: portalLoading ? null : onTap,
-          borderRadius: BorderRadius.circular(16),
-          child: content,
-        ),
-      );
-    }
-    return content;
   }
 }
 
-/// Single invoice row for billing history list.
-class _SubscriptionInvoiceTile extends StatelessWidget {
-  const _SubscriptionInvoiceTile({
-    required this.invoice,
-    required this.formatVnd,
-  });
-
-  final SubscriptionInvoice invoice;
-  final String Function(int) formatVnd;
-
-  @override
-  Widget build(BuildContext context) {
-    final displayNumber =
-        invoice.number ??
-        (invoice.id.length >= 12
-            ? invoice.id.substring(invoice.id.length - 12)
-            : invoice.id);
-    final dateStr = DateTime.tryParse(invoice.date) != null
-        ? '${DateTime.parse(invoice.date).day.toString().padLeft(2, '0')}.${DateTime.parse(invoice.date).month.toString().padLeft(2, '0')}.${DateTime.parse(invoice.date).year}'
-        : invoice.date;
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        Expanded(
-          child: Text(
-            displayNumber,
-            style: const TextStyle(
-              fontSize: 13,
-              fontWeight: FontWeight.w500,
-              color: AppColors.textPrimary,
-            ),
-            overflow: TextOverflow.ellipsis,
-          ),
-        ),
-        Text(
-          dateStr,
-          style: const TextStyle(fontSize: 13, color: AppColors.textSecondary),
-        ),
-        const SizedBox(width: 8),
-        Text(
-          invoice.currency == 'VND'
-              ? formatVnd(invoice.amount.round())
-              : '${invoice.amount.toStringAsFixed(2)} ${invoice.currency}',
-          style: const TextStyle(
-            fontSize: 13,
-            fontWeight: FontWeight.w500,
-            color: AppColors.textPrimary,
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-class _BillingHistorySection extends StatelessWidget {
-  final List<SubscriptionInvoice> invoices;
-  final String Function(int) formatVnd;
-  final VoidCallback onManageBilling;
-  final bool portalLoading;
-
-  const _BillingHistorySection({
-    required this.invoices,
-    required this.formatVnd,
-    required this.onManageBilling,
-    required this.portalLoading,
-  });
+class _ProEnabledCard extends StatelessWidget {
+  const _ProEnabledCard();
 
   @override
   Widget build(BuildContext context) {
@@ -579,10 +283,10 @@ class _BillingHistorySection extends StatelessWidget {
         children: [
           Row(
             children: [
-              Icon(Icons.receipt_long, color: AppColors.primary500, size: 20),
+              Icon(Icons.check_circle, color: AppColors.primary500, size: 20),
               const SizedBox(width: 8),
               const Text(
-                'История платежей',
+                'План Pro активен',
                 style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.bold,
@@ -591,107 +295,11 @@ class _BillingHistorySection extends StatelessWidget {
               ),
             ],
           ),
-          const SizedBox(height: 12),
-          if (invoices.isEmpty)
-            const Padding(
-              padding: EdgeInsets.symmetric(vertical: 16),
-              child: Text(
-                'Пока нет платежей',
-                style: TextStyle(fontSize: 14, color: AppColors.textSecondary),
-                textAlign: TextAlign.center,
-              ),
-            )
-          else
-            ...invoices
-                .take(10)
-                .map(
-                  (inv) => Padding(
-                    padding: const EdgeInsets.only(bottom: 8),
-                    child: _SubscriptionInvoiceTile(
-                      invoice: inv,
-                      formatVnd: formatVnd,
-                    ),
-                  ),
-                ),
           const SizedBox(height: 8),
-          Center(
-            child: TextButton(
-              onPressed: portalLoading ? null : onManageBilling,
-              child: Text(
-                portalLoading ? 'Загрузка...' : 'ВСЕ ТРАНЗАКЦИИ',
-                style: const TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600,
-                  color: AppColors.textSecondary,
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _AccountActionsCard extends StatelessWidget {
-  final VoidCallback onManageBilling;
-  final VoidCallback? onCancel;
-  final bool portalLoading;
-  final bool cancelLoading;
-
-  const _AccountActionsCard({
-    required this.onManageBilling,
-    this.onCancel,
-    required this.portalLoading,
-    required this.cancelLoading,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: AppColors.backgroundPrimary,
-        border: Border.all(color: AppColors.borderPrimary),
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
           const Text(
-            'НАСТРОЙКИ АККАУНТА',
-            style: TextStyle(
-              fontSize: 11,
-              fontWeight: FontWeight.w600,
-              color: AppColors.textTertiary,
-              letterSpacing: 0.5,
-            ),
+            'Спасибо за подписку. Все функции Pro уже доступны в приложении.',
+            style: TextStyle(fontSize: 14, color: AppColors.textSecondary),
           ),
-          const SizedBox(height: 12),
-          FilledButton(
-            onPressed: portalLoading ? null : onManageBilling,
-            style: FilledButton.styleFrom(
-              backgroundColor: AppColors.primary500,
-              foregroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(vertical: 12),
-            ),
-            child: const Text('Управление оплатой'),
-          ),
-          if (onCancel != null) ...[
-            const SizedBox(height: 8),
-            TextButton.icon(
-              onPressed: cancelLoading ? null : onCancel,
-              icon: const Icon(
-                Icons.close,
-                size: 18,
-                color: AppColors.textSecondary,
-              ),
-              label: Text(
-                cancelLoading ? 'Отменяем...' : 'Отменить подписку',
-                style: const TextStyle(color: AppColors.textSecondary),
-              ),
-            ),
-          ],
         ],
       ),
     );
@@ -853,7 +461,7 @@ class _PlanCard extends StatelessWidget {
           ),
           const SizedBox(height: 16),
           const Text(
-            'Starter',
+            'Pro',
             style: TextStyle(
               fontSize: 24,
               fontWeight: FontWeight.bold,
@@ -862,7 +470,7 @@ class _PlanCard extends StatelessWidget {
           ),
           const SizedBox(height: 4),
           const Text(
-            'Всё необходимое для роста вашего салона',
+            'Расширенные функции для роста вашей студии',
             style: TextStyle(fontSize: 13, color: AppColors.textSecondary),
             textAlign: TextAlign.center,
           ),

@@ -46,16 +46,14 @@ class ServicesApiService {
       final raw = body is List
           ? body
           : (body is Map && body['data'] is List
-              ? body['data'] as List
-              : <dynamic>[]);
+                ? body['data'] as List
+                : <dynamic>[]);
       final out = <TrainingCategoryOption>[];
       for (final item in raw) {
         if (item is! Map) continue;
         try {
           out.add(
-            TrainingCategoryOption.fromJson(
-              Map<String, dynamic>.from(item),
-            ),
+            TrainingCategoryOption.fromJson(Map<String, dynamic>.from(item)),
           );
         } catch (e) {
           if (kDebugMode) {
@@ -63,7 +61,9 @@ class ServicesApiService {
           }
         }
       }
-      out.sort((a, b) => a.nameEn.toLowerCase().compareTo(b.nameEn.toLowerCase()));
+      out.sort(
+        (a, b) => a.nameEn.toLowerCase().compareTo(b.nameEn.toLowerCase()),
+      );
       return out;
     } on ApiException catch (e) {
       if (kDebugMode) debugPrint('[ServicesAPI] getTrainingCategories: $e');
@@ -91,11 +91,7 @@ class ServicesApiService {
         payload['trainingCategoryId'] = trainingCategoryId;
       }
       final map =
-          await ApiClient.post(
-                '/trainings',
-                accessToken,
-                body: payload,
-              )
+          await ApiClient.post('/trainings', accessToken, body: payload)
               as Map<String, dynamic>?;
       return map != null ? ServiceItem.fromJson(map) : null;
     } on ApiException catch (e) {
@@ -112,6 +108,7 @@ class ServicesApiService {
     String? description,
     double? price,
     int? duration,
+    int? trainingCategoryId,
   }) async {
     try {
       final data = <String, dynamic>{};
@@ -119,6 +116,9 @@ class ServicesApiService {
       if (description != null) data['description'] = description;
       if (price != null) data['price'] = price;
       if (duration != null) data['duration'] = duration;
+      if (trainingCategoryId != null) {
+        data['trainingCategoryId'] = trainingCategoryId;
+      }
       final map =
           await ApiClient.put(
                 '/trainings/$id',

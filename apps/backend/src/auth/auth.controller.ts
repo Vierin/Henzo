@@ -180,12 +180,12 @@ export class AuthController {
   @Get('initialize')
   async initialize(
     @Headers('authorization') authHeader: string,
-    @Query('includeSalon') includeSalon?: string,
+    @Query('includeStudio') includeStudio?: string,
   ) {
     try {
       this.logger.log('Initialize request');
       const result = await this.authService.initializeUser(authHeader, {
-        includeSalon: includeSalon === 'true',
+        includeStudio: includeStudio === 'true',
       });
       this.logger.log(`Initialize ok id=${result.user.id.slice(0, 8)}…`);
       return result;
@@ -374,10 +374,10 @@ export class AuthController {
   }
 
   @Get('favorites')
-  async getFavoriteSalons(@Headers('authorization') authHeader: string) {
+  async getFavoriteStudios(@Headers('authorization') authHeader: string) {
     try {
       const currentUser = await this.authService.getCurrentUser(authHeader);
-      const favorites = await this.authService.getFavoriteSalons(
+      const favorites = await this.authService.getFavoriteStudios(
         currentUser.user.id,
       );
 
@@ -396,57 +396,57 @@ export class AuthController {
     }
   }
 
-  @Post('favorites/:salonId')
-  async addFavoriteSalon(
+  @Post('favorites/:studioId')
+  async addFavoriteStudio(
     @Headers('authorization') authHeader: string,
-    @Body() body: { salonId: string },
+    @Param('studioId') studioId: string,
   ) {
     try {
       const currentUser = await this.authService.getCurrentUser(authHeader);
-      const updatedUser = await this.authService.addFavoriteSalon(
+      const updatedUser = await this.authService.addFavoriteStudio(
         currentUser.user.id,
-        body.salonId,
+        studioId,
       );
 
       return {
         success: true,
-        message: 'Salon added to favorites',
-        favoriteSalons: updatedUser.favoriteStudios,
+        message: 'Studio added to favorites',
+        favoriteStudios: updatedUser.favoriteStudios,
       };
     } catch (error) {
       this.logger.warn(
         `Add favorite failed: ${error instanceof Error ? error.message : String(error)}`,
       );
       throw new HttpException(
-        error.message || 'Failed to add salon to favorites',
+        error.message || 'Failed to add studio to favorites',
         HttpStatus.BAD_REQUEST,
       );
     }
   }
 
-  @Delete('favorites/:salonId')
-  async removeFavoriteSalon(
+  @Delete('favorites/:studioId')
+  async removeFavoriteStudio(
     @Headers('authorization') authHeader: string,
-    @Body() body: { salonId: string },
+    @Param('studioId') studioId: string,
   ) {
     try {
       const currentUser = await this.authService.getCurrentUser(authHeader);
-      const updatedUser = await this.authService.removeFavoriteSalon(
+      const updatedUser = await this.authService.removeFavoriteStudio(
         currentUser.user.id,
-        body.salonId,
+        studioId,
       );
 
       return {
         success: true,
-        message: 'Salon removed from favorites',
-        favoriteSalons: updatedUser.favoriteStudios,
+        message: 'Studio removed from favorites',
+        favoriteStudios: updatedUser.favoriteStudios,
       };
     } catch (error) {
       this.logger.warn(
         `Remove favorite failed: ${error instanceof Error ? error.message : String(error)}`,
       );
       throw new HttpException(
-        error.message || 'Failed to remove salon from favorites',
+        error.message || 'Failed to remove studio from favorites',
         HttpStatus.BAD_REQUEST,
       );
     }

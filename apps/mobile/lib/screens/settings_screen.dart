@@ -1,11 +1,13 @@
 import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_image_compress/flutter_image_compress.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../constants/colors.dart';
+import '../../config/app_config.dart';
 import '../../l10n/locale_provider.dart';
 import '../../models/salon.dart';
 import '../../services/auth_service.dart';
@@ -24,7 +26,10 @@ class SettingsScreen extends StatefulWidget {
 class _SettingsScreenState extends State<SettingsScreen> {
   static const int _maxStudioPhotos = 5;
   static const int _maxPhotoBytes = 3 * 1024 * 1024;
-  static const String _studioPhotosBucket = 'studio-photos';
+  String get _studioPhotosBucket {
+    final configured = (AppConfig.studioPhotosBucket).trim();
+    return configured.isEmpty ? 'studio-photos' : configured;
+  }
 
   final _salonFormKey = GlobalKey<FormState>();
   final _salonNameController = TextEditingController();
@@ -39,16 +44,34 @@ class _SettingsScreenState extends State<SettingsScreen> {
   bool _salonLoading = true;
   bool _salonSaving = false;
   bool _photosProcessing = false;
+  String? _photoProgressText;
   double? _salonLat;
   double? _salonLon;
   List<String> _studioPhotos = <String>[];
+  String _initialSnapshot = '';
 
   @override
   void initState() {
     super.initState();
+    for (final controller in [
+      _salonNameController,
+      _salonDescriptionController,
+      _salonAddressController,
+      _salonPhoneController,
+      _salonEmailController,
+      _salonFacebookController,
+      _salonInstagramController,
+    ]) {
+      controller.addListener(_onFormChanged);
+    }
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _loadSalon();
     });
+  }
+
+  void _onFormChanged() {
+    if (!mounted) return;
+    setState(() {});
   }
 
   Future<void> _loadSalon() async {
@@ -84,10 +107,23 @@ class _SettingsScreenState extends State<SettingsScreen> {
     _salonLat = s.latitude;
     _salonLon = s.longitude;
     _studioPhotos = List<String>.from(s.photos ?? <String>[]);
+    _initialSnapshot = _buildSnapshot();
+    if (mounted) setState(() {});
   }
 
   @override
   void dispose() {
+    for (final controller in [
+      _salonNameController,
+      _salonDescriptionController,
+      _salonAddressController,
+      _salonPhoneController,
+      _salonEmailController,
+      _salonFacebookController,
+      _salonInstagramController,
+    ]) {
+      controller.removeListener(_onFormChanged);
+    }
     _salonNameController.dispose();
     _salonDescriptionController.dispose();
     _salonAddressController.dispose();
@@ -98,7 +134,68 @@ class _SettingsScreenState extends State<SettingsScreen> {
     super.dispose();
   }
 
+  String _buildSnapshot() {
+    final photos = List<String>.from(_studioPhotos)..sort();
+    return [
+      _salonNameController.text.trim(),
+      _salonDescriptionController.text.trim(),
+      _salonAddressController.text.trim(),
+      _salonPhoneController.text.trim(),
+      _salonEmailController.text.trim(),
+      _salonFacebookController.text.trim(),
+      _salonInstagramController.text.trim(),
+      _salonLat?.toStringAsFixed(6) ?? '',
+      _salonLon?.toStringAsFixed(6) ?? '',
+      photos.join('|'),
+    ].join('::');
+  }
+
+  bool get _hasUnsavedChanges {
+    if (_salonLoading) return false;
+    return _buildSnapshot() != _initialSnapshot;
+  }
+
+  bool get _canSaveFromAppBar {
+    return !_salonSaving &&
+        !_salonLoading &&
+        !_photosProcessing &&
+        _hasUnsavedChanges;
+  }
+
+  Future<bool> _confirmDiscardChanges() async {
+    if (!_hasUnsavedChanges) return true;
+    final shouldLeave = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) {
+        return AlertDialog(
+          title: const Text('Изменения не сохранены'),
+          content: const Text(
+            'Вы уверены, что хотите выйти без сохранения?',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(false),
+              child: const Text('Остаться'),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.of(dialogContext).pop(true),
+              child: const Text('Выйти'),
+            ),
+          ],
+        );
+      },
+    );
+    return shouldLeave ?? false;
+  }
+
+  Future<void> _handleBackPressed() async {
+    final shouldLeave = await _confirmDiscardChanges();
+    if (!mounted || !shouldLeave) return;
+    Navigator.of(context).pop();
+  }
+
   Future<void> _saveSalon() async {
+    if (!_hasUnsavedChanges) return;
     if (!(_salonFormKey.currentState?.validate() ?? false)) return;
     final name = _salonNameController.text.trim();
     if (name.isEmpty) {
@@ -178,33 +275,45 @@ class _SettingsScreenState extends State<SettingsScreen> {
     }
 
     setState(() => _photosProcessing = true);
+    setState(() => _photoProgressText = 'Оптимизация...');
     final uploadedUrls = <String>[];
     var oversizedCount = 0;
     var failedUploadsCount = 0;
+    final uploadErrors = <String>{};
     for (final file in filesToProcess) {
       final photoBytes = await _convertToWebpBytes(file);
       if (photoBytes == null) {
         oversizedCount++;
         continue;
       }
-      final uploadedUrl = await _uploadPhotoToStorage(photoBytes);
-      if (uploadedUrl == null) {
+      if (mounted) {
+        setState(() => _photoProgressText = 'Загрузка...');
+      }
+      final upload = await _uploadPhotoToStorage(photoBytes);
+      if (upload.url == null) {
         failedUploadsCount++;
+        if (upload.error != null && upload.error!.isNotEmpty) {
+          uploadErrors.add(upload.error!);
+        }
         continue;
       }
-      uploadedUrls.add(uploadedUrl);
+      uploadedUrls.add(upload.url!);
     }
 
     if (!mounted) return;
     setState(() {
       _studioPhotos = <String>[..._studioPhotos, ...uploadedUrls];
       _photosProcessing = false;
+      _photoProgressText = null;
     });
     if (oversizedCount > 0) {
       _showSnack('$oversizedCount фото больше 3MB и не были добавлены');
     }
     if (failedUploadsCount > 0) {
       _showSnack('$failedUploadsCount фото не загрузились в storage');
+      if (uploadErrors.isNotEmpty) {
+        _showSnack(uploadErrors.first);
+      }
     }
   }
 
@@ -224,9 +333,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
     return Uint8List.fromList(compressed.isEmpty ? original : compressed);
   }
 
-  Future<String?> _uploadPhotoToStorage(Uint8List bytes) async {
+  Future<({String? url, String? error})> _uploadPhotoToStorage(
+    Uint8List bytes,
+  ) async {
     try {
-      final userId = context.read<AuthService>().user?.id ?? 'unknown';
+      final userId =
+          Supabase.instance.client.auth.currentUser?.id ??
+          context.read<AuthService>().user?.id ??
+          'unknown';
       final fileName =
           'owners/$userId/${DateTime.now().millisecondsSinceEpoch}_${_randomSuffix()}.webp';
       await Supabase.instance.client.storage
@@ -240,11 +354,24 @@ class _SettingsScreenState extends State<SettingsScreen> {
               contentType: 'image/webp',
             ),
           );
-      return Supabase.instance.client.storage
+      final publicUrl = Supabase.instance.client.storage
           .from(_studioPhotosBucket)
           .getPublicUrl(fileName);
-    } catch (_) {
-      return null;
+      return (url: publicUrl, error: null);
+    } on StorageException catch (e) {
+      if (kDebugMode) {
+        debugPrint('[StudioPhotoUpload] StorageException: ${e.message}');
+      }
+      return (
+        url: null,
+        error:
+            'Storage error: ${e.message}. Проверь bucket "$_studioPhotosBucket" и policy на insert.',
+      );
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('[StudioPhotoUpload] Unknown error: $e');
+      }
+      return (url: null, error: 'Upload error: $e');
     }
   }
 
@@ -307,24 +434,47 @@ class _SettingsScreenState extends State<SettingsScreen> {
         const pageBg = Color(0xFFF8F9FA);
         const maxContentWidth = 680.0;
 
-        return Scaffold(
-          backgroundColor: pageBg,
-          appBar: AppBar(
-            title: Text(locale.t('profileForm.settings')),
-            backgroundColor: AppColors.backgroundPrimary,
-            foregroundColor: AppColors.textPrimary,
-            elevation: 0,
-          ),
-          body: GestureDetector(
-            behavior: HitTestBehavior.translucent,
-            onTap: () => FocusManager.instance.primaryFocus?.unfocus(),
-            child: Center(
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: maxContentWidth),
-                child: ListView(
-                  padding: const EdgeInsets.all(12),
-                  children: [
-                    const SizedBox(height: 8),
+        return PopScope(
+          canPop: !_hasUnsavedChanges,
+          onPopInvoked: (didPop) async {
+            if (didPop) return;
+            await _handleBackPressed();
+          },
+          child: Scaffold(
+            backgroundColor: pageBg,
+            appBar: AppBar(
+              leading: IconButton(
+                icon: const Icon(Icons.arrow_back),
+                onPressed: _handleBackPressed,
+              ),
+              title: Text(locale.t('profileForm.settings')),
+              backgroundColor: AppColors.backgroundPrimary,
+              foregroundColor: AppColors.textPrimary,
+              elevation: 0,
+              actions: [
+                TextButton(
+                  onPressed: _canSaveFromAppBar ? _saveSalon : null,
+                  child: _salonSaving
+                      ? const SizedBox(
+                          width: 18,
+                          height: 18,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : const Text('Сохранить'),
+                ),
+                const SizedBox(width: 8),
+              ],
+            ),
+            body: GestureDetector(
+              behavior: HitTestBehavior.translucent,
+              onTap: () => FocusManager.instance.primaryFocus?.unfocus(),
+              child: Center(
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: maxContentWidth),
+                  child: ListView(
+                    padding: const EdgeInsets.all(12),
+                    children: [
+                      const SizedBox(height: 8),
 
                     // Секции салона в одной форме
                     _salonLoading
@@ -442,36 +592,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                           ),
                                         ),
                                       ),
-                                      const SizedBox(height: 20),
-                                      SizedBox(
-                                        height: 44,
-                                        child: FilledButton(
-                                          onPressed: _salonSaving
-                                              ? null
-                                              : _saveSalon,
-                                          style: FilledButton.styleFrom(
-                                            backgroundColor:
-                                                AppColors.primary500,
-                                          ),
-                                          child: _salonSaving
-                                              ? const SizedBox(
-                                                  height: 22,
-                                                  width: 22,
-                                                  child:
-                                                      CircularProgressIndicator(
-                                                        strokeWidth: 2,
-                                                        color: Colors.white,
-                                                      ),
-                                                )
-                                              : Text(
-                                                  _salon == null
-                                                      ? locale.t(
-                                                          'profileForm.addSalon',
-                                                        )
-                                                      : locale.t('common.save'),
-                                                ),
-                                        ),
-                                      ),
                                     ],
                                   ),
                                 ),
@@ -483,7 +603,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                         CrossAxisAlignment.stretch,
                                     children: [
                                       Text(
-                                        'До $_maxStudioPhotos фото, максимум 3MB на фото. Автоконвертация: WebP, ширина до 1000px.',
+                                        'До $_maxStudioPhotos фото, максимум 3MB на фото.',
                                         style: const TextStyle(
                                           color: AppColors.textSecondary,
                                           fontSize: 13,
@@ -510,6 +630,29 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                             ),
                                         ],
                                       ),
+                                      if (_photosProcessing &&
+                                          _photoProgressText != null) ...[
+                                        const SizedBox(height: 10),
+                                        Row(
+                                          children: [
+                                            const SizedBox(
+                                              width: 16,
+                                              height: 16,
+                                              child: CircularProgressIndicator(
+                                                strokeWidth: 2,
+                                              ),
+                                            ),
+                                            const SizedBox(width: 8),
+                                            Text(
+                                              _photoProgressText!,
+                                              style: const TextStyle(
+                                                color: AppColors.textSecondary,
+                                                fontSize: 13,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ],
                                     ],
                                   ),
                                 ),
@@ -580,7 +723,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                             ),
                           ),
                     const SizedBox(height: 24),
-                  ],
+                    ],
+                  ),
                 ),
               ),
             ),

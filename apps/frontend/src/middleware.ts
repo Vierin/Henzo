@@ -61,9 +61,18 @@ export async function middleware(req: NextRequest) {
 	}
 
 	const pathWithoutLocale = stripLocaleFromPath(pathname);
+
+	// Legacy booking URLs used /salon/{slug}; public page lives at /studio/{slug}.
+	if (pathWithoutLocale === '/salon' || pathWithoutLocale.startsWith('/salon/')) {
+		const targetLocale = urlLocale ?? defaultLocale;
+		const redirectUrl = req.nextUrl.clone();
+		const newPath = pathWithoutLocale.replace(/^\/salon/, '/studio');
+		redirectUrl.pathname = `/${targetLocale}${newPath}`;
+		return NextResponse.redirect(redirectUrl, 308);
+	}
+
 	const disabledPrefixes = [
 		'/salons',
-		'/salon',
 		'/category',
 		'/map',
 		'/business',

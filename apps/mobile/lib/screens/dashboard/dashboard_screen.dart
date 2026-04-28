@@ -5,16 +5,20 @@ import '../../l10n/locale_provider.dart';
 import '../../utils/show_api_error.dart';
 import '../../models/salon.dart';
 import '../../services/auth_service.dart';
+import '../../services/api_client.dart';
 import '../../services/cache/salon_cache.dart';
 import '../../services/dashboard_api_service.dart';
 import '../../services/notifications_store.dart';
 import '../../widgets/dashboard/dashboard_header_pill.dart';
 import '../../widgets/dashboard/dashboard_link_card.dart';
+import '../../widgets/dashboard/owner_checklist_card.dart';
 import '../../widgets/dashboard/dashboard_setup_card.dart';
 import '../../widgets/owner_training_session_card.dart';
 import '../app_settings_screen.dart';
 import '../notifications_screen.dart';
+import '../online_booking_screen.dart';
 import '../salon_setup_screen.dart';
+import '../settings_screen.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -25,8 +29,10 @@ class DashboardScreen extends StatefulWidget {
 
 class _DashboardScreenState extends State<DashboardScreen> {
   Salon? _salon;
+  StudioOnboardingChecklist? _checklist;
   List<OwnerTrainingSession> _todaySessions = [];
   bool _isLoading = false;
+  bool _isPublishing = false;
 
   @override
   void initState() {
@@ -54,6 +60,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
       final from = DateTime(now.year, now.month, now.day);
       final to = from.add(const Duration(days: 1));
       List<OwnerTrainingSession> sessions = [];
+      StudioOnboardingChecklist? checklist;
       try {
         sessions = await DashboardApiService.getOwnerTrainingSessions(
           token,
@@ -65,9 +72,15 @@ class _DashboardScreenState extends State<DashboardScreen> {
         // Daily sessions are non-blocking for dashboard bootstrap.
         sessions = [];
       }
+      if (salon != null) {
+        checklist = await DashboardApiService.getCurrentStudioOnboardingChecklist(
+          token,
+        );
+      }
       if (mounted) {
         setState(() {
           _salon = salon;
+          _checklist = checklist;
           _todaySessions = sessions;
           _isLoading = false;
         });
@@ -75,6 +88,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     } catch (e) {
       if (mounted) {
         setState(() {
+          _checklist = null;
           _todaySessions = [];
           _isLoading = false;
         });
@@ -85,6 +99,62 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   Future<void> _handleRefresh() async {
     await _loadData();
+  }
+
+  Future<void> _openTrainingSetup() async {
+    await Navigator.of(context).pushNamed('/trainings/new');
+    await _loadData();
+  }
+
+  Future<void> _openSettings() async {
+    await Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => const SettingsScreen()),
+    );
+    await _loadData();
+  }
+
+  Future<void> _openBookingSettings() async {
+    await Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => const OnlineBookingScreen()),
+    );
+    await _loadData();
+  }
+
+  String _humanizeChecklistStep(String key) {
+    switch (key) {
+      case 'hasTraining':
+        return 'create first training';
+      case 'hasPhoto':
+        return 'add studio photo';
+      default:
+        return key;
+    }
+  }
+
+  Future<void> _publishStudio() async {
+    final token = context.read<AuthService>().accessToken;
+    final salon = _salon;
+    if (token == null || token.isEmpty || salon == null) return;
+    if (_isPublishing) return;
+    setState(() => _isPublishing = true);
+    try {
+      await DashboardApiService.publishStudio(token, salon.id);
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Studio is now active')),
+      );
+      await _loadData();
+    } on ApiException catch (e) {
+      if (!mounted) return;
+      showApiError(context, e);
+    } catch (e) {
+      if (!mounted) return;
+      showApiError(context, e);
+    } finally {
+      if (mounted) setState(() => _isPublishing = false);
+    }
   }
 
   String? _ownerTrainerFallback() {
@@ -346,7 +416,32 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     ),
                   )
                 else
-                  _buildDailySchedule(),
+                  Column(
+                    children: [
+                      if (_checklist != null) ...[
+                        OwnerChecklistCard(
+                          hasTraining: _checklist!.hasTraining.completed,
+                          hasPhoto: _checklist!.hasPhoto.completed,
+                          bookingWindowConfigured:
+                              _checklist!.bookingWindowConfigured.completed,
+                          contactsConfigured:
+                              _checklist!.contactsConfigured.completed,
+                          canPublish: _checklist!.canPublish,
+                          isPublishing: _isPublishing,
+                          missingRequiredSteps: _checklist!.missingRequiredSteps
+                              .map(_humanizeChecklistStep)
+                              .toList(),
+                          onCreateTrainingTap: _openTrainingSetup,
+                          onAddPhotoTap: _openSettings,
+                          onBookingWindowTap: _openBookingSettings,
+                          onContactsTap: _openSettings,
+                          onPublishTap: _publishStudio,
+                        ),
+                        const SizedBox(height: 12),
+                      ],
+                      _buildDailySchedule(),
+                    ],
+                  ),
                 const SizedBox(height: 24),
               ],
             ),

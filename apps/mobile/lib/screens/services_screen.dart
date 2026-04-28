@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import '../../constants/colors.dart';
 import '../../l10n/locale_provider.dart';
 import '../../models/salon.dart';
+import '../../models/training_category_option.dart';
 import '../../utils/currency_format.dart';
 import '../../models/service_item.dart';
 import '../../services/auth_service.dart';
@@ -47,6 +48,19 @@ class _ServicesScreenState extends State<ServicesScreen> {
   final _searchController = TextEditingController();
   String _searchQuery = '';
   String? _selectedCategory;
+
+  String _formatThousandsDots(int value) {
+    final raw = value.abs().toString();
+    final chars = raw.split('').reversed.toList();
+    final parts = <String>[];
+    for (var i = 0; i < chars.length; i++) {
+      parts.add(chars[i]);
+      if ((i + 1) % 3 == 0 && i + 1 < chars.length) {
+        parts.add('.');
+      }
+    }
+    return parts.reversed.join();
+  }
 
   @override
   void initState() {
@@ -122,8 +136,10 @@ class _ServicesScreenState extends State<ServicesScreen> {
     if (minutes == null) return '—';
     final h = minutes ~/ 60;
     final m = minutes % 60;
-    if (h > 0 && m > 0) return '${h}${locale.t('servicesScreen.hourShort')} ${m}${locale.t('servicesScreen.minuteShort')}';
-    if (h > 0) return '${h}${locale.t('servicesScreen.hourShort')} 0${locale.t('servicesScreen.minuteShort')}';
+    if (h > 0 && m > 0)
+      return '${h}${locale.t('servicesScreen.hourShort')} ${m}${locale.t('servicesScreen.minuteShort')}';
+    if (h > 0)
+      return '${h}${locale.t('servicesScreen.hourShort')} 0${locale.t('servicesScreen.minuteShort')}';
     return '${m}${locale.t('servicesScreen.minuteShort')}';
   }
 
@@ -186,10 +202,18 @@ class _ServicesScreenState extends State<ServicesScreen> {
                 final labels = {
                   ServicesSort.nameAz: locale.t('servicesScreen.sortNameAsc'),
                   ServicesSort.nameZa: locale.t('servicesScreen.sortNameDesc'),
-                  ServicesSort.priceAsc: locale.t('servicesScreen.sortPriceAsc'),
-                  ServicesSort.priceDesc: locale.t('servicesScreen.sortPriceDesc'),
-                  ServicesSort.durationAsc: locale.t('servicesScreen.sortDurationAsc'),
-                  ServicesSort.durationDesc: locale.t('servicesScreen.sortDurationDesc'),
+                  ServicesSort.priceAsc: locale.t(
+                    'servicesScreen.sortPriceAsc',
+                  ),
+                  ServicesSort.priceDesc: locale.t(
+                    'servicesScreen.sortPriceDesc',
+                  ),
+                  ServicesSort.durationAsc: locale.t(
+                    'servicesScreen.sortDurationAsc',
+                  ),
+                  ServicesSort.durationDesc: locale.t(
+                    'servicesScreen.sortDurationDesc',
+                  ),
                 };
                 return ListTile(
                   title: Text(labels[value]!),
@@ -215,23 +239,20 @@ class _ServicesScreenState extends State<ServicesScreen> {
   }
 
   Future<void> _deleteService(ServiceItem item) async {
-    final locale = context.read<LocaleProvider>();
     final confirm = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: Text(locale.t('servicesScreen.deleteServiceTitle')),
-        content: Text(
-          '${locale.t('servicesScreen.deleteServiceQuestionPrefix')} «${item.displayName}»?',
-        ),
+        title: const Text('Удалить тренировку'),
+        content: Text('Удалить тренировку «${item.displayName}»?'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
-            child: Text(locale.t('common.cancel')),
+            child: const Text('Отмена'),
           ),
           TextButton(
             onPressed: () => Navigator.pop(ctx, true),
             style: TextButton.styleFrom(foregroundColor: Colors.red),
-            child: Text(locale.t('common.delete')),
+            child: const Text('Удалить'),
           ),
         ],
       ),
@@ -247,15 +268,15 @@ class _ServicesScreenState extends State<ServicesScreen> {
         context.read<ServicesStaffCache>().invalidateServices(_salon?.id);
         await _loadData();
         ScaffoldMessenger.maybeOf(context)?.showSnackBar(
-          SnackBar(
-            content: Text(locale.t('servicesScreen.serviceDeleted')),
+          const SnackBar(
+            content: Text('Тренировка удалена'),
             backgroundColor: Colors.green,
           ),
         );
       } else {
         ScaffoldMessenger.maybeOf(context)?.showSnackBar(
-          SnackBar(
-            content: Text(locale.t('common.deleteFailed')),
+          const SnackBar(
+            content: Text('Не удалось удалить тренировку'),
             backgroundColor: Colors.red,
           ),
         );
@@ -286,26 +307,49 @@ class _ServicesScreenState extends State<ServicesScreen> {
   }
 
   Future<void> _openAddTrainingPage() async {
-    final added = await Navigator.of(context).push<bool>(
-      MaterialPageRoute(builder: (_) => const AddTrainingScreen()),
-    );
+    final added = await Navigator.of(
+      context,
+    ).push<bool>(MaterialPageRoute(builder: (_) => const AddTrainingScreen()));
     if (added == true && mounted) {
       await _loadData();
     }
   }
 
-  void _openEditDialog(ServiceItem item) {
+  void _showCategoryInfo() {
+    showDialog<void>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Информация'),
+        content: const Text(
+          'Если нет категории для вашей услуги, пожалуйста сообщите нам об этом, и мы добавим ее как можно скорее.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: const Text('Понятно'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _openEditDialog(ServiceItem item) async {
+    final token = context.read<AuthService>().accessToken;
+    if (token == null || token.isEmpty) return;
     final locale = context.read<LocaleProvider>();
     final nameController = TextEditingController(text: item.name);
-    final descriptionController = TextEditingController(
-      text: item.description ?? '',
-    );
     final priceController = TextEditingController(
-      text: item.price != null ? (item.price!.toStringAsFixed(0)) : '0',
+      text: _formatThousandsDots((item.price ?? 0).round()),
     );
     final durationController = TextEditingController(
       text: (item.duration ?? 30).toString(),
     );
+    final categories = await ServicesApiService.getTrainingCategories(token);
+    int? selectedCategoryId = item.trainingCategoryId;
+    if (selectedCategoryId != null &&
+        !categories.any((c) => c.id == selectedCategoryId)) {
+      selectedCategoryId = null;
+    }
     showDialog(
       context: context,
       builder: (ctx) => Dialog(
@@ -319,7 +363,7 @@ class _ServicesScreenState extends State<ServicesScreen> {
               Padding(
                 padding: const EdgeInsets.fromLTRB(12, 16, 12, 16),
                 child: Text(
-                  locale.t('servicesScreen.editServiceTitle'),
+                  'Редактировать тренировку',
                   style: TextStyle(
                     fontSize: 22,
                     fontWeight: FontWeight.bold,
@@ -334,7 +378,7 @@ class _ServicesScreenState extends State<ServicesScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        locale.t('servicesScreen.serviceName'),
+                        'Название тренировки',
                         style: TextStyle(
                           fontSize: 14,
                           fontWeight: FontWeight.w500,
@@ -345,7 +389,7 @@ class _ServicesScreenState extends State<ServicesScreen> {
                       TextField(
                         controller: nameController,
                         decoration: InputDecoration(
-                          hintText: locale.t('servicesScreen.serviceName'),
+                          hintText: 'Например: Vinyasa Flow',
                           filled: true,
                           fillColor: AppColors.backgroundPrimary,
                           border: OutlineInputBorder(
@@ -364,139 +408,103 @@ class _ServicesScreenState extends State<ServicesScreen> {
                         ),
                       ),
                       const SizedBox(height: 16),
-                      Text(
-                        locale.t('common.description'),
-                        style: TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w500,
-                          color: AppColors.textPrimary,
-                        ),
-                      ),
-                      const SizedBox(height: 6),
-                      TextField(
-                        controller: descriptionController,
-                        maxLines: 3,
-                        decoration: InputDecoration(
-                          hintText: locale.t('servicesScreen.serviceDescription'),
-                          filled: true,
-                          fillColor: AppColors.backgroundPrimary,
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          enabledBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
-                            borderSide: const BorderSide(
-                              color: AppColors.borderPrimary,
-                            ),
-                          ),
-                          contentPadding: const EdgeInsets.symmetric(
-                            horizontal: 14,
-                            vertical: 12,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-                      Text(
-                        locale.t('servicesScreen.category'),
-                        style: TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w500,
-                          color: AppColors.textPrimary,
-                        ),
-                      ),
-                      const SizedBox(height: 6),
-                      if (item.categoryName != null &&
-                          item.categoryName!.trim().isNotEmpty)
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 12,
-                            vertical: 10,
-                          ),
-                          decoration: BoxDecoration(
-                            color: AppColors.backgroundPrimary,
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(color: AppColors.borderPrimary),
-                          ),
-                          child: Row(
-                            children: [
-                              Expanded(
-                                child: Text(
-                                  item.categoryName ?? '',
-                                  style: const TextStyle(
-                                    fontSize: 14,
-                                    color: AppColors.textPrimary,
-                                  ),
-                                ),
-                              ),
-                              IconButton(
-                                icon: const Icon(Icons.close, size: 20),
-                                onPressed: () {},
-                                style: IconButton.styleFrom(
-                                  padding: EdgeInsets.zero,
-                                  minimumSize: const Size(32, 32),
-                                ),
-                              ),
-                            ],
-                          ),
-                        )
-                      else
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 14,
-                            vertical: 12,
-                          ),
-                          decoration: BoxDecoration(
-                            color: AppColors.backgroundPrimary,
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(color: AppColors.borderPrimary),
-                          ),
-                          child: Text(
-                            locale.t('common.notSelected'),
+                      Row(
+                        children: [
+                          Text(
+                            'Категория',
                             style: TextStyle(
                               fontSize: 14,
-                              color: AppColors.textSecondary,
+                              fontWeight: FontWeight.w500,
+                              color: AppColors.textPrimary,
                             ),
                           ),
-                        ),
-                      const SizedBox(height: 16),
-                      Text(
-                        locale.t('servicesScreen.staffOptional'),
-                        style: TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w500,
-                          color: AppColors.textPrimary,
-                        ),
+                          const SizedBox(width: 6),
+                          InkWell(
+                            borderRadius: BorderRadius.circular(12),
+                            onTap: _showCategoryInfo,
+                            child: const Padding(
+                              padding: EdgeInsets.all(2),
+                              child: Icon(
+                                Icons.info_outline,
+                                size: 16,
+                                color: AppColors.textSecondary,
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
                       const SizedBox(height: 6),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 14,
-                          vertical: 12,
-                        ),
-                        decoration: BoxDecoration(
-                          color: AppColors.backgroundPrimary,
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: AppColors.borderPrimary),
-                        ),
-                        child: Text(
-                          locale.t('servicesScreen.selectStaff'),
-                          style: TextStyle(
-                            fontSize: 14,
-                            color: AppColors.textSecondary,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        locale.t('servicesScreen.selectStaffHint'),
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: AppColors.textSecondary,
-                        ),
+                      StatefulBuilder(
+                        builder: (context, setLocalState) {
+                          return DropdownButtonFormField<int>(
+                            isExpanded: true,
+                            isDense: true,
+                            value: selectedCategoryId,
+                            dropdownColor: AppColors.backgroundPrimary,
+                            borderRadius: BorderRadius.circular(12),
+                            menuMaxHeight: 320,
+                            icon: const Icon(
+                              Icons.keyboard_arrow_down_rounded,
+                              color: AppColors.textSecondary,
+                            ),
+                            style: const TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w500,
+                              color: AppColors.textPrimary,
+                            ),
+                            hint: const Text(
+                              'Выберите категорию',
+                              style: TextStyle(
+                                color: AppColors.textSecondary,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                            items: categories
+                                .map(
+                                  (TrainingCategoryOption c) =>
+                                      DropdownMenuItem<int>(
+                                        value: c.id,
+                                        child: Padding(
+                                          padding: const EdgeInsets.symmetric(
+                                            vertical: 2,
+                                          ),
+                                          child: Text(
+                                            c.label(locale.localeCode),
+                                            overflow: TextOverflow.ellipsis,
+                                            maxLines: 1,
+                                          ),
+                                        ),
+                                      ),
+                                )
+                                .toList(),
+                            onChanged: categories.isEmpty
+                                ? null
+                                : (v) => setLocalState(
+                                    () => selectedCategoryId = v,
+                                  ),
+                            decoration: InputDecoration(
+                              filled: true,
+                              fillColor: AppColors.backgroundPrimary,
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              enabledBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                                borderSide: const BorderSide(
+                                  color: AppColors.borderPrimary,
+                                ),
+                              ),
+                              contentPadding: const EdgeInsets.symmetric(
+                                horizontal: 14,
+                                vertical: 12,
+                              ),
+                            ),
+                          );
+                        },
                       ),
                       const SizedBox(height: 16),
                       Text(
-                        locale.t('servicesScreen.durationMinutes'),
+                        'Длительность (мин)',
                         style: TextStyle(
                           fontSize: 14,
                           fontWeight: FontWeight.w500,
@@ -527,7 +535,7 @@ class _ServicesScreenState extends State<ServicesScreen> {
                       ),
                       const SizedBox(height: 16),
                       Text(
-                        locale.t('servicesScreen.priceDong'),
+                        'Цена',
                         style: TextStyle(
                           fontSize: 14,
                           fontWeight: FontWeight.w500,
@@ -537,9 +545,7 @@ class _ServicesScreenState extends State<ServicesScreen> {
                       const SizedBox(height: 6),
                       TextField(
                         controller: priceController,
-                        keyboardType: const TextInputType.numberWithOptions(
-                          decimal: true,
-                        ),
+                        keyboardType: TextInputType.number,
                         decoration: InputDecoration(
                           filled: true,
                           fillColor: AppColors.backgroundPrimary,
@@ -558,14 +564,6 @@ class _ServicesScreenState extends State<ServicesScreen> {
                           ),
                         ),
                       ),
-                      const SizedBox(height: 4),
-                      Text(
-                        locale.t('servicesScreen.numbersOnlyHint'),
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: AppColors.textSecondary,
-                        ),
-                      ),
                       const SizedBox(height: 24),
                       Row(
                         mainAxisAlignment: MainAxisAlignment.end,
@@ -582,21 +580,21 @@ class _ServicesScreenState extends State<ServicesScreen> {
                                 ScaffoldMessenger.maybeOf(
                                   context,
                                 )?.showSnackBar(
-                                  SnackBar(
+                                  const SnackBar(
                                     content: Text(
-                                      locale.t('servicesScreen.enterServiceName'),
+                                      'Введите название тренировки',
                                     ),
                                   ),
                                 );
                                 return;
                               }
-                              final description = descriptionController.text
-                                  .trim();
                               final price =
                                   double.tryParse(
-                                    priceController.text.replaceAll(',', '.'),
+                                    priceController.text
+                                        .trim()
+                                        .replaceAll('.', '')
+                                        .replaceAll(',', '.'),
                                   ) ??
-                                  item.price ??
                                   0.0;
                               final duration =
                                   int.tryParse(durationController.text) ??
@@ -608,30 +606,22 @@ class _ServicesScreenState extends State<ServicesScreen> {
                                 )?.showSnackBar(
                                   SnackBar(
                                     content: Text(
-                                      locale.t(
-                                        'servicesScreen.priceDurationMustBePositive',
-                                      ),
+                                      'Цена и длительность должны быть > 0',
                                     ),
                                   ),
                                 );
                                 return;
                               }
                               Navigator.pop(ctx);
-                              final token = context
-                                  .read<AuthService>()
-                                  .accessToken;
-                              if (token == null) return;
                               setState(() => _isActionLoading = true);
                               try {
                                 final updated = await ServicesApiService.update(
                                   token,
                                   item.id,
                                   name: name,
-                                  description: description.isEmpty
-                                      ? null
-                                      : description,
                                   price: price,
                                   duration: duration,
+                                  trainingCategoryId: selectedCategoryId,
                                 );
                                 if (!mounted) return;
                                 if (updated != null) {
@@ -828,9 +818,7 @@ class _ServicesScreenState extends State<ServicesScreen> {
                           TextField(
                             controller: _searchController,
                             decoration: InputDecoration(
-                              hintText: locale.t(
-                                'servicesScreen.searchByName',
-                              ),
+                              hintText: locale.t('servicesScreen.searchByName'),
                               filled: true,
                               fillColor: AppColors.backgroundPrimary,
                               border: OutlineInputBorder(
@@ -1008,9 +996,7 @@ class _ServiceCard extends StatelessWidget {
                             decoration: BoxDecoration(
                               color: AppColors.primary50,
                               borderRadius: BorderRadius.circular(8),
-                              border: Border.all(
-                                color: AppColors.primary200,
-                              ),
+                              border: Border.all(color: AppColors.primary200),
                             ),
                             child: Text(
                               tag,

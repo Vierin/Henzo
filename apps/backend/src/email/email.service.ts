@@ -136,48 +136,6 @@ export class EmailService {
     }
   }
 
-  async sendBookingPending(
-    clientEmail: string,
-    clientName: string,
-    bookingData: Parameters<ClientBookingEmailService['sendBookingPending']>[2],
-  ) {
-    try {
-      const result = await this.clientBooking.sendBookingPending(
-        clientEmail,
-        clientName,
-        bookingData,
-      );
-      console.log(
-        '✅ Booking pending notification sent successfully via Brevo',
-      );
-      return result;
-    } catch (error) {
-      console.error('❌ Error sending booking pending notification:', error);
-      throw error;
-    }
-  }
-
-  async sendBookingRejection(
-    clientEmail: string,
-    clientName: string,
-    bookingData: Parameters<
-      ClientBookingEmailService['sendBookingRejection']
-    >[2],
-  ) {
-    try {
-      const result = await this.clientBooking.sendBookingRejection(
-        clientEmail,
-        clientName,
-        bookingData,
-      );
-      console.log('✅ Booking rejection sent successfully via Brevo');
-      return result;
-    } catch (error) {
-      console.error('❌ Error sending booking rejection:', error);
-      throw error;
-    }
-  }
-
   async testConnection() {
     try {
       if (!this.delivery.hasApiKey) {

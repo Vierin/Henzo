@@ -10,6 +10,7 @@ import { nanoid } from 'nanoid';
 @Injectable()
 export class StudiosService {
   private static readonly MAX_STUDIO_PHOTOS = 5;
+  private static readonly DEFAULT_BOOKING_PERIOD_DAYS = 14;
 
   constructor(
     @Inject(PrismaService) private prisma: any,
@@ -67,6 +68,128 @@ export class StudiosService {
       throw new Error('Invalid photo value. Use uploaded storage public URL.');
     }
     return photos;
+  }
+
+  private hasAtLeastOnePhoto(input: unknown): boolean {
+    return (
+      Array.isArray(input) &&
+      input.some(
+        (photo) => typeof photo === 'string' && photo.trim().length > 0,
+      )
+    );
+  }
+
+  private hasContactInfo(studio: {
+    phone?: string | null;
+    email?: string | null;
+    website?: string | null;
+    instagram?: string | null;
+  }): boolean {
+    return [studio.phone, studio.email, studio.website, studio.instagram].some(
+      (value) => typeof value === 'string' && value.trim().length > 0,
+    );
+  }
+
+  private getBookingPeriodDays(reminderSettings: unknown): number | null {
+    if (!reminderSettings || typeof reminderSettings !== 'object') return null;
+    const raw = (reminderSettings as Record<string, unknown>)[
+      'bookingPeriodDays'
+    ];
+    if (typeof raw === 'number' && Number.isFinite(raw)) {
+      return Math.floor(raw);
+    }
+    if (typeof raw === 'string') {
+      const parsed = Number.parseInt(raw, 10);
+      if (!Number.isNaN(parsed)) return parsed;
+    }
+    return null;
+  }
+
+  async getStudioOnboardingChecklist(studioId: string) {
+    const studioRepo = this.prisma.studio ?? this.prisma.Studio;
+    if (!studioRepo) {
+      throw new Error('Studio repository is not available');
+    }
+
+    const studio = await studioRepo.findUnique({
+      where: { id: studioId },
+      select: {
+        id: true,
+        status: true,
+        photos: true,
+        phone: true,
+        email: true,
+        website: true,
+        instagram: true,
+        reminderSettings: true,
+        _count: {
+          select: {
+            Training: true,
+          },
+        },
+      },
+    });
+
+    if (!studio) {
+      throw new Error('Studio not found');
+    }
+
+    const hasTraining = (studio._count?.Training ?? 0) > 0;
+    const hasPhoto = this.hasAtLeastOnePhoto(studio.photos);
+    const bookingPeriodDays = this.getBookingPeriodDays(
+      studio.reminderSettings,
+    );
+    const bookingWindowConfigured =
+      bookingPeriodDays != null &&
+      bookingPeriodDays !== StudiosService.DEFAULT_BOOKING_PERIOD_DAYS;
+    const contactsConfigured = this.hasContactInfo(studio);
+
+    const missingRequiredSteps: string[] = [];
+    if (!hasTraining) missingRequiredSteps.push('hasTraining');
+    if (!hasPhoto) missingRequiredSteps.push('hasPhoto');
+
+    const requiredCompleted = missingRequiredSteps.length === 0;
+
+    return {
+      studioId: studio.id,
+      status: studio.status,
+      requiredCompleted,
+      canPublish: requiredCompleted,
+      missingRequiredSteps,
+      steps: {
+        hasTraining: {
+          required: true,
+          completed: hasTraining,
+        },
+        hasPhoto: {
+          required: true,
+          completed: hasPhoto,
+        },
+        bookingWindowConfigured: {
+          required: false,
+          completed: bookingWindowConfigured,
+        },
+        contactsConfigured: {
+          required: false,
+          completed: contactsConfigured,
+        },
+      },
+    };
+  }
+
+  async getCurrentUserStudioOnboardingChecklist(userId: string) {
+    const studioRepo = this.prisma.studio ?? this.prisma.Studio;
+    if (!studioRepo) {
+      throw new Error('Studio repository is not available');
+    }
+    const studio = await studioRepo.findFirst({
+      where: { ownerId: userId },
+      select: { id: true },
+    });
+    if (!studio) {
+      throw new Error('Studio not found');
+    }
+    return this.getStudioOnboardingChecklist(studio.id);
   }
 
   async suggestStudios(params: { search: string; limit: number }) {
@@ -153,6 +276,42 @@ export class StudiosService {
                 },
               },
             },
+          },
+          TrainingSession: {
+            where: {
+              status: 'ACTIVE',
+              startsAt: {
+                gte: new Date(),
+              },
+            },
+            select: {
+              id: true,
+              startsAt: true,
+              endsAt: true,
+              capacity: true,
+              bookedCount: true,
+              Training: {
+                select: {
+                  id: true,
+                  name: true,
+                  nameEn: true,
+                  nameVi: true,
+                  nameRu: true,
+                  duration: true,
+                  price: true,
+                },
+              },
+              Trainer: {
+                select: {
+                  id: true,
+                  name: true,
+                },
+              },
+            },
+            orderBy: {
+              startsAt: 'asc',
+            },
+            take: 20,
           },
           Review: {
             take: 10, // Limit reviews to avoid huge payload
@@ -787,7 +946,7 @@ export class StudiosService {
 
   async getCurrentUserStudio(userId: string) {
     console.log('🔍 Looking for studio for user:', userId);
-    const studioRepo = this.prisma.studio ?? this.prisma.salon;
+    const studioRepo = this.prisma.studio;
     const studio = studioRepo
       ? await studioRepo.findFirst({
           where: { ownerId: userId },
@@ -1003,12 +1162,8 @@ export class StudiosService {
           },
         });
 
-        // Create FREEMIUM subscription with 3-month trial for the new Studio
+        // Create default FREE subscription for each new studio.
         const now = new Date();
-        const trialEndDate = new Date();
-        trialEndDate.setMonth(now.getMonth() + 3); // 3 months trial
-        const oneMonthFromTrialEnd = new Date(trialEndDate);
-        oneMonthFromTrialEnd.setMonth(trialEndDate.getMonth() + 1);
 
         await tx.subscription.create({
           data: {
@@ -1016,10 +1171,7 @@ export class StudiosService {
             type: 'FREEMIUM',
             status: 'ACTIVE',
             startDate: now,
-            endDate: oneMonthFromTrialEnd,
-            nextPaymentDate: oneMonthFromTrialEnd,
-            trialEndDate: trialEndDate,
-            amount: 0.0, // Free during trial
+            amount: 0.0,
             updatedAt: now,
           },
         });
@@ -1092,7 +1244,7 @@ export class StudiosService {
       (result as any).services = services;
 
       console.log(
-        `✅ Created Studio "${result.name}" with FREEMIUM subscription and 3-month trial`,
+        `✅ Created Studio "${result.name}" with default FREEMIUM subscription`,
       );
       return result;
     } catch (error) {
@@ -1452,6 +1604,36 @@ export class StudiosService {
               .filter(Boolean),
           ),
         ),
+        upcomingClasses: ((Studio as any).TrainingSession || []).map(
+          (session: any) => ({
+            id: session.id,
+            startsAt: session.startsAt
+              ? new Date(session.startsAt).toISOString()
+              : null,
+            endsAt: session.endsAt
+              ? new Date(session.endsAt).toISOString()
+              : null,
+            capacity: session.capacity,
+            bookedCount: session.bookedCount,
+            training: session.Training
+              ? {
+                  id: session.Training.id,
+                  name: session.Training.name,
+                  nameEn: session.Training.nameEn,
+                  nameVi: session.Training.nameVi,
+                  nameRu: session.Training.nameRu,
+                  duration: session.Training.duration,
+                  price: session.Training.price,
+                }
+              : null,
+            trainer: session.Trainer
+              ? {
+                  id: session.Trainer.id,
+                  name: session.Trainer.name,
+                }
+              : null,
+          }),
+        ),
       };
 
       return transformedStudio as any;
@@ -1658,6 +1840,128 @@ export class StudiosService {
     }
   }
 
+  /** Same payload shape as findBySlug but without owner linkage, staff/reviewer PII, or reminder settings. */
+  async findPublicBySlug(slug: string) {
+    const full = await this.findBySlug(slug);
+    if (!full) return null;
+    const studio = full as Record<string, unknown>;
+    delete studio.ownerId;
+    delete studio.reminderSettings;
+    const staff = studio.staff as Array<Record<string, unknown>> | undefined;
+    if (Array.isArray(staff)) {
+      studio.staff = staff.map((s) => ({
+        id: s.id,
+        name: s.name,
+        accessLevel: s.accessLevel,
+      }));
+    }
+    const reviews = studio.reviews as Array<{
+      user?: { id?: unknown; name?: unknown; email?: unknown };
+      [k: string]: unknown;
+    }> | null;
+    if (Array.isArray(reviews)) {
+      studio.reviews = reviews.map((r) => ({
+        ...r,
+        user: r.user ? { id: r.user.id, name: r.user.name } : null,
+      }));
+    }
+    return studio as any;
+  }
+
+  async findPublicScheduleById(
+    id: string,
+    params?: { fromIso?: string; toIso?: string; limit?: number },
+  ) {
+    if (!id || id.trim().length === 0) {
+      throw new Error('Studio ID is required');
+    }
+
+    const studio = await this.prisma.Studio.findUnique({
+      where: { id },
+      select: { id: true, status: true, timezone: true },
+    });
+    if (!studio || studio.status !== 'ACTIVE') {
+      return [];
+    }
+
+    const fromDate = params?.fromIso ? new Date(params.fromIso) : new Date();
+    if (Number.isNaN(fromDate.getTime())) {
+      throw new Error('Invalid from date');
+    }
+    const toDate = params?.toIso
+      ? new Date(params.toIso)
+      : new Date(fromDate.getTime() + 1000 * 60 * 60 * 24 * 60);
+    if (Number.isNaN(toDate.getTime())) {
+      throw new Error('Invalid to date');
+    }
+    const take = Math.min(Math.max(params?.limit ?? 300, 1), 500);
+
+    const sessions = await this.prisma.trainingSession.findMany({
+      where: {
+        studioId: id,
+        status: 'ACTIVE',
+        startsAt: {
+          gte: fromDate,
+          lte: toDate,
+        },
+      },
+      select: {
+        id: true,
+        startsAt: true,
+        endsAt: true,
+        status: true,
+        capacity: true,
+        bookedCount: true,
+        Training: {
+          select: {
+            id: true,
+            name: true,
+            nameEn: true,
+            nameVi: true,
+            nameRu: true,
+            duration: true,
+            price: true,
+          },
+        },
+        Trainer: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
+      },
+      orderBy: { startsAt: 'asc' },
+      take,
+    });
+
+    return sessions.map((s) => ({
+      id: s.id,
+      startsAt: s.startsAt.toISOString(),
+      endsAt: s.endsAt.toISOString(),
+      status: s.status,
+      capacity: s.capacity,
+      bookedCount: s.bookedCount,
+      training: s.Training
+        ? {
+            id: s.Training.id,
+            name: s.Training.name,
+            nameEn: s.Training.nameEn,
+            nameVi: s.Training.nameVi,
+            nameRu: s.Training.nameRu,
+            duration: s.Training.duration,
+            price: s.Training.price,
+          }
+        : null,
+      trainer: s.Trainer
+        ? {
+            id: s.Trainer.id,
+            name: s.Trainer.name,
+          }
+        : null,
+      timezone: studio.timezone,
+    }));
+  }
+
   // New optimized methods for better performance
 
   async findStudiosPreview(params: {
@@ -1767,7 +2071,7 @@ export class StudiosService {
     });
 
     // Get unique categories from trainings (only need category names and IDs)
-    const categoryData = await this.prisma.service.findMany({
+    const categoryData = await this.prisma.training.findMany({
       where: {
         studioId: { in: StudioIds },
         trainingCategoryId: { not: null },
@@ -1907,7 +2211,7 @@ export class StudiosService {
     const { lat, lng, radius, limit } = params;
 
     // If no coordinates provided, return featured Studios
-    if (!lat || !lng) {
+    if (lat == null || lng == null) {
       return this.findFeaturedStudios(limit);
     }
 
@@ -1957,6 +2261,12 @@ export class StudiosService {
       .sort((a, b) => a.distance - b.distance)
       .slice(0, limit);
 
+    // Fallback for MVP: if no Studios in selected radius, return featured list
+    // so client map/home are not empty for new regions with sparse data.
+    if (StudiosWithDistance.length === 0) {
+      return this.findFeaturedStudios(limit);
+    }
+
     return StudiosWithDistance;
   }
 
@@ -1970,7 +2280,7 @@ export class StudiosService {
         where: { studioId: StudioId },
         select: { rating: true },
       }),
-      this.prisma.service.findMany({
+      this.prisma.training.findMany({
         where: { studioId: StudioId },
         select: { id: true },
       }),

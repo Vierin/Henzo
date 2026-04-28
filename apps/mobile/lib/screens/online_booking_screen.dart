@@ -121,7 +121,7 @@ class _OnlineBookingScreenState extends State<OnlineBookingScreen> {
     final salon = _salon;
     if (salon == null) return AppConfig.webUrl;
     final slug = salon.slug ?? salon.id;
-    return '${AppConfig.webUrl}/salon/$slug';
+    return '${AppConfig.webUrl}/studio/$slug';
   }
 
   Future<void> _openBookingLink() async {
@@ -330,8 +330,8 @@ class _OnlineBookingScreenState extends State<OnlineBookingScreen> {
                     onTap: _saving ? null : _openBookingPeriodModal,
                     child: Ink(
                       padding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 10,
+                        horizontal: 14,
+                        vertical: 12,
                       ),
                       decoration: BoxDecoration(
                         color: AppColors.backgroundSecondary,
@@ -341,7 +341,14 @@ class _OnlineBookingScreenState extends State<OnlineBookingScreen> {
                       child: Row(
                         children: [
                           const Expanded(
-                            child: SizedBox.shrink(),
+                            child: Text(
+                              'Период бронирования',
+                              style: TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w600,
+                                color: AppColors.textPrimary,
+                              ),
+                            ),
                           ),
                           Column(
                             crossAxisAlignment: CrossAxisAlignment.end,
@@ -364,6 +371,12 @@ class _OnlineBookingScreenState extends State<OnlineBookingScreen> {
                               ),
                             ],
                           ),
+                          const SizedBox(width: 10),
+                          const Icon(
+                            Icons.chevron_right,
+                            size: 20,
+                            color: AppColors.textSecondary,
+                          ),
                         ],
                       ),
                     ),
@@ -378,8 +391,8 @@ class _OnlineBookingScreenState extends State<OnlineBookingScreen> {
                     onTap: _openBookingLink,
                     child: Ink(
                       padding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 14,
+                        horizontal: 14,
+                        vertical: 13,
                       ),
                       decoration: BoxDecoration(
                         color: AppColors.backgroundSecondary,
@@ -397,9 +410,10 @@ class _OnlineBookingScreenState extends State<OnlineBookingScreen> {
                             ),
                           ),
                           Spacer(),
+                          SizedBox(width: 8),
                           Icon(
                             Icons.open_in_new,
-                            size: 22,
+                            size: 20,
                             color: AppColors.primary500,
                           ),
                         ],

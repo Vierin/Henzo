@@ -108,10 +108,7 @@ class _AddTrainingScreenState extends State<AddTrainingScreen> {
     return int.tryParse(raw) ?? 0;
   }
 
-  InputDecoration _step1Decoration({
-    required bool invalid,
-    String? hintText,
-  }) {
+  InputDecoration _step1Decoration({required bool invalid, String? hintText}) {
     final danger = AppColors.error600;
     final normal = AppColors.borderPrimary;
     return InputDecoration(
@@ -147,8 +144,7 @@ class _AddTrainingScreenState extends State<AddTrainingScreen> {
     final capacity = int.tryParse(_capacityController.text.trim()) ?? 0;
     final capacityOk = capacity > 0;
     final priceOk = _parsePriceDigits() > 0;
-    final categoryOk =
-        _categories.isEmpty || _selectedCategoryId != null;
+    final categoryOk = _categories.isEmpty || _selectedCategoryId != null;
 
     setState(() {
       _step1NameError = !nameOk;
@@ -164,9 +160,7 @@ class _AddTrainingScreenState extends State<AddTrainingScreen> {
 
     ScaffoldMessenger.maybeOf(context)?.showSnackBar(
       const SnackBar(
-        content: Text(
-          'Проверьте поля, отмеченные красной рамкой',
-        ),
+        content: Text('Проверьте поля, отмеченные красной рамкой'),
       ),
     );
     return false;
@@ -187,8 +181,7 @@ class _AddTrainingScreenState extends State<AddTrainingScreen> {
         _step1PriceError = false;
       }
       final cid = found.trainingCategoryId;
-      if (cid != null &&
-          _categories.any((c) => c.id == cid)) {
+      if (cid != null && _categories.any((c) => c.id == cid)) {
         _selectedCategoryId = cid;
         _step1CategoryError = false;
       }
@@ -217,9 +210,31 @@ class _AddTrainingScreenState extends State<AddTrainingScreen> {
     return days;
   }
 
+  void _showCategoryInfo() {
+    showDialog<void>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Информация'),
+        content: const Text(
+          'Если нет категории для вашей услуги, пожалуйста сообщите нам об этом, и мы добавим ее как можно скорее.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: const Text('Понятно'),
+          ),
+        ],
+      ),
+    );
+  }
+
   List<DateTime> _buildRecurringPreview() {
     if (!_isRecurring || _recurringDays.isEmpty) return [];
-    final start = DateTime(_sessionDate.year, _sessionDate.month, _sessionDate.day);
+    final start = DateTime(
+      _sessionDate.year,
+      _sessionDate.month,
+      _sessionDate.day,
+    );
     final end = start.add(Duration(days: _bookingPeriodDays()));
     final sortedDays = _recurringDays.toList()..sort();
     final dates = <DateTime>[];
@@ -228,7 +243,13 @@ class _AddTrainingScreenState extends State<AddTrainingScreen> {
       final weekday = _weekdayFromDate(day);
       if (!sortedDays.contains(weekday)) continue;
       final t = _recurringDayTimes[weekday] ?? _sessionTime;
-      final candidate = DateTime(day.year, day.month, day.day, t.hour, t.minute);
+      final candidate = DateTime(
+        day.year,
+        day.month,
+        day.day,
+        t.hour,
+        t.minute,
+      );
       if (!candidate.isAfter(end)) {
         dates.add(candidate);
       }
@@ -249,13 +270,9 @@ class _AddTrainingScreenState extends State<AddTrainingScreen> {
     try {
       final studio = await salonCache.getSalon(token);
       final list = studio != null
-          ? await servicesStaffCache.getServicesForSalon(
-              token,
-              studio.id,
-            )
+          ? await servicesStaffCache.getServicesForSalon(token, studio.id)
           : <ServiceItem>[];
-      final categories =
-          await ServicesApiService.getTrainingCategories(token);
+      final categories = await ServicesApiService.getTrainingCategories(token);
       if (!mounted) return;
       setState(() {
         _studio = studio;
@@ -378,7 +395,11 @@ class _AddTrainingScreenState extends State<AddTrainingScreen> {
     return Scaffold(
       backgroundColor: AppColors.backgroundSecondary,
       appBar: AppBar(
-        title: Text(_step == 1 ? 'Добавить тренировку • 1/2' : 'Добавить тренировку • 2/2'),
+        title: Text(
+          _step == 1
+              ? 'Добавить тренировку • 1/2'
+              : 'Добавить тренировку • 2/2',
+        ),
         backgroundColor: AppColors.backgroundPrimary,
         foregroundColor: AppColors.textPrimary,
       ),
@@ -390,528 +411,600 @@ class _AddTrainingScreenState extends State<AddTrainingScreen> {
               padding: const EdgeInsets.all(16),
               children: _step == 1
                   ? [
-                const Text(
-                  'Название',
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                    color: AppColors.textPrimary,
-                  ),
-                ),
-                const SizedBox(height: 6),
-                if (_existing.isEmpty)
-                  TextField(
-                    controller: _nameController,
-                    onChanged: (_) =>
-                        setState(() => _step1NameError = false),
-                    decoration: _step1Decoration(
-                      invalid: _step1NameError,
-                      hintText: 'Например: Vinyasa Flow',
-                    ),
-                  )
-                else
-                  RawAutocomplete<ServiceItem>(
-                    textEditingController: _nameController,
-                    focusNode: _nameFocusNode,
-                    displayStringForOption: (option) => option.displayName,
-                    optionsBuilder: (value) {
-                      final q = value.text.trim().toLowerCase();
-                      final sorted = [..._existing]
-                        ..sort((a, b) => a.displayName
-                            .toLowerCase()
-                            .compareTo(b.displayName.toLowerCase()));
-                      if (q.isEmpty) return sorted.take(8);
-                      return sorted
-                          .where(
-                            (e) =>
-                                e.displayName.toLowerCase().contains(q),
-                          )
-                          .take(8);
-                    },
-                    onSelected: _applyExistingTrainingSelection,
-                    fieldViewBuilder: (context, ctrl, focusNode, onSubmit) {
-                      return TextField(
-                        controller: ctrl,
-                        focusNode: focusNode,
-                        onChanged: (_) =>
-                            setState(() => _step1NameError = false),
-                        decoration: _step1Decoration(
-                          invalid: _step1NameError,
-                          hintText: 'Например: Vinyasa Flow',
+                      const Text(
+                        'Название',
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.textPrimary,
                         ),
-                      );
-                    },
-                    optionsViewBuilder: (context, onSelected, options) {
-                      return Align(
-                        alignment: Alignment.topLeft,
-                        child: Material(
-                          elevation: 4,
-                          borderRadius: BorderRadius.circular(12),
-                          child: ConstrainedBox(
-                            constraints: BoxConstraints(
-                              maxHeight:
-                                  MediaQuery.of(context).size.height * 0.4,
-                              maxWidth:
-                                  MediaQuery.of(context).size.width - 32,
-                            ),
-                            child: ListView(
-                              shrinkWrap: true,
-                              padding: EdgeInsets.zero,
-                              children: options.map((e) {
-                                final sub = _suggestionSubtitle(e);
-                                return ListTile(
-                                  dense: true,
-                                  title: Text(
-                                    e.displayName,
-                                    maxLines: 2,
-                                    overflow: TextOverflow.ellipsis,
+                      ),
+                      const SizedBox(height: 6),
+                      if (_existing.isEmpty)
+                        TextField(
+                          controller: _nameController,
+                          onChanged: (_) =>
+                              setState(() => _step1NameError = false),
+                          decoration: _step1Decoration(
+                            invalid: _step1NameError,
+                            hintText: 'Например: Vinyasa Flow',
+                          ),
+                        )
+                      else
+                        RawAutocomplete<ServiceItem>(
+                          textEditingController: _nameController,
+                          focusNode: _nameFocusNode,
+                          displayStringForOption: (option) =>
+                              option.displayName,
+                          optionsBuilder: (value) {
+                            final q = value.text.trim().toLowerCase();
+                            final sorted = [..._existing]
+                              ..sort(
+                                (a, b) => a.displayName.toLowerCase().compareTo(
+                                  b.displayName.toLowerCase(),
+                                ),
+                              );
+                            if (q.isEmpty) return sorted.take(8);
+                            return sorted
+                                .where(
+                                  (e) =>
+                                      e.displayName.toLowerCase().contains(q),
+                                )
+                                .take(8);
+                          },
+                          onSelected: _applyExistingTrainingSelection,
+                          fieldViewBuilder:
+                              (context, ctrl, focusNode, onSubmit) {
+                                return TextField(
+                                  controller: ctrl,
+                                  focusNode: focusNode,
+                                  onChanged: (_) =>
+                                      setState(() => _step1NameError = false),
+                                  decoration: _step1Decoration(
+                                    invalid: _step1NameError,
+                                    hintText: 'Например: Vinyasa Flow',
                                   ),
-                                  subtitle: Text(
-                                    sub,
+                                );
+                              },
+                          optionsViewBuilder: (context, onSelected, options) {
+                            return Align(
+                              alignment: Alignment.topLeft,
+                              child: Material(
+                                elevation: 4,
+                                borderRadius: BorderRadius.circular(12),
+                                child: ConstrainedBox(
+                                  constraints: BoxConstraints(
+                                    maxHeight:
+                                        MediaQuery.of(context).size.height *
+                                        0.4,
+                                    maxWidth:
+                                        MediaQuery.of(context).size.width - 32,
+                                  ),
+                                  child: ListView(
+                                    shrinkWrap: true,
+                                    padding: EdgeInsets.zero,
+                                    children: options.map((e) {
+                                      final sub = _suggestionSubtitle(e);
+                                      return ListTile(
+                                        dense: true,
+                                        title: Text(
+                                          e.displayName,
+                                          maxLines: 2,
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                        subtitle: Text(
+                                          sub,
+                                          style: TextStyle(
+                                            fontSize: 12,
+                                            color: AppColors.textSecondary,
+                                            fontWeight: FontWeight.w500,
+                                          ),
+                                        ),
+                                        onTap: () => onSelected(e),
+                                      );
+                                    }).toList(),
+                                  ),
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+                      if (_existing.isEmpty) ...[
+                        const SizedBox(height: 8),
+                        const Text(
+                          'У этой студии пока нет тренировок. Введите название новой.',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: AppColors.textSecondary,
+                          ),
+                        ),
+                      ],
+                      const SizedBox(height: 16),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                const Text(
+                                  'Длительность (мин)',
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w600,
+                                    color: AppColors.textPrimary,
+                                  ),
+                                ),
+                                const SizedBox(height: 6),
+                                TextField(
+                                  controller: _durationController,
+                                  keyboardType: TextInputType.number,
+                                  onChanged: (_) => setState(
+                                    () => _step1DurationError = false,
+                                  ),
+                                  decoration: _step1Decoration(
+                                    invalid: _step1DurationError,
+                                    hintText: '60',
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                const Text(
+                                  'Вместительность',
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w600,
+                                    color: AppColors.textPrimary,
+                                  ),
+                                ),
+                                const SizedBox(height: 6),
+                                TextField(
+                                  controller: _capacityController,
+                                  keyboardType: TextInputType.number,
+                                  onChanged: (_) => setState(
+                                    () => _step1CapacityError = false,
+                                  ),
+                                  decoration: _step1Decoration(
+                                    invalid: _step1CapacityError,
+                                    hintText: '10',
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 16),
+                      Consumer<LocaleProvider>(
+                        builder: (context, locale, _) {
+                          return Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                children: [
+                                  const Text(
+                                    'Категория',
                                     style: TextStyle(
-                                      fontSize: 12,
-                                      color: AppColors.textSecondary,
-                                      fontWeight: FontWeight.w500,
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w600,
+                                      color: AppColors.textPrimary,
                                     ),
                                   ),
-                                  onTap: () => onSelected(e),
-                                );
-                              }).toList(),
+                                  const SizedBox(width: 6),
+                                  InkWell(
+                                    borderRadius: BorderRadius.circular(12),
+                                    onTap: _showCategoryInfo,
+                                    child: const Padding(
+                                      padding: EdgeInsets.all(2),
+                                      child: Icon(
+                                        Icons.info_outline,
+                                        size: 16,
+                                        color: AppColors.textSecondary,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 6),
+                              DropdownButtonFormField<int>(
+                                isExpanded: true,
+                                isDense: true,
+                                value: _selectedCategoryId,
+                                dropdownColor: AppColors.backgroundPrimary,
+                                borderRadius: BorderRadius.circular(12),
+                                menuMaxHeight: 320,
+                                icon: const Icon(
+                                  Icons.keyboard_arrow_down_rounded,
+                                  color: AppColors.textSecondary,
+                                ),
+                                style: const TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w500,
+                                  color: AppColors.textPrimary,
+                                ),
+                                hint: const Text(
+                                  'Выберите категорию',
+                                  style: TextStyle(
+                                    color: AppColors.textSecondary,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                                decoration: _step1Decoration(
+                                  invalid: _step1CategoryError,
+                                ),
+                                items: _categories
+                                    .map(
+                                      (c) => DropdownMenuItem<int>(
+                                        value: c.id,
+                                        child: Padding(
+                                          padding: const EdgeInsets.symmetric(
+                                            vertical: 2,
+                                          ),
+                                          child: Text(
+                                            c.label(locale.localeCode),
+                                            overflow: TextOverflow.ellipsis,
+                                            maxLines: 1,
+                                          ),
+                                        ),
+                                      ),
+                                    )
+                                    .toList(),
+                                onChanged: _categories.isEmpty
+                                    ? null
+                                    : (v) => setState(() {
+                                        _selectedCategoryId = v;
+                                        _step1CategoryError = false;
+                                      }),
+                              ),
+                            ],
+                          );
+                        },
+                      ),
+                      const SizedBox(height: 16),
+                      const Text(
+                        'Цена',
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.textPrimary,
+                        ),
+                      ),
+                      const SizedBox(height: 6),
+                      TextField(
+                        controller: _priceController,
+                        keyboardType: TextInputType.number,
+                        inputFormatters: [_VndThousandsFormatter()],
+                        onChanged: (_) =>
+                            setState(() => _step1PriceError = false),
+                        decoration: _step1Decoration(
+                          invalid: _step1PriceError,
+                          hintText: '100.000',
+                        ),
+                      ),
+                      const SizedBox(height: 24),
+                      SizedBox(
+                        height: 46,
+                        child: FilledButton(
+                          onPressed: () {
+                            if (!_validateStep1()) return;
+                            setState(() => _step = 2);
+                          },
+                          style: FilledButton.styleFrom(
+                            backgroundColor: AppColors.primary500,
+                          ),
+                          child: const Text('Далее'),
+                        ),
+                      ),
+                    ]
+                  : [
+                      const Text(
+                        'Дата тренировки',
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.textPrimary,
+                        ),
+                      ),
+                      const SizedBox(height: 6),
+                      InkWell(
+                        onTap: () async {
+                          final picked = await showDatePicker(
+                            context: context,
+                            initialDate: _sessionDate,
+                            firstDate: DateTime.now().subtract(
+                              const Duration(days: 1),
+                            ),
+                            lastDate: DateTime.now().add(
+                              const Duration(days: 365),
+                            ),
+                          );
+                          if (picked != null && mounted) {
+                            setState(() => _sessionDate = picked);
+                          }
+                        },
+                        borderRadius: BorderRadius.circular(12),
+                        child: InputDecorator(
+                          decoration: InputDecoration(
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                          ),
+                          child: Text(
+                            '${_sessionDate.day.toString().padLeft(2, '0')}.${_sessionDate.month.toString().padLeft(2, '0')}.${_sessionDate.year}',
+                            style: const TextStyle(
+                              fontSize: 14,
+                              color: AppColors.textPrimary,
+                              fontWeight: FontWeight.w600,
                             ),
                           ),
                         ),
-                      );
-                    },
-                  ),
-                if (_existing.isEmpty) ...[
-                  const SizedBox(height: 8),
-                  const Text(
-                    'У этой студии пока нет тренировок. Введите название новой.',
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: AppColors.textSecondary,
-                    ),
-                  ),
-                ],
-                const SizedBox(height: 16),
-                Row(
-                  children: [
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Text(
-                            'Длительность (мин)',
-                            style: TextStyle(
-                              fontSize: 14,
-                              fontWeight: FontWeight.w600,
-                              color: AppColors.textPrimary,
-                            ),
-                          ),
-                          const SizedBox(height: 6),
-                          TextField(
-                            controller: _durationController,
-                            keyboardType: TextInputType.number,
-                            onChanged: (_) =>
-                                setState(() => _step1DurationError = false),
-                            decoration: _step1Decoration(
-                              invalid: _step1DurationError,
-                              hintText: '60',
-                            ),
-                          ),
-                        ],
                       ),
-                    ),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Text(
-                            'Вместительность',
-                            style: TextStyle(
-                              fontSize: 14,
-                              fontWeight: FontWeight.w600,
-                              color: AppColors.textPrimary,
-                            ),
-                          ),
-                          const SizedBox(height: 6),
-                          TextField(
-                            controller: _capacityController,
-                            keyboardType: TextInputType.number,
-                            onChanged: (_) =>
-                                setState(() => _step1CapacityError = false),
-                            decoration: _step1Decoration(
-                              invalid: _step1CapacityError,
-                              hintText: '10',
-                            ),
-                          ),
-                        ],
+                      const SizedBox(height: 16),
+                      const Text(
+                        'Время тренировки',
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.textPrimary,
+                        ),
                       ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 16),
-                Consumer<LocaleProvider>(
-                  builder: (context, locale, _) {
-                    return Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
+                      const SizedBox(height: 6),
+                      InkWell(
+                        onTap: () async {
+                          final picked = await showTimePicker(
+                            context: context,
+                            initialTime: _sessionTime,
+                          );
+                          if (picked != null && mounted) {
+                            setState(() => _sessionTime = picked);
+                          }
+                        },
+                        borderRadius: BorderRadius.circular(12),
+                        child: InputDecorator(
+                          decoration: InputDecoration(
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                          ),
+                          child: Text(
+                            _timeToHm(_sessionTime),
+                            style: const TextStyle(
+                              fontSize: 14,
+                              color: AppColors.textPrimary,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      SwitchListTile(
+                        contentPadding: EdgeInsets.zero,
+                        value: _isRecurring,
+                        onChanged: (v) => setState(() => _isRecurring = v),
+                        title: const Text(
+                          'Повторяемая тренировка',
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w700,
+                            color: AppColors.textPrimary,
+                          ),
+                        ),
+                        subtitle: const Text(
+                          'Если включено, занятия создаются по дням недели',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: AppColors.textSecondary,
+                          ),
+                        ),
+                      ),
+                      if (_isRecurring) ...[
+                        const SizedBox(height: 8),
                         const Text(
-                          'Категория',
+                          'Дни недели',
                           style: TextStyle(
                             fontSize: 14,
                             fontWeight: FontWeight.w600,
                             color: AppColors.textPrimary,
                           ),
                         ),
-                        const SizedBox(height: 6),
-                        DropdownButtonFormField<int>(
-                          isExpanded: true,
-                          value: _selectedCategoryId,
-                          hint: const Text('Выберите категорию'),
-                          decoration: _step1Decoration(
-                            invalid: _step1CategoryError,
-                          ),
-                          items: _categories
-                              .map(
-                                (c) => DropdownMenuItem<int>(
-                                  value: c.id,
+                        const SizedBox(height: 8),
+                        Wrap(
+                          spacing: 8,
+                          runSpacing: 8,
+                          children: List.generate(7, (index) {
+                            final day = index + 1;
+                            final selected = _recurringDays.contains(day);
+                            return FilterChip(
+                              label: Text(_weekdayLabel(day)),
+                              selected: selected,
+                              onSelected: (v) {
+                                setState(() {
+                                  if (v) {
+                                    _recurringDays.add(day);
+                                    _recurringDayTimes[day] =
+                                        _recurringDayTimes[day] ?? _sessionTime;
+                                  } else {
+                                    _recurringDays.remove(day);
+                                    _recurringDayTimes.remove(day);
+                                  }
+                                });
+                              },
+                            );
+                          }),
+                        ),
+                        const SizedBox(height: 16),
+                        ...(_recurringDays.toList()..sort()).map((day) {
+                          final time = _recurringDayTimes[day] ?? _sessionTime;
+                          return Padding(
+                            padding: const EdgeInsets.only(bottom: 8),
+                            child: Row(
+                              children: [
+                                SizedBox(
+                                  width: 48,
                                   child: Text(
-                                    c.label(locale.localeCode),
-                                    overflow: TextOverflow.ellipsis,
+                                    _weekdayLabel(day),
+                                    style: const TextStyle(
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.w700,
+                                      color: AppColors.textPrimary,
+                                    ),
                                   ),
                                 ),
-                              )
-                              .toList(),
-                          onChanged: _categories.isEmpty
-                              ? null
-                              : (v) => setState(() {
-                                    _selectedCategoryId = v;
-                                    _step1CategoryError = false;
-                                  }),
+                                const SizedBox(width: 8),
+                                Expanded(
+                                  child: InkWell(
+                                    onTap: () async {
+                                      final picked = await showTimePicker(
+                                        context: context,
+                                        initialTime: time,
+                                      );
+                                      if (picked != null && mounted) {
+                                        setState(
+                                          () =>
+                                              _recurringDayTimes[day] = picked,
+                                        );
+                                      }
+                                    },
+                                    borderRadius: BorderRadius.circular(12),
+                                    child: InputDecorator(
+                                      decoration: InputDecoration(
+                                        border: OutlineInputBorder(
+                                          borderRadius: BorderRadius.circular(
+                                            12,
+                                          ),
+                                        ),
+                                      ),
+                                      child: Text(
+                                        _timeToHm(time),
+                                        style: const TextStyle(
+                                          fontSize: 14,
+                                          color: AppColors.textPrimary,
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          );
+                        }),
+                        const SizedBox(height: 8),
+                        Builder(
+                          builder: (_) {
+                            final preview = _buildRecurringPreview();
+                            final firstThree = preview
+                                .take(3)
+                                .map((d) {
+                                  final dd = d.day.toString().padLeft(2, '0');
+                                  final mm = d.month.toString().padLeft(2, '0');
+                                  final hh = d.hour.toString().padLeft(2, '0');
+                                  final min = d.minute.toString().padLeft(
+                                    2,
+                                    '0',
+                                  );
+                                  return '$dd.$mm $hh:$min';
+                                })
+                                .join(', ');
+                            return Text(
+                              preview.isEmpty
+                                  ? 'Будет создано 0 занятий'
+                                  : 'Будет создано ${preview.length} занятий. Ближайшие: $firstThree',
+                              style: const TextStyle(
+                                fontSize: 12,
+                                color: AppColors.textSecondary,
+                              ),
+                            );
+                          },
                         ),
                       ],
-                    );
-                  },
-                ),
-                const SizedBox(height: 16),
-                const Text(
-                  'Цена',
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                    color: AppColors.textPrimary,
-                  ),
-                ),
-                const SizedBox(height: 6),
-                TextField(
-                  controller: _priceController,
-                  keyboardType: TextInputType.number,
-                  inputFormatters: [_VndThousandsFormatter()],
-                  onChanged: (_) =>
-                      setState(() => _step1PriceError = false),
-                  decoration: _step1Decoration(
-                    invalid: _step1PriceError,
-                    hintText: '100.000',
-                  ),
-                ),
-                const SizedBox(height: 24),
-                SizedBox(
-                  height: 46,
-                  child: FilledButton(
-                    onPressed: () {
-                      if (!_validateStep1()) return;
-                      setState(() => _step = 2);
-                    },
-                    style: FilledButton.styleFrom(
-                      backgroundColor: AppColors.primary500,
-                    ),
-                    child: const Text('Далее'),
-                  ),
-                ),
-              ]
-                  : [
-                const Text(
-                  'Дата тренировки',
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                    color: AppColors.textPrimary,
-                  ),
-                ),
-                const SizedBox(height: 6),
-                InkWell(
-                  onTap: () async {
-                    final picked = await showDatePicker(
-                      context: context,
-                      initialDate: _sessionDate,
-                      firstDate: DateTime.now().subtract(const Duration(days: 1)),
-                      lastDate: DateTime.now().add(const Duration(days: 365)),
-                    );
-                    if (picked != null && mounted) {
-                      setState(() => _sessionDate = picked);
-                    }
-                  },
-                  borderRadius: BorderRadius.circular(12),
-                  child: InputDecorator(
-                    decoration: InputDecoration(
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
+                      const SizedBox(height: 16),
+                      const Text(
+                        'Тренер',
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.textPrimary,
+                        ),
                       ),
-                    ),
-                    child: Text(
-                      '${_sessionDate.day.toString().padLeft(2, '0')}.${_sessionDate.month.toString().padLeft(2, '0')}.${_sessionDate.year}',
-                      style: const TextStyle(
-                        fontSize: 14,
-                        color: AppColors.textPrimary,
-                        fontWeight: FontWeight.w600,
+                      const SizedBox(height: 6),
+                      InputDecorator(
+                        decoration: InputDecoration(
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          enabledBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: const BorderSide(
+                              color: AppColors.borderPrimary,
+                            ),
+                          ),
+                          filled: true,
+                          fillColor: AppColors.backgroundPrimary,
+                          contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 14,
+                          ),
+                        ),
+                        child: Text(
+                          ownerName,
+                          style: const TextStyle(
+                            fontSize: 14,
+                            color: AppColors.textPrimary,
+                          ),
+                        ),
                       ),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 16),
-                const Text(
-                  'Время тренировки',
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                    color: AppColors.textPrimary,
-                  ),
-                ),
-                const SizedBox(height: 6),
-                InkWell(
-                  onTap: () async {
-                    final picked = await showTimePicker(
-                      context: context,
-                      initialTime: _sessionTime,
-                    );
-                    if (picked != null && mounted) {
-                      setState(() => _sessionTime = picked);
-                    }
-                  },
-                  borderRadius: BorderRadius.circular(12),
-                  child: InputDecorator(
-                    decoration: InputDecoration(
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
+                      const SizedBox(height: 8),
+                      const Text(
+                        'Для добавления тренеров выкупите подписку Pro',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: AppColors.textSecondary,
+                        ),
                       ),
-                    ),
-                    child: Text(
-                      _timeToHm(_sessionTime),
-                      style: const TextStyle(
-                        fontSize: 14,
-                        color: AppColors.textPrimary,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 16),
-                SwitchListTile(
-                  contentPadding: EdgeInsets.zero,
-                  value: _isRecurring,
-                  onChanged: (v) => setState(() => _isRecurring = v),
-                  title: const Text(
-                    'Повторяемая тренировка',
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w700,
-                      color: AppColors.textPrimary,
-                    ),
-                  ),
-                  subtitle: const Text(
-                    'Если включено, занятия создаются по дням недели',
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: AppColors.textSecondary,
-                    ),
-                  ),
-                ),
-                if (_isRecurring) ...[
-                  const SizedBox(height: 8),
-                  const Text(
-                    'Дни недели',
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
-                      color: AppColors.textPrimary,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Wrap(
-                    spacing: 8,
-                    runSpacing: 8,
-                    children: List.generate(7, (index) {
-                      final day = index + 1;
-                      final selected = _recurringDays.contains(day);
-                      return FilterChip(
-                        label: Text(_weekdayLabel(day)),
-                        selected: selected,
-                        onSelected: (v) {
-                          setState(() {
-                            if (v) {
-                              _recurringDays.add(day);
-                              _recurringDayTimes[day] = _recurringDayTimes[day] ?? _sessionTime;
-                            } else {
-                              _recurringDays.remove(day);
-                              _recurringDayTimes.remove(day);
-                            }
-                          });
-                        },
-                      );
-                    }),
-                  ),
-                  const SizedBox(height: 16),
-                  ...(_recurringDays.toList()..sort()).map((day) {
-                    final time = _recurringDayTimes[day] ?? _sessionTime;
-                    return Padding(
-                      padding: const EdgeInsets.only(bottom: 8),
-                      child: Row(
+                      const SizedBox(height: 24),
+                      Row(
                         children: [
-                          SizedBox(
-                            width: 48,
-                            child: Text(
-                              _weekdayLabel(day),
-                              style: const TextStyle(
-                                fontSize: 13,
-                                fontWeight: FontWeight.w700,
-                                color: AppColors.textPrimary,
+                          Expanded(
+                            child: SizedBox(
+                              height: 46,
+                              child: OutlinedButton(
+                                onPressed: _saving
+                                    ? null
+                                    : () => setState(() => _step = 1),
+                                child: const Text('Назад'),
                               ),
                             ),
                           ),
-                          const SizedBox(width: 8),
+                          const SizedBox(width: 10),
                           Expanded(
-                            child: InkWell(
-                              onTap: () async {
-                                final picked = await showTimePicker(
-                                  context: context,
-                                  initialTime: time,
-                                );
-                                if (picked != null && mounted) {
-                                  setState(() => _recurringDayTimes[day] = picked);
-                                }
-                              },
-                              borderRadius: BorderRadius.circular(12),
-                              child: InputDecorator(
-                                decoration: InputDecoration(
-                                  border: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(12),
-                                  ),
+                            child: SizedBox(
+                              height: 46,
+                              child: FilledButton(
+                                onPressed: _saving ? null : _save,
+                                style: FilledButton.styleFrom(
+                                  backgroundColor: AppColors.primary500,
                                 ),
-                                child: Text(
-                                  _timeToHm(time),
-                                  style: const TextStyle(
-                                    fontSize: 14,
-                                    color: AppColors.textPrimary,
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
+                                child: _saving
+                                    ? const SizedBox(
+                                        height: 18,
+                                        width: 18,
+                                        child: CircularProgressIndicator(
+                                          strokeWidth: 2,
+                                        ),
+                                      )
+                                    : const Text('Сохранить'),
                               ),
                             ),
                           ),
                         ],
                       ),
-                    );
-                  }),
-                  const SizedBox(height: 8),
-                  Builder(
-                    builder: (_) {
-                      final preview = _buildRecurringPreview();
-                      final firstThree = preview.take(3).map((d) {
-                        final dd = d.day.toString().padLeft(2, '0');
-                        final mm = d.month.toString().padLeft(2, '0');
-                        final hh = d.hour.toString().padLeft(2, '0');
-                        final min = d.minute.toString().padLeft(2, '0');
-                        return '$dd.$mm $hh:$min';
-                      }).join(', ');
-                      return Text(
-                        preview.isEmpty
-                            ? 'Будет создано 0 занятий'
-                            : 'Будет создано ${preview.length} занятий. Ближайшие: $firstThree',
-                        style: const TextStyle(
-                          fontSize: 12,
-                          color: AppColors.textSecondary,
-                        ),
-                      );
-                    },
-                  ),
-                ],
-                const SizedBox(height: 16),
-                const Text(
-                  'Тренер',
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                    color: AppColors.textPrimary,
-                  ),
-                ),
-                const SizedBox(height: 6),
-                InputDecorator(
-                  decoration: InputDecoration(
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    enabledBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: const BorderSide(
-                        color: AppColors.borderPrimary,
-                      ),
-                    ),
-                    filled: true,
-                    fillColor: AppColors.backgroundPrimary,
-                    contentPadding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 14,
-                    ),
-                  ),
-                  child: Text(
-                    ownerName,
-                    style: const TextStyle(
-                      fontSize: 14,
-                      color: AppColors.textPrimary,
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 8),
-                const Text(
-                  'Для добавления тренеров выкупите подписку Pro',
-                  style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
-                ),
-                const SizedBox(height: 24),
-                Row(
-                  children: [
-                    Expanded(
-                      child: SizedBox(
-                        height: 46,
-                        child: OutlinedButton(
-                          onPressed: _saving ? null : () => setState(() => _step = 1),
-                          child: const Text('Назад'),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: SizedBox(
-                        height: 46,
-                        child: FilledButton(
-                          onPressed: _saving ? null : _save,
-                          style: FilledButton.styleFrom(
-                            backgroundColor: AppColors.primary500,
-                          ),
-                          child: _saving
-                              ? const SizedBox(
-                                  height: 18,
-                                  width: 18,
-                                  child: CircularProgressIndicator(strokeWidth: 2),
-                                )
-                              : const Text('Сохранить'),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ],
+                    ],
             ),
     );
   }
@@ -949,4 +1042,3 @@ class _VndThousandsFormatter extends TextInputFormatter {
     return parts.reversed.join();
   }
 }
-

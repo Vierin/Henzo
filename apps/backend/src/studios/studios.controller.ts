@@ -19,6 +19,7 @@ import { UpdateStudioDto } from './dto/update-studio.dto';
 import { CreateStudioDto } from './dto/create-studio.dto';
 import { AuthService } from '../auth/auth.service';
 import { PrismaService } from '../prisma/prisma.service';
+import { NotificationsService } from '../notifications/notifications.service';
 import { generateStudioSlug } from '../utils/slug';
 
 @Controller('studios')
@@ -27,6 +28,7 @@ export class StudiosController {
     private readonly studiosService: StudiosService,
     private readonly authService: AuthService,
     private readonly prisma: PrismaService,
+    private readonly notificationsService: NotificationsService,
   ) {}
 
   @Get('with-services')
@@ -165,6 +167,28 @@ export class StudiosController {
     } catch (error) {
       console.error('❌ Get current Studio failed:', error.message);
       return { success: false, message: error.message };
+    }
+  }
+
+  @Get('current/onboarding-checklist')
+  async getCurrentUserStudioOnboardingChecklist(
+    @Headers('authorization') authHeader: string,
+  ) {
+    try {
+      const currentUser = await this.authService.getCurrentUser(authHeader);
+      const checklist =
+        await this.studiosService.getCurrentUserStudioOnboardingChecklist(
+          currentUser.user.id,
+        );
+      return { success: true, data: checklist };
+    } catch (error) {
+      console.error('❌ Get Studio onboarding checklist failed:', error.message);
+      throw new HttpException(
+        error.message || 'Failed to get Studio onboarding checklist',
+        error.message === 'Studio not found'
+          ? HttpStatus.NOT_FOUND
+          : HttpStatus.INTERNAL_SERVER_ERROR,
+      );
     }
   }
 
@@ -549,6 +573,21 @@ export class StudiosController {
     }
   }
 
+  @Get('public/by-slug/:slug')
+  @Header('Cache-Control', 'public, max-age=120, stale-while-revalidate=300')
+  async getPublicStudioBySlug(@Param('slug') slug: string) {
+    try {
+      const result = await this.studiosService.findPublicBySlug(slug);
+      if (!result) {
+        throw new HttpException('Studio not found', HttpStatus.NOT_FOUND);
+      }
+      return result;
+    } catch (error) {
+      console.error('❌ Error getting public Studio by slug:', error);
+      throw error;
+    }
+  }
+
   @Get('by-slug/:slug')
   @Header('Cache-Control', 'public, max-age=120, stale-while-revalidate=300')
   async getStudioBySlug(@Param('slug') slug: string) {
@@ -561,6 +600,194 @@ export class StudiosController {
     } catch (error) {
       console.error('❌ Error getting Studio by slug:', error);
       throw error;
+    }
+  }
+
+  @Get(':id/schedule')
+  @Header('Cache-Control', 'public, max-age=60, stale-while-revalidate=120')
+  async getPublicStudioSchedule(
+    @Param('id') id: string,
+    @Query('from') from?: string,
+    @Query('to') to?: string,
+    @Query('limit') limit?: string,
+  ) {
+    try {
+      return await this.studiosService.findPublicScheduleById(id, {
+        fromIso: from,
+        toIso: to,
+        limit: limit ? parseInt(limit, 10) : 300,
+      });
+    } catch (error) {
+      console.error('❌ Error getting public Studio schedule:', error);
+      throw new HttpException(
+        error.message || 'Failed to get Studio schedule',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+  }
+
+  @Post('sessions/:sessionId/book')
+  async bookPublicStudioSession(
+    @Param('sessionId') sessionId: string,
+    @Headers('authorization') authHeader: string,
+  ) {
+    try {
+      const currentUser = await this.authService.getCurrentUser(authHeader);
+      const userId = currentUser.user.id;
+
+      const session = await this.prisma.trainingSession.findUnique({
+        where: { id: sessionId },
+        select: {
+          id: true,
+          studioId: true,
+          startsAt: true,
+          endsAt: true,
+          capacity: true,
+          bookedCount: true,
+          status: true,
+          Studio: {
+            select: {
+              id: true,
+              ownerId: true,
+              name: true,
+            },
+          },
+          Training: {
+            select: {
+              id: true,
+              name: true,
+            },
+          },
+        },
+      });
+
+      if (!session || session.status !== 'ACTIVE') {
+        throw new HttpException('Session not found', HttpStatus.NOT_FOUND);
+      }
+      if (session.startsAt < new Date()) {
+        throw new HttpException(
+          'Session has already started',
+          HttpStatus.BAD_REQUEST,
+        );
+      }
+
+      const existing = await this.prisma.sessionEnrollment.findFirst({
+        where: {
+          sessionId,
+          userId,
+        },
+        select: {
+          id: true,
+          status: true,
+        },
+      });
+
+      if (existing?.status === 'ACTIVE') {
+        return {
+          success: true,
+          alreadyBooked: true,
+          booking: {
+            sessionId: session.id,
+            status: 'ACTIVE',
+            startsAt: session.startsAt,
+            endsAt: session.endsAt,
+            bookedCount: session.bookedCount,
+            capacity: session.capacity,
+          },
+        };
+      }
+
+      if (session.bookedCount >= session.capacity) {
+        throw new HttpException('No spots left', HttpStatus.BAD_REQUEST);
+      }
+
+      const booking = await this.prisma.$transaction(async (tx) => {
+        if (existing) {
+          await tx.sessionEnrollment.update({
+            where: { id: existing.id },
+            data: {
+              status: 'ACTIVE',
+              cancelledAt: null,
+            },
+          });
+        } else {
+          await tx.sessionEnrollment.create({
+            data: {
+              sessionId,
+              userId,
+              status: 'ACTIVE',
+            },
+          });
+        }
+
+        const updatedSession = await tx.trainingSession.update({
+          where: { id: sessionId },
+          data: {
+            bookedCount: {
+              increment: 1,
+            },
+          },
+          select: {
+            id: true,
+            startsAt: true,
+            endsAt: true,
+            bookedCount: true,
+            capacity: true,
+          },
+        });
+        return updatedSession;
+      });
+
+      try {
+        if (session.Studio?.ownerId) {
+          const tokens = await this.notificationsService.getPushTokensByUserId(
+            session.Studio.ownerId,
+          );
+          if (tokens.length > 0) {
+            const title = 'New class booking';
+            const body = `${currentUser.user.name || currentUser.user.email} booked ${session.Training?.name || 'a class'}`;
+            await this.notificationsService.sendPushNotification(
+              tokens,
+              title,
+              body,
+              {
+                type: 'NEW_CLASS_BOOKING',
+                sessionId: session.id,
+                studioId: session.studioId,
+                trainingName: session.Training?.name || '',
+                startsAt: session.startsAt.toISOString(),
+                clientName:
+                  currentUser.user.name || currentUser.user.email || 'Client',
+              },
+              undefined,
+              'henzo_default',
+            );
+          }
+        }
+      } catch (pushError) {
+        console.error('⚠️ Failed to send class booking push:', pushError);
+      }
+
+      return {
+        success: true,
+        alreadyBooked: false,
+        booking: {
+          sessionId: booking.id,
+          status: 'ACTIVE',
+          startsAt: booking.startsAt,
+          endsAt: booking.endsAt,
+          bookedCount: booking.bookedCount,
+          capacity: booking.capacity,
+        },
+      };
+    } catch (error) {
+      if (error instanceof HttpException) {
+        throw error;
+      }
+      throw new HttpException(
+        error?.message || 'Failed to book session',
+        HttpStatus.BAD_REQUEST,
+      );
     }
   }
 
@@ -601,6 +828,20 @@ export class StudiosController {
 
       if (!studio) {
         throw new HttpException('Studio not found', HttpStatus.NOT_FOUND);
+      }
+
+      const checklist = await this.studiosService.getStudioOnboardingChecklist(
+        studio.id,
+      );
+      if (!checklist.canPublish) {
+        throw new HttpException(
+          {
+            message: 'Studio is not ready for publish',
+            missingRequiredSteps: checklist.missingRequiredSteps,
+            checklist,
+          },
+          HttpStatus.BAD_REQUEST,
+        );
       }
 
       // Update Studio status to ACTIVE

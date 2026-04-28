@@ -16,7 +16,9 @@ class CalendarScreen extends StatefulWidget {
 }
 
 class _CalendarScreenState extends State<CalendarScreen> {
-  List<OwnerTrainingSession> _sessions = [];
+  final Map<int, int> _sessionCountByDay = <int, int>{};
+  final Map<int, List<OwnerTrainingSession>> _sessionsByDay =
+      <int, List<OwnerTrainingSession>>{};
   bool _isLoading = false;
   bool _isMonthExpanded = false;
   late DateTime _selectedDay;
@@ -59,9 +61,25 @@ class _CalendarScreenState extends State<CalendarScreen> {
         fromIso: from,
         toIso: to,
       );
+      final grouped = <int, List<OwnerTrainingSession>>{};
+      final counts = <int, int>{};
+      for (final session in sessions) {
+        final local = session.startsAt.toLocal();
+        final key = _dayKey(local);
+        (grouped[key] ??= <OwnerTrainingSession>[]).add(session);
+        counts[key] = (counts[key] ?? 0) + 1;
+      }
+      for (final list in grouped.values) {
+        list.sort((a, b) => a.startsAt.compareTo(b.startsAt));
+      }
       if (mounted) {
         setState(() {
-          _sessions = sessions;
+          _sessionsByDay
+            ..clear()
+            ..addAll(grouped);
+          _sessionCountByDay
+            ..clear()
+            ..addAll(counts);
           _isLoading = false;
         });
       }
@@ -84,12 +102,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
   }
 
   List<OwnerTrainingSession> _sessionsForSelectedDay() {
-    return _sessions.where((s) {
-      final d = s.startsAt.toLocal();
-      return d.year == _selectedDay.year &&
-          d.month == _selectedDay.month &&
-          d.day == _selectedDay.day;
-    }).toList()..sort((a, b) => a.startsAt.compareTo(b.startsAt));
+    return _sessionsByDay[_dayKey(_selectedDay)] ?? const [];
   }
 
   void _openCreateTraining() {
@@ -260,15 +273,10 @@ class _CalendarScreenState extends State<CalendarScreen> {
   }
 
   int _sessionsCountForDay(DateTime day) {
-    var count = 0;
-    for (final s in _sessions) {
-      final d = s.startsAt.toLocal();
-      if (d.year == day.year && d.month == day.month && d.day == day.day) {
-        count++;
-      }
-    }
-    return count;
+    return _sessionCountByDay[_dayKey(day)] ?? 0;
   }
+
+  int _dayKey(DateTime d) => d.year * 10000 + d.month * 100 + d.day;
 
   @override
   Widget build(BuildContext context) {
@@ -335,7 +343,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
                                   color: AppColors.borderPrimary,
                                 ),
                                 padding: const EdgeInsets.symmetric(
-                                  horizontal: 10,
+                                  horizontal: 8,
                                   vertical: 8,
                                 ),
                               ),
@@ -357,19 +365,28 @@ class _CalendarScreenState extends State<CalendarScreen> {
                                   color: AppColors.borderPrimary,
                                 ),
                                 padding: const EdgeInsets.symmetric(
-                                  horizontal: 10,
+                                  horizontal: 8,
                                   vertical: 8,
                                 ),
                               ),
-                              icon: const Icon(
-                                Icons.calendar_month_outlined,
-                                color: AppColors.textPrimary,
-                              ),
-                              label: Text(
-                                _isMonthExpanded ? 'Свернуть' : 'Развернуть',
-                                style: const TextStyle(
-                                  color: AppColors.textPrimary,
-                                ),
+                              icon: const SizedBox.shrink(),
+                              label: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  const Icon(
+                                    Icons.calendar_month_outlined,
+                                    color: AppColors.textPrimary,
+                                  ),
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    _isMonthExpanded
+                                        ? 'Свернуть'
+                                        : 'Развернуть',
+                                    style: const TextStyle(
+                                      color: AppColors.textPrimary,
+                                    ),
+                                  ),
+                                ],
                               ),
                             ),
                           ],
@@ -555,12 +572,12 @@ class _CalendarScreenState extends State<CalendarScreen> {
                                         ? () {
                                             final shell = context
                                                 .findAncestorStateOfType<
-                                                    MainShellState>();
+                                                  MainShellState
+                                                >();
                                             shell?.navigateToTab0Route(
                                               '/services',
                                               arguments: {
-                                                'editTrainingId':
-                                                    s.trainingId,
+                                                'editTrainingId': s.trainingId,
                                               },
                                             );
                                           }

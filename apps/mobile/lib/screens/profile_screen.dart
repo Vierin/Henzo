@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import '../constants/colors.dart';
 import '../l10n/locale_provider.dart';
@@ -46,9 +45,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
       final salon = await context.read<SalonCache>().getSalon(token);
       final list = salon != null
           ? await context.read<ServicesStaffCache>().getServicesForSalon(
-                token,
-                salon.id,
-              )
+              token,
+              salon.id,
+            )
           : <ServiceItem>[];
       if (mounted) {
         setState(() {
@@ -69,22 +68,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
     }
     try {
       final sub = await DashboardApiService.getCurrentSubscription(token);
-      if (mounted) setState(() {
-        _subscription = sub;
-        _loadingSubscription = false;
-      });
+      if (mounted)
+        setState(() {
+          _subscription = sub;
+          _loadingSubscription = false;
+        });
     } catch (_) {
       if (mounted) setState(() => _loadingSubscription = false);
-    }
-  }
-
-  static String _formatDate(String? isoDate) {
-    if (isoDate == null || isoDate.isEmpty) return '—';
-    try {
-      final d = DateTime.parse(isoDate);
-      return DateFormat('dd.MM.yyyy').format(d);
-    } catch (_) {
-      return isoDate;
     }
   }
 
@@ -122,10 +112,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           ),
           body: RefreshIndicator(
             onRefresh: () async {
-              await Future.wait([
-                _loadSubscription(),
-                _loadTrainingsCount(),
-              ]);
+              await Future.wait([_loadSubscription(), _loadTrainingsCount()]);
             },
             child: SingleChildScrollView(
               physics: const AlwaysScrollableScrollPhysics(),
@@ -140,7 +127,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               ),
             ),
           ),
-    );
+        );
       },
     );
   }
@@ -148,10 +135,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
   static String _packageLabel(String? type) {
     if (type == null || type.isEmpty) return '—';
     switch (type.toUpperCase()) {
-      case 'TRIAL':
-        return 'TRIAL';
-      case 'STARTER':
-        return 'Starter';
+      case 'FREEMIUM':
+        return 'FREEMIUM';
+      case 'PRO':
+        return 'PRO';
       default:
         return type;
     }
@@ -177,8 +164,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
   String _mapProfilePackage(String packageCode) {
     final locale = context.read<LocaleProvider>();
     switch (packageCode.toUpperCase()) {
-      case 'TRIAL':
-        return locale.t('profile.trial');
+      case 'FREEMIUM':
+        return locale.t('profile.free');
+      case 'PRO':
+        return locale.t('profile.pro');
       default:
         return packageCode;
     }
@@ -207,21 +196,22 @@ class _ProfileScreenState extends State<ProfileScreen> {
   Widget _buildCurrentSubscriptionCard() {
     final sub = _subscription;
     final isActive = sub?.isActive ?? false;
+    final isFreePlan =
+        sub != null &&
+        sub.type.toUpperCase() == 'FREEMIUM' &&
+        (sub.amount ?? 0) <= 0;
     final borderColor = isActive ? AppColors.primary500 : AppColors.error500;
     final statusColor = isActive ? AppColors.primary500 : AppColors.error500;
-    final endDateStr = sub != null
-        ? _formatDate(sub.endDate ?? sub.nextPaymentDate ?? sub.trialEndDate)
-        : '—';
-
     return Material(
       color: Colors.transparent,
       child: InkWell(
-        onTap: () => Navigator.push(
-          context,
-          MaterialPageRoute(builder: (_) => const SubscriptionScreen()),
-        ).then((_) {
-          if (mounted) _loadSubscription();
-        }),
+        onTap: () =>
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const SubscriptionScreen()),
+            ).then((_) {
+              if (mounted) _loadSubscription();
+            }),
         borderRadius: BorderRadius.circular(12),
         child: Container(
           padding: const EdgeInsets.all(16),
@@ -244,16 +234,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      context.read<LocaleProvider>().t('profile.yourSubscription'),
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: AppColors.textSecondary,
-                      ),
-                    ),
                     const SizedBox(height: 10),
                     Text(
-                      '${context.read<LocaleProvider>().t('profile.package')}: '
+                      '${context.read<LocaleProvider>().t('profile.yourSubscription')}: '
                       '${_mapProfilePackage(_packageLabel(sub?.type))}',
                       style: const TextStyle(
                         fontSize: 14,
@@ -274,13 +257,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       ),
                     ),
                     const SizedBox(height: 4),
-                    Text(
-                      '${context.read<LocaleProvider>().t('profile.validUntil')}: $endDateStr',
-                      style: const TextStyle(
-                        fontSize: 14,
-                        color: AppColors.textSecondary,
+                    if (!isFreePlan && sub != null)
+                      Text(
+                        context.read<LocaleProvider>().t('profile.proActive'),
+                        style: const TextStyle(
+                          fontSize: 14,
+                          color: AppColors.textSecondary,
+                        ),
                       ),
-                    ),
                   ],
                 ),
               ),
@@ -423,10 +407,7 @@ class _ProfileGridCard extends StatelessWidget {
   final String title;
   final VoidCallback onTap;
 
-  const _ProfileGridCard({
-    required this.title,
-    required this.onTap,
-  });
+  const _ProfileGridCard({required this.title, required this.onTap});
 
   @override
   Widget build(BuildContext context) {

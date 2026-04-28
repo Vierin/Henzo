@@ -16,7 +16,6 @@ import { MapboxModule } from './mapbox/mapbox.module';
 import { AppThrottlerModule } from './throttler/throttler.module';
 import { QueueModule } from './queue/queue.module';
 import { ConfigModule } from '@nestjs/config';
-import { StorageModule } from './storage/storage.module';
 import { validate } from './config/env.validation';
 import { resolveBackendEnvPath } from './config/resolve-backend-env-path';
 import { FitnessModule } from './fitness/fitness.module';
@@ -45,7 +44,6 @@ const backendEnvFile = resolveBackendEnvPath(__dirname);
     SearchModule,
     NotificationsModule,
     MapboxModule,
-    StorageModule,
     FitnessModule,
   ],
   controllers: [AppController],

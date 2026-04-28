@@ -159,9 +159,6 @@ model Subscription {
   type              SubscriptionType   @default(FREEMIUM)
   status           SubscriptionStatus  @default(ACTIVE)
   startDate         DateTime
-  endDate           DateTime?
-  nextPaymentDate   DateTime? 
-  trialEndDate      DateTime?
   amount            Float
   createdAt         DateTime           @default(now())
   updatedAt         DateTime

@@ -159,7 +159,10 @@ export function LanguageProvider({
 		publicModules.push('public/salon');
 		// Booking module needed for DateTimePicker component (selectTime, timeIntervals)
 		publicModules.push('public/booking');
-	} else if (pathNoLocale.startsWith('/salon/')) {
+	} else if (
+		pathNoLocale.startsWith('/salon/') ||
+		pathNoLocale.startsWith('/studio/')
+	) {
 		publicModules.push('public/salon');
 		// Booking module needed for BookingModal component
 		publicModules.push('public/booking');

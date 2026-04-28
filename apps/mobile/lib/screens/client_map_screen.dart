@@ -27,8 +27,15 @@ class _ClientMapScreenState extends State<ClientMapScreen> {
   double? _lat;
   double? _lon;
   final MapController _mapController = MapController();
+  final Distance _distance = const Distance();
   List<_NearbyStudio> _nearbyStudios = const [];
   bool _isLoadingNearby = true;
+  bool _showSearchThisArea = false;
+  double? _lastSearchLat;
+  double? _lastSearchLon;
+  double? _pendingSearchLat;
+  double? _pendingSearchLon;
+  static const double _searchAreaThresholdKm = 2.0;
 
   @override
   void initState() {
@@ -78,6 +85,9 @@ class _ClientMapScreenState extends State<ClientMapScreen> {
         _lat = picked.lat;
         _lon = picked.lon;
       }
+      _showSearchThisArea = false;
+      _pendingSearchLat = null;
+      _pendingSearchLon = null;
     });
     if (_lat != null && _lon != null) {
       _mapController.move(LatLng(_lat!, _lon!), 14);
@@ -85,34 +95,40 @@ class _ClientMapScreenState extends State<ClientMapScreen> {
     await _loadNearbyStudios();
   }
 
-  Future<void> _loadNearbyStudios() async {
+  Future<void> _loadNearbyStudios({double? searchLat, double? searchLon}) async {
+    final effectiveLat = searchLat ?? _lat;
+    final effectiveLon = searchLon ?? _lon;
     if (!mounted) return;
-    setState(() => _isLoadingNearby = true);
+    setState(() {
+      _isLoadingNearby = true;
+      _showSearchThisArea = false;
+    });
     try {
       final query = StringBuffer('/studios/nearby?limit=25');
-      if (_lat != null && _lon != null) {
+      if (effectiveLat != null && effectiveLon != null) {
         query
           ..write('&lat=')
-          ..write(_lat!.toStringAsFixed(6))
+          ..write(effectiveLat.toStringAsFixed(6))
           ..write('&lng=')
-          ..write(_lon!.toStringAsFixed(6))
+          ..write(effectiveLon.toStringAsFixed(6))
           ..write('&radius=50');
       }
       final raw = await ApiClient.get(query.toString(), null);
-      final list = raw is List ? raw : <dynamic>[];
+      final list = _extractStudiosList(raw);
       final mapped = <_NearbyStudio>[];
       for (final item in list) {
-        if (item is! Map<String, dynamic>) continue;
-        final lat = (item['latitude'] as num?)?.toDouble();
-        final lon = (item['longitude'] as num?)?.toDouble();
+        if (item is! Map) continue;
+        final data = Map<String, dynamic>.from(item);
+        final lat = (data['latitude'] as num?)?.toDouble();
+        final lon = (data['longitude'] as num?)?.toDouble();
         mapped.add(
           _NearbyStudio(
-            id: (item['id'] ?? '').toString(),
-            name: (item['name'] ?? 'Studio').toString(),
-            address: (item['address'] ?? '').toString(),
+            id: (data['id'] ?? '').toString(),
+            name: (data['name'] ?? 'Studio').toString(),
+            address: (data['address'] ?? '').toString(),
             lat: lat,
             lon: lon,
-            distanceKm: (item['distance'] as num?)?.toDouble(),
+            distanceKm: (data['distance'] as num?)?.toDouble(),
           ),
         );
       }
@@ -120,14 +136,71 @@ class _ClientMapScreenState extends State<ClientMapScreen> {
       setState(() {
         _nearbyStudios = mapped;
         _isLoadingNearby = false;
+        _lastSearchLat = effectiveLat;
+        _lastSearchLon = effectiveLon;
+        _pendingSearchLat = null;
+        _pendingSearchLon = null;
       });
     } catch (_) {
       if (!mounted) return;
       setState(() {
         _nearbyStudios = const [];
         _isLoadingNearby = false;
+        _lastSearchLat = effectiveLat;
+        _lastSearchLon = effectiveLon;
       });
     }
+  }
+
+  void _handleMapPositionChanged(MapCamera camera, bool hasGesture) {
+    if (!hasGesture) return;
+    final center = camera.center;
+    final baseLat = _lastSearchLat ?? _lat;
+    final baseLon = _lastSearchLon ?? _lon;
+    if (baseLat == null || baseLon == null) return;
+    final movedKm = _distance.as(
+      LengthUnit.Kilometer,
+      LatLng(baseLat, baseLon),
+      center,
+    );
+    if (movedKm >= _searchAreaThresholdKm) {
+      if (!mounted) return;
+      setState(() {
+        _pendingSearchLat = center.latitude;
+        _pendingSearchLon = center.longitude;
+        _showSearchThisArea = true;
+      });
+      return;
+    }
+    if (_showSearchThisArea) {
+      setState(() {
+        _showSearchThisArea = false;
+        _pendingSearchLat = null;
+        _pendingSearchLon = null;
+      });
+    }
+  }
+
+  Future<void> _searchThisArea() async {
+    final lat = _pendingSearchLat;
+    final lon = _pendingSearchLon;
+    if (lat == null || lon == null) return;
+    await _loadNearbyStudios(searchLat: lat, searchLon: lon);
+  }
+
+  List<dynamic> _extractStudiosList(dynamic raw) {
+    if (raw is List) return raw;
+    if (raw is Map) {
+      final data = raw['data'];
+      if (data is List) return data;
+      if (data is Map && data['items'] is List) {
+        return data['items'] as List<dynamic>;
+      }
+      if (raw['items'] is List) return raw['items'] as List<dynamic>;
+      if (raw['results'] is List) return raw['results'] as List<dynamic>;
+      if (raw['studios'] is List) return raw['studios'] as List<dynamic>;
+    }
+    return const <dynamic>[];
   }
 
   @override
@@ -143,10 +216,17 @@ class _ClientMapScreenState extends State<ClientMapScreen> {
           Positioned.fill(
             child: FlutterMap(
               mapController: _mapController,
-              options: MapOptions(initialCenter: center, initialZoom: hasCoords ? 14 : 10),
+              options: MapOptions(
+                initialCenter: center,
+                initialZoom: hasCoords ? 14 : 10,
+                onPositionChanged: _handleMapPositionChanged,
+              ),
               children: [
                 TileLayer(
-                  urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                  urlTemplate:
+                      'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',
+                  subdomains: const ['a', 'b', 'c', 'd'],
+                  retinaMode: true,
                   userAgentPackageName: 'com.henzo.mobile',
                 ),
                 MarkerLayer(
@@ -155,29 +235,12 @@ class _ClientMapScreenState extends State<ClientMapScreen> {
                       .map(
                         (s) => Marker(
                           point: LatLng(s.lat!, s.lon!),
-                          width: 34,
-                          height: 34,
-                          child: Container(
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              color: AppColors.backgroundPrimary,
-                              border: Border.all(
-                                color: AppColors.primary500,
-                                width: 2.5,
-                              ),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: Colors.black.withValues(alpha: 0.15),
-                                  blurRadius: 8,
-                                  offset: const Offset(0, 2),
-                                ),
-                              ],
-                            ),
-                            child: const Icon(
-                              Icons.fitness_center,
-                              size: 16,
-                              color: AppColors.primary500,
-                            ),
+                          width: 32,
+                          height: 32,
+                          child: const Icon(
+                            Icons.location_on,
+                            size: 32,
+                            color: AppColors.primary500,
                           ),
                         ),
                       )
@@ -296,6 +359,37 @@ class _ClientMapScreenState extends State<ClientMapScreen> {
               ),
             ),
           ),
+          if (_showSearchThisArea)
+            Positioned(
+              top: 68,
+              left: 0,
+              right: 0,
+              child: SafeArea(
+                bottom: false,
+                child: Center(
+                  child: ElevatedButton.icon(
+                    onPressed: _isLoadingNearby ? null : _searchThisArea,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.primary500,
+                      foregroundColor: Colors.white,
+                      elevation: 4,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 14,
+                        vertical: 10,
+                      ),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(999),
+                      ),
+                    ),
+                    icon: const Icon(Icons.search, size: 16),
+                    label: const Text(
+                      'Search this area',
+                      style: TextStyle(fontWeight: FontWeight.w700),
+                    ),
+                  ),
+                ),
+              ),
+            ),
           Positioned.fill(
             top: 84,
             child: DraggableScrollableSheet(

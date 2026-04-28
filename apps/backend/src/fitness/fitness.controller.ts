@@ -23,7 +23,7 @@ export class FitnessController {
     private readonly studioAnalyticsService: StudioAnalyticsService,
   ) {}
 
-  // ---- Studios (alias of salons) ----
+  // ---- Studios  ----
   @Get('studios/featured')
   async getFeaturedStudios(@Query('limit') limit?: string) {
     const limitNum = limit ? parseInt(limit, 10) : 6;
@@ -102,6 +102,15 @@ export class FitnessController {
     @Query('to') to?: string,
   ) {
     return this.fitnessSessionsService.getOwnerSessions(authHeader, from, to);
+  }
+
+  @Get('client/schedule')
+  async getClientSchedule(
+    @Headers('authorization') authHeader: string,
+    @Query('from') from?: string,
+    @Query('to') to?: string,
+  ) {
+    return this.fitnessSessionsService.getClientSchedule(authHeader, from, to);
   }
 
   @Put('owner/training-sessions/:id/status')

@@ -1056,8 +1056,8 @@ export class AuthService {
 
           // Update all related records to use the new Supabase Auth ID
           await this.prisma.$transaction(async (prisma) => {
-            // Update salons
-            await prisma.salon.updateMany({
+            // Update studios
+            await prisma.studio.updateMany({
               where: { ownerId: oldUserId },
               data: { ownerId: user.id },
             });
@@ -1098,26 +1098,19 @@ export class AuthService {
           const roleFromMetadata =
             user.app_metadata?.role || user.user_metadata?.role;
 
-          // Проверяем, есть ли у пользователя студии/салоны (для восстановления роли OWNER).
-          // Поддерживаем обе схемы (studio/salon), чтобы не падать на рассинхроне Prisma моделей.
-          const existingSalons = this.prisma.studio
-            ? await this.prisma.studio.findMany({
-                where: { ownerId: user.id },
-              })
-            : this.prisma.salon
-              ? await this.prisma.salon.findMany({
-                  where: { ownerId: user.id },
-                })
-              : [];
+          // Проверяем, есть ли у пользователя студии (для восстановления роли OWNER).
+          const existingStudios = await this.prisma.studio.findMany({
+            where: { ownerId: user.id },
+          });
 
-          // Определяем роль: сначала из метаданных, потом из салонов, потом CLIENT по умолчанию
+          // Определяем роль: сначала из метаданных, потом из студий, потом CLIENT по умолчанию
           const userRole =
             roleFromMetadata ||
-            (existingSalons.length > 0 ? 'OWNER' : 'CLIENT');
+            (existingStudios.length > 0 ? 'OWNER' : 'CLIENT');
 
           console.log('📝 Creating user with role:', {
             roleFromMetadata,
-            hasSalons: existingSalons.length > 0,
+            hasStudios: existingStudios.length > 0,
             finalRole: userRole,
             userId: user.id,
             email: user.email,
@@ -1138,8 +1131,8 @@ export class AuthService {
             );
             // Обновляем ID существующего пользователя на новый из Supabase Auth
             await this.prisma.$transaction(async (prisma) => {
-              // Update salons
-              await prisma.salon.updateMany({
+              // Update studios
+              await prisma.studio.updateMany({
                 where: { ownerId: existingUserByEmail.id },
                 data: { ownerId: user.id },
               });
@@ -1326,12 +1319,12 @@ export class AuthService {
 
   /**
    * Batch endpoint для инициализации пользователя
-   * Возвращает пользователя и опционально салон (для OWNER)
+   * Возвращает пользователя и опционально студию (для OWNER)
    * Один запрос вместо нескольких
    */
   async initializeUser(
     authHeader: string,
-    options: { includeSalon?: boolean } = {},
+    options: { includeStudio?: boolean } = {},
   ) {
     try {
       // Получаем пользователя (использует кэш)
@@ -1342,10 +1335,10 @@ export class AuthService {
         user,
       };
 
-      // Если OWNER и запрошен салон, получаем его
-      if (options.includeSalon && user.role === 'OWNER') {
+      // Если OWNER и запрошена студия, получаем ее.
+      if (options.includeStudio && user.role === 'OWNER') {
         try {
-          const salon = await this.prisma.salon.findFirst({
+          const studio = await this.prisma.studio.findFirst({
             where: { ownerId: user.id },
             select: {
               id: true,
@@ -1361,14 +1354,14 @@ export class AuthService {
             },
           });
 
-          if (salon) {
-            result.salon = salon;
+          if (studio) {
+            result.studio = studio;
             result.needsSetup = false;
           } else {
             result.needsSetup = true;
           }
-        } catch (salonError) {
-          console.error('⚠️ Error fetching salon:', salonError);
+        } catch (studioError) {
+          console.error('⚠️ Error fetching studio:', studioError);
           result.needsSetup = true;
         }
       }
@@ -1522,7 +1515,7 @@ export class AuthService {
       const user = await this.prisma.user.findUnique({
         where: { id: userId },
         include: {
-          Salon: true,
+          Studio: true,
           Booking: true,
           Review: true,
         },
@@ -1536,36 +1529,36 @@ export class AuthService {
         userId: user.id,
         email: user.email,
         role: user.role,
-        hasSalon: !!user.Salon && user.Salon.length > 0,
+        hasStudio: !!user.Studio && user.Studio.length > 0,
         bookingsCount: user.Booking.length,
         reviewsCount: user.Review.length,
       });
 
       // Удаляем связанные данные в зависимости от роли
-      if (user.role === 'OWNER' && user.Salon && user.Salon.length > 0) {
-        const salon = user.Salon[0];
-        console.log(`🏢 Deleting salon data for owner: ${salon.id}`);
+      if (user.role === 'OWNER' && user.Studio && user.Studio.length > 0) {
+        const studio = user.Studio[0];
+        console.log(`🏢 Deleting studio data for owner: ${studio.id}`);
 
-        // Удаляем все связанные с салоном данные
+        // Удаляем все связанные со студией данные
         await this.prisma.booking.deleteMany({
-          where: { salonId: salon.id },
+          where: { studioId: studio.id },
         });
 
         await this.prisma.review.deleteMany({
-          where: { salonId: salon.id },
+          where: { studioId: studio.id },
         });
 
         await this.prisma.staff.deleteMany({
-          where: { salonId: salon.id },
+          where: { studioId: studio.id },
         });
 
         await this.prisma.service.deleteMany({
-          where: { salonId: salon.id },
+          where: { studioId: studio.id },
         });
 
-        // Удаляем сам салон
-        await this.prisma.salon.delete({
-          where: { id: salon.id },
+        // Удаляем саму студию
+        await this.prisma.studio.delete({
+          where: { id: studio.id },
         });
       }
 
@@ -1627,11 +1620,11 @@ export class AuthService {
     }
   }
 
-  async getFavoriteSalons(userId: string) {
+  async getFavoriteStudios(userId: string) {
     try {
       const user = await this.prisma.user.findUnique({
         where: { id: userId },
-        select: { favoriteSalons: true },
+        select: { favoriteStudios: true },
       });
 
       if (!user) {
@@ -1639,10 +1632,10 @@ export class AuthService {
       }
 
       // Критично: Используем select вместо include для уменьшения payload
-      const salons = await this.prisma.salon.findMany({
+      const studios = await this.prisma.Studio.findMany({
         where: {
           id: {
-            in: user.favoriteSalons,
+            in: user.favoriteStudios,
           },
         },
         select: {
@@ -1656,7 +1649,7 @@ export class AuthService {
           instagram: true,
           photos: true,
           // Убираем workingHours, reminderSettings, ownerId, createdAt, categoryIds, latitude, longitude - не нужны для списка
-          Service: {
+          Training: {
             select: {
               id: true,
               name: true,
@@ -1675,97 +1668,98 @@ export class AuthService {
         },
       });
 
-      // Calculate average rating for each salon
-      const salonsWithRating = salons.map((salon) => {
+      // Calculate average rating for each studio
+      const studiosWithRating = studios.map((studio) => {
         const avgRating =
-          salon.Review.length > 0
-            ? salon.Review.reduce((sum, review) => sum + review.rating, 0) /
-              salon.Review.length
+          studio.Review.length > 0
+            ? studio.Review.reduce((sum, review) => sum + review.rating, 0) /
+              studio.Review.length
             : 0;
 
         return {
-          ...salon,
+          ...studio,
           averageRating: avgRating,
-          reviewCount: salon.Review.length,
+          reviewCount: studio.Review.length,
         };
       });
 
-      return salonsWithRating;
+      return studiosWithRating;
     } catch (error) {
-      throw new Error(`Failed to get favorite salons: ${error.message}`);
+      throw new Error(`Failed to get favorite studios: ${error.message}`);
     }
   }
 
-  async addFavoriteSalon(userId: string, salonId: string) {
+  async addFavoriteStudio(userId: string, studioId: string) {
     try {
-      // Check if salon exists
-      const salon = await this.prisma.salon.findUnique({
-        where: { id: salonId },
+      // Check if studio exists
+      const studio = await this.prisma.Studio.findUnique({
+        where: { id: studioId },
       });
 
-      if (!salon) {
-        throw new Error('Salon not found');
+      if (!studio) {
+        throw new Error('Studio not found');
       }
 
       // Get current user
       const user = await this.prisma.user.findUnique({
         where: { id: userId },
-        select: { favoriteSalons: true },
+        select: { favoriteStudios: true },
       });
 
       if (!user) {
         throw new Error('User not found');
       }
 
-      // Check if already favorited
-      if (user.favoriteSalons.includes(salonId)) {
-        throw new Error('Salon is already in favorites');
+      // Idempotent behavior for MVP UX:
+      // if studio is already in favorites, do not fail with 400.
+      if (user.favoriteStudios.includes(studioId)) {
+        return user;
       }
 
-      // Add salon to favorites
+      // Add studio to favorites
       const updatedUser = await this.prisma.user.update({
         where: { id: userId },
         data: {
-          favoriteSalons: {
-            push: salonId,
+          favoriteStudios: {
+            push: studioId,
           },
         },
       });
 
       return updatedUser;
     } catch (error) {
-      throw new Error(`Failed to add salon to favorites: ${error.message}`);
+      throw new Error(`Failed to add studio to favorites: ${error.message}`);
     }
   }
 
-  async removeFavoriteSalon(userId: string, salonId: string) {
+  async removeFavoriteStudio(userId: string, studioId: string) {
     try {
       // Get current user
       const user = await this.prisma.user.findUnique({
         where: { id: userId },
-        select: { favoriteSalons: true },
+        select: { favoriteStudios: true },
       });
 
       if (!user) {
         throw new Error('User not found');
       }
 
-      // Remove salon from favorites
-      const updatedFavorites = user.favoriteSalons.filter(
-        (id) => id !== salonId,
+      // Remove studio from favorites
+      const updatedFavorites = user.favoriteStudios.filter(
+        (id) => id !== studioId,
       );
 
       const updatedUser = await this.prisma.user.update({
         where: { id: userId },
         data: {
-          favoriteSalons: updatedFavorites,
+          favoriteStudios: updatedFavorites,
         },
       });
 
       return updatedUser;
     } catch (error) {
       throw new Error(
-        `Failed to remove salon from favorites: ${error.message}`,
+        `Failed to remove studio from favorites: ${error.message}`,
       );
     }
   }

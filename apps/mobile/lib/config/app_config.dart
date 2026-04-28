@@ -17,12 +17,13 @@ abstract final class AppConfig {
 
   /// URL веб-приложения для ссылки на онлайн-запись (без завершающего слэша).
   static String get webUrl =>
-      (dotenv.env['EXPO_PUBLIC_WEB_URL'] ?? 'https://henzo.app').trim().replaceAll(RegExp(r'/$'), '');
+      (dotenv.env['EXPO_PUBLIC_WEB_URL'] ?? 'https://henzo.app')
+          .trim()
+          .replaceAll(RegExp(r'/$'), '');
 
   /// Страница регистрации владельца (можно переопределить `EXPO_PUBLIC_OWNER_REGISTER_URL`).
   static String get ownerRegisterUrl {
-    final custom =
-        (dotenv.env['EXPO_PUBLIC_OWNER_REGISTER_URL'] ?? '').trim();
+    final custom = (dotenv.env['EXPO_PUBLIC_OWNER_REGISTER_URL'] ?? '').trim();
     if (custom.isNotEmpty) {
       return custom.replaceAll(RegExp(r'/$'), '');
     }
@@ -36,4 +37,8 @@ abstract final class AppConfig {
   /// iOS Client ID из Google Cloud (только для iOS).
   static String get googleIosClientId =>
       (dotenv.env['EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID'] ?? '').trim();
+
+  static String get studioPhotosBucket =>
+      (dotenv.env['EXPO_PUBLIC_STUDIO_PHOTOS_BUCKET'] ?? 'studio-photos')
+          .trim();
 }
