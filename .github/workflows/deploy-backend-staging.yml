@@ -94,6 +94,13 @@ jobs:
 
             cd "$BACKEND_DIR"
             IMAGE_REF=${{ env.IMAGE_BASE }}@${{ env.IMAGE_DIGEST }}
-            docker compose -f docker-compose.yml config --services | grep -qx backend_staging || { echo "Service backend_staging not found in $BACKEND_DIR/docker-compose.yml"; docker compose -f docker-compose.yml config --services; exit 1; }
+            docker compose -f docker-compose.yml config --services \
+              | tr -d '\r' \
+              | grep -Fxq "backend_staging" \
+              || { 
+                echo "Service backend_staging not found in $BACKEND_DIR/docker-compose.yml"
+                docker compose -f docker-compose.yml config --services | sed -n 'l'
+                exit 1
+              }
             bash deploy/deploy-compose-service.sh --env=staging --image="$IMAGE_REF" --migrate=true
             echo "✅ Staging deployment complete!"
