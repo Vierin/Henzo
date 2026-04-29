@@ -78,7 +78,7 @@ jobs:
             set -euo pipefail
 
             if [ -n "${{ secrets.GHCR_TOKEN }}" ]; then
-              echo "${{ secrets.GHCR_TOKEN }}" | docker login ${{ env.REGISTRY }} -u ${{ github.actor }} --password-stdin
+              echo "${{ secrets.GHCR_TOKEN }}" | docker login ${{ env.REGISTRY }} -u Vierin --password-stdin
             fi
 
             APP_DIR="/var/www/henzo"
