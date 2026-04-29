@@ -46,9 +46,13 @@ jobs:
           key: ${{ secrets.DO_SSH_KEY }}
           port: 22
           script: |
-            if [ -n "${{ secrets.GHCR_TOKEN }}" ]; then
-              echo "${{ secrets.GHCR_TOKEN }}" | docker login ${{ env.REGISTRY }} -u ${{ github.actor }} --password-stdin
-            fi
+            set -euo pipefail
+
+            GHCR_USER="${{ secrets.GHCR_USERNAME }}"
+            [ -n "$GHCR_USER" ] || GHCR_USER="${{ github.repository_owner }}"
+            [ -n "${{ secrets.GHCR_TOKEN }}" ] || { echo "❌ GHCR_TOKEN secret is missing"; exit 1; }
+            echo "${{ secrets.GHCR_TOKEN }}" | docker login ${{ env.REGISTRY }} -u "$GHCR_USER" --password-stdin
+
             cd /var/www/henzo/apps/backend
             # Promote verified staging image to production by digest (no rebuild).
             docker pull ${{ env.IMAGE_BASE }}:staging
