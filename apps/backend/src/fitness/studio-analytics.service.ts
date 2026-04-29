@@ -30,6 +30,12 @@ import { PrismaService } from '../prisma/prisma.service';
  */
 @Injectable()
 export class StudioAnalyticsService {
+  private readonly enrollmentRevenueStatuses = new Set([
+    'ACTIVE',
+    'NO_SHOW',
+    'NOSHOW',
+  ]);
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly authService: AuthService,
@@ -145,7 +151,6 @@ export class StudioAnalyticsService {
           })
         : [];
 
-    const enrollmentStatusesForRevenue = new Set(['ACTIVE', 'NO_SHOW', 'NOSHOW']);
     const activeEnrollmentsWithPriceRaw =
       sessionIdsInPeriod.length > 0
         ? await this.prisma.sessionEnrollment.findMany({
@@ -165,7 +170,7 @@ export class StudioAnalyticsService {
           })
         : [];
     const activeEnrollmentsWithPrice = activeEnrollmentsWithPriceRaw.filter((e) =>
-      enrollmentStatusesForRevenue.has(String(e.status)),
+      this.enrollmentRevenueStatuses.has(String(e.status)),
     );
 
     const classRevenue = activeEnrollmentsWithPrice.reduce((sum, e) => {
@@ -350,7 +355,7 @@ export class StudioAnalyticsService {
       },
     });
     const enrollmentRows = enrollmentRowsRaw.filter((r) =>
-      enrollmentStatusesForRevenue.has(String(r.status)),
+      this.enrollmentRevenueStatuses.has(String(r.status)),
     );
 
     const visitsByUser = new Map<string, Date[]>();
