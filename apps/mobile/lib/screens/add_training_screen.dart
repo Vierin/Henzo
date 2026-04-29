@@ -279,9 +279,16 @@ class _AddTrainingScreenState extends State<AddTrainingScreen> {
                     Flexible(
                       child: ListView(
                         shrinkWrap: true,
+                        itemExtent: 44,
                         children: _categories.map((c) {
                           final selected = temp == c.id;
                           return ListTile(
+                            dense: true,
+                            minVerticalPadding: 0,
+                            visualDensity: const VisualDensity(
+                              vertical: -3,
+                              horizontal: 0,
+                            ),
                             contentPadding: const EdgeInsets.symmetric(
                               horizontal: 4,
                             ),
@@ -301,8 +308,13 @@ class _AddTrainingScreenState extends State<AddTrainingScreen> {
                     Row(
                       children: [
                         Expanded(
-                          child: TextButton(
+                          child: OutlinedButton(
                             onPressed: () => setModalState(() => temp = null),
+                            style: OutlinedButton.styleFrom(
+                              side: const BorderSide(
+                                color: AppColors.borderPrimary,
+                              ),
+                            ),
                             child: const Text('Сбросить'),
                           ),
                         ),

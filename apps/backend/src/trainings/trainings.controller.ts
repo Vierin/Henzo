@@ -2,6 +2,7 @@ import {
   Controller,
   Get,
   Post,
+  Patch,
   Put,
   Delete,
   Param,
@@ -15,6 +16,7 @@ import { TrainingsService } from './trainings.service';
 import { TranslationService } from './translation.service';
 import { CreateServiceDto } from './dto/create-service.dto';
 import { UpdateServiceDto } from './dto/update-service.dto';
+import { UpdateTrainingScheduleDto } from './dto/update-training-schedule.dto';
 import { AuthService } from '../auth/auth.service';
 
 @Controller('trainings')
@@ -168,6 +170,30 @@ export class TrainingsController {
         updateBody.trainingCategoryId ?? updateBody.serviceCategoryId,
       trainerIds: updateServiceDto.staffIds,
     });
+  }
+
+  @Patch(':id/schedule')
+  async updateTrainingSchedule(
+    @Headers('authorization') authHeader: string,
+    @Param('id') id: string,
+    @Body() dto: UpdateTrainingScheduleDto,
+  ) {
+    const currentUser = await this.authService.getCurrentUser(authHeader);
+    if (currentUser.user.role !== 'OWNER') {
+      throw new HttpException('Forbidden', HttpStatus.FORBIDDEN);
+    }
+    const studioId = await this.trainingsService.findTrainingStudioId(id);
+    if (!studioId) {
+      throw new HttpException('Training not found', HttpStatus.NOT_FOUND);
+    }
+    const isOwner = await this.trainingsService.isStudioOwnedByOwner(
+      studioId,
+      currentUser.user.id,
+    );
+    if (!isOwner) {
+      throw new HttpException('Forbidden', HttpStatus.FORBIDDEN);
+    }
+    return this.trainingsService.updateTrainingSchedule(id, dto);
   }
 
   @Delete(':id')

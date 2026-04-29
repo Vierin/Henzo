@@ -5,6 +5,34 @@ import '../models/service_item.dart';
 import '../models/training_category_option.dart';
 
 class ServicesApiService {
+  static Future<Map<String, dynamic>?> updateTrainingSchedule(
+    String accessToken,
+    String id, {
+    required List<Map<String, dynamic>> slots,
+    required DateTime effectiveFrom,
+  }) async {
+    try {
+      final map =
+          await ApiClient.patch(
+                '/trainings/$id/schedule',
+                accessToken,
+                body: {
+                  'slots': slots,
+                  'effectiveFrom': effectiveFrom.toUtc().toIso8601String(),
+                },
+              )
+              as Map<String, dynamic>?;
+      if (map == null) return null;
+      final data = map['data'];
+      return data is Map<String, dynamic>
+          ? Map<String, dynamic>.from(data)
+          : map;
+    } on ApiException catch (e) {
+      if (kDebugMode) debugPrint('[ServicesAPI] updateTrainingSchedule: $e');
+      return null;
+    }
+  }
+
   /// GET /trainings?studioId= — список тренировок студии.
   static Future<List<ServiceItem>> getByStudio(
     String accessToken,

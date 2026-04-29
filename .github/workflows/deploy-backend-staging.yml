@@ -75,15 +75,25 @@ jobs:
           key: ${{ secrets.DO_SSH_KEY }}
           port: 22
           script: |
+            set -euo pipefail
+
             if [ -n "${{ secrets.GHCR_TOKEN }}" ]; then
               echo "${{ secrets.GHCR_TOKEN }}" | docker login ${{ env.REGISTRY }} -u ${{ github.actor }} --password-stdin
             fi
-            cd /var/www/henzo
-            git fetch origin
-            git checkout staging
-            git pull --ff-only origin staging
-            cd /var/www/henzo/apps/backend
+
+            APP_DIR="/var/www/henzo"
+            BACKEND_DIR="$APP_DIR/apps/backend"
+
+            [ -d "$APP_DIR/.git" ] || { echo "Git repo not found at $APP_DIR (.git missing)"; exit 1; }
+            [ -f "$BACKEND_DIR/docker-compose.yml" ] || { echo "docker-compose.yml not found at $BACKEND_DIR"; exit 1; }
+            [ -f "$BACKEND_DIR/deploy/deploy-compose-service.sh" ] || { echo "deploy script not found at $BACKEND_DIR/deploy/deploy-compose-service.sh"; exit 1; }
+
+            git -C "$APP_DIR" fetch origin
+            git -C "$APP_DIR" checkout staging
+            git -C "$APP_DIR" pull --ff-only origin staging
+
+            cd "$BACKEND_DIR"
             IMAGE_REF=${{ env.IMAGE_BASE }}@${{ env.IMAGE_DIGEST }}
-            docker compose config --services | grep -qx backend_staging || { echo "Service backend_staging not found in docker-compose.yml"; docker compose config --services; exit 1; }
+            docker compose -f docker-compose.yml config --services | grep -qx backend_staging || { echo "Service backend_staging not found in $BACKEND_DIR/docker-compose.yml"; docker compose -f docker-compose.yml config --services; exit 1; }
             bash deploy/deploy-compose-service.sh --env=staging --image="$IMAGE_REF" --migrate=true
             echo "✅ Staging deployment complete!"

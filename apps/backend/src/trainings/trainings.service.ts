@@ -1,5 +1,6 @@
 import { Injectable, Inject } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { UpdateTrainingScheduleDto } from './dto/update-training-schedule.dto';
 
 /** Normalize Training payload for JSON (hide Prisma relation names where redundant). */
 function mapTrainingResponse(t: any) {
@@ -14,6 +15,55 @@ function mapTrainingResponse(t: any) {
 @Injectable()
 export class TrainingsService {
   constructor(@Inject(PrismaService) private prisma: any) {}
+
+  private parseHm(value: string): { hour: number; minute: number } {
+    const [h, m] = value.split(':');
+    return { hour: Number(h), minute: Number(m) };
+  }
+
+  private normalizeDateOnly(date: Date): Date {
+    return new Date(date.getFullYear(), date.getMonth(), date.getDate());
+  }
+
+  private buildOccurrenceDates(
+    startsFromDate: Date,
+    daysOfWeek: number[],
+    weeksCount: number,
+  ): Date[] {
+    const uniqueDays = Array.from(new Set(daysOfWeek)).sort((a, b) => a - b);
+    const anchor = this.normalizeDateOnly(startsFromDate);
+    const all: Date[] = [];
+    for (let week = 0; week < weeksCount; week += 1) {
+      for (const day of uniqueDays) {
+        const mondayOffset = day - 1;
+        const weekBase = new Date(anchor);
+        weekBase.setDate(anchor.getDate() + week * 7);
+        const weekDay = weekBase.getDay() === 0 ? 7 : weekBase.getDay();
+        const delta = mondayOffset - (weekDay - 1);
+        const candidate = new Date(weekBase);
+        candidate.setDate(weekBase.getDate() + delta);
+        if (candidate >= anchor) {
+          all.push(candidate);
+        }
+      }
+    }
+    all.sort((a, b) => a.getTime() - b.getTime());
+    return all;
+  }
+
+  private extractBookingPeriodDays(reminderSettings: unknown): number {
+    const fallback = 14;
+    if (!reminderSettings || typeof reminderSettings !== 'object')
+      return fallback;
+    const raw = (reminderSettings as Record<string, unknown>)[
+      'bookingPeriodDays'
+    ];
+    let parsed: number | null = null;
+    if (typeof raw === 'number') parsed = Math.floor(raw);
+    if (typeof raw === 'string') parsed = Number.parseInt(raw, 10);
+    if (!parsed || Number.isNaN(parsed)) return fallback;
+    return Math.max(1, Math.min(60, parsed));
+  }
 
   async isStudioOwnedByOwner(studioId: string, ownerId: string) {
     const studioRepo = this.prisma.studio ?? this.prisma.salon;
@@ -334,6 +384,186 @@ export class TrainingsService {
       ...updated,
       Staff: updated.Trainer,
     });
+  }
+
+  async updateTrainingSchedule(id: string, dto: UpdateTrainingScheduleDto) {
+    const training = await this.training.findUnique({
+      where: { id },
+      select: {
+        id: true,
+        studioId: true,
+        duration: true,
+        Studio: { select: { reminderSettings: true } },
+      },
+    });
+    if (!training) {
+      throw new Error('Training not found');
+    }
+
+    const slots = dto.slots ?? [];
+    if (slots.length === 0) {
+      throw new Error('At least one recurrence slot is required');
+    }
+    const invalidSlot = slots.find(
+      (s) =>
+        !Number.isInteger(s.day) ||
+        s.day < 1 ||
+        s.day > 7 ||
+        !/^\d{2}:\d{2}$/.test(s.startTime),
+    );
+    if (invalidSlot) {
+      throw new Error('Invalid slot value');
+    }
+
+    const effectiveFrom = dto.effectiveFrom
+      ? new Date(dto.effectiveFrom)
+      : new Date();
+    if (Number.isNaN(effectiveFrom.getTime())) {
+      throw new Error('Invalid effectiveFrom');
+    }
+
+    const bookingPeriodDays = this.extractBookingPeriodDays(
+      training.Studio?.reminderSettings,
+    );
+    const rangeStart = this.normalizeDateOnly(effectiveFrom);
+    const rangeEnd = new Date(rangeStart);
+    rangeEnd.setDate(rangeEnd.getDate() + bookingPeriodDays);
+
+    const candidateDays = this.buildOccurrenceDates(
+      rangeStart,
+      slots.map((s) => s.day),
+      Math.ceil(bookingPeriodDays / 7) + 2,
+    ).filter((d) => d <= rangeEnd);
+
+    const slotTimeByDay = new Map<number, string>();
+    for (const slot of slots) {
+      slotTimeByDay.set(slot.day, slot.startTime);
+    }
+
+    const desired = candidateDays
+      .map((d) => {
+        const weekday = d.getDay() === 0 ? 7 : d.getDay();
+        const time = slotTimeByDay.get(weekday);
+        if (!time) return null;
+        const { hour, minute } = this.parseHm(time);
+        const startsAt = new Date(d);
+        startsAt.setHours(hour, minute, 0, 0);
+        const endsAt = new Date(startsAt);
+        endsAt.setMinutes(endsAt.getMinutes() + training.duration);
+        return { startsAt, endsAt };
+      })
+      .filter((v): v is { startsAt: Date; endsAt: Date } => v !== null);
+
+    const existing = await this.prisma.trainingSession.findMany({
+      where: {
+        trainingId: id,
+        studioId: training.studioId,
+        status: 'ACTIVE',
+        startsAt: { gte: rangeStart, lte: rangeEnd },
+      },
+      select: {
+        id: true,
+        trainerId: true,
+        capacity: true,
+        startsAt: true,
+        Enrollments: { select: { status: true } },
+      },
+      orderBy: { startsAt: 'asc' },
+    });
+
+    const mutable = existing.filter(
+      (s: any) =>
+        !s.Enrollments?.some((e: any) => e.status === 'ACTIVE'),
+    );
+    const mutableIds = mutable.map((s: any) => s.id);
+    const template = mutable[0] ?? existing[0] ?? null;
+
+    const pairCount = Math.min(mutable.length, desired.length);
+    let updatedCount = 0;
+    let createdCount = 0;
+    let skippedConflicts = 0;
+
+    const usedStartsAt = new Set<number>();
+    for (let i = 0; i < pairCount; i += 1) {
+      const d = desired[i]!;
+      usedStartsAt.add(d.startsAt.getTime());
+      const row = mutable[i]!;
+      const overlap = await this.prisma.trainingSession.findFirst({
+        where: {
+          studioId: training.studioId,
+          id: { notIn: mutableIds },
+          status: 'ACTIVE',
+          startsAt: { lt: d.endsAt },
+          endsAt: { gt: d.startsAt },
+          ...(row.trainerId ? { trainerId: row.trainerId } : {}),
+        },
+        select: { id: true },
+      });
+      if (overlap) {
+        skippedConflicts += 1;
+        continue;
+      }
+      await this.prisma.trainingSession.update({
+        where: { id: row.id },
+        data: { startsAt: d.startsAt, endsAt: d.endsAt },
+      });
+      updatedCount += 1;
+    }
+
+    if (template) {
+      for (let i = pairCount; i < desired.length; i += 1) {
+        const d = desired[i]!;
+        if (usedStartsAt.has(d.startsAt.getTime())) continue;
+        const overlap = await this.prisma.trainingSession.findFirst({
+          where: {
+            studioId: training.studioId,
+            id: { notIn: mutableIds },
+            status: 'ACTIVE',
+            startsAt: { lt: d.endsAt },
+            endsAt: { gt: d.startsAt },
+            ...(template.trainerId ? { trainerId: template.trainerId } : {}),
+          },
+          select: { id: true },
+        });
+        if (overlap) {
+          skippedConflicts += 1;
+          continue;
+        }
+        await this.prisma.trainingSession.create({
+          data: {
+            studioId: training.studioId,
+            trainingId: id,
+            trainerId: template.trainerId ?? null,
+            startsAt: d.startsAt,
+            endsAt: d.endsAt,
+            capacity: template.capacity ?? 1,
+            status: 'ACTIVE',
+          },
+        });
+        createdCount += 1;
+      }
+    }
+
+    const extraIds = mutable.slice(pairCount).map((s: any) => s.id);
+    if (extraIds.length > 0) {
+      await this.prisma.trainingSession.deleteMany({
+        where: { id: { in: extraIds } },
+      });
+    }
+
+    return {
+      success: true,
+      data: {
+        bookingPeriodDays,
+        effectiveFrom: rangeStart.toISOString(),
+        desiredCount: desired.length,
+        updatedCount,
+        createdCount,
+        removedCount: extraIds.length,
+        skippedBookedCount: existing.length - mutable.length,
+        skippedConflicts,
+      },
+    };
   }
 
   async deleteTraining(id: string) {

@@ -26,6 +26,8 @@ class _OwnerEditTrainingSessionScreenState
   String? _trainerId;
   List<StaffMember> _trainers = [];
   bool _loadingTrainers = true;
+  bool _loadingSubscription = true;
+  bool _isProPlan = false;
   bool _saving = false;
 
   @override
@@ -52,23 +54,52 @@ class _OwnerEditTrainingSessionScreenState
   Future<void> _loadTrainers() async {
     final token = context.read<AuthService>().accessToken;
     if (token == null || token.isEmpty) {
-      if (mounted) setState(() => _loadingTrainers = false);
-      return;
-    }
-    final salon = await context.read<SalonCache>().getSalon(token);
-    if (salon == null || !mounted) {
-      setState(() => _loadingTrainers = false);
+      if (mounted) {
+        setState(() {
+          _loadingTrainers = false;
+          _loadingSubscription = false;
+        });
+      }
       return;
     }
     try {
+      final salon = await context.read<SalonCache>().getSalon(token);
+      if (salon == null || !mounted) {
+        setState(() {
+          _loadingTrainers = false;
+          _loadingSubscription = false;
+        });
+        return;
+      }
       final list = await StaffApiService.getBySalon(token, salon.id);
+      final sub = await DashboardApiService.getCurrentSubscription(token);
+      String? selectedTrainerId = _trainerId;
+      if (selectedTrainerId == null) {
+        final currentName = _initial?.trainerName.trim() ?? '';
+        if (currentName.isNotEmpty && currentName != '—' && currentName != '-') {
+          final matched = list.where(
+            (t) => t.name.trim().toLowerCase() == currentName.toLowerCase(),
+          );
+          if (matched.isNotEmpty) {
+            selectedTrainerId = matched.first.id;
+          }
+        }
+      }
       if (!mounted) return;
       setState(() {
         _trainers = list;
+        _trainerId = selectedTrainerId;
         _loadingTrainers = false;
+        _loadingSubscription = false;
+        _isProPlan = (sub?.type.toUpperCase() ?? 'FREEMIUM') == 'PRO';
       });
     } catch (_) {
-      if (mounted) setState(() => _loadingTrainers = false);
+      if (mounted) {
+        setState(() {
+          _loadingTrainers = false;
+          _loadingSubscription = false;
+        });
+      }
     }
   }
 
@@ -89,6 +120,25 @@ class _OwnerEditTrainingSessionScreenState
     setState(() {
       _startsAt = DateTime(d.year, d.month, d.day, t.hour, t.minute);
     });
+  }
+
+  Future<void> _showTrainerPlanInfo() async {
+    await showDialog<void>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Тренер'),
+        content: const Text(
+          'На плане Free поле тренера доступно только для чтения.\n\n'
+          'Изменять тренера и добавлять новых тренеров можно на плане Pro.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: const Text('Понятно'),
+          ),
+        ],
+      ),
+    );
   }
 
   bool _sameStartLocal(OwnerTrainingSession session) {
@@ -113,7 +163,7 @@ class _OwnerEditTrainingSessionScreenState
     }
     final trainerBefore = session.trainerId;
     final trainerAfter = _trainerId;
-    if (trainerBefore != trainerAfter) {
+    if (_isProPlan && trainerBefore != trainerAfter) {
       body['trainerId'] = trainerAfter;
     }
 
@@ -197,8 +247,8 @@ class _OwnerEditTrainingSessionScreenState
       );
     }
 
-    final completed =
-        session.status.toUpperCase() == 'COMPLETED';
+    final completed = session.status.toUpperCase() == 'COMPLETED';
+    final trainerReadOnly = completed || !_isProPlan;
 
     return Scaffold(
       backgroundColor: AppColors.backgroundSecondary,
@@ -228,7 +278,7 @@ class _OwnerEditTrainingSessionScreenState
           ListTile(
             contentPadding: EdgeInsets.zero,
             title: const Text(
-              'Начало',
+              'Дата и время',
               style: TextStyle(
                 fontSize: 13,
                 fontWeight: FontWeight.w600,
@@ -247,16 +297,33 @@ class _OwnerEditTrainingSessionScreenState
             onTap: completed ? null : _pickStart,
           ),
           const SizedBox(height: 8),
-          Text(
-            'Тренер',
-            style: TextStyle(
-              fontSize: 13,
-              fontWeight: FontWeight.w600,
-              color: AppColors.textSecondary,
-            ),
+          Row(
+            children: [
+              Text(
+                'Тренер',
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.textSecondary,
+                ),
+              ),
+              const SizedBox(width: 6),
+              InkWell(
+                borderRadius: BorderRadius.circular(12),
+                onTap: _showTrainerPlanInfo,
+                child: const Padding(
+                  padding: EdgeInsets.all(2),
+                  child: Icon(
+                    Icons.info_outline,
+                    size: 16,
+                    color: AppColors.textSecondary,
+                  ),
+                ),
+              ),
+            ],
           ),
           const SizedBox(height: 8),
-          if (_loadingTrainers)
+          if (_loadingTrainers || _loadingSubscription)
             const Padding(
               padding: EdgeInsets.all(12),
               child: Center(child: CircularProgressIndicator()),
@@ -303,13 +370,24 @@ class _OwnerEditTrainingSessionScreenState
                       isExpanded: true,
                       value: _trainerId,
                       items: items,
-                      onChanged: completed
+                      onChanged: trainerReadOnly
                           ? null
                           : (v) => setState(() => _trainerId = v),
                     ),
                   ),
                 );
               },
+            ),
+          if (!_isProPlan && !completed)
+            Padding(
+              padding: const EdgeInsets.only(top: 8),
+              child: Text(
+                'На Free изменение тренера недоступно.',
+                style: TextStyle(
+                  color: AppColors.textSecondary,
+                  fontSize: 12,
+                ),
+              ),
             ),
           const SizedBox(height: 28),
           SizedBox(

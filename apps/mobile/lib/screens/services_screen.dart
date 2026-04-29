@@ -672,6 +672,12 @@ class _EditTrainingScreenState extends State<_EditTrainingScreen> {
   late final TextEditingController _priceController;
   int? _selectedCategoryId;
   bool _saving = false;
+  bool _applyScheduleChanges = false;
+  bool _applyFromToday = true;
+  late DateTime _effectiveFromDate;
+  late TimeOfDay _defaultSlotTime;
+  final Set<int> _recurringDays = <int>{1, 3, 5};
+  final Map<int, TimeOfDay> _recurringDayTimes = <int, TimeOfDay>{};
 
   String _formatThousandsDots(int value) {
     final raw = value.abs().toString();
@@ -691,9 +697,7 @@ class _EditTrainingScreenState extends State<_EditTrainingScreen> {
       hintText: hintText,
       filled: true,
       fillColor: AppColors.backgroundPrimary,
-      border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
-      ),
+      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
         borderSide: const BorderSide(color: AppColors.borderPrimary),
@@ -712,6 +716,12 @@ class _EditTrainingScreenState extends State<_EditTrainingScreen> {
     _priceController = TextEditingController(
       text: _formatThousandsDots((widget.item.price ?? 0).round()),
     );
+    final now = DateTime.now();
+    _effectiveFromDate = DateTime(now.year, now.month, now.day);
+    _defaultSlotTime = TimeOfDay.fromDateTime(now);
+    for (final day in _recurringDays) {
+      _recurringDayTimes[day] = _defaultSlotTime;
+    }
     _selectedCategoryId = widget.item.trainingCategoryId;
     if (_selectedCategoryId != null &&
         !widget.categories.any((c) => c.id == _selectedCategoryId)) {
@@ -749,6 +759,23 @@ class _EditTrainingScreenState extends State<_EditTrainingScreen> {
       return;
     }
 
+    final recurringDays = _recurringDays.toList()..sort();
+    if (_applyScheduleChanges && recurringDays.isEmpty) {
+      ScaffoldMessenger.maybeOf(context)?.showSnackBar(
+        const SnackBar(content: Text('Выберите хотя бы один день')),
+      );
+      return;
+    }
+    final slots = recurringDays
+        .map(
+          (d) => {
+            'day': d,
+            'startTime':
+                '${_recurringDayTimes[d]?.hour.toString().padLeft(2, '0') ?? _defaultSlotTime.hour.toString().padLeft(2, '0')}:${_recurringDayTimes[d]?.minute.toString().padLeft(2, '0') ?? _defaultSlotTime.minute.toString().padLeft(2, '0')}',
+          },
+        )
+        .toList();
+
     setState(() => _saving = true);
     try {
       final updated = await ServicesApiService.update(
@@ -761,6 +788,38 @@ class _EditTrainingScreenState extends State<_EditTrainingScreen> {
       );
       if (!mounted) return;
       if (updated != null) {
+        if (_applyScheduleChanges) {
+          final scheduleRes = await ServicesApiService.updateTrainingSchedule(
+            widget.token,
+            widget.item.id,
+            slots: slots,
+            effectiveFrom: _applyFromToday ? DateTime.now() : _effectiveFromDate,
+          );
+          if (scheduleRes == null && mounted) {
+            ScaffoldMessenger.maybeOf(context)?.showSnackBar(
+              const SnackBar(
+                content: Text('Не удалось обновить расписание тренировок'),
+              ),
+            );
+            return;
+          }
+          final scheduleData = scheduleRes ?? const <String, dynamic>{};
+          final updatedCount =
+              (scheduleData['updatedCount'] as num?)?.toInt() ?? 0;
+          final createdCount =
+              (scheduleData['createdCount'] as num?)?.toInt() ?? 0;
+          final removedCount =
+              (scheduleData['removedCount'] as num?)?.toInt() ?? 0;
+          final skippedBooked =
+              (scheduleData['skippedBookedCount'] as num?)?.toInt() ?? 0;
+          final conflicts =
+              (scheduleData['skippedConflicts'] as num?)?.toInt() ?? 0;
+          final summary = 'Расписание: обновлено $updatedCount, добавлено $createdCount, '
+              'удалено $removedCount, пропущено занятых $skippedBooked, конфликтов $conflicts';
+          ScaffoldMessenger.maybeOf(context)?.showSnackBar(
+            SnackBar(content: Text(summary)),
+          );
+        }
         Navigator.of(context).pop(true);
         return;
       }
@@ -794,7 +853,7 @@ class _EditTrainingScreenState extends State<_EditTrainingScreen> {
         title: const Text(
           'Редактировать тренировку',
           style: TextStyle(
-            fontSize: 24,
+            fontSize: 18,
             fontWeight: FontWeight.w600,
             color: AppColors.textPrimary,
           ),
@@ -918,6 +977,94 @@ class _EditTrainingScreenState extends State<_EditTrainingScreen> {
               keyboardType: TextInputType.number,
               decoration: _fieldDecoration(),
             ),
+            const SizedBox(height: 16),
+            SwitchListTile(
+              value: _applyScheduleChanges,
+              onChanged: (v) => setState(() => _applyScheduleChanges = v),
+              title: const Text(
+                'Изменить дни и время для всех будущих тренировок',
+              ),
+              contentPadding: EdgeInsets.zero,
+            ),
+            if (_applyScheduleChanges) ...[
+              const SizedBox(height: 8),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: List.generate(7, (i) {
+                  final day = i + 1;
+                  const labels = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'];
+                  final selected = _recurringDays.contains(day);
+                  return FilterChip(
+                    label: Text(labels[i]),
+                    selected: selected,
+                    onSelected: (on) {
+                      setState(() {
+                        if (on) {
+                          _recurringDays.add(day);
+                          _recurringDayTimes[day] =
+                              _recurringDayTimes[day] ?? _defaultSlotTime;
+                        } else {
+                          _recurringDays.remove(day);
+                          _recurringDayTimes.remove(day);
+                        }
+                      });
+                    },
+                    selectedColor: AppColors.primary100,
+                    checkmarkColor: AppColors.primary500,
+                  );
+                }),
+              ),
+              const SizedBox(height: 10),
+              ...(_recurringDays.toList()..sort()).map((day) {
+                const labels = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'];
+                final time = _recurringDayTimes[day] ?? _defaultSlotTime;
+                return ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  title: Text('Время (${labels[day - 1]})'),
+                  subtitle: Text(time.format(context)),
+                  trailing: const Icon(Icons.schedule),
+                  onTap: () async {
+                    final picked = await showTimePicker(
+                      context: context,
+                      initialTime: time,
+                    );
+                    if (picked == null || !mounted) return;
+                    setState(() => _recurringDayTimes[day] = picked);
+                  },
+                );
+              }),
+              const SizedBox(height: 8),
+              SwitchListTile(
+                value: _applyFromToday,
+                onChanged: (v) => setState(() => _applyFromToday = v),
+                title: const Text('Применить с сегодняшнего дня'),
+                contentPadding: EdgeInsets.zero,
+              ),
+              if (!_applyFromToday)
+                ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  title: const Text('Дата начала изменений'),
+                  subtitle: Text(
+                    MaterialLocalizations.of(
+                      context,
+                    ).formatFullDate(_effectiveFromDate),
+                  ),
+                  trailing: const Icon(Icons.calendar_today_outlined),
+                  onTap: () async {
+                    final picked = await showDatePicker(
+                      context: context,
+                      initialDate: _effectiveFromDate,
+                      firstDate: DateTime.now().subtract(
+                        const Duration(days: 365),
+                      ),
+                      lastDate: DateTime.now().add(const Duration(days: 365 * 2)),
+                    );
+                    if (picked == null || !mounted) return;
+                    setState(() => _effectiveFromDate = picked);
+                  },
+                ),
+            ],
             const SizedBox(height: 24),
             SizedBox(
               width: double.infinity,
