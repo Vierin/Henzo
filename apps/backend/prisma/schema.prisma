@@ -38,20 +38,6 @@ model SessionBooking {
   @@index([userId, status, startsAt]) // P2: Для быстрого поиска клиентских бронирований по статусу
 }
 
-model PendingBooking {
-  id          String   @id @default(cuid())
-  token       String   @unique
-  email       String
-  bookingData Json
-  expiresAt   DateTime
-  createdAt   DateTime @default(now())
-
-  @@index([email])
-  @@index([expiresAt])
-  @@index([token])
-}
- 
-
 model Review {
   id        String   @id @default(cuid())
   studioId  String
@@ -84,6 +70,7 @@ model Studio {
   email            String?
   website          String?
   instagram        String?
+  logoUrl          String?
   photos           String[]
   workingHours     Json?
   reminderSettings Json?         @default("{\"intervals\":[24]}")
@@ -243,33 +230,6 @@ model TrainingCategory {
   name_ru          String    @unique
   main_category_id Int?
   Training         Training[]
-}
-
-model RecommendedStudio {
-  id         Int      @id @default(autoincrement())
-  nameEn     String
-  nameVi     String
-  nameRu     String
-  categoryId Int?
-  priority   Int      @default(0)
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
-
-  @@index([nameEn, nameVi, nameRu])
-  @@index([priority])
-  @@index([categoryId])
-}
-
-model City {
-  id          String  @id
-  name        String
-  countryCode String  @default("VN")
-  lat         Float
-  lng         Float
-  isActive    Boolean @default(true)
-
-  @@index([countryCode, isActive])
-  @@index([isActive])
 }
 
 enum BookingStatus {

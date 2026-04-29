@@ -235,6 +235,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
                   setState(() {
                     _selectedDay = day;
                     _weekStart = day.subtract(Duration(days: day.weekday - 1));
+                    _isMonthExpanded = false;
                   });
                 },
                 borderRadius: BorderRadius.circular(20),
@@ -394,9 +395,11 @@ class _CalendarScreenState extends State<CalendarScreen> {
                         if (_isMonthExpanded)
                           GestureDetector(
                             onHorizontalDragEnd: (details) {
-                              if ((details.primaryVelocity ?? 0) < -150) {
+                              const threshold = 90.0;
+                              if ((details.primaryVelocity ?? 0) < -threshold) {
                                 _shiftMonth(1);
-                              } else if ((details.primaryVelocity ?? 0) > 150) {
+                              } else if ((details.primaryVelocity ?? 0) >
+                                  threshold) {
                                 _shiftMonth(-1);
                               }
                             },
@@ -407,6 +410,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
                             height: 74,
                             child: PageView.builder(
                               controller: _weekPagerController,
+                              physics: const _AmplifiedWeekPageScrollPhysics(),
                               onPageChanged: (page) {
                                 final delta = page - _weekInitialPage;
                                 if (delta == 0) return;
@@ -568,12 +572,22 @@ class _CalendarScreenState extends State<CalendarScreen> {
                                     s,
                                     trainerFallbackName:
                                         _ownerTrainerFallback(),
-                                    onEditTraining: s.trainingId.isNotEmpty
+                                    onEditSession: s.sessionId.isNotEmpty
                                         ? () {
                                             final shell = context
                                                 .findAncestorStateOfType<
-                                                  MainShellState
-                                                >();
+                                                    MainShellState>();
+                                            shell?.navigateToTab0Route(
+                                              '/owner/session/edit',
+                                              arguments: s.toRouteArgs(),
+                                            );
+                                          }
+                                        : null,
+                                    onEditService: s.trainingId.isNotEmpty
+                                        ? () {
+                                            final shell = context
+                                                .findAncestorStateOfType<
+                                                    MainShellState>();
                                             shell?.navigateToTab0Route(
                                               '/services',
                                               arguments: {
@@ -591,6 +605,32 @@ class _CalendarScreenState extends State<CalendarScreen> {
           ),
         );
       },
+    );
+  }
+}
+
+/// Amplifies horizontal drag so switching weeks needs less finger travel.
+class _AmplifiedWeekPageScrollPhysics extends PageScrollPhysics {
+  const _AmplifiedWeekPageScrollPhysics({
+    super.parent,
+    this.dragMultiplier = 1.55,
+  });
+
+  final double dragMultiplier;
+
+  @override
+  _AmplifiedWeekPageScrollPhysics applyTo(ScrollPhysics? ancestor) {
+    return _AmplifiedWeekPageScrollPhysics(
+      parent: buildParent(ancestor),
+      dragMultiplier: dragMultiplier,
+    );
+  }
+
+  @override
+  double applyPhysicsToUserOffset(ScrollMetrics position, double offset) {
+    return super.applyPhysicsToUserOffset(
+      position,
+      offset * dragMultiplier,
     );
   }
 }

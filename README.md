@@ -76,8 +76,8 @@ pnpm check-types
 
 Project uses branch-based flow:
 
-- `staging` = test environment (auto deploy)
-- `main` = production (manual deploy)
+- `staging` = test environment (auto deploy, backend image is built once and deployed by digest)
+- `main` = production (manual approval via GitHub Environment, promote same verified staging image digest)
 
 ### Staging deploy (automatic)
 
@@ -85,16 +85,31 @@ Project uses branch-based flow:
 2. Commit changes.
 3. Merge/push into `staging`.
 4. GitHub Actions runs automatically:
-   - `CI`
+   - `CI` (runs only on `pull_request`, no duplicated push run)
+   - `PR Branch Guards`
    - `Deploy Frontend to Vercel` (staging)
    - `Deploy Backend (staging) to DigitalOcean`
 
 ### Production deploy (manual, safe)
 
 1. Merge `staging` into `main`.
-2. Trigger GitHub Actions manually:
-   - `Deploy Backend to DigitalOcean` with input `confirm=DEPLOY`
+2. Trigger GitHub Actions manually (or push to `main` and approve environment):
+   - `Deploy Backend to DigitalOcean` with input `confirm=DEPLOY` (promotes already tested staging image digest)
    - `Deploy Frontend to Vercel` with input `environment=production` from branch `main`
+
+### Branch protection / required checks
+
+For both `staging` and `main`, set required checks in GitHub branch protection:
+
+- `Lint and typecheck` (job from `CI`)
+- `Enforce staging/main PR flow` (job from `PR Branch Guards`)
+
+Recommended:
+
+- require pull request before merge;
+- require at least 1 reviewer;
+- disable direct pushes to `main`;
+- require up-to-date branch before merge.
 
 ### Required GitHub Secrets (Actions)
 

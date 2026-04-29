@@ -15,6 +15,7 @@ import 'services_screen.dart';
 import 'staff_screen.dart';
 import 'clients_screen.dart';
 import 'all_bookings_screen.dart';
+import 'owner_edit_training_session_screen.dart';
 
 class MainShell extends StatefulWidget {
   const MainShell({super.key});
@@ -95,9 +96,17 @@ class MainShellState extends State<MainShell> {
             return MaterialPageRoute(builder: (_) => const DashboardScreen());
           case '/trainings/new':
             return MaterialPageRoute(builder: (_) => const AddTrainingScreen());
+          case '/owner/session/edit':
+            return MaterialPageRoute<bool?>(
+              builder: (_) => const OwnerEditTrainingSessionScreen(),
+              settings: settings,
+            );
           case '/offerings':
           case '/services':
-            return MaterialPageRoute(builder: (_) => const ServicesScreen());
+            return MaterialPageRoute<bool?>(
+              builder: (_) => const ServicesScreen(),
+              settings: settings,
+            );
           case '/trainers':
           case '/staff':
             return MaterialPageRoute(builder: (_) => const StaffScreen());

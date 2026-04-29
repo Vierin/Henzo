@@ -54,6 +54,10 @@ export class UpdateStudioDto {
   instagram?: string;
 
   @IsOptional()
+  @IsString()
+  logoUrl?: string | null;
+
+  @IsOptional()
   @IsArray()
   @IsString({ each: true })
   photos?: string[];

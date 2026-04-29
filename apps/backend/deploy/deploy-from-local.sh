@@ -94,21 +94,16 @@ if [ ! -f "docker-compose.yml" ]; then
     exit 1
 fi
 
-# Сборка
-echo "🔨 Сборка Docker образов..."
-docker-compose build
-
-# Миграции
-echo "🗄️  Применение миграций..."
+IMAGE_REF="${BACKEND_IMAGE:-henzo-backend:prod}"
+RUN_MIGRATIONS="false"
 read -p "Применить миграции Prisma? (y/n) " -n 1 -r
 echo
 if [[ $REPLY =~ ^[Yy]$ ]]; then
-    docker-compose run --rm backend npx prisma migrate deploy || echo "⚠️  Ошибка миграций"
+    RUN_MIGRATIONS="true"
 fi
 
-# Запуск
-echo "▶️  Запуск контейнеров..."
-docker-compose up -d
+echo "▶️  Unified deploy entrypoint..."
+bash deploy/deploy-compose-service.sh --env=production --image="$IMAGE_REF" --migrate="$RUN_MIGRATIONS"
 
 # Ожидание
 echo "⏳ Ожидание запуска (30 секунд)..."
@@ -117,7 +112,7 @@ sleep 30
 # Проверка
 echo ""
 echo "📊 Статус контейнеров:"
-docker-compose ps
+docker compose ps
 
 echo ""
 echo "🔍 Health check:"

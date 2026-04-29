@@ -49,19 +49,6 @@ class _ServicesScreenState extends State<ServicesScreen> {
   String _searchQuery = '';
   String? _selectedCategory;
 
-  String _formatThousandsDots(int value) {
-    final raw = value.abs().toString();
-    final chars = raw.split('').reversed.toList();
-    final parts = <String>[];
-    for (var i = 0; i < chars.length; i++) {
-      parts.add(chars[i]);
-      if ((i + 1) % 3 == 0 && i + 1 < chars.length) {
-        parts.add('.');
-      }
-    }
-    return parts.reversed.join();
-  }
-
   @override
   void initState() {
     super.initState();
@@ -132,15 +119,8 @@ class _ServicesScreenState extends State<ServicesScreen> {
   }
 
   String _formatDuration(int? minutes) {
-    final locale = context.read<LocaleProvider>();
     if (minutes == null) return '—';
-    final h = minutes ~/ 60;
-    final m = minutes % 60;
-    if (h > 0 && m > 0)
-      return '${h}${locale.t('servicesScreen.hourShort')} ${m}${locale.t('servicesScreen.minuteShort')}';
-    if (h > 0)
-      return '${h}${locale.t('servicesScreen.hourShort')} 0${locale.t('servicesScreen.minuteShort')}';
-    return '${m}${locale.t('servicesScreen.minuteShort')}';
+    return '$minutes min';
   }
 
   List<String> get _uniqueCategories {
@@ -303,7 +283,7 @@ class _ServicesScreenState extends State<ServicesScreen> {
     }
     if (match == null) return;
     _didOpenEditFromRouteArgs = true;
-    _openEditDialog(match);
+    _openEditTrainingPage(match);
   }
 
   Future<void> _openAddTrainingPage() async {
@@ -318,360 +298,104 @@ class _ServicesScreenState extends State<ServicesScreen> {
   void _showCategoryInfo() {
     showDialog<void>(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Информация'),
-        content: const Text(
-          'Если нет категории для вашей услуги, пожалуйста сообщите нам об этом, и мы добавим ее как можно скорее.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(ctx).pop(),
-            child: const Text('Понятно'),
+      barrierColor: Colors.black.withValues(alpha: 0.45),
+      builder: (ctx) => Dialog(
+        backgroundColor: Colors.transparent,
+        insetPadding: const EdgeInsets.symmetric(horizontal: 18, vertical: 24),
+        child: Container(
+          decoration: BoxDecoration(
+            color: AppColors.backgroundPrimary,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: AppColors.borderPrimary),
+            boxShadow: const [
+              BoxShadow(
+                color: Color(0x1A000000),
+                blurRadius: 16,
+                offset: Offset(0, 8),
+              ),
+            ],
           ),
-        ],
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    const Expanded(
+                      child: Text(
+                        'Информация',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w800,
+                          color: AppColors.textPrimary,
+                        ),
+                      ),
+                    ),
+                    IconButton(
+                      onPressed: () => Navigator.of(ctx).pop(),
+                      visualDensity: VisualDensity.compact,
+                      splashRadius: 18,
+                      icon: const Icon(
+                        Icons.close,
+                        color: AppColors.textSecondary,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 6),
+                const Text(
+                  'Если нет категории для вашей услуги, пожалуйста сообщите нам об этом, и мы добавим ее как можно скорее.',
+                  style: TextStyle(
+                    fontSize: 14,
+                    height: 1.4,
+                    color: AppColors.textSecondary,
+                  ),
+                ),
+                const SizedBox(height: 14),
+                SizedBox(
+                  width: double.infinity,
+                  height: 44,
+                  child: FilledButton(
+                    onPressed: () => Navigator.of(ctx).pop(),
+                    style: FilledButton.styleFrom(
+                      backgroundColor: AppColors.primary500,
+                    ),
+                    child: const Text('Понятно'),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
       ),
     );
   }
 
-  Future<void> _openEditDialog(ServiceItem item) async {
+  Future<void> _openEditTrainingPage(ServiceItem item) async {
     final token = context.read<AuthService>().accessToken;
     if (token == null || token.isEmpty) return;
-    final locale = context.read<LocaleProvider>();
-    final nameController = TextEditingController(text: item.name);
-    final priceController = TextEditingController(
-      text: _formatThousandsDots((item.price ?? 0).round()),
-    );
-    final durationController = TextEditingController(
-      text: (item.duration ?? 30).toString(),
-    );
     final categories = await ServicesApiService.getTrainingCategories(token);
-    int? selectedCategoryId = item.trainingCategoryId;
-    if (selectedCategoryId != null &&
-        !categories.any((c) => c.id == selectedCategoryId)) {
-      selectedCategoryId = null;
-    }
-    showDialog(
-      context: context,
-      builder: (ctx) => Dialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        child: Container(
-          constraints: const BoxConstraints(maxWidth: 520, maxHeight: 600),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Padding(
-                padding: const EdgeInsets.fromLTRB(12, 16, 12, 16),
-                child: Text(
-                  'Редактировать тренировку',
-                  style: TextStyle(
-                    fontSize: 22,
-                    fontWeight: FontWeight.bold,
-                    color: AppColors.textPrimary,
-                  ),
-                ),
-              ),
-              Flexible(
-                child: SingleChildScrollView(
-                  padding: const EdgeInsets.fromLTRB(12, 0, 12, 16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Название тренировки',
-                        style: TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w500,
-                          color: AppColors.textPrimary,
-                        ),
-                      ),
-                      const SizedBox(height: 6),
-                      TextField(
-                        controller: nameController,
-                        decoration: InputDecoration(
-                          hintText: 'Например: Vinyasa Flow',
-                          filled: true,
-                          fillColor: AppColors.backgroundPrimary,
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          enabledBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
-                            borderSide: const BorderSide(
-                              color: AppColors.borderPrimary,
-                            ),
-                          ),
-                          contentPadding: const EdgeInsets.symmetric(
-                            horizontal: 14,
-                            vertical: 12,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-                      Row(
-                        children: [
-                          Text(
-                            'Категория',
-                            style: TextStyle(
-                              fontSize: 14,
-                              fontWeight: FontWeight.w500,
-                              color: AppColors.textPrimary,
-                            ),
-                          ),
-                          const SizedBox(width: 6),
-                          InkWell(
-                            borderRadius: BorderRadius.circular(12),
-                            onTap: _showCategoryInfo,
-                            child: const Padding(
-                              padding: EdgeInsets.all(2),
-                              child: Icon(
-                                Icons.info_outline,
-                                size: 16,
-                                color: AppColors.textSecondary,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 6),
-                      StatefulBuilder(
-                        builder: (context, setLocalState) {
-                          return DropdownButtonFormField<int>(
-                            isExpanded: true,
-                            isDense: true,
-                            value: selectedCategoryId,
-                            dropdownColor: AppColors.backgroundPrimary,
-                            borderRadius: BorderRadius.circular(12),
-                            menuMaxHeight: 320,
-                            icon: const Icon(
-                              Icons.keyboard_arrow_down_rounded,
-                              color: AppColors.textSecondary,
-                            ),
-                            style: const TextStyle(
-                              fontSize: 14,
-                              fontWeight: FontWeight.w500,
-                              color: AppColors.textPrimary,
-                            ),
-                            hint: const Text(
-                              'Выберите категорию',
-                              style: TextStyle(
-                                color: AppColors.textSecondary,
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
-                            items: categories
-                                .map(
-                                  (TrainingCategoryOption c) =>
-                                      DropdownMenuItem<int>(
-                                        value: c.id,
-                                        child: Padding(
-                                          padding: const EdgeInsets.symmetric(
-                                            vertical: 2,
-                                          ),
-                                          child: Text(
-                                            c.label(locale.localeCode),
-                                            overflow: TextOverflow.ellipsis,
-                                            maxLines: 1,
-                                          ),
-                                        ),
-                                      ),
-                                )
-                                .toList(),
-                            onChanged: categories.isEmpty
-                                ? null
-                                : (v) => setLocalState(
-                                    () => selectedCategoryId = v,
-                                  ),
-                            decoration: InputDecoration(
-                              filled: true,
-                              fillColor: AppColors.backgroundPrimary,
-                              border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                              enabledBorder: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(12),
-                                borderSide: const BorderSide(
-                                  color: AppColors.borderPrimary,
-                                ),
-                              ),
-                              contentPadding: const EdgeInsets.symmetric(
-                                horizontal: 14,
-                                vertical: 12,
-                              ),
-                            ),
-                          );
-                        },
-                      ),
-                      const SizedBox(height: 16),
-                      Text(
-                        'Длительность (мин)',
-                        style: TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w500,
-                          color: AppColors.textPrimary,
-                        ),
-                      ),
-                      const SizedBox(height: 6),
-                      TextField(
-                        controller: durationController,
-                        keyboardType: TextInputType.number,
-                        decoration: InputDecoration(
-                          filled: true,
-                          fillColor: AppColors.backgroundPrimary,
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          enabledBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
-                            borderSide: const BorderSide(
-                              color: AppColors.borderPrimary,
-                            ),
-                          ),
-                          contentPadding: const EdgeInsets.symmetric(
-                            horizontal: 14,
-                            vertical: 12,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-                      Text(
-                        'Цена',
-                        style: TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w500,
-                          color: AppColors.textPrimary,
-                        ),
-                      ),
-                      const SizedBox(height: 6),
-                      TextField(
-                        controller: priceController,
-                        keyboardType: TextInputType.number,
-                        decoration: InputDecoration(
-                          filled: true,
-                          fillColor: AppColors.backgroundPrimary,
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          enabledBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
-                            borderSide: const BorderSide(
-                              color: AppColors.borderPrimary,
-                            ),
-                          ),
-                          contentPadding: const EdgeInsets.symmetric(
-                            horizontal: 14,
-                            vertical: 12,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 24),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.end,
-                        children: [
-                          TextButton(
-                            onPressed: () => Navigator.pop(ctx),
-                            child: Text(locale.t('common.cancel')),
-                          ),
-                          const SizedBox(width: 8),
-                          FilledButton(
-                            onPressed: () async {
-                              final name = nameController.text.trim();
-                              if (name.isEmpty) {
-                                ScaffoldMessenger.maybeOf(
-                                  context,
-                                )?.showSnackBar(
-                                  const SnackBar(
-                                    content: Text(
-                                      'Введите название тренировки',
-                                    ),
-                                  ),
-                                );
-                                return;
-                              }
-                              final price =
-                                  double.tryParse(
-                                    priceController.text
-                                        .trim()
-                                        .replaceAll('.', '')
-                                        .replaceAll(',', '.'),
-                                  ) ??
-                                  0.0;
-                              final duration =
-                                  int.tryParse(durationController.text) ??
-                                  item.duration ??
-                                  30;
-                              if (price <= 0 || duration <= 0) {
-                                ScaffoldMessenger.maybeOf(
-                                  context,
-                                )?.showSnackBar(
-                                  SnackBar(
-                                    content: Text(
-                                      'Цена и длительность должны быть > 0',
-                                    ),
-                                  ),
-                                );
-                                return;
-                              }
-                              Navigator.pop(ctx);
-                              setState(() => _isActionLoading = true);
-                              try {
-                                final updated = await ServicesApiService.update(
-                                  token,
-                                  item.id,
-                                  name: name,
-                                  price: price,
-                                  duration: duration,
-                                  trainingCategoryId: selectedCategoryId,
-                                );
-                                if (!mounted) return;
-                                if (updated != null) {
-                                  context
-                                      .read<ServicesStaffCache>()
-                                      .invalidateServices(_salon?.id);
-                                  await _loadData();
-                                  ScaffoldMessenger.maybeOf(
-                                    context,
-                                  )?.showSnackBar(
-                                    SnackBar(
-                                      content: Text(
-                                        locale.t('common.changesSaved'),
-                                      ),
-                                      backgroundColor: Colors.green,
-                                    ),
-                                  );
-                                } else {
-                                  ScaffoldMessenger.maybeOf(
-                                    context,
-                                  )?.showSnackBar(
-                                    SnackBar(
-                                      content: Text(
-                                        locale.t('common.saveFailed'),
-                                      ),
-                                      backgroundColor: Colors.red,
-                                    ),
-                                  );
-                                }
-                              } catch (e) {
-                                if (mounted) showApiError(context, e);
-                              } finally {
-                                if (mounted)
-                                  setState(() => _isActionLoading = false);
-                              }
-                            },
-                            style: FilledButton.styleFrom(
-                              backgroundColor: AppColors.primary500,
-                            ),
-                            child: Text(locale.t('common.update')),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ],
-          ),
+    final changed = await Navigator.of(context).push<bool>(
+      MaterialPageRoute(
+        builder: (_) => _EditTrainingScreen(
+          token: token,
+          item: item,
+          categories: categories,
+          onShowCategoryInfo: _showCategoryInfo,
         ),
+      ),
+    );
+    if (changed != true || !mounted) return;
+    context.read<ServicesStaffCache>().invalidateServices(_salon?.id);
+    await _loadData();
+    if (!mounted) return;
+    final locale = context.read<LocaleProvider>();
+    ScaffoldMessenger.maybeOf(context)?.showSnackBar(
+      SnackBar(
+        content: Text(locale.t('common.changesSaved')),
+        backgroundColor: Colors.green,
       ),
     );
   }
@@ -912,7 +636,7 @@ class _ServicesScreenState extends State<ServicesScreen> {
                             formatPrice: formatVnd,
                             formatDuration: _formatDuration,
                             isActionLoading: _isActionLoading,
-                            onEdit: () => _openEditDialog(item),
+                            onEdit: () => _openEditTrainingPage(item),
                             onDelete: () => _deleteService(item),
                           );
                         }, childCount: _filteredAndSortedServices.length),
@@ -921,6 +645,305 @@ class _ServicesScreenState extends State<ServicesScreen> {
                 ],
               ),
             ),
+    );
+  }
+}
+
+class _EditTrainingScreen extends StatefulWidget {
+  const _EditTrainingScreen({
+    required this.token,
+    required this.item,
+    required this.categories,
+    required this.onShowCategoryInfo,
+  });
+
+  final String token;
+  final ServiceItem item;
+  final List<TrainingCategoryOption> categories;
+  final VoidCallback onShowCategoryInfo;
+
+  @override
+  State<_EditTrainingScreen> createState() => _EditTrainingScreenState();
+}
+
+class _EditTrainingScreenState extends State<_EditTrainingScreen> {
+  late final TextEditingController _nameController;
+  late final TextEditingController _durationController;
+  late final TextEditingController _priceController;
+  int? _selectedCategoryId;
+  bool _saving = false;
+
+  String _formatThousandsDots(int value) {
+    final raw = value.abs().toString();
+    final chars = raw.split('').reversed.toList();
+    final parts = <String>[];
+    for (var i = 0; i < chars.length; i++) {
+      parts.add(chars[i]);
+      if ((i + 1) % 3 == 0 && i + 1 < chars.length) {
+        parts.add('.');
+      }
+    }
+    return parts.reversed.join();
+  }
+
+  InputDecoration _fieldDecoration({String? hintText}) {
+    return InputDecoration(
+      hintText: hintText,
+      filled: true,
+      fillColor: AppColors.backgroundPrimary,
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+      ),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: const BorderSide(color: AppColors.borderPrimary),
+      ),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+    );
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _nameController = TextEditingController(text: widget.item.name);
+    _durationController = TextEditingController(
+      text: (widget.item.duration ?? 30).toString(),
+    );
+    _priceController = TextEditingController(
+      text: _formatThousandsDots((widget.item.price ?? 0).round()),
+    );
+    _selectedCategoryId = widget.item.trainingCategoryId;
+    if (_selectedCategoryId != null &&
+        !widget.categories.any((c) => c.id == _selectedCategoryId)) {
+      _selectedCategoryId = null;
+    }
+  }
+
+  @override
+  void dispose() {
+    _nameController.dispose();
+    _durationController.dispose();
+    _priceController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _submit() async {
+    final locale = context.read<LocaleProvider>();
+    final name = _nameController.text.trim();
+    if (name.isEmpty) {
+      ScaffoldMessenger.maybeOf(context)?.showSnackBar(
+        const SnackBar(content: Text('Введите название тренировки')),
+      );
+      return;
+    }
+    final price =
+        double.tryParse(
+          _priceController.text.trim().replaceAll('.', '').replaceAll(',', '.'),
+        ) ??
+        0.0;
+    final duration = int.tryParse(_durationController.text.trim()) ?? 0;
+    if (price <= 0 || duration <= 0) {
+      ScaffoldMessenger.maybeOf(context)?.showSnackBar(
+        const SnackBar(content: Text('Цена и длительность должны быть > 0')),
+      );
+      return;
+    }
+
+    setState(() => _saving = true);
+    try {
+      final updated = await ServicesApiService.update(
+        widget.token,
+        widget.item.id,
+        name: name,
+        price: price,
+        duration: duration,
+        trainingCategoryId: _selectedCategoryId,
+      );
+      if (!mounted) return;
+      if (updated != null) {
+        Navigator.of(context).pop(true);
+        return;
+      }
+      ScaffoldMessenger.maybeOf(context)?.showSnackBar(
+        SnackBar(
+          content: Text(locale.t('common.saveFailed')),
+          backgroundColor: Colors.red,
+        ),
+      );
+    } catch (e) {
+      if (mounted) showApiError(context, e);
+    } finally {
+      if (mounted) setState(() => _saving = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final locale = context.watch<LocaleProvider>();
+    return Scaffold(
+      backgroundColor: AppColors.backgroundSecondary,
+      appBar: AppBar(
+        backgroundColor: AppColors.backgroundPrimary,
+        elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          color: AppColors.textPrimary,
+          onPressed: () => Navigator.of(context).pop(),
+        ),
+        centerTitle: true,
+        title: const Text(
+          'Редактировать тренировку',
+          style: TextStyle(
+            fontSize: 24,
+            fontWeight: FontWeight.w600,
+            color: AppColors.textPrimary,
+          ),
+        ),
+      ),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.fromLTRB(12, 16, 12, 24),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Название тренировки',
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w500,
+                color: AppColors.textPrimary,
+              ),
+            ),
+            const SizedBox(height: 6),
+            TextField(
+              controller: _nameController,
+              decoration: _fieldDecoration(hintText: 'Например: Vinyasa Flow'),
+            ),
+            const SizedBox(height: 16),
+            Row(
+              children: [
+                Text(
+                  'Категория',
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
+                    color: AppColors.textPrimary,
+                  ),
+                ),
+                const SizedBox(width: 6),
+                InkWell(
+                  borderRadius: BorderRadius.circular(12),
+                  onTap: widget.onShowCategoryInfo,
+                  child: const Padding(
+                    padding: EdgeInsets.all(2),
+                    child: Icon(
+                      Icons.info_outline,
+                      size: 16,
+                      color: AppColors.textSecondary,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 6),
+            DropdownButtonFormField<int>(
+              isExpanded: true,
+              isDense: true,
+              value: _selectedCategoryId,
+              dropdownColor: AppColors.backgroundPrimary,
+              borderRadius: BorderRadius.circular(12),
+              menuMaxHeight: 320,
+              icon: const Icon(
+                Icons.keyboard_arrow_down_rounded,
+                color: AppColors.textSecondary,
+              ),
+              style: const TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w500,
+                color: AppColors.textPrimary,
+              ),
+              hint: const Text(
+                'Выберите категорию',
+                style: TextStyle(
+                  color: AppColors.textSecondary,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+              items: widget.categories
+                  .map(
+                    (TrainingCategoryOption c) => DropdownMenuItem<int>(
+                      value: c.id,
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 2),
+                        child: Text(
+                          c.label(locale.localeCode),
+                          overflow: TextOverflow.ellipsis,
+                          maxLines: 1,
+                        ),
+                      ),
+                    ),
+                  )
+                  .toList(),
+              onChanged: widget.categories.isEmpty
+                  ? null
+                  : (v) => setState(() => _selectedCategoryId = v),
+              decoration: _fieldDecoration(),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'Длительность (мин)',
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w500,
+                color: AppColors.textPrimary,
+              ),
+            ),
+            const SizedBox(height: 6),
+            TextField(
+              controller: _durationController,
+              keyboardType: TextInputType.number,
+              decoration: _fieldDecoration(),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'Цена',
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w500,
+                color: AppColors.textPrimary,
+              ),
+            ),
+            const SizedBox(height: 6),
+            TextField(
+              controller: _priceController,
+              keyboardType: TextInputType.number,
+              decoration: _fieldDecoration(),
+            ),
+            const SizedBox(height: 24),
+            SizedBox(
+              width: double.infinity,
+              height: 46,
+              child: FilledButton(
+                onPressed: _saving ? null : _submit,
+                style: FilledButton.styleFrom(
+                  backgroundColor: AppColors.primary500,
+                ),
+                child: _saving
+                    ? const SizedBox(
+                        width: 18,
+                        height: 18,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          valueColor: AlwaysStoppedAnimation<Color>(
+                            Colors.white,
+                          ),
+                        ),
+                      )
+                    : Text(locale.t('common.update')),
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }
@@ -1037,36 +1060,29 @@ class _ServiceCard extends StatelessWidget {
                 ),
               ),
             ),
-            if (isActionLoading)
-              const Padding(
-                padding: EdgeInsets.only(right: 8, top: 12),
-                child: SizedBox(
-                  width: 22,
-                  height: 22,
-                  child: CircularProgressIndicator(strokeWidth: 2),
-                ),
-              )
-            else
-              Padding(
-                padding: const EdgeInsets.only(right: 4, top: 4),
+            Padding(
+              padding: const EdgeInsets.only(right: 4, top: 4),
+              child: Opacity(
+                opacity: isActionLoading ? 0.45 : 1,
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     IconButton(
                       icon: const Icon(Icons.edit_outlined, size: 22),
-                      onPressed: onEdit,
+                      onPressed: isActionLoading ? null : onEdit,
                       color: AppColors.primary500,
                       visualDensity: VisualDensity.compact,
                     ),
                     IconButton(
                       icon: const Icon(Icons.delete_outline, size: 22),
-                      onPressed: onDelete,
+                      onPressed: isActionLoading ? null : onDelete,
                       color: AppColors.error600,
                       visualDensity: VisualDensity.compact,
                     ),
                   ],
                 ),
               ),
+            ),
           ],
         ),
       ),

@@ -54,6 +54,10 @@ export class CreateStudioDto {
   instagram?: string;
 
   @IsOptional()
+  @IsString()
+  logoUrl?: string;
+
+  @IsOptional()
   @IsArray()
   @IsString({ each: true })
   photos?: string[];

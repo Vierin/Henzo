@@ -4,6 +4,7 @@ import {
   Get,
   Headers,
   Param,
+  Patch,
   Post,
   Put,
   Query,
@@ -13,6 +14,7 @@ import { AuthService } from '../auth/auth.service';
 import { FitnessSessionsService } from './fitness-sessions.service';
 import { StudioAnalyticsService } from './studio-analytics.service';
 import { CreateRecurringTrainingSessionsDto } from './dto/create-recurring-training-sessions.dto';
+import { UpdateOwnerTrainingSessionDto } from './dto/update-owner-training-session.dto';
 
 @Controller('fitness')
 export class FitnessController {
@@ -104,6 +106,19 @@ export class FitnessController {
     return this.fitnessSessionsService.getOwnerSessions(authHeader, from, to);
   }
 
+  /** 1:1 client bookings for the current studio (mobile owner clients list, dashboard). */
+  @Get('session-bookings/owner')
+  async getOwnerSessionBookings(
+    @Headers('authorization') authHeader: string,
+    @Query('limit') limit?: string,
+  ) {
+    const n = limit ? parseInt(limit, 10) : 100;
+    return this.fitnessSessionsService.getOwnerSessionBookings(
+      authHeader,
+      Number.isFinite(n) ? n : 100,
+    );
+  }
+
   @Get('client/schedule')
   async getClientSchedule(
     @Headers('authorization') authHeader: string,
@@ -111,6 +126,20 @@ export class FitnessController {
     @Query('to') to?: string,
   ) {
     return this.fitnessSessionsService.getClientSchedule(authHeader, from, to);
+  }
+
+  /** Update one scheduled session (time, trainer, status). Does not change the Training template. */
+  @Patch('owner/training-sessions/:id')
+  async updateOwnerTrainingSession(
+    @Headers('authorization') authHeader: string,
+    @Param('id') id: string,
+    @Body() dto: UpdateOwnerTrainingSessionDto,
+  ) {
+    return this.fitnessSessionsService.updateOwnerTrainingSession(
+      authHeader,
+      id,
+      dto,
+    );
   }
 
   @Put('owner/training-sessions/:id/status')

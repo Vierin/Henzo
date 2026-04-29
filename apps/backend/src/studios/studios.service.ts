@@ -79,6 +79,25 @@ export class StudiosService {
     );
   }
 
+  private normalizeStudioLogoUrl(input: unknown): string | null {
+    if (input == null) return null;
+    if (typeof input !== 'string') {
+      throw new Error('Invalid logo URL value.');
+    }
+    const trimmed = input.trim();
+    if (!trimmed) return null;
+    if (!this.isAllowedPhotoValue(trimmed)) {
+      throw new Error(
+        'Invalid logo URL value. Use uploaded storage public URL.',
+      );
+    }
+    return trimmed;
+  }
+
+  private hasLogoUrl(input: unknown): boolean {
+    return typeof input === 'string' && input.trim().length > 0;
+  }
+
   private hasContactInfo(studio: {
     phone?: string | null;
     email?: string | null;
@@ -116,6 +135,7 @@ export class StudiosService {
       select: {
         id: true,
         status: true,
+        logoUrl: true,
         photos: true,
         phone: true,
         email: true,
@@ -135,6 +155,7 @@ export class StudiosService {
     }
 
     const hasTraining = (studio._count?.Training ?? 0) > 0;
+    const hasLogo = this.hasLogoUrl(studio.logoUrl);
     const hasPhoto = this.hasAtLeastOnePhoto(studio.photos);
     const bookingPeriodDays = this.getBookingPeriodDays(
       studio.reminderSettings,
@@ -164,6 +185,10 @@ export class StudiosService {
         hasPhoto: {
           required: true,
           completed: hasPhoto,
+        },
+        hasLogo: {
+          required: false,
+          completed: hasLogo,
         },
         bookingWindowConfigured: {
           required: false,
@@ -231,6 +256,7 @@ export class StudiosService {
           email: true,
           website: true,
           instagram: true,
+          logoUrl: true,
           photos: true,
           workingHours: true,
           reminderSettings: true,
@@ -550,34 +576,17 @@ export class StudiosService {
       };
     }
 
-    // Location filter - check cities table first
+    // Location filter — match studio address (normalized + common city name variants)
     if (location.trim()) {
       const normalizedLocation = this.normalizeLocationForSearch(
         location.trim(),
       );
 
-      // Try to find city in cities table
-      const city = await this.prisma.city.findFirst({
-        where: {
-          isActive: true,
-          name: {
-            equals: normalizedLocation,
-            mode: 'insensitive',
-          },
-        },
-      });
-
-      // Create location variations for better matching
       const locationVariations = new Set<string>();
       locationVariations.add(normalizedLocation);
       locationVariations.add(location.trim());
 
-      // If city found in table, add its name to variations
-      if (city) {
-        locationVariations.add(city.name);
-      }
-
-      // Add Vietnamese-English name variations for major cities
+      // Vietnamese-English name variations for major cities
       // Da Nang / Đà Nẵng
       if (/đà nẵng|da nang/i.test(normalizedLocation)) {
         locationVariations.add('Da Nang');
@@ -599,12 +608,6 @@ export class StudiosService {
       const addressConditions = Array.from(locationVariations).map((loc) => ({
         address: { contains: loc, mode: 'insensitive' as const },
       }));
-
-      // If city found and has coordinates, also search by proximity
-      if (city && city.lat && city.lng) {
-        // For now, we'll use address matching
-        // TODO: Add geospatial search if needed (requires PostGIS)
-      }
 
       // If we already have OR conditions (from search), wrap everything in AND
       if (where.OR) {
@@ -680,6 +683,7 @@ export class StudiosService {
         description: true,
         address: true,
         phone: true,
+        logoUrl: true,
         photos: true,
         workingHours: true,
         createdAt: true,
@@ -959,6 +963,7 @@ export class StudiosService {
             email: true,
             website: true,
             instagram: true,
+            logoUrl: true,
             photos: true,
             workingHours: true,
             reminderSettings: true,
@@ -1046,6 +1051,9 @@ export class StudiosService {
       const normalizedPhotos = this.normalizeStudioPhotos(
         createStudioDto.photos,
       );
+      const normalizedLogoUrl = this.normalizeStudioLogoUrl(
+        createStudioDto.logoUrl,
+      );
 
       // Geocode address if provided and coordinates not provided
       let latitude = createStudioDto.latitude;
@@ -1116,6 +1124,7 @@ export class StudiosService {
         const studio = await studioRepo.create({
           data: {
             ...createStudioDto,
+            logoUrl: normalizedLogoUrl,
             photos: normalizedPhotos,
             reminderSettings,
             ...descriptionTranslations,
@@ -1133,6 +1142,7 @@ export class StudiosService {
             email: true,
             website: true,
             instagram: true,
+            logoUrl: true,
             photos: true,
             workingHours: true,
             reminderSettings: true,
@@ -1196,6 +1206,7 @@ export class StudiosService {
             email: true,
             website: true,
             instagram: true,
+            logoUrl: true,
             photos: true,
             workingHours: true,
             reminderSettings: true,
@@ -1282,6 +1293,10 @@ export class StudiosService {
       updateStudioDto.photos !== undefined
         ? this.normalizeStudioPhotos(updateStudioDto.photos)
         : undefined;
+    const normalizedLogoUrl =
+      updateStudioDto.logoUrl !== undefined
+        ? this.normalizeStudioLogoUrl(updateStudioDto.logoUrl)
+        : undefined;
 
     // Generate new slug if name or address changed
     let slug: string | undefined;
@@ -1299,6 +1314,7 @@ export class StudiosService {
 
     const { ...StudioData } = {
       ...updateStudioDto,
+      ...(normalizedLogoUrl !== undefined ? { logoUrl: normalizedLogoUrl } : {}),
       ...(normalizedPhotos !== undefined ? { photos: normalizedPhotos } : {}),
       ...(updateStudioDto.reminderSettings !== undefined
         ? {
@@ -1454,6 +1470,7 @@ export class StudiosService {
           phone: true,
           website: true,
           instagram: true,
+          logoUrl: true,
           photos: true,
           workingHours: true,
           latitude: true,
@@ -1679,6 +1696,7 @@ export class StudiosService {
           email: true,
           website: true,
           instagram: true,
+          logoUrl: true,
           photos: true,
           workingHours: true,
           reminderSettings: true,
@@ -1921,6 +1939,7 @@ export class StudiosService {
             nameRu: true,
             duration: true,
             price: true,
+            trainingCategoryId: true,
           },
         },
         Trainer: {
@@ -1950,6 +1969,7 @@ export class StudiosService {
             nameRu: s.Training.nameRu,
             duration: s.Training.duration,
             price: s.Training.price,
+            trainingCategoryId: s.Training.trainingCategoryId,
           }
         : null,
       trainer: s.Trainer
@@ -2002,6 +2022,7 @@ export class StudiosService {
           name: true,
           address: true,
           phone: true,
+          logoUrl: true,
           photos: true, // Get all photos, but we'll only use the first one
           _count: true,
         },
@@ -2037,6 +2058,7 @@ export class StudiosService {
         address: true,
         latitude: true,
         longitude: true,
+        logoUrl: true,
         photos: true,
         _count: {
           select: {
@@ -2228,6 +2250,7 @@ export class StudiosService {
         address: true,
         latitude: true,
         longitude: true,
+        logoUrl: true,
         photos: true,
         _count: {
           select: {

@@ -20,10 +20,14 @@ jobs:
   deploy:
     name: Deploy with migrations
     runs-on: ubuntu-latest
+    env:
+      REGISTRY: ghcr.io
 
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+      - name: Set image base
+        run: |
+          BASE="${{ env.REGISTRY }}/$(echo ${{ github.repository }} | tr '[:upper:]' '[:lower:]')/backend"
+          echo "IMAGE_BASE=${BASE}" >> $GITHUB_ENV
 
       - name: Deploy to DigitalOcean
         uses: appleboy/ssh-action@v1.0.0
@@ -34,32 +38,46 @@ jobs:
           port: 22
           script: |
             set -e
-            cd /var/www/henzo
+            cd /var/www/henzo/apps/backend
+
+            if [ -n "${{ secrets.GHCR_TOKEN }}" ]; then
+              echo "${{ secrets.GHCR_TOKEN }}" | docker login ${{ env.REGISTRY }} -u ${{ github.actor }} --password-stdin
+            fi
 
             if [ "${{ inputs.environment }}" = "staging" ]; then
-              BRANCH=staging
               SERVICE=backend_staging
+              export IMAGE_REF=${{ env.IMAGE_BASE }}:staging
               HEALTH='curl -fsS -H "Host: api-staging.henzo.app" http://127.0.0.1/health'
             else
-              BRANCH=main
               SERVICE=backend
+              docker pull ${{ env.IMAGE_BASE }}:staging
+              IMAGE_REF=$(docker image inspect --format='{{index .RepoDigests 0}}' ${{ env.IMAGE_BASE }}:staging)
+              if [ -z "$IMAGE_REF" ]; then
+                echo "❌ Failed to resolve digest from staging image"
+                exit 1
+              fi
+              export IMAGE_REF
               HEALTH='curl -fsS http://127.0.0.1/health'
             fi
 
-            echo "🔄 Pulling $BRANCH..."
-            git fetch origin "$BRANCH"
-            git checkout "$BRANCH"
-            git pull origin "$BRANCH"
-
-            cd apps/backend
+            if [ "$SERVICE" = "backend_staging" ]; then
+              export BACKEND_STAGING_IMAGE=$IMAGE_REF
+            else
+              export BACKEND_IMAGE=$IMAGE_REF
+            fi
 
             if [ "${{ inputs.run_migrations }}" = "true" ]; then
+              echo "🔍 Migration precheck ($SERVICE)..."
+              docker compose run --rm "$SERVICE" npx prisma migrate status
               echo "📊 Running migrations ($SERVICE)..."
               docker compose run --rm "$SERVICE" npx prisma migrate deploy
             fi
 
-            echo "🔄 Recreating stack..."
-            docker compose up -d
+            echo "🔄 Pulling image ($SERVICE)..."
+            docker compose pull "$SERVICE"
+            echo "🔄 Recreating service ($SERVICE)..."
+            docker compose up -d --no-deps "$SERVICE"
+            docker compose up -d --no-deps nginx
 
             echo "⏳ Waiting for startup..."
             sleep 15
@@ -67,7 +85,7 @@ jobs:
             echo "🔍 Health check..."
             eval "$HEALTH"
 
-            echo "✅ Done ($SERVICE / $BRANCH)"
+            echo "✅ Done ($SERVICE)"
             docker compose ps
 
       - name: Send notification on success

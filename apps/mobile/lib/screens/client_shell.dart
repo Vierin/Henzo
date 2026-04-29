@@ -8,7 +8,11 @@ import 'package:url_launcher/url_launcher.dart';
 import '../config/app_config.dart';
 import '../constants/colors.dart';
 import '../l10n/locale_provider.dart';
+import '../models/training_category_option.dart';
 import '../services/api_client.dart';
+import '../services/cache/client_nearby_cache.dart';
+import '../services/client_favorites_store.dart';
+import '../widgets/public/cached_salon_network_image.dart';
 import 'client_map_screen.dart';
 import 'public_home_screen.dart';
 import 'public_studio_detail_screen.dart';
@@ -25,11 +29,12 @@ class ClientShell extends StatefulWidget {
 class _ClientShellState extends State<ClientShell> {
   int _currentIndex = 0;
   bool _showMapScreen = false;
-  final GlobalKey<_ClientFavoritesScreenState> _favoritesKey =
-      GlobalKey<_ClientFavoritesScreenState>();
+  final GlobalKey<_ClientSearchScreenState> _exploreScreenKey =
+      GlobalKey<_ClientSearchScreenState>();
 
   void goToExploreTab() {
     setState(() => _currentIndex = 1);
+    _exploreScreenKey.currentState?.ensureExploreLoaded();
   }
 
   List<Widget> get _screens => [
@@ -38,8 +43,8 @@ class _ClientShellState extends State<ClientShell> {
         _showMapScreen = true;
       }),
     ),
-    const _ClientSearchScreen(),
-    _ClientFavoritesScreen(key: _favoritesKey),
+    _ClientSearchScreen(key: _exploreScreenKey),
+    const _ClientFavoritesScreen(),
     const _ClientProfileScreen(),
   ];
 
@@ -89,7 +94,10 @@ class _ClientShellState extends State<ClientShell> {
                   activeIcon: Icons.search,
                   label: 'Explore',
                   isSelected: _currentIndex == 1,
-                  onTap: () => setState(() => _currentIndex = 1),
+                  onTap: () {
+                    setState(() => _currentIndex = 1);
+                    _exploreScreenKey.currentState?.ensureExploreLoaded();
+                  },
                 ),
               ),
               Expanded(
@@ -100,7 +108,8 @@ class _ClientShellState extends State<ClientShell> {
                   isSelected: _currentIndex == 2,
                   onTap: () {
                     setState(() => _currentIndex = 2);
-                    _favoritesKey.currentState?.reload();
+                    final t = context.read<AuthService>().accessToken;
+                    context.read<ClientFavoritesStore>().sync(t, force: false);
                   },
                 ),
               ),
@@ -122,7 +131,7 @@ class _ClientShellState extends State<ClientShell> {
 }
 
 class _ClientSearchScreen extends StatefulWidget {
-  const _ClientSearchScreen();
+  const _ClientSearchScreen({super.key});
 
   @override
   State<_ClientSearchScreen> createState() => _ClientSearchScreenState();
@@ -144,14 +153,25 @@ class _ClientSearchScreenState extends State<_ClientSearchScreen> {
   RangeValues _timeRange = const RangeValues(0, 1439);
   List<_ExploreStudioItem> _studios = const [];
   List<_ExploreClassItem> _classes = const [];
+  List<TrainingCategoryOption> _trainingCategories = const [];
+  int? _selectedCategoryId;
 
   @override
   void initState() {
     super.initState();
-    _loadLocationAndExplore();
+    _loadSavedLocationOnly();
   }
 
-  Future<void> _loadLocationAndExplore() async {
+  /// First call is deferred until user opens the Explore tab (see [ensureExploreLoaded]).
+  bool _exploreLoadRequested = false;
+
+  void ensureExploreLoaded() {
+    if (_exploreLoadRequested) return;
+    _exploreLoadRequested = true;
+    _loadExplore();
+  }
+
+  Future<void> _loadSavedLocationOnly() async {
     final prefs = await SharedPreferences.getInstance();
     final city = prefs.getString(_cityKey)?.trim();
     final lat = prefs.getDouble(_latKey);
@@ -164,7 +184,6 @@ class _ClientSearchScreenState extends State<_ClientSearchScreen> {
       _selectedLat = lat;
       _selectedLon = lon;
     });
-    await _loadExplore();
   }
 
   int _currentRadiusKm() {
@@ -183,6 +202,58 @@ class _ClientSearchScreenState extends State<_ClientSearchScreen> {
     }
   }
 
+  Future<List<_ExploreClassItem>> _fetchExploreClassesForStudio(
+    _ExploreStudioItem studio,
+    String fromQuery,
+    String toQuery,
+  ) async {
+    try {
+      final raw = await ApiClient.get(
+        '/studios/${studio.id}/schedule?from=$fromQuery&to=$toQuery&limit=20',
+        null,
+      );
+      if (raw is! List) return const [];
+      final out = <_ExploreClassItem>[];
+      for (final row in raw) {
+        if (row is! Map) continue;
+        final map = Map<String, dynamic>.from(row);
+        final training = map['training'] is Map
+            ? Map<String, dynamic>.from(map['training'] as Map)
+            : <String, dynamic>{};
+        final startsAt = DateTime.tryParse(
+          (map['startsAt'] ?? '').toString(),
+        )?.toLocal();
+        if (startsAt == null) continue;
+        final trainingCategoryId = training['trainingCategoryId'] == null
+            ? null
+            : (training['trainingCategoryId'] as num).toInt();
+        out.add(
+          _ExploreClassItem(
+            sessionId: (map['id'] ?? '').toString(),
+            studioId: studio.id,
+            studioName: studio.name,
+            studioAddress: studio.address,
+            startsAt: startsAt,
+            durationMin: (training['duration'] as num?)?.toInt(),
+            trainerName: map['trainer'] is Map
+                ? (map['trainer']['name'] ?? '').toString()
+                : '',
+            className: (training['name'] ?? 'Class').toString(),
+            price: (training['price'] as num?)?.toDouble(),
+            capacity: (map['capacity'] as num?)?.toInt(),
+            bookedCount: (map['bookedCount'] as num?)?.toInt() ?? 0,
+            rating: studio.rating,
+            reviewCount: studio.reviewCount,
+            trainingCategoryId: trainingCategoryId,
+          ),
+        );
+      }
+      return out;
+    } catch (_) {
+      return const [];
+    }
+  }
+
   Future<void> _loadExplore() async {
     if (!mounted) return;
     setState(() => _loading = true);
@@ -198,7 +269,12 @@ class _ClientSearchScreenState extends State<_ClientSearchScreen> {
           ..write('&lng=')
           ..write(_selectedLon!.toStringAsFixed(6));
       }
-      final nearbyRaw = await ApiClient.get(nearbyQuery.toString(), null);
+      final nearbyPath = nearbyQuery.toString();
+      var nearbyRaw = ClientNearbyCache.get(nearbyPath);
+      if (nearbyRaw == null) {
+        nearbyRaw = await ApiClient.get(nearbyPath, null);
+        ClientNearbyCache.put(nearbyPath, nearbyRaw);
+      }
       final nearbyList = nearbyRaw is List
           ? nearbyRaw
           : (nearbyRaw is Map<String, dynamic> && nearbyRaw['data'] is List
@@ -223,6 +299,22 @@ class _ClientSearchScreenState extends State<_ClientSearchScreen> {
                   reviewCount
             : ((map['avgRating'] as num?)?.toDouble() ?? 0);
 
+        final trainingCategoryIds = <int>[];
+        final rawCatIds = map['trainingCategoryIds'];
+        if (rawCatIds is List) {
+          for (final e in rawCatIds) {
+            if (e is num) trainingCategoryIds.add(e.toInt());
+          }
+        }
+        final categoryNames = <String>[];
+        final rawCats = map['categories'];
+        if (rawCats is List) {
+          for (final e in rawCats) {
+            final s = e.toString().trim();
+            if (s.isNotEmpty) categoryNames.add(s);
+          }
+        }
+
         studios.add(
           _ExploreStudioItem(
             id: id,
@@ -244,6 +336,8 @@ class _ClientSearchScreenState extends State<_ClientSearchScreen> {
                 (map['lng'] as num?)?.toDouble() ??
                 (map['lon'] as num?)?.toDouble() ??
                 (map['longitude'] as num?)?.toDouble(),
+            trainingCategoryIds: trainingCategoryIds,
+            categoryNames: categoryNames,
           ),
         );
       }
@@ -253,44 +347,20 @@ class _ClientSearchScreenState extends State<_ClientSearchScreen> {
       final to = from.add(const Duration(days: 6));
       final toQuery = Uri.encodeComponent(to.toIso8601String());
       final fromQuery = Uri.encodeComponent(from.toIso8601String());
-      for (final studio in studios.take(8)) {
-        try {
-          final raw = await ApiClient.get(
-            '/studios/${studio.id}/schedule?from=$fromQuery&to=$toQuery&limit=20',
-            null,
-          );
-          if (raw is! List) continue;
-          for (final row in raw) {
-            if (row is! Map) continue;
-            final map = Map<String, dynamic>.from(row);
-            final training = map['training'] is Map
-                ? Map<String, dynamic>.from(map['training'] as Map)
-                : <String, dynamic>{};
-            final startsAt = DateTime.tryParse(
-              (map['startsAt'] ?? '').toString(),
-            )?.toLocal();
-            if (startsAt == null) continue;
-            classes.add(
-              _ExploreClassItem(
-                sessionId: (map['id'] ?? '').toString(),
-                studioId: studio.id,
-                studioName: studio.name,
-                studioAddress: studio.address,
-                startsAt: startsAt,
-                durationMin: (training['duration'] as num?)?.toInt(),
-                trainerName: map['trainer'] is Map
-                    ? (map['trainer']['name'] ?? '').toString()
-                    : '',
-                className: (training['name'] ?? 'Class').toString(),
-                price: (training['price'] as num?)?.toDouble(),
-                capacity: (map['capacity'] as num?)?.toInt(),
-                bookedCount: (map['bookedCount'] as num?)?.toInt() ?? 0,
-                rating: studio.rating,
-                reviewCount: studio.reviewCount,
-              ),
-            );
-          }
-        } catch (_) {}
+      final slice = studios.take(8).toList();
+      const concurrency = 4;
+      for (var i = 0; i < slice.length; i += concurrency) {
+        final end =
+            i + concurrency > slice.length ? slice.length : i + concurrency;
+        final batch = slice.sublist(i, end);
+        final batchResults = await Future.wait(
+          batch.map(
+            (s) => _fetchExploreClassesForStudio(s, fromQuery, toQuery),
+          ),
+        );
+        for (final list in batchResults) {
+          classes.addAll(list);
+        }
       }
       classes.sort((a, b) => a.startsAt.compareTo(b.startsAt));
 
@@ -452,6 +522,212 @@ class _ClientSearchScreenState extends State<_ClientSearchScreen> {
     final from = _timeRange.start.round();
     final to = _timeRange.end.round();
     return startMin >= from && startMin <= to;
+  }
+
+  bool _classMatchesCategory(_ExploreClassItem c) {
+    if (_selectedCategoryId == null) return true;
+    return c.trainingCategoryId == _selectedCategoryId;
+  }
+
+  TrainingCategoryOption? _categoryOptionById(int id) {
+    for (final o in _trainingCategories) {
+      if (o.id == id) return o;
+    }
+    return null;
+  }
+
+  bool _studioMatchesCategory(_ExploreStudioItem s) {
+    final cid = _selectedCategoryId;
+    if (cid == null) return true;
+    if (s.trainingCategoryIds.contains(cid)) return true;
+    final bySessions = _classes.any(
+      (c) => c.studioId == s.id && c.trainingCategoryId == cid,
+    );
+    if (bySessions) return true;
+    if (s.trainingCategoryIds.isEmpty && s.categoryNames.isEmpty) {
+      return true;
+    }
+    final opt = _categoryOptionById(cid);
+    if (opt == null || s.categoryNames.isEmpty) return true;
+    final labels = {opt.nameEn, opt.nameRu, opt.nameVn}
+        .map((e) => e.trim().toLowerCase())
+        .where((e) => e.isNotEmpty)
+        .toSet();
+    return s.categoryNames.any(
+      (n) => labels.contains(n.trim().toLowerCase()),
+    );
+  }
+
+  String _categoryChipLabel(String localeCode) {
+    final id = _selectedCategoryId;
+    if (id == null) return 'Categories';
+    final opt = _categoryOptionById(id);
+    return opt?.label(localeCode) ?? 'Categories';
+  }
+
+  Future<void> _ensureTrainingCategoriesLoaded() async {
+    if (_trainingCategories.isNotEmpty) return;
+    try {
+      final raw = await ApiClient.get('/trainings/categories', null);
+      if (raw is! List || !mounted) return;
+      final list = <TrainingCategoryOption>[];
+      for (final row in raw) {
+        if (row is! Map) continue;
+        list.add(
+          TrainingCategoryOption.fromJson(
+            Map<String, dynamic>.from(row),
+          ),
+        );
+      }
+      setState(() => _trainingCategories = list);
+    } catch (_) {}
+  }
+
+  Future<void> _openCategorySheet() async {
+    await _ensureTrainingCategoriesLoaded();
+    if (!mounted) return;
+    final localeCode = context.read<LocaleProvider>().localeCode;
+    var tempSelection = _selectedCategoryId ?? -1;
+
+    final result = await showModalBottomSheet<int>(
+      context: context,
+      showDragHandle: false,
+      isScrollControlled: true,
+      backgroundColor: AppColors.backgroundPrimary,
+      builder: (ctx) {
+        final maxH = MediaQuery.of(context).size.height * 0.72;
+        Widget rowTile({
+          required String title,
+          required bool selected,
+          required VoidCallback onTap,
+        }) {
+          return InkWell(
+            splashColor: Colors.transparent,
+            highlightColor: Colors.transparent,
+            hoverColor: Colors.transparent,
+            borderRadius: BorderRadius.circular(10),
+            onTap: onTap,
+            child: Container(
+              margin: const EdgeInsets.only(bottom: 10),
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+              decoration: BoxDecoration(
+                color: AppColors.backgroundPrimary,
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(
+                  color: selected
+                      ? AppColors.primary500
+                      : AppColors.borderPrimary,
+                  width: selected ? 1.5 : 1,
+                ),
+              ),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      title,
+                      style: TextStyle(
+                        color: selected
+                            ? AppColors.primary500
+                            : AppColors.textPrimary,
+                        fontWeight: FontWeight.w700,
+                        fontSize: 15,
+                      ),
+                    ),
+                  ),
+                  if (selected)
+                    const Icon(
+                      Icons.check,
+                      color: AppColors.primary500,
+                      size: 22,
+                    ),
+                ],
+              ),
+            ),
+          );
+        }
+
+        return StatefulBuilder(
+          builder: (context, setModalState) {
+            return Theme(
+              data: Theme.of(context).copyWith(
+                splashColor: Colors.transparent,
+                highlightColor: Colors.transparent,
+                bottomSheetTheme: const BottomSheetThemeData(
+                  surfaceTintColor: Colors.transparent,
+                ),
+              ),
+              child: SafeArea(
+                child: SizedBox(
+                  height: maxH,
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(14, 0, 14, 14),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        _filterSheetTitleRow(ctx, 'Category'),
+                        const SizedBox(height: 8),
+                        Expanded(
+                          child: ListView(
+                            children: [
+                              rowTile(
+                                title: 'All categories',
+                                selected: tempSelection < 0,
+                                onTap: () =>
+                                    setModalState(() => tempSelection = -1),
+                              ),
+                              ..._trainingCategories.map(
+                                (cat) => rowTile(
+                                  title: cat.label(localeCode),
+                                  selected: tempSelection == cat.id,
+                                  onTap: () => setModalState(
+                                    () => tempSelection = cat.id,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        SizedBox(
+                          width: double.infinity,
+                          child: TextButton(
+                            onPressed: () =>
+                                setModalState(() => tempSelection = -1),
+                            child: const Text(
+                              'Reset',
+                              style: TextStyle(
+                                color: AppColors.textPrimary,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        SizedBox(
+                          width: double.infinity,
+                          child: FilledButton(
+                            onPressed: () =>
+                                Navigator.of(ctx).pop(tempSelection),
+                            style: FilledButton.styleFrom(
+                              backgroundColor: AppColors.primary500,
+                            ),
+                            child: const Text('Apply'),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+
+    if (!mounted || result == null) return;
+    setState(() {
+      _selectedCategoryId = result < 0 ? null : result;
+    });
   }
 
   Future<void> _openTimeFilterSheet() async {
@@ -1215,6 +1491,7 @@ class _ClientSearchScreenState extends State<_ClientSearchScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final localeCode = context.watch<LocaleProvider>().localeCode;
     final selectedDate = DateTime.now().add(Duration(days: _selectedDayOffset));
     final dayClasses = _classes.where((c) {
       final d = c.startsAt;
@@ -1222,8 +1499,11 @@ class _ClientSearchScreenState extends State<_ClientSearchScreen> {
           d.month == selectedDate.month &&
           d.day == selectedDate.day &&
           _isClassInSelectedPeriods(c.startsAt) &&
-          _isClassInTimeRange(c.startsAt);
+          _isClassInTimeRange(c.startsAt) &&
+          _classMatchesCategory(c);
     }).toList();
+
+    final visibleStudios = _studios.where(_studioMatchesCategory).toList();
 
     return Scaffold(
       backgroundColor: AppColors.backgroundSecondary,
@@ -1338,7 +1618,10 @@ class _ClientSearchScreenState extends State<_ClientSearchScreen> {
                           label: _sortChipLabel,
                           onTap: _openSortSheet,
                         ),
-                        _FilterChip(label: 'Categories'),
+                        _FilterChip(
+                          label: _categoryChipLabel(localeCode),
+                          onTap: _openCategorySheet,
+                        ),
                         _FilterChip(
                           label: _distanceChipLabel,
                           onTap: _openAllFiltersSheet,
@@ -1417,13 +1700,13 @@ class _ClientSearchScreenState extends State<_ClientSearchScreen> {
                             },
                           )
                         : ListView.separated(
-                            itemCount: _studios.length,
+                            itemCount: visibleStudios.length,
                             separatorBuilder: (_, __) => const Divider(
                               height: 1,
                               color: AppColors.borderPrimary,
                             ),
                             itemBuilder: (_, index) {
-                              final s = _studios[index];
+                              final s = visibleStudios[index];
                               final todayClassForStudio =
                                   _classes
                                       .where(
@@ -1438,7 +1721,8 @@ class _ClientSearchScreenState extends State<_ClientSearchScreen> {
                                             _isClassInSelectedPeriods(
                                               c.startsAt,
                                             ) &&
-                                            _isClassInTimeRange(c.startsAt),
+                                            _isClassInTimeRange(c.startsAt) &&
+                                            _classMatchesCategory(c),
                                       )
                                       .toList()
                                     ..sort(
@@ -1538,13 +1822,11 @@ class _ClientSearchScreenState extends State<_ClientSearchScreen> {
                                               ClipRRect(
                                                 borderRadius:
                                                     BorderRadius.circular(8),
-                                                child: Image.network(
-                                                  s.logoUrl!,
+                                                child: CachedSalonNetworkImage(
+                                                  imageUrl: s.logoUrl!,
                                                   width: 64,
                                                   height: 64,
                                                   fit: BoxFit.contain,
-                                                  errorBuilder: (_, __, ___) =>
-                                                      const SizedBox.shrink(),
                                                 ),
                                               ),
                                             ],
@@ -1732,6 +2014,8 @@ class _ExploreStudioItem {
     required this.logoUrl,
     required this.lat,
     required this.lng,
+    this.trainingCategoryIds = const [],
+    this.categoryNames = const [],
   });
   final String id;
   final String name;
@@ -1742,6 +2026,8 @@ class _ExploreStudioItem {
   final String? logoUrl;
   final double? lat;
   final double? lng;
+  final List<int> trainingCategoryIds;
+  final List<String> categoryNames;
 }
 
 class _ExploreClassItem {
@@ -1759,6 +2045,7 @@ class _ExploreClassItem {
     required this.bookedCount,
     required this.rating,
     required this.reviewCount,
+    this.trainingCategoryId,
   });
   final String sessionId;
   final String studioId;
@@ -1773,18 +2060,17 @@ class _ExploreClassItem {
   final int bookedCount;
   final double rating;
   final int reviewCount;
+  final int? trainingCategoryId;
 }
 
 class _ClientFavoritesScreen extends StatefulWidget {
-  const _ClientFavoritesScreen({super.key});
+  const _ClientFavoritesScreen();
 
   @override
   State<_ClientFavoritesScreen> createState() => _ClientFavoritesScreenState();
 }
 
 class _ClientFavoritesScreenState extends State<_ClientFavoritesScreen> {
-  bool _isLoading = true;
-  List<Map<String, dynamic>> _favorites = const [];
   final Set<String> _removingIds = <String>{};
 
   static const double _favoriteLogoSize = 60;
@@ -1812,15 +2098,12 @@ class _ClientFavoritesScreenState extends State<_ClientFavoritesScreen> {
 
   Future<void> _removeFavorite(String studioId) async {
     final token = context.read<AuthService>().accessToken;
-    if (token == null || token.isEmpty || _removingIds.contains(studioId))
+    final favStore = context.read<ClientFavoritesStore>();
+    if (token == null || token.isEmpty || _removingIds.contains(studioId)) {
       return;
+    }
     setState(() => _removingIds.add(studioId));
-    final previous = List<Map<String, dynamic>>.from(_favorites);
-    setState(() {
-      _favorites = _favorites
-          .where((s) => (s['id'] ?? '').toString() != studioId)
-          .toList();
-    });
+    favStore.removeLocal(studioId);
     try {
       await ApiClient.delete('/auth/favorites/$studioId', token);
       HapticFeedback.lightImpact();
@@ -1833,7 +2116,7 @@ class _ClientFavoritesScreenState extends State<_ClientFavoritesScreen> {
       }
     } catch (_) {
       if (mounted) {
-        setState(() => _favorites = previous);
+        await favStore.sync(token, force: true);
         ScaffoldMessenger.of(context)
           ..hideCurrentSnackBar()
           ..showSnackBar(const SnackBar(content: Text('Could not remove')));
@@ -1843,48 +2126,33 @@ class _ClientFavoritesScreenState extends State<_ClientFavoritesScreen> {
     }
   }
 
+  Future<void> _refreshFavorites() async {
+    final token = context.read<AuthService>().accessToken;
+    await context.read<ClientFavoritesStore>().sync(token, force: true);
+  }
+
   @override
   void initState() {
     super.initState();
-    reload();
-  }
-
-  Future<void> reload() async {
-    final token = context.read<AuthService>().accessToken;
-    if (token == null || token.isEmpty) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
-      setState(() {
-        _favorites = const [];
-        _isLoading = false;
-      });
-      return;
-    }
-    if (mounted) setState(() => _isLoading = true);
-    try {
-      final raw = await ApiClient.get('/auth/favorites', token);
-      final list = raw is Map<String, dynamic> && raw['favorites'] is List
-          ? raw['favorites'] as List<dynamic>
-          : <dynamic>[];
-      final parsed = <Map<String, dynamic>>[];
-      for (final item in list) {
-        if (item is Map) parsed.add(Map<String, dynamic>.from(item));
-      }
-      if (!mounted) return;
-      setState(() {
-        _favorites = parsed;
-        _isLoading = false;
-      });
-    } catch (_) {
-      if (!mounted) return;
-      setState(() {
-        _favorites = const [];
-        _isLoading = false;
-      });
-    }
+      context.read<ClientFavoritesStore>().sync(
+            context.read<AuthService>().accessToken,
+            force: true,
+          );
+    });
   }
 
   @override
   Widget build(BuildContext context) {
+    final token = context.watch<AuthService>().accessToken;
+    final favStore = context.watch<ClientFavoritesStore>();
+    final favorites = favStore.favorites;
+    final showInitialSpinner = token != null &&
+        token.isNotEmpty &&
+        (!favStore.hasCompletedSync ||
+            (favStore.isLoading && favorites.isEmpty));
+
     return Scaffold(
       backgroundColor: AppColors.backgroundSecondary,
       body: SafeArea(
@@ -1903,9 +2171,9 @@ class _ClientFavoritesScreenState extends State<_ClientFavoritesScreen> {
               ),
             ),
             Expanded(
-              child: _isLoading
+              child: showInitialSpinner
                   ? const Center(child: CircularProgressIndicator())
-                  : _favorites.isEmpty
+                  : favorites.isEmpty
                   ? Padding(
                       padding: const EdgeInsets.all(16),
                       child: Column(
@@ -1947,13 +2215,13 @@ class _ClientFavoritesScreenState extends State<_ClientFavoritesScreen> {
                       ),
                     )
                   : RefreshIndicator(
-                      onRefresh: reload,
+                      onRefresh: _refreshFavorites,
                       child: ListView.separated(
                         padding: const EdgeInsets.fromLTRB(12, 4, 12, 12),
-                        itemCount: _favorites.length,
+                        itemCount: favorites.length,
                         separatorBuilder: (_, __) => const SizedBox(height: 8),
                         itemBuilder: (_, index) {
-                          final studio = _favorites[index];
+                          final studio = favorites[index];
                           final id = (studio['id'] ?? '').toString();
                           final name = (studio['name'] ?? 'Studio').toString();
                           final address = (studio['address'] ?? '').toString();
@@ -2002,24 +2270,11 @@ class _ClientFavoritesScreenState extends State<_ClientFavoritesScreen> {
                                     ClipRRect(
                                       borderRadius: BorderRadius.circular(10),
                                       child: logoUrl != null
-                                          ? Image.network(
-                                              logoUrl,
+                                          ? CachedSalonNetworkImage(
+                                              imageUrl: logoUrl,
                                               width: _favoriteLogoSize,
                                               height: _favoriteLogoSize,
                                               fit: BoxFit.cover,
-                                              errorBuilder: (_, __, ___) =>
-                                                  Container(
-                                                    width: _favoriteLogoSize,
-                                                    height: _favoriteLogoSize,
-                                                    color:
-                                                        AppColors.secondary100,
-                                                    alignment: Alignment.center,
-                                                    child: const Icon(
-                                                      Icons.fitness_center,
-                                                      color:
-                                                          AppColors.primary500,
-                                                    ),
-                                                  ),
                                             )
                                           : Container(
                                               width: _favoriteLogoSize,

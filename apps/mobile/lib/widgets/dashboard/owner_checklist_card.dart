@@ -1,17 +1,23 @@
 import 'package:flutter/material.dart';
-import '../../constants/colors.dart';
+import 'package:provider/provider.dart';
 
-class OwnerChecklistCard extends StatelessWidget {
+import '../../constants/colors.dart';
+import '../../l10n/locale_provider.dart';
+
+class OwnerChecklistCard extends StatefulWidget {
   const OwnerChecklistCard({
     super.key,
     required this.hasTraining,
     required this.hasPhoto,
+    required this.hasLogo,
     required this.bookingWindowConfigured,
     required this.contactsConfigured,
     required this.canPublish,
+    required this.isStudioActive,
     required this.isPublishing,
     required this.onCreateTrainingTap,
     required this.onAddPhotoTap,
+    required this.onAddLogoTap,
     required this.onBookingWindowTap,
     required this.onContactsTap,
     required this.onPublishTap,
@@ -20,25 +26,51 @@ class OwnerChecklistCard extends StatelessWidget {
 
   final bool hasTraining;
   final bool hasPhoto;
+  final bool hasLogo;
   final bool bookingWindowConfigured;
   final bool contactsConfigured;
   final bool canPublish;
+  final bool isStudioActive;
   final bool isPublishing;
   final List<String> missingRequiredSteps;
   final VoidCallback onCreateTrainingTap;
   final VoidCallback onAddPhotoTap;
+  final VoidCallback onAddLogoTap;
   final VoidCallback onBookingWindowTap;
   final VoidCallback onContactsTap;
   final VoidCallback onPublishTap;
 
   @override
+  State<OwnerChecklistCard> createState() => _OwnerChecklistCardState();
+}
+
+class _OwnerChecklistCardState extends State<OwnerChecklistCard> {
+  static const int _kTotalSteps = 5;
+  /// Collapsed by default to save vertical space; header stays visible.
+  bool _checklistExpanded = false;
+
+  @override
   Widget build(BuildContext context) {
+    final t = context.watch<LocaleProvider>();
+    String tr(String k) => t.t('dashboard.$k');
+
     final completedCount = <bool>[
-      hasTraining,
-      hasPhoto,
-      bookingWindowConfigured,
-      contactsConfigured,
+      widget.hasTraining,
+      widget.hasPhoto,
+      widget.hasLogo,
+      widget.bookingWindowConfigured,
+      widget.contactsConfigured,
     ].where((done) => done).length;
+
+    final progressLine =
+        '$completedCount/$_kTotalSteps ${tr('onboardingStepsCompleted')}';
+
+    final missingText = widget.missingRequiredSteps.isEmpty
+        ? null
+        : tr('onboardingMissingRequired').replaceAll(
+            '{items}',
+            widget.missingRequiredSteps.join(', '),
+          );
 
     return Container(
       width: double.infinity,
@@ -52,52 +84,57 @@ class OwnerChecklistCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            'Studio onboarding',
-            style: const TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.w700,
-              color: AppColors.textPrimary,
+          Material(
+            color: Colors.transparent,
+            child: InkWell(
+              borderRadius: BorderRadius.circular(10),
+              onTap: () =>
+                  setState(() => _checklistExpanded = !_checklistExpanded),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: 2),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            tr('onboardingTitle'),
+                            style: const TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.w700,
+                              color: AppColors.textPrimary,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            progressLine,
+                            style: const TextStyle(
+                              fontSize: 13,
+                              color: AppColors.textSecondary,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Icon(
+                      _checklistExpanded
+                          ? Icons.expand_less_rounded
+                          : Icons.expand_more_rounded,
+                      size: 28,
+                      color: AppColors.textSecondary,
+                    ),
+                  ],
+                ),
+              ),
             ),
           ),
-          const SizedBox(height: 4),
-          Text(
-            '$completedCount/4 completed',
-            style: const TextStyle(
-              fontSize: 13,
-              color: AppColors.textSecondary,
-            ),
-          ),
-          const SizedBox(height: 12),
-          _ChecklistRow(
-            label: 'Create first training',
-            required: true,
-            done: hasTraining,
-            onTap: onCreateTrainingTap,
-          ),
-          _ChecklistRow(
-            label: 'Add at least 1 studio photo',
-            required: true,
-            done: hasPhoto,
-            onTap: onAddPhotoTap,
-          ),
-          const Divider(height: 18, color: AppColors.borderSecondary),
-          _ChecklistRow(
-            label: 'Configure booking window',
-            required: false,
-            done: bookingWindowConfigured,
-            onTap: onBookingWindowTap,
-          ),
-          _ChecklistRow(
-            label: 'Add contact info',
-            required: false,
-            done: contactsConfigured,
-            onTap: onContactsTap,
-          ),
-          if (missingRequiredSteps.isNotEmpty) ...[
+          if (missingText != null) ...[
             const SizedBox(height: 10),
             Text(
-              'Missing required: ${missingRequiredSteps.join(', ')}',
+              missingText,
               style: const TextStyle(
                 color: AppColors.warning600,
                 fontWeight: FontWeight.w600,
@@ -105,29 +142,103 @@ class OwnerChecklistCard extends StatelessWidget {
               ),
             ),
           ],
-          const SizedBox(height: 14),
-          SizedBox(
-            width: double.infinity,
-            child: ElevatedButton(
-              onPressed: canPublish && !isPublishing ? onPublishTap : null,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primary500,
-                disabledBackgroundColor: AppColors.borderPrimary,
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(vertical: 12),
+          if (_checklistExpanded) ...[
+            const SizedBox(height: 12),
+            Text(
+              tr('onboardingRequiredCaption'),
+              style: const TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.w700,
+                letterSpacing: 0.4,
+                color: AppColors.textSecondary,
               ),
-              child: isPublishing
-                  ? const SizedBox(
-                      height: 16,
-                      width: 16,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                      ),
-                    )
-                  : const Text('Activate studio'),
             ),
-          ),
+            const SizedBox(height: 6),
+            _ChecklistRow(
+              label: tr('onboardingCreateTraining'),
+              done: widget.hasTraining,
+              onTap: widget.hasTraining ? null : widget.onCreateTrainingTap,
+            ),
+            _ChecklistRow(
+              label: tr('onboardingAddPhoto'),
+              done: widget.hasPhoto,
+              onTap: widget.hasPhoto ? null : widget.onAddPhotoTap,
+            ),
+            Padding(
+              padding: const EdgeInsets.only(top: 10, bottom: 6),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Container(
+                          height: 1,
+                          color: AppColors.borderSecondary,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 10),
+                  Text(
+                    tr('onboardingOptionalTitle'),
+                    style: const TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: 0.4,
+                      color: AppColors.textSecondary,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            _ChecklistRow(
+              label: tr('onboardingAddLogo'),
+              done: widget.hasLogo,
+              onTap: widget.hasLogo ? null : widget.onAddLogoTap,
+            ),
+            _ChecklistRow(
+              label: tr('onboardingBookingWindow'),
+              done: widget.bookingWindowConfigured,
+              onTap: widget.bookingWindowConfigured
+                  ? null
+                  : widget.onBookingWindowTap,
+            ),
+            _ChecklistRow(
+              label: tr('onboardingContacts'),
+              done: widget.contactsConfigured,
+              onTap: widget.contactsConfigured ? null : widget.onContactsTap,
+            ),
+          ],
+          if (!widget.isStudioActive) ...[
+            const SizedBox(height: 14),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: widget.canPublish && !widget.isPublishing
+                    ? widget.onPublishTap
+                    : null,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.primary500,
+                  disabledBackgroundColor: AppColors.borderPrimary,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                ),
+                child: widget.isPublishing
+                    ? const SizedBox(
+                        height: 16,
+                        width: 16,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          valueColor: AlwaysStoppedAnimation<Color>(
+                            Colors.white,
+                          ),
+                        ),
+                      )
+                    : Text(tr('onboardingActivate')),
+              ),
+            ),
+          ],
         ],
       ),
     );
@@ -137,37 +248,38 @@ class OwnerChecklistCard extends StatelessWidget {
 class _ChecklistRow extends StatelessWidget {
   const _ChecklistRow({
     required this.label,
-    required this.required,
     required this.done,
-    required this.onTap,
+    this.onTap,
   });
 
   final String label;
-  final bool required;
   final bool done;
-  final VoidCallback onTap;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
     final icon = done ? Icons.check_circle : Icons.radio_button_unchecked;
     final color = done ? AppColors.success600 : AppColors.textSecondary;
+    final disabled = onTap == null;
     return ListTile(
       dense: true,
       contentPadding: EdgeInsets.zero,
       minVerticalPadding: 0,
       leading: Icon(icon, size: 20, color: color),
       title: Text(
-        required ? '$label (required)' : label,
+        label,
         style: TextStyle(
           fontSize: 14,
           fontWeight: done ? FontWeight.w600 : FontWeight.w500,
-          color: AppColors.textPrimary,
+          color: disabled ? AppColors.textSecondary : AppColors.textPrimary,
         ),
       ),
-      trailing: const Icon(
-        Icons.chevron_right_rounded,
-        color: AppColors.textSecondary,
-      ),
+      trailing: disabled
+          ? const SizedBox.shrink()
+          : const Icon(
+              Icons.chevron_right_rounded,
+              color: AppColors.textSecondary,
+            ),
       onTap: onTap,
     );
   }

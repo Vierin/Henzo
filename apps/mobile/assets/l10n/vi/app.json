@@ -105,7 +105,23 @@
 		"loading": "Đang tải...",
 		"setupSalonFirst": "Vui lòng thiết lập doanh nghiệp trước",
 		"noBookingsToday": "Không có đặt chỗ hôm nay",
-		"noUpcomingBookings": "Không có đặt chỗ sắp tới"
+		"noUpcomingBookings": "Không có đặt chỗ sắp tới",
+		"onboardingTitle": "Onboarding",
+		"onboardingStepsCompleted": "hoàn thành",
+		"onboardingRequiredCaption": "Bắt buộc để kích hoạt",
+		"onboardingOptionalTitle": "Tùy chọn",
+		"onboardingOptionalHint": "Không bắt buộc để kích hoạt — có thể thêm sau.",
+		"onboardingCreateTraining": "Tạo buổi tập đầu tiên",
+		"onboardingAddPhoto": "Thêm ít nhất 1 ảnh studio",
+		"onboardingAddLogo": "Thêm logo studio",
+		"onboardingBookingWindow": "Cấu hình khung giờ đặt chỗ",
+		"onboardingContacts": "Thêm thông tin liên hệ",
+		"onboardingMissingRequired": "Thiếu bước bắt buộc: {items}",
+		"onboardingActivate": "Kích hoạt studio"
+	},
+	"ownerSession": {
+		"editCurrentSession": "Sửa buổi tập hiện tại",
+		"editAllTrainings": "Sửa tất cả buổi tập (cùng dịch vụ)"
 	},
 	"booking": {
 		"details": "Chi tiết đặt chỗ",
@@ -132,8 +148,6 @@
 	},
 	"subscription": {
 		"title": "Đăng ký",
-		"manageTitle": "Nâng cấp lên Pro",
-		"manageSubtitle": "Bật Pro để mở khóa các tính năng nâng cao cho studio",
 		"subscribe": "Đăng ký",
 		"noLongTerm": "Không ràng buộc dài hạn.",
 		"feature1": "Tối đa 5 huấn luyện viên mỗi studio",
@@ -146,6 +160,7 @@
 	"profile": {
 		"title": "Hồ sơ",
 		"yourSubscription": "Đăng ký của bạn",
+		"since": "Từ ngày",
 		"package": "Gói",
 		"status": "Trạng thái",
 		"validUntil": "Có hiệu lực đến",

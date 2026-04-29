@@ -1,7 +1,9 @@
-import { Injectable } from '@nestjs/common';
+import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
 import { AuthService } from '../auth/auth.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateRecurringTrainingSessionsDto } from './dto/create-recurring-training-sessions.dto';
+import { UpdateOwnerTrainingSessionDto } from './dto/update-owner-training-session.dto';
 
 type SessionStatus = 'ACTIVE' | 'CANCELLED' | 'COMPLETED';
 
@@ -245,7 +247,7 @@ export class FitnessSessionsService {
       where,
       include: {
         Training: { select: { name: true } },
-        Trainer: { select: { name: true } },
+        Trainer: { select: { id: true, name: true } },
         Enrollments: {
           select: { status: true },
         },
@@ -268,9 +270,109 @@ export class FitnessSessionsService {
         enrolledCount: activeEnrollments,
         attendanceSummary: { attended: activeEnrollments },
         training: { name: s.Training?.name || 'Training' },
-        trainer: { name: s.Trainer?.name || '—' },
+        trainer: s.Trainer
+          ? { id: s.Trainer.id, name: s.Trainer.name }
+          : { id: null, name: '—' },
       };
     });
+  }
+
+  async updateOwnerTrainingSession(
+    authHeader: string,
+    sessionId: string,
+    dto: UpdateOwnerTrainingSessionDto,
+  ) {
+    const currentUser = await this.authService.getCurrentUser(authHeader);
+    if (currentUser.user.role !== 'OWNER') {
+      throw new HttpException('Forbidden', HttpStatus.FORBIDDEN);
+    }
+
+    const session = await this.prisma.trainingSession.findFirst({
+      where: { id: sessionId },
+      include: {
+        Studio: { select: { ownerId: true } },
+        Training: { select: { duration: true } },
+      },
+    });
+    if (!session || session.Studio?.ownerId !== currentUser.user.id) {
+      throw new HttpException('Session not found', HttpStatus.NOT_FOUND);
+    }
+
+    const hasPatch =
+      dto.startsAt !== undefined ||
+      dto.trainerId !== undefined ||
+      dto.status !== undefined;
+    if (!hasPatch) {
+      return { success: true };
+    }
+
+    let startsAt = session.startsAt;
+    let endsAt = session.endsAt;
+    let trainerId: string | null = session.trainerId;
+    let status = session.status;
+
+    if (dto.startsAt !== undefined) {
+      const d = new Date(dto.startsAt);
+      if (Number.isNaN(d.getTime())) {
+        throw new HttpException('Invalid startsAt', HttpStatus.BAD_REQUEST);
+      }
+      startsAt = d;
+      endsAt = new Date(startsAt);
+      endsAt.setMinutes(endsAt.getMinutes() + session.Training.duration);
+    }
+
+    if (dto.trainerId !== undefined) {
+      const raw = dto.trainerId;
+      if (raw === null || raw === '') {
+        trainerId = null;
+      } else {
+        const trainer = await this.prisma.trainer.findFirst({
+          where: { id: raw, studioId: session.studioId },
+          select: { id: true },
+        });
+        if (!trainer) {
+          throw new HttpException('Trainer not found', HttpStatus.BAD_REQUEST);
+        }
+        trainerId = raw;
+      }
+    }
+
+    if (dto.status !== undefined) {
+      status = dto.status;
+    }
+
+    if (status === 'ACTIVE') {
+      const overlapWhere: Prisma.TrainingSessionWhereInput = {
+        studioId: session.studioId,
+        id: { not: sessionId },
+        status: 'ACTIVE',
+        startsAt: { lt: endsAt },
+        endsAt: { gt: startsAt },
+        ...(trainerId ? { trainerId } : {}),
+      };
+      const overlap = await this.prisma.trainingSession.findFirst({
+        where: overlapWhere,
+        select: { id: true },
+      });
+      if (overlap) {
+        throw new HttpException(
+          'Time slot conflicts with another session',
+          HttpStatus.BAD_REQUEST,
+        );
+      }
+    }
+
+    await this.prisma.trainingSession.update({
+      where: { id: sessionId },
+      data: {
+        startsAt,
+        endsAt,
+        trainerId,
+        status,
+      },
+    });
+
+    return { success: true };
   }
 
   async updateOwnerSessionStatus(
@@ -395,6 +497,77 @@ export class FitnessSessionsService {
             address: e.TrainingSession.Studio.address,
           }
         : null,
+    }));
+  }
+
+  /**
+   * 1:1 appointment bookings (SessionBooking) for owner apps — clients list, calendar hooks.
+   * Shape matches mobile [DashboardApiService.getOwnerBookings] / [Booking.fromJson] after [time]→dateTime.
+   */
+  async getOwnerSessionBookings(
+    authHeader: string,
+    limit = 100,
+  ): Promise<
+    {
+      id: string;
+      time: string;
+      status: string;
+      notes: string | null;
+      user: { name: string | null; email: string | null; phone: string | null };
+      service: { name: string; price: number | null; duration: number | null };
+      staff: { id: string; name: string } | null;
+      staffId: string | null;
+      serviceId: string;
+    }[]
+  > {
+    const currentUser = await this.authService.getCurrentUser(authHeader);
+    if (currentUser.user.role !== 'OWNER') {
+      throw new Error('Forbidden');
+    }
+
+    const studio = await this.prisma.studio.findFirst({
+      where: { ownerId: currentUser.user.id },
+      select: { id: true },
+    });
+    if (!studio) {
+      return [];
+    }
+
+    const take = Math.min(Math.max(1, limit), 500);
+    const rows = await this.prisma.sessionBooking.findMany({
+      where: { studioId: studio.id },
+      include: {
+        User: { select: { name: true, email: true, phone: true } },
+        Training: {
+          select: { name: true, nameEn: true, price: true, duration: true },
+        },
+        Trainer: { select: { id: true, name: true } },
+      },
+      orderBy: { startsAt: 'desc' },
+      take,
+    });
+
+    return rows.map((b) => ({
+      id: b.id,
+      time: b.startsAt.toISOString(),
+      status: b.status,
+      notes: b.notes,
+      user: {
+        name: b.User.name,
+        email: b.User.email,
+        phone: b.User.phone,
+      },
+      service: {
+        name: (b.Training?.name ?? b.Training?.nameEn ?? '—').trim() || '—',
+        price:
+          b.Training != null ? Number(b.Training.price) : null,
+        duration: b.Training?.duration ?? null,
+      },
+      staff: b.Trainer
+        ? { id: b.Trainer.id, name: b.Trainer.name }
+        : null,
+      staffId: b.trainerId,
+      serviceId: b.trainingId,
     }));
   }
 }

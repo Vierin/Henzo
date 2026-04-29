@@ -7,6 +7,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../constants/colors.dart';
 import '../services/api_client.dart';
+import '../services/cache/client_nearby_cache.dart';
 import 'location_picker_screen.dart';
 
 class ClientMapScreen extends StatefulWidget {
@@ -113,7 +114,22 @@ class _ClientMapScreenState extends State<ClientMapScreen> {
           ..write(effectiveLon.toStringAsFixed(6))
           ..write('&radius=50');
       }
-      final raw = await ApiClient.get(query.toString(), null);
+      final path = query.toString();
+      dynamic raw = ClientNearbyCache.get(path);
+      if (raw == null &&
+          effectiveLat != null &&
+          effectiveLon != null) {
+        final sliced = ClientNearbyCache.sliceFromHomeCache(
+          effectiveLat,
+          effectiveLon,
+          take: 25,
+        );
+        if (sliced != null) {
+          raw = sliced;
+        }
+      }
+      raw ??= await ApiClient.get(path, null);
+      ClientNearbyCache.put(path, raw);
       final list = _extractStudiosList(raw);
       final mapped = <_NearbyStudio>[];
       for (final item in list) {

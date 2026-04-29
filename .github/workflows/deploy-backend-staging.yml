@@ -15,6 +15,8 @@ jobs:
   build-and-push:
     name: Build and push staging image
     runs-on: ubuntu-latest
+    outputs:
+      image_digest: ${{ steps.build.outputs.digest }}
     permissions:
       contents: read
       packages: write
@@ -35,12 +37,22 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Build and push
+        id: build
         uses: docker/build-push-action@v6
         with:
           context: apps/backend
           file: apps/backend/Dockerfile
           push: true
           tags: ${{ env.IMAGE_BASE }}:staging
+
+      - name: Save image digest artifact
+        run: echo "${{ steps.build.outputs.digest }}" > backend-staging-digest.txt
+
+      - name: Upload image digest artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-staging-image-digest
+          path: backend-staging-digest.txt
 
   deploy:
     name: Deploy staging to server
@@ -53,6 +65,7 @@ jobs:
         run: |
           BASE="${{ env.REGISTRY }}/$(echo ${{ github.repository }} | tr '[:upper:]' '[:lower:]')/backend"
           echo "IMAGE_BASE=${BASE}" >> $GITHUB_ENV
+          echo "IMAGE_DIGEST=${{ needs.build-and-push.outputs.image_digest }}" >> $GITHUB_ENV
 
       - name: Deploy to DigitalOcean
         uses: appleboy/ssh-action@v1.0.0
@@ -62,15 +75,11 @@ jobs:
           key: ${{ secrets.DO_SSH_KEY }}
           port: 22
           script: |
-            cd /var/www/henzo
-            git fetch origin staging
-            git checkout staging
-            git pull origin staging
-            cd apps/backend
             if [ -n "${{ secrets.GHCR_TOKEN }}" ]; then
               echo "${{ secrets.GHCR_TOKEN }}" | docker login ${{ env.REGISTRY }} -u ${{ github.actor }} --password-stdin
             fi
-            export BACKEND_STAGING_IMAGE=${{ env.IMAGE_BASE }}:staging
+            cd /var/www/henzo/apps/backend
+            export BACKEND_STAGING_IMAGE=${{ env.IMAGE_BASE }}@${{ env.IMAGE_DIGEST }}
             echo "🔄 Pulling staging image..."
             docker compose pull backend_staging
             echo "🔄 Restarting staging backend + nginx..."

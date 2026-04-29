@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_map/flutter_map.dart';
@@ -11,6 +13,8 @@ import '../l10n/locale_provider.dart';
 import '../models/public_studio_preview.dart';
 import '../services/api_client.dart';
 import '../services/auth_service.dart';
+import '../services/cache/client_nearby_cache.dart';
+import '../services/client_favorites_store.dart';
 import '../services/mapbox_api_service.dart';
 import '../widgets/public/top_studio_card.dart';
 import 'location_picker_screen.dart';
@@ -36,7 +40,6 @@ class _PublicHomeScreenState extends State<PublicHomeScreen> {
   double? _selectedLat;
   double? _selectedLon;
   bool _locationModalShown = false;
-  final Set<String> _favoriteStudioIds = <String>{};
   final Set<String> _favoriteLoadingIds = <String>{};
 
   @override
@@ -64,7 +67,12 @@ class _PublicHomeScreenState extends State<PublicHomeScreen> {
           ..write(_selectedLon!.toStringAsFixed(6))
           ..write('&radius=50');
       }
-      final raw = await ApiClient.get(query.toString(), null);
+      final path = query.toString();
+      var raw = ClientNearbyCache.get(path);
+      if (raw == null) {
+        raw = await ApiClient.get(path, null);
+        ClientNearbyCache.put(path, raw);
+      }
       final list = _extractStudiosList(raw);
       final mapped = <PublicStudioPreview>[];
       for (final item in list) {
@@ -105,7 +113,10 @@ class _PublicHomeScreenState extends State<PublicHomeScreen> {
         _allStudios = mapped;
         _isLoadingStudios = false;
       });
-      await _loadFavoriteStudios();
+      final token = context.read<AuthService>().accessToken;
+      unawaited(
+        context.read<ClientFavoritesStore>().sync(token, force: false),
+      );
     } catch (_) {
       if (!mounted) return;
       setState(() {
@@ -113,29 +124,6 @@ class _PublicHomeScreenState extends State<PublicHomeScreen> {
         _isLoadingStudios = false;
       });
     }
-  }
-
-  Future<void> _loadFavoriteStudios() async {
-    final token = context.read<AuthService>().accessToken;
-    if (token == null || token.isEmpty || !mounted) return;
-    try {
-      final raw = await ApiClient.get('/auth/favorites', token);
-      final list = raw is Map<String, dynamic> && raw['favorites'] is List
-          ? raw['favorites'] as List<dynamic>
-          : <dynamic>[];
-      final ids = <String>{};
-      for (final item in list) {
-        if (item is Map && item['id'] != null) {
-          ids.add(item['id'].toString());
-        }
-      }
-      if (!mounted) return;
-      setState(
-        () => _favoriteStudioIds
-          ..clear()
-          ..addAll(ids),
-      );
-    } catch (_) {}
   }
 
   List<dynamic> _extractStudiosList(dynamic raw) {
@@ -206,6 +194,7 @@ class _PublicHomeScreenState extends State<PublicHomeScreen> {
       await prefs.setDouble(_latKey, lat);
       await prefs.setDouble(_lonKey, lon);
     }
+    ClientNearbyCache.clear();
     if (!mounted) return;
     setState(() {
       _selectedCity = city;
@@ -361,20 +350,26 @@ class _PublicHomeScreenState extends State<PublicHomeScreen> {
 
   Future<void> _toggleFavorite(PublicStudioPreview studio) async {
     final token = context.read<AuthService>().accessToken;
+    final favStore = context.read<ClientFavoritesStore>();
     if (token == null ||
         token.isEmpty ||
         _favoriteLoadingIds.contains(studio.id)) {
       return;
     }
-    final wasFavorite = _favoriteStudioIds.contains(studio.id);
-    setState(() {
-      _favoriteLoadingIds.add(studio.id);
-      if (wasFavorite) {
-        _favoriteStudioIds.remove(studio.id);
-      } else {
-        _favoriteStudioIds.add(studio.id);
-      }
-    });
+    final wasFavorite = favStore.isFavorite(studio.id);
+    setState(() => _favoriteLoadingIds.add(studio.id));
+    if (wasFavorite) {
+      favStore.removeLocal(studio.id);
+    } else {
+      favStore.upsertStudioMap({
+        'id': studio.id,
+        'name': studio.name,
+        'address': studio.address,
+        if (studio.photoUrl != null && studio.photoUrl!.isNotEmpty)
+          'photos': [studio.photoUrl],
+        'avgRating': studio.rating,
+      });
+    }
     try {
       if (wasFavorite) {
         await ApiClient.delete('/auth/favorites/${studio.id}', token);
@@ -400,27 +395,24 @@ class _PublicHomeScreenState extends State<PublicHomeScreen> {
       }
     } catch (_) {
       if (!mounted) return;
-      setState(() {
-        if (wasFavorite) {
-          _favoriteStudioIds.add(studio.id);
-        } else {
-          _favoriteStudioIds.remove(studio.id);
-        }
-      });
-      ScaffoldMessenger.of(context)
+      final messenger = ScaffoldMessenger.of(context);
+      await favStore.sync(token, force: true);
+      messenger
         ..hideCurrentSnackBar()
         ..showSnackBar(
           const SnackBar(content: Text('Failed to update favorites')),
         );
     } finally {
-      if (!mounted) return;
-      setState(() => _favoriteLoadingIds.remove(studio.id));
+      if (mounted) {
+        setState(() => _favoriteLoadingIds.remove(studio.id));
+      }
     }
   }
 
   @override
   Widget build(BuildContext context) {
     final locale = context.watch<LocaleProvider>();
+    final favStore = context.watch<ClientFavoritesStore>();
     final localizationLabel = _selectedCity ?? 'Set location';
     final studios = _filteredStudios;
     return Scaffold(
@@ -521,6 +513,7 @@ class _PublicHomeScreenState extends State<PublicHomeScreen> {
                         ),
                       )
                     : ListView.builder(
+                        cacheExtent: 320,
                         padding: const EdgeInsets.symmetric(horizontal: 16),
                         scrollDirection: Axis.horizontal,
                         itemCount: studios.length,
@@ -528,7 +521,7 @@ class _PublicHomeScreenState extends State<PublicHomeScreen> {
                           final studio = studios[index];
                           return TopStudioCard(
                             studio: studio,
-                            isFavorite: _favoriteStudioIds.contains(studio.id),
+                            isFavorite: favStore.isFavorite(studio.id),
                             isFavoriteLoading: _favoriteLoadingIds.contains(
                               studio.id,
                             ),

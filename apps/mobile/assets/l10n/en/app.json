@@ -105,7 +105,23 @@
 		"loading": "Loading...",
 		"setupSalonFirst": "Set up business first",
 		"noBookingsToday": "No bookings for today",
-		"noUpcomingBookings": "No upcoming bookings"
+		"noUpcomingBookings": "No upcoming bookings",
+		"onboardingTitle": "Onboarding",
+		"onboardingStepsCompleted": "completed",
+		"onboardingRequiredCaption": "Required to go live",
+		"onboardingOptionalTitle": "Optional",
+		"onboardingOptionalHint": "Not required to activate — you can add these later.",
+		"onboardingCreateTraining": "Create first training",
+		"onboardingAddPhoto": "Add at least 1 studio photo",
+		"onboardingAddLogo": "Add studio logo",
+		"onboardingBookingWindow": "Configure booking window",
+		"onboardingContacts": "Add contact info",
+		"onboardingMissingRequired": "Missing required: {items}",
+		"onboardingActivate": "Activate studio"
+	},
+	"ownerSession": {
+		"editCurrentSession": "Edit current session",
+		"editAllTrainings": "Edit all trainings"
 	},
 	"booking": {
 		"details": "Booking Details",
@@ -132,8 +148,6 @@
 	},
 	"subscription": {
 		"title": "Subscription",
-		"manageTitle": "Upgrade to Pro",
-		"manageSubtitle": "Enable Pro to unlock advanced studio features",
 		"subscribe": "Subscribe",
 		"noLongTerm": "No long-term commitment.",
 		"feature1": "Up to 5 trainers per studio",
@@ -146,6 +160,7 @@
 	"profile": {
 		"title": "Profile",
 		"yourSubscription": "Your subscription",
+		"since": "Since",
 		"package": "Package",
 		"status": "Status",
 		"validUntil": "Valid until",

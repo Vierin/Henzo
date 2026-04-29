@@ -18,6 +18,8 @@ class OwnerTrainingSession {
   final int attendedCount;
   final String trainingName;
   final String trainerName;
+  /// Null when no trainer row or owner-led slot.
+  final String? trainerId;
 
   const OwnerTrainingSession({
     required this.sessionId,
@@ -30,12 +32,15 @@ class OwnerTrainingSession {
     required this.attendedCount,
     required this.trainingName,
     required this.trainerName,
+    this.trainerId,
   });
 
   factory OwnerTrainingSession.fromJson(Map<String, dynamic> json) {
     final attendance = json['attendanceSummary'];
     final training = json['training'];
     final trainer = json['trainer'];
+    final trainerIdRaw =
+        trainer is Map<String, dynamic> ? trainer['id'] : null;
     return OwnerTrainingSession(
       sessionId: (json['sessionId'] ?? '').toString(),
       trainingId: (json['trainingId'] ??
@@ -61,6 +66,47 @@ class OwnerTrainingSession {
       trainerName: trainer is Map<String, dynamic>
           ? (trainer['name'] ?? '—').toString()
           : '—',
+      trainerId: trainerIdRaw == null
+          ? null
+          : trainerIdRaw.toString().trim().isEmpty
+              ? null
+              : trainerIdRaw.toString(),
+    );
+  }
+
+  /// Args for [Navigator] to [OwnerEditTrainingSessionScreen].
+  Map<String, dynamic> toRouteArgs() => {
+        'sessionId': sessionId,
+        'trainingId': trainingId,
+        'startsAt': startsAt.toIso8601String(),
+        'endsAt': endsAt.toIso8601String(),
+        'status': status,
+        'capacity': capacity,
+        'enrolledCount': enrolledCount,
+        'attendedCount': attendedCount,
+        'trainingName': trainingName,
+        'trainerName': trainerName,
+        if (trainerId != null) 'trainerId': trainerId,
+      };
+
+  factory OwnerTrainingSession.fromRouteArgs(Map<String, dynamic> m) {
+    final trainerRaw = m['trainerId'];
+    return OwnerTrainingSession(
+      sessionId: (m['sessionId'] ?? '').toString(),
+      trainingId: (m['trainingId'] ?? '').toString(),
+      startsAt: DateTime.tryParse((m['startsAt'] ?? '').toString()) ??
+          DateTime.now(),
+      endsAt: DateTime.tryParse((m['endsAt'] ?? '').toString()) ??
+          DateTime.now(),
+      status: (m['status'] ?? 'ACTIVE').toString(),
+      capacity: (m['capacity'] as num?)?.toInt() ?? 0,
+      enrolledCount: (m['enrolledCount'] as num?)?.toInt() ?? 0,
+      attendedCount: (m['attendedCount'] as num?)?.toInt() ?? 0,
+      trainingName: (m['trainingName'] ?? 'Training').toString(),
+      trainerName: (m['trainerName'] ?? '—').toString(),
+      trainerId: trainerRaw == null || trainerRaw.toString().isEmpty
+          ? null
+          : trainerRaw.toString(),
     );
   }
 }
@@ -197,17 +243,27 @@ class DashboardApiService {
     try {
       final body = await ApiClient.get('/fitness/studios/current', accessToken);
       if (body is! Map<String, dynamic>) return null;
-      if (body['success'] != true) {
-        if (kDebugMode) debugPrint('[DashboardAPI] salon success=false');
-        return null;
-      }
       if (body['needsSetup'] == true) {
         if (kDebugMode) debugPrint('[DashboardAPI] salon needsSetup=true');
         return null;
       }
+      // Backend responses are inconsistent across routes/versions:
+      // 1) { success: true, data: {...} }
+      // 2) { data: {...} }
+      // 3) direct studio object {...}
       final data = body['data'];
-      if (data == null || data is! Map<String, dynamic>) return null;
-      return Salon.fromJson(Map<String, dynamic>.from(data));
+      if (data is Map<String, dynamic>) {
+        return Salon.fromJson(Map<String, dynamic>.from(data));
+      }
+      if (body['id'] != null) {
+        return Salon.fromJson(Map<String, dynamic>.from(body));
+      }
+      // Only treat explicit success=false as setup/failure.
+      if (body.containsKey('success') && body['success'] == false) {
+        if (kDebugMode) debugPrint('[DashboardAPI] salon success=false');
+        return null;
+      }
+      return null;
     } on ApiException catch (e) {
       if (_isRouteMissing(e)) {
         try {
@@ -544,6 +600,21 @@ class DashboardApiService {
     );
   }
 
+  /// PATCH /fitness/owner/training-sessions/:id — одно занятие (время, тренер, статус).
+  /// В [fields] можно передать `trainerId: null`, чтобы снять тренера.
+  static Future<void> patchOwnerTrainingSession(
+    String accessToken,
+    String sessionId,
+    Map<String, dynamic> fields,
+  ) async {
+    if (fields.isEmpty) return;
+    await ApiClient.patch(
+      '/fitness/owner/training-sessions/$sessionId',
+      accessToken,
+      body: fields,
+    );
+  }
+
   static Future<RecurringCreationResult> createRecurringTrainingSessions(
     String accessToken, {
     required String studioId,
@@ -612,6 +683,7 @@ class StudioOnboardingChecklist {
     required this.missingRequiredSteps,
     required this.hasTraining,
     required this.hasPhoto,
+    required this.hasLogo,
     required this.bookingWindowConfigured,
     required this.contactsConfigured,
   });
@@ -623,6 +695,7 @@ class StudioOnboardingChecklist {
   final List<String> missingRequiredSteps;
   final StudioOnboardingStep hasTraining;
   final StudioOnboardingStep hasPhoto;
+  final StudioOnboardingStep hasLogo;
   final StudioOnboardingStep bookingWindowConfigured;
   final StudioOnboardingStep contactsConfigured;
 
@@ -657,6 +730,7 @@ class StudioOnboardingChecklist {
       missingRequiredSteps: missing,
       hasTraining: parseStep('hasTraining', true),
       hasPhoto: parseStep('hasPhoto', true),
+      hasLogo: parseStep('hasLogo', false),
       bookingWindowConfigured: parseStep('bookingWindowConfigured', false),
       contactsConfigured: parseStep('contactsConfigured', false),
     );

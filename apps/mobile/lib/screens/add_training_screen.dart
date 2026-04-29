@@ -228,6 +228,111 @@ class _AddTrainingScreenState extends State<AddTrainingScreen> {
     );
   }
 
+  String _categoryLabel(String localeCode) {
+    final id = _selectedCategoryId;
+    if (id == null) return 'Выберите категорию';
+    for (final c in _categories) {
+      if (c.id == id) return c.label(localeCode);
+    }
+    return 'Выберите категорию';
+  }
+
+  Future<void> _openCategoryBottomSheet() async {
+    if (_categories.isEmpty) return;
+    int? temp = _selectedCategoryId;
+    final localeCode = context.read<LocaleProvider>().localeCode;
+    final result = await showModalBottomSheet<int?>(
+      context: context,
+      showDragHandle: false,
+      isScrollControlled: true,
+      backgroundColor: AppColors.backgroundPrimary,
+      builder: (ctx) {
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(14, 10, 14, 14),
+            child: StatefulBuilder(
+              builder: (context, setModalState) {
+                return Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        const Expanded(
+                          child: Text(
+                            'Категория',
+                            style: TextStyle(
+                              fontSize: 20,
+                              fontWeight: FontWeight.w800,
+                              color: AppColors.textPrimary,
+                            ),
+                          ),
+                        ),
+                        IconButton(
+                          onPressed: () => Navigator.of(ctx).pop(),
+                          icon: const Icon(Icons.close),
+                          color: AppColors.textSecondary,
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 6),
+                    Flexible(
+                      child: ListView(
+                        shrinkWrap: true,
+                        children: _categories.map((c) {
+                          final selected = temp == c.id;
+                          return ListTile(
+                            contentPadding: const EdgeInsets.symmetric(
+                              horizontal: 4,
+                            ),
+                            title: Text(c.label(localeCode)),
+                            trailing: selected
+                                ? const Icon(
+                                    Icons.check,
+                                    color: AppColors.primary500,
+                                  )
+                                : null,
+                            onTap: () => setModalState(() => temp = c.id),
+                          );
+                        }).toList(),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: TextButton(
+                            onPressed: () => setModalState(() => temp = null),
+                            child: const Text('Сбросить'),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: FilledButton(
+                            onPressed: () => Navigator.of(ctx).pop(temp),
+                            style: FilledButton.styleFrom(
+                              backgroundColor: AppColors.primary500,
+                            ),
+                            child: const Text('Применить'),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                );
+              },
+            ),
+          ),
+        );
+      },
+    );
+    if (!mounted) return;
+    setState(() {
+      _selectedCategoryId = result;
+      _step1CategoryError = false;
+    });
+  }
+
   List<DateTime> _buildRecurringPreview() {
     if (!_isRecurring || _recurringDays.isEmpty) return [];
     final start = DateTime(
@@ -611,55 +716,39 @@ class _AddTrainingScreenState extends State<AddTrainingScreen> {
                                 ],
                               ),
                               const SizedBox(height: 6),
-                              DropdownButtonFormField<int>(
-                                isExpanded: true,
-                                isDense: true,
-                                value: _selectedCategoryId,
-                                dropdownColor: AppColors.backgroundPrimary,
+                              InkWell(
                                 borderRadius: BorderRadius.circular(12),
-                                menuMaxHeight: 320,
-                                icon: const Icon(
-                                  Icons.keyboard_arrow_down_rounded,
-                                  color: AppColors.textSecondary,
-                                ),
-                                style: const TextStyle(
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.w500,
-                                  color: AppColors.textPrimary,
-                                ),
-                                hint: const Text(
-                                  'Выберите категорию',
-                                  style: TextStyle(
-                                    color: AppColors.textSecondary,
-                                    fontWeight: FontWeight.w500,
+                                onTap: _categories.isEmpty
+                                    ? null
+                                    : _openCategoryBottomSheet,
+                                child: InputDecorator(
+                                  decoration: _step1Decoration(
+                                    invalid: _step1CategoryError,
                                   ),
-                                ),
-                                decoration: _step1Decoration(
-                                  invalid: _step1CategoryError,
-                                ),
-                                items: _categories
-                                    .map(
-                                      (c) => DropdownMenuItem<int>(
-                                        value: c.id,
-                                        child: Padding(
-                                          padding: const EdgeInsets.symmetric(
-                                            vertical: 2,
-                                          ),
-                                          child: Text(
-                                            c.label(locale.localeCode),
-                                            overflow: TextOverflow.ellipsis,
-                                            maxLines: 1,
+                                  child: Row(
+                                    children: [
+                                      Expanded(
+                                        child: Text(
+                                          _categoryLabel(locale.localeCode),
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                          style: TextStyle(
+                                            fontSize: 14,
+                                            fontWeight: FontWeight.w500,
+                                            color: _selectedCategoryId == null
+                                                ? AppColors.textSecondary
+                                                : AppColors.textPrimary,
                                           ),
                                         ),
                                       ),
-                                    )
-                                    .toList(),
-                                onChanged: _categories.isEmpty
-                                    ? null
-                                    : (v) => setState(() {
-                                        _selectedCategoryId = v;
-                                        _step1CategoryError = false;
-                                      }),
+                                      const SizedBox(width: 8),
+                                      const Icon(
+                                        Icons.keyboard_arrow_down_rounded,
+                                        color: AppColors.textSecondary,
+                                      ),
+                                    ],
+                                  ),
+                                ),
                               ),
                             ],
                           );

@@ -73,9 +73,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
         sessions = [];
       }
       if (salon != null) {
-        checklist = await DashboardApiService.getCurrentStudioOnboardingChecklist(
-          token,
-        );
+        checklist =
+            await DashboardApiService.getCurrentStudioOnboardingChecklist(
+              token,
+            );
       }
       if (mounted) {
         setState(() {
@@ -128,6 +129,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
         return 'create first training';
       case 'hasPhoto':
         return 'add studio photo';
+      case 'hasLogo':
+        return 'add studio logo';
       default:
         return key;
     }
@@ -142,9 +145,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
     try {
       await DashboardApiService.publishStudio(token, salon.id);
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Studio is now active')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Studio is now active')));
       await _loadData();
     } on ApiException catch (e) {
       if (!mounted) return;
@@ -169,10 +172,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   Widget _sessionStatusBadge(OwnerTrainingSession s) {
     return Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: 8,
-        vertical: 4,
-      ),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
         color: _statusColor(s.status).withValues(alpha: 0.12),
         borderRadius: BorderRadius.circular(999),
@@ -205,13 +205,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   Widget _buildDailySchedule() {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(16),
       margin: const EdgeInsets.symmetric(horizontal: 10),
-      decoration: BoxDecoration(
-        color: AppColors.backgroundPrimary,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.borderPrimary),
-      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -230,32 +224,42 @@ class _DashboardScreenState extends State<DashboardScreen> {
               style: TextStyle(fontSize: 14, color: AppColors.textSecondary),
             )
           else
-            ..._todaySessions.map(
-              (s) {
-                final badge = _sessionStatusBadge(s);
-                return OwnerTrainingSessionCard(
-                  session: s,
-                  margin:
-                      const EdgeInsets.only(left: 10, right: 10, bottom: 10),
+            ..._todaySessions.map((s) {
+              final badge = _sessionStatusBadge(s);
+              return OwnerTrainingSessionCard(
+                session: s,
+                margin: const EdgeInsets.only(left: 0, right: 0, bottom: 5),
+                statusBadge: badge,
+                trainerFallbackName: _ownerTrainerFallback(),
+                onTap: () => OwnerTrainingSessionCard.showDetailsModal(
+                  context,
+                  s,
                   statusBadge: badge,
                   trainerFallbackName: _ownerTrainerFallback(),
-                  onTap: () => OwnerTrainingSessionCard.showDetailsModal(
-                    context,
-                    s,
-                    statusBadge: badge,
-                    trainerFallbackName: _ownerTrainerFallback(),
-                    onEditTraining: s.trainingId.isNotEmpty
-                        ? () => Navigator.of(context).pushNamed(
-                              '/services',
-                              arguments: {
-                                'editTrainingId': s.trainingId,
-                              },
-                            )
-                        : null,
-                  ),
-                );
-              },
-            ),
+                  onEditSession: s.sessionId.isNotEmpty
+                      ? () async {
+                          final changed = await Navigator.of(context)
+                              .pushNamed<bool>(
+                            '/owner/session/edit',
+                            arguments: s.toRouteArgs(),
+                          );
+                          if (changed == true && context.mounted) {
+                            _loadData();
+                          }
+                        }
+                      : null,
+                  onEditService: s.trainingId.isNotEmpty
+                      ? () async {
+                          await Navigator.of(context).pushNamed<bool?>(
+                            '/services',
+                            arguments: {'editTrainingId': s.trainingId},
+                          );
+                          if (context.mounted) await _loadData();
+                        }
+                      : null,
+                ),
+              );
+            }),
         ],
       ),
     );
@@ -418,21 +422,29 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 else
                   Column(
                     children: [
-                      if (_checklist != null) ...[
+                      if (_checklist != null &&
+                          !(_checklist!.hasTraining.completed &&
+                              _checklist!.hasPhoto.completed &&
+                              _checklist!.bookingWindowConfigured.completed &&
+                              _checklist!.contactsConfigured.completed)) ...[
                         OwnerChecklistCard(
                           hasTraining: _checklist!.hasTraining.completed,
                           hasPhoto: _checklist!.hasPhoto.completed,
+                          hasLogo: _checklist!.hasLogo.completed,
                           bookingWindowConfigured:
                               _checklist!.bookingWindowConfigured.completed,
                           contactsConfigured:
                               _checklist!.contactsConfigured.completed,
                           canPublish: _checklist!.canPublish,
+                          isStudioActive:
+                              _checklist!.status.toUpperCase() == 'ACTIVE',
                           isPublishing: _isPublishing,
                           missingRequiredSteps: _checklist!.missingRequiredSteps
                               .map(_humanizeChecklistStep)
                               .toList(),
                           onCreateTrainingTap: _openTrainingSetup,
                           onAddPhotoTap: _openSettings,
+                          onAddLogoTap: _openSettings,
                           onBookingWindowTap: _openBookingSettings,
                           onContactsTap: _openSettings,
                           onPublishTap: _publishStudio,

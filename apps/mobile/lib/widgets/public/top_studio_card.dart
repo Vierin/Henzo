@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../constants/colors.dart';
 import '../../models/public_studio_preview.dart';
+import 'cached_salon_network_image.dart';
 
 class TopStudioCard extends StatelessWidget {
   const TopStudioCard({
@@ -49,18 +50,9 @@ class TopStudioCard extends StatelessWidget {
                           child:
                               studio.photoUrl != null &&
                                   studio.photoUrl!.isNotEmpty
-                              ? Image.network(
-                                  studio.photoUrl!,
+                              ? CachedSalonNetworkImage(
+                                  imageUrl: studio.photoUrl!,
                                   fit: BoxFit.cover,
-                                  errorBuilder: (_, _, _) => Container(
-                                    color: AppColors.secondary100,
-                                    alignment: Alignment.center,
-                                    child: const Icon(
-                                      Icons.fitness_center,
-                                      size: 30,
-                                      color: AppColors.primary500,
-                                    ),
-                                  ),
                                 )
                               : Container(
                                   color: AppColors.secondary100,

@@ -194,12 +194,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   Widget _buildCurrentSubscriptionCard() {
+    final localeProv = context.read<LocaleProvider>();
     final sub = _subscription;
-    final isActive = sub?.isActive ?? false;
     final isFreePlan =
-        sub != null &&
-        sub.type.toUpperCase() == 'FREEMIUM' &&
-        (sub.amount ?? 0) <= 0;
+        !_loadingSubscription &&
+        (sub == null ||
+            (sub.type.toUpperCase() == 'FREEMIUM' && (sub.amount ?? 0) <= 0));
+    final isActive = _loadingSubscription ? false : (sub?.isActive ?? isFreePlan);
+    final tierLabel = isFreePlan
+        ? localeProv.t('profile.free')
+        : _mapProfilePackage(_packageLabel(sub?.type));
     final borderColor = isActive ? AppColors.primary500 : AppColors.error500;
     final statusColor = isActive ? AppColors.primary500 : AppColors.error500;
     return Material(
@@ -236,8 +240,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   children: [
                     const SizedBox(height: 10),
                     Text(
-                      '${context.read<LocaleProvider>().t('profile.yourSubscription')}: '
-                      '${_mapProfilePackage(_packageLabel(sub?.type))}',
+                      '${localeProv.t('profile.yourSubscription')}: $tierLabel',
                       style: const TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.w500,
@@ -245,17 +248,35 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       ),
                     ),
                     const SizedBox(height: 4),
-                    Text(
-                      '${context.read<LocaleProvider>().t('profile.status')}: '
-                      '${_mapProfileStatus(_statusLabel(_loadingSubscription, sub))}',
-                      style: TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w500,
-                        color: _loadingSubscription
-                            ? AppColors.textSecondary
-                            : statusColor,
+                    if (_loadingSubscription)
+                      Text(
+                        '${localeProv.t('profile.status')}: '
+                        '${localeProv.t('common.loading')}',
+                        style: const TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w500,
+                          color: AppColors.textSecondary,
+                        ),
+                      )
+                    else if (isFreePlan)
+                      Text(
+                        '${localeProv.t('profile.status')}: ${localeProv.t('profile.active')}',
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w500,
+                          color: statusColor,
+                        ),
+                      )
+                    else
+                      Text(
+                        '${localeProv.t('profile.status')}: '
+                        '${_mapProfileStatus(_statusLabel(false, sub))}',
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w500,
+                          color: statusColor,
+                        ),
                       ),
-                    ),
                     const SizedBox(height: 4),
                     if (!isFreePlan && sub != null)
                       Text(

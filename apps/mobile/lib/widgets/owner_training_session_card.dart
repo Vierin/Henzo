@@ -1,11 +1,9 @@
 import 'package:flutter/material.dart';
-
 import 'package:intl/intl.dart';
-
-
+import 'package:provider/provider.dart';
 
 import '../constants/colors.dart';
-
+import '../l10n/locale_provider.dart';
 import '../services/dashboard_api_service.dart';
 
 
@@ -110,7 +108,11 @@ class OwnerTrainingSessionCard extends StatelessWidget {
 
     String? trainerFallbackName,
 
-    VoidCallback? onEditTraining,
+    /// Редактировать только этот слот (время, тренер, отмена).
+    VoidCallback? onEditSession,
+
+    /// Редактировать шаблон услуги (имя, цена, длительность) — влияет на все будущие слоты.
+    VoidCallback? onEditService,
 
   }) {
 
@@ -137,8 +139,8 @@ class OwnerTrainingSessionCard extends StatelessWidget {
       backgroundColor: Colors.transparent,
 
       builder: (ctx) {
-
         final badge = statusBadge;
+        final tr = context.read<LocaleProvider>().t;
 
         return SafeArea(
 
@@ -258,72 +260,65 @@ class OwnerTrainingSessionCard extends StatelessWidget {
 
                     const SizedBox(height: 8),
 
-                    if (onEditTraining != null)
-                      Row(
-                        children: [
-                          Expanded(
-                            flex: 3,
-                            child: SizedBox(
-                              height: 46,
-                              child: OutlinedButton(
-                                onPressed: () {
-                                  Navigator.of(ctx).pop();
-                                  onEditTraining();
-                                },
-                                child: const Text(
-                                  'Редактировать',
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                              ),
+                    if (onEditSession != null ||
+                        onEditService != null) ...[
+                      if (onEditSession != null)
+                        SizedBox(
+                          width: double.infinity,
+                          height: 46,
+                          child: OutlinedButton(
+                            onPressed: () {
+                              Navigator.of(ctx).pop();
+                              onEditSession();
+                            },
+                            child: Text(
+                              tr('ownerSession.editCurrentSession'),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
                             ),
                           ),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            flex: 2,
-                            child: SizedBox(
-                              height: 44,
-                              child: FilledButton(
-                                onPressed: () => Navigator.of(ctx).pop(),
-                                style: FilledButton.styleFrom(
-                                  backgroundColor: AppColors.primary500,
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 8,
-                                  ),
-                                  textStyle: const TextStyle(
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
-                                child: const Text('Закрыть'),
-                              ),
-                            ),
-                          ),
-                        ],
-                      )
-
-                    else
-
-                      SizedBox(
-
-                        width: double.infinity,
-
-                        height: 46,
-
-                        child: FilledButton(
-
-                          onPressed: () => Navigator.of(ctx).pop(),
-
-                          style: FilledButton.styleFrom(
-
-                            backgroundColor: AppColors.primary500,
-
-                          ),
-
-                          child: const Text('Закрыть'),
-
                         ),
-
+                      if (onEditSession != null &&
+                          onEditService != null)
+                        const SizedBox(height: 8),
+                      if (onEditService != null)
+                        SizedBox(
+                          width: double.infinity,
+                          child: TextButton(
+                            onPressed: () {
+                              Navigator.of(ctx).pop();
+                              onEditService();
+                            },
+                            child: Text(
+                              tr('ownerSession.editAllTrainings'),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        ),
+                      const SizedBox(height: 8),
+                      SizedBox(
+                        width: double.infinity,
+                        height: 46,
+                        child: FilledButton(
+                          onPressed: () => Navigator.of(ctx).pop(),
+                          style: FilledButton.styleFrom(
+                            backgroundColor: AppColors.primary500,
+                          ),
+                          child: const Text('Закрыть'),
+                        ),
+                      ),
+                    ] else
+                      SizedBox(
+                        width: double.infinity,
+                        height: 46,
+                        child: FilledButton(
+                          onPressed: () => Navigator.of(ctx).pop(),
+                          style: FilledButton.styleFrom(
+                            backgroundColor: AppColors.primary500,
+                          ),
+                          child: const Text('Закрыть'),
+                        ),
                       ),
 
                   ],

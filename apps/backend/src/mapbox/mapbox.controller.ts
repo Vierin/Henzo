@@ -1,13 +1,9 @@
 import { Controller, Get, Query } from '@nestjs/common';
 import { MapboxService } from './mapbox.service';
-import { PrismaService } from '../prisma/prisma.service';
 
 @Controller('mapbox')
 export class MapboxController {
-  constructor(
-    private readonly mapboxService: MapboxService,
-    private readonly prisma: PrismaService,
-  ) {}
+  constructor(private readonly mapboxService: MapboxService) {}
 
   @Get('autocomplete')
   async getAutocompleteSuggestions(
@@ -53,32 +49,5 @@ export class MapboxController {
 
     const result = await this.mapboxService.reverseGeocode(latNum, lonNum);
     return result;
-  }
-
-  @Get('cities')
-  async getCities() {
-    const cities = await this.prisma.city.findMany({
-      where: {
-        isActive: true,
-      },
-      select: {
-        id: true,
-        name: true,
-        lat: true,
-        lng: true,
-        countryCode: true,
-      },
-      orderBy: {
-        name: 'asc',
-      },
-    });
-
-    // Transform to match AddressSuggestion format
-    return cities.map((city) => ({
-      id: `city-${city.id}`,
-      address: city.name,
-      lat: city.lat,
-      lon: city.lng,
-    }));
   }
 }

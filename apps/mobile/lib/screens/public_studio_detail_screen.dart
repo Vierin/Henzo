@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
@@ -6,6 +8,9 @@ import 'package:provider/provider.dart';
 import '../constants/colors.dart';
 import '../services/api_client.dart';
 import '../services/auth_service.dart';
+import '../services/cache/studio_public_detail_cache.dart';
+import '../services/client_favorites_store.dart';
+import '../widgets/public/cached_salon_network_image.dart';
 import 'public_studio_schedule_screen.dart';
 
 class PublicStudioDetailScreen extends StatefulWidget {
@@ -19,7 +24,6 @@ class PublicStudioDetailScreen extends StatefulWidget {
 
 class _PublicStudioDetailScreenState extends State<PublicStudioDetailScreen> {
   bool _isLoading = true;
-  bool _isFavorite = false;
   bool _isFavoriteLoading = false;
   String? _error;
   Map<String, dynamic>? _studio;
@@ -32,67 +36,62 @@ class _PublicStudioDetailScreenState extends State<PublicStudioDetailScreen> {
 
   Future<void> _loadStudio() async {
     if (!mounted) return;
-    setState(() {
-      _isLoading = true;
-      _error = null;
-    });
+    final cached = StudioPublicDetailCache.get(widget.studioId);
+    if (cached != null) {
+      setState(() {
+        _studio = cached;
+        _isLoading = false;
+        _error = null;
+      });
+      final token = context.read<AuthService>().accessToken;
+      unawaited(context.read<ClientFavoritesStore>().sync(token, force: false));
+    } else {
+      setState(() {
+        _isLoading = true;
+        _error = null;
+      });
+    }
     try {
       final raw = await ApiClient.get('/studios/${widget.studioId}', null);
       if (!mounted) return;
-      setState(() {
-        _studio = raw is Map<String, dynamic> ? raw : null;
-        _isLoading = false;
-      });
-      await _loadFavoriteStatus();
+      if (raw is Map<String, dynamic>) {
+        StudioPublicDetailCache.put(widget.studioId, raw);
+        setState(() {
+          _studio = raw;
+          _isLoading = false;
+          _error = null;
+        });
+      } else {
+        setState(() {
+          if (_studio == null) _error = 'Invalid response';
+          _isLoading = false;
+        });
+      }
+      final token = context.read<AuthService>().accessToken;
+      unawaited(context.read<ClientFavoritesStore>().sync(token, force: false));
     } catch (e) {
       if (!mounted) return;
       setState(() {
-        _error = e.toString();
+        if (_studio == null) _error = e.toString();
         _isLoading = false;
       });
-    }
-  }
-
-  Future<void> _loadFavoriteStatus() async {
-    final studio = _studio;
-    final studioId = (studio?['id'] ?? '').toString();
-    if (studioId.isEmpty) return;
-    final token = context.read<AuthService>().accessToken;
-    if (token == null || token.isEmpty) {
-      if (!mounted) return;
-      setState(() => _isFavorite = false);
-      return;
-    }
-    try {
-      final raw = await ApiClient.get('/auth/favorites', token);
-      final list = raw is Map<String, dynamic> && raw['favorites'] is List
-          ? raw['favorites'] as List<dynamic>
-          : <dynamic>[];
-      var found = false;
-      for (final item in list) {
-        if (item is Map && item['id']?.toString() == studioId) {
-          found = true;
-          break;
-        }
-      }
-      if (!mounted) return;
-      setState(() => _isFavorite = found);
-    } catch (_) {
-      // Ignore to keep page available for anonymous/limited users.
     }
   }
 
   Future<void> _toggleFavorite() async {
     final studio = _studio;
     final studioId = (studio?['id'] ?? '').toString();
-    if (studioId.isEmpty || _isFavoriteLoading) return;
+    if (studioId.isEmpty || studio == null || _isFavoriteLoading) return;
     final token = context.read<AuthService>().accessToken;
     if (token == null || token.isEmpty) return;
-    final wasFavorite = _isFavorite;
-    setState(() {
-      _isFavoriteLoading = true;
-      _isFavorite = !wasFavorite;
-    });
+    final favStore = context.read<ClientFavoritesStore>();
+    final wasFavorite = favStore.isFavorite(studioId);
+    setState(() => _isFavoriteLoading = true);
+    if (wasFavorite) {
+      favStore.removeLocal(studioId);
+    } else {
+      favStore.upsertStudioMap(Map<String, dynamic>.from(studio));
+    }
     try {
       if (wasFavorite) {
         await ApiClient.delete('/auth/favorites/$studioId', token);
@@ -103,10 +102,11 @@ class _PublicStudioDetailScreenState extends State<PublicStudioDetailScreen> {
       }
     } catch (_) {
       if (!mounted) return;
-      setState(() => _isFavorite = wasFavorite);
+      await favStore.sync(token, force: true);
     } finally {
-      if (!mounted) return;
-      setState(() => _isFavoriteLoading = false);
+      if (mounted) {
+        setState(() => _isFavoriteLoading = false);
+      }
     }
   }
 
@@ -149,7 +149,6 @@ class _PublicStudioDetailScreenState extends State<PublicStudioDetailScreen> {
                 )
               : _DetailContent(
                   studio: studio,
-                  isFavorite: _isFavorite,
                   isFavoriteLoading: _isFavoriteLoading,
                   onToggleFavorite: _toggleFavorite,
                 ),
@@ -160,13 +159,11 @@ class _PublicStudioDetailScreenState extends State<PublicStudioDetailScreen> {
 class _DetailContent extends StatelessWidget {
   const _DetailContent({
     required this.studio,
-    required this.isFavorite,
     required this.isFavoriteLoading,
     required this.onToggleFavorite,
   });
 
   final Map<String, dynamic> studio;
-  final bool isFavorite;
   final bool isFavoriteLoading;
   final VoidCallback onToggleFavorite;
 
@@ -199,10 +196,9 @@ class _DetailContent extends StatelessWidget {
                 height: 240,
                 width: double.infinity,
                 child: photoUrl != null && photoUrl.isNotEmpty
-                    ? Image.network(
-                        photoUrl,
+                    ? CachedSalonNetworkImage(
+                        imageUrl: photoUrl,
                         fit: BoxFit.cover,
-                        errorBuilder: (_, _, _) => _photoFallback(),
                       )
                     : _photoFallback(),
               ),
@@ -238,33 +234,42 @@ class _DetailContent extends StatelessWidget {
                               ),
                             ),
                           ),
-                          Material(
-                            color: Colors.transparent,
-                            child: InkWell(
-                              customBorder: const CircleBorder(),
-                              onTap: isFavoriteLoading ? null : onToggleFavorite,
-                              child: Padding(
-                                padding: const EdgeInsets.all(6),
-                                child: isFavoriteLoading
-                                    ? const SizedBox(
-                                        width: 18,
-                                        height: 18,
-                                        child: CircularProgressIndicator(
-                                          strokeWidth: 2,
-                                          color: AppColors.textSecondary,
-                                        ),
-                                      )
-                                    : Icon(
-                                        isFavorite
-                                            ? Icons.favorite
-                                            : Icons.favorite_border,
-                                        size: 22,
-                                        color: isFavorite
-                                            ? const Color(0xFFFF5D7A)
-                                            : AppColors.textSecondary,
-                                      ),
-                              ),
-                            ),
+                          Consumer<ClientFavoritesStore>(
+                            builder: (context, fav, _) {
+                              final sid =
+                                  (studio['id'] ?? '').toString();
+                              final isFavorite = fav.isFavorite(sid);
+                              return Material(
+                                color: Colors.transparent,
+                                child: InkWell(
+                                  customBorder: const CircleBorder(),
+                                  onTap: isFavoriteLoading
+                                      ? null
+                                      : onToggleFavorite,
+                                  child: Padding(
+                                    padding: const EdgeInsets.all(6),
+                                    child: isFavoriteLoading
+                                        ? const SizedBox(
+                                            width: 18,
+                                            height: 18,
+                                            child: CircularProgressIndicator(
+                                              strokeWidth: 2,
+                                              color: AppColors.textSecondary,
+                                            ),
+                                          )
+                                        : Icon(
+                                            isFavorite
+                                                ? Icons.favorite
+                                                : Icons.favorite_border,
+                                            size: 22,
+                                            color: isFavorite
+                                                ? const Color(0xFFFF5D7A)
+                                                : AppColors.textSecondary,
+                                          ),
+                                  ),
+                                ),
+                              );
+                            },
                           ),
                         ],
                       ),
