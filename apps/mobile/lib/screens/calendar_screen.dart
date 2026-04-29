@@ -572,6 +572,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
                                     s,
                                     trainerFallbackName:
                                         _ownerTrainerFallback(),
+                                    onParticipantsChanged: _loadData,
                                     onEditSession: s.sessionId.isNotEmpty
                                         ? () {
                                             final shell = context

@@ -90,4 +90,12 @@ class NotificationsStore extends ChangeNotifier {
     await _save();
     notifyListeners();
   }
+
+  Future<void> deleteById(String id) async {
+    final before = _items.length;
+    _items = _items.where((e) => e.id != id).toList();
+    if (_items.length == before) return;
+    await _save();
+    notifyListeners();
+  }
 }

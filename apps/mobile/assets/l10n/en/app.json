@@ -121,7 +121,23 @@
 	},
 	"ownerSession": {
 		"editCurrentSession": "Edit current session",
-		"editAllTrainings": "Edit all trainings"
+		"editAllTrainings": "Edit all trainings",
+		"participants": "Participants",
+		"addParticipant": "Add participant",
+		"name": "Name",
+		"email": "Email",
+		"phone": "Phone",
+		"add": "Add",
+		"participantAdded": "Participant added",
+		"participantsLoadError": "Failed to load participants",
+		"noParticipants": "No participants yet",
+		"participantStatusActive": "Active",
+		"participantStatusNoShow": "No-show",
+		"participantStatusCancelled": "Cancelled",
+		"actionSetActive": "Set active",
+		"actionSetNoShow": "Mark no-show",
+		"actionCancelParticipant": "Cancel participation",
+		"actionDeleteParticipant": "Delete"
 	},
 	"booking": {
 		"details": "Booking Details",
@@ -328,7 +344,10 @@
 		"inactiveHint": "No sessions in 90 days",
 		"noData": "No data for selected period",
 		"failedLoad": "Failed to load analytics",
-		"retry": "Retry"
+		"retry": "Retry",
+		"proLockedTitle": "Advanced analytics is available in Pro",
+		"proLockedDescription": "Upgrade to Pro to unlock attendance, no-shows, sessions utilization and top training insights.",
+		"upgradeToPro": "Upgrade to Pro"
 	},
 	"profileForm": {
 		"profileUpdated": "Profile updated",

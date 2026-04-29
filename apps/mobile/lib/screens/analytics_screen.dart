@@ -8,6 +8,7 @@ import '../services/dashboard_api_service.dart';
 import '../utils/show_api_error.dart';
 import '../utils/currency_format.dart';
 import 'period_picker_screen.dart';
+import 'subscription_screen.dart';
 
 class AnalyticsScreen extends StatefulWidget {
   const AnalyticsScreen({super.key});
@@ -211,58 +212,64 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                   ),
                 )
               else ...[
-                _buildClientsCard(locale),
+                _buildBasicKpisCard(locale),
                 const SizedBox(height: 24),
-                SizedBox(
-                  height: 225,
-                  child: PageView(
-                    controller: _pageController,
-                    onPageChanged: (i) => setState(() => _currentPage = i),
-                    padEnds: false,
-                    children: [
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 6),
-                        child: _buildIncomeExpensesSlide(locale),
-                      ),
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 6),
-                        child: _buildSalesSlide(locale),
-                      ),
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 6),
-                        child: _buildServicesSlide(locale),
-                      ),
-                    ],
+                if (_analytics?.isPro == true) ...[
+                  _buildClientsCard(locale),
+                  const SizedBox(height: 24),
+                  SizedBox(
+                    height: 225,
+                    child: PageView(
+                      controller: _pageController,
+                      onPageChanged: (i) => setState(() => _currentPage = i),
+                      padEnds: false,
+                      children: [
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 6),
+                          child: _buildIncomeExpensesSlide(locale),
+                        ),
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 6),
+                          child: _buildSalesSlide(locale),
+                        ),
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 6),
+                          child: _buildServicesSlide(locale),
+                        ),
+                      ],
+                    ),
                   ),
-                ),
+                ] else
+                  _buildProLockedCard(locale),
               ],
               const SizedBox(height: 20),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: List.generate(3, (i) {
-                  return GestureDetector(
-                    onTap: () {
-                      _pageController.animateToPage(
-                        i,
-                        duration: const Duration(milliseconds: 300),
-                        curve: Curves.easeOut,
-                      );
-                    },
-                    child: AnimatedContainer(
-                      duration: const Duration(milliseconds: 200),
-                      margin: const EdgeInsets.symmetric(horizontal: 3),
-                      width: i == _currentPage ? 20 : 8,
-                      height: 6,
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(3),
-                        color: i == _currentPage
-                            ? AppColors.analyticsPurple
-                            : AppColors.neutral300,
+              if (_analytics?.isPro == true)
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: List.generate(3, (i) {
+                    return GestureDetector(
+                      onTap: () {
+                        _pageController.animateToPage(
+                          i,
+                          duration: const Duration(milliseconds: 300),
+                          curve: Curves.easeOut,
+                        );
+                      },
+                      child: AnimatedContainer(
+                        duration: const Duration(milliseconds: 200),
+                        margin: const EdgeInsets.symmetric(horizontal: 3),
+                        width: i == _currentPage ? 20 : 8,
+                        height: 6,
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(3),
+                          color: i == _currentPage
+                              ? AppColors.analyticsPurple
+                              : AppColors.neutral300,
+                        ),
                       ),
-                    ),
-                  );
-                }),
-              ),
+                    );
+                  }),
+                ),
               const SizedBox(height: 32),
             ],
           ),
@@ -576,6 +583,110 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                 locale.t('analytics.inactiveHint'),
               ),
             ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildBasicKpisCard(LocaleProvider locale) {
+    final a = _analytics;
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppColors.backgroundPrimary,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.06),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            locale.t('analytics.overview'),
+            style: const TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+              color: AppColors.textPrimary,
+            ),
+          ),
+          const SizedBox(height: 16),
+          _buildFinanceCard(
+            iconBg: AppColors.analyticsTealLight,
+            icon: Icons.trending_up,
+            iconColor: AppColors.analyticsTeal,
+            title: locale.t('analytics.revenue'),
+            valueText: formatVnd(a?.revenueTotal ?? 0),
+          ),
+          const SizedBox(height: 12),
+          _buildFinanceCard(
+            iconBg: AppColors.analyticsPurpleLight,
+            icon: Icons.event_note_outlined,
+            iconColor: AppColors.analyticsPurple,
+            title: locale.t('analytics.bookings'),
+            valueText: '${a?.bookingCount ?? 0}',
+          ),
+          const SizedBox(height: 12),
+          _buildFinanceCard(
+            iconBg: AppColors.analyticsTealLight,
+            icon: Icons.group_outlined,
+            iconColor: AppColors.analyticsTeal,
+            title: locale.t('analytics.clients'),
+            valueText: '${a?.clientsTotal ?? 0}',
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildProLockedCard(LocaleProvider locale) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppColors.backgroundPrimary,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.06),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            locale.t('analytics.proLockedTitle'),
+            style: const TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+              color: AppColors.textPrimary,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            locale.t('analytics.proLockedDescription'),
+            style: const TextStyle(
+              fontSize: 14,
+              color: AppColors.textSecondary,
+            ),
+          ),
+          const SizedBox(height: 12),
+          FilledButton(
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const SubscriptionScreen()),
+              );
+            },
+            child: Text(locale.t('analytics.upgradeToPro')),
           ),
         ],
       ),

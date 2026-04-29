@@ -1,5 +1,5 @@
 import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
-import { Prisma } from '@prisma/client';
+import { Prisma, SessionEnrollmentStatus, UserRole } from '@prisma/client';
 import { AuthService } from '../auth/auth.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateRecurringTrainingSessionsDto } from './dto/create-recurring-training-sessions.dto';
@@ -258,7 +258,7 @@ export class FitnessSessionsService {
 
     return sessions.map((s: any) => {
       const activeEnrollments = (s.Enrollments || []).filter(
-        (e: any) => e.status === 'ACTIVE',
+        (e: any) => e.status === 'ACTIVE' || e.status === 'NO_SHOW',
       ).length;
       return {
         sessionId: s.id,
@@ -401,6 +401,213 @@ export class FitnessSessionsService {
     return { success: true };
   }
 
+  private async getOwnedSessionOrThrow(authHeader: string, sessionId: string) {
+    const currentUser = await this.authService.getCurrentUser(authHeader);
+    if (currentUser.user.role !== 'OWNER') {
+      throw new HttpException('Forbidden', HttpStatus.FORBIDDEN);
+    }
+    const session = await this.prisma.trainingSession.findFirst({
+      where: { id: sessionId },
+      include: {
+        Studio: { select: { ownerId: true } },
+        Training: { select: { price: true } },
+      },
+    });
+    if (!session || session.Studio?.ownerId !== currentUser.user.id) {
+      throw new HttpException('Session not found', HttpStatus.NOT_FOUND);
+    }
+    return { currentUser, session };
+  }
+
+  async getOwnerSessionEnrollments(authHeader: string, sessionId: string) {
+    await this.getOwnedSessionOrThrow(authHeader, sessionId);
+    const rows = await this.prisma.sessionEnrollment.findMany({
+      where: { sessionId },
+      select: {
+        id: true,
+        userId: true,
+        status: true,
+        createdAt: true,
+        cancelledAt: true,
+        User: {
+          select: {
+            name: true,
+            email: true,
+            phone: true,
+          },
+        },
+      },
+      orderBy: [{ status: 'asc' }, { createdAt: 'asc' }],
+    });
+    return rows.map((r) => ({
+      enrollmentId: r.id,
+      userId: r.userId,
+      status: r.status,
+      createdAt: r.createdAt.toISOString(),
+      cancelledAt: r.cancelledAt?.toISOString() ?? null,
+      user: {
+        name: r.User.name,
+        email: r.User.email,
+        phone: r.User.phone,
+      },
+    }));
+  }
+
+  async addOwnerSessionEnrollment(
+    authHeader: string,
+    sessionId: string,
+    payload: {
+      userId?: string;
+      name?: string;
+      email?: string;
+      phone?: string;
+    },
+  ) {
+    const { session } = await this.getOwnedSessionOrThrow(authHeader, sessionId);
+    let targetUserId = payload.userId?.trim();
+
+    if (!targetUserId) {
+      const email = payload.email?.trim().toLowerCase();
+      const phone = payload.phone?.trim();
+      const name = payload.name?.trim() || null;
+      if (!email && !phone) {
+        throw new HttpException(
+          'email or phone is required',
+          HttpStatus.BAD_REQUEST,
+        );
+      }
+
+      let user = email
+        ? await this.prisma.user.findUnique({
+            where: { email },
+            select: { id: true },
+          })
+        : null;
+      if (!user && phone) {
+        user = await this.prisma.user.findFirst({
+          where: { phone },
+          select: { id: true },
+        });
+      }
+      if (!user) {
+        const generatedEmail =
+          email ??
+          `guest-${Date.now()}-${Math.floor(Math.random() * 100000)}@henzo.local`;
+        user = await this.prisma.user.create({
+          data: {
+            email: generatedEmail,
+            name,
+            phone: phone ?? null,
+            role: UserRole.CLIENT,
+            isGuest: true,
+          },
+          select: { id: true },
+        });
+      }
+      targetUserId = user.id;
+    }
+
+    const existing = await this.prisma.sessionEnrollment.findFirst({
+      where: { sessionId, userId: targetUserId },
+      select: { id: true, status: true },
+    });
+
+    if (
+      !existing &&
+      (session.bookedCount ?? 0) >= session.capacity
+    ) {
+      throw new HttpException('No spots left', HttpStatus.BAD_REQUEST);
+    }
+
+    await this.prisma.$transaction(async (tx) => {
+      if (existing) {
+        if (existing.status === SessionEnrollmentStatus.ACTIVE) {
+          return;
+        }
+        await tx.sessionEnrollment.update({
+          where: { id: existing.id },
+          data: {
+            status: SessionEnrollmentStatus.ACTIVE,
+            cancelledAt: null,
+          },
+        });
+      } else {
+        await tx.sessionEnrollment.create({
+          data: {
+            sessionId,
+            userId: targetUserId!,
+            status: SessionEnrollmentStatus.ACTIVE,
+          },
+        });
+        await tx.trainingSession.update({
+          where: { id: sessionId },
+          data: { bookedCount: { increment: 1 } },
+        });
+      }
+    });
+
+    return { success: true };
+  }
+
+  async updateOwnerEnrollmentStatus(
+    authHeader: string,
+    enrollmentId: string,
+    status: 'ACTIVE' | 'NO_SHOW' | 'CANCELLED',
+  ) {
+    const row = await this.prisma.sessionEnrollment.findUnique({
+      where: { id: enrollmentId },
+      select: {
+        id: true,
+        status: true,
+        sessionId: true,
+      },
+    });
+    if (!row) {
+      throw new HttpException('Enrollment not found', HttpStatus.NOT_FOUND);
+    }
+    await this.getOwnedSessionOrThrow(authHeader, row.sessionId);
+
+    const nextStatus = status as SessionEnrollmentStatus;
+    if (row.status === nextStatus) {
+      return { success: true };
+    }
+
+    await this.prisma.$transaction(async (tx) => {
+      await tx.sessionEnrollment.update({
+        where: { id: enrollmentId },
+        data: {
+          status: nextStatus,
+          cancelledAt:
+            nextStatus === SessionEnrollmentStatus.CANCELLED
+              ? new Date()
+              : null,
+        },
+      });
+
+      if (
+        row.status === SessionEnrollmentStatus.ACTIVE &&
+        nextStatus === SessionEnrollmentStatus.CANCELLED
+      ) {
+        await tx.trainingSession.update({
+          where: { id: row.sessionId },
+          data: { bookedCount: { decrement: 1 } },
+        });
+      }
+
+      if (
+        row.status === SessionEnrollmentStatus.CANCELLED &&
+        nextStatus === SessionEnrollmentStatus.ACTIVE
+      ) {
+        await tx.trainingSession.update({
+          where: { id: row.sessionId },
+          data: { bookedCount: { increment: 1 } },
+        });
+      }
+    });
+
+    return { success: true };
+  }
+
   async getClientSchedule(
     authHeader: string,
     fromIso?: string,
@@ -507,13 +714,19 @@ export class FitnessSessionsService {
   async getOwnerSessionBookings(
     authHeader: string,
     limit = 100,
+    page = 1,
   ): Promise<
     {
       id: string;
       time: string;
       status: string;
       notes: string | null;
-      user: { name: string | null; email: string | null; phone: string | null };
+      user: {
+        id: string | null;
+        name: string | null;
+        email: string | null;
+        phone: string | null;
+      };
       service: { name: string; price: number | null; duration: number | null };
       staff: { id: string; name: string } | null;
       staffId: string | null;
@@ -534,10 +747,11 @@ export class FitnessSessionsService {
     }
 
     const take = Math.min(Math.max(1, limit), 500);
+    const skip = (Math.max(1, page) - 1) * take;
     const rows = await this.prisma.sessionBooking.findMany({
       where: { studioId: studio.id },
       include: {
-        User: { select: { name: true, email: true, phone: true } },
+        User: { select: { id: true, name: true, email: true, phone: true } },
         Training: {
           select: { name: true, nameEn: true, price: true, duration: true },
         },
@@ -545,6 +759,7 @@ export class FitnessSessionsService {
       },
       orderBy: { startsAt: 'desc' },
       take,
+      skip,
     });
 
     return rows.map((b) => ({
@@ -553,6 +768,7 @@ export class FitnessSessionsService {
       status: b.status,
       notes: b.notes,
       user: {
+        id: b.User.id,
         name: b.User.name,
         email: b.User.email,
         phone: b.User.phone,
@@ -566,5 +782,112 @@ export class FitnessSessionsService {
       staffId: b.trainerId,
       serviceId: b.trainingId,
     }));
+  }
+
+  private async getOwnerStudioId(authHeader: string): Promise<string> {
+    const currentUser = await this.authService.getCurrentUser(authHeader);
+    if (currentUser.user.role !== 'OWNER') {
+      throw new Error('Forbidden');
+    }
+    const studio = await this.prisma.studio.findFirst({
+      where: { ownerId: currentUser.user.id },
+      select: { id: true },
+    });
+    if (!studio) {
+      throw new Error('Studio not found');
+    }
+    return studio.id;
+  }
+
+  async getOwnerClientBlocklist(authHeader: string) {
+    const studioId = await this.getOwnerStudioId(authHeader);
+    const rows = await this.prisma.studioClientBlock.findMany({
+      where: { studioId },
+      select: {
+        id: true,
+        userId: true,
+        email: true,
+        phone: true,
+        reason: true,
+        createdAt: true,
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+    return rows.map((r) => ({
+      id: r.id,
+      userId: r.userId,
+      email: r.email,
+      phone: r.phone,
+      reason: r.reason,
+      createdAt: r.createdAt.toISOString(),
+    }));
+  }
+
+  async blockOwnerClient(
+    authHeader: string,
+    input: { userId?: string; email?: string; phone?: string; reason?: string },
+  ) {
+    const studioId = await this.getOwnerStudioId(authHeader);
+    const userId = input.userId?.trim() || null;
+    const email = input.email?.trim().toLowerCase() || null;
+    const phone = input.phone?.trim() || null;
+    if (!userId && !email && !phone) {
+      throw new HttpException(
+        'userId or email or phone is required',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
+    const existing = await this.prisma.studioClientBlock.findFirst({
+      where: {
+        studioId,
+        OR: [
+          ...(userId ? [{ userId }] : []),
+          ...(email ? [{ email }] : []),
+          ...(phone ? [{ phone }] : []),
+        ],
+      },
+      select: { id: true },
+    });
+    if (existing) return { success: true, alreadyBlocked: true };
+
+    await this.prisma.studioClientBlock.create({
+      data: {
+        studioId,
+        userId,
+        email,
+        phone,
+        reason: input.reason?.trim() || null,
+      },
+    });
+    return { success: true };
+  }
+
+  async unblockOwnerClient(
+    authHeader: string,
+    input: { userId?: string; email?: string; phone?: string },
+  ) {
+    const studioId = await this.getOwnerStudioId(authHeader);
+    const userId = input.userId?.trim() || null;
+    const email = input.email?.trim().toLowerCase() || null;
+    const phone = input.phone?.trim() || null;
+    if (!userId && !email && !phone) {
+      throw new HttpException(
+        'userId or email or phone is required',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
+    await this.prisma.studioClientBlock.deleteMany({
+      where: {
+        studioId,
+        OR: [
+          ...(userId ? [{ userId }] : []),
+          ...(email ? [{ email }] : []),
+          ...(phone ? [{ phone }] : []),
+        ],
+      },
+    });
+    return { success: true };
   }
 }

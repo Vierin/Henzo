@@ -3,7 +3,7 @@ import {
   Injectable,
   BadRequestException,
 } from '@nestjs/common';
-import { BookingStatus } from '@prisma/client';
+import { BookingStatus, SubscriptionStatus, SubscriptionType } from '@prisma/client';
 import { AuthService } from '../auth/auth.service';
 import { PrismaService } from '../prisma/prisma.service';
 
@@ -14,7 +14,10 @@ import { PrismaService } from '../prisma/prisma.service';
  * (ISO range from the client — typically local day start/end converted to UTC).
  *
  * **SessionBooking (1:1 appointments):** revenue = sum of linked Training.price for rows where
- * status ≠ CANCELED; "bookings" counts the same filter.
+ * status ≠ CANCELED.
+ *
+ * **SessionEnrollment (group classes):** active enrollments for sessions in period also contribute
+ * to revenue and total "bookings" (counted as paid class spots).
  *
  * **TrainingSession + SessionEnrollment (group classes):** scheduled sessions by calendar;
  * enrollments counted with session `startsAt` in range. Cancellations: enrollment status
@@ -27,6 +30,12 @@ import { PrismaService } from '../prisma/prisma.service';
  */
 @Injectable()
 export class StudioAnalyticsService {
+  private readonly enrollmentRevenueStatuses = new Set([
+    'ACTIVE',
+    'NO_SHOW',
+    'NOSHOW',
+  ]);
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly authService: AuthService,
@@ -65,39 +74,41 @@ export class StudioAnalyticsService {
     }
 
     const studioId = studio.id;
-
     const bookingWherePeriod = {
       studioId,
       startsAt: { gte: from, lte: to },
       status: { not: BookingStatus.CANCELED },
     };
+    const [subscription, bookingsInPeriod] = await Promise.all([
+      this.prisma.subscription.findUnique({
+        where: { studioId },
+        select: { type: true, status: true },
+      }),
+      this.prisma.sessionBooking.findMany({
+        where: bookingWherePeriod,
+        select: {
+          trainingId: true,
+          status: true,
+          Training: { select: { price: true } },
+        },
+      }),
+    ]);
+    const isPro =
+      subscription?.type === SubscriptionType.PRO &&
+      subscription?.status === SubscriptionStatus.ACTIVE;
 
-    const bookingsInPeriod = await this.prisma.sessionBooking.findMany({
-      where: bookingWherePeriod,
-      select: {
-        id: true,
-        userId: true,
-        trainingId: true,
-        status: true,
-        Training: { select: { price: true, name: true } },
-      },
-    });
-
-    const revenueTotal = bookingsInPeriod.reduce((s, b) => {
+    const appointmentRevenue = bookingsInPeriod.reduce((s, b) => {
       const p = b.Training?.price;
       return s + (typeof p === 'number' ? p : 0);
     }, 0);
 
-    const bookingCount = bookingsInPeriod.length;
+    const appointmentBookingCount = bookingsInPeriod.length;
     const noshowCount = bookingsInPeriod.filter(
       (b) => b.status === BookingStatus.NOSHOW,
     ).length;
     const completedBookingCount = bookingsInPeriod.filter(
       (b) => b.status === BookingStatus.COMPLETED,
     ).length;
-    const averagePerBooking =
-      bookingCount > 0 ? revenueTotal / bookingCount : 0;
-
     const attendanceDenom = completedBookingCount + noshowCount;
     const attendanceRate =
       attendanceDenom > 0 ? completedBookingCount / attendanceDenom : null;
@@ -116,6 +127,8 @@ export class StudioAnalyticsService {
         status: true,
         capacity: true,
         bookedCount: true,
+        Training: { select: { name: true } },
+        Trainer: { select: { name: true } },
       },
     });
 
@@ -138,6 +151,39 @@ export class StudioAnalyticsService {
           })
         : [];
 
+    const activeEnrollmentsWithPriceRaw =
+      sessionIdsInPeriod.length > 0
+        ? await this.prisma.sessionEnrollment.findMany({
+            where: {
+              sessionId: { in: sessionIdsInPeriod },
+            },
+            select: {
+              status: true,
+              TrainingSession: {
+                select: {
+                  Training: {
+                    select: { price: true },
+                  },
+                },
+              },
+            },
+          })
+        : [];
+    const activeEnrollmentsWithPrice = activeEnrollmentsWithPriceRaw.filter((e) =>
+      this.enrollmentRevenueStatuses.has(String(e.status)),
+    );
+
+    const classRevenue = activeEnrollmentsWithPrice.reduce((sum, e) => {
+      const p = e.TrainingSession?.Training?.price;
+      return sum + (typeof p === 'number' ? p : 0);
+    }, 0);
+    const classBookingCount = activeEnrollmentsWithPrice.length;
+
+    const revenueTotal = appointmentRevenue + classRevenue;
+    const bookingCount = appointmentBookingCount + classBookingCount;
+    const averagePerBooking =
+      bookingCount > 0 ? revenueTotal / bookingCount : 0;
+
     let enrollmentsActive = 0;
     let enrollmentsCancelled = 0;
     for (const e of enrollmentsForSessions) {
@@ -145,17 +191,25 @@ export class StudioAnalyticsService {
       if (e.status === 'CANCELLED') enrollmentsCancelled += 1;
     }
 
+    const activeEnrollmentsBySession = new Map<string, number>();
+    for (const e of enrollmentsForSessions) {
+      if (e.status !== 'ACTIVE') continue;
+      activeEnrollmentsBySession.set(
+        e.sessionId,
+        (activeEnrollmentsBySession.get(e.sessionId) ?? 0) + 1,
+      );
+    }
     let utilizationSum = 0;
     let utilizationN = 0;
-    for (const s of trainingSessions) {
-      if (s.status === 'CANCELLED') continue;
-      const cap = Math.max(1, s.capacity || 1);
-      const enrolled = enrollmentsForSessions.filter(
-        (e) => e.sessionId === s.id && e.status === 'ACTIVE',
-      ).length;
-      const occ = Math.max(enrolled, s.bookedCount ?? 0);
-      utilizationSum += occ / cap;
-      utilizationN += 1;
+    if (isPro) {
+      for (const s of trainingSessions) {
+        if (s.status === 'CANCELLED') continue;
+        const cap = Math.max(1, s.capacity || 1);
+        const enrolled = activeEnrollmentsBySession.get(s.id) ?? 0;
+        const occ = Math.max(enrolled, s.bookedCount ?? 0);
+        utilizationSum += occ / cap;
+        utilizationN += 1;
+      }
     }
     const averageUtilization =
       utilizationN > 0 ? utilizationSum / utilizationN : 0;
@@ -189,14 +243,15 @@ export class StudioAnalyticsService {
       }
     }
 
-    let topTrainingName: string | null = null;
-    if (topTrainingId) {
-      const tr = await this.prisma.training.findUnique({
-        where: { id: topTrainingId },
-        select: { name: true },
-      });
-      topTrainingName = tr?.name ?? null;
+    const trainingNameById = new Map<string, string>();
+    for (const s of trainingSessions) {
+      if (s.trainingId && s.Training?.name) {
+        trainingNameById.set(s.trainingId, s.Training.name);
+      }
     }
+    const topTrainingName = topTrainingId
+      ? (trainingNameById.get(topTrainingId) ?? null)
+      : null;
 
     const trainerSessionCounts = new Map<string | null, number>();
     for (const s of trainingSessions) {
@@ -212,37 +267,49 @@ export class StudioAnalyticsService {
         topTrainerId = tid;
       }
     }
-    let topTrainerName: string | null = null;
-    if (topTrainerId) {
-      const trn = await this.prisma.trainer.findUnique({
-        where: { id: topTrainerId },
-        select: { name: true },
-      });
-      topTrainerName = trn?.name ?? null;
+    const trainerNameById = new Map<string, string>();
+    for (const s of trainingSessions) {
+      if (s.trainerId && s.Trainer?.name) {
+        trainerNameById.set(s.trainerId, s.Trainer.name);
+      }
     }
+    const topTrainerName = topTrainerId
+      ? (trainerNameById.get(topTrainerId) ?? null)
+      : null;
 
     const activeTrainingIdsInPeriod = new Set<string>(trainingIds);
     const trainingsActiveInPeriod = activeTrainingIdsInPeriod.size;
 
-    const clients = await this.computeClientSegments(studioId, from, to);
+    const clientsForTier = isPro
+      ? await this.computeClientSegments(studioId, from, to)
+      : {
+          total: await this.computeClientTotal(studioId),
+          regular: 0,
+          newInPeriod: 0,
+          inactive: 0,
+        };
 
     return {
       success: true,
       needsSetup: false,
       data: {
         period: { from: from.toISOString(), to: to.toISOString() },
+        analyticsTier: isPro ? 'PRO' : 'FREEMIUM',
+        isPro,
+        proLocked: !isPro,
         revenueTotal,
         bookingCount,
-        averagePerBooking,
-        noshowCount,
-        completedBookingCount,
-        attendanceRate,
-        trainingSessionsScheduled,
-        trainingSessionsCancelled,
-        enrollmentsActive,
-        enrollmentsCancelled,
-        averageUtilization,
+        averagePerBooking: isPro ? averagePerBooking : 0,
+        noshowCount: isPro ? noshowCount : 0,
+        completedBookingCount: isPro ? completedBookingCount : 0,
+        attendanceRate: isPro ? attendanceRate : null,
+        trainingSessionsScheduled: isPro ? trainingSessionsScheduled : 0,
+        trainingSessionsCancelled: isPro ? trainingSessionsCancelled : 0,
+        enrollmentsActive: isPro ? enrollmentsActive : 0,
+        enrollmentsCancelled: isPro ? enrollmentsCancelled : 0,
+        averageUtilization: isPro ? averageUtilization : 0,
         topTraining:
+          isPro &&
           topTrainingId && topTrainingName
             ? {
                 id: topTrainingId,
@@ -251,6 +318,7 @@ export class StudioAnalyticsService {
               }
             : null,
         topTrainer:
+          isPro &&
           topTrainerId && topTrainerName
             ? {
                 id: topTrainerId,
@@ -258,8 +326,8 @@ export class StudioAnalyticsService {
                 sessionCount: topTrainerSessions,
               }
             : null,
-        trainingsActiveInPeriod,
-        clients,
+        trainingsActiveInPeriod: isPro ? trainingsActiveInPeriod : 0,
+        clients: clientsForTier,
       },
     };
   }
@@ -276,16 +344,19 @@ export class StudioAnalyticsService {
       select: { userId: true, startsAt: true },
     });
 
-    const enrollmentRows = await this.prisma.sessionEnrollment.findMany({
+    const enrollmentRowsRaw = await this.prisma.sessionEnrollment.findMany({
       where: {
         TrainingSession: { studioId },
-        status: 'ACTIVE',
       },
       select: {
+        status: true,
         userId: true,
         TrainingSession: { select: { startsAt: true } },
       },
     });
+    const enrollmentRows = enrollmentRowsRaw.filter((r) =>
+      this.enrollmentRevenueStatuses.has(String(r.status)),
+    );
 
     const visitsByUser = new Map<string, Date[]>();
     for (const r of bookingRows) {
@@ -329,5 +400,33 @@ export class StudioAnalyticsService {
       newInPeriod,
       inactive,
     };
+  }
+
+  private async computeClientTotal(studioId: string): Promise<number> {
+    const [bookingUsers, enrollmentUsers] = await Promise.all([
+      this.prisma.sessionBooking.findMany({
+        where: {
+          studioId,
+          status: { not: BookingStatus.CANCELED },
+        },
+        select: { userId: true },
+        distinct: ['userId'],
+      }),
+      this.prisma.sessionEnrollment.findMany({
+        where: {
+          TrainingSession: { studioId },
+        },
+        select: { userId: true, status: true },
+      }),
+    ]);
+    const unique = new Set<string>();
+    for (const row of bookingUsers) unique.add(row.userId);
+    for (const row of enrollmentUsers) {
+      const status = String(row.status);
+      if (status === 'ACTIVE' || status === 'NO_SHOW' || status === 'NOSHOW') {
+        unique.add(row.userId);
+      }
+    }
+    return unique.size;
   }
 }

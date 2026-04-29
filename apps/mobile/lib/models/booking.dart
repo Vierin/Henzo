@@ -139,11 +139,13 @@ class Service {
 }
 
 class User {
+  final String? id;
   final String? name;
   final String? email;
   final String? phone;
 
   User({
+    this.id,
     this.name,
     this.email,
     this.phone,
@@ -151,6 +153,7 @@ class User {
 
   factory User.fromJson(Map<String, dynamic> json) {
     return User(
+      id: json['id']?.toString(),
       name: json['name'] as String?,
       email: json['email'] as String?,
       phone: json['phone'] as String?,
@@ -159,6 +162,7 @@ class User {
 
   Map<String, dynamic> toJson() {
     return {
+      'id': id,
       'name': name,
       'email': email,
       'phone': phone,
