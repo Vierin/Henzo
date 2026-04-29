@@ -4,16 +4,13 @@ import 'package:provider/provider.dart';
 
 import '../constants/colors.dart';
 import '../l10n/locale_provider.dart';
+import '../services/auth_service.dart';
 import '../services/dashboard_api_service.dart';
-
-
 
 /// Owner-facing card: start clock time + duration in minutes, title/trainer, occupancy + "booked".
 
 class OwnerTrainingSessionCard extends StatelessWidget {
-
   const OwnerTrainingSessionCard({
-
     super.key,
 
     required this.session,
@@ -25,12 +22,10 @@ class OwnerTrainingSessionCard extends StatelessWidget {
     this.onTap,
 
     /// When API returns no trainer (owner-led session), show this instead of "—".
-
     this.trainerFallbackName,
-
+    this.isPast = false,
+    this.pastLabel,
   });
-
-
 
   final OwnerTrainingSession session;
 
@@ -40,52 +35,37 @@ class OwnerTrainingSessionCard extends StatelessWidget {
 
   final VoidCallback? onTap;
 
-
-
   /// Owner name/email when trainer is unset in backend.
 
   final String? trainerFallbackName;
-
-
+  final bool isPast;
+  final String? pastLabel;
 
   /// Duration as configured (whole minutes).
 
   static int durationMinutes(OwnerTrainingSession session) {
-
     final d = session.endsAt.difference(session.startsAt);
 
     return d.inMinutes.clamp(0, 24 * 60);
-
   }
 
-
-
   static String durationMinutesLabel(OwnerTrainingSession session) {
-
     final m = durationMinutes(session);
 
     return '$m min';
-
   }
-
-
 
   /// Effective trainer label when session has no Trainer row (owner teaches).
 
   static String displayTrainer(
-
     OwnerTrainingSession session,
 
     String? fallbackName,
-
   ) {
-
     final raw = session.trainerName.trim();
 
     if (raw.isNotEmpty && raw != '—' && raw != '-') {
-
       return session.trainerName;
-
     }
 
     final f = fallbackName?.trim();
@@ -93,13 +73,9 @@ class OwnerTrainingSessionCard extends StatelessWidget {
     if (f != null && f.isNotEmpty) return f;
 
     return '—';
-
   }
 
-
-
   static Future<void> showDetailsModal(
-
     BuildContext context,
 
     OwnerTrainingSession session, {
@@ -113,9 +89,8 @@ class OwnerTrainingSessionCard extends StatelessWidget {
 
     /// Редактировать шаблон услуги (имя, цена, длительность) — влияет на все будущие слоты.
     VoidCallback? onEditService,
-
+    VoidCallback? onParticipantsChanged,
   }) {
-
     final startsLocal = session.startsAt.toLocal();
 
     final dateFmt = DateFormat('dd.MM.yyyy');
@@ -124,14 +99,264 @@ class OwnerTrainingSessionCard extends StatelessWidget {
 
     final minutes = durationMinutes(session);
 
-    final trainerLabel =
+    final trainerLabel = displayTrainer(session, trainerFallbackName);
+    final tr = context.read<LocaleProvider>().t;
 
-        displayTrainer(session, trainerFallbackName);
+    String statusText(String status) {
+      switch (status) {
+        case 'ACTIVE':
+          return tr('ownerSession.participantStatusActive');
+        case 'NO_SHOW':
+          return tr('ownerSession.participantStatusNoShow');
+        case 'CANCELLED':
+          return tr('ownerSession.participantStatusCancelled');
+        default:
+          return status;
+      }
+    }
 
+    Future<List<OwnerSessionEnrollment>> loadEnrollments() async {
+      final token = context.read<AuthService>().accessToken;
+      if (token == null || token.isEmpty) return [];
+      return DashboardApiService.getOwnerSessionEnrollments(
+        token,
+        session.sessionId,
+      );
+    }
 
+    Future<List<OwnerSessionEnrollment>> enrollmentsFuture = loadEnrollments();
+
+    Future<void> addParticipantDialog(StateSetter setModalState) async {
+      final nameController = TextEditingController();
+      final emailController = TextEditingController();
+      final phoneController = TextEditingController();
+      final shouldSave = await showDialog<bool>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          title: Text(tr('ownerSession.addParticipant')),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: nameController,
+                decoration: InputDecoration(labelText: tr('ownerSession.name')),
+              ),
+              const SizedBox(height: 8),
+              TextField(
+                controller: emailController,
+                decoration: InputDecoration(
+                  labelText: tr('ownerSession.email'),
+                ),
+              ),
+              const SizedBox(height: 8),
+              TextField(
+                controller: phoneController,
+                decoration: InputDecoration(
+                  labelText: tr('ownerSession.phone'),
+                ),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(ctx).pop(false),
+              child: Text(tr('common.cancel')),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.of(ctx).pop(true),
+              child: Text(tr('ownerSession.add')),
+            ),
+          ],
+        ),
+      );
+      if (shouldSave != true) return;
+      final token = context.read<AuthService>().accessToken;
+      if (token == null || token.isEmpty) return;
+      await DashboardApiService.addOwnerSessionEnrollment(
+        token,
+        session.sessionId,
+        name: nameController.text.trim(),
+        email: emailController.text.trim(),
+        phone: phoneController.text.trim(),
+      );
+      enrollmentsFuture = loadEnrollments();
+      setModalState(() {});
+      onParticipantsChanged?.call();
+      ScaffoldMessenger.maybeOf(context)?.showSnackBar(
+        SnackBar(content: Text(tr('ownerSession.participantAdded'))),
+      );
+    }
+
+    Future<void> editParticipantsDialog(StateSetter setModalState) async {
+      await showModalBottomSheet<void>(
+        context: context,
+        isScrollControlled: true,
+        backgroundColor: Colors.transparent,
+        builder: (sheetCtx) => SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+            child: Container(
+              decoration: BoxDecoration(
+                color: AppColors.backgroundPrimary,
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: AppColors.borderPrimary),
+              ),
+              padding: const EdgeInsets.fromLTRB(16, 14, 16, 16),
+              child: FutureBuilder<List<OwnerSessionEnrollment>>(
+                future: enrollmentsFuture,
+                builder: (context, snap) {
+                  if (snap.connectionState == ConnectionState.waiting) {
+                    return const SizedBox(
+                      height: 220,
+                      child: Center(
+                        child: CircularProgressIndicator(
+                          color: AppColors.primary500,
+                        ),
+                      ),
+                    );
+                  }
+                  if (snap.hasError) {
+                    return Padding(
+                      padding: const EdgeInsets.only(bottom: 12),
+                      child: Text(
+                        tr('ownerSession.participantsLoadError'),
+                        style: TextStyle(color: AppColors.error500),
+                      ),
+                    );
+                  }
+                  final list = snap.data ?? const [];
+                  if (list.isEmpty) {
+                    return SizedBox(
+                      height: 160,
+                      child: Center(
+                        child: Text(
+                          tr('ownerSession.noParticipants'),
+                          style: const TextStyle(color: AppColors.textSecondary),
+                        ),
+                      ),
+                    );
+                  }
+                  return ListView(
+                    shrinkWrap: true,
+                    children: list.map((e) {
+                      final displayName =
+                          (e.name ?? e.email ?? e.phone ?? tr('booking.client')).trim();
+                      final subtitle = e.phone?.isNotEmpty == true
+                          ? e.phone!
+                          : (e.email ?? '');
+                      final statusColor = e.status == 'NO_SHOW'
+                          ? AppColors.error500
+                          : e.status == 'CANCELLED'
+                              ? AppColors.textSecondary
+                              : AppColors.primary500;
+                      return Container(
+                        margin: const EdgeInsets.only(bottom: 8),
+                        padding: const EdgeInsets.all(10),
+                        decoration: BoxDecoration(
+                          color: AppColors.backgroundSecondary,
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    displayName,
+                                    style: const TextStyle(
+                                      fontWeight: FontWeight.w600,
+                                      color: AppColors.textPrimary,
+                                    ),
+                                  ),
+                                  if (subtitle.isNotEmpty)
+                                    Text(
+                                      subtitle,
+                                      style: const TextStyle(
+                                        fontSize: 12,
+                                        color: AppColors.textSecondary,
+                                      ),
+                                    ),
+                                ],
+                              ),
+                            ),
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 8,
+                                vertical: 4,
+                              ),
+                              decoration: BoxDecoration(
+                                color: statusColor.withValues(alpha: 0.14),
+                                borderRadius: BorderRadius.circular(999),
+                              ),
+                              child: Text(
+                                statusText(e.status),
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w700,
+                                  color: statusColor,
+                                ),
+                              ),
+                            ),
+                            PopupMenuButton<String>(
+                              onSelected: (value) async {
+                                final token = context.read<AuthService>().accessToken;
+                                if (token == null || token.isEmpty) return;
+                                if (value == 'DELETE') {
+                                  await DashboardApiService.deleteOwnerEnrollment(
+                                    token,
+                                    e.enrollmentId,
+                                  );
+                                } else {
+                                  await DashboardApiService.updateOwnerEnrollmentStatus(
+                                    token,
+                                    e.enrollmentId,
+                                    value,
+                                  );
+                                }
+                                enrollmentsFuture = loadEnrollments();
+                                setModalState(() {});
+                                onParticipantsChanged?.call();
+                                if (sheetCtx.mounted) Navigator.of(sheetCtx).pop();
+                                await editParticipantsDialog(setModalState);
+                              },
+                              itemBuilder: (_) => [
+                                PopupMenuItem(
+                                  value: 'ACTIVE',
+                                  child: Text(tr('ownerSession.actionSetActive')),
+                                ),
+                                PopupMenuItem(
+                                  value: 'NO_SHOW',
+                                  child: Text(tr('ownerSession.actionSetNoShow')),
+                                ),
+                                PopupMenuItem(
+                                  value: 'CANCELLED',
+                                  child: Text(
+                                    tr('ownerSession.actionCancelParticipant'),
+                                  ),
+                                ),
+                                PopupMenuItem(
+                                  value: 'DELETE',
+                                  child: Text(
+                                    tr('ownerSession.actionDeleteParticipant'),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      );
+                    }).toList(),
+                  );
+                },
+              ),
+            ),
+          ),
+        ),
+      );
+    }
 
     return showModalBottomSheet<void>(
-
       context: context,
 
       isScrollControlled: true,
@@ -142,283 +367,250 @@ class OwnerTrainingSessionCard extends StatelessWidget {
         final badge = statusBadge;
         final tr = context.read<LocaleProvider>().t;
 
-        return SafeArea(
+        return StatefulBuilder(
+          builder: (context, setModalState) => SafeArea(
+            child: Padding(
+              padding: EdgeInsets.only(
+                left: 16,
 
-          child: Padding(
+                right: 16,
 
-            padding: EdgeInsets.only(
+                bottom: 16 + MediaQuery.of(ctx).viewInsets.bottom,
 
-              left: 16,
-
-              right: 16,
-
-              bottom: 16 + MediaQuery.of(ctx).viewInsets.bottom,
-
-              top: 8,
-
-            ),
-
-            child: Container(
-
-              decoration: BoxDecoration(
-
-                color: AppColors.backgroundPrimary,
-
-                borderRadius: BorderRadius.circular(16),
-
-                border: Border.all(color: AppColors.borderPrimary),
-
-                boxShadow: const [
-
-                  BoxShadow(
-
-                    color: Color(0x14000000),
-
-                    blurRadius: 16,
-
-                    offset: Offset(0, 6),
-
-                  ),
-
-                ],
-
+                top: 8,
               ),
 
-              padding: const EdgeInsets.fromLTRB(20, 16, 20, 20),
+              child: Container(
+                decoration: BoxDecoration(
+                  color: AppColors.backgroundPrimary,
 
-              child: SingleChildScrollView(
+                  borderRadius: BorderRadius.circular(16),
 
-                child: Column(
+                  border: Border.all(color: AppColors.borderPrimary),
 
-                  crossAxisAlignment: CrossAxisAlignment.start,
+                  boxShadow: const [
+                    BoxShadow(
+                      color: Color(0x14000000),
 
-                  mainAxisSize: MainAxisSize.min,
+                      blurRadius: 16,
 
-                  children: [
+                      offset: Offset(0, 6),
+                    ),
+                  ],
+                ),
 
-                    Row(
+                padding: const EdgeInsets.fromLTRB(20, 16, 20, 20),
 
-                      crossAxisAlignment: CrossAxisAlignment.start,
+                child: SingleChildScrollView(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
 
-                      children: [
+                    mainAxisSize: MainAxisSize.min,
 
-                        Expanded(
+                    children: [
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
 
-                          child: Text(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              session.trainingName,
 
-                            session.trainingName,
+                              style: const TextStyle(
+                                fontSize: 18,
 
-                            style: const TextStyle(
+                                fontWeight: FontWeight.w800,
 
-                              fontSize: 18,
+                                color: AppColors.textPrimary,
 
-                              fontWeight: FontWeight.w800,
-
-                              color: AppColors.textPrimary,
-
-                              height: 1.25,
-
+                                height: 1.25,
+                              ),
                             ),
-
                           ),
 
-                        ),
+                          if (badge != null) ...[
+                            const SizedBox(width: 10),
 
-                        if (badge != null) ...[
-
-                          const SizedBox(width: 10),
-
-                          badge,
-
+                            badge,
+                          ],
                         ],
+                      ),
 
-                      ],
+                      const SizedBox(height: 16),
 
-                    ),
+                      _detailRow(
+                        'Начало',
 
-                    const SizedBox(height: 16),
+                        '${dateFmt.format(startsLocal)} · ${timeFmt.format(startsLocal)}',
+                      ),
 
-                    _detailRow(
+                      _detailRow('Длительность', '$minutes min'),
 
-                      'Начало',
+                      _detailRow('Тренер', trainerLabel),
 
-                      '${dateFmt.format(startsLocal)} · ${timeFmt.format(startsLocal)}',
+                      _detailRow(
+                        'Заполненность',
 
-                    ),
+                        '${session.enrolledCount} / ${session.capacity}',
+                      ),
 
-                    _detailRow('Длительность', '$minutes min'),
+                      const SizedBox(height: 8),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              tr('ownerSession.participants'),
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w700,
+                                color: AppColors.textPrimary,
+                              ),
+                            ),
+                          ),
+                          IconButton(
+                            onPressed: () =>
+                                addParticipantDialog(setModalState),
+                            icon: const Icon(Icons.person_add_alt_1),
+                            tooltip: tr('ownerSession.addParticipant'),
+                          ),
+                          IconButton(
+                            onPressed: () =>
+                                editParticipantsDialog(setModalState),
+                            icon: const Icon(Icons.edit_outlined),
+                            tooltip: tr('ownerSession.editParticipants'),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
 
-                    _detailRow('Тренер', trainerLabel),
-
-                    _detailRow(
-
-                      'Заполненность',
-
-                      '${session.enrolledCount} / ${session.capacity}',
-
-                    ),
-
-                    const SizedBox(height: 8),
-
-                    if (onEditSession != null ||
-                        onEditService != null) ...[
-                      if (onEditSession != null)
+                      if (onEditSession != null || onEditService != null) ...[
+                        if (onEditSession != null)
+                          SizedBox(
+                            width: double.infinity,
+                            height: 46,
+                            child: OutlinedButton(
+                              onPressed: () {
+                                Navigator.of(ctx).pop();
+                                onEditSession();
+                              },
+                              child: Text(
+                                tr('ownerSession.editCurrentSession'),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          ),
+                        if (onEditSession != null && onEditService != null)
+                          const SizedBox(height: 8),
+                        if (onEditService != null)
+                          SizedBox(
+                            width: double.infinity,
+                            child: TextButton(
+                              onPressed: () {
+                                Navigator.of(ctx).pop();
+                                onEditService();
+                              },
+                              child: Text(
+                                tr('ownerSession.editAllTrainings'),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          ),
+                        const SizedBox(height: 8),
                         SizedBox(
                           width: double.infinity,
                           height: 46,
-                          child: OutlinedButton(
-                            onPressed: () {
-                              Navigator.of(ctx).pop();
-                              onEditSession();
-                            },
-                            child: Text(
-                              tr('ownerSession.editCurrentSession'),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
+                          child: FilledButton(
+                            onPressed: () => Navigator.of(ctx).pop(),
+                            style: FilledButton.styleFrom(
+                              backgroundColor: AppColors.primary500,
                             ),
+                            child: const Text('Закрыть'),
                           ),
                         ),
-                      if (onEditSession != null &&
-                          onEditService != null)
-                        const SizedBox(height: 8),
-                      if (onEditService != null)
+                      ] else
                         SizedBox(
                           width: double.infinity,
-                          child: TextButton(
-                            onPressed: () {
-                              Navigator.of(ctx).pop();
-                              onEditService();
-                            },
-                            child: Text(
-                              tr('ownerSession.editAllTrainings'),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
+                          height: 46,
+                          child: FilledButton(
+                            onPressed: () => Navigator.of(ctx).pop(),
+                            style: FilledButton.styleFrom(
+                              backgroundColor: AppColors.primary500,
                             ),
+                            child: const Text('Закрыть'),
                           ),
                         ),
-                      const SizedBox(height: 8),
-                      SizedBox(
-                        width: double.infinity,
-                        height: 46,
-                        child: FilledButton(
-                          onPressed: () => Navigator.of(ctx).pop(),
-                          style: FilledButton.styleFrom(
-                            backgroundColor: AppColors.primary500,
-                          ),
-                          child: const Text('Закрыть'),
-                        ),
-                      ),
-                    ] else
-                      SizedBox(
-                        width: double.infinity,
-                        height: 46,
-                        child: FilledButton(
-                          onPressed: () => Navigator.of(ctx).pop(),
-                          style: FilledButton.styleFrom(
-                            backgroundColor: AppColors.primary500,
-                          ),
-                          child: const Text('Закрыть'),
-                        ),
-                      ),
-
-                  ],
-
+                    ],
+                  ),
                 ),
-
               ),
-
             ),
-
           ),
-
         );
-
       },
-
     );
-
   }
 
-
-
   static Widget _detailRow(String label, String value) {
-
     return Padding(
-
       padding: const EdgeInsets.only(bottom: 10),
 
       child: Row(
-
         crossAxisAlignment: CrossAxisAlignment.start,
 
         children: [
-
           SizedBox(
-
             width: 118,
 
             child: Text(
-
               label,
 
               style: TextStyle(
-
                 fontSize: 13,
 
                 fontWeight: FontWeight.w600,
 
                 color: AppColors.textSecondary,
-
               ),
-
             ),
-
           ),
 
           Expanded(
-
             child: Text(
-
               value,
 
               style: const TextStyle(
-
                 fontSize: 14,
 
                 fontWeight: FontWeight.w600,
 
                 color: AppColors.textPrimary,
-
               ),
-
             ),
-
           ),
-
         ],
-
       ),
-
     );
-
   }
 
-
-
   @override
-
   Widget build(BuildContext context) {
+    final resolvedMargin = margin.resolve(Directionality.of(context));
+    final safeMargin = EdgeInsets.fromLTRB(
+      resolvedMargin.left < 0 ? 0 : resolvedMargin.left,
+      resolvedMargin.top < 0 ? 0 : resolvedMargin.top,
+      resolvedMargin.right < 0 ? 0 : resolvedMargin.right,
+      resolvedMargin.bottom < 0 ? 0 : resolvedMargin.bottom,
+    );
 
     final badge = statusBadge;
+    final past = isPast;
 
-    final trainerLabel =
-
-        displayTrainer(session, trainerFallbackName);
+    final trainerLabel = displayTrainer(session, trainerFallbackName);
 
     final startLabel = TimeOfDay.fromDateTime(
-
       session.startsAt.toLocal(),
-
     ).format(context);
 
     final durationLabel = durationMinutesLabel(session);
@@ -428,245 +620,172 @@ class OwnerTrainingSessionCard extends StatelessWidget {
     final cap = session.capacity;
 
     final fillLabel = cap > 0 ? '$enrolled/$cap' : '$enrolled';
+    final fillProgress = cap > 0 ? (enrolled / cap).clamp(0.0, 1.0) : 0.0;
 
-
-
-    final inner = IntrinsicHeight(
-
-      child: Row(
-
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-
-        children: [
-
-          Container(
-
-            width: 4,
-
-            decoration: const BoxDecoration(
-
-              color: AppColors.primary500,
-
+    final inner = Stack(
+      children: [
+        const Positioned(
+          top: 8,
+          bottom: 8,
+          left: 75,
+          child: SizedBox(
+            width: 3,
+            child: DecoratedBox(
+              decoration: BoxDecoration(color: AppColors.primary500),
             ),
-
           ),
+        ),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(14, 14, 14, 14),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
 
-          Expanded(
+            children: [
+              SizedBox(
+                width: 76,
 
-            child: Padding(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
 
-              padding: const EdgeInsets.fromLTRB(14, 14, 14, 14),
+                  children: [
+                    Text(
+                      startLabel,
 
-              child: Row(
+                      style: TextStyle(
+                        fontSize: 18,
 
-                crossAxisAlignment: CrossAxisAlignment.start,
+                        fontWeight: FontWeight.w800,
 
-                children: [
+                        letterSpacing: -0.3,
 
-                  SizedBox(
+                        color: past
+                            ? AppColors.textSecondary
+                            : AppColors.textPrimary,
 
-                    width: 76,
-
-                    child: Column(
-
-                      crossAxisAlignment: CrossAxisAlignment.start,
-
-                      children: [
-
-                        Text(
-
-                          startLabel,
-
-                          style: const TextStyle(
-
-                            fontSize: 18,
-
-                            fontWeight: FontWeight.w800,
-
-                            letterSpacing: -0.3,
-
-                            color: AppColors.textPrimary,
-
-                            height: 1.1,
-
-                          ),
-
-                        ),
-
-                        const SizedBox(height: 4),
-
-                        Text(
-
-                          durationLabel,
-
-                          style: TextStyle(
-
-                            fontSize: 12,
-
-                            fontWeight: FontWeight.w500,
-
-                            color: AppColors.textSecondary,
-
-                          ),
-
-                        ),
-
-                      ],
-
+                        height: 1.1,
+                      ),
                     ),
 
-                  ),
+                    const SizedBox(height: 4),
 
-                  const SizedBox(width: 10),
+                    Text(
+                      durationLabel,
 
-                  Expanded(
+                      style: TextStyle(
+                        fontSize: 12,
 
-                    child: Column(
+                        fontWeight: FontWeight.w500,
 
-                      crossAxisAlignment: CrossAxisAlignment.start,
-
-                      children: [
-
-                        Row(
-
-                          crossAxisAlignment: CrossAxisAlignment.start,
-
-                          children: [
-
-                            Expanded(
-
-                              child: Text(
-
-                                session.trainingName,
-
-                                style: const TextStyle(
-
-                                  fontSize: 16,
-
-                                  fontWeight: FontWeight.w700,
-
-                                  color: AppColors.textPrimary,
-
-                                  height: 1.25,
-
-                                ),
-
-                              ),
-
-                            ),
-
-                            if (badge != null) ...[
-
-                              const SizedBox(width: 8),
-
-                              badge,
-
-                            ],
-
-                          ],
-
-                        ),
-
-                        const SizedBox(height: 4),
-
-                        Text(
-
-                          trainerLabel,
-
-                          maxLines: 1,
-
-                          overflow: TextOverflow.ellipsis,
-
-                          style: TextStyle(
-
-                            fontSize: 13,
-
-                            color: AppColors.textSecondary,
-
-                          ),
-
-                        ),
-
-                      ],
-
+                        color: AppColors.textSecondary,
+                      ),
                     ),
-
-                  ),
-
-                  const SizedBox(width: 10),
-
-                  Column(
-
-                    crossAxisAlignment: CrossAxisAlignment.end,
-
-                    children: [
-
-                      Text(
-
-                        fillLabel,
-
-                        style: const TextStyle(
-
-                          fontSize: 17,
-
-                          fontWeight: FontWeight.w800,
-
-                          letterSpacing: -0.2,
-
-                          color: AppColors.primary600,
-
-                          height: 1.05,
-
-                        ),
-
-                      ),
-
-                      const SizedBox(height: 2),
-
-                      Text(
-
-                        'booked',
-
-                        style: TextStyle(
-
-                          fontSize: 11,
-
-                          fontWeight: FontWeight.w600,
-
-                          letterSpacing: 0.2,
-
-                          color: AppColors.textSecondary,
-
-                        ),
-
-                      ),
-
-                    ],
-
-                  ),
-
-                ],
-
+                  ],
+                ),
               ),
 
-            ),
+              const SizedBox(width: 10),
 
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+
+                  children: [
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+
+                      children: [
+                        Expanded(
+                          child: Text(
+                            session.trainingName,
+
+                            style: TextStyle(
+                              fontSize: 16,
+
+                              fontWeight: FontWeight.w700,
+
+                              color: past
+                                  ? AppColors.textSecondary
+                                  : AppColors.textPrimary,
+
+                              height: 1.25,
+                            ),
+                          ),
+                        ),
+
+                        if (badge != null) ...[const SizedBox(width: 8), badge],
+                      ],
+                    ),
+
+                    const SizedBox(height: 4),
+
+                    Text(
+                      trainerLabel,
+
+                      maxLines: 1,
+
+                      overflow: TextOverflow.ellipsis,
+
+                      style: TextStyle(
+                        fontSize: 13,
+
+                        color: AppColors.textSecondary,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              const SizedBox(width: 4),
+
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+
+                children: [
+                  Text(
+                    fillLabel,
+
+                    style: TextStyle(
+                      fontSize: 17,
+
+                      fontWeight: FontWeight.w800,
+
+                      letterSpacing: -0.2,
+
+                      color: past
+                          ? AppColors.textSecondary
+                          : AppColors.primary600,
+
+                      height: 1.05,
+                    ),
+                  ),
+
+                  const SizedBox(height: 6),
+                  SizedBox(
+                    width: 48,
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(999),
+                      child: LinearProgressIndicator(
+                        minHeight: 5,
+                        value: fillProgress,
+                        backgroundColor: AppColors.borderPrimary,
+                        valueColor: AlwaysStoppedAnimation<Color>(
+                          past ? AppColors.textSecondary : AppColors.primary500,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
           ),
-
-        ],
-
-      ),
-
+        ),
+      ],
     );
 
-
-
     final box = Container(
-
-      margin: margin,
+      margin: safeMargin,
 
       decoration: BoxDecoration(
-
         color: AppColors.backgroundPrimary,
 
         borderRadius: BorderRadius.circular(14),
@@ -674,44 +793,67 @@ class OwnerTrainingSessionCard extends StatelessWidget {
         border: Border.all(color: AppColors.borderPrimary),
 
         boxShadow: const [
-
           BoxShadow(
-
             color: Color(0x10000000),
 
             blurRadius: 10,
 
             offset: Offset(0, 3),
-
           ),
-
         ],
-
       ),
 
-      clipBehavior: Clip.antiAlias,
+      clipBehavior: Clip.none,
 
-      child: inner,
-
+      child: Stack(
+        clipBehavior: Clip.none,
+        children: [
+          inner,
+          if (past && pastLabel != null && pastLabel!.isNotEmpty)
+            Positioned(
+              top: 0,
+              left: 0,
+              right: 0,
+              child: FractionalTranslation(
+                translation: const Offset(0, -0.5),
+                child: Center(
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 3,
+                    ),
+                    decoration: BoxDecoration(
+                      color: AppColors.backgroundPrimary,
+                      borderRadius: BorderRadius.circular(999),
+                      border: Border.all(color: AppColors.borderPrimary),
+                    ),
+                    child: Text(
+                      pastLabel!,
+                      style: const TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: 0.2,
+                        color: AppColors.textSecondary,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+        ],
+      ),
     );
 
+    final visualBox = past ? Opacity(opacity: 0.78, child: box) : box;
 
-
-    if (onTap == null) return box;
-
-
+    if (onTap == null) return visualBox;
 
     return GestureDetector(
-
       onTap: onTap,
 
       behavior: HitTestBehavior.opaque,
 
-      child: box,
-
+      child: visualBox,
     );
-
   }
-
 }
-

@@ -92,11 +92,31 @@ model Studio {
   Trainer          Trainer[]
   Subscription     Subscription?
   TrainingSession  TrainingSession[]
+  ClientBlocks     StudioClientBlock[]
 
   @@index([latitude, longitude])
   @@index([ownerId, createdAt])
   @@index([createdAt])
   @@index([slug]) // Index for fast slug lookups
+}
+
+model StudioClientBlock {
+  id        String   @id @default(cuid())
+  studioId  String
+  userId    String?
+  email     String?
+  phone     String?
+  reason    String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  Studio    Studio   @relation(fields: [studioId], references: [id], onDelete: Cascade)
+  User      User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([studioId, createdAt])
+  @@index([studioId, userId])
+  @@index([studioId, email])
+  @@index([studioId, phone])
+  @@unique([studioId, userId])
 }
 
 model Training {
@@ -170,6 +190,7 @@ model TrainingSession {
   Enrollments SessionEnrollment[]
 
   @@index([studioId, startsAt])
+  @@index([studioId, status, startsAt])
   @@index([trainingId, startsAt])
   @@index([trainerId, startsAt])
 }
@@ -205,6 +226,7 @@ model User {
   Review           Review[]
   Studio           Studio[]
   SessionEnrollment SessionEnrollment[]
+  StudioClientBlocks StudioClientBlock[]
 }
 
 model PushToken {
@@ -265,6 +287,7 @@ enum TrainingSessionStatus {
 
 enum SessionEnrollmentStatus {
   ACTIVE
+  NO_SHOW
   CANCELLED
 }
 

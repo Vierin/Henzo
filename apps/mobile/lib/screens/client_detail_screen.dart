@@ -8,21 +8,26 @@ import '../../models/booking.dart';
 import '../../services/auth_service.dart';
 import '../../services/cache/bookings_cache.dart';
 import '../../services/dashboard_api_service.dart';
+import '../../utils/client_identity.dart';
 import '../../utils/show_api_error.dart';
 import '../../widgets/dashboard/booking_detail_modal.dart';
 
 class ClientDetailScreen extends StatefulWidget {
   final String clientKey;
   final String name;
+  final String? userId;
   final String? email;
   final String? phone;
+  final bool initialBlocked;
 
   const ClientDetailScreen({
     super.key,
     required this.clientKey,
     required this.name,
+    this.userId,
     this.email,
     this.phone,
+    this.initialBlocked = false,
   });
 
   @override
@@ -37,6 +42,7 @@ class _ClientDetailScreenState extends State<ClientDetailScreen> {
   @override
   void initState() {
     super.initState();
+    _blocked = widget.initialBlocked;
     _loadData();
   }
 
@@ -48,11 +54,13 @@ class _ClientDetailScreenState extends State<ClientDetailScreen> {
     }
     setState(() => _loading = true);
     try {
-      final all = await context.read<BookingsCache>().getBookings(token);
+      final primaryBookings = await context.read<BookingsCache>().getBookings(token);
+      final fallbackEnrollments = primaryBookings.isEmpty
+          ? await DashboardApiService.getOwnerEnrollmentBookings(token)
+          : <Booking>[];
+      final all = <Booking>[...primaryBookings, ...fallbackEnrollments];
       final list = all
-          .where((b) =>
-              (b.user?.email ?? b.user?.phone ?? b.user?.name ?? '').trim() ==
-              widget.clientKey)
+          .where((b) => clientIdentityKey(b) == widget.clientKey)
           .toList()
         ..sort((a, b) => b.dateTime.compareTo(a.dateTime));
       if (mounted) {
@@ -98,6 +106,7 @@ class _ClientDetailScreenState extends State<ClientDetailScreen> {
     if (token == null) return;
     await DashboardApiService.confirmBooking(token, id);
     if (mounted) {
+      context.read<BookingsCache>().invalidate();
       _loadData();
       ScaffoldMessenger.maybeOf(context)?.showSnackBar(
         const SnackBar(content: Text('Подтверждено'), backgroundColor: Colors.green),
@@ -116,6 +125,55 @@ class _ClientDetailScreenState extends State<ClientDetailScreen> {
         const SnackBar(content: Text('Отклонено'), backgroundColor: Colors.orange),
       );
     }
+  }
+
+  Future<void> _toggleBlocked() async {
+    final token = context.read<AuthService>().accessToken;
+    if (token == null) return;
+    final userId = widget.userId ?? _bookings
+        .map((b) => b.user?.id)
+        .whereType<String>()
+        .firstWhere((v) => v.isNotEmpty, orElse: () => '');
+    final email = widget.email ?? _bookings
+        .map((b) => b.user?.email)
+        .whereType<String>()
+        .firstWhere((v) => v.isNotEmpty, orElse: () => '');
+    final phone = widget.phone ?? _bookings
+        .map((b) => b.user?.phone)
+        .whereType<String>()
+        .firstWhere((v) => v.isNotEmpty, orElse: () => '');
+    if (userId.isEmpty && email.isEmpty && phone.isEmpty) {
+      ScaffoldMessenger.maybeOf(context)?.showSnackBar(
+        const SnackBar(
+          content: Text('Нужно минимум email/phone/userId для блокировки'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+    if (_blocked) {
+      await DashboardApiService.unblockOwnerClient(
+        token,
+        userId: userId.isEmpty ? null : userId,
+        email: email.isEmpty ? null : email,
+        phone: phone.isEmpty ? null : phone,
+      );
+    } else {
+      await DashboardApiService.blockOwnerClient(
+        token,
+        userId: userId.isEmpty ? null : userId,
+        email: email.isEmpty ? null : email,
+        phone: phone.isEmpty ? null : phone,
+      );
+    }
+    if (!mounted) return;
+    setState(() => _blocked = !_blocked);
+    ScaffoldMessenger.maybeOf(context)?.showSnackBar(
+      SnackBar(
+        content: Text(_blocked ? 'Клиент заблокирован' : 'Клиент разблокирован'),
+        backgroundColor: Colors.orange,
+      ),
+    );
   }
 
   @override
@@ -155,12 +213,15 @@ class _ClientDetailScreenState extends State<ClientDetailScreen> {
           : RefreshIndicator(
               onRefresh: _loadData,
               color: AppColors.primary500,
-              child: SingleChildScrollView(
+              child: ListView.builder(
                 physics: const AlwaysScrollableScrollPhysics(),
                 padding: const EdgeInsets.all(24),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
+                itemCount: _bookings.length + 1,
+                itemBuilder: (context, index) {
+                  if (index == 0) {
+                    return Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
                     if (_firstVisit != null) ...[
                       const Text(
                         'Дата первого визита',
@@ -239,15 +300,7 @@ class _ClientDetailScreenState extends State<ClientDetailScreen> {
                         ],
                         const SizedBox(width: 8),
                         IconButton(
-                          onPressed: () {
-                            setState(() => _blocked = !_blocked);
-                            ScaffoldMessenger.maybeOf(context)?.showSnackBar(
-                              SnackBar(
-                                content: Text(_blocked ? 'Клиент заблокирован' : 'Клиент разблокирован'),
-                                backgroundColor: Colors.orange,
-                              ),
-                            );
-                          },
+                          onPressed: _toggleBlocked,
                           icon: Icon(
                             _blocked ? Icons.block : Icons.block_outlined,
                             size: 28,
@@ -267,7 +320,7 @@ class _ClientDetailScreenState extends State<ClientDetailScreen> {
                       ),
                     ),
                     const SizedBox(height: 12),
-                    if (_bookings.isEmpty)
+                    if (_bookings.isEmpty) ...[
                       Padding(
                         padding: const EdgeInsets.symmetric(vertical: 24),
                         child: Center(
@@ -276,20 +329,23 @@ class _ClientDetailScreenState extends State<ClientDetailScreen> {
                             style: const TextStyle(color: AppColors.textSecondary),
                           ),
                         ),
-                      )
-                    else
-                      ..._bookings.map((b) => _BookingCard(
-                            booking: b,
-                            onTap: () => BookingDetailModal.show(
-                              context,
-                              booking: b,
-                              onCancel: _handleCancelBooking,
-                              onConfirm: _handleConfirmBooking,
-                              onReject: _handleRejectBooking,
-                            ),
-                          )),
+                      ),
+                    ],
                   ],
-                ),
+                );
+                  }
+                  final booking = _bookings[index - 1];
+                  return _BookingCard(
+                    booking: booking,
+                    onTap: () => BookingDetailModal.show(
+                      context,
+                      booking: booking,
+                      onCancel: _handleCancelBooking,
+                      onConfirm: _handleConfirmBooking,
+                      onReject: _handleRejectBooking,
+                    ),
+                  );
+                },
               ),
             ),
     );

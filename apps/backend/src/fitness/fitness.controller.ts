@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   Headers,
   Param,
@@ -111,12 +112,36 @@ export class FitnessController {
   async getOwnerSessionBookings(
     @Headers('authorization') authHeader: string,
     @Query('limit') limit?: string,
+    @Query('page') page?: string,
   ) {
     const n = limit ? parseInt(limit, 10) : 100;
-    return this.fitnessSessionsService.getOwnerSessionBookings(
+    const p = page ? parseInt(page, 10) : 1;
+    return (this.fitnessSessionsService as any).getOwnerSessionBookings(
       authHeader,
       Number.isFinite(n) ? n : 100,
+      Number.isFinite(p) ? p : 1,
     );
+  }
+
+  @Get('owner/client-blocklist')
+  async getOwnerClientBlocklist(@Headers('authorization') authHeader: string) {
+    return (this.fitnessSessionsService as any).getOwnerClientBlocklist(authHeader);
+  }
+
+  @Put('owner/client-blocklist/block')
+  async blockOwnerClient(
+    @Headers('authorization') authHeader: string,
+    @Body() body: { userId?: string; email?: string; phone?: string; reason?: string },
+  ) {
+    return (this.fitnessSessionsService as any).blockOwnerClient(authHeader, body);
+  }
+
+  @Put('owner/client-blocklist/unblock')
+  async unblockOwnerClient(
+    @Headers('authorization') authHeader: string,
+    @Body() body: { userId?: string; email?: string; phone?: string },
+  ) {
+    return (this.fitnessSessionsService as any).unblockOwnerClient(authHeader, body);
   }
 
   @Get('client/schedule')
@@ -152,6 +177,53 @@ export class FitnessController {
       authHeader,
       id,
       body.status,
+    );
+  }
+
+  @Get('owner/training-sessions/:id/enrollments')
+  async getOwnerTrainingSessionEnrollments(
+    @Headers('authorization') authHeader: string,
+    @Param('id') id: string,
+  ) {
+    return this.fitnessSessionsService.getOwnerSessionEnrollments(authHeader, id);
+  }
+
+  @Post('owner/training-sessions/:id/enrollments')
+  async addOwnerTrainingSessionEnrollment(
+    @Headers('authorization') authHeader: string,
+    @Param('id') id: string,
+    @Body()
+    body: { userId?: string; name?: string; email?: string; phone?: string },
+  ) {
+    return this.fitnessSessionsService.addOwnerSessionEnrollment(
+      authHeader,
+      id,
+      body,
+    );
+  }
+
+  @Patch('owner/enrollments/:id/status')
+  async updateOwnerEnrollmentStatus(
+    @Headers('authorization') authHeader: string,
+    @Param('id') id: string,
+    @Body() body: { status: 'ACTIVE' | 'NO_SHOW' | 'CANCELLED' },
+  ) {
+    return this.fitnessSessionsService.updateOwnerEnrollmentStatus(
+      authHeader,
+      id,
+      body.status,
+    );
+  }
+
+  @Delete('owner/enrollments/:id')
+  async deleteOwnerEnrollment(
+    @Headers('authorization') authHeader: string,
+    @Param('id') id: string,
+  ) {
+    return this.fitnessSessionsService.updateOwnerEnrollmentStatus(
+      authHeader,
+      id,
+      'CANCELLED',
     );
   }
 }

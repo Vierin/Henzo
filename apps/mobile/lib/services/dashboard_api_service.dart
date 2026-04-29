@@ -143,6 +143,44 @@ class RecurringSlot {
   };
 }
 
+class OwnerSessionEnrollment {
+  final String enrollmentId;
+  final String userId;
+  final String status;
+  final DateTime createdAt;
+  final DateTime? cancelledAt;
+  final String? name;
+  final String? email;
+  final String? phone;
+
+  const OwnerSessionEnrollment({
+    required this.enrollmentId,
+    required this.userId,
+    required this.status,
+    required this.createdAt,
+    this.cancelledAt,
+    this.name,
+    this.email,
+    this.phone,
+  });
+
+  factory OwnerSessionEnrollment.fromJson(Map<String, dynamic> json) {
+    final user = json['user'];
+    return OwnerSessionEnrollment(
+      enrollmentId: (json['enrollmentId'] ?? '').toString(),
+      userId: (json['userId'] ?? '').toString(),
+      status: (json['status'] ?? 'ACTIVE').toString(),
+      createdAt:
+          DateTime.tryParse((json['createdAt'] ?? '').toString()) ??
+          DateTime.now(),
+      cancelledAt: DateTime.tryParse((json['cancelledAt'] ?? '').toString()),
+      name: user is Map<String, dynamic> ? user['name']?.toString() : null,
+      email: user is Map<String, dynamic> ? user['email']?.toString() : null,
+      phone: user is Map<String, dynamic> ? user['phone']?.toString() : null,
+    );
+  }
+}
+
 class StudioAnalytics {
   final DateTime from;
   final DateTime to;
@@ -164,6 +202,9 @@ class StudioAnalytics {
   final int clientsRegular;
   final int clientsNewInPeriod;
   final int clientsInactive;
+  final String analyticsTier;
+  final bool isPro;
+  final bool proLocked;
 
   const StudioAnalytics({
     required this.from,
@@ -186,6 +227,9 @@ class StudioAnalytics {
     required this.clientsRegular,
     required this.clientsNewInPeriod,
     required this.clientsInactive,
+    required this.analyticsTier,
+    required this.isPro,
+    required this.proLocked,
   });
 
   static int _asInt(dynamic value) => (value as num?)?.toInt() ?? 0;
@@ -230,11 +274,44 @@ class StudioAnalytics {
           clients is Map<String, dynamic> ? _asInt(clients['newInPeriod']) : 0,
       clientsInactive:
           clients is Map<String, dynamic> ? _asInt(clients['inactive']) : 0,
+      analyticsTier: (json['analyticsTier'] ?? 'FREEMIUM').toString(),
+      isPro: json['isPro'] == true,
+      proLocked: json['proLocked'] == true,
+    );
+  }
+}
+
+class OwnerClientBlock {
+  final String? userId;
+  final String? email;
+  final String? phone;
+
+  const OwnerClientBlock({
+    this.userId,
+    this.email,
+    this.phone,
+  });
+
+  factory OwnerClientBlock.fromJson(Map<String, dynamic> json) {
+    return OwnerClientBlock(
+      userId: json['userId']?.toString(),
+      email: json['email']?.toString(),
+      phone: json['phone']?.toString(),
     );
   }
 }
 
 class DashboardApiService {
+  static Map<String, dynamic> _expectEnvelope(
+    dynamic body,
+    String methodName,
+  ) {
+    if (body is! Map<String, dynamic>) {
+      throw ApiException('$methodName: invalid response shape');
+    }
+    return body;
+  }
+
   static bool _isRouteMissing(ApiException e) =>
       e.statusCode == 404 && e.message.contains('Cannot GET');
 
@@ -291,11 +368,14 @@ class DashboardApiService {
     String accessToken,
   ) async {
     try {
-      final body = await ApiClient.get(
+      final raw = await ApiClient.get(
         '/studios/current/onboarding-checklist',
         accessToken,
       );
-      if (body is! Map<String, dynamic>) return null;
+      final body = _expectEnvelope(
+        raw,
+        'getCurrentStudioOnboardingChecklist',
+      );
       final data = body['data'];
       if (data is! Map<String, dynamic>) return null;
       return StudioOnboardingChecklist.fromJson(Map<String, dynamic>.from(data));
@@ -388,23 +468,140 @@ class DashboardApiService {
   /// GET /fitness/session-bookings/owner — бронирования владельца студии.
   static Future<List<Booking>> getOwnerBookings(String accessToken) async {
     try {
-      final list = await ApiClient.get(
-        '/fitness/session-bookings/owner?limit=100',
-        accessToken,
-      );
-      if (list is! List) return [];
       final result = <Booking>[];
-      for (final item in list) {
-        if (item is Map<String, dynamic>) {
-          try {
-            result.add(_bookingFromApi(Map<String, dynamic>.from(item)));
-          } catch (e) {
-            if (kDebugMode) {
-              debugPrint('[DashboardAPI] booking parse error: $e');
+      const pageSize = 200;
+      const maxPages = 20;
+      for (var page = 1; page <= maxPages; page++) {
+        final raw = await ApiClient.get(
+          '/fitness/session-bookings/owner?limit=$pageSize&page=$page',
+          accessToken,
+        );
+        final list = raw is List
+            ? raw
+            : raw is Map<String, dynamic> && raw['data'] is List
+                ? raw['data'] as List
+                : <dynamic>[];
+        if (list.isEmpty) break;
+        for (final item in list) {
+          if (item is Map<String, dynamic>) {
+            try {
+              result.add(_bookingFromApi(Map<String, dynamic>.from(item)));
+            } catch (e) {
+              if (kDebugMode) {
+                debugPrint('[DashboardAPI] booking parse error: $e');
+              }
             }
           }
         }
+        if (list.length < pageSize) break;
       }
+      return result;
+    } on ApiException {
+      return [];
+    }
+  }
+
+  static Future<List<OwnerClientBlock>> getOwnerClientBlocklist(
+    String accessToken,
+  ) async {
+    try {
+      final raw = await ApiClient.get('/fitness/owner/client-blocklist', accessToken);
+      if (raw is! List) return [];
+      final result = <OwnerClientBlock>[];
+      for (final item in raw) {
+        if (item is Map<String, dynamic>) {
+          result.add(OwnerClientBlock.fromJson(Map<String, dynamic>.from(item)));
+        }
+      }
+      return result;
+    } on ApiException {
+      return [];
+    }
+  }
+
+  static Future<void> blockOwnerClient(
+    String accessToken, {
+    String? userId,
+    String? email,
+    String? phone,
+  }) async {
+    await ApiClient.put(
+      '/fitness/owner/client-blocklist/block',
+      accessToken,
+      body: {
+        if (userId != null && userId.isNotEmpty) 'userId': userId,
+        if (email != null && email.isNotEmpty) 'email': email,
+        if (phone != null && phone.isNotEmpty) 'phone': phone,
+      },
+    );
+  }
+
+  static Future<void> unblockOwnerClient(
+    String accessToken, {
+    String? userId,
+    String? email,
+    String? phone,
+  }) async {
+    await ApiClient.put(
+      '/fitness/owner/client-blocklist/unblock',
+      accessToken,
+      body: {
+        if (userId != null && userId.isNotEmpty) 'userId': userId,
+        if (email != null && email.isNotEmpty) 'email': email,
+        if (phone != null && phone.isNotEmpty) 'phone': phone,
+      },
+    );
+  }
+
+  /// Fallback data source for Clients screen: participants of owner group sessions.
+  static Future<List<Booking>> getOwnerEnrollmentBookings(
+    String accessToken, {
+    int daysBack = 120,
+  }) async {
+    try {
+      final now = DateTime.now().toUtc();
+      final from = now.subtract(Duration(days: daysBack));
+      final sessions = await getOwnerTrainingSessions(
+        accessToken,
+        fromIso: from.toIso8601String(),
+        toIso: now.toIso8601String(),
+      );
+      if (sessions.isEmpty) return [];
+
+      final enrollmentsBySession = await Future.wait(
+        sessions.map(
+          (s) => getOwnerSessionEnrollments(accessToken, s.sessionId),
+        ),
+      );
+
+      final result = <Booking>[];
+      for (var i = 0; i < sessions.length; i++) {
+        final s = sessions[i];
+        final enrollments = enrollmentsBySession[i];
+        for (final e in enrollments) {
+          result.add(
+            Booking(
+              id: 'enrollment:${e.enrollmentId}',
+              dateTime: s.startsAt,
+              status: BookingStatus.fromString(e.status),
+              service: Service(
+                name: s.trainingName,
+                duration: s.endsAt.difference(s.startsAt).inMinutes,
+              ),
+              user: User(
+                id: e.userId,
+                name: e.name,
+                email: e.email,
+                phone: e.phone,
+              ),
+              staff: Staff(id: s.trainerId, name: s.trainerName),
+              staffId: s.trainerId,
+              serviceId: s.trainingId,
+            ),
+          );
+        }
+      }
+      result.sort((a, b) => b.dateTime.compareTo(a.dateTime));
       return result;
     } on ApiException {
       return [];
@@ -581,7 +778,11 @@ class DashboardApiService {
           sessions.add(
             OwnerTrainingSession.fromJson(Map<String, dynamic>.from(item)),
           );
-        } catch (_) {}
+        } catch (e) {
+          if (kDebugMode) {
+            debugPrint('[DashboardAPI] training session parse error: $e');
+          }
+        }
       }
     }
     return sessions;
@@ -613,6 +814,63 @@ class DashboardApiService {
       accessToken,
       body: fields,
     );
+  }
+
+  static Future<List<OwnerSessionEnrollment>> getOwnerSessionEnrollments(
+    String accessToken,
+    String sessionId,
+  ) async {
+    final raw = await ApiClient.get(
+      '/fitness/owner/training-sessions/$sessionId/enrollments',
+      accessToken,
+    );
+    if (raw is! List) return [];
+    final items = <OwnerSessionEnrollment>[];
+    for (final item in raw) {
+      if (item is Map<String, dynamic>) {
+        items.add(OwnerSessionEnrollment.fromJson(Map<String, dynamic>.from(item)));
+      }
+    }
+    return items;
+  }
+
+  static Future<void> addOwnerSessionEnrollment(
+    String accessToken,
+    String sessionId, {
+    String? userId,
+    String? name,
+    String? email,
+    String? phone,
+  }) async {
+    await ApiClient.post(
+      '/fitness/owner/training-sessions/$sessionId/enrollments',
+      accessToken,
+      body: {
+        if (userId != null && userId.isNotEmpty) 'userId': userId,
+        if (name != null && name.isNotEmpty) 'name': name,
+        if (email != null && email.isNotEmpty) 'email': email,
+        if (phone != null && phone.isNotEmpty) 'phone': phone,
+      },
+    );
+  }
+
+  static Future<void> updateOwnerEnrollmentStatus(
+    String accessToken,
+    String enrollmentId,
+    String status,
+  ) async {
+    await ApiClient.patch(
+      '/fitness/owner/enrollments/$enrollmentId/status',
+      accessToken,
+      body: {'status': status},
+    );
+  }
+
+  static Future<void> deleteOwnerEnrollment(
+    String accessToken,
+    String enrollmentId,
+  ) async {
+    await ApiClient.delete('/fitness/owner/enrollments/$enrollmentId', accessToken);
   }
 
   static Future<RecurringCreationResult> createRecurringTrainingSessions(

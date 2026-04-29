@@ -978,8 +978,18 @@ export class StudiosService {
             timezone: true,
             status: true,
             autoConfirmBookings: true,
-            Training: true,
-            Trainer: true,
+            Training: {
+              select: {
+                id: true,
+                trainingCategoryId: true,
+              },
+            },
+            Trainer: {
+              select: {
+                id: true,
+                name: true,
+              },
+            },
             User: {
               select: {
                 id: true,

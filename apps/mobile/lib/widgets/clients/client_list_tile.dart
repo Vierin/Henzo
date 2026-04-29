@@ -7,11 +7,13 @@ class ClientListTile extends StatelessWidget {
     super.key,
     required this.name,
     required this.subtitle,
+    required this.visitsCount,
     required this.onTap,
   });
 
   final String name;
   final String subtitle;
+  final int visitsCount;
   final VoidCallback onTap;
 
   @override
@@ -64,6 +66,14 @@ class ClientListTile extends StatelessWidget {
                         ),
                       ),
                     ],
+                    const SizedBox(height: 4),
+                    Text(
+                      '$visitsCount визитов',
+                      style: const TextStyle(
+                        fontSize: 12,
+                        color: AppColors.textTertiary,
+                      ),
+                    ),
                   ],
                 ),
               ),

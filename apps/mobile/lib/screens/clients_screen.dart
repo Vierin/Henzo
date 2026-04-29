@@ -1,12 +1,13 @@
 import 'package:flutter/material.dart';
+import 'dart:async';
 import 'package:provider/provider.dart';
 import '../../constants/colors.dart';
 import '../../models/booking.dart';
 import '../../models/client_summary.dart';
 import '../../services/auth_service.dart';
 import '../../services/cache/bookings_cache.dart';
-import '../../services/cache/salon_cache.dart';
 import '../../services/dashboard_api_service.dart';
+import '../../utils/client_identity.dart';
 import '../../widgets/clients/client_list_tile.dart';
 import '../../widgets/clients/clients_filter_chip.dart';
 import 'client_detail_screen.dart';
@@ -21,25 +22,67 @@ class ClientsScreen extends StatefulWidget {
 }
 
 class _ClientsScreenState extends State<ClientsScreen> {
-  List<Booking> _bookings = [];
   bool _isLoading = true;
   final _searchController = TextEditingController();
+  Timer? _searchDebounce;
   String _searchQuery = '';
   ClientFilter _filter = ClientFilter.all;
+  List<ClientSummary> _clients = [];
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) => _loadData());
-    _searchController.addListener(
-      () => setState(() => _searchQuery = _searchController.text.trim()),
-    );
+    _searchController.addListener(_onSearchChanged);
   }
 
   @override
   void dispose() {
+    _searchDebounce?.cancel();
+    _searchController.removeListener(_onSearchChanged);
     _searchController.dispose();
     super.dispose();
+  }
+
+  void _onSearchChanged() {
+    _searchDebounce?.cancel();
+    _searchDebounce = Timer(const Duration(milliseconds: 250), () {
+      if (!mounted) return;
+      setState(() => _searchQuery = _searchController.text.trim());
+    });
+  }
+
+  List<ClientSummary> _buildUniqueClients(List<Booking> bookings) {
+    final map = <String, ClientSummary>{};
+    final now = DateTime.now();
+    final threeMonthsAgo = now.subtract(const Duration(days: 90));
+    for (final b in bookings) {
+      final u = b.user;
+      final key = clientIdentityKey(b);
+      if (key.isEmpty) continue;
+      final existing = map[key];
+      final userId = u?.id ?? existing?.userId;
+      final email = u?.email ?? existing?.email;
+      final phone = u?.phone ?? existing?.phone;
+      final latestVisit =
+          (existing == null || b.dateTime.isAfter(existing.lastVisit))
+          ? b.dateTime
+          : existing.lastVisit;
+      map[key] = ClientSummary(
+        key: key,
+        name: u?.name ?? u?.email ?? 'Клиент',
+        userId: userId,
+        email: email,
+        phone: phone,
+        lastVisit: latestVisit,
+        isSleeper: latestVisit.isBefore(threeMonthsAgo),
+        visitsCount: (existing?.visitsCount ?? 0) + 1,
+        isBlocked: existing?.isBlocked ?? false,
+      );
+    }
+    final items = map.values.toList();
+    items.sort((a, b) => b.lastVisit.compareTo(a.lastVisit));
+    return items;
   }
 
   Future<void> _loadData() async {
@@ -51,20 +94,51 @@ class _ClientsScreenState extends State<ClientsScreen> {
       return;
     }
     try {
-      final salon = await context.read<SalonCache>().getSalon(token);
-      final bookings = salon != null
-          ? await context.read<BookingsCache>().getBookings(token)
+      final primaryBookings = await context.read<BookingsCache>().getBookings(token);
+      final fallbackEnrollments = primaryBookings.isEmpty
+          ? await DashboardApiService.getOwnerEnrollmentBookings(token)
           : <Booking>[];
+      final blocklist = await DashboardApiService.getOwnerClientBlocklist(token);
+      final blockedUserIds = blocklist
+          .map((b) => b.userId)
+          .whereType<String>()
+          .toSet();
+      final blockedEmails = blocklist
+          .map((b) => b.email?.trim().toLowerCase())
+          .whereType<String>()
+          .toSet();
+      final blockedPhones = blocklist
+          .map((b) => b.phone?.trim())
+          .whereType<String>()
+          .toSet();
+      final bookings = <Booking>[...primaryBookings, ...fallbackEnrollments];
       if (mounted) {
         setState(() {
-          _bookings = bookings;
+          _clients = _buildUniqueClients(bookings).map((c) {
+            final userId = c.userId;
+            final email = c.email?.trim().toLowerCase();
+            final phone = c.phone?.trim();
+            return ClientSummary(
+              key: c.key,
+              name: c.name,
+              userId: c.userId,
+              email: c.email,
+              phone: c.phone,
+              lastVisit: c.lastVisit,
+              isSleeper: c.isSleeper,
+              visitsCount: c.visitsCount,
+              isBlocked: (userId != null && blockedUserIds.contains(userId)) ||
+                  (email != null && blockedEmails.contains(email)) ||
+                  (phone != null && blockedPhones.contains(phone)),
+            );
+          }).toList();
           _isLoading = false;
         });
       }
     } catch (e) {
       if (mounted) {
         setState(() {
-          _bookings = [];
+          _clients = [];
           _isLoading = false;
         });
         ScaffoldMessenger.maybeOf(context)?.showSnackBar(
@@ -74,38 +148,8 @@ class _ClientsScreenState extends State<ClientsScreen> {
     }
   }
 
-  List<ClientSummary> get _uniqueClients {
-    final map = <String, ClientSummary>{};
-    final now = DateTime.now();
-    final threeMonthsAgo = now.subtract(const Duration(days: 90));
-
-    for (final b in _bookings) {
-      final u = b.user;
-      final key = (u?.email ?? u?.phone ?? u?.name ?? '').trim();
-      if (key.isEmpty) continue;
-
-      final existing = map[key];
-      final latestVisit =
-          (existing == null || b.dateTime.isAfter(existing.lastVisit))
-          ? b.dateTime
-          : existing.lastVisit;
-
-      map[key] = ClientSummary(
-        key: key,
-        name: u?.name ?? u?.email ?? 'Клиент',
-        email: u?.email,
-        phone: u?.phone,
-        lastVisit: latestVisit,
-        isSleeper: latestVisit.isBefore(threeMonthsAgo),
-      );
-    }
-    final items = map.values.toList();
-    items.sort((a, b) => b.lastVisit.compareTo(a.lastVisit));
-    return items;
-  }
-
   List<ClientSummary> get _filteredClients {
-    var list = _uniqueClients;
+    var list = _clients;
 
     if (_searchQuery.isNotEmpty) {
       final q = _searchQuery.toLowerCase();
@@ -123,8 +167,10 @@ class _ClientsScreenState extends State<ClientsScreen> {
         list = list.where((c) => c.isSleeper).toList();
         break;
       case ClientFilter.whiteList:
+        list = list.where((c) => !c.isBlocked).toList();
+        break;
       case ClientFilter.blocked:
-        list = [];
+        list = list.where((c) => c.isBlocked).toList();
         break;
     }
     return list;
@@ -221,49 +267,67 @@ class _ClientsScreenState extends State<ClientsScreen> {
                       color: AppColors.primary500,
                     ),
                   )
-                : clients.isEmpty
-                ? Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(
-                          Icons.people_outline,
-                          size: 64,
-                          color: AppColors.neutral300,
-                        ),
-                        const SizedBox(height: 16),
-                        Text(
-                          _filter == ClientFilter.all && _searchQuery.isEmpty
-                              ? 'Нет клиентов'
-                              : 'Ничего не найдено',
-                          style: TextStyle(
-                            fontSize: 16,
-                            color: AppColors.textSecondary,
+                : RefreshIndicator(
+                    onRefresh: _loadData,
+                    color: AppColors.primary500,
+                    child: clients.isEmpty
+                        ? ListView(
+                            physics: const AlwaysScrollableScrollPhysics(),
+                            children: [
+                              SizedBox(
+                                height:
+                                    MediaQuery.of(context).size.height * 0.45,
+                                child: Center(
+                                  child: Column(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      Icon(
+                                        Icons.people_outline,
+                                        size: 64,
+                                        color: AppColors.neutral300,
+                                      ),
+                                      const SizedBox(height: 16),
+                                      Text(
+                                        _filter == ClientFilter.all &&
+                                                _searchQuery.isEmpty
+                                            ? 'Нет клиентов'
+                                            : 'Ничего не найдено',
+                                        style: TextStyle(
+                                          fontSize: 16,
+                                          color: AppColors.textSecondary,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ],
+                          )
+                        : ListView.builder(
+                            padding: const EdgeInsets.symmetric(horizontal: 12),
+                            physics: const AlwaysScrollableScrollPhysics(),
+                            itemCount: clients.length,
+                            itemBuilder: (context, i) {
+                              final c = clients[i];
+                              return ClientListTile(
+                                name: c.name,
+                                subtitle: c.email ?? c.phone ?? '',
+                                visitsCount: c.visitsCount,
+                                onTap: () => Navigator.of(context).push(
+                                  MaterialPageRoute(
+                                    builder: (_) => ClientDetailScreen(
+                                      clientKey: c.key,
+                                      name: c.name,
+                                      userId: c.userId,
+                                      email: c.email,
+                                      phone: c.phone,
+                                      initialBlocked: c.isBlocked,
+                                    ),
+                                  ),
+                                ),
+                              );
+                            },
                           ),
-                        ),
-                      ],
-                    ),
-                  )
-                : ListView.builder(
-                    padding: const EdgeInsets.symmetric(horizontal: 12),
-                    itemCount: clients.length,
-                    itemBuilder: (context, i) {
-                      final c = clients[i];
-                      return ClientListTile(
-                        name: c.name,
-                        subtitle: c.email ?? c.phone ?? '',
-                        onTap: () => Navigator.of(context).push(
-                          MaterialPageRoute(
-                            builder: (_) => ClientDetailScreen(
-                              clientKey: c.key,
-                              name: c.name,
-                              email: c.email,
-                              phone: c.phone,
-                            ),
-                          ),
-                        ),
-                      );
-                    },
                   ),
           ),
         ],

@@ -121,7 +121,23 @@
 	},
 	"ownerSession": {
 		"editCurrentSession": "Sửa buổi tập hiện tại",
-		"editAllTrainings": "Sửa tất cả buổi tập (cùng dịch vụ)"
+		"editAllTrainings": "Sửa tất cả buổi tập (cùng dịch vụ)",
+		"participants": "Người tham gia",
+		"addParticipant": "Thêm người tham gia",
+		"name": "Tên",
+		"email": "Email",
+		"phone": "Điện thoại",
+		"add": "Thêm",
+		"participantAdded": "Đã thêm người tham gia",
+		"participantsLoadError": "Không thể tải danh sách người tham gia",
+		"noParticipants": "Chưa có người tham gia",
+		"participantStatusActive": "Đang hoạt động",
+		"participantStatusNoShow": "No-show",
+		"participantStatusCancelled": "Đã hủy",
+		"actionSetActive": "Chuyển sang active",
+		"actionSetNoShow": "Đánh dấu no-show",
+		"actionCancelParticipant": "Hủy tham gia",
+		"actionDeleteParticipant": "Xóa"
 	},
 	"booking": {
 		"details": "Chi tiết đặt chỗ",
@@ -329,7 +345,10 @@
 		"inactiveHint": "Không có buổi trong 90 ngày",
 		"noData": "Không có dữ liệu trong kỳ đã chọn",
 		"failedLoad": "Không thể tải phân tích",
-		"retry": "Thử lại"
+		"retry": "Thử lại",
+		"proLockedTitle": "Phân tích nâng cao chỉ có trong Pro",
+		"proLockedDescription": "Nâng cấp Pro để mở khóa tỷ lệ tham gia, vắng mặt, hiệu suất buổi tập và insight lớp nổi bật.",
+		"upgradeToPro": "Nâng cấp Pro"
 	},
 	"profileForm": {
 		"profileUpdated": "Đã cập nhật hồ sơ",

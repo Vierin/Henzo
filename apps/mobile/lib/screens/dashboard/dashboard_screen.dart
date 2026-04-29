@@ -103,24 +103,26 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   Future<void> _openTrainingSetup() async {
-    await Navigator.of(context).pushNamed('/trainings/new');
-    await _loadData();
+    final changed = await Navigator.of(
+      context,
+    ).pushNamed<bool>('/trainings/new');
+    if (changed == true && mounted) await _loadData();
   }
 
   Future<void> _openSettings() async {
-    await Navigator.push(
+    final changed = await Navigator.push<bool>(
       context,
       MaterialPageRoute(builder: (_) => const SettingsScreen()),
     );
-    await _loadData();
+    if (changed == true && mounted) await _loadData();
   }
 
   Future<void> _openBookingSettings() async {
-    await Navigator.push(
+    final changed = await Navigator.push<bool>(
       context,
       MaterialPageRoute(builder: (_) => const OnlineBookingScreen()),
     );
-    await _loadData();
+    if (changed == true && mounted) await _loadData();
   }
 
   String _humanizeChecklistStep(String key) {
@@ -170,38 +172,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
     return null;
   }
 
-  Widget _sessionStatusBadge(OwnerTrainingSession s) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      decoration: BoxDecoration(
-        color: _statusColor(s.status).withValues(alpha: 0.12),
-        borderRadius: BorderRadius.circular(999),
-      ),
-      child: Text(
-        s.status,
-        style: TextStyle(
-          fontSize: 11,
-          fontWeight: FontWeight.w700,
-          color: _statusColor(s.status),
-        ),
-      ),
-    );
-  }
-
-  Color _statusColor(String status) {
-    switch (status.toUpperCase()) {
-      case 'COMPLETED':
-        return AppColors.success600;
-      case 'CANCELLED':
-      case 'CANCELED':
-        return AppColors.error600;
-      case 'PENDING':
-        return AppColors.warning600;
-      default:
-        return AppColors.primary600;
-    }
-  }
-
   Widget _buildDailySchedule() {
     return Container(
       width: double.infinity,
@@ -209,13 +179,36 @@ class _DashboardScreenState extends State<DashboardScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            'Daily schedule',
-            style: const TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.w700,
-              color: AppColors.textPrimary,
-            ),
+          Row(
+            children: [
+              const Expanded(
+                child: Text(
+                  'Daily schedule',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.textPrimary,
+                  ),
+                ),
+              ),
+              Container(
+                width: 26,
+                height: 26,
+                decoration: const BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: AppColors.primary500,
+                ),
+                alignment: Alignment.center,
+                child: Text(
+                  '${_todaySessions.length}',
+                  style: const TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w700,
+                    color: Colors.white,
+                  ),
+                ),
+              ),
+            ],
           ),
           const SizedBox(height: 12),
           if (_todaySessions.isEmpty)
@@ -225,24 +218,25 @@ class _DashboardScreenState extends State<DashboardScreen> {
             )
           else
             ..._todaySessions.map((s) {
-              final badge = _sessionStatusBadge(s);
+              final isPast = s.endsAt.isBefore(DateTime.now());
               return OwnerTrainingSessionCard(
                 session: s,
-                margin: const EdgeInsets.only(left: 0, right: 0, bottom: 5),
-                statusBadge: badge,
+                margin: const EdgeInsets.only(top: -10),
+                isPast: isPast,
+                pastLabel: isPast ? 'Past' : null,
                 trainerFallbackName: _ownerTrainerFallback(),
                 onTap: () => OwnerTrainingSessionCard.showDetailsModal(
                   context,
                   s,
-                  statusBadge: badge,
                   trainerFallbackName: _ownerTrainerFallback(),
+                  onParticipantsChanged: _loadData,
                   onEditSession: s.sessionId.isNotEmpty
                       ? () async {
                           final changed = await Navigator.of(context)
                               .pushNamed<bool>(
-                            '/owner/session/edit',
-                            arguments: s.toRouteArgs(),
-                          );
+                                '/owner/session/edit',
+                                arguments: s.toRouteArgs(),
+                              );
                           if (changed == true && context.mounted) {
                             _loadData();
                           }
@@ -250,11 +244,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       : null,
                   onEditService: s.trainingId.isNotEmpty
                       ? () async {
-                          await Navigator.of(context).pushNamed<bool?>(
-                            '/services',
-                            arguments: {'editTrainingId': s.trainingId},
-                          );
-                          if (context.mounted) await _loadData();
+                          final changed = await Navigator.of(context)
+                              .pushNamed<bool?>(
+                                '/services',
+                                arguments: {'editTrainingId': s.trainingId},
+                              );
+                          if (changed == true && context.mounted)
+                            await _loadData();
                         }
                       : null,
                 ),

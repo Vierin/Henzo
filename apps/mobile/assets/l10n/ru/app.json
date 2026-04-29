@@ -121,7 +121,23 @@
 	},
 	"ownerSession": {
 		"editCurrentSession": "Изменить текущую тренировку",
-		"editAllTrainings": "Изменить все тренировки"
+		"editAllTrainings": "Изменить все тренировки",
+		"participants": "Участники",
+		"addParticipant": "Добавить участника",
+		"name": "Имя",
+		"email": "Email",
+		"phone": "Телефон",
+		"add": "Добавить",
+		"participantAdded": "Участник добавлен",
+		"participantsLoadError": "Не удалось загрузить участников",
+		"noParticipants": "Участников пока нет",
+		"participantStatusActive": "Активен",
+		"participantStatusNoShow": "No-show",
+		"participantStatusCancelled": "Отменен",
+		"actionSetActive": "Сделать активным",
+		"actionSetNoShow": "Отметить no-show",
+		"actionCancelParticipant": "Отменить участие",
+		"actionDeleteParticipant": "Удалить"
 	},
 	"booking": {
 		"details": "Детали записи",
@@ -328,7 +344,10 @@
 		"inactiveHint": "Нет занятий 90 дней",
 		"noData": "Нет данных за выбранный период",
 		"failedLoad": "Не удалось загрузить аналитику",
-		"retry": "Повторить"
+		"retry": "Повторить",
+		"proLockedTitle": "Расширенная аналитика доступна в Pro",
+		"proLockedDescription": "Перейдите на Pro, чтобы открыть посещаемость, неявки, загрузку сессий и инсайты по топ-тренировкам.",
+		"upgradeToPro": "Перейти на Pro"
 	},
 	"profileForm": {
 		"profileUpdated": "Профиль обновлён",
