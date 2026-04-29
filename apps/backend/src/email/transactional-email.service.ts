@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { BrevoEmailDeliveryService } from './brevo-email-delivery.service';
 import {
+  BUSINESS_REGISTRATION_STRINGS,
   MAGIC_LINK_CONFIRMATION_STRINGS,
   resolveClientEmailLocale,
 } from './copy';
@@ -92,12 +93,17 @@ export class TransactionalEmailService {
     email: string,
     name: string,
     registerUrl: string,
+    locale?: 'en' | 'ru' | 'vi',
   ) {
     console.log('📧 Sending business registration magic link to:', email);
 
+    const loc = resolveClientEmailLocale(locale);
+    const L =
+      BUSINESS_REGISTRATION_STRINGS[loc] || BUSINESS_REGISTRATION_STRINGS.en;
     const htmlContent = renderBusinessRegistrationMagicLinkHtml(
       name,
       registerUrl,
+      L,
     );
 
     return this.delivery.send({
@@ -108,7 +114,7 @@ export class TransactionalEmailService {
           'noreply@henzo.app',
         name: 'Henzo Business Platform',
       },
-      subject: 'Complete Your Business Registration - Henzo',
+      subject: L.subject,
       htmlContent,
     });
   }

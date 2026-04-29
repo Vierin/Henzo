@@ -85,7 +85,7 @@
 	"clientsWith2Visits": "{count} с 2 визитами",
 	"clients": "Клиенты",
 	"trialPromoTitle": "Пробный период скоро закончится",
-	"trialPromoBody": "Окончание пробного периода — {{date}}. Оформите подписку сейчас и получите {{percent}}% скидку на годовой тариф.",
+	"trialPromoBody": "Окончание пробного периода — {{date}}. Чтобы продолжить пользоваться платформой, оформите подписку.",
 	"trialPromoAnnualPrice": "Годовой тариф от {{price}}",
 	"trialPromoCtaAnnual": "Годовая подписка со скидкой",
 	"trialPromoCtaPlans": "Все тарифы",

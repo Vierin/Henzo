@@ -9,86 +9,59 @@ datasource db {
   directUrl = env("DIRECT_URL")
 }
 
-model Booking {
+model SessionBooking {
   id                     String        @id @default(cuid())
-  salonId                String
+  studioId               String
   userId                 String
-  serviceId              String
-  staffId                String?
+  trainingId             String
+  trainerId              String?
   status                 BookingStatus @default(PENDING)
   notes                  String?
   /// Locale for client-facing booking emails (en, ru, vi)
   clientEmailLocale      String        @default("en")
   createdAt              DateTime      @default(now())
-  dateTime               DateTime
+  startsAt               DateTime
   reminderSent           Boolean       @default(false)
   remindersSentIntervals Json?         @default("[]")
-  Salon                  Salon         @relation(fields: [salonId], references: [id])
-  Service                Service       @relation(fields: [serviceId], references: [id])
-  Staff                  Staff?        @relation(fields: [staffId], references: [id])
+  Studio                 Studio        @relation(fields: [studioId], references: [id])
+  Training               Training      @relation(fields: [trainingId], references: [id])
+  Trainer                Trainer?      @relation(fields: [trainerId], references: [id])
   User                   User          @relation(fields: [userId], references: [id])
   Review                 Review[]
 
-  @@index([salonId, status, dateTime])
-  @@index([userId, dateTime])
-  @@index([dateTime])
-  @@index([salonId, createdAt])
-  @@index([status, dateTime]) // P3: Для быстрого поиска по статусу и дате
-  @@index([salonId, dateTime, status]) // P3: Составной индекс для фильтрации
-  @@index([userId, status, dateTime]) // P2: Для быстрого поиска клиентских бронирований по статусу
-}
-
-model PendingBooking {
-  id          String   @id @default(cuid())
-  token       String   @unique
-  email       String
-  bookingData Json
-  expiresAt   DateTime
-  createdAt   DateTime @default(now())
-
-  @@index([email])
-  @@index([expiresAt])
-  @@index([token])
-}
-
-model PendingBusinessRegistration {
-  id        String   @id @default(cuid())
-  token     String   @unique
-  email     String
-  name      String
-  password  String   @default("") // Hashed password or userId (temporary)
-  expiresAt DateTime
-  createdAt DateTime @default(now())
-
-  @@index([email])
-  @@index([expiresAt])
-  @@index([token])
+  @@index([studioId, status, startsAt])
+  @@index([userId, startsAt])
+  @@index([startsAt])
+  @@index([studioId, createdAt])
+  @@index([status, startsAt]) // P3: Для быстрого поиска по статусу и дате
+  @@index([studioId, startsAt, status]) // P3: Составной индекс для фильтрации
+  @@index([userId, status, startsAt]) // P2: Для быстрого поиска клиентских бронирований по статусу
 }
 
 model Review {
   id        String   @id @default(cuid())
-  salonId   String
+  studioId  String
   userId    String
   bookingId String?
   rating    Int
   comment   String?
   createdAt DateTime @default(now())
-  Booking   Booking? @relation(fields: [bookingId], references: [id])
-  Salon     Salon    @relation(fields: [salonId], references: [id])
+  Booking   SessionBooking? @relation(fields: [bookingId], references: [id])
+  Studio    Studio    @relation(fields: [studioId], references: [id])
   User      User     @relation(fields: [userId], references: [id])
 
-  @@unique([userId, salonId, bookingId])
-  @@index([salonId, createdAt])
-  @@index([salonId, rating])
+  @@unique([userId, studioId, bookingId])
+  @@index([studioId, createdAt])
+  @@index([studioId, rating])
 }
 
-enum SalonStatus {
+enum StudioStatus {
   DRAFT
   READY
   ACTIVE
 }
 
-model Salon {
+model Studio {
   id               String        @id @default(cuid())
   name             String
   description      String?
@@ -97,29 +70,28 @@ model Salon {
   email            String?
   website          String?
   instagram        String?
+  logoUrl          String?
   photos           String[]
   workingHours     Json?
   reminderSettings Json?         @default("{\"intervals\":[24]}")
   ownerId          String
   createdAt        DateTime      @default(now())
-  latitude         Float?
+  latitude         Float? 
   longitude        Float?
   descriptionEn    String?
   descriptionVi    String?
   descriptionRu    String?
   timezone         String        @default("Asia/Ho_Chi_Minh") // IANA timezone identifier
-  slug             String?       @unique // SEO-friendly slug for salon URLs
-  status           SalonStatus   @default(DRAFT) // Salon publication status
+  slug             String?       @unique // SEO-friendly slug for studio URLs
+  status           StudioStatus   @default(DRAFT) // Studio publication status
   autoConfirmBookings Boolean   @default(false) // New bookings auto-confirmed (no owner approval)
-  Booking          Booking[]
+  Booking          SessionBooking[]
   Review           Review[]
   User             User          @relation(fields: [ownerId], references: [id])
-  Service          Service[]
-  SmsUsage         SmsUsage[]
-  Staff            Staff[]
+  Training         Training[]
+  Trainer          Trainer[]
   Subscription     Subscription?
-  TimeBlock        TimeBlock[]
-  ClientNote       ClientNote[]
+  TrainingSession  TrainingSession[]
 
   @@index([latitude, longitude])
   @@index([ownerId, createdAt])
@@ -127,128 +99,94 @@ model Salon {
   @@index([slug]) // Index for fast slug lookups
 }
 
-model Service {
+model Training {
   id                 String              @id @default(cuid())
   name               String
   description        String?
   duration           Int
   price              Float
-  salonId            String
+  studioId           String
   categoryId         String?
-  serviceCategoryId  Int?
+  trainingCategoryId Int?
   nameEn             String?
   nameVi             String?
   nameRu             String?
   descriptionEn      String?
   descriptionVi      String?
   descriptionRu      String?
-  serviceGroupId     String?
-  Booking            Booking[]
-  Salon              Salon               @relation(fields: [salonId], references: [id])
-  service_categories service_categories? @relation(fields: [serviceCategoryId], references: [id])
-  ServiceGroup       ServiceGroup?       @relation(fields: [serviceGroupId], references: [id])
-  Staff              Staff[]             @relation("StaffServices")
+  Booking            SessionBooking[]
+  Studio             Studio              @relation(fields: [studioId], references: [id])
+  trainingCategory   TrainingCategory? @relation(fields: [trainingCategoryId], references: [id]) 
+  Trainer            Trainer[]           @relation("TrainerTrainings")
+  TrainingSession    TrainingSession[]
 
-  @@unique([name, salonId])
-  @@index([salonId])
+  @@unique([name, studioId])
+  @@index([studioId])
 }
 
-model ServiceGroup {
-  id        String    @id @default(cuid())
-  salonId   String
-  name      String
-  nameEn    String?
-  nameVi    String?
-  nameRu    String?
-  position  Int       @default(0)
-  isActive  Boolean   @default(true)
-  createdAt DateTime  @default(now())
-  Service   Service[]
-
-  @@index([salonId, position])
-}
-
-model SmsUsage {
-  id        String   @id
-  salonId   String
-  sent      Int      @default(0)
-  balance   Int      @default(0)
-  month     Int
-  year      Int
-  createdAt DateTime @default(now())
-  updatedAt DateTime
-  Salon     Salon    @relation(fields: [salonId], references: [id])
-
-  @@unique([salonId, month, year])
-}
-
-model Staff {
+model Trainer {
   id                                           String           @id @default(cuid())
   name                                         String
-  accessLevel                                  StaffAccessLevel @default(EMPLOYEE)
+  accessLevel                                  TrainerAccessLevel @default(EMPLOYEE)
   email                                        String?
   phone                                        String?
-  salonId                                      String
-  Booking                                      Booking[]
-  Salon                                        Salon            @relation(fields: [salonId], references: [id])
-  TimeBlock_TimeBlock_rescheduleStaffIdToStaff TimeBlock[]      @relation("TimeBlock_rescheduleStaffIdToStaff")
-  TimeBlock_TimeBlock_staffIdToStaff           TimeBlock[]      @relation("TimeBlock_staffIdToStaff")
-  Service                                      Service[]        @relation("StaffServices")
+  studioId                                     String
+  Booking                                      SessionBooking[]
+  Studio                                       Studio           @relation(fields: [studioId], references: [id])
+  Training                                     Training[]       @relation("TrainerTrainings")
+  TrainingSession                              TrainingSession[]
 
-  @@unique([name, salonId])
-  @@index([salonId])
+  @@unique([name, studioId])
+  @@index([studioId])
 }
 
 model Subscription {
   id                String             @id @default(cuid())
-  salonId           String             @unique
-  type              SubscriptionType   @default(TRIAL)
+  studioId          String             @unique
+  type              SubscriptionType   @default(FREEMIUM)
   status           SubscriptionStatus  @default(ACTIVE)
   startDate         DateTime
-  endDate           DateTime?
-  nextPaymentDate   DateTime?
-  trialEndDate      DateTime?
   amount            Float
-  stripeCustomerId  String?            // for Stripe Billing Portal
   createdAt         DateTime           @default(now())
   updatedAt         DateTime
-  Salon             Salon              @relation(fields: [salonId], references: [id])
+  Studio            Studio             @relation(fields: [studioId], references: [id])
 }
 
-/// Discount coupons tracked in admin; `stripeCouponId` is Stripe Coupon id (e.g. zAb1CD2e).
-model PlatformStripeCoupon {
-  id               String   @id @default(cuid())
-  label            String
-  stripeCouponId   String   @unique
-  isActive         Boolean  @default(true)
-  /// Auto-applied to owner annual subscription Checkout (only one should be active).
-  useForAutoAnnual Boolean  @default(false)
-  /// Cached from Stripe for UI (percent off subscription).
-  percentOff       Int?
-  createdAt        DateTime @default(now())
-  updatedAt        DateTime @updatedAt
+model TrainingSession {
+  id          String              @id @default(cuid())
+  studioId    String
+  trainingId  String
+  trainerId   String?
+  startsAt    DateTime
+  endsAt      DateTime
+  capacity    Int                 @default(1)
+  bookedCount Int                 @default(0)
+  status      TrainingSessionStatus @default(ACTIVE)
+  createdAt   DateTime            @default(now())
+  updatedAt   DateTime            @updatedAt
+  Studio      Studio              @relation(fields: [studioId], references: [id], onDelete: Cascade)
+  Training    Training            @relation(fields: [trainingId], references: [id], onDelete: Cascade)
+  Trainer     Trainer?            @relation(fields: [trainerId], references: [id], onDelete: SetNull)
+  Enrollments SessionEnrollment[]
+
+  @@index([studioId, startsAt])
+  @@index([trainingId, startsAt])
+  @@index([trainerId, startsAt])
 }
 
-model TimeBlock {
-  id                                       String         @id
-  salonId                                  String
-  staffId                                  String?
-  type                                     TimeBlockType
-  reason                                   String?
-  startDate                                DateTime
-  endDate                                  DateTime
-  notes                                    String?
-  conflictAction                           ConflictAction @default(CANCEL)
-  createdAt                                DateTime       @default(now())
-  updatedAt                                DateTime
-  rescheduleStaffId                        String?
-  Staff_TimeBlock_rescheduleStaffIdToStaff Staff?         @relation("TimeBlock_rescheduleStaffIdToStaff", fields: [rescheduleStaffId], references: [id], onUpdate: NoAction)
-  Salon                                    Salon          @relation(fields: [salonId], references: [id], onDelete: Cascade, onUpdate: NoAction)
-  Staff_TimeBlock_staffIdToStaff           Staff?         @relation("TimeBlock_staffIdToStaff", fields: [staffId], references: [id], onUpdate: NoAction)
+model SessionEnrollment {
+  id                String                  @id @default(cuid())
+  sessionId         String
+  userId            String
+  status            SessionEnrollmentStatus @default(ACTIVE)
+  createdAt         DateTime                @default(now())
+  cancelledAt       DateTime?
+  TrainingSession   TrainingSession         @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  User              User                    @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  @@index([salonId])
-  @@index([staffId])
-  @@index([startDate, endDate])
+  @@unique([sessionId, userId])
+  @@index([sessionId, status])
+  @@index([userId, createdAt])
 }
 
 model User {
@@ -261,15 +199,12 @@ model User {
   /// and has not yet completed full account registration.
   isGuest          Boolean      @default(false)
   createdAt        DateTime     @default(now())
-  favoriteSalons   String[]     @default([])
-  telegramId       String?      @unique
-  telegramUsername String?
-  telegramPhotoUrl String?
-  Booking          Booking[]
+  favoriteStudios  String[]     @default([])
+  Booking          SessionBooking[]
   pushTokens       PushToken[]
   Review           Review[]
-  Salon            Salon[]
-  ClientNote       ClientNote[]
+  Studio           Studio[]
+  SessionEnrollment SessionEnrollment[]
 }
 
 model PushToken {
@@ -288,55 +223,13 @@ model PushToken {
   @@index([isActive])
 }
 
-model service_categories {
+model TrainingCategory {
   id               Int       @id @default(autoincrement())
   name_en          String    @unique
   name_vn          String    @unique
   name_ru          String    @unique
   main_category_id Int?
-  Service          Service[]
-}
-
-model RecommendedService {
-  id         Int      @id @default(autoincrement())
-  nameEn     String
-  nameVi     String
-  nameRu     String
-  categoryId Int?
-  priority   Int      @default(0)
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
-
-  @@index([nameEn, nameVi, nameRu])
-  @@index([priority])
-  @@index([categoryId])
-}
-
-model City {
-  id          String  @id
-  name        String
-  countryCode String  @default("VN")
-  lat         Float
-  lng         Float
-  isActive    Boolean @default(true)
-
-  @@index([countryCode, isActive])
-  @@index([isActive])
-}
-
-model ClientNote {
-  id        String   @id @default(cuid())
-  salonId   String
-  userId    String
-  note      String
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  Salon     Salon    @relation(fields: [salonId], references: [id], onDelete: Cascade)
-  User      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@index([salonId, userId])
-  @@index([userId])
-  @@index([salonId])
+  Training         Training[]
 }
 
 enum BookingStatus {
@@ -347,13 +240,7 @@ enum BookingStatus {
   NOSHOW
 }
 
-enum ConflictAction {
-  KEEP
-  CANCEL
-  RESCHEDULE
-}
-
-enum StaffAccessLevel {
+enum TrainerAccessLevel {
   ADMIN
   EMPLOYEE
 }
@@ -366,14 +253,19 @@ enum SubscriptionStatus {
 }
 
 enum SubscriptionType {
-  TRIAL
-  STARTER
+  FREEMIUM
+  PRO
 }
 
-enum TimeBlockType {
-  TIME_OFF
-  BUSY
-  CLOSURE
+enum TrainingSessionStatus {
+  ACTIVE
+  CANCELLED
+  COMPLETED
+}
+
+enum SessionEnrollmentStatus {
+  ACTIVE
+  CANCELLED
 }
 
 enum UserRole {

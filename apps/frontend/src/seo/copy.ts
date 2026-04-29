@@ -3,13 +3,10 @@ import type { Locale } from '@/i18n/routing';
 /** Static public routes with locale-prefixed URLs (`/en/...`, `/ru/...`, `/vi/...`). */
 export type PublicPageId =
 	| 'home'
-	| 'salons'
-	| 'business'
 	| 'about'
 	| 'contact'
 	| 'terms'
-	| 'privacy'
-	| 'map';
+	| 'privacy';
 
 export type PageSeoCopy = {
 	title: string;
@@ -17,27 +14,21 @@ export type PageSeoCopy = {
 	keywords?: string[];
 };
 
-/** Path after locale segment (e.g. `/salons`). Home uses `''`. */
+/** Path after locale (e.g. `/contact`). Home uses `''`. */
 export const PAGE_PATHS: Record<PublicPageId, string> = {
 	home: '',
-	salons: '/salons',
-	business: '/business',
 	about: '/about',
 	contact: '/contact',
 	terms: '/terms-of-service',
 	privacy: '/privacy-policy',
-	map: '/map',
 };
 
 export const PAGE_OG_IMAGES: Record<PublicPageId, string> = {
 	home: '/og-image.jpg',
-	salons: '/og-salons.jpg',
-	business: '/og-business.jpg',
 	about: '/og-about.jpg',
 	contact: '/og-contact.jpg',
 	terms: '/og-terms.jpg',
 	privacy: '/og-privacy.jpg',
-	map: '/og-map.jpg',
 };
 
 export const PUBLIC_PAGE_COPY: Record<
@@ -46,179 +37,85 @@ export const PUBLIC_PAGE_COPY: Record<
 > = {
 	home: {
 		en: {
-			title: 'Henzo — Book hair, spa & beauty salons online',
+			title: 'Henzo Fitness - Studio operations in one mobile app',
 			description:
-				'Find and book trusted salons and spas near you. Easy online booking, transparent pricing, and real reviews on Henzo.',
-			keywords: [
-				'beauty booking',
-				'salon booking',
-				'spa appointment',
-				'book salon online',
-				'Henzo',
-			],
+				'Run your fitness studio from mobile with scheduling, coach workflows, and booking operations in one place.',
+			keywords: ['fitness studio app', 'studio management', 'Henzo Fitness'],
 		},
 		ru: {
-			title: 'Henzo — онлайн-запись в салоны красоты, спа и барбершопы',
+			title: 'Henzo Fitness - управление студией в одном приложении',
 			description:
-				'Находите салоны и спа рядом с вами, бронируйте онлайн на Henzo: удобная запись, отзывы и прозрачные цены.',
-			keywords: [
-				'запись в салон',
-				'онлайн запись спа',
-				'бронирование салона',
-				'Henzo',
-			],
+				'Управляйте фитнес-студией с телефона: расписание, тренеры и записи клиентов в едином процессе.',
+			keywords: ['приложение для фитнес студии', 'управление студией', 'Henzo Fitness'],
 		},
 		vi: {
-			title:
-				'Henzo - Đặt Lịch Salon Tóc, Spa, Massage Online | Hà Nội, TP.HCM',
+			title: 'Henzo Fitness - Van hanh studio tren mobile',
 			description:
-				'Đặt lịch hẹn làm đẹp online với Henzo tại Việt Nam. Tìm và đặt salon tóc, spa, massage, nail tại Hà Nội, TP.HCM. Đặt lịch dễ dàng, đánh giá tin cậy, giá cả minh bạch.',
-			keywords: [
-				'đặt lịch salon',
-				'đặt lịch spa',
-				'salon tóc Hà Nội',
-				'spa TP.HCM',
-				'đặt lịch làm đẹp',
-				'beauty booking Vietnam',
-			],
-		},
-	},
-	salons: {
-		en: {
-			title: 'Find beauty salons & services',
-			description:
-				'Discover salons, spas, and wellness near you. Book hair, nails, massage, and more online with trusted reviews.',
-		},
-		ru: {
-			title: 'Салоны красоты и услуги рядом с вами',
-			description:
-				'Выбирайте салоны, спа и wellness поблизости. Онлайн-запись: волосы, ногти, массаж и другие услуги.',
-		},
-		vi: {
-			title: 'Tìm salon & dịch vụ làm đẹp',
-			description:
-				'Khám phá salon, spa và dịch vụ chăm sóc gần bạn. Đặt lịch tóc, nail, massage trực tuyến với đánh giá thật.',
-		},
-	},
-	business: {
-		en: {
-			title: 'Henzo for salons — scheduling & client management',
-			description:
-				'Grow your salon with Henzo: online booking, client management, reminders. Try free during the launch period.',
-			keywords: [
-				'salon software',
-				'salon booking system',
-				'spa management',
-				'Henzo',
-			],
-		},
-		ru: {
-			title: 'Henzo для салонов — запись и клиентская база',
-			description:
-				'Развивайте салон с Henzo: онлайн-запись, клиенты, напоминания. Пробный период на старте.',
-			keywords: [
-				'программа для салона',
-				'онлайн запись салон',
-				'crm салона',
-				'Henzo',
-			],
-		},
-		vi: {
-			title:
-				'Henzo cho Salon - Phần mềm quản lý Salon miễn phí | Đặt lịch Online',
-			description:
-				'Phát triển salon của bạn với Henzo. Phần mềm quản lý salon hoàn chỉnh: đặt lịch online, quản lý khách hàng, nhắc hẹn tự động. Dùng thử ngay!',
-			keywords: [
-				'phần mềm quản lý salon',
-				'đặt lịch online cho salon',
-				'quản lý spa',
-				'phần mềm salon Việt Nam',
-			],
+				'Quan ly lich, huan luyen vien va dat cho khach hang trong mot ung dung duy nhat.',
+			keywords: ['ung dung fitness studio', 'quan ly studio', 'Henzo Fitness'],
 		},
 	},
 	about: {
 		en: {
-			title: 'About Henzo',
+			title: 'About Henzo Fitness',
 			description:
-				'Learn how Henzo helps clients book beauty and wellness services and how we partner with salons.',
+				'Learn how Henzo helps fitness studios streamline bookings and daily operations.',
 		},
 		ru: {
-			title: 'О Henzo',
+			title: 'О Henzo Fitness',
 			description:
-				'Узнайте, как Henzo помогает клиентам бронировать beauty-услуги и как мы работаем с салонами.',
+				'Как Henzo помогает фитнес-студиям упростить записи и ежедневные операции.',
 		},
 		vi: {
-			title: 'Về Henzo',
+			title: 'Ve Henzo Fitness',
 			description:
-				'Tìm hiểu sứ mệnh Henzo: kết nối khách hàng với salon và dịch vụ làm đẹp đáng tin cậy.',
+				'Tim hieu cach Henzo giup studio fitness toi uu dat lich va van hanh hang ngay.',
 		},
 	},
 	contact: {
 		en: {
-			title: 'Contact & support',
+			title: 'Contact Henzo Fitness',
 			description:
-				'Get help with booking, your account, billing, or general questions — contact the Henzo team.',
+				'Talk to our team about onboarding your fitness studio to Henzo.',
 		},
 		ru: {
-			title: 'Контакты и поддержка',
-			description:
-				'Помощь с бронированием, аккаунтом, оплатой и другими вопросами — свяжитесь с поддержкой Henzo.',
+			title: 'Контакты Henzo Fitness',
+			description: 'Свяжитесь с нами по вопросам подключения вашей фитнес-студии.',
 		},
 		vi: {
-			title: 'Liên hệ & hỗ trợ',
+			title: 'Lien he Henzo Fitness',
 			description:
-				'Nhận trợ giúp về đặt lịch, tài khoản, thanh toán hoặc câu hỏi chung — liên hệ đội ngũ Henzo.',
+				'Lien he doi ngu Henzo de bat dau van hanh studio fitness cua ban.',
 		},
 	},
 	terms: {
 		en: {
 			title: 'Terms of service',
-			description:
-				'Read the terms and conditions for using the Henzo beauty booking platform.',
+			description: 'Terms and conditions for using Henzo Fitness products.',
 		},
 		ru: {
 			title: 'Условия использования',
-			description:
-				'Условия использования платформы онлайн-записи Henzo.',
+			description: 'Условия и правила использования продуктов Henzo Fitness.',
 		},
 		vi: {
-			title: 'Điều khoản dịch vụ',
-			description:
-				'Điều khoản và điều kiện sử dụng nền tảng đặt lịch Henzo.',
+			title: 'Dieu khoan dich vu',
+			description: 'Dieu khoan va dieu kien su dung san pham Henzo Fitness.',
 		},
 	},
 	privacy: {
 		en: {
 			title: 'Privacy policy',
-			description:
-				'How Henzo collects, uses, and protects your personal data.',
+			description: 'How Henzo Fitness collects, uses, and protects personal data.',
 		},
 		ru: {
 			title: 'Политика конфиденциальности',
 			description:
-				'Как Henzo обрабатывает и защищает ваши персональные данные.',
+				'Как Henzo Fitness собирает, использует и защищает персональные данные.',
 		},
 		vi: {
-			title: 'Chính sách bảo mật',
+			title: 'Chinh sach bao mat',
 			description:
-				'Cách Henzo thu thập, sử dụng và bảo vệ dữ liệu cá nhân của bạn.',
-		},
-	},
-	map: {
-		en: {
-			title: 'Salon map',
-			description:
-				'Explore beauty salons and spas on the map. Compare locations and book in a few taps.',
-		},
-		ru: {
-			title: 'Карта салонов',
-			description:
-				'Салоны и спа на карте: выберите удобное место и забронируйте онлайн.',
-		},
-		vi: {
-			title: 'Bản đồ salon',
-			description:
-				'Xem salon và spa trên bản đồ, so sánh vị trí và đặt lịch nhanh chóng.',
+				'Cach Henzo Fitness thu thap, su dung va bao ve du lieu ca nhan.',
 		},
 	},
 };

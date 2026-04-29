@@ -1,13 +1,18 @@
+import 'dart:typed_data';
+
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
+import 'package:flutter/foundation.dart';
+import 'package:flutter_image_compress/flutter_image_compress.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../constants/colors.dart';
+import '../../config/app_config.dart';
 import '../../l10n/locale_provider.dart';
 import '../../models/salon.dart';
 import '../../services/auth_service.dart';
 import '../../services/cache/salon_cache.dart';
 import '../../services/dashboard_api_service.dart';
-import '../../utils/auth_ui_result.dart';
 import '../../utils/show_api_error.dart';
 import '../../widgets/address_picker_modal.dart';
 
@@ -19,44 +24,54 @@ class SettingsScreen extends StatefulWidget {
 }
 
 class _SettingsScreenState extends State<SettingsScreen> {
-  final _profileFormKey = GlobalKey<FormState>();
-  final _passwordFormKey = GlobalKey<FormState>();
+  static const int _maxStudioPhotos = 5;
+  static const int _maxPhotoBytes = 3 * 1024 * 1024;
+  String get _studioPhotosBucket {
+    final configured = (AppConfig.studioPhotosBucket).trim();
+    return configured.isEmpty ? 'studio-photos' : configured;
+  }
+
   final _salonFormKey = GlobalKey<FormState>();
-  final _nameController = TextEditingController();
-  final _phoneController = TextEditingController();
-  final _newPasswordController = TextEditingController();
-  final _confirmPasswordController = TextEditingController();
   final _salonNameController = TextEditingController();
   final _salonDescriptionController = TextEditingController();
   final _salonAddressController = TextEditingController();
   final _salonPhoneController = TextEditingController();
   final _salonEmailController = TextEditingController();
-  final _salonWebsiteController = TextEditingController();
+  final _salonFacebookController = TextEditingController();
   final _salonInstagramController = TextEditingController();
 
-  bool _isSavingProfile = false;
-  bool _isSavingPassword = false;
   Salon? _salon;
   bool _salonLoading = true;
   bool _salonSaving = false;
+  bool _photosProcessing = false;
+  String? _photoProgressText;
   double? _salonLat;
   double? _salonLon;
+  List<String> _studioPhotos = <String>[];
+  String _initialSnapshot = '';
 
   @override
   void initState() {
     super.initState();
+    for (final controller in [
+      _salonNameController,
+      _salonDescriptionController,
+      _salonAddressController,
+      _salonPhoneController,
+      _salonEmailController,
+      _salonFacebookController,
+      _salonInstagramController,
+    ]) {
+      controller.addListener(_onFormChanged);
+    }
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      _fillProfileFromUser();
       _loadSalon();
     });
   }
 
-  void _fillProfileFromUser() {
-    final user = context.read<AuthService>().user;
-    if (user != null) {
-      _nameController.text = user.name ?? '';
-      _phoneController.text = user.phone ?? '';
-    }
+  void _onFormChanged() {
+    if (!mounted) return;
+    setState(() {});
   }
 
   Future<void> _loadSalon() async {
@@ -87,41 +102,100 @@ class _SettingsScreenState extends State<SettingsScreen> {
     _salonAddressController.text = s.address ?? '';
     _salonPhoneController.text = s.phone ?? '';
     _salonEmailController.text = s.email ?? '';
-    _salonWebsiteController.text = s.website ?? '';
+    _salonFacebookController.text = s.website ?? '';
     _salonInstagramController.text = s.instagram ?? '';
     _salonLat = s.latitude;
     _salonLon = s.longitude;
-  }
-
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    final user = context.read<AuthService>().user;
-    if (user != null &&
-        _nameController.text.isEmpty &&
-        _nameController.text != (user.name ?? '')) {
-      _nameController.text = user.name ?? '';
-      _phoneController.text = user.phone ?? '';
-    }
+    _studioPhotos = List<String>.from(s.photos ?? <String>[]);
+    _initialSnapshot = _buildSnapshot();
+    if (mounted) setState(() {});
   }
 
   @override
   void dispose() {
-    _nameController.dispose();
-    _phoneController.dispose();
-    _newPasswordController.dispose();
-    _confirmPasswordController.dispose();
+    for (final controller in [
+      _salonNameController,
+      _salonDescriptionController,
+      _salonAddressController,
+      _salonPhoneController,
+      _salonEmailController,
+      _salonFacebookController,
+      _salonInstagramController,
+    ]) {
+      controller.removeListener(_onFormChanged);
+    }
     _salonNameController.dispose();
     _salonDescriptionController.dispose();
     _salonAddressController.dispose();
     _salonPhoneController.dispose();
     _salonEmailController.dispose();
-    _salonWebsiteController.dispose();
+    _salonFacebookController.dispose();
     _salonInstagramController.dispose();
     super.dispose();
   }
 
+  String _buildSnapshot() {
+    final photos = List<String>.from(_studioPhotos)..sort();
+    return [
+      _salonNameController.text.trim(),
+      _salonDescriptionController.text.trim(),
+      _salonAddressController.text.trim(),
+      _salonPhoneController.text.trim(),
+      _salonEmailController.text.trim(),
+      _salonFacebookController.text.trim(),
+      _salonInstagramController.text.trim(),
+      _salonLat?.toStringAsFixed(6) ?? '',
+      _salonLon?.toStringAsFixed(6) ?? '',
+      photos.join('|'),
+    ].join('::');
+  }
+
+  bool get _hasUnsavedChanges {
+    if (_salonLoading) return false;
+    return _buildSnapshot() != _initialSnapshot;
+  }
+
+  bool get _canSaveFromAppBar {
+    return !_salonSaving &&
+        !_salonLoading &&
+        !_photosProcessing &&
+        _hasUnsavedChanges;
+  }
+
+  Future<bool> _confirmDiscardChanges() async {
+    if (!_hasUnsavedChanges) return true;
+    final shouldLeave = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) {
+        return AlertDialog(
+          title: const Text('Изменения не сохранены'),
+          content: const Text(
+            'Вы уверены, что хотите выйти без сохранения?',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(false),
+              child: const Text('Остаться'),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.of(dialogContext).pop(true),
+              child: const Text('Выйти'),
+            ),
+          ],
+        );
+      },
+    );
+    return shouldLeave ?? false;
+  }
+
+  Future<void> _handleBackPressed() async {
+    final shouldLeave = await _confirmDiscardChanges();
+    if (!mounted || !shouldLeave) return;
+    Navigator.of(context).pop();
+  }
+
   Future<void> _saveSalon() async {
+    if (!_hasUnsavedChanges) return;
     if (!(_salonFormKey.currentState?.validate() ?? false)) return;
     final name = _salonNameController.text.trim();
     if (name.isEmpty) {
@@ -141,8 +215,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
         'address': _salonAddressController.text.trim(),
         'phone': _salonPhoneController.text.trim(),
         'email': _salonEmailController.text.trim(),
-        'website': _salonWebsiteController.text.trim(),
+        'website': _salonFacebookController.text.trim(),
         'instagram': _salonInstagramController.text.trim(),
+        'photos': _studioPhotos,
       };
       if (_salonLat != null && _salonLon != null) {
         payload['latitude'] = _salonLat;
@@ -181,112 +256,139 @@ class _SettingsScreenState extends State<SettingsScreen> {
     }
   }
 
-  Future<void> _saveProfile() async {
-    if (!(_profileFormKey.currentState?.validate() ?? false)) return;
-    setState(() => _isSavingProfile = true);
-    final auth = context.read<AuthService>();
-    final result = await auth.updateProfile(
-      name: _nameController.text.trim(),
-      phone: _phoneController.text.trim(),
-    );
-    if (!mounted) return;
-    setState(() => _isSavingProfile = false);
-    if (result.success) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('Профиль обновлён')));
-    } else {
-      final loc = context.read<LocaleProvider>();
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            resolveAuthUiMessage(
-              loc,
-              result,
-              fallbackKey: 'profileForm.updateError',
-            ),
-          ),
-        ),
-      );
+  Future<void> _pickStudioPhotos() async {
+    if (_photosProcessing) return;
+    final availableSlots = _maxStudioPhotos - _studioPhotos.length;
+    if (availableSlots <= 0) {
+      _showSnack('Можно загрузить максимум $_maxStudioPhotos фото');
+      return;
     }
-  }
 
-  Future<void> _changePassword() async {
-    if (!(_passwordFormKey.currentState?.validate() ?? false)) return;
-    final newPwd = _newPasswordController.text;
-    if (newPwd != _confirmPasswordController.text) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            context.read<LocaleProvider>().t('profileForm.passwordsDontMatch'),
-          ),
-        ),
-      );
-      return;
+    final picker = ImagePicker();
+    final picked = await picker.pickMultiImage();
+    if (picked.isEmpty) return;
+
+    var filesToProcess = picked;
+    if (picked.length > availableSlots) {
+      filesToProcess = picked.take(availableSlots).toList();
+      _showSnack('Лишние фото пропущены. Лимит: $_maxStudioPhotos');
     }
-    if (newPwd.length < 8) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            context.read<LocaleProvider>().t('profileForm.passwordMin8'),
-          ),
-        ),
-      );
-      return;
+
+    setState(() => _photosProcessing = true);
+    setState(() => _photoProgressText = 'Оптимизация...');
+    final uploadedUrls = <String>[];
+    var oversizedCount = 0;
+    var failedUploadsCount = 0;
+    final uploadErrors = <String>{};
+    for (final file in filesToProcess) {
+      final photoBytes = await _convertToWebpBytes(file);
+      if (photoBytes == null) {
+        oversizedCount++;
+        continue;
+      }
+      if (mounted) {
+        setState(() => _photoProgressText = 'Загрузка...');
+      }
+      final upload = await _uploadPhotoToStorage(photoBytes);
+      if (upload.url == null) {
+        failedUploadsCount++;
+        if (upload.error != null && upload.error!.isNotEmpty) {
+          uploadErrors.add(upload.error!);
+        }
+        continue;
+      }
+      uploadedUrls.add(upload.url!);
     }
-    setState(() => _isSavingPassword = true);
-    final auth = context.read<AuthService>();
-    final result = await auth.updatePassword(newPwd);
+
     if (!mounted) return;
     setState(() {
-      _isSavingPassword = false;
-      _newPasswordController.clear();
-      _confirmPasswordController.clear();
+      _studioPhotos = <String>[..._studioPhotos, ...uploadedUrls];
+      _photosProcessing = false;
+      _photoProgressText = null;
     });
-    if (result.success) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            context.read<LocaleProvider>().t('profileForm.passwordChanged'),
-          ),
-        ),
-      );
-    } else {
-      final loc = context.read<LocaleProvider>();
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            resolveAuthUiMessage(
-              loc,
-              result,
-              fallbackKey: 'profileForm.changePasswordError',
-            ),
-          ),
-        ),
-      );
+    if (oversizedCount > 0) {
+      _showSnack('$oversizedCount фото больше 3MB и не были добавлены');
+    }
+    if (failedUploadsCount > 0) {
+      _showSnack('$failedUploadsCount фото не загрузились в storage');
+      if (uploadErrors.isNotEmpty) {
+        _showSnack(uploadErrors.first);
+      }
     }
   }
 
-  Future<void> _deleteAccount() async {
-    final auth = context.read<AuthService>();
-    final result = await auth.deleteAccount();
-    if (!mounted) return;
-    if (result.success) {
-      Navigator.of(context).popUntil((route) => route.isFirst);
-    } else {
-      final loc = context.read<LocaleProvider>();
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            resolveAuthUiMessage(
-              loc,
-              result,
-              fallbackKey: 'profileForm.deleteAccountError',
-            ),
-          ),
-        ),
-      );
+  Future<Uint8List?> _convertToWebpBytes(XFile file) async {
+    final bytesLength = await file.length();
+    if (bytesLength > _maxPhotoBytes) {
+      return null;
     }
+    final original = await file.readAsBytes();
+    final compressed = await FlutterImageCompress.compressWithList(
+      original,
+      minWidth: 1000,
+      quality: 82,
+      format: CompressFormat.webp,
+      keepExif: false,
+    );
+    return Uint8List.fromList(compressed.isEmpty ? original : compressed);
+  }
+
+  Future<({String? url, String? error})> _uploadPhotoToStorage(
+    Uint8List bytes,
+  ) async {
+    try {
+      final userId =
+          Supabase.instance.client.auth.currentUser?.id ??
+          context.read<AuthService>().user?.id ??
+          'unknown';
+      final fileName =
+          'owners/$userId/${DateTime.now().millisecondsSinceEpoch}_${_randomSuffix()}.webp';
+      await Supabase.instance.client.storage
+          .from(_studioPhotosBucket)
+          .uploadBinary(
+            fileName,
+            bytes,
+            fileOptions: const FileOptions(
+              cacheControl: '3600',
+              upsert: false,
+              contentType: 'image/webp',
+            ),
+          );
+      final publicUrl = Supabase.instance.client.storage
+          .from(_studioPhotosBucket)
+          .getPublicUrl(fileName);
+      return (url: publicUrl, error: null);
+    } on StorageException catch (e) {
+      if (kDebugMode) {
+        debugPrint('[StudioPhotoUpload] StorageException: ${e.message}');
+      }
+      return (
+        url: null,
+        error:
+            'Storage error: ${e.message}. Проверь bucket "$_studioPhotosBucket" и policy на insert.',
+      );
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('[StudioPhotoUpload] Unknown error: $e');
+      }
+      return (url: null, error: 'Upload error: $e');
+    }
+  }
+
+  String _randomSuffix() {
+    final ms = DateTime.now().microsecondsSinceEpoch.toRadixString(36);
+    return ms.substring(ms.length > 6 ? ms.length - 6 : 0);
+  }
+
+  void _removePhotoAt(int index) {
+    setState(() => _studioPhotos.removeAt(index));
+  }
+
+  void _showSnack(String message) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(message)));
   }
 
   InputDecoration _inputDecoration({
@@ -325,556 +427,404 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
-  void _showDeleteAccountDialog() {
-    showDialog<void>(
-      context: context,
-      barrierDismissible: false,
-      builder: (dialogContext) => AlertDialog(
-        title: Text(
-          context.read<LocaleProvider>().t('profileForm.deleteAccount'),
-        ),
-        content: Text(
-          context.read<LocaleProvider>().t('profileForm.deleteAccountConfirm'),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(dialogContext).pop(),
-            child: Text(context.read<LocaleProvider>().t('common.cancel')),
-          ),
-          FilledButton(
-            onPressed: () {
-              Navigator.of(dialogContext).pop();
-              _deleteAccount();
-            },
-            style: FilledButton.styleFrom(backgroundColor: AppColors.error600),
-            child: Text(
-              context.read<LocaleProvider>().t('profileForm.deleteAccount'),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
-    final auth = context.watch<AuthService>();
-    final user = auth.user;
-
     return Consumer<LocaleProvider>(
       builder: (context, locale, _) {
         const pageBg = Color(0xFFF8F9FA);
         const maxContentWidth = 680.0;
 
-        return Scaffold(
-          backgroundColor: pageBg,
-          appBar: AppBar(
-            title: Text(locale.t('profileForm.settings')),
-            backgroundColor: AppColors.backgroundPrimary,
-            foregroundColor: AppColors.textPrimary,
-            elevation: 0,
-          ),
-          body: user == null
-              ? const Center(child: CircularProgressIndicator())
-              : Center(
-                  child: ConstrainedBox(
-                    constraints: const BoxConstraints(
-                      maxWidth: maxContentWidth,
-                    ),
-                    child: ListView(
-                      padding: const EdgeInsets.all(12),
-                      children: [
-                        Center(
-                          child: Text(
-                            locale.t('profileForm.profileSettings'),
-                            style: const TextStyle(
-                              fontSize: 24,
-                              fontWeight: FontWeight.w700,
-                              color: AppColors.textPrimary,
-                            ),
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          locale.t('profileForm.salonDescriptionHint'),
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                            fontSize: 14,
-                            color: AppColors.textSecondary,
-                            height: 1.4,
-                          ),
-                        ),
-                        const SizedBox(height: 24),
+        return PopScope(
+          canPop: !_hasUnsavedChanges,
+          onPopInvoked: (didPop) async {
+            if (didPop) return;
+            await _handleBackPressed();
+          },
+          child: Scaffold(
+            backgroundColor: pageBg,
+            appBar: AppBar(
+              leading: IconButton(
+                icon: const Icon(Icons.arrow_back),
+                onPressed: _handleBackPressed,
+              ),
+              title: Text(locale.t('profileForm.settings')),
+              backgroundColor: AppColors.backgroundPrimary,
+              foregroundColor: AppColors.textPrimary,
+              elevation: 0,
+              actions: [
+                TextButton(
+                  onPressed: _canSaveFromAppBar ? _saveSalon : null,
+                  child: _salonSaving
+                      ? const SizedBox(
+                          width: 18,
+                          height: 18,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : const Text('Сохранить'),
+                ),
+                const SizedBox(width: 8),
+              ],
+            ),
+            body: GestureDetector(
+              behavior: HitTestBehavior.translucent,
+              onTap: () => FocusManager.instance.primaryFocus?.unfocus(),
+              child: Center(
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: maxContentWidth),
+                  child: ListView(
+                    padding: const EdgeInsets.all(12),
+                    children: [
+                      const SizedBox(height: 8),
 
-                        // Секции салона в одной форме
-                        _salonLoading
-                            ? _SectionCard(
-                                title: locale.t('profileForm.mainInfo'),
-                                child: const Padding(
-                                  padding: EdgeInsets.symmetric(vertical: 24),
-                                  child: Center(
-                                    child: CircularProgressIndicator(),
-                                  ),
-                                ),
-                              )
-                            : Form(
-                                key: _salonFormKey,
-                                child: Column(
-                                  crossAxisAlignment:
-                                      CrossAxisAlignment.stretch,
-                                  children: [
-                                    _SectionCard(
-                                      title: locale.t('profileForm.mainInfo'),
-                                      child: Column(
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.stretch,
-                                        children: [
-                                          _labeledField(
-                                            label: locale.t(
-                                              'profileForm.salonName',
-                                            ),
-                                            child: TextFormField(
-                                              controller: _salonNameController,
-                                              decoration: _inputDecoration(
-                                                hint: locale.t(
-                                                  'profileForm.enterSalonName',
-                                                ),
-                                              ),
-                                              textCapitalization:
-                                                  TextCapitalization.words,
-                                              validator: (v) =>
-                                                  (v == null ||
-                                                      v.trim().isEmpty)
-                                                  ? locale.t(
-                                                      'profileForm.requiredField',
-                                                    )
-                                                  : null,
+                    // Секции салона в одной форме
+                    _salonLoading
+                        ? _SectionCard(
+                            title: locale.t('profileForm.mainInfo'),
+                            child: const Padding(
+                              padding: EdgeInsets.symmetric(vertical: 24),
+                              child: Center(child: CircularProgressIndicator()),
+                            ),
+                          )
+                        : Form(
+                            key: _salonFormKey,
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.stretch,
+                              children: [
+                                _SectionCard(
+                                  title: locale.t('profileForm.mainInfo'),
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.stretch,
+                                    children: [
+                                      _labeledField(
+                                        label: locale.t(
+                                          'profileForm.salonName',
+                                        ),
+                                        child: TextFormField(
+                                          controller: _salonNameController,
+                                          decoration: _inputDecoration(
+                                            hint: locale.t(
+                                              'profileForm.enterSalonName',
                                             ),
                                           ),
-                                          const SizedBox(height: 16),
-                                          _labeledField(
-                                            label: locale.t(
-                                              'profileForm.description',
+                                          textCapitalization:
+                                              TextCapitalization.words,
+                                          validator: (v) =>
+                                              (v == null || v.trim().isEmpty)
+                                              ? locale.t(
+                                                  'profileForm.requiredField',
+                                                )
+                                              : null,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 16),
+                                      _labeledField(
+                                        label: locale.t(
+                                          'profileForm.description',
+                                        ),
+                                        child: TextFormField(
+                                          controller:
+                                              _salonDescriptionController,
+                                          decoration: _inputDecoration(
+                                            hint: locale.t(
+                                              'profileForm.enterDescription',
                                             ),
-                                            child: TextFormField(
-                                              controller:
-                                                  _salonDescriptionController,
-                                              decoration: _inputDecoration(
-                                                hint: locale.t(
-                                                  'profileForm.enterDescription',
-                                                ),
-                                                alignLabelWithHint: true,
-                                              ),
-                                              maxLines: 4,
-                                            ),
+                                            alignLabelWithHint: true,
                                           ),
-                                          const SizedBox(height: 16),
-                                          _labeledField(
-                                            label: locale.t(
-                                              'profileForm.address',
-                                            ),
-                                            child: InkWell(
-                                              onTap: () async {
-                                                await AddressPickerModal.show(
-                                                  context,
-                                                  initialAddress:
-                                                      _salonAddressController
-                                                          .text,
-                                                  initialLat: _salonLat,
-                                                  initialLon: _salonLon,
-                                                  onSelect: (address, lat, lon) {
-                                                    setState(() {
-                                                      _salonAddressController
-                                                              .text =
-                                                          address;
-                                                      _salonLat = lat;
-                                                      _salonLon = lon;
-                                                    });
-                                                  },
-                                                );
+                                          maxLines: 4,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 16),
+                                      _labeledField(
+                                        label: locale.t('profileForm.address'),
+                                        child: InkWell(
+                                          onTap: () async {
+                                            await AddressPickerModal.show(
+                                              context,
+                                              initialAddress:
+                                                  _salonAddressController.text,
+                                              initialLat: _salonLat,
+                                              initialLon: _salonLon,
+                                              onSelect: (address, lat, lon) {
+                                                setState(() {
+                                                  _salonAddressController.text =
+                                                      address;
+                                                  _salonLat = lat;
+                                                  _salonLon = lon;
+                                                });
                                               },
-                                              borderRadius:
-                                                  BorderRadius.circular(10),
-                                              child: InputDecorator(
-                                                decoration:
-                                                    _inputDecoration(
-                                                      hint: locale.t(
-                                                        'profileForm.enterAddress',
-                                                      ),
-                                                    ).copyWith(
-                                                      suffixIcon: Icon(
-                                                        Icons
-                                                            .location_on_outlined,
-                                                        size: 20,
-                                                        color: AppColors
-                                                            .textSecondary,
-                                                      ),
-                                                    ),
-                                                child: Text(
-                                                  _salonAddressController
-                                                          .text
-                                                          .isEmpty
-                                                      ? ''
-                                                      : _salonAddressController
-                                                            .text,
-                                                  style: TextStyle(
-                                                    fontSize: 16,
+                                            );
+                                          },
+                                          borderRadius: BorderRadius.circular(
+                                            10,
+                                          ),
+                                          child: InputDecorator(
+                                            decoration:
+                                                _inputDecoration(
+                                                  hint: locale.t(
+                                                    'profileForm.enterAddress',
+                                                  ),
+                                                ).copyWith(
+                                                  suffixIcon: Icon(
+                                                    Icons.location_on_outlined,
+                                                    size: 20,
                                                     color:
-                                                        _salonAddressController
-                                                            .text
-                                                            .isEmpty
-                                                        ? AppColors
-                                                              .textSecondary
-                                                        : AppColors.textPrimary,
+                                                        AppColors.textSecondary,
                                                   ),
                                                 ),
+                                            child: Text(
+                                              _salonAddressController
+                                                      .text
+                                                      .isEmpty
+                                                  ? ''
+                                                  : _salonAddressController
+                                                        .text,
+                                              style: TextStyle(
+                                                fontSize: 16,
+                                                color:
+                                                    _salonAddressController
+                                                        .text
+                                                        .isEmpty
+                                                    ? AppColors.textSecondary
+                                                    : AppColors.textPrimary,
                                               ),
                                             ),
                                           ),
-                                          const SizedBox(height: 20),
-                                          SizedBox(
-                                            height: 44,
-                                            child: FilledButton(
-                                              onPressed: _salonSaving
-                                                  ? null
-                                                  : _saveSalon,
-                                              style: FilledButton.styleFrom(
-                                                backgroundColor:
-                                                    AppColors.primary500,
-                                              ),
-                                              child: _salonSaving
-                                                  ? const SizedBox(
-                                                      height: 22,
-                                                      width: 22,
-                                                      child:
-                                                          CircularProgressIndicator(
-                                                            strokeWidth: 2,
-                                                            color: Colors.white,
-                                                          ),
-                                                    )
-                                                  : Text(
-                                                      _salon == null
-                                                          ? locale.t(
-                                                              'profileForm.addSalon',
-                                                            )
-                                                          : locale.t(
-                                                              'common.save',
-                                                            ),
-                                                    ),
-                                            ),
-                                          ),
-                                        ],
+                                        ),
                                       ),
-                                    ),
-                                    const SizedBox(height: 24),
-                                    _SectionCard(
-                                      title: locale.t(
-                                        'profileForm.contactInfo',
+                                    ],
+                                  ),
+                                ),
+                                const SizedBox(height: 24),
+                                _SectionCard(
+                                  title: 'Фотографии студии',
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.stretch,
+                                    children: [
+                                      Text(
+                                        'До $_maxStudioPhotos фото, максимум 3MB на фото.',
+                                        style: const TextStyle(
+                                          color: AppColors.textSecondary,
+                                          fontSize: 13,
+                                        ),
                                       ),
-                                      child: Column(
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.stretch,
+                                      const SizedBox(height: 12),
+                                      Wrap(
+                                        spacing: 10,
+                                        runSpacing: 10,
                                         children: [
-                                          _labeledField(
-                                            label: locale.t(
-                                              'profileForm.salonPhone',
-                                            ),
-                                            child: TextFormField(
-                                              controller: _salonPhoneController,
-                                              decoration: _inputDecoration(
-                                                hint: locale.t(
-                                                  'profileForm.enterPhone',
-                                                ),
-                                              ),
-                                              keyboardType: TextInputType.phone,
+                                          ...List.generate(
+                                            _studioPhotos.length,
+                                            (index) => _StudioPhotoTile(
+                                              photo: _studioPhotos[index],
+                                              onRemove: () =>
+                                                  _removePhotoAt(index),
                                             ),
                                           ),
-                                          const SizedBox(height: 16),
-                                          _labeledField(
-                                            label: locale.t(
-                                              'profileForm.salonEmail',
+                                          if (_studioPhotos.length <
+                                              _maxStudioPhotos)
+                                            _AddStudioPhotoTile(
+                                              loading: _photosProcessing,
+                                              onTap: _pickStudioPhotos,
                                             ),
-                                            child: TextFormField(
-                                              controller: _salonEmailController,
-                                              decoration: _inputDecoration(
-                                                hint: locale.t(
-                                                  'profileForm.enterEmail',
-                                                ),
-                                              ),
-                                              keyboardType:
-                                                  TextInputType.emailAddress,
-                                            ),
-                                          ),
-                                          const SizedBox(height: 16),
-                                          _labeledField(
-                                            label: locale.t(
-                                              'profileForm.website',
-                                            ),
-                                            child: TextFormField(
-                                              controller:
-                                                  _salonWebsiteController,
-                                              decoration: _inputDecoration(
-                                                hint: 'https://',
-                                              ),
-                                              keyboardType: TextInputType.url,
-                                            ),
-                                          ),
-                                          const SizedBox(height: 16),
-                                          _labeledField(
-                                            label: locale.t(
-                                              'profileForm.instagram',
-                                            ),
-                                            child: TextFormField(
-                                              controller:
-                                                  _salonInstagramController,
-                                              decoration: _inputDecoration(
-                                                hint: '@username',
-                                              ),
-                                            ),
-                                          ),
                                         ],
                                       ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                        const SizedBox(height: 24),
-
-                        Text(
-                          locale.t('profileForm.accountSettings'),
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w600,
-                            color: AppColors.textSecondary,
-                          ),
-                        ),
-                        const SizedBox(height: 12),
-
-                        _SectionCard(
-                          title: locale.t('profileForm.personalData'),
-                          child: Form(
-                            key: _profileFormKey,
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.stretch,
-                              children: [
-                                TextFormField(
-                                  controller: _nameController,
-                                  decoration: InputDecoration(
-                                    labelText: locale.t('profileForm.name'),
-                                    hintText: locale.t('profileForm.enterName'),
-                                    border: const OutlineInputBorder(),
-                                  ),
-                                  textCapitalization: TextCapitalization.words,
-                                ),
-                                const SizedBox(height: 16),
-                                TextFormField(
-                                  key: ValueKey('email_${user.email}'),
-                                  initialValue: user.email,
-                                  readOnly: true,
-                                  decoration: InputDecoration(
-                                    labelText: locale.t('profileForm.email'),
-                                    border: const OutlineInputBorder(),
-                                    filled: true,
-                                    fillColor: AppColors.backgroundTertiary,
-                                  ),
-                                ),
-                                const SizedBox(height: 8),
-                                Text(
-                                  locale.t('profileForm.emailReadOnlyHint'),
-                                  style: TextStyle(
-                                    fontSize: 12,
-                                    color: AppColors.textSecondary,
-                                  ),
-                                ),
-                                const SizedBox(height: 16),
-                                TextFormField(
-                                  controller: _phoneController,
-                                  decoration: InputDecoration(
-                                    labelText: locale.t('profileForm.phone'),
-                                    hintText: locale.t(
-                                      'profileForm.enterPhone',
-                                    ),
-                                    border: const OutlineInputBorder(),
-                                  ),
-                                  keyboardType: TextInputType.phone,
-                                ),
-                                const SizedBox(height: 20),
-                                SizedBox(
-                                  height: 44,
-                                  child: FilledButton(
-                                    onPressed: _isSavingProfile
-                                        ? null
-                                        : _saveProfile,
-                                    style: FilledButton.styleFrom(
-                                      backgroundColor: AppColors.primary500,
-                                    ),
-                                    child: _isSavingProfile
-                                        ? const SizedBox(
-                                            height: 22,
-                                            width: 22,
-                                            child: CircularProgressIndicator(
-                                              strokeWidth: 2,
-                                              color: Colors.white,
+                                      if (_photosProcessing &&
+                                          _photoProgressText != null) ...[
+                                        const SizedBox(height: 10),
+                                        Row(
+                                          children: [
+                                            const SizedBox(
+                                              width: 16,
+                                              height: 16,
+                                              child: CircularProgressIndicator(
+                                                strokeWidth: 2,
+                                              ),
                                             ),
-                                          )
-                                        : Text(locale.t('common.save')),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                        const SizedBox(height: 24),
-
-                        _SectionCard(
-                          title: locale.t('profileForm.security'),
-                          child: Form(
-                            key: _passwordFormKey,
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.stretch,
-                              children: [
-                                TextFormField(
-                                  controller: _newPasswordController,
-                                  obscureText: true,
-                                  decoration: InputDecoration(
-                                    labelText: locale.t(
-                                      'profileForm.newPassword',
-                                    ),
-                                    hintText: locale.t(
-                                      'profileForm.passwordMin8',
-                                    ),
-                                    border: const OutlineInputBorder(),
-                                  ),
-                                  validator: (v) {
-                                    if (v != null &&
-                                        v.isNotEmpty &&
-                                        v.length < 8) {
-                                      return locale.t(
-                                        'profileForm.passwordMin8',
-                                      );
-                                    }
-                                    return null;
-                                  },
-                                ),
-                                const SizedBox(height: 16),
-                                TextFormField(
-                                  controller: _confirmPasswordController,
-                                  obscureText: true,
-                                  decoration: InputDecoration(
-                                    labelText: locale.t(
-                                      'profileForm.confirmPassword',
-                                    ),
-                                    border: const OutlineInputBorder(),
-                                  ),
-                                  validator: (v) {
-                                    if (_newPasswordController
-                                            .text
-                                            .isNotEmpty &&
-                                        v != _newPasswordController.text) {
-                                      return locale.t(
-                                        'profileForm.passwordsDontMatch',
-                                      );
-                                    }
-                                    return null;
-                                  },
-                                ),
-                                const SizedBox(height: 20),
-                                SizedBox(
-                                  height: 44,
-                                  child: FilledButton(
-                                    onPressed: _isSavingPassword
-                                        ? null
-                                        : _changePassword,
-                                    style: FilledButton.styleFrom(
-                                      backgroundColor: AppColors.primary500,
-                                    ),
-                                    child: _isSavingPassword
-                                        ? const SizedBox(
-                                            height: 22,
-                                            width: 22,
-                                            child: CircularProgressIndicator(
-                                              strokeWidth: 2,
-                                              color: Colors.white,
+                                            const SizedBox(width: 8),
+                                            Text(
+                                              _photoProgressText!,
+                                              style: const TextStyle(
+                                                color: AppColors.textSecondary,
+                                                fontSize: 13,
+                                              ),
                                             ),
-                                          )
-                                        : Text(
-                                            locale.t(
-                                              'profileForm.changePassword',
+                                          ],
+                                        ),
+                                      ],
+                                    ],
+                                  ),
+                                ),
+                                const SizedBox(height: 24),
+                                _SectionCard(
+                                  title: locale.t('profileForm.contactInfo'),
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.stretch,
+                                    children: [
+                                      _labeledField(
+                                        label: locale.t(
+                                          'profileForm.salonPhone',
+                                        ),
+                                        child: TextFormField(
+                                          controller: _salonPhoneController,
+                                          decoration: _inputDecoration(
+                                            hint: locale.t(
+                                              'profileForm.enterPhone',
                                             ),
                                           ),
+                                          keyboardType: TextInputType.phone,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 16),
+                                      _labeledField(
+                                        label: locale.t(
+                                          'profileForm.salonEmail',
+                                        ),
+                                        child: TextFormField(
+                                          controller: _salonEmailController,
+                                          decoration: _inputDecoration(
+                                            hint: locale.t(
+                                              'profileForm.enterEmail',
+                                            ),
+                                          ),
+                                          keyboardType:
+                                              TextInputType.emailAddress,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 16),
+                                      _labeledField(
+                                        label: 'Facebook',
+                                        child: TextFormField(
+                                          controller: _salonFacebookController,
+                                          decoration: _inputDecoration(
+                                            hint: 'https://facebook.com/...',
+                                          ),
+                                          keyboardType: TextInputType.url,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 16),
+                                      _labeledField(
+                                        label: locale.t(
+                                          'profileForm.instagram',
+                                        ),
+                                        child: TextFormField(
+                                          controller: _salonInstagramController,
+                                          decoration: _inputDecoration(
+                                            hint: '@username',
+                                          ),
+                                        ),
+                                      ),
+                                    ],
                                   ),
                                 ),
                               ],
                             ),
                           ),
-                        ),
-                        const SizedBox(height: 24),
-
-                        _SectionCard(
-                          title: locale.t('profileForm.dangerZone'),
-                          titleColor: AppColors.error600,
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.stretch,
-                            children: [
-                              Text(
-                                locale.t('profileForm.deleteWarning'),
-                                style: TextStyle(
-                                  fontSize: 14,
-                                  color: AppColors.textSecondary,
-                                ),
-                              ),
-                              const SizedBox(height: 16),
-                              OutlinedButton.icon(
-                                onPressed: _showDeleteAccountDialog,
-                                icon: const Icon(
-                                  Icons.delete_forever,
-                                  size: 20,
-                                ),
-                                label: Text(
-                                  locale.t('profileForm.deleteAccount'),
-                                ),
-                                style: OutlinedButton.styleFrom(
-                                  foregroundColor: AppColors.error600,
-                                  side: const BorderSide(
-                                    color: AppColors.error600,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        const SizedBox(height: 24),
-
-                        OutlinedButton.icon(
-                          onPressed: () => auth.logout(),
-                          icon: const Icon(Icons.logout),
-                          label: Text(locale.t('profileForm.logout')),
-                          style: OutlinedButton.styleFrom(
-                            foregroundColor: AppColors.primary500,
-                            side: const BorderSide(color: AppColors.primary500),
-                            padding: const EdgeInsets.symmetric(vertical: 14),
-                          ),
-                        ),
-                      ],
-                    ),
+                    const SizedBox(height: 24),
+                    ],
                   ),
                 ),
+              ),
+            ),
+          ),
         );
       },
     );
   }
 }
 
+class _StudioPhotoTile extends StatelessWidget {
+  const _StudioPhotoTile({required this.photo, required this.onRemove});
+
+  final String photo;
+  final VoidCallback onRemove;
+
+  @override
+  Widget build(BuildContext context) {
+    const tileSize = 96.0;
+    return Stack(
+      children: [
+        ClipRRect(
+          borderRadius: BorderRadius.circular(10),
+          child: Container(
+            width: tileSize,
+            height: tileSize,
+            color: AppColors.backgroundSecondary,
+            child: Image.network(
+              photo,
+              fit: BoxFit.cover,
+              errorBuilder: (_, __, ___) => const Icon(
+                Icons.broken_image_outlined,
+                color: AppColors.textSecondary,
+              ),
+            ),
+          ),
+        ),
+        Positioned(
+          top: 4,
+          right: 4,
+          child: Material(
+            color: Colors.black54,
+            shape: const CircleBorder(),
+            child: InkWell(
+              customBorder: const CircleBorder(),
+              onTap: onRemove,
+              child: const Padding(
+                padding: EdgeInsets.all(4),
+                child: Icon(Icons.close, size: 14, color: Colors.white),
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _AddStudioPhotoTile extends StatelessWidget {
+  const _AddStudioPhotoTile({required this.loading, required this.onTap});
+
+  final bool loading;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    const tileSize = 96.0;
+    return InkWell(
+      onTap: loading ? null : onTap,
+      borderRadius: BorderRadius.circular(10),
+      child: Container(
+        width: tileSize,
+        height: tileSize,
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(
+            color: AppColors.borderPrimary,
+            style: BorderStyle.solid,
+          ),
+          color: AppColors.backgroundPrimary,
+        ),
+        child: Center(
+          child: loading
+              ? const SizedBox(
+                  width: 20,
+                  height: 20,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                )
+              : const Icon(Icons.add_a_photo_outlined),
+        ),
+      ),
+    );
+  }
+}
+
 class _SectionCard extends StatelessWidget {
-  const _SectionCard({
-    required this.title,
-    required this.child,
-    this.titleColor,
-  });
+  const _SectionCard({required this.title, required this.child});
 
   final String title;
   final Widget child;
-  final Color? titleColor;
 
   @override
   Widget build(BuildContext context) {
@@ -901,7 +851,7 @@ class _SectionCard extends StatelessWidget {
               style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.w700,
-                color: titleColor ?? AppColors.textPrimary,
+                color: AppColors.textPrimary,
               ),
             ),
             const SizedBox(height: 16),

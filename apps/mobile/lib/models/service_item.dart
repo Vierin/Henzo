@@ -1,4 +1,4 @@
-/// Услуга салона для экрана «Сервисы».
+/// Тренировка студии для экрана «Сервисы» (legacy имя класса ServiceItem).
 class ServiceItem {
   final String id;
   final String name;
@@ -9,10 +9,12 @@ class ServiceItem {
   final double? price;
   final int? duration;
   final String? salonId;
-  /// Название категории (из service_categories) для тега.
+  /// Id категории тренировки (канонично).
+  final int? trainingCategoryId;
+  /// @deprecated см. trainingCategoryId
+  final int? serviceCategoryId;
+  /// Название категории для тега.
   final String? categoryName;
-  /// Название группы (из serviceGroup) для тега.
-  final String? groupName;
 
   ServiceItem({
     required this.id,
@@ -24,8 +26,9 @@ class ServiceItem {
     this.price,
     this.duration,
     this.salonId,
+    this.trainingCategoryId,
+    this.serviceCategoryId,
     this.categoryName,
-    this.groupName,
   });
 
   String get displayName => name;
@@ -45,12 +48,20 @@ class ServiceItem {
     return null;
   }
 
-  /// Теги для отображения (категория и группа как пилюли).
   List<String> get tagNames {
     final list = <String>[];
     if (categoryName != null && categoryName!.isNotEmpty) list.add(categoryName!);
-    if (groupName != null && groupName!.isNotEmpty && groupName != categoryName) list.add(groupName!);
     return list;
+  }
+
+  static String? _categoryLabelFromMap(Map<dynamic, dynamic> m) {
+    final nameRu = m['name_ru'] ?? m['nameRu'];
+    final nameEn = m['name_en'] ?? m['nameEn'];
+    final nameVn = m['name_vn'] ?? m['nameVn'];
+    if (nameRu is String && nameRu.isNotEmpty) return nameRu;
+    if (nameEn is String && nameEn.isNotEmpty) return nameEn;
+    if (nameVn is String && nameVn.isNotEmpty) return nameVn;
+    return null;
   }
 
   factory ServiceItem.fromJson(Map<String, dynamic> json) {
@@ -61,16 +72,15 @@ class ServiceItem {
         (json['nameVi'] as String?) ??
         (json['nameRu'] as String?) ??
         '';
+
+    final trainingCatId =
+        _parseInt(json['trainingCategoryId']) ?? _parseInt(json['serviceCategoryId']);
+
     String? categoryName;
-    final cat = json['service_categories'];
-    if (cat is Map) {
-      categoryName = (cat['name_ru'] as String?) ?? (cat['name_en'] as String?) ?? (cat['name_vn'] as String?);
-    }
-    String? groupName;
-    final gr = json['serviceGroup'];
-    if (gr is Map) {
-      groupName = (gr['nameRu'] as String?) ?? (gr['name'] as String?) ?? (gr['nameEn'] as String?) ?? (gr['nameVi'] as String?);
-    }
+    dynamic cat = json['trainingCategory'];
+    if (cat is! Map) cat = json['service_categories'];
+    if (cat is Map) categoryName = _categoryLabelFromMap(cat);
+
     return ServiceItem(
       id: id,
       name: name,
@@ -80,9 +90,10 @@ class ServiceItem {
       nameRu: json['nameRu'] as String?,
       price: _parseDouble(json['price']),
       duration: _parseInt(json['duration']),
-      salonId: json['salonId'] as String?,
+      salonId: (json['studioId'] ?? json['salonId']) as String?,
+      trainingCategoryId: trainingCatId,
+      serviceCategoryId: _parseInt(json['serviceCategoryId']) ?? trainingCatId,
       categoryName: categoryName,
-      groupName: groupName,
     );
   }
 
@@ -96,9 +107,10 @@ class ServiceItem {
       'nameRu': nameRu,
       'price': price,
       'duration': duration,
-      'salonId': salonId,
+      'studioId': salonId,
+      'trainingCategoryId': trainingCategoryId,
+      'serviceCategoryId': serviceCategoryId,
       'categoryName': categoryName,
-      'groupName': groupName,
     };
   }
 }

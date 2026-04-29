@@ -69,5 +69,11 @@
 	"staffSelected": "nhân viên được chọn",
 	"staffHelp": "Chọn nhân viên có thể thực hiện dịch vụ này. Nếu không chọn ai, dịch vụ sẽ có sẵn cho tất cả nhân viên.",
 	"selectStaff": "Chọn nhân viên",
-	"searchStaff": "Tìm kiếm nhân viên..."
+	"searchStaff": "Tìm kiếm nhân viên...",
+	"createdSuccessfully": "Tạo dịch vụ thành công!",
+	"updatedSuccessfully": "Cập nhật dịch vụ thành công!",
+	"deletedSuccessfully": "Xóa dịch vụ thành công!",
+	"failedToCreate": "Không thể tạo dịch vụ",
+	"failedToUpdate": "Không thể cập nhật dịch vụ",
+	"failedToDelete": "Không thể xóa dịch vụ"
 }

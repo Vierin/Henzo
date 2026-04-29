@@ -74,37 +74,6 @@ export class EnvironmentVariables {
   @IsString()
   @IsOptional()
   MAPBOX_ACCESS_TOKEN?: string;
-
-  // Sentry (optional)
-  @IsString()
-  @IsOptional()
-  SENTRY_DSN?: string;
-
-  // Sentry dev mode (optional)
-  @IsString()
-  @IsOptional()
-  ENABLE_SENTRY_IN_DEV?: string;
-
-  // Stripe (optional; required for subscription checkout)
-  @IsString()
-  @IsOptional()
-  STRIPE_SECRET_KEY?: string;
-
-  @IsString()
-  @IsOptional()
-  STRIPE_MONTHLY_PRICE_ID?: string;
-
-  @IsString()
-  @IsOptional()
-  STRIPE_ANNUAL_PRICE_ID?: string;
-
-  @IsString()
-  @IsOptional()
-  STRIPE_YEARLY_PRICE_ID?: string;
-
-  @IsString()
-  @IsOptional()
-  STRIPE_WEBHOOK_SECRET?: string;
 }
 
 export function validate(config: Record<string, unknown>) {

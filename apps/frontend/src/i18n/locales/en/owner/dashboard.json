@@ -85,7 +85,7 @@
 	"clientsWith2Visits": "{count} with 2 visits",
 	"clients": "Clients",
 	"trialPromoTitle": "Your trial is ending soon",
-	"trialPromoBody": "Your trial ends on {{date}}. Subscribe now and get {{percent}}% off the annual plan.",
+	"trialPromoBody": "Your trial ends on {{date}}. To continue using the platform, please subscribe.",
 	"trialPromoAnnualPrice": "Annual plan from {{price}}",
 	"trialPromoCtaAnnual": "Subscribe yearly & save",
 	"trialPromoCtaPlans": "All plans",

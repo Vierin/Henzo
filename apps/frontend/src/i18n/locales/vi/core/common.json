@@ -25,5 +25,7 @@
 	"select": "Chọn",
 	"locationOutsideVietnam": "Hiện tại chúng tôi chỉ làm việc với các salon tại Việt Nam. Vui lòng chọn một địa điểm tại Việt Nam.",
 	"noSalonsInArea": "Hiện tại chúng tôi chưa có salon nào trong khu vực của bạn trong bán kính 50km. Vui lòng thử chọn một địa điểm khác.",
-	"photoComingSoon": "Ảnh salon sắp có"
+	"photoComingSoon": "Ảnh salon sắp có",
+	"photoSizeMustBeLessThan": "Kích thước ảnh phải nhỏ hơn",
+	"photoUploadedSuccessfully": "Tải ảnh lên thành công!"
 }

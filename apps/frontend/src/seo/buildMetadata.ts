@@ -30,7 +30,7 @@ function normalizePathAfterLocale(pathAfterLocale: string): string {
 		: `/${pathAfterLocale}`;
 }
 
-/** Full pathname including locale, e.g. `/en/salons` or `/vi`. */
+/** Full pathname including locale, e.g. `/en/studio/foo` or `/vi`. */
 export function localizedPath(
 	locale: Locale,
 	pathAfterLocale: string
@@ -105,7 +105,7 @@ export function buildStaticPageMetadata(
 }
 
 export type DynamicPageMetaInput = {
-	/** Path after locale, e.g. `/salon/my-salon` or `/category/hair`. */
+	/** Path after locale, e.g. `/studio/my-studio` or `/category/hair`. */
 	pathAfterLocale: string;
 	title: string;
 	description: string;

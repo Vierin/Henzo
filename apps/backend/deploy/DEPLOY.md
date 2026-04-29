@@ -1,266 +1,78 @@
-# Деплой Henzo Backend на DigitalOcean с Docker
+# Backend Deploy Runbook (Docker Compose)
 
-## Быстрый старт
+This is the current deployment model for `apps/backend`:
 
-### 1. Первоначальная настройка сервера (один раз)
+- one DigitalOcean server;
+- two backend services in `docker compose`: `backend_staging` and `backend`;
+- production is deployed by promoting the already-validated staging image digest (no rebuild on prod deploy).
 
-```bash
-# Подключение к серверу
-ssh root@165.22.101.13
+## Required server layout
 
-# Запуск скрипта настройки
-curl -fsSL https://raw.githubusercontent.com/YOUR_REPO/main/apps/backend/deploy/setup-server.sh | bash
-```
+- repo cloned at `/var/www/henzo`
+- backend path: `/var/www/henzo/apps/backend`
+- env files:
+  - `.env.staging` for `backend_staging`
+  - `.env.production` for `backend`
 
-Или вручную:
+## Unified deploy entrypoint
 
-```bash
-ssh root@165.22.101.13
-cd /tmp
-# Скопируйте setup-server.sh на сервер
-bash setup-server.sh
-```
-
-### 2. Клонирование репозитория
+Use one script for both environments:
 
 ```bash
-cd /var/www/henzo
-git clone YOUR_REPO_URL .
-
-# Или если репозиторий приватный
-git clone https://YOUR_TOKEN@github.com/YOUR_USERNAME/henzo.git .
+bash deploy/deploy-compose-service.sh --env=staging|production --image=<image-ref> --migrate=true|false
 ```
 
-### 3. Настройка окружения
+Examples:
 
 ```bash
-cd /var/www/henzo/apps/backend
+# staging by tag
+bash deploy/deploy-compose-service.sh --env=staging --image=ghcr.io/<org>/<repo>/backend:staging --migrate=true
 
-# Создайте .env.production
-cp deploy/.env.production.example .env.production
-nano .env.production
+# production by digest
+bash deploy/deploy-compose-service.sh --env=production --image=ghcr.io/<org>/<repo>/backend@sha256:<digest> --migrate=true
 ```
 
-Заполните все необходимые переменные:
+## Promotion flow (staging -> prod)
 
-- `DATABASE_URL` - из Supabase (Connection pooling)
-- `DIRECT_URL` - из Supabase (Direct connection)
-- `SUPABASE_URL` и `SUPABASE_KEY`
-- `JWT_SECRET` - генерируйте: `openssl rand -base64 32`
-- `FRONTEND_URL` - ваш домен на Vercel
-- Остальные ключи API
+1. `staging` workflow builds and pushes backend image.
+2. Staging deploy uses exact image digest.
+3. After QA signoff, promote to prod:
+   - resolve digest of staging image;
+   - deploy `backend` with that digest;
+   - run `prisma migrate status` and `prisma migrate deploy`;
+   - run health check.
 
-### 4. Первый деплой
+## Rollback
+
+Rollback does not rebuild code.
+Redeploy previous known-good digest:
 
 ```bash
-cd /var/www/henzo/apps/backend
-bash deploy/deploy-docker.sh
+bash deploy/deploy-compose-service.sh --env=production --image=ghcr.io/<org>/<repo>/backend@sha256:<previous_digest> --migrate=false
 ```
 
-Скрипт спросит:
+## Migration failure runbook
 
-- Удалить старые образы? (y/n) - при первом деплое можно n
-- Применить миграции? (y/n) - при первом деплое обязательно y
+If migrations fail in deploy:
 
-### 5. Проверка
+1. stop rollout (do not continue to restart unrelated services);
+2. inspect migration status/logs:
 
 ```bash
-# Статус контейнеров
-docker-compose ps
-
-# Логи
-docker-compose logs -f
-
-# Health check
-curl http://165.22.101.13/health
-
-# Или с другой машины
-curl http://165.22.101.13/health
+docker compose run --rm backend npx prisma migrate status
+docker compose logs backend
 ```
 
-## Обновление кода
+3. fix migration in code and redeploy from staging flow;
+4. avoid manual schema drift in production database.
 
-### Обычное обновление (с пересборкой)
+## Troubleshooting quick commands
 
 ```bash
-ssh root@165.22.101.13
-cd /var/www/henzo/apps/backend
-bash deploy/quick-update.sh
+docker compose ps
+docker compose logs -f backend
+docker compose logs -f backend_staging
+docker compose logs -f nginx
+curl -fsS http://127.0.0.1/health
+curl -fsS -H "Host: api-staging.henzo.app" http://127.0.0.1/health
 ```
-
-### Полный деплой (с миграциями)
-
-```bash
-ssh root@165.22.101.13
-cd /var/www/henzo/apps/backend
-bash deploy/deploy-docker.sh
-```
-
-## Полезные команды
-
-```bash
-# Логи всех сервисов
-docker-compose logs -f
-
-# Логи только backend
-docker-compose logs -f backend
-
-# Логи только nginx
-docker-compose logs -f nginx
-
-# Статус контейнеров
-docker-compose ps
-
-# Перезапуск сервиса
-docker-compose restart backend
-
-# Остановка всех сервисов
-docker-compose down
-
-# Запуск всех сервисов
-docker-compose up -d
-
-# Выполнить команду в контейнере
-docker-compose exec backend sh
-
-# Применить миграции вручную
-docker-compose run --rm backend npx prisma migrate deploy
-
-# Посмотреть использование ресурсов
-docker stats
-```
-
-## Масштабирование
-
-### Увеличить количество инстансов backend
-
-```bash
-# Редактируйте docker-compose.yml
-nano docker-compose.yml
-```
-
-Добавьте:
-
-```yaml
-services:
-  backend:
-    deploy:
-      replicas: 3 # количество инстансов
-```
-
-Или запустите:
-
-```bash
-docker-compose up -d --scale backend=3
-```
-
-### Мониторинг
-
-Установка мониторинга (опционально):
-
-```bash
-# Установить ctop для мониторинга контейнеров
-docker run --rm -ti \
-  --name=ctop \
-  --volume /var/run/docker.sock:/var/run/docker.sock:ro \
-  quay.io/vektorlab/ctop:latest
-```
-
-## SSL/HTTPS (Опционально)
-
-### Настройка домена
-
-1. Укажите A-запись вашего домена на IP: 165.22.101.13
-
-2. Установите Certbot:
-
-```bash
-apt install -y certbot
-
-# Получите сертификат
-certbot certonly --standalone -d api.yourdomain.com
-
-# Сертификаты будут в /etc/letsencrypt/live/api.yourdomain.com/
-```
-
-3. Обновите docker-compose.yml:
-
-```yaml
-nginx:
-  volumes:
-    - /etc/letsencrypt:/etc/nginx/ssl:ro
-```
-
-4. Раскомментируйте HTTPS блок в deploy/nginx.conf
-
-5. Перезапустите:
-
-```bash
-docker-compose restart nginx
-```
-
-## Бэкапы
-
-### База данных
-
-База на Supabase - бэкапы настраиваются там автоматически.
-
-### Код и конфигурация
-
-```bash
-# Создать бэкап .env
-cp .env.production .env.production.backup.$(date +%Y%m%d)
-```
-
-## Откат на предыдущую версию
-
-```bash
-cd /var/www/henzo
-git log --oneline  # найдите нужный коммит
-git checkout COMMIT_HASH
-
-cd apps/backend
-bash deploy/quick-update.sh
-```
-
-## Troubleshooting
-
-### Backend не запускается
-
-```bash
-# Смотрим логи
-docker-compose logs backend
-
-# Проверяем .env файл
-docker-compose exec backend env | grep DATABASE_URL
-
-# Перезапускаем с чистого листа
-docker-compose down
-docker-compose up -d
-```
-
-### Нет подключения к БД
-
-```bash
-# Проверьте DATABASE_URL в .env.production
-# Убедитесь что IP сервера добавлен в allowed connections Supabase
-```
-
-### 502 Bad Gateway
-
-```bash
-# Проверьте что backend запущен
-docker-compose ps
-
-# Проверьте логи nginx
-docker-compose logs nginx
-
-# Проверьте health endpoint
-docker-compose exec backend curl http://localhost:3001/health
-```
-
-## Контакты и поддержка
-
-IP сервера: 165.22.101.13
-Backend URL: http://165.22.101.13
-Health check: http://165.22.101.13/health

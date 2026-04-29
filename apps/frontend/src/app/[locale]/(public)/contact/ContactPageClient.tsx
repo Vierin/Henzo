@@ -5,11 +5,9 @@ import toast from 'react-hot-toast';
 import FAQSection from '@/components/FAQSection';
 import { useTranslation } from '@/contexts/LanguageContext';
 import { apiClient } from '@/lib/api-client';
-import { useErrorHandler } from '@/hooks/useErrorHandler';
 
 export default function ContactPageClient() {
 	const t = useTranslation();
-	const { handleError } = useErrorHandler();
 	const [formData, setFormData] = useState({
 		name: '',
 		email: '',
@@ -44,7 +42,7 @@ export default function ContactPageClient() {
 					.join('; ');
 				toast.error(errorMessages);
 			} else {
-				handleError(error, t.contact.errorMessage);
+				toast.error(t.contact.errorMessage);
 			}
 		} finally {
 			setIsSubmitting(false);

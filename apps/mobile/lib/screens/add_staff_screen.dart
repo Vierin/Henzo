@@ -49,13 +49,17 @@ class _AddStaffScreenState extends State<AddStaffScreen> {
       return;
     }
     try {
-      final list = await ServicesApiService.getBySalon(token, widget.salonId);
-      if (mounted) setState(() {
-        _services = list;
-        _loadingServices = false;
-      });
+      final list = await ServicesApiService.getByStudio(token, widget.salonId);
+      if (mounted) {
+        setState(() {
+          _services = list;
+          _loadingServices = false;
+        });
+      }
     } catch (_) {
-      if (mounted) setState(() => _loadingServices = false);
+      if (mounted) {
+        setState(() => _loadingServices = false);
+      }
     }
   }
 

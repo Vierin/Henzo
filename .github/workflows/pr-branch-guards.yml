@@ -1,0 +1,42 @@
+name: PR Branch Guards
+
+on:
+  pull_request:
+    branches:
+      - staging
+      - main
+
+jobs:
+  enforce-flow:
+    name: Enforce staging/main PR flow
+    runs-on: ubuntu-latest
+    steps:
+      - name: Validate source branch for target
+        run: |
+          BASE="${{ github.base_ref }}"
+          HEAD="${{ github.head_ref }}"
+          echo "PR flow check: ${HEAD} -> ${BASE}"
+
+          if [ "$BASE" = "main" ]; then
+            case "$HEAD" in
+              staging|hotfix/*)
+                echo "✅ Allowed source branch for main"
+                ;;
+              *)
+                echo "❌ main accepts PRs only from staging or hotfix/*"
+                exit 1
+                ;;
+            esac
+          fi
+
+          if [ "$BASE" = "staging" ]; then
+            case "$HEAD" in
+              feature/*|fix/*|hotfix/*|chore/*|refactor/*|staging)
+                echo "✅ Allowed source branch for staging"
+                ;;
+              *)
+                echo "❌ staging expects feature/fix/hotfix/chore/refactor branches"
+                exit 1
+                ;;
+            esac
+          fi

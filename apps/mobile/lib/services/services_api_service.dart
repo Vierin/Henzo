@@ -2,16 +2,45 @@ import 'package:flutter/foundation.dart';
 
 import 'api_client.dart';
 import '../models/service_item.dart';
+import '../models/training_category_option.dart';
 
 class ServicesApiService {
-  /// GET /services?salonId= — список услуг салона.
-  static Future<List<ServiceItem>> getBySalon(
+  static Future<Map<String, dynamic>?> updateTrainingSchedule(
     String accessToken,
-    String salonId,
+    String id, {
+    required List<Map<String, dynamic>> slots,
+    required DateTime effectiveFrom,
+  }) async {
+    try {
+      final map =
+          await ApiClient.patch(
+                '/trainings/$id/schedule',
+                accessToken,
+                body: {
+                  'slots': slots,
+                  'effectiveFrom': effectiveFrom.toUtc().toIso8601String(),
+                },
+              )
+              as Map<String, dynamic>?;
+      if (map == null) return null;
+      final data = map['data'];
+      return data is Map<String, dynamic>
+          ? Map<String, dynamic>.from(data)
+          : map;
+    } on ApiException catch (e) {
+      if (kDebugMode) debugPrint('[ServicesAPI] updateTrainingSchedule: $e');
+      return null;
+    }
+  }
+
+  /// GET /trainings?studioId= — список тренировок студии.
+  static Future<List<ServiceItem>> getByStudio(
+    String accessToken,
+    String studioId,
   ) async {
     try {
       final body = await ApiClient.get(
-        '/services?salonId=${Uri.encodeComponent(salonId)}',
+        '/trainings?studioId=${Uri.encodeComponent(studioId)}',
         accessToken,
       );
       final list = body is List
@@ -31,31 +60,66 @@ class ServicesApiService {
       }
       return result;
     } on ApiException catch (e) {
-      if (kDebugMode) debugPrint('[ServicesAPI] getBySalon: $e');
+      if (kDebugMode) debugPrint('[ServicesAPI] getByStudio: $e');
       return [];
     }
   }
 
-  /// POST /services — создать услугу.
+  /// GET /trainings/categories — справочник категорий.
+  static Future<List<TrainingCategoryOption>> getTrainingCategories(
+    String accessToken,
+  ) async {
+    try {
+      final body = await ApiClient.get('/trainings/categories', accessToken);
+      final raw = body is List
+          ? body
+          : (body is Map && body['data'] is List
+                ? body['data'] as List
+                : <dynamic>[]);
+      final out = <TrainingCategoryOption>[];
+      for (final item in raw) {
+        if (item is! Map) continue;
+        try {
+          out.add(
+            TrainingCategoryOption.fromJson(Map<String, dynamic>.from(item)),
+          );
+        } catch (e) {
+          if (kDebugMode) {
+            debugPrint('[ServicesAPI] category parse: $e');
+          }
+        }
+      }
+      out.sort(
+        (a, b) => a.nameEn.toLowerCase().compareTo(b.nameEn.toLowerCase()),
+      );
+      return out;
+    } on ApiException catch (e) {
+      if (kDebugMode) debugPrint('[ServicesAPI] getTrainingCategories: $e');
+      return [];
+    }
+  }
+
+  /// POST /trainings — создать тренировку.
   static Future<ServiceItem?> create(
     String accessToken, {
-    required String salonId,
+    required String studioId,
     required String name,
     required double price,
     required int duration,
+    int? trainingCategoryId,
   }) async {
     try {
+      final payload = <String, dynamic>{
+        'studioId': studioId,
+        'name': name,
+        'price': price,
+        'duration': duration,
+      };
+      if (trainingCategoryId != null) {
+        payload['trainingCategoryId'] = trainingCategoryId;
+      }
       final map =
-          await ApiClient.post(
-                '/services',
-                accessToken,
-                body: {
-                  'salonId': salonId,
-                  'name': name,
-                  'price': price,
-                  'duration': duration,
-                },
-              )
+          await ApiClient.post('/trainings', accessToken, body: payload)
               as Map<String, dynamic>?;
       return map != null ? ServiceItem.fromJson(map) : null;
     } on ApiException catch (e) {
@@ -64,7 +128,7 @@ class ServicesApiService {
     }
   }
 
-  /// PUT /services/:id — обновить услугу.
+  /// PUT /trainings/:id — обновить тренировку.
   static Future<ServiceItem?> update(
     String accessToken,
     String id, {
@@ -72,6 +136,7 @@ class ServicesApiService {
     String? description,
     double? price,
     int? duration,
+    int? trainingCategoryId,
   }) async {
     try {
       final data = <String, dynamic>{};
@@ -79,9 +144,12 @@ class ServicesApiService {
       if (description != null) data['description'] = description;
       if (price != null) data['price'] = price;
       if (duration != null) data['duration'] = duration;
+      if (trainingCategoryId != null) {
+        data['trainingCategoryId'] = trainingCategoryId;
+      }
       final map =
           await ApiClient.put(
-                '/services/$id',
+                '/trainings/$id',
                 accessToken,
                 body: data.isEmpty ? null : data,
               )
@@ -93,10 +161,10 @@ class ServicesApiService {
     }
   }
 
-  /// DELETE /services/:id — удалить услугу.
+  /// DELETE /trainings/:id — удалить тренировку.
   static Future<bool> delete(String accessToken, String id) async {
     try {
-      await ApiClient.delete('/services/$id', accessToken);
+      await ApiClient.delete('/trainings/$id', accessToken);
       return true;
     } on ApiException catch (e) {
       if (kDebugMode) debugPrint('[ServicesAPI] delete: $e');

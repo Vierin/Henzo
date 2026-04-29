@@ -15,7 +15,7 @@ async function checkStoragePolicies() {
   try {
     console.log('Checking Supabase Storage policies...');
 
-    // Check if salon-files bucket exists
+    // Check if studio-files bucket exists
     const { data: buckets, error: listError } =
       await supabase.storage.listBuckets();
 
@@ -23,20 +23,20 @@ async function checkStoragePolicies() {
       throw listError;
     }
 
-    const salonFilesBucket = buckets.find(
-      (bucket) => bucket.name === 'salon-files',
+    const studioFilesBucket = buckets.find(
+      (bucket) => bucket.name === 'studio-files',
     );
 
-    if (salonFilesBucket) {
-      console.log('✅ salon-files bucket exists');
+    if (studioFilesBucket) {
+      console.log('✅ studio-files bucket exists');
       console.log('Bucket details:', {
-        name: salonFilesBucket.name,
-        public: salonFilesBucket.public,
-        fileSizeLimit: salonFilesBucket.file_size_limit,
-        allowedMimeTypes: salonFilesBucket.allowed_mime_types,
+        name: studioFilesBucket.name,
+        public: studioFilesBucket.public,
+        fileSizeLimit: studioFilesBucket.file_size_limit,
+        allowedMimeTypes: studioFilesBucket.allowed_mime_types,
       });
     } else {
-      console.log('❌ salon-files bucket does not exist');
+      console.log('❌ studio-files bucket does not exist');
     }
 
     // Try to check RLS status

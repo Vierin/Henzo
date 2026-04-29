@@ -1,14 +1,10 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Inject } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { Prisma } from '@prisma/client';
-import { CacheService } from '../cache/cache.service';
 
 @Injectable()
 export class SearchService {
-  constructor(
-    private prisma: PrismaService,
-    private cacheService: CacheService,
-  ) {}
+  constructor(@Inject(PrismaService) private prisma: any) {}
 
   // Unified core suggestion (categories + tags collapsed to categories)
   async suggestCoreCategories(query: string, language: string, limit: number) {
@@ -49,7 +45,7 @@ export class SearchService {
             };
 
     // Search only categories (tags removed)
-    const categories = await this.prisma.service_categories.findMany({
+    const categories = await this.prisma.trainingCategory.findMany({
       where: catWhere,
       select: { id: true, name_en: true, name_vn: true, name_ru: true },
       take: limit,
@@ -228,7 +224,7 @@ export class SearchService {
                 ],
               };
 
-      const categories = await this.prisma.service_categories.findMany({
+      const categories = await this.prisma.trainingCategory.findMany({
         where: whereCondition,
         take: 30,
       });
@@ -241,7 +237,7 @@ export class SearchService {
 
       const services = await this.prisma.service.findMany({
         where: {
-          serviceCategoryId: {
+          trainingCategoryId: {
             in: categoryIds,
           },
         },
@@ -249,11 +245,13 @@ export class SearchService {
           id: true,
           name: true,
           description: true,
-          serviceCategoryId: true,
-          service_categories: {
+          studioId: true,
+          trainingCategoryId: true,
+          trainingCategory: {
             select: {
               name_en: true,
               name_vn: true,
+              name_ru: true,
             },
           },
         },
@@ -272,7 +270,7 @@ export class SearchService {
   removeDuplicateServices(services: any[]) {
     const seen = new Set();
     return services.filter((service) => {
-      const key = `${service.id}-${service.salonId}`;
+      const key = `${service.id}-${service.studioId}`;
       if (seen.has(key)) {
         return false;
       }
@@ -292,39 +290,36 @@ export class SearchService {
           score += 10;
         }
 
+        const cat = service.trainingCategory;
         // Бонус за совпадение в категории (с приоритетом по языку)
         if (language === 'vn') {
-          if (
-            service.service_categories?.name_vn
-              ?.toLowerCase()
-              .includes(query.toLowerCase())
-          ) {
+          if (cat?.name_vn?.toLowerCase().includes(query.toLowerCase())) {
             score += 12; // Высший приоритет для вьетнамского
           } else if (
-            service.service_categories?.name_en
-              ?.toLowerCase()
-              .includes(query.toLowerCase())
+            cat?.name_en?.toLowerCase().includes(query.toLowerCase())
           ) {
             score += 8; // Меньший приоритет для английского
           }
-        } else {
-          if (
-            service.service_categories?.name_en
-              ?.toLowerCase()
-              .includes(query.toLowerCase())
+        } else if (language === 'ru') {
+          if (cat?.name_ru?.toLowerCase().includes(query.toLowerCase())) {
+            score += 12;
+          } else if (
+            cat?.name_en?.toLowerCase().includes(query.toLowerCase())
           ) {
+            score += 8;
+          }
+        } else {
+          if (cat?.name_en?.toLowerCase().includes(query.toLowerCase())) {
             score += 12; // Высший приоритет для английского
           } else if (
-            service.service_categories?.name_vn
-              ?.toLowerCase()
-              .includes(query.toLowerCase())
+            cat?.name_vn?.toLowerCase().includes(query.toLowerCase())
           ) {
             score += 8; // Меньший приоритет для вьетнамского
           }
         }
 
         // Бонус за привязанную категорию
-        if (service.serviceCategoryId) {
+        if (service.trainingCategoryId) {
           score += 5;
         }
 
@@ -367,11 +362,13 @@ export class SearchService {
           id: true,
           name: true,
           description: true,
-          serviceCategoryId: true,
-          service_categories: {
+          studioId: true,
+          trainingCategoryId: true,
+          trainingCategory: {
             select: {
               name_en: true,
               name_vn: true,
+              name_ru: true,
             },
           },
         },
@@ -451,7 +448,7 @@ export class SearchService {
               ],
             };
 
-      const categories = await this.prisma.service_categories.findMany({
+      const categories = await this.prisma.trainingCategory.findMany({
         where: whereCondition,
         orderBy: language === 'vn' ? { name_vn: 'asc' } : { name_en: 'asc' },
         take: 10, // Limit to 10 suggestions
@@ -473,7 +470,7 @@ export class SearchService {
       // Получаем только категории, которые используются в салонах
       const usedCategoryIds = await this.getUsedCategoryIds();
 
-      const categories = await this.prisma.service_categories.findMany({
+      const categories = await this.prisma.trainingCategory.findMany({
         where: {
           id: {
             in: usedCategoryIds,
@@ -506,12 +503,12 @@ export class SearchService {
 
       // derive used categories from existing services, not from salons.categoryIds
       const distinct = await this.prisma.service.findMany({
-        where: { serviceCategoryId: { not: null } },
-        select: { serviceCategoryId: true },
-        distinct: ['serviceCategoryId'],
+        where: { trainingCategoryId: { not: null } },
+        select: { trainingCategoryId: true },
+        distinct: ['trainingCategoryId'],
       });
       const ids = distinct
-        .map((r) => r.serviceCategoryId)
+        .map((r) => r.trainingCategoryId)
         .filter((v): v is number => typeof v === 'number');
       this.usedCategoriesCache = { ids, at: now };
       return ids;
@@ -587,19 +584,6 @@ export class SearchService {
     try {
       const lang = language === 'vn' ? 'vn' : language === 'ru' ? 'ru' : 'en';
       const safeLimit = Math.min(Math.max(limit, 1), 20);
-      const cacheKey = `search:popular-recommended:v1:${lang}:${safeLimit}`;
-
-      const cached = await this.cacheService.get<
-        Array<{
-          id: string;
-          name: string;
-          type: 'recommended';
-          priority: number;
-        }>
-      >(cacheKey);
-      if (cached) {
-        return cached;
-      }
 
       const services = await this.prisma.recommendedService.findMany({
         orderBy: [{ priority: 'desc' }, { nameEn: 'asc' }],
@@ -618,8 +602,6 @@ export class SearchService {
         priority: service.priority,
       }));
 
-      // 24 hours: popular recommended services rarely change.
-      await this.cacheService.set(cacheKey, result, 24 * 60 * 60);
       return result;
     } catch (error) {
       console.error('❌ Error getting popular recommended services:', error);

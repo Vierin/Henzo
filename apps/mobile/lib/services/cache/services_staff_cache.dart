@@ -5,7 +5,7 @@ import '../../models/staff_member.dart';
 import '../services_api_service.dart';
 import '../staff_api_service.dart';
 
-/// In-memory cache for services and staff by salonId. Invalidated on create/update/delete.
+/// In-memory cache for services and staff by studioId. Invalidated on create/update/delete.
 class ServicesStaffCache extends ChangeNotifier {
   final Map<String, List<ServiceItem>> _servicesBySalon = {};
   final Map<String, List<StaffMember>> _staffBySalon = {};
@@ -20,7 +20,7 @@ class ServicesStaffCache extends ChangeNotifier {
     final cached = _servicesBySalon[salonId];
     if (cached != null) return cached;
     try {
-      final list = await ServicesApiService.getBySalon(accessToken, salonId);
+      final list = await ServicesApiService.getByStudio(accessToken, salonId);
       _servicesBySalon[salonId] = list;
       notifyListeners();
       return list;

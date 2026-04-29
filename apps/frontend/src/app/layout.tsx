@@ -4,8 +4,6 @@ import { Suspense } from 'react';
 import { Geist, Geist_Mono } from 'next/font/google';
 import './globals.css';
 import Toaster from '@/components/Toaster';
-import QueryProvider from '@/components/QueryProvider';
-import AuthProvider from '@/components/AuthProvider';
 import ConditionalFooter from '@/components/ConditionalFooter';
 import CookieBanner from '@/components/CookieBanner';
 import { LanguageProvider } from '@/contexts/LanguageContext';
@@ -77,20 +75,14 @@ export default function RootLayout({
 			>
 				<EnvValidator />
 				<LanguageProvider>
-					<QueryProvider>
-						<AuthProvider>
-							<div className="flex-1">
-								<Suspense
-									fallback={<LoadingFallback message="" fullScreen={true} />}
-								>
-									{children}
-								</Suspense>
-							</div>
-							<ConditionalFooter />
-							<CookieBanner />
-							<Toaster />
-						</AuthProvider>
-					</QueryProvider>
+					<div className="flex-1">
+						<Suspense fallback={<LoadingFallback message="" fullScreen={true} />}>
+							{children}
+						</Suspense>
+					</div>
+					<ConditionalFooter />
+					<CookieBanner />
+					<Toaster />
 				</LanguageProvider>
 				{/* Google Analytics */}
 				<Script

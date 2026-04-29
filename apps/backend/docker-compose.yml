@@ -2,9 +2,6 @@
 services:
   backend:
     image: ${BACKEND_IMAGE:-henzo-backend:local}
-    build:
-      context: .
-      dockerfile: Dockerfile
     container_name: henzo-backend
     restart: unless-stopped
     ports:
@@ -36,9 +33,6 @@ services:
 
   backend_staging:
     image: ${BACKEND_STAGING_IMAGE:-henzo-backend:staging}
-    build:
-      context: .
-      dockerfile: Dockerfile
     container_name: henzo-backend-staging
     restart: unless-stopped
     ports:

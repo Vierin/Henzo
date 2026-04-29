@@ -30,7 +30,13 @@ export class AuthController {
 
   @Post('send-business-magic-link')
   async sendBusinessMagicLink(
-    @Body() data: { email: string; name: string; password: string },
+    @Body()
+    data: {
+      email: string;
+      name: string;
+      password: string;
+      locale?: string;
+    },
   ) {
     try {
       this.logger.log(
@@ -40,6 +46,7 @@ export class AuthController {
         data.email,
         data.name,
         data.password,
+        data.locale,
       );
       this.logger.log('Business magic link sent');
       return result;
@@ -103,6 +110,40 @@ export class AuthController {
     }
   }
 
+  @Post('register-client/request-code')
+  async requestClientRegistrationCode(@Body() data: RegisterClientDto) {
+    try {
+      this.logger.log('Client registration OTP request');
+      return await this.authService.requestClientRegistrationCode(data);
+    } catch (error) {
+      this.logger.warn(
+        `Client registration OTP request failed: ${error instanceof Error ? error.message : String(error)}`,
+      );
+      throw new HttpException(
+        error.message || 'Failed to send verification code',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+  }
+
+  @Post('register-client/verify-code')
+  async verifyClientRegistrationCode(
+    @Body() data: { email: string; code: string },
+  ) {
+    try {
+      this.logger.log('Client registration OTP verify');
+      return await this.authService.verifyClientRegistrationCode(data);
+    } catch (error) {
+      this.logger.warn(
+        `Client registration OTP verify failed: ${error instanceof Error ? error.message : String(error)}`,
+      );
+      throw new HttpException(
+        error.message || 'Failed to verify code',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+  }
+
   @Post('login-client')
   async loginClient(@Body() data: { email: string; password: string }) {
     try {
@@ -139,12 +180,12 @@ export class AuthController {
   @Get('initialize')
   async initialize(
     @Headers('authorization') authHeader: string,
-    @Query('includeSalon') includeSalon?: string,
+    @Query('includeStudio') includeStudio?: string,
   ) {
     try {
       this.logger.log('Initialize request');
       const result = await this.authService.initializeUser(authHeader, {
-        includeSalon: includeSalon === 'true',
+        includeStudio: includeStudio === 'true',
       });
       this.logger.log(`Initialize ok id=${result.user.id.slice(0, 8)}…`);
       return result;
@@ -188,9 +229,18 @@ export class AuthController {
   }
 
   @Post('user-role')
-  async getUserRole(@Body() data: GetUserRoleDto) {
+  async getUserRole(
+    @Body() data: GetUserRoleDto,
+    @Headers('authorization') authHeader: string,
+  ) {
     try {
-      const role = await this.authService.getUserRole(data.userId);
+      const currentUser = await this.authService.getCurrentUser(authHeader);
+      const requestedUserId = data.userId?.trim() || currentUser.user.id;
+      const isAdmin = currentUser.user.role === 'ADMIN';
+      if (!isAdmin && requestedUserId !== currentUser.user.id) {
+        throw new HttpException('Forbidden', HttpStatus.FORBIDDEN);
+      }
+      const role = await this.authService.getUserRole(requestedUserId);
       return { role };
     } catch (error) {
       this.logger.warn(
@@ -209,6 +259,12 @@ export class AuthController {
     @Headers('authorization') authHeader: string,
   ) {
     try {
+      if (data.role !== 'CLIENT') {
+        throw new HttpException(
+          'Only CLIENT role is allowed for self-update',
+          HttpStatus.FORBIDDEN,
+        );
+      }
       // Получаем текущего пользователя
       const currentUser = await this.authService.getCurrentUser(authHeader);
 
@@ -247,6 +303,7 @@ export class AuthController {
       const updatedUser = await this.authService.updateUserRole(
         data.userId,
         data.role,
+        { allowPrivilegeEscalation: true },
       );
       return {
         success: true,
@@ -317,10 +374,10 @@ export class AuthController {
   }
 
   @Get('favorites')
-  async getFavoriteSalons(@Headers('authorization') authHeader: string) {
+  async getFavoriteStudios(@Headers('authorization') authHeader: string) {
     try {
       const currentUser = await this.authService.getCurrentUser(authHeader);
-      const favorites = await this.authService.getFavoriteSalons(
+      const favorites = await this.authService.getFavoriteStudios(
         currentUser.user.id,
       );
 
@@ -339,57 +396,57 @@ export class AuthController {
     }
   }
 
-  @Post('favorites/:salonId')
-  async addFavoriteSalon(
+  @Post('favorites/:studioId')
+  async addFavoriteStudio(
     @Headers('authorization') authHeader: string,
-    @Body() body: { salonId: string },
+    @Param('studioId') studioId: string,
   ) {
     try {
       const currentUser = await this.authService.getCurrentUser(authHeader);
-      const updatedUser = await this.authService.addFavoriteSalon(
+      const updatedUser = await this.authService.addFavoriteStudio(
         currentUser.user.id,
-        body.salonId,
+        studioId,
       );
 
       return {
         success: true,
-        message: 'Salon added to favorites',
-        favoriteSalons: updatedUser.favoriteSalons,
+        message: 'Studio added to favorites',
+        favoriteStudios: updatedUser.favoriteStudios,
       };
     } catch (error) {
       this.logger.warn(
         `Add favorite failed: ${error instanceof Error ? error.message : String(error)}`,
       );
       throw new HttpException(
-        error.message || 'Failed to add salon to favorites',
+        error.message || 'Failed to add studio to favorites',
         HttpStatus.BAD_REQUEST,
       );
     }
   }
 
-  @Delete('favorites/:salonId')
-  async removeFavoriteSalon(
+  @Delete('favorites/:studioId')
+  async removeFavoriteStudio(
     @Headers('authorization') authHeader: string,
-    @Body() body: { salonId: string },
+    @Param('studioId') studioId: string,
   ) {
     try {
       const currentUser = await this.authService.getCurrentUser(authHeader);
-      const updatedUser = await this.authService.removeFavoriteSalon(
+      const updatedUser = await this.authService.removeFavoriteStudio(
         currentUser.user.id,
-        body.salonId,
+        studioId,
       );
 
       return {
         success: true,
-        message: 'Salon removed from favorites',
-        favoriteSalons: updatedUser.favoriteSalons,
+        message: 'Studio removed from favorites',
+        favoriteStudios: updatedUser.favoriteStudios,
       };
     } catch (error) {
       this.logger.warn(
         `Remove favorite failed: ${error instanceof Error ? error.message : String(error)}`,
       );
       throw new HttpException(
-        error.message || 'Failed to remove salon from favorites',
+        error.message || 'Failed to remove studio from favorites',
         HttpStatus.BAD_REQUEST,
       );
     }

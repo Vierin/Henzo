@@ -81,6 +81,7 @@ enum BookingStatus {
       case 'CANCELLED':
         return BookingStatus.canceled;
       case 'NO_SHOW':
+      case 'NOSHOW':
         return BookingStatus.noShow;
       default:
         return BookingStatus.pending;

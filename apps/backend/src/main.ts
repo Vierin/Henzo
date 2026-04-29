@@ -2,17 +2,11 @@ import { NestFactory } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
 import { NestExpressApplication } from '@nestjs/platform-express';
 import { AppModule } from './app.module';
-import { AllExceptionsFilter } from './common/filters/http-exception.filter';
-import { MonitoringInterceptor } from './common/interceptors/monitoring.interceptor';
-import { MonitoringService } from './monitoring/monitoring.service';
 import * as compression from 'compression';
 import helmet from 'helmet';
-import { initSentry } from './config/sentry.config';
 import { resolveBackendEnvPath } from './config/resolve-backend-env-path';
 
-// Load environment variables before initializing Sentry
-// This ensures ENABLE_SENTRY_IN_DEV and SENTRY_DSN are available
-// Use require to avoid TypeScript import issues with dotenv
+// Load environment variables early.
 try {
   const dotenv = require('dotenv');
   const envPath = resolveBackendEnvPath(__dirname);
@@ -22,18 +16,6 @@ try {
 } catch (error) {
   // Silently fall back to system environment variables
 }
-
-// Normalize ENABLE_SENTRY_IN_DEV value if set
-const enableSentryInDev = process.env.ENABLE_SENTRY_IN_DEV;
-if (enableSentryInDev !== undefined) {
-  const normalized = enableSentryInDev.trim().toLowerCase();
-  if (normalized === 'true' || normalized === '1' || normalized === 'yes') {
-    process.env.ENABLE_SENTRY_IN_DEV = 'true';
-  }
-}
-
-// Initialize Sentry before anything else
-initSentry();
 
 async function bootstrap() {
   try {
@@ -142,15 +124,6 @@ async function bootstrap() {
       }),
     );
     console.log('✅ Compression enabled with optimized settings');
-
-    // Enable global exception filter
-    app.useGlobalFilters(new AllExceptionsFilter());
-    console.log('✅ Global exception filter enabled');
-
-    // Enable global monitoring interceptor
-    const monitoringService = app.get(MonitoringService);
-    app.useGlobalInterceptors(new MonitoringInterceptor(monitoringService));
-    console.log('✅ Global monitoring interceptor enabled');
 
     // Enable global validation
     app.useGlobalPipes(

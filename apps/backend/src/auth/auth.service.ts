@@ -1,5 +1,6 @@
 import {
   Injectable,
+  Inject,
   BadRequestException,
   UnauthorizedException,
 } from '@nestjs/common';
@@ -24,13 +25,119 @@ export class AuthService {
   // Кэш для синхронизации app_metadata (ленивая синхронизация)
   private roleSyncCache = new Map<string, { lastSync: number; role: string }>();
   private readonly ROLE_SYNC_TTL = 5 * 60 * 1000; // 5 минут между синхронизациями
+  private readonly clientRegistrationOtpStore = new Map<
+    string,
+    {
+      code: string;
+      expiresAt: number;
+      attempts: number;
+      payload: {
+        email: string;
+        password: string;
+        name?: string;
+        phone?: string;
+      };
+    }
+  >();
+  private readonly CLIENT_OTP_TTL_MS = 10 * 60 * 1000;
+  private readonly CLIENT_OTP_MAX_ATTEMPTS = 5;
 
   constructor(
-    private prisma: PrismaService,
+    @Inject(PrismaService) private prisma: any,
     private emailService: EmailService,
     private configService: ConfigService,
     private jwtVerifier: JwtVerifierService,
   ) {}
+
+  private getFrontendUrl() {
+    return (
+      this.configService.get<string>('FRONTEND_URL') ||
+      process.env.FRONTEND_URL ||
+      'https://henzo.app'
+    );
+  }
+
+  private generateOtpCode() {
+    return Math.floor(100000 + Math.random() * 900000).toString();
+  }
+
+  private normalizeEmail(email: string) {
+    return email.toLowerCase().trim();
+  }
+
+  private async sendClientRegistrationOtpEmail(email: string, code: string) {
+    await this.emailService.sendEmail({
+      to: email,
+      subject: 'Your Henzo verification code',
+      html: `
+        <div style="font-family:Arial,sans-serif;line-height:1.5;color:#111">
+          <h2 style="margin-bottom:8px">Confirm your Henzo account</h2>
+          <p style="margin:0 0 12px">Use this code in the app to finish registration:</p>
+          <div style="font-size:32px;font-weight:700;letter-spacing:6px;margin:12px 0">${code}</div>
+          <p style="margin:12px 0 0;color:#666">Code expires in 10 minutes.</p>
+        </div>
+      `,
+      fromName: 'Henzo',
+    });
+  }
+
+  async requestClientRegistrationCode(data: {
+    email: string;
+    password: string;
+    name?: string;
+    phone?: string;
+  }) {
+    const email = this.normalizeEmail(data.email);
+    if (!email || !data.password || data.password.length < 6) {
+      throw new BadRequestException('Invalid registration payload');
+    }
+
+    const existingUser = await this.prisma.user.findUnique({
+      where: { email },
+    });
+    if (existingUser && existingUser.role !== 'CLIENT') {
+      throw new BadRequestException('User with this email already exists');
+    }
+
+    const code = this.generateOtpCode();
+    this.clientRegistrationOtpStore.set(email, {
+      code,
+      expiresAt: Date.now() + this.CLIENT_OTP_TTL_MS,
+      attempts: 0,
+      payload: {
+        email,
+        password: data.password,
+        name: data.name,
+        phone: data.phone,
+      },
+    });
+    await this.sendClientRegistrationOtpEmail(email, code);
+    return { success: true };
+  }
+
+  async verifyClientRegistrationCode(data: { email: string; code: string }) {
+    const email = this.normalizeEmail(data.email);
+    const otp = this.clientRegistrationOtpStore.get(email);
+    if (!otp) {
+      throw new BadRequestException('Verification code not requested');
+    }
+    if (Date.now() > otp.expiresAt) {
+      this.clientRegistrationOtpStore.delete(email);
+      throw new BadRequestException('Verification code expired');
+    }
+    if (otp.attempts >= this.CLIENT_OTP_MAX_ATTEMPTS) {
+      this.clientRegistrationOtpStore.delete(email);
+      throw new BadRequestException('Too many attempts');
+    }
+    if ((data.code || '').trim() !== otp.code) {
+      otp.attempts += 1;
+      this.clientRegistrationOtpStore.set(email, otp);
+      throw new BadRequestException('Invalid verification code');
+    }
+
+    this.clientRegistrationOtpStore.delete(email);
+    return this.registerClient(otp.payload);
+  }
 
   /**
    * Owner registration must prove Supabase identity when userId is sent:
@@ -691,15 +798,22 @@ export class AuthService {
         '✅ User not found in database, proceeding with registration',
       );
 
-      // Создаем пользователя в Supabase (отключаем подтверждение email для разработки)
-      console.log('📧 Creating user in Supabase...');
-      const { data: authData, error: authError } = await supabase.auth.signUp({
-        email: data.email,
-        password: data.password,
-        options: {
-          emailRedirectTo: undefined, // Отключаем перенаправление
-        },
-      });
+      // Создаем пользователя через Admin API с подтвержденным email:
+      // подтверждение мы уже сделали через OTP от Henzo.
+      console.log('📧 Creating user in Supabase (admin, email confirmed)...');
+      const { data: authData, error: authError } =
+        await supabase.auth.admin.createUser({
+          email: data.email,
+          password: data.password,
+          email_confirm: true,
+          user_metadata: {
+            name: data.name,
+            phone: data.phone,
+          },
+          app_metadata: {
+            role: 'CLIENT',
+          },
+        });
 
       if (authError) {
         console.error('❌ Supabase auth error:', authError.message);
@@ -740,6 +854,16 @@ export class AuthService {
         // Не блокируем регистрацию, если не удалось обновить метаданные
       }
 
+      // Получаем session после создания (admin.createUser не возвращает её).
+      const { data: signInData, error: signInError } =
+        await supabase.auth.signInWithPassword({
+          email: data.email,
+          password: data.password,
+        });
+      if (signInError) {
+        throw new Error(signInError.message || 'Failed to create session');
+      }
+
       return {
         user: {
           id: user.id,
@@ -748,7 +872,7 @@ export class AuthService {
           phone: user.phone,
           role: user.role,
         },
-        session: authData.session,
+        session: signInData.session,
       };
     } catch (error) {
       throw new Error(`Registration failed: ${error.message}`);
@@ -932,8 +1056,8 @@ export class AuthService {
 
           // Update all related records to use the new Supabase Auth ID
           await this.prisma.$transaction(async (prisma) => {
-            // Update salons
-            await prisma.salon.updateMany({
+            // Update studios
+            await prisma.studio.updateMany({
               where: { ownerId: oldUserId },
               data: { ownerId: user.id },
             });
@@ -974,19 +1098,19 @@ export class AuthService {
           const roleFromMetadata =
             user.app_metadata?.role || user.user_metadata?.role;
 
-          // Проверяем, есть ли у пользователя салоны (для восстановления роли OWNER)
-          const existingSalons = await this.prisma.salon.findMany({
+          // Проверяем, есть ли у пользователя студии (для восстановления роли OWNER).
+          const existingStudios = await this.prisma.studio.findMany({
             where: { ownerId: user.id },
           });
 
-          // Определяем роль: сначала из метаданных, потом из салонов, потом CLIENT по умолчанию
+          // Определяем роль: сначала из метаданных, потом из студий, потом CLIENT по умолчанию
           const userRole =
             roleFromMetadata ||
-            (existingSalons.length > 0 ? 'OWNER' : 'CLIENT');
+            (existingStudios.length > 0 ? 'OWNER' : 'CLIENT');
 
           console.log('📝 Creating user with role:', {
             roleFromMetadata,
-            hasSalons: existingSalons.length > 0,
+            hasStudios: existingStudios.length > 0,
             finalRole: userRole,
             userId: user.id,
             email: user.email,
@@ -1007,8 +1131,8 @@ export class AuthService {
             );
             // Обновляем ID существующего пользователя на новый из Supabase Auth
             await this.prisma.$transaction(async (prisma) => {
-              // Update salons
-              await prisma.salon.updateMany({
+              // Update studios
+              await prisma.studio.updateMany({
                 where: { ownerId: existingUserByEmail.id },
                 data: { ownerId: user.id },
               });
@@ -1195,12 +1319,12 @@ export class AuthService {
 
   /**
    * Batch endpoint для инициализации пользователя
-   * Возвращает пользователя и опционально салон (для OWNER)
+   * Возвращает пользователя и опционально студию (для OWNER)
    * Один запрос вместо нескольких
    */
   async initializeUser(
     authHeader: string,
-    options: { includeSalon?: boolean } = {},
+    options: { includeStudio?: boolean } = {},
   ) {
     try {
       // Получаем пользователя (использует кэш)
@@ -1211,10 +1335,10 @@ export class AuthService {
         user,
       };
 
-      // Если OWNER и запрошен салон, получаем его
-      if (options.includeSalon && user.role === 'OWNER') {
+      // Если OWNER и запрошена студия, получаем ее.
+      if (options.includeStudio && user.role === 'OWNER') {
         try {
-          const salon = await this.prisma.salon.findFirst({
+          const studio = await this.prisma.studio.findFirst({
             where: { ownerId: user.id },
             select: {
               id: true,
@@ -1230,14 +1354,14 @@ export class AuthService {
             },
           });
 
-          if (salon) {
-            result.salon = salon;
+          if (studio) {
+            result.studio = studio;
             result.needsSetup = false;
           } else {
             result.needsSetup = true;
           }
-        } catch (salonError) {
-          console.error('⚠️ Error fetching salon:', salonError);
+        } catch (studioError) {
+          console.error('⚠️ Error fetching studio:', studioError);
           result.needsSetup = true;
         }
       }
@@ -1298,8 +1422,18 @@ export class AuthService {
     }
   }
 
-  async updateUserRole(userId: string, role: 'CLIENT' | 'OWNER' | 'ADMIN') {
+  async updateUserRole(
+    userId: string,
+    role: 'CLIENT' | 'OWNER' | 'ADMIN',
+    options?: { allowPrivilegeEscalation?: boolean },
+  ) {
     try {
+      if (
+        !options?.allowPrivilegeEscalation &&
+        (role === 'OWNER' || role === 'ADMIN')
+      ) {
+        throw new Error('Privilege escalation is not allowed');
+      }
       // Обновляем роль в базе данных
       const updatedUser = await this.prisma.user.update({
         where: { id: userId },
@@ -1381,7 +1515,7 @@ export class AuthService {
       const user = await this.prisma.user.findUnique({
         where: { id: userId },
         include: {
-          Salon: true,
+          Studio: true,
           Booking: true,
           Review: true,
         },
@@ -1395,36 +1529,36 @@ export class AuthService {
         userId: user.id,
         email: user.email,
         role: user.role,
-        hasSalon: !!user.Salon && user.Salon.length > 0,
+        hasStudio: !!user.Studio && user.Studio.length > 0,
         bookingsCount: user.Booking.length,
         reviewsCount: user.Review.length,
       });
 
       // Удаляем связанные данные в зависимости от роли
-      if (user.role === 'OWNER' && user.Salon && user.Salon.length > 0) {
-        const salon = user.Salon[0];
-        console.log(`🏢 Deleting salon data for owner: ${salon.id}`);
+      if (user.role === 'OWNER' && user.Studio && user.Studio.length > 0) {
+        const studio = user.Studio[0];
+        console.log(`🏢 Deleting studio data for owner: ${studio.id}`);
 
-        // Удаляем все связанные с салоном данные
+        // Удаляем все связанные со студией данные
         await this.prisma.booking.deleteMany({
-          where: { salonId: salon.id },
+          where: { studioId: studio.id },
         });
 
         await this.prisma.review.deleteMany({
-          where: { salonId: salon.id },
+          where: { studioId: studio.id },
         });
 
         await this.prisma.staff.deleteMany({
-          where: { salonId: salon.id },
+          where: { studioId: studio.id },
         });
 
         await this.prisma.service.deleteMany({
-          where: { salonId: salon.id },
+          where: { studioId: studio.id },
         });
 
-        // Удаляем сам салон
-        await this.prisma.salon.delete({
-          where: { id: salon.id },
+        // Удаляем саму студию
+        await this.prisma.studio.delete({
+          where: { id: studio.id },
         });
       }
 
@@ -1486,11 +1620,11 @@ export class AuthService {
     }
   }
 
-  async getFavoriteSalons(userId: string) {
+  async getFavoriteStudios(userId: string) {
     try {
       const user = await this.prisma.user.findUnique({
         where: { id: userId },
-        select: { favoriteSalons: true },
+        select: { favoriteStudios: true },
       });
 
       if (!user) {
@@ -1498,10 +1632,10 @@ export class AuthService {
       }
 
       // Критично: Используем select вместо include для уменьшения payload
-      const salons = await this.prisma.salon.findMany({
+      const studios = await this.prisma.Studio.findMany({
         where: {
           id: {
-            in: user.favoriteSalons,
+            in: user.favoriteStudios,
           },
         },
         select: {
@@ -1515,13 +1649,13 @@ export class AuthService {
           instagram: true,
           photos: true,
           // Убираем workingHours, reminderSettings, ownerId, createdAt, categoryIds, latitude, longitude - не нужны для списка
-          Service: {
+          Training: {
             select: {
               id: true,
               name: true,
               price: true,
               duration: true,
-              // Убираем description, serviceCategoryId, serviceGroupId - не нужны для списка
+              // Убираем description при необходимости — не нужны для списка
             },
           },
           Review: {
@@ -1534,102 +1668,108 @@ export class AuthService {
         },
       });
 
-      // Calculate average rating for each salon
-      const salonsWithRating = salons.map((salon) => {
+      // Calculate average rating for each studio
+      const studiosWithRating = studios.map((studio) => {
         const avgRating =
-          salon.Review.length > 0
-            ? salon.Review.reduce((sum, review) => sum + review.rating, 0) /
-              salon.Review.length
+          studio.Review.length > 0
+            ? studio.Review.reduce((sum, review) => sum + review.rating, 0) /
+              studio.Review.length
             : 0;
 
         return {
-          ...salon,
+          ...studio,
           averageRating: avgRating,
-          reviewCount: salon.Review.length,
+          reviewCount: studio.Review.length,
         };
       });
 
-      return salonsWithRating;
+      return studiosWithRating;
     } catch (error) {
-      throw new Error(`Failed to get favorite salons: ${error.message}`);
+      throw new Error(`Failed to get favorite studios: ${error.message}`);
     }
   }
 
-  async addFavoriteSalon(userId: string, salonId: string) {
+  async addFavoriteStudio(userId: string, studioId: string) {
     try {
-      // Check if salon exists
-      const salon = await this.prisma.salon.findUnique({
-        where: { id: salonId },
+      // Check if studio exists
+      const studio = await this.prisma.Studio.findUnique({
+        where: { id: studioId },
       });
 
-      if (!salon) {
-        throw new Error('Salon not found');
+      if (!studio) {
+        throw new Error('Studio not found');
       }
 
       // Get current user
       const user = await this.prisma.user.findUnique({
         where: { id: userId },
-        select: { favoriteSalons: true },
+        select: { favoriteStudios: true },
       });
 
       if (!user) {
         throw new Error('User not found');
       }
 
-      // Check if already favorited
-      if (user.favoriteSalons.includes(salonId)) {
-        throw new Error('Salon is already in favorites');
+      // Idempotent behavior for MVP UX:
+      // if studio is already in favorites, do not fail with 400.
+      if (user.favoriteStudios.includes(studioId)) {
+        return user;
       }
 
-      // Add salon to favorites
+      // Add studio to favorites
       const updatedUser = await this.prisma.user.update({
         where: { id: userId },
         data: {
-          favoriteSalons: {
-            push: salonId,
+          favoriteStudios: {
+            push: studioId,
           },
         },
       });
 
       return updatedUser;
     } catch (error) {
-      throw new Error(`Failed to add salon to favorites: ${error.message}`);
+      throw new Error(`Failed to add studio to favorites: ${error.message}`);
     }
   }
 
-  async removeFavoriteSalon(userId: string, salonId: string) {
+  async removeFavoriteStudio(userId: string, studioId: string) {
     try {
       // Get current user
       const user = await this.prisma.user.findUnique({
         where: { id: userId },
-        select: { favoriteSalons: true },
+        select: { favoriteStudios: true },
       });
 
       if (!user) {
         throw new Error('User not found');
       }
 
-      // Remove salon from favorites
-      const updatedFavorites = user.favoriteSalons.filter(
-        (id) => id !== salonId,
+      // Remove studio from favorites
+      const updatedFavorites = user.favoriteStudios.filter(
+        (id) => id !== studioId,
       );
 
       const updatedUser = await this.prisma.user.update({
         where: { id: userId },
         data: {
-          favoriteSalons: updatedFavorites,
+          favoriteStudios: updatedFavorites,
         },
       });
 
       return updatedUser;
     } catch (error) {
       throw new Error(
-        `Failed to remove salon from favorites: ${error.message}`,
+        `Failed to remove studio from favorites: ${error.message}`,
       );
     }
   }
 
-  async sendBusinessMagicLink(email: string, name: string, password: string) {
+  async sendBusinessMagicLink(
+    email: string,
+    name: string,
+    password: string,
+    locale?: string,
+  ) {
     try {
       const normalizedEmail = email.toLowerCase().trim();
       console.log('🔍 Checking for existing user with email:', normalizedEmail);
@@ -1860,7 +2000,9 @@ export class AuthService {
         (process.env.NODE_ENV === 'production'
           ? 'https://api.henzo.app'
           : 'http://localhost:3001');
-      const magicLinkUrl = `${backendUrl}/auth/business-magic-link/${token}`;
+      const safeLocale =
+        locale === 'ru' || locale === 'en' || locale === 'vi' ? locale : 'en';
+      const magicLinkUrl = `${backendUrl}/auth/business-magic-link/${token}?locale=${encodeURIComponent(safeLocale)}`;
 
       console.log(
         '📧 Sending business registration magic link email to:',
@@ -1873,6 +2015,7 @@ export class AuthService {
         email,
         name,
         magicLinkUrl,
+        safeLocale,
       );
 
       console.log('✅ Business magic link sent:', { email });
@@ -1975,11 +2118,7 @@ export class AuthService {
       // Генерируем magic link с redirectTo на URL С ЛОКАЛЬЮ.
       // Важно: фронт middleware редиректит все пути без /{locale}/, и hash (#access_token=...)
       // при серверном редиректе теряется. Поэтому redirectTo должен содержать locale.
-      const frontendUrl =
-        this.configService.get<string>('FRONTEND_URL') ||
-        (process.env.NODE_ENV === 'production'
-          ? 'https://henzo.app'
-          : 'http://localhost:3000');
+      const frontendUrl = this.getFrontendUrl();
 
       const safeLocale =
         locale === 'ru' || locale === 'en' || locale === 'vi' ? locale : 'vi';

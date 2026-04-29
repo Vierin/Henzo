@@ -1,23 +1,12 @@
 #!/bin/bash
 
-# Быстрый деплой (без миграций)
-# Для быстрого обновления кода без изменений БД
+# Quick deploy wrapper (no migrations).
 
-set -e
+set -euo pipefail
 
 cd /var/www/henzo/apps/backend
 
-echo "🔄 Получение последних изменений..."
-git pull origin main
+IMAGE_REF="${BACKEND_IMAGE:-henzo-backend:prod}"
 
-echo "📦 Установка зависимостей..."
-npm ci --only=production
-
-echo "🔨 Сборка..."
-npm run build
-
-echo "🔄 Перезапуск..."
-pm2 reload henzo-backend
-
-echo "✅ Готово!"
-pm2 status henzo-backend
+echo "🔄 Quick Docker deploy for production"
+bash deploy/deploy-compose-service.sh --env=production --image="$IMAGE_REF" --migrate=false

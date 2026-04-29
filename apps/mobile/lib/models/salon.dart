@@ -7,6 +7,7 @@ class Salon {
   final String? email;
   final String? website;
   final String? instagram;
+  final String? logoUrl;
   final List<String>? photos;
   final Map<String, dynamic>? workingHours;
   final Map<String, dynamic>? reminderSettings;
@@ -25,6 +26,7 @@ class Salon {
     this.email,
     this.website,
     this.instagram,
+    this.logoUrl,
     this.photos,
     this.workingHours,
     this.reminderSettings,
@@ -71,6 +73,7 @@ class Salon {
       email: json['email'] as String?,
       website: json['website'] as String?,
       instagram: json['instagram'] as String?,
+      logoUrl: json['logoUrl'] as String?,
       photos: photosList,
       workingHours: wh,
       reminderSettings: rs,
@@ -92,6 +95,7 @@ class Salon {
       'email': email,
       'website': website,
       'instagram': instagram,
+      'logoUrl': logoUrl,
       'photos': photos,
       'workingHours': workingHours,
       'reminderSettings': reminderSettings,
@@ -114,6 +118,7 @@ class Salon {
       if (email != null) 'email': email,
       if (website != null) 'website': website,
       if (instagram != null) 'instagram': instagram,
+      if (logoUrl != null) 'logoUrl': logoUrl,
       if (photos != null) 'photos': photos,
       if (workingHours != null) 'workingHours': workingHours,
       if (reminderSettings != null) 'reminderSettings': reminderSettings,

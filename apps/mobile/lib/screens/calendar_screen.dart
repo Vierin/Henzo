@@ -1,21 +1,12 @@
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../constants/colors.dart';
 import '../../l10n/locale_provider.dart';
-import '../../models/booking.dart';
-import '../../models/salon.dart';
-import '../../models/staff_member.dart';
-import '../../models/time_block.dart';
 import '../../services/auth_service.dart';
-import '../../services/cache/bookings_cache.dart';
-import '../../services/cache/salon_cache.dart';
 import '../../services/dashboard_api_service.dart';
-import '../../services/staff_api_service.dart';
-import '../../widgets/dashboard/booking_detail_modal.dart';
 import '../../utils/show_api_error.dart';
-import '../../widgets/dashboard/new_booking_modal.dart';
-import 'work_schedule_screen.dart';
+import '../../widgets/owner_training_session_card.dart';
+import 'main_shell.dart';
 
 class CalendarScreen extends StatefulWidget {
   const CalendarScreen({super.key});
@@ -25,64 +16,32 @@ class CalendarScreen extends StatefulWidget {
 }
 
 class _CalendarScreenState extends State<CalendarScreen> {
-  Salon? _salon;
-  List<Booking> _bookings = [];
-  List<StaffMember> _staffMembers = [];
-  List<TimeBlock> _timeBlocks = [];
+  final Map<int, int> _sessionCountByDay = <int, int>{};
+  final Map<int, List<OwnerTrainingSession>> _sessionsByDay =
+      <int, List<OwnerTrainingSession>>{};
   bool _isLoading = false;
-
-  DateTime _selectedDate = DateTime.now();
-  DateTime _displayWeekStart = DateTime.now(); // понедельник видимой недели для заголовка
-  String? _selectedStaffId;
-  bool _expandedView = false;
-  late PageController _dayStripPageController;
-
-  static const _dayStripTotalWeeks = 208;
+  bool _isMonthExpanded = false;
+  late DateTime _selectedDay;
+  late DateTime _weekStart;
+  late final PageController _weekPagerController;
+  static const int _weekInitialPage = 1000;
 
   @override
   void initState() {
     super.initState();
-    _displayWeekStart = _mondayOfWeek(_selectedDate);
-    _dayStripPageController = PageController(
-      initialPage: _weekIndexForDate(_selectedDate),
-      viewportFraction: 0.92,
+    final now = DateTime.now();
+    _selectedDay = DateTime(now.year, now.month, now.day);
+    _weekStart = _selectedDay.subtract(
+      Duration(days: _selectedDay.weekday - 1),
     );
-    _dayStripPageController.addListener(_onDayStripPageChanged);
+    _weekPagerController = PageController(initialPage: _weekInitialPage);
     _loadData();
   }
 
   @override
   void dispose() {
-    _dayStripPageController.removeListener(_onDayStripPageChanged);
-    _dayStripPageController.dispose();
+    _weekPagerController.dispose();
     super.dispose();
-  }
-
-  void _onDayStripPageChanged() {
-    if (!_dayStripPageController.position.hasContentDimensions) return;
-    final page = _dayStripPageController.page ?? _dayStripPageController.initialPage.toDouble();
-    final index = page.round().clamp(0, _dayStripTotalWeeks - 1);
-    final monday = _dateForWeekIndex(index);
-    if (_displayWeekStart.year != monday.year ||
-        _displayWeekStart.month != monday.month ||
-        _displayWeekStart.day != monday.day) {
-      if (mounted) setState(() => _displayWeekStart = monday);
-    }
-  }
-
-  static DateTime _mondayOfWeek(DateTime d) {
-    return d.subtract(Duration(days: d.weekday - 1));
-  }
-
-  static final _epochMonday = DateTime(2024, 1, 1);
-
-  int _weekIndexForDate(DateTime d) {
-    final monday = _mondayOfWeek(d);
-    return monday.difference(_mondayOfWeek(_epochMonday)).inDays ~/ 7;
-  }
-
-  DateTime _dateForWeekIndex(int index) {
-    return _epochMonday.add(Duration(days: index * 7));
   }
 
   Future<void> _loadData() async {
@@ -94,32 +53,34 @@ class _CalendarScreenState extends State<CalendarScreen> {
       return;
     }
     try {
-      final salon = await context.read<SalonCache>().getSalon(token);
-      List<Booking> bookings = [];
-      List<StaffMember> staff = [];
-      List<TimeBlock> timeBlocks = [];
-      if (salon != null) {
-        final now = DateTime.now();
-        final start = now.subtract(const Duration(days: 30));
-        final end = now.add(const Duration(days: 60));
-        bookings = await context.read<BookingsCache>().getBookings(token);
-        staff = await StaffApiService.getBySalon(token, salon.id);
-        timeBlocks = await DashboardApiService.getTimeBlocks(
-          token,
-          startDate: start.toIso8601String(),
-          endDate: end.toIso8601String(),
-        );
+      final now = DateTime.now();
+      final from = now.subtract(const Duration(days: 30)).toIso8601String();
+      final to = now.add(const Duration(days: 90)).toIso8601String();
+      final sessions = await DashboardApiService.getOwnerTrainingSessions(
+        token,
+        fromIso: from,
+        toIso: to,
+      );
+      final grouped = <int, List<OwnerTrainingSession>>{};
+      final counts = <int, int>{};
+      for (final session in sessions) {
+        final local = session.startsAt.toLocal();
+        final key = _dayKey(local);
+        (grouped[key] ??= <OwnerTrainingSession>[]).add(session);
+        counts[key] = (counts[key] ?? 0) + 1;
+      }
+      for (final list in grouped.values) {
+        list.sort((a, b) => a.startsAt.compareTo(b.startsAt));
       }
       if (mounted) {
         setState(() {
-          _salon = salon;
-          _bookings = bookings;
-          _staffMembers = staff;
-          _timeBlocks = timeBlocks;
+          _sessionsByDay
+            ..clear()
+            ..addAll(grouped);
+          _sessionCountByDay
+            ..clear()
+            ..addAll(counts);
           _isLoading = false;
-          if (_selectedStaffId == null && staff.isNotEmpty) {
-            _selectedStaffId = staff.first.id;
-          }
         });
       }
     } catch (e) {
@@ -130,1085 +91,546 @@ class _CalendarScreenState extends State<CalendarScreen> {
     }
   }
 
-  /// Бронирования на день (по локальной дате). Учитывает timezone: сравниваем в local.
-  List<Booking> _bookingsForDate(DateTime date) {
-    final start = DateTime(date.year, date.month, date.day);
-    final end = start.add(const Duration(days: 1));
-    return _bookings.where((b) {
-      final local = b.dateTime.isUtc ? b.dateTime.toLocal() : b.dateTime;
-      return !local.isBefore(start) && local.isBefore(end);
-    }).toList()
-      ..sort((a, b) {
-        final la = a.dateTime.isUtc ? a.dateTime.toLocal() : a.dateTime;
-        final lb = b.dateTime.isUtc ? b.dateTime.toLocal() : b.dateTime;
-        return la.compareTo(lb);
-      });
-  }
-
-  List<Booking> _bookingsForDateAndStaff(DateTime date, String? staffId) {
-    var list = _bookingsForDate(date);
-    if (staffId != null && staffId.isNotEmpty) {
-      list = list.where((b) => b.effectiveStaffId == staffId).toList();
-    }
-    return list;
-  }
-
-  /// Бронирование для строки часа (по локальному времени). Показываем, если бронь пересекает этот час.
-  Booking? _bookingAtHour(DateTime forDate, List<Booking> dayBookings, int hour) {
-    final slotStart = DateTime(forDate.year, forDate.month, forDate.day, hour, 0);
-    final slotEnd = slotStart.add(const Duration(hours: 1));
-    for (final b in dayBookings) {
-      final local = b.dateTime.isUtc ? b.dateTime.toLocal() : b.dateTime;
-      final duration = b.service?.duration ?? 60;
-      final bookingEnd = local.add(Duration(minutes: duration));
-      if (local.isBefore(slotEnd) && bookingEnd.isAfter(slotStart)) return b;
-    }
+  String? _ownerTrainerFallback() {
+    final u = context.read<AuthService>().user;
+    if (u == null) return null;
+    final name = u.name;
+    if (name != null && name.trim().isNotEmpty) return name.trim();
+    final email = u.email.trim();
+    if (email.isNotEmpty) return email;
     return null;
   }
 
-  /// День недели для workingHours: monday..sunday (DateTime.weekday 1=Mon, 7=Sun).
-  static const _dayKeys = [
-    '',
-    'monday',
-    'tuesday',
-    'wednesday',
-    'thursday',
-    'friday',
-    'saturday',
-    'sunday',
-  ];
-  String _dayKey(DateTime d) => _dayKeys[d.weekday];
-
-  /// Рабочие часы выбранного дня: openHour, closeHour. null если день закрыт или нет данных.
-  ({int openHour, int closeHour})? _getSelectedDayWorkingHours() {
-    final wh = _salon?.workingHours;
-    if (wh == null) return null;
-    final dayHours = wh[_dayKey(_selectedDate)];
-    if (dayHours == null || dayHours is! Map) return null;
-    final dayMap = dayHours as Map<String, dynamic>;
-    final closed = dayMap['closed'] == true;
-    if (closed) return null;
-    final open = dayMap['open']?.toString();
-    final close = dayMap['close']?.toString();
-    if (open == null || close == null || open.isEmpty || close.isEmpty)
-      return null;
-    final openParts = open.split(':');
-    final closeParts = close.split(':');
-    final openHour = int.tryParse(openParts.first) ?? 9;
-    final closeHour = int.tryParse(closeParts.first) ?? 18;
-    return (openHour: openHour, closeHour: closeHour);
+  List<OwnerTrainingSession> _sessionsForSelectedDay() {
+    return _sessionsByDay[_dayKey(_selectedDay)] ?? const [];
   }
 
-  /// Глобальный диапазон часов по всем дням (для отображения сетки). По умолчанию 6–23.
-  ({int startHour, int endHour}) _getGlobalTimeRange() {
-    final wh = _salon?.workingHours;
-    if (wh == null) return (startHour: 6, endHour: 23);
-    int minStart = 23;
-    int maxEnd = 0;
-    for (final dayKey in _dayKeys) {
-      if (dayKey.isEmpty) continue;
-      final dayHours = wh[dayKey];
-      if (dayHours == null || dayHours is! Map) continue;
-      final dayMap = dayHours as Map<String, dynamic>;
-      if (dayMap['closed'] == true) continue;
-      final open = dayMap['open']?.toString();
-      final close = dayMap['close']?.toString();
-      if (open == null || close == null) continue;
-      final openHour = int.tryParse(open.split(':').first) ?? 9;
-      final closeHour = int.tryParse(close.split(':').first) ?? 18;
-      if (openHour < minStart) minStart = openHour;
-      if (closeHour > maxEnd) maxEnd = closeHour;
-    }
-    if (minStart == 23 || maxEnd == 0) return (startHour: 6, endHour: 23);
-    return (startHour: minStart, endHour: maxEnd);
-  }
-
-  bool _isTimeSlotOutsideWorkingHours(int hour) {
-    final dayHours = _getSelectedDayWorkingHours();
-    if (dayHours == null) return false;
-    return hour < dayHours.openHour || hour >= dayHours.closeHour;
-  }
-
-  List<TimeBlock> _getTimeBlocksForDate(DateTime date) {
-    final dayStart = DateTime(date.year, date.month, date.day);
-    final dayEnd = dayStart.add(const Duration(days: 1));
-    return _timeBlocks.where((b) {
-      final bStart = DateTime(
-        b.startDate.year,
-        b.startDate.month,
-        b.startDate.day,
-      );
-      final bEnd = DateTime(b.endDate.year, b.endDate.month, b.endDate.day);
-      return !dayStart.isAfter(bEnd) && !dayEnd.isBefore(bStart);
-    }).toList();
-  }
-
-  TimeBlock? _getTimeBlockAtTime(String? staffId, int hour) {
-    final dayBlocks = _getTimeBlocksForDate(_selectedDate);
-    final slotStart = DateTime(
-      _selectedDate.year,
-      _selectedDate.month,
-      _selectedDate.day,
-      hour,
-    );
-    final slotEnd = slotStart.add(const Duration(hours: 1));
-    for (final block in dayBlocks) {
-      if (staffId != null && block.staffId != null && block.staffId != staffId)
-        continue;
-      if (slotStart.isBefore(block.endDate) && slotEnd.isAfter(block.startDate))
-        return block;
-    }
-    return null;
-  }
-
-  bool _isToday(DateTime d) {
-    final now = DateTime.now();
-    return d.year == now.year && d.month == now.month && d.day == now.day;
-  }
-
-  Widget _headerPill({
-    required String label,
-    required bool selected,
-    required VoidCallback onTap,
-  }) {
-    return Material(
-      color: selected ? AppColors.primary500 : AppColors.backgroundPrimary,
-      borderRadius: BorderRadius.circular(16),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(16),
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(
-              color: selected ? AppColors.primary500 : AppColors.borderPrimary,
-            ),
-          ),
-          child: Text(
-            label,
-            style: TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.w500,
-              color: selected ? AppColors.textInverse : AppColors.textPrimary,
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  Future<void> _handleConfirmBooking(String bookingId) async {
-    final token = context.read<AuthService>().accessToken;
-    if (token == null) return;
-    try {
-      final ok = await DashboardApiService.confirmBooking(token, bookingId);
-      if (!mounted) return;
-      if (ok) {
-        await _loadData();
-        if (!mounted) return;
-        ScaffoldMessenger.maybeOf(context)?.showSnackBar(
-          SnackBar(
-            content: Text(context.read<LocaleProvider>().t('calendar.bookingConfirmed')),
-            backgroundColor: Colors.green,
-          ),
-        );
-      }
-    } catch (e) {
-      if (!mounted) return;
-      showApiError(context, e);
-    }
-  }
-
-  Future<void> _handleRejectBooking(String bookingId) async {
-    final token = context.read<AuthService>().accessToken;
-    if (token == null) return;
-    try {
-      final ok = await DashboardApiService.rejectBooking(token, bookingId);
-      if (!mounted) return;
-      if (ok) {
-        await _loadData();
-        if (!mounted) return;
-        ScaffoldMessenger.maybeOf(context)?.showSnackBar(
-          SnackBar(
-            content: Text(context.read<LocaleProvider>().t('calendar.bookingRejected')),
-            backgroundColor: Colors.orange,
-          ),
-        );
-      }
-    } catch (e) {
-      if (!mounted) return;
-      showApiError(context, e);
-    }
-  }
-
-  Future<void> _handleCancelBooking(String bookingId) async {
-    final token = context.read<AuthService>().accessToken;
-    if (token == null) return;
-    try {
-      final ok = await DashboardApiService.cancelBooking(token, bookingId);
-      if (!mounted) return;
-      if (ok) {
-        await _loadData();
-        if (!mounted) return;
-        ScaffoldMessenger.maybeOf(context)?.showSnackBar(
-          SnackBar(
-            content: Text(context.read<LocaleProvider>().t('calendar.bookingCancelled')),
-            backgroundColor: Colors.orange,
-          ),
-        );
-      }
-    } catch (e) {
-      if (!mounted) return;
-      showApiError(context, e);
-    }
-  }
-
-  Future<void> _handleEditBooking(Booking booking) async {
-    final token = context.read<AuthService>().accessToken;
-    if (token == null) return;
-    await NewBookingModal.show(
-      context,
-      accessToken: token,
-      onSaved: _loadData,
-      getAccessToken: () async {
-        await context.read<AuthService>().refreshSession();
-        return context.read<AuthService>().accessToken;
-      },
-      existingBooking: booking,
-    );
-  }
-
-  Future<void> _onNewAppointment() async {
-    final token = context.read<AuthService>().accessToken;
-    if (token == null) {
-      ScaffoldMessenger.maybeOf(context)?.showSnackBar(
-        SnackBar(
-          content: Text(context.read<LocaleProvider>().t('calendar.noAccess')),
-          backgroundColor: Colors.orange,
-        ),
-      );
+  void _openCreateTraining() {
+    final shell = context.findAncestorStateOfType<MainShellState>();
+    if (shell != null) {
+      shell.navigateToTab0Route('/trainings/new');
       return;
     }
-    await NewBookingModal.show(
-      context,
-      accessToken: token,
-      onSaved: _loadData,
-      getAccessToken: () async {
-        await context.read<AuthService>().refreshSession();
-        return context.read<AuthService>().accessToken;
-      },
-    );
+    Navigator.of(context).pushNamed('/trainings/new');
   }
 
-  void _showCalendarActionsModal() {
-    final locale = context.read<LocaleProvider>();
-    final staffLabel = locale.t('calendar.staffMember');
-    final staffName = _selectedStaffId != null
-        ? (_staffMembers
-                  .where((s) => s.id == _selectedStaffId)
-                  .firstOrNull
-                  ?.name ??
-              staffLabel)
-        : staffLabel;
-    showModalBottomSheet<void>(
-      context: context,
-      backgroundColor: Colors.transparent,
-      builder: (ctx) => Container(
-        margin: const EdgeInsets.fromLTRB(16, 0, 16, 12),
-        decoration: BoxDecoration(
-          color: AppColors.backgroundPrimary,
-          borderRadius: BorderRadius.circular(20),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.1),
-              blurRadius: 20,
-              offset: const Offset(0, 4),
-            ),
-          ],
-        ),
-        child: SafeArea(
-          top: false,
-          child: Padding(
-            padding: const EdgeInsets.all(20),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                _calendarActionOption(
-                  label: locale.t('calendar.editSchedule'),
-                  icon: Icons.calendar_month_outlined,
-                  onTap: () {
-                    Navigator.pop(ctx);
-                    Navigator.push(
-                      ctx,
-                      MaterialPageRoute(
-                        builder: (_) => const WorkScheduleScreen(),
-                      ),
-                    );
-                  },
-                ),
-                const SizedBox(height: 12),
-                _calendarActionOption(
-                  label: '${locale.t('calendar.addUnavailable')} $staffName',
-                  icon: Icons.schedule_outlined,
-                  onTap: () {
-                    Navigator.pop(ctx);
-                    ScaffoldMessenger.maybeOf(context)?.showSnackBar(
-                      SnackBar(
-                        content: Text(locale.t('calendar.unavailableComingSoon')),
-                      ),
-                    );
-                  },
-                ),
-                const SizedBox(height: 12),
-                _calendarActionOption(
-                  label: locale.t('calendar.makeDayOff'),
-                  icon: Icons.event_busy_outlined,
-                  onTap: () {
-                    Navigator.pop(ctx);
-                    ScaffoldMessenger.maybeOf(context)?.showSnackBar(
-                      SnackBar(
-                        content: Text(locale.t('calendar.blockComingSoon')),
-                      ),
-                    );
-                  },
-                ),
-                const SizedBox(height: 12),
-                _calendarActionOption(
-                  label: locale.t('calendar.newBooking'),
-                  icon: Icons.add_circle_outline,
-                  onTap: () {
-                    Navigator.pop(ctx);
-                    _onNewAppointment();
-                  },
-                ),
-              ],
-            ),
-          ),
-        ),
+  String _weekdayShort(DateTime day) {
+    const names = ['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN'];
+    return names[day.weekday - 1];
+  }
+
+  String _monthNameRu(int month) {
+    const months = [
+      'Январь',
+      'Февраль',
+      'Март',
+      'Апрель',
+      'Май',
+      'Июнь',
+      'Июль',
+      'Август',
+      'Сентябрь',
+      'Октябрь',
+      'Ноябрь',
+      'Декабрь',
+    ];
+    return months[month - 1];
+  }
+
+  String _weekTitle() {
+    final weekEnd = _weekStart.add(const Duration(days: 6));
+    if (_weekStart.year == weekEnd.year) {
+      if (_weekStart.month == weekEnd.month) {
+        return '${_monthNameRu(_weekStart.month)} ${_weekStart.year}';
+      }
+      return '${_monthNameRu(_weekStart.month)} / ${_monthNameRu(weekEnd.month)} ${_weekStart.year}';
+    }
+    return '${_monthNameRu(_weekStart.month)} ${_weekStart.year} / ${_monthNameRu(weekEnd.month)} ${weekEnd.year}';
+  }
+
+  void _shiftMonth(int deltaMonths) {
+    final targetMonth = DateTime(
+      _selectedDay.year,
+      _selectedDay.month + deltaMonths,
+      1,
+    );
+    final daysInTargetMonth = DateTime(
+      targetMonth.year,
+      targetMonth.month + 1,
+      0,
+    ).day;
+    final targetDay = _selectedDay.day.clamp(1, daysInTargetMonth);
+    final nextSelected = DateTime(
+      targetMonth.year,
+      targetMonth.month,
+      targetDay,
+    );
+    setState(() {
+      _selectedDay = nextSelected;
+      _weekStart = nextSelected.subtract(
+        Duration(days: nextSelected.weekday - 1),
+      );
+    });
+  }
+
+  List<DateTime?> _monthCells(DateTime monthDate) {
+    final firstDay = DateTime(monthDate.year, monthDate.month, 1);
+    final daysInMonth = DateTime(monthDate.year, monthDate.month + 1, 0).day;
+    final startOffset = firstDay.weekday - 1; // Monday = 0
+    final totalCells = ((startOffset + daysInMonth + 6) ~/ 7) * 7;
+    return List.generate(totalCells, (index) {
+      final dayNum = index - startOffset + 1;
+      if (dayNum < 1 || dayNum > daysInMonth) return null;
+      return DateTime(monthDate.year, monthDate.month, dayNum);
+    });
+  }
+
+  Widget _buildMonthExpanded() {
+    final cells = _monthCells(_selectedDay);
+    const dow = ['ПН', 'ВТ', 'СР', 'ЧТ', 'ПТ', 'СБ', 'ВС'];
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(10),
+      decoration: BoxDecoration(
+        color: AppColors.backgroundPrimary,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: AppColors.borderPrimary),
       ),
-    );
-  }
-
-  Widget _calendarActionOption({
-    required String label,
-    required IconData icon,
-    required VoidCallback onTap,
-  }) {
-    return Material(
-      color: AppColors.primary100,
-      borderRadius: BorderRadius.circular(16),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(16),
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: AppColors.primary200),
-          ),
-          child: Row(
-            children: [
-              Expanded(
-                child: Text(
-                  label,
-                  style: const TextStyle(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w500,
-                    color: AppColors.textPrimary,
-                  ),
-                ),
-              ),
-              Icon(icon, size: 22, color: AppColors.primary500),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Consumer<LocaleProvider>(
-      builder: (context, locale, _) {
-        if (_salon == null && !_isLoading) {
-          return Scaffold(
-            backgroundColor: AppColors.backgroundSecondary,
-            body: SafeArea(
-              child: Center(
-                child: Padding(
-                  padding: const EdgeInsets.all(12),
+      child: Column(
+        children: [
+          Row(
+            children: List.generate(
+              7,
+              (i) => Expanded(
+                child: Center(
                   child: Text(
-                    locale.t('calendar.setupSalonFirst'),
-                    style: TextStyle(fontSize: 16, color: AppColors.textSecondary),
-                  ),
-                ),
-              ),
-            ),
-          );
-        }
-
-        final monthNames = locale.tList('calendar.months');
-        final weekDays = locale.tList('calendar.weekDays');
-        final displayDate = _expandedView ? _selectedDate : _displayWeekStart;
-        final monthYear = monthNames.isNotEmpty
-            ? '${monthNames[displayDate.month - 1]} ${displayDate.year}'
-            : '${displayDate.month} ${displayDate.year}';
-        return Scaffold(
-      backgroundColor: AppColors.backgroundSecondary,
-      body: SafeArea(
-        child: RefreshIndicator(
-          onRefresh: _loadData,
-          color: AppColors.primary500,
-          child: CustomScrollView(
-            physics: const AlwaysScrollableScrollPhysics(),
-            slivers: [
-              SliverToBoxAdapter(
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(0, 20, 0, 0),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      // Header: Month/Year + Today, Expand
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 12),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Text(
-                              monthYear,
-                              style: const TextStyle(
-                                fontSize: 18,
-                                fontWeight: FontWeight.bold,
-                                color: AppColors.textPrimary,
-                              ),
-                            ),
-                            Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                _headerPill(
-                                  label: locale.t('calendar.today'),
-                                  selected: _isToday(_selectedDate),
-                                  onTap: () {
-                                    final now = DateTime.now();
-                                    setState(() {
-                                      _selectedDate = now;
-                                      _displayWeekStart = _mondayOfWeek(now);
-                                    });
-                                    final page = _weekIndexForDate(now);
-                                    if (page >= 0 &&
-                                        page < _dayStripTotalWeeks) {
-                                      _dayStripPageController.animateToPage(
-                                        page,
-                                        duration: const Duration(
-                                          milliseconds: 300,
-                                        ),
-                                        curve: Curves.easeInOut,
-                                      );
-                                    }
-                                  },
-                                ),
-                                const SizedBox(width: 8),
-                                _headerPill(
-                                  label: _expandedView
-                                      ? locale.t('calendar.collapse')
-                                      : locale.t('calendar.expand'),
-                                  selected: _expandedView,
-                                  onTap: () => setState(
-                                    () => _expandedView = !_expandedView,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(height: 20),
-                      // Date strip (7 days) or full month grid with background
-                      _expandedView
-                          ? Container(
-                              margin: const EdgeInsets.symmetric(horizontal: 12),
-                              decoration: BoxDecoration(
-                                color: AppColors.backgroundPrimary,
-                                borderRadius: BorderRadius.circular(12),
-                                border: Border.all(color: AppColors.borderPrimary),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: Colors.black.withValues(alpha: 0.06),
-                                    blurRadius: 8,
-                                    offset: const Offset(0, 2),
-                                  ),
-                                ],
-                              ),
-                              child: ConstrainedBox(
-                                constraints: const BoxConstraints(maxHeight: 320),
-                                child: SingleChildScrollView(
-                                  padding: const EdgeInsets.all(12),
-                                  child: _buildMonthGrid(weekDays),
-                                ),
-                              ),
-                            )
-                          : _buildDayStrip(weekDays),
-                      if (!_expandedView) ...[
-                        const SizedBox(height: 16),
-                        _buildStaffPills(),
-                        const SizedBox(height: 16),
-                      ],
-                    ],
-                  ),
-                ),
-              ),
-              SliverFillRemaining(
-                hasScrollBody: false,
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(12, 0, 12, 100),
-                  child: _buildTimeGrid(locale),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _showCalendarActionsModal,
-        backgroundColor: AppColors.primary500,
-        child: const Icon(
-          CupertinoIcons.calendar_badge_plus,
-          color: AppColors.textInverse,
-          size: 28,
-        ),
-      ),
-        );
-      },
-    );
-  }
-
-  Widget _buildMonthGrid(List<String> weekDays) {
-    final year = _selectedDate.year;
-    final month = _selectedDate.month;
-    final firstDay = DateTime(year, month, 1);
-    final lastDay = DateTime(year, month + 1, 0).day;
-    final firstWeekday = firstDay.weekday; // 1=Mon, 7=Sun
-    final leadingEmpty = firstWeekday - 1;
-    final totalCells = leadingEmpty + lastDay;
-    final rows = (totalCells / 7).ceil();
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        // Day headers: Пн, Вт, Ср, Чт, Пт, Сб, Вс
-        Row(
-          children: List.generate(7, (i) {
-            final idx = (i + 1) % 7;
-            final label = weekDays.length > idx ? weekDays[idx] : '$idx';
-            return Expanded(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 4),
-                child: Text(
-                  label,
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w600,
-                    color: AppColors.textSecondary,
-                  ),
-                ),
-              ),
-            );
-          }),
-        ),
-        // Grid of days
-        ...List.generate(rows, (row) {
-          return Padding(
-            padding: const EdgeInsets.only(bottom: 6),
-            child: Row(
-              children: List.generate(7, (col) {
-                final cellIndex = row * 7 + col;
-                if (cellIndex < leadingEmpty) {
-                  return const Expanded(child: SizedBox(height: 48));
-                }
-                final dayNum = cellIndex - leadingEmpty + 1;
-                if (dayNum > lastDay) {
-                  return const Expanded(child: SizedBox(height: 48));
-                }
-                final d = DateTime(year, month, dayNum);
-                final isSelected =
-                    _selectedDate.year == d.year &&
-                    _selectedDate.month == d.month &&
-                    _selectedDate.day == d.day;
-                final count = _bookingsForDateAndStaff(
-                  d,
-                  _selectedStaffId,
-                ).length;
-                return Expanded(
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 2),
-                    child: _dayPill(
-                      d.day,
-                      count,
-                      isSelected,
-                      () {
-                        setState(() {
-                          _selectedDate = d;
-                          _expandedView = false;
-                          _displayWeekStart = _mondayOfWeek(d);
-                        });
-                        // После закрытия календаря прокрутить пилсы дат к неделе выбранного дня
-                        WidgetsBinding.instance.addPostFrameCallback((_) {
-                          if (!mounted) return;
-                          final page = _weekIndexForDate(d);
-                          if (page >= 0 && page < _dayStripTotalWeeks) {
-                            _dayStripPageController.animateToPage(
-                              page,
-                              duration: const Duration(milliseconds: 300),
-                              curve: Curves.easeInOut,
-                            );
-                          }
-                        });
-                      },
-                      compact: true,
-                    ),
-                  ),
-                );
-              }),
-            ),
-          );
-        }),
-      ],
-    );
-  }
-
-  Widget _dayPill(
-    int dayNum,
-    int count,
-    bool isSelected,
-    VoidCallback onTap, {
-    bool compact = false,
-  }) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(12),
-      child: Container(
-        height: 48,
-        padding: const EdgeInsets.symmetric(vertical: 6),
-        decoration: BoxDecoration(
-          color: isSelected
-              ? AppColors.primary100
-              : AppColors.backgroundPrimary,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(
-            color: isSelected ? AppColors.primary500 : AppColors.borderPrimary,
-            width: isSelected ? 2 : 1,
-          ),
-        ),
-        alignment: Alignment.center,
-        child: compact
-            ? Text(
-                '$dayNum',
-                style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w700,
-                  color: isSelected
-                      ? AppColors.primary500
-                      : AppColors.textPrimary,
-                ),
-              )
-            : Column(
-                mainAxisSize: MainAxisSize.min,
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text(
-                    '$dayNum',
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w700,
-                      color: isSelected
-                          ? AppColors.primary500
-                          : AppColors.textPrimary,
-                    ),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    '$count',
-                    style: TextStyle(
+                    dow[i],
+                    style: const TextStyle(
                       fontSize: 10,
-                      color: isSelected
-                          ? AppColors.primary500
-                          : AppColors.textSecondary,
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.textSecondary,
                     ),
                   ),
-                ],
+                ),
               ),
-      ),
-    );
-  }
-
-  Widget _buildDayStrip(List<String> weekDays) {
-    return SizedBox(
-      height: 84,
-      child: PageView.builder(
-        controller: _dayStripPageController,
-        itemCount: _dayStripTotalWeeks,
-        padEnds: true,
-        physics: const PageScrollPhysics(),
-        // Не меняем активную дату при прокрутке — только по клику на ячейку
-        itemBuilder: (context, index) {
-          final monday = _dateForWeekIndex(index);
-          final days = List<DateTime>.generate(
-            7,
-            (i) => monday.add(Duration(days: i)),
-          );
-          return Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: days.map((d) {
-              final isSelected =
-                  _selectedDate.year == d.year &&
-                  _selectedDate.month == d.month &&
-                  _selectedDate.day == d.day;
-              final count = _bookingsForDateAndStaff(
-                d,
-                _selectedStaffId,
-              ).length;
-              return Expanded(
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 4),
-                  child: Material(
-                    color: isSelected
-                        ? AppColors.primary100
-                        : AppColors.backgroundPrimary,
-                    borderRadius: BorderRadius.circular(16),
-                    child: InkWell(
-                      onTap: () => setState(() => _selectedDate = d),
-                      borderRadius: BorderRadius.circular(16),
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(vertical: 6),
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(16),
-                          border: Border.all(
-                            color: isSelected
-                                ? AppColors.primary500
-                                : AppColors.borderPrimary,
-                            width: isSelected ? 2 : 1,
-                          ),
-                        ),
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Text(
-                              weekDays.length > d.weekday % 7
-                                  ? weekDays[d.weekday % 7]
-                                  : '${d.weekday}',
-                              style: TextStyle(
-                                fontSize: 10,
-                                fontWeight: FontWeight.w500,
-                                color: isSelected
-                                    ? AppColors.primary500
-                                    : AppColors.textSecondary,
-                              ),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                            const SizedBox(height: 2),
-                            Text(
-                              '${d.day}',
-                              style: TextStyle(
-                                fontSize: 14,
-                                fontWeight: FontWeight.w700,
-                                color: isSelected
-                                    ? AppColors.primary500
-                                    : AppColors.textPrimary,
-                              ),
-                              maxLines: 1,
-                            ),
-                            const SizedBox(height: 1),
-                            Text(
-                              '$count',
-                              style: TextStyle(
-                                fontSize: 10,
-                                color: isSelected
-                                    ? AppColors.primary500
-                                    : AppColors.textSecondary,
-                              ),
-                              maxLines: 1,
-                            ),
-                          ],
-                        ),
-                      ),
+            ),
+          ),
+          const SizedBox(height: 8),
+          GridView.builder(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            itemCount: cells.length,
+            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: 7,
+              mainAxisSpacing: 6,
+              crossAxisSpacing: 6,
+              childAspectRatio: 1.0,
+            ),
+            itemBuilder: (_, index) {
+              final day = cells[index];
+              if (day == null) return const SizedBox.shrink();
+              final selected = _isSameDay(day, _selectedDay);
+              return InkWell(
+                onTap: () {
+                  setState(() {
+                    _selectedDay = day;
+                    _weekStart = day.subtract(Duration(days: day.weekday - 1));
+                    _isMonthExpanded = false;
+                  });
+                },
+                borderRadius: BorderRadius.circular(20),
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: selected
+                        ? AppColors.primary500
+                        : AppColors.backgroundSecondary,
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(
+                      color: selected
+                          ? AppColors.primary500
+                          : AppColors.borderPrimary,
+                    ),
+                  ),
+                  alignment: Alignment.center,
+                  child: Text(
+                    '${day.day}',
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w700,
+                      color: selected ? Colors.white : AppColors.textPrimary,
                     ),
                   ),
                 ),
               );
-            }).toList(),
-          );
-        },
-      ),
-    );
-  }
-
-  Widget _buildStaffPills() {
-    final staffList = _staffMembers;
-    if (staffList.isEmpty) return const SizedBox.shrink();
-    return SizedBox(
-      height: 40,
-      child: ListView(
-        scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(horizontal: 12),
-        children: staffList
-            .map(
-              (s) => InkWell(
-                onTap: () => setState(() => _selectedStaffId = s.id),
-                borderRadius: BorderRadius.circular(20),
-                child: Padding(
-                  padding: const EdgeInsets.only(right: 8),
-                  child: _staffPill(s.name, _selectedStaffId == s.id),
-                ),
-              ),
-            )
-            .toList(),
-      ),
-    );
-  }
-
-  Widget _staffPill(String label, bool selected) {
-    return Material(
-      color: selected ? AppColors.primary100 : AppColors.backgroundPrimary,
-      borderRadius: BorderRadius.circular(20),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(
-            color: selected ? AppColors.primary500 : AppColors.borderPrimary,
+            },
           ),
-        ),
-        alignment: Alignment.center,
-        child: Text(
-          label,
-          style: TextStyle(
-            fontSize: 14,
-            fontWeight: FontWeight.w500,
-            color: selected ? AppColors.primary500 : AppColors.textPrimary,
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildTimeGrid(LocaleProvider locale) {
-    final range = _getGlobalTimeRange();
-    final startHour = range.startHour;
-    final endHour = range.endHour;
-    const rowHeight = 72.0;
-    final dayBookings = _bookingsForDateAndStaff(
-      _selectedDate,
-      _selectedStaffId,
-    );
-
-    return Container(
-      decoration: BoxDecoration(
-        color: AppColors.backgroundPrimary,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.borderPrimary),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          ...List.generate(endHour - startHour + 1, (i) {
-            final hour = startHour + i;
-            final booking = _bookingAtHour(_selectedDate, dayBookings, hour);
-            final timeBlock = _getTimeBlockAtTime(_selectedStaffId, hour);
-            final outsideHours = _isTimeSlotOutsideWorkingHours(hour);
-            return SizedBox(
-              height: rowHeight,
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  SizedBox(
-                    width: 52,
-                    height: rowHeight,
-                    child: Center(
-                      child: Text(
-                        '${hour.toString().padLeft(2, '0')}:00',
-                        style: TextStyle(
-                          fontSize: 13,
-                          color: AppColors.textSecondary,
-                        ),
-                      ),
-                    ),
-                  ),
-                  Expanded(
-                    child: Container(
-                      decoration: BoxDecoration(
-                        border: Border(
-                          bottom: BorderSide(
-                            color: AppColors.borderPrimary.withValues(
-                              alpha: 0.5,
-                            ),
-                            width: 1,
-                          ),
-                        ),
-                      ),
-                      child: Stack(
-                        children: [
-                          if (outsideHours)
-                            Positioned.fill(
-                              child: Container(
-                                color: AppColors.neutral100.withValues(
-                                  alpha: 0.5,
-                                ),
-                              ),
-                            ),
-                          if (timeBlock != null)
-                            Positioned.fill(
-                              child: Container(
-                                margin: const EdgeInsets.only(
-                                  right: 8,
-                                  top: 4,
-                                  bottom: 4,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: AppColors.neutral200,
-                                  borderRadius: BorderRadius.circular(8),
-                                  border: Border.all(
-                                    color: AppColors.borderPrimary,
-                                  ),
-                                ),
-                                child: CustomPaint(
-                                  painter: _DiagonalStripesPainter(),
-                                  child: Center(
-                                    child: Text(
-                                      _timeBlockLabel(timeBlock.type, locale),
-                                      style: TextStyle(
-                                        fontSize: 12,
-                                        fontWeight: FontWeight.w500,
-                                        color: AppColors.textSecondary,
-                                      ),
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ),
-                          if (booking != null && timeBlock == null)
-                            Positioned.fill(
-                              child: Padding(
-                                padding: const EdgeInsets.only(
-                                  right: 8,
-                                  top: 4,
-                                  bottom: 4,
-                                ),
-                                child: InkWell(
-                                  onTap: () => BookingDetailModal.show(
-                                    context,
-                                    booking: booking,
-                                    onEdit: _handleEditBooking,
-                                    onCancel: _handleCancelBooking,
-                                    onConfirm: _handleConfirmBooking,
-                                    onReject: _handleRejectBooking,
-                                  ),
-                                  borderRadius: BorderRadius.circular(8),
-                                  child: Container(
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 10,
-                                      vertical: 6,
-                                    ),
-                                    decoration: BoxDecoration(
-                                      color: AppColors.primary100,
-                                      borderRadius: BorderRadius.circular(8),
-                                      border: Border.all(
-                                        color: AppColors.primary300,
-                                      ),
-                                    ),
-                                    child: Row(
-                                      children: [
-                                        Flexible(
-                                          child: Text(
-                                            () {
-                                              final duration =
-                                                  booking.service?.duration ??
-                                                  60;
-                                              final end = booking.dateTime.add(
-                                                Duration(minutes: duration),
-                                              );
-                                              return '${booking.dateTime.hour.toString().padLeft(2, '0')}:${booking.dateTime.minute.toString().padLeft(2, '0')}-'
-                                                  '${end.hour.toString().padLeft(2, '0')}:${end.minute.toString().padLeft(2, '0')}';
-                                            }(),
-                                            style: TextStyle(
-                                              fontSize: 11,
-                                              fontWeight: FontWeight.w500,
-                                              color: AppColors.primary600,
-                                            ),
-                                            maxLines: 1,
-                                            overflow: TextOverflow.ellipsis,
-                                          ),
-                                        ),
-                                        const SizedBox(width: 8),
-                                        Expanded(
-                                          child: Text(
-                                            booking.service?.name ??
-                                                booking.user?.name ??
-                                                booking.user?.email ??
-                                                '—',
-                                            style: const TextStyle(
-                                              fontSize: 12,
-                                              fontWeight: FontWeight.w600,
-                                              color: AppColors.textPrimary,
-                                            ),
-                                            maxLines: 1,
-                                            overflow: TextOverflow.ellipsis,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            );
-          }),
         ],
       ),
     );
   }
 
-  String _timeBlockLabel(TimeBlockType type, LocaleProvider locale) {
-    switch (type) {
-      case TimeBlockType.timeOff:
-        return locale.t('calendar.dayOff');
-      case TimeBlockType.busy:
-        return locale.t('calendar.busy');
-      case TimeBlockType.closure:
-        return locale.t('calendar.closed');
-    }
+  bool _isSameDay(DateTime a, DateTime b) {
+    return a.year == b.year && a.month == b.month && a.day == b.day;
+  }
+
+  int _sessionsCountForDay(DateTime day) {
+    return _sessionCountByDay[_dayKey(day)] ?? 0;
+  }
+
+  int _dayKey(DateTime d) => d.year * 10000 + d.month * 100 + d.day;
+
+  @override
+  Widget build(BuildContext context) {
+    return Consumer<LocaleProvider>(
+      builder: (context, locale, _) {
+        final daySessions = _sessionsForSelectedDay();
+        return Scaffold(
+          backgroundColor: AppColors.backgroundSecondary,
+          floatingActionButton: SafeArea(
+            minimum: const EdgeInsets.only(bottom: 8),
+            child: FloatingActionButton(
+              onPressed: _openCreateTraining,
+              backgroundColor: AppColors.primary500,
+              foregroundColor: Colors.white,
+              child: const Icon(Icons.add),
+            ),
+          ),
+          floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
+          body: SafeArea(
+            child: RefreshIndicator(
+              onRefresh: _loadData,
+              color: AppColors.primary500,
+              child: _isLoading
+                  ? const Center(
+                      child: CircularProgressIndicator(
+                        color: AppColors.primary500,
+                      ),
+                    )
+                  : ListView(
+                      padding: const EdgeInsets.fromLTRB(12, 16, 12, 20),
+                      children: [
+                        Row(
+                          children: [
+                            Expanded(
+                              child: Text(
+                                _weekTitle(),
+                                style: const TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w700,
+                                  color: AppColors.textPrimary,
+                                ),
+                              ),
+                            ),
+                            OutlinedButton(
+                              onPressed: () {
+                                final now = DateTime.now();
+                                final today = DateTime(
+                                  now.year,
+                                  now.month,
+                                  now.day,
+                                );
+                                setState(() {
+                                  _selectedDay = today;
+                                  _weekStart = today.subtract(
+                                    Duration(days: today.weekday - 1),
+                                  );
+                                });
+                              },
+                              style: OutlinedButton.styleFrom(
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                side: const BorderSide(
+                                  color: AppColors.borderPrimary,
+                                ),
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 8,
+                                  vertical: 8,
+                                ),
+                              ),
+                              child: const Text(
+                                'Сегодня',
+                                style: TextStyle(color: AppColors.textPrimary),
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            OutlinedButton.icon(
+                              onPressed: () => setState(
+                                () => _isMonthExpanded = !_isMonthExpanded,
+                              ),
+                              style: OutlinedButton.styleFrom(
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                side: const BorderSide(
+                                  color: AppColors.borderPrimary,
+                                ),
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 8,
+                                  vertical: 8,
+                                ),
+                              ),
+                              icon: const SizedBox.shrink(),
+                              label: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  const Icon(
+                                    Icons.calendar_month_outlined,
+                                    color: AppColors.textPrimary,
+                                  ),
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    _isMonthExpanded
+                                        ? 'Свернуть'
+                                        : 'Развернуть',
+                                    style: const TextStyle(
+                                      color: AppColors.textPrimary,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                        if (_isMonthExpanded)
+                          GestureDetector(
+                            onHorizontalDragEnd: (details) {
+                              const threshold = 90.0;
+                              if ((details.primaryVelocity ?? 0) < -threshold) {
+                                _shiftMonth(1);
+                              } else if ((details.primaryVelocity ?? 0) >
+                                  threshold) {
+                                _shiftMonth(-1);
+                              }
+                            },
+                            child: _buildMonthExpanded(),
+                          )
+                        else
+                          SizedBox(
+                            height: 74,
+                            child: PageView.builder(
+                              controller: _weekPagerController,
+                              physics: const _AmplifiedWeekPageScrollPhysics(),
+                              onPageChanged: (page) {
+                                final delta = page - _weekInitialPage;
+                                if (delta == 0) return;
+                                setState(() {
+                                  _weekStart = _weekStart.add(
+                                    Duration(days: delta * 7),
+                                  );
+                                  _selectedDay = _selectedDay.add(
+                                    Duration(days: delta * 7),
+                                  );
+                                });
+                                WidgetsBinding.instance.addPostFrameCallback((
+                                  _,
+                                ) {
+                                  if (!mounted) return;
+                                  _weekPagerController.jumpToPage(
+                                    _weekInitialPage,
+                                  );
+                                });
+                              },
+                              itemBuilder: (context, pageIndex) {
+                                final baseWeekStart = _weekStart.add(
+                                  Duration(
+                                    days: (pageIndex - _weekInitialPage) * 7,
+                                  ),
+                                );
+                                return Row(
+                                  children: List.generate(7, (index) {
+                                    final day = baseWeekStart.add(
+                                      Duration(days: index),
+                                    );
+                                    final selected = _isSameDay(
+                                      day,
+                                      _selectedDay,
+                                    );
+                                    final sessionsCount = _sessionsCountForDay(
+                                      day,
+                                    );
+                                    return Expanded(
+                                      child: Padding(
+                                        padding: EdgeInsets.only(
+                                          right: index == 6 ? 0 : 6,
+                                        ),
+                                        child: InkWell(
+                                          onTap: () {
+                                            setState(() {
+                                              _selectedDay = DateTime(
+                                                day.year,
+                                                day.month,
+                                                day.day,
+                                              );
+                                            });
+                                          },
+                                          borderRadius: BorderRadius.circular(
+                                            22,
+                                          ),
+                                          child: Container(
+                                            height: 74,
+                                            decoration: BoxDecoration(
+                                              color: selected
+                                                  ? AppColors.primary500
+                                                  : AppColors.backgroundPrimary,
+                                              borderRadius:
+                                                  BorderRadius.circular(22),
+                                              border: Border.all(
+                                                color: selected
+                                                    ? AppColors.primary500
+                                                    : AppColors.borderPrimary,
+                                              ),
+                                            ),
+                                            padding: const EdgeInsets.symmetric(
+                                              vertical: 8,
+                                            ),
+                                            child: Column(
+                                              mainAxisAlignment:
+                                                  MainAxisAlignment.center,
+                                              children: [
+                                                Text(
+                                                  _weekdayShort(day),
+                                                  style: TextStyle(
+                                                    fontSize: 9,
+                                                    fontWeight: FontWeight.w700,
+                                                    color: selected
+                                                        ? Colors.white
+                                                        : AppColors
+                                                              .textSecondary,
+                                                  ),
+                                                ),
+                                                const SizedBox(height: 3),
+                                                Text(
+                                                  '${day.day}',
+                                                  style: TextStyle(
+                                                    fontSize: 15,
+                                                    fontWeight: FontWeight.w800,
+                                                    color: selected
+                                                        ? Colors.white
+                                                        : AppColors.textPrimary,
+                                                  ),
+                                                ),
+                                                const SizedBox(height: 2),
+                                                Text(
+                                                  '$sessionsCount',
+                                                  style: TextStyle(
+                                                    fontSize: 10,
+                                                    fontWeight: FontWeight.w600,
+                                                    color: selected
+                                                        ? Colors.white70
+                                                        : AppColors
+                                                              .textSecondary,
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                    );
+                                  }),
+                                );
+                              },
+                            ),
+                          ),
+                        const SizedBox(height: 14),
+                        Text(
+                          'Daily schedule',
+                          style: const TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.w700,
+                            color: AppColors.textPrimary,
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        if (daySessions.isEmpty)
+                          Container(
+                            padding: const EdgeInsets.all(16),
+                            decoration: BoxDecoration(
+                              color: AppColors.backgroundPrimary,
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(
+                                color: AppColors.borderPrimary,
+                              ),
+                            ),
+                            child: Text(
+                              'No trainings for selected day',
+                              style: TextStyle(
+                                color: AppColors.textSecondary,
+                                fontSize: 14,
+                              ),
+                            ),
+                          )
+                        else
+                          ...daySessions.map(
+                            (s) => OwnerTrainingSessionCard(
+                              session: s,
+                              trainerFallbackName: _ownerTrainerFallback(),
+                              onTap: () =>
+                                  OwnerTrainingSessionCard.showDetailsModal(
+                                    context,
+                                    s,
+                                    trainerFallbackName:
+                                        _ownerTrainerFallback(),
+                                    onEditSession: s.sessionId.isNotEmpty
+                                        ? () {
+                                            final shell = context
+                                                .findAncestorStateOfType<
+                                                    MainShellState>();
+                                            shell?.navigateToTab0Route(
+                                              '/owner/session/edit',
+                                              arguments: s.toRouteArgs(),
+                                            );
+                                          }
+                                        : null,
+                                    onEditService: s.trainingId.isNotEmpty
+                                        ? () {
+                                            final shell = context
+                                                .findAncestorStateOfType<
+                                                    MainShellState>();
+                                            shell?.navigateToTab0Route(
+                                              '/services',
+                                              arguments: {
+                                                'editTrainingId': s.trainingId,
+                                              },
+                                            );
+                                          }
+                                        : null,
+                                  ),
+                            ),
+                          ),
+                      ],
+                    ),
+            ),
+          ),
+        );
+      },
+    );
   }
 }
 
-/// Рисует диагональные полоски для заблокированного времени.
-class _DiagonalStripesPainter extends CustomPainter {
+/// Amplifies horizontal drag so switching weeks needs less finger travel.
+class _AmplifiedWeekPageScrollPhysics extends PageScrollPhysics {
+  const _AmplifiedWeekPageScrollPhysics({
+    super.parent,
+    this.dragMultiplier = 1.55,
+  });
+
+  final double dragMultiplier;
+
   @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = Colors.black.withValues(alpha: 0.06)
-      ..strokeWidth = 1;
-    const step = 8.0;
-    for (double i = -size.height; i < size.width + size.height; i += step) {
-      canvas.drawLine(
-        Offset(i, 0),
-        Offset(i + size.height, size.height),
-        paint,
-      );
-    }
+  _AmplifiedWeekPageScrollPhysics applyTo(ScrollPhysics? ancestor) {
+    return _AmplifiedWeekPageScrollPhysics(
+      parent: buildParent(ancestor),
+      dragMultiplier: dragMultiplier,
+    );
   }
 
   @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+  double applyPhysicsToUserOffset(ScrollMetrics position, double offset) {
+    return super.applyPhysicsToUserOffset(
+      position,
+      offset * dragMultiplier,
+    );
+  }
 }

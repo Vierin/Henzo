@@ -1,6 +1,5 @@
 import type { NextConfig } from 'next';
 import path from 'path';
-import { withSentryConfig } from '@sentry/nextjs';
 import bundleAnalyzer from '@next/bundle-analyzer';
 
 // P1: Bundle analyzer (optional, enable with ANALYZE=true)
@@ -48,7 +47,6 @@ const nextConfig: NextConfig = {
 			'lucide-react',
 			'@radix-ui/react-popover',
 			'@radix-ui/react-select',
-			'@tanstack/react-query',
 			'react-hot-toast',
 		],
 	},
@@ -75,6 +73,7 @@ const nextConfig: NextConfig = {
 		],
 		// P1: Оптимизация изображений для production
 		formats: ['image/avif', 'image/webp'], // Современные форматы
+		qualities: [75, 85, 95, 100],
 		minimumCacheTTL: 60, // Кэш изображений
 		deviceSizes: [640, 750, 828, 1080, 1200, 1920, 2048, 3840],
 		imageSizes: [16, 32, 48, 64, 96, 128, 256, 384],
@@ -116,15 +115,4 @@ const nextConfig: NextConfig = {
 	poweredByHeader: false, // Убрать X-Powered-By header
 };
 
-// Wrap with Sentry if DSN is provided
-const configWithSentry = process.env.NEXT_PUBLIC_SENTRY_DSN
-	? withSentryConfig(withBundleAnalyzer(nextConfig), {
-			// For all available options, see:
-			// https://github.com/getsentry/sentry-webpack-plugin#options
-			silent: true,
-			org: process.env.SENTRY_ORG,
-			project: process.env.SENTRY_PROJECT,
-		})
-	: withBundleAnalyzer(nextConfig);
-
-export default configWithSentry;
+export default withBundleAnalyzer(nextConfig);

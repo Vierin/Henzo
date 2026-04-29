@@ -14,7 +14,7 @@ class BookingLinkScreen extends StatelessWidget {
   String get _bookingUrl {
     final base = AppConfig.webUrl;
     final slug = salon.slug ?? salon.id;
-    return '$base/salon/$slug';
+    return '$base/studio/$slug';
   }
 
   @override

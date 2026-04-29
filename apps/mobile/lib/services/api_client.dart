@@ -50,7 +50,27 @@ class ApiClient {
     try {
       final body = json.decode(response.body);
       if (body is Map<String, dynamic>) {
-        final msg = body['msg'] as String? ?? body['message'] as String?;
+        String? msg;
+        final rawMsg = body['msg'] ?? body['message'];
+        if (rawMsg is String) {
+          msg = rawMsg;
+        } else if (rawMsg is Map<String, dynamic>) {
+          final nestedMessage = rawMsg['message'];
+          if (nestedMessage is String && nestedMessage.isNotEmpty) {
+            msg = nestedMessage;
+          }
+          final missing = rawMsg['missingRequiredSteps'];
+          if (missing is List && missing.isNotEmpty) {
+            final list = missing
+                .whereType<String>()
+                .where((item) => item.trim().isNotEmpty)
+                .join(', ');
+            if (list.isNotEmpty) {
+              final base = msg ?? 'Studio is not ready for publish';
+              return '$base. Missing: $list';
+            }
+          }
+        }
         if (msg != null && msg.isNotEmpty) return msg;
       }
     } catch (_) {}
@@ -180,6 +200,30 @@ class ApiClient {
     );
     if (kDebugMode) {
       debugPrint('[ApiClient] DELETE $path status=${response.statusCode}');
+    }
+    _throwIfNotSuccess(response);
+    if (response.body.isEmpty) return null;
+    return json.decode(response.body);
+  }
+
+  /// PATCH [path] with optional [body]. Returns decoded JSON. Throws [ApiException] on non-2xx.
+  static Future<dynamic> patch(
+    String path,
+    String? accessToken, {
+    Map<String, dynamic>? body,
+  }) async {
+    final url = Uri.parse('$_baseUrl$path');
+    if (kDebugMode) debugPrint('[ApiClient] PATCH $path');
+    final response = await _withRetry(
+      () => http.patch(
+        url,
+        headers: _headers(accessToken),
+        body: body != null ? json.encode(body) : null,
+      ),
+      debugLabel: 'PATCH $path',
+    );
+    if (kDebugMode) {
+      debugPrint('[ApiClient] PATCH $path status=${response.statusCode}');
     }
     _throwIfNotSuccess(response);
     if (response.body.isEmpty) return null;

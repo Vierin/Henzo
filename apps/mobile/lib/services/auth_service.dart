@@ -28,8 +28,15 @@ class AuthService extends ChangeNotifier {
   bool get isLoading => _isLoading;
   bool get isAuthenticated => _isAuthenticated;
 
-  /// Salon owner app: only `OWNER` may use the main shell.
-  bool get isSalonOwner => _user != null && _user!.role == 'OWNER';
+  String get normalizedRole => (_user?.role ?? '').trim().toUpperCase();
+
+  /// Fitness studio app: only `OWNER` may use the main shell.
+  bool get isStudioOperator => normalizedRole == 'OWNER';
+
+  bool get isClient => normalizedRole == 'CLIENT';
+
+  /// Backward-compatible alias during pivot.
+  bool get isSalonOwner => isStudioOperator;
 
   /// Bearer token for API calls.
   String? get accessToken => _supabase.auth.currentSession?.accessToken;
@@ -268,6 +275,13 @@ class AuthService extends ChangeNotifier {
       notifyListeners();
       String msg = e is AuthException ? e.message : e.toString();
       if (kDebugMode) debugPrint('[Auth] loginWithGoogle exception: $e');
+      if (msg.contains('ApiException: 7') || msg.contains('network_error')) {
+        return (
+          success: false,
+          errorL10nKey: AuthErrorKeys.network,
+          errorRaw: null,
+        );
+      }
       if (msg.contains('ApiException: 10') || msg.contains('sign_in_failed')) {
         return (
           success: false,
@@ -338,6 +352,147 @@ class AuthService extends ChangeNotifier {
       return (success: false, errorL10nKey: null, errorRaw: e.message);
     } catch (e) {
       return (success: false, errorL10nKey: null, errorRaw: e.toString());
+    }
+  }
+
+  Future<AuthUiResult> requestBusinessRegistration({
+    required String email,
+    required String password,
+    String? locale,
+  }) async {
+    try {
+      final url = Uri.parse('${AppConfig.apiUrl}/auth/send-business-magic-link');
+      final response = await http.post(
+        url,
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: json.encode({
+          'name': email.trim(),
+          'email': email.trim(),
+          'password': password,
+          if (locale != null && locale.isNotEmpty) 'locale': locale,
+        }),
+      );
+
+      if (response.statusCode >= 200 && response.statusCode < 300) {
+        return (success: true, errorL10nKey: null, errorRaw: null);
+      }
+
+      String msg = 'HTTP ${response.statusCode}';
+      try {
+        final err = json.decode(response.body) as Map<String, dynamic>?;
+        if (err != null && err['message'] != null) {
+          msg = err['message'] as String;
+        }
+      } catch (_) {}
+      return (success: false, errorL10nKey: null, errorRaw: msg);
+    } catch (e) {
+      return (
+        success: false,
+        errorL10nKey: AuthErrorKeys.network,
+        errorRaw: e.toString(),
+      );
+    }
+  }
+
+  Future<AuthUiResult> requestClientRegistration({
+    required String email,
+    required String password,
+    String? name,
+    String? phone,
+  }) async {
+    try {
+      final url = Uri.parse('${AppConfig.apiUrl}/auth/register-client/request-code');
+      final response = await http.post(
+        url,
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: json.encode({
+          'email': email.trim(),
+          'password': password,
+          if (name != null && name.trim().isNotEmpty) 'name': name.trim(),
+          if (phone != null && phone.trim().isNotEmpty) 'phone': phone.trim(),
+        }),
+      );
+
+      if (response.statusCode >= 200 && response.statusCode < 300) {
+        return (success: true, errorL10nKey: null, errorRaw: null);
+      }
+
+      String msg = 'HTTP ${response.statusCode}';
+      try {
+        final err = json.decode(response.body) as Map<String, dynamic>?;
+        if (err != null && err['message'] != null) {
+          msg = err['message'] as String;
+        }
+      } catch (_) {}
+      return (success: false, errorL10nKey: null, errorRaw: msg);
+    } catch (e) {
+      return (
+        success: false,
+        errorL10nKey: AuthErrorKeys.network,
+        errorRaw: e.toString(),
+      );
+    }
+  }
+
+  Future<AuthUiResult> verifyClientRegistrationCode({
+    required String email,
+    required String code,
+  }) async {
+    try {
+      final url = Uri.parse('${AppConfig.apiUrl}/auth/register-client/verify-code');
+      final response = await http.post(
+        url,
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: json.encode({
+          'email': email.trim(),
+          'code': code.trim(),
+        }),
+      );
+      if (response.statusCode >= 200 && response.statusCode < 300) {
+        final payload = json.decode(response.body) as Map<String, dynamic>?;
+        final session = payload?['session'];
+        final accessToken = session is Map<String, dynamic>
+            ? (session['access_token'] as String?)
+            : null;
+        if (accessToken == null || accessToken.isEmpty) {
+          return (
+            success: false,
+            errorL10nKey: AuthErrorKeys.noSession,
+            errorRaw: 'Session is missing after OTP verification',
+          );
+        }
+        final fetch = await _fetchUser(accessToken);
+        notifyListeners();
+        if (!fetch.ok || !_isAuthenticated || _user == null) {
+          return (
+            success: false,
+            errorL10nKey:
+                fetch.errorL10nKey ?? AuthErrorKeys.userNotFoundInSystem,
+            errorRaw: fetch.errorRaw,
+          );
+        }
+        return (success: true, errorL10nKey: null, errorRaw: null);
+      }
+      String msg = 'HTTP ${response.statusCode}';
+      try {
+        final err = json.decode(response.body) as Map<String, dynamic>?;
+        if (err != null && err['message'] != null) {
+          msg = err['message'] as String;
+        }
+      } catch (_) {}
+      return (success: false, errorL10nKey: null, errorRaw: msg);
+    } catch (e) {
+      return (
+        success: false,
+        errorL10nKey: AuthErrorKeys.network,
+        errorRaw: e.toString(),
+      );
     }
   }
 
@@ -412,6 +567,38 @@ class AuthService extends ChangeNotifier {
       return (
         success: false,
         errorL10nKey: AuthErrorKeys.passwordUpdateFailed,
+        errorRaw: null,
+      );
+    } on AuthException catch (e) {
+      return (success: false, errorL10nKey: null, errorRaw: e.message);
+    } catch (e) {
+      return (success: false, errorL10nKey: null, errorRaw: e.toString());
+    }
+  }
+
+  Future<AuthUiResult> updateEmail(String email) async {
+    final trimmed = email.trim();
+    if (trimmed.isEmpty) {
+      return (success: false, errorL10nKey: null, errorRaw: 'Email is empty');
+    }
+    try {
+      final res = await _supabase.auth.updateUser(UserAttributes(email: trimmed));
+      if (res.user != null) {
+        if (_user != null) {
+          _user = UserModel(
+            id: _user!.id,
+            email: trimmed,
+            name: _user!.name,
+            phone: _user!.phone,
+            role: _user!.role,
+          );
+        }
+        notifyListeners();
+        return (success: true, errorL10nKey: null, errorRaw: null);
+      }
+      return (
+        success: false,
+        errorL10nKey: AuthErrorKeys.profileUpdateFailed,
         errorRaw: null,
       );
     } on AuthException catch (e) {

@@ -6,16 +6,16 @@ import '../../services/auth_service.dart';
 import '../../services/cache/bookings_cache.dart';
 import '../../services/cache/salon_cache.dart';
 import '../../services/push_notification_service.dart';
-import '../../widgets/dashboard/new_booking_modal.dart';
 import 'dashboard/dashboard_screen.dart';
 import 'calendar_screen.dart';
 import 'analytics_screen.dart';
 import 'profile_screen.dart';
+import 'add_training_screen.dart';
 import 'services_screen.dart';
 import 'staff_screen.dart';
 import 'clients_screen.dart';
-import 'online_booking_screen.dart';
 import 'all_bookings_screen.dart';
+import 'owner_edit_training_session_screen.dart';
 
 class MainShell extends StatefulWidget {
   const MainShell({super.key});
@@ -62,11 +62,27 @@ class MainShellState extends State<MainShell> {
     }
   }
 
-  /// Переключиться на первую вкладку и открыть маршрут (например /staff, /services).
-  void navigateToTab0Route(String routeName) {
-    setState(() => _currentIndex = 0);
+  /// Переключиться на первую вкладку и открыть маршрут (например /trainers, /offerings).
+  void navigateToTab0Route(String routeName, {Object? arguments}) {
+    final nav = _homeNavigatorKey.currentState;
+    if (_currentIndex != 0) {
+      setState(() => _currentIndex = 0);
+    }
+    void push(NavigatorState n) {
+      if (arguments != null) {
+        n.pushNamed(routeName, arguments: arguments);
+      } else {
+        n.pushNamed(routeName);
+      }
+    }
+
+    if (nav != null) {
+      push(nav);
+      return;
+    }
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      _homeNavigatorKey.currentState?.pushNamed(routeName);
+      final n = _homeNavigatorKey.currentState;
+      if (n != null) push(n);
     });
   }
 
@@ -78,16 +94,24 @@ class MainShellState extends State<MainShell> {
         switch (settings.name) {
           case '/':
             return MaterialPageRoute(builder: (_) => const DashboardScreen());
+          case '/trainings/new':
+            return MaterialPageRoute(builder: (_) => const AddTrainingScreen());
+          case '/owner/session/edit':
+            return MaterialPageRoute<bool?>(
+              builder: (_) => const OwnerEditTrainingSessionScreen(),
+              settings: settings,
+            );
+          case '/offerings':
           case '/services':
-            return MaterialPageRoute(builder: (_) => const ServicesScreen());
+            return MaterialPageRoute<bool?>(
+              builder: (_) => const ServicesScreen(),
+              settings: settings,
+            );
+          case '/trainers':
           case '/staff':
             return MaterialPageRoute(builder: (_) => const StaffScreen());
           case '/clients':
             return MaterialPageRoute(builder: (_) => const ClientsScreen());
-          case '/online-booking':
-            return MaterialPageRoute(
-              builder: (_) => const OnlineBookingScreen(),
-            );
           case '/all-bookings':
             return MaterialPageRoute(builder: (_) => const AllBookingsScreen());
           default:
@@ -103,20 +127,6 @@ class MainShellState extends State<MainShell> {
     AnalyticsScreen(),
     const ProfileScreen(),
   ];
-
-  Future<void> _openNewBooking() async {
-    final token = context.read<AuthService>().accessToken;
-    if (token == null || token.isEmpty) return;
-    await NewBookingModal.show(
-      context,
-      accessToken: token,
-      onSaved: () {},
-      getAccessToken: () async {
-        await context.read<AuthService>().refreshSession();
-        return context.read<AuthService>().accessToken;
-      },
-    );
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -164,7 +174,6 @@ class MainShellState extends State<MainShell> {
                     onTap: () => setState(() => _currentIndex = 1),
                   ),
                 ),
-                Expanded(child: _PlusButton(onTap: _openNewBooking)),
                 Expanded(
                   child: _NavItem(
                     icon: Icons.analytics_outlined,
@@ -186,26 +195,6 @@ class MainShellState extends State<MainShell> {
               ],
             ),
           ),
-        ),
-      ),
-    );
-  }
-}
-
-class _PlusButton extends StatelessWidget {
-  final VoidCallback onTap;
-
-  const _PlusButton({required this.onTap});
-
-  @override
-  Widget build(BuildContext context) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(8),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 4),
-        child: Center(
-          child: Icon(Icons.add_circle, size: 40, color: AppColors.primary500),
         ),
       ),
     );

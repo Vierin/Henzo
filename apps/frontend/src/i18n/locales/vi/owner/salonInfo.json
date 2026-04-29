@@ -26,6 +26,9 @@
 	"logoPlaceholder": "Nhấp hoặc kéo thả logo vào đây",
 	"salonPhotos": "Hình ảnh Salon",
 	"photosLabel": "Tải lên tối đa 3 hình ảnh salon của bạn",
+	"coverPhoto": "Ảnh bìa",
+	"makeCoverPhoto": "Đặt làm ảnh bìa",
+	"coverPhotoUpdated": "Đã cập nhật ảnh bìa",
 	"operatingHours": "Giờ làm việc",
 	"closed": "Đóng cửa",
 	"updatingSalon": "Đang cập nhật thông tin salon...",
@@ -86,5 +89,6 @@
 	"salonQRCode": "Mã QR Salon",
 	"qrCodeDescription": "Quét mã QR để mở trang salon",
 	"copyLink": "Sao chép liên kết",
-	"sharedSuccessfully": "Đã chia sẻ liên kết thành công"
+	"sharedSuccessfully": "Đã chia sẻ liên kết thành công",
+	"unsavedChangesConfirm": "Bạn có thay đổi chưa lưu. Rời khỏi trang mà không lưu?"
 }

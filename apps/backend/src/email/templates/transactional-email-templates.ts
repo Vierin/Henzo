@@ -1,4 +1,5 @@
 import type { MagicLinkConfirmationStrings } from '../copy/magic-link-confirmation.strings';
+import type { BusinessRegistrationStrings } from '../copy/business-registration.strings';
 
 export function renderContactMessageHtml(context: {
   name: string;
@@ -170,14 +171,17 @@ export function renderMagicLinkConfirmationHtml(
 export function renderBusinessRegistrationMagicLinkHtml(
   name: string,
   registerUrl: string,
+  L: BusinessRegistrationStrings,
 ): string {
+  const greeting = L.greeting.replace('{name}', name);
+
   return `
         <!DOCTYPE html>
         <html>
         <head>
           <meta charset="utf-8">
           <meta name="viewport" content="width=device-width, initial-scale=1.0">
-          <title>Complete Your Business Registration - Henzo</title>
+          <title>${L.pageTitle}</title>
           <!--[if mso]>
           <style type="text/css">
             body, table, td { font-family: Arial, sans-serif !important; }
@@ -191,13 +195,13 @@ export function renderBusinessRegistrationMagicLinkHtml(
                 <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="600" style="margin: 0 auto; background-color: #ffffff; max-width: 600px; width: 100%;">
                   <tr>
                     <td style="background-color: #ff5b5b; padding: 30px; text-align: center; border-radius: 8px 8px 0 0;">
-                      <h1 style="margin: 0; color: #ffffff; font-size: 24px; font-weight: bold; line-height: 1.4;">🚀 Complete Your Business Registration</h1>
+                      <h1 style="margin: 0; color: #ffffff; font-size: 24px; font-weight: bold; line-height: 1.4;">${L.headerTitle}</h1>
                     </td>
                   </tr>
                   <tr>
                     <td style="background-color: #f9f9f9; padding: 30px; border-radius: 0 0 8px 8px;">
-                      <p style="margin: 0 0 16px 0; color: #333333; font-size: 16px; line-height: 1.6;">Hi ${name},</p>
-                      <p style="margin: 0 0 24px 0; color: #333333; font-size: 16px; line-height: 1.6;">Thank you for your interest in Henzo! Click the button below to complete your business account registration:</p>
+                      <p style="margin: 0 0 16px 0; color: #333333; font-size: 16px; line-height: 1.6;">${greeting}</p>
+                      <p style="margin: 0 0 24px 0; color: #333333; font-size: 16px; line-height: 1.6;">${L.intro}</p>
 
                       <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="margin: 20px 0;">
                         <tr>
@@ -205,7 +209,7 @@ export function renderBusinessRegistrationMagicLinkHtml(
                             <table role="presentation" cellspacing="0" cellpadding="0" border="0">
                               <tr>
                                 <td style="background-color: #ff5b5b; border-radius: 5px; text-align: center;">
-                                  <a href="${registerUrl}" style="display: inline-block; padding: 15px 30px; color: #ffffff !important; text-decoration: none; font-size: 16px; font-weight: bold; border-radius: 5px; background-color: #ff5b5b; white-space: nowrap;">Complete Registration</a>
+                                  <a href="${registerUrl}" style="display: inline-block; padding: 15px 30px; color: #ffffff !important; text-decoration: none; font-size: 16px; font-weight: bold; border-radius: 5px; background-color: #ff5b5b; white-space: nowrap;">${L.buttonLabel}</a>
                                 </td>
                               </tr>
                             </table>
@@ -213,15 +217,15 @@ export function renderBusinessRegistrationMagicLinkHtml(
                         </tr>
                       </table>
 
-                      <p style="margin: 24px 0 16px 0; color: #333333; font-size: 16px; line-height: 1.6;">Or copy and paste this link into your browser:</p>
+                      <p style="margin: 24px 0 16px 0; color: #333333; font-size: 16px; line-height: 1.6;">${L.fallbackText}</p>
                       <p style="margin: 0 0 24px 0; word-break: break-all; color: #666666; font-size: 14px; line-height: 1.6; background-color: #ffffff; padding: 12px; border-radius: 4px; border: 1px solid #e0e0e0;">${registerUrl}</p>
-                      <p style="margin: 0 0 16px 0; color: #333333; font-size: 16px; line-height: 1.6;"><strong>This link will expire in 24 hours.</strong></p>
-                      <p style="margin: 0; color: #666666; font-size: 14px; line-height: 1.6;">If you didn't request this registration, please ignore this email.</p>
+                      <p style="margin: 0 0 16px 0; color: #333333; font-size: 16px; line-height: 1.6;"><strong>${L.expiryText}</strong></p>
+                      <p style="margin: 0; color: #666666; font-size: 14px; line-height: 1.6;">${L.ignoreText}</p>
                     </td>
                   </tr>
                   <tr>
                     <td style="padding: 30px 20px 20px 20px; text-align: center;">
-                      <p style="margin: 0; color: #666666; font-size: 14px; line-height: 1.6;">This is an automated message from Henzo. Please do not reply to this email.</p>
+                      <p style="margin: 0; color: #666666; font-size: 14px; line-height: 1.6;">${L.footerText}</p>
                     </td>
                   </tr>
                 </table>

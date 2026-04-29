@@ -27,28 +27,40 @@
 		"freePeriod": "3 tháng đầu",
 		"quickStart": "Khởi động nhanh",
 		"quickStartTime": "Hoạt động trong 8 phút",
-		"onboardingNote": "Chúng tôi đang kết nối những doanh nghiệp đầu tiên và hỗ trợ thiết lập trực tiếp."
+		"onboardingNote": "Bắt đầu an tâm: không cần thẻ và không có phí ẩn trong thời gian dùng thử. Đội ngũ của chúng tôi sẽ hỗ trợ miễn phí việc thiết lập và hoàn thiện hồ sơ để bạn vận hành nhanh."
 	},
 	"features": {
 		"badge": "Tính năng",
-		"title": "Mọi thứ bạn cần",
-		"titleBreak": "để vận hành salon của bạn",
+		"title": "Nhiều khách hơn. Ít vắng hẹn hơn.",
+		"titleBreak": "Không thêm việc vụn vặt",
 		"subtitle": "Các tính năng mạnh mẽ được thiết kế để tiết kiệm thời gian và giúp doanh nghiệp của bạn phát triển",
 		"smartScheduling": {
 			"title": "Lịch trình thông minh",
-			"description": "Lịch thông minh ngăn chặn đặt lịch trùng và tự động tối ưu hóa thời gian của nhóm bạn."
+			"description": "Lịch thông minh ngăn chặn đặt lịch trùng và tự động tối ưu hóa thời gian của nhóm bạn.",
+			"shortDescription": "Lịch gọn gàng, không trùng giờ hay khoảng trống thừa.",
+			"resultValue": "10+ giờ/tuần",
+			"resultLabel": "tiết kiệm cho việc quản trị"
 		},
 		"onlineBooking": {
 			"title": "Đặt lịch trực tuyến 24/7",
-			"description": "Chấp nhận đặt lịch bất cứ lúc nào, ngay cả khi salon của bạn đóng cửa. Không bao giờ mất khách hàng nữa."
+			"description": "Chấp nhận đặt lịch bất cứ lúc nào, ngay cả khi salon của bạn đóng cửa. Không bao giờ mất khách hàng nữa.",
+			"shortDescription": "Khách vẫn có thể đặt lịch cả tối và cuối tuần.",
+			"resultValue": "+15%",
+			"resultLabel": "nhiều lượt đặt lịch hơn không cần quảng cáo"
 		},
 		"emailReminders": {
 			"title": "Nhắc nhở qua Email",
-			"description": "Giảm số lần không đến với nhắc nhở cuộc hẹn tự động qua email."
+			"description": "Giảm số lần không đến với nhắc nhở cuộc hẹn tự động qua email.",
+			"shortDescription": "Tự động gửi nhắc lịch trước buổi hẹn.",
+			"resultValue": "-30%",
+			"resultLabel": "ít khách vắng hẹn hơn"
 		},
 		"analytics": {
 			"title": "Phân tích",
-			"description": "Theo dõi dịch vụ phổ biến và hiệu suất nhân viên với thông tin chi tiết theo thời gian thực."
+			"description": "Theo dõi dịch vụ phổ biến và hiệu suất nhân viên với thông tin chi tiết theo thời gian thực.",
+			"shortDescription": "Biết dịch vụ nào hiệu quả để tối ưu nhanh.",
+			"resultValue": "-50%",
+			"resultLabel": "ít lỗi đặt lịch trùng hơn"
 		}
 	},
 	"benefits": {
@@ -97,13 +109,13 @@
 		"titleBreak": "salon của bạn?",
 		"subtitle": "Nhận 3 tháng truy cập miễn phí. Không cần cam kết.",
 		"startForFree": "Nhận 3 tháng truy cập miễn phí",
-		"joinBetaTesters": "Chúng tôi đang kết nối những doanh nghiệp đầu tiên và hỗ trợ thiết lập trực tiếp."
+		"joinBetaTesters": "Bắt đầu an tâm: không cần thẻ và không có phí ẩn trong thời gian dùng thử. Đội ngũ của chúng tôi sẽ hỗ trợ miễn phí việc thiết lập và hoàn thiện hồ sơ để bạn vận hành nhanh."
 	},
 	"betaForm": {
 		"badge": "Bắt đầu miễn phí",
 		"title": "Tạo tài khoản doanh nghiệp",
 		"subtitle": "Điền vào biểu mẫu bên dưới để bắt đầu. Chúng tôi sẽ hỗ trợ thiết lập trực tiếp.",
-		"onboardingNote": "Chúng tôi đang kết nối những doanh nghiệp đầu tiên và hỗ trợ thiết lập trực tiếp.",
+		"onboardingNote": "Bắt đầu an tâm: không cần thẻ và không có phí ẩn trong thời gian dùng thử. Đội ngũ của chúng tôi sẽ hỗ trợ miễn phí việc thiết lập và hoàn thiện hồ sơ để bạn vận hành nhanh.",
 		"fullName": "Họ và tên",
 		"salonName": "Tên salon",
 		"optional": "(Tùy chọn)",
@@ -225,7 +237,7 @@
 			"invalidPhone": "Vui lòng nhập số điện thoại hợp lệ"
 		},
 		"success": {
-			"salonSetupCompleted": "Thiết lập salon đã hoàn tất thành công!"
+			"salonSetupCompleted": "Thiết lập doanh nghiệp đã hoàn tất thành công!"
 		},
 		"error": {
 			"failedToCompleteSetup": "Không thể hoàn tất thiết lập salon"

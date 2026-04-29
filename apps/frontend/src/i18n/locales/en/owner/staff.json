@@ -34,5 +34,7 @@
 	"allServices": "All services",
 	"selectServices": "Select services",
 	"searchServices": "Search services...",
-	"servicesSelected": "services selected"
+	"servicesSelected": "services selected",
+	"createdSuccessfully": "Staff member created successfully!",
+	"createdSucesfully": "Staff member created successfully!"
 }

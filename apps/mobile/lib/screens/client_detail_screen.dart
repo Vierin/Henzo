@@ -10,7 +10,6 @@ import '../../services/cache/bookings_cache.dart';
 import '../../services/dashboard_api_service.dart';
 import '../../utils/show_api_error.dart';
 import '../../widgets/dashboard/booking_detail_modal.dart';
-import '../../widgets/dashboard/new_booking_modal.dart';
 
 class ClientDetailScreen extends StatefulWidget {
   final String clientKey;
@@ -80,21 +79,6 @@ class _ClientDetailScreenState extends State<ClientDetailScreen> {
   int get _rejectedVisits =>
       _bookings.where((b) => b.status == BookingStatus.canceled || b.status == BookingStatus.noShow).length;
   int get _totalVisits => _bookings.length;
-
-  Future<void> _handleEditBooking(Booking booking) async {
-    final token = context.read<AuthService>().accessToken;
-    if (token == null) return;
-    await NewBookingModal.show(
-      context,
-      accessToken: token,
-      onSaved: _loadData,
-      getAccessToken: () async {
-        await context.read<AuthService>().refreshSession();
-        return context.read<AuthService>().accessToken;
-      },
-      existingBooking: booking,
-    );
-  }
 
   Future<void> _handleCancelBooking(String id) async {
     final token = context.read<AuthService>().accessToken;
@@ -299,7 +283,6 @@ class _ClientDetailScreenState extends State<ClientDetailScreen> {
                             onTap: () => BookingDetailModal.show(
                               context,
                               booking: b,
-                              onEdit: _handleEditBooking,
                               onCancel: _handleCancelBooking,
                               onConfirm: _handleConfirmBooking,
                               onReject: _handleRejectBooking,

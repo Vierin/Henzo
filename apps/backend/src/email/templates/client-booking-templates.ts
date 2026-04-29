@@ -1,6 +1,4 @@
 import type { BookingConfirmationStrings } from '../copy/booking-confirmation.strings';
-import type { BookingPendingStrings } from '../copy/booking-pending.strings';
-import type { BookingRejectionStrings } from '../copy/booking-rejection.strings';
 import type { BookingReminderStrings } from '../copy/booking-reminder.strings';
 
 export function renderBookingConfirmationHtml(
@@ -283,7 +281,7 @@ export function renderBookingReminderHtml(
 }
 
 export function renderBookingPendingHtml(
-  L: BookingPendingStrings,
+  L: any,
   bookingData: {
     serviceName: string;
     date: string;
@@ -419,7 +417,7 @@ export function renderBookingPendingHtml(
 }
 
 export function renderBookingRejectionHtml(
-  L: BookingRejectionStrings,
+  L: any,
   bookingData: {
     serviceName: string;
     date: string;

@@ -8,11 +8,15 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'config/app_config.dart';
 import 'firebase_options.dart';
 import 'l10n/locale_provider.dart';
-import 'screens/login_screen.dart';
 import 'screens/main_shell.dart';
+import 'screens/client_shell.dart';
+import 'screens/login_screen.dart';
 import 'screens/non_owner_gate_screen.dart';
 import 'services/auth_service.dart';
+import 'services/client_favorites_store.dart';
 import 'services/cache/bookings_cache.dart';
+import 'services/cache/client_nearby_cache.dart';
+import 'services/cache/studio_public_detail_cache.dart';
 import 'services/cache/salon_cache.dart';
 import 'services/cache/services_staff_cache.dart';
 import 'services/notifications_store.dart';
@@ -59,6 +63,7 @@ class MyApp extends StatelessWidget {
     return MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (_) => AuthService()),
+        ChangeNotifierProvider(create: (_) => ClientFavoritesStore()),
         ChangeNotifierProvider(create: (_) => LocaleProvider()),
         ChangeNotifierProvider(create: (_) => SalonCache()),
         ChangeNotifierProvider(create: (_) => BookingsCache()),
@@ -118,7 +123,8 @@ class AuthWrapper extends StatefulWidget {
 }
 
 class _AuthWrapperState extends State<AuthWrapper> {
-  bool _lastAllowedInApp = false;
+  bool _lastOwnerAllowed = false;
+  bool _wasClient = false;
 
   @override
   Widget build(BuildContext context) {
@@ -130,10 +136,11 @@ class _AuthWrapperState extends State<AuthWrapper> {
           );
         }
 
-        final allowedInApp = auth.isAuthenticated && auth.isSalonOwner;
+        final ownerAllowed = auth.isAuthenticated && auth.isStudioOperator;
+        final isClient = auth.isAuthenticated && auth.isClient;
 
         if (!auth.isLoading) {
-          if (_lastAllowedInApp && !allowedInApp) {
+          if (_lastOwnerAllowed && !ownerAllowed) {
             WidgetsBinding.instance.addPostFrameCallback((_) {
               if (!context.mounted) return;
               context.read<SalonCache>().invalidate();
@@ -141,14 +148,27 @@ class _AuthWrapperState extends State<AuthWrapper> {
               context.read<ServicesStaffCache>().invalidateAll();
             });
           }
-          _lastAllowedInApp = allowedInApp;
+          if (_wasClient && !isClient) {
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              if (!context.mounted) return;
+              context.read<ClientFavoritesStore>().clear();
+              ClientNearbyCache.clear();
+              StudioPublicDetailCache.clear();
+            });
+          }
+          _lastOwnerAllowed = ownerAllowed;
+          _wasClient = isClient;
         }
 
-        if (allowedInApp) {
+        if (ownerAllowed) {
           return const MainShell();
         }
 
-        if (auth.isAuthenticated && !auth.isSalonOwner) {
+        if (auth.isAuthenticated && auth.isClient) {
+          return const ClientShell();
+        }
+
+        if (auth.isAuthenticated) {
           return const NonOwnerGateScreen();
         }
 

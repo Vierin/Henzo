@@ -1,10 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:url_launcher/url_launcher.dart';
 
-import '../config/app_config.dart';
 import '../constants/colors.dart';
 import '../l10n/locale_provider.dart';
+import '../screens/registration_role_screen.dart';
 import '../services/auth_service.dart';
 import '../utils/auth_ui_result.dart';
 import '../utils/show_api_error.dart';
@@ -82,10 +81,9 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   Future<void> _openRegister() async {
-    final uri = Uri.parse(AppConfig.ownerRegisterUrl);
-    if (await canLaunchUrl(uri)) {
-      await launchUrl(uri, mode: LaunchMode.externalApplication);
-    }
+    await Navigator.of(context).push(
+      MaterialPageRoute(builder: (_) => const RegistrationRoleScreen()),
+    );
   }
 
   Future<void> _showForgotPassword() async {
@@ -304,7 +302,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                   ? null
                                   : _openRegister,
                               child: Text(
-                                locale.t('auth.registerOnWebsite'),
+                                'No account? Register',
                                 textAlign: TextAlign.center,
                               ),
                             ),

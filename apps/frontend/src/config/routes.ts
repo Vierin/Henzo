@@ -17,60 +17,28 @@ export interface RouteConfig {
  */
 export const publicRoutes = [
 	'/', // homepage
-	'/login',
-	'/register',
-	'/salons',
-	'/category',
-	'/salon',
 	'/about',
 	'/contact',
-	'/map',
-	'/auth',
-	'/verify',
-	'/check-email',
-	'/business',
-	'/business/register',
 	'/terms-of-service',
 	'/privacy-policy',
-	'/forgot-password',
-	'/reset-password',
-	'/unauthorized',
 ] as const;
 
 /**
  * Client routes - require CLIENT role
  */
 export const clientRoutes = [
-	'/dashboard',
-	'/favorites',
-	'/reviews',
-	'/settings',
 ] as const;
 
 /**
  * Owner routes - require OWNER role
  */
 export const ownerRoutes = [
-	'/owner-dashboard',
-	'/calendar',
-	'/services',
-	'/marketing',
-	'/staff',
-	'/salon-info',
-	'/billing',
 ] as const;
 
 /**
  * Admin routes - require ADMIN role
  */
 export const adminRoutes = [
-	'/admin-panel',
-	'/admin/bookings',
-	'/admin/customers',
-	'/admin/salons-data',
-	'/admin/subscriptions',
-	'/profit',
-	'/promotion-coupons',
 ] as const;
 
 /**
@@ -146,14 +114,9 @@ export function hasRouteAccess(
  * Special route patterns that need custom handling
  */
 export const specialRoutes = {
-	// Business routes that are public except specific sub-routes
 	business: {
-		public: ['/business', '/business/register'],
-		protected: (path: string) =>
-			path.startsWith('/business/') &&
-			path !== '/business' &&
-			!path.startsWith('/business/register'),
+		public: [] as string[],
+		protected: (_path: string) => false,
 	},
-	// Owner routes that might be under /owner prefix
-	ownerPrefix: (path: string) => path.startsWith('/owner/'),
+	ownerPrefix: (_path: string) => false,
 } as const;

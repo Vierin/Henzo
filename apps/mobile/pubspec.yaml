@@ -53,6 +53,10 @@ dependencies:
   firebase_messaging: ^16.1.2
   flutter_local_notifications: ^18.0.1
   permission_handler: ^11.0.0
+  geolocator: ^14.0.2
+  image_picker: ^1.1.2
+  flutter_image_compress: ^2.3.0
+  cached_network_image: ^3.4.1
 
 dev_dependencies:
   flutter_test:
@@ -76,6 +80,7 @@ flutter:
     - assets/.env.example
     - assets/icon.png
     - assets/logo.png
+    - assets/public/
     - assets/l10n/en/
     - assets/l10n/ru/
     - assets/l10n/vi/

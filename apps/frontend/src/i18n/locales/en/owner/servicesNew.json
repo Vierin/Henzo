@@ -49,6 +49,12 @@
 	"selectStaff": "Select staff",
 	"searchStaff": "Search staff...",
 	"noStaffFound": "No staff found",
+	"createdSuccessfully": "Service created successfully!",
+	"updatedSuccessfully": "Service updated successfully!",
+	"deletedSuccessfully": "Service deleted successfully!",
+	"failedToCreate": "Failed to create service",
+	"failedToUpdate": "Failed to update service",
+	"failedToDelete": "Failed to delete service",
 	"errors": {
 		"serviceNameRequired": "Service name is required",
 		"durationRequired": "Duration is required",
