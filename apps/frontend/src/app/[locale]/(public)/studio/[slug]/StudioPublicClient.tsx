@@ -16,7 +16,10 @@ type Props = {
 	studio: PublicStudioPayload;
 };
 
-function serviceName(s: PublicStudioPayload['services'][0], loc: Locale): string {
+function serviceName(
+	s: PublicStudioPayload['services'][0],
+	loc: Locale,
+): string {
 	if (loc === 'ru' && s.nameRu) return s.nameRu;
 	if (loc === 'vi' && s.nameVi) return s.nameVi;
 	if (s.nameEn) return s.nameEn;
@@ -25,7 +28,7 @@ function serviceName(s: PublicStudioPayload['services'][0], loc: Locale): string
 
 function categoryLabel(
 	c: PublicStudioPayload['services'][0]['trainingCategory'],
-	loc: Locale
+	loc: Locale,
 ): string {
 	if (!c) return '';
 	if (loc === 'ru' && c.nameRu) return c.nameRu;
@@ -54,8 +57,8 @@ export default function StudioPublicClient({ locale, studio }: Props) {
 		new Set(
 			studio.services
 				.map((s) => categoryLabel(s.trainingCategory, locale))
-				.filter(Boolean)
-		)
+				.filter(Boolean),
+		),
 	);
 
 	const copy = {
@@ -144,7 +147,6 @@ export default function StudioPublicClient({ locale, studio }: Props) {
 					>
 						{photos.map((src) => (
 							<SwiperSlide key={src} className="!h-[min(42vh,320px)]">
-								{/* eslint-disable-next-line @next/next/no-img-element -- studio photos are arbitrary URLs from API */}
 								<img
 									src={src}
 									alt=""
@@ -190,7 +192,6 @@ export default function StudioPublicClient({ locale, studio }: Props) {
 				<div className="flex gap-3">
 					<div className="relative h-16 w-16 shrink-0 overflow-hidden rounded-full border border-[#f1e9e5] bg-[#F8F5F2]">
 						{photos[0] ? (
-							// eslint-disable-next-line @next/next/no-img-element
 							<img
 								src={photos[0]}
 								alt=""
@@ -322,8 +323,12 @@ export default function StudioPublicClient({ locale, studio }: Props) {
 							<span className="font-semibold text-gray-900">
 								{s.price != null
 									? new Intl.NumberFormat(
-											locale === 'vi' ? 'vi-VN' : locale === 'ru' ? 'ru-RU' : 'en-US',
-											{ maximumFractionDigits: 0 }
+											locale === 'vi'
+												? 'vi-VN'
+												: locale === 'ru'
+													? 'ru-RU'
+													: 'en-US',
+											{ maximumFractionDigits: 0 },
 										).format(s.price)
 									: '—'}
 							</span>
