@@ -124,5 +124,4 @@ export class ClientBookingEmailService {
       htmlContent,
     });
   }
-
 }

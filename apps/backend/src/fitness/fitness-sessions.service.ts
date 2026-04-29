@@ -559,13 +559,10 @@ export class FitnessSessionsService {
       },
       service: {
         name: (b.Training?.name ?? b.Training?.nameEn ?? '—').trim() || '—',
-        price:
-          b.Training != null ? Number(b.Training.price) : null,
+        price: b.Training != null ? Number(b.Training.price) : null,
         duration: b.Training?.duration ?? null,
       },
-      staff: b.Trainer
-        ? { id: b.Trainer.id, name: b.Trainer.name }
-        : null,
+      staff: b.Trainer ? { id: b.Trainer.id, name: b.Trainer.name } : null,
       staffId: b.trainerId,
       serviceId: b.trainingId,
     }));

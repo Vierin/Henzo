@@ -1314,7 +1314,9 @@ export class StudiosService {
 
     const { ...StudioData } = {
       ...updateStudioDto,
-      ...(normalizedLogoUrl !== undefined ? { logoUrl: normalizedLogoUrl } : {}),
+      ...(normalizedLogoUrl !== undefined
+        ? { logoUrl: normalizedLogoUrl }
+        : {}),
       ...(normalizedPhotos !== undefined ? { photos: normalizedPhotos } : {}),
       ...(updateStudioDto.reminderSettings !== undefined
         ? {

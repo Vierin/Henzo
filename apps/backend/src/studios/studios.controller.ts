@@ -182,7 +182,10 @@ export class StudiosController {
         );
       return { success: true, data: checklist };
     } catch (error) {
-      console.error('❌ Get Studio onboarding checklist failed:', error.message);
+      console.error(
+        '❌ Get Studio onboarding checklist failed:',
+        error.message,
+      );
       throw new HttpException(
         error.message || 'Failed to get Studio onboarding checklist',
         error.message === 'Studio not found'

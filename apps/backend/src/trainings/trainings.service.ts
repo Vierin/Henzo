@@ -472,8 +472,7 @@ export class TrainingsService {
     });
 
     const mutable = existing.filter(
-      (s: any) =>
-        !s.Enrollments?.some((e: any) => e.status === 'ACTIVE'),
+      (s: any) => !s.Enrollments?.some((e: any) => e.status === 'ACTIVE'),
     );
     const mutableIds = mutable.map((s: any) => s.id);
     const template = mutable[0] ?? existing[0] ?? null;
