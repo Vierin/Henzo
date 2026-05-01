@@ -130,7 +130,7 @@ class ClassScheduleCard extends StatelessWidget {
                     foregroundColor: accentColor,
                     side: BorderSide(color: accentColor),
                   ),
-                  child: Text(isBooking ? '...' : (isFull ? 'Full' : 'Book')),
+                  child: Text(isFull ? 'Full' : 'Book'),
                 ),
               ),
             ],

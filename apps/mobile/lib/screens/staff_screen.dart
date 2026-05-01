@@ -8,6 +8,7 @@ import '../../models/staff_member.dart';
 import '../../services/auth_service.dart';
 import '../../services/cache/salon_cache.dart';
 import '../../services/cache/services_staff_cache.dart';
+import '../../services/dashboard_api_service.dart';
 import '../../services/staff_api_service.dart';
 import '../../utils/show_api_error.dart';
 import 'add_staff_screen.dart';
@@ -26,6 +27,7 @@ class _StaffScreenState extends State<StaffScreen> {
   List<StaffMember> _staff = [];
   bool _isLoading = false;
   bool _isActionLoading = false;
+  bool _isProPlan = false;
   StaffSort _sort = StaffSort.nameAz;
 
   @override
@@ -50,10 +52,12 @@ class _StaffScreenState extends State<StaffScreen> {
               salon.id,
             )
           : <StaffMember>[];
+      final sub = await DashboardApiService.getCurrentSubscription(token);
       if (mounted) {
         setState(() {
           _salon = salon;
           _staff = staff;
+          _isProPlan = (sub?.type.toUpperCase() ?? 'FREEMIUM') == 'PRO';
           _isLoading = false;
         });
       }
@@ -119,6 +123,16 @@ class _StaffScreenState extends State<StaffScreen> {
   }
 
   void _openAddStaff() {
+    if (!_isProPlan) {
+      ScaffoldMessenger.maybeOf(context)?.showSnackBar(
+        const SnackBar(
+          content: Text(
+            'Добавление новых тренеров доступно только в пакете Pro',
+          ),
+        ),
+      );
+      return;
+    }
     final salonId = _salon?.id;
     if (salonId == null) return;
     Navigator.push(
@@ -571,6 +585,12 @@ class _StaffScreenState extends State<StaffScreen> {
   @override
   Widget build(BuildContext context) {
     final locale = context.watch<LocaleProvider>();
+    final owner = context.read<AuthService>().user;
+    final ownerName = (owner?.name?.trim().isNotEmpty ?? false)
+        ? owner!.name!.trim()
+        : owner?.email ?? 'Owner';
+    final ownerEmail = owner?.email ?? '';
+    final ownerPhone = owner?.phone ?? '';
     return Scaffold(
       backgroundColor: AppColors.backgroundSecondary,
       appBar: AppBar(
@@ -620,116 +640,175 @@ class _StaffScreenState extends State<StaffScreen> {
           : RefreshIndicator(
               onRefresh: _loadData,
               color: AppColors.primary500,
-              child: _staff.isEmpty
-                  ? ListView(
-                      padding: const EdgeInsets.all(24),
-                      children: [
-                        const SizedBox(height: 48),
-                        Icon(
-                          Icons.people_outline,
-                          size: 64,
-                          color: AppColors.textSecondary,
+              child: ListView(
+                padding: const EdgeInsets.fromLTRB(16, 16, 16, 100),
+                children: [
+                  Card(
+                    margin: const EdgeInsets.only(bottom: 12),
+                    color: AppColors.backgroundPrimary,
+                    child: ListTile(
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 8,
+                      ),
+                      leading: CircleAvatar(
+                        backgroundColor: AppColors.primary500.withValues(
+                          alpha: 0.12,
                         ),
-                        const SizedBox(height: 16),
-                        Text(
-                          locale.t('staffScreen.emptyTitle'),
-                          style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.w600,
-                            color: AppColors.textPrimary,
-                          ),
-                          textAlign: TextAlign.center,
+                        child: const Icon(
+                          Icons.workspace_premium_outlined,
+                          color: AppColors.primary500,
                         ),
-                        const SizedBox(height: 8),
-                        Text(
-                          locale.t('staffScreen.emptySubtitle'),
-                          style: TextStyle(
-                            fontSize: 14,
-                            color: AppColors.textSecondary,
-                          ),
-                          textAlign: TextAlign.center,
-                        ),
-                      ],
-                    )
-                  : ListView.builder(
-                      padding: const EdgeInsets.fromLTRB(16, 16, 16, 100),
-                      itemCount: _sortedStaff.length,
-                      itemBuilder: (context, index) {
-                        final member = _sortedStaff[index];
-                        return Card(
-                          margin: const EdgeInsets.only(bottom: 12),
-                          child: ListTile(
-                            contentPadding: const EdgeInsets.symmetric(
-                              horizontal: 16,
-                              vertical: 8,
-                            ),
-                            title: Text(
-                              member.name,
+                      ),
+                      title: Text(
+                        ownerName,
+                        style: const TextStyle(fontWeight: FontWeight.w700),
+                      ),
+                      subtitle: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          if (ownerEmail.isNotEmpty)
+                            Text(
+                              ownerEmail,
                               style: const TextStyle(
-                                fontWeight: FontWeight.w600,
+                                fontSize: 13,
+                                color: AppColors.textSecondary,
                               ),
                             ),
-                            subtitle: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                if (member.email != null &&
-                                    member.email!.isNotEmpty)
-                                  Text(
-                                    member.email!,
-                                    style: TextStyle(
-                                      fontSize: 13,
-                                      color: AppColors.textSecondary,
-                                    ),
-                                  ),
-                                if (member.phone != null &&
-                                    member.phone!.isNotEmpty)
-                                  Text(
-                                    member.phone!,
-                                    style: TextStyle(
-                                      fontSize: 13,
-                                      color: AppColors.textSecondary,
-                                    ),
-                                  ),
-                              ],
+                          if (ownerPhone.isNotEmpty)
+                            Text(
+                              ownerPhone,
+                              style: const TextStyle(
+                                fontSize: 13,
+                                color: AppColors.textSecondary,
+                              ),
                             ),
-                            trailing: _isActionLoading
-                                ? const SizedBox(
-                                    width: 24,
-                                    height: 24,
-                                    child: CircularProgressIndicator(
-                                      strokeWidth: 2,
-                                    ),
-                                  )
-                                : Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      IconButton(
-                                        icon: const Icon(Icons.edit_outlined),
-                                        onPressed: () =>
-                                            _openEditDialog(member),
-                                        color: AppColors.primary500,
-                                      ),
-                                      IconButton(
-                                        icon: const Icon(Icons.delete_outline),
-                                        onPressed: () => _deleteStaff(member),
-                                        color: Colors.red,
-                                      ),
-                                    ],
-                                  ),
+                        ],
+                      ),
+                      trailing: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 5,
+                        ),
+                        decoration: BoxDecoration(
+                          color: AppColors.primary500.withValues(alpha: 0.14),
+                          borderRadius: BorderRadius.circular(999),
+                        ),
+                        child: const Text(
+                          'Владелец',
+                          style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w700,
+                            color: AppColors.primary500,
                           ),
-                        );
-                      },
+                        ),
+                      ),
                     ),
+                  ),
+                  if (_staff.isEmpty) ...[
+                    const SizedBox(height: 20),
+                    Icon(
+                      Icons.people_outline,
+                      size: 56,
+                      color: AppColors.textSecondary,
+                    ),
+                    const SizedBox(height: 12),
+                    Text(
+                      locale.t('staffScreen.emptyTitle'),
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.textPrimary,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      locale.t('staffScreen.emptySubtitle'),
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: AppColors.textSecondary,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                  ] else ..._sortedStaff.map((member) {
+                    return Card(
+                      margin: const EdgeInsets.only(bottom: 12),
+                      child: ListTile(
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 8,
+                        ),
+                        title: Text(
+                          member.name,
+                          style: const TextStyle(
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        subtitle: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            if (member.email != null && member.email!.isNotEmpty)
+                              Text(
+                                member.email!,
+                                style: TextStyle(
+                                  fontSize: 13,
+                                  color: AppColors.textSecondary,
+                                ),
+                              ),
+                            if (member.phone != null && member.phone!.isNotEmpty)
+                              Text(
+                                member.phone!,
+                                style: TextStyle(
+                                  fontSize: 13,
+                                  color: AppColors.textSecondary,
+                                ),
+                              ),
+                          ],
+                        ),
+                        trailing: _isActionLoading
+                            ? const SizedBox(
+                                width: 24,
+                                height: 24,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                ),
+                              )
+                            : Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  IconButton(
+                                    icon: const Icon(Icons.edit_outlined),
+                                    onPressed: () => _openEditDialog(member),
+                                    color: AppColors.primary500,
+                                  ),
+                                  IconButton(
+                                    icon: const Icon(Icons.delete_outline),
+                                    onPressed: () => _deleteStaff(member),
+                                    color: Colors.red,
+                                  ),
+                                ],
+                              ),
+                      ),
+                    );
+                  }),
+                ],
+              ),
             ),
       floatingActionButton: _salon != null && !_isLoading
           ? FloatingActionButton(
               onPressed: _openAddStaff,
+              tooltip: _isProPlan
+                  ? locale.t('staffScreen.addStaff')
+                  : 'Доступно в Pro',
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
               ),
-              backgroundColor: AppColors.primary500,
+              backgroundColor: _isProPlan
+                  ? AppColors.primary500
+                  : AppColors.neutral400,
               foregroundColor: Colors.white,
-              child: const Icon(Icons.add),
+              child: Icon(_isProPlan ? Icons.add : Icons.lock_outline),
             )
           : null,
     );

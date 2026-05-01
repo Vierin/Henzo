@@ -114,9 +114,7 @@ class _PublicHomeScreenState extends State<PublicHomeScreen> {
         _isLoadingStudios = false;
       });
       final token = context.read<AuthService>().accessToken;
-      unawaited(
-        context.read<ClientFavoritesStore>().sync(token, force: false),
-      );
+      unawaited(context.read<ClientFavoritesStore>().sync(token, force: false));
     } catch (_) {
       if (!mounted) return;
       setState(() {
@@ -146,9 +144,11 @@ class _PublicHomeScreenState extends State<PublicHomeScreen> {
   double? _distanceKmForStudio(Map<String, dynamic> data, double? apiDistance) {
     if (apiDistance != null) return apiDistance;
     if (_selectedLat == null || _selectedLon == null) return null;
-    final slat = (data['latitude'] as num?)?.toDouble() ??
+    final slat =
+        (data['latitude'] as num?)?.toDouble() ??
         (data['lat'] as num?)?.toDouble();
-    final slng = (data['longitude'] as num?)?.toDouble() ??
+    final slng =
+        (data['longitude'] as num?)?.toDouble() ??
         (data['lng'] as num?)?.toDouble() ??
         (data['lon'] as num?)?.toDouble();
     if (slat == null || slng == null) return null;
@@ -497,7 +497,7 @@ class _PublicHomeScreenState extends State<PublicHomeScreen> {
             ),
             SliverToBoxAdapter(
               child: SizedBox(
-                height: 190,
+                height: 210,
                 child: _isLoadingStudios
                     ? const Center(child: CircularProgressIndicator())
                     : studios.isEmpty

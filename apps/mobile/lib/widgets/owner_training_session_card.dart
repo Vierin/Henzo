@@ -132,60 +132,148 @@ class OwnerTrainingSessionCard extends StatelessWidget {
       final nameController = TextEditingController();
       final emailController = TextEditingController();
       final phoneController = TextEditingController();
-      final shouldSave = await showDialog<bool>(
+      bool isSaving = false;
+
+      await showModalBottomSheet<void>(
         context: context,
-        builder: (ctx) => AlertDialog(
-          title: Text(tr('ownerSession.addParticipant')),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextField(
-                controller: nameController,
-                decoration: InputDecoration(labelText: tr('ownerSession.name')),
+        isScrollControlled: true,
+        backgroundColor: Colors.transparent,
+        builder: (sheetCtx) => StatefulBuilder(
+          builder: (context, setSheetState) => SafeArea(
+            child: Padding(
+              padding: EdgeInsets.fromLTRB(
+                16,
+                8,
+                16,
+                16 + MediaQuery.of(sheetCtx).viewInsets.bottom,
               ),
-              const SizedBox(height: 8),
-              TextField(
-                controller: emailController,
-                decoration: InputDecoration(
-                  labelText: tr('ownerSession.email'),
+              child: Container(
+                decoration: BoxDecoration(
+                  color: AppColors.backgroundPrimary,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: AppColors.borderPrimary),
+                  boxShadow: const [
+                    BoxShadow(
+                      color: Color(0x14000000),
+                      blurRadius: 16,
+                      offset: Offset(0, 6),
+                    ),
+                  ],
+                ),
+                padding: const EdgeInsets.fromLTRB(16, 14, 16, 16),
+                child: SingleChildScrollView(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        tr('ownerSession.addParticipant'),
+                        style: const TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w800,
+                          color: AppColors.textPrimary,
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      TextField(
+                        controller: nameController,
+                        enabled: !isSaving,
+                        decoration: InputDecoration(
+                          labelText: tr('ownerSession.name'),
+                        ),
+                      ),
+                      const SizedBox(height: 10),
+                      TextField(
+                        controller: emailController,
+                        enabled: !isSaving,
+                        keyboardType: TextInputType.emailAddress,
+                        decoration: InputDecoration(
+                          labelText: tr('ownerSession.email'),
+                        ),
+                      ),
+                      const SizedBox(height: 10),
+                      TextField(
+                        controller: phoneController,
+                        enabled: !isSaving,
+                        keyboardType: TextInputType.phone,
+                        decoration: InputDecoration(
+                          labelText: tr('ownerSession.phone'),
+                        ),
+                      ),
+                      const SizedBox(height: 14),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: OutlinedButton(
+                              onPressed: isSaving
+                                  ? null
+                                  : () => Navigator.of(sheetCtx).pop(),
+                              child: Text(tr('common.cancel')),
+                            ),
+                          ),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: FilledButton(
+                              onPressed: isSaving
+                                  ? null
+                                  : () async {
+                                      final token = context
+                                          .read<AuthService>()
+                                          .accessToken;
+                                      if (token == null || token.isEmpty) return;
+                                      setSheetState(() => isSaving = true);
+                                      try {
+                                        await DashboardApiService
+                                            .addOwnerSessionEnrollment(
+                                          token,
+                                          session.sessionId,
+                                          name: nameController.text.trim(),
+                                          email: emailController.text.trim(),
+                                          phone: phoneController.text.trim(),
+                                        );
+                                        enrollmentsFuture = loadEnrollments();
+                                        setModalState(() {});
+                                        onParticipantsChanged?.call();
+                                        if (sheetCtx.mounted) {
+                                          Navigator.of(sheetCtx).pop();
+                                        }
+                                        ScaffoldMessenger.maybeOf(context)
+                                            ?.showSnackBar(
+                                              SnackBar(
+                                                content: Text(
+                                                  tr(
+                                                    'ownerSession.participantAdded',
+                                                  ),
+                                                ),
+                                              ),
+                                            );
+                                      } finally {
+                                        if (sheetCtx.mounted) {
+                                          setSheetState(() => isSaving = false);
+                                        }
+                                      }
+                                    },
+                              child: isSaving
+                                  ? const SizedBox(
+                                      width: 18,
+                                      height: 18,
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2,
+                                        color: Colors.white,
+                                      ),
+                                    )
+                                  : Text(tr('ownerSession.add')),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
                 ),
               ),
-              const SizedBox(height: 8),
-              TextField(
-                controller: phoneController,
-                decoration: InputDecoration(
-                  labelText: tr('ownerSession.phone'),
-                ),
-              ),
-            ],
+            ),
           ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(ctx).pop(false),
-              child: Text(tr('common.cancel')),
-            ),
-            FilledButton(
-              onPressed: () => Navigator.of(ctx).pop(true),
-              child: Text(tr('ownerSession.add')),
-            ),
-          ],
         ),
-      );
-      if (shouldSave != true) return;
-      final token = context.read<AuthService>().accessToken;
-      if (token == null || token.isEmpty) return;
-      await DashboardApiService.addOwnerSessionEnrollment(
-        token,
-        session.sessionId,
-        name: nameController.text.trim(),
-        email: emailController.text.trim(),
-        phone: phoneController.text.trim(),
-      );
-      enrollmentsFuture = loadEnrollments();
-      setModalState(() {});
-      onParticipantsChanged?.call();
-      ScaffoldMessenger.maybeOf(context)?.showSnackBar(
-        SnackBar(content: Text(tr('ownerSession.participantAdded'))),
       );
     }
 
@@ -233,7 +321,9 @@ class OwnerTrainingSessionCard extends StatelessWidget {
                       child: Center(
                         child: Text(
                           tr('ownerSession.noParticipants'),
-                          style: const TextStyle(color: AppColors.textSecondary),
+                          style: const TextStyle(
+                            color: AppColors.textSecondary,
+                          ),
                         ),
                       ),
                     );
@@ -242,15 +332,16 @@ class OwnerTrainingSessionCard extends StatelessWidget {
                     shrinkWrap: true,
                     children: list.map((e) {
                       final displayName =
-                          (e.name ?? e.email ?? e.phone ?? tr('booking.client')).trim();
+                          (e.name ?? e.email ?? e.phone ?? tr('booking.client'))
+                              .trim();
                       final subtitle = e.phone?.isNotEmpty == true
                           ? e.phone!
                           : (e.email ?? '');
                       final statusColor = e.status == 'NO_SHOW'
                           ? AppColors.error500
                           : e.status == 'CANCELLED'
-                              ? AppColors.textSecondary
-                              : AppColors.primary500;
+                          ? AppColors.textSecondary
+                          : AppColors.primary500;
                       return Container(
                         margin: const EdgeInsets.only(bottom: 8),
                         padding: const EdgeInsets.all(10),
@@ -302,7 +393,9 @@ class OwnerTrainingSessionCard extends StatelessWidget {
                             ),
                             PopupMenuButton<String>(
                               onSelected: (value) async {
-                                final token = context.read<AuthService>().accessToken;
+                                final token = context
+                                    .read<AuthService>()
+                                    .accessToken;
                                 if (token == null || token.isEmpty) return;
                                 if (value == 'DELETE') {
                                   await DashboardApiService.deleteOwnerEnrollment(
@@ -319,17 +412,22 @@ class OwnerTrainingSessionCard extends StatelessWidget {
                                 enrollmentsFuture = loadEnrollments();
                                 setModalState(() {});
                                 onParticipantsChanged?.call();
-                                if (sheetCtx.mounted) Navigator.of(sheetCtx).pop();
+                                if (sheetCtx.mounted)
+                                  Navigator.of(sheetCtx).pop();
                                 await editParticipantsDialog(setModalState);
                               },
                               itemBuilder: (_) => [
                                 PopupMenuItem(
                                   value: 'ACTIVE',
-                                  child: Text(tr('ownerSession.actionSetActive')),
+                                  child: Text(
+                                    tr('ownerSession.actionSetActive'),
+                                  ),
                                 ),
                                 PopupMenuItem(
                                   value: 'NO_SHOW',
-                                  child: Text(tr('ownerSession.actionSetNoShow')),
+                                  child: Text(
+                                    tr('ownerSession.actionSetNoShow'),
+                                  ),
                                 ),
                                 PopupMenuItem(
                                   value: 'CANCELLED',
@@ -627,159 +725,173 @@ class OwnerTrainingSessionCard extends StatelessWidget {
 
     final inner = Stack(
       children: [
-        Positioned(
-          top: 8,
-          bottom: 8,
-          left: 75,
-          child: SizedBox(
-            width: 3,
-            child: DecoratedBox(
-              decoration: BoxDecoration(color: accentColor),
-            ),
-          ),
-        ),
         Padding(
-          padding: const EdgeInsets.fromLTRB(14, 14, 14, 14),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
+          padding: const EdgeInsets.fromLTRB(8, 8, 12, 8),
+          child: IntrinsicHeight(
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
 
-            children: [
-              SizedBox(
-                width: 76,
-
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-
-                  children: [
-                    Text(
-                      startLabel,
-
-                      style: TextStyle(
-                        fontSize: 18,
-
-                        fontWeight: FontWeight.w800,
-
-                        letterSpacing: -0.3,
-
-                        color: past
-                            ? AppColors.textSecondary
-                            : AppColors.textPrimary,
-
-                        height: 1.1,
-                      ),
+              children: [
+                SizedBox(
+                  width: 80,
+                  height: 80,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 10,
                     ),
-
-                    const SizedBox(height: 4),
-
-                    Text(
-                      durationLabel,
-
-                      style: TextStyle(
-                        fontSize: 12,
-
-                        fontWeight: FontWeight.w500,
-
-                        color: AppColors.textSecondary,
-                      ),
+                    decoration: BoxDecoration(
+                      color: accentColor.withValues(alpha: 0.14),
+                      borderRadius: BorderRadius.circular(10),
                     ),
-                  ],
-                ),
-              ),
-
-              const SizedBox(width: 10),
-
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-
-                  children: [
-                    Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      mainAxisAlignment: MainAxisAlignment.center,
 
                       children: [
-                        Expanded(
-                          child: Text(
-                            session.trainingName,
+                        Text(
+                          startLabel,
+                          textAlign: TextAlign.center,
 
-                            style: TextStyle(
-                              fontSize: 16,
+                          style: TextStyle(
+                            fontSize: 18,
 
-                              fontWeight: FontWeight.w700,
+                            fontWeight: FontWeight.w800,
 
-                              color: past
-                                  ? AppColors.textSecondary
-                                  : AppColors.textPrimary,
+                            letterSpacing: -0.3,
 
-                              height: 1.25,
-                            ),
+                            color: past
+                                ? AppColors.textSecondary
+                                : AppColors.textPrimary,
+
+                            height: 1.1,
                           ),
                         ),
 
-                        if (badge != null) ...[const SizedBox(width: 8), badge],
+                        const SizedBox(height: 4),
+
+                        Text(
+                          durationLabel,
+                          textAlign: TextAlign.center,
+
+                          style: TextStyle(
+                            fontSize: 12,
+
+                            fontWeight: FontWeight.w500,
+
+                            color: AppColors.textSecondary,
+                          ),
+                        ),
                       ],
                     ),
-
-                    const SizedBox(height: 4),
-
-                    Text(
-                      trainerLabel,
-
-                      maxLines: 1,
-
-                      overflow: TextOverflow.ellipsis,
-
-                      style: TextStyle(
-                        fontSize: 13,
-
-                        color: AppColors.textSecondary,
-                      ),
-                    ),
-                  ],
+                  ),
                 ),
-              ),
 
-              const SizedBox(width: 4),
+                const SizedBox(width: 10),
 
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.end,
+                Expanded(
+                  child: Center(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.start,
 
-                children: [
-                  Text(
-                    fillLabel,
+                      children: [
+                        Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
 
-                    style: TextStyle(
-                      fontSize: 17,
+                          children: [
+                            Expanded(
+                              child: Text(
+                                session.trainingName,
 
-                      fontWeight: FontWeight.w800,
+                                style: TextStyle(
+                                  fontSize: 16,
 
-                      letterSpacing: -0.2,
+                                  fontWeight: FontWeight.w700,
 
-                      color: past
-                          ? AppColors.textSecondary
-                          : accentColor,
+                                  color: past
+                                      ? AppColors.textSecondary
+                                      : AppColors.textPrimary,
 
-                      height: 1.05,
+                                  height: 1.25,
+                                ),
+                              ),
+                            ),
+
+                            if (badge != null) ...[
+                              const SizedBox(width: 8),
+                              badge,
+                            ],
+                          ],
+                        ),
+
+                        const SizedBox(height: 4),
+
+                        Text(
+                          trainerLabel,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            fontSize: 13,
+                            color: AppColors.textSecondary,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
+                ),
 
-                  const SizedBox(height: 6),
-                  SizedBox(
-                    width: 48,
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(999),
-                      child: LinearProgressIndicator(
-                        minHeight: 5,
-                        value: fillProgress,
-                        backgroundColor: AppColors.borderPrimary,
-                        valueColor: AlwaysStoppedAnimation<Color>(
-                          past ? AppColors.textSecondary : accentColor,
+                const SizedBox(width: 4),
+
+                Center(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.end,
+
+                    children: [
+                      Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            Icons.person_outline,
+                            size: 18,
+                            color: past ? AppColors.textSecondary : accentColor,
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            fillLabel,
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.w600,
+                              letterSpacing: -0.2,
+                              color: past
+                                  ? AppColors.textSecondary
+                                  : accentColor,
+                              height: 1.05,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 7),
+                      SizedBox(
+                        width: 56,
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(999),
+                          child: LinearProgressIndicator(
+                            minHeight: 5,
+                            value: fillProgress,
+                            backgroundColor: AppColors.borderPrimary,
+                            valueColor: AlwaysStoppedAnimation<Color>(
+                              past ? AppColors.textSecondary : accentColor,
+                            ),
+                          ),
                         ),
                       ),
-                    ),
+                    ],
                   ),
-                ],
-              ),
-            ],
+                ),
+              ],
+            ),
           ),
         ),
       ],
@@ -807,6 +919,7 @@ class OwnerTrainingSessionCard extends StatelessWidget {
       ),
 
       clipBehavior: Clip.none,
+      constraints: const BoxConstraints(minHeight: 90),
 
       child: Stack(
         clipBehavior: Clip.none,

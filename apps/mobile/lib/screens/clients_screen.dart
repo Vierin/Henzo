@@ -203,87 +203,90 @@ class _ClientsScreenState extends State<ClientsScreen> {
   Widget build(BuildContext context) {
     final clients = _filteredClients;
 
-    return Scaffold(
-      backgroundColor: AppColors.backgroundSecondary,
-      appBar: AppBar(
-        backgroundColor: AppColors.backgroundPrimary,
-        foregroundColor: AppColors.textPrimary,
-        elevation: 0,
-        leading: IconButton(
-          onPressed: () => Navigator.of(context).pop(),
-          icon: const Icon(Icons.arrow_back),
-          color: AppColors.textPrimary,
-        ),
-        title: const Text(
-          'Клиенты',
-          style: TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.w600,
+    return SafeArea(
+      bottom: false,
+      child: Scaffold(
+        backgroundColor: AppColors.backgroundSecondary,
+        appBar: AppBar(
+          backgroundColor: AppColors.backgroundPrimary,
+          foregroundColor: AppColors.textPrimary,
+          elevation: 0,
+          leading: IconButton(
+            onPressed: () => Navigator.of(context).pop(),
+            icon: const Icon(Icons.arrow_back),
             color: AppColors.textPrimary,
           ),
+          title: const Text(
+            'Клиенты',
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.w600,
+              color: AppColors.textPrimary,
+            ),
+          ),
+          centerTitle: true,
         ),
-        centerTitle: true,
-      ),
-      body: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(12, 16, 12, 12),
-            child: TextField(
-              controller: _searchController,
-              decoration: InputDecoration(
-                hintText: 'Поиск',
-                prefixIcon: const Icon(
-                  Icons.search,
-                  size: 22,
-                  color: AppColors.textSecondary,
-                ),
-                filled: true,
-                fillColor: AppColors.backgroundPrimary,
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide.none,
-                ),
-                contentPadding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 12,
+        body: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(12, 16, 12, 12),
+              child: TextField(
+                controller: _searchController,
+                decoration: InputDecoration(
+                  hintText: 'Поиск',
+                  prefixIcon: const Icon(
+                    Icons.search,
+                    size: 22,
+                    color: AppColors.textSecondary,
+                  ),
+                  filled: true,
+                  fillColor: AppColors.backgroundPrimary,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide.none,
+                  ),
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 12,
+                  ),
                 ),
               ),
             ),
-          ),
-          SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            padding: const EdgeInsets.symmetric(horizontal: 12),
-            child: Row(
-              children: [
-                ClientsFilterChip(
-                  label: 'Все',
-                  isSelected: _filter == ClientFilter.all,
-                  onTap: () => setState(() => _filter = ClientFilter.all),
-                ),
-                const SizedBox(width: 8),
-                ClientsFilterChip(
-                  label: 'Спящие',
-                  isSelected: _filter == ClientFilter.sleepers,
-                  onTap: () => setState(() => _filter = ClientFilter.sleepers),
-                ),
-                const SizedBox(width: 8),
-                ClientsFilterChip(
-                  label: 'Белый список',
-                  isSelected: _filter == ClientFilter.whiteList,
-                  onTap: () => setState(() => _filter = ClientFilter.whiteList),
-                ),
-                const SizedBox(width: 8),
-                ClientsFilterChip(
-                  label: 'Заблокированные',
-                  isSelected: _filter == ClientFilter.blocked,
-                  onTap: () => setState(() => _filter = ClientFilter.blocked),
-                ),
-              ],
+            SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              padding: const EdgeInsets.fromLTRB(12, 12, 12, 0),
+              child: Row(
+                children: [
+                  ClientsFilterChip(
+                    label: 'Все',
+                    isSelected: _filter == ClientFilter.all,
+                    onTap: () => setState(() => _filter = ClientFilter.all),
+                  ),
+                  const SizedBox(width: 8),
+                  ClientsFilterChip(
+                    label: 'Спящие',
+                    isSelected: _filter == ClientFilter.sleepers,
+                    onTap: () => setState(() => _filter = ClientFilter.sleepers),
+                  ),
+                  const SizedBox(width: 8),
+                  ClientsFilterChip(
+                    label: 'Белый список',
+                    isSelected: _filter == ClientFilter.whiteList,
+                    onTap: () =>
+                        setState(() => _filter = ClientFilter.whiteList),
+                  ),
+                  const SizedBox(width: 8),
+                  ClientsFilterChip(
+                    label: 'Заблокированные',
+                    isSelected: _filter == ClientFilter.blocked,
+                    onTap: () => setState(() => _filter = ClientFilter.blocked),
+                  ),
+                ],
+              ),
             ),
-          ),
-          const SizedBox(height: 16),
-          Expanded(
+            const SizedBox(height: 16),
+            Expanded(
             child: _isLoading
                 ? const Center(
                     child: CircularProgressIndicator(
@@ -354,6 +357,7 @@ class _ClientsScreenState extends State<ClientsScreen> {
                   ),
           ),
         ],
+      ),
       ),
     );
   }

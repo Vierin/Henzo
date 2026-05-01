@@ -12,6 +12,7 @@ import { nanoid } from 'nanoid';
 export class StudiosService {
   private static readonly MAX_STUDIO_PHOTOS = 5;
   private static readonly DEFAULT_BOOKING_PERIOD_DAYS = 14;
+  private static readonly MAX_BOOKING_PERIOD_DAYS = 60;
 
   constructor(
     @Inject(PrismaService) private prisma: any,
@@ -123,6 +124,22 @@ export class StudiosService {
       if (!Number.isNaN(parsed)) return parsed;
     }
     return null;
+  }
+
+  private getNormalizedBookingPeriodDays(reminderSettings: unknown): number {
+    const raw = this.getBookingPeriodDays(reminderSettings);
+    const parsed = raw ?? StudiosService.DEFAULT_BOOKING_PERIOD_DAYS;
+    return Math.max(
+      1,
+      Math.min(StudiosService.MAX_BOOKING_PERIOD_DAYS, parsed),
+    );
+  }
+
+  private getBookingCutoffDate(bookingPeriodDays: number): Date {
+    const cutoff = new Date();
+    cutoff.setDate(cutoff.getDate() + bookingPeriodDays);
+    cutoff.setHours(23, 59, 59, 999);
+    return cutoff;
   }
 
   async getStudioOnboardingChecklist(studioId: string) {
@@ -1924,7 +1941,7 @@ export class StudiosService {
 
     const studio = await this.prisma.Studio.findUnique({
       where: { id },
-      select: { id: true, status: true, timezone: true },
+      select: { id: true, status: true, timezone: true, reminderSettings: true },
     });
     if (!studio || studio.status !== 'ACTIVE') {
       return [];
@@ -1940,6 +1957,14 @@ export class StudiosService {
     if (Number.isNaN(toDate.getTime())) {
       throw new Error('Invalid to date');
     }
+    const bookingPeriodDays = this.getNormalizedBookingPeriodDays(
+      studio.reminderSettings,
+    );
+    const bookingCutoff = this.getBookingCutoffDate(bookingPeriodDays);
+    const effectiveToDate = toDate < bookingCutoff ? toDate : bookingCutoff;
+    if (effectiveToDate < fromDate) {
+      return [];
+    }
     const take = Math.min(Math.max(params?.limit ?? 300, 1), 500);
 
     const sessions = await this.prisma.trainingSession.findMany({
@@ -1948,7 +1973,7 @@ export class StudiosService {
         status: 'ACTIVE',
         startsAt: {
           gte: fromDate,
-          lte: toDate,
+          lte: effectiveToDate,
         },
       },
       select: {

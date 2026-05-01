@@ -13,12 +13,25 @@ import 'online_booking_screen.dart';
 import 'profile_screen.dart';
 import 'settings_screen.dart';
 
-enum SettingsHubSection { studio, booking, account, app }
+enum SettingsHubSection { studio, account, app }
 
-class AppSettingsScreen extends StatelessWidget {
+class AppSettingsScreen extends StatefulWidget {
   const AppSettingsScreen({super.key, this.initialSection = SettingsHubSection.studio});
 
   final SettingsHubSection initialSection;
+
+  @override
+  State<AppSettingsScreen> createState() => _AppSettingsScreenState();
+}
+
+class _AppSettingsScreenState extends State<AppSettingsScreen> {
+  late SettingsHubSection _selectedSection;
+
+  @override
+  void initState() {
+    super.initState();
+    _selectedSection = widget.initialSection;
+  }
 
   Future<void> _openWebPage(
     BuildContext context,
@@ -65,29 +78,34 @@ class AppSettingsScreen extends StatelessWidget {
             ),
             centerTitle: true,
           ),
+          bottomNavigationBar: SafeArea(
+            top: false,
+            minimum: const EdgeInsets.fromLTRB(16, 8, 16, 12),
+            child: _buildExitButton(context, locale),
+          ),
           body: SingleChildScrollView(
-            padding: const EdgeInsets.fromLTRB(0, 16, 0, 32),
+            padding: const EdgeInsets.fromLTRB(0, 16, 0, 12),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                _buildSectionTabs(context, locale),
+                _buildSectionTabs(context),
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 24),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
                       const SizedBox(height: 20),
-                      ..._buildSectionContent(context, locale),
-                      const SizedBox(height: 20),
-                      Center(
-                        child: Text(
-                          locale.t('settings.version'),
-                          style: TextStyle(
-                            fontSize: 13,
-                            color: AppColors.textSecondary,
-                          ),
+                      AnimatedSwitcher(
+                        duration: const Duration(milliseconds: 220),
+                        switchInCurve: Curves.easeOutCubic,
+                        switchOutCurve: Curves.easeInCubic,
+                        child: Column(
+                          key: ValueKey(_selectedSection),
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: _buildSectionContent(context, locale),
                         ),
                       ),
+                      const SizedBox(height: 20),
                     ],
                   ),
                 ),
@@ -100,7 +118,7 @@ class AppSettingsScreen extends StatelessWidget {
   }
 
   List<Widget> _buildSectionContent(BuildContext context, LocaleProvider locale) {
-    switch (initialSection) {
+    switch (_selectedSection) {
       case SettingsHubSection.studio:
         return [
           _buildListTile(
@@ -120,19 +138,6 @@ class AppSettingsScreen extends StatelessWidget {
             icon: Icons.public_outlined,
             title: 'Онлайн бронирование',
             subtitle: 'Окно записи и публичная ссылка',
-            onTap: () => Navigator.of(context).push(
-              MaterialPageRoute(builder: (_) => const OnlineBookingScreen()),
-            ),
-          ),
-        ];
-      case SettingsHubSection.booking:
-        return [
-          _buildListTile(
-            context,
-            locale,
-            icon: Icons.public_outlined,
-            title: 'Онлайн бронирование',
-            subtitle: 'Управление окном записи и ссылкой',
             onTap: () => Navigator.of(context).push(
               MaterialPageRoute(builder: (_) => const OnlineBookingScreen()),
             ),
@@ -209,8 +214,6 @@ class AppSettingsScreen extends StatelessWidget {
               '/terms-of-service',
             ),
           ),
-          const SizedBox(height: 24),
-          _buildExitButton(context, locale),
         ];
     }
   }
@@ -272,17 +275,12 @@ class AppSettingsScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildSectionTabs(BuildContext context, LocaleProvider locale) {
+  Widget _buildSectionTabs(BuildContext context) {
     final tabs = <({SettingsHubSection section, IconData icon, String label})>[
       (
         section: SettingsHubSection.studio,
         icon: Icons.store_outlined,
         label: 'Studio',
-      ),
-      (
-        section: SettingsHubSection.booking,
-        icon: Icons.public_outlined,
-        label: 'Booking',
       ),
       (
         section: SettingsHubSection.account,
@@ -304,13 +302,12 @@ class AppSettingsScreen extends StatelessWidget {
         separatorBuilder: (_, _) => const SizedBox(width: 12),
         itemBuilder: (context, index) {
           final item = tabs[index];
-          final isActive = item.section == initialSection;
+          final isActive = item.section == _selectedSection;
           return InkWell(
-            onTap: () => Navigator.of(context).pushReplacement(
-              MaterialPageRoute(
-                builder: (_) => AppSettingsScreen(initialSection: item.section),
-              ),
-            ),
+            onTap: () {
+              if (item.section == _selectedSection) return;
+              setState(() => _selectedSection = item.section);
+            },
             borderRadius: BorderRadius.circular(12),
             child: Container(
               width: 86,

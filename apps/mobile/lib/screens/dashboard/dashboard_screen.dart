@@ -123,7 +123,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
       context,
       MaterialPageRoute(
         builder: (_) =>
-            const AppSettingsScreen(initialSection: SettingsHubSection.booking),
+            const AppSettingsScreen(initialSection: SettingsHubSection.studio),
       ),
     );
     if (changed == true && mounted) await _loadData();
@@ -313,7 +313,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
                               label: _salon!.rating != null
                                   ? _salon!.rating!.toStringAsFixed(1)
                                   : '—',
-                              onTap: null,
+                              onTap: () => Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) => const NotificationsScreen(
+                                    initialFilter: NotificationFilter.reviews,
+                                  ),
+                                ),
+                              ),
                             ),
                           Consumer<NotificationsStore>(
                             builder: (context, store, _) {

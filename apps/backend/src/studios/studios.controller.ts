@@ -24,6 +24,28 @@ import { generateStudioSlug } from '../utils/slug';
 
 @Controller('studios')
 export class StudiosController {
+  private getBookingPeriodDays(reminderSettings: unknown): number {
+    const fallback = 14;
+    if (!reminderSettings || typeof reminderSettings !== 'object') {
+      return fallback;
+    }
+    const raw = (reminderSettings as Record<string, unknown>)[
+      'bookingPeriodDays'
+    ];
+    let parsed: number | null = null;
+    if (typeof raw === 'number') parsed = Math.floor(raw);
+    if (typeof raw === 'string') parsed = Number.parseInt(raw, 10);
+    if (!parsed || Number.isNaN(parsed)) return fallback;
+    return Math.max(1, Math.min(60, parsed));
+  }
+
+  private getBookingCutoffDate(bookingPeriodDays: number): Date {
+    const cutoff = new Date();
+    cutoff.setDate(cutoff.getDate() + bookingPeriodDays);
+    cutoff.setHours(23, 59, 59, 999);
+    return cutoff;
+  }
+
   constructor(
     private readonly studiosService: StudiosService,
     private readonly authService: AuthService,
@@ -653,6 +675,7 @@ export class StudiosController {
               id: true,
               ownerId: true,
               name: true,
+              reminderSettings: true,
             },
           },
           Training: {
@@ -670,6 +693,16 @@ export class StudiosController {
       if (session.startsAt < new Date()) {
         throw new HttpException(
           'Session has already started',
+          HttpStatus.BAD_REQUEST,
+        );
+      }
+      const bookingPeriodDays = this.getBookingPeriodDays(
+        session.Studio?.reminderSettings,
+      );
+      const bookingCutoffDate = this.getBookingCutoffDate(bookingPeriodDays);
+      if (session.startsAt > bookingCutoffDate) {
+        throw new HttpException(
+          `Booking is allowed only up to ${bookingPeriodDays} days in advance`,
           HttpStatus.BAD_REQUEST,
         );
       }

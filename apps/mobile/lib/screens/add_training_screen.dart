@@ -246,6 +246,10 @@ class _AddTrainingScreenState extends State<AddTrainingScreen> {
       showDragHandle: false,
       isScrollControlled: true,
       backgroundColor: AppColors.backgroundPrimary,
+      sheetAnimationStyle: const AnimationStyle(
+        duration: Duration(milliseconds: 320),
+        reverseDuration: Duration(milliseconds: 220),
+      ),
       builder: (ctx) {
         return SafeArea(
           child: Padding(

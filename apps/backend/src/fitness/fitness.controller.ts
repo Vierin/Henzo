@@ -153,6 +153,11 @@ export class FitnessController {
     return this.fitnessSessionsService.getClientSchedule(authHeader, from, to);
   }
 
+  @Get('client/profile-stats')
+  async getClientProfileStats(@Headers('authorization') authHeader: string) {
+    return this.fitnessSessionsService.getClientProfileStats(authHeader);
+  }
+
   /** Update one scheduled session (time, trainer, status). Does not change the Training template. */
   @Patch('owner/training-sessions/:id')
   async updateOwnerTrainingSession(

@@ -17,6 +17,7 @@ import '../widgets/public/cached_salon_network_image.dart';
 import 'client_map_screen.dart';
 import 'public_home_screen.dart';
 import 'public_studio_detail_screen.dart';
+import 'public_studio_schedule_screen.dart';
 import '../services/auth_service.dart';
 import '../widgets/public/class_schedule_card.dart';
 
@@ -151,7 +152,8 @@ class _ClientSearchScreenState extends State<_ClientSearchScreen> {
   String _distanceFilter = 'auto';
   String _sortBy = 'recommended';
   final Set<String> _timePeriods = <String>{};
-  RangeValues _timeRange = const RangeValues(0, 1439);
+  /// Minutes from midnight; max 1440 = 24:00. Slider uses 30-minute steps.
+  RangeValues _timeRange = const RangeValues(0, 1440);
   List<_ExploreStudioItem> _studios = const [];
   List<_ExploreClassItem> _classes = const [];
   List<TrainingCategoryOption> _trainingCategories = const [];
@@ -404,10 +406,19 @@ class _ClientSearchScreenState extends State<_ClientSearchScreen> {
   }
 
   String _formatMinutesLabel(double minutes) {
-    final safe = minutes.round().clamp(0, 1439);
+    final safe = minutes.round().clamp(0, 1440);
     final h = (safe ~/ 60).toString().padLeft(2, '0');
     final m = (safe % 60).toString().padLeft(2, '0');
     return '$h:$m';
+  }
+
+  /// Snap to 30-minute steps for [RangeSlider] (min 0, max 1440, divisions 48).
+  RangeValues _alignTimeRangeToSlider(RangeValues r) {
+    int step30(int v) => ((v / 30.0).round() * 30).clamp(0, 1440);
+    var a = step30(r.start.round());
+    var b = step30(r.end.round());
+    if (b < a) b = a;
+    return RangeValues(a.toDouble(), b.toDouble());
   }
 
   Widget _filterSheetTitleRow(BuildContext sheetContext, String title) {
@@ -450,10 +461,15 @@ class _ClientSearchScreenState extends State<_ClientSearchScreen> {
     return useful.first;
   }
 
-  bool get _hasActiveTimeFilter =>
-      _timePeriods.isNotEmpty ||
-      _timeRange.start.round() != 0 ||
-      _timeRange.end.round() != 1439;
+  bool get _hasActiveTimeFilter {
+    if (_timePeriods.isNotEmpty) return true;
+    final startMin = _timeRange.start.round();
+    final endMin = _timeRange.end.round();
+    if (startMin != 0) return true;
+    // Legacy full-day upper bound was 23:59 (1439); new slider uses 24:00 (1440).
+    if (endMin < 1439) return true;
+    return false;
+  }
 
   String get _sortChipLabel {
     switch (_sortBy) {
@@ -734,7 +750,7 @@ class _ClientSearchScreenState extends State<_ClientSearchScreen> {
 
   Future<void> _openTimeFilterSheet() async {
     final tempPeriods = Set<String>.from(_timePeriods);
-    RangeValues tempRange = _timeRange;
+    RangeValues tempRange = _alignTimeRangeToSlider(_timeRange);
     final result = await showModalBottomSheet<Map<String, dynamic>>(
       context: context,
       showDragHandle: false,
@@ -872,8 +888,8 @@ class _ClientSearchScreenState extends State<_ClientSearchScreen> {
                       RangeSlider(
                         values: tempRange,
                         min: 0,
-                        max: 1439,
-                        divisions: 95,
+                        max: 1440,
+                        divisions: 48,
                         activeColor: AppColors.primary500,
                         inactiveColor: AppColors.borderPrimary,
                         onChanged: (values) =>
@@ -886,7 +902,7 @@ class _ClientSearchScreenState extends State<_ClientSearchScreen> {
                           onPressed: () {
                             setModalState(() {
                               tempPeriods.clear();
-                              tempRange = const RangeValues(0, 1439);
+                              tempRange = const RangeValues(0, 1440);
                             });
                           },
                           child: const Text(
@@ -1128,7 +1144,7 @@ class _ClientSearchScreenState extends State<_ClientSearchScreen> {
     String tempSort = _sortBy;
     String tempDistance = _distanceFilter;
     final tempPeriods = Set<String>.from(_timePeriods);
-    RangeValues tempRange = _timeRange;
+    RangeValues tempRange = _alignTimeRangeToSlider(_timeRange);
 
     final result = await showModalBottomSheet<Map<String, dynamic>>(
       context: context,
@@ -1402,8 +1418,8 @@ class _ClientSearchScreenState extends State<_ClientSearchScreen> {
                         RangeSlider(
                           values: tempRange,
                           min: 0,
-                          max: 1439,
-                          divisions: 95,
+                          max: 1440,
+                          divisions: 48,
                           activeColor: AppColors.primary500,
                           inactiveColor: AppColors.borderPrimary,
                           onChanged: (values) =>
@@ -1418,7 +1434,7 @@ class _ClientSearchScreenState extends State<_ClientSearchScreen> {
                                 tempSort = 'recommended';
                                 tempDistance = 'auto';
                                 tempPeriods.clear();
-                                tempRange = const RangeValues(0, 1439);
+                                tempRange = const RangeValues(0, 1440);
                               });
                             },
                             child: const Text(
@@ -2388,11 +2404,75 @@ class _ClientFavoritesScreenState extends State<_ClientFavoritesScreen> {
   }
 }
 
-class _ClientProfileScreen extends StatelessWidget {
+class _ClientProfileScreen extends StatefulWidget {
   const _ClientProfileScreen();
 
   @override
+  State<_ClientProfileScreen> createState() => _ClientProfileScreenState();
+}
+
+class _ClientProfileScreenState extends State<_ClientProfileScreen>
+    with AutomaticKeepAliveClientMixin {
+  static const Duration _statsCacheTtl = Duration(minutes: 2);
+  static int? _cachedClassesVisited;
+  static DateTime? _statsCachedAt;
+
+  int _classesVisited = 0;
+  bool _loadingStats = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadStats();
+  }
+
+  @override
+  bool get wantKeepAlive => true;
+
+  Future<void> _loadStats({bool force = false}) async {
+    if (!force &&
+        _cachedClassesVisited != null &&
+        _statsCachedAt != null &&
+        DateTime.now().difference(_statsCachedAt!) < _statsCacheTtl) {
+      if (mounted) {
+        setState(() {
+          _classesVisited = _cachedClassesVisited!;
+          _loadingStats = false;
+        });
+      }
+      return;
+    }
+    final token = context.read<AuthService>().accessToken;
+    if (token == null || token.isEmpty) {
+      if (!mounted) return;
+      setState(() {
+        _classesVisited = 0;
+        _loadingStats = false;
+      });
+      return;
+    }
+    if (mounted) setState(() => _loadingStats = true);
+    try {
+      final raw = await ApiClient.get('/fitness/client/profile-stats', token);
+      final map = raw is Map<String, dynamic>
+          ? raw
+          : (raw is Map ? Map<String, dynamic>.from(raw) : <String, dynamic>{});
+      if (!mounted) return;
+      setState(() {
+        _classesVisited = (map['classesVisited'] as num?)?.toInt() ?? 0;
+        _loadingStats = false;
+      });
+      _cachedClassesVisited = _classesVisited;
+      _statsCachedAt = DateTime.now();
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _loadingStats = false);
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
+    super.build(context);
     final auth = context.watch<AuthService>();
     final user = auth.user;
     final displayName = user?.name?.trim().isNotEmpty == true
@@ -2424,9 +2504,11 @@ class _ClientProfileScreen extends StatelessWidget {
                             ),
                           ),
                           const SizedBox(height: 4),
-                          const Text(
-                            '0 classes visited',
-                            style: TextStyle(
+                          Text(
+                            _loadingStats
+                                ? 'Loading classes visited...'
+                                : '$_classesVisited classes visited',
+                            style: const TextStyle(
                               fontSize: 13,
                               fontWeight: FontWeight.w500,
                               color: AppColors.textSecondary,
@@ -2468,9 +2550,12 @@ class _ClientProfileScreen extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 8),
-              const Expanded(
+              Expanded(
                 child: TabBarView(
-                  children: [_ClientScheduleTab(), _ClientPassesTab()],
+                  children: [
+                    const _ClientScheduleTab(),
+                    const _ClientPassesTab(),
+                  ],
                 ),
               ),
             ],
@@ -2488,9 +2573,16 @@ class _ClientScheduleTab extends StatefulWidget {
   State<_ClientScheduleTab> createState() => _ClientScheduleTabState();
 }
 
-class _ClientScheduleTabState extends State<_ClientScheduleTab> {
+class _ClientScheduleTabState extends State<_ClientScheduleTab>
+    with AutomaticKeepAliveClientMixin {
+  static const Duration _cacheTtl = Duration(minutes: 2);
+  static List<Map<String, dynamic>>? _cachedItems;
+  static DateTime? _cachedAt;
+
   bool _loading = true;
   List<Map<String, dynamic>> _items = const [];
+  String? _error;
+  final Set<String> _cancelingBookingIds = <String>{};
 
   @override
   void initState() {
@@ -2498,7 +2590,22 @@ class _ClientScheduleTabState extends State<_ClientScheduleTab> {
     _load();
   }
 
-  Future<void> _load() async {
+  @override
+  bool get wantKeepAlive => true;
+
+  Future<void> _load({bool force = false}) async {
+    if (!force &&
+        _cachedItems != null &&
+        _cachedAt != null &&
+        DateTime.now().difference(_cachedAt!) < _cacheTtl) {
+      if (!mounted) return;
+      setState(() {
+        _items = List<Map<String, dynamic>>.from(_cachedItems!);
+        _loading = false;
+        _error = null;
+      });
+      return;
+    }
     final token = context.read<AuthService>().accessToken;
     if (token == null || token.isEmpty) {
       if (!mounted) return;
@@ -2511,15 +2618,19 @@ class _ClientScheduleTabState extends State<_ClientScheduleTab> {
     if (mounted) setState(() => _loading = true);
     try {
       final now = DateTime.now();
-      final from = Uri.encodeComponent(now.toIso8601String());
+      final from = Uri.encodeComponent(now.toUtc().toIso8601String());
       final to = Uri.encodeComponent(
-        now.add(const Duration(days: 120)).toIso8601String(),
+        now.add(const Duration(days: 120)).toUtc().toIso8601String(),
       );
       final raw = await ApiClient.get(
         '/fitness/client/schedule?from=$from&to=$to',
         token,
       );
-      final list = raw is List ? raw : <dynamic>[];
+      final list = raw is List
+          ? raw
+          : (raw is Map<String, dynamic> && raw['data'] is List
+                ? raw['data'] as List
+                : <dynamic>[]);
       final parsed = <Map<String, dynamic>>[];
       for (final item in list) {
         if (item is Map) parsed.add(Map<String, dynamic>.from(item));
@@ -2528,12 +2639,16 @@ class _ClientScheduleTabState extends State<_ClientScheduleTab> {
       setState(() {
         _items = parsed;
         _loading = false;
+        _error = null;
       });
-    } catch (_) {
+      _cachedItems = List<Map<String, dynamic>>.from(parsed);
+      _cachedAt = DateTime.now();
+    } catch (e) {
       if (!mounted) return;
       setState(() {
         _items = const [];
         _loading = false;
+        _error = e.toString();
       });
     }
   }
@@ -2556,10 +2671,67 @@ class _ClientScheduleTabState extends State<_ClientScheduleTab> {
     return '$h:$m';
   }
 
+  String? _bookingId(Map<String, dynamic> item) {
+    final bookingId = item['bookingId']?.toString().trim();
+    if (bookingId != null && bookingId.isNotEmpty) return bookingId;
+    final id = item['id']?.toString().trim();
+    if (id != null && id.isNotEmpty) return id;
+    return null;
+  }
+
+  bool _canCancelBooking(Map<String, dynamic> item) {
+    final startsAt = DateTime.tryParse(
+      (item['startsAt'] ?? '').toString(),
+    )?.toLocal();
+    if (startsAt == null || !startsAt.isAfter(DateTime.now())) return false;
+    final status = (item['bookingStatus'] ?? item['status'] ?? '')
+        .toString()
+        .toUpperCase();
+    if (status == 'CANCELLED' || status == 'COMPLETED') return false;
+    return _bookingId(item) != null;
+  }
+
+  Future<void> _cancelBooking(Map<String, dynamic> item) async {
+    final token = context.read<AuthService>().accessToken;
+    final bookingId = _bookingId(item);
+    if (token == null || token.isEmpty || bookingId == null) return;
+    if (_cancelingBookingIds.contains(bookingId)) return;
+    setState(() => _cancelingBookingIds.add(bookingId));
+    try {
+      await ApiClient.put('/bookings/$bookingId/cancel', token);
+      _cachedItems = null;
+      _cachedAt = null;
+      if (!mounted) return;
+      ScaffoldMessenger.maybeOf(context)?.showSnackBar(
+        const SnackBar(content: Text('Booking cancelled')),
+      );
+      await _load();
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.maybeOf(context)?.showSnackBar(
+        SnackBar(content: Text('Failed to cancel booking: $e')),
+      );
+    } finally {
+      if (mounted) setState(() => _cancelingBookingIds.remove(bookingId));
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
+    super.build(context);
     if (_loading) {
       return const Center(child: CircularProgressIndicator());
+    }
+    if (_error != null) {
+      return ListView(
+        padding: const EdgeInsets.all(16),
+        children: [
+          _ClientPlaceholderCard(
+            title: 'Failed to load schedule',
+            subtitle: _error!,
+          ),
+        ],
+      );
     }
     if (_items.isEmpty) {
       return ListView(
@@ -2573,7 +2745,7 @@ class _ClientScheduleTabState extends State<_ClientScheduleTab> {
       );
     }
     return RefreshIndicator(
-      onRefresh: _load,
+      onRefresh: () => _load(force: true),
       child: ListView.separated(
         padding: const EdgeInsets.all(12),
         itemCount: _items.length,
@@ -2597,6 +2769,10 @@ class _ClientScheduleTabState extends State<_ClientScheduleTab> {
           final price = (training['price'] as num?)?.toDouble();
           final className = (training['name'] ?? 'Class').toString();
           final studioName = (studio['name'] ?? '').toString();
+          final canCancel = _canCancelBooking(item);
+          final bookingId = _bookingId(item);
+          final isCanceling =
+              bookingId != null && _cancelingBookingIds.contains(bookingId);
 
           return Container(
             color: AppColors.backgroundPrimary,
@@ -2658,15 +2834,48 @@ class _ClientScheduleTabState extends State<_ClientScheduleTab> {
                     ],
                   ),
                 ),
-                if (price != null)
-                  Text(
-                    _formatVnd(price),
-                    style: const TextStyle(
-                      fontWeight: FontWeight.w800,
-                      color: AppColors.primary500,
-                      fontSize: 26 / 1.6,
-                    ),
-                  ),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    if (price != null)
+                      Text(
+                        _formatVnd(price),
+                        style: const TextStyle(
+                          fontWeight: FontWeight.w800,
+                          color: AppColors.primary500,
+                          fontSize: 26 / 1.6,
+                        ),
+                      ),
+                    if (canCancel) ...[
+                      const SizedBox(height: 8),
+                      SizedBox(
+                        height: 30,
+                        child: OutlinedButton(
+                          onPressed: isCanceling ? null : () => _cancelBooking(item),
+                          style: OutlinedButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(horizontal: 12),
+                            side: const BorderSide(color: AppColors.error500),
+                            foregroundColor: AppColors.error500,
+                            textStyle: const TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                          child: isCanceling
+                              ? const SizedBox(
+                                  width: 14,
+                                  height: 14,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    color: AppColors.error500,
+                                  ),
+                                )
+                              : const Text('Cancel'),
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
               ],
             ),
           );
@@ -2681,14 +2890,282 @@ class _ClientPassesTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ListView(
-      padding: const EdgeInsets.all(16),
-      children: const [
-        _ClientPlaceholderCard(
-          title: 'No active passes',
-          subtitle: 'Purchased passes will appear here.',
-        ),
-      ],
+    return const _ClientPassesHistoryList();
+  }
+}
+
+class _ClientPassesHistoryList extends StatefulWidget {
+  const _ClientPassesHistoryList();
+
+  @override
+  State<_ClientPassesHistoryList> createState() => _ClientPassesHistoryListState();
+}
+
+class _ClientPassesHistoryListState extends State<_ClientPassesHistoryList>
+    with AutomaticKeepAliveClientMixin {
+  static const Duration _cacheTtl = Duration(minutes: 2);
+  static List<Map<String, dynamic>>? _cachedItems;
+  static DateTime? _cachedAt;
+
+  bool _loading = true;
+  String? _error;
+  List<Map<String, dynamic>> _items = const [];
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  @override
+  bool get wantKeepAlive => true;
+
+  Future<void> _load({bool force = false}) async {
+    if (!force &&
+        _cachedItems != null &&
+        _cachedAt != null &&
+        DateTime.now().difference(_cachedAt!) < _cacheTtl) {
+      if (!mounted) return;
+      setState(() {
+        _items = List<Map<String, dynamic>>.from(_cachedItems!);
+        _loading = false;
+        _error = null;
+      });
+      return;
+    }
+    final token = context.read<AuthService>().accessToken;
+    if (token == null || token.isEmpty) {
+      if (!mounted) return;
+      setState(() {
+        _items = const [];
+        _loading = false;
+      });
+      return;
+    }
+    if (mounted) setState(() => _loading = true);
+    try {
+      final now = DateTime.now();
+      final from = Uri.encodeComponent(
+        now.subtract(const Duration(days: 180)).toUtc().toIso8601String(),
+      );
+      final to = Uri.encodeComponent(
+        now.add(const Duration(days: 120)).toUtc().toIso8601String(),
+      );
+      final raw = await ApiClient.get(
+        '/fitness/client/schedule?from=$from&to=$to',
+        token,
+      );
+      final list = raw is List
+          ? raw
+          : (raw is Map<String, dynamic> && raw['data'] is List
+                ? raw['data'] as List
+                : <dynamic>[]);
+      final parsed = <Map<String, dynamic>>[];
+      for (final item in list) {
+        if (item is Map) parsed.add(Map<String, dynamic>.from(item));
+      }
+      parsed.sort((a, b) {
+        final aa = DateTime.tryParse((a['startsAt'] ?? '').toString()) ??
+            DateTime.fromMillisecondsSinceEpoch(0);
+        final bb = DateTime.tryParse((b['startsAt'] ?? '').toString()) ??
+            DateTime.fromMillisecondsSinceEpoch(0);
+        return bb.compareTo(aa);
+      });
+      if (!mounted) return;
+      setState(() {
+        _items = parsed;
+        _loading = false;
+        _error = null;
+      });
+      _cachedItems = List<Map<String, dynamic>>.from(parsed);
+      _cachedAt = DateTime.now();
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _items = const [];
+        _loading = false;
+        _error = e.toString();
+      });
+    }
+  }
+
+  String _statusLabel(Map<String, dynamic> item) {
+    final status = (item['sessionStatus'] ?? '').toString().toUpperCase();
+    final endsAt = DateTime.tryParse((item['endsAt'] ?? '').toString())?.toLocal();
+    if (status == 'COMPLETED') return 'Completed';
+    if (endsAt != null && endsAt.isBefore(DateTime.now())) return 'Completed';
+    return 'Scheduled';
+  }
+
+  Color _statusColor(String status) {
+    if (status == 'Completed') return const Color(0xFF2E7D32);
+    return AppColors.primary500;
+  }
+
+  String _dateTimeLabel(DateTime? dt) {
+    if (dt == null) return 'Date TBD';
+    String two(int v) => v.toString().padLeft(2, '0');
+    return '${two(dt.day)}.${two(dt.month)} ${two(dt.hour)}:${two(dt.minute)}';
+  }
+
+  void _bookAgain(Map<String, dynamic> item) {
+    final studio = item['studio'] is Map
+        ? Map<String, dynamic>.from(item['studio'] as Map)
+        : <String, dynamic>{};
+    final studioId = (studio['id'] ?? item['studioId'] ?? '').toString();
+    final studioName = (studio['name'] ?? 'Studio').toString();
+    if (studioId.isEmpty) {
+      ScaffoldMessenger.maybeOf(context)?.showSnackBar(
+        const SnackBar(content: Text('Studio is unavailable for rebooking')),
+      );
+      return;
+    }
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) =>
+            PublicStudioScheduleScreen(studioId: studioId, studioName: studioName),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    super.build(context);
+    if (_loading) {
+      return const Center(child: CircularProgressIndicator());
+    }
+    if (_error != null) {
+      return ListView(
+        padding: const EdgeInsets.all(16),
+        children: [
+          _ClientPlaceholderCard(
+            title: 'Failed to load passes',
+            subtitle: _error!,
+          ),
+        ],
+      );
+    }
+    if (_items.isEmpty) {
+      return ListView(
+        padding: const EdgeInsets.all(16),
+        children: const [
+          _ClientPlaceholderCard(
+            title: 'No classes yet',
+            subtitle: 'Your class cards will appear here.',
+          ),
+        ],
+      );
+    }
+    return RefreshIndicator(
+      onRefresh: () => _load(force: true),
+      child: ListView.separated(
+        padding: const EdgeInsets.all(12),
+        itemCount: _items.length,
+        separatorBuilder: (_, __) =>
+            const Divider(height: 1, color: AppColors.borderPrimary),
+        itemBuilder: (_, index) {
+          final item = _items[index];
+          final training = item['training'] is Map
+              ? Map<String, dynamic>.from(item['training'] as Map)
+              : <String, dynamic>{};
+          final studio = item['studio'] is Map
+              ? Map<String, dynamic>.from(item['studio'] as Map)
+              : <String, dynamic>{};
+          final studioName = (studio['name'] ?? '').toString();
+          final startsAt =
+              DateTime.tryParse((item['startsAt'] ?? '').toString())?.toLocal();
+          final status = _statusLabel(item);
+          final statusColor = _statusColor(status);
+          final canBookAgain = status == 'Completed';
+
+          return Container(
+            color: AppColors.backgroundPrimary,
+            padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Row(
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            (training['name'] ?? 'Class').toString(),
+                            style: const TextStyle(
+                              fontWeight: FontWeight.w700,
+                              fontSize: 14,
+                              color: AppColors.textPrimary,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            _dateTimeLabel(startsAt),
+                            style: const TextStyle(
+                              color: AppColors.textSecondary,
+                              fontSize: 12,
+                            ),
+                          ),
+                          if (studioName.isNotEmpty)
+                            Text(
+                              studioName,
+                              style: const TextStyle(
+                                color: AppColors.textSecondary,
+                                fontSize: 12,
+                              ),
+                            ),
+                        ],
+                      ),
+                    ),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 5,
+                      ),
+                      decoration: BoxDecoration(
+                        color: statusColor.withValues(alpha: 0.12),
+                        borderRadius: BorderRadius.circular(999),
+                        border: Border.all(
+                          color: statusColor.withValues(alpha: 0.35),
+                        ),
+                      ),
+                      child: Text(
+                        status,
+                        style: TextStyle(
+                          color: statusColor,
+                          fontWeight: FontWeight.w700,
+                          fontSize: 12,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                if (canBookAgain) ...[
+                  const SizedBox(height: 10),
+                  Align(
+                    alignment: Alignment.centerRight,
+                    child: SizedBox(
+                      height: 32,
+                      child: FilledButton(
+                        onPressed: () => _bookAgain(item),
+                        style: FilledButton.styleFrom(
+                          backgroundColor: AppColors.primary500,
+                          padding: const EdgeInsets.symmetric(horizontal: 12),
+                          textStyle: const TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                        child: const Text('Book again'),
+                      ),
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          );
+        },
+      ),
     );
   }
 }

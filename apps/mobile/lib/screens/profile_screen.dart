@@ -331,7 +331,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     context,
                     MaterialPageRoute(
                       builder: (_) => const AppSettingsScreen(
-                        initialSection: SettingsHubSection.booking,
+                        initialSection: SettingsHubSection.studio,
                       ),
                     ),
                   );
@@ -403,6 +403,7 @@ class _ProfileTrainingsRowCard extends StatelessWidget {
         onTap: onTap,
         borderRadius: BorderRadius.circular(12),
         child: Container(
+          constraints: const BoxConstraints(minHeight: 96),
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
           decoration: BoxDecoration(
             color: AppColors.backgroundPrimary,

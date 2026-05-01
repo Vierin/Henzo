@@ -168,6 +168,20 @@ class _DetailContent extends StatelessWidget {
   final bool isFavoriteLoading;
   final VoidCallback onToggleFavorite;
 
+  int _extractBookingPeriodDays(Map<String, dynamic> studio) {
+    const defaultDays = 14;
+    const minDays = 1;
+    const maxDays = 60;
+    final reminderSettings = studio['reminderSettings'];
+    if (reminderSettings is! Map) return defaultDays;
+    final raw = reminderSettings['bookingPeriodDays'];
+    int? days;
+    if (raw is int) days = raw;
+    if (raw is num) days = raw.toInt();
+    if (raw is String) days = int.tryParse(raw);
+    return (days ?? defaultDays).clamp(minDays, maxDays);
+  }
+
   @override
   Widget build(BuildContext context) {
     final photos = studio['photos'];
@@ -566,11 +580,13 @@ class _DetailContent extends StatelessWidget {
                   minimumSize: const Size.fromHeight(44),
                 ),
                 onPressed: () {
+                  final bookingPeriodDays = _extractBookingPeriodDays(studio);
                   Navigator.of(context).push(
                     MaterialPageRoute(
                       builder: (_) => PublicStudioScheduleScreen(
                         studioId: (studio['id'] ?? '').toString(),
                         studioName: (studio['name'] ?? 'Studio').toString(),
+                        bookingPeriodDays: bookingPeriodDays,
                       ),
                     ),
                   );

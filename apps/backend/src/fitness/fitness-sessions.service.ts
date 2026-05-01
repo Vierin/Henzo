@@ -695,7 +695,9 @@ export class FitnessSessionsService {
         userId,
         status: 'ACTIVE',
         TrainingSession: {
-          status: 'ACTIVE',
+          status: {
+            in: [TrainingSessionStatus.ACTIVE, TrainingSessionStatus.COMPLETED],
+          },
           startsAt: {
             gte: fromDate,
             lte: toDate,
@@ -755,6 +757,7 @@ export class FitnessSessionsService {
       sessionId: e.TrainingSession.id,
       startsAt: e.TrainingSession.startsAt.toISOString(),
       endsAt: e.TrainingSession.endsAt.toISOString(),
+      sessionStatus: e.TrainingSession.status,
       capacity: e.TrainingSession.capacity,
       bookedCount: e.TrainingSession.bookedCount,
       training: e.TrainingSession.Training
@@ -787,6 +790,52 @@ export class FitnessSessionsService {
           }
         : null,
     }));
+  }
+
+  async getClientProfileStats(authHeader: string): Promise<{
+    classesVisited: number;
+    upcomingClasses: number;
+    activePasses: number;
+  }> {
+    const currentUser = await this.authService.getCurrentUser(authHeader);
+    const userId = currentUser.user.id;
+
+    await this.completePastTrainingSessions();
+
+    const now = new Date();
+    const [classesVisited, upcomingClasses] = await Promise.all([
+      this.prisma.sessionEnrollment.count({
+        where: {
+          userId,
+          status: SessionEnrollmentStatus.ACTIVE,
+          TrainingSession: {
+            endsAt: { lt: now },
+            status: {
+              in: [
+                TrainingSessionStatus.COMPLETED,
+                TrainingSessionStatus.ACTIVE,
+              ],
+            },
+          },
+        },
+      }),
+      this.prisma.sessionEnrollment.count({
+        where: {
+          userId,
+          status: SessionEnrollmentStatus.ACTIVE,
+          TrainingSession: {
+            startsAt: { gte: now },
+            status: TrainingSessionStatus.ACTIVE,
+          },
+        },
+      }),
+    ]);
+
+    return {
+      classesVisited,
+      upcomingClasses,
+      activePasses: 0,
+    };
   }
 
   /**
