@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import Script from 'next/script';
 import { Suspense } from 'react';
-import { Geist, Geist_Mono } from 'next/font/google';
+import { Instrument_Serif, Geist, Geist_Mono } from 'next/font/google';
 import './globals.css';
 import Toaster from '@/components/Toaster';
 import ConditionalFooter from '@/components/ConditionalFooter';
@@ -9,6 +9,15 @@ import CookieBanner from '@/components/CookieBanner';
 import { LanguageProvider } from '@/contexts/LanguageContext';
 import { EnvValidator } from '@/components/EnvValidator';
 import LoadingFallback from '@/components/LoadingFallback';
+
+const instrumentSerif = Instrument_Serif({
+	variable: '--font-instrument-serif',
+	subsets: ['latin', 'latin-ext'],
+	weight: ['400'],
+	style: ['normal', 'italic'],
+	display: 'swap',
+	adjustFontFallback: true,
+});
 
 const geistSans = Geist({
 	variable: '--font-geist-sans',
@@ -70,7 +79,7 @@ export default function RootLayout({
 				<meta name="ICBM" content="21.028511, 105.804817" />
 			</head>
 			<body
-				className={`${geistSans.variable} ${geistMono.variable} antialiased min-h-screen flex flex-col`}
+				className={`${geistSans.variable} ${geistMono.variable} ${instrumentSerif.variable} font-sans antialiased min-h-screen flex flex-col`}
 				suppressHydrationWarning={true}
 			>
 				<EnvValidator />

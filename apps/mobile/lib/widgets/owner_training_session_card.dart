@@ -25,6 +25,7 @@ class OwnerTrainingSessionCard extends StatelessWidget {
     this.trainerFallbackName,
     this.isPast = false,
     this.pastLabel,
+    this.trainingColor,
   });
 
   final OwnerTrainingSession session;
@@ -40,6 +41,7 @@ class OwnerTrainingSessionCard extends StatelessWidget {
   final String? trainerFallbackName;
   final bool isPast;
   final String? pastLabel;
+  final Color? trainingColor;
 
   /// Duration as configured (whole minutes).
 
@@ -621,17 +623,18 @@ class OwnerTrainingSessionCard extends StatelessWidget {
 
     final fillLabel = cap > 0 ? '$enrolled/$cap' : '$enrolled';
     final fillProgress = cap > 0 ? (enrolled / cap).clamp(0.0, 1.0) : 0.0;
+    final accentColor = trainingColor ?? AppColors.primary500;
 
     final inner = Stack(
       children: [
-        const Positioned(
+        Positioned(
           top: 8,
           bottom: 8,
           left: 75,
           child: SizedBox(
             width: 3,
             child: DecoratedBox(
-              decoration: BoxDecoration(color: AppColors.primary500),
+              decoration: BoxDecoration(color: accentColor),
             ),
           ),
         ),
@@ -753,7 +756,7 @@ class OwnerTrainingSessionCard extends StatelessWidget {
 
                       color: past
                           ? AppColors.textSecondary
-                          : AppColors.primary600,
+                          : accentColor,
 
                       height: 1.05,
                     ),
@@ -769,7 +772,7 @@ class OwnerTrainingSessionCard extends StatelessWidget {
                         value: fillProgress,
                         backgroundColor: AppColors.borderPrimary,
                         valueColor: AlwaysStoppedAnimation<Color>(
-                          past ? AppColors.textSecondary : AppColors.primary500,
+                          past ? AppColors.textSecondary : accentColor,
                         ),
                       ),
                     ),

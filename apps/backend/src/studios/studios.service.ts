@@ -4,6 +4,7 @@ import { UpdateStudioDto } from './dto/update-studio.dto';
 import { CreateStudioDto } from './dto/create-studio.dto';
 import { MapboxService } from '../mapbox/mapbox.service';
 import { TranslationService } from '../trainings/translation.service';
+import { computeTrainingDisplayColor } from '../trainings/training-color.util';
 import { generateStudioSlug } from '../utils/slug';
 import { nanoid } from 'nanoid';
 
@@ -325,6 +326,13 @@ export class StudiosService {
                   nameRu: true,
                   duration: true,
                   price: true,
+                  trainingCategoryId: true,
+                  displayColor: true,
+                  trainingCategory: {
+                    select: {
+                      main_category_id: true,
+                    },
+                  },
                 },
               },
               Trainer: {
@@ -1653,6 +1661,14 @@ export class StudiosService {
                   nameRu: session.Training.nameRu,
                   duration: session.Training.duration,
                   price: session.Training.price,
+                  displayColor: computeTrainingDisplayColor({
+                    trainingId: session.Training.id,
+                    trainingName: session.Training.name,
+                    trainingCategoryId: session.Training.trainingCategoryId,
+                    mainCategoryId:
+                      session.Training.trainingCategory?.main_category_id,
+                    existingColor: session.Training.displayColor,
+                  }),
                 }
               : null,
             trainer: session.Trainer
@@ -1952,6 +1968,12 @@ export class StudiosService {
             duration: true,
             price: true,
             trainingCategoryId: true,
+            displayColor: true,
+            trainingCategory: {
+              select: {
+                main_category_id: true,
+              },
+            },
           },
         },
         Trainer: {
@@ -1982,6 +2004,13 @@ export class StudiosService {
             duration: s.Training.duration,
             price: s.Training.price,
             trainingCategoryId: s.Training.trainingCategoryId,
+            displayColor: computeTrainingDisplayColor({
+              trainingId: s.Training.id,
+              trainingName: s.Training.name,
+              trainingCategoryId: s.Training.trainingCategoryId,
+              mainCategoryId: s.Training.trainingCategory?.main_category_id,
+              existingColor: s.Training.displayColor,
+            }),
           }
         : null,
       trainer: s.Trainer

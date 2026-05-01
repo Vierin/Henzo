@@ -8,9 +8,9 @@ import '../services/auth_service.dart';
 import '../services/cache/salon_cache.dart';
 import '../services/cache/services_staff_cache.dart';
 import '../services/dashboard_api_service.dart';
-import 'online_booking_screen.dart';
+import 'app_settings_screen.dart';
 import 'services_screen.dart';
-import 'settings_screen.dart';
+import 'staff_screen.dart';
 import 'subscription_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
@@ -104,7 +104,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 onPressed: () {
                   Navigator.push(
                     context,
-                    MaterialPageRoute(builder: (_) => const SettingsScreen()),
+                    MaterialPageRoute(
+                      builder: (_) => const AppSettingsScreen(
+                        initialSection: SettingsHubSection.studio,
+                      ),
+                    ),
                   );
                 },
               ),
@@ -309,7 +313,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 onTap: () {
                   Navigator.push(
                     context,
-                    MaterialPageRoute(builder: (_) => const SettingsScreen()),
+                    MaterialPageRoute(
+                      builder: (_) => const AppSettingsScreen(
+                        initialSection: SettingsHubSection.studio,
+                      ),
+                    ),
                   );
                 },
               ),
@@ -322,7 +330,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (_) => const OnlineBookingScreen(),
+                      builder: (_) => const AppSettingsScreen(
+                        initialSection: SettingsHubSection.booking,
+                      ),
                     ),
                   );
                 },
@@ -331,19 +341,40 @@ class _ProfileScreenState extends State<ProfileScreen> {
           ],
         ),
         const SizedBox(height: 12),
-        _ProfileTrainingsRowCard(
-          count: _trainingsCount,
-          loading: _loadingTrainingsCount,
-          onTap: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (_) => const ServicesScreen(trainingMode: true),
+        Row(
+          children: [
+            Expanded(
+              child: _ProfileTrainingsRowCard(
+                title: 'Тренировки',
+                count: _trainingsCount,
+                loading: _loadingTrainingsCount,
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => const ServicesScreen(trainingMode: true),
+                    ),
+                  ).then((_) {
+                    if (mounted) _loadTrainingsCount();
+                  });
+                },
               ),
-            ).then((_) {
-              if (mounted) _loadTrainingsCount();
-            });
-          },
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: _ProfileTrainingsRowCard(
+                title: 'Тренеры',
+                count: null,
+                loading: false,
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const StaffScreen()),
+                  );
+                },
+              ),
+            ),
+          ],
         ),
       ],
     );
@@ -353,12 +384,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
 /// Full-width row: «Тренировки» + count of training types.
 class _ProfileTrainingsRowCard extends StatelessWidget {
   const _ProfileTrainingsRowCard({
+    required this.title,
     required this.count,
     required this.loading,
     required this.onTap,
   });
 
-  final int count;
+  final String title;
+  final int? count;
   final bool loading;
   final VoidCallback onTap;
 
@@ -385,10 +418,10 @@ class _ProfileTrainingsRowCard extends StatelessWidget {
           ),
           child: Row(
             children: [
-              const Expanded(
+              Expanded(
                 child: Text(
-                  'Тренировки',
-                  style: TextStyle(
+                  title,
+                  style: const TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w600,
                     color: AppColors.textPrimary,
@@ -401,7 +434,7 @@ class _ProfileTrainingsRowCard extends StatelessWidget {
                   width: 20,
                   child: CircularProgressIndicator(strokeWidth: 2),
                 )
-              else
+              else if (count != null)
                 Text(
                   '$count',
                   style: const TextStyle(

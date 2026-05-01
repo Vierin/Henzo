@@ -10,6 +10,7 @@ import '../services/api_client.dart';
 import '../services/auth_service.dart';
 import '../services/cache/studio_public_detail_cache.dart';
 import '../services/client_favorites_store.dart';
+import '../utils/color_hex.dart';
 import '../widgets/public/cached_salon_network_image.dart';
 import 'public_studio_schedule_screen.dart';
 
@@ -464,13 +465,18 @@ class _DetailContent extends StatelessWidget {
                       ?.toLocal();
                   final duration = (training['duration'] as num?)?.toInt();
                   final price = (training['price'] as num?)?.toDouble();
+                  final accentColor = parseHexColor(
+                    training['displayColor']?.toString(),
+                  );
                   return Container(
                     margin: const EdgeInsets.fromLTRB(12, 0, 12, 8),
                     padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 11),
                     decoration: BoxDecoration(
                       color: AppColors.backgroundPrimary,
                       borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: AppColors.borderPrimary),
+                      border: Border.all(
+                        color: accentColor ?? AppColors.borderPrimary,
+                      ),
                     ),
                     child: Row(
                       children: [

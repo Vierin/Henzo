@@ -305,15 +305,6 @@ class _AccountSettingsScreenState extends State<AccountSettingsScreen> {
                           ),
                         ),
                       ),
-                      const SizedBox(height: 8),
-                      SizedBox(
-                        width: double.infinity,
-                        child: OutlinedButton.icon(
-                          onPressed: () => auth.logout(),
-                          icon: const Icon(Icons.logout),
-                          label: Text(locale.t('profileForm.logout')),
-                        ),
-                      ),
                     ],
                   ),
                 ),

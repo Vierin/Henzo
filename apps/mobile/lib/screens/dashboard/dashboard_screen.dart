@@ -9,16 +9,14 @@ import '../../services/api_client.dart';
 import '../../services/cache/salon_cache.dart';
 import '../../services/dashboard_api_service.dart';
 import '../../services/notifications_store.dart';
+import '../../utils/color_hex.dart';
 import '../../widgets/dashboard/dashboard_header_pill.dart';
-import '../../widgets/dashboard/dashboard_link_card.dart';
 import '../../widgets/dashboard/owner_checklist_card.dart';
 import '../../widgets/dashboard/dashboard_setup_card.dart';
 import '../../widgets/owner_training_session_card.dart';
 import '../app_settings_screen.dart';
 import '../notifications_screen.dart';
-import '../online_booking_screen.dart';
 import '../salon_setup_screen.dart';
-import '../settings_screen.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -112,7 +110,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
   Future<void> _openSettings() async {
     final changed = await Navigator.push<bool>(
       context,
-      MaterialPageRoute(builder: (_) => const SettingsScreen()),
+      MaterialPageRoute(
+        builder: (_) =>
+            const AppSettingsScreen(initialSection: SettingsHubSection.studio),
+      ),
     );
     if (changed == true && mounted) await _loadData();
   }
@@ -120,7 +121,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
   Future<void> _openBookingSettings() async {
     final changed = await Navigator.push<bool>(
       context,
-      MaterialPageRoute(builder: (_) => const OnlineBookingScreen()),
+      MaterialPageRoute(
+        builder: (_) =>
+            const AppSettingsScreen(initialSection: SettingsHubSection.booking),
+      ),
     );
     if (changed == true && mounted) await _loadData();
   }
@@ -221,6 +225,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
               final isPast = s.endsAt.isBefore(DateTime.now());
               return OwnerTrainingSessionCard(
                 session: s,
+                trainingColor: parseHexColor(s.trainingDisplayColorHex),
                 margin: const EdgeInsets.only(top: -10),
                 isPast: isPast,
                 pastLabel: isPast ? 'Past' : null,
@@ -370,28 +375,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   ),
                 ),
                 const SizedBox(height: 16),
-                // Link cards: клиенты
-                if (!_isLoading && _salon != null) ...[
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 12),
-                    child: Row(
-                      children: [
-                        Expanded(
-                          child: DashboardLinkCard(
-                            title: context.read<LocaleProvider>().t(
-                              'dashboard.clients',
-                            ),
-                            icon: Icons.people_outline,
-                            color: AppColors.primary100,
-                            onTap: () =>
-                                Navigator.of(context).pushNamed('/clients'),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                ],
                 if (_isLoading)
                   const SizedBox(
                     height: 120,

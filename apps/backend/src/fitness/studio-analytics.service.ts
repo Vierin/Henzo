@@ -6,6 +6,7 @@ import {
 import { BookingStatus, SubscriptionStatus, SubscriptionType } from '@prisma/client';
 import { AuthService } from '../auth/auth.service';
 import { PrismaService } from '../prisma/prisma.service';
+import { FitnessSessionsService } from './fitness-sessions.service';
 
 /**
  * KPI definitions for owner studio analytics:
@@ -20,6 +21,7 @@ import { PrismaService } from '../prisma/prisma.service';
  * to revenue and total "bookings" (counted as paid class spots).
  *
  * **TrainingSession + SessionEnrollment (group classes):** scheduled sessions by calendar;
+ * Past sessions are auto-marked COMPLETED when `endsAt` has passed (see FitnessSessionsService).
  * enrollments counted with session `startsAt` in range. Cancellations: enrollment status
  * CANCELLED with cancelledAt in range (when set), else status-only in range.
  *
@@ -39,6 +41,7 @@ export class StudioAnalyticsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly authService: AuthService,
+    private readonly fitnessSessionsService: FitnessSessionsService,
   ) {}
 
   async getCurrentStudioAnalytics(
@@ -64,6 +67,8 @@ export class StudioAnalyticsService {
     if (currentUser.user.role !== 'OWNER') {
       throw new ForbiddenException('Forbidden');
     }
+
+    await this.fitnessSessionsService.completePastTrainingSessions();
 
     const studio = await this.prisma.studio.findFirst({
       where: { ownerId: currentUser.user.id },

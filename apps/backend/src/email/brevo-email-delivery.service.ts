@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { Counter } from 'prom-client';
 
 export type BrevoSendPayload = {
   to: { email: string; name: string }[];
@@ -10,6 +11,18 @@ export type BrevoSendPayload = {
 
 @Injectable()
 export class BrevoEmailDeliveryService {
+  private static readonly sentCounter = new Counter({
+    name: 'henzo_email_sent_total',
+    help: 'Total number of successfully delivered transactional emails',
+    labelNames: ['provider'] as const,
+  });
+
+  private static readonly failedCounter = new Counter({
+    name: 'henzo_email_failed_total',
+    help: 'Total number of failed transactional email sends',
+    labelNames: ['provider', 'status_code'] as const,
+  });
+
   private readonly brevoApiKey: string;
   private readonly brevoApiUrl = 'https://api.brevo.com/v3/smtp/email';
 
@@ -31,6 +44,10 @@ export class BrevoEmailDeliveryService {
       console.error(
         '❌ BREVO_API_KEY is not configured. Email cannot be sent.',
       );
+      BrevoEmailDeliveryService.failedCounter.inc({
+        provider: 'brevo',
+        status_code: 'no_api_key',
+      });
       throw new Error('BREVO_API_KEY is not configured');
     }
 
@@ -75,10 +92,15 @@ export class BrevoEmailDeliveryService {
         statusText: response.statusText,
         error: errorData,
       });
+      BrevoEmailDeliveryService.failedCounter.inc({
+        provider: 'brevo',
+        status_code: String(response.status),
+      });
       throw new Error(errorMessage);
     }
 
     const result = await response.json();
+    BrevoEmailDeliveryService.sentCounter.inc({ provider: 'brevo' });
     console.log('✅ Email sent via Brevo successfully:', {
       messageId: result.messageId,
       to: recipientEmails,

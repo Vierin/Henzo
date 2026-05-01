@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../constants/colors.dart';
 import '../services/api_client.dart';
 import '../services/auth_service.dart';
+import '../utils/color_hex.dart';
 import '../widgets/public/class_schedule_card.dart';
 
 class PublicStudioScheduleScreen extends StatefulWidget {
@@ -333,6 +334,9 @@ class _PublicStudioScheduleScreenState extends State<PublicStudioScheduleScreen>
                             final price = (training['price'] as num?)?.toDouble();
                             final capacity = (s['capacity'] as num?)?.toInt();
                             final bookedCount = (s['bookedCount'] as num?)?.toInt() ?? 0;
+                            final trainingColor = parseHexColor(
+                              training['displayColor']?.toString(),
+                            );
                             final hasCapacity = capacity != null && capacity > 0;
                             final isFull = hasCapacity && bookedCount >= capacity;
                             final sessionId = (s['id'] ?? '').toString();
@@ -345,6 +349,7 @@ class _PublicStudioScheduleScreenState extends State<PublicStudioScheduleScreen>
                               priceLabel: price != null ? _formatVnd(price) : null,
                               bookedCount: bookedCount,
                               capacity: capacity,
+                              trainingColor: trainingColor,
                               isBooking: isBooking,
                               onBook: isFull ? null : () => _bookSession(s),
                             );

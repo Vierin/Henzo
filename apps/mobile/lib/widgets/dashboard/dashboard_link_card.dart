@@ -6,12 +6,14 @@ class DashboardLinkCard extends StatelessWidget {
   const DashboardLinkCard({
     super.key,
     required this.title,
+    this.subtitle,
     required this.icon,
     required this.color,
     required this.onTap,
   });
 
   final String title;
+  final String? subtitle;
   final IconData icon;
   final Color color;
   final VoidCallback onTap;
@@ -46,6 +48,19 @@ class DashboardLinkCard extends StatelessWidget {
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
               ),
+              if (subtitle != null && subtitle!.trim().isNotEmpty) ...[
+                const SizedBox(height: 4),
+                Text(
+                  subtitle!,
+                  style: const TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w500,
+                    color: AppColors.textSecondary,
+                  ),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
             ],
           ),
         ),

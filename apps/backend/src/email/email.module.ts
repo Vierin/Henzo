@@ -3,7 +3,6 @@ import { ConfigModule } from '@nestjs/config';
 import { EmailService } from './email.service';
 import { BrevoEmailDeliveryService } from './brevo-email-delivery.service';
 import { ClientBookingEmailService } from './client-booking-email.service';
-import { SalonEmailService } from './salon-email.service';
 import { TransactionalEmailService } from './transactional-email.service';
 
 @Module({
@@ -11,7 +10,6 @@ import { TransactionalEmailService } from './transactional-email.service';
   providers: [
     BrevoEmailDeliveryService,
     ClientBookingEmailService,
-    SalonEmailService,
     TransactionalEmailService,
     EmailService,
   ],

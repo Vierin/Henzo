@@ -5,9 +5,10 @@ import { RemindersService } from './reminders.service';
 import { RemindersScheduler } from './reminders.scheduler';
 import { PrismaModule } from '../prisma/prisma.module';
 import { EmailModule } from '../email/email.module';
+import { FitnessModule } from '../fitness/fitness.module';
 
 @Module({
-  imports: [PrismaModule, EmailModule, ScheduleModule.forRoot()],
+  imports: [PrismaModule, EmailModule, FitnessModule, ScheduleModule.forRoot()],
   controllers: [RemindersController],
   providers: [RemindersService, RemindersScheduler],
   exports: [RemindersService],

@@ -100,21 +100,21 @@ class _BookingDetailContent extends StatelessWidget {
                       const SizedBox(height: 20),
                       BookingDetailSection(
                         title: 'Date & Time',
-                        mainText: DateFormat(
-                          'EEEE, dd/MM/yyyy',
-                        ).format(booking.dateTime),
+                        mainText:
+                            DateFormat('dd/MM/yyyy').format(booking.dateTime),
                         subTexts: [
                           DateFormat('HH:mm').format(booking.dateTime),
                         ],
                       ),
-                      if (booking.staff != null) ...[
-                        const SizedBox(height: 20),
-                        BookingDetailSection(
-                          title: 'Staff',
-                          mainText: booking.staff!.name,
-                          subTexts: [],
-                        ),
-                      ],
+                      const SizedBox(height: 20),
+                      BookingDetailSection(
+                        title: 'Тренер',
+                        mainText: booking.staff != null &&
+                                booking.staff!.name.trim().isNotEmpty
+                            ? booking.staff!.name.trim()
+                            : 'Не назначен',
+                        subTexts: [],
+                      ),
                       if (booking.notes != null &&
                           booking.notes!.isNotEmpty) ...[
                         const SizedBox(height: 20),

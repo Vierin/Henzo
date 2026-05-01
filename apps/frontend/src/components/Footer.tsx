@@ -12,7 +12,7 @@ export default function Footer() {
 	const t = useTranslation();
 
 	return (
-		<footer className="bg-[#F8F5F2] pt-6 md:py-12 md:px-6 px-4 border-t border-gray-200" suppressHydrationWarning>
+		<footer className="bg-[#F9F4F0] pt-6 md:py-12 md:px-6 px-4 border-t border-[#eadfd7]" suppressHydrationWarning>
 			<div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
 				<div className="flex md:flex-col gap-5 md:gap-0 flex-col-reverse md:flex-row justify-between items-start md:items-center">
 					<div className="mb-4 md:mb-0">

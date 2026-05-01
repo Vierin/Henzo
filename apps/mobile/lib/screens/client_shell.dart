@@ -12,6 +12,7 @@ import '../models/training_category_option.dart';
 import '../services/api_client.dart';
 import '../services/cache/client_nearby_cache.dart';
 import '../services/client_favorites_store.dart';
+import '../utils/color_hex.dart';
 import '../widgets/public/cached_salon_network_image.dart';
 import 'client_map_screen.dart';
 import 'public_home_screen.dart';
@@ -242,6 +243,7 @@ class _ClientSearchScreenState extends State<_ClientSearchScreen> {
             price: (training['price'] as num?)?.toDouble(),
             capacity: (map['capacity'] as num?)?.toInt(),
             bookedCount: (map['bookedCount'] as num?)?.toInt() ?? 0,
+            displayColorHex: training['displayColor']?.toString(),
             rating: studio.rating,
             reviewCount: studio.reviewCount,
             trainingCategoryId: trainingCategoryId,
@@ -1690,6 +1692,7 @@ class _ClientSearchScreenState extends State<_ClientSearchScreen> {
                                 durationMin: c.durationMin,
                                 className: c.className,
                                 trainerName: c.trainerName,
+                                trainingColor: parseHexColor(c.displayColorHex),
                                 priceLabel: c.price != null
                                     ? _formatVnd(c.price!)
                                     : null,
@@ -2043,6 +2046,7 @@ class _ExploreClassItem {
     required this.price,
     required this.capacity,
     required this.bookedCount,
+    this.displayColorHex,
     required this.rating,
     required this.reviewCount,
     this.trainingCategoryId,
@@ -2058,6 +2062,7 @@ class _ExploreClassItem {
   final double? price;
   final int? capacity;
   final int bookedCount;
+  final String? displayColorHex;
   final double rating;
   final int reviewCount;
   final int? trainingCategoryId;

@@ -15,7 +15,10 @@ import 'client_detail_screen.dart';
 enum ClientFilter { all, sleepers, whiteList, blocked }
 
 class ClientsScreen extends StatefulWidget {
-  const ClientsScreen({super.key});
+  const ClientsScreen({super.key, this.initialFilter, this.initialQuery});
+
+  final String? initialFilter;
+  final String? initialQuery;
 
   @override
   State<ClientsScreen> createState() => _ClientsScreenState();
@@ -32,8 +35,29 @@ class _ClientsScreenState extends State<ClientsScreen> {
   @override
   void initState() {
     super.initState();
+    _filter = _parseFilter(widget.initialFilter);
+    final initialQuery = widget.initialQuery?.trim();
+    if (initialQuery != null && initialQuery.isNotEmpty) {
+      _searchController.text = initialQuery;
+      _searchQuery = initialQuery;
+    }
     WidgetsBinding.instance.addPostFrameCallback((_) => _loadData());
     _searchController.addListener(_onSearchChanged);
+  }
+
+  ClientFilter _parseFilter(String? raw) {
+    switch (raw?.trim().toLowerCase()) {
+      case 'sleepers':
+        return ClientFilter.sleepers;
+      case 'whitelist':
+      case 'white_list':
+      case 'white-list':
+        return ClientFilter.whiteList;
+      case 'blocked':
+        return ClientFilter.blocked;
+      default:
+        return ClientFilter.all;
+    }
   }
 
   @override
@@ -95,9 +119,8 @@ class _ClientsScreenState extends State<ClientsScreen> {
     }
     try {
       final primaryBookings = await context.read<BookingsCache>().getBookings(token);
-      final fallbackEnrollments = primaryBookings.isEmpty
-          ? await DashboardApiService.getOwnerEnrollmentBookings(token)
-          : <Booking>[];
+      final enrollmentBookings =
+          await DashboardApiService.getOwnerEnrollmentBookings(token);
       final blocklist = await DashboardApiService.getOwnerClientBlocklist(token);
       final blockedUserIds = blocklist
           .map((b) => b.userId)
@@ -111,7 +134,7 @@ class _ClientsScreenState extends State<ClientsScreen> {
           .map((b) => b.phone?.trim())
           .whereType<String>()
           .toSet();
-      final bookings = <Booking>[...primaryBookings, ...fallbackEnrollments];
+      final bookings = <Booking>[...primaryBookings, ...enrollmentBookings];
       if (mounted) {
         setState(() {
           _clients = _buildUniqueClients(bookings).map((c) {

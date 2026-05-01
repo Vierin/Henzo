@@ -111,7 +111,18 @@ class MainShellState extends State<MainShell> {
           case '/staff':
             return MaterialPageRoute(builder: (_) => const StaffScreen());
           case '/clients':
+            final args = settings.arguments;
+            if (args is Map<String, dynamic>) {
+              return MaterialPageRoute(
+                builder: (_) => ClientsScreen(
+                  initialFilter: args['filter']?.toString(),
+                  initialQuery: args['query']?.toString(),
+                ),
+              );
+            }
             return MaterialPageRoute(builder: (_) => const ClientsScreen());
+          case '/profile':
+            return MaterialPageRoute(builder: (_) => const ProfileScreen());
           case '/all-bookings':
             return MaterialPageRoute(builder: (_) => const AllBookingsScreen());
           default:
@@ -125,7 +136,7 @@ class MainShellState extends State<MainShell> {
     _buildHomeNavigator(),
     CalendarScreen(),
     AnalyticsScreen(),
-    const ProfileScreen(),
+    const ClientsScreen(),
   ];
 
   @override
@@ -185,9 +196,9 @@ class MainShellState extends State<MainShell> {
                 ),
                 Expanded(
                   child: _NavItem(
-                    icon: Icons.person_outline,
-                    activeIcon: Icons.person,
-                    label: locale.t('nav.profile'),
+                    icon: Icons.group_outlined,
+                    activeIcon: Icons.group,
+                    label: locale.t('dashboard.clients'),
                     isSelected: _currentIndex == 3,
                     onTap: () => setState(() => _currentIndex = 3),
                   ),

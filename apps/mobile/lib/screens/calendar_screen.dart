@@ -5,6 +5,7 @@ import '../../l10n/locale_provider.dart';
 import '../../services/auth_service.dart';
 import '../../services/dashboard_api_service.dart';
 import '../../utils/show_api_error.dart';
+import '../../utils/color_hex.dart';
 import '../../widgets/owner_training_session_card.dart';
 import 'main_shell.dart';
 
@@ -565,6 +566,9 @@ class _CalendarScreenState extends State<CalendarScreen> {
                           ...daySessions.map(
                             (s) => OwnerTrainingSessionCard(
                               session: s,
+                              trainingColor: parseHexColor(
+                                s.trainingDisplayColorHex,
+                              ),
                               trainerFallbackName: _ownerTrainerFallback(),
                               onTap: () =>
                                   OwnerTrainingSessionCard.showDetailsModal(

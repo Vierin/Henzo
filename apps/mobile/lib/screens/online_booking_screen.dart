@@ -324,7 +324,8 @@ class _OnlineBookingScreenState extends State<OnlineBookingScreen> {
               padding: const EdgeInsets.all(12),
               children: [
                 _SectionCard(
-                  title: 'Booking period',
+                  title: '',
+                  hideTitle: true,
                   child: InkWell(
                     borderRadius: BorderRadius.circular(12),
                     onTap: _saving ? null : _openBookingPeriodModal,
@@ -344,7 +345,7 @@ class _OnlineBookingScreenState extends State<OnlineBookingScreen> {
                             child: Text(
                               'Период бронирования',
                               style: TextStyle(
-                                fontSize: 14,
+                                fontSize: 16,
                                 fontWeight: FontWeight.w600,
                                 color: AppColors.textPrimary,
                               ),
@@ -391,8 +392,8 @@ class _OnlineBookingScreenState extends State<OnlineBookingScreen> {
                     onTap: _openBookingLink,
                     child: Ink(
                       padding: const EdgeInsets.symmetric(
-                        horizontal: 14,
-                        vertical: 13,
+                        horizontal: 12,
+                        vertical: 12,
                       ),
                       decoration: BoxDecoration(
                         color: AppColors.backgroundSecondary,

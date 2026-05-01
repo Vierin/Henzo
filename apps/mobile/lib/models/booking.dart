@@ -124,9 +124,24 @@ class Service {
         '';
     return Service(
       name: name,
-      price: json['price'] != null ? (json['price'] as num).toDouble() : null,
-      duration: json['duration'] as int?,
+      price: _parseOptionalDouble(json['price']),
+      duration: _parseOptionalInt(json['duration']),
     );
+  }
+
+  static double? _parseOptionalDouble(dynamic v) {
+    if (v == null) return null;
+    if (v is num) return v.toDouble();
+    if (v is String) return double.tryParse(v.trim());
+    return null;
+  }
+
+  static int? _parseOptionalInt(dynamic v) {
+    if (v == null) return null;
+    if (v is int) return v;
+    if (v is num) return v.toInt();
+    if (v is String) return int.tryParse(v.trim());
+    return null;
   }
 
   Map<String, dynamic> toJson() {

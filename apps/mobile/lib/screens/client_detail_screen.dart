@@ -38,6 +38,7 @@ class _ClientDetailScreenState extends State<ClientDetailScreen> {
   List<Booking> _bookings = [];
   bool _loading = true;
   bool _blocked = false;
+  bool _blockUpdating = false;
 
   @override
   void initState() {
@@ -54,15 +55,15 @@ class _ClientDetailScreenState extends State<ClientDetailScreen> {
     }
     setState(() => _loading = true);
     try {
-      final primaryBookings = await context.read<BookingsCache>().getBookings(token);
-      final fallbackEnrollments = primaryBookings.isEmpty
-          ? await DashboardApiService.getOwnerEnrollmentBookings(token)
-          : <Booking>[];
-      final all = <Booking>[...primaryBookings, ...fallbackEnrollments];
-      final list = all
-          .where((b) => clientIdentityKey(b) == widget.clientKey)
-          .toList()
-        ..sort((a, b) => b.dateTime.compareTo(a.dateTime));
+      final primaryBookings = await context.read<BookingsCache>().getBookings(
+        token,
+      );
+      final enrollmentBookings =
+          await DashboardApiService.getOwnerEnrollmentBookings(token);
+      final all = <Booking>[...primaryBookings, ...enrollmentBookings];
+      final list =
+          all.where((b) => clientIdentityKey(b) == widget.clientKey).toList()
+            ..sort((a, b) => b.dateTime.compareTo(a.dateTime));
       if (mounted) {
         setState(() {
           _bookings = list;
@@ -77,15 +78,24 @@ class _ClientDetailScreenState extends State<ClientDetailScreen> {
     }
   }
 
-  DateTime? get _firstVisit =>
-      _bookings.isEmpty ? null : _bookings.map((b) => b.dateTime).reduce((a, b) => a.isBefore(b) ? a : b);
-  DateTime? get _lastVisit =>
-      _bookings.isEmpty ? null : _bookings.map((b) => b.dateTime).reduce((a, b) => a.isAfter(b) ? a : b);
+  DateTime? get _firstVisit => _bookings.isEmpty
+      ? null
+      : _bookings
+            .map((b) => b.dateTime)
+            .reduce((a, b) => a.isBefore(b) ? a : b);
+  DateTime? get _lastVisit => _bookings.isEmpty
+      ? null
+      : _bookings.map((b) => b.dateTime).reduce((a, b) => a.isAfter(b) ? a : b);
   double get _income => _bookings
       .where((b) => b.status != BookingStatus.canceled)
       .fold(0.0, (s, b) => s + (b.service?.price ?? 0));
-  int get _rejectedVisits =>
-      _bookings.where((b) => b.status == BookingStatus.canceled || b.status == BookingStatus.noShow).length;
+  int get _rejectedVisits => _bookings
+      .where(
+        (b) =>
+            b.status == BookingStatus.canceled ||
+            b.status == BookingStatus.noShow,
+      )
+      .length;
   int get _totalVisits => _bookings.length;
 
   Future<void> _handleCancelBooking(String id) async {
@@ -96,7 +106,10 @@ class _ClientDetailScreenState extends State<ClientDetailScreen> {
       context.read<BookingsCache>().invalidate();
       _loadData();
       ScaffoldMessenger.maybeOf(context)?.showSnackBar(
-        const SnackBar(content: Text('Запись отменена'), backgroundColor: Colors.orange),
+        const SnackBar(
+          content: Text('Запись отменена'),
+          backgroundColor: Colors.orange,
+        ),
       );
     }
   }
@@ -109,7 +122,10 @@ class _ClientDetailScreenState extends State<ClientDetailScreen> {
       context.read<BookingsCache>().invalidate();
       _loadData();
       ScaffoldMessenger.maybeOf(context)?.showSnackBar(
-        const SnackBar(content: Text('Подтверждено'), backgroundColor: Colors.green),
+        const SnackBar(
+          content: Text('Подтверждено'),
+          backgroundColor: Colors.green,
+        ),
       );
     }
   }
@@ -122,27 +138,72 @@ class _ClientDetailScreenState extends State<ClientDetailScreen> {
       context.read<BookingsCache>().invalidate();
       _loadData();
       ScaffoldMessenger.maybeOf(context)?.showSnackBar(
-        const SnackBar(content: Text('Отклонено'), backgroundColor: Colors.orange),
+        const SnackBar(
+          content: Text('Отклонено'),
+          backgroundColor: Colors.orange,
+        ),
       );
     }
   }
 
+  String? _clean(String? value, {bool lowercase = false}) {
+    if (value == null) return null;
+    final trimmed = value.trim();
+    if (trimmed.isEmpty) return null;
+    return lowercase ? trimmed.toLowerCase() : trimmed;
+  }
+
+  ({String? userId, String? email, String? phone}) _resolveClientIdentity() {
+    final userId =
+        _clean(widget.userId) ??
+        _bookings
+            .map((b) => _clean(b.user?.id))
+            .whereType<String>()
+            .firstWhere((v) => v.isNotEmpty, orElse: () => '');
+    final email =
+        _clean(widget.email, lowercase: true) ??
+        _bookings
+            .map((b) => _clean(b.user?.email, lowercase: true))
+            .whereType<String>()
+            .firstWhere((v) => v.isNotEmpty, orElse: () => '');
+    final phone =
+        _clean(widget.phone) ??
+        _bookings
+            .map((b) => _clean(b.user?.phone))
+            .whereType<String>()
+            .firstWhere((v) => v.isNotEmpty, orElse: () => '');
+    return (
+      userId: userId.isEmpty ? null : userId,
+      email: email.isEmpty ? null : email,
+      phone: phone.isEmpty ? null : phone,
+    );
+  }
+
+  bool _isBlockedByAnyIdentity(
+    List<OwnerClientBlock> blocklist, {
+    String? userId,
+    String? email,
+    String? phone,
+  }) {
+    return blocklist.any((b) {
+      final blockUserId = _clean(b.userId);
+      final blockEmail = _clean(b.email, lowercase: true);
+      final blockPhone = _clean(b.phone);
+      return (userId != null && blockUserId == userId) ||
+          (email != null && blockEmail == email) ||
+          (phone != null && blockPhone == phone);
+    });
+  }
+
   Future<void> _toggleBlocked() async {
+    if (_blockUpdating) return;
     final token = context.read<AuthService>().accessToken;
     if (token == null) return;
-    final userId = widget.userId ?? _bookings
-        .map((b) => b.user?.id)
-        .whereType<String>()
-        .firstWhere((v) => v.isNotEmpty, orElse: () => '');
-    final email = widget.email ?? _bookings
-        .map((b) => b.user?.email)
-        .whereType<String>()
-        .firstWhere((v) => v.isNotEmpty, orElse: () => '');
-    final phone = widget.phone ?? _bookings
-        .map((b) => b.user?.phone)
-        .whereType<String>()
-        .firstWhere((v) => v.isNotEmpty, orElse: () => '');
-    if (userId.isEmpty && email.isEmpty && phone.isEmpty) {
+    final identity = _resolveClientIdentity();
+    final userId = identity.userId;
+    final email = identity.email;
+    final phone = identity.phone;
+    if (userId == null && email == null && phone == null) {
       ScaffoldMessenger.maybeOf(context)?.showSnackBar(
         const SnackBar(
           content: Text('Нужно минимум email/phone/userId для блокировки'),
@@ -151,29 +212,53 @@ class _ClientDetailScreenState extends State<ClientDetailScreen> {
       );
       return;
     }
-    if (_blocked) {
-      await DashboardApiService.unblockOwnerClient(
+
+    setState(() => _blockUpdating = true);
+    try {
+      if (_blocked) {
+        await DashboardApiService.unblockOwnerClient(
+          token,
+          userId: userId,
+          email: email,
+          phone: phone,
+        );
+      } else {
+        await DashboardApiService.blockOwnerClient(
+          token,
+          userId: userId,
+          email: email,
+          phone: phone,
+        );
+      }
+
+      final blocklist = await DashboardApiService.getOwnerClientBlocklist(
         token,
-        userId: userId.isEmpty ? null : userId,
-        email: email.isEmpty ? null : email,
-        phone: phone.isEmpty ? null : phone,
       );
-    } else {
-      await DashboardApiService.blockOwnerClient(
-        token,
-        userId: userId.isEmpty ? null : userId,
-        email: email.isEmpty ? null : email,
-        phone: phone.isEmpty ? null : phone,
+      final nowBlocked = _isBlockedByAnyIdentity(
+        blocklist,
+        userId: userId,
+        email: email,
+        phone: phone,
       );
+
+      if (!mounted) return;
+      setState(() => _blocked = nowBlocked);
+      ScaffoldMessenger.maybeOf(context)?.showSnackBar(
+        SnackBar(
+          content: Text(
+            nowBlocked ? 'Клиент заблокирован' : 'Клиент разблокирован',
+          ),
+          backgroundColor: Colors.orange,
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      showApiError(context, e);
+    } finally {
+      if (mounted) {
+        setState(() => _blockUpdating = false);
+      }
     }
-    if (!mounted) return;
-    setState(() => _blocked = !_blocked);
-    ScaffoldMessenger.maybeOf(context)?.showSnackBar(
-      SnackBar(
-        content: Text(_blocked ? 'Клиент заблокирован' : 'Клиент разблокирован'),
-        backgroundColor: Colors.orange,
-      ),
-    );
   }
 
   @override
@@ -202,137 +287,188 @@ class _ClientDetailScreenState extends State<ClientDetailScreen> {
             icon: const Icon(Icons.edit_outlined, color: AppColors.textPrimary),
             onPressed: () {
               ScaffoldMessenger.maybeOf(context)?.showSnackBar(
-                const SnackBar(content: Text('Редактирование клиента — в разработке')),
+                const SnackBar(
+                  content: Text('Редактирование клиента — в разработке'),
+                ),
               );
             },
           ),
         ],
       ),
       body: _loading
-          ? const Center(child: CircularProgressIndicator(color: AppColors.primary500))
+          ? const Center(
+              child: CircularProgressIndicator(color: AppColors.primary500),
+            )
           : RefreshIndicator(
               onRefresh: _loadData,
               color: AppColors.primary500,
               child: ListView.builder(
                 physics: const AlwaysScrollableScrollPhysics(),
-                padding: const EdgeInsets.all(24),
+                padding: const EdgeInsets.all(12),
                 itemCount: _bookings.length + 1,
                 itemBuilder: (context, index) {
                   if (index == 0) {
+                    final resolvedPhone =
+                        _clean(widget.phone) ??
+                        _bookings
+                            .map((b) => _clean(b.user?.phone))
+                            .whereType<String>()
+                            .firstWhere((v) => v.isNotEmpty, orElse: () => '');
+                    final resolvedEmail =
+                        _clean(widget.email, lowercase: true) ??
+                        _bookings
+                            .map((b) => _clean(b.user?.email, lowercase: true))
+                            .whereType<String>()
+                            .firstWhere((v) => v.isNotEmpty, orElse: () => '');
                     return Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
-                    if (_firstVisit != null) ...[
-                      const Text(
-                        'Дата первого визита',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: AppColors.textTertiary,
+                        if (resolvedPhone.isNotEmpty ||
+                            resolvedEmail.isNotEmpty) ...[
+                          const Text(
+                            'Контактные данные',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: AppColors.textTertiary,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          if (resolvedPhone.isNotEmpty)
+                            Text(
+                              resolvedPhone,
+                              style: const TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w500,
+                                color: AppColors.textPrimary,
+                              ),
+                            ),
+                          if (resolvedEmail.isNotEmpty) ...[
+                            if (resolvedPhone.isNotEmpty)
+                              const SizedBox(height: 2),
+                            Text(
+                              resolvedEmail,
+                              style: const TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w500,
+                                color: AppColors.textPrimary,
+                              ),
+                            ),
+                          ],
+                          const SizedBox(height: 20),
+                        ],
+                        if (_firstVisit != null) ...[
+                          const Text(
+                            'Дата первого визита',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: AppColors.textTertiary,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            DateFormat('dd.MM.yyyy').format(_firstVisit!),
+                            style: const TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                              color: AppColors.textPrimary,
+                            ),
+                          ),
+                          const SizedBox(height: 20),
+                        ],
+                        Row(
+                          children: [
+                            Expanded(
+                              child: _MiniCard(
+                                title: 'Последний визит',
+                                value: _lastVisit != null
+                                    ? DateFormat('dd.MM.yy').format(_lastVisit!)
+                                    : '—',
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: _MiniCard(
+                                title: 'Income from client',
+                                value: formatVnd(_income),
+                              ),
+                            ),
+                          ],
                         ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        DateFormat('dd.MM.yyyy').format(_firstVisit!),
-                        style: const TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                          color: AppColors.textPrimary,
+                        const SizedBox(height: 12),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: _MiniCard(
+                                title: 'Rejected Visits',
+                                value: '$_rejectedVisits',
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: _MiniCard(
+                                title: 'Total visits',
+                                value: '$_totalVisits',
+                              ),
+                            ),
+                          ],
                         ),
-                      ),
-                      const SizedBox(height: 20),
-                    ],
-                    Row(
-                      children: [
-                        Expanded(
-                          child: _MiniCard(
-                            title: 'Последний визит',
-                            value: _lastVisit != null
-                                ? DateFormat('dd.MM.yy').format(_lastVisit!)
-                                : '—',
+                        const SizedBox(height: 24),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            if (widget.phone != null &&
+                                widget.phone!.isNotEmpty)
+                              IconButton(
+                                onPressed: () =>
+                                    _showPhone(context, widget.phone!),
+                                icon: const Icon(
+                                  Icons.phone_outlined,
+                                  size: 28,
+                                ),
+                                color: AppColors.primary500,
+                                tooltip: widget.phone,
+                              ),
+                            const SizedBox(width: 8),
+                            IconButton(
+                              onPressed: _blockUpdating ? null : _toggleBlocked,
+                              icon: Icon(
+                                _blocked ? Icons.block : Icons.block_outlined,
+                                size: 28,
+                                color: _blocked
+                                    ? AppColors.error500
+                                    : AppColors.textSecondary,
+                              ),
+                              tooltip: 'Заблокировать клиента',
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 24),
+                        const Text(
+                          'Резервации',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                            color: AppColors.textPrimary,
                           ),
                         ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: _MiniCard(
-                            title: 'Income from client',
-                            value: formatVnd(_income),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 12),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: _MiniCard(
-                            title: 'Rejected Visits',
-                            value: '$_rejectedVisits',
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: _MiniCard(
-                            title: 'Total visits',
-                            value: '$_totalVisits',
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 24),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        if (widget.phone != null && widget.phone!.isNotEmpty)
-                          IconButton(
-                            onPressed: () => _showPhone(context, widget.phone!),
-                            icon: const Icon(Icons.phone_outlined, size: 28),
-                            color: AppColors.primary500,
-                            tooltip: widget.phone,
-                          ),
-                        if (widget.email != null && widget.email!.isNotEmpty) ...[
-                          const SizedBox(width: 8),
-                          IconButton(
-                            onPressed: () => _showEmail(context, widget.email!),
-                            icon: const Icon(Icons.email_outlined, size: 28),
-                            color: AppColors.primary500,
-                            tooltip: widget.email,
+                        const SizedBox(height: 12),
+                        if (_bookings.isEmpty) ...[
+                          Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 24),
+                            child: Center(
+                              child: Text(
+                                context.watch<LocaleProvider>().t(
+                                  'booking.noBookings',
+                                ),
+                                style: const TextStyle(
+                                  color: AppColors.textSecondary,
+                                ),
+                              ),
+                            ),
                           ),
                         ],
-                        const SizedBox(width: 8),
-                        IconButton(
-                          onPressed: _toggleBlocked,
-                          icon: Icon(
-                            _blocked ? Icons.block : Icons.block_outlined,
-                            size: 28,
-                            color: _blocked ? AppColors.error500 : AppColors.textSecondary,
-                          ),
-                          tooltip: 'Заблокировать клиента',
-                        ),
                       ],
-                    ),
-                    const SizedBox(height: 24),
-                    const Text(
-                      'Резервации',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                        color: AppColors.textPrimary,
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    if (_bookings.isEmpty) ...[
-                      Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 24),
-                        child: Center(
-                          child: Text(
-                            context.watch<LocaleProvider>().t('booking.noBookings'),
-                            style: const TextStyle(color: AppColors.textSecondary),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ],
-                );
+                    );
                   }
                   final booking = _bookings[index - 1];
                   return _BookingCard(
@@ -359,26 +495,15 @@ class _ClientDetailScreenState extends State<ClientDetailScreen> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Text('Телефон', style: TextStyle(fontSize: 14, color: AppColors.textSecondary)),
+            const Text(
+              'Телефон',
+              style: TextStyle(fontSize: 14, color: AppColors.textSecondary),
+            ),
             const SizedBox(height: 8),
-            SelectableText(phone, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600)),
-          ],
-        ),
-      ),
-    );
-  }
-
-  void _showEmail(BuildContext context, String email) {
-    showModalBottomSheet(
-      context: context,
-      builder: (ctx) => Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Text('Email', style: TextStyle(fontSize: 14, color: AppColors.textSecondary)),
-            const SizedBox(height: 8),
-            SelectableText(email, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600)),
+            SelectableText(
+              phone,
+              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
+            ),
           ],
         ),
       ),
@@ -411,7 +536,11 @@ class _MiniCard extends StatelessWidget {
           const SizedBox(height: 4),
           Text(
             value,
-            style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: AppColors.textPrimary),
+            style: const TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+              color: AppColors.textPrimary,
+            ),
           ),
         ],
       ),
@@ -454,14 +583,21 @@ class _BookingCard extends StatelessWidget {
                     const SizedBox(height: 2),
                     Text(
                       booking.service?.name ?? '—',
-                      style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
+                      style: const TextStyle(
+                        fontSize: 12,
+                        color: AppColors.textSecondary,
+                      ),
                     ),
                   ],
                 ),
               ),
               Text(
                 price != null ? formatVnd(price) : '—',
-                style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: AppColors.primary500),
+                style: const TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.primary500,
+                ),
               ),
             ],
           ),

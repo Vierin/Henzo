@@ -2,6 +2,7 @@ import { Controller, Get, HttpStatus, Res } from '@nestjs/common';
 import { AppService } from './app.service';
 import { PrismaService } from './prisma/prisma.service';
 import { Response } from 'express';
+import { register } from 'prom-client';
 
 @Controller()
 export class AppController {
@@ -52,5 +53,11 @@ export class AppController {
         '/auth/register',
       ],
     };
+  }
+
+  @Get('metrics')
+  async metrics(@Res() res: Response) {
+    res.setHeader('Content-Type', register.contentType);
+    res.status(HttpStatus.OK).send(await register.metrics());
   }
 }

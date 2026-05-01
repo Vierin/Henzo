@@ -15,6 +15,7 @@ class ServiceItem {
   final int? serviceCategoryId;
   /// Название категории для тега.
   final String? categoryName;
+  final String? displayColor;
 
   ServiceItem({
     required this.id,
@@ -29,6 +30,7 @@ class ServiceItem {
     this.trainingCategoryId,
     this.serviceCategoryId,
     this.categoryName,
+    this.displayColor,
   });
 
   String get displayName => name;
@@ -94,6 +96,7 @@ class ServiceItem {
       trainingCategoryId: trainingCatId,
       serviceCategoryId: _parseInt(json['serviceCategoryId']) ?? trainingCatId,
       categoryName: categoryName,
+      displayColor: json['displayColor']?.toString(),
     );
   }
 
@@ -111,6 +114,7 @@ class ServiceItem {
       'trainingCategoryId': trainingCategoryId,
       'serviceCategoryId': serviceCategoryId,
       'categoryName': categoryName,
+      'displayColor': displayColor,
     };
   }
 }
