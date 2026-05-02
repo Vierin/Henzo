@@ -148,22 +148,24 @@ class MainShellState extends State<MainShell> {
           if (_salonLoading) const _SalonLoadingCurtain(),
         ],
       ),
-      bottomNavigationBar: SafeArea(
-        top: false,
-        child: Container(
-          decoration: BoxDecoration(
-            color: AppColors.backgroundPrimary,
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.08),
-                blurRadius: 8,
-                offset: const Offset(0, -2),
-              ),
-            ],
-          ),
-          constraints: const BoxConstraints(minHeight: 42, maxHeight: 56),
-          padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 6),
-          child: Consumer<LocaleProvider>(
+      bottomNavigationBar: ColoredBox(
+        color: AppColors.backgroundPrimary,
+        child: SafeArea(
+          top: false,
+          child: Container(
+            decoration: BoxDecoration(
+              color: AppColors.backgroundPrimary,
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.08),
+                  blurRadius: 8,
+                  offset: const Offset(0, -2),
+                ),
+              ],
+            ),
+            constraints: const BoxConstraints(minHeight: 42, maxHeight: 56),
+            padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 6),
+            child: Consumer<LocaleProvider>(
             builder: (context, locale, _) => Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
@@ -206,6 +208,7 @@ class MainShellState extends State<MainShell> {
               ],
             ),
           ),
+        ),
         ),
       ),
     );

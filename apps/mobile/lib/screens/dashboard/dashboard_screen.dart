@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../constants/colors.dart';
 import '../../l10n/locale_provider.dart';
+import '../../utils/currency_format.dart';
 import '../../utils/show_api_error.dart';
 import '../../models/salon.dart';
 import '../../services/auth_service.dart';
@@ -13,6 +14,7 @@ import '../../utils/color_hex.dart';
 import '../../widgets/dashboard/dashboard_header_pill.dart';
 import '../../widgets/dashboard/owner_checklist_card.dart';
 import '../../widgets/dashboard/dashboard_setup_card.dart';
+import '../../widgets/dashboard/owner_weekly_insight_strip.dart';
 import '../../widgets/owner_training_session_card.dart';
 import '../app_settings_screen.dart';
 import '../notifications_screen.dart';
@@ -29,6 +31,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   Salon? _salon;
   StudioOnboardingChecklist? _checklist;
   List<OwnerTrainingSession> _todaySessions = [];
+  StudioAnalytics? _weekLast;
   bool _isLoading = false;
   bool _isPublishing = false;
 
@@ -47,6 +50,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
       if (mounted) {
         setState(() {
           _salon = null;
+          _weekLast = null;
           _isLoading = false;
         });
       }
@@ -59,6 +63,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
       final to = from.add(const Duration(days: 1));
       List<OwnerTrainingSession> sessions = [];
       StudioOnboardingChecklist? checklist;
+      StudioAnalytics? weekLast;
       try {
         sessions = await DashboardApiService.getOwnerTrainingSessions(
           token,
@@ -71,16 +76,30 @@ class _DashboardScreenState extends State<DashboardScreen> {
         sessions = [];
       }
       if (salon != null) {
-        checklist =
-            await DashboardApiService.getCurrentStudioOnboardingChecklist(
-              token,
-            );
+        final lastWeek = _lastCompletedCalendarWeekLocal();
+        final checklistFuture =
+            DashboardApiService.getCurrentStudioOnboardingChecklist(token);
+        final analyticsFuture = DashboardApiService.getCurrentStudioAnalytics(
+          token,
+          fromIso: lastWeek.from.toUtc().toIso8601String(),
+          toIso: lastWeek.to.toUtc().toIso8601String(),
+        );
+        checklist = await checklistFuture;
+        try {
+          weekLast = await analyticsFuture;
+        } catch (_) {
+          weekLast = null;
+        }
       }
       if (mounted) {
         setState(() {
           _salon = salon;
           _checklist = checklist;
           _todaySessions = sessions;
+          _weekLast = weekLast;
+          if (salon == null) {
+            _weekLast = null;
+          }
           _isLoading = false;
         });
       }
@@ -89,11 +108,79 @@ class _DashboardScreenState extends State<DashboardScreen> {
         setState(() {
           _checklist = null;
           _todaySessions = [];
+          _weekLast = null;
           _isLoading = false;
         });
         showApiError(context, e);
       }
     }
+  }
+
+  /// Mon 00:00 – Sun 23:59:59 of the last full calendar week (before current week).
+  ({DateTime from, DateTime to}) _lastCompletedCalendarWeekLocal() {
+    final now = DateTime.now();
+    final todayStart = DateTime(now.year, now.month, now.day);
+    final thisMonday =
+        todayStart.subtract(Duration(days: todayStart.weekday - 1));
+    final lastSunday = thisMonday.subtract(const Duration(days: 1));
+    final to = DateTime(
+      lastSunday.year,
+      lastSunday.month,
+      lastSunday.day,
+      23,
+      59,
+      59,
+    );
+    final from = thisMonday.subtract(const Duration(days: 7));
+    return (from: from, to: to);
+  }
+
+  double _thirdMetricValue(StudioAnalytics a) {
+    if (a.isPro) return a.trainingSessionsScheduled.toDouble();
+    if (a.bookingCount <= 0) return 0;
+    return a.revenueTotal / a.bookingCount;
+  }
+
+  Widget _buildWeeklyInsights(LocaleProvider loc) {
+    final current = _weekLast;
+    if (current == null) return const SizedBox.shrink();
+
+    final t = loc.t;
+
+    final todayClasses = _todaySessions.length;
+    final todayBookings =
+        _todaySessions.fold<int>(0, (a, s) => a + s.enrolledCount);
+    final todayLine = t('dashboard.todaySummary')
+        .replaceAll('{classes}', '$todayClasses')
+        .replaceAll('{bookings}', '$todayBookings');
+
+    final showSessions = current.isPro;
+
+    return OwnerWeeklyInsightStrip(
+      todaySummaryLine: todayLine,
+      sectionTitle: t('dashboard.weeklyInsightsTitle'),
+      cards: [
+        OwnerWeeklyInsightCard(
+          label: t('dashboard.weeklyRevenueLabel'),
+          value: formatVnd(current.revenueTotal),
+          brandVariant: 0,
+        ),
+        OwnerWeeklyInsightCard(
+          label: t('dashboard.weeklyBookingsLabel'),
+          value: '${current.bookingCount}',
+          brandVariant: 1,
+        ),
+        OwnerWeeklyInsightCard(
+          label: showSessions
+              ? t('dashboard.weeklySessionsLabel')
+              : t('dashboard.weeklyAvgTicketLabel'),
+          value: showSessions
+              ? '${current.trainingSessionsScheduled}'
+              : formatVnd(_thirdMetricValue(current)),
+          brandVariant: 2,
+        ),
+      ],
+    );
   }
 
   Future<void> _handleRefresh() async {
@@ -437,6 +524,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         ),
                         const SizedBox(height: 12),
                       ],
+                      _buildWeeklyInsights(context.watch<LocaleProvider>()),
+                      const SizedBox(height: 16),
                       _buildDailySchedule(),
                     ],
                   ),

@@ -117,7 +117,13 @@
 		"onboardingBookingWindow": "Настроить окно записи",
 		"onboardingContacts": "Добавить контакты",
 		"onboardingMissingRequired": "Не хватает обязательных: {items}",
-		"onboardingActivate": "Активировать студию"
+		"onboardingActivate": "Активировать студию",
+		"weeklyInsightsTitle": "Прошлая неделя (пн–вс)",
+		"todaySummary": "{classes} занятий · {bookings} записей сегодня",
+		"weeklyRevenueLabel": "ВЫРУЧКА ЗА НЕДЕЛЮ",
+		"weeklyBookingsLabel": "ЗАПИСИ (МЕСТА)",
+		"weeklySessionsLabel": "ГРУППОВЫХ ЗАНЯТИЙ",
+		"weeklyAvgTicketLabel": "СРЕДНИЙ ЧЕК"
 	},
 	"ownerSession": {
 		"editCurrentSession": "Изменить текущую тренировку",

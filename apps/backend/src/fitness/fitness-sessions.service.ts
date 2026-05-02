@@ -710,6 +710,7 @@ export class FitnessSessionsService {
         TrainingSession: {
           select: {
             id: true,
+            status: true,
             startsAt: true,
             endsAt: true,
             capacity: true,

@@ -57,22 +57,24 @@ class _ClientShellState extends State<ClientShell> {
               ),
           ],
         ),
-        bottomNavigationBar: SafeArea(
-          top: false,
-          child: Container(
-            decoration: BoxDecoration(
-              color: AppColors.backgroundPrimary,
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.08),
-                  blurRadius: 8,
-                  offset: const Offset(0, -2),
-                ),
-              ],
-            ),
-            constraints: const BoxConstraints(minHeight: 42, maxHeight: 56),
-            padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 6),
-            child: Row(
+        bottomNavigationBar: ColoredBox(
+          color: AppColors.backgroundPrimary,
+          child: SafeArea(
+            top: false,
+            child: Container(
+              decoration: BoxDecoration(
+                color: AppColors.backgroundPrimary,
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.08),
+                    blurRadius: 8,
+                    offset: const Offset(0, -2),
+                  ),
+                ],
+              ),
+              constraints: const BoxConstraints(minHeight: 42, maxHeight: 56),
+              padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 6),
+              child: Row(
               children: [
                 Expanded(
                   child: ClientNavItem(
@@ -118,6 +120,7 @@ class _ClientShellState extends State<ClientShell> {
                   ),
                 ),
               ],
+            ),
             ),
           ),
         ),
