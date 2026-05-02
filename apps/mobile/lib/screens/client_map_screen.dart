@@ -8,6 +8,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../constants/colors.dart';
 import '../services/api_client.dart';
 import '../services/cache/client_nearby_cache.dart';
+import '../utils/nearby_payload.dart';
 import 'location_picker_screen.dart';
 
 class ClientMapScreen extends StatefulWidget {
@@ -130,7 +131,7 @@ class _ClientMapScreenState extends State<ClientMapScreen> {
       }
       raw ??= await ApiClient.get(path, null);
       ClientNearbyCache.put(path, raw);
-      final list = _extractStudiosList(raw);
+      final list = extractStudiosListFromNearby(raw);
       final mapped = <_NearbyStudio>[];
       for (final item in list) {
         if (item is! Map) continue;
@@ -202,21 +203,6 @@ class _ClientMapScreenState extends State<ClientMapScreen> {
     final lon = _pendingSearchLon;
     if (lat == null || lon == null) return;
     await _loadNearbyStudios(searchLat: lat, searchLon: lon);
-  }
-
-  List<dynamic> _extractStudiosList(dynamic raw) {
-    if (raw is List) return raw;
-    if (raw is Map) {
-      final data = raw['data'];
-      if (data is List) return data;
-      if (data is Map && data['items'] is List) {
-        return data['items'] as List<dynamic>;
-      }
-      if (raw['items'] is List) return raw['items'] as List<dynamic>;
-      if (raw['results'] is List) return raw['results'] as List<dynamic>;
-      if (raw['studios'] is List) return raw['studios'] as List<dynamic>;
-    }
-    return const <dynamic>[];
   }
 
   @override

@@ -34,8 +34,7 @@ class ClientFavoritesStore extends ChangeNotifier {
 
     if (!force &&
         _lastSyncedAt != null &&
-        DateTime.now().difference(_lastSyncedAt!) < syncThrottle &&
-        _favorites.isNotEmpty) {
+        DateTime.now().difference(_lastSyncedAt!) < syncThrottle) {
       return;
     }
 
