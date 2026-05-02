@@ -17,6 +17,7 @@ import '../../widgets/dashboard/dashboard_setup_card.dart';
 import '../../widgets/dashboard/owner_weekly_insight_strip.dart';
 import '../../widgets/owner_training_session_card.dart';
 import '../app_settings_screen.dart';
+import 'owner_studio_reviews_screen.dart';
 import '../notifications_screen.dart';
 import '../salon_setup_screen.dart';
 
@@ -403,8 +404,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
                               onTap: () => Navigator.push(
                                 context,
                                 MaterialPageRoute(
-                                  builder: (_) => const NotificationsScreen(
-                                    initialFilter: NotificationFilter.reviews,
+                                  builder: (_) => OwnerStudioReviewsScreen(
+                                    studioId: _salon!.id,
+                                    headerAvgRating: _salon!.rating,
                                   ),
                                 ),
                               ),

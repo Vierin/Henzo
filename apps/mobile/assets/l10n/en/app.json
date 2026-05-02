@@ -123,7 +123,12 @@
 		"weeklyRevenueLabel": "WEEKLY REVENUE",
 		"weeklyBookingsLabel": "BOOKINGS (SPOTS)",
 		"weeklySessionsLabel": "GROUP SESSIONS",
-		"weeklyAvgTicketLabel": "AVG. TICKET"
+		"weeklyAvgTicketLabel": "AVG. TICKET",
+		"reviewsTitle": "Reviews",
+		"reviewsSubtitle": "{rating} average · {count} reviews",
+		"reviewsEmpty": "No reviews yet",
+		"reviewsLoadError": "Could not load reviews.",
+		"reviewsRetry": "Try again"
 	},
 	"ownerSession": {
 		"editCurrentSession": "Edit current session",

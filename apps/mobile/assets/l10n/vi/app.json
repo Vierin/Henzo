@@ -123,7 +123,12 @@
 		"weeklyRevenueLabel": "DOANH THU TUẦN",
 		"weeklyBookingsLabel": "LƯỢT ĐẶT (CHỖ)",
 		"weeklySessionsLabel": "LỚP NHÓM",
-		"weeklyAvgTicketLabel": "GIÁ TRUNG BÌNH"
+		"weeklyAvgTicketLabel": "GIÁ TRUNG BÌNH",
+		"reviewsTitle": "Đánh giá",
+		"reviewsSubtitle": "trung bình {rating} · {count} đánh giá",
+		"reviewsEmpty": "Chưa có đánh giá",
+		"reviewsLoadError": "Không tải được đánh giá.",
+		"reviewsRetry": "Thử lại"
 	},
 	"ownerSession": {
 		"editCurrentSession": "Sửa buổi tập hiện tại",

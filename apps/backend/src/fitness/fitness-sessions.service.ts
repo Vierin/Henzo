@@ -13,6 +13,48 @@ import { computeTrainingDisplayColor } from '../trainings/training-color.util';
 
 type SessionStatus = 'ACTIVE' | 'CANCELLED' | 'COMPLETED';
 
+/** Hoisted so Prisma infers `TrainingSession.status` on client schedule rows (nested where + select inference bug). */
+const clientScheduleEnrollmentSelect = Prisma.validator<Prisma.SessionEnrollmentSelect>()({
+  id: true,
+  createdAt: true,
+  TrainingSession: {
+    select: {
+      id: true,
+      status: true,
+      startsAt: true,
+      endsAt: true,
+      capacity: true,
+      bookedCount: true,
+      Training: {
+        select: {
+          id: true,
+          name: true,
+          duration: true,
+          price: true,
+          displayColor: true,
+          trainingCategoryId: true,
+          trainingCategory: {
+            select: { main_category_id: true },
+          },
+        },
+      },
+      Trainer: {
+        select: {
+          id: true,
+          name: true,
+        },
+      },
+      Studio: {
+        select: {
+          id: true,
+          name: true,
+          address: true,
+        },
+      },
+    },
+  },
+});
+
 @Injectable()
 export class FitnessSessionsService {
   constructor(
@@ -704,46 +746,7 @@ export class FitnessSessionsService {
           },
         },
       },
-      select: {
-        id: true,
-        createdAt: true,
-        TrainingSession: {
-          select: {
-            id: true,
-            status: true,
-            startsAt: true,
-            endsAt: true,
-            capacity: true,
-            bookedCount: true,
-            Training: {
-              select: {
-                id: true,
-                name: true,
-                duration: true,
-                price: true,
-                displayColor: true,
-                trainingCategoryId: true,
-                trainingCategory: {
-                  select: { main_category_id: true },
-                },
-              },
-            },
-            Trainer: {
-              select: {
-                id: true,
-                name: true,
-              },
-            },
-            Studio: {
-              select: {
-                id: true,
-                name: true,
-                address: true,
-              },
-            },
-          },
-        },
-      },
+      select: clientScheduleEnrollmentSelect,
       orderBy: {
         TrainingSession: {
           startsAt: 'asc',
