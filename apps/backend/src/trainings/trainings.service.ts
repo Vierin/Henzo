@@ -1,12 +1,21 @@
 import { Injectable, Inject } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { UpdateTrainingScheduleDto } from './dto/update-training-schedule.dto';
+import { computeTrainingDisplayColor } from './training-color.util';
 
 /** Normalize Training payload for JSON (hide Prisma relation names where redundant). */
 function mapTrainingResponse(t: any) {
   if (!t) return t;
+  const displayColor = computeTrainingDisplayColor({
+    trainingId: t.id,
+    trainingName: t.name,
+    trainingCategoryId: t.trainingCategoryId,
+    mainCategoryId: t.trainingCategory?.main_category_id,
+    existingColor: t.displayColor,
+  });
   return {
     ...t,
+    displayColor,
     Staff: t.Staff ?? t.Trainer,
     Trainer: undefined,
   };
@@ -91,6 +100,20 @@ export class TrainingsService {
     return this.prisma.trainingCategory ?? this.prisma.TrainingCategory;
   }
 
+  private async resolveMainCategoryId(
+    trainingCategoryId: number | null | undefined,
+  ): Promise<number | null> {
+    if (trainingCategoryId == null) return null;
+    const repo = this.trainingCategory;
+    if (!repo) return null;
+    const row = await repo.findUnique({
+      where: { id: trainingCategoryId },
+      select: { main_category_id: true },
+    });
+    const raw = row?.main_category_id;
+    return typeof raw === 'number' ? raw : null;
+  }
+
   async findByStudioId(studioId: string) {
     const items = await this.training.findMany({
       where: { studioId },
@@ -108,6 +131,7 @@ export class TrainingsService {
         price: true,
         studioId: true,
         trainingCategoryId: true,
+        displayColor: true,
         Trainer: {
           select: {
             id: true,
@@ -154,6 +178,7 @@ export class TrainingsService {
         price: true,
         studioId: true,
         trainingCategoryId: true,
+        displayColor: true,
         Trainer: {
           select: {
             id: true,
@@ -176,6 +201,7 @@ export class TrainingsService {
             name_en: true,
             name_vn: true,
             name_ru: true,
+            main_category_id: true,
           },
         },
       },
@@ -267,6 +293,13 @@ export class TrainingsService {
       }
     }
 
+    const mainCategoryId = await this.resolveMainCategoryId(trainingCategoryId);
+    const displayColor = computeTrainingDisplayColor({
+      trainingName: data.name,
+      trainingCategoryId,
+      mainCategoryId,
+    });
+
     const created = await this.training.create({
       data: {
         name: data.name,
@@ -281,6 +314,7 @@ export class TrainingsService {
         price: data.price,
         studioId: data.studioId,
         trainingCategoryId,
+        displayColor,
         ...(trainerConnect ? { Trainer: trainerConnect } : {}),
       },
       include: {
@@ -368,10 +402,40 @@ export class TrainingsService {
       }
     }
 
+    const existing = await this.training.findUnique({
+      where: { id },
+      select: {
+        id: true,
+        name: true,
+        trainingCategoryId: true,
+        displayColor: true,
+      },
+    });
+    if (!existing) {
+      throw new Error('Training not found');
+    }
+    const nextName =
+      typeof data.name === 'string' && data.name.trim().length > 0
+        ? data.name
+        : existing.name;
+    const nextCategoryId =
+      resolvedCategory !== undefined
+        ? resolvedCategory
+        : existing.trainingCategoryId;
+    const nextMainCategoryId = await this.resolveMainCategoryId(nextCategoryId);
+    const nextDisplayColor = computeTrainingDisplayColor({
+      trainingId: existing.id,
+      trainingName: nextName,
+      trainingCategoryId: nextCategoryId,
+      mainCategoryId: nextMainCategoryId,
+      existingColor: existing.displayColor,
+    });
+
     const updated = await this.training.update({
       where: { id },
       data: {
         ...updateData,
+        displayColor: nextDisplayColor,
         ...(trainerUpdate && { Trainer: trainerUpdate }),
       },
       include: {
@@ -617,6 +681,7 @@ export class TrainingsService {
             name_en: true,
             name_vn: true,
             name_ru: true,
+            main_category_id: true,
           },
         },
         Studio: {
@@ -642,6 +707,7 @@ export class TrainingsService {
         description: true,
         duration: true,
         price: true,
+        displayColor: true,
         Studio: {
           select: {
             id: true,
@@ -652,6 +718,7 @@ export class TrainingsService {
         trainingCategory: {
           select: {
             name_en: true,
+            main_category_id: true,
           },
         },
       },
@@ -671,6 +738,7 @@ export class TrainingsService {
         description: true,
         duration: true,
         price: true,
+        displayColor: true,
         Studio: {
           select: {
             id: true,
@@ -681,6 +749,7 @@ export class TrainingsService {
         trainingCategory: {
           select: {
             name_en: true,
+            main_category_id: true,
           },
         },
       },

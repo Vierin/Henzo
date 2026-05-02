@@ -118,7 +118,18 @@
 		"onboardingBookingWindow": "Cấu hình khung giờ đặt chỗ",
 		"onboardingContacts": "Thêm thông tin liên hệ",
 		"onboardingMissingRequired": "Thiếu bước bắt buộc: {items}",
-		"onboardingActivate": "Kích hoạt studio"
+		"onboardingActivate": "Kích hoạt studio",
+		"weeklyInsightsTitle": "Tuần trước (T2–CN)",
+		"todaySummary": "{classes} lớp · {bookings} lượt đặt hôm nay",
+		"weeklyRevenueLabel": "DOANH THU TUẦN",
+		"weeklyBookingsLabel": "LƯỢT ĐẶT (CHỖ)",
+		"weeklySessionsLabel": "LỚP NHÓM",
+		"weeklyAvgTicketLabel": "GIÁ TRUNG BÌNH",
+		"reviewsTitle": "Đánh giá",
+		"reviewsSubtitle": "trung bình {rating} · {count} đánh giá",
+		"reviewsEmpty": "Chưa có đánh giá",
+		"reviewsLoadError": "Không tải được đánh giá.",
+		"reviewsRetry": "Thử lại"
 	},
 	"ownerSession": {
 		"editCurrentSession": "Sửa buổi tập hiện tại",

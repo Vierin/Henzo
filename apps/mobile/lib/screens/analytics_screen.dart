@@ -7,6 +7,7 @@ import '../services/auth_service.dart';
 import '../services/dashboard_api_service.dart';
 import '../utils/show_api_error.dart';
 import '../utils/currency_format.dart';
+import 'clients_screen.dart';
 import 'period_picker_screen.dart';
 import 'subscription_screen.dart';
 
@@ -75,6 +76,14 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
   String _asPercent(double? value) {
     if (value == null) return '—';
     return '${(value * 100).toStringAsFixed(1)}%';
+  }
+
+  void _openClients({String? filter}) {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => ClientsScreen(initialFilter: filter),
+      ),
+    );
   }
 
   Future<void> _loadAnalytics() async {
@@ -583,6 +592,15 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                 locale.t('analytics.inactiveHint'),
               ),
             ],
+          ),
+          const SizedBox(height: 12),
+          Align(
+            alignment: Alignment.centerLeft,
+            child: OutlinedButton.icon(
+              onPressed: () => _openClients(filter: 'sleepers'),
+              icon: const Icon(Icons.people_outline),
+              label: const Text('Open clients'),
+            ),
           ),
         ],
       ),

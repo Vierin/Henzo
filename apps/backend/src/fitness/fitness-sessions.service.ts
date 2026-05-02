@@ -1,11 +1,60 @@
 import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
-import { Prisma, SessionEnrollmentStatus, UserRole } from '@prisma/client';
+import {
+  Prisma,
+  SessionEnrollmentStatus,
+  TrainingSessionStatus,
+  UserRole,
+} from '@prisma/client';
 import { AuthService } from '../auth/auth.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateRecurringTrainingSessionsDto } from './dto/create-recurring-training-sessions.dto';
 import { UpdateOwnerTrainingSessionDto } from './dto/update-owner-training-session.dto';
+import { computeTrainingDisplayColor } from '../trainings/training-color.util';
 
 type SessionStatus = 'ACTIVE' | 'CANCELLED' | 'COMPLETED';
+
+/** Hoisted so Prisma infers `TrainingSession.status` on client schedule rows (nested where + select inference bug). */
+const clientScheduleEnrollmentSelect =
+  Prisma.validator<Prisma.SessionEnrollmentSelect>()({
+    id: true,
+    createdAt: true,
+    TrainingSession: {
+      select: {
+        id: true,
+        status: true,
+        startsAt: true,
+        endsAt: true,
+        capacity: true,
+        bookedCount: true,
+        Training: {
+          select: {
+            id: true,
+            name: true,
+            duration: true,
+            price: true,
+            displayColor: true,
+            trainingCategoryId: true,
+            trainingCategory: {
+              select: { main_category_id: true },
+            },
+          },
+        },
+        Trainer: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
+        Studio: {
+          select: {
+            id: true,
+            name: true,
+            address: true,
+          },
+        },
+      },
+    },
+  });
 
 @Injectable()
 export class FitnessSessionsService {
@@ -13,6 +62,21 @@ export class FitnessSessionsService {
     private readonly prisma: PrismaService,
     private readonly authService: AuthService,
   ) {}
+
+  /**
+   * Marks scheduled group sessions whose end time is in the past as COMPLETED.
+   * Keeps analytics, owner calendar, and client schedule consistent without manual action.
+   */
+  async completePastTrainingSessions(): Promise<{ updated: number }> {
+    const result = await this.prisma.trainingSession.updateMany({
+      where: {
+        status: TrainingSessionStatus.ACTIVE,
+        endsAt: { lt: new Date() },
+      },
+      data: { status: TrainingSessionStatus.COMPLETED },
+    });
+    return { updated: result.count };
+  }
 
   private parseHm(value: string): { hour: number; minute: number } {
     const [h, m] = value.split(':');
@@ -236,6 +300,8 @@ export class FitnessSessionsService {
     });
     if (!studio) return [];
 
+    await this.completePastTrainingSessions();
+
     const where: any = { studioId: studio.id };
     if (fromIso || toIso) {
       where.startsAt = {};
@@ -246,7 +312,17 @@ export class FitnessSessionsService {
     const sessions = await this.prisma.trainingSession.findMany({
       where,
       include: {
-        Training: { select: { name: true } },
+        Training: {
+          select: {
+            id: true,
+            name: true,
+            price: true,
+            duration: true,
+            trainingCategoryId: true,
+            displayColor: true,
+            trainingCategory: { select: { main_category_id: true } },
+          },
+        },
         Trainer: { select: { id: true, name: true } },
         Enrollments: {
           select: { status: true },
@@ -269,7 +345,21 @@ export class FitnessSessionsService {
         capacity: s.capacity,
         enrolledCount: activeEnrollments,
         attendanceSummary: { attended: activeEnrollments },
-        training: { name: s.Training?.name || 'Training' },
+        training: {
+          name: s.Training?.name || 'Training',
+          displayColor: computeTrainingDisplayColor({
+            trainingId: s.trainingId,
+            trainingName: s.Training?.name,
+            trainingCategoryId: s.Training?.trainingCategoryId,
+            mainCategoryId: s.Training?.trainingCategory?.main_category_id,
+            existingColor: s.Training?.displayColor,
+          }),
+          price:
+            s.Training != null && s.Training.price != null
+              ? Number(s.Training.price)
+              : null,
+          duration: s.Training?.duration ?? null,
+        },
         trainer: s.Trainer
           ? { id: s.Trainer.id, name: s.Trainer.name }
           : { id: null, name: '—' },
@@ -463,7 +553,10 @@ export class FitnessSessionsService {
       phone?: string;
     },
   ) {
-    const { session } = await this.getOwnedSessionOrThrow(authHeader, sessionId);
+    const { session } = await this.getOwnedSessionOrThrow(
+      authHeader,
+      sessionId,
+    );
     let targetUserId = payload.userId?.trim();
 
     if (!targetUserId) {
@@ -512,10 +605,7 @@ export class FitnessSessionsService {
       select: { id: true, status: true },
     });
 
-    if (
-      !existing &&
-      (session.bookedCount ?? 0) >= session.capacity
-    ) {
+    if (!existing && (session.bookedCount ?? 0) >= session.capacity) {
       throw new HttpException('No spots left', HttpStatus.BAD_REQUEST);
     }
 
@@ -572,6 +662,26 @@ export class FitnessSessionsService {
       return { success: true };
     }
 
+    await this.completePastTrainingSessions();
+
+    const sessionEndsAt = await this.prisma.trainingSession.findUnique({
+      where: { id: row.sessionId },
+      select: { endsAt: true },
+    });
+    if (!sessionEndsAt) {
+      throw new HttpException('Session not found', HttpStatus.NOT_FOUND);
+    }
+    const now = new Date();
+    if (
+      nextStatus === SessionEnrollmentStatus.NO_SHOW &&
+      sessionEndsAt.endsAt > now
+    ) {
+      throw new HttpException(
+        'NO_SHOW can be set only after the session has ended',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
     await this.prisma.$transaction(async (tx) => {
       await tx.sessionEnrollment.update({
         where: { id: enrollmentId },
@@ -616,6 +726,8 @@ export class FitnessSessionsService {
     const currentUser = await this.authService.getCurrentUser(authHeader);
     const userId = currentUser.user.id;
 
+    await this.completePastTrainingSessions();
+
     const fromDate = fromIso ? new Date(fromIso) : new Date();
     const toDate = toIso
       ? new Date(toIso)
@@ -626,47 +738,16 @@ export class FitnessSessionsService {
         userId,
         status: 'ACTIVE',
         TrainingSession: {
-          status: 'ACTIVE',
+          status: {
+            in: [TrainingSessionStatus.ACTIVE, TrainingSessionStatus.COMPLETED],
+          },
           startsAt: {
             gte: fromDate,
             lte: toDate,
           },
         },
       },
-      select: {
-        id: true,
-        createdAt: true,
-        TrainingSession: {
-          select: {
-            id: true,
-            startsAt: true,
-            endsAt: true,
-            capacity: true,
-            bookedCount: true,
-            Training: {
-              select: {
-                id: true,
-                name: true,
-                duration: true,
-                price: true,
-              },
-            },
-            Trainer: {
-              select: {
-                id: true,
-                name: true,
-              },
-            },
-            Studio: {
-              select: {
-                id: true,
-                name: true,
-                address: true,
-              },
-            },
-          },
-        },
-      },
+      select: clientScheduleEnrollmentSelect,
       orderBy: {
         TrainingSession: {
           startsAt: 'asc',
@@ -681,6 +762,7 @@ export class FitnessSessionsService {
       sessionId: e.TrainingSession.id,
       startsAt: e.TrainingSession.startsAt.toISOString(),
       endsAt: e.TrainingSession.endsAt.toISOString(),
+      sessionStatus: e.TrainingSession.status,
       capacity: e.TrainingSession.capacity,
       bookedCount: e.TrainingSession.bookedCount,
       training: e.TrainingSession.Training
@@ -689,6 +771,14 @@ export class FitnessSessionsService {
             name: e.TrainingSession.Training.name,
             duration: e.TrainingSession.Training.duration,
             price: e.TrainingSession.Training.price,
+            displayColor: computeTrainingDisplayColor({
+              trainingId: e.TrainingSession.Training.id,
+              trainingName: e.TrainingSession.Training.name,
+              trainingCategoryId: e.TrainingSession.Training.trainingCategoryId,
+              mainCategoryId:
+                e.TrainingSession.Training.trainingCategory?.main_category_id,
+              existingColor: e.TrainingSession.Training.displayColor,
+            }),
           }
         : null,
       trainer: e.TrainingSession.Trainer
@@ -705,6 +795,52 @@ export class FitnessSessionsService {
           }
         : null,
     }));
+  }
+
+  async getClientProfileStats(authHeader: string): Promise<{
+    classesVisited: number;
+    upcomingClasses: number;
+    activePasses: number;
+  }> {
+    const currentUser = await this.authService.getCurrentUser(authHeader);
+    const userId = currentUser.user.id;
+
+    await this.completePastTrainingSessions();
+
+    const now = new Date();
+    const [classesVisited, upcomingClasses] = await Promise.all([
+      this.prisma.sessionEnrollment.count({
+        where: {
+          userId,
+          status: SessionEnrollmentStatus.ACTIVE,
+          TrainingSession: {
+            endsAt: { lt: now },
+            status: {
+              in: [
+                TrainingSessionStatus.COMPLETED,
+                TrainingSessionStatus.ACTIVE,
+              ],
+            },
+          },
+        },
+      }),
+      this.prisma.sessionEnrollment.count({
+        where: {
+          userId,
+          status: SessionEnrollmentStatus.ACTIVE,
+          TrainingSession: {
+            startsAt: { gte: now },
+            status: TrainingSessionStatus.ACTIVE,
+          },
+        },
+      }),
+    ]);
+
+    return {
+      classesVisited,
+      upcomingClasses,
+      activePasses: 0,
+    };
   }
 
   /**

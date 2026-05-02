@@ -25,20 +25,6 @@ export class AuthService {
   // Кэш для синхронизации app_metadata (ленивая синхронизация)
   private roleSyncCache = new Map<string, { lastSync: number; role: string }>();
   private readonly ROLE_SYNC_TTL = 5 * 60 * 1000; // 5 минут между синхронизациями
-  private readonly clientRegistrationOtpStore = new Map<
-    string,
-    {
-      code: string;
-      expiresAt: number;
-      attempts: number;
-      payload: {
-        email: string;
-        password: string;
-        name?: string;
-        phone?: string;
-      };
-    }
-  >();
   private readonly CLIENT_OTP_TTL_MS = 10 * 60 * 1000;
   private readonly CLIENT_OTP_MAX_ATTEMPTS = 5;
 
@@ -59,6 +45,10 @@ export class AuthService {
 
   private generateOtpCode() {
     return Math.floor(100000 + Math.random() * 900000).toString();
+  }
+
+  private hashOtpCode(code: string) {
+    return crypto.createHash('sha256').update(code).digest('hex');
   }
 
   private normalizeEmail(email: string) {
@@ -100,15 +90,30 @@ export class AuthService {
     }
 
     const code = this.generateOtpCode();
-    this.clientRegistrationOtpStore.set(email, {
-      code,
-      expiresAt: Date.now() + this.CLIENT_OTP_TTL_MS,
-      attempts: 0,
-      payload: {
+    await this.prisma.clientRegistrationOtp.upsert({
+      where: { email },
+      update: {
+        codeHash: this.hashOtpCode(code),
+        expiresAt: new Date(Date.now() + this.CLIENT_OTP_TTL_MS),
+        attempts: 0,
+        payload: {
+          email,
+          password: data.password,
+          name: data.name,
+          phone: data.phone,
+        },
+      },
+      create: {
         email,
-        password: data.password,
-        name: data.name,
-        phone: data.phone,
+        codeHash: this.hashOtpCode(code),
+        expiresAt: new Date(Date.now() + this.CLIENT_OTP_TTL_MS),
+        attempts: 0,
+        payload: {
+          email,
+          password: data.password,
+          name: data.name,
+          phone: data.phone,
+        },
       },
     });
     await this.sendClientRegistrationOtpEmail(email, code);
@@ -117,26 +122,30 @@ export class AuthService {
 
   async verifyClientRegistrationCode(data: { email: string; code: string }) {
     const email = this.normalizeEmail(data.email);
-    const otp = this.clientRegistrationOtpStore.get(email);
+    const otp = await this.prisma.clientRegistrationOtp.findUnique({
+      where: { email },
+    });
     if (!otp) {
       throw new BadRequestException('Verification code not requested');
     }
-    if (Date.now() > otp.expiresAt) {
-      this.clientRegistrationOtpStore.delete(email);
+    if (Date.now() > new Date(otp.expiresAt).getTime()) {
+      await this.prisma.clientRegistrationOtp.delete({ where: { email } });
       throw new BadRequestException('Verification code expired');
     }
     if (otp.attempts >= this.CLIENT_OTP_MAX_ATTEMPTS) {
-      this.clientRegistrationOtpStore.delete(email);
+      await this.prisma.clientRegistrationOtp.delete({ where: { email } });
       throw new BadRequestException('Too many attempts');
     }
-    if ((data.code || '').trim() !== otp.code) {
-      otp.attempts += 1;
-      this.clientRegistrationOtpStore.set(email, otp);
+    if (this.hashOtpCode((data.code || '').trim()) !== otp.codeHash) {
+      await this.prisma.clientRegistrationOtp.update({
+        where: { email },
+        data: { attempts: { increment: 1 } },
+      });
       throw new BadRequestException('Invalid verification code');
     }
 
-    this.clientRegistrationOtpStore.delete(email);
-    return this.registerClient(otp.payload);
+    await this.prisma.clientRegistrationOtp.delete({ where: { email } });
+    return this.registerClient(otp.payload as any);
   }
 
   /**
@@ -1387,7 +1396,6 @@ export class AuthService {
         },
         data: {
           name: data.name,
-          email: data.email,
           phone: data.phone,
         },
         select: {
@@ -1979,7 +1987,7 @@ export class AuthService {
           token,
           email: normalizedEmail,
           name,
-          password: authData.user.id, // Сохраняем userId вместо пароля для связи
+          userId: authData.user.id,
           expiresAt,
         },
       });
@@ -2084,8 +2092,7 @@ export class AuthService {
         expiresAt: pendingReg.expiresAt,
       });
 
-      // userId сохранен в поле password (временное решение)
-      const userId = pendingReg.password;
+      const userId = pendingReg.userId;
 
       if (!userId) {
         throw new BadRequestException('Invalid magic link data');

@@ -42,7 +42,7 @@ export class CreateStudioDto {
   phone?: string;
 
   @IsOptional()
-  @IsString()
+  @IsEmail()
   email?: string;
 
   @IsOptional()

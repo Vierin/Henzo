@@ -137,7 +137,7 @@ class TopStudioCard extends StatelessWidget {
                       overflow: TextOverflow.ellipsis,
                       style: const TextStyle(
                         fontSize: 19,
-                        fontWeight: FontWeight.w700,
+                        fontWeight: FontWeight.w600,
                         color: AppColors.textPrimary,
                       ),
                     ),
@@ -175,7 +175,7 @@ class TopStudioCard extends StatelessWidget {
                             '${studio.distanceKm!.toStringAsFixed(1)} km',
                             style: const TextStyle(
                               fontSize: 12,
-                              fontWeight: FontWeight.w700,
+                              fontWeight: FontWeight.w500,
                               color: AppColors.textPrimary,
                             ),
                           ),

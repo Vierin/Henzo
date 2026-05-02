@@ -111,7 +111,18 @@ class MainShellState extends State<MainShell> {
           case '/staff':
             return MaterialPageRoute(builder: (_) => const StaffScreen());
           case '/clients':
+            final args = settings.arguments;
+            if (args is Map<String, dynamic>) {
+              return MaterialPageRoute(
+                builder: (_) => ClientsScreen(
+                  initialFilter: args['filter']?.toString(),
+                  initialQuery: args['query']?.toString(),
+                ),
+              );
+            }
             return MaterialPageRoute(builder: (_) => const ClientsScreen());
+          case '/profile':
+            return MaterialPageRoute(builder: (_) => const ProfileScreen());
           case '/all-bookings':
             return MaterialPageRoute(builder: (_) => const AllBookingsScreen());
           default:
@@ -125,7 +136,7 @@ class MainShellState extends State<MainShell> {
     _buildHomeNavigator(),
     CalendarScreen(),
     AnalyticsScreen(),
-    const ProfileScreen(),
+    const ClientsScreen(),
   ];
 
   @override
@@ -137,22 +148,24 @@ class MainShellState extends State<MainShell> {
           if (_salonLoading) const _SalonLoadingCurtain(),
         ],
       ),
-      bottomNavigationBar: SafeArea(
-        top: false,
-        child: Container(
-          decoration: BoxDecoration(
-            color: AppColors.backgroundPrimary,
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.08),
-                blurRadius: 8,
-                offset: const Offset(0, -2),
-              ),
-            ],
-          ),
-          constraints: const BoxConstraints(minHeight: 42, maxHeight: 56),
-          padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 6),
-          child: Consumer<LocaleProvider>(
+      bottomNavigationBar: ColoredBox(
+        color: AppColors.backgroundPrimary,
+        child: SafeArea(
+          top: false,
+          child: Container(
+            decoration: BoxDecoration(
+              color: AppColors.backgroundPrimary,
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.08),
+                  blurRadius: 8,
+                  offset: const Offset(0, -2),
+                ),
+              ],
+            ),
+            constraints: const BoxConstraints(minHeight: 42, maxHeight: 56),
+            padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 6),
+            child: Consumer<LocaleProvider>(
             builder: (context, locale, _) => Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
@@ -185,9 +198,9 @@ class MainShellState extends State<MainShell> {
                 ),
                 Expanded(
                   child: _NavItem(
-                    icon: Icons.person_outline,
-                    activeIcon: Icons.person,
-                    label: locale.t('nav.profile'),
+                    icon: Icons.group_outlined,
+                    activeIcon: Icons.group,
+                    label: locale.t('dashboard.clients'),
                     isSelected: _currentIndex == 3,
                     onTap: () => setState(() => _currentIndex = 3),
                   ),
@@ -195,6 +208,7 @@ class MainShellState extends State<MainShell> {
               ],
             ),
           ),
+        ),
         ),
       ),
     );

@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../constants/colors.dart';
 import '../services/api_client.dart';
 import '../services/auth_service.dart';
+import '../utils/color_hex.dart';
 import '../widgets/public/class_schedule_card.dart';
 
 class PublicStudioScheduleScreen extends StatefulWidget {
@@ -11,10 +12,12 @@ class PublicStudioScheduleScreen extends StatefulWidget {
     super.key,
     required this.studioId,
     required this.studioName,
+    this.bookingPeriodDays,
   });
 
   final String studioId;
   final String studioName;
+  final int? bookingPeriodDays;
 
   @override
   State<PublicStudioScheduleScreen> createState() =>
@@ -22,37 +25,58 @@ class PublicStudioScheduleScreen extends StatefulWidget {
 }
 
 class _PublicStudioScheduleScreenState extends State<PublicStudioScheduleScreen> {
+  static const int _defaultBookingPeriodDays = 14;
+  static const int _minBookingPeriodDays = 1;
+  static const int _maxBookingPeriodDays = 60;
+
   final Map<int, List<Map<String, dynamic>>> _sessionsByDay =
       <int, List<Map<String, dynamic>>>{};
   final Set<String> _bookingInProgress = <String>{};
   late DateTime _selectedDay;
   late DateTime _weekStart;
+  late DateTime _minBookableDay;
+  late DateTime _maxBookableDay;
   bool _loading = true;
+  String? _loadError;
 
   @override
   void initState() {
     super.initState();
     final now = DateTime.now();
-    _selectedDay = DateTime(now.year, now.month, now.day);
+    _selectedDay = _normalizeDay(now);
+    _minBookableDay = _selectedDay;
+    _maxBookableDay = _selectedDay.add(
+      const Duration(days: _defaultBookingPeriodDays),
+    );
     _weekStart = _selectedDay.subtract(Duration(days: _selectedDay.weekday - 1));
     _loadSchedule();
   }
 
   Future<void> _loadSchedule() async {
     if (!mounted) return;
-    setState(() => _loading = true);
+    setState(() {
+      _loading = true;
+      _loadError = null;
+    });
     try {
-      final from = DateTime(
-        _selectedDay.year,
-        _selectedDay.month,
-        _selectedDay.day,
-      );
-      final to = from.add(const Duration(days: 60));
+      final parsedBookingPeriod = (widget.bookingPeriodDays ??
+              _defaultBookingPeriodDays)
+          .clamp(_minBookingPeriodDays, _maxBookingPeriodDays);
+      final now = DateTime.now();
+      final minDay = _normalizeDay(now);
+      final maxDay = minDay.add(Duration(days: parsedBookingPeriod));
+      final clampedSelectedDay = _clampDay(_selectedDay, minDay, maxDay);
+      final from = clampedSelectedDay;
+      final to = maxDay;
       final raw = await ApiClient.get(
-        '/studios/${widget.studioId}/schedule?from=${Uri.encodeComponent(from.toIso8601String())}&to=${Uri.encodeComponent(to.toIso8601String())}&limit=400',
+        '/studios/${widget.studioId}/schedule?from=${Uri.encodeComponent(from.toUtc().toIso8601String())}&to=${Uri.encodeComponent(to.toUtc().toIso8601String())}&limit=400',
         null,
       );
-      final list = raw is List ? raw : <dynamic>[];
+      final list = raw is List
+          ? raw
+          : (raw is Map<String, dynamic> && raw['data'] is List
+                ? raw['data'] as List
+                : <dynamic>[]);
       final grouped = <int, List<Map<String, dynamic>>>{};
       for (final item in list) {
         if (item is! Map) continue;
@@ -73,19 +97,74 @@ class _PublicStudioScheduleScreenState extends State<PublicStudioScheduleScreen>
         });
       }
       if (!mounted) return;
+      final selectedKey = _dayKey(_selectedDay);
+      DateTime? nextDayWithSessions;
+      if (!grouped.containsKey(selectedKey) && grouped.isNotEmpty) {
+        final sortedKeys = grouped.keys.toList()..sort();
+        final fallbackKey = sortedKeys.firstWhere(
+          (k) => k >= selectedKey,
+          orElse: () => sortedKeys.first,
+        );
+        nextDayWithSessions = _dateFromDayKey(fallbackKey);
+      }
       setState(() {
         _sessionsByDay
           ..clear()
           ..addAll(grouped);
+        _minBookableDay = minDay;
+        _maxBookableDay = maxDay;
+        _selectedDay = clampedSelectedDay;
+        _weekStart = _selectedDay.subtract(Duration(days: _selectedDay.weekday - 1));
+        if (nextDayWithSessions != null) {
+          final clampedNext = _clampDay(nextDayWithSessions, minDay, maxDay);
+          _selectedDay = clampedNext;
+          _weekStart = _selectedDay.subtract(Duration(days: _selectedDay.weekday - 1));
+        }
         _loading = false;
+        _loadError = null;
       });
-    } catch (_) {
+    } catch (e) {
       if (!mounted) return;
-      setState(() => _loading = false);
+      setState(() {
+        _loading = false;
+        _loadError = e.toString();
+      });
     }
   }
 
   int _dayKey(DateTime d) => d.year * 10000 + d.month * 100 + d.day;
+
+  DateTime _normalizeDay(DateTime d) => DateTime(d.year, d.month, d.day);
+
+  DateTime _clampDay(DateTime d, DateTime minDay, DateTime maxDay) {
+    final normalized = _normalizeDay(d);
+    if (normalized.isBefore(minDay)) return minDay;
+    if (normalized.isAfter(maxDay)) return maxDay;
+    return normalized;
+  }
+
+  bool _isDayInRange(DateTime day) {
+    final normalized = _normalizeDay(day);
+    return !normalized.isBefore(_minBookableDay) &&
+        !normalized.isAfter(_maxBookableDay);
+  }
+
+  bool _canGoPreviousWeek() {
+    final next = _selectedDay.subtract(const Duration(days: 7));
+    return _isDayInRange(next);
+  }
+
+  bool _canGoNextWeek() {
+    final next = _selectedDay.add(const Duration(days: 7));
+    return _isDayInRange(next);
+  }
+
+  DateTime _dateFromDayKey(int key) {
+    final year = key ~/ 10000;
+    final month = (key % 10000) ~/ 100;
+    final day = key % 100;
+    return DateTime(year, month, day);
+  }
 
   List<Map<String, dynamic>> _sessionsForDay(DateTime day) {
     return _sessionsByDay[_dayKey(day)] ?? const [];
@@ -189,6 +268,8 @@ class _PublicStudioScheduleScreenState extends State<PublicStudioScheduleScreen>
   @override
   Widget build(BuildContext context) {
     final sessions = _sessionsForDay(_selectedDay);
+    final canGoPrevWeek = _canGoPreviousWeek();
+    final canGoNextWeek = _canGoNextWeek();
     return Scaffold(
       backgroundColor: AppColors.backgroundSecondary,
       appBar: AppBar(
@@ -212,7 +293,8 @@ class _PublicStudioScheduleScreenState extends State<PublicStudioScheduleScreen>
                       Row(
                         children: [
                           IconButton(
-                            onPressed: () {
+                            onPressed: canGoPrevWeek
+                                ? () {
                               setState(() {
                                 _weekStart = _weekStart.subtract(
                                   const Duration(days: 7),
@@ -221,7 +303,8 @@ class _PublicStudioScheduleScreenState extends State<PublicStudioScheduleScreen>
                                   const Duration(days: 7),
                                 );
                               });
-                            },
+                            }
+                                : null,
                             icon: const Icon(Icons.chevron_left),
                           ),
                           Expanded(
@@ -237,7 +320,8 @@ class _PublicStudioScheduleScreenState extends State<PublicStudioScheduleScreen>
                             ),
                           ),
                           IconButton(
-                            onPressed: () {
+                            onPressed: canGoNextWeek
+                                ? () {
                               setState(() {
                                 _weekStart = _weekStart.add(
                                   const Duration(days: 7),
@@ -246,7 +330,8 @@ class _PublicStudioScheduleScreenState extends State<PublicStudioScheduleScreen>
                                   const Duration(days: 7),
                                 );
                               });
-                            },
+                            }
+                                : null,
                             icon: const Icon(Icons.chevron_right),
                           ),
                         ],
@@ -255,18 +340,25 @@ class _PublicStudioScheduleScreenState extends State<PublicStudioScheduleScreen>
                       Row(
                         children: List.generate(7, (i) {
                           final day = _weekStart.add(Duration(days: i));
+                          final isInRange = _isDayInRange(day);
                           final selected = day.year == _selectedDay.year &&
                               day.month == _selectedDay.month &&
                               day.day == _selectedDay.day;
                           return Expanded(
                             child: GestureDetector(
-                              onTap: () => setState(() => _selectedDay = day),
+                              onTap: isInRange
+                                  ? () => setState(() => _selectedDay = day)
+                                  : null,
                               child: Column(
                                 children: [
                                   Text(
                                     _weekdayLetter(day),
-                                    style: const TextStyle(
-                                      color: AppColors.textSecondary,
+                                    style: TextStyle(
+                                      color: isInRange
+                                          ? AppColors.textSecondary
+                                          : AppColors.textSecondary.withValues(
+                                              alpha: 0.38,
+                                            ),
                                       fontSize: 12,
                                       fontWeight: FontWeight.w600,
                                     ),
@@ -279,6 +371,11 @@ class _PublicStudioScheduleScreenState extends State<PublicStudioScheduleScreen>
                                       color: selected
                                           ? AppColors.textPrimary
                                           : Colors.transparent,
+                                      border: !selected && isInRange
+                                          ? Border.all(
+                                              color: AppColors.borderPrimary,
+                                            )
+                                          : null,
                                       shape: BoxShape.circle,
                                     ),
                                     alignment: Alignment.center,
@@ -287,7 +384,10 @@ class _PublicStudioScheduleScreenState extends State<PublicStudioScheduleScreen>
                                       style: TextStyle(
                                         color: selected
                                             ? Colors.white
-                                            : AppColors.textPrimary,
+                                            : isInRange
+                                            ? AppColors.textPrimary
+                                            : AppColors.textSecondary
+                                                  .withValues(alpha: 0.38),
                                         fontWeight: FontWeight.w700,
                                       ),
                                     ),
@@ -298,12 +398,52 @@ class _PublicStudioScheduleScreenState extends State<PublicStudioScheduleScreen>
                           );
                         }),
                       ),
+                      const SizedBox(height: 8),
+                      Text(
+                        'Booking window: ${_monthTitle(_minBookableDay)} - ${_monthTitle(_maxBookableDay)}',
+                        style: const TextStyle(
+                          fontSize: 12,
+                          color: AppColors.textSecondary,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
                     ],
                   ),
                 ),
                 const Divider(height: 1, color: AppColors.borderPrimary),
                 Expanded(
-                  child: sessions.isEmpty
+                  child: _loadError != null
+                      ? Center(
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 24),
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                const Text(
+                                  'Failed to load schedule',
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.w700,
+                                    color: AppColors.textPrimary,
+                                  ),
+                                ),
+                                const SizedBox(height: 8),
+                                Text(
+                                  _loadError!,
+                                  textAlign: TextAlign.center,
+                                  style: const TextStyle(
+                                    color: AppColors.textSecondary,
+                                  ),
+                                ),
+                                const SizedBox(height: 12),
+                                FilledButton(
+                                  onPressed: _loadSchedule,
+                                  child: const Text('Retry'),
+                                ),
+                              ],
+                            ),
+                          ),
+                        )
+                      : sessions.isEmpty
                       ? Center(
                           child: Text(
                             'No classes for selected day',
@@ -333,6 +473,9 @@ class _PublicStudioScheduleScreenState extends State<PublicStudioScheduleScreen>
                             final price = (training['price'] as num?)?.toDouble();
                             final capacity = (s['capacity'] as num?)?.toInt();
                             final bookedCount = (s['bookedCount'] as num?)?.toInt() ?? 0;
+                            final trainingColor = parseHexColor(
+                              training['displayColor']?.toString(),
+                            );
                             final hasCapacity = capacity != null && capacity > 0;
                             final isFull = hasCapacity && bookedCount >= capacity;
                             final sessionId = (s['id'] ?? '').toString();
@@ -345,6 +488,7 @@ class _PublicStudioScheduleScreenState extends State<PublicStudioScheduleScreen>
                               priceLabel: price != null ? _formatVnd(price) : null,
                               bookedCount: bookedCount,
                               capacity: capacity,
+                              trainingColor: trainingColor,
                               isBooking: isBooking,
                               onBook: isFull ? null : () => _bookSession(s),
                             );

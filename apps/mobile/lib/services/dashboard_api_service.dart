@@ -6,6 +6,21 @@ import '../models/salon.dart';
 import '../models/subscription.dart';
 import '../models/time_block.dart';
 
+double? _parseOptionalDouble(dynamic v) {
+  if (v == null) return null;
+  if (v is num) return v.toDouble();
+  if (v is String) return double.tryParse(v.trim());
+  return null;
+}
+
+int? _parseOptionalInt(dynamic v) {
+  if (v == null) return null;
+  if (v is int) return v;
+  if (v is num) return v.toInt();
+  if (v is String) return int.tryParse(v.trim());
+  return null;
+}
+
 class OwnerTrainingSession {
   final String sessionId;
   /// Training (service) id — for navigation to edit.
@@ -17,6 +32,11 @@ class OwnerTrainingSession {
   final int enrolledCount;
   final int attendedCount;
   final String trainingName;
+  /// Template price from Training (for enrollment-derived bookings / revenue).
+  final double? trainingPrice;
+  /// Duration from Training template (minutes), when API sends it.
+  final int? trainingDurationMinutes;
+  final String? trainingDisplayColorHex;
   final String trainerName;
   /// Null when no trainer row or owner-led slot.
   final String? trainerId;
@@ -31,6 +51,9 @@ class OwnerTrainingSession {
     required this.enrolledCount,
     required this.attendedCount,
     required this.trainingName,
+    this.trainingPrice,
+    this.trainingDurationMinutes,
+    this.trainingDisplayColorHex,
     required this.trainerName,
     this.trainerId,
   });
@@ -63,6 +86,16 @@ class OwnerTrainingSession {
       trainingName: training is Map<String, dynamic>
           ? (training['name'] ?? 'Training').toString()
           : 'Training',
+      trainingPrice: training is Map<String, dynamic>
+          ? (_parseOptionalDouble(training['price']) ??
+              _parseOptionalDouble(training['amount']))
+          : null,
+      trainingDurationMinutes: training is Map<String, dynamic>
+          ? _parseOptionalInt(training['duration'])
+          : null,
+      trainingDisplayColorHex: training is Map<String, dynamic>
+          ? training['displayColor']?.toString()
+          : null,
       trainerName: trainer is Map<String, dynamic>
           ? (trainer['name'] ?? '—').toString()
           : '—',
@@ -85,6 +118,11 @@ class OwnerTrainingSession {
         'enrolledCount': enrolledCount,
         'attendedCount': attendedCount,
         'trainingName': trainingName,
+        if (trainingPrice != null) 'trainingPrice': trainingPrice,
+        if (trainingDurationMinutes != null)
+          'trainingDurationMinutes': trainingDurationMinutes,
+        if (trainingDisplayColorHex != null)
+          'trainingDisplayColorHex': trainingDisplayColorHex,
         'trainerName': trainerName,
         if (trainerId != null) 'trainerId': trainerId,
       };
@@ -103,6 +141,9 @@ class OwnerTrainingSession {
       enrolledCount: (m['enrolledCount'] as num?)?.toInt() ?? 0,
       attendedCount: (m['attendedCount'] as num?)?.toInt() ?? 0,
       trainingName: (m['trainingName'] ?? 'Training').toString(),
+      trainingPrice: _parseOptionalDouble(m['trainingPrice']),
+      trainingDurationMinutes: _parseOptionalInt(m['trainingDurationMinutes']),
+      trainingDisplayColorHex: m['trainingDisplayColorHex']?.toString(),
       trainerName: (m['trainerName'] ?? '—').toString(),
       trainerId: trainerRaw == null || trainerRaw.toString().isEmpty
           ? null
@@ -586,7 +627,9 @@ class DashboardApiService {
               status: BookingStatus.fromString(e.status),
               service: Service(
                 name: s.trainingName,
-                duration: s.endsAt.difference(s.startsAt).inMinutes,
+                price: s.trainingPrice,
+                duration: s.trainingDurationMinutes ??
+                    s.endsAt.difference(s.startsAt).inMinutes,
               ),
               user: User(
                 id: e.userId,

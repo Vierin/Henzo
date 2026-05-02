@@ -10,5 +10,6 @@ import { StudioAnalyticsService } from './studio-analytics.service';
   imports: [StudiosModule, AuthModule, PrismaModule],
   controllers: [FitnessController],
   providers: [FitnessSessionsService, StudioAnalyticsService],
+  exports: [FitnessSessionsService],
 })
 export class FitnessModule {}

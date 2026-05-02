@@ -118,7 +118,18 @@
 		"onboardingBookingWindow": "Настроить окно записи",
 		"onboardingContacts": "Добавить контакты",
 		"onboardingMissingRequired": "Не хватает обязательных: {items}",
-		"onboardingActivate": "Активировать студию"
+		"onboardingActivate": "Активировать студию",
+		"weeklyInsightsTitle": "Прошлая неделя (пн–вс)",
+		"todaySummary": "{classes} занятий · {bookings} записей сегодня",
+		"weeklyRevenueLabel": "ВЫРУЧКА ЗА НЕДЕЛЮ",
+		"weeklyBookingsLabel": "ЗАПИСИ (МЕСТА)",
+		"weeklySessionsLabel": "ГРУППОВЫХ ЗАНЯТИЙ",
+		"weeklyAvgTicketLabel": "СРЕДНИЙ ЧЕК",
+		"reviewsTitle": "Отзывы",
+		"reviewsSubtitle": "в среднем {rating} · {count} отзывов",
+		"reviewsEmpty": "Пока нет отзывов",
+		"reviewsLoadError": "Не удалось загрузить отзывы.",
+		"reviewsRetry": "Повторить"
 	},
 	"ownerSession": {
 		"editCurrentSession": "Изменить текущую тренировку",

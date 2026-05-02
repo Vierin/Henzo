@@ -29,13 +29,12 @@ class Booking {
     final staffId = staffIdRaw != null ? staffIdRaw.toString() : null;
     final serviceIdRaw = json['serviceId'];
     final serviceId = serviceIdRaw != null ? serviceIdRaw.toString() : null;
+    final serviceMap = _serviceLikeMap(json);
     return Booking(
       id: json['id'] as String,
       dateTime: DateTime.parse(json['dateTime'] as String),
       status: BookingStatus.fromString(json['status'] as String),
-      service: json['service'] != null
-          ? Service.fromJson(json['service'] as Map<String, dynamic>)
-          : null,
+      service: serviceMap != null ? Service.fromJson(serviceMap) : null,
       user: json['user'] != null
           ? User.fromJson(json['user'] as Map<String, dynamic>)
           : null,
@@ -46,6 +45,15 @@ class Booking {
       serviceId: serviceId,
       notes: json['notes'] as String?,
     );
+  }
+
+  /// API may send [service] or nest training under [training].
+  static Map<String, dynamic>? _serviceLikeMap(Map<String, dynamic> json) {
+    final s = json['service'];
+    if (s is Map<String, dynamic>) return s;
+    final t = json['training'];
+    if (t is Map<String, dynamic>) return t;
+    return null;
   }
 
   Map<String, dynamic> toJson() {
@@ -74,6 +82,9 @@ enum BookingStatus {
       case 'PENDING':
         return BookingStatus.pending;
       case 'CONFIRMED':
+        return BookingStatus.confirmed;
+      // Групповые занятия: активная запись в SessionEnrollment.
+      case 'ACTIVE':
         return BookingStatus.confirmed;
       case 'COMPLETED':
         return BookingStatus.completed;
@@ -124,9 +135,25 @@ class Service {
         '';
     return Service(
       name: name,
-      price: json['price'] != null ? (json['price'] as num).toDouble() : null,
-      duration: json['duration'] as int?,
+      price: _parseOptionalDouble(json['price']) ??
+          _parseOptionalDouble(json['amount']),
+      duration: _parseOptionalInt(json['duration']),
     );
+  }
+
+  static double? _parseOptionalDouble(dynamic v) {
+    if (v == null) return null;
+    if (v is num) return v.toDouble();
+    if (v is String) return double.tryParse(v.trim());
+    return null;
+  }
+
+  static int? _parseOptionalInt(dynamic v) {
+    if (v == null) return null;
+    if (v is int) return v;
+    if (v is num) return v.toInt();
+    if (v is String) return int.tryParse(v.trim());
+    return null;
   }
 
   Map<String, dynamic> toJson() {

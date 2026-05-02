@@ -20,6 +20,7 @@ class AuthService extends ChangeNotifier {
   final SupabaseClient _supabase = Supabase.instance.client;
 
   UserModel? _user;
+
   /// False until [_init] finishes once. Not tied to login-in-progress — avoids
   /// replacing [LoginScreen] during sign-in (which disposed the State and swallowed SnackBars).
   bool _initialSessionReady = false;
@@ -148,9 +149,7 @@ class AuthService extends ChangeNotifier {
         _user = UserModel.fromJson(userData);
         _isAuthenticated = _user != null;
         if (kDebugMode) {
-          debugPrint(
-            '[Auth] User loaded: ${_user?.email} role=${_user?.role}',
-          );
+          debugPrint('[Auth] User loaded: ${_user?.email} role=${_user?.role}');
         }
         return (ok: true, errorL10nKey: null, errorRaw: null);
       }
@@ -177,11 +176,7 @@ class AuthService extends ChangeNotifier {
           errStr.contains('Connection refused') ||
           errStr.contains('Failed host lookup') ||
           errStr.contains('NetworkException')) {
-        return (
-          ok: false,
-          errorL10nKey: AuthErrorKeys.network,
-          errorRaw: null,
-        );
+        return (ok: false, errorL10nKey: AuthErrorKeys.network, errorRaw: null);
       }
       return (ok: false, errorL10nKey: null, errorRaw: errStr);
     }
@@ -190,6 +185,10 @@ class AuthService extends ChangeNotifier {
   Future<AuthUiResult> loginWithGoogle() async {
     final webClientId = AppConfig.googleWebClientId;
     if (webClientId.isEmpty) {
+      AppConfig.logIfDevelopment(
+        'login.google',
+        'GOOGLE_WEB_CLIENT_ID is empty',
+      );
       return (
         success: false,
         errorL10nKey: AuthErrorKeys.googleWebClientMissing,
@@ -213,6 +212,11 @@ class AuthService extends ChangeNotifier {
       final account = await googleSignIn.signIn();
       if (account == null) {
         if (kDebugMode) debugPrint('[Auth] Google sign in cancelled');
+        AppConfig.logIfDevelopment(
+          'login.google',
+          'User cancelled Google sign-in',
+        );
+        notifyListeners();
         return (
           success: false,
           errorL10nKey: AuthErrorKeys.googleSignInCancelled,
@@ -224,6 +228,10 @@ class AuthService extends ChangeNotifier {
       final idToken = auth.idToken;
       final accessToken = auth.accessToken;
       if (idToken == null) {
+        AppConfig.logIfDevelopment(
+          'login.google',
+          'Google did not return idToken',
+        );
         return (
           success: false,
           errorL10nKey: AuthErrorKeys.googleNoIdToken,
@@ -243,6 +251,11 @@ class AuthService extends ChangeNotifier {
       final session = _supabase.auth.currentSession;
       if (session == null) {
         if (kDebugMode) debugPrint('[Auth] No session after signInWithIdToken');
+        AppConfig.logIfDevelopment(
+          'login.google',
+          'No Supabase session after signInWithIdToken',
+        );
+        notifyListeners();
         return (
           success: false,
           errorL10nKey: AuthErrorKeys.googleNoSessionAfterSignIn,
@@ -255,6 +268,10 @@ class AuthService extends ChangeNotifier {
       notifyListeners();
 
       if (!fetch.ok || !_isAuthenticated || _user == null) {
+        AppConfig.logIfDevelopment(
+          'login.google',
+          'GET /auth/user after Google failed: l10n=${fetch.errorL10nKey} raw=${fetch.errorRaw}',
+        );
         return (
           success: false,
           errorL10nKey:
@@ -263,11 +280,17 @@ class AuthService extends ChangeNotifier {
         );
       }
       return (success: true, errorL10nKey: null, errorRaw: null);
-    } catch (e) {
+    } catch (e, st) {
       _user = null;
       _isAuthenticated = false;
       notifyListeners();
       String msg = e is AuthException ? e.message : e.toString();
+      AppConfig.logIfDevelopment(
+        'login.google',
+        'Exception during Google sign-in',
+        e,
+        st,
+      );
       if (kDebugMode) debugPrint('[Auth] loginWithGoogle exception: $e');
       if (msg.contains('ApiException: 7') || msg.contains('network_error')) {
         return (
@@ -288,13 +311,19 @@ class AuthService extends ChangeNotifier {
   }
 
   Future<AuthUiResult> login(String email, String password) async {
+    final emailForLog = email.trim();
     try {
       final response = await _supabase.auth.signInWithPassword(
-        email: email.trim(),
+        email: emailForLog,
         password: password,
       );
 
       if (response.session == null) {
+        AppConfig.logIfDevelopment(
+          'login.password',
+          'Supabase returned null session after signInWithPassword',
+        );
+        notifyListeners();
         return (
           success: false,
           errorL10nKey: AuthErrorKeys.noSession,
@@ -306,6 +335,11 @@ class AuthService extends ChangeNotifier {
       notifyListeners();
 
       if (!fetch.ok || !_isAuthenticated || _user == null) {
+        AppConfig.logIfDevelopment(
+          'login.password',
+          'GET /auth/user after password sign-in failed (email=$emailForLog): '
+              'l10n=${fetch.errorL10nKey} raw=${fetch.errorRaw}',
+        );
         return (
           success: false,
           errorL10nKey:
@@ -314,11 +348,17 @@ class AuthService extends ChangeNotifier {
         );
       }
       return (success: true, errorL10nKey: null, errorRaw: null);
-    } catch (e) {
+    } catch (e, st) {
       _user = null;
       _isAuthenticated = false;
       notifyListeners();
       final msg = e is AuthException ? e.message : e.toString();
+      AppConfig.logIfDevelopment(
+        'login.password',
+        'signInWithPassword exception (email=$emailForLog)',
+        e,
+        st,
+      );
       return (success: false, errorL10nKey: null, errorRaw: msg);
     }
   }
@@ -348,12 +388,12 @@ class AuthService extends ChangeNotifier {
     String? locale,
   }) async {
     try {
-      final url = Uri.parse('${AppConfig.apiUrl}/auth/send-business-magic-link');
+      final url = Uri.parse(
+        '${AppConfig.apiUrl}/auth/send-business-magic-link',
+      );
       final response = await http.post(
         url,
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: {'Content-Type': 'application/json'},
         body: json.encode({
           'name': email.trim(),
           'email': email.trim(),
@@ -390,12 +430,12 @@ class AuthService extends ChangeNotifier {
     String? phone,
   }) async {
     try {
-      final url = Uri.parse('${AppConfig.apiUrl}/auth/register-client/request-code');
+      final url = Uri.parse(
+        '${AppConfig.apiUrl}/auth/register-client/request-code',
+      );
       final response = await http.post(
         url,
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: {'Content-Type': 'application/json'},
         body: json.encode({
           'email': email.trim(),
           'password': password,
@@ -430,16 +470,13 @@ class AuthService extends ChangeNotifier {
     required String code,
   }) async {
     try {
-      final url = Uri.parse('${AppConfig.apiUrl}/auth/register-client/verify-code');
+      final url = Uri.parse(
+        '${AppConfig.apiUrl}/auth/register-client/verify-code',
+      );
       final response = await http.post(
         url,
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: json.encode({
-          'email': email.trim(),
-          'code': code.trim(),
-        }),
+        headers: {'Content-Type': 'application/json'},
+        body: json.encode({'email': email.trim(), 'code': code.trim()}),
       );
       if (response.statusCode >= 200 && response.statusCode < 300) {
         final payload = json.decode(response.body) as Map<String, dynamic>?;
@@ -546,8 +583,9 @@ class AuthService extends ChangeNotifier {
 
   Future<AuthUiResult> updatePassword(String newPassword) async {
     try {
-      final res =
-          await _supabase.auth.updateUser(UserAttributes(password: newPassword));
+      final res = await _supabase.auth.updateUser(
+        UserAttributes(password: newPassword),
+      );
       if (res.user != null) {
         return (success: true, errorL10nKey: null, errorRaw: null);
       }
@@ -569,7 +607,9 @@ class AuthService extends ChangeNotifier {
       return (success: false, errorL10nKey: null, errorRaw: 'Email is empty');
     }
     try {
-      final res = await _supabase.auth.updateUser(UserAttributes(email: trimmed));
+      final res = await _supabase.auth.updateUser(
+        UserAttributes(email: trimmed),
+      );
       if (res.user != null) {
         if (_user != null) {
           _user = UserModel(

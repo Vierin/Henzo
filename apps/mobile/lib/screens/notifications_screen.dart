@@ -9,18 +9,24 @@ import '../models/app_notification.dart';
 import '../services/notifications_store.dart';
 
 class NotificationsScreen extends StatefulWidget {
-  const NotificationsScreen({super.key});
+  const NotificationsScreen({
+    super.key,
+    this.initialFilter = NotificationFilter.all,
+  });
+
+  final NotificationFilter initialFilter;
 
   @override
   State<NotificationsScreen> createState() => _NotificationsScreenState();
 }
 
 class _NotificationsScreenState extends State<NotificationsScreen> {
-  NotificationFilter _filter = NotificationFilter.all;
+  late NotificationFilter _filter;
 
   @override
   void initState() {
     super.initState();
+    _filter = widget.initialFilter;
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<NotificationsStore>().markAllRead();
     });

@@ -16,6 +16,8 @@ import '../services/auth_service.dart';
 import '../services/cache/client_nearby_cache.dart';
 import '../services/client_favorites_store.dart';
 import '../services/mapbox_api_service.dart';
+import '../utils/nearby_payload.dart';
+import '../services/client_favorites_mutations.dart';
 import '../widgets/public/top_studio_card.dart';
 import 'location_picker_screen.dart';
 import 'public_studio_detail_screen.dart';
@@ -73,7 +75,7 @@ class _PublicHomeScreenState extends State<PublicHomeScreen> {
         raw = await ApiClient.get(path, null);
         ClientNearbyCache.put(path, raw);
       }
-      final list = _extractStudiosList(raw);
+      final list = extractStudiosListFromNearby(raw);
       final mapped = <PublicStudioPreview>[];
       for (final item in list) {
         if (item is! Map) continue;
@@ -114,9 +116,7 @@ class _PublicHomeScreenState extends State<PublicHomeScreen> {
         _isLoadingStudios = false;
       });
       final token = context.read<AuthService>().accessToken;
-      unawaited(
-        context.read<ClientFavoritesStore>().sync(token, force: false),
-      );
+      unawaited(context.read<ClientFavoritesStore>().sync(token, force: false));
     } catch (_) {
       if (!mounted) return;
       setState(() {
@@ -126,29 +126,16 @@ class _PublicHomeScreenState extends State<PublicHomeScreen> {
     }
   }
 
-  List<dynamic> _extractStudiosList(dynamic raw) {
-    if (raw is List) return raw;
-    if (raw is Map) {
-      final data = raw['data'];
-      if (data is List) return data;
-      if (data is Map && data['items'] is List) {
-        return data['items'] as List<dynamic>;
-      }
-      if (raw['items'] is List) return raw['items'] as List<dynamic>;
-      if (raw['results'] is List) return raw['results'] as List<dynamic>;
-      if (raw['studios'] is List) return raw['studios'] as List<dynamic>;
-    }
-    return const <dynamic>[];
-  }
-
   /// Same idea as Explore: use API `distance` when present; otherwise Haversine
   /// from saved client position + studio coordinates (e.g. featured fallback).
   double? _distanceKmForStudio(Map<String, dynamic> data, double? apiDistance) {
     if (apiDistance != null) return apiDistance;
     if (_selectedLat == null || _selectedLon == null) return null;
-    final slat = (data['latitude'] as num?)?.toDouble() ??
+    final slat =
+        (data['latitude'] as num?)?.toDouble() ??
         (data['lat'] as num?)?.toDouble();
-    final slng = (data['longitude'] as num?)?.toDouble() ??
+    final slng =
+        (data['longitude'] as num?)?.toDouble() ??
         (data['lng'] as num?)?.toDouble() ??
         (data['lon'] as num?)?.toDouble();
     if (slat == null || slng == null) return null;
@@ -358,55 +345,47 @@ class _PublicHomeScreenState extends State<PublicHomeScreen> {
     }
     final wasFavorite = favStore.isFavorite(studio.id);
     setState(() => _favoriteLoadingIds.add(studio.id));
-    if (wasFavorite) {
-      favStore.removeLocal(studio.id);
-    } else {
-      favStore.upsertStudioMap({
-        'id': studio.id,
-        'name': studio.name,
-        'address': studio.address,
-        if (studio.photoUrl != null && studio.photoUrl!.isNotEmpty)
-          'photos': [studio.photoUrl],
-        'avgRating': studio.rating,
-      });
-    }
-    try {
+    final ok = wasFavorite
+        ? await ClientFavoritesMutations.removeStudio(
+            favStore: favStore,
+            token: token,
+            studioId: studio.id,
+          )
+        : await ClientFavoritesMutations.addStudio(
+            favStore: favStore,
+            token: token,
+            studioId: studio.id,
+            optimisticStudioPayload: {
+              'id': studio.id,
+              'name': studio.name,
+              'address': studio.address,
+              if (studio.photoUrl != null && studio.photoUrl!.isNotEmpty)
+                'photos': [studio.photoUrl],
+              'avgRating': studio.rating,
+            },
+          );
+    if (!mounted) return;
+    if (ok) {
       if (wasFavorite) {
-        await ApiClient.delete('/auth/favorites/${studio.id}', token);
-        if (mounted) {
-          ScaffoldMessenger.of(context)
-            ..hideCurrentSnackBar()
-            ..showSnackBar(
-              const SnackBar(content: Text('Removed from favorites')),
-            );
-        }
+        ScaffoldMessenger.of(context)
+          ..hideCurrentSnackBar()
+          ..showSnackBar(
+            const SnackBar(content: Text('Removed from favorites')),
+          );
       } else {
-        await ApiClient.post(
-          '/auth/favorites/${studio.id}',
-          token,
-          body: {'studioId': studio.id},
-        );
         HapticFeedback.lightImpact();
-        if (mounted) {
-          ScaffoldMessenger.of(context)
-            ..hideCurrentSnackBar()
-            ..showSnackBar(const SnackBar(content: Text('Added to favorites')));
-        }
+        ScaffoldMessenger.of(context)
+          ..hideCurrentSnackBar()
+          ..showSnackBar(const SnackBar(content: Text('Added to favorites')));
       }
-    } catch (_) {
-      if (!mounted) return;
-      final messenger = ScaffoldMessenger.of(context);
-      await favStore.sync(token, force: true);
-      messenger
+    } else {
+      ScaffoldMessenger.of(context)
         ..hideCurrentSnackBar()
         ..showSnackBar(
           const SnackBar(content: Text('Failed to update favorites')),
         );
-    } finally {
-      if (mounted) {
-        setState(() => _favoriteLoadingIds.remove(studio.id));
-      }
     }
+    setState(() => _favoriteLoadingIds.remove(studio.id));
   }
 
   @override
@@ -497,7 +476,7 @@ class _PublicHomeScreenState extends State<PublicHomeScreen> {
             ),
             SliverToBoxAdapter(
               child: SizedBox(
-                height: 190,
+                height: 210,
                 child: _isLoadingStudios
                     ? const Center(child: CircularProgressIndicator())
                     : studios.isEmpty

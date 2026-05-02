@@ -4,6 +4,7 @@ import { UpdateStudioDto } from './dto/update-studio.dto';
 import { CreateStudioDto } from './dto/create-studio.dto';
 import { MapboxService } from '../mapbox/mapbox.service';
 import { TranslationService } from '../trainings/translation.service';
+import { computeTrainingDisplayColor } from '../trainings/training-color.util';
 import { generateStudioSlug } from '../utils/slug';
 import { nanoid } from 'nanoid';
 
@@ -11,6 +12,7 @@ import { nanoid } from 'nanoid';
 export class StudiosService {
   private static readonly MAX_STUDIO_PHOTOS = 5;
   private static readonly DEFAULT_BOOKING_PERIOD_DAYS = 14;
+  private static readonly MAX_BOOKING_PERIOD_DAYS = 60;
 
   constructor(
     @Inject(PrismaService) private prisma: any,
@@ -122,6 +124,22 @@ export class StudiosService {
       if (!Number.isNaN(parsed)) return parsed;
     }
     return null;
+  }
+
+  private getNormalizedBookingPeriodDays(reminderSettings: unknown): number {
+    const raw = this.getBookingPeriodDays(reminderSettings);
+    const parsed = raw ?? StudiosService.DEFAULT_BOOKING_PERIOD_DAYS;
+    return Math.max(
+      1,
+      Math.min(StudiosService.MAX_BOOKING_PERIOD_DAYS, parsed),
+    );
+  }
+
+  private getBookingCutoffDate(bookingPeriodDays: number): Date {
+    const cutoff = new Date();
+    cutoff.setDate(cutoff.getDate() + bookingPeriodDays);
+    cutoff.setHours(23, 59, 59, 999);
+    return cutoff;
   }
 
   async getStudioOnboardingChecklist(studioId: string) {
@@ -325,6 +343,13 @@ export class StudiosService {
                   nameRu: true,
                   duration: true,
                   price: true,
+                  trainingCategoryId: true,
+                  displayColor: true,
+                  trainingCategory: {
+                    select: {
+                      main_category_id: true,
+                    },
+                  },
                 },
               },
               Trainer: {
@@ -1653,6 +1678,14 @@ export class StudiosService {
                   nameRu: session.Training.nameRu,
                   duration: session.Training.duration,
                   price: session.Training.price,
+                  displayColor: computeTrainingDisplayColor({
+                    trainingId: session.Training.id,
+                    trainingName: session.Training.name,
+                    trainingCategoryId: session.Training.trainingCategoryId,
+                    mainCategoryId:
+                      session.Training.trainingCategory?.main_category_id,
+                    existingColor: session.Training.displayColor,
+                  }),
                 }
               : null,
             trainer: session.Trainer
@@ -1908,7 +1941,12 @@ export class StudiosService {
 
     const studio = await this.prisma.Studio.findUnique({
       where: { id },
-      select: { id: true, status: true, timezone: true },
+      select: {
+        id: true,
+        status: true,
+        timezone: true,
+        reminderSettings: true,
+      },
     });
     if (!studio || studio.status !== 'ACTIVE') {
       return [];
@@ -1924,6 +1962,14 @@ export class StudiosService {
     if (Number.isNaN(toDate.getTime())) {
       throw new Error('Invalid to date');
     }
+    const bookingPeriodDays = this.getNormalizedBookingPeriodDays(
+      studio.reminderSettings,
+    );
+    const bookingCutoff = this.getBookingCutoffDate(bookingPeriodDays);
+    const effectiveToDate = toDate < bookingCutoff ? toDate : bookingCutoff;
+    if (effectiveToDate < fromDate) {
+      return [];
+    }
     const take = Math.min(Math.max(params?.limit ?? 300, 1), 500);
 
     const sessions = await this.prisma.trainingSession.findMany({
@@ -1932,7 +1978,7 @@ export class StudiosService {
         status: 'ACTIVE',
         startsAt: {
           gte: fromDate,
-          lte: toDate,
+          lte: effectiveToDate,
         },
       },
       select: {
@@ -1952,6 +1998,12 @@ export class StudiosService {
             duration: true,
             price: true,
             trainingCategoryId: true,
+            displayColor: true,
+            trainingCategory: {
+              select: {
+                main_category_id: true,
+              },
+            },
           },
         },
         Trainer: {
@@ -1982,6 +2034,13 @@ export class StudiosService {
             duration: s.Training.duration,
             price: s.Training.price,
             trainingCategoryId: s.Training.trainingCategoryId,
+            displayColor: computeTrainingDisplayColor({
+              trainingId: s.Training.id,
+              trainingName: s.Training.name,
+              trainingCategoryId: s.Training.trainingCategoryId,
+              mainCategoryId: s.Training.trainingCategory?.main_category_id,
+              existingColor: s.Training.displayColor,
+            }),
           }
         : null,
       trainer: s.Trainer

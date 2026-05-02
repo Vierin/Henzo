@@ -125,6 +125,7 @@ model Training {
   description        String?
   duration           Int
   price              Float
+  displayColor       String?
   studioId           String
   categoryId         String?
   trainingCategoryId Int?
@@ -227,6 +228,32 @@ model User {
   Studio           Studio[]
   SessionEnrollment SessionEnrollment[]
   StudioClientBlocks StudioClientBlock[]
+}
+
+model PendingBusinessRegistration {
+  id        String   @id @default(cuid())
+  token     String   @unique
+  email     String
+  name      String?
+  userId    String
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@index([email, expiresAt])
+  @@index([userId])
+}
+
+model ClientRegistrationOtp {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  codeHash  String
+  expiresAt DateTime
+  attempts  Int      @default(0)
+  payload   Json
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([expiresAt])
 }
 
 model PushToken {

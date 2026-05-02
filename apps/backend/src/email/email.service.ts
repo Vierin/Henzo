@@ -2,7 +2,6 @@ import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { BrevoEmailDeliveryService } from './brevo-email-delivery.service';
 import { ClientBookingEmailService } from './client-booking-email.service';
-import { SalonEmailService } from './salon-email.service';
 import { TransactionalEmailService } from './transactional-email.service';
 
 /**
@@ -15,7 +14,6 @@ export class EmailService {
     private readonly delivery: BrevoEmailDeliveryService,
     private readonly configService: ConfigService,
     private readonly clientBooking: ClientBookingEmailService,
-    private readonly salonEmail: SalonEmailService,
     private readonly transactional: TransactionalEmailService,
   ) {}
 
@@ -64,25 +62,6 @@ export class EmailService {
     }
   }
 
-  async sendSalonNotification(
-    salonEmail: string,
-    salonName: string,
-    bookingData: Parameters<SalonEmailService['sendSalonNotification']>[2],
-  ) {
-    try {
-      const result = await this.salonEmail.sendSalonNotification(
-        salonEmail,
-        salonName,
-        bookingData,
-      );
-      console.log('✅ Salon notification sent successfully via Brevo');
-      return result;
-    } catch (error) {
-      console.error('❌ Error sending salon notification:', error);
-      throw error;
-    }
-  }
-
   async sendBookingReminder(
     clientEmail: string,
     clientName: string,
@@ -117,25 +96,6 @@ export class EmailService {
     }
   }
 
-  async sendSalonBookingRequest(
-    salonEmail: string,
-    salonName: string,
-    bookingData: Parameters<SalonEmailService['sendSalonBookingRequest']>[2],
-  ) {
-    try {
-      const result = await this.salonEmail.sendSalonBookingRequest(
-        salonEmail,
-        salonName,
-        bookingData,
-      );
-      console.log('✅ Salon booking request sent successfully via Brevo');
-      return result;
-    } catch (error) {
-      console.error('❌ Error sending salon booking request:', error);
-      throw error;
-    }
-  }
-
   async testConnection() {
     try {
       if (!this.delivery.hasApiKey) {
@@ -146,23 +106,6 @@ export class EmailService {
     } catch (error) {
       console.error('❌ Brevo API connection test failed:', error);
       return false;
-    }
-  }
-
-  async sendMagicLinkConfirmation(
-    clientEmail: string,
-    data: Parameters<TransactionalEmailService['sendMagicLinkConfirmation']>[1],
-  ) {
-    try {
-      const result = await this.transactional.sendMagicLinkConfirmation(
-        clientEmail,
-        data,
-      );
-      console.log('✅ Magic link confirmation sent successfully via Brevo');
-      return result;
-    } catch (error) {
-      console.error('❌ Error sending magic link confirmation:', error);
-      throw error;
     }
   }
 

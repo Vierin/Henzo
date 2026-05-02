@@ -125,15 +125,21 @@ export class FitnessController {
 
   @Get('owner/client-blocklist')
   async getOwnerClientBlocklist(@Headers('authorization') authHeader: string) {
-    return (this.fitnessSessionsService as any).getOwnerClientBlocklist(authHeader);
+    return (this.fitnessSessionsService as any).getOwnerClientBlocklist(
+      authHeader,
+    );
   }
 
   @Put('owner/client-blocklist/block')
   async blockOwnerClient(
     @Headers('authorization') authHeader: string,
-    @Body() body: { userId?: string; email?: string; phone?: string; reason?: string },
+    @Body()
+    body: { userId?: string; email?: string; phone?: string; reason?: string },
   ) {
-    return (this.fitnessSessionsService as any).blockOwnerClient(authHeader, body);
+    return (this.fitnessSessionsService as any).blockOwnerClient(
+      authHeader,
+      body,
+    );
   }
 
   @Put('owner/client-blocklist/unblock')
@@ -141,7 +147,10 @@ export class FitnessController {
     @Headers('authorization') authHeader: string,
     @Body() body: { userId?: string; email?: string; phone?: string },
   ) {
-    return (this.fitnessSessionsService as any).unblockOwnerClient(authHeader, body);
+    return (this.fitnessSessionsService as any).unblockOwnerClient(
+      authHeader,
+      body,
+    );
   }
 
   @Get('client/schedule')
@@ -151,6 +160,11 @@ export class FitnessController {
     @Query('to') to?: string,
   ) {
     return this.fitnessSessionsService.getClientSchedule(authHeader, from, to);
+  }
+
+  @Get('client/profile-stats')
+  async getClientProfileStats(@Headers('authorization') authHeader: string) {
+    return this.fitnessSessionsService.getClientProfileStats(authHeader);
   }
 
   /** Update one scheduled session (time, trainer, status). Does not change the Training template. */
@@ -185,7 +199,10 @@ export class FitnessController {
     @Headers('authorization') authHeader: string,
     @Param('id') id: string,
   ) {
-    return this.fitnessSessionsService.getOwnerSessionEnrollments(authHeader, id);
+    return this.fitnessSessionsService.getOwnerSessionEnrollments(
+      authHeader,
+      id,
+    );
   }
 
   @Post('owner/training-sessions/:id/enrollments')

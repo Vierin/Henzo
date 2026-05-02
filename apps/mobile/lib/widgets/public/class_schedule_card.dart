@@ -14,6 +14,7 @@ class ClassScheduleCard extends StatelessWidget {
     this.bookedCount,
     this.capacity,
     this.isBooking = false,
+    this.trainingColor,
   });
 
   final String timeLabel;
@@ -25,6 +26,7 @@ class ClassScheduleCard extends StatelessWidget {
   final int? bookedCount;
   final int? capacity;
   final bool isBooking;
+  final Color? trainingColor;
 
   @override
   Widget build(BuildContext context) {
@@ -33,6 +35,7 @@ class ClassScheduleCard extends StatelessWidget {
     final fillRatio = hasCapacity ? (safeBooked / capacity!).clamp(0.0, 1.0) : 0.0;
     final isFull = hasCapacity && safeBooked >= capacity!;
     final canBook = !isBooking && !isFull && onBook != null;
+    final accentColor = trainingColor ?? AppColors.primary500;
 
     return Container(
       color: AppColors.backgroundPrimary,
@@ -98,8 +101,7 @@ class ClassScheduleCard extends StatelessWidget {
                       minHeight: 6,
                       value: fillRatio,
                       backgroundColor: AppColors.neutral200,
-                      valueColor:
-                          const AlwaysStoppedAnimation<Color>(AppColors.primary500),
+                      valueColor: AlwaysStoppedAnimation<Color>(accentColor),
                     ),
                   ),
                 ],
@@ -113,9 +115,9 @@ class ClassScheduleCard extends StatelessWidget {
               if (priceLabel != null && priceLabel!.isNotEmpty)
                 Text(
                   priceLabel!,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontWeight: FontWeight.w800,
-                    color: AppColors.primary500,
+                    color: accentColor,
                     fontSize: 26 / 1.6,
                   ),
                 ),
@@ -125,10 +127,10 @@ class ClassScheduleCard extends StatelessWidget {
                 child: OutlinedButton(
                   onPressed: canBook ? onBook : null,
                   style: OutlinedButton.styleFrom(
-                    foregroundColor: AppColors.primary500,
-                    side: const BorderSide(color: AppColors.primary500),
+                    foregroundColor: accentColor,
+                    side: BorderSide(color: accentColor),
                   ),
-                  child: Text(isBooking ? '...' : (isFull ? 'Full' : 'Book')),
+                  child: Text(isFull ? 'Full' : 'Book'),
                 ),
               ),
             ],

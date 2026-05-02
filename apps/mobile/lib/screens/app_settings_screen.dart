@@ -9,9 +9,29 @@ import '../services/auth_service.dart';
 import '../widgets/language_selector_modal.dart';
 import '../services/push_notification_service.dart';
 import 'account_settings_screen.dart';
+import 'online_booking_screen.dart';
+import 'profile_screen.dart';
+import 'settings_screen.dart';
 
-class AppSettingsScreen extends StatelessWidget {
-  const AppSettingsScreen({super.key});
+enum SettingsHubSection { studio, account, app }
+
+class AppSettingsScreen extends StatefulWidget {
+  const AppSettingsScreen({super.key, this.initialSection = SettingsHubSection.studio});
+
+  final SettingsHubSection initialSection;
+
+  @override
+  State<AppSettingsScreen> createState() => _AppSettingsScreenState();
+}
+
+class _AppSettingsScreenState extends State<AppSettingsScreen> {
+  late SettingsHubSection _selectedSection;
+
+  @override
+  void initState() {
+    super.initState();
+    _selectedSection = widget.initialSection;
+  }
 
   Future<void> _openWebPage(
     BuildContext context,
@@ -58,87 +78,34 @@ class AppSettingsScreen extends StatelessWidget {
             ),
             centerTitle: true,
           ),
+          bottomNavigationBar: SafeArea(
+            top: false,
+            minimum: const EdgeInsets.fromLTRB(16, 8, 16, 12),
+            child: _buildExitButton(context, locale),
+          ),
           body: SingleChildScrollView(
-            padding: const EdgeInsets.fromLTRB(0, 16, 0, 32),
+            padding: const EdgeInsets.fromLTRB(0, 16, 0, 12),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                _buildQuickActions(context, locale),
+                _buildSectionTabs(context),
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 24),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      const SizedBox(height: 24),
-                      _buildListTile(
-                        context,
-                        locale,
-                        icon: Icons.language,
-                        title: locale.t('settings.changeLanguage'),
-                        onTap: () => showLanguageSelectorModal(
-                          context,
-                          locale,
-                          onLocaleSelected: (code) {
-                            final token = context
-                                .read<AuthService>()
-                                .accessToken;
-                            if (token != null && token.isNotEmpty) {
-                              PushNotificationService.registerToken(
-                                accessToken: token,
-                                language: code,
-                              );
-                            }
-                          },
+                      const SizedBox(height: 20),
+                      AnimatedSwitcher(
+                        duration: const Duration(milliseconds: 220),
+                        switchInCurve: Curves.easeOutCubic,
+                        switchOutCurve: Curves.easeInCubic,
+                        child: Column(
+                          key: ValueKey(_selectedSection),
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: _buildSectionContent(context, locale),
                         ),
                       ),
-                      const SizedBox(height: 8),
-                      _buildListTile(
-                        context,
-                        locale,
-                        icon: Icons.manage_accounts_outlined,
-                        title: 'Настройка аккаунта',
-                        onTap: () => Navigator.of(context).push(
-                          MaterialPageRoute(
-                            builder: (_) => const AccountSettingsScreen(),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      _buildListTile(
-                        context,
-                        locale,
-                        icon: Icons.description_outlined,
-                        title: locale.t('settings.privacyPolicy'),
-                        onTap: () => _openWebPage(
-                          context,
-                          locale,
-                          '/privacy-policy',
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      _buildListTile(
-                        context,
-                        locale,
-                        icon: Icons.description_outlined,
-                        title: locale.t('settings.termsOfUse'),
-                        onTap: () => _openWebPage(
-                          context,
-                          locale,
-                          '/terms-of-service',
-                        ),
-                      ),
-                      const SizedBox(height: 24),
-                      Center(
-                        child: Text(
-                          locale.t('settings.version'),
-                          style: TextStyle(
-                            fontSize: 13,
-                            color: AppColors.textSecondary,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 24),
-                      _buildExitButton(context, locale),
+                      const SizedBox(height: 20),
                     ],
                   ),
                 ),
@@ -150,13 +117,119 @@ class AppSettingsScreen extends StatelessWidget {
     );
   }
 
+  List<Widget> _buildSectionContent(BuildContext context, LocaleProvider locale) {
+    switch (_selectedSection) {
+      case SettingsHubSection.studio:
+        return [
+          _buildListTile(
+            context,
+            locale,
+            icon: Icons.store_outlined,
+            title: 'Настройки студии',
+            subtitle: 'Основные данные, фото, контакты',
+            onTap: () => Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => const SettingsScreen()),
+            ),
+          ),
+          const SizedBox(height: 8),
+          _buildListTile(
+            context,
+            locale,
+            icon: Icons.public_outlined,
+            title: 'Онлайн бронирование',
+            subtitle: 'Окно записи и публичная ссылка',
+            onTap: () => Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => const OnlineBookingScreen()),
+            ),
+          ),
+        ];
+      case SettingsHubSection.account:
+        return [
+          _buildListTile(
+            context,
+            locale,
+            icon: Icons.person_outline,
+            title: 'Профиль владельца',
+            subtitle: 'Подписка и рабочие разделы',
+            onTap: () => Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => const ProfileScreen()),
+            ),
+          ),
+          const SizedBox(height: 8),
+          _buildListTile(
+            context,
+            locale,
+            icon: Icons.manage_accounts_outlined,
+            title: 'Настройка аккаунта',
+            subtitle: 'Личные данные, пароль, удаление аккаунта',
+            onTap: () => Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (_) => const AccountSettingsScreen(),
+              ),
+            ),
+          ),
+        ];
+      case SettingsHubSection.app:
+        return [
+          _buildListTile(
+            context,
+            locale,
+            icon: Icons.language,
+            title: locale.t('settings.changeLanguage'),
+            onTap: () => showLanguageSelectorModal(
+              context,
+              locale,
+              onLocaleSelected: (code) {
+                final token = context.read<AuthService>().accessToken;
+                if (token != null && token.isNotEmpty) {
+                  PushNotificationService.registerToken(
+                    accessToken: token,
+                    language: code,
+                  );
+                }
+              },
+            ),
+          ),
+          const SizedBox(height: 8),
+          _buildListTile(
+            context,
+            locale,
+            icon: Icons.description_outlined,
+            title: locale.t('settings.privacyPolicy'),
+            onTap: () => _openWebPage(
+              context,
+              locale,
+              '/privacy-policy',
+            ),
+          ),
+          const SizedBox(height: 8),
+          _buildListTile(
+            context,
+            locale,
+            icon: Icons.description_outlined,
+            title: locale.t('settings.termsOfUse'),
+            onTap: () => _openWebPage(
+              context,
+              locale,
+              '/terms-of-service',
+            ),
+          ),
+        ];
+    }
+  }
+
   Widget _buildListTile(
     BuildContext context,
     LocaleProvider locale, {
     required IconData icon,
     required String title,
+    String? subtitle,
     required VoidCallback onTap,
   }) {
+    const subtitleStyle = TextStyle(
+      fontSize: 12,
+      color: AppColors.textSecondary,
+    );
     return Material(
       color: AppColors.neutral100,
       borderRadius: BorderRadius.circular(12),
@@ -166,17 +239,40 @@ class AppSettingsScreen extends StatelessWidget {
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
           child: Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               Icon(icon, size: 24, color: AppColors.primary500),
               const SizedBox(width: 12),
               Expanded(
-                child: Text(
-                  title,
-                  style: const TextStyle(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w500,
-                    color: AppColors.textPrimary,
-                  ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      title,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w500,
+                        color: AppColors.textPrimary,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    SizedBox(
+                      height: 28,
+                      width: double.infinity,
+                      child: Align(
+                        alignment: Alignment.topLeft,
+                        child: Text(
+                          subtitle ?? '',
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: subtitleStyle,
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ),
               Icon(
@@ -191,73 +287,88 @@ class AppSettingsScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildQuickActions(BuildContext context, LocaleProvider locale) {
-    final actions = [
-      (icon: Icons.list_alt_outlined, label: locale.t('settings.howToService')),
-      (icon: Icons.public_outlined, label: locale.t('settings.howToOnline')),
-      (icon: Icons.language, label: locale.t('settings.changeLanguage')),
-      (icon: Icons.manage_accounts_outlined, label: 'Настройка\nаккаунта'),
+  Widget _buildSectionTabs(BuildContext context) {
+    final tabs = <({SettingsHubSection section, IconData icon, String label})>[
+      (
+        section: SettingsHubSection.studio,
+        icon: Icons.store_outlined,
+        label: 'Studio',
+      ),
+      (
+        section: SettingsHubSection.account,
+        icon: Icons.manage_accounts_outlined,
+        label: 'Account',
+      ),
+      (
+        section: SettingsHubSection.app,
+        icon: Icons.settings_suggest_outlined,
+        label: 'App',
+      ),
     ];
-    return SizedBox(
-      height: 100,
-      child: ListView.separated(
-        scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(horizontal: 16),
-        itemCount: actions.length,
-        separatorBuilder: (_, _) => const SizedBox(width: 12),
-        itemBuilder: (context, index) {
-          final a = actions[index];
-          return _buildQuickActionButton(
-            icon: a.icon,
-            label: a.label,
-            onTap: () {
-              ScaffoldMessenger.maybeOf(context)?.showSnackBar(
-                SnackBar(
-                  content: Text(
-                    '${a.label.replaceAll('\n', ' ')} в разработке',
-                  ),
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: SizedBox(
+        height: 88,
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            for (var i = 0; i < tabs.length; i++) ...[
+              if (i > 0) const SizedBox(width: 8),
+              Expanded(
+                child: _buildSectionTabChip(
+                  section: tabs[i].section,
+                  icon: tabs[i].icon,
+                  label: tabs[i].label,
+                  isActive: tabs[i].section == _selectedSection,
                 ),
-              );
-            },
-          );
-        },
+              ),
+            ],
+          ],
+        ),
       ),
     );
   }
 
-  Widget _buildQuickActionButton({
+  Widget _buildSectionTabChip({
+    required SettingsHubSection section,
     required IconData icon,
     required String label,
-    required VoidCallback onTap,
+    required bool isActive,
   }) {
     return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(50),
-      child: SizedBox(
-        width: 80,
+      onTap: () {
+        if (section == _selectedSection) return;
+        setState(() => _selectedSection = section);
+      },
+      borderRadius: BorderRadius.circular(12),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 10),
+        decoration: BoxDecoration(
+          color: isActive ? AppColors.primary500 : AppColors.neutral100,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: isActive ? AppColors.primary500 : AppColors.neutral200,
+          ),
+        ),
         child: Column(
-          mainAxisSize: MainAxisSize.min,
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Container(
-              width: 56,
-              height: 56,
-              decoration: BoxDecoration(
-                color: AppColors.primary500,
-                shape: BoxShape.circle,
-              ),
-              child: Icon(icon, color: AppColors.textInverse, size: 26),
+            Icon(
+              icon,
+              size: 22,
+              color: isActive ? AppColors.textInverse : AppColors.textSecondary,
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: 6),
             Text(
               label,
               textAlign: TextAlign.center,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 11,
-                fontWeight: FontWeight.w500,
-                color: AppColors.textPrimary,
+                fontWeight: FontWeight.w600,
+                color: isActive ? AppColors.textInverse : AppColors.textPrimary,
               ),
               maxLines: 2,
+              overflow: TextOverflow.ellipsis,
             ),
           ],
         ),

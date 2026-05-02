@@ -10,6 +10,7 @@ import '../services/api_client.dart';
 import '../services/auth_service.dart';
 import '../services/cache/studio_public_detail_cache.dart';
 import '../services/client_favorites_store.dart';
+import '../utils/color_hex.dart';
 import '../widgets/public/cached_salon_network_image.dart';
 import 'public_studio_schedule_screen.dart';
 
@@ -166,6 +167,20 @@ class _DetailContent extends StatelessWidget {
   final Map<String, dynamic> studio;
   final bool isFavoriteLoading;
   final VoidCallback onToggleFavorite;
+
+  int _extractBookingPeriodDays(Map<String, dynamic> studio) {
+    const defaultDays = 14;
+    const minDays = 1;
+    const maxDays = 60;
+    final reminderSettings = studio['reminderSettings'];
+    if (reminderSettings is! Map) return defaultDays;
+    final raw = reminderSettings['bookingPeriodDays'];
+    int? days;
+    if (raw is int) days = raw;
+    if (raw is num) days = raw.toInt();
+    if (raw is String) days = int.tryParse(raw);
+    return (days ?? defaultDays).clamp(minDays, maxDays);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -464,13 +479,18 @@ class _DetailContent extends StatelessWidget {
                       ?.toLocal();
                   final duration = (training['duration'] as num?)?.toInt();
                   final price = (training['price'] as num?)?.toDouble();
+                  final accentColor = parseHexColor(
+                    training['displayColor']?.toString(),
+                  );
                   return Container(
                     margin: const EdgeInsets.fromLTRB(12, 0, 12, 8),
                     padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 11),
                     decoration: BoxDecoration(
                       color: AppColors.backgroundPrimary,
                       borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: AppColors.borderPrimary),
+                      border: Border.all(
+                        color: accentColor ?? AppColors.borderPrimary,
+                      ),
                     ),
                     child: Row(
                       children: [
@@ -560,11 +580,13 @@ class _DetailContent extends StatelessWidget {
                   minimumSize: const Size.fromHeight(44),
                 ),
                 onPressed: () {
+                  final bookingPeriodDays = _extractBookingPeriodDays(studio);
                   Navigator.of(context).push(
                     MaterialPageRoute(
                       builder: (_) => PublicStudioScheduleScreen(
                         studioId: (studio['id'] ?? '').toString(),
                         studioName: (studio['name'] ?? 'Studio').toString(),
+                        bookingPeriodDays: bookingPeriodDays,
                       ),
                     ),
                   );
