@@ -130,7 +130,7 @@ class _AuthWrapperState extends State<AuthWrapper> {
   Widget build(BuildContext context) {
     return Consumer<AuthService>(
       builder: (context, auth, _) {
-        if (auth.isLoading) {
+        if (!auth.isInitialSessionReady) {
           return const Scaffold(
             body: Center(child: CircularProgressIndicator()),
           );
@@ -139,7 +139,7 @@ class _AuthWrapperState extends State<AuthWrapper> {
         final ownerAllowed = auth.isAuthenticated && auth.isStudioOperator;
         final isClient = auth.isAuthenticated && auth.isClient;
 
-        if (!auth.isLoading) {
+        if (auth.isInitialSessionReady) {
           if (_lastOwnerAllowed && !ownerAllowed) {
             WidgetsBinding.instance.addPostFrameCallback((_) {
               if (!context.mounted) return;

@@ -1,6 +1,5 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { User } from 'lucide-react';
 import PublicHeader from '@/components/PublicHeader';
 import { isLocale, type Locale, withLocale } from '@/i18n/routing';
 import { buildStaticPageMetadata, resolveLocale } from '@/seo';
@@ -15,75 +14,167 @@ export async function generateMetadata({
 	return buildStaticPageMetadata('home', resolveLocale(raw));
 }
 
-function LandingPhoneMockup() {
+function AppleStoreIcon({ className }: { className?: string }) {
 	return (
-		<div className="relative w-full max-w-[300px] select-none sm:max-w-[320px]">
-			<div className="relative rounded-[2.75rem] bg-gradient-to-b from-[#4a5568] to-[#1e293b] p-[11px] shadow-[0_32px_64px_-16px_rgba(30,41,59,0.45)] ring-1 ring-black/5">
-				<div className="overflow-hidden rounded-[2.35rem] bg-[#F9F4F0] aspect-[9/19.2]">
-					<div className="flex justify-center pt-3 pb-1">
-						<div className="h-[26px] w-[88px] rounded-full bg-[#1A202C]/90" />
+		<svg className={className} viewBox="0 0 24 24" aria-hidden>
+			<path
+				fill="currentColor"
+				d="M17.05 20.28c-.98.95-2.05.8-3.08.35-1.09-.46-2.09-.48-3.24 0-1.44.62-2.2.44-3.06-.35C2.79 15.25 3.51 7.59 9.05 7.31c1.35.07 2.29.74 3.08.8 1.18-.24 2.31-.93 3.57-.84 1.51.12 2.65.72 3.4 1.8-3.12 1.87-2.38 5.98.48 7.13-.57 1.5-1.31 2.99-2.54 4.09l.01-.01zM12.03 7.25c-.15-2.23 1.66-4.07 3.74-4.25.29 2.58-2.34 4.5-3.74 4.25z"
+			/>
+		</svg>
+	);
+}
+
+function GooglePlayIcon({ className }: { className?: string }) {
+	return (
+		<svg className={className} viewBox="0 0 24 24" aria-hidden>
+			<path fill="#00D9FF" d="m3.04 2.29 10.17 10.18L3 21.72c-.59-.33-.99-.96-.99-1.69V4.03c0-.69.36-1.3.93-1.64z" />
+			<path fill="#FFCE00" d="m14.21 12.47 3.01 1.74L5.09 2.15l-.05-.03c-.23-.13-.48-.2-.74-.21l9.91 10.56z" />
+			<path fill="#00F076" d="m14.46 11.53-9.97-10.6c.26 0 .52.07.75.21l17.37 10.03c.74.43.74 1.51 0 1.94l-3.31 1.91-4.84-2.49z" />
+			<path fill="#FF3A44" d="m3.04 21.71 11.17-9.24-2.85-1.47L3.04 21.71z" />
+		</svg>
+	);
+}
+
+function ChaoticUnderline({ className }: { className?: string }) {
+	return (
+		<svg
+			className={className}
+			viewBox="0 0 120 14"
+			fill="none"
+			xmlns="http://www.w3.org/2000/svg"
+			aria-hidden
+		>
+			<path
+				d="M4 10c18-4 38-5 58-4 12 1 24 2 36 1"
+				stroke="#E53935"
+				strokeWidth="3"
+				strokeLinecap="round"
+				strokeLinejoin="round"
+				opacity="0.95"
+			/>
+			<path
+				d="M8 11c22-5 48-6 72-4"
+				stroke="#E53935"
+				strokeWidth="2.2"
+				strokeLinecap="round"
+				opacity="0.75"
+			/>
+		</svg>
+	);
+}
+
+function LandingHeroMockup({
+	notificationText,
+	newClientsTitle,
+	newBadge,
+	clientsBadge,
+	autoBadge,
+	notificationBadge,
+	activeUserLabel,
+	clients,
+}: {
+	notificationText: string;
+	newClientsTitle: string;
+	newBadge: string;
+	clientsBadge: string;
+	autoBadge: string;
+	notificationBadge: string;
+	activeUserLabel: string;
+	clients: Array<{ name: string; initials: string }>;
+}) {
+	return (
+		<div className="relative mx-auto flex min-h-[380px] w-full max-w-[720px] justify-center px-2 sm:min-h-[440px] md:max-w-none">
+			{/* Decorative blurs */}
+			<div
+				className="pointer-events-none absolute -left-4 bottom-8 h-28 w-28 rounded-full bg-gradient-to-br from-amber-200/90 to-orange-400/40 blur-2xl sm:h-36 sm:w-36"
+				aria-hidden
+			/>
+			<div
+				className="pointer-events-none absolute -right-2 bottom-4 h-32 w-32 rounded-full bg-gradient-to-br from-orange-400/80 to-red-500/50 blur-2xl sm:h-40 sm:w-40"
+				aria-hidden
+			/>
+
+			{/* Left stack: notification + bell + pills */}
+			<div className="absolute left-0 top-4 z-10 w-[min(42%,200px)] sm:left-2 md:left-4 md:top-8 lg:left-8">
+				<div className="rounded-2xl bg-white px-3 py-2.5 text-[11px] font-medium leading-snug text-[#1A202C] shadow-[0_12px_40px_-12px_rgba(26,32,44,0.35)] sm:text-xs md:px-4 md:py-3 md:text-[13px]">
+					{notificationText}
+				</div>
+				<div className="relative mt-3 flex items-center">
+					<div className="flex h-12 w-12 items-center justify-center rounded-full bg-white shadow-[0_10px_30px_-8px_rgba(26,32,44,0.25)] ring-1 ring-black/5 sm:h-14 sm:w-14">
+						<span className="text-2xl sm:text-3xl" aria-hidden>
+							🔔
+						</span>
 					</div>
-					<div className="space-y-3 px-4 pb-8 font-sans">
-						<p className="text-center font-serif text-[1.35rem] font-semibold leading-tight text-[#1A202C]">
-							Henzo
-						</p>
-						<p className="text-center text-[11px] font-medium tracking-wide text-[#718096]">
-							Today
-						</p>
-						<div className="rounded-[18px] bg-gradient-to-br from-[#1e293b] via-[#1a2234] to-[#0f172a] p-3.5 text-white shadow-lg">
-							<p className="text-[10px] font-medium uppercase tracking-[0.12em] text-white/55">
-								Next session
-							</p>
-							<p className="mt-1.5 text-[15px] font-semibold leading-snug">Morning flow</p>
-							<div className="mt-3 flex items-center justify-between text-[11px] text-white/75">
-								<span>9:00</span>
-								<span className="rounded-full bg-emerald-500/20 px-2 py-0.5 text-emerald-200">
-									Studio A
-								</span>
-							</div>
+					<div className="absolute left-10 top-10 flex -translate-y-1 flex-wrap items-center gap-1 sm:left-12">
+						<span className="rounded-full bg-[#FF7A5C] px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wide text-white shadow-md">
+							{autoBadge}
+						</span>
+						<span className="rounded-full bg-[#3D2B5C] px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wide text-white shadow-md">
+							{notificationBadge}
+						</span>
+					</div>
+				</div>
+			</div>
+
+			{/* Phone */}
+			<div className="relative z-[5] mt-8 w-[min(52%,280px)] shrink-0 select-none sm:mt-10 sm:w-[300px] md:w-[min(46%,320px)]">
+				<div className="relative rounded-[2.75rem] bg-gradient-to-b from-[#3d3d45] to-[#12141a] p-[11px] shadow-[0_40px_80px_-24px_rgba(0,0,0,0.55)] ring-1 ring-black/20">
+					<div className="aspect-[9/19.5] overflow-hidden rounded-[2.35rem] bg-white">
+						<div className="flex justify-center pt-3 pb-2">
+							<div className="h-[24px] w-[78px] rounded-full bg-[#1A202C]" />
 						</div>
-						<div className="rounded-[18px] border border-[#eadfd7] bg-white/95 p-3.5 text-[#1A202C] shadow-sm">
-							<div className="flex items-center justify-between text-[12px] font-medium">
-								<span>Bookings</span>
-								<span className="font-semibold text-emerald-600">+12%</span>
-							</div>
-							<div className="mt-2 h-1.5 overflow-hidden rounded-full bg-[#F9F4F0]">
-								<div className="h-full w-[68%] rounded-full bg-[#E86D4F]/85" />
-							</div>
-						</div>
-						<div className="rounded-[18px] border border-[#eadfd7]/80 bg-[#fffdfb] p-3 text-[11px] text-[#4A5568]">
-							<div className="flex items-center justify-between">
-								<span className="font-medium text-[#1A202C]">Daily schedule</span>
-								<span className="text-[10px] text-[#718096]">3 classes</span>
-							</div>
-							<div className="mt-2.5 space-y-2.5">
-								<div className="flex min-h-[56px] items-center justify-between rounded-xl border border-[#eadfd7] bg-white px-2.5 py-2">
-									<div className="space-y-1">
-										<p className="text-[10px] text-[#718096]">08:00</p>
-										<p className="text-[11px] font-medium text-[#1A202C]">
-											Morning Hatha
+						<div className="h-full bg-white" />
+					</div>
+				</div>
+			</div>
+
+			{/* Right: new clients */}
+			<div className="absolute right-0 top-6 z-10 w-[min(48%,220px)] sm:right-2 md:right-4 md:top-10 lg:right-8">
+				<div className="mb-2 flex flex-wrap items-center justify-end gap-1">
+					<span className="rounded-full bg-[#B8E986] px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wide text-[#1a3d0a] shadow-sm">
+						{newBadge}
+					</span>
+					<span className="rounded-full bg-[#1E5C3A] px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wide text-white shadow-sm">
+						{clientsBadge}
+					</span>
+				</div>
+				<div className="rounded-2xl bg-white/95 px-2.5 py-2 shadow-[0_16px_44px_-14px_rgba(26,32,44,0.35)] ring-1 ring-[#eadfd7]/80 backdrop-blur-sm sm:px-3 sm:py-2.5">
+					<p className="mb-2 text-[11px] font-semibold text-[#1A202C] sm:text-xs">
+						{newClientsTitle}
+					</p>
+					<ul className="space-y-2">
+						{clients.map((c) => (
+							<li key={c.name}>
+								<div className="flex items-center gap-2 rounded-xl bg-[#faf8f5] px-2 py-1.5">
+									<span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[#E8E0FF] to-[#C4B5FD] text-[10px] font-bold text-[#4C1D95]">
+										{c.initials}
+									</span>
+									<div className="min-w-0 flex-1">
+										<p className="truncate text-[11px] font-semibold leading-tight text-[#1A202C] sm:text-xs">
+											{c.name}
+										</p>
+										<p className="text-[9px] text-[#718096] sm:text-[10px]">
+											{activeUserLabel}
 										</p>
 									</div>
-									<div className="flex items-center gap-1.5 text-[#4A5568]">
-										<User className="h-3.5 w-3.5 text-[#E86D4F]" strokeWidth={2.2} />
-										<span className="font-medium">12/15</span>
-									</div>
+									<span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-[#B8E986] text-[#1a3d0a] shadow-sm">
+										<svg
+											width="14"
+											height="14"
+											viewBox="0 0 24 24"
+											fill="none"
+											stroke="currentColor"
+											strokeWidth="2.5"
+											aria-hidden
+										>
+											<path d="M9 18l6-6-6-6" />
+										</svg>
+									</span>
 								</div>
-								<div className="flex min-h-[56px] items-center justify-between rounded-xl border border-[#eadfd7] bg-white px-2.5 py-2">
-									<div className="space-y-1">
-										<p className="text-[10px] text-[#718096]">11:30</p>
-										<p className="text-[11px] font-medium text-[#1A202C]">
-											Vinyasa Flow
-										</p>
-									</div>
-									<div className="flex items-center gap-1.5 text-[#4A5568]">
-										<User className="h-3.5 w-3.5 text-[#E86D4F]" strokeWidth={2.2} />
-										<span className="font-medium">5/12</span>
-									</div>
-								</div>
-							</div>
-						</div>
-					</div>
+							</li>
+						))}
+					</ul>
 				</div>
 			</div>
 		</div>
@@ -91,12 +182,24 @@ function LandingPhoneMockup() {
 }
 
 type HomeContent = {
-	badge: string;
-	heroTitleMain: string;
-	heroTitleAccent: string;
+	heroLine1Lead: string;
+	heroLine1Highlight: string;
+	heroLine1Trail: string;
+	heroLine2Lead: string;
+	heroLine2Highlight: string;
+	heroLine2Trail: string;
+	storeAppStore: string;
+	storeGooglePlay: string;
+	heroNotification: string;
+	heroNewClientsTitle: string;
+	heroNewBadge: string;
+	heroClientsBadge: string;
+	heroAutoBadge: string;
+	heroNotificationBadge: string;
+	heroActiveUser: string;
+	heroClients: Array<{ name: string; initials: string }>;
 	description: string;
 	secondary: string;
-	getAppCta: string;
 	androidCta: string;
 	iosCta: string;
 	contactCta: string;
@@ -112,14 +215,30 @@ type HomeContent = {
 
 const contentByLocale: Record<Locale, HomeContent> = {
 	en: {
-		badge: 'Henzo Fitness',
-		heroTitleMain: 'The calm way to run your fitness studio',
-		heroTitleAccent: 'From your phone, with clarity.',
+		heroLine1Lead: 'From',
+		heroLine1Highlight: 'chaotic',
+		heroLine1Trail: 'bookings',
+		heroLine2Lead: 'to a',
+		heroLine2Highlight: 'clear schedule',
+		heroLine2Trail: '',
+		storeAppStore: 'App Store',
+		storeGooglePlay: 'Google Play',
+		heroNotification: 'Remember to train today at 3pm',
+		heroNewClientsTitle: 'New Clients',
+		heroNewBadge: 'New',
+		heroClientsBadge: 'Clients',
+		heroAutoBadge: 'Auto',
+		heroNotificationBadge: 'Notification',
+		heroActiveUser: 'Active user',
+		heroClients: [
+			{ name: 'Anna Nowak', initials: 'AN' },
+			{ name: 'Ivan Founder', initials: 'IF' },
+			{ name: 'Maria Kowalski', initials: 'MK' },
+		],
 		description:
 			'Run your studio from mobile: schedule, coach slots, and client bookings in one flow.',
 		secondary:
 			'Download for Android or iOS and onboard your team without friction.',
-		getAppCta: 'Get the app',
 		androidCta: 'Download for Android',
 		iosCta: 'Download for iOS',
 		contactCta: 'Contact sales',
@@ -163,14 +282,30 @@ const contentByLocale: Record<Locale, HomeContent> = {
 			'Start with the mobile app and move your daily operations into one clean flow.',
 	},
 	ru: {
-		badge: 'Henzo Fitness',
-		heroTitleMain: 'Спокойное управление фитнес-студией',
-		heroTitleAccent: 'С телефона — без лишнего шума.',
+		heroLine1Lead: 'От',
+		heroLine1Highlight: 'хаотичных',
+		heroLine1Trail: 'записей',
+		heroLine2Lead: 'к',
+		heroLine2Highlight: 'понятному расписанию',
+		heroLine2Trail: '',
+		storeAppStore: 'App Store',
+		storeGooglePlay: 'Google Play',
+		heroNotification: 'Не забудьте: тренировка сегодня в 15:00',
+		heroNewClientsTitle: 'Новые клиенты',
+		heroNewBadge: 'New',
+		heroClientsBadge: 'Клиенты',
+		heroAutoBadge: 'Авто',
+		heroNotificationBadge: 'Пуш',
+		heroActiveUser: 'Активен',
+		heroClients: [
+			{ name: 'Анна Новак', initials: 'АН' },
+			{ name: 'Иван Основатель', initials: 'ИО' },
+			{ name: 'Мария К.', initials: 'МК' },
+		],
 		description:
 			'Расписание, тренеры и записи клиентов в одном мобильном рабочем процессе.',
 		secondary:
 			'Скачайте приложение на Android или iOS и запустите студию без лишних шагов.',
-		getAppCta: 'Скачать приложение',
 		androidCta: 'Скачать для Android',
 		iosCta: 'Скачать для iOS',
 		contactCta: 'Связаться с отделом продаж',
@@ -215,16 +350,32 @@ const contentByLocale: Record<Locale, HomeContent> = {
 			'Начните с мобильного приложения и переведите ежедневные процессы в один понятный поток.',
 	},
 	vi: {
-		badge: 'Henzo Fitness',
-		heroTitleMain: 'Van hanh studio fitness mot cach thoai mai',
-		heroTitleAccent: 'Tren dien thoai, ro rang.',
+		heroLine1Lead: 'Từ lịch',
+		heroLine1Highlight: 'hỗn loạn',
+		heroLine1Trail: '',
+		heroLine2Lead: 'đến',
+		heroLine2Highlight: 'lịch rõ ràng',
+		heroLine2Trail: '',
+		storeAppStore: 'App Store',
+		storeGooglePlay: 'Google Play',
+		heroNotification: 'Nhắc tập hôm nay lúc 15:00',
+		heroNewClientsTitle: 'Khách mới',
+		heroNewBadge: 'Mới',
+		heroClientsBadge: 'Khách',
+		heroAutoBadge: 'Tự động',
+		heroNotificationBadge: 'Thông báo',
+		heroActiveUser: 'Đang hoạt động',
+		heroClients: [
+			{ name: 'Anna Nowak', initials: 'AN' },
+			{ name: 'Ivan Founder', initials: 'IF' },
+			{ name: 'Maria K.', initials: 'MK' },
+		],
 		description:
-			'Quan ly lich, huan luyen vien va dat cho cua hoc vien trong mot quy trinh.',
+			'Quản lý lịch, huấn luyện viên và đặt chỗ học viên trong một quy trình.',
 		secondary:
-			'Tai ung dung Android hoac iOS de bat dau van hanh studio ngay.',
-		getAppCta: 'Tai ung dung',
-		androidCta: 'Tai cho Android',
-		iosCta: 'Tai cho iOS',
+			'Tải ứng dụng Android hoặc iOS để vận hành studio ngay.',
+		androidCta: 'Tải cho Android',
+		iosCta: 'Tải cho iOS',
 		contactCta: 'Lien he tu van',
 		kpiTitle: 'Tat ca van hanh studio trong mot quy trinh',
 		kpis: ['Dat lich 24/7', 'Kiem soat lich huan luyen vien', 'Van hanh mobile-first'],
@@ -284,72 +435,85 @@ export default async function HomePage({
 
 	return (
 		<div className="min-h-screen bg-[#F9F4F0] text-[#1A202C]">
-			<PublicHeader variant="landing" />
-
-			<main className="w-full pb-20 pt-8 md:pb-28 md:pt-12">
+			<section className="bg-[#2B1B4A] pb-10 pt-5 md:pb-14 md:pt-8">
 				<div className="mx-auto w-full max-w-6xl px-4 sm:px-6">
-				<section className="grid gap-12 lg:grid-cols-2 lg:items-center lg:gap-14 xl:gap-16">
-					<div className="text-left">
-						<p className="inline-flex rounded-full border border-[#eadfd7] bg-white/70 px-4 py-1.5 text-xs font-semibold uppercase tracking-[0.14em] text-[#718096]">
-							{content.badge}
-						</p>
+					<div className="overflow-hidden rounded-[1.75rem] bg-[#FDF6F0] shadow-[0_28px_90px_-20px_rgba(0,0,0,0.55)] sm:rounded-[2rem]">
+						<div className="border-b border-[#eadfd7]/60 bg-white px-2 py-2 shadow-sm sm:px-4 sm:py-3">
+							<PublicHeader variant="landing" embedded />
+						</div>
 
-						<h1 className="mt-8 max-w-[28ch] font-serif text-[2.35rem] font-semibold leading-[1.12] tracking-tight text-[#1A202C] sm:max-w-2xl sm:text-5xl xl:text-[3.25rem] xl:leading-[1.08]">
-							{content.heroTitleMain}
-						</h1>
-						<p className="mt-4 max-w-xl font-serif text-2xl italic text-[#E86D4F] sm:text-3xl lg:text-[2rem]">
-							{content.heroTitleAccent}
-						</p>
-
-						<p className="mt-8 max-w-xl text-base leading-relaxed text-[#4A5568] md:text-lg">
-							{content.description}
-						</p>
-						<p className="mt-3 max-w-lg text-sm leading-relaxed text-[#718096] md:text-base">
-							{content.secondary}
-						</p>
-
-						<div
-							id="get-app"
-							className="mt-10 flex scroll-mt-28 flex-col items-start gap-4 sm:mt-12"
-						>
-							<a
-								href={playStoreUrl}
-								target="_blank"
-								rel="noreferrer"
-								className={`inline-flex min-h-[52px] min-w-[200px] items-center justify-center rounded-full px-10 py-3.5 text-base font-semibold text-white transition ${coral.btn}`}
-							>
-								{content.getAppCta}
-							</a>
-							<div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm font-medium">
-								<a
-									href={playStoreUrl}
-									target="_blank"
-									rel="noreferrer"
-									className="text-[#4A5568] underline decoration-[#eadfd7] decoration-2 underline-offset-4 transition hover:text-[#E86D4F]"
-								>
-									{content.androidCta}
-								</a>
-								<span className="hidden text-[#cbd5e0] sm:inline" aria-hidden>
-									·
+						<div className="px-4 pb-6 pt-10 text-center sm:px-8 md:pb-8 md:pt-14">
+							<h1 className="mx-auto max-w-[24rem] font-sans text-[2rem] font-semibold leading-[1.18] tracking-tight text-[#1A202C] sm:max-w-3xl sm:text-4xl sm:leading-[1.15] md:text-5xl md:leading-[1.12] lg:text-[3.15rem]">
+								<span className="block">
+									{content.heroLine1Lead}{' '}
+									<span className="relative inline-block px-0.5">
+										{content.heroLine1Highlight}
+										<ChaoticUnderline className="pointer-events-none absolute -bottom-0.5 left-0 w-[108%] -translate-x-[4%]" />
+									</span>
+									{content.heroLine1Trail ? `\u00a0${content.heroLine1Trail}` : ''}
 								</span>
+								<span className="mt-2 block sm:mt-3">
+									{content.heroLine2Lead}{' '}
+									<span className="text-[#FF6B4A]">{content.heroLine2Highlight}</span>
+									{content.heroLine2Trail ? `\u00a0${content.heroLine2Trail}` : ''}
+								</span>
+							</h1>
+
+							<div
+								id="get-app"
+								className="mt-9 flex scroll-mt-28 flex-wrap items-center justify-center gap-3 sm:mt-11 sm:gap-4"
+							>
 								<a
 									href={appStoreUrl}
 									target="_blank"
 									rel="noreferrer"
-									className="text-[#4A5568] underline decoration-[#eadfd7] decoration-2 underline-offset-4 transition hover:text-[#E86D4F]"
+									className="inline-flex min-h-[48px] min-w-[160px] items-center justify-center gap-2 rounded-full border-2 border-[#1A202C] bg-white px-6 py-2.5 text-sm font-semibold text-[#1A202C] shadow-sm transition hover:bg-[#faf8f5] sm:min-w-[180px] sm:px-8 sm:text-base"
 								>
-									{content.iosCta}
+									<AppleStoreIcon className="h-6 w-6 shrink-0 sm:h-7 sm:w-7" />
+									{content.storeAppStore}
+								</a>
+								<a
+									href={playStoreUrl}
+									target="_blank"
+									rel="noreferrer"
+									className="inline-flex min-h-[48px] min-w-[160px] items-center justify-center gap-2 rounded-full border-2 border-[#1A202C] bg-white px-6 py-2.5 text-sm font-semibold text-[#1A202C] shadow-sm transition hover:bg-[#faf8f5] sm:min-w-[180px] sm:px-8 sm:text-base"
+								>
+									<GooglePlayIcon className="h-6 w-6 shrink-0 sm:h-7 sm:w-7" />
+									{content.storeGooglePlay}
 								</a>
 							</div>
 						</div>
-					</div>
 
-					<div className="flex justify-center lg:justify-end">
-						<LandingPhoneMockup />
+						<div className="relative px-2 pb-8 pt-2 md:px-6 md:pb-12">
+							<LandingHeroMockup
+								notificationText={content.heroNotification}
+								newClientsTitle={content.heroNewClientsTitle}
+								newBadge={content.heroNewBadge}
+								clientsBadge={content.heroClientsBadge}
+								autoBadge={content.heroAutoBadge}
+								notificationBadge={content.heroNotificationBadge}
+								activeUserLabel={content.heroActiveUser}
+								clients={content.heroClients}
+							/>
+						</div>
 					</div>
-				</section>
+				</div>
+			</section>
 
-				<section className="mt-20 md:mt-28">
+			<main className="w-full pb-20 pt-10 md:pb-28 md:pt-14">
+				<div className="mx-auto w-full max-w-6xl px-4 sm:px-6">
+					<div className="mx-auto max-w-2xl text-center">
+						<p className="text-base leading-relaxed text-[#4A5568] md:text-lg">
+							{content.description}
+						</p>
+						<p className="mt-3 text-sm leading-relaxed text-[#718096] md:text-base">
+							{content.secondary}
+						</p>
+					</div>
+				</div>
+
+				<div className="mx-auto w-full max-w-6xl px-4 sm:px-6">
+				<section className="mt-16 md:mt-24">
 					<div className="rounded-[28px] border border-[#eadfd7] bg-white/70 p-8 shadow-[0_20px_50px_-24px_rgba(26,32,44,0.12)] backdrop-blur-sm md:p-10">
 						<p className="text-center font-serif text-lg font-semibold text-[#E86D4F] md:text-xl">
 							{content.kpiTitle}
@@ -368,7 +532,7 @@ export default async function HomePage({
 					</div>
 				</section>
 
-				<section className="mt-16 md:mt-24">
+				<section className="mt-16 md:mt-24" id="benefits">
 					<h2 className="text-center font-serif text-3xl font-semibold tracking-tight text-[#1A202C] md:text-4xl">
 						{content.featureTitle}
 					</h2>
@@ -389,7 +553,7 @@ export default async function HomePage({
 					</div>
 				</section>
 
-				<section className="mt-16 md:mt-24">
+				<section className="mt-16 md:mt-24" id="pricing">
 					<h2 className="text-center font-serif text-3xl font-semibold tracking-tight text-[#1A202C] md:text-4xl">
 						{content.workflowTitle}
 					</h2>

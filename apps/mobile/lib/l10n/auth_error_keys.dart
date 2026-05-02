@@ -5,6 +5,7 @@ abstract final class AuthErrorKeys {
   static const userNotFoundInSystem = 'errors.userNotFoundInSystem';
   static const noSession = 'errors.noSession';
   static const googleWebClientMissing = 'errors.googleWebClientMissing';
+  static const googleIosClientMissing = 'errors.googleIosClientMissing';
   static const googleSignInCancelled = 'errors.googleSignInCancelled';
   static const googleNoIdToken = 'errors.googleNoIdToken';
   static const googleNoSessionAfterSignIn = 'errors.googleNoSessionAfterSignIn';

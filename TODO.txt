@@ -1,1 +1,29 @@
 доработать поисковик на главной
+# Database
+DATABASE_URL="postgresql://postgres.zjbvotcxbalcytvruqod:3369Cbvzvjz@aws-1-ap-south-1.pooler.supabase.com:6543/postgres?pgbouncer=true"
+DIRECT_URL="postgresql://postgres.zjbvotcxbalcytvruqod:3369Cbvzvjz@aws-1-ap-south-1.pooler.supabase.com:5432/postgres"
+
+# Supabase
+SUPABASE_URL="https://zjbvotcxbalcytvruqod.supabase.co"
+SUPABASE_ANON_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpqYnZvdGN4YmFsY3l0dnJ1cW9kIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzcxMjU0NzksImV4cCI6MjA5MjcwMTQ3OX0.ttFTL7caAUqr1TZFIrpc_lWZDJmNQfDMp6ORa-0Y5xM"
+SUPABASE_SERVICE_ROLE_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpqYnZvdGN4YmFsY3l0dnJ1cW9kIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3NzEyNTQ3OSwiZXhwIjoyMDkyNzAxNDc5fQ.o7H1n4e3E3nBEfVZzhwQTKdYZE4vQxLdGjVt4qWMgaM"
+
+# JWT
+JWT_SECRET="FdTGf1FOS/SQclTZ71+VaOgZRdfqfLJLh/lJIMt4ytER0NZteUNcTEI8S3ehGqOIcJ+ZvjJz5ZevJSdlEuNjJg=="
+
+BREVO_API_KEY="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"
+BREVO_FROM_EMAIL="contact@henzo.app"
+
+GOOGLE_TRANSLATE_API_KEY=AIzaSyBptVH9xGkSxrFiGUxY4z2PbbRgNauO3F8
+
+# Server
+PORT=3001
+
+MAPBOX_ACCESS_TOKEN=pk.eyJ1IjoidmllcmluIiwiYSI6ImNtMWw4amwzajA1YW4yanF2ZmFrbXEwZDUifQ.WkpNl9Tyv0Lzq1rODQRdgA
+
+FIREBASE_SERVICE_ACCOUNT='{"type": "service_account","project_id": "henzo-79a1e","private_key_id": "38ef6e71c5b5dfbc359567c60af81c7e625fc581","private_key": "-----BEGIN PRIVATE KEY-----\nMIIEuwIBADANBgkqhkiG9w0BAQEFAASCBKUwggShAgEAAoIBAQCRp/BNBZegj69L\n+hPWSBV8YxwEJxnmsTR1a1kJgMWal2dHq1iAenIGwtww0MoKLnZwqBnyzgEdhpI/\nhysuqgaSIxaNR2qMMzH5nAKqu/PVHaHv6JlU7PswmHRZ4olKLRzqvL6h559nVzry\nG4gMPgy3l6urHEuBziCTUG0wYBqHCOIG/9x/S1jLpbCZjyixeJPxvV1fNNFmcwc9\nx+Rr1La+TuaSRauFxy8o4vpgExsuzk+swl9jLLB9SB8zNOxeu5QqAR50ZF/NZlo7\ngkDfGiBpgAzTz+Lt9jtnFI9ftyWvCzfQnG0sRrpWToUOV3DXCQ8V3T0APo7q4bdy\nM7VGLQflAgMBAAECgf9ylK/L51pO13N9efEVVKsGqQfm30/vXrF3ONJvIYZ/vtUG\nKUpYsCixwC+xZaUtUZnO+hFBDWSwT49rXp4fhfLIPWlL3UVLP0CW21fgpjSY4I39\njzyymAACNKY7mv+IMdIH1tt9Ae0A5Dsu/8rpSuaqhlo5r6WfK7xo4NYbmvK3rvhO\nBhzHy7eiAcm38YgGtg+4z5uKtarBr0uG6HQcNcEvcOlxfLeRrkd0q57ot5gjdCUR\n5UTxRRhQ/Q36AeY2CH71YZOVb7aTfuw8g4uZObDHoEaMJYQHxzowguVRdPo6xAif\n3VSUHpGuGV9BVcL9TsTTFIBB6mJ54gJN6en/nCkCgYEAwoQqjpKn9/EiYhLSyO8K\n4XQFhL5/6WOBbqCud/fL6rVopGXI6q+vie1fKixMNtZ4aBdlK7u5kDe25+zSYLsv\n2/hAwiko0kEDepvtcwCdtDi7yy/7MD+QhJSi3bbsZ/Ve3lNZL5oWdtyPHwZASt9L\nhVy/ufrRzd/cp4dLna2wk90CgYEAv7IbLjhVM/2PoM8hZ6CbaAnMOoXludu5r1dq\nvyTeTB/g9qf6ip+tO2CAVfsCuGI2hBU9kZTLVuGHRKqze0Tezk5k0cAFaPT29+Kh\nXDcCdFTEL59sQ79UQSI5xNQOHSUnsh7yzv38TcjPTwvmly6hj64KO34BPp+5/owo\nJ2x756kCgYB2V3KMyyzl7A6/HDShis1T3QJ+gGfR1ngolhmPY3LsmPHRExvprHlf\nsMr1HX5A3rrimVk0AkIjO8JL2AkmULwNWDwN5Hyxblxve+46yWUpAFtAgzCPahzC\njKuJuICbvuy41nysOVLxfb6VYXg8FR4dRRBgVfjPCCN2yRl4FPQZAQKBgQCf76K7\n2mZEHV7zJT3Sru5aTCpn/YUgn1F6GK5IUiNiUgqo4JephvXKn4YTtnybh93CL9KR\nnxpUH5BzWxSqWVinukJluhcJbbCMOzqzrHXQx1R0A0gZ8g0C1uJp9R7ddD19YFLn\nHoOeBlfotJ4sLsy/Cs8guc2iCTPuS9PIqLtsGQKBgCdxaiwoDZn+bDsGXokZKq29\nikJ7FQqSA9f42J41Qsd08/EAhoA9lsmNQZaR7XrdWQQdQMRXUKyvf7tKgExhl/jT\n+5zHQ9T3zFwBtjZL2RcB2GMbPb+YFHkw5GirPg+c00ScylVsA4tgj5ZAnYe+7023\nmPKtiENsYNABnSO9uZZb\n-----END PRIVATE KEY-----\n", "client_email": "firebase-adminsdk-fbsvc@henzo-79a1e.iam.gserviceaccount.com", "client_id": "112657222711145546464", "auth_uri": "https://accounts.google.com/o/oauth2/auth", "token_uri": "https://oauth2.googleapis.com/token", "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs", "client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/firebase-adminsdk-fbsvc%40henzo-79a1e.iam.gserviceaccount.com","universe_domain": "googleapis.com"}'
+FIREBASE_SERVICE_ACCOUNT_PATH="./config/firebase-service-account.json"
+
+STRIPE_MONTHLY_PRICE_ID=price_1TP1fLIvZaveulZMv6s367u7
+STRIPE_YEARLY_PRICE_ID=price_1TP1fLIvZaveulZMXH32DqdC
+STRIPE_SECRET_KEY=sk_test_51TP1ZnIvZaveulZMgPuOL0wb1DOzzNhhUbI7klMVCxW5vOEyUToOF0mMJPbI60jA3GLOCVXEq1iTG5FyLsfgakBV00CbaCnWqQ

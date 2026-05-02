@@ -82,6 +82,7 @@
 		"userNotFoundInSystem": "Không tải được hồ sơ.",
 		"noSession": "Không có phiên hoạt động.",
 		"googleWebClientMissing": "Chưa cấu hình Google Web Client ID.",
+		"googleIosClientMissing": "Thiếu OAuth Google cho iOS: tạo OAuth client kiểu iOS với bundle com.henzo.vn.Henzo trong Google Cloud, thêm Client ID vào EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID trong assets/.env và CFBundleURLTypes trong ios/Runner/Info.plist.",
 		"googleSignInCancelled": "Đã hủy đăng nhập.",
 		"googleNoIdToken": "Không có ID token từ Google.",
 		"googleNoSessionAfterSignIn": "Không có phiên sau khi đăng nhập Google.",
