@@ -58,7 +58,7 @@ class DefaultFirebaseOptions {
     messagingSenderId: '601312951370',
     projectId: 'henzo-79a1e',
     storageBucket: 'henzo-79a1e.firebasestorage.app',
-    iosBundleId: 'com.example.mobile',
+    iosBundleId: 'com.henzo.vn.Henzo',
   );
 
   static const FirebaseOptions macos = FirebaseOptions(
@@ -67,7 +67,7 @@ class DefaultFirebaseOptions {
     messagingSenderId: '601312951370',
     projectId: 'henzo-79a1e',
     storageBucket: 'henzo-79a1e.firebasestorage.app',
-    iosBundleId: 'com.example.mobile',
+    iosBundleId: 'com.henzo.mobile',
   );
 
   static const FirebaseOptions windows = FirebaseOptions(

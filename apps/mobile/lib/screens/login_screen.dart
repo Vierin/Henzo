@@ -50,9 +50,10 @@ class _LoginScreenState extends State<LoginScreen> {
     if (result.success) {
       showSuccess(context, locale.t('auth.signInSuccess'));
     } else {
+      final msg = resolveAuthUiMessage(locale, result);
       showApiError(
         context,
-        resolveAuthUiMessage(locale, result),
+        msg.isNotEmpty ? msg : locale.t('auth.signInError'),
       );
     }
   }

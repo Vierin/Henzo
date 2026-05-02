@@ -82,6 +82,7 @@
 		"userNotFoundInSystem": "Your profile could not be loaded.",
 		"noSession": "No active session.",
 		"googleWebClientMissing": "Google Web Client ID is not configured.",
+		"googleIosClientMissing": "Google iOS OAuth client is missing. In Google Cloud Console create an OAuth client type \"iOS\" with bundle ID com.henzo.vn.Henzo, paste its Client ID into EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID in assets/.env, add CFBundleURLTypes + reversed scheme to ios/Runner/Info.plist (google_sign_in_ios README).",
 		"googleSignInCancelled": "Sign in was cancelled.",
 		"googleNoIdToken": "No ID token from Google.",
 		"googleNoSessionAfterSignIn": "No session after Google sign-in.",

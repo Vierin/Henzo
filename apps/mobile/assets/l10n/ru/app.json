@@ -82,6 +82,7 @@
 		"userNotFoundInSystem": "Не удалось загрузить профиль.",
 		"noSession": "Нет активной сессии.",
 		"googleWebClientMissing": "Не настроен Google Web Client ID.",
+		"googleIosClientMissing": "Не настроен Google OAuth для iOS: в Google Cloud создай клиент типа iOS с bundle com.henzo.vn.Henzo, укажи Client ID в EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID в assets/.env и добавь CFBundleURLTypes с reversed scheme в ios/Runner/Info.plist (см. README google_sign_in_ios).",
 		"googleSignInCancelled": "Вход отменён.",
 		"googleNoIdToken": "Нет ID токена от Google.",
 		"googleNoSessionAfterSignIn": "Нет сессии после входа через Google.",

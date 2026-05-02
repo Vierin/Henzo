@@ -20,12 +20,14 @@ class AuthService extends ChangeNotifier {
   final SupabaseClient _supabase = Supabase.instance.client;
 
   UserModel? _user;
-  bool _isLoading = true;
+  /// False until [_init] finishes once. Not tied to login-in-progress — avoids
+  /// replacing [LoginScreen] during sign-in (which disposed the State and swallowed SnackBars).
+  bool _initialSessionReady = false;
   bool _isAuthenticated = false;
   StreamSubscription<AuthState>? _authSub;
 
   UserModel? get user => _user;
-  bool get isLoading => _isLoading;
+  bool get isInitialSessionReady => _initialSessionReady;
   bool get isAuthenticated => _isAuthenticated;
 
   String get normalizedRole => (_user?.role ?? '').trim().toUpperCase();
@@ -61,8 +63,6 @@ class AuthService extends ChangeNotifier {
   }
 
   Future<void> _init() async {
-    _isLoading = true;
-    notifyListeners();
     try {
       final session = _supabase.auth.currentSession;
       if (session != null) {
@@ -76,7 +76,7 @@ class AuthService extends ChangeNotifier {
       _user = null;
       _isAuthenticated = false;
     } finally {
-      _isLoading = false;
+      _initialSessionReady = true;
       notifyListeners();
       _ensureAuthSubscription();
     }
@@ -94,7 +94,6 @@ class AuthService extends ChangeNotifier {
         if (_user != null || _isAuthenticated) {
           _user = null;
           _isAuthenticated = false;
-          _isLoading = false;
           notifyListeners();
         }
         return;
@@ -102,14 +101,12 @@ class AuthService extends ChangeNotifier {
 
       if (event == AuthChangeEvent.tokenRefreshed) {
         await _fetchUser(session.accessToken);
-        _isLoading = false;
         notifyListeners();
         return;
       }
 
       if (event == AuthChangeEvent.userUpdated) {
         await _fetchUser(session.accessToken);
-        _isLoading = false;
         notifyListeners();
       }
     });
@@ -199,20 +196,23 @@ class AuthService extends ChangeNotifier {
         errorRaw: null,
       );
     }
+    final iosClientId = AppConfig.googleIosClientId;
+    if (Platform.isIOS && iosClientId.isEmpty) {
+      return (
+        success: false,
+        errorL10nKey: AuthErrorKeys.googleIosClientMissing,
+        errorRaw: null,
+      );
+    }
     if (kDebugMode) debugPrint('[Auth] loginWithGoogle: start');
     try {
-      _isLoading = true;
-      notifyListeners();
-
       final googleSignIn = GoogleSignIn(
         serverClientId: webClientId,
-        clientId: Platform.isIOS ? AppConfig.googleIosClientId : null,
+        clientId: Platform.isIOS ? iosClientId : null,
       );
       final account = await googleSignIn.signIn();
       if (account == null) {
         if (kDebugMode) debugPrint('[Auth] Google sign in cancelled');
-        _isLoading = false;
-        notifyListeners();
         return (
           success: false,
           errorL10nKey: AuthErrorKeys.googleSignInCancelled,
@@ -224,8 +224,6 @@ class AuthService extends ChangeNotifier {
       final idToken = auth.idToken;
       final accessToken = auth.accessToken;
       if (idToken == null) {
-        _isLoading = false;
-        notifyListeners();
         return (
           success: false,
           errorL10nKey: AuthErrorKeys.googleNoIdToken,
@@ -245,8 +243,6 @@ class AuthService extends ChangeNotifier {
       final session = _supabase.auth.currentSession;
       if (session == null) {
         if (kDebugMode) debugPrint('[Auth] No session after signInWithIdToken');
-        _isLoading = false;
-        notifyListeners();
         return (
           success: false,
           errorL10nKey: AuthErrorKeys.googleNoSessionAfterSignIn,
@@ -256,7 +252,6 @@ class AuthService extends ChangeNotifier {
       if (kDebugMode) debugPrint('[Auth] Session OK, fetching user from API');
 
       final fetch = await _fetchUser(session.accessToken);
-      _isLoading = false;
       notifyListeners();
 
       if (!fetch.ok || !_isAuthenticated || _user == null) {
@@ -271,7 +266,6 @@ class AuthService extends ChangeNotifier {
     } catch (e) {
       _user = null;
       _isAuthenticated = false;
-      _isLoading = false;
       notifyListeners();
       String msg = e is AuthException ? e.message : e.toString();
       if (kDebugMode) debugPrint('[Auth] loginWithGoogle exception: $e');
@@ -295,17 +289,12 @@ class AuthService extends ChangeNotifier {
 
   Future<AuthUiResult> login(String email, String password) async {
     try {
-      _isLoading = true;
-      notifyListeners();
-
       final response = await _supabase.auth.signInWithPassword(
         email: email.trim(),
         password: password,
       );
 
       if (response.session == null) {
-        _isLoading = false;
-        notifyListeners();
         return (
           success: false,
           errorL10nKey: AuthErrorKeys.noSession,
@@ -314,7 +303,6 @@ class AuthService extends ChangeNotifier {
       }
 
       final fetch = await _fetchUser(response.session!.accessToken);
-      _isLoading = false;
       notifyListeners();
 
       if (!fetch.ok || !_isAuthenticated || _user == null) {
@@ -329,7 +317,6 @@ class AuthService extends ChangeNotifier {
     } catch (e) {
       _user = null;
       _isAuthenticated = false;
-      _isLoading = false;
       notifyListeners();
       final msg = e is AuthException ? e.message : e.toString();
       return (success: false, errorL10nKey: null, errorRaw: msg);
