@@ -419,7 +419,9 @@ export class TrainingsService {
         ? data.name
         : existing.name;
     const nextCategoryId =
-      resolvedCategory !== undefined ? resolvedCategory : existing.trainingCategoryId;
+      resolvedCategory !== undefined
+        ? resolvedCategory
+        : existing.trainingCategoryId;
     const nextMainCategoryId = await this.resolveMainCategoryId(nextCategoryId);
     const nextDisplayColor = computeTrainingDisplayColor({
       trainingId: existing.id,

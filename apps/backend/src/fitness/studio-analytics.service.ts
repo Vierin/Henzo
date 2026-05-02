@@ -3,7 +3,11 @@ import {
   Injectable,
   BadRequestException,
 } from '@nestjs/common';
-import { BookingStatus, SubscriptionStatus, SubscriptionType } from '@prisma/client';
+import {
+  BookingStatus,
+  SubscriptionStatus,
+  SubscriptionType,
+} from '@prisma/client';
 import { AuthService } from '../auth/auth.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { FitnessSessionsService } from './fitness-sessions.service';
@@ -174,8 +178,8 @@ export class StudioAnalyticsService {
             },
           })
         : [];
-    const activeEnrollmentsWithPrice = activeEnrollmentsWithPriceRaw.filter((e) =>
-      this.enrollmentRevenueStatuses.has(String(e.status)),
+    const activeEnrollmentsWithPrice = activeEnrollmentsWithPriceRaw.filter(
+      (e) => this.enrollmentRevenueStatuses.has(String(e.status)),
     );
 
     const classRevenue = activeEnrollmentsWithPrice.reduce((sum, e) => {
@@ -314,8 +318,7 @@ export class StudioAnalyticsService {
         enrollmentsCancelled: isPro ? enrollmentsCancelled : 0,
         averageUtilization: isPro ? averageUtilization : 0,
         topTraining:
-          isPro &&
-          topTrainingId && topTrainingName
+          isPro && topTrainingId && topTrainingName
             ? {
                 id: topTrainingId,
                 name: topTrainingName,
@@ -323,8 +326,7 @@ export class StudioAnalyticsService {
               }
             : null,
         topTrainer:
-          isPro &&
-          topTrainerId && topTrainerName
+          isPro && topTrainerId && topTrainerName
             ? {
                 id: topTrainerId,
                 name: topTrainerName,

@@ -14,7 +14,9 @@ export class PrismaService
     return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback;
   }
 
-  private static buildConnectionUrl(databaseUrl: string | undefined): string | undefined {
+  private static buildConnectionUrl(
+    databaseUrl: string | undefined,
+  ): string | undefined {
     if (!databaseUrl || databaseUrl.trim().length === 0) {
       return databaseUrl;
     }
@@ -98,9 +100,7 @@ export class PrismaService
       try {
         await this.$connect();
         if (attempt > 1) {
-          console.warn(
-            `[Prisma] connected on retry ${attempt}/${maxAttempts}`,
-          );
+          console.warn(`[Prisma] connected on retry ${attempt}/${maxAttempts}`);
         }
         return;
       } catch (error) {

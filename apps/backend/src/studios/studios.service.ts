@@ -1941,7 +1941,12 @@ export class StudiosService {
 
     const studio = await this.prisma.Studio.findUnique({
       where: { id },
-      select: { id: true, status: true, timezone: true, reminderSettings: true },
+      select: {
+        id: true,
+        status: true,
+        timezone: true,
+        reminderSettings: true,
+      },
     });
     if (!studio || studio.status !== 'ACTIVE') {
       return [];

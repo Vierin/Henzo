@@ -36,8 +36,7 @@ export class TransactionalEmailService {
       to: [{ email: data.to, name: 'Henzo Team' }],
       sender: {
         email:
-          this.configService.get<string>('EMAIL_FROM') ||
-          'noreply@henzo.app',
+          this.configService.get<string>('EMAIL_FROM') || 'noreply@henzo.app',
         name:
           this.configService.get<string>('EMAIL_FROM_NAME') ||
           'Henzo Contact Form',
@@ -68,8 +67,7 @@ export class TransactionalEmailService {
       to: [{ email, name }],
       sender: {
         email:
-          this.configService.get<string>('EMAIL_FROM') ||
-          'noreply@henzo.app',
+          this.configService.get<string>('EMAIL_FROM') || 'noreply@henzo.app',
         name:
           this.configService.get<string>('EMAIL_FROM_NAME') ||
           'Henzo Business Platform',
