@@ -193,6 +193,10 @@ class AuthService extends ChangeNotifier {
   Future<AuthUiResult> loginWithGoogle() async {
     final webClientId = AppConfig.googleWebClientId;
     if (webClientId.isEmpty) {
+      AppConfig.logIfDevelopment(
+        'login.google',
+        'GOOGLE_WEB_CLIENT_ID is empty',
+      );
       return (
         success: false,
         errorL10nKey: AuthErrorKeys.googleWebClientMissing,
@@ -211,6 +215,7 @@ class AuthService extends ChangeNotifier {
       final account = await googleSignIn.signIn();
       if (account == null) {
         if (kDebugMode) debugPrint('[Auth] Google sign in cancelled');
+        AppConfig.logIfDevelopment('login.google', 'User cancelled Google sign-in');
         _isLoading = false;
         notifyListeners();
         return (
@@ -224,6 +229,7 @@ class AuthService extends ChangeNotifier {
       final idToken = auth.idToken;
       final accessToken = auth.accessToken;
       if (idToken == null) {
+        AppConfig.logIfDevelopment('login.google', 'Google did not return idToken');
         _isLoading = false;
         notifyListeners();
         return (
@@ -245,6 +251,10 @@ class AuthService extends ChangeNotifier {
       final session = _supabase.auth.currentSession;
       if (session == null) {
         if (kDebugMode) debugPrint('[Auth] No session after signInWithIdToken');
+        AppConfig.logIfDevelopment(
+          'login.google',
+          'No Supabase session after signInWithIdToken',
+        );
         _isLoading = false;
         notifyListeners();
         return (
@@ -260,6 +270,10 @@ class AuthService extends ChangeNotifier {
       notifyListeners();
 
       if (!fetch.ok || !_isAuthenticated || _user == null) {
+        AppConfig.logIfDevelopment(
+          'login.google',
+          'GET /auth/user after Google failed: l10n=${fetch.errorL10nKey} raw=${fetch.errorRaw}',
+        );
         return (
           success: false,
           errorL10nKey:
@@ -268,12 +282,13 @@ class AuthService extends ChangeNotifier {
         );
       }
       return (success: true, errorL10nKey: null, errorRaw: null);
-    } catch (e) {
+    } catch (e, st) {
       _user = null;
       _isAuthenticated = false;
       _isLoading = false;
       notifyListeners();
       String msg = e is AuthException ? e.message : e.toString();
+      AppConfig.logIfDevelopment('login.google', 'Exception during Google sign-in', e, st);
       if (kDebugMode) debugPrint('[Auth] loginWithGoogle exception: $e');
       if (msg.contains('ApiException: 7') || msg.contains('network_error')) {
         return (
@@ -294,16 +309,21 @@ class AuthService extends ChangeNotifier {
   }
 
   Future<AuthUiResult> login(String email, String password) async {
+    final emailForLog = email.trim();
     try {
       _isLoading = true;
       notifyListeners();
 
       final response = await _supabase.auth.signInWithPassword(
-        email: email.trim(),
+        email: emailForLog,
         password: password,
       );
 
       if (response.session == null) {
+        AppConfig.logIfDevelopment(
+          'login.password',
+          'signInWithPassword returned no session (email=$emailForLog)',
+        );
         _isLoading = false;
         notifyListeners();
         return (
@@ -318,6 +338,11 @@ class AuthService extends ChangeNotifier {
       notifyListeners();
 
       if (!fetch.ok || !_isAuthenticated || _user == null) {
+        AppConfig.logIfDevelopment(
+          'login.password',
+          'GET /auth/user after password sign-in failed (email=$emailForLog): '
+              'l10n=${fetch.errorL10nKey} raw=${fetch.errorRaw}',
+        );
         return (
           success: false,
           errorL10nKey:
@@ -326,12 +351,18 @@ class AuthService extends ChangeNotifier {
         );
       }
       return (success: true, errorL10nKey: null, errorRaw: null);
-    } catch (e) {
+    } catch (e, st) {
       _user = null;
       _isAuthenticated = false;
       _isLoading = false;
       notifyListeners();
       final msg = e is AuthException ? e.message : e.toString();
+      AppConfig.logIfDevelopment(
+        'login.password',
+        'signInWithPassword exception (email=$emailForLog)',
+        e,
+        st,
+      );
       return (success: false, errorL10nKey: null, errorRaw: msg);
     }
   }

@@ -87,7 +87,8 @@ class OwnerTrainingSession {
           ? (training['name'] ?? 'Training').toString()
           : 'Training',
       trainingPrice: training is Map<String, dynamic>
-          ? _parseOptionalDouble(training['price'])
+          ? (_parseOptionalDouble(training['price']) ??
+              _parseOptionalDouble(training['amount']))
           : null,
       trainingDurationMinutes: training is Map<String, dynamic>
           ? _parseOptionalInt(training['duration'])

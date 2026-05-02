@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 /// Конфигурация приложения из переменных окружения (assets/.env).
@@ -41,4 +42,26 @@ abstract final class AppConfig {
   static String get studioPhotosBucket =>
       (dotenv.env['EXPO_PUBLIC_STUDIO_PHOTOS_BUCKET'] ?? 'studio-photos')
           .trim();
+
+  /// `EXPO_PUBLIC_APP_ENV`: `development` / `dev` → dev; иначе production (по умолчанию).
+  static bool get isDevelopment {
+    final v = (dotenv.env['EXPO_PUBLIC_APP_ENV'] ?? '').trim().toLowerCase();
+    return v == 'development' || v == 'dev';
+  }
+
+  static bool get isProduction => !isDevelopment;
+
+  /// Логирование только в development (например детали ошибок входа).
+  static void logIfDevelopment(
+    String tag,
+    String message, [
+    Object? error,
+    StackTrace? stackTrace,
+  ]) {
+    if (!isDevelopment) return;
+    final buf = StringBuffer('[APP_ENV=dev][$tag] $message');
+    if (error != null) buf.write('\n$error');
+    if (stackTrace != null) buf.write('\n$stackTrace');
+    debugPrint(buf.toString());
+  }
 }

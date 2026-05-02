@@ -226,6 +226,10 @@ class _AppSettingsScreenState extends State<AppSettingsScreen> {
     String? subtitle,
     required VoidCallback onTap,
   }) {
+    const subtitleStyle = TextStyle(
+      fontSize: 12,
+      color: AppColors.textSecondary,
+    );
     return Material(
       color: AppColors.neutral100,
       borderRadius: BorderRadius.circular(12),
@@ -235,31 +239,39 @@ class _AppSettingsScreenState extends State<AppSettingsScreen> {
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
           child: Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               Icon(icon, size: 24, color: AppColors.primary500),
               const SizedBox(width: 12),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
                   children: [
                     Text(
                       title,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
                       style: const TextStyle(
                         fontSize: 15,
                         fontWeight: FontWeight.w500,
                         color: AppColors.textPrimary,
                       ),
                     ),
-                    if (subtitle != null && subtitle.isNotEmpty) ...[
-                      const SizedBox(height: 2),
-                      Text(
-                        subtitle,
-                        style: const TextStyle(
-                          fontSize: 12,
-                          color: AppColors.textSecondary,
+                    const SizedBox(height: 2),
+                    SizedBox(
+                      height: 28,
+                      width: double.infinity,
+                      child: Align(
+                        alignment: Alignment.topLeft,
+                        child: Text(
+                          subtitle ?? '',
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: subtitleStyle,
                         ),
                       ),
-                    ],
+                    ),
                   ],
                 ),
               ),
@@ -293,60 +305,73 @@ class _AppSettingsScreenState extends State<AppSettingsScreen> {
         label: 'App',
       ),
     ];
-    return SizedBox(
-      height: 88,
-      child: ListView.separated(
-        scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(horizontal: 16),
-        itemCount: tabs.length,
-        separatorBuilder: (_, _) => const SizedBox(width: 12),
-        itemBuilder: (context, index) {
-          final item = tabs[index];
-          final isActive = item.section == _selectedSection;
-          return InkWell(
-            onTap: () {
-              if (item.section == _selectedSection) return;
-              setState(() => _selectedSection = item.section);
-            },
-            borderRadius: BorderRadius.circular(12),
-            child: Container(
-              width: 86,
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
-              decoration: BoxDecoration(
-                color: isActive ? AppColors.primary500 : AppColors.neutral100,
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(
-                  color: isActive ? AppColors.primary500 : AppColors.neutral200,
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: SizedBox(
+        height: 88,
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            for (var i = 0; i < tabs.length; i++) ...[
+              if (i > 0) const SizedBox(width: 8),
+              Expanded(
+                child: _buildSectionTabChip(
+                  section: tabs[i].section,
+                  icon: tabs[i].icon,
+                  label: tabs[i].label,
+                  isActive: tabs[i].section == _selectedSection,
                 ),
               ),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(
-                    item.icon,
-                    size: 22,
-                    color: isActive
-                        ? AppColors.textInverse
-                        : AppColors.textSecondary,
-                  ),
-                  const SizedBox(height: 6),
-                  Text(
-                    item.label,
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      fontSize: 11,
-                      fontWeight: FontWeight.w600,
-                      color: isActive
-                          ? AppColors.textInverse
-                          : AppColors.textPrimary,
-                    ),
-                    maxLines: 2,
-                  ),
-                ],
-              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSectionTabChip({
+    required SettingsHubSection section,
+    required IconData icon,
+    required String label,
+    required bool isActive,
+  }) {
+    return InkWell(
+      onTap: () {
+        if (section == _selectedSection) return;
+        setState(() => _selectedSection = section);
+      },
+      borderRadius: BorderRadius.circular(12),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 10),
+        decoration: BoxDecoration(
+          color: isActive ? AppColors.primary500 : AppColors.neutral100,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: isActive ? AppColors.primary500 : AppColors.neutral200,
+          ),
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              icon,
+              size: 22,
+              color: isActive ? AppColors.textInverse : AppColors.textSecondary,
             ),
-          );
-        },
+            const SizedBox(height: 6),
+            Text(
+              label,
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.w600,
+                color: isActive ? AppColors.textInverse : AppColors.textPrimary,
+              ),
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ],
+        ),
       ),
     );
   }
