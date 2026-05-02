@@ -12,8 +12,11 @@ type HeaderVariant = 'default' | 'landing';
 
 function PublicHeaderContent({
 	variant = 'default',
+	embedded = false,
 }: {
 	variant?: HeaderVariant;
+	/** Sits inside a card: no full-width sticky bar. */
+	embedded?: boolean;
 }) {
 	const [isLanguageDropdownOpen, setIsLanguageDropdownOpen] = useState(false);
 	const [selectedLanguage, setSelectedLanguage] = useState('EN');
@@ -25,13 +28,6 @@ function PublicHeaderContent({
 	const t = useTranslation();
 
 	const currentLocale = extractLocaleFromPath(pathname) ?? 'en';
-
-	const getAppLabel =
-		currentLocale === 'ru'
-			? 'Скачать приложение'
-			: currentLocale === 'vi'
-				? 'Tải ứng dụng'
-				: 'Get the app';
 
 	const languages = [
 		{ code: 'en', name: 'English', flag: '🇺🇸' },
@@ -66,9 +62,139 @@ function PublicHeaderContent({
 		return () => document.removeEventListener('mousedown', handleClickOutside);
 	}, [handleClickOutside]);
 
+	const getAppLabel =
+		currentLocale === 'ru'
+			? 'Скачать приложение'
+			: currentLocale === 'vi'
+				? 'Tải ứng dụng'
+				: 'Get the app';
+
+	const navBenefits =
+		currentLocale === 'ru'
+			? 'преимущества'
+			: currentLocale === 'vi'
+				? 'lợi ích'
+				: 'benefits';
+	const navPricing =
+		currentLocale === 'ru'
+			? 'цены'
+			: currentLocale === 'vi'
+				? 'bảng giá'
+				: 'pricing';
+	const navContact =
+		currentLocale === 'ru'
+			? 'контакты'
+			: currentLocale === 'vi'
+				? 'liên hệ'
+				: 'contact';
+	const languageLabel =
+		currentLocale === 'ru'
+			? 'язык'
+			: currentLocale === 'vi'
+				? 'ngôn ngữ'
+				: 'language';
+
 	if (variant === 'landing') {
+		const shellClass = embedded
+			? 'relative z-40 bg-transparent'
+			: 'sticky top-0 z-40 border-b border-[#eadfd7]/70 bg-[#F9F4F0]/85 backdrop-blur-md';
+
+		if (embedded) {
+			return (
+				<header className={shellClass}>
+					<div className="relative mx-auto flex max-w-6xl items-center justify-between gap-3 px-3 py-3 sm:gap-4 sm:px-4">
+						<Link
+							href={withLocale('/', currentLocale as 'en' | 'ru' | 'vi')}
+							className="relative z-10 flex min-w-0 items-center gap-2 sm:gap-3"
+						>
+							<Image
+								src="/logo.png"
+								alt="Henzo"
+								width={88}
+								height={40}
+								className="h-8 w-auto shrink-0 object-contain sm:h-10"
+							/>
+						</Link>
+
+						<nav
+							className="absolute left-1/2 top-1/2 hidden -translate-x-1/2 -translate-y-1/2 gap-6 text-[0.9375rem] font-medium lowercase text-[#1A202C]/85 md:flex md:gap-8"
+							aria-label="Landing"
+						>
+							<a
+								href={`${pathname.split('#')[0]}#benefits`}
+								className="whitespace-nowrap transition hover:text-[#E86D4F]"
+							>
+								{navBenefits}
+							</a>
+							<a
+								href={`${pathname.split('#')[0]}#pricing`}
+								className="whitespace-nowrap transition hover:text-[#E86D4F]"
+							>
+								{navPricing}
+							</a>
+							<Link
+								href={withLocale('/contact', currentLocale as 'en' | 'ru' | 'vi')}
+								className="whitespace-nowrap transition hover:text-[#E86D4F]"
+							>
+								{navContact}
+							</Link>
+						</nav>
+
+						<div className="relative z-10 shrink-0" ref={dropdownRef}>
+							<button
+								type="button"
+								onClick={() =>
+									setIsLanguageDropdownOpen(!isLanguageDropdownOpen)
+								}
+								className="flex items-center gap-1 rounded-full border border-[#eadfd7] bg-white/90 px-2.5 py-2 text-xs font-medium lowercase text-[#1A202C] shadow-sm transition hover:border-[#E86D4F]/40 hover:bg-white sm:gap-2 sm:px-3 sm:py-2 sm:text-sm"
+								aria-expanded={isLanguageDropdownOpen}
+								aria-haspopup="listbox"
+							>
+								<span className="hidden sm:inline">{languageLabel}</span>
+								<span className="sm:hidden">{selectedLanguage}</span>
+								<ChevronDown
+									className={`h-3.5 w-3.5 shrink-0 transition-transform sm:h-4 sm:w-4 ${
+										isLanguageDropdownOpen ? 'rotate-180' : ''
+									}`}
+								/>
+							</button>
+
+							{isLanguageDropdownOpen && (
+								<div
+									className="absolute right-0 top-full z-50 mt-1 w-44 overflow-hidden rounded-xl border border-[#eadfd7] bg-white shadow-lg sm:w-48"
+									role="listbox"
+								>
+									{languages.map((language) => (
+										<button
+											key={language.code}
+											type="button"
+											role="option"
+											aria-selected={
+												selectedLanguage === language.code.toUpperCase()
+											}
+											onClick={() => handleLanguageSelect(language)}
+											className={`flex w-full items-center gap-2 px-3 py-2.5 text-left text-sm transition sm:gap-3 sm:px-4 sm:py-3 ${
+												selectedLanguage === language.code.toUpperCase()
+													? 'bg-[#E86D4F] text-white hover:bg-[#d85e42]'
+													: 'text-[#1A202C] hover:bg-[#F9F4F0]'
+											}`}
+										>
+											<span className="text-base sm:text-lg">
+												{language.flag}
+											</span>
+											<span className="font-medium">{language.name}</span>
+										</button>
+									))}
+								</div>
+							)}
+						</div>
+					</div>
+				</header>
+			);
+		}
+
 		return (
-			<header className="sticky top-0 z-40 border-b border-[#eadfd7]/70 bg-[#F9F4F0]/85 backdrop-blur-md">
+			<header className={shellClass}>
 				<div className="mx-auto flex max-w-6xl items-center justify-between gap-3 px-4 py-4 sm:px-6">
 					<Link
 						href={withLocale('/', currentLocale as 'en' | 'ru' | 'vi')}
@@ -216,8 +342,10 @@ function PublicHeaderContent({
 
 export default function PublicHeader({
 	variant = 'default',
+	embedded = false,
 }: {
 	variant?: HeaderVariant;
+	embedded?: boolean;
 }) {
 	const landing = variant === 'landing';
 	return (
@@ -225,9 +353,11 @@ export default function PublicHeader({
 			fallback={
 				<header
 					className={
-						landing
-							? 'sticky top-0 z-40 border-b border-[#eadfd7]/70 bg-[#F9F4F0]/85 backdrop-blur-md'
-							: 'bg-white shadow-sm'
+						landing && embedded
+							? 'relative z-40 bg-transparent'
+							: landing
+								? 'sticky top-0 z-40 border-b border-[#eadfd7]/70 bg-[#F9F4F0]/85 backdrop-blur-md'
+								: 'bg-white shadow-sm'
 					}
 				>
 					<div className="mx-auto max-w-7xl px-4 py-4 md:px-6">
@@ -239,7 +369,7 @@ export default function PublicHeader({
 				</header>
 			}
 		>
-			<PublicHeaderContent variant={variant} />
+			<PublicHeaderContent variant={variant} embedded={embedded} />
 		</Suspense>
 	);
 }
