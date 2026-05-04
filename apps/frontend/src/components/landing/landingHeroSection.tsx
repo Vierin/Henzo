@@ -1,0 +1,48 @@
+import type { StudioLandingContent } from '@/components/landing/studioLanding.types';
+import { ChaoticUnderline } from '@/components/landing/chaoticUnderline';
+import { StoreBadgeLinks } from '@/components/landing/storeBadgeLinks';
+
+type Hero = StudioLandingContent['hero'];
+
+export function LandingHeroSection({ hero }: { hero: Hero }) {
+	const {
+		line1Lead,
+		line1Highlight,
+		line1Trail,
+		line2Lead,
+		line2Highlight,
+		line2Trail,
+		storeAppStore,
+		storeGooglePlay,
+	} = hero;
+
+	return (
+		<section className="relative z-[8] min-h-screen bg-[#3F3287] pt-33">
+			<div className="mx-auto w-full max-w-7xl overflow-hidden rounded-[1.75rem] bg-[#FDF6F0] shadow-[0_28px_90px_-20px_rgba(0,0,0,0.55)]">
+				<div className="px-4 min-h-screen pb-[clamp(4rem,14vw,7rem)] pt-10 text-center sm:px-8 md:pt-14">
+					<h1 className="mx-auto text-[2rem] leading-[1.1] tracking-tight text-[#3F3F3F] lg:text-[4.9rem]">
+						<span className="block">
+							{line1Lead}{' '}
+							<span className="relative inline-block px-0.5">
+								{line1Highlight}
+								<ChaoticUnderline className="pointer-events-none absolute -bottom-0.5 left-0 w-[108%] -translate-x-[4%]" />
+							</span>
+							{line1Trail ? `\u00a0${line1Trail}` : ''}
+						</span>
+						<span className="mt-2 block sm:mt-3">
+							{line2Lead}{' '}
+							<span className="text-[#FF6B4A]">{line2Highlight}</span>
+							{line2Trail ? `\u00a0${line2Trail}` : ''}
+						</span>
+					</h1>
+
+					<StoreBadgeLinks
+						id="get-app"
+						appStoreLabel={storeAppStore}
+						googlePlayLabel={storeGooglePlay}
+					/>
+				</div>
+			</div>
+		</section>
+	);
+}

@@ -45,5 +45,112 @@
 	"learnMore": "Tìm hiểu thêm",
 	"seeAllSalons": "Xem tất cả salon",
 	"noSalonsAvailable": "Không có salon nào",
-	"checkBackLater": "Vui lòng quay lại sau để xem các salon có sẵn."
+	"checkBackLater": "Vui lòng quay lại sau để xem các salon có sẵn.",
+	"studio": {
+		"hero": {
+			"line1Lead": "Từ lịch",
+			"line1Highlight": "hỗn loạn",
+			"line1Trail": "",
+			"line2Lead": "đến",
+			"line2Highlight": "lịch rõ ràng",
+			"line2Trail": "",
+			"storeAppStore": "App Store",
+			"storeGooglePlay": "Google Play",
+			"notification": "Nhắc tập hôm nay lúc 15:00",
+			"newClientsTitle": "Khách mới",
+			"newBadge": "Mới",
+			"clientsBadge": "Khách",
+			"autoBadge": "Tự động",
+			"notificationBadge": "Thông báo",
+			"activeUserLabel": "Đang hoạt động",
+			"clients": [
+				{ "name": "Anna Nowak", "initials": "AN" },
+				{ "name": "Ivan Founder", "initials": "IF" },
+				{ "name": "Maria K.", "initials": "MK" }
+			]
+		},
+		"intro": {
+			"description": "Quản lý lịch, huấn luyện viên và đặt chỗ học viên trong một quy trình.",
+			"secondary": "Tải ứng dụng Android hoặc iOS để vận hành studio ngay."
+		},
+		"spotlight": {
+			"headingLine1": "Ban van hanh lop hoc",
+			"line2BeforeAccent": "Chung toi van hanh ",
+			"line2Accent": "he thong",
+			"slides": [
+				{
+					"stat": "+30%",
+					"featureTitle": "Ti le lap day lop",
+					"description": "Slot ro rang va quan ly lich hen de hon",
+					"videoSrc": "/video-1.mp4",
+					"videoLabel": "Video spotlight 1"
+				},
+				{
+					"stat": "+24%",
+					"featureTitle": "Suu dung HLV",
+					"description": "Lich kha dung ro rang de moi gio mang lai gia tri.",
+					"videoSrc": "/video-2.mp4",
+					"videoLabel": "Video spotlight 2"
+				},
+				{
+					"stat": "+18%",
+					"featureTitle": "It no-show hon",
+					"description": "Nhac lich va lich on dinh giu hoc vien den dung gio.",
+					"videoSrc": "/video-3.mp4",
+					"videoLabel": "Video spotlight 3"
+				}
+			]
+		},
+		"quickStart": {
+			"line1": "Sẵn sàng hoạt động",
+			"line2Before": "trong ",
+			"line2Accent": "5 phút",
+			"steps": [
+				{ "label": "Bước 1:", "text": "Thêm tên studio và địa chỉ" },
+				{ "label": "Bước 2:", "text": "Tải ảnh lên và tạo lớp học đầu tiên" },
+				{ "label": "Bước 3:", "text": "Bắt đầu nhận những booking đầu tiên" }
+			]
+		},
+		"features": {
+			"title": "Thiet ke cho van hanh studio",
+			"items": [
+				{
+					"title": "Lich hoat dong dong bo",
+					"description": "Quan ly khung gio tap, tranh trung lich, giu van hanh moi ngay on dinh."
+				},
+				{
+					"title": "Ro rang ve trainer va goi tap",
+					"description": "Kiem soat dich vu dang mo, do san sang cua trainer va cong suat dat lich."
+				},
+				{
+					"title": "Trai nghiem dat lich cho hoc vien",
+					"description": "Cho phep dat lich nhanh, doi ngu van theo doi duoc toan bo session."
+				}
+			]
+		},
+		"workflow": {
+			"title": "Cach studio khoi dong voi Henzo",
+			"steps": [
+				{
+					"title": "1. Cai dat app",
+					"description": "Tai tren Android hoac iOS va dang nhap vai tro operator."
+				},
+				{
+					"title": "2. Cau hinh studio",
+					"description": "Thiet lap trainer, offering va lich theo tuan."
+				},
+				{
+					"title": "3. Bat dau nhan dat lich",
+					"description": "Mo booking cho hoc vien va quan ly session tren mobile."
+				}
+			]
+		},
+		"finalCta": {
+			"title": "San sang van hanh studio nhanh hon?",
+			"description": "Bat dau voi app mobile va dua toan bo quy trinh hang ngay vao mot luong don gian.",
+			"androidCta": "Tải cho Android",
+			"iosCta": "Tải cho iOS",
+			"contactCta": "Liên hệ tư vấn"
+		}
+	}
 }

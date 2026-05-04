@@ -10,7 +10,7 @@ export default function Toaster() {
 				duration: 4000,
 				style: {
 					background: '#fff',
-					color: '#374151',
+					color: '#3F3F3F',
 					border: '1px solid #e5e7eb',
 					borderRadius: '8px',
 					boxShadow:

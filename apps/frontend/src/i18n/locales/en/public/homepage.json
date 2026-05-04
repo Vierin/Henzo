@@ -45,5 +45,112 @@
 	"registerBusiness": "Register Your Business",
 	"seeAllSalons": "See all salons",
 	"noSalonsAvailable": "No salons available",
-	"checkBackLater": "Check back later for available salons."
+	"checkBackLater": "Check back later for available salons.",
+	"studio": {
+		"hero": {
+			"line1Lead": "From",
+			"line1Highlight": "chaotic",
+			"line1Trail": "bookings",
+			"line2Lead": "to a",
+			"line2Highlight": "clear schedule",
+			"line2Trail": "",
+			"storeAppStore": "App Store",
+			"storeGooglePlay": "Google Play",
+			"notification": "Remember to train today at 3pm",
+			"newClientsTitle": "New Clients",
+			"newBadge": "New",
+			"clientsBadge": "Clients",
+			"autoBadge": "Auto",
+			"notificationBadge": "Notification",
+			"activeUserLabel": "Active user",
+			"clients": [
+				{ "name": "Anna Nowak", "initials": "AN" },
+				{ "name": "Ivan Founder", "initials": "IF" },
+				{ "name": "Maria Kowalski", "initials": "MK" }
+			]
+		},
+		"intro": {
+			"description": "Run your studio from mobile: schedule, coach slots, and client bookings in one flow.",
+			"secondary": "Download for Android or iOS and onboard your team without friction."
+		},
+		"spotlight": {
+			"headingLine1": "Run your classes",
+			"line2BeforeAccent": "We'll run your ",
+			"line2Accent": "system",
+			"slides": [
+				{
+					"stat": "+30%",
+					"featureTitle": "Class occupancy",
+					"description": "Visible slots and easier appointment management",
+					"videoSrc": "/video-1.mp4",
+					"videoLabel": "Studio spotlight clip one"
+				},
+				{
+					"stat": "+24%",
+					"featureTitle": "Trainer utilization",
+					"description": "Clear availability so every hour works harder for your studio.",
+					"videoSrc": "/video-2.mp4",
+					"videoLabel": "Studio spotlight clip two"
+				},
+				{
+					"stat": "+18%",
+					"featureTitle": "Fewer no-shows",
+					"description": "Reminders and predictable schedules keep clients showing up.",
+					"videoSrc": "/video-3.mp4",
+					"videoLabel": "Studio spotlight clip three"
+				}
+			]
+		},
+		"quickStart": {
+			"line1": "Up and running",
+			"line2Before": "in ",
+			"line2Accent": "5 minutes",
+			"steps": [
+				{ "label": "Step 1:", "text": "Add your studio name and address" },
+				{ "label": "Step 2:", "text": "Upload photos and create your first class" },
+				{ "label": "Step 3:", "text": "Start getting your first bookings" }
+			]
+		},
+		"features": {
+			"title": "Built for studio operations",
+			"items": [
+				{
+					"title": "Schedules that stay synchronized",
+					"description": "Manage training slots, avoid conflicts, and keep daily operations predictable."
+				},
+				{
+					"title": "Trainer and service visibility",
+					"description": "Control active offerings, trainer availability, and booking capacity from one place."
+				},
+				{
+					"title": "Client booking experience",
+					"description": "Give clients a fast booking flow while your team keeps full control of sessions."
+				}
+			]
+		},
+		"workflow": {
+			"title": "How studios launch with Henzo",
+			"steps": [
+				{
+					"title": "1. Install app",
+					"description": "Download on Android or iOS and sign in as studio operator."
+				},
+				{
+					"title": "2. Configure studio",
+					"description": "Set up trainers, offerings, and your weekly schedule."
+				},
+				{
+					"title": "3. Start taking bookings",
+					"description": "Open booking flow to clients and manage sessions from mobile."
+				}
+			]
+		},
+		"finalCta": {
+			"title": "Ready to run your fitness studio faster?",
+			"description": "Start with the mobile app and move your daily operations into one clean flow.",
+			"androidCta": "Download for Android",
+			"iosCta": "Download for iOS",
+			"contactCta": "Contact sales"
+		}
+	}
 }
