@@ -1,5 +1,6 @@
 'use client';
 
+import { ChaoticUnderline } from '@/components/landing/chaoticUnderline';
 import { useLanguage, useTranslation } from '@/contexts/LanguageContext';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
@@ -57,41 +58,14 @@ function parseSlides(raw: unknown): LandingSpotlightSlide[] {
 	return out;
 }
 
-const SCRIBBLE_STROKES = [
-	{ main: '#FF5B4A', sub: '#E53935' },
-	{ main: '#C6FF00', sub: '#84CC16' },
-	{ main: '#F472B6', sub: '#DB2777' },
-] as const;
+const SPOTLIGHT_COLORS = ['#F15942', '#C2F600', '#FF7EE9', '#FFFFFF'] as const;
 
-function hashStatToPaletteIndex(stat: string): number {
-	const t = stat.trim();
-	let h = 2166136261;
-	for (let i = 0; i < t.length; i++) {
-		h ^= t.charCodeAt(i);
-		h = Math.imul(h, 16777619);
-	}
-	return Math.abs(h) % SCRIBBLE_STROKES.length;
-}
-
-function scribbleStrokesForSlide(slide: LandingSpotlightSlide): {
+function scribbleStrokesForSlideIndex(idx: number): {
 	main: string;
 	sub: string;
 } {
-	if (slide.scribbleMain && slide.scribbleSub) {
-		return { main: slide.scribbleMain, sub: slide.scribbleSub };
-	}
-	const t = slide.stat.trim();
-	const isNegative =
-		t.startsWith('-') || t.startsWith('\u2212') || t.startsWith('\u2013');
-	if (isNegative) {
-		return {
-			main: SCRIBBLE_STROKES[1].main,
-			sub: SCRIBBLE_STROKES[1].sub,
-		};
-	}
-	const idx = hashStatToPaletteIndex(t);
-	const pair = SCRIBBLE_STROKES[idx] ?? SCRIBBLE_STROKES[0];
-	return { main: pair.main, sub: pair.sub };
+	const color = SPOTLIGHT_COLORS[idx % SPOTLIGHT_COLORS.length] ?? '#FFFFFF';
+	return { main: color, sub: color };
 }
 
 /**
@@ -156,33 +130,6 @@ function SpotlightLoopVideo({
 			preload="auto"
 			aria-label={label}
 		/>
-	);
-}
-
-function SystemUnderlineWhite({ className }: { className?: string }) {
-	return (
-		<svg
-			className={className}
-			viewBox="0 0 120 12"
-			fill="none"
-			xmlns="http://www.w3.org/2000/svg"
-			aria-hidden
-		>
-			<path
-				d="M4 8c22-5 48-7 72-4 16 2 32 4 40 3"
-				stroke="white"
-				strokeWidth="2.2"
-				strokeLinecap="round"
-				opacity="0.95"
-			/>
-			<path
-				d="M8 9c28-6 58-8 88-5"
-				stroke="white"
-				strokeWidth="1.4"
-				strokeLinecap="round"
-				opacity="0.75"
-			/>
-		</svg>
 	);
 }
 
@@ -253,21 +200,6 @@ export function LandingSpotlightSection() {
 			return Math.min(max, Math.max(min, v));
 		}
 
-		/**
-		 * TRUE FAN / WHEEL ANIMATION
-		 *
-		 * All cards are stacked at the same position (top:0, left:0, absolute).
-		 * Each card rotates around a pivot point far to its right.
-		 * At progress=0 → card[0] is active (rotation=0), cards above it
-		 *   have positive rotation (tilted clockwise = top-right).
-		 * At progress=1 → card[n-1] is active.
-		 *
-		 * The "focus" is the continuous active index (0…n-1).
-		 * delta = cardIndex - focus
-		 *   delta=0  → rotation=0 (active card, flat and centered)
-		 *   delta>0  → positive rotation (card below active, swings down-right)
-		 *   delta<0  → negative rotation (card above active, swings up-right)
-		 */
 		const applyFan = (progress: number) => {
 			const clipEl = clipRef.current;
 			if (!clipEl) return;
@@ -304,13 +236,10 @@ export function LandingSpotlightSection() {
 				invalidateOnRefresh: true,
 				anticipatePin: 1,
 				onUpdate: (self: ScrollTrigger) => {
-					// Invert progress so cards sweep in reverse direction on scroll-down
 					const reversedProgress = 1 - self.progress;
 					applyFan(reversedProgress);
-					const idx = Math.min(
-						slides.length - 1,
-						Math.floor(reversedProgress * slides.length),
-					);
+					const rawIdx = Math.floor((1 - reversedProgress) * n);
+					const idx = Math.min(n - 1, rawIdx);
 					if (idx !== lastIdx) {
 						lastIdx = idx;
 						setActive(idx);
@@ -351,7 +280,7 @@ export function LandingSpotlightSection() {
 		return null;
 	}
 
-	const scribble = scribbleStrokesForSlide(slide);
+	const scribble = scribbleStrokesForSlideIndex(active);
 
 	return (
 		<section
@@ -372,7 +301,10 @@ export function LandingSpotlightSection() {
 						<span>{line2BeforeAccent}</span>
 						<span className="relative inline-block whitespace-nowrap px-0.5">
 							{line2Accent}
-							<SystemUnderlineWhite className="pointer-events-none absolute -bottom-0.5 left-0 w-[105%] max-w-none -translate-x-[2%]" />
+							<ChaoticUnderline
+								color="#FFFFFF"
+								className="pointer-events-none absolute -bottom-0.5 left-0 w-[105%] max-w-none -translate-x-[2%]"
+							/>
 						</span>
 					</p>
 				</div>
@@ -383,7 +315,6 @@ export function LandingSpotlightSection() {
 				className="mx-auto flex w-full max-w-6xl min-h-[100svh] items-center px-4 sm:px-6 md:h-[100svh] md:min-h-0"
 			>
 				<div className="grid w-full translate-y-6 grid-cols-1 items-start gap-10 md:translate-y-12 md:grid-cols-2 md:gap-12 lg:gap-16">
-					{/* ── LEFT: copy ─────────────────────────────────────────── */}
 					<div className="mt-6 text-left md:mt-12">
 						<div ref={leftCopyRef}>
 							<div className="relative inline-flex min-h-[4.5rem] min-w-[8rem] items-center justify-center px-2 py-1 sm:min-h-[5rem]">
@@ -410,24 +341,26 @@ export function LandingSpotlightSection() {
 							{slides.map((_, i) => (
 								<span
 									key={i}
-									className={`h-2.5 w-2.5 rounded-full transition-[transform,box-shadow] duration-300 ${
+									className={`h-2.5 w-2.5 rounded-full transition-[transform,opacity,box-shadow] duration-300 ${
 										i === active
-											? 'scale-125 bg-[#E86D4F] shadow-[0_0_0_2px_rgba(232,109,79,0.35)]'
-											: 'scale-100 bg-[#8B7FC4]/90'
+											? 'scale-125 opacity-100'
+											: 'scale-100 opacity-45'
 									}`}
+									style={{
+										backgroundColor:
+											SPOTLIGHT_COLORS[i % SPOTLIGHT_COLORS.length] ??
+											'#FFFFFF',
+										boxShadow:
+											i === active
+												? `0 0 0 2px ${SPOTLIGHT_COLORS[i % SPOTLIGHT_COLORS.length]}59`
+												: 'none',
+									}}
 									aria-hidden
 								/>
 							))}
 						</div>
 					</div>
 
-					{/* ── RIGHT: fan wheel ────────────────────────────────────── */}
-					{/*
-					 * All cards are absolutely positioned on top of each other.
-					 * The container maintains its natural aspect-ratio height so layout
-					 * doesn't collapse, and overflow-visible lets cards peek out above/below
-					 * the bounding box as they fan out.
-					 */}
 					<div
 						ref={clipRef}
 						className="relative mx-auto mt-8 aspect-[4/3] w-full md:mt-12"

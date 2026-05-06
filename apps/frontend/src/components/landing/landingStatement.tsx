@@ -5,11 +5,9 @@ import { useCallback, useEffect, useState } from 'react';
 
 const BASE = 'homepage.studio.statementBeforeSpotlight';
 
-const ROTATE_MS = 2000;
-/** Second phrase rotates with this delay so it trails the first */
+const ROTATE_MS = 1500;
 const ROTATOR_STAGGER_MS = 20;
 
-/** One line height in em — same for mask + each row so % translate stays aligned */
 const LINE_EM = 1.2;
 
 function PhraseAccentRotator({

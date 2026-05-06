@@ -79,7 +79,7 @@ export default function RootLayout({
 				<meta name="ICBM" content="21.028511, 105.804817" />
 			</head>
 			<body
-				className={`${geistSans.variable} ${geistMono.variable} ${instrumentSerif.variable} font-sans antialiased min-h-screen flex flex-col`}
+				className={`${geistSans.variable} ${geistMono.variable} ${instrumentSerif.variable} font-wix-madefor-display antialiased min-h-screen flex flex-col`}
 				suppressHydrationWarning={true}
 			>
 				<EnvValidator />

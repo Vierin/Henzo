@@ -1,7 +1,9 @@
 'use client';
 
+import { ChaoticUnderline } from '@/components/landing/chaoticUnderline';
 import { StoreBadgeLinks } from '@/components/landing/storeBadgeLinks';
 import { useTranslation } from '@/contexts/LanguageContext';
+import Image from 'next/image';
 import { useMemo } from 'react';
 
 const BASE = 'homepage.studio.pricing';
@@ -36,24 +38,6 @@ function parsePlans(raw: unknown): PricingPlan[] {
 	);
 }
 
-function BlueUnderline() {
-	return (
-		<svg
-			className="pointer-events-none absolute -bottom-1 left-0 w-[108%] -translate-x-[4%]"
-			viewBox="0 0 210 14"
-			fill="none"
-			aria-hidden
-		>
-			<path
-				d="M3 7.5 C 40 11, 76 3.5, 112 8.5 C 146 12, 174 5, 207 9"
-				stroke="#3A48C9"
-				strokeWidth="3"
-				strokeLinecap="round"
-			/>
-		</svg>
-	);
-}
-
 export function LandingPricingSection() {
 	const t = useTranslation();
 	const titleLine1 = String(t(`${BASE}.titleLine1`));
@@ -69,55 +53,64 @@ export function LandingPricingSection() {
 	return (
 		<section
 			id="pricing"
-			className="bg-[#F9F4F0] px-6 pb-16 pt-8 md:px-10 md:pb-20 md:pt-10"
+			className="bg-[#F9F4F0] h-screen px-6 pb-16 pt-8 md:px-10 md:pb-20 md:pt-10"
 		>
-			<div className="mx-auto max-w-[1220px]">
+			<div className="mx-auto max-w-7xl">
 				<h2 className="text-center text-[#33363F]">
 					<span className="block text-[clamp(2.3rem,5.6vw,5.25rem)] leading-[1.06] tracking-tight">
 						{titleLine1}
 					</span>
 					<span className="relative mt-2 inline-block text-[clamp(2.3rem,5.6vw,5.25rem)] font-semibold leading-[1.04] tracking-tight text-[#F15942]">
 						{titleLine2}
-						<BlueUnderline />
+						<ChaoticUnderline
+							color="#4D39A8"
+							className="pointer-events-none absolute -bottom-1 left-[43%] w-[58%] -translate-x-[4%]"
+						/>
 					</span>
 				</h2>
 
-				<div className="mt-10 grid gap-7 md:mt-12 md:grid-cols-2 md:gap-8">
+				<div className="mt-15 grid gap-7 md:grid-cols-2 md:gap-[9vw]">
 					{plans.map((plan) => (
 						<article
 							key={plan.name}
-							className="rounded-[1.4rem] border border-[#FF8A72] bg-white px-6 py-5 md:px-7 md:py-6"
+							className="rounded-[1.4rem] border border-[#FF8A72] bg-white p-5 pb-11"
 						>
-							<div className="flex items-start gap-3">
-								<div className="h-11 w-11 rounded-xl bg-[#F15942]" />
-								<div>
-									<h3 className="text-[1.85rem] font-medium leading-tight text-[#33363F]">
+							<div className="flex items-start gap-6 flex align-center">
+								<div className="aspect-square w-[4rem] rounded-2xl bg-[#F15942]" />
+								<div className="font-medium">
+									<h3 className="text-[1.5rem] leading-tight text-[#33363F]">
 										{plan.name}
 									</h3>
-									<p className="mt-0.5 text-[1.05rem] leading-tight text-[#33363F]">
+									<p className="text-[1rem] leading-tight text-[#33363F]">
 										{plan.subtitle}
 									</p>
 								</div>
 							</div>
 
-							<div className="mt-5 border-t border-[#CDD0D7]" />
+							<div className="my-10 border-t border-[#3F3F3F]" />
 
-							<div className="mt-6">
+							<div className="">
 								<p className="text-[4.9rem] font-medium leading-none tracking-tight text-[#33363F]">
 									{plan.price}
 								</p>
-								<p className="mt-2 text-[1.05rem] text-[#33363F]">{plan.priceSub}</p>
+								<p className="mt-3 text-[1rem] text-[#3F3F3F]">
+									{plan.priceSub}
+								</p>
 							</div>
 
-							<ul className="mt-8 space-y-3">
+							<ul className="mt-13 space-y-4">
 								{plan.features.map((feature) => (
 									<li
 										key={`${plan.name}-${feature}`}
-										className="flex items-start gap-2 text-[1.03rem] leading-snug text-[#151515]"
+										className="flex items-start gap-3 text-[1.03rem] leading-snug text-[#151515]"
 									>
-										<span aria-hidden className="pt-0.5">
-											🔥
-										</span>
+										<Image
+											className="pt-0.5"
+											src="/images/icon-fire.png"
+											alt="Fire"
+											width={16}
+											height={16}
+										/>
 										<span>{feature}</span>
 									</li>
 								))}
@@ -127,7 +120,8 @@ export function LandingPricingSection() {
 				</div>
 
 				<StoreBadgeLinks
-					className="mt-10 flex flex-wrap items-center justify-center gap-4 md:mt-12 md:gap-5"
+					className="mt-12 flex flex-wrap items-center justify-center gap-4 md:mt-20 md:gap-10"
+					buttonClassName="bg-white"
 					appStoreLabel={appStoreLabel}
 					googlePlayLabel={googlePlayLabel}
 				/>

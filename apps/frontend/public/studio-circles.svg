@@ -1,4 +1,4 @@
-export const studioCirclesSvg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1276 1276" fill="none">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1276 1276" fill="none">
 <g filter="url(#filter0_g_158_201)">
 <circle cx="638" cy="638" r="573" stroke="url(#paint0_linear_158_201)" stroke-width="4"/>
 </g>
@@ -69,4 +69,4 @@ export const studioCirclesSvg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox
 <stop offset="1" stop-color="#FF7EE9"/>
 </linearGradient>
 </defs>
-</svg>`;
+</svg>

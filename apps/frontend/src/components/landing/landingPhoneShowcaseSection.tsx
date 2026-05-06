@@ -1,7 +1,6 @@
 'use client';
 
 import { StudioPhoneFrame } from '@/components/landing/studioPhoneFrame';
-import { studioCirclesSvg } from '@/components/landing/studioCirclesSvg';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { useLayoutEffect, useRef } from 'react';
@@ -9,7 +8,7 @@ import { useLayoutEffect, useRef } from 'react';
 export function LandingPhoneShowcaseSection() {
 	const sectionRef = useRef<HTMLElement>(null);
 	const phoneRef = useRef<HTMLDivElement>(null);
-	const circlesRef = useRef<HTMLDivElement>(null);
+	const circlesRef = useRef<HTMLImageElement>(null);
 
 	useLayoutEffect(() => {
 		const section = sectionRef.current;
@@ -72,11 +71,14 @@ export function LandingPhoneShowcaseSection() {
 			className="relative z-[12] -mt-[55svh] h-[155svh] flex flex-col items-center overflow-hidden pointer-events-none"
 			aria-label="App preview"
 		>
-			<div className="pointer-events-none absolute inset-x-0 bottom-[-10%] z-0 w-full [&_svg]:h-auto [&_svg]:w-full">
-				<div
+			<div className="pointer-events-none absolute inset-x-0 bottom-[-10%] z-0 w-full">
+				<img
 					ref={circlesRef}
-					className="origin-center"
-					dangerouslySetInnerHTML={{ __html: studioCirclesSvg }}
+					src="/studio-circles.svg"
+					alt=""
+					aria-hidden="true"
+					className="h-auto w-full origin-center"
+					draggable={false}
 				/>
 			</div>
 			<div className="relative z-10 flex w-full max-w-6xl flex-col items-center justify-start px-4 pb-3 pt-0 sm:px-6 ">

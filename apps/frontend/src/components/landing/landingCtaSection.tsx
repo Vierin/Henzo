@@ -1,10 +1,10 @@
 'use client';
 
+import { ChaoticUnderline } from '@/components/landing/chaoticUnderline';
 import {
 	AppleStoreIcon,
 	GooglePlayIcon,
 } from '@/components/landing/storeIcons';
-import { studioCirclesSvg } from '@/components/landing/studioCirclesSvg';
 import { StudioPhoneFrame } from '@/components/landing/studioPhoneFrame';
 import { appStoreUrl, playStoreUrl } from '@/constants/appStores';
 import { useTranslation } from '@/contexts/LanguageContext';
@@ -24,25 +24,58 @@ function useCtaBannerCopy() {
 	return t(BASE) as unknown as CtaBannerCopy;
 }
 
+function renderTitleLine2WithHandsUnderline(titleLine2: string) {
+	const match = titleLine2.match(/\bhands[.!?]?/i);
+	if (!match || match.index === undefined) {
+		return <span className="block text-[#C6FF3A]">{titleLine2}</span>;
+	}
+
+	const before = titleLine2.slice(0, match.index);
+	const target = titleLine2.slice(match.index, match.index + match[0].length);
+	const after = titleLine2.slice(match.index + match[0].length);
+
+	return (
+		<span className="block text-[#C6FF3A]">
+			{before}
+			<span className="relative inline-block px-0.5">
+				{target}
+				<ChaoticUnderline
+					color="#FFFFFF"
+					className="pointer-events-none absolute -bottom-0.5 left-0 w-[108%] -translate-x-[4%]"
+				/>
+			</span>
+			{after}
+		</span>
+	);
+}
+
 export function LandingCtaSection() {
-	const { titleLine1, titleLine2, description, storeAppStore, storeGooglePlay } =
-		useCtaBannerCopy();
+	const {
+		titleLine1,
+		titleLine2,
+		description,
+		storeAppStore,
+		storeGooglePlay,
+	} = useCtaBannerCopy();
 
 	return (
 		<section className="bg-[#F9F4F0] px-4 pb-8 pt-6 sm:px-6 md:px-10 md:pb-10">
-			<div className="mx-auto max-w-[1220px] overflow-hidden rounded-[1.75rem] bg-[#4A39A8]">
+			<div className="mx-auto max-w-7xl overflow-hidden rounded-[1.75rem] bg-[#4A39A8]">
 				<div className="relative grid min-h-[430px] gap-8 px-6 py-8 sm:px-8 md:grid-cols-[1.1fr_0.9fr] md:items-center md:px-12 md:py-10">
-					<div className="pointer-events-none absolute right-[-18%] top-1/2 z-0 w-[72%] -translate-y-1/2 opacity-70 [&_svg]:h-auto [&_svg]:w-full">
-						<div
-							className="origin-center"
-							dangerouslySetInnerHTML={{ __html: studioCirclesSvg }}
+					<div className="pointer-events-none absolute right-[-18%] top-1/2 z-0 w-[72%] -translate-y-1/2 opacity-70">
+						<img
+							src="/studio-circles.svg"
+							alt=""
+							aria-hidden="true"
+							className="h-auto w-full origin-center"
+							draggable={false}
 						/>
 					</div>
 
 					<div className="relative z-10">
 						<h2 className="text-[clamp(2.2rem,4.2vw,4rem)] leading-[0.98] tracking-[-0.02em] text-white">
 							<span className="block">{titleLine1}</span>
-							<span className="block text-[#C6FF3A]">{titleLine2}</span>
+							{renderTitleLine2WithHandsUnderline(titleLine2)}
 						</h2>
 						<p className="mt-5 max-w-[26ch] text-[1.15rem] leading-[1.45] text-white/90">
 							{description}

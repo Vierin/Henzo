@@ -5,7 +5,7 @@ import {
 } from '@/components/landing/storeIcons';
 
 const btnClass =
-	'inline-flex min-h-[50px] w-[169px] items-center justify-center gap-2 rounded-full border-1 border-[#3F3F3F] px-6 py-2 text-sm font-semibold text-[#3F3F3F] shadow-sm whitespace-nowrap transition hover:bg-[#faf8f5] sm:px-8 sm:text-[1em]';
+	'inline-flex min-h-[50px] w-[169px] items-center justify-center gap-2 rounded-full border-1 border-[#3F3F3F] px-6 py-2 text-sm font-semibold text-[#3F3F3F] shadow-sm whitespace-nowrap transition hover:bg-[#faf8f5] sm:px-7 sm:text-[1em]';
 
 type StoreBadgeLinksProps = {
 	appStoreLabel: string;
@@ -13,6 +13,7 @@ type StoreBadgeLinksProps = {
 	/** e.g. scroll-mt for anchor targets */
 	id?: string;
 	className?: string;
+	buttonClassName?: string;
 };
 
 export function StoreBadgeLinks({
@@ -20,6 +21,7 @@ export function StoreBadgeLinks({
 	googlePlayLabel,
 	id,
 	className,
+	buttonClassName,
 }: StoreBadgeLinksProps) {
 	return (
 		<div
@@ -33,7 +35,9 @@ export function StoreBadgeLinks({
 				href={appStoreUrl}
 				target="_blank"
 				rel="noreferrer"
-				className={btnClass}
+				className={
+					buttonClassName ? `${btnClass} ${buttonClassName}` : btnClass
+				}
 			>
 				<AppleStoreIcon className="w-6 shrink-0 sm:w-7 aspect-square" />
 				{appStoreLabel}
@@ -42,7 +46,9 @@ export function StoreBadgeLinks({
 				href={playStoreUrl}
 				target="_blank"
 				rel="noreferrer"
-				className={btnClass}
+				className={
+					buttonClassName ? `${btnClass} ${buttonClassName}` : btnClass
+				}
 			>
 				<GooglePlayIcon className="w-6 shrink-0 sm:w-7 aspect-square" />
 				{googlePlayLabel}

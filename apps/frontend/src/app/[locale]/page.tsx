@@ -4,7 +4,6 @@ import { LandingSpotlightSection } from '@/components/landingSpotlightSection';
 import { LandingHeroSection } from '@/components/landing/landingHeroSection';
 import { LandingPhoneShowcaseSection } from '@/components/landing/landingPhoneShowcaseSection';
 import { LandingStatement } from '@/components/landing/landingStatement';
-import { LandingIntro } from '@/components/landing/landingIntro';
 import { QuickStartSection } from '@/components/landing/quickStartSection';
 import { LandingPricingSection } from '@/components/landing/landingPricingSection';
 import { buildStaticPageMetadata, resolveLocale } from '@/seo';
@@ -21,7 +20,7 @@ export async function generateMetadata({
 
 export default async function HomePage() {
 	return (
-		<div className="min-h-screen bg-[#3F3287]  font-wix-madefor-display text-[#3F3F3F]">
+		<div className="min-h-screen bg-[#3F3287] font-wix-madefor-display text-[#3F3F3F]">
 			<header className="absolute left-1/2 top-0 z-30 -translate-x-1/2 w-full max-w-4xl rounded-b-[1.35rem] bg-[#FDF5F0] px-2 py-2 sm:rounded-b-[1.75rem] sm:px-4 sm:py-3">
 				<PublicHeader variant="landing" embedded />
 			</header>
