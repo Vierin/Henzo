@@ -1,59 +1,90 @@
 'use client';
 
 import { StudioPhoneFrame } from '@/components/landing/studioPhoneFrame';
+import { studioCirclesSvg } from '@/components/landing/studioCirclesSvg';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { useLayoutEffect, useRef } from 'react';
 
-/** Под hero с отрицательным margin — телефон слегка перекрывает карточку; скролл слегка увеличивает масштаб. */
 export function LandingPhoneShowcaseSection() {
 	const sectionRef = useRef<HTMLElement>(null);
 	const phoneRef = useRef<HTMLDivElement>(null);
+	const circlesRef = useRef<HTMLDivElement>(null);
 
 	useLayoutEffect(() => {
 		const section = sectionRef.current;
 		const phone = phoneRef.current;
-		if (!section || !phone) {
+		const circlesEl = circlesRef.current;
+		if (!section || !phone || !circlesEl) {
 			return;
 		}
 
 		gsap.registerPlugin(ScrollTrigger);
 
-		const tween = gsap.fromTo(
-			phone,
-			{ scale: 0.97, yPercent: 0 },
-			{
-				scale: 1.045,
-				yPercent: 40,
-				ease: 'none',
-				scrollTrigger: {
-					trigger: section,
-					start: 'top 92%',
-					end: 'top 18%',
-					scrub: 1,
-					invalidateOnRefresh: true,
+		const ctx = gsap.context(() => {
+			gsap.fromTo(
+				phone,
+				{ scale: 1, yPercent: 0, force3D: true },
+				{
+					scale: 0.9,
+					yPercent: 80,
+					ease: 'none',
+					force3D: true,
+					scrollTrigger: {
+						trigger: section,
+						start: 'top 30%',
+						end: 'bottom 90%',
+						scrub: true,
+						invalidateOnRefresh: true,
+					},
 				},
-			},
-		);
+			);
+
+			gsap.fromTo(
+				circlesEl,
+				{ scale: 0.85, rotate: 120, autoAlpha: 0 },
+				{
+					scale: 1,
+					rotate: 0,
+					autoAlpha: 1,
+					ease: 'none',
+					force3D: true,
+					scrollTrigger: {
+						trigger: section,
+						markers: false,
+						start: 'center 70%',
+						end: 'bottom 70%',
+						scrub: true,
+						invalidateOnRefresh: true,
+					},
+				},
+			);
+		}, section);
 
 		return () => {
-			tween.scrollTrigger?.kill();
-			tween.kill();
+			ctx.revert();
 		};
 	}, []);
 
 	return (
 		<section
 			ref={sectionRef}
-			className="relative z-[12] -mt-[70svh] h-screen flex flex-col items-center"
+			className="relative z-[12] -mt-[55svh] h-[155svh] flex flex-col items-center overflow-hidden pointer-events-none"
 			aria-label="App preview"
 		>
-			<div className="flex w-full max-w-6xl flex-col items-center justify-start px-4 pb-3 pt-0 sm:px-6">
+			<div className="pointer-events-none absolute inset-x-0 bottom-[-10%] z-0 w-full [&_svg]:h-auto [&_svg]:w-full">
+				<div
+					ref={circlesRef}
+					className="origin-center"
+					dangerouslySetInnerHTML={{ __html: studioCirclesSvg }}
+				/>
+			</div>
+			<div className="relative z-10 flex w-full max-w-6xl flex-col items-center justify-start px-4 pb-3 pt-0 sm:px-6 ">
 				<div
 					ref={phoneRef}
-					className="origin-top will-change-transform [transform:translateZ(0)]"
+					className="will-change-transform [transform:translateZ(0)]"
 				>
-					<StudioPhoneFrame className="w-[min(78vw,300px)] sm:w-[300px] md:w-[min(46vw,320px)]" />
+					<StudioPhoneFrame />
 				</div>
 			</div>
 		</section>

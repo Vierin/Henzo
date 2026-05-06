@@ -1,10 +1,25 @@
-import type { StudioLandingContent } from '@/components/landing/studioLanding.types';
+'use client';
+
 import { ChaoticUnderline } from '@/components/landing/chaoticUnderline';
 import { StoreBadgeLinks } from '@/components/landing/storeBadgeLinks';
+import { useTranslation } from '@/contexts/LanguageContext';
 
-type Hero = StudioLandingContent['hero'];
+const H = 'homepage.studio.hero';
 
-export function LandingHeroSection({ hero }: { hero: Hero }) {
+type HeroCopy = {
+	line1Lead: string;
+	line1Highlight: string;
+	line1Trail: string;
+	line2Lead: string;
+	line2Highlight: string;
+	line2Trail: string;
+	storeAppStore: string;
+	storeGooglePlay: string;
+	availableForFree: string;
+};
+
+export function LandingHeroSection() {
+	const t = useTranslation();
 	const {
 		line1Lead,
 		line1Highlight,
@@ -14,7 +29,8 @@ export function LandingHeroSection({ hero }: { hero: Hero }) {
 		line2Trail,
 		storeAppStore,
 		storeGooglePlay,
-	} = hero;
+		availableForFree,
+	} = t(H) as unknown as HeroCopy;
 
 	return (
 		<section className="relative z-[8] min-h-screen bg-[#3F3287] pt-33">
@@ -41,6 +57,7 @@ export function LandingHeroSection({ hero }: { hero: Hero }) {
 						appStoreLabel={storeAppStore}
 						googlePlayLabel={storeGooglePlay}
 					/>
+					<p className="mt-5 text-sm text-[#878787]">{availableForFree}</p>
 				</div>
 			</div>
 		</section>

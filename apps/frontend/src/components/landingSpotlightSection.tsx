@@ -1,8 +1,9 @@
 'use client';
 
+import { useLanguage, useTranslation } from '@/contexts/LanguageContext';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
-import { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 
 export type LandingSpotlightSlide = {
 	stat: string;
@@ -16,12 +17,45 @@ export type LandingSpotlightSlide = {
 	scribbleSub?: string;
 };
 
-type LandingSpotlightSectionProps = {
-	headingLine1: string;
-	line2BeforeAccent: string;
-	line2Accent: string;
-	slides: LandingSpotlightSlide[];
-};
+const SPOTLIGHT_BASE = 'homepage.studio.spotlight';
+
+function parseSlides(raw: unknown): LandingSpotlightSlide[] {
+	if (!Array.isArray(raw)) {
+		return [];
+	}
+	const out: LandingSpotlightSlide[] = [];
+	for (const x of raw) {
+		if (
+			x !== null &&
+			typeof x === 'object' &&
+			'stat' in x &&
+			'featureTitle' in x &&
+			'description' in x &&
+			'videoSrc' in x &&
+			'videoLabel' in x
+		) {
+			const s = x as LandingSpotlightSlide;
+			if (
+				typeof s.stat === 'string' &&
+				typeof s.featureTitle === 'string' &&
+				typeof s.description === 'string' &&
+				typeof s.videoSrc === 'string' &&
+				typeof s.videoLabel === 'string'
+			) {
+				out.push({
+					stat: s.stat,
+					featureTitle: s.featureTitle,
+					description: s.description,
+					videoSrc: s.videoSrc,
+					videoLabel: s.videoLabel,
+					scribbleMain: s.scribbleMain,
+					scribbleSub: s.scribbleSub,
+				});
+			}
+		}
+	}
+	return out;
+}
 
 const SCRIBBLE_STROKES = [
 	{ main: '#FF5B4A', sub: '#E53935' },
@@ -39,7 +73,6 @@ function hashStatToPaletteIndex(stat: string): number {
 	return Math.abs(h) % SCRIBBLE_STROKES.length;
 }
 
-/** Colors for StatScribbleOval: explicit fields, or “−” stats → lime, else palette by `stat` text. */
 function scribbleStrokesForSlide(slide: LandingSpotlightSlide): {
 	main: string;
 	sub: string;
@@ -49,9 +82,7 @@ function scribbleStrokesForSlide(slide: LandingSpotlightSlide): {
 	}
 	const t = slide.stat.trim();
 	const isNegative =
-		t.startsWith('-') ||
-		t.startsWith('\u2212') ||
-		t.startsWith('\u2013');
+		t.startsWith('-') || t.startsWith('\u2212') || t.startsWith('\u2013');
 	if (isNegative) {
 		return {
 			main: SCRIBBLE_STROKES[1].main,
@@ -63,12 +94,29 @@ function scribbleStrokesForSlide(slide: LandingSpotlightSlide): {
 	return { main: pair.main, sub: pair.sub };
 }
 
-/** Degrees per “slot” offset from the scroll-focused card; clamped for the fan stack. */
-const FAN_DEG_PER_SLOT = -11;
-const FAN_MAX_DEG = 15;
-/** Subtle horizontal arc (px) — cards above/below shift slightly for a deck feel */
-const FAN_TX_PER_SLOT = 5;
-const FAN_MAX_TX = 10;
+/**
+ * FAN / WHEEL ANIMATION CONFIG
+ *
+ * Each card rotates around a pivot point that sits far to the RIGHT of the card.
+ * This creates a true circular arc — cards sweep in from top-right, pass through
+ * the "active" slot (rotation = 0), then continue down-right.
+ *
+ * The pivot is placed at (cardWidth * FAN_PIVOT_X_FACTOR, cardHeight * 0.5)
+ * relative to the card's own top-left corner.
+ * A large factor = larger radius = gentler, more cinematic arc.
+ *
+ * FAN_DEG_PER_SLOT: degrees between consecutive cards on the wheel.
+ *   Positive = card above active rotates clockwise (tilted top-right).
+ *   Negative = card below active rotates counter-clockwise (tilted bottom-right).
+ *
+ * We use transform-origin on each card independently, all pointing to the same
+ * world-space pivot. The track div does NOT translate — only card rotations change.
+ */
+const FAN_DEG_PER_SLOT = 32; // degrees between adjacent cards — much more spacing
+const FAN_MAX_DEG = 96; // clamp for out-of-range cards
+// Pivot far outside right edge = larger radius = gentler arc, cards don't overlap
+const FAN_ORIGIN_X = '260%';
+const FAN_ORIGIN_Y = '50%';
 
 function SpotlightLoopVideo({
 	src,
@@ -167,40 +215,24 @@ function StatScribbleOval({
 	);
 }
 
-export function LandingSpotlightSection({
-	headingLine1,
-	line2BeforeAccent,
-	line2Accent,
-	slides,
-}: LandingSpotlightSectionProps) {
+export function LandingSpotlightSection() {
+	const { language } = useLanguage();
+	const t = useTranslation();
+	const headingLine1 = String(t(`${SPOTLIGHT_BASE}.headingLine1`));
+	const line2BeforeAccent = String(t(`${SPOTLIGHT_BASE}.line2BeforeAccent`));
+	const line2Accent = String(t(`${SPOTLIGHT_BASE}.line2Accent`));
+	const slides = useMemo(
+		() => parseSlides(t(`${SPOTLIGHT_BASE}.slides`)),
+		[language, t],
+	);
+
 	const [active, setActive] = useState(0);
-	const [clipH, setClipH] = useState(0);
 	const sectionRef = useRef<HTMLElement>(null);
 	const pinRef = useRef<HTMLDivElement>(null);
 	const clipRef = useRef<HTMLDivElement>(null);
-	const trackRef = useRef<HTMLDivElement>(null);
 	const leftCopyRef = useRef<HTMLDivElement>(null);
 
 	const slide = slides[active] ?? slides[0];
-
-	useLayoutEffect(() => {
-		const clip = clipRef.current;
-		if (!clip) {
-			return;
-		}
-
-		const ro = new ResizeObserver(() => {
-			gsap.registerPlugin(ScrollTrigger);
-			setClipH(clip.getBoundingClientRect().height);
-			ScrollTrigger.refresh();
-		});
-		ro.observe(clip);
-		setClipH(clip.getBoundingClientRect().height);
-
-		return () => {
-			ro.disconnect();
-		};
-	}, [slides.length]);
 
 	useLayoutEffect(() => {
 		if (typeof window === 'undefined' || slides.length === 0) {
@@ -210,65 +242,54 @@ export function LandingSpotlightSection({
 		gsap.registerPlugin(ScrollTrigger);
 
 		const pin = pinRef.current;
-		if (!pin || !clipRef.current || !trackRef.current) {
+		if (!pin || !clipRef.current) {
 			return;
 		}
 
 		let lastIdx = -1;
-
 		const n = slides.length;
 
-		function clamp(nv: number, min: number, max: number) {
-			return Math.min(max, Math.max(min, nv));
+		function clamp(v: number, min: number, max: number) {
+			return Math.min(max, Math.max(min, v));
 		}
 
-		/** Pixels: last card aligns with first slot; shift = (n−1)×(card height + row gap). */
-		const applyTrack = (progress: number) => {
+		/**
+		 * TRUE FAN / WHEEL ANIMATION
+		 *
+		 * All cards are stacked at the same position (top:0, left:0, absolute).
+		 * Each card rotates around a pivot point far to its right.
+		 * At progress=0 → card[0] is active (rotation=0), cards above it
+		 *   have positive rotation (tilted clockwise = top-right).
+		 * At progress=1 → card[n-1] is active.
+		 *
+		 * The "focus" is the continuous active index (0…n-1).
+		 * delta = cardIndex - focus
+		 *   delta=0  → rotation=0 (active card, flat and centered)
+		 *   delta>0  → positive rotation (card below active, swings down-right)
+		 *   delta<0  → negative rotation (card above active, swings up-right)
+		 */
+		const applyFan = (progress: number) => {
 			const clipEl = clipRef.current;
-			const trackEl = trackRef.current;
-			if (!trackEl || !clipEl) {
-				return;
-			}
-			if (n <= 1) {
-				gsap.set(trackEl, { y: 0, force3D: true });
-				const only = trackEl.firstElementChild as HTMLElement | null;
-				if (only) {
-					gsap.set(only, {
-						rotation: 0,
-						x: 0,
-						transformOrigin: '100% 0%',
-						force3D: true,
-					});
-				}
-				return;
-			}
-			const H = clipEl.getBoundingClientRect().height;
-			const gapStr = getComputedStyle(trackEl).rowGap;
-			const gap =
-				gapStr && gapStr !== 'normal' ? Number.parseFloat(gapStr) || 0 : 0;
-			const totalShift = (n - 1) * (H + gap);
-			gsap.set(trackEl, {
-				y: -progress * totalShift,
-				force3D: true,
-			});
+			if (!clipEl) return;
 
-			/** Continuous index of which card is aligned with the left copy (0 … n−1). */
+			const cards = clipEl.querySelectorAll<HTMLElement>('[data-fan-card]');
+			if (cards.length === 0) return;
+
 			const focus = progress * (n - 1);
-			const cards = trackEl.children;
-			for (let j = 0; j < cards.length; j++) {
-				const el = cards[j] as HTMLElement;
+
+			cards.forEach((el, j) => {
 				const delta = j - focus;
 				const rot = clamp(delta * FAN_DEG_PER_SLOT, -FAN_MAX_DEG, FAN_MAX_DEG);
-				const tx = clamp(delta * FAN_TX_PER_SLOT, -FAN_MAX_TX, FAN_MAX_TX);
-				/** Before focus (δ≤0): pivot top-right; after (δ>0): bottom-right — fan in/out of alignment. */
-				const origin = delta > 0 ? '100% 0%' : '100% 100%';
+
 				gsap.set(el, {
 					rotation: rot,
-					x: tx,
-					transformOrigin: origin,
+					opacity: 1,
+					scale: 1,
+					transformOrigin: `${FAN_ORIGIN_X} ${FAN_ORIGIN_Y}`,
 					force3D: true,
+					zIndex: Math.round(100 - Math.abs(delta) * 10),
 				});
-			}
+			});
 		};
 
 		const ctx = gsap.context(() => {
@@ -276,17 +297,19 @@ export function LandingSpotlightSection({
 				trigger: pin,
 				start: 'top top',
 				end: () =>
-					`+=${Math.round(window.innerHeight * Math.max(2, n * 0.85))}`,
+					`+=${Math.round(window.innerHeight * Math.max(1.25, n * 0.5))}`,
 				pin: true,
 				pinSpacing: true,
 				scrub: 1,
 				invalidateOnRefresh: true,
 				anticipatePin: 1,
 				onUpdate: (self: ScrollTrigger) => {
-					applyTrack(self.progress);
+					// Invert progress so cards sweep in reverse direction on scroll-down
+					const reversedProgress = 1 - self.progress;
+					applyFan(reversedProgress);
 					const idx = Math.min(
 						slides.length - 1,
-						Math.floor(self.progress * slides.length),
+						Math.floor(reversedProgress * slides.length),
 					);
 					if (idx !== lastIdx) {
 						lastIdx = idx;
@@ -295,7 +318,7 @@ export function LandingSpotlightSection({
 				},
 			});
 
-			applyTrack(0);
+			applyFan(1); // reversed: progress=1 → first card active at start
 		}, pin);
 
 		const onResize = () => {
@@ -307,7 +330,7 @@ export function LandingSpotlightSection({
 			window.removeEventListener('resize', onResize);
 			ctx.revert();
 		};
-	}, [slides.length]);
+	}, [slides.length, slides]);
 
 	useEffect(() => {
 		const el = leftCopyRef.current;
@@ -333,18 +356,19 @@ export function LandingSpotlightSection({
 	return (
 		<section
 			ref={sectionRef}
-			className="relative bg-[#5141A8]"
+			id="benefits"
+			className="relative bg-[#3F3287]"
 			aria-labelledby="landing-spotlight-heading"
 		>
 			<div className="mx-auto w-full max-w-6xl px-4 pt-12 sm:px-6 md:pt-16">
 				<div className="text-center">
 					<h2
 						id="landing-spotlight-heading"
-						className="text-[1.65rem] font-semibold leading-tight tracking-tight text-white sm:text-3xl md:text-4xl"
+						className="text-[4.9rem] text-white"
 					>
 						{headingLine1}
 					</h2>
-					<p className="mx-auto mt-4 max-w-2xl text-lg font-semibold leading-snug text-[#C6FF00] sm:text-xl md:text-2xl">
+					<p className="mx-auto mt-4 max-w-2xl text-lg leading-snug text-[#C6FF00] sm:text-xl md:text-2xl">
 						<span>{line2BeforeAccent}</span>
 						<span className="relative inline-block whitespace-nowrap px-0.5">
 							{line2Accent}
@@ -358,8 +382,9 @@ export function LandingSpotlightSection({
 				ref={pinRef}
 				className="mx-auto flex w-full max-w-6xl min-h-[100svh] items-center px-4 sm:px-6 md:h-[100svh] md:min-h-0"
 			>
-				<div className="grid w-full grid-cols-1 items-center gap-10 md:grid-cols-2 md:gap-12 lg:gap-16">
-					<div className="text-left">
+				<div className="grid w-full translate-y-6 grid-cols-1 items-start gap-10 md:translate-y-12 md:grid-cols-2 md:gap-12 lg:gap-16">
+					{/* ── LEFT: copy ─────────────────────────────────────────── */}
+					<div className="mt-6 text-left md:mt-12">
 						<div ref={leftCopyRef}>
 							<div className="relative inline-flex min-h-[4.5rem] min-w-[8rem] items-center justify-center px-2 py-1 sm:min-h-[5rem]">
 								<StatScribbleOval
@@ -396,32 +421,35 @@ export function LandingSpotlightSection({
 						</div>
 					</div>
 
+					{/* ── RIGHT: fan wheel ────────────────────────────────────── */}
+					{/*
+					 * All cards are absolutely positioned on top of each other.
+					 * The container maintains its natural aspect-ratio height so layout
+					 * doesn't collapse, and overflow-visible lets cards peek out above/below
+					 * the bounding box as they fan out.
+					 */}
 					<div
 						ref={clipRef}
-						className="relative mx-auto aspect-[4/3] w-full [perspective:1100px]"
+						className="relative mx-auto mt-8 aspect-[4/3] w-full md:mt-12"
+						style={{ overflow: 'visible' }}
 					>
-						<div
-							ref={trackRef}
-							className="absolute left-0 right-0 top-0 flex w-full flex-col gap-8 will-change-[transform]"
-						>
-							{slides.map((s) => {
-								return (
-									<div
-										key={s.videoSrc}
-										className="relative w-full flex-shrink-0 overflow-hidden rounded-[2rem] sm:rounded-[2.25rem] md:rounded-[2.5rem] will-change-transform"
-										style={
-											clipH > 0 ? { height: clipH } : { aspectRatio: '4 / 3' }
-										}
-									>
-										<SpotlightLoopVideo
-											src={s.videoSrc}
-											label={s.videoLabel}
-											className="absolute inset-0 h-full w-full object-cover"
-										/>
-									</div>
-								);
-							})}
-						</div>
+						{slides.map((s, i) => (
+							<div
+								key={s.videoSrc}
+								data-fan-card
+								className="absolute inset-0 w-full overflow-hidden rounded-[2rem] sm:rounded-[2.25rem] md:rounded-[2.5rem] will-change-transform"
+								style={{
+									// Initial stacking — GSAP will take over on mount
+									zIndex: slides.length - i,
+								}}
+							>
+								<SpotlightLoopVideo
+									src={s.videoSrc}
+									label={s.videoLabel}
+									className="absolute inset-0 h-full w-full object-cover"
+								/>
+							</div>
+						))}
 					</div>
 				</div>
 			</div>

@@ -56,6 +56,7 @@
 			"line2Trail": "",
 			"storeAppStore": "App Store",
 			"storeGooglePlay": "Google Play",
+			"availableForFree": "Бесплатно",
 			"notification": "Не забудьте: тренировка сегодня в 15:00",
 			"newClientsTitle": "Новые клиенты",
 			"newBadge": "New",
@@ -72,6 +73,16 @@
 		"intro": {
 			"description": "Расписание, тренеры и записи клиентов в одном мобильном рабочем процессе.",
 			"secondary": "Скачайте приложение на Android или iOS и запустите студию без лишних шагов."
+		},
+		"statementBeforeSpotlight": {
+			"phrase1Lead": "Ты",
+			"phrase1AccentRotating": ["тренируйся.", "учи.", "фокусируйся."],
+			"phrase2Lead": "Мы",
+			"phrase2AccentRotating": [
+				"заполняем расписание.",
+				"ведём записи.",
+				"снижаем неявки."
+			]
 		},
 		"spotlight": {
 			"headingLine1": "Ведите свои занятия",
@@ -98,6 +109,13 @@
 					"description": "Напоминания и предсказуемое расписание удерживают клиентов.",
 					"videoSrc": "/video-3.mp4",
 					"videoLabel": "Видео блока spotlight, фрагмент 3"
+				},
+				{
+					"stat": "+42%",
+					"featureTitle": "Регулярные абонементы",
+					"description": "Стабильный поток занятий помогает клиентам возвращаться каждую неделю.",
+					"videoSrc": "/video-4.mp4",
+					"videoLabel": "Видео блока spotlight, фрагмент 4"
 				}
 			]
 		},
@@ -109,6 +127,36 @@
 				{ "label": "Шаг 1:", "text": "Укажите название и адрес студии" },
 				{ "label": "Шаг 2:", "text": "Загрузите фото и создайте первое занятие" },
 				{ "label": "Шаг 3:", "text": "Начните получать первые записи" }
+			]
+		},
+		"pricing": {
+			"titleLine1": "Простая цена",
+			"titleLine2": "Реальный результат",
+			"storeAppStore": "App Store",
+			"storeGooglePlay": "Google Play",
+			"plans": [
+				{
+					"name": "Freemium",
+					"subtitle": "Для легкого старта",
+					"price": "$0",
+					"priceSub": "Неограниченное число тренировок",
+					"features": [
+						"3 тренировки в неделю",
+						"Отслеживайте прогресс и сохраняйте мотивацию",
+						"Анализируйте результаты"
+					]
+				},
+				{
+					"name": "Pro",
+					"subtitle": "Для роста студии",
+					"price": "$15",
+					"priceSub": "/за 1 месяц",
+					"features": [
+						"Неограниченные тренировки",
+						"Доступ к аналитике и улучшению профиля",
+						"Анализируйте результаты"
+					]
+				}
 			]
 		},
 		"features": {
@@ -145,12 +193,27 @@
 				}
 			]
 		},
+		"ctaBanner": {
+			"titleLine1": "Ваша студия.",
+			"titleLine2": "В ваших руках.",
+			"description": "Управляйте расписанием, учениками и записями из одного мобильного приложения",
+			"storeAppStore": "App Store",
+			"storeGooglePlay": "Google Play"
+		},
 		"finalCta": {
 			"title": "Готовы ускорить работу вашей фитнес-студии?",
 			"description": "Начните с мобильного приложения и переведите ежедневные процессы в один понятный поток.",
 			"androidCta": "Скачать для Android",
 			"iosCta": "Скачать для iOS",
 			"contactCta": "Связаться с отделом продаж"
+		},
+		"footer": {
+			"navBenefits": "Преимущества",
+			"navPricing": "Цены",
+			"navHowItWorks": "Как это работает",
+			"ctaTitle": "Запустите свой бизнес уже сегодня.",
+			"copyright": "Copyright © Henzo app. Все права защищены. 2026",
+			"email": "hello.henzo@gmail.com"
 		}
 	}
 }

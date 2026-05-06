@@ -56,6 +56,7 @@
 			"line2Trail": "",
 			"storeAppStore": "App Store",
 			"storeGooglePlay": "Google Play",
+			"availableForFree": "Available for free",
 			"notification": "Remember to train today at 3pm",
 			"newClientsTitle": "New Clients",
 			"newBadge": "New",
@@ -72,6 +73,16 @@
 		"intro": {
 			"description": "Run your studio from mobile: schedule, coach slots, and client bookings in one flow.",
 			"secondary": "Download for Android or iOS and onboard your team without friction."
+		},
+		"statementBeforeSpotlight": {
+			"phrase1Lead": "You",
+			"phrase1AccentRotating": ["train.", "teach.", "focus."],
+			"phrase2Lead": "We",
+			"phrase2AccentRotating": [
+				"fill your schedule.",
+				"handle bookings.",
+				"reduce no-shows."
+			]
 		},
 		"spotlight": {
 			"headingLine1": "Run your classes",
@@ -98,6 +109,13 @@
 					"description": "Reminders and predictable schedules keep clients showing up.",
 					"videoSrc": "/video-3.mp4",
 					"videoLabel": "Studio spotlight clip three"
+				},
+				{
+					"stat": "+42%",
+					"featureTitle": "Recurring memberships",
+					"description": "A smoother class flow keeps members coming back every week.",
+					"videoSrc": "/video-4.mp4",
+					"videoLabel": "Studio spotlight clip four"
 				}
 			]
 		},
@@ -109,6 +127,36 @@
 				{ "label": "Step 1:", "text": "Add your studio name and address" },
 				{ "label": "Step 2:", "text": "Upload photos and create your first class" },
 				{ "label": "Step 3:", "text": "Start getting your first bookings" }
+			]
+		},
+		"pricing": {
+			"titleLine1": "Simple pricing",
+			"titleLine2": "Real results",
+			"storeAppStore": "App Store",
+			"storeGooglePlay": "Google Play",
+			"plans": [
+				{
+					"name": "Freemium",
+					"subtitle": "For an easy start",
+					"price": "$0",
+					"priceSub": "Unlimited number of workouts",
+					"features": [
+						"3 workouts per week",
+						"Track your progress and stay motivated",
+						"Analyze your performance"
+					]
+				},
+				{
+					"name": "Pro",
+					"subtitle": "For strong growth",
+					"price": "$15",
+					"priceSub": "/per 1 month",
+					"features": [
+						"Unlimited workouts",
+						"Access analytics and profile improvements",
+						"Analyze your performance"
+					]
+				}
 			]
 		},
 		"features": {
@@ -145,12 +193,27 @@
 				}
 			]
 		},
+		"ctaBanner": {
+			"titleLine1": "Your studio.",
+			"titleLine2": "In your hands.",
+			"description": "Manage classes, students, and appointments all from one mobile app",
+			"storeAppStore": "App Store",
+			"storeGooglePlay": "Google Play"
+		},
 		"finalCta": {
 			"title": "Ready to run your fitness studio faster?",
 			"description": "Start with the mobile app and move your daily operations into one clean flow.",
 			"androidCta": "Download for Android",
 			"iosCta": "Download for iOS",
 			"contactCta": "Contact sales"
+		},
+		"footer": {
+			"navBenefits": "Benefits",
+			"navPricing": "Pricing",
+			"navHowItWorks": "How it works",
+			"ctaTitle": "Start your business today.",
+			"copyright": "Copyright © Henzo app. All rights reserved. 2026",
+			"email": "hello.henzo@gmail.com"
 		}
 	}
 }

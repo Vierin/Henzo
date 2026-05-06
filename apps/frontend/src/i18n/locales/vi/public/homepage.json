@@ -56,6 +56,7 @@
 			"line2Trail": "",
 			"storeAppStore": "App Store",
 			"storeGooglePlay": "Google Play",
+			"availableForFree": "Miễn phí",
 			"notification": "Nhắc tập hôm nay lúc 15:00",
 			"newClientsTitle": "Khách mới",
 			"newBadge": "Mới",
@@ -72,6 +73,16 @@
 		"intro": {
 			"description": "Quản lý lịch, huấn luyện viên và đặt chỗ học viên trong một quy trình.",
 			"secondary": "Tải ứng dụng Android hoặc iOS để vận hành studio ngay."
+		},
+		"statementBeforeSpotlight": {
+			"phrase1Lead": "Bạn",
+			"phrase1AccentRotating": ["tập luyện.", "dạy.", "tập trung."],
+			"phrase2Lead": "Chúng tôi",
+			"phrase2AccentRotating": [
+				"lấp đầy lịch của bạn.",
+				"xử lý đặt chỗ.",
+				"giảm vắng mặt."
+			]
 		},
 		"spotlight": {
 			"headingLine1": "Ban van hanh lop hoc",
@@ -98,6 +109,13 @@
 					"description": "Nhac lich va lich on dinh giu hoc vien den dung gio.",
 					"videoSrc": "/video-3.mp4",
 					"videoLabel": "Video spotlight 3"
+				},
+				{
+					"stat": "+42%",
+					"featureTitle": "Thanh vien quay lai deu",
+					"description": "Lich lop on dinh giup hoc vien quay lai deu dan moi tuan.",
+					"videoSrc": "/video-4.mp4",
+					"videoLabel": "Video spotlight 4"
 				}
 			]
 		},
@@ -109,6 +127,36 @@
 				{ "label": "Bước 1:", "text": "Thêm tên studio và địa chỉ" },
 				{ "label": "Bước 2:", "text": "Tải ảnh lên và tạo lớp học đầu tiên" },
 				{ "label": "Bước 3:", "text": "Bắt đầu nhận những booking đầu tiên" }
+			]
+		},
+		"pricing": {
+			"titleLine1": "Gia don gian",
+			"titleLine2": "Ket qua thuc te",
+			"storeAppStore": "App Store",
+			"storeGooglePlay": "Google Play",
+			"plans": [
+				{
+					"name": "Freemium",
+					"subtitle": "Khoi dong de dang",
+					"price": "$0",
+					"priceSub": "Khong gioi han so buoi tap",
+					"features": [
+						"3 buoi tap moi tuan",
+						"Theo doi tien do va giu dong luc",
+						"Phan tich hieu suat"
+					]
+				},
+				{
+					"name": "Pro",
+					"subtitle": "Tang truong manh me",
+					"price": "$15",
+					"priceSub": "/1 thang",
+					"features": [
+						"So buoi tap khong gioi han",
+						"Truy cap analytics va nang cap ho so",
+						"Phan tich hieu suat"
+					]
+				}
 			]
 		},
 		"features": {
@@ -145,12 +193,27 @@
 				}
 			]
 		},
+		"ctaBanner": {
+			"titleLine1": "Studio của bạn.",
+			"titleLine2": "Trong tay bạn.",
+			"description": "Quản lý lớp học, học viên và lịch hẹn chỉ trong một ứng dụng mobile",
+			"storeAppStore": "App Store",
+			"storeGooglePlay": "Google Play"
+		},
 		"finalCta": {
 			"title": "San sang van hanh studio nhanh hon?",
 			"description": "Bat dau voi app mobile va dua toan bo quy trinh hang ngay vao mot luong don gian.",
 			"androidCta": "Tải cho Android",
 			"iosCta": "Tải cho iOS",
 			"contactCta": "Liên hệ tư vấn"
+		},
+		"footer": {
+			"navBenefits": "Lợi ích",
+			"navPricing": "Bảng giá",
+			"navHowItWorks": "Cách hoạt động",
+			"ctaTitle": "Bắt đầu kinh doanh ngay hôm nay.",
+			"copyright": "Copyright © Henzo app. Đã đăng ký bản quyền. 2026",
+			"email": "hello.henzo@gmail.com"
 		}
 	}
 }

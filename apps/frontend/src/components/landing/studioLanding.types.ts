@@ -11,6 +11,7 @@ export type StudioSpotlightSlide = {
 
 export type StudioLandingContent = {
 	hero: {
+		availableForFree: string;
 		line1Lead: string;
 		line1Highlight: string;
 		line1Trail: string;
@@ -44,6 +45,19 @@ export type StudioLandingContent = {
 		line2Accent: string;
 		steps: Array<{ label: string; text: string }>;
 	};
+	pricing: {
+		titleLine1: string;
+		titleLine2: string;
+		storeAppStore: string;
+		storeGooglePlay: string;
+		plans: Array<{
+			name: string;
+			subtitle: string;
+			price: string;
+			priceSub: string;
+			features: string[];
+		}>;
+	};
 	features: {
 		title: string;
 		items: Array<{ title: string; description: string }>;
@@ -58,5 +72,13 @@ export type StudioLandingContent = {
 		androidCta: string;
 		iosCta: string;
 		contactCta: string;
+	};
+	footer: {
+		navBenefits: string;
+		navPricing: string;
+		navHowItWorks: string;
+		ctaTitle: string;
+		copyright: string;
+		email: string;
 	};
 };

@@ -1,9 +1,15 @@
-type LandingIntroProps = {
-	description: string;
-	secondary: string;
-};
+'use client';
 
-export function LandingIntro({ description, secondary }: LandingIntroProps) {
+import { useTranslation } from '@/contexts/LanguageContext';
+
+const BASE = 'homepage.studio.intro';
+
+export function LandingIntro() {
+	const t = useTranslation();
+
+	const description = String(t(`${BASE}.description`));
+	const secondary = String(t(`${BASE}.secondary`));
+
 	return (
 		<div className="mx-auto w-full max-w-6xl px-4 sm:px-6">
 			<div className="mx-auto max-w-2xl text-center">

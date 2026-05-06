@@ -5,7 +5,7 @@ export function StudioPhoneFrame({ className }: { className?: string }) {
 	return (
 		<div
 			className={cn(
-				'relative mx-auto w-[min(72vw,280px)] shrink-0 select-none sm:w-[300px]',
+				'relative mx-auto w-[min(72vw,400px)] shrink-0 select-none',
 				className,
 			)}
 		>
