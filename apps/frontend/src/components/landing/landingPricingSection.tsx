@@ -53,14 +53,14 @@ export function LandingPricingSection() {
 	return (
 		<section
 			id="pricing"
-			className="bg-[#F9F4F0] h-screen px-6 pb-16 pt-8 md:px-10 md:pb-20 md:pt-10"
+			className="bg-[#F9F4F0] h-[max(100svh,1000px)] px-6 pb-16 pt-8 md:px-10 md:pb-20 md:pt-10"
 		>
 			<div className="mx-auto max-w-7xl">
 				<h2 className="text-center text-[#33363F]">
-					<span className="block text-[clamp(2.3rem,5.6vw,5.25rem)] leading-[1.06] tracking-tight">
+					<span className="block text-[4.4rem] tracking-tight leading-[1]">
 						{titleLine1}
 					</span>
-					<span className="relative mt-2 inline-block text-[clamp(2.3rem,5.6vw,5.25rem)] font-semibold leading-[1.04] tracking-tight text-[#F15942]">
+					<span className="relative  inline-block text-[4.4rem] font-medium leading-[1] tracking-tight text-[#F15942]">
 						{titleLine2}
 						<ChaoticUnderline
 							color="#4D39A8"
@@ -90,7 +90,7 @@ export function LandingPricingSection() {
 							<div className="my-10 border-t border-[#3F3F3F]" />
 
 							<div className="">
-								<p className="text-[4.9rem] font-medium leading-none tracking-tight text-[#33363F]">
+								<p className="text-[4.4rem] font-medium leading-none tracking-tight text-[#33363F]">
 									{plan.price}
 								</p>
 								<p className="mt-3 text-[1rem] text-[#3F3F3F]">

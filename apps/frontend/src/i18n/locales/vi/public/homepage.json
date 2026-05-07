@@ -70,6 +70,12 @@
 				{ "name": "Maria K.", "initials": "MK" }
 			]
 		},
+		"header": {
+			"navBenefits": "Lợi ích",
+			"navPricing": "Bảng giá",
+			"navContact": "Liên hệ",
+			"getApp": "Tải ứng dụng"
+		},
 		"intro": {
 			"description": "Quản lý lịch, huấn luyện viên và đặt chỗ học viên trong một quy trình.",
 			"secondary": "Tải ứng dụng Android hoặc iOS để vận hành studio ngay."

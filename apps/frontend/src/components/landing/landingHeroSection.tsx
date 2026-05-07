@@ -36,7 +36,7 @@ export function LandingHeroSection() {
 		<section className="relative z-[8] min-h-screen bg-[#3F3287] pt-33">
 			<div className="mx-auto w-full max-w-7xl overflow-hidden rounded-[1.75rem] bg-[#FDF6F0] shadow-[0_28px_90px_-20px_rgba(0,0,0,0.55)]">
 				<div className="px-4 min-h-screen pb-[clamp(4rem,14vw,7rem)] pt-10 text-center sm:px-8 md:pt-14">
-					<h1 className="mx-auto text-[2rem] leading-[1.1] tracking-tight text-[#3F3F3F] lg:text-[4.9rem]">
+					<h1 className="mx-auto text-[2rem] leading-[1.1] tracking-tight text-[#3F3F3F] lg:text-[4.4rem]">
 						<span className="block">
 							{line1Lead}{' '}
 							<span className="relative inline-block px-0.5">

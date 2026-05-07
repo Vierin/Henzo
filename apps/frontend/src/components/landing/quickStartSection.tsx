@@ -40,15 +40,15 @@ export function QuickStartSection() {
 	return (
 		<section
 			id="how-it-works"
-			className="bg-[#F9F4F0] px-5 py-12 h-screen"
+			className="bg-[#F9F4F0] px-5 py-12 h-[max(100svh,1000px)]"
 			aria-labelledby="quick-start-heading"
 		>
-			<div className="mx-auto max-w-[76vw]">
+			<div className="mx-auto max-w-5xl">
 				<h2
 					id="quick-start-heading"
 					className="text-center text-[#3F3F3F] [&_span]:tracking-tight"
 				>
-					<span className="block text-[4.9rem] leading-tight">{line1}</span>
+					<span className="block text-[4.4rem] leading-tight">{line1}</span>
 					<span className="mt-2 block text-[2.5rem] font-normal">
 						{line2Before}
 						<span className="relative inline-block px-0.5">
@@ -60,7 +60,7 @@ export function QuickStartSection() {
 
 				<div className="relative mt-14 hidden min-h-[620px] w-full lg:block">
 					<div className="absolute left-1/2 top-1/2 z-[2] w-[30vw] -translate-x-1/2 -translate-y-[46%]">
-						<StudioPhoneFrame className="w-[23vw]" />
+						<StudioPhoneFrame className="w-[min(23vw,20rem)]" />
 					</div>
 
 					<div className="absolute left-0 top-[2%] max-w-[min(240px,28vw)] text-left">

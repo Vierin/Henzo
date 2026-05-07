@@ -70,6 +70,12 @@
 				{ "name": "Maria Kowalski", "initials": "MK" }
 			]
 		},
+		"header": {
+			"navBenefits": "Benefits",
+			"navPricing": "Pricing",
+			"navContact": "Contact",
+			"getApp": "Get the app"
+		},
 		"intro": {
 			"description": "Run your studio from mobile: schedule, coach slots, and client bookings in one flow.",
 			"secondary": "Download for Android or iOS and onboard your team without friction."

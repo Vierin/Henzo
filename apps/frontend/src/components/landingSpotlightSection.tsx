@@ -10,10 +10,8 @@ export type LandingSpotlightSlide = {
 	stat: string;
 	featureTitle: string;
 	description: string;
-	/** Path under `public/`, e.g. `/video-1.mp4` */
 	videoSrc: string;
 	videoLabel: string;
-	/** Optional scribble colors; otherwise derived from {@link stat} */
 	scribbleMain?: string;
 	scribbleSub?: string;
 };
@@ -68,27 +66,8 @@ function scribbleStrokesForSlideIndex(idx: number): {
 	return { main: color, sub: color };
 }
 
-/**
- * FAN / WHEEL ANIMATION CONFIG
- *
- * Each card rotates around a pivot point that sits far to the RIGHT of the card.
- * This creates a true circular arc — cards sweep in from top-right, pass through
- * the "active" slot (rotation = 0), then continue down-right.
- *
- * The pivot is placed at (cardWidth * FAN_PIVOT_X_FACTOR, cardHeight * 0.5)
- * relative to the card's own top-left corner.
- * A large factor = larger radius = gentler, more cinematic arc.
- *
- * FAN_DEG_PER_SLOT: degrees between consecutive cards on the wheel.
- *   Positive = card above active rotates clockwise (tilted top-right).
- *   Negative = card below active rotates counter-clockwise (tilted bottom-right).
- *
- * We use transform-origin on each card independently, all pointing to the same
- * world-space pivot. The track div does NOT translate — only card rotations change.
- */
-const FAN_DEG_PER_SLOT = 32; // degrees between adjacent cards — much more spacing
-const FAN_MAX_DEG = 96; // clamp for out-of-range cards
-// Pivot far outside right edge = larger radius = gentler arc, cards don't overlap
+const FAN_DEG_PER_SLOT = 32;
+const FAN_MAX_DEG = 96;
 const FAN_ORIGIN_X = '260%';
 const FAN_ORIGIN_Y = '50%';
 
@@ -268,8 +247,8 @@ export function LandingSpotlightSection() {
 		}
 		const tw = gsap.fromTo(
 			el,
-			{ opacity: 0.45, y: 10 },
-			{ opacity: 1, y: 0, duration: 0.42, ease: 'power2.out' },
+			{ opacity: 0, y: 15 },
+			{ opacity: 1, y: 0, duration: 0.4, ease: 'power2.out' },
 		);
 		return () => {
 			tw.kill();
@@ -289,15 +268,15 @@ export function LandingSpotlightSection() {
 			className="relative bg-[#3F3287]"
 			aria-labelledby="landing-spotlight-heading"
 		>
-			<div className="mx-auto w-full max-w-6xl px-4 pt-12 sm:px-6 md:pt-16">
+			<div className="mx-auto w-full max-w-7xl px-4 pt-12 sm:px-6 md:pt-16">
 				<div className="text-center">
 					<h2
 						id="landing-spotlight-heading"
-						className="text-[4.9rem] text-white"
+						className="text-[4.4rem] text-white"
 					>
 						{headingLine1}
 					</h2>
-					<p className="mx-auto mt-4 max-w-2xl text-lg leading-snug text-[#C6FF00] sm:text-xl md:text-2xl">
+					<p className="mx-auto mt-2 max-w-2xl text-lg leading-snug text-[#C6FF00] sm:text-xl md:text-[2.2rem]">
 						<span>{line2BeforeAccent}</span>
 						<span className="relative inline-block whitespace-nowrap px-0.5">
 							{line2Accent}
@@ -312,7 +291,7 @@ export function LandingSpotlightSection() {
 
 			<div
 				ref={pinRef}
-				className="mx-auto flex w-full max-w-6xl min-h-[100svh] items-center px-4 sm:px-6 md:h-[100svh] md:min-h-0"
+				className="mx-auto flex w-full max-w-7xl min-h-[100svh] items-center px-4 sm:px-6 md:h-[100svh] md:min-h-0"
 			>
 				<div className="grid w-full translate-y-6 grid-cols-1 items-start gap-10 md:translate-y-12 md:grid-cols-2 md:gap-12 lg:gap-16">
 					<div className="mt-6 text-left md:mt-12">
@@ -322,17 +301,17 @@ export function LandingSpotlightSection() {
 									key={slide.stat}
 									strokeMain={scribble.main}
 									strokeSub={scribble.sub}
-									className="pointer-events-none absolute inset-[-6px] h-[calc(100%+14px)] w-[calc(100%+48px)] max-w-[min(100vw,280px)] -translate-x-2 sm:w-[calc(100%+64px)] sm:translate-x-0"
+									className="pointer-events-none absolute inset-[-1rem] aspect-[3/1.2] w-[calc(100%+2rem)] max-w-[min(100vw,280px)] -translate-x-2 sm:w-[calc(100%+10rem)] sm:translate-x-0"
 								/>
-								<span className="relative z-10 text-[2.75rem] font-bold leading-none tracking-tight text-white sm:text-5xl md:text-6xl">
+								<span className="relative z-10 text-[2.75rem] font-medium leading-none tracking-tight text-white sm:text-5xl md:text-[5rem]">
 									{slide.stat}
 								</span>
 							</div>
 
-							<h3 className="mt-6 text-xl font-semibold text-white md:text-2xl">
+							<h3 className="mt-6 text-[1.5rem] font-semibold text-white md:text-[2.5rem]">
 								{slide.featureTitle}
 							</h3>
-							<p className="mt-3 max-w-md text-base leading-relaxed text-white/90 md:text-lg">
+							<p className="mt-3 max-w-md text-[1rem] leading-relaxed text-white/90 md:text-[1.2rem]">
 								{slide.description}
 							</p>
 						</div>
@@ -363,7 +342,7 @@ export function LandingSpotlightSection() {
 
 					<div
 						ref={clipRef}
-						className="relative mx-auto mt-8 aspect-[4/3] w-full md:mt-12"
+						className="relative mx-auto mt-8 aspect-[4/3] w-full xl:w-[110%] md:mt-12"
 						style={{ overflow: 'visible' }}
 					>
 						{slides.map((s, i) => (

@@ -20,18 +20,21 @@ export function LandingPhoneShowcaseSection() {
 
 		gsap.registerPlugin(ScrollTrigger);
 
+		const yMove = window.innerHeight * 1;
+
 		const ctx = gsap.context(() => {
 			gsap.fromTo(
 				phone,
-				{ scale: 1, yPercent: 0, force3D: true },
+				{ scale: 1, y: 0, force3D: true },
 				{
 					scale: 0.9,
-					yPercent: 80,
+					y: yMove,
 					ease: 'none',
 					force3D: true,
 					scrollTrigger: {
 						trigger: section,
-						start: 'top 30%',
+						markers: false,
+						start: 'top 25%',
 						end: 'bottom 90%',
 						scrub: true,
 						invalidateOnRefresh: true,
@@ -68,13 +71,13 @@ export function LandingPhoneShowcaseSection() {
 	return (
 		<section
 			ref={sectionRef}
-			className="relative z-[12] -mt-[55svh] h-[155svh] flex flex-col items-center overflow-hidden pointer-events-none"
+			className="relative z-[12] -mt-[55svh] h-[200svh] flex flex-col items-center overflow-hidden pointer-events-none"
 			aria-label="App preview"
 		>
 			<div className="pointer-events-none absolute inset-x-0 bottom-[-10%] z-0 w-full">
 				<img
 					ref={circlesRef}
-					src="/studio-circles.svg"
+					src="/images/circles.webp"
 					alt=""
 					aria-hidden="true"
 					className="h-auto w-full origin-center"
