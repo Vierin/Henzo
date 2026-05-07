@@ -58,6 +58,10 @@
 			"storeGooglePlay": "Google Play",
 			"availableForFree": "Available for free",
 			"notification": "Remember to train today at 3pm",
+			"entryNotificationTitle": "New reservation!",
+			"entryNotificationText": "Sam just booked a training session.",
+			"entryNotification2Title": "New review received!",
+			"entryNotification2Text": "A client left a 5-star review for your class.",
 			"newClientsTitle": "New Clients",
 			"newBadge": "New",
 			"clientsBadge": "Clients",
@@ -65,14 +69,24 @@
 			"notificationBadge": "Notification",
 			"activeUserLabel": "Active user",
 			"clients": [
-				{ "name": "Anna Nowak", "initials": "AN" },
-				{ "name": "Ivan Founder", "initials": "IF" },
-				{ "name": "Maria Kowalski", "initials": "MK" }
+				{
+					"name": "Anna Nowak",
+					"initials": "AN"
+				},
+				{
+					"name": "Ivan Founder",
+					"initials": "IF"
+				},
+				{
+					"name": "Maria Kowalski",
+					"initials": "MK"
+				}
 			]
 		},
 		"header": {
 			"navBenefits": "Benefits",
 			"navPricing": "Pricing",
+			"navHowItWorks": "How it works",
 			"navContact": "Contact",
 			"getApp": "Get the app"
 		},
@@ -82,7 +96,11 @@
 		},
 		"statementBeforeSpotlight": {
 			"phrase1Lead": "You",
-			"phrase1AccentRotating": ["train.", "teach.", "focus."],
+			"phrase1AccentRotating": [
+				"train.",
+				"teach.",
+				"focus."
+			],
 			"phrase2Lead": "We",
 			"phrase2AccentRotating": [
 				"fill your schedule.",
@@ -99,28 +117,28 @@
 					"stat": "+30%",
 					"featureTitle": "Class occupancy",
 					"description": "Visible slots and easier appointment management",
-					"videoSrc": "/video-1.mp4",
+					"videoSrc": "/video-4.mp4",
 					"videoLabel": "Studio spotlight clip one"
 				},
 				{
-					"stat": "+24%",
-					"featureTitle": "Trainer utilization",
-					"description": "Clear availability so every hour works harder for your studio.",
-					"videoSrc": "/video-2.mp4",
+					"stat": "-40%",
+					"featureTitle": "Reduction in missed classes",
+					"description": "Clients receive reminders and are less likely to forget",
+					"videoSrc": "/video-3.mp4",
 					"videoLabel": "Studio spotlight clip two"
 				},
 				{
-					"stat": "+18%",
-					"featureTitle": "Fewer no-shows",
-					"description": "Reminders and predictable schedules keep clients showing up.",
-					"videoSrc": "/video-3.mp4",
+					"stat": "-70%",
+					"featureTitle": "Reduction in time spent on correspondence",
+					"description": "No need to manually reply to each client",
+					"videoSrc": "/video-2.mp4",
 					"videoLabel": "Studio spotlight clip three"
 				},
 				{
 					"stat": "+42%",
-					"featureTitle": "Recurring memberships",
-					"description": "A smoother class flow keeps members coming back every week.",
-					"videoSrc": "/video-4.mp4",
+					"featureTitle": "Schedule control",
+					"description": "All classes and appointments in one place",
+					"videoSrc": "/video-1.mp4",
 					"videoLabel": "Studio spotlight clip four"
 				}
 			]
@@ -130,9 +148,18 @@
 			"line2Before": "in ",
 			"line2Accent": "5 minutes",
 			"steps": [
-				{ "label": "Step 1:", "text": "Add your studio name and address" },
-				{ "label": "Step 2:", "text": "Upload photos and create your first class" },
-				{ "label": "Step 3:", "text": "Start getting your first bookings" }
+				{
+					"label": "Step 1:",
+					"text": "Add your studio name and address"
+				},
+				{
+					"label": "Step 2:",
+					"text": "Upload photos and create your first class"
+				},
+				{
+					"label": "Step 3:",
+					"text": "Start getting your first bookings"
+				}
 			]
 		},
 		"pricing": {
@@ -144,23 +171,29 @@
 				{
 					"name": "Freemium",
 					"subtitle": "For an easy start",
-					"price": "$0",
-					"priceSub": "Unlimited number of workouts",
+					"price": "0",
+					"priceSub": "Perfect for getting started",
 					"features": [
-						"3 workouts per week",
-						"Track your progress and stay motivated",
-						"Analyze your performance"
+						"6 workouts per week",
+						"Unlimited clients",
+						"Manage bookings & clients",
+						"Online booking page",
+						"Automatic client reminders",
+						"1 trainer account"
 					]
 				},
 				{
 					"name": "Pro",
 					"subtitle": "For strong growth",
-					"price": "$15",
+					"price": "395.000",
 					"priceSub": "/per 1 month",
 					"features": [
-						"Unlimited workouts",
-						"Access analytics and profile improvements",
-						"Analyze your performance"
+						"Unlimited active workouts",
+						"Unlimited trainer accounts",
+						"Auto reminders / No-show reduction",
+						"Waitlist for classes",
+						"Advanced analytics",
+						"Priority support"
 					]
 				}
 			]

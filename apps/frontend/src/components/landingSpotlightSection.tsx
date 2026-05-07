@@ -254,7 +254,7 @@ export function LandingSpotlightSection() {
 				},
 			});
 
-			applyFan(1); // reversed: progress=1 → first card active at start
+			applyFan(1);
 		}, pin);
 
 		const onResize = () => {
@@ -331,25 +331,25 @@ export function LandingSpotlightSection() {
 				ref={pinRef}
 				className="mx-auto flex w-full max-w-7xl min-h-[100svh] items-center px-4 sm:px-6 md:h-[100svh] md:min-h-0"
 			>
-				<div className="grid w-full translate-y-6 grid-cols-1 items-start gap-10 md:translate-y-12 md:grid-cols-2 md:gap-12 lg:gap-16">
+				<div className="grid w-full translate-y-6 grid-cols-1 items-start gap-10 md:translate-y-6 md:grid-cols-2 md:gap-12 lg:gap-16">
 					<div className="mt-6 text-left md:mt-12">
 						<div ref={leftCopyRef}>
-							<div className="relative inline-flex min-h-[4.5rem] min-w-[8rem] items-center justify-center px-2 py-1 sm:min-h-[5rem]">
+							<div className="relative inline-flex min-h-[4.5rem] text-center min-w-[15rem] items-center justify-center px-2 py-1 sm:min-h-[5rem]">
 								<StatScribbleOval
 									key={slide.stat}
 									strokeMain={scribble.main}
 									strokeSub={scribble.sub}
 									className="pointer-events-none absolute inset-[-1rem] aspect-[3/1.2] w-[calc(100%+2rem)] max-w-[min(100vw,280px)] -translate-x-2 sm:w-[calc(100%+10rem)] sm:translate-x-0"
 								/>
-								<span className="relative z-10 text-[2.75rem] font-medium leading-none tracking-tight text-white sm:text-5xl md:text-[5rem]">
+								<span className="relative z-10 text-[2.75rem]  font-medium leading-none tracking-tight text-white sm:text-5xl md:text-[5rem]">
 									{slide.stat}
 								</span>
 							</div>
 
-							<h3 className="mt-6 text-[1.5rem] font-semibold text-white md:text-[2.5rem]">
+							<h3 className="mt-6 text-[1.5rem] leading-[1.1] font-semibold text-white md:text-[2.5rem]">
 								{slide.featureTitle}
 							</h3>
-							<p className="mt-3 max-w-md text-[1rem] leading-relaxed text-white/90 md:text-[1.2rem]">
+							<p className="mt-3 max-w-md text-[1rem]  leading-[1.2] min-h-[4.5rem] text-white/90 md:text-[1.2rem]">
 								{slide.description}
 							</p>
 						</div>

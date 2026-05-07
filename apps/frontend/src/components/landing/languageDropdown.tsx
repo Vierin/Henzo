@@ -46,7 +46,7 @@ export function LanguageDropdown({
 
 			{isOpen && (
 				<div
-					className="absolute right-0 top-full z-50 mt-1 w-44 overflow-hidden rounded-xl border border-[#eadfd7] bg-white shadow-lg sm:w-48"
+					className="absolute right-0 top-full z-50 mt-1 w-44 overflow-hidden rounded-xl border border-[#eadfd7] bg-white sm:w-48"
 					role="listbox"
 				>
 					{languages.map((language) => (

@@ -60,7 +60,7 @@ export function LandingPricingSection() {
 					<span className="block text-[4.4rem] tracking-tight leading-[1]">
 						{titleLine1}
 					</span>
-					<span className="relative  inline-block text-[4.4rem] font-medium leading-[1] tracking-tight text-[#F15942]">
+					<span className="relative inline-block text-[4.4rem] font-medium leading-[1] tracking-tight text-[#F15942]">
 						{titleLine2}
 						<ChaoticUnderline
 							color="#4D39A8"
@@ -70,52 +70,69 @@ export function LandingPricingSection() {
 				</h2>
 
 				<div className="mt-15 grid gap-7 md:grid-cols-2 md:gap-12 max-w-5xl mx-auto">
-					{plans.map((plan) => (
-						<article
+					{plans.map((plan, index) => (
+						<div
 							key={plan.name}
-							className="rounded-[1.4rem] border border-[#FF8A72] bg-white p-5 pb-11"
+							className="rounded-[1.4rem] bg-gradient-to-b from-[#F15942] to-[#FCF3EC] p-[1px]"
 						>
-							<div className="flex items-start gap-6 flex align-center">
-								<div className="aspect-square w-[4rem] rounded-2xl bg-[#F15942]" />
-								<div className="font-medium">
-									<h3 className="text-[1.5rem] leading-tight text-[#33363F]">
-										{plan.name}
-									</h3>
-									<p className="text-[1rem] leading-tight text-[#33363F]">
-										{plan.subtitle}
+							<article
+								className={`rounded-[calc(1.4rem-1px)] p-5 pb-11 ${
+									index === 0 ? 'bg-[#fdf8f4]' : 'bg-white'
+								}`}
+							>
+								<div className="flex items-start gap-6 flex align-center">
+									<div className="aspect-square w-[4rem] rounded-2xl bg-[#F15942]" />
+									<div className="font-medium">
+										<h3 className="flex items-center gap-2 text-[1.5rem] leading-tight text-[#3F3F3F]">
+											{plan.name}
+											<Image
+												src={
+													index === 0
+														? '/images/icon-shoose.png'
+														: '/images/icon-rocket.png'
+												}
+												alt={index === 0 ? 'Shoes icon' : 'Rocket icon'}
+												width={22}
+												height={22}
+											/>
+										</h3>
+										<p className="text-[1rem] leading-tight text-[#33363F]">
+											{plan.subtitle}
+										</p>
+									</div>
+								</div>
+
+								<div className="my-10 border-t border-[#3F3F3F]" />
+
+								<div className="">
+									<p className="text-[4.4rem] font-medium leading-none tracking-tight text-[#3F3F3F]">
+										{plan.price}{' '}
+										<span className="text-[2.5rem] text-[#3F3F3F]">VND</span>
+									</p>
+									<p className="mt-3 text-[1rem] text-[#3F3F3F]">
+										{plan.priceSub}
 									</p>
 								</div>
-							</div>
 
-							<div className="my-10 border-t border-[#3F3F3F]" />
-
-							<div className="">
-								<p className="text-[4.4rem] font-medium leading-none tracking-tight text-[#33363F]">
-									{plan.price}
-								</p>
-								<p className="mt-3 text-[1rem] text-[#3F3F3F]">
-									{plan.priceSub}
-								</p>
-							</div>
-
-							<ul className="mt-13 space-y-4">
-								{plan.features.map((feature) => (
-									<li
-										key={`${plan.name}-${feature}`}
-										className="flex items-start gap-3 text-[1.03rem] leading-snug text-[#151515]"
-									>
-										<Image
-											className="pt-0.5"
-											src="/images/icon-fire.png"
-											alt="Fire"
-											width={16}
-											height={16}
-										/>
-										<span>{feature}</span>
-									</li>
-								))}
-							</ul>
-						</article>
+								<ul className="mt-13 space-y-4">
+									{plan.features.map((feature) => (
+										<li
+											key={`${plan.name}-${feature}`}
+											className="flex items-start gap-3 text-[1.03rem] leading-snug text-[#151515]"
+										>
+											<Image
+												className="pt-0.5"
+												src="/images/icon-fire.png"
+												alt="Fire"
+												width={16}
+												height={16}
+											/>
+											<span>{feature}</span>
+										</li>
+									))}
+								</ul>
+							</article>
+						</div>
 					))}
 				</div>
 

@@ -24,6 +24,7 @@ function PublicHeaderContent({
 }) {
 	const [isLanguageDropdownOpen, setIsLanguageDropdownOpen] = useState(false);
 	const [selectedLanguage, setSelectedLanguage] = useState('EN');
+	const [isScrolledDown, setIsScrolledDown] = useState(false);
 	const dropdownRef = useRef<HTMLDivElement>(null);
 	const pathname = usePathname();
 	const searchParams = useSearchParams();
@@ -66,14 +67,32 @@ function PublicHeaderContent({
 		return () => document.removeEventListener('mousedown', handleClickOutside);
 	}, [handleClickOutside]);
 
+	useEffect(() => {
+		if (embedded) {
+			return;
+		}
+
+		const handleScroll = () => {
+			setIsScrolledDown(window.scrollY > 0);
+		};
+
+		handleScroll();
+		window.addEventListener('scroll', handleScroll, { passive: true });
+		return () => {
+			window.removeEventListener('scroll', handleScroll);
+		};
+	}, [embedded]);
+
 	const getAppLabel = String(t('homepage.studio.header.getApp'));
 	const navBenefits = String(t('homepage.studio.header.navBenefits'));
 	const navPricing = String(t('homepage.studio.header.navPricing'));
-	const navContact = String(t('homepage.studio.header.navContact'));
+	const navHowItWorks = String(t('homepage.studio.header.navHowItWorks'));
 
 	const shellClass = embedded
 		? 'relative z-40 bg-transparent'
-		: 'sticky top-0 z-40 border-b border-[#eadfd7]/70 bg-[#F9F4F0]/85 backdrop-blur-md';
+		: `sticky top-0 z-40 border-b border-[#eadfd7]/70 bg-[#F9F4F0]/85 backdrop-blur-md will-change-transform transition-[transform,opacity] duration-300 ${
+				isScrolledDown ? '-translate-y-1/2 opacity-70' : 'translate-y-0 opacity-100'
+			}`;
 
 	if (embedded) {
 		return (
@@ -92,8 +111,9 @@ function PublicHeaderContent({
 						/>
 					</Link>
 
+					<div className="flex items-center gap-12">
 					<nav
-						className="absolute left-1/2 top-1/2 hidden -translate-x-1/2 -translate-y-1/2 gap-6 text-[0.9375rem] font-medium text-[#3F3F3F]/85 md:flex md:gap-8"
+						className="relative gap-6 text-[1rem] font-medium text-[#3F3F3F] flex md:gap-8"
 						aria-label="Landing"
 					>
 						<a
@@ -108,12 +128,12 @@ function PublicHeaderContent({
 						>
 							{navPricing}
 						</a>
-						<Link
-							href={withLocale('/contact', currentLocale as 'en' | 'ru' | 'vi')}
+						<a
+							href={`${pathname.split('#')[0]}#how-it-works`}
 							className="whitespace-nowrap transition hover:text-[#E86D4F]"
 						>
-							{navContact}
-						</Link>
+							{navHowItWorks}
+						</a>
 					</nav>
 
 					<div className="relative z-10 shrink-0">
@@ -127,14 +147,14 @@ function PublicHeaderContent({
 									setIsLanguageDropdownOpen(!isLanguageDropdownOpen)
 								}
 								onSelect={handleLanguageSelect}
-								buttonClassName="flex items-center gap-1 rounded-full border border-[#eadfd7] bg-white/90 px-2.5 py-2 text-xs font-medium text-[#3F3F3F] shadow-sm transition hover:border-[#E86D4F]/40 hover:bg-white sm:gap-2 sm:px-3 sm:py-2 sm:text-sm"
+								buttonClassName="flex items-center gap-1 rounded-full border border-[#eadfd7] bg-white/90 px-2.5 py-2 text-xs font-medium text-[#3F3F3F] transition hover:border-[#E86D4F]/40 hover:bg-white sm:gap-2 sm:px-3 sm:py-2 sm:text-sm"
 							/>
 							<a
 								href={appStoreUrl}
 								target="_blank"
 								rel="noreferrer"
 								aria-label="App Store"
-								className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-[#eadfd7] bg-white/90 text-[#3F3F3F] shadow-sm transition hover:border-[#E86D4F]/40 hover:bg-white sm:h-10 sm:w-10"
+								className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-[#3F3F3F] text-[#3F3F3F] transition hover:border-[#E86D4F]/40 hover:bg-white sm:h-10 sm:w-10"
 							>
 								<AppleStoreIcon className="h-4 w-4 sm:h-4.5 sm:w-4.5" />
 							</a>
@@ -143,12 +163,13 @@ function PublicHeaderContent({
 								target="_blank"
 								rel="noreferrer"
 								aria-label="Google Play"
-								className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-[#eadfd7] bg-white/90 text-[#3F3F3F] shadow-sm transition hover:border-[#E86D4F]/40 hover:bg-white sm:h-10 sm:w-10"
+								className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-[#3F3F3F] text-[#3F3F3F] transition hover:border-[#E86D4F]/40 hover:bg-white sm:h-10 sm:w-10"
 							>
 								<GooglePlayIcon className="h-4 w-4 sm:h-4.5 sm:w-4.5" />
 							</a>
 						</div>
-					</div>
+					</div> 
+				</div>
 				</div>
 			</header>
 		);

@@ -86,74 +86,76 @@ export default function Footer() {
 									className="h-[54px] w-auto object-contain"
 								/>
 							</Link>
-							<p className="text-[1rem] pl-12 text-[#3F3F3F] -mt-2">
+						</div>
+
+						<div className="mt-8 pl-12">
+							<p className="text-[1rem] text-[#3F3F3F] -mt-2">
 								Run your classes.{' '}
 								<b className="text-[#F15942]">We’ll run your system.</b>
 							</p>
-						</div>
-
-						<nav
-							aria-label="Footer"
-							className="mt-8 flex flex-wrap items-center gap-x-9 gap-y-3 text-[1.02rem] font-medium text-[#3F3F3F]"
-						>
-							<Link
-								href={`${homePath}#benefits`}
-								className="transition hover:text-[#E86D4F]"
+							<nav
+								aria-label="Footer"
+								className="mt-8 flex flex-wrap items-center gap-x-9 gap-y-3 text-[1.02rem] font-medium text-[#3F3F3F]"
 							>
-								{navBenefits}
-							</Link>
-							<Link
-								href={`${homePath}#pricing`}
-								className="transition hover:text-[#E86D4F]"
-							>
-								{navPricing}
-							</Link>
-							<Link
-								href={`${homePath}#how-it-works`}
-								className="transition hover:text-[#E86D4F]"
-							>
-								{navHowItWorks}
-							</Link>
-						</nav>
-						<div className="mt-8 flex flex-wrap items-center gap-4">
-							<a
-								href="https://facebook.com"
-								target="_blank"
-								rel="noreferrer"
-								aria-label="Facebook"
-								className="inline-flex h-10 w-14 items-center justify-center rounded-full border border-[#E4E7ED] bg-white text-[#3F3F3F] transition hover:text-[#E86D4F]"
-							>
-								<FacebookIconFilled className="w-[1.2rem] aspect-square text-[#3F3F3F]" />
-							</a>
-							<a
-								href="https://linkedin.com"
-								target="_blank"
-								rel="noreferrer"
-								aria-label="LinkedIn"
-								className="inline-flex h-10 w-14 items-center justify-center rounded-full border border-[#E4E7ED] bg-white text-[#3F3F3F] transition hover:text-[#E86D4F]"
-							>
-								<LinkedinIconFilled className="w-[1.2rem] aspect-square text-[#3F3F3F]" />
-							</a>
-							<a
-								href="https://instagram.com"
-								target="_blank"
-								rel="noreferrer"
-								aria-label="Instagram"
-								className="inline-flex h-10 w-14 items-center justify-center rounded-full border border-[#E4E7ED] bg-white text-[#3F3F3F] transition hover:text-[#E86D4F]"
-							>
-								<InstagramIconFilled className="w-[1.2rem] aspect-square text-[#3F3F3F]" />
-							</a>
-							<a
-								href="mailto:hello.henzo@gmail.com"
-								className="ml-2 text-[1.06rem] font-medium text-[#3F3F3F] transition hover:text-[#E86D4F]"
-							>
-								hello.henzo@gmail.com
-							</a>
+								<Link
+									href={`${homePath}#benefits`}
+									className="transition hover:text-[#E86D4F]"
+								>
+									{navBenefits}
+								</Link>
+								<Link
+									href={`${homePath}#pricing`}
+									className="transition hover:text-[#E86D4F]"
+								>
+									{navPricing}
+								</Link>
+								<Link
+									href={`${homePath}#how-it-works`}
+									className="transition hover:text-[#E86D4F]"
+								>
+									{navHowItWorks}
+								</Link>
+							</nav>
+							<div className="mt-8 flex flex-wrap items-center gap-4">
+								<a
+									href="https://facebook.com"
+									target="_blank"
+									rel="noreferrer"
+									aria-label="Facebook"
+									className="inline-flex h-10 w-14 items-center justify-center rounded-full border border-[#E4E7ED] bg-white text-[#3F3F3F] transition hover:text-[#E86D4F]"
+								>
+									<FacebookIconFilled className="w-[1.2rem] aspect-square text-[#3F3F3F]" />
+								</a>
+								<a
+									href="https://linkedin.com"
+									target="_blank"
+									rel="noreferrer"
+									aria-label="LinkedIn"
+									className="inline-flex h-10 w-14 items-center justify-center rounded-full border border-[#E4E7ED] bg-white text-[#3F3F3F] transition hover:text-[#E86D4F]"
+								>
+									<LinkedinIconFilled className="w-[1.2rem] aspect-square text-[#3F3F3F]" />
+								</a>
+								<a
+									href="https://instagram.com"
+									target="_blank"
+									rel="noreferrer"
+									aria-label="Instagram"
+									className="inline-flex h-10 w-14 items-center justify-center rounded-full border border-[#E4E7ED] bg-white text-[#3F3F3F] transition hover:text-[#E86D4F]"
+								>
+									<InstagramIconFilled className="w-[1.2rem] aspect-square text-[#3F3F3F]" />
+								</a>
+								<a
+									href="mailto:hello.henzo@gmail.com"
+									className="ml-2 text-[1.06rem] font-medium text-[#3F3F3F] transition hover:text-[#E86D4F]"
+								>
+									hello.henzo@gmail.com
+								</a>
+							</div>
 						</div>
 					</div>
 					<div className="md:pb-1">
-						<div className="rounded-3xl bg-white px-12 py-6 pr-8 flex items-center justify-between gap-6">
-							<p className="text-[2rem] leading-[1.03] tracking-tight text-[#3B3B3F]">
+						<div className="rounded-3xl bg-white px-9 py-6 pr-8 flex items-center justify-between gap-6">
+							<p className="text-[1.5rem] leading-[1.03] tracking-tight text-[#3B3B3F]">
 								{ctaTitle}
 							</p>
 							<div className="flex items-center gap-3">

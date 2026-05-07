@@ -48,167 +48,200 @@
 	"checkBackLater": "Vui lòng quay lại sau để xem các salon có sẵn.",
 	"studio": {
 		"hero": {
-			"line1Lead": "Từ lịch",
-			"line1Highlight": "hỗn loạn",
-			"line1Trail": "",
+			"line1Lead": "Từ",
+			"line1Highlight": "lịch đặt",
+			"line1Trail": "hỗn loạn",
 			"line2Lead": "đến",
-			"line2Highlight": "lịch rõ ràng",
+			"line2Highlight": "lịch trình rõ ràng",
 			"line2Trail": "",
 			"storeAppStore": "App Store",
 			"storeGooglePlay": "Google Play",
-			"availableForFree": "Miễn phí",
-			"notification": "Nhắc tập hôm nay lúc 15:00",
-			"newClientsTitle": "Khách mới",
+			"availableForFree": "Dùng miễn phí",
+			"notification": "Nhớ tập hôm nay lúc 3pm",
+			"entryNotificationTitle": "Đặt lịch mới!",
+			"entryNotificationText": "Sam vừa đặt một buổi tập.",
+			"entryNotification2Title": "Có đánh giá mới!",
+			"entryNotification2Text": "Một khách hàng vừa để lại đánh giá 5 sao.",
+			"newClientsTitle": "Khách hàng mới",
 			"newBadge": "Mới",
 			"clientsBadge": "Khách",
 			"autoBadge": "Tự động",
 			"notificationBadge": "Thông báo",
-			"activeUserLabel": "Đang hoạt động",
+			"activeUserLabel": "Người dùng hoạt động",
 			"clients": [
-				{ "name": "Anna Nowak", "initials": "AN" },
-				{ "name": "Ivan Founder", "initials": "IF" },
-				{ "name": "Maria K.", "initials": "MK" }
+				{
+					"name": "Anna Nowak",
+					"initials": "AN"
+				},
+				{
+					"name": "Ivan Founder",
+					"initials": "IF"
+				},
+				{
+					"name": "Maria Kowalski",
+					"initials": "MK"
+				}
 			]
 		},
 		"header": {
 			"navBenefits": "Lợi ích",
 			"navPricing": "Bảng giá",
+			"navHowItWorks": "Cách hoạt động",
 			"navContact": "Liên hệ",
 			"getApp": "Tải ứng dụng"
 		},
 		"intro": {
-			"description": "Quản lý lịch, huấn luyện viên và đặt chỗ học viên trong một quy trình.",
-			"secondary": "Tải ứng dụng Android hoặc iOS để vận hành studio ngay."
+			"description": "Vận hành studio từ điện thoại: lịch, khung giờ huấn luyện viên và đặt chỗ của khách trong một luồng thống nhất.",
+			"secondary": "Tải cho Android hoặc iOS và onboard đội ngũ nhanh chóng, không rườm rà."
 		},
 		"statementBeforeSpotlight": {
 			"phrase1Lead": "Bạn",
-			"phrase1AccentRotating": ["tập luyện.", "dạy.", "tập trung."],
+			"phrase1AccentRotating": [
+				"tập luyện.",
+				"giảng dạy.",
+				"tập trung."
+			],
 			"phrase2Lead": "Chúng tôi",
 			"phrase2AccentRotating": [
 				"lấp đầy lịch của bạn.",
-				"xử lý đặt chỗ.",
-				"giảm vắng mặt."
+				"xử lý booking.",
+				"giảm no-show."
 			]
 		},
 		"spotlight": {
-			"headingLine1": "Ban van hanh lop hoc",
-			"line2BeforeAccent": "Chung toi van hanh ",
-			"line2Accent": "he thong",
+			"headingLine1": "Vận hành lớp học của bạn",
+			"line2BeforeAccent": "Chúng tôi vận hành ",
+			"line2Accent": "hệ thống",
 			"slides": [
 				{
 					"stat": "+30%",
-					"featureTitle": "Ti le lap day lop",
-					"description": "Slot ro rang va quan ly lich hen de hon",
-					"videoSrc": "/video-1.mp4",
-					"videoLabel": "Video spotlight 1"
+					"featureTitle": "Tỉ lệ lấp đầy lớp",
+					"description": "Khung giờ rõ ràng và quản lý lịch hẹn dễ hơn",
+					"videoSrc": "/video-4.mp4",
+					"videoLabel": "Video spotlight studio 1"
 				},
 				{
-					"stat": "+24%",
-					"featureTitle": "Suu dung HLV",
-					"description": "Lich kha dung ro rang de moi gio mang lai gia tri.",
-					"videoSrc": "/video-2.mp4",
-					"videoLabel": "Video spotlight 2"
-				},
-				{
-					"stat": "+18%",
-					"featureTitle": "It no-show hon",
-					"description": "Nhac lich va lich on dinh giu hoc vien den dung gio.",
+					"stat": "-40%",
+					"featureTitle": "Giảm số buổi bị bỏ lỡ",
+					"description": "Khách nhận nhắc lịch và ít quên buổi tập hơn",
 					"videoSrc": "/video-3.mp4",
-					"videoLabel": "Video spotlight 3"
+					"videoLabel": "Video spotlight studio 2"
+				},
+				{
+					"stat": "-70%",
+					"featureTitle": "Giảm thời gian trả lời tin nhắn",
+					"description": "Không cần phản hồi thủ công từng khách hàng",
+					"videoSrc": "/video-2.mp4",
+					"videoLabel": "Video spotlight studio 3"
 				},
 				{
 					"stat": "+42%",
-					"featureTitle": "Thanh vien quay lai deu",
-					"description": "Lich lop on dinh giup hoc vien quay lai deu dan moi tuan.",
-					"videoSrc": "/video-4.mp4",
-					"videoLabel": "Video spotlight 4"
+					"featureTitle": "Kiểm soát lịch trình",
+					"description": "Tất cả lớp học và lịch hẹn trong một nơi",
+					"videoSrc": "/video-1.mp4",
+					"videoLabel": "Video spotlight studio 4"
 				}
 			]
 		},
 		"quickStart": {
-			"line1": "Sẵn sàng hoạt động",
+			"line1": "Sẵn sàng vận hành",
 			"line2Before": "trong ",
 			"line2Accent": "5 phút",
 			"steps": [
-				{ "label": "Bước 1:", "text": "Thêm tên studio và địa chỉ" },
-				{ "label": "Bước 2:", "text": "Tải ảnh lên và tạo lớp học đầu tiên" },
-				{ "label": "Bước 3:", "text": "Bắt đầu nhận những booking đầu tiên" }
+				{
+					"label": "Bước 1:",
+					"text": "Thêm tên và địa chỉ studio"
+				},
+				{
+					"label": "Bước 2:",
+					"text": "Tải ảnh lên và tạo lớp học đầu tiên"
+				},
+				{
+					"label": "Bước 3:",
+					"text": "Bắt đầu nhận booking đầu tiên"
+				}
 			]
 		},
 		"pricing": {
-			"titleLine1": "Gia don gian",
-			"titleLine2": "Ket qua thuc te",
+			"titleLine1": "Giá đơn giản",
+			"titleLine2": "Kết quả thực tế",
 			"storeAppStore": "App Store",
 			"storeGooglePlay": "Google Play",
 			"plans": [
 				{
 					"name": "Freemium",
-					"subtitle": "Khoi dong de dang",
-					"price": "$0",
-					"priceSub": "Khong gioi han so buoi tap",
+					"subtitle": "Khởi đầu dễ dàng",
+					"price": "0",
+					"priceSub": "Hoàn hảo để bắt đầu",
 					"features": [
-						"3 buoi tap moi tuan",
-						"Theo doi tien do va giu dong luc",
-						"Phan tich hieu suat"
+						"6 buổi tập mỗi tuần",
+						"Không giới hạn khách hàng",
+						"Quản lý booking và khách hàng",
+						"Trang đặt lịch online",
+						"Nhắc lịch tự động cho khách",
+						"1 tài khoản huấn luyện viên"
 					]
 				},
 				{
 					"name": "Pro",
-					"subtitle": "Tang truong manh me",
-					"price": "$15",
-					"priceSub": "/1 thang",
+					"subtitle": "Tăng trưởng mạnh mẽ",
+					"price": "395.000",
+					"priceSub": "/mỗi tháng",
 					"features": [
-						"So buoi tap khong gioi han",
-						"Truy cap analytics va nang cap ho so",
-						"Phan tich hieu suat"
+						"Không giới hạn buổi tập đang hoạt động",
+						"Không giới hạn tài khoản huấn luyện viên",
+						"Nhắc lịch tự động / giảm no-show",
+						"Danh sách chờ cho lớp học",
+						"Phân tích nâng cao",
+						"Hỗ trợ ưu tiên"
 					]
 				}
 			]
 		},
 		"features": {
-			"title": "Thiet ke cho van hanh studio",
+			"title": "Thiết kế cho vận hành studio",
 			"items": [
 				{
-					"title": "Lich hoat dong dong bo",
-					"description": "Quan ly khung gio tap, tranh trung lich, giu van hanh moi ngay on dinh."
+					"title": "Lịch trình luôn đồng bộ",
+					"description": "Quản lý khung giờ tập, tránh xung đột và giữ vận hành hằng ngày ổn định."
 				},
 				{
-					"title": "Ro rang ve trainer va goi tap",
-					"description": "Kiem soat dich vu dang mo, do san sang cua trainer va cong suat dat lich."
+					"title": "Minh bạch huấn luyện viên và dịch vụ",
+					"description": "Kiểm soát dịch vụ đang mở, độ sẵn sàng của huấn luyện viên và công suất booking tại một nơi."
 				},
 				{
-					"title": "Trai nghiem dat lich cho hoc vien",
-					"description": "Cho phep dat lich nhanh, doi ngu van theo doi duoc toan bo session."
+					"title": "Trải nghiệm đặt lịch cho khách",
+					"description": "Cho khách luồng booking nhanh, trong khi đội ngũ vẫn kiểm soát toàn bộ session."
 				}
 			]
 		},
 		"workflow": {
-			"title": "Cach studio khoi dong voi Henzo",
+			"title": "Cách studio triển khai với Henzo",
 			"steps": [
 				{
-					"title": "1. Cai dat app",
-					"description": "Tai tren Android hoac iOS va dang nhap vai tro operator."
+					"title": "1. Cài ứng dụng",
+					"description": "Tải trên Android hoặc iOS và đăng nhập với vai trò vận hành studio."
 				},
 				{
-					"title": "2. Cau hinh studio",
-					"description": "Thiet lap trainer, offering va lich theo tuan."
+					"title": "2. Cấu hình studio",
+					"description": "Thiết lập huấn luyện viên, dịch vụ và lịch làm việc theo tuần."
 				},
 				{
-					"title": "3. Bat dau nhan dat lich",
-					"description": "Mo booking cho hoc vien va quan ly session tren mobile."
+					"title": "3. Bắt đầu nhận booking",
+					"description": "Mở luồng booking cho khách và quản lý session từ điện thoại."
 				}
 			]
 		},
 		"ctaBanner": {
 			"titleLine1": "Studio của bạn.",
 			"titleLine2": "Trong tay bạn.",
-			"description": "Quản lý lớp học, học viên và lịch hẹn chỉ trong một ứng dụng mobile",
+			"description": "Quản lý lớp học, học viên và lịch hẹn trong một ứng dụng mobile",
 			"storeAppStore": "App Store",
 			"storeGooglePlay": "Google Play"
 		},
 		"finalCta": {
-			"title": "San sang van hanh studio nhanh hon?",
-			"description": "Bat dau voi app mobile va dua toan bo quy trinh hang ngay vao mot luong don gian.",
+			"title": "Sẵn sàng vận hành fitness studio nhanh hơn?",
+			"description": "Bắt đầu với ứng dụng mobile và đưa vận hành hằng ngày vào một luồng gọn gàng.",
 			"androidCta": "Tải cho Android",
 			"iosCta": "Tải cho iOS",
 			"contactCta": "Liên hệ tư vấn"
