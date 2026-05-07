@@ -58,6 +58,10 @@
 			"storeGooglePlay": "Google Play",
 			"availableForFree": "Доступно бесплатно",
 			"notification": "Не забудьте тренировку сегодня в 15:00",
+			"entryNotificationTitle": "Новая резервация!",
+			"entryNotificationText": "Sam только что записался на тренировку.",
+			"entryNotification2Title": "Получен новый отзыв!",
+			"entryNotification2Text": "Клиент оставил 5-звёздочный отзыв о занятии.",
 			"newClientsTitle": "Новые клиенты",
 			"newBadge": "New",
 			"clientsBadge": "Клиенты",
@@ -65,14 +69,24 @@
 			"notificationBadge": "Уведомление",
 			"activeUserLabel": "Активный пользователь",
 			"clients": [
-				{ "name": "Анна Новак", "initials": "АН" },
-				{ "name": "Иван Фаундер", "initials": "ИФ" },
-				{ "name": "Мария Ковальски", "initials": "МК" }
+				{
+					"name": "Анна Новак",
+					"initials": "АН"
+				},
+				{
+					"name": "Иван Фаундер",
+					"initials": "ИФ"
+				},
+				{
+					"name": "Мария Ковальски",
+					"initials": "МК"
+				}
 			]
 		},
 		"header": {
 			"navBenefits": "Преимущества",
 			"navPricing": "Цены",
+			"navHowItWorks": "Как это работает",
 			"navContact": "Контакты",
 			"getApp": "Скачать приложение"
 		},
@@ -82,7 +96,11 @@
 		},
 		"statementBeforeSpotlight": {
 			"phrase1Lead": "Вы",
-			"phrase1AccentRotating": ["тренируете.", "обучаете.", "фокусируетесь."],
+			"phrase1AccentRotating": [
+				"тренируете.",
+				"обучаете.",
+				"фокусируетесь."
+			],
 			"phrase2Lead": "Мы",
 			"phrase2AccentRotating": [
 				"заполняем ваше расписание.",
@@ -130,12 +148,18 @@
 			"line2Before": "за ",
 			"line2Accent": "5 минут",
 			"steps": [
-				{ "label": "Шаг 1:", "text": "Добавьте название и адрес студии" },
+				{
+					"label": "Шаг 1:",
+					"text": "Добавьте название и адрес студии"
+				},
 				{
 					"label": "Шаг 2:",
 					"text": "Загрузите фото и создайте первое занятие"
 				},
-				{ "label": "Шаг 3:", "text": "Начните получать первые записи" }
+				{
+					"label": "Шаг 3:",
+					"text": "Начните получать первые записи"
+				}
 			]
 		},
 		"pricing": {

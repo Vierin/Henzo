@@ -58,6 +58,10 @@
 			"storeGooglePlay": "Google Play",
 			"availableForFree": "Available for free",
 			"notification": "Remember to train today at 3pm",
+			"entryNotificationTitle": "New reservation!",
+			"entryNotificationText": "Sam just booked a training session.",
+			"entryNotification2Title": "New review received!",
+			"entryNotification2Text": "A client left a 5-star review for your class.",
 			"newClientsTitle": "New Clients",
 			"newBadge": "New",
 			"clientsBadge": "Clients",
@@ -65,14 +69,24 @@
 			"notificationBadge": "Notification",
 			"activeUserLabel": "Active user",
 			"clients": [
-				{ "name": "Anna Nowak", "initials": "AN" },
-				{ "name": "Ivan Founder", "initials": "IF" },
-				{ "name": "Maria Kowalski", "initials": "MK" }
+				{
+					"name": "Anna Nowak",
+					"initials": "AN"
+				},
+				{
+					"name": "Ivan Founder",
+					"initials": "IF"
+				},
+				{
+					"name": "Maria Kowalski",
+					"initials": "MK"
+				}
 			]
 		},
 		"header": {
 			"navBenefits": "Benefits",
 			"navPricing": "Pricing",
+			"navHowItWorks": "How it works",
 			"navContact": "Contact",
 			"getApp": "Get the app"
 		},
@@ -82,7 +96,11 @@
 		},
 		"statementBeforeSpotlight": {
 			"phrase1Lead": "You",
-			"phrase1AccentRotating": ["train.", "teach.", "focus."],
+			"phrase1AccentRotating": [
+				"train.",
+				"teach.",
+				"focus."
+			],
 			"phrase2Lead": "We",
 			"phrase2AccentRotating": [
 				"fill your schedule.",
@@ -130,12 +148,18 @@
 			"line2Before": "in ",
 			"line2Accent": "5 minutes",
 			"steps": [
-				{ "label": "Step 1:", "text": "Add your studio name and address" },
+				{
+					"label": "Step 1:",
+					"text": "Add your studio name and address"
+				},
 				{
 					"label": "Step 2:",
 					"text": "Upload photos and create your first class"
 				},
-				{ "label": "Step 3:", "text": "Start getting your first bookings" }
+				{
+					"label": "Step 3:",
+					"text": "Start getting your first bookings"
+				}
 			]
 		},
 		"pricing": {

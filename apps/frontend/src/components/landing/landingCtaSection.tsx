@@ -8,6 +8,8 @@ import {
 import { StudioPhoneFrame } from '@/components/landing/studioPhoneFrame';
 import { appStoreUrl, playStoreUrl } from '@/constants/appStores';
 import { useTranslation } from '@/contexts/LanguageContext';
+import gsap from 'gsap';
+import { useLayoutEffect, useRef } from 'react';
 
 const BASE = 'homepage.studio.ctaBanner';
 
@@ -50,6 +52,7 @@ function renderTitleLine2WithHandsUnderline(titleLine2: string) {
 }
 
 export function LandingCtaSection() {
+	const sectionRef = useRef<HTMLElement>(null); 
 	const {
 		titleLine1,
 		titleLine2,
@@ -59,10 +62,12 @@ export function LandingCtaSection() {
 	} = useCtaBannerCopy();
 
 	return (
-		<section className="bg-[#F9F4F0] px-6 py-12 h-screen">
+		<section ref={sectionRef} className="bg-[#F9F4F0] px-6 py-12 h-screen">
 			<div className="mx-auto max-w-7xl overflow-hidden h-full rounded-[1.75rem] bg-[#4A39A8] flex items-center justify-center">
 				<div className="relative grid min-h-[430px] gap-8 px-6 py-8 sm:px-8 md:grid-cols-[1.1fr_0.9fr] md:items-center md:px-12 md:py-10">
-					<div className="pointer-events-none absolute right-[-6%] top-1/2 z-0 w-[60%] -translate-y-1/2 opacity-70">
+					<div 
+						className="circle-image pointer-events-none absolute right-[-6%] top-0 z-0 w-[60%]"
+					>
 						<img
 							src="/images/circles.webp"
 							alt=""

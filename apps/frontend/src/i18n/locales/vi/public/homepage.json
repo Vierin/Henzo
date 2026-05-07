@@ -58,6 +58,10 @@
 			"storeGooglePlay": "Google Play",
 			"availableForFree": "Dùng miễn phí",
 			"notification": "Nhớ tập hôm nay lúc 3pm",
+			"entryNotificationTitle": "Đặt lịch mới!",
+			"entryNotificationText": "Sam vừa đặt một buổi tập.",
+			"entryNotification2Title": "Có đánh giá mới!",
+			"entryNotification2Text": "Một khách hàng vừa để lại đánh giá 5 sao.",
 			"newClientsTitle": "Khách hàng mới",
 			"newBadge": "Mới",
 			"clientsBadge": "Khách",
@@ -65,14 +69,24 @@
 			"notificationBadge": "Thông báo",
 			"activeUserLabel": "Người dùng hoạt động",
 			"clients": [
-				{ "name": "Anna Nowak", "initials": "AN" },
-				{ "name": "Ivan Founder", "initials": "IF" },
-				{ "name": "Maria Kowalski", "initials": "MK" }
+				{
+					"name": "Anna Nowak",
+					"initials": "AN"
+				},
+				{
+					"name": "Ivan Founder",
+					"initials": "IF"
+				},
+				{
+					"name": "Maria Kowalski",
+					"initials": "MK"
+				}
 			]
 		},
 		"header": {
 			"navBenefits": "Lợi ích",
 			"navPricing": "Bảng giá",
+			"navHowItWorks": "Cách hoạt động",
 			"navContact": "Liên hệ",
 			"getApp": "Tải ứng dụng"
 		},
@@ -82,7 +96,11 @@
 		},
 		"statementBeforeSpotlight": {
 			"phrase1Lead": "Bạn",
-			"phrase1AccentRotating": ["tập luyện.", "giảng dạy.", "tập trung."],
+			"phrase1AccentRotating": [
+				"tập luyện.",
+				"giảng dạy.",
+				"tập trung."
+			],
 			"phrase2Lead": "Chúng tôi",
 			"phrase2AccentRotating": [
 				"lấp đầy lịch của bạn.",
@@ -130,12 +148,18 @@
 			"line2Before": "trong ",
 			"line2Accent": "5 phút",
 			"steps": [
-				{ "label": "Bước 1:", "text": "Thêm tên và địa chỉ studio" },
+				{
+					"label": "Bước 1:",
+					"text": "Thêm tên và địa chỉ studio"
+				},
 				{
 					"label": "Bước 2:",
 					"text": "Tải ảnh lên và tạo lớp học đầu tiên"
 				},
-				{ "label": "Bước 3:", "text": "Bắt đầu nhận booking đầu tiên" }
+				{
+					"label": "Bước 3:",
+					"text": "Bắt đầu nhận booking đầu tiên"
+				}
 			]
 		},
 		"pricing": {

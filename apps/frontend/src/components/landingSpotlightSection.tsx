@@ -349,7 +349,7 @@ export function LandingSpotlightSection() {
 							<h3 className="mt-6 text-[1.5rem] leading-[1.1] font-semibold text-white md:text-[2.5rem]">
 								{slide.featureTitle}
 							</h3>
-							<p className="mt-3 max-w-md text-[1rem] leading-[1.2] min-h-[4.5rem] text-white/90 md:text-[1.2rem]">
+							<p className="mt-3 max-w-md text-[1rem]  leading-[1.2] min-h-[4.5rem] text-white/90 md:text-[1.2rem]">
 								{slide.description}
 							</p>
 						</div>
