@@ -14,31 +14,32 @@ export function LandingPhoneShowcaseSection() {
 		const section = sectionRef.current;
 		const phone = phoneRef.current;
 		const circlesEl = circlesRef.current;
-		if (!section || !phone || !circlesEl) {
-			return;
-		}
+		if (!section || !phone || !circlesEl) return;
 
 		gsap.registerPlugin(ScrollTrigger);
 
 		const ctx = gsap.context(() => {
+			// Телефон: движение вниз
 			gsap.fromTo(
 				phone,
-				{ scale: 1, yPercent: 0, force3D: true },
+				{ scale: 1, y: 0, force3D: true },
 				{
 					scale: 0.9,
-					yPercent: 80,
+					y: () => window.innerHeight * 0.6,
 					ease: 'none',
 					force3D: true,
 					scrollTrigger: {
 						trigger: section,
-						start: 'top 30%',
-						end: 'bottom 90%',
+						markers: false,
+						start: 'top 25%',
+						end: 'bottom bottom',
 						scrub: true,
 						invalidateOnRefresh: true,
 					},
 				},
 			);
 
+			// Кружки: появление
 			gsap.fromTo(
 				circlesEl,
 				{ scale: 0.85, rotate: 120, autoAlpha: 0 },
@@ -60,28 +61,36 @@ export function LandingPhoneShowcaseSection() {
 			);
 		}, section);
 
+		// Пересчитываем ScrollTrigger при ресайзе
+		const handleResize = () => {
+			ScrollTrigger.refresh();
+		};
+
+		window.addEventListener('resize', handleResize);
+
 		return () => {
 			ctx.revert();
+			window.removeEventListener('resize', handleResize);
 		};
 	}, []);
 
 	return (
 		<section
 			ref={sectionRef}
-			className="relative z-[12] -mt-[55svh] h-[155svh] flex flex-col items-center overflow-hidden pointer-events-none"
+			className="relative z-[12] -mt-[55svh] h-[170svh] flex flex-col items-center overflow-hidden pointer-events-none"
 			aria-label="App preview"
 		>
 			<div className="pointer-events-none absolute inset-x-0 bottom-[-10%] z-0 w-full">
 				<img
 					ref={circlesRef}
-					src="/studio-circles.svg"
+					src="/images/circles.webp"
 					alt=""
 					aria-hidden="true"
 					className="h-auto w-full origin-center"
 					draggable={false}
 				/>
 			</div>
-			<div className="relative z-10 flex w-full max-w-6xl flex-col items-center justify-start px-4 pb-3 pt-0 sm:px-6 ">
+			<div className="relative z-10 flex w-full max-w-6xl flex-col items-center justify-start px-4 pb-3 pt-0 sm:px-6">
 				<div
 					ref={phoneRef}
 					className="will-change-transform [transform:translateZ(0)]"

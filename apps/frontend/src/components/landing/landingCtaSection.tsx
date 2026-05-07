@@ -41,7 +41,7 @@ function renderTitleLine2WithHandsUnderline(titleLine2: string) {
 				{target}
 				<ChaoticUnderline
 					color="#FFFFFF"
-					className="pointer-events-none absolute -bottom-0.5 left-0 w-[108%] -translate-x-[4%]"
+					className="pointer-events-none absolute -bottom-[4%] left-[2%] w-[103%]"
 				/>
 			</span>
 			{after}
@@ -59,12 +59,12 @@ export function LandingCtaSection() {
 	} = useCtaBannerCopy();
 
 	return (
-		<section className="bg-[#F9F4F0] px-4 pb-8 pt-6 sm:px-6 md:px-10 md:pb-10">
-			<div className="mx-auto max-w-7xl overflow-hidden rounded-[1.75rem] bg-[#4A39A8]">
+		<section className="bg-[#F9F4F0] px-6 py-12 h-screen">
+			<div className="mx-auto max-w-7xl overflow-hidden h-full rounded-[1.75rem] bg-[#4A39A8] flex items-center justify-center">
 				<div className="relative grid min-h-[430px] gap-8 px-6 py-8 sm:px-8 md:grid-cols-[1.1fr_0.9fr] md:items-center md:px-12 md:py-10">
-					<div className="pointer-events-none absolute right-[-18%] top-1/2 z-0 w-[72%] -translate-y-1/2 opacity-70">
+					<div className="pointer-events-none absolute right-[-6%] top-1/2 z-0 w-[60%] -translate-y-1/2 opacity-70">
 						<img
-							src="/studio-circles.svg"
+							src="/images/circles.webp"
 							alt=""
 							aria-hidden="true"
 							className="h-auto w-full origin-center"
@@ -73,11 +73,11 @@ export function LandingCtaSection() {
 					</div>
 
 					<div className="relative z-10">
-						<h2 className="text-[clamp(2.2rem,4.2vw,4rem)] leading-[0.98] tracking-[-0.02em] text-white">
+						<h2 className="text-[4rem] leading-[0.98] tracking-[-0.02em] text-white">
 							<span className="block">{titleLine1}</span>
 							{renderTitleLine2WithHandsUnderline(titleLine2)}
 						</h2>
-						<p className="mt-5 max-w-[26ch] text-[1.15rem] leading-[1.45] text-white/90">
+						<p className="mt-10 max-w-[30ch] text-[1.8rem] leading-[1.45] text-white/90">
 							{description}
 						</p>
 
@@ -106,7 +106,7 @@ export function LandingCtaSection() {
 					</div>
 
 					<div className="relative z-10 flex justify-center md:justify-end">
-						<StudioPhoneFrame className="w-[min(58vw,286px)] md:w-[min(32vw,292px)]" />
+						<StudioPhoneFrame className="w-[min(58vw,220px)] md:w-[min(32vw,250px)]" />
 					</div>
 				</div>
 			</div>

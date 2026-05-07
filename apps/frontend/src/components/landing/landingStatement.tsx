@@ -5,7 +5,7 @@ import { useCallback, useEffect, useState } from 'react';
 
 const BASE = 'homepage.studio.statementBeforeSpotlight';
 
-const ROTATE_MS = 1500;
+const ROTATE_MS = 3000;
 const ROTATOR_STAGGER_MS = 20;
 
 const LINE_EM = 1.2;
