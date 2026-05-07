@@ -69,7 +69,7 @@ export function LandingPricingSection() {
 					</span>
 				</h2>
 
-				<div className="mt-15 grid gap-7 md:grid-cols-2 md:gap-[9vw]">
+				<div className="mt-15 grid gap-7 md:grid-cols-2 md:gap-12 max-w-5xl mx-auto">
 					{plans.map((plan) => (
 						<article
 							key={plan.name}

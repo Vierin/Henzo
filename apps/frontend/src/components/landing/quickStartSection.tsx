@@ -40,7 +40,7 @@ export function QuickStartSection() {
 	return (
 		<section
 			id="how-it-works"
-			className="bg-[#F9F4F0] px-5 py-12 h-[max(100svh,1000px)]"
+			className="bg-[#F9F4F0] px-5 py-12 h-[max(105svh,1000px)] pb-40"
 			aria-labelledby="quick-start-heading"
 		>
 			<div className="mx-auto max-w-5xl">
