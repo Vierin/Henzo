@@ -101,7 +101,7 @@ export default function FAQSection() {
 							onClick={() => toggleQuestion(item.id)}
 							className="w-full px-6 py-4 text-left hover:bg-gray-50 transition-colors flex justify-between items-center"
 						>
-							<span className="font-semibold text-black text-left">
+							<span className="font-semibold text-[#3F3F3F] text-left">
 								{item.question}
 							</span>
 							<svg

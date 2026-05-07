@@ -25,11 +25,27 @@ import 'theme/app_theme.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  var loadedEnv = 'assets/.env';
   try {
     await dotenv.load(fileName: 'assets/.env');
-  } catch (_) {
+  } catch (e) {
+    loadedEnv = 'assets/.env.example';
     await dotenv.load(fileName: 'assets/.env.example');
+    assert(() {
+      // ignore: avoid_print
+      print('[Env] Failed to load assets/.env, fallback to .env.example: $e');
+      return true;
+    }());
   }
+  assert(() {
+    // ignore: avoid_print
+    print('[Env] Loaded env file: $loadedEnv');
+    if (AppConfig.supabaseUrl.contains('your-project.supabase.co')) {
+      // ignore: avoid_print
+      print('[Env] Invalid EXPO_PUBLIC_SUPABASE_URL: placeholder value is active');
+    }
+    return true;
+  }());
   final notificationsStore = NotificationsStore();
   await notificationsStore.load();
   try {

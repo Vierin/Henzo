@@ -64,7 +64,7 @@ export default function ContactPageClient() {
 							</p>
 							<h1
 								id="contact-hero-heading"
-								className="text-4xl md:text-5xl font-bold text-black mb-6"
+								className="text-4xl md:text-5xl font-bold text-[#3F3F3F] mb-6"
 							>
 								{t.contact.heroTitle}
 							</h1>
@@ -85,7 +85,7 @@ export default function ContactPageClient() {
 								<div>
 									<h2
 										id="contact-form-heading"
-										className="text-2xl font-bold text-black mb-2"
+										className="text-2xl font-bold text-[#3F3F3F] mb-2"
 									>
 										{t.contact.formTitle}
 									</h2>
@@ -175,7 +175,7 @@ export default function ContactPageClient() {
 								<div>
 									<h2
 										id="contact-info-heading"
-										className="text-2xl font-bold text-black mb-2"
+										className="text-2xl font-bold text-[#3F3F3F] mb-2"
 									>
 										{t.contact.contactInfoTitle}
 									</h2>
@@ -209,7 +209,7 @@ export default function ContactPageClient() {
 												</svg>
 											</div>
 											<div>
-												<h3 className="text-lg font-semibold text-black mb-1">
+												<h3 className="text-lg font-semibold text-[#3F3F3F] mb-1">
 													{t.contact.email}
 												</h3>
 												<p className="text-gray-600 mb-1">
@@ -239,7 +239,7 @@ export default function ContactPageClient() {
 							<div className="text-center mb-12">
 								<h2
 									id="faq-heading"
-									className="text-3xl font-bold text-black mb-4"
+									className="text-3xl font-bold text-[#3F3F3F] mb-4"
 								>
 									{t.contact.faqTitle}
 								</h2>

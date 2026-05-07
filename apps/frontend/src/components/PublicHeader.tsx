@@ -87,12 +87,6 @@ function PublicHeaderContent({
 			: currentLocale === 'vi'
 				? 'liên hệ'
 				: 'contact';
-	const languageLabel =
-		currentLocale === 'ru'
-			? 'язык'
-			: currentLocale === 'vi'
-				? 'ngôn ngữ'
-				: 'language';
 
 	if (variant === 'landing') {
 		const shellClass = embedded
@@ -110,14 +104,14 @@ function PublicHeaderContent({
 							<Image
 								src="/logo.png"
 								alt="Henzo"
-								width={88}
-								height={40}
-								className="h-8 w-auto shrink-0 object-contain sm:h-10"
+								width={161}
+								height={52}
+								className="h-[52px] w-auto shrink-0 object-contain"
 							/>
 						</Link>
 
 						<nav
-							className="absolute left-1/2 top-1/2 hidden -translate-x-1/2 -translate-y-1/2 gap-6 text-[0.9375rem] font-medium lowercase text-[#1A202C]/85 md:flex md:gap-8"
+							className="absolute left-1/2 top-1/2 hidden -translate-x-1/2 -translate-y-1/2 gap-6 text-[0.9375rem] font-medium lowercase text-[#3F3F3F]/85 md:flex md:gap-8"
 							aria-label="Landing"
 						>
 							<a
@@ -133,7 +127,10 @@ function PublicHeaderContent({
 								{navPricing}
 							</a>
 							<Link
-								href={withLocale('/contact', currentLocale as 'en' | 'ru' | 'vi')}
+								href={withLocale(
+									'/contact',
+									currentLocale as 'en' | 'ru' | 'vi',
+								)}
 								className="whitespace-nowrap transition hover:text-[#E86D4F]"
 							>
 								{navContact}
@@ -146,12 +143,11 @@ function PublicHeaderContent({
 								onClick={() =>
 									setIsLanguageDropdownOpen(!isLanguageDropdownOpen)
 								}
-								className="flex items-center gap-1 rounded-full border border-[#eadfd7] bg-white/90 px-2.5 py-2 text-xs font-medium lowercase text-[#1A202C] shadow-sm transition hover:border-[#E86D4F]/40 hover:bg-white sm:gap-2 sm:px-3 sm:py-2 sm:text-sm"
+								className="flex items-center gap-1 rounded-full border border-[#eadfd7] bg-white/90 px-2.5 py-2 text-xs font-medium text-[#3F3F3F] shadow-sm transition hover:border-[#E86D4F]/40 hover:bg-white sm:gap-2 sm:px-3 sm:py-2 sm:text-sm"
 								aria-expanded={isLanguageDropdownOpen}
 								aria-haspopup="listbox"
 							>
-								<span className="hidden sm:inline">{languageLabel}</span>
-								<span className="sm:hidden">{selectedLanguage}</span>
+								<span>{selectedLanguage}</span>
 								<ChevronDown
 									className={`h-3.5 w-3.5 shrink-0 transition-transform sm:h-4 sm:w-4 ${
 										isLanguageDropdownOpen ? 'rotate-180' : ''
@@ -176,7 +172,7 @@ function PublicHeaderContent({
 											className={`flex w-full items-center gap-2 px-3 py-2.5 text-left text-sm transition sm:gap-3 sm:px-4 sm:py-3 ${
 												selectedLanguage === language.code.toUpperCase()
 													? 'bg-[#E86D4F] text-white hover:bg-[#d85e42]'
-													: 'text-[#1A202C] hover:bg-[#F9F4F0]'
+													: 'text-[#3F3F3F] hover:bg-[#F9F4F0]'
 											}`}
 										>
 											<span className="text-base sm:text-lg">
@@ -216,7 +212,7 @@ function PublicHeaderContent({
 								onClick={() =>
 									setIsLanguageDropdownOpen(!isLanguageDropdownOpen)
 								}
-								className="flex items-center gap-1 rounded-full border border-[#eadfd7] bg-white/90 px-2.5 py-2 text-xs font-medium text-[#1A202C] shadow-sm transition hover:border-[#E86D4F]/40 hover:bg-white sm:gap-2 sm:px-3 sm:py-2.5 sm:text-sm"
+								className="flex items-center gap-1 rounded-full border border-[#eadfd7] bg-white/90 px-2.5 py-2 text-xs font-medium text-[#3F3F3F] shadow-sm transition hover:border-[#E86D4F]/40 hover:bg-white sm:gap-2 sm:px-3 sm:py-2.5 sm:text-sm"
 								aria-expanded={isLanguageDropdownOpen}
 								aria-haspopup="listbox"
 							>
@@ -245,7 +241,7 @@ function PublicHeaderContent({
 											className={`flex w-full items-center gap-2 px-3 py-2.5 text-left text-sm transition sm:gap-3 sm:px-4 sm:py-3 ${
 												selectedLanguage === language.code.toUpperCase()
 													? 'bg-[#E86D4F] text-white hover:bg-[#d85e42]'
-													: 'text-[#1A202C] hover:bg-[#F9F4F0]'
+													: 'text-[#3F3F3F] hover:bg-[#F9F4F0]'
 											}`}
 										>
 											<span className="text-base sm:text-lg">
@@ -360,10 +356,16 @@ export default function PublicHeader({
 								: 'bg-white shadow-sm'
 					}
 				>
-					<div className="mx-auto max-w-7xl px-4 py-4 md:px-6">
-						<div className="flex items-center justify-between">
-							<div className="h-10 w-32 rounded bg-[#eadfd7]/80 animate-pulse" />
-							<div className="h-10 w-24 rounded-full bg-[#eadfd7]/80 animate-pulse" />
+					<div
+						className={
+							landing && embedded
+								? 'flex items-center justify-between gap-3 px-1 py-1 sm:px-2'
+								: 'mx-auto max-w-7xl px-4 py-4 md:px-6'
+						}
+					>
+						<div className="flex w-full items-center justify-between gap-3">
+							<div className="h-8 w-28 rounded-md bg-[#eadfd7]/80 animate-pulse sm:h-10 sm:w-32" />
+							<div className="h-9 w-[4.5rem] rounded-full bg-[#eadfd7]/80 animate-pulse sm:h-10 sm:w-24" />
 						</div>
 					</div>
 				</header>

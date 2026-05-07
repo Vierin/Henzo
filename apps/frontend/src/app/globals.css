@@ -1,8 +1,9 @@
+@import url('https://fonts.googleapis.com/css2?family=Caveat:wght@600;700&family=Shadows+Into+Light+Two&family=Wix+Madefor+Display:wght@400;500;600;700;800&display=swap');
 @import 'tailwindcss';
 
 :root {
 	--background: #ffffff;
-	--foreground: #374151;
+	--foreground: #3f3f3f;
 	--primary: #ff5b5b;
 	--border: #ff5b5b26;
 	--secondary: #ffe5e5;
@@ -19,6 +20,10 @@
 	--font-sans: var(--font-geist-sans);
 	--font-serif: var(--font-instrument-serif), ui-serif, Georgia, serif;
 	--font-mono: var(--font-geist-mono);
+	--font-wix-madefor-display:
+		'Wix Madefor Display', ui-sans-serif, system-ui, sans-serif;
+	--font-shadows-into-light-two:
+		'Shadows Into Light Two', ui-serif, Georgia, serif;
 }
 
 html {
@@ -44,16 +49,16 @@ main {
 
 /* Prevent Safari zoom on input focus - minimum 16px font size on mobile */
 @media (max-width: 768px) {
-	input[type="text"],
-	input[type="email"],
-	input[type="tel"],
-	input[type="number"],
-	input[type="password"],
-	input[type="search"],
-	input[type="url"],
-	input[type="date"],
-	input[type="time"],
-	input[type="datetime-local"],
+	input[type='text'],
+	input[type='email'],
+	input[type='tel'],
+	input[type='number'],
+	input[type='password'],
+	input[type='search'],
+	input[type='url'],
+	input[type='date'],
+	input[type='time'],
+	input[type='datetime-local'],
 	textarea,
 	select {
 		font-size: 16px !important;
@@ -185,7 +190,7 @@ main {
 /* Override all blue color references in time picker */
 .rs-picker-time .rs-picker-toggle-textbox,
 .custom-time-picker .rs-picker-toggle-textbox {
-	color: #374151 !important;
+	color: #3f3f3f !important;
 }
 
 .rs-picker-time .rs-picker-toggle-textbox:focus,
@@ -250,7 +255,7 @@ main {
 .rs-picker-time .rs-picker-toggle-textbox,
 .custom-time-picker input,
 .custom-time-picker .rs-picker-toggle-textbox {
-	color: #374151 !important;
+	color: #3f3f3f !important;
 }
 
 .rs-picker-time input:focus,
@@ -274,7 +279,7 @@ main {
 }
 
 .ant-picker-input > input {
-	color: #374151 !important;
+	color: #3f3f3f !important;
 }
 
 .ant-picker-input > input::placeholder {
@@ -308,12 +313,16 @@ main {
 }
 
 /* Ant Design TimePicker активные элементы */
-.ant-picker-time-panel-column > li.ant-picker-time-panel-cell-selected .ant-picker-time-panel-cell-inner {
+.ant-picker-time-panel-column
+	> li.ant-picker-time-panel-cell-selected
+	.ant-picker-time-panel-cell-inner {
 	background-color: #ff5b5b !important;
 	color: white !important;
 }
 
-.ant-picker-time-panel-column > li.ant-picker-time-panel-cell-selected .ant-picker-time-panel-cell-inner:hover {
+.ant-picker-time-panel-column
+	> li.ant-picker-time-panel-cell-selected
+	.ant-picker-time-panel-cell-inner:hover {
 	background-color: #e04a4a !important;
 }
 
@@ -328,7 +337,9 @@ main {
 	background: #ff5b5b !important;
 }
 
-.ant-picker-time-panel-column > li.ant-picker-time-panel-cell-selected .ant-picker-time-panel-cell-inner {
+.ant-picker-time-panel-column
+	> li.ant-picker-time-panel-cell-selected
+	.ant-picker-time-panel-cell-inner {
 	background: #ff5b5b !important;
 	color: white !important;
 }
