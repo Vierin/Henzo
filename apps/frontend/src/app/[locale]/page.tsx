@@ -30,9 +30,9 @@ export default async function HomePage() {
 				<LandingPhoneShowcaseSection />
 				<LandingStatement />
 				<LandingSpotlightSection />
-				<QuickStartSection />
+				{/* <QuickStartSection />
 				<LandingPricingSection />
-				<LandingCtaSection />
+				<LandingCtaSection /> */}
 			</main>
 		</div>
 	);
