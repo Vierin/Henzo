@@ -176,7 +176,7 @@ export function LandingSpotlightSection() {
 	const line2BeforeAccent = String(t(`${SPOTLIGHT_BASE}.line2BeforeAccent`));
 	const line2Accent = String(t(`${SPOTLIGHT_BASE}.line2Accent`));
 	const slides = useMemo(
-		() => parseSlides(t(`${SPOTLIGHT_BASE}.slides`)),
+		() => parseSlides(t(`${SPOTLIGHT_BASE}.slides`)).reverse(),
 		[language, t],
 	);
 
@@ -185,6 +185,9 @@ export function LandingSpotlightSection() {
 	const pinRef = useRef<HTMLDivElement>(null);
 	const clipRef = useRef<HTMLDivElement>(null);
 	const leftCopyRef = useRef<HTMLDivElement>(null);
+	const mobilePinRef = useRef<HTMLDivElement>(null);
+	const mobileCardsRef = useRef<HTMLDivElement>(null);
+	const mobileCopyRef = useRef<HTMLDivElement>(null);
 
 	const slide = slides[active] ?? slides[0];
 
@@ -194,12 +197,6 @@ export function LandingSpotlightSection() {
 		}
 
 		gsap.registerPlugin(ScrollTrigger);
-
-		const pin = pinRef.current;
-		if (!pin || !clipRef.current) {
-			return;
-		}
-
 		let lastIdx = -1;
 		const n = slides.length;
 
@@ -207,55 +204,128 @@ export function LandingSpotlightSection() {
 			return Math.min(max, Math.max(min, v));
 		}
 
-		const applyFan = (progress: number) => {
-			const clipEl = clipRef.current;
-			if (!clipEl) return;
+		const ctx = gsap.context(() => {
+			const mm = gsap.matchMedia();
 
-			const cards = clipEl.querySelectorAll<HTMLElement>('[data-fan-card]');
-			if (cards.length === 0) return;
+			mm.add('(min-width: 768px)', () => {
+				const pin = pinRef.current;
+				const clipEl = clipRef.current;
+				if (!pin || !clipEl) return;
 
-			const focus = progress * (n - 1);
+				const applyFan = (progress: number) => {
+					const cards = clipEl.querySelectorAll<HTMLElement>('[data-fan-card]');
+					if (cards.length === 0) return;
 
-			cards.forEach((el, j) => {
-				const delta = j - focus;
-				const rot = clamp(delta * FAN_DEG_PER_SLOT, -FAN_MAX_DEG, FAN_MAX_DEG);
+					const focus = progress * (n - 1);
+					cards.forEach((el, j) => {
+						const delta = j - focus;
+						const rot = clamp(delta * FAN_DEG_PER_SLOT, -FAN_MAX_DEG, FAN_MAX_DEG);
+						gsap.set(el, {
+							rotation: rot,
+							opacity: 1,
+							scale: 1,
+							transformOrigin: `${FAN_ORIGIN_X} ${FAN_ORIGIN_Y}`,
+							force3D: true,
+							zIndex: Math.round(100 - Math.abs(delta) * 10),
+						});
+					});
+				};
 
-				gsap.set(el, {
-					rotation: rot,
-					opacity: 1,
-					scale: 1,
-					transformOrigin: `${FAN_ORIGIN_X} ${FAN_ORIGIN_Y}`,
-					force3D: true,
-					zIndex: Math.round(100 - Math.abs(delta) * 10),
+				ScrollTrigger.create({
+					trigger: pin,
+					start: 'top top',
+					end: () =>
+						`+=${Math.round(window.innerHeight * Math.max(1.25, n * 0.5))}`,
+					pin: true,
+					pinSpacing: true,
+					scrub: 1,
+					invalidateOnRefresh: true,
+					anticipatePin: 1,
+					onUpdate: (self: ScrollTrigger) => {
+						const reversedProgress = 1 - self.progress;
+						applyFan(reversedProgress);
+						const rawIdx = Math.floor((1 - reversedProgress) * n);
+						const idx = Math.min(n - 1, rawIdx);
+						if (idx !== lastIdx) {
+							lastIdx = idx;
+							setActive(idx);
+						}
+					},
+				});
+
+				applyFan(1);
+			});
+
+			mm.add('(max-width: 767px)', () => {
+				const mobilePin = mobilePinRef.current;
+				const mobileCards = mobileCardsRef.current;
+				if (!mobilePin || !mobileCards) return;
+
+				const cards = mobileCards.querySelectorAll<HTMLElement>('[data-mobile-card]');
+				if (cards.length === 0) return;
+
+				gsap.set(cards, { y: 40, opacity: 0, scale: 1, force3D: true });
+				gsap.set(cards[0], { y: 10, opacity: 1, scale: 1 });
+
+				ScrollTrigger.create({
+					trigger: mobilePin,
+					start: 'top top',
+					end: () => `+=${Math.round(window.innerHeight * Math.max(1.45, n * 0.78))}`,
+					pin: true,
+					pinSpacing: true,
+					scrub: 1,
+					invalidateOnRefresh: true,
+					anticipatePin: 1,
+					onUpdate: (self: ScrollTrigger) => {
+						const rawFocus = self.progress * Math.max(0.0001, n - 1);
+						const baseIdx = clamp(Math.floor(rawFocus), 0, n - 1);
+						const seg = rawFocus - baseIdx;
+						// Fast entry, then short hold per slide to improve readability.
+						const enterP = seg < 0.24 ? seg / 0.24 : 1;
+						const focus = clamp(baseIdx + enterP, 0, n - 1);
+						const idx = clamp(Math.round(focus), 0, n - 1);
+						if (idx !== lastIdx) {
+							lastIdx = idx;
+							setActive(idx);
+						}
+
+						cards.forEach((el, j) => {
+							let y = 40;
+							let opacity = 0;
+							let scale = 0.96;
+							const depth = focus - j;
+
+							if (depth >= 0) {
+								// Already shown cards move up smoothly and shrink per depth.
+								y = 10 - depth * 30;
+								scale = 1 - depth * 0.12;
+								scale = clamp(scale, 0.3, 1.2);
+								opacity = 1;
+							} else if (depth > -1) {
+								// Next card enters smoothly from below and fades in quickly.
+								const p = 1 + depth; // -1..0 => 0..1
+								const fastFade = Math.pow(p, 0.6);
+								y = 40 - 30 * p;
+								opacity = fastFade;
+								scale = 0.96 + 0.04 * p;
+							}
+
+							gsap.set(el, {
+								y,
+								scale,
+								opacity,
+								zIndex: 100 + j,
+								force3D: true,
+							});
+						});
+					},
 				});
 			});
-		};
 
-		const ctx = gsap.context(() => {
-			ScrollTrigger.create({
-				trigger: pin,
-				start: 'top top',
-				end: () =>
-					`+=${Math.round(window.innerHeight * Math.max(1.25, n * 0.5))}`,
-				pin: true,
-				pinSpacing: true,
-				scrub: 1,
-				invalidateOnRefresh: true,
-				anticipatePin: 1,
-				onUpdate: (self: ScrollTrigger) => {
-					const reversedProgress = 1 - self.progress;
-					applyFan(reversedProgress);
-					const rawIdx = Math.floor((1 - reversedProgress) * n);
-					const idx = Math.min(n - 1, rawIdx);
-					if (idx !== lastIdx) {
-						lastIdx = idx;
-						setActive(idx);
-					}
-				},
-			});
-
-			applyFan(1);
-		}, pin);
+			return () => {
+				mm.revert();
+			};
+		}, sectionRef);
 
 		const onResize = () => {
 			ScrollTrigger.refresh();
@@ -269,11 +339,16 @@ export function LandingSpotlightSection() {
 	}, [slides.length, slides]);
 
 	useEffect(() => {
-		const el = leftCopyRef.current;
-		if (!el || slides.length === 0) {
+		if (slides.length === 0) {
 			return;
 		}
-		const targets = el.querySelectorAll('h3, p');
+		const targets: Element[] = [];
+		if (leftCopyRef.current) {
+			targets.push(...leftCopyRef.current.querySelectorAll('h3, p'));
+		}
+		if (mobileCopyRef.current) {
+			targets.push(...mobileCopyRef.current.querySelectorAll('h3, p'));
+		}
 		if (targets.length === 0) {
 			return;
 		}
@@ -285,7 +360,7 @@ export function LandingSpotlightSection() {
 				y: 0,
 				duration: 0.42,
 				ease: 'power2.out',
-				stagger: 0.07,
+				stagger: 0.05,
 			},
 		);
 		return () => {
@@ -310,11 +385,11 @@ export function LandingSpotlightSection() {
 				<div className="text-center">
 					<h2
 						id="landing-spotlight-heading"
-						className="text-[4.4rem] text-white"
+						className="text-[2.4rem] sm:text-[4.4rem] text-white"
 					>
 						{headingLine1}
 					</h2>
-					<p className="mx-auto mt-2 max-w-2xl text-lg leading-snug text-[#C6FF00] sm:text-xl md:text-[2.2rem]">
+					<p className="mx-auto mt-2 max-w-2xl text-2xl leading-snug text-[#C6FF00] sm:text-[2.2rem]">
 						<span>{line2BeforeAccent}</span>
 						<span className="relative inline-block whitespace-nowrap px-0.5">
 							{line2Accent}
@@ -329,7 +404,7 @@ export function LandingSpotlightSection() {
 
 			<div
 				ref={pinRef}
-				className="mx-auto flex w-full max-w-7xl min-h-[100svh] items-center px-4 sm:px-6 md:h-[100svh] md:min-h-0"
+				className="mx-auto hidden w-full max-w-7xl min-h-[100svh] items-center px-4 sm:px-6 md:flex md:h-[100svh] md:min-h-0"
 			>
 				<div className="grid w-full translate-y-6 grid-cols-1 items-start gap-10 md:translate-y-6 md:grid-cols-2 md:gap-12 lg:gap-16">
 					<div className="mt-6 text-left md:mt-12">
@@ -400,6 +475,73 @@ export function LandingSpotlightSection() {
 								/>
 							</div>
 						))}
+					</div>
+				</div>
+			</div>
+
+			<div
+				ref={mobilePinRef}
+				className="mx-auto w-full max-w-md overflow-hidden px-4 pb-4 md:hidden"
+			>
+				<div className="flex h-[100svh] flex-col items-center justify-center gap-4 sm:py-3">
+					<div
+						ref={mobileCardsRef}
+						className="relative mx-auto mt-1 aspect-[4/3] w-[92%]"
+						style={{ overflow: 'visible' }}
+					>
+						{slides.map((s, i) => (
+							<div
+								key={`${s.videoSrc}-mobile`}
+								data-mobile-card
+								className="absolute inset-0 w-full overflow-hidden rounded-[2rem] will-change-transform"
+								style={{ zIndex: slides.length - i }}
+							>
+								<SpotlightLoopVideo
+									src={s.videoSrc}
+									label={s.videoLabel}
+									className="absolute inset-0 h-full w-full object-cover"
+								/>
+							</div>
+						))}
+					</div>
+
+					<div ref={mobileCopyRef} className="mt-15 sm:mt-3 text-left w-full min-h-[300px] flex flex-col">
+						<div className="relative inline-flex min-h-[3.6rem] min-w-[10rem] items-center justify-center w-fit px-2 py-1">
+							<StatScribbleOval
+								key={`mobile-${slide.stat}`}
+								strokeMain={scribble.main}
+								strokeSub={scribble.sub}
+								className="pointer-events-none absolute inset-[-0.8rem] aspect-[3/1.2] w-[calc(100%+1.6rem)] max-w-[240px]"
+							/>
+							<span className="relative z-10 text-[2.4rem] font-medium leading-none tracking-tight text-white">
+								{slide.stat}
+							</span>
+						</div>
+						<h3 className="mt-3 text-[1.5rem] leading-[1.08] font-semibold text-white">
+							{slide.featureTitle}
+						</h3>
+						<p className="mt-3 min-h-[4.2rem] text-[1.2rem] leading-[1.3] text-white/90">
+							{slide.description}
+						</p>
+						<div className="mt-auto sm:mt-5 flex justify-center gap-2.5" role="group">
+							{slides.map((_, i) => (
+								<span
+									key={`mobile-dot-${i}`}
+									className={`h-2.5 w-2.5 rounded-full transition-[transform,opacity,box-shadow] duration-300 ${
+										i === active ? 'scale-125 opacity-100' : 'scale-100 opacity-45'
+									}`}
+									style={{
+										backgroundColor:
+											SPOTLIGHT_COLORS[i % SPOTLIGHT_COLORS.length] ?? '#FFFFFF',
+										boxShadow:
+											i === active
+												? `0 0 0 2px ${SPOTLIGHT_COLORS[i % SPOTLIGHT_COLORS.length]}59`
+												: 'none',
+									}}
+									aria-hidden
+								/>
+							))}
+						</div>
 					</div>
 				</div>
 			</div>

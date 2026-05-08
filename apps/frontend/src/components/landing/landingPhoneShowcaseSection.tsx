@@ -115,10 +115,15 @@ export function LandingPhoneShowcaseSection() {
 			// Телефон: движение вниз
 			gsap.fromTo(
 				phone,
-				{ scale: 1, yPercent: 0, force3D: true },
+				{ scale: 1, y: 0, force3D: true },
 				{
 					scale: 0.9,
-					yPercent: 70,
+					y: () => {
+						const vh = window.innerHeight;
+						const w = window.innerWidth;
+						const factor = w < 768 ? 0.9 : 0.6;  
+						return vh * factor;
+					},
 					ease: 'none',
 					force3D: true,
 					scrollTrigger: {
@@ -173,10 +178,10 @@ export function LandingPhoneShowcaseSection() {
 	return (
 		<section
 			ref={sectionRef}
-			className="relative z-[12] -mt-[55svh] h-[170svh] flex flex-col items-center overflow-hidden pointer-events-none"
+			className="relative z-[12] -mt-[65svh]  sm:-mt-[55svh] h-[170svh] flex flex-col items-center overflow-hidden pointer-events-none"
 			aria-label="App preview"
 		>
-			<div className="pointer-events-none absolute inset-x-0 bottom-[-10%] z-0 w-full">
+			<div className="pointer-events-none absolute inset-x-0 bottom-[5%] sm:bottom-[-10%] left-1/2 -translate-x-1/2 z-0 w-[200vw] sm:w-full">
 				<img
 					ref={circlesRef}
 					src="/images/circles.webp"

@@ -53,14 +53,14 @@ export function LandingPricingSection() {
 	return (
 		<section
 			id="pricing"
-			className="bg-[#F9F4F0] h-[max(100svh,1000px)] px-6 pb-16 pt-8 md:px-10 md:pb-20 md:pt-10"
+			className="bg-[#F9F4F0] sm:min-h-[max(100svh,1000px)] px-6 pb-16 pt-8 md:px-10 md:pb-20 md:pt-10"
 		>
 			<div className="mx-auto max-w-7xl">
 				<h2 className="text-center text-[#33363F]">
-					<span className="block text-[4.4rem] tracking-tight leading-[1]">
+					<span className="block text-[2.4rem] sm:text-[4.4rem] tracking-tight leading-[1]">
 						{titleLine1}
 					</span>
-					<span className="relative inline-block text-[4.4rem] font-medium leading-[1] tracking-tight text-[#F15942]">
+					<span className="relative inline-block text-[2.4rem] sm:text-[4.4rem] font-medium leading-[1] tracking-tight text-[#F15942]">
 						{titleLine2}
 						<ChaoticUnderline
 							color="#4D39A8"
@@ -102,19 +102,19 @@ export function LandingPricingSection() {
 									</div>
 								</div>
 
-								<div className="my-10 border-t border-[#3F3F3F]" />
+								<div className="my-5 sm:my-10 border-t border-[#3F3F3F]" />
 
 								<div className="">
-									<p className="text-[4.4rem] font-medium leading-none tracking-tight text-[#3F3F3F]">
+									<p className="text-[3rem] sm:text-[4.4rem] font-medium leading-none tracking-tight text-[#3F3F3F]">
 										{plan.price}{' '}
-										<span className="text-[2.5rem] text-[#3F3F3F]">VND</span>
+										<span className="text-[1.8rem] sm:text-[2.5rem] text-[#3F3F3F]">VND</span>
 									</p>
 									<p className="mt-3 text-[1rem] text-[#3F3F3F]">
 										{plan.priceSub}
 									</p>
 								</div>
 
-								<ul className="mt-13 space-y-4">
+								<ul className="mt-5 sm:mt-13 space-y-4">
 									{plan.features.map((feature) => (
 										<li
 											key={`${plan.name}-${feature}`}

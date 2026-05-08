@@ -5,7 +5,7 @@ import { StudioPhoneFrame } from '@/components/landing/studioPhoneFrame';
 import { useTranslation } from '@/contexts/LanguageContext';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
-import { useLayoutEffect, useMemo, useRef } from 'react';
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 
 const scriptClass =
 	'font-shadows-into-light-two text-[2.5rem] leading-none text-[#D9534F]';
@@ -33,9 +33,12 @@ export function QuickStartSection() {
 	const t = useTranslation();
 	const sectionRef = useRef<HTMLElement>(null);
 	const desktopWrapRef = useRef<HTMLDivElement>(null);
+	const mobilePinRef = useRef<HTMLDivElement>(null);
+	const mobileStepRef = useRef<HTMLDivElement>(null);
 	const labelRefs = useRef<Array<HTMLSpanElement | null>>([]);
 	const bodyRefs = useRef<Array<HTMLParagraphElement | null>>([]);
 	const arrowRefs = useRef<Array<HTMLImageElement | null>>([]);
+	const [mobileActiveStep, setMobileActiveStep] = useState(0);
 
 	const line1 = String(t(`${BASE}.line1`));
 	const line2Before = String(t(`${BASE}.line2Before`));
@@ -45,12 +48,9 @@ export function QuickStartSection() {
 	const steps = useMemo(() => parseSteps(rawSteps), [rawSteps]);
 
 	useLayoutEffect(() => {
-		const section = sectionRef.current;
-		const desktopWrap = desktopWrapRef.current;
-		if (!section || !desktopWrap || steps.length === 0) {
+		if (steps.length === 0) {
 			return;
 		}
-
 		gsap.registerPlugin(ScrollTrigger);
 
 		const labels = labelRefs.current.filter(
@@ -73,89 +73,154 @@ export function QuickStartSection() {
 		}
 
 		const ctx = gsap.context(() => {
-			let maxProgress = 0;
+			const mm = gsap.matchMedia();
 
-			labels.forEach((labelEl, i) => {
-				gsap.set(labelEl, {
-					width: '0ch',
-					autoAlpha: 1,
-					display: 'inline-block',
-					overflow: 'hidden',
-					whiteSpace: 'nowrap',
+			mm.add('(min-width: 768px)', () => {
+				const section = sectionRef.current;
+				const desktopWrap = desktopWrapRef.current;
+				if (!section || !desktopWrap) {
+					return;
+				}
+
+				let maxProgress = 0;
+
+				labels.forEach((labelEl, i) => {
+					gsap.set(labelEl, {
+						width: '0ch',
+						autoAlpha: 1,
+						display: 'inline-block',
+						overflow: 'hidden',
+						whiteSpace: 'nowrap',
+					});
+					const chars = Math.max(steps[i]?.label.length ?? 1, 1);
+					labelEl.style.setProperty('--label-chars', `${chars}ch`);
 				});
-				const chars = Math.max(steps[i]?.label.length ?? 1, 1);
-				labelEl.style.setProperty('--label-chars', `${chars}ch`);
+
+				gsap.set(bodies, { autoAlpha: 0, y: 26 });
+				gsap.set(arrows, {
+					autoAlpha: 0,
+					clipPath: 'inset(0 100% 0 0)',
+				});
+
+				const tl = gsap.timeline({
+					scrollTrigger: {
+						trigger: section,
+						start: 'top top',
+						end: `+=${Math.max(980, itemsCount * 380)}`,
+						pin: true,
+						pinSpacing: true,
+						anticipatePin: 1,
+						scrub: 1,
+						onUpdate: (self: ScrollTrigger) => {
+							if (self.progress >= maxProgress) {
+								maxProgress = self.progress;
+								return;
+							}
+							self.animation?.progress(maxProgress);
+						},
+						invalidateOnRefresh: true,
+					},
+				});
+
+				for (let i = 0; i < itemsCount; i += 1) {
+					const labelChars = steps[i]?.label.length ?? 10;
+					tl.to(labels[i], {
+						width: `var(--label-chars)`,
+						duration: 0.42,
+						ease: `steps(${Math.max(labelChars, 6)})`,
+					});
+					tl.to(
+						bodies[i],
+						{
+							autoAlpha: 1,
+							y: 0,
+							duration: 0.36,
+							ease: 'power2.out',
+						},
+						'-=0.09',
+					);
+					tl.to(
+						arrows[i],
+						{
+							autoAlpha: 1,
+							clipPath: 'inset(0 0% 0 0)',
+							duration: 0.34,
+							ease: 'power2.out',
+						},
+						'-=0.08',
+					);
+					if (i !== itemsCount - 1) {
+						tl.to({}, { duration: 0.2 });
+					}
+				}
 			});
 
-			gsap.set(bodies, { autoAlpha: 0, y: 26 });
-			gsap.set(arrows, {
-				autoAlpha: 0,
-				clipPath: 'inset(0 100% 0 0)',
-			});
-
-			const tl = gsap.timeline({
-				scrollTrigger: {
+			mm.add('(max-width: 767px)', () => {
+				const section = sectionRef.current;
+				const mobilePin = mobilePinRef.current;
+				if (!section || !mobilePin) {
+					return;
+				}
+				setMobileActiveStep(0);
+				ScrollTrigger.create({
 					trigger: section,
 					start: 'top top',
-					end: `+=${Math.max(900, itemsCount * 300)}`,
+					end: `+=${Math.max(820, steps.length * 340)}`,
 					pin: true,
 					pinSpacing: true,
-					anticipatePin: 1,
 					scrub: 1,
-					onUpdate: (self: ScrollTrigger) => {
-						if (self.progress >= maxProgress) {
-							maxProgress = self.progress;
-							return;
-						}
-						self.animation?.progress(maxProgress);
-					},
 					invalidateOnRefresh: true,
-				},
+					anticipatePin: 1,
+					onUpdate: (self: ScrollTrigger) => {
+						const idx = Math.min(
+							steps.length - 1,
+							Math.floor(self.progress * steps.length),
+						);
+						setMobileActiveStep(idx);
+					},
+				});
 			});
 
-			for (let i = 0; i < itemsCount; i += 1) {
-				const labelChars = steps[i]?.label.length ?? 10;
-				tl.to(labels[i], {
-					width: `var(--label-chars)`,
-					duration: 0.42,
-					ease: `steps(${Math.max(labelChars, 6)})`,
-				});
-				tl.to(
-					bodies[i],
-					{
-						autoAlpha: 1,
-						y: 0,
-						duration: 0.36,
-						ease: 'power2.out',
-					},
-					'-=0.09',
-				);
-				tl.to(
-					arrows[i],
-					{
-						autoAlpha: 1,
-						clipPath: 'inset(0 0% 0 0)',
-						duration: 0.34,
-						ease: 'power2.out',
-					},
-					'-=0.08',
-				);
-				if (i !== itemsCount - 1) {
-					tl.to({}, { duration: 0.08 });
-				}
-			}
-		}, desktopWrap);
+			return () => {
+				mm.revert();
+			};
+		}, sectionRef);
 
 		return () => {
 			ctx.revert();
 		};
 	}, [steps]);
 
+	useEffect(() => {
+		const stepEl = mobileStepRef.current;
+		if (!stepEl || steps.length === 0) {
+			return;
+		}
+		const targets = stepEl.querySelectorAll('[data-mobile-step-animate]');
+		if (targets.length === 0) {
+			return;
+		}
+		const tw = gsap.fromTo(
+			targets,
+			{ opacity: 0, y: 16 },
+			{
+				opacity: 1,
+				y: 0,
+				duration: 0.35,
+				ease: 'power2.out',
+				stagger: 0.06,
+			},
+		);
+		return () => {
+			tw.kill();
+		};
+	}, [mobileActiveStep, steps.length]);
+
 	return (
 		<section
 			ref={sectionRef}
 			id="how-it-works"
-			className="bg-[#F9F4F0] px-5 py-12 h-[max(108svh,1000px)] pb-80"
+			className="bg-[#F9F4F0] px-5 py-12 pb-16"
 			aria-labelledby="quick-start-heading"
 		>
 			<div className="mx-auto max-w-5xl">
@@ -163,8 +228,8 @@ export function QuickStartSection() {
 					id="quick-start-heading"
 					className="text-center text-[#3F3F3F] [&_span]:tracking-tight"
 				>
-					<span className="block text-[4.4rem] leading-tight">{line1}</span>
-					<span className="-mt-2 block text-[2.5rem] font-normal">
+					<span className="block text-[2.4rem] sm:text-[4.4rem] leading-tight">{line1}</span>
+					<span className="-mt-2 block text-[1.8rem] sm:text-[2.5rem] font-normal">
 						{line2Before}
 						<span className="relative inline-block px-0.5">
 							{line2Accent}
@@ -175,7 +240,7 @@ export function QuickStartSection() {
 
 				<div
 					ref={desktopWrapRef}
-					className="relative mt-14 hidden min-h-[620px] w-full lg:block"
+					className="relative mt-14 hidden min-h-[620px] w-full md:block"
 				>
 					<div className="absolute left-1/2 top-1/2 z-[2] w-[30vw] -translate-x-1/2 -translate-y-[46%]">
 						<StudioPhoneFrame className="w-[min(23vw,20rem)]" />
@@ -206,7 +271,7 @@ export function QuickStartSection() {
 							src="/quickstart-arrow-1.svg"
 							alt=""
 							aria-hidden
-							className="pointer-events-none absolute -right-[5rem] top-[120%] hidden h-[120px] w-[140px] lg:block"
+							className="pointer-events-none absolute -right-[5rem] top-[120%] hidden h-[120px] w-[140px] md:block"
 						/>
 					</div>
 
@@ -235,7 +300,7 @@ export function QuickStartSection() {
 							src="/quickstart-arrow-2.svg"
 							alt=""
 							aria-hidden
-							className="pointer-events-none absolute -left-[7.5rem] top-[100%] hidden aspect-square w-[140px] lg:block"
+							className="pointer-events-none absolute -left-[7.5rem] top-[100%] hidden aspect-square w-[140px] md:block"
 						/>
 					</div>
 
@@ -264,8 +329,43 @@ export function QuickStartSection() {
 							src="/quickstart-arrow-3.svg"
 							alt=""
 							aria-hidden
-							className="pointer-events-none absolute -right-[2rem] bottom-[72%] hidden aspect-square w-[140px] lg:block"
+							className="pointer-events-none absolute -right-[2rem] bottom-[72%] hidden aspect-square w-[140px] md:block"
 						/>
+					</div>
+				</div>
+
+				<div ref={mobilePinRef} className="mt-10 md:hidden">
+					<div className="grid h-[88svh] grid-rows-[auto_1fr] items-start gap-6">
+						<div ref={mobileStepRef} className="mx-auto max-w-sm text-center">
+							<p
+								data-mobile-step-animate
+								className="font-shadows-into-light-two text-[2.2rem] leading-none text-[#D9534F]"
+							>
+								{steps[mobileActiveStep]?.label}
+							</p>
+							<p
+								data-mobile-step-animate
+								className="mx-auto mt-4 max-w-[24ch] text-[1.35rem] leading-[1.18] min-h-[6rem] font-medium text-[#3F3F3F]"
+							>
+								{steps[mobileActiveStep]?.text}
+							</p>
+							<div className="mt-5 flex justify-center gap-2.5" role="group">
+								{steps.map((_, i) => (
+									<span
+										key={`mobile-step-dot-${i}`}
+										className={`h-2.5 w-2.5 rounded-full transition-[transform,opacity] duration-300 ${
+											i === mobileActiveStep
+												? 'scale-125 opacity-100 bg-[#D9534F]'
+												: 'scale-100 opacity-45 bg-[#D9534F]'
+										}`}
+										aria-hidden
+									/>
+								))}
+							</div>
+						</div>
+						<div className="flex items-end justify-center">
+							<StudioPhoneFrame className="w-[min(72vw,18rem)]" />
+						</div>
 					</div>
 				</div>
 			</div>

@@ -62,11 +62,11 @@ export function LandingCtaSection() {
 	} = useCtaBannerCopy();
 
 	return (
-		<section ref={sectionRef} className="bg-[#F9F4F0] px-6 py-12 h-screen">
+		<section ref={sectionRef} className="bg-[#F9F4F0] px-3 sm:px-6 py-6 sm:py-12 sm:h-screen">
 			<div className="mx-auto max-w-7xl overflow-hidden h-full rounded-[1.75rem] bg-[#4A39A8] flex items-center justify-center">
-				<div className="relative grid min-h-[430px] gap-8 px-6 py-8 sm:px-8 md:grid-cols-[1.1fr_0.9fr] md:items-center md:px-12 md:py-10">
+				<div className="relative grid min-h-[430px] gap-8 px-3 py-4 sm:px-8 md:grid-cols-[1.1fr_0.9fr] md:items-center md:px-12 md:py-10">
 					<div 
-						className="circle-image pointer-events-none absolute right-[-6%] top-0 z-0 w-[60%]"
+						className="circle-image pointer-events-none absolute w-[160%] top-[35%] left-[-30%] sm:right-[-6%] sm:top-0 z-0 sm:w-[60%]"
 					>
 						<img
 							src="/images/circles.webp"
@@ -77,12 +77,12 @@ export function LandingCtaSection() {
 						/>
 					</div>
 
-					<div className="relative z-10">
-						<h2 className="text-[4rem] leading-[0.98] tracking-[-0.02em] text-white">
+					<div className="relative z-10 top-[25%] sm:top-0">
+						<h2 className="text-[2.4rem] sm:text-[4rem] leading-[0.98] tracking-[-0.02em] text-white">
 							<span className="block">{titleLine1}</span>
 							{renderTitleLine2WithHandsUnderline(titleLine2)}
 						</h2>
-						<p className="mt-10 max-w-[30ch] text-[1.8rem] leading-[1.45] text-white/90">
+						<p className="mt-10 max-w-[30ch] text-[1.2rem] sm:text-[1.8rem]  leading-[1.2] text-white/90">
 							{description}
 						</p>
 
@@ -92,7 +92,7 @@ export function LandingCtaSection() {
 								target="_blank"
 								rel="noreferrer"
 								aria-label="App Store"
-								className="inline-flex h-[46px] min-w-[146px] items-center justify-center gap-2 rounded-full bg-white px-5 text-[0.95rem] font-medium text-[#1D1D1F] shadow-[0_8px_24px_-14px_rgba(0,0,0,0.65)] transition hover:bg-[#F5F7FA]"
+								className="inline-flex h-[46px] min-w-[120px] sm:min-w-[146px] items-center justify-center gap-2 rounded-full bg-white px-5 text-[0.95rem] font-medium text-[#1D1D1F] shadow-[0_8px_24px_-14px_rgba(0,0,0,0.65)] transition hover:bg-[#F5F7FA]"
 							>
 								<AppleStoreIcon className="h-5 w-5" />
 								{storeAppStore}
@@ -110,7 +110,7 @@ export function LandingCtaSection() {
 						</div>
 					</div>
 
-					<div className="relative z-10 flex justify-center md:justify-end">
+					<div className="relative z-10 flex justify-center md:justify-end bottom-[-25%] sm:bottom-0">
 						<StudioPhoneFrame className="w-[min(58vw,220px)] md:w-[min(32vw,250px)]" />
 					</div>
 				</div>

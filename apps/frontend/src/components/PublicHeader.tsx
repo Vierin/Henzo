@@ -97,7 +97,7 @@ function PublicHeaderContent({
 	if (embedded) {
 		return (
 			<header className={shellClass}>
-				<div className="relative mx-auto flex max-w-6xl items-center justify-between gap-3 px-12 py-5 sm:gap-4">
+				<div className="relative mx-auto flex max-w-6xl items-center justify-between gap-2 px-3 py-2.5 md:px-12 md:py-5 sm:gap-4">
 					<Link
 						href={withLocale('/', currentLocale as 'en' | 'ru' | 'vi')}
 						className="relative z-10 flex min-w-0 items-center gap-2 sm:gap-3"
@@ -107,13 +107,13 @@ function PublicHeaderContent({
 							alt="Henzo"
 							width={161}
 							height={52}
-							className="h-[58px] w-auto shrink-0 object-contain"
+							className="h-[42px] md:h-[58px] w-auto shrink-0 object-contain"
 						/>
 					</Link>
 
 					<div className="flex items-center gap-12">
 					<nav
-						className="relative gap-6 text-[1rem] font-medium text-[#3F3F3F] flex md:gap-8"
+						className="relative gap-6 text-[1rem] font-medium text-[#3F3F3F] hidden md:gap-8 sm:flex"
 						aria-label="Landing"
 					>
 						<a

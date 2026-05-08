@@ -164,15 +164,15 @@ export function LandingStatement() {
 			<h2 id="landing-statement-before-spotlight-heading" className="sr-only">
 				{titleText}
 			</h2>
-			<div className="mx-auto flex max-w-7xl flex-wrap items-baseline justify-center gap-10 text-center sm:gap-12 md:gap-16">
-				<p className="inline-flex max-w-full flex-nowrap items-baseline justify-center font-normal leading-none text-[4vw]">
+			<div className="mx-auto flex max-w-7xl flex-col sm:flex-row flex-wrap items-baseline justify-center gap-6 text-center sm:gap-12 md:gap-16">
+				<p className="inline-flex max-w-full flex-nowrap items-baseline justify-center font-normal leading-none text-[8vw] sm:text-[4vw]">
 					<span className="shrink-0 text-[#3F3F3F]">{phrase1Lead}</span>
 					<span className="shrink-0" aria-hidden>
 						&nbsp;
 					</span>
 					<PhraseAccentRotator words={rotating1} />
 				</p>
-				<p className="inline-flex max-w-full flex-nowrap items-baseline justify-center font-normal leading-none text-[4vw]">
+				<p className="inline-flex max-w-full flex-nowrap items-baseline justify-center font-normal leading-none text-[8vw] sm:text-[4vw]">
 					<span className="shrink-0 text-[#3F3F3F]">{phrase2Lead}</span>
 					<span className="shrink-0" aria-hidden>
 						&nbsp;
