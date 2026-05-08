@@ -117,28 +117,28 @@
 					"stat": "+30%",
 					"featureTitle": "Tỉ lệ lấp đầy lớp",
 					"description": "Khung giờ rõ ràng và quản lý lịch hẹn dễ hơn",
-					"videoSrc": "/video-4.mp4",
+					"videoSrc": "/video-4.webm",
 					"videoLabel": "Video spotlight studio 1"
 				},
 				{
 					"stat": "-40%",
 					"featureTitle": "Giảm số buổi bị bỏ lỡ",
 					"description": "Khách nhận nhắc lịch và ít quên buổi tập hơn",
-					"videoSrc": "/video-3.mp4",
+					"videoSrc": "/video-3.webm",
 					"videoLabel": "Video spotlight studio 2"
 				},
 				{
 					"stat": "-70%",
 					"featureTitle": "Giảm thời gian trả lời tin nhắn",
 					"description": "Không cần phản hồi thủ công từng khách hàng",
-					"videoSrc": "/video-2.mp4",
+					"videoSrc": "/video-2.webm",
 					"videoLabel": "Video spotlight studio 3"
 				},
 				{
 					"stat": "+42%",
 					"featureTitle": "Kiểm soát lịch trình",
 					"description": "Tất cả lớp học và lịch hẹn trong một nơi",
-					"videoSrc": "/video-1.mp4",
+					"videoSrc": "/video-1.webm",
 					"videoLabel": "Video spotlight studio 4"
 				}
 			]

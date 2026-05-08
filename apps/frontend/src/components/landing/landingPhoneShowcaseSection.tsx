@@ -6,6 +6,7 @@ import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { useLayoutEffect, useRef } from 'react';
 import { useTranslation } from '@/contexts/LanguageContext';
+import { getStableViewportHeight } from '@/utils/viewport';
 
 export function LandingPhoneShowcaseSection() {
 	const t = useTranslation();
@@ -28,6 +29,7 @@ export function LandingPhoneShowcaseSection() {
 		if (!section || !phone || !circlesEl || !card1 || !card2) return;
 
 		gsap.registerPlugin(ScrollTrigger);
+		ScrollTrigger.config({ ignoreMobileResize: true });
 		const isWebKit =
 			typeof navigator !== 'undefined' &&
 			/Safari/i.test(navigator.userAgent) &&
@@ -115,11 +117,10 @@ export function LandingPhoneShowcaseSection() {
 			// Телефон: движение вниз
 			gsap.fromTo(
 				phone,
-				{ scale: 1, y: 0, force3D: true },
+				{ y: 0, force3D: true },
 				{
-					scale: 0.9,
 					y: () => {
-						const vh = window.innerHeight;
+						const vh = getStableViewportHeight();
 						const w = window.innerWidth;
 						const factor = w < 768 ? 0.9 : 0.6;  
 						return vh * factor;
@@ -162,16 +163,24 @@ export function LandingPhoneShowcaseSection() {
 			);
 		}, section);
 
-		// Пересчитываем ScrollTrigger при ресайзе
-		const handleResize = () => {
-			ScrollTrigger.refresh();
+		let orientationRefreshTimer: ReturnType<typeof setTimeout> | null = null;
+		const handleOrientationChange = () => {
+			if (orientationRefreshTimer !== null) {
+				clearTimeout(orientationRefreshTimer);
+			}
+			orientationRefreshTimer = setTimeout(() => {
+				ScrollTrigger.refresh();
+			}, 140);
 		};
 
-		window.addEventListener('resize', handleResize);
+		window.addEventListener('orientationchange', handleOrientationChange);
 
 		return () => {
 			ctx.revert();
-			window.removeEventListener('resize', handleResize);
+			window.removeEventListener('orientationchange', handleOrientationChange);
+			if (orientationRefreshTimer !== null) {
+				clearTimeout(orientationRefreshTimer);
+			}
 		};
 	}, []);
 

@@ -117,28 +117,28 @@
 					"stat": "+30%",
 					"featureTitle": "Заполняемость занятий",
 					"description": "Свободные слоты видны, а управлять записями становится проще",
-					"videoSrc": "/video-4.mp4",
+					"videoSrc": "/video-4.webm",
 					"videoLabel": "Клип spotlight студии 1"
 				},
 				{
 					"stat": "-40%",
 					"featureTitle": "Снижение пропущенных занятий",
 					"description": "Клиенты получают напоминания и реже забывают о занятии",
-					"videoSrc": "/video-3.mp4",
+					"videoSrc": "/video-3.webm",
 					"videoLabel": "Клип spotlight студии 2"
 				},
 				{
 					"stat": "-70%",
 					"featureTitle": "Снижение времени на переписку",
 					"description": "Больше не нужно вручную отвечать каждому клиенту",
-					"videoSrc": "/video-2.mp4",
+					"videoSrc": "/video-2.webm",
 					"videoLabel": "Клип spotlight студии 3"
 				},
 				{
 					"stat": "+42%",
 					"featureTitle": "Контроль расписания",
 					"description": "Все занятия и записи собраны в одном месте",
-					"videoSrc": "/video-1.mp4",
+					"videoSrc": "/video-1.webm",
 					"videoLabel": "Клип spotlight студии 4"
 				}
 			]

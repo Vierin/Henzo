@@ -17,6 +17,7 @@ class LoginScreen extends StatefulWidget {
 }
 
 class _LoginScreenState extends State<LoginScreen> {
+  static const _placeholderMuted = Color(0x993F3F3F);
   final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
@@ -161,267 +162,345 @@ class _LoginScreenState extends State<LoginScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final textTheme = Theme.of(context).textTheme;
     return Scaffold(
       body: SafeArea(
-        child: Stack(
-          children: [
-            Center(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.symmetric(horizontal: 24),
-                child: Form(
-                  key: _formKey,
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      Image.asset(
-                        'assets/logo.png',
-                        height: 56,
-                        fit: BoxFit.contain,
-                        errorBuilder: (_, __, ___) => Text(
-                          'Henzo',
-                          style: TextStyle(
-                            fontSize: 32,
-                            fontWeight: FontWeight.bold,
-                            color: AppColors.primary500,
-                          ),
-                          textAlign: TextAlign.center,
+        child: Consumer<LocaleProvider>(
+          builder: (context, locale, _) => SingleChildScrollView(
+            padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
+            child: Form(
+              key: _formKey,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Align(
+                    alignment: Alignment.centerRight,
+                    child: InkWell(
+                      onTap: () => showLanguageSelectorModal(context, locale),
+                      borderRadius: BorderRadius.circular(8),
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 6,
+                          vertical: 6,
                         ),
-                      ),
-                      const SizedBox(height: 8),
-                      Consumer<LocaleProvider>(
-                        builder: (context, locale, _) => Text(
-                          locale.t('auth.ownerPanel'),
-                          style: TextStyle(
-                            fontSize: 16,
-                            color: Colors.grey.shade600,
-                          ),
-                          textAlign: TextAlign.center,
-                        ),
-                      ),
-                      const SizedBox(height: 48),
-                      Consumer<LocaleProvider>(
-                        builder: (context, locale, _) => Column(
-                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
                           children: [
-                            TextFormField(
-                              controller: _emailController,
-                              keyboardType: TextInputType.emailAddress,
-                              textInputAction: TextInputAction.next,
-                              decoration: InputDecoration(
-                                labelText: locale.t('auth.email'),
-                                hintText: 'example@mail.com',
-                                prefixIcon: const Icon(Icons.email_outlined),
-                                border: const OutlineInputBorder(),
-                              ),
-                              validator: (v) {
-                                if (v == null || v.isEmpty) {
-                                  return locale.t('auth.enterEmail');
-                                }
-                                if (!v.contains('@')) {
-                                  return locale.t('auth.invalidEmail');
-                                }
-                                return null;
-                              },
+                            const Icon(
+                              Icons.language,
+                              size: 16,
+                              color: AppColors.textPrimary,
                             ),
-                            const SizedBox(height: 16),
-                            TextFormField(
-                              controller: _passwordController,
-                              obscureText: _obscurePassword,
-                              textInputAction: TextInputAction.done,
-                              onFieldSubmitted: (_) => _submit(),
-                              decoration: InputDecoration(
-                                labelText: locale.t('auth.password'),
-                                hintText: '••••••••',
-                                prefixIcon: const Icon(Icons.lock_outline),
-                                border: const OutlineInputBorder(),
-                                suffixIcon: IconButton(
-                                  icon: Icon(
-                                    _obscurePassword
-                                        ? Icons.visibility_outlined
-                                        : Icons.visibility_off_outlined,
-                                  ),
-                                  onPressed: () {
-                                    setState(
-                                      () =>
-                                          _obscurePassword = !_obscurePassword,
-                                    );
-                                  },
-                                ),
-                              ),
-                              validator: (v) {
-                                if (v == null || v.isEmpty) {
-                                  return locale.t('auth.enterPassword');
-                                }
-                                if (v.length < 6) {
-                                  return locale.t('auth.passwordMin');
-                                }
-                                return null;
-                              },
-                            ),
-                            Align(
-                              alignment: Alignment.centerRight,
-                              child: TextButton(
-                                onPressed: (_isSubmitting || _isGoogleLoading)
-                                    ? null
-                                    : _showForgotPassword,
-                                child: Text(locale.t('auth.forgotPassword')),
-                              ),
-                            ),
-                            const SizedBox(height: 8),
-                            FilledButton(
-                              onPressed: _isSubmitting ? null : _submit,
-                              style: FilledButton.styleFrom(
-                                backgroundColor: AppColors.primary500,
-                                padding: const EdgeInsets.symmetric(
-                                  vertical: 16,
-                                ),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(8),
-                                ),
-                              ),
-                              child: _isSubmitting
-                                  ? const SizedBox(
-                                      height: 22,
-                                      width: 22,
-                                      child: CircularProgressIndicator(
-                                        strokeWidth: 2,
-                                        color: Colors.white,
-                                      ),
-                                    )
-                                  : Text(
-                                      locale.t('auth.signIn'),
-                                      style: const TextStyle(
-                                        fontSize: 16,
-                                        fontWeight: FontWeight.w600,
-                                      ),
-                                    ),
-                            ),
-                            const SizedBox(height: 16),
-                            TextButton(
-                              onPressed: (_isSubmitting || _isGoogleLoading)
-                                  ? null
-                                  : _openRegister,
-                              child: Text(
-                                'No account? Register',
-                                textAlign: TextAlign.center,
-                              ),
-                            ),
-                            const SizedBox(height: 8),
-                            Row(
-                              children: [
-                                const Expanded(child: Divider()),
-                                Padding(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 16,
-                                  ),
-                                  child: Text(
-                                    locale.t('auth.orContinue'),
-                                    style: TextStyle(
-                                      color: Colors.grey.shade600,
-                                      fontSize: 14,
-                                    ),
-                                  ),
-                                ),
-                                const Expanded(child: Divider()),
-                              ],
-                            ),
-                            const SizedBox(height: 24),
-                            OutlinedButton.icon(
-                              onPressed: (_isSubmitting || _isGoogleLoading)
-                                  ? null
-                                  : _submitGoogle,
-                              icon: _isGoogleLoading
-                                  ? const SizedBox(
-                                      width: 20,
-                                      height: 20,
-                                      child: CircularProgressIndicator(
-                                        strokeWidth: 2,
-                                      ),
-                                    )
-                                  : _buildGoogleIcon(),
-                              label: Text(
-                                _isGoogleLoading
-                                    ? locale.t('common.loading')
-                                    : locale.t('auth.continueWithGoogle'),
-                                style: const TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.w500,
-                                ),
-                              ),
-                              style: OutlinedButton.styleFrom(
-                                padding: const EdgeInsets.symmetric(
-                                  vertical: 14,
-                                ),
-                                side: BorderSide(color: Colors.grey.shade400),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(8),
-                                ),
+                            const SizedBox(width: 4),
+                            Text(
+                              _languageLabels[locale.localeCode] ??
+                                  locale.localeCode.toUpperCase(),
+                              style: const TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w400,
+                                color: AppColors.textPrimary,
                               ),
                             ),
                           ],
                         ),
                       ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-            Positioned(
-              top: 0,
-              right: 0,
-              child: Consumer<LocaleProvider>(
-                builder: (context, locale, _) => InkWell(
-                  onTap: () => showLanguageSelectorModal(context, locale),
-                  borderRadius: BorderRadius.circular(8),
-                  child: Padding(
-                    padding: const EdgeInsets.all(12),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(
-                          Icons.language,
-                          size: 22,
-                          color: AppColors.textSecondary,
-                        ),
-                        const SizedBox(width: 6),
-                        Text(
-                          _languageLabels[locale.localeCode] ??
-                              locale.localeCode.toUpperCase(),
-                          style: TextStyle(
-                            fontSize: 14,
-                            color: AppColors.textSecondary,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                      ],
                     ),
                   ),
-                ),
+                  const SizedBox(height: 64),
+                  Center(
+                    child: Image.asset(
+                      'assets/logo.png',
+                      height: 60,
+                      fit: BoxFit.contain,
+                      errorBuilder: (_, __, ___) => const Text(
+                        'Henzo',
+                        style: TextStyle(
+                          fontSize: 44,
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.textPrimary,
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 56),
+                  TextFormField(
+                    controller: _emailController,
+                    keyboardType: TextInputType.emailAddress,
+                    textInputAction: TextInputAction.next,
+                    decoration: InputDecoration(
+                      hintText: locale.t('auth.email'),
+                      hintStyle: const TextStyle(
+                        color: _placeholderMuted,
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                      ),
+                      prefixIcon: const Padding(
+                        padding: EdgeInsets.only(left: 22, right: 8),
+                        child: Icon(
+                          Icons.email,
+                          color: _placeholderMuted,
+                          size: 20,
+                        ),
+                      ),
+                      prefixIconConstraints: const BoxConstraints(
+                        minWidth: 0,
+                        minHeight: 0,
+                      ),
+                      filled: true,
+                      fillColor: AppColors.backgroundPrimary,
+                      contentPadding: const EdgeInsets.only(
+                        top: 18,
+                        bottom: 18,
+                        right: 18,
+                      ),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(999),
+                        borderSide: BorderSide.none,
+                      ),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(999),
+                        borderSide: BorderSide.none,
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(999),
+                        borderSide: const BorderSide(
+                          color: AppColors.primary500,
+                          width: 1.2,
+                        ),
+                      ),
+                    ),
+                    style: const TextStyle(
+                      fontSize: 19,
+                      color: AppColors.textPrimary,
+                    ),
+                    validator: (v) {
+                      if (v == null || v.isEmpty) return locale.t('auth.enterEmail');
+                      if (!v.contains('@')) return locale.t('auth.invalidEmail');
+                      return null;
+                    },
+                  ),
+                  const SizedBox(height: 10),
+                  TextFormField(
+                    controller: _passwordController,
+                    obscureText: _obscurePassword,
+                    textInputAction: TextInputAction.done,
+                    onFieldSubmitted: (_) => _submit(),
+                    decoration: InputDecoration(
+                      hintText: locale.t('auth.password'),
+                      hintStyle: const TextStyle(
+                        color: _placeholderMuted,
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                      ),
+                      prefixIcon: const Padding(
+                        padding: EdgeInsets.only(left: 22, right: 8),
+                        child: Icon(
+                          Icons.lock,
+                          color: _placeholderMuted,
+                          size: 20,
+                        ),
+                      ),
+                      prefixIconConstraints: const BoxConstraints(
+                        minWidth: 0,
+                        minHeight: 0,
+                      ),
+                      suffixIcon: IconButton(
+                        icon: Icon(
+                          _obscurePassword
+                              ? Icons.visibility_outlined
+                              : Icons.visibility_off_outlined,
+                          color: _placeholderMuted,
+                          size: 22,
+                        ),
+                        padding: EdgeInsets.only(right: 12),
+                        onPressed: () {
+                          setState(() => _obscurePassword = !_obscurePassword);
+                        },
+                      ),
+                      filled: true,
+                      fillColor: AppColors.backgroundPrimary,
+                      contentPadding: const EdgeInsets.only(
+                        top: 18,
+                        bottom: 18,
+                        right: 18,
+                      ),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(999),
+                        borderSide: BorderSide.none,
+                      ),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(999),
+                        borderSide: BorderSide.none,
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(999),
+                        borderSide: const BorderSide(
+                          color: AppColors.primary500,
+                          width: 1.2,
+                        ),
+                      ),
+                    ),
+                    style: const TextStyle(
+                      fontSize: 19,
+                      color: AppColors.textPrimary,
+                    ),
+                    validator: (v) {
+                      if (v == null || v.isEmpty) return locale.t('auth.enterPassword');
+                      if (v.length < 6) return locale.t('auth.passwordMin');
+                      return null;
+                    },
+                  ),
+                  const SizedBox(height: 8),
+                  Align(
+                    alignment: Alignment.centerRight,
+                    child: TextButton(
+                      onPressed: (_isSubmitting || _isGoogleLoading)
+                          ? null
+                          : _showForgotPassword,
+                      style: TextButton.styleFrom(
+                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                        minimumSize: Size.zero,
+                        padding: const EdgeInsets.symmetric(horizontal: 0),
+                      ),
+                      child: Text(
+                        locale.t('auth.forgotPassword'),
+                        style: const TextStyle(
+                          color: AppColors.primary500,
+                          fontSize: 14,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                  SizedBox(
+                    height: 50,
+                    child: FilledButton(
+                      onPressed: _isSubmitting ? null : _submit,
+                      style: FilledButton.styleFrom(
+                        backgroundColor: AppColors.primary500,
+                        foregroundColor: AppColors.textInverse,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(999),
+                        ),
+                      ),
+                      child: _isSubmitting
+                          ? const SizedBox(
+                              height: 22,
+                              width: 22,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: Colors.white,
+                              ),
+                            )
+                          : Text(
+                              locale.t('auth.signIn'),
+                              style: textTheme.titleLarge?.copyWith(
+                                fontWeight: FontWeight.w600,
+                                color: AppColors.textInverse,
+                                fontSize: 16,
+                              ),
+                            ),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  TextButton(
+                    onPressed:
+                        (_isSubmitting || _isGoogleLoading) ? null : _openRegister,
+                    style: TextButton.styleFrom(
+                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      minimumSize: Size.zero,
+                    ),
+                    child: const Text(
+                      'No account? Register',
+                      style: TextStyle(
+                        color: AppColors.primary500,
+                        fontSize: 14,
+                        fontWeight: FontWeight.w400,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      const Expanded(
+                        child: Divider(
+                          color: Color(0xFF9B9B9B),
+                          thickness: 1.0,
+                          indent: 24,
+                          endIndent: 12,
+                        ),
+                      ),
+                      Text(
+                        locale.t('auth.orContinue').toLowerCase(),
+                        style: const TextStyle(
+                          color: AppColors.textPrimary,
+                          fontSize: 15,
+                        ),
+                      ),
+                      const Expanded(
+                        child: Divider(
+                          color: Color(0xFF9B9B9B),
+                          thickness: 1.0,
+                          indent: 12,
+                          endIndent: 24,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 14),
+                  SizedBox(
+                    height: 50,
+                    child: OutlinedButton.icon(
+                      onPressed: (_isSubmitting || _isGoogleLoading)
+                          ? null
+                          : _submitGoogle,
+                      icon: _isGoogleLoading
+                          ? const SizedBox(
+                              width: 20,
+                              height: 20,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            )
+                          : _buildGoogleIcon(),
+                      label: Text(
+                        _isGoogleLoading
+                            ? locale.t('common.loading')
+                            : locale.t('auth.continueWithGoogle'),
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w500,
+                          color: AppColors.textPrimary,
+                        ),
+                      ),
+                      style: OutlinedButton.styleFrom(
+                        backgroundColor: AppColors.backgroundPrimary,
+                        side: BorderSide.none,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(999),
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                ],
               ),
             ),
-          ],
+          ),
         ),
       ),
     );
   }
 
   Widget _buildGoogleIcon() {
-    return Container(
+    return Image.asset(
+      'assets/public/icon-google.png',
       width: 20,
       height: 20,
-      decoration: const BoxDecoration(
+      fit: BoxFit.contain,
+      errorBuilder: (_, __, ___) => const Icon(
+        Icons.g_mobiledata_rounded,
+        size: 20,
         color: Color(0xFF4285F4),
-        shape: BoxShape.circle,
-      ),
-      alignment: Alignment.center,
-      child: const Text(
-        'G',
-        style: TextStyle(
-          color: Colors.white,
-          fontSize: 12,
-          fontWeight: FontWeight.bold,
-        ),
       ),
     );
   }

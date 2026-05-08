@@ -66,7 +66,7 @@ export function LandingCtaSection() {
 			<div className="mx-auto max-w-7xl overflow-hidden h-full rounded-[1.75rem] bg-[#4A39A8] flex items-center justify-center">
 				<div className="relative grid min-h-[430px] gap-8 px-3 py-4 sm:px-8 md:grid-cols-[1.1fr_0.9fr] md:items-center md:px-12 md:py-10">
 					<div 
-						className="circle-image pointer-events-none absolute w-[160%] top-[35%] left-[-30%] sm:right-[-6%] sm:top-0 z-0 sm:w-[60%]"
+						className="circle-image pointer-events-none absolute w-[160%] top-[35%] left-[-30%] sm:left-auto sm:right-[-6%] sm:top-0 z-0 sm:w-[60%]"
 					>
 						<img
 							src="/images/circles.webp"

@@ -117,28 +117,28 @@
 					"stat": "+30%",
 					"featureTitle": "Class occupancy",
 					"description": "Visible slots and easier appointment management",
-					"videoSrc": "/video-4.mp4",
+					"videoSrc": "/video-4.webm",
 					"videoLabel": "Studio spotlight clip one"
 				},
 				{
 					"stat": "-40%",
 					"featureTitle": "Reduction in missed classes",
 					"description": "Clients receive reminders and are less likely to forget",
-					"videoSrc": "/video-3.mp4",
+					"videoSrc": "/video-3.webm",
 					"videoLabel": "Studio spotlight clip two"
 				},
 				{
 					"stat": "-70%",
 					"featureTitle": "Reduction in time spent on correspondence",
 					"description": "No need to manually reply to each client",
-					"videoSrc": "/video-2.mp4",
+					"videoSrc": "/video-2.webm",
 					"videoLabel": "Studio spotlight clip three"
 				},
 				{
 					"stat": "+42%",
 					"featureTitle": "Schedule control",
 					"description": "All classes and appointments in one place",
-					"videoSrc": "/video-1.mp4",
+					"videoSrc": "/video-1.webm",
 					"videoLabel": "Studio spotlight clip four"
 				}
 			]

@@ -2,17 +2,24 @@ import 'package:flutter/material.dart';
 
 // Color palette based on the existing frontend design
 class AppColors {
-  // Primary colors (orange-red theme)
-  static const primary50 = Color(0xFFFEF2F2);
-  static const primary100 = Color(0xFFFEE2E2);
-  static const primary200 = Color(0xFFFECACA);
-  static const primary300 = Color(0xFFFCA5A5);
-  static const primary400 = Color(0xFFF87171);
-  static const primary500 = Color(0xFFEA4B4B); // Main brand color
-  static const primary600 = Color(0xFFDC2626);
-  static const primary700 = Color(0xFFB91C1C);
-  static const primary800 = Color(0xFF991B1B);
-  static const primary900 = Color(0xFF7F1D1D);
+  // Brand tokens (single source of truth)
+  static const brandBackground = Color(0xFFFCF3EC);
+  static const brandAccent = Color(0xFFF15942);
+  static const brandAccentHover = Color(0xFFD94C37);
+  static const brandAccentActive = Color(0xFFBF422F);
+  static const brandText = Color(0xFF3F3F3F);
+
+  // Primary colors (based on brand accent)
+  static const primary50 = Color(0xFFFFF3F1);
+  static const primary100 = Color(0xFFFEE5DF);
+  static const primary200 = Color(0xFFFDC9BF);
+  static const primary300 = Color(0xFFF9A48F);
+  static const primary400 = Color(0xFFF37B63);
+  static const primary500 = brandAccent; // Main brand color
+  static const primary600 = brandAccentHover;
+  static const primary700 = brandAccentActive;
+  static const primary800 = Color(0xFF9B3223);
+  static const primary900 = Color(0xFF7A2518);
 
   // Secondary colors (beige/cream theme)
   static const secondary50 = Color(0xFFFEFDF8);
@@ -73,12 +80,13 @@ class AppColors {
   static const error900 = Color(0xFF7F1D1D);
 
   // Background colors
+  static const backgroundBrand = brandBackground;
   static const backgroundPrimary = Color(0xFFFFFFFF);
-  static const backgroundSecondary = Color(0xFFF9FAFB);
-  static const backgroundTertiary = Color(0xFFF3F4F6);
+  static const backgroundSecondary = Color(0xFFFFF8F3);
+  static const backgroundTertiary = Color(0xFFF8EDE5);
 
   // Text colors
-  static const textPrimary = Color(0xFF111827); // Dark gray for main text
+  static const textPrimary = brandText; // Main brand text color
   static const textSecondary = Color(
     0xFF6B7280,
   ); // Medium gray for secondary text
@@ -90,7 +98,7 @@ class AppColors {
   // Border colors
   static const borderPrimary = Color(0xFFE5E7EB);
   static const borderSecondary = Color(0xFFD1D5DB);
-  static const borderFocus = Color(0xFFEA4B4B);
+  static const borderFocus = brandAccent;
 
   // Status colors for bookings
   static const statusConfirmed = Color(0xFF22C55E); // Green

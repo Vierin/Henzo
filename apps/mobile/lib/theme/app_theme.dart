@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../constants/colors.dart';
 
 /// Единая тема приложения на основе AppColors.
@@ -7,8 +8,15 @@ class AppTheme {
   AppTheme._();
 
   static ThemeData get light {
+    final base = ThemeData(useMaterial3: true);
+    final wixTextTheme = GoogleFonts.getTextTheme(
+      'Wix Madefor Display',
+      base.textTheme,
+    );
+
     return ThemeData(
       useMaterial3: true,
+      textTheme: wixTextTheme,
       colorScheme: ColorScheme.light(
         primary: AppColors.primary500,
         onPrimary: AppColors.textInverse,
@@ -24,8 +32,8 @@ class AppTheme {
         error: AppColors.error500,
         onError: AppColors.textInverse,
       ),
-      scaffoldBackgroundColor: AppColors.backgroundSecondary,
-      appBarTheme: const AppBarTheme(
+      scaffoldBackgroundColor: AppColors.backgroundBrand,
+      appBarTheme: AppBarTheme(
         backgroundColor: AppColors.backgroundPrimary,
         foregroundColor: AppColors.textPrimary,
         elevation: 0,
@@ -34,6 +42,7 @@ class AppTheme {
           fontSize: 18,
           fontWeight: FontWeight.w600,
           color: AppColors.textPrimary,
+          fontFamily: wixTextTheme.titleLarge?.fontFamily,
         ),
         iconTheme: IconThemeData(color: AppColors.textPrimary),
       ),

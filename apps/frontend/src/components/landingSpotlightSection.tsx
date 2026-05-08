@@ -2,6 +2,7 @@
 
 import { ChaoticUnderline } from '@/components/landing/chaoticUnderline';
 import { useLanguage, useTranslation } from '@/contexts/LanguageContext';
+import { getStableViewportHeight } from '@/utils/viewport';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
@@ -197,6 +198,7 @@ export function LandingSpotlightSection() {
 		}
 
 		gsap.registerPlugin(ScrollTrigger);
+		ScrollTrigger.config({ ignoreMobileResize: true });
 		let lastIdx = -1;
 		const n = slides.length;
 
@@ -235,7 +237,7 @@ export function LandingSpotlightSection() {
 					trigger: pin,
 					start: 'top top',
 					end: () =>
-						`+=${Math.round(window.innerHeight * Math.max(1.25, n * 0.5))}`,
+						`+=${Math.round(getStableViewportHeight() * Math.max(1.25, n * 0.5))}`,
 					pin: true,
 					pinSpacing: true,
 					scrub: 1,
@@ -270,7 +272,8 @@ export function LandingSpotlightSection() {
 				ScrollTrigger.create({
 					trigger: mobilePin,
 					start: 'top top',
-					end: () => `+=${Math.round(window.innerHeight * Math.max(1.45, n * 0.78))}`,
+					end: () =>
+						`+=${Math.round(getStableViewportHeight() * Math.max(1.45, n * 0.78))}`,
 					pin: true,
 					pinSpacing: true,
 					scrub: 1,
@@ -327,13 +330,22 @@ export function LandingSpotlightSection() {
 			};
 		}, sectionRef);
 
-		const onResize = () => {
-			ScrollTrigger.refresh();
+		let orientationRefreshTimer: ReturnType<typeof setTimeout> | null = null;
+		const onOrientationChange = () => {
+			if (orientationRefreshTimer !== null) {
+				clearTimeout(orientationRefreshTimer);
+			}
+			orientationRefreshTimer = setTimeout(() => {
+				ScrollTrigger.refresh();
+			}, 140);
 		};
-		window.addEventListener('resize', onResize);
+		window.addEventListener('orientationchange', onOrientationChange);
 
 		return () => {
-			window.removeEventListener('resize', onResize);
+			window.removeEventListener('orientationchange', onOrientationChange);
+			if (orientationRefreshTimer !== null) {
+				clearTimeout(orientationRefreshTimer);
+			}
 			ctx.revert();
 		};
 	}, [slides.length, slides]);
