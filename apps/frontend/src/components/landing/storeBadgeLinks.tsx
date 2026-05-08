@@ -5,7 +5,7 @@ import {
 } from '@/components/landing/storeIcons';
 
 const btnClass =
-	'inline-flex min-h-[50px] w-[169px] items-center justify-center gap-2 rounded-full border-1 border-[#3F3F3F] px-6 py-2 text-sm font-semibold text-[#3F3F3F] shadow-sm whitespace-nowrap transition hover:bg-[#faf8f5] sm:px-7 sm:text-[1em]';
+	'inline-flex min-h-[40px] sm:min-h-[50px] w-[140px] sm:w-[169px] items-center justify-center gap-2 rounded-full border-1 border-[#3F3F3F] px-6 py-2 text-sm font-semibold text-[#3F3F3F] shadow-sm whitespace-nowrap transition hover:bg-[#faf8f5] sm:px-7 sm:text-[1em]';
 
 type StoreBadgeLinksProps = {
 	appStoreLabel: string;

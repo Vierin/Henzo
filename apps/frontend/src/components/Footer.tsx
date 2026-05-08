@@ -68,9 +68,9 @@ export default function Footer() {
 				: 'Start your business today.';
 
 	return (
-		<footer className="bg-[#F9F4F0] px-6 py-8" suppressHydrationWarning>
+		<footer className="bg-[#F9F4F0] px-3 py-4 sm:px-6 sm:py-8" suppressHydrationWarning>
 			<div className="mx-auto max-w-7xl">
-				<div className="flex gap-8 md:gap-10 justify-between items-end">
+				<div className="flex sm:flex-row flex-col gap-4 sm:gap-10 justify-between items-end">
 					<div>
 						<div className="">
 							<Link
@@ -88,8 +88,8 @@ export default function Footer() {
 							</Link>
 						</div>
 
-						<div className="mt-8 pl-12">
-							<p className="text-[1rem] text-[#3F3F3F] -mt-2">
+						<div className="mt-8 sm:pl-12">
+							<p className="sm:text-[1rem] text-[0.9rem] text-[#3F3F3F] -mt-9 sm:-mt-2 sm:pl-0 pl-12">
 								Run your classes.{' '}
 								<b className="text-[#F15942]">We’ll run your system.</b>
 							</p>
@@ -154,7 +154,7 @@ export default function Footer() {
 						</div>
 					</div>
 					<div className="md:pb-1">
-						<div className="rounded-3xl bg-white px-9 py-6 pr-8 flex items-center justify-between gap-6">
+						<div className="rounded-3xl bg-white px-9 py-6 pr-8 hidden sm:flex items-center justify-between gap-6">
 							<p className="text-[1.5rem] leading-[1.03] tracking-tight text-[#3B3B3F]">
 								{ctaTitle}
 							</p>
@@ -179,7 +179,7 @@ export default function Footer() {
 								</a>
 							</div>
 						</div>
-						<p className="mt-8 text-[1rem] font-medium text-[#3F3F3F] md:text-left">
+						<p className="sm:mt-8 text-[1rem] font-medium text-[#3F3F3F] text-left">
 							{t('footer.allRightsReserved')}
 						</p>
 					</div>
