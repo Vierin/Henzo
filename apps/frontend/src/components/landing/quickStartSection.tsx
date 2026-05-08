@@ -155,6 +155,8 @@ export function QuickStartSection() {
 						tl.to({}, { duration: 0.34 });
 					}
 				}
+				// Keep the last step on screen before unpin.
+				tl.to({}, { duration: 0.62 });
 			});
 
 			mm.add('(max-width: 767px)', () => {
@@ -165,10 +167,10 @@ export function QuickStartSection() {
 				}
 				setMobileActiveStep(0);
 				ScrollTrigger.create({
-					trigger: section,
+					trigger: mobilePin,
 					start: 'top top',
-					end: `+=${Math.max(820, steps.length * 340)}`,
-					pin: true,
+					end: `+=${Math.max(980, steps.length * 380)}`,
+					pin: mobilePin,
 					pinSpacing: true,
 					scrub: 1,
 					invalidateOnRefresh: true,
@@ -178,7 +180,9 @@ export function QuickStartSection() {
 						const raw = self.progress * totalSegments;
 						const base = Math.floor(raw);
 						const seg = raw - base;
-						const switchAt = 0.72; // Hold current step longer, then switch.
+						// Show the last step earlier, so user has time to read it.
+						const isLastTransition = base >= totalSegments - 1;
+						const switchAt = isLastTransition ? 0.38 : 0.72;
 						const idx = Math.min(
 							steps.length - 1,
 							base + (seg >= switchAt ? 1 : 0),
@@ -359,7 +363,7 @@ export function QuickStartSection() {
 					</div>
 				</div>
 
-				<div ref={mobilePinRef} className="mt-10 md:hidden">
+				<div ref={mobilePinRef} className="mt-10 pt-5 md:hidden">
 					<div className="grid h-[88svh] grid-rows-[auto_1fr] items-start gap-6">
 						<div ref={mobileStepRef} className="mx-auto max-w-sm text-center">
 							<p
@@ -370,11 +374,11 @@ export function QuickStartSection() {
 							</p>
 							<p
 								ref={mobileBodyRef}
-								className="mx-auto mt-4 max-w-[24ch] text-[1.35rem] leading-[1.18] min-h-[6rem] font-medium text-[#3F3F3F]"
+								className="mx-auto mt-4 max-w-[24ch] text-[1.35rem] leading-[1.18] min-h-[5rem] font-medium text-[#3F3F3F]"
 							>
 								{steps[mobileActiveStep]?.text}
 							</p>
-							<div className="mt-5 flex justify-center gap-2.5" role="group">
+							<div className=" flex justify-center gap-2.5" role="group">
 								{steps.map((_, i) => (
 									<span
 										key={`mobile-step-dot-${i}`}
