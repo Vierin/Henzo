@@ -27,7 +27,8 @@ export function LandingPhoneShowcaseSection() {
 		const circlesEl = circlesRef.current;
 		const card1 = card1Ref.current;
 		const card2 = card2Ref.current;
-		if (!section || !phone || !phoneFrame || !circlesEl || !card1 || !card2) return;
+		if (!section || !phone || !phoneFrame || !circlesEl || !card1 || !card2)
+			return;
 
 		gsap.registerPlugin(ScrollTrigger);
 		ScrollTrigger.config({ ignoreMobileResize: true });
@@ -274,7 +275,7 @@ export function LandingPhoneShowcaseSection() {
 				</div>
 				<div
 					ref={card2Ref}
-					className="pointer-events-none absolute left-[max(3rem,4vw)] top-[25%] sm:top-[15%] z-20 hidden w-[min(350px,50vw)] lg:block"
+					className="pointer-events-none absolute left-[max(3rem,4vw)] top-[25%] z-20 hidden w-[min(350px,50vw)] lg:block"
 				>
 					<LandingEntryNotificationCard
 						title={entryTitle2}

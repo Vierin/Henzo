@@ -35,6 +35,8 @@ export function QuickStartSection() {
 	const desktopWrapRef = useRef<HTMLDivElement>(null);
 	const mobilePinRef = useRef<HTMLDivElement>(null);
 	const mobileStepRef = useRef<HTMLDivElement>(null);
+	const mobileLabelRef = useRef<HTMLParagraphElement>(null);
+	const mobileBodyRef = useRef<HTMLParagraphElement>(null);
 	const labelRefs = useRef<Array<HTMLSpanElement | null>>([]);
 	const bodyRefs = useRef<Array<HTMLParagraphElement | null>>([]);
 	const arrowRefs = useRef<Array<HTMLImageElement | null>>([]);
@@ -150,7 +152,7 @@ export function QuickStartSection() {
 						'-=0.08',
 					);
 					if (i !== itemsCount - 1) {
-						tl.to({}, { duration: 0.2 });
+						tl.to({}, { duration: 0.34 });
 					}
 				}
 			});
@@ -172,9 +174,14 @@ export function QuickStartSection() {
 					invalidateOnRefresh: true,
 					anticipatePin: 1,
 					onUpdate: (self: ScrollTrigger) => {
+						const totalSegments = Math.max(1, steps.length - 1);
+						const raw = self.progress * totalSegments;
+						const base = Math.floor(raw);
+						const seg = raw - base;
+						const switchAt = 0.72; // Hold current step longer, then switch.
 						const idx = Math.min(
 							steps.length - 1,
-							Math.floor(self.progress * steps.length),
+							base + (seg >= switchAt ? 1 : 0),
 						);
 						setMobileActiveStep(idx);
 					},
@@ -193,24 +200,40 @@ export function QuickStartSection() {
 
 	useEffect(() => {
 		const stepEl = mobileStepRef.current;
-		if (!stepEl || steps.length === 0) {
+		const labelEl = mobileLabelRef.current;
+		const bodyEl = mobileBodyRef.current;
+		if (!stepEl || !labelEl || !bodyEl || steps.length === 0) {
 			return;
 		}
-		const targets = stepEl.querySelectorAll('[data-mobile-step-animate]');
-		if (targets.length === 0) {
-			return;
-		}
-		const tw = gsap.fromTo(
-			targets,
-			{ opacity: 0, y: 16 },
+
+		const labelChars = Math.max(steps[mobileActiveStep]?.label.length ?? 1, 1);
+		labelEl.style.setProperty('--mobile-label-chars', `${labelChars}ch`);
+
+		const tw = gsap.timeline();
+		tw.set(labelEl, {
+			width: '0ch',
+			autoAlpha: 1,
+			display: 'inline-block',
+			overflow: 'hidden',
+			whiteSpace: 'nowrap',
+		});
+		tw.set(bodyEl, { autoAlpha: 0, y: 26 });
+		tw.to(labelEl, {
+			width: 'var(--mobile-label-chars)',
+			duration: 0.42,
+			ease: `steps(${Math.max(labelChars, 6)})`,
+		});
+		tw.to(
+			bodyEl,
 			{
-				opacity: 1,
+				autoAlpha: 1,
 				y: 0,
-				duration: 0.35,
+				duration: 0.36,
 				ease: 'power2.out',
-				stagger: 0.06,
 			},
+			'-=0.09',
 		);
+
 		return () => {
 			tw.kill();
 		};
@@ -220,7 +243,7 @@ export function QuickStartSection() {
 		<section
 			ref={sectionRef}
 			id="how-it-works"
-			className="bg-[#F9F4F0] px-5 py-12 pb-16"
+			className="bg-[#F9F4F0] px-5 py-6 sm:py-12 pb-16"
 			aria-labelledby="quick-start-heading"
 		>
 			<div className="mx-auto max-w-5xl">
@@ -228,7 +251,9 @@ export function QuickStartSection() {
 					id="quick-start-heading"
 					className="text-center text-[#3F3F3F] [&_span]:tracking-tight"
 				>
-					<span className="block text-[2.4rem] sm:text-[4.4rem] leading-tight">{line1}</span>
+					<span className="block text-[2.4rem] sm:text-[4.4rem] leading-tight">
+						{line1}
+					</span>
 					<span className="-mt-2 block text-[1.8rem] sm:text-[2.5rem] font-normal">
 						{line2Before}
 						<span className="relative inline-block px-0.5">
@@ -338,13 +363,13 @@ export function QuickStartSection() {
 					<div className="grid h-[88svh] grid-rows-[auto_1fr] items-start gap-6">
 						<div ref={mobileStepRef} className="mx-auto max-w-sm text-center">
 							<p
-								data-mobile-step-animate
+								ref={mobileLabelRef}
 								className="font-shadows-into-light-two text-[2.2rem] leading-none text-[#D9534F]"
 							>
 								{steps[mobileActiveStep]?.label}
 							</p>
 							<p
-								data-mobile-step-animate
+								ref={mobileBodyRef}
 								className="mx-auto mt-4 max-w-[24ch] text-[1.35rem] leading-[1.18] min-h-[6rem] font-medium text-[#3F3F3F]"
 							>
 								{steps[mobileActiveStep]?.text}

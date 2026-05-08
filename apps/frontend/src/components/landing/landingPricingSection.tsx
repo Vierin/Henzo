@@ -53,7 +53,7 @@ export function LandingPricingSection() {
 	return (
 		<section
 			id="pricing"
-			className="bg-[#F9F4F0] sm:min-h-[max(100svh,1000px)] px-6 pb-16 pt-8 md:px-10 md:pb-20 md:pt-10"
+			className="bg-[#F9F4F0] sm:min-h-[max(100svh,1000px)] pt-[15rem] px-6 pb-16 sm:pt-8 md:px-10 md:pb-20 md:pt-10"
 		>
 			<div className="mx-auto max-w-7xl">
 				<h2 className="text-center text-[#33363F]">
@@ -107,7 +107,9 @@ export function LandingPricingSection() {
 								<div className="">
 									<p className="text-[3rem] sm:text-[4.4rem] font-medium leading-none tracking-tight text-[#3F3F3F]">
 										{plan.price}{' '}
-										<span className="text-[1.8rem] sm:text-[2.5rem] text-[#3F3F3F]">VND</span>
+										<span className="text-[1.8rem] sm:text-[2.5rem] text-[#3F3F3F]">
+											VND
+										</span>
 									</p>
 									<p className="mt-3 text-[1rem] text-[#3F3F3F]">
 										{plan.priceSub}

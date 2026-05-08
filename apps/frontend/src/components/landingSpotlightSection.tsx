@@ -455,9 +455,9 @@ export function LandingSpotlightSection() {
 
 			<div
 				ref={pinRef}
-				className="mx-auto hidden w-full max-w-7xl min-h-[100svh] items-center px-4 sm:px-6 md:flex md:h-[100svh] md:min-h-0"
+				className="mx-auto hidden w-full max-w-7xl min-h-[100svh] items-center  px-4 sm:px-6 md:flex md:h-[100svh] md:min-h-0"
 			>
-				<div className="grid w-full translate-y-6 grid-cols-1 items-start gap-10 md:translate-y-6 md:grid-cols-2 md:gap-12 lg:gap-16">
+				<div className="grid w-full translate-y-6 grid-cols-1  items-start gap-10 md:translate-y-6 md:grid-cols-2 md:gap-12 lg:gap-16">
 					<div className="mt-6 text-left md:mt-12">
 						<div ref={leftCopyRef}>
 							<div className="relative inline-flex min-h-[4.5rem] text-center min-w-[15rem] items-center justify-center px-2 py-1 sm:min-h-[5rem]">
@@ -475,7 +475,7 @@ export function LandingSpotlightSection() {
 							<h3 className="mt-6 text-[1.5rem] leading-[1.1] font-semibold text-white md:text-[2.5rem]">
 								{slide.featureTitle}
 							</h3>
-							<p className="mt-3 max-w-md text-[1rem]  leading-[1.2] min-h-[4.5rem] text-white/90 md:text-[1.2rem]">
+							<p className="mt-3 max-w-md text-[1rem] leading-[1.2]min-h-[4.5rem] text-white/90 md:text-[1.2rem]">
 								{slide.description}
 							</p>
 						</div>
@@ -532,9 +532,9 @@ export function LandingSpotlightSection() {
 
 			<div
 				ref={mobilePinRef}
-				className="mx-auto w-full max-w-md overflow-hidden px-4 pb-4 md:hidden"
+				className="mx-auto w-full max-w-md overflow-hidden px-4 pb-4 sm:hidden"
 			>
-				<div className="flex h-[100svh] flex-col items-center justify-center gap-4 sm:py-3">
+				<div className="flex h-[100svh] flex-col items-center pt-12 justify-center gap-4 sm:py-3">
 					<div
 						ref={mobileCardsRef}
 						className="relative mx-auto mt-1 aspect-[4/3] w-[92%]"
@@ -558,7 +558,7 @@ export function LandingSpotlightSection() {
 
 					<div
 						ref={mobileCopyRef}
-						className="mt-15 sm:mt-3 text-left w-full min-h-[300px] flex flex-col"
+						className="mt-15 sm:mt-3 text-left w-full min-h-[270px] flex flex-col"
 					>
 						<div className="relative inline-flex min-h-[3.6rem] min-w-[10rem] items-center justify-center w-fit px-2 py-1">
 							<StatScribbleOval
@@ -574,7 +574,7 @@ export function LandingSpotlightSection() {
 						<h3 className="mt-3 text-[1.5rem] leading-[1.08] font-semibold text-white">
 							{slide.featureTitle}
 						</h3>
-						<p className="mt-3 min-h-[4.2rem] text-[1.2rem] leading-[1.3] text-white/90">
+						<p className="mt-3 min-h-[3.5rem] text-[1.2rem] leading-[1.3] text-white/90">
 							{slide.description}
 						</p>
 						<div
