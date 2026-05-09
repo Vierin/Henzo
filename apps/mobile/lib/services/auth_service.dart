@@ -383,6 +383,7 @@ class AuthService extends ChangeNotifier {
   }
 
   Future<AuthUiResult> requestBusinessRegistration({
+    String? name,
     required String email,
     required String password,
     String? locale,
@@ -395,7 +396,9 @@ class AuthService extends ChangeNotifier {
         url,
         headers: {'Content-Type': 'application/json'},
         body: json.encode({
-          'name': email.trim(),
+          'name': (name != null && name.trim().isNotEmpty)
+              ? name.trim()
+              : email.trim(),
           'email': email.trim(),
           'password': password,
           if (locale != null && locale.isNotEmpty) 'locale': locale,

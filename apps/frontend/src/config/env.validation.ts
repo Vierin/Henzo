@@ -77,25 +77,17 @@ export function validateEnv(): EnvValidationResult {
 		});
 	}
 
-	// Log errors and warnings
-	if (errors.length > 0) {
-		console.error('❌ Environment variable validation errors:', errors);
-		errors.forEach((error) => {
-			console.error(`  - ${error}`);
-		});
-	}
-
-	// Only show warnings in development (they're informational)
-	// In production, warnings are shown above
-	if (warnings.length > 0) {
-		if (process.env.NODE_ENV === 'development') {
-			// In development, warnings are less critical
-			console.debug('ℹ️ Environment variable validation info:', warnings);
-		} else {
-			console.warn('⚠️ Environment variable validation warnings:', warnings);
-			warnings.forEach((warning) => {
-				console.warn(`  - ${warning}`);
+	// Avoid noisy console logs in production bundles.
+	if (isDevelopment) {
+		if (errors.length > 0) {
+			console.error('❌ Environment variable validation errors:', errors);
+			errors.forEach((error) => {
+				console.error(`  - ${error}`);
 			});
+		}
+
+		if (warnings.length > 0) {
+			console.debug('ℹ️ Environment variable validation info:', warnings);
 		}
 	}
 
@@ -118,11 +110,7 @@ export function initEnvValidation(): void {
 	if (!result.valid) {
 		// In development, we can continue, but log errors
 		// In production, this should be fixed before deployment
-		if (process.env.NODE_ENV === 'production') {
-			console.error(
-				'🚨 Critical environment variables are missing. The application may not work correctly.'
-			);
-		}
+		// Keep silent in production; validation result can be handled by callers if needed.
 	}
 }
 

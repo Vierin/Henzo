@@ -74,6 +74,20 @@ class MyApp extends StatelessWidget {
 
   final NotificationsStore? notificationsStore;
 
+  Widget _withKeyboardDismiss(BuildContext context, Widget? child) {
+    if (child == null) return const SizedBox.shrink();
+    return GestureDetector(
+      behavior: HitTestBehavior.translucent,
+      onTap: () {
+        final currentFocus = FocusScope.of(context);
+        if (!currentFocus.hasPrimaryFocus && currentFocus.focusedChild != null) {
+          currentFocus.unfocus();
+        }
+      },
+      child: child,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return MultiProvider(
@@ -93,6 +107,7 @@ class MyApp extends StatelessWidget {
             return MaterialApp(
               title: 'Henzo',
               theme: AppTheme.light,
+              builder: _withKeyboardDismiss,
               localizationsDelegates: const [
                 GlobalMaterialLocalizations.delegate,
                 GlobalWidgetsLocalizations.delegate,
@@ -112,6 +127,7 @@ class MyApp extends StatelessWidget {
             title: 'Henzo',
             theme: AppTheme.light,
             themeMode: ThemeMode.light,
+            builder: _withKeyboardDismiss,
             locale: Locale(locale.languageTag),
             localizationsDelegates: const [
               GlobalMaterialLocalizations.delegate,

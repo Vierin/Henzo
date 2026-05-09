@@ -2,6 +2,7 @@
 
 import { ChaoticUnderline } from '@/components/landing/chaoticUnderline';
 import { useLanguage, useTranslation } from '@/contexts/LanguageContext';
+import { getStableViewportHeight } from '@/utils/viewport';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
@@ -70,6 +71,20 @@ const FAN_DEG_PER_SLOT = 32;
 const FAN_MAX_DEG = 96;
 const FAN_ORIGIN_X = '260%';
 const FAN_ORIGIN_Y = '50%';
+let spotlightRefreshTimer: ReturnType<typeof setTimeout> | null = null;
+
+function scheduleSpotlightLayoutRefresh() {
+	if (typeof window === 'undefined') {
+		return;
+	}
+	if (spotlightRefreshTimer !== null) {
+		clearTimeout(spotlightRefreshTimer);
+	}
+	spotlightRefreshTimer = setTimeout(() => {
+		spotlightRefreshTimer = null;
+		ScrollTrigger.refresh();
+	}, 300);
+}
 
 function SpotlightLoopVideo({
 	src,
@@ -81,6 +96,11 @@ function SpotlightLoopVideo({
 	className?: string;
 }) {
 	const ref = useRef<HTMLVideoElement>(null);
+	const didScheduleRefreshRef = useRef(false);
+
+	setTimeout(() => {
+		ScrollTrigger.refresh();
+	}, 3000);
 
 	useEffect(() => {
 		const el = ref.current;
@@ -97,6 +117,19 @@ function SpotlightLoopVideo({
 		}
 	}, [src]);
 
+	useEffect(() => {
+		didScheduleRefreshRef.current = false;
+	}, [src]);
+
+	const handleVideoReady = () => {
+		// One refresh per source is enough to recalc pinned sections.
+		if (didScheduleRefreshRef.current) {
+			return;
+		}
+		didScheduleRefreshRef.current = true;
+		scheduleSpotlightLayoutRefresh();
+	};
+
 	return (
 		<video
 			ref={ref}
@@ -108,6 +141,8 @@ function SpotlightLoopVideo({
 			loop
 			preload="auto"
 			aria-label={label}
+			onLoadedMetadata={handleVideoReady}
+			onCanPlay={handleVideoReady}
 		/>
 	);
 }
@@ -197,6 +232,7 @@ export function LandingSpotlightSection() {
 		}
 
 		gsap.registerPlugin(ScrollTrigger);
+		ScrollTrigger.config({ ignoreMobileResize: true });
 		let lastIdx = -1;
 		const n = slides.length;
 
@@ -219,7 +255,11 @@ export function LandingSpotlightSection() {
 					const focus = progress * (n - 1);
 					cards.forEach((el, j) => {
 						const delta = j - focus;
-						const rot = clamp(delta * FAN_DEG_PER_SLOT, -FAN_MAX_DEG, FAN_MAX_DEG);
+						const rot = clamp(
+							delta * FAN_DEG_PER_SLOT,
+							-FAN_MAX_DEG,
+							FAN_MAX_DEG,
+						);
 						gsap.set(el, {
 							rotation: rot,
 							opacity: 1,
@@ -235,7 +275,7 @@ export function LandingSpotlightSection() {
 					trigger: pin,
 					start: 'top top',
 					end: () =>
-						`+=${Math.round(window.innerHeight * Math.max(1.25, n * 0.5))}`,
+						`+=${Math.round(getStableViewportHeight() * Math.max(1.25, n * 0.5))}`,
 					pin: true,
 					pinSpacing: true,
 					scrub: 1,
@@ -261,7 +301,8 @@ export function LandingSpotlightSection() {
 				const mobileCards = mobileCardsRef.current;
 				if (!mobilePin || !mobileCards) return;
 
-				const cards = mobileCards.querySelectorAll<HTMLElement>('[data-mobile-card]');
+				const cards =
+					mobileCards.querySelectorAll<HTMLElement>('[data-mobile-card]');
 				if (cards.length === 0) return;
 
 				gsap.set(cards, { y: 40, opacity: 0, scale: 1, force3D: true });
@@ -270,7 +311,8 @@ export function LandingSpotlightSection() {
 				ScrollTrigger.create({
 					trigger: mobilePin,
 					start: 'top top',
-					end: () => `+=${Math.round(window.innerHeight * Math.max(1.45, n * 0.78))}`,
+					end: () =>
+						`+=${Math.round(getStableViewportHeight() * Math.max(1.45, n * 0.78))}`,
 					pin: true,
 					pinSpacing: true,
 					scrub: 1,
@@ -327,13 +369,22 @@ export function LandingSpotlightSection() {
 			};
 		}, sectionRef);
 
-		const onResize = () => {
-			ScrollTrigger.refresh();
+		let orientationRefreshTimer: ReturnType<typeof setTimeout> | null = null;
+		const onOrientationChange = () => {
+			if (orientationRefreshTimer !== null) {
+				clearTimeout(orientationRefreshTimer);
+			}
+			orientationRefreshTimer = setTimeout(() => {
+				ScrollTrigger.refresh();
+			}, 140);
 		};
-		window.addEventListener('resize', onResize);
+		window.addEventListener('orientationchange', onOrientationChange);
 
 		return () => {
-			window.removeEventListener('resize', onResize);
+			window.removeEventListener('orientationchange', onOrientationChange);
+			if (orientationRefreshTimer !== null) {
+				clearTimeout(orientationRefreshTimer);
+			}
 			ctx.revert();
 		};
 	}, [slides.length, slides]);
@@ -404,9 +455,9 @@ export function LandingSpotlightSection() {
 
 			<div
 				ref={pinRef}
-				className="mx-auto hidden w-full max-w-7xl min-h-[100svh] items-center px-4 sm:px-6 md:flex md:h-[100svh] md:min-h-0"
+				className="mx-auto hidden w-full max-w-7xl min-h-[100svh] items-center  px-4 sm:px-6 md:flex md:h-[100svh] md:min-h-0"
 			>
-				<div className="grid w-full translate-y-6 grid-cols-1 items-start gap-10 md:translate-y-6 md:grid-cols-2 md:gap-12 lg:gap-16">
+				<div className="grid w-full translate-y-6 grid-cols-1  items-start gap-10 md:translate-y-6 md:grid-cols-2 md:gap-12 lg:gap-16">
 					<div className="mt-6 text-left md:mt-12">
 						<div ref={leftCopyRef}>
 							<div className="relative inline-flex min-h-[4.5rem] text-center min-w-[15rem] items-center justify-center px-2 py-1 sm:min-h-[5rem]">
@@ -424,7 +475,7 @@ export function LandingSpotlightSection() {
 							<h3 className="mt-6 text-[1.5rem] leading-[1.1] font-semibold text-white md:text-[2.5rem]">
 								{slide.featureTitle}
 							</h3>
-							<p className="mt-3 max-w-md text-[1rem]  leading-[1.2] min-h-[4.5rem] text-white/90 md:text-[1.2rem]">
+							<p className="mt-3 max-w-md text-[1rem] leading-[1.2]min-h-[4.5rem] text-white/90 md:text-[1.2rem]">
 								{slide.description}
 							</p>
 						</div>
@@ -481,9 +532,9 @@ export function LandingSpotlightSection() {
 
 			<div
 				ref={mobilePinRef}
-				className="mx-auto w-full max-w-md overflow-hidden px-4 pb-4 md:hidden"
+				className="mx-auto w-full max-w-md overflow-hidden px-4 pb-4 sm:hidden"
 			>
-				<div className="flex h-[100svh] flex-col items-center justify-center gap-4 sm:py-3">
+				<div className="flex h-[100svh] flex-col items-center pt-12 justify-center gap-4 sm:py-3">
 					<div
 						ref={mobileCardsRef}
 						className="relative mx-auto mt-1 aspect-[4/3] w-[92%]"
@@ -505,7 +556,10 @@ export function LandingSpotlightSection() {
 						))}
 					</div>
 
-					<div ref={mobileCopyRef} className="mt-15 sm:mt-3 text-left w-full min-h-[300px] flex flex-col">
+					<div
+						ref={mobileCopyRef}
+						className="mt-15 sm:mt-3 text-left w-full min-h-[270px] flex flex-col"
+					>
 						<div className="relative inline-flex min-h-[3.6rem] min-w-[10rem] items-center justify-center w-fit px-2 py-1">
 							<StatScribbleOval
 								key={`mobile-${slide.stat}`}
@@ -520,19 +574,25 @@ export function LandingSpotlightSection() {
 						<h3 className="mt-3 text-[1.5rem] leading-[1.08] font-semibold text-white">
 							{slide.featureTitle}
 						</h3>
-						<p className="mt-3 min-h-[4.2rem] text-[1.2rem] leading-[1.3] text-white/90">
+						<p className="mt-3 min-h-[3.5rem] text-[1.2rem] leading-[1.3] text-white/90">
 							{slide.description}
 						</p>
-						<div className="mt-auto sm:mt-5 flex justify-center gap-2.5" role="group">
+						<div
+							className="mt-auto sm:mt-5 flex justify-center gap-2.5"
+							role="group"
+						>
 							{slides.map((_, i) => (
 								<span
 									key={`mobile-dot-${i}`}
 									className={`h-2.5 w-2.5 rounded-full transition-[transform,opacity,box-shadow] duration-300 ${
-										i === active ? 'scale-125 opacity-100' : 'scale-100 opacity-45'
+										i === active
+											? 'scale-125 opacity-100'
+											: 'scale-100 opacity-45'
 									}`}
 									style={{
 										backgroundColor:
-											SPOTLIGHT_COLORS[i % SPOTLIGHT_COLORS.length] ?? '#FFFFFF',
+											SPOTLIGHT_COLORS[i % SPOTLIGHT_COLORS.length] ??
+											'#FFFFFF',
 										boxShadow:
 											i === active
 												? `0 0 0 2px ${SPOTLIGHT_COLORS[i % SPOTLIGHT_COLORS.length]}59`
