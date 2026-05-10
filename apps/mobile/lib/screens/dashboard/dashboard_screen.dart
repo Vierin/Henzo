@@ -16,6 +16,7 @@ import '../../widgets/dashboard/owner_checklist_card.dart';
 import '../../widgets/dashboard/dashboard_setup_card.dart';
 import '../../widgets/dashboard/owner_weekly_insight_strip.dart';
 import '../../widgets/owner_training_session_card.dart';
+import '../owner_training_session_detail_screen.dart';
 import '../app_settings_screen.dart';
 import 'owner_studio_reviews_screen.dart';
 import '../notifications_screen.dart';
@@ -121,8 +122,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
   ({DateTime from, DateTime to}) _lastCompletedCalendarWeekLocal() {
     final now = DateTime.now();
     final todayStart = DateTime(now.year, now.month, now.day);
-    final thisMonday =
-        todayStart.subtract(Duration(days: todayStart.weekday - 1));
+    final thisMonday = todayStart.subtract(
+      Duration(days: todayStart.weekday - 1),
+    );
     final lastSunday = thisMonday.subtract(const Duration(days: 1));
     final to = DateTime(
       lastSunday.year,
@@ -149,8 +151,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
     final t = loc.t;
 
     final todayClasses = _todaySessions.length;
-    final todayBookings =
-        _todaySessions.fold<int>(0, (a, s) => a + s.enrolledCount);
+    final todayBookings = _todaySessions.fold<int>(
+      0,
+      (a, s) => a + s.enrolledCount,
+    );
     final todayLine = t('dashboard.todaySummary')
         .replaceAll('{classes}', '$todayClasses')
         .replaceAll('{bookings}', '$todayBookings');
@@ -318,35 +322,44 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 isPast: isPast,
                 pastLabel: isPast ? 'Past' : null,
                 trainerFallbackName: _ownerTrainerFallback(),
-                onTap: () => OwnerTrainingSessionCard.showDetailsModal(
-                  context,
-                  s,
-                  trainerFallbackName: _ownerTrainerFallback(),
-                  onParticipantsChanged: _loadData,
-                  onEditSession: s.sessionId.isNotEmpty
-                      ? () async {
-                          final changed = await Navigator.of(context)
-                              .pushNamed<bool>(
-                                '/owner/session/edit',
-                                arguments: s.toRouteArgs(),
-                              );
-                          if (changed == true && context.mounted) {
-                            _loadData();
-                          }
-                        }
-                      : null,
-                  onEditService: s.trainingId.isNotEmpty
-                      ? () async {
-                          final changed = await Navigator.of(context)
-                              .pushNamed<bool?>(
-                                '/services',
-                                arguments: {'editTrainingId': s.trainingId},
-                              );
-                          if (changed == true && context.mounted)
-                            await _loadData();
-                        }
-                      : null,
-                ),
+                onTap: () {
+                  Navigator.of(context).push<void>(
+                    MaterialPageRoute<void>(
+                      builder: (_) => OwnerTrainingSessionDetailScreen(
+                        session: s,
+                        trainingColor: parseHexColor(s.trainingDisplayColorHex),
+                        trainerFallbackName: _ownerTrainerFallback(),
+                        onParticipantsChanged: _loadData,
+                        onEditSession: s.sessionId.isNotEmpty
+                            ? () async {
+                                final changed = await Navigator.of(context)
+                                    .pushNamed<bool>(
+                                      '/owner/session/edit',
+                                      arguments: s.toRouteArgs(),
+                                    );
+                                if (changed == true && context.mounted) {
+                                  _loadData();
+                                }
+                              }
+                            : null,
+                        onEditService: s.trainingId.isNotEmpty
+                            ? () async {
+                                final changed = await Navigator.of(context)
+                                    .pushNamed<bool?>(
+                                      '/services',
+                                      arguments: {
+                                        'editTrainingId': s.trainingId,
+                                      },
+                                    );
+                                if (changed == true && context.mounted) {
+                                  await _loadData();
+                                }
+                              }
+                            : null,
+                      ),
+                    ),
+                  );
+                },
               );
             }),
         ],

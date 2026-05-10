@@ -23,6 +23,7 @@ int? _parseOptionalInt(dynamic v) {
 
 class OwnerTrainingSession {
   final String sessionId;
+
   /// Training (service) id — for navigation to edit.
   final String trainingId;
   final DateTime startsAt;
@@ -32,12 +33,20 @@ class OwnerTrainingSession {
   final int enrolledCount;
   final int attendedCount;
   final String trainingName;
+
   /// Template price from Training (for enrollment-derived bookings / revenue).
   final double? trainingPrice;
+
   /// Duration from Training template (minutes), when API sends it.
   final int? trainingDurationMinutes;
   final String? trainingDisplayColorHex;
+
+  /// Localized category names from API (Training.trainingCategory).
+  final String? trainingCategoryNameEn;
+  final String? trainingCategoryNameRu;
+  final String? trainingCategoryNameVn;
   final String trainerName;
+
   /// Null when no trainer row or owner-led slot.
   final String? trainerId;
 
@@ -54,6 +63,9 @@ class OwnerTrainingSession {
     this.trainingPrice,
     this.trainingDurationMinutes,
     this.trainingDisplayColorHex,
+    this.trainingCategoryNameEn,
+    this.trainingCategoryNameRu,
+    this.trainingCategoryNameVn,
     required this.trainerName,
     this.trainerId,
   });
@@ -62,14 +74,25 @@ class OwnerTrainingSession {
     final attendance = json['attendanceSummary'];
     final training = json['training'];
     final trainer = json['trainer'];
-    final trainerIdRaw =
-        trainer is Map<String, dynamic> ? trainer['id'] : null;
+    final trainerIdRaw = trainer is Map<String, dynamic> ? trainer['id'] : null;
+    String? catEn;
+    String? catRu;
+    String? catVn;
+    if (training is Map<String, dynamic>) {
+      final tc = training['trainingCategory'];
+      if (tc is Map<String, dynamic>) {
+        catEn = tc['nameEn']?.toString();
+        catRu = tc['nameRu']?.toString();
+        catVn = tc['nameVn']?.toString();
+      }
+    }
     return OwnerTrainingSession(
       sessionId: (json['sessionId'] ?? '').toString(),
-      trainingId: (json['trainingId'] ??
-              (training is Map<String, dynamic> ? training['id'] : null) ??
-              '')
-          .toString(),
+      trainingId:
+          (json['trainingId'] ??
+                  (training is Map<String, dynamic> ? training['id'] : null) ??
+                  '')
+              .toString(),
       startsAt:
           DateTime.tryParse((json['startsAt'] ?? '').toString()) ??
           DateTime.now(),
@@ -88,7 +111,7 @@ class OwnerTrainingSession {
           : 'Training',
       trainingPrice: training is Map<String, dynamic>
           ? (_parseOptionalDouble(training['price']) ??
-              _parseOptionalDouble(training['amount']))
+                _parseOptionalDouble(training['amount']))
           : null,
       trainingDurationMinutes: training is Map<String, dynamic>
           ? _parseOptionalInt(training['duration'])
@@ -96,46 +119,55 @@ class OwnerTrainingSession {
       trainingDisplayColorHex: training is Map<String, dynamic>
           ? training['displayColor']?.toString()
           : null,
+      trainingCategoryNameEn: catEn,
+      trainingCategoryNameRu: catRu,
+      trainingCategoryNameVn: catVn,
       trainerName: trainer is Map<String, dynamic>
           ? (trainer['name'] ?? '—').toString()
           : '—',
       trainerId: trainerIdRaw == null
           ? null
           : trainerIdRaw.toString().trim().isEmpty
-              ? null
-              : trainerIdRaw.toString(),
+          ? null
+          : trainerIdRaw.toString(),
     );
   }
 
   /// Args for [Navigator] to [OwnerEditTrainingSessionScreen].
   Map<String, dynamic> toRouteArgs() => {
-        'sessionId': sessionId,
-        'trainingId': trainingId,
-        'startsAt': startsAt.toIso8601String(),
-        'endsAt': endsAt.toIso8601String(),
-        'status': status,
-        'capacity': capacity,
-        'enrolledCount': enrolledCount,
-        'attendedCount': attendedCount,
-        'trainingName': trainingName,
-        if (trainingPrice != null) 'trainingPrice': trainingPrice,
-        if (trainingDurationMinutes != null)
-          'trainingDurationMinutes': trainingDurationMinutes,
-        if (trainingDisplayColorHex != null)
-          'trainingDisplayColorHex': trainingDisplayColorHex,
-        'trainerName': trainerName,
-        if (trainerId != null) 'trainerId': trainerId,
-      };
+    'sessionId': sessionId,
+    'trainingId': trainingId,
+    'startsAt': startsAt.toIso8601String(),
+    'endsAt': endsAt.toIso8601String(),
+    'status': status,
+    'capacity': capacity,
+    'enrolledCount': enrolledCount,
+    'attendedCount': attendedCount,
+    'trainingName': trainingName,
+    if (trainingPrice != null) 'trainingPrice': trainingPrice,
+    if (trainingDurationMinutes != null)
+      'trainingDurationMinutes': trainingDurationMinutes,
+    if (trainingDisplayColorHex != null)
+      'trainingDisplayColorHex': trainingDisplayColorHex,
+    if (trainingCategoryNameEn != null)
+      'trainingCategoryNameEn': trainingCategoryNameEn,
+    if (trainingCategoryNameRu != null)
+      'trainingCategoryNameRu': trainingCategoryNameRu,
+    if (trainingCategoryNameVn != null)
+      'trainingCategoryNameVn': trainingCategoryNameVn,
+    'trainerName': trainerName,
+    if (trainerId != null) 'trainerId': trainerId,
+  };
 
   factory OwnerTrainingSession.fromRouteArgs(Map<String, dynamic> m) {
     final trainerRaw = m['trainerId'];
     return OwnerTrainingSession(
       sessionId: (m['sessionId'] ?? '').toString(),
       trainingId: (m['trainingId'] ?? '').toString(),
-      startsAt: DateTime.tryParse((m['startsAt'] ?? '').toString()) ??
-          DateTime.now(),
-      endsAt: DateTime.tryParse((m['endsAt'] ?? '').toString()) ??
-          DateTime.now(),
+      startsAt:
+          DateTime.tryParse((m['startsAt'] ?? '').toString()) ?? DateTime.now(),
+      endsAt:
+          DateTime.tryParse((m['endsAt'] ?? '').toString()) ?? DateTime.now(),
       status: (m['status'] ?? 'ACTIVE').toString(),
       capacity: (m['capacity'] as num?)?.toInt() ?? 0,
       enrolledCount: (m['enrolledCount'] as num?)?.toInt() ?? 0,
@@ -144,11 +176,32 @@ class OwnerTrainingSession {
       trainingPrice: _parseOptionalDouble(m['trainingPrice']),
       trainingDurationMinutes: _parseOptionalInt(m['trainingDurationMinutes']),
       trainingDisplayColorHex: m['trainingDisplayColorHex']?.toString(),
+      trainingCategoryNameEn: m['trainingCategoryNameEn']?.toString(),
+      trainingCategoryNameRu: m['trainingCategoryNameRu']?.toString(),
+      trainingCategoryNameVn: m['trainingCategoryNameVn']?.toString(),
       trainerName: (m['trainerName'] ?? '—').toString(),
       trainerId: trainerRaw == null || trainerRaw.toString().isEmpty
           ? null
           : trainerRaw.toString(),
     );
+  }
+
+  /// Training category label for UI (matches studio locale).
+  String? categoryLabelForLocale(String localeCode) {
+    switch (localeCode) {
+      case 'ru':
+        final r = trainingCategoryNameRu?.trim();
+        if (r != null && r.isNotEmpty) return r;
+        break;
+      case 'vi':
+        final v = trainingCategoryNameVn?.trim();
+        if (v != null && v.isNotEmpty) return v;
+        break;
+      default:
+        break;
+    }
+    final e = trainingCategoryNameEn?.trim();
+    return e != null && e.isNotEmpty ? e : null;
   }
 }
 
@@ -173,15 +226,9 @@ class RecurringSlot {
   final int day;
   final String startTime;
 
-  const RecurringSlot({
-    required this.day,
-    required this.startTime,
-  });
+  const RecurringSlot({required this.day, required this.startTime});
 
-  Map<String, dynamic> toJson() => {
-    'day': day,
-    'startTime': startTime,
-  };
+  Map<String, dynamic> toJson() => {'day': day, 'startTime': startTime};
 }
 
 class OwnerSessionEnrollment {
@@ -308,13 +355,18 @@ class StudioAnalytics {
       topTrainerName: topTrainer is Map<String, dynamic>
           ? topTrainer['name']?.toString()
           : null,
-      clientsTotal: clients is Map<String, dynamic> ? _asInt(clients['total']) : 0,
-      clientsRegular:
-          clients is Map<String, dynamic> ? _asInt(clients['regular']) : 0,
-      clientsNewInPeriod:
-          clients is Map<String, dynamic> ? _asInt(clients['newInPeriod']) : 0,
-      clientsInactive:
-          clients is Map<String, dynamic> ? _asInt(clients['inactive']) : 0,
+      clientsTotal: clients is Map<String, dynamic>
+          ? _asInt(clients['total'])
+          : 0,
+      clientsRegular: clients is Map<String, dynamic>
+          ? _asInt(clients['regular'])
+          : 0,
+      clientsNewInPeriod: clients is Map<String, dynamic>
+          ? _asInt(clients['newInPeriod'])
+          : 0,
+      clientsInactive: clients is Map<String, dynamic>
+          ? _asInt(clients['inactive'])
+          : 0,
       analyticsTier: (json['analyticsTier'] ?? 'FREEMIUM').toString(),
       isPro: json['isPro'] == true,
       proLocked: json['proLocked'] == true,
@@ -327,11 +379,7 @@ class OwnerClientBlock {
   final String? email;
   final String? phone;
 
-  const OwnerClientBlock({
-    this.userId,
-    this.email,
-    this.phone,
-  });
+  const OwnerClientBlock({this.userId, this.email, this.phone});
 
   factory OwnerClientBlock.fromJson(Map<String, dynamic> json) {
     return OwnerClientBlock(
@@ -343,10 +391,7 @@ class OwnerClientBlock {
 }
 
 class DashboardApiService {
-  static Map<String, dynamic> _expectEnvelope(
-    dynamic body,
-    String methodName,
-  ) {
+  static Map<String, dynamic> _expectEnvelope(dynamic body, String methodName) {
     if (body is! Map<String, dynamic>) {
       throw ApiException('$methodName: invalid response shape');
     }
@@ -413,13 +458,12 @@ class DashboardApiService {
         '/studios/current/onboarding-checklist',
         accessToken,
       );
-      final body = _expectEnvelope(
-        raw,
-        'getCurrentStudioOnboardingChecklist',
-      );
+      final body = _expectEnvelope(raw, 'getCurrentStudioOnboardingChecklist');
       final data = body['data'];
       if (data is! Map<String, dynamic>) return null;
-      return StudioOnboardingChecklist.fromJson(Map<String, dynamic>.from(data));
+      return StudioOnboardingChecklist.fromJson(
+        Map<String, dynamic>.from(data),
+      );
     } on ApiException catch (e) {
       if (kDebugMode) {
         debugPrint('[DashboardAPI] getCurrentStudioOnboardingChecklist: $e');
@@ -520,8 +564,8 @@ class DashboardApiService {
         final list = raw is List
             ? raw
             : raw is Map<String, dynamic> && raw['data'] is List
-                ? raw['data'] as List
-                : <dynamic>[];
+            ? raw['data'] as List
+            : <dynamic>[];
         if (list.isEmpty) break;
         for (final item in list) {
           if (item is Map<String, dynamic>) {
@@ -546,12 +590,17 @@ class DashboardApiService {
     String accessToken,
   ) async {
     try {
-      final raw = await ApiClient.get('/fitness/owner/client-blocklist', accessToken);
+      final raw = await ApiClient.get(
+        '/fitness/owner/client-blocklist',
+        accessToken,
+      );
       if (raw is! List) return [];
       final result = <OwnerClientBlock>[];
       for (final item in raw) {
         if (item is Map<String, dynamic>) {
-          result.add(OwnerClientBlock.fromJson(Map<String, dynamic>.from(item)));
+          result.add(
+            OwnerClientBlock.fromJson(Map<String, dynamic>.from(item)),
+          );
         }
       }
       return result;
@@ -628,7 +677,8 @@ class DashboardApiService {
               service: Service(
                 name: s.trainingName,
                 price: s.trainingPrice,
-                duration: s.trainingDurationMinutes ??
+                duration:
+                    s.trainingDurationMinutes ??
                     s.endsAt.difference(s.startsAt).inMinutes,
               ),
               user: User(
@@ -871,7 +921,9 @@ class DashboardApiService {
     final items = <OwnerSessionEnrollment>[];
     for (final item in raw) {
       if (item is Map<String, dynamic>) {
-        items.add(OwnerSessionEnrollment.fromJson(Map<String, dynamic>.from(item)));
+        items.add(
+          OwnerSessionEnrollment.fromJson(Map<String, dynamic>.from(item)),
+        );
       }
     }
     return items;
@@ -913,7 +965,10 @@ class DashboardApiService {
     String accessToken,
     String enrollmentId,
   ) async {
-    await ApiClient.delete('/fitness/owner/enrollments/$enrollmentId', accessToken);
+    await ApiClient.delete(
+      '/fitness/owner/enrollments/$enrollmentId',
+      accessToken,
+    );
   }
 
   static Future<RecurringCreationResult> createRecurringTrainingSessions(

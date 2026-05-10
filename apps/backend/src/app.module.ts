@@ -19,6 +19,7 @@ import { ConfigModule } from '@nestjs/config';
 import { validate } from './config/env.validation';
 import { resolveBackendEnvPath } from './config/resolve-backend-env-path';
 import { FitnessModule } from './fitness/fitness.module';
+import { SubscriptionsModule } from './subscriptions/subscriptions.module';
 
 const backendEnvFile = resolveBackendEnvPath(__dirname);
 
@@ -45,6 +46,7 @@ const backendEnvFile = resolveBackendEnvPath(__dirname);
     NotificationsModule,
     MapboxModule,
     FitnessModule,
+    SubscriptionsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

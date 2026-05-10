@@ -8,7 +8,7 @@ import '../../services/cache/salon_cache.dart';
 import '../../services/push_notification_service.dart';
 import 'dashboard/dashboard_screen.dart';
 import 'calendar_screen.dart';
-import 'analytics_screen.dart';
+import 'app_settings_screen.dart';
 import 'profile_screen.dart';
 import 'add_training_screen.dart';
 import 'services_screen.dart';
@@ -135,8 +135,11 @@ class MainShellState extends State<MainShell> {
   List<Widget> get _screens => [
     _buildHomeNavigator(),
     CalendarScreen(),
-    AnalyticsScreen(),
     const ClientsScreen(),
+    const AppSettingsScreen(
+      initialSection: SettingsHubSection.studio,
+      embeddedInShell: true,
+    ),
   ];
 
   @override
@@ -149,66 +152,62 @@ class MainShellState extends State<MainShell> {
         ],
       ),
       bottomNavigationBar: ColoredBox(
-        color: AppColors.backgroundPrimary,
+        color: AppColors.backgroundSecondary,
         child: SafeArea(
           top: false,
+          minimum: const EdgeInsets.fromLTRB(8, 8, 8, 8),
           child: Container(
+            height: 88,
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
             decoration: BoxDecoration(
               color: AppColors.backgroundPrimary,
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.08),
-                  blurRadius: 8,
-                  offset: const Offset(0, -2),
-                ),
-              ],
+              borderRadius: BorderRadius.circular(18),
+              border: Border.all(color: const Color(0xFFE6E3E2), width: 1),
             ),
-            constraints: const BoxConstraints(minHeight: 42, maxHeight: 56),
-            padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 6),
             child: Consumer<LocaleProvider>(
-            builder: (context, locale, _) => Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Expanded(
-                  child: _NavItem(
-                    icon: Icons.dashboard_outlined,
-                    activeIcon: Icons.dashboard,
-                    label: locale.t('nav.dashboard'),
-                    isSelected: _currentIndex == 0,
-                    onTap: () => setState(() => _currentIndex = 0),
+              builder: (context, locale, _) => Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Expanded(
+                    child: _NavItem(
+                      icon: Icons.home_outlined,
+                      activeIcon: Icons.home_rounded,
+                      label: 'Today',
+                      isSelected: _currentIndex == 0,
+                      onTap: () => setState(() => _currentIndex = 0),
+                    ),
                   ),
-                ),
-                Expanded(
-                  child: _NavItem(
-                    icon: Icons.calendar_today_outlined,
-                    activeIcon: Icons.calendar_today,
-                    label: locale.t('nav.calendar'),
-                    isSelected: _currentIndex == 1,
-                    onTap: () => setState(() => _currentIndex = 1),
+                  Expanded(
+                    child: _NavItem(
+                      icon: Icons.calendar_today_outlined,
+                      activeIcon: Icons.calendar_month_rounded,
+                      label: 'Schedule',
+                      isSelected: _currentIndex == 1,
+                      onTap: () => setState(() => _currentIndex = 1),
+                    ),
                   ),
-                ),
-                Expanded(
-                  child: _NavItem(
-                    icon: Icons.analytics_outlined,
-                    activeIcon: Icons.analytics,
-                    label: locale.t('nav.analytics'),
-                    isSelected: _currentIndex == 2,
-                    onTap: () => setState(() => _currentIndex = 2),
+                  Expanded(
+                    child: _NavItem(
+                      icon: Icons.group_outlined,
+                      activeIcon: Icons.groups_rounded,
+                      label: 'Clients',
+                      isSelected: _currentIndex == 2,
+                      onTap: () => setState(() => _currentIndex = 2),
+                    ),
                   ),
-                ),
-                Expanded(
-                  child: _NavItem(
-                    icon: Icons.group_outlined,
-                    activeIcon: Icons.group,
-                    label: locale.t('dashboard.clients'),
-                    isSelected: _currentIndex == 3,
-                    onTap: () => setState(() => _currentIndex = 3),
+                  Expanded(
+                    child: _NavItem(
+                      icon: Icons.settings_outlined,
+                      activeIcon: Icons.settings_rounded,
+                      label: 'Settings',
+                      isSelected: _currentIndex == 3,
+                      onTap: () => setState(() => _currentIndex = 3),
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
-        ),
         ),
       ),
     );
@@ -232,30 +231,46 @@ class _NavItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = isSelected ? AppColors.primary500 : AppColors.textSecondary;
+    final iconColor = isSelected
+        ? AppColors.textInverse
+        : const Color(0xFF655B58);
+    final textColor = isSelected
+        ? AppColors.textInverse
+        : const Color(0xFF655B58);
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(8),
+      borderRadius: BorderRadius.circular(28),
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 4),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(isSelected ? activeIcon : icon, size: 20, color: color),
-            const SizedBox(height: 1),
-            Text(
-              label,
-              style: TextStyle(
-                fontSize: 9,
-                fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
-                color: color,
+        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 0),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 170),
+          curve: Curves.easeOutCubic,
+          height: 70,
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 0),
+          decoration: BoxDecoration(
+            color: isSelected ? AppColors.primary500 : Colors.transparent,
+            borderRadius: BorderRadius.circular(18),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(isSelected ? activeIcon : icon, size: 24, color: iconColor),
+              const SizedBox(height: 3),
+              Text(
+                label,
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                  color: textColor,
+                  height: 1.05,
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                textAlign: TextAlign.center,
               ),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              textAlign: TextAlign.center,
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );

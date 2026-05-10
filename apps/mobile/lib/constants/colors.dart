@@ -82,7 +82,7 @@ class AppColors {
   // Background colors
   static const backgroundBrand = brandBackground;
   static const backgroundPrimary = Color(0xFFFFFFFF);
-  static const backgroundSecondary = Color(0xFFFFF8F3);
+  static const backgroundSecondary = backgroundBrand;
   static const backgroundTertiary = Color(0xFFF8EDE5);
 
   // Text colors

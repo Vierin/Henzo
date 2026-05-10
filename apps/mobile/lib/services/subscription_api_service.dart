@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 
 import 'api_client.dart';
 import '../models/subscription.dart';
+import '../models/subscription_pro_prices.dart';
 
 /// Интервал подписки (как в веб).
 typedef SubscriptionInterval = String; // 'monthly' | 'annual'
@@ -40,6 +41,25 @@ class SubscriptionApiService {
     } on ApiException catch (e) {
       if (kDebugMode) debugPrint('[SubscriptionAPI] createCheckoutSession: $e');
       rethrow;
+    }
+  }
+
+  /// GET /subscriptions/pro-prices — суммы Pro в VND (Stripe + кеш на бэкенде).
+  static Future<SubscriptionProPrices?> getProPrices(String accessToken) async {
+    try {
+      final body =
+          await ApiClient.get('/subscriptions/pro-prices', accessToken);
+      if (body is! Map<String, dynamic>) return null;
+      final data = body['data'];
+      if (data is Map<String, dynamic>) {
+        return SubscriptionProPrices.fromJson(
+          Map<String, dynamic>.from(data),
+        );
+      }
+      return null;
+    } on ApiException catch (e) {
+      if (kDebugMode) debugPrint('[SubscriptionAPI] getProPrices: $e');
+      return null;
     }
   }
 }
