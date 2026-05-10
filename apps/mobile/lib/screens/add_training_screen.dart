@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
@@ -106,6 +107,66 @@ class _AddTrainingScreenState extends State<AddTrainingScreen> {
   int _parsePriceDigits() {
     final raw = _priceController.text.trim().replaceAll('.', '');
     return int.tryParse(raw) ?? 0;
+  }
+
+  Future<TimeOfDay?> _pickTimeWithWheel(TimeOfDay initialTime) {
+    var selected = initialTime;
+    final initialDateTime = DateTime(
+      2000,
+      1,
+      1,
+      initialTime.hour,
+      initialTime.minute,
+    );
+    return showModalBottomSheet<TimeOfDay>(
+      context: context,
+      backgroundColor: AppColors.backgroundPrimary,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (ctx) {
+        return SafeArea(
+          child: SizedBox(
+            height: 320,
+            child: Column(
+              children: [
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(12, 8, 12, 6),
+                  child: Row(
+                    children: [
+                      TextButton(
+                        onPressed: () => Navigator.of(ctx).pop(),
+                        child: const Text('Отмена'),
+                      ),
+                      const Spacer(),
+                      TextButton(
+                        onPressed: () => Navigator.of(ctx).pop(selected),
+                        child: const Text(
+                          'Готово',
+                          style: TextStyle(fontWeight: FontWeight.w700),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const Divider(height: 1),
+                Expanded(
+                  child: CupertinoDatePicker(
+                    mode: CupertinoDatePickerMode.time,
+                    use24hFormat: true,
+                    minuteInterval: 5,
+                    initialDateTime: initialDateTime,
+                    onDateTimeChanged: (value) {
+                      selected = TimeOfDay(hour: value.hour, minute: value.minute);
+                    },
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
   }
 
   InputDecoration _step1Decoration({required bool invalid, String? hintText}) {
@@ -861,10 +922,7 @@ class _AddTrainingScreenState extends State<AddTrainingScreen> {
                       const SizedBox(height: 6),
                       InkWell(
                         onTap: () async {
-                          final picked = await showTimePicker(
-                            context: context,
-                            initialTime: _sessionTime,
-                          );
+                          final picked = await _pickTimeWithWheel(_sessionTime);
                           if (picked != null && mounted) {
                             setState(() => _sessionTime = picked);
                           }
@@ -964,9 +1022,8 @@ class _AddTrainingScreenState extends State<AddTrainingScreen> {
                                 Expanded(
                                   child: InkWell(
                                     onTap: () async {
-                                      final picked = await showTimePicker(
-                                        context: context,
-                                        initialTime: time,
+                                      final picked = await _pickTimeWithWheel(
+                                        time,
                                       );
                                       if (picked != null && mounted) {
                                         setState(
