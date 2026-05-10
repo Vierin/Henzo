@@ -6,6 +6,8 @@ class Subscription {
   final String status; // ACTIVE, INACTIVE, CANCELLED, EXPIRED
   final String startDate;
   final double? amount;
+  /// ISO 8601 end of current billing period (Stripe), if known.
+  final String? currentPeriodEnd;
 
   Subscription({
     required this.id,
@@ -14,6 +16,7 @@ class Subscription {
     required this.status,
     required this.startDate,
     this.amount,
+    this.currentPeriodEnd,
   });
 
   bool get isActive => status == 'ACTIVE';
@@ -28,6 +31,7 @@ class Subscription {
           ? amountRaw.toDouble()
           : double.tryParse(amountRaw.toString());
     }
+    final cpe = json['currentPeriodEnd'];
     return Subscription(
       id: (json['id']?.toString() ?? '').trim(),
       salonId: (json['salonId']?.toString() ?? '').trim(),
@@ -35,6 +39,7 @@ class Subscription {
       status: (json['status'] as String?) ?? 'INACTIVE',
       startDate: (json['startDate'] as String?) ?? '',
       amount: amount,
+      currentPeriodEnd: cpe is String && cpe.isNotEmpty ? cpe : null,
     );
   }
 }

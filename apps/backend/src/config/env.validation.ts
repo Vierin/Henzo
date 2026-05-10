@@ -74,6 +74,43 @@ export class EnvironmentVariables {
   @IsString()
   @IsOptional()
   MAPBOX_ACCESS_TOKEN?: string;
+
+  // Stripe (optional — Pro prices for mobile; fallback VND if unset / API error)
+  @IsString()
+  @IsOptional()
+  STRIPE_SECRET_KEY?: string;
+
+  @IsString()
+  @IsOptional()
+  STRIPE_MONTHLY_PRICE_ID?: string;
+
+  @IsString()
+  @IsOptional()
+  STRIPE_YEARLY_PRICE_ID?: string;
+
+  @IsNumberString()
+  @IsOptional()
+  STRIPE_PRICES_CACHE_TTL_SEC?: string;
+
+  @IsNumberString()
+  @IsOptional()
+  FALLBACK_PRO_PRICE_MONTHLY_VND?: string;
+
+  @IsNumberString()
+  @IsOptional()
+  FALLBACK_PRO_PRICE_ANNUAL_VND?: string;
+
+  @IsString()
+  @IsOptional()
+  MOBILE_DEEP_LINK_SCHEME?: string;
+
+  @IsString()
+  @IsOptional()
+  STRIPE_CHECKOUT_SUCCESS_URL?: string;
+
+  @IsString()
+  @IsOptional()
+  STRIPE_CHECKOUT_CANCEL_URL?: string;
 }
 
 export function validate(config: Record<string, unknown>) {

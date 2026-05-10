@@ -320,7 +320,14 @@ export class FitnessSessionsService {
             duration: true,
             trainingCategoryId: true,
             displayColor: true,
-            trainingCategory: { select: { main_category_id: true } },
+            trainingCategory: {
+              select: {
+                main_category_id: true,
+                name_en: true,
+                name_vn: true,
+                name_ru: true,
+              },
+            },
           },
         },
         Trainer: { select: { id: true, name: true } },
@@ -359,6 +366,13 @@ export class FitnessSessionsService {
               ? Number(s.Training.price)
               : null,
           duration: s.Training?.duration ?? null,
+          trainingCategory: s.Training?.trainingCategory
+            ? {
+                nameEn: s.Training.trainingCategory.name_en,
+                nameVn: s.Training.trainingCategory.name_vn,
+                nameRu: s.Training.trainingCategory.name_ru,
+              }
+            : null,
         },
         trainer: s.Trainer
           ? { id: s.Trainer.id, name: s.Trainer.name }

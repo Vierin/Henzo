@@ -13,9 +13,9 @@ export interface SubscriptionPlanConfig {
 	saveAmountVnd?: number; // economy when choosing annual vs 12× monthly
 }
 
-/** Prices in VND. Monthly 390k, Annual 3150k. */
-export const PRICE_MONTHLY_VND = 390_000;
-export const PRICE_ANNUAL_VND = 3_150_000;
+/** Prices in VND. Monthly 395k, Annual 3980k. */
+export const PRICE_MONTHLY_VND = 395_000;
+export const PRICE_ANNUAL_VND = 3_980_000;
 /** Regular price for 12 months (monthly × 12). Used for strikethrough on annual plan. */
 export const PRICE_12_MONTHS_VND = PRICE_MONTHLY_VND * 12;
 export const SAVE_ANNUAL_VND = PRICE_12_MONTHS_VND - PRICE_ANNUAL_VND; // 1 530 000

@@ -2,10 +2,12 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:intl/date_symbol_data_local.dart';
 import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'config/app_config.dart';
+import 'deep_links/subscription_checkout_deep_link.dart';
 import 'firebase_options.dart';
 import 'l10n/locale_provider.dart';
 import 'screens/main_shell.dart';
@@ -21,10 +23,16 @@ import 'services/cache/salon_cache.dart';
 import 'services/cache/services_staff_cache.dart';
 import 'services/notifications_store.dart';
 import 'services/push_notification_service.dart';
+import 'services/subscription_refresh_notifier.dart';
 import 'theme/app_theme.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await Future.wait([
+    initializeDateFormatting('en'),
+    initializeDateFormatting('ru'),
+    initializeDateFormatting('vi'),
+  ]);
   var loadedEnv = 'assets/.env';
   try {
     await dotenv.load(fileName: 'assets/.env');
@@ -42,7 +50,9 @@ Future<void> main() async {
     print('[Env] Loaded env file: $loadedEnv');
     if (AppConfig.supabaseUrl.contains('your-project.supabase.co')) {
       // ignore: avoid_print
-      print('[Env] Invalid EXPO_PUBLIC_SUPABASE_URL: placeholder value is active');
+      print(
+        '[Env] Invalid EXPO_PUBLIC_SUPABASE_URL: placeholder value is active',
+      );
     }
     return true;
   }());
@@ -69,6 +79,10 @@ Future<void> main() async {
   runApp(MyApp(notificationsStore: notificationsStore));
 }
 
+/// Корневой [Navigator] для deep links после Stripe (например `henzo://subscription-checkout`).
+final GlobalKey<NavigatorState> henzoRootNavigatorKey =
+    GlobalKey<NavigatorState>();
+
 class MyApp extends StatelessWidget {
   const MyApp({super.key, this.notificationsStore});
 
@@ -80,7 +94,8 @@ class MyApp extends StatelessWidget {
       behavior: HitTestBehavior.translucent,
       onTap: () {
         final currentFocus = FocusScope.of(context);
-        if (!currentFocus.hasPrimaryFocus && currentFocus.focusedChild != null) {
+        if (!currentFocus.hasPrimaryFocus &&
+            currentFocus.focusedChild != null) {
           currentFocus.unfocus();
         }
       },
@@ -98,6 +113,7 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => SalonCache()),
         ChangeNotifierProvider(create: (_) => BookingsCache()),
         ChangeNotifierProvider(create: (_) => ServicesStaffCache()),
+        ChangeNotifierProvider(create: (_) => SubscriptionRefreshNotifier()),
         if (notificationsStore != null)
           ChangeNotifierProvider.value(value: notificationsStore!),
       ],
@@ -125,20 +141,23 @@ class MyApp extends StatelessWidget {
           }
           return MaterialApp(
             title: 'Henzo',
+            navigatorKey: henzoRootNavigatorKey,
             theme: AppTheme.light,
             themeMode: ThemeMode.light,
-            builder: _withKeyboardDismiss,
+            builder: (context, child) {
+              final layered = _withKeyboardDismiss(context, child);
+              return SubscriptionCheckoutDeepLinkScope(
+                navigatorKey: henzoRootNavigatorKey,
+                child: layered,
+              );
+            },
             locale: Locale(locale.languageTag),
             localizationsDelegates: const [
               GlobalMaterialLocalizations.delegate,
               GlobalWidgetsLocalizations.delegate,
               GlobalCupertinoLocalizations.delegate,
             ],
-            supportedLocales: const [
-              Locale('en'),
-              Locale('ru'),
-              Locale('vi'),
-            ],
+            supportedLocales: const [Locale('en'), Locale('ru'), Locale('vi')],
             home: const AuthWrapper(),
           );
         },

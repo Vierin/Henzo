@@ -86,6 +86,19 @@
 			</dict>
 		</dict>
 	</dict>
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleTypeRole</key>
+			<string>Editor</string>
+			<key>CFBundleURLName</key>
+			<string>app.henzo.subscription-checkout</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>henzo</string>
+			</array>
+		</dict>
+	</array>
 	<key>GIDServerClientID</key>
 	<string>601312951370-1fg9fqajecnjlspki91hendb4csikqd5.apps.googleusercontent.com</string>
 </dict>

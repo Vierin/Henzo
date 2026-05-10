@@ -12,10 +12,13 @@ class ClientRegistrationScreen extends StatefulWidget {
   const ClientRegistrationScreen({super.key});
 
   @override
-  State<ClientRegistrationScreen> createState() => _ClientRegistrationScreenState();
+  State<ClientRegistrationScreen> createState() =>
+      _ClientRegistrationScreenState();
 }
 
 class _ClientRegistrationScreenState extends State<ClientRegistrationScreen> {
+  static const _placeholderMuted = Color(0x993F3F3F);
+
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
   final _emailController = TextEditingController();
@@ -169,35 +172,132 @@ class _ClientRegistrationScreenState extends State<ClientRegistrationScreen> {
     );
   }
 
+  InputDecoration _roundedInputDecoration({
+    required String hintText,
+    required IconData prefixIcon,
+    Widget? suffixIcon,
+  }) {
+    return InputDecoration(
+      hintText: hintText,
+      hintStyle: const TextStyle(
+        color: _placeholderMuted,
+        fontSize: 16,
+        fontWeight: FontWeight.w600,
+      ),
+      prefixIcon: Padding(
+        padding: const EdgeInsets.only(left: 22, right: 8),
+        child: Icon(prefixIcon, color: _placeholderMuted, size: 20),
+      ),
+      prefixIconConstraints: const BoxConstraints(minWidth: 0, minHeight: 0),
+      suffixIcon: suffixIcon,
+      filled: true,
+      fillColor: AppColors.backgroundPrimary,
+      contentPadding: const EdgeInsets.only(top: 18, bottom: 18, right: 18),
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(999),
+        borderSide: BorderSide.none,
+      ),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(999),
+        borderSide: BorderSide.none,
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(999),
+        borderSide: const BorderSide(color: AppColors.primary500, width: 1.2),
+      ),
+    );
+  }
+
+  Widget _buildGoogleIcon() {
+    return Image.asset(
+      'assets/public/icon-google.png',
+      width: 20,
+      height: 20,
+      fit: BoxFit.contain,
+      errorBuilder: (_, _, _) => const Icon(
+        Icons.g_mobiledata_rounded,
+        size: 20,
+        color: Color(0xFF4285F4),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final locale = context.watch<LocaleProvider>();
+    final textTheme = Theme.of(context).textTheme;
     return Scaffold(
-      appBar: AppBar(title: const Text('Client registration')),
+      backgroundColor: AppColors.backgroundSecondary,
       body: SafeArea(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
           child: _isVerificationStep
-              ? _buildVerificationStep(locale)
-              : _buildFormStep(locale),
+              ? _buildVerificationStep(locale, textTheme)
+              : _buildFormStep(locale, textTheme),
         ),
       ),
     );
   }
 
-  Widget _buildFormStep(LocaleProvider locale) {
+  Widget _buildFormStep(LocaleProvider locale, TextTheme textTheme) {
     return Form(
       key: _formKey,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              IconButton(
+                onPressed: () => Navigator.of(context).pop(),
+                icon: const Icon(
+                  Icons.arrow_back,
+                  color: AppColors.textPrimary,
+                  size: 22,
+                ),
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints(
+                  minWidth: 30,
+                  minHeight: 30,
+                ),
+                splashRadius: 22,
+              ),
+              const Text(
+                'Client registration',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w400,
+                  color: AppColors.textPrimary,
+                  height: 1.05,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          const Padding(
+            padding: EdgeInsets.only(left: 44),
+            child: Text(
+              'Create your client account to book classes \nand manage visits in Henzo',
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w400,
+                color: AppColors.textPrimary,
+                height: 1.2,
+              ),
+            ),
+          ),
+          const SizedBox(height: 44),
           TextFormField(
             controller: _nameController,
             textInputAction: TextInputAction.next,
-            decoration: const InputDecoration(
-              labelText: 'Name',
-              border: OutlineInputBorder(),
-              prefixIcon: Icon(Icons.person_outline),
+            textCapitalization: TextCapitalization.words,
+            decoration: _roundedInputDecoration(
+              hintText: 'Name',
+              prefixIcon: Icons.person_outline_rounded,
+            ),
+            style: const TextStyle(
+              fontSize: 19,
+              color: AppColors.textPrimary,
             ),
           ),
           const SizedBox(height: 12),
@@ -205,13 +305,18 @@ class _ClientRegistrationScreenState extends State<ClientRegistrationScreen> {
             controller: _emailController,
             keyboardType: TextInputType.emailAddress,
             textInputAction: TextInputAction.next,
-            decoration: InputDecoration(
-              labelText: locale.t('auth.email'),
-              border: const OutlineInputBorder(),
-              prefixIcon: const Icon(Icons.email_outlined),
+            decoration: _roundedInputDecoration(
+              hintText: locale.t('auth.email'),
+              prefixIcon: Icons.email_rounded,
+            ),
+            style: const TextStyle(
+              fontSize: 19,
+              color: AppColors.textPrimary,
             ),
             validator: (v) {
-              if (v == null || v.trim().isEmpty) return locale.t('auth.enterEmail');
+              if (v == null || v.trim().isEmpty) {
+                return locale.t('auth.enterEmail');
+              }
               if (!v.contains('@')) return locale.t('auth.invalidEmail');
               return null;
             },
@@ -221,10 +326,13 @@ class _ClientRegistrationScreenState extends State<ClientRegistrationScreen> {
             controller: _phoneController,
             textInputAction: TextInputAction.next,
             keyboardType: TextInputType.phone,
-            decoration: const InputDecoration(
-              labelText: 'Phone',
-              border: OutlineInputBorder(),
-              prefixIcon: Icon(Icons.phone_outlined),
+            decoration: _roundedInputDecoration(
+              hintText: 'Phone',
+              prefixIcon: Icons.phone_rounded,
+            ),
+            style: const TextStyle(
+              fontSize: 19,
+              color: AppColors.textPrimary,
             ),
           ),
           const SizedBox(height: 12),
@@ -232,14 +340,25 @@ class _ClientRegistrationScreenState extends State<ClientRegistrationScreen> {
             controller: _passwordController,
             obscureText: _obscurePassword,
             textInputAction: TextInputAction.next,
-            decoration: InputDecoration(
-              labelText: locale.t('auth.password'),
-              border: const OutlineInputBorder(),
-              prefixIcon: const Icon(Icons.lock_outline),
+            decoration: _roundedInputDecoration(
+              hintText: locale.t('auth.password'),
+              prefixIcon: Icons.lock_rounded,
               suffixIcon: IconButton(
-                onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
-                icon: Icon(_obscurePassword ? Icons.visibility_outlined : Icons.visibility_off_outlined),
+                padding: const EdgeInsets.only(right: 12),
+                onPressed: () {
+                  setState(() => _obscurePassword = !_obscurePassword);
+                },
+                icon: Icon(
+                  _obscurePassword
+                      ? Icons.visibility_outlined
+                      : Icons.visibility_off_outlined,
+                  color: _placeholderMuted,
+                ),
               ),
+            ),
+            style: const TextStyle(
+              fontSize: 19,
+              color: AppColors.textPrimary,
             ),
             validator: (v) {
               if (v == null || v.isEmpty) return locale.t('auth.enterPassword');
@@ -253,48 +372,126 @@ class _ClientRegistrationScreenState extends State<ClientRegistrationScreen> {
             obscureText: _obscureConfirmPassword,
             textInputAction: TextInputAction.done,
             onFieldSubmitted: (_) => _submit(),
-            decoration: InputDecoration(
-              labelText: locale.t('auth.confirmPassword'),
-              border: const OutlineInputBorder(),
-              prefixIcon: const Icon(Icons.lock_person_outlined),
+            decoration: _roundedInputDecoration(
+              hintText: locale.t('auth.confirmPassword'),
+              prefixIcon: Icons.lock_rounded,
               suffixIcon: IconButton(
-                onPressed: () => setState(() => _obscureConfirmPassword = !_obscureConfirmPassword),
-                icon: Icon(_obscureConfirmPassword ? Icons.visibility_outlined : Icons.visibility_off_outlined),
+                padding: const EdgeInsets.only(right: 12),
+                onPressed: () {
+                  setState(
+                    () => _obscureConfirmPassword = !_obscureConfirmPassword,
+                  );
+                },
+                icon: Icon(
+                  _obscureConfirmPassword
+                      ? Icons.visibility_outlined
+                      : Icons.visibility_off_outlined,
+                  color: _placeholderMuted,
+                ),
               ),
+            ),
+            style: const TextStyle(
+              fontSize: 19,
+              color: AppColors.textPrimary,
             ),
             validator: (v) {
               if (v == null || v.isEmpty) return locale.t('auth.enterPassword');
-              if (v != _passwordController.text) return locale.t('auth.passwordsDontMatch');
+              if (v != _passwordController.text) {
+                return locale.t('auth.passwordsDontMatch');
+              }
               return null;
             },
           ),
-          const SizedBox(height: 20),
-          FilledButton(
-            onPressed: (_isSubmitting || _isGoogleLoading) ? null : _submit,
-            style: FilledButton.styleFrom(
-              backgroundColor: AppColors.primary500,
-              padding: const EdgeInsets.symmetric(vertical: 14),
+          const SizedBox(height: 30),
+          SizedBox(
+            height: 60,
+            child: FilledButton(
+              onPressed:
+                  (_isSubmitting || _isGoogleLoading) ? null : _submit,
+              style: FilledButton.styleFrom(
+                backgroundColor: AppColors.primary500,
+                foregroundColor: AppColors.textInverse,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(999),
+                ),
+              ),
+              child: _isSubmitting
+                  ? const SizedBox(
+                      width: 22,
+                      height: 22,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: Colors.white,
+                      ),
+                    )
+                  : Text(
+                      'Create account',
+                      style: textTheme.titleLarge?.copyWith(
+                        fontWeight: FontWeight.w600,
+                        fontSize: 16,
+                        color: AppColors.textInverse,
+                      ),
+                    ),
             ),
-            child: _isSubmitting
-                ? const SizedBox(
-                    width: 20,
-                    height: 20,
-                    child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
-                  )
-                : const Text('Create client account'),
           ),
-          const SizedBox(height: 14),
-          OutlinedButton.icon(
-            onPressed: (_isSubmitting || _isGoogleLoading) ? null : _submitGoogle,
-            icon: _isGoogleLoading
-                ? const SizedBox(
-                    width: 18,
-                    height: 18,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  )
-                : _buildGoogleIcon(),
-            label: Text(
-              _isGoogleLoading ? 'Loading...' : 'Register with Google',
+          const SizedBox(height: 22),
+          Row(
+            children: [
+              const Expanded(
+                child: Divider(
+                  color: Color(0xFF9B9B9B),
+                  thickness: 1,
+                  indent: 14,
+                  endIndent: 10,
+                ),
+              ),
+              Text(
+                locale.t('auth.orContinue'),
+                style: const TextStyle(
+                  color: AppColors.textPrimary,
+                  fontSize: 15,
+                ),
+              ),
+              const Expanded(
+                child: Divider(
+                  color: Color(0xFF9B9B9B),
+                  thickness: 1,
+                  indent: 10,
+                  endIndent: 14,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 22),
+          SizedBox(
+            height: 60,
+            child: OutlinedButton.icon(
+              onPressed:
+                  (_isSubmitting || _isGoogleLoading) ? null : _submitGoogle,
+              icon: _isGoogleLoading
+                  ? const SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : _buildGoogleIcon(),
+              label: Text(
+                _isGoogleLoading
+                    ? locale.t('common.loading')
+                    : locale.t('auth.continueWithGoogle'),
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w500,
+                  color: AppColors.textPrimary,
+                ),
+              ),
+              style: OutlinedButton.styleFrom(
+                backgroundColor: AppColors.backgroundPrimary,
+                side: BorderSide.none,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(999),
+                ),
+              ),
             ),
           ),
         ],
@@ -302,32 +499,58 @@ class _ClientRegistrationScreenState extends State<ClientRegistrationScreen> {
     );
   }
 
-  Widget _buildVerificationStep(LocaleProvider locale) {
+  Widget _buildVerificationStep(LocaleProvider locale, TextTheme textTheme) {
     final email = _emailController.text.trim();
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
+        const SizedBox(height: 8),
+        Row(
+          children: [
+            IconButton(
+              onPressed: () {
+                setState(() {
+                  _isVerificationStep = false;
+                  _otpController.clear();
+                });
+              },
+              icon: const Icon(
+                Icons.arrow_back,
+                color: AppColors.textPrimary,
+                size: 22,
+              ),
+              padding: EdgeInsets.zero,
+              constraints: const BoxConstraints(
+                minWidth: 30,
+                minHeight: 30,
+              ),
+              splashRadius: 22,
+            ),
+            Text(
+              locale.t('auth.verificationCodeTitle'),
+              style: const TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w400,
+                color: AppColors.textPrimary,
+                height: 1.05,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        Padding(
+          padding: const EdgeInsets.only(left: 44),
+          child: Text(
+            locale.t('auth.verificationCodeSubtitle'),
+            style: const TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w400,
+              color: AppColors.textPrimary,
+              height: 1.2,
+            ),
+          ),
+        ),
         const SizedBox(height: 28),
-        const Text(
-          'Verification code',
-          style: TextStyle(
-            fontSize: 40,
-            fontWeight: FontWeight.w700,
-            color: AppColors.textPrimary,
-            height: 1,
-          ),
-          textAlign: TextAlign.center,
-        ),
-        const SizedBox(height: 12),
-        Text(
-          'We sent a 6-digit code to your email address.',
-          style: const TextStyle(
-            fontSize: 19,
-            color: AppColors.textSecondary,
-          ),
-          textAlign: TextAlign.center,
-        ),
-        const SizedBox(height: 26),
         GestureDetector(
           onTap: () => _otpFocusNode.requestFocus(),
           child: Container(
@@ -361,7 +584,8 @@ class _ClientRegistrationScreenState extends State<ClientRegistrationScreen> {
                         6,
                         (index) => Expanded(
                           child: Padding(
-                            padding: EdgeInsets.only(right: index == 5 ? 0 : 8),
+                            padding:
+                                EdgeInsets.only(right: index == 5 ? 0 : 8),
                             child: Container(
                               height: 58,
                               alignment: Alignment.center,
@@ -375,7 +599,7 @@ class _ClientRegistrationScreenState extends State<ClientRegistrationScreen> {
                                     ? _otpController.text[index]
                                     : '',
                                 style: const TextStyle(
-                                  fontSize: 30,
+                                  fontSize: 24,
                                   fontWeight: FontWeight.w700,
                                   color: AppColors.textPrimary,
                                 ),
@@ -388,22 +612,35 @@ class _ClientRegistrationScreenState extends State<ClientRegistrationScreen> {
                   ],
                 ),
                 const SizedBox(height: 14),
-                FilledButton(
-                  onPressed: _isVerifyingCode ? null : _verifyCode,
-                  style: FilledButton.styleFrom(
-                    backgroundColor: AppColors.primary500,
-                    padding: const EdgeInsets.symmetric(vertical: 14),
+                SizedBox(
+                  height: 60,
+                  child: FilledButton(
+                    onPressed: _isVerifyingCode ? null : _verifyCode,
+                    style: FilledButton.styleFrom(
+                      backgroundColor: AppColors.primary500,
+                      foregroundColor: AppColors.textInverse,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(999),
+                      ),
+                    ),
+                    child: _isVerifyingCode
+                        ? const SizedBox(
+                            width: 22,
+                            height: 22,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: Colors.white,
+                            ),
+                          )
+                        : Text(
+                            locale.t('common.verify'),
+                            style: textTheme.titleLarge?.copyWith(
+                              fontWeight: FontWeight.w600,
+                              fontSize: 16,
+                              color: AppColors.textInverse,
+                            ),
+                          ),
                   ),
-                  child: _isVerifyingCode
-                      ? const SizedBox(
-                          width: 20,
-                          height: 20,
-                          child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
-                        )
-                      : const Text(
-                          'Verify',
-                          style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
-                        ),
                 ),
               ],
             ),
@@ -412,9 +649,9 @@ class _ClientRegistrationScreenState extends State<ClientRegistrationScreen> {
         const SizedBox(height: 14),
         if (_resendSecondsLeft > 0)
           Text(
-            'Resend code in 00:${_resendSecondsLeft.toString().padLeft(2, '0')}',
+            '${locale.t('auth.resendCodeIn')} 00:${_resendSecondsLeft.toString().padLeft(2, '0')}',
             style: const TextStyle(
-              fontSize: 16,
+              fontSize: 14,
               color: AppColors.textSecondary,
             ),
             textAlign: TextAlign.center,
@@ -424,10 +661,10 @@ class _ClientRegistrationScreenState extends State<ClientRegistrationScreen> {
             child: Wrap(
               crossAxisAlignment: WrapCrossAlignment.center,
               children: [
-                const Text(
-                  "Didn't receive the code? ",
-                  style: TextStyle(
-                    fontSize: 16,
+                Text(
+                  locale.t('auth.didntReceiveCode'),
+                  style: const TextStyle(
+                    fontSize: 14,
                     color: AppColors.textSecondary,
                   ),
                 ),
@@ -444,12 +681,12 @@ class _ClientRegistrationScreenState extends State<ClientRegistrationScreen> {
                           height: 14,
                           child: CircularProgressIndicator(strokeWidth: 2),
                         )
-                      : const Text(
-                          'Resend',
-                          style: TextStyle(
-                            fontSize: 16,
+                      : Text(
+                          locale.t('auth.resend'),
+                          style: const TextStyle(
+                            fontSize: 14,
                             fontWeight: FontWeight.w700,
-                            color: Color(0xFFCC1224),
+                            color: AppColors.primary500,
                           ),
                         ),
                 ),
@@ -460,30 +697,13 @@ class _ClientRegistrationScreenState extends State<ClientRegistrationScreen> {
         Center(
           child: Text(
             email,
-            style: const TextStyle(fontSize: 12, color: AppColors.textTertiary),
+            style: const TextStyle(
+              fontSize: 12,
+              color: AppColors.textTertiary,
+            ),
           ),
         ),
       ],
-    );
-  }
-
-  Widget _buildGoogleIcon() {
-    return Container(
-      width: 18,
-      height: 18,
-      decoration: const BoxDecoration(
-        color: Color(0xFF4285F4),
-        shape: BoxShape.circle,
-      ),
-      alignment: Alignment.center,
-      child: const Text(
-        'G',
-        style: TextStyle(
-          color: Colors.white,
-          fontSize: 11,
-          fontWeight: FontWeight.bold,
-        ),
-      ),
     );
   }
 }

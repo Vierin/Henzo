@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:provider/provider.dart';
 import '../../constants/colors.dart';
 import '../../l10n/locale_provider.dart';
@@ -8,7 +9,7 @@ import '../../services/cache/salon_cache.dart';
 import '../../services/push_notification_service.dart';
 import 'dashboard/dashboard_screen.dart';
 import 'calendar_screen.dart';
-import 'analytics_screen.dart';
+import 'app_settings_screen.dart';
 import 'profile_screen.dart';
 import 'add_training_screen.dart';
 import 'services_screen.dart';
@@ -24,7 +25,6 @@ class MainShell extends StatefulWidget {
   State<MainShell> createState() => MainShellState();
 }
 
-/// Состояние MainShell — можно использовать для навигации на экраны первой вкладки с сохранением нижней панели.
 class MainShellState extends State<MainShell> {
   int _currentIndex = 0;
   bool _salonLoading = true;
@@ -135,8 +135,11 @@ class MainShellState extends State<MainShell> {
   List<Widget> get _screens => [
     _buildHomeNavigator(),
     CalendarScreen(),
-    AnalyticsScreen(),
     const ClientsScreen(),
+    const AppSettingsScreen(
+      initialSection: SettingsHubSection.studio,
+      embeddedInShell: true,
+    ),
   ];
 
   @override
@@ -149,66 +152,58 @@ class MainShellState extends State<MainShell> {
         ],
       ),
       bottomNavigationBar: ColoredBox(
-        color: AppColors.backgroundPrimary,
+        color: AppColors.backgroundSecondary,
         child: SafeArea(
           top: false,
+          minimum: const EdgeInsets.fromLTRB(10, 10, 10, 18),
           child: Container(
+            height: 70,
+            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
             decoration: BoxDecoration(
               color: AppColors.backgroundPrimary,
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.08),
-                  blurRadius: 8,
-                  offset: const Offset(0, -2),
-                ),
-              ],
+              borderRadius: BorderRadius.circular(18),
+              border: Border.all(color: const Color(0xFFE6E3E2), width: 1),
             ),
-            constraints: const BoxConstraints(minHeight: 42, maxHeight: 56),
-            padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 6),
             child: Consumer<LocaleProvider>(
-            builder: (context, locale, _) => Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Expanded(
-                  child: _NavItem(
-                    icon: Icons.dashboard_outlined,
-                    activeIcon: Icons.dashboard,
-                    label: locale.t('nav.dashboard'),
-                    isSelected: _currentIndex == 0,
-                    onTap: () => setState(() => _currentIndex = 0),
+              builder: (context, locale, _) => Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Expanded(
+                    child: _NavItem(
+                      svgAsset: 'assets/icons/icon-house.svg',
+                      label: 'Home',
+                      isSelected: _currentIndex == 0,
+                      onTap: () => setState(() => _currentIndex = 0),
+                    ),
                   ),
-                ),
-                Expanded(
-                  child: _NavItem(
-                    icon: Icons.calendar_today_outlined,
-                    activeIcon: Icons.calendar_today,
-                    label: locale.t('nav.calendar'),
-                    isSelected: _currentIndex == 1,
-                    onTap: () => setState(() => _currentIndex = 1),
+                  Expanded(
+                    child: _NavItem(
+                      svgAsset: 'assets/icons/icon-schedule.svg',
+                      label: 'Schedule',
+                      isSelected: _currentIndex == 1,
+                      onTap: () => setState(() => _currentIndex = 1),
+                    ),
                   ),
-                ),
-                Expanded(
-                  child: _NavItem(
-                    icon: Icons.analytics_outlined,
-                    activeIcon: Icons.analytics,
-                    label: locale.t('nav.analytics'),
-                    isSelected: _currentIndex == 2,
-                    onTap: () => setState(() => _currentIndex = 2),
+                  Expanded(
+                    child: _NavItem(
+                      svgAsset: 'assets/icons/icon-clients.svg',
+                      label: 'Clients',
+                      isSelected: _currentIndex == 2,
+                      onTap: () => setState(() => _currentIndex = 2),
+                    ),
                   ),
-                ),
-                Expanded(
-                  child: _NavItem(
-                    icon: Icons.group_outlined,
-                    activeIcon: Icons.group,
-                    label: locale.t('dashboard.clients'),
-                    isSelected: _currentIndex == 3,
-                    onTap: () => setState(() => _currentIndex = 3),
+                  Expanded(
+                    child: _NavItem(
+                      svgAsset: 'assets/icons/icon-settings.svg',
+                      label: 'Settings',
+                      isSelected: _currentIndex == 3,
+                      onTap: () => setState(() => _currentIndex = 3),
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
-        ),
         ),
       ),
     );
@@ -216,15 +211,15 @@ class MainShellState extends State<MainShell> {
 }
 
 class _NavItem extends StatelessWidget {
-  final IconData icon;
-  final IconData activeIcon;
+  static const _inactiveIconAndLabel = AppColors.brandText;
+
+  final String svgAsset;
   final String label;
   final bool isSelected;
   final VoidCallback onTap;
 
   const _NavItem({
-    required this.icon,
-    required this.activeIcon,
+    required this.svgAsset,
     required this.label,
     required this.isSelected,
     required this.onTap,
@@ -232,30 +227,54 @@ class _NavItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = isSelected ? AppColors.primary500 : AppColors.textSecondary;
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(8),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 4),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(isSelected ? activeIcon : icon, size: 20, color: color),
-            const SizedBox(height: 1),
-            Text(
-              label,
-              style: TextStyle(
-                fontSize: 9,
-                fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
-                color: color,
-              ),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              textAlign: TextAlign.center,
+    final iconColor = isSelected
+        ? AppColors.textInverse
+        : _inactiveIconAndLabel;
+    final textColor = isSelected
+        ? AppColors.textInverse
+        : _inactiveIconAndLabel;
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(12),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 0),
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 170),
+            curve: Curves.easeOutCubic,
+            height: 60,
+            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+            decoration: BoxDecoration(
+              color: isSelected ? AppColors.primary500 : Colors.transparent,
+              borderRadius: BorderRadius.circular(20),
             ),
-          ],
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                SvgPicture.asset(
+                  svgAsset,
+                  width: 20,
+                  height: 20,
+                  colorFilter: ColorFilter.mode(iconColor, BlendMode.srcIn),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  label,
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w400,
+                    color: textColor,
+                    height: 1,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  textAlign: TextAlign.center,
+                ),
+              ],
+            ),
+          ),
         ),
       ),
     );
