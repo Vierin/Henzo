@@ -1,8 +1,4 @@
-import {
-  BadRequestException,
-  Injectable,
-  Logger,
-} from '@nestjs/common';
+import { BadRequestException, Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import Stripe from 'stripe';
 
@@ -30,8 +26,7 @@ export class StripeCheckoutService {
     }
     const monthlyId = this.config.get<string>('STRIPE_MONTHLY_PRICE_ID');
     const yearlyId = this.config.get<string>('STRIPE_YEARLY_PRICE_ID');
-    const priceId =
-      params.interval === 'annual' ? yearlyId : monthlyId;
+    const priceId = params.interval === 'annual' ? yearlyId : monthlyId;
     if (!priceId?.trim()) {
       throw new BadRequestException(
         `Stripe price ID is not configured for interval "${params.interval}" (${params.interval === 'annual' ? 'STRIPE_YEARLY_PRICE_ID' : 'STRIPE_MONTHLY_PRICE_ID'})`,
@@ -75,9 +70,7 @@ export class StripeCheckoutService {
     } catch (e: unknown) {
       const msg = e instanceof Error ? e.message : String(e);
       this.logger.warn(`checkout.sessions.create failed: ${msg}`);
-      throw new BadRequestException(
-        `Could not start checkout: ${msg}`,
-      );
+      throw new BadRequestException(`Could not start checkout: ${msg}`);
     }
   }
 

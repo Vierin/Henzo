@@ -17,7 +17,8 @@ export class StripePricingService {
   private readonly logger = new Logger(StripePricingService.name);
   private stripe: Stripe | null = null;
 
-  private cache: { expiresAtMs: number; payload: ProPricesPayload } | null = null;
+  private cache: { expiresAtMs: number; payload: ProPricesPayload } | null =
+    null;
 
   constructor(private readonly config: ConfigService) {
     const sk = this.config.get<string>('STRIPE_SECRET_KEY');
@@ -69,10 +70,7 @@ export class StripePricingService {
         this.logger.warn('Stripe price missing unit_amount');
         return null;
       }
-      if (
-        monthlyPrice.currency !== 'vnd' ||
-        annualPrice.currency !== 'vnd'
-      ) {
+      if (monthlyPrice.currency !== 'vnd' || annualPrice.currency !== 'vnd') {
         this.logger.warn(
           `Unexpected Stripe currency monthly=${monthlyPrice.currency} annual=${annualPrice.currency}`,
         );

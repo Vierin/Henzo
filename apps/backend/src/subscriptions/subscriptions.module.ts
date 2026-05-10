@@ -9,7 +9,11 @@ import { PrismaModule } from '../prisma/prisma.module';
 @Module({
   imports: [AuthModule, PrismaModule],
   controllers: [SubscriptionsController],
-  providers: [StripePricingService, StripeCheckoutService, SubscriptionsService],
+  providers: [
+    StripePricingService,
+    StripeCheckoutService,
+    SubscriptionsService,
+  ],
   exports: [StripePricingService, StripeCheckoutService, SubscriptionsService],
 })
 export class SubscriptionsModule {}

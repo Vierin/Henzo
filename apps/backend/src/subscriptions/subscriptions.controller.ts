@@ -49,7 +49,9 @@ export class SubscriptionsController {
   async getCurrent(@Headers('authorization') authHeader: string) {
     const { user } = await this.authService.getCurrentUser(authHeader);
     if (user.role !== 'OWNER') {
-      throw new ForbiddenException('Only studio owners have subscriptions here');
+      throw new ForbiddenException(
+        'Only studio owners have subscriptions here',
+      );
     }
     const data = await this.subscriptions.getCurrentForOwner(user.id);
     return { success: true, data };

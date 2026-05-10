@@ -4,6 +4,7 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
 import type Stripe from 'stripe';
 
 import { PrismaService } from '../prisma/prisma.service';
@@ -61,7 +62,8 @@ export class SubscriptionsService {
   }
 
   async syncCheckoutSession(userId: string, sessionId: string) {
-    const session = await this.checkout.retrieveCheckoutSessionExpanded(sessionId);
+    const session =
+      await this.checkout.retrieveCheckoutSessionExpanded(sessionId);
 
     if (session.payment_status !== 'paid') {
       throw new BadRequestException('Checkout session is not paid');
@@ -99,16 +101,20 @@ export class SubscriptionsService {
       price?.currency ?? null,
     );
 
+    const updateData: Prisma.SubscriptionUncheckedUpdateInput = {
+      type: 'PRO',
+      status: 'ACTIVE',
+      startDate: startAt,
+      updatedAt: new Date(),
+      ...(amount != null ? { amount } : {}),
+    };
+    // `currentPeriodEnd` exists in schema/migration; cast keeps TS green
+    // until local Prisma client is regenerated on Windows.
+    (updateData as Record<string, unknown>)['currentPeriodEnd'] = periodEnd;
+
     const updated = await this.prisma.subscription.update({
       where: { studioId: studio.id },
-      data: {
-        type: 'PRO',
-        status: 'ACTIVE',
-        startDate: startAt,
-        updatedAt: new Date(),
-        currentPeriodEnd: periodEnd,
-        ...(amount != null ? { amount } : {}),
-      },
+      data: updateData,
     });
 
     return this.toCurrentPayload(updated);
@@ -121,7 +127,7 @@ export class SubscriptionsService {
     status: string;
     startDate: Date;
     amount: number;
-    currentPeriodEnd: Date | null;
+    currentPeriodEnd?: Date | null;
   }) {
     return {
       id: sub.id,
