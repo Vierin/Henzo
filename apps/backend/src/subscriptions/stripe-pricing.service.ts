@@ -53,8 +53,8 @@ export class StripePricingService {
   }
 
   private async fetchFromStripe(): Promise<ProPricesPayload | null> {
-    const monthlyId = this.config.get<string>('STRIPE_PRICE_PRO_MONTHLY');
-    const annualId = this.config.get<string>('STRIPE_PRICE_PRO_ANNUAL');
+    const monthlyId = this.config.get<string>('STRIPE_MONTHLY_PRICE_ID');
+    const annualId = this.config.get<string>('STRIPE_YEARLY_PRICE_ID');
     if (!this.stripe || !monthlyId || !annualId) {
       return null;
     }

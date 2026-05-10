@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:provider/provider.dart';
 import '../../constants/colors.dart';
 import '../../l10n/locale_provider.dart';
@@ -24,7 +25,6 @@ class MainShell extends StatefulWidget {
   State<MainShell> createState() => MainShellState();
 }
 
-/// Состояние MainShell — можно использовать для навигации на экраны первой вкладки с сохранением нижней панели.
 class MainShellState extends State<MainShell> {
   int _currentIndex = 0;
   bool _salonLoading = true;
@@ -155,10 +155,10 @@ class MainShellState extends State<MainShell> {
         color: AppColors.backgroundSecondary,
         child: SafeArea(
           top: false,
-          minimum: const EdgeInsets.fromLTRB(8, 8, 8, 8),
+          minimum: const EdgeInsets.fromLTRB(10, 10, 10, 18),
           child: Container(
-            height: 88,
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+            height: 70,
+            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
             decoration: BoxDecoration(
               color: AppColors.backgroundPrimary,
               borderRadius: BorderRadius.circular(18),
@@ -170,17 +170,15 @@ class MainShellState extends State<MainShell> {
                 children: [
                   Expanded(
                     child: _NavItem(
-                      icon: Icons.home_outlined,
-                      activeIcon: Icons.home_rounded,
-                      label: 'Today',
+                      svgAsset: 'assets/icons/icon-house.svg',
+                      label: 'Home',
                       isSelected: _currentIndex == 0,
                       onTap: () => setState(() => _currentIndex = 0),
                     ),
                   ),
                   Expanded(
                     child: _NavItem(
-                      icon: Icons.calendar_today_outlined,
-                      activeIcon: Icons.calendar_month_rounded,
+                      svgAsset: 'assets/icons/icon-schedule.svg',
                       label: 'Schedule',
                       isSelected: _currentIndex == 1,
                       onTap: () => setState(() => _currentIndex = 1),
@@ -188,8 +186,7 @@ class MainShellState extends State<MainShell> {
                   ),
                   Expanded(
                     child: _NavItem(
-                      icon: Icons.group_outlined,
-                      activeIcon: Icons.groups_rounded,
+                      svgAsset: 'assets/icons/icon-clients.svg',
                       label: 'Clients',
                       isSelected: _currentIndex == 2,
                       onTap: () => setState(() => _currentIndex = 2),
@@ -197,8 +194,7 @@ class MainShellState extends State<MainShell> {
                   ),
                   Expanded(
                     child: _NavItem(
-                      icon: Icons.settings_outlined,
-                      activeIcon: Icons.settings_rounded,
+                      svgAsset: 'assets/icons/icon-settings.svg',
                       label: 'Settings',
                       isSelected: _currentIndex == 3,
                       onTap: () => setState(() => _currentIndex = 3),
@@ -215,15 +211,15 @@ class MainShellState extends State<MainShell> {
 }
 
 class _NavItem extends StatelessWidget {
-  final IconData icon;
-  final IconData activeIcon;
+  static const _inactiveIconAndLabel = AppColors.brandText;
+
+  final String svgAsset;
   final String label;
   final bool isSelected;
   final VoidCallback onTap;
 
   const _NavItem({
-    required this.icon,
-    required this.activeIcon,
+    required this.svgAsset,
     required this.label,
     required this.isSelected,
     required this.onTap,
@@ -233,43 +229,51 @@ class _NavItem extends StatelessWidget {
   Widget build(BuildContext context) {
     final iconColor = isSelected
         ? AppColors.textInverse
-        : const Color(0xFF655B58);
+        : _inactiveIconAndLabel;
     final textColor = isSelected
         ? AppColors.textInverse
-        : const Color(0xFF655B58);
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(28),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 0),
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 170),
-          curve: Curves.easeOutCubic,
-          height: 70,
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 0),
-          decoration: BoxDecoration(
-            color: isSelected ? AppColors.primary500 : Colors.transparent,
-            borderRadius: BorderRadius.circular(18),
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(isSelected ? activeIcon : icon, size: 24, color: iconColor),
-              const SizedBox(height: 3),
-              Text(
-                label,
-                style: TextStyle(
-                  fontSize: 12,
-                  fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-                  color: textColor,
-                  height: 1.05,
+        : _inactiveIconAndLabel;
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(12),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 0),
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 170),
+            curve: Curves.easeOutCubic,
+            height: 60,
+            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+            decoration: BoxDecoration(
+              color: isSelected ? AppColors.primary500 : Colors.transparent,
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                SvgPicture.asset(
+                  svgAsset,
+                  width: 20,
+                  height: 20,
+                  colorFilter: ColorFilter.mode(iconColor, BlendMode.srcIn),
                 ),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                textAlign: TextAlign.center,
-              ),
-            ],
+                const SizedBox(height: 4),
+                Text(
+                  label,
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w400,
+                    color: textColor,
+                    height: 1,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  textAlign: TextAlign.center,
+                ),
+              ],
+            ),
           ),
         ),
       ),

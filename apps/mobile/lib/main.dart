@@ -7,6 +7,7 @@ import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'config/app_config.dart';
+import 'deep_links/subscription_checkout_deep_link.dart';
 import 'firebase_options.dart';
 import 'l10n/locale_provider.dart';
 import 'screens/main_shell.dart';
@@ -22,6 +23,7 @@ import 'services/cache/salon_cache.dart';
 import 'services/cache/services_staff_cache.dart';
 import 'services/notifications_store.dart';
 import 'services/push_notification_service.dart';
+import 'services/subscription_refresh_notifier.dart';
 import 'theme/app_theme.dart';
 
 Future<void> main() async {
@@ -77,6 +79,10 @@ Future<void> main() async {
   runApp(MyApp(notificationsStore: notificationsStore));
 }
 
+/// Корневой [Navigator] для deep links после Stripe (например `henzo://subscription-checkout`).
+final GlobalKey<NavigatorState> henzoRootNavigatorKey =
+    GlobalKey<NavigatorState>();
+
 class MyApp extends StatelessWidget {
   const MyApp({super.key, this.notificationsStore});
 
@@ -107,6 +113,7 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => SalonCache()),
         ChangeNotifierProvider(create: (_) => BookingsCache()),
         ChangeNotifierProvider(create: (_) => ServicesStaffCache()),
+        ChangeNotifierProvider(create: (_) => SubscriptionRefreshNotifier()),
         if (notificationsStore != null)
           ChangeNotifierProvider.value(value: notificationsStore!),
       ],
@@ -134,9 +141,16 @@ class MyApp extends StatelessWidget {
           }
           return MaterialApp(
             title: 'Henzo',
+            navigatorKey: henzoRootNavigatorKey,
             theme: AppTheme.light,
             themeMode: ThemeMode.light,
-            builder: _withKeyboardDismiss,
+            builder: (context, child) {
+              final layered = _withKeyboardDismiss(context, child);
+              return SubscriptionCheckoutDeepLinkScope(
+                navigatorKey: henzoRootNavigatorKey,
+                child: layered,
+              );
+            },
             locale: Locale(locale.languageTag),
             localizationsDelegates: const [
               GlobalMaterialLocalizations.delegate,

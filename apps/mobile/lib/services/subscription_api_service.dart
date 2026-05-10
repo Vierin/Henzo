@@ -44,6 +44,31 @@ class SubscriptionApiService {
     }
   }
 
+  /// POST /subscriptions/sync-checkout-session — после успешного Stripe Checkout.
+  static Future<Subscription?> syncCheckoutSession(
+    String accessToken,
+    String sessionId,
+  ) async {
+    try {
+      final body =
+          await ApiClient.post(
+                '/subscriptions/sync-checkout-session',
+                accessToken,
+                body: {'sessionId': sessionId},
+              )
+              as Map<String, dynamic>?;
+      if (body == null) return null;
+      final data = body['data'];
+      if (data is Map<String, dynamic>) {
+        return Subscription.fromJson(Map<String, dynamic>.from(data));
+      }
+      return Subscription.fromJson(Map<String, dynamic>.from(body));
+    } on ApiException catch (e) {
+      if (kDebugMode) debugPrint('[SubscriptionAPI] syncCheckoutSession: $e');
+      rethrow;
+    }
+  }
+
   /// GET /subscriptions/pro-prices — суммы Pro в VND (Stripe + кеш на бэкенде).
   static Future<SubscriptionProPrices?> getProPrices(String accessToken) async {
     try {

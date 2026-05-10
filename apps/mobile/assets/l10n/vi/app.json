@@ -199,7 +199,12 @@
 		"feature3": "Nhắc lịch tự động / Giảm vắng mặt",
 		"feature4": "Danh sách chờ lớp học",
 		"feature5": "Phân tích nâng cao",
-		"feature6": "Hỗ trợ ưu tiên"
+		"feature6": "Hỗ trợ khách hàng ưu tiên",
+		"checkoutSuccessTitle": "Thanh toán thành công",
+		"checkoutSuccessBody": "Bạn đã hoàn tất thanh toán gói Pro. Có thể mất vài phút để gói cập nhật trong ứng dụng.",
+		"checkoutCancelledTitle": "Chưa thanh toán",
+		"checkoutCancelledBody": "Thanh toán bị hủy hoặc chưa hoàn tất. Bạn có thể thử lại bất cứ lúc nào trong mục Đăng ký.",
+		"checkoutDone": "Đồng ý"
 	},
 	"profile": {
 		"title": "Hồ sơ",

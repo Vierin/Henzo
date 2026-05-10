@@ -1,15 +1,19 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import '../../constants/colors.dart';
 import '../../l10n/locale_provider.dart';
 import '../../utils/currency_format.dart';
 import '../../utils/show_api_error.dart';
 import '../../models/salon.dart';
+import '../../models/subscription.dart';
 import '../../services/auth_service.dart';
 import '../../services/api_client.dart';
 import '../../services/cache/salon_cache.dart';
 import '../../services/dashboard_api_service.dart';
 import '../../services/notifications_store.dart';
+import '../../services/subscription_api_service.dart';
+import '../../services/subscription_refresh_notifier.dart';
 import '../../utils/color_hex.dart';
 import '../../widgets/dashboard/dashboard_header_pill.dart';
 import '../../widgets/dashboard/owner_checklist_card.dart';
@@ -31,16 +35,33 @@ class DashboardScreen extends StatefulWidget {
 
 class _DashboardScreenState extends State<DashboardScreen> {
   Salon? _salon;
+  Subscription? _subscription;
   StudioOnboardingChecklist? _checklist;
   List<OwnerTrainingSession> _todaySessions = [];
   StudioAnalytics? _weekLast;
   bool _isLoading = false;
   bool _isPublishing = false;
+  SubscriptionRefreshNotifier? _subRefresh;
 
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) => _loadData());
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      _subRefresh = context.read<SubscriptionRefreshNotifier>();
+      _subRefresh!.addListener(_onSubscriptionRefresh);
+      _loadData();
+    });
+  }
+
+  void _onSubscriptionRefresh() {
+    if (mounted) _loadData();
+  }
+
+  @override
+  void dispose() {
+    _subRefresh?.removeListener(_onSubscriptionRefresh);
+    super.dispose();
   }
 
   Future<void> _loadData() async {
@@ -52,6 +73,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
       if (mounted) {
         setState(() {
           _salon = null;
+          _subscription = null;
           _weekLast = null;
           _isLoading = false;
         });
@@ -60,6 +82,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
     }
     try {
       final salon = await context.read<SalonCache>().getSalon(token);
+      Subscription? subscription;
+      try {
+        subscription = await SubscriptionApiService.getCurrent(token);
+      } catch (_) {
+        subscription = null;
+      }
       final now = DateTime.now();
       final from = DateTime(now.year, now.month, now.day);
       final to = from.add(const Duration(days: 1));
@@ -96,11 +124,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
       if (mounted) {
         setState(() {
           _salon = salon;
+          _subscription = subscription;
           _checklist = checklist;
           _todaySessions = sessions;
           _weekLast = weekLast;
           if (salon == null) {
             _weekLast = null;
+            _subscription = null;
           }
           _isLoading = false;
         });
@@ -111,6 +141,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
           _checklist = null;
           _todaySessions = [];
           _weekLast = null;
+          _subscription = null;
           _isLoading = false;
         });
         showApiError(context, e);
@@ -142,6 +173,94 @@ class _DashboardScreenState extends State<DashboardScreen> {
     if (a.isPro) return a.trainingSessionsScheduled.toDouble();
     if (a.bookingCount <= 0) return 0;
     return a.revenueTotal / a.bookingCount;
+  }
+
+  String _subscriptionStatusLine(LocaleProvider loc, String status) {
+    switch (status.toUpperCase()) {
+      case 'ACTIVE':
+        return loc.t('profile.active');
+      case 'CANCELLED':
+        return loc.t('profile.cancelled');
+      case 'EXPIRED':
+        return loc.t('profile.expired');
+      default:
+        return loc.t('profile.inactive');
+    }
+  }
+
+  String? _formatPeriodEndIso(String? iso, String localeCode) {
+    if (iso == null || iso.isEmpty) return null;
+    final dt = DateTime.tryParse(iso);
+    if (dt == null) return null;
+    return DateFormat.yMMMd(localeCode).format(dt.toLocal());
+  }
+
+  Widget _buildSubscriptionSummary(LocaleProvider loc) {
+    final sub = _subscription!;
+    final isPro = sub.type.toUpperCase() == 'PRO';
+    final until = _formatPeriodEndIso(sub.currentPeriodEnd, loc.localeCode);
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      decoration: BoxDecoration(
+        color: AppColors.backgroundPrimary,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: AppColors.borderPrimary),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  '${loc.t('profile.package')}: ${isPro ? loc.t('profile.pro') : loc.t('profile.free')}',
+                  style: const TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.textPrimary,
+                  ),
+                ),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: AppColors.primary500.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Text(
+                  isPro ? 'PRO' : 'FREE',
+                  style: const TextStyle(
+                    fontSize: 10,
+                    fontWeight: FontWeight.w800,
+                    color: AppColors.primary500,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 6),
+          Text(
+            '${loc.t('profile.status')}: ${_subscriptionStatusLine(loc, sub.status)}',
+            style: const TextStyle(
+              fontSize: 13,
+              color: AppColors.textSecondary,
+            ),
+          ),
+          if (isPro && until != null) ...[
+            const SizedBox(height: 4),
+            Text(
+              '${loc.t('profile.validUntil')}: $until',
+              style: const TextStyle(
+                fontSize: 13,
+                color: AppColors.textSecondary,
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
   }
 
   Widget _buildWeeklyInsights(LocaleProvider loc) {
@@ -484,6 +603,15 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   ),
                 ),
                 const SizedBox(height: 16),
+                if (!_isLoading &&
+                    _salon != null &&
+                    _subscription != null)
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
+                    child: _buildSubscriptionSummary(
+                      context.watch<LocaleProvider>(),
+                    ),
+                  ),
                 if (_isLoading)
                   const SizedBox(
                     height: 120,

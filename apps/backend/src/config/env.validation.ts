@@ -82,11 +82,11 @@ export class EnvironmentVariables {
 
   @IsString()
   @IsOptional()
-  STRIPE_PRICE_PRO_MONTHLY?: string;
+  STRIPE_MONTHLY_PRICE_ID?: string;
 
   @IsString()
   @IsOptional()
-  STRIPE_PRICE_PRO_ANNUAL?: string;
+  STRIPE_YEARLY_PRICE_ID?: string;
 
   @IsNumberString()
   @IsOptional()
@@ -99,6 +99,18 @@ export class EnvironmentVariables {
   @IsNumberString()
   @IsOptional()
   FALLBACK_PRO_PRICE_ANNUAL_VND?: string;
+
+  @IsString()
+  @IsOptional()
+  MOBILE_DEEP_LINK_SCHEME?: string;
+
+  @IsString()
+  @IsOptional()
+  STRIPE_CHECKOUT_SUCCESS_URL?: string;
+
+  @IsString()
+  @IsOptional()
+  STRIPE_CHECKOUT_CANCEL_URL?: string;
 }
 
 export function validate(config: Record<string, unknown>) {

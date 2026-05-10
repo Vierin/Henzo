@@ -8,6 +8,7 @@ import '../models/subscription.dart';
 import '../models/subscription_pro_prices.dart';
 import '../services/auth_service.dart';
 import '../services/subscription_api_service.dart';
+import '../services/subscription_refresh_notifier.dart';
 import '../utils/show_api_error.dart';
 
 String _formatVndSite(int amount) {
@@ -43,11 +44,27 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
   bool _loading = true;
   String? _checkoutLoading; // 'monthly' | 'annual'
   String _billingInterval = 'monthly';
+  SubscriptionRefreshNotifier? _subRefresh;
 
   @override
   void initState() {
     super.initState();
-    _load();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      _subRefresh = context.read<SubscriptionRefreshNotifier>();
+      _subRefresh!.addListener(_onSubscriptionRefresh);
+      _load();
+    });
+  }
+
+  void _onSubscriptionRefresh() {
+    if (mounted) _load();
+  }
+
+  @override
+  void dispose() {
+    _subRefresh?.removeListener(_onSubscriptionRefresh);
+    super.dispose();
   }
 
   Future<void> _load() async {

@@ -199,7 +199,12 @@
 		"feature3": "Auto reminders / No-show reduction",
 		"feature4": "Waitlist for classes",
 		"feature5": "Advanced analytics",
-		"feature6": "Priority support"
+		"feature6": "Priority customer support",
+		"checkoutSuccessTitle": "Payment successful",
+		"checkoutSuccessBody": "Your Pro subscription checkout completed. It may take a moment for the plan to update in the app.",
+		"checkoutCancelledTitle": "Payment not completed",
+		"checkoutCancelledBody": "Checkout was cancelled or could not be completed. You can try again anytime from Subscription.",
+		"checkoutDone": "OK"
 	},
 	"profile": {
 		"title": "Profile",
