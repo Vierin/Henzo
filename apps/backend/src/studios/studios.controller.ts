@@ -776,29 +776,15 @@ export class StudiosController {
 
       try {
         if (session.Studio?.ownerId) {
-          const tokens = await this.notificationsService.getPushTokensByUserId(
-            session.Studio.ownerId,
-          );
-          if (tokens.length > 0) {
-            const title = 'New class booking';
-            const body = `${currentUser.user.name || currentUser.user.email} booked ${session.Training?.name || 'a class'}`;
-            await this.notificationsService.sendPushNotification(
-              tokens,
-              title,
-              body,
-              {
-                type: 'NEW_CLASS_BOOKING',
-                sessionId: session.id,
-                studioId: session.studioId,
-                trainingName: session.Training?.name || '',
-                startsAt: session.startsAt.toISOString(),
-                clientName:
-                  currentUser.user.name || currentUser.user.email || 'Client',
-              },
-              undefined,
-              'henzo_default',
-            );
-          }
+          await this.notificationsService.sendGroupClassBookingNotification({
+            salonId: session.studioId,
+            studioId: session.studioId,
+            sessionId: session.id,
+            trainingName: session.Training?.name || 'class',
+            startsAt: session.startsAt,
+            clientName:
+              currentUser.user.name || currentUser.user.email || 'Client',
+          });
         }
       } catch (pushError) {
         console.error('⚠️ Failed to send class booking push:', pushError);
