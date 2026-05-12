@@ -1,6 +1,7 @@
-import { Module } from '@nestjs/common';
+import { MiddlewareConsumer, Module, NestModule } from '@nestjs/common';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
+import { RequestIdMiddleware } from './lib/request-id.middleware';
 import { PrismaModule } from './prisma/prisma.module';
 import { StudiosModule } from './studios/studios.module';
 import { TrainersModule } from './trainers/trainers.module';
@@ -20,6 +21,7 @@ import { validate } from './config/env.validation';
 import { resolveBackendEnvPath } from './config/resolve-backend-env-path';
 import { FitnessModule } from './fitness/fitness.module';
 import { SubscriptionsModule } from './subscriptions/subscriptions.module';
+import { AnalyticsModule } from './analytics/analytics.module';
 
 const backendEnvFile = resolveBackendEnvPath(__dirname);
 
@@ -47,8 +49,13 @@ const backendEnvFile = resolveBackendEnvPath(__dirname);
     MapboxModule,
     FitnessModule,
     SubscriptionsModule,
+    AnalyticsModule,
   ],
   controllers: [AppController],
   providers: [AppService],
 })
-export class AppModule {}
+export class AppModule implements NestModule {
+  configure(consumer: MiddlewareConsumer) {
+    consumer.apply(RequestIdMiddleware).forRoutes('*');
+  }
+}

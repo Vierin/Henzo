@@ -1,3 +1,6 @@
+// Sentry MUST be imported before anything else when using @sentry/nestjs auto-instrumentation.
+import './instrument';
+
 import { NestFactory } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
 import { NestExpressApplication } from '@nestjs/platform-express';
@@ -5,6 +8,7 @@ import { AppModule } from './app.module';
 import * as compression from 'compression';
 import helmet from 'helmet';
 import { resolveBackendEnvPath } from './config/resolve-backend-env-path';
+import { AllExceptionsFilter } from './lib/all-exceptions.filter';
 
 // Load environment variables early.
 try {
@@ -134,6 +138,10 @@ async function bootstrap() {
       }),
     );
     console.log('✅ Global validation pipes enabled');
+
+    // Global exception filter: winston log + Prometheus counter + Sentry capture (5xx only).
+    app.useGlobalFilters(new AllExceptionsFilter());
+    console.log('✅ Global exception filter enabled');
 
     // Enable CORS for frontend communication
     const allowedOrigins = [

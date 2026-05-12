@@ -7,6 +7,7 @@ import { TranslationService } from '../trainings/translation.service';
 import { computeTrainingDisplayColor } from '../trainings/training-color.util';
 import { generateStudioSlug } from '../utils/slug';
 import { nanoid } from 'nanoid';
+import { AnalyticsService } from '../analytics/analytics.service';
 
 @Injectable()
 export class StudiosService {
@@ -18,6 +19,7 @@ export class StudiosService {
     @Inject(PrismaService) private prisma: any,
     private mapboxService: MapboxService,
     private translationService: TranslationService,
+    private analytics: AnalyticsService,
   ) {}
 
   private normalizeReminderSettings(input: any): Record<string, unknown> {
@@ -1292,6 +1294,9 @@ export class StudiosService {
       console.log(
         `✅ Created Studio "${result.name}" with default FREEMIUM subscription`,
       );
+      this.analytics.track(userId, 'studio_created', {
+        studio_id: (result as any).id,
+      });
       return result;
     } catch (error) {
       console.error('❌ Database error creating Studio:', error.message);

@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { EmailService } from '../email/email.service';
+import { AnalyticsService } from '../analytics/analytics.service';
 import { InputJsonValue } from '@prisma/client/runtime/library';
 import { formatInTimeZone } from 'date-fns-tz';
 
@@ -56,6 +57,7 @@ export class RemindersService {
   constructor(
     private prisma: PrismaService,
     private emailService: EmailService,
+    private analytics: AnalyticsService,
   ) {}
 
   async sendBookingReminders() {
@@ -309,6 +311,12 @@ export class RemindersService {
             console.log(
               `✅ ${intervalHours}h reminder sent for booking ${booking.id} to ${booking.User.email}`,
             );
+            this.analytics.track(booking.User.id, 'reminder_sent', {
+              booking_id: booking.id,
+              studio_id: booking.studioId,
+              interval_hours: intervalHours,
+              channel: 'email',
+            });
             totalSent++;
           } catch (error) {
             console.error(

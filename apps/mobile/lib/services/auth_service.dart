@@ -11,6 +11,7 @@ import '../config/app_config.dart';
 import '../l10n/auth_error_keys.dart';
 import '../models/user_model.dart';
 import '../utils/auth_ui_result.dart';
+import 'analytics_service.dart';
 
 class AuthService extends ChangeNotifier {
   AuthService() {
@@ -150,6 +151,11 @@ class AuthService extends ChangeNotifier {
         _isAuthenticated = _user != null;
         if (kDebugMode) {
           debugPrint('[Auth] User loaded: ${_user?.email} role=${_user?.role}');
+        }
+        if (_user != null) {
+          unawaited(
+            AnalyticsService.instance.setUser(_user!.id, role: _user!.role),
+          );
         }
         return (ok: true, errorL10nKey: null, errorRaw: null);
       }
@@ -527,6 +533,7 @@ class AuthService extends ChangeNotifier {
     _user = null;
     _isAuthenticated = false;
     notifyListeners();
+    unawaited(AnalyticsService.instance.setUser(null));
     try {
       await _supabase.auth.signOut();
     } catch (_) {}

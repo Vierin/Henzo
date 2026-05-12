@@ -20,6 +20,7 @@ import { CreateStudioDto } from './dto/create-studio.dto';
 import { AuthService } from '../auth/auth.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { NotificationsService } from '../notifications/notifications.service';
+import { AnalyticsService } from '../analytics/analytics.service';
 import { generateStudioSlug } from '../utils/slug';
 
 @Controller('studios')
@@ -51,6 +52,7 @@ export class StudiosController {
     private readonly authService: AuthService,
     private readonly prisma: PrismaService,
     private readonly notificationsService: NotificationsService,
+    private readonly analytics: AnalyticsService,
   ) {}
 
   @Get('with-services')
@@ -789,6 +791,13 @@ export class StudiosController {
       } catch (pushError) {
         console.error('⚠️ Failed to send class booking push:', pushError);
       }
+
+      this.analytics.track(userId, 'booking_created', {
+        session_id: session.id,
+        studio_id: session.studioId,
+        training_id: session.Training?.id,
+        source: 'client_self',
+      });
 
       return {
         success: true,

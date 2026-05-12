@@ -7,6 +7,7 @@ import {
 } from '@prisma/client';
 import { AuthService } from '../auth/auth.service';
 import { PrismaService } from '../prisma/prisma.service';
+import { AnalyticsService } from '../analytics/analytics.service';
 import { CreateRecurringTrainingSessionsDto } from './dto/create-recurring-training-sessions.dto';
 import { UpdateOwnerTrainingSessionDto } from './dto/update-owner-training-session.dto';
 import { computeTrainingDisplayColor } from '../trainings/training-color.util';
@@ -61,6 +62,7 @@ export class FitnessSessionsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly authService: AuthService,
+    private readonly analytics: AnalyticsService,
   ) {}
 
   /**
@@ -623,6 +625,7 @@ export class FitnessSessionsService {
       throw new HttpException('No spots left', HttpStatus.BAD_REQUEST);
     }
 
+    let wasCreated = false;
     await this.prisma.$transaction(async (tx) => {
       if (existing) {
         if (existing.status === SessionEnrollmentStatus.ACTIVE) {
@@ -635,6 +638,7 @@ export class FitnessSessionsService {
             cancelledAt: null,
           },
         });
+        wasCreated = true;
       } else {
         await tx.sessionEnrollment.create({
           data: {
@@ -647,8 +651,17 @@ export class FitnessSessionsService {
           where: { id: sessionId },
           data: { bookedCount: { increment: 1 } },
         });
+        wasCreated = true;
       }
     });
+
+    if (wasCreated) {
+      this.analytics.track(targetUserId!, 'booking_created', {
+        session_id: sessionId,
+        studio_id: (session as any).studioId,
+        source: 'owner_added',
+      });
+    }
 
     return { success: true };
   }
@@ -728,6 +741,25 @@ export class FitnessSessionsService {
         });
       }
     });
+
+    if (
+      row.status === SessionEnrollmentStatus.ACTIVE &&
+      nextStatus === SessionEnrollmentStatus.CANCELLED
+    ) {
+      const enrollment = await this.prisma.sessionEnrollment.findUnique({
+        where: { id: enrollmentId },
+        select: {
+          userId: true,
+          TrainingSession: { select: { studioId: true } },
+        },
+      });
+      this.analytics.track(enrollment?.userId ?? null, 'booking_cancelled', {
+        enrollment_id: enrollmentId,
+        session_id: row.sessionId,
+        studio_id: enrollment?.TrainingSession?.studioId,
+        source: 'owner_cancelled',
+      });
+    }
 
     return { success: true };
   }

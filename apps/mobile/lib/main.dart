@@ -1,4 +1,8 @@
+import 'dart:async';
+import 'dart:ui';
+
 import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
@@ -14,6 +18,7 @@ import 'screens/main_shell.dart';
 import 'screens/client_shell.dart';
 import 'screens/login_screen.dart';
 import 'screens/non_owner_gate_screen.dart';
+import 'services/analytics_service.dart';
 import 'services/auth_service.dart';
 import 'services/client_favorites_store.dart';
 import 'services/cache/bookings_cache.dart';
@@ -27,66 +32,111 @@ import 'services/subscription_refresh_notifier.dart';
 import 'theme/app_theme.dart';
 
 Future<void> main() async {
-  WidgetsFlutterBinding.ensureInitialized();
-  await Future.wait([
-    initializeDateFormatting('en'),
-    initializeDateFormatting('ru'),
-    initializeDateFormatting('vi'),
-  ]);
-  var loadedEnv = 'assets/.env';
-  try {
-    await dotenv.load(fileName: 'assets/.env');
-  } catch (e) {
-    loadedEnv = 'assets/.env.example';
-    await dotenv.load(fileName: 'assets/.env.example');
-    assert(() {
-      // ignore: avoid_print
-      print('[Env] Failed to load assets/.env, fallback to .env.example: $e');
-      return true;
-    }());
-  }
-  assert(() {
-    // ignore: avoid_print
-    print('[Env] Loaded env file: $loadedEnv');
-    if (AppConfig.supabaseUrl.contains('your-project.supabase.co')) {
-      // ignore: avoid_print
-      print(
-        '[Env] Invalid EXPO_PUBLIC_SUPABASE_URL: placeholder value is active',
-      );
+  runZonedGuarded<Future<void>>(() async {
+    WidgetsFlutterBinding.ensureInitialized();
+    await Future.wait([
+      initializeDateFormatting('en'),
+      initializeDateFormatting('ru'),
+      initializeDateFormatting('vi'),
+    ]);
+    var loadedEnv = 'assets/.env';
+    try {
+      await dotenv.load(fileName: 'assets/.env');
+    } catch (e) {
+      loadedEnv = 'assets/.env.example';
+      await dotenv.load(fileName: 'assets/.env.example');
+      assert(() {
+        // ignore: avoid_print
+        print('[Env] Failed to load assets/.env, fallback to .env.example: $e');
+        return true;
+      }());
     }
-    return true;
-  }());
-  final notificationsStore = NotificationsStore();
-  await notificationsStore.load();
-  try {
-    await Firebase.initializeApp(
-      options: DefaultFirebaseOptions.currentPlatform,
-    );
-    await PushNotificationService.initialize(
-      onNotificationReceived: notificationsStore.addFromPush,
-    );
-  } catch (e) {
     assert(() {
       // ignore: avoid_print
-      print('Firebase init skipped: $e');
+      print('[Env] Loaded env file: $loadedEnv');
+      if (AppConfig.supabaseUrl.contains('your-project.supabase.co')) {
+        // ignore: avoid_print
+        print(
+          '[Env] Invalid EXPO_PUBLIC_SUPABASE_URL: placeholder value is active',
+        );
+      }
       return true;
     }());
-  }
-  await Supabase.initialize(
-    url: AppConfig.supabaseUrl,
-    anonKey: AppConfig.supabaseAnonKey,
-  );
-  runApp(MyApp(notificationsStore: notificationsStore));
+    final notificationsStore = NotificationsStore();
+    await notificationsStore.load();
+    var firebaseReady = false;
+    try {
+      await Firebase.initializeApp(
+        options: DefaultFirebaseOptions.currentPlatform,
+      );
+      firebaseReady = true;
+      await PushNotificationService.initialize(
+        onNotificationReceived: notificationsStore.addFromPush,
+      );
+    } catch (e) {
+      assert(() {
+        // ignore: avoid_print
+        print('Firebase init skipped: $e');
+        return true;
+      }());
+    }
+
+    if (firebaseReady) {
+      await AnalyticsService.instance.load();
+      FlutterError.onError = (details) {
+        FirebaseCrashlytics.instance.recordFlutterFatalError(details);
+      };
+      PlatformDispatcher.instance.onError = (error, stack) {
+        FirebaseCrashlytics.instance.recordError(error, stack, fatal: true);
+        return true;
+      };
+      await AnalyticsService.instance.logEvent('app_opened');
+    }
+
+    await Supabase.initialize(
+      url: AppConfig.supabaseUrl,
+      anonKey: AppConfig.supabaseAnonKey,
+    );
+    runApp(MyApp(notificationsStore: notificationsStore));
+  }, (error, stack) {
+    if (Firebase.apps.isNotEmpty) {
+      FirebaseCrashlytics.instance.recordError(error, stack, fatal: true);
+    }
+  });
 }
 
 /// Корневой [Navigator] для deep links после Stripe (например `henzo://subscription-checkout`).
 final GlobalKey<NavigatorState> henzoRootNavigatorKey =
     GlobalKey<NavigatorState>();
 
-class MyApp extends StatelessWidget {
+class MyApp extends StatefulWidget {
   const MyApp({super.key, this.notificationsStore});
 
   final NotificationsStore? notificationsStore;
+
+  @override
+  State<MyApp> createState() => _MyAppState();
+}
+
+class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      AnalyticsService.instance.logEvent('app_opened');
+    }
+  }
 
   Widget _withKeyboardDismiss(BuildContext context, Widget? child) {
     if (child == null) return const SizedBox.shrink();
@@ -114,8 +164,8 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => BookingsCache()),
         ChangeNotifierProvider(create: (_) => ServicesStaffCache()),
         ChangeNotifierProvider(create: (_) => SubscriptionRefreshNotifier()),
-        if (notificationsStore != null)
-          ChangeNotifierProvider.value(value: notificationsStore!),
+        if (widget.notificationsStore != null)
+          ChangeNotifierProvider.value(value: widget.notificationsStore!),
       ],
       child: Consumer<LocaleProvider>(
         builder: (context, locale, _) {

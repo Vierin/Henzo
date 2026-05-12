@@ -1,6 +1,9 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:math';
 
+import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 
@@ -25,9 +28,23 @@ class ApiClient {
 
   static const Duration _timeout = Duration(seconds: 25);
   static const int _maxRetries = 2;
+  static final Random _rng = Random.secure();
 
-  static Map<String, String> _headers(String? accessToken) {
-    final map = <String, String>{'Content-Type': 'application/json'};
+  /// Короткий request id для корреляции client <-> backend логов.
+  static String _newRequestId() {
+    final bytes = List<int>.generate(8, (_) => _rng.nextInt(256));
+    return bytes
+        .map((b) => b.toRadixString(16).padLeft(2, '0'))
+        .join();
+  }
+
+  static bool get _crashlyticsReady => Firebase.apps.isNotEmpty;
+
+  static Map<String, String> _headers(String? accessToken, String requestId) {
+    final map = <String, String>{
+      'Content-Type': 'application/json',
+      'X-Request-ID': requestId,
+    };
     if (accessToken != null && accessToken.isNotEmpty) {
       map['authorization'] = 'Bearer $accessToken';
     }
@@ -77,9 +94,29 @@ class ApiClient {
     return 'HTTP ${response.statusCode}';
   }
 
-  static void _throwIfNotSuccess(http.Response response) {
+  static void _throwIfNotSuccess(http.Response response, String requestId) {
     if (response.statusCode >= 200 && response.statusCode < 300) return;
-    throw ApiException(errorMessageFromResponse(response), response.statusCode);
+    final exception = ApiException(
+      errorMessageFromResponse(response),
+      response.statusCode,
+    );
+    if (response.statusCode >= 500 && _crashlyticsReady) {
+      FirebaseCrashlytics.instance.recordError(
+        exception,
+        StackTrace.current,
+        reason: 'API ${response.statusCode}',
+        information: ['requestId=$requestId'],
+        fatal: false,
+      );
+    }
+    throw exception;
+  }
+
+  static void _logBreadcrumb(String method, String path, String requestId) {
+    if (_crashlyticsReady) {
+      FirebaseCrashlytics.instance.log('$method $path rid=$requestId');
+    }
+    if (kDebugMode) debugPrint('[ApiClient] $method $path rid=$requestId');
   }
 
   static Future<http.Response> _withRetry(
@@ -129,15 +166,16 @@ class ApiClient {
   /// GET [path] (relative to base URL). Returns decoded JSON. Throws [ApiException] on non-2xx.
   static Future<dynamic> get(String path, String? accessToken) async {
     final url = Uri.parse('$_baseUrl$path');
-    if (kDebugMode) debugPrint('[ApiClient] GET $path');
+    final requestId = _newRequestId();
+    _logBreadcrumb('GET', path, requestId);
     final response = await _withRetry(
-      () => http.get(url, headers: _headers(accessToken)),
+      () => http.get(url, headers: _headers(accessToken, requestId)),
       debugLabel: 'GET $path',
     );
     if (kDebugMode) {
-      debugPrint('[ApiClient] GET $path status=${response.statusCode}');
+      debugPrint('[ApiClient] GET $path status=${response.statusCode} rid=$requestId');
     }
-    _throwIfNotSuccess(response);
+    _throwIfNotSuccess(response, requestId);
     if (response.body.isEmpty) return null;
     return json.decode(response.body);
   }
@@ -149,19 +187,20 @@ class ApiClient {
     Map<String, dynamic>? body,
   }) async {
     final url = Uri.parse('$_baseUrl$path');
-    if (kDebugMode) debugPrint('[ApiClient] POST $path');
+    final requestId = _newRequestId();
+    _logBreadcrumb('POST', path, requestId);
     final response = await _withRetry(
       () => http.post(
         url,
-        headers: _headers(accessToken),
+        headers: _headers(accessToken, requestId),
         body: body != null ? json.encode(body) : null,
       ),
       debugLabel: 'POST $path',
     );
     if (kDebugMode) {
-      debugPrint('[ApiClient] POST $path status=${response.statusCode}');
+      debugPrint('[ApiClient] POST $path status=${response.statusCode} rid=$requestId');
     }
-    _throwIfNotSuccess(response);
+    _throwIfNotSuccess(response, requestId);
     if (response.body.isEmpty) return null;
     return json.decode(response.body);
   }
@@ -173,19 +212,20 @@ class ApiClient {
     Map<String, dynamic>? body,
   }) async {
     final url = Uri.parse('$_baseUrl$path');
-    if (kDebugMode) debugPrint('[ApiClient] PUT $path');
+    final requestId = _newRequestId();
+    _logBreadcrumb('PUT', path, requestId);
     final response = await _withRetry(
       () => http.put(
         url,
-        headers: _headers(accessToken),
+        headers: _headers(accessToken, requestId),
         body: body != null ? json.encode(body) : null,
       ),
       debugLabel: 'PUT $path',
     );
     if (kDebugMode) {
-      debugPrint('[ApiClient] PUT $path status=${response.statusCode}');
+      debugPrint('[ApiClient] PUT $path status=${response.statusCode} rid=$requestId');
     }
-    _throwIfNotSuccess(response);
+    _throwIfNotSuccess(response, requestId);
     if (response.body.isEmpty) return null;
     return json.decode(response.body);
   }
@@ -193,15 +233,16 @@ class ApiClient {
   /// DELETE [path]. Returns decoded JSON. Throws [ApiException] on non-2xx.
   static Future<dynamic> delete(String path, String? accessToken) async {
     final url = Uri.parse('$_baseUrl$path');
-    if (kDebugMode) debugPrint('[ApiClient] DELETE $path');
+    final requestId = _newRequestId();
+    _logBreadcrumb('DELETE', path, requestId);
     final response = await _withRetry(
-      () => http.delete(url, headers: _headers(accessToken)),
+      () => http.delete(url, headers: _headers(accessToken, requestId)),
       debugLabel: 'DELETE $path',
     );
     if (kDebugMode) {
-      debugPrint('[ApiClient] DELETE $path status=${response.statusCode}');
+      debugPrint('[ApiClient] DELETE $path status=${response.statusCode} rid=$requestId');
     }
-    _throwIfNotSuccess(response);
+    _throwIfNotSuccess(response, requestId);
     if (response.body.isEmpty) return null;
     return json.decode(response.body);
   }
@@ -213,19 +254,20 @@ class ApiClient {
     Map<String, dynamic>? body,
   }) async {
     final url = Uri.parse('$_baseUrl$path');
-    if (kDebugMode) debugPrint('[ApiClient] PATCH $path');
+    final requestId = _newRequestId();
+    _logBreadcrumb('PATCH', path, requestId);
     final response = await _withRetry(
       () => http.patch(
         url,
-        headers: _headers(accessToken),
+        headers: _headers(accessToken, requestId),
         body: body != null ? json.encode(body) : null,
       ),
       debugLabel: 'PATCH $path',
     );
     if (kDebugMode) {
-      debugPrint('[ApiClient] PATCH $path status=${response.statusCode}');
+      debugPrint('[ApiClient] PATCH $path status=${response.statusCode} rid=$requestId');
     }
-    _throwIfNotSuccess(response);
+    _throwIfNotSuccess(response, requestId);
     if (response.body.isEmpty) return null;
     return json.decode(response.body);
   }

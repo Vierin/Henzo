@@ -2,6 +2,7 @@ import { Injectable, Inject } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { UpdateTrainingScheduleDto } from './dto/update-training-schedule.dto';
 import { computeTrainingDisplayColor } from './training-color.util';
+import { AnalyticsService } from '../analytics/analytics.service';
 
 /** Normalize Training payload for JSON (hide Prisma relation names where redundant). */
 function mapTrainingResponse(t: any) {
@@ -23,7 +24,10 @@ function mapTrainingResponse(t: any) {
 
 @Injectable()
 export class TrainingsService {
-  constructor(@Inject(PrismaService) private prisma: any) {}
+  constructor(
+    @Inject(PrismaService) private prisma: any,
+    private readonly analytics: AnalyticsService,
+  ) {}
 
   private parseHm(value: string): { hour: number; minute: number } {
     const [h, m] = value.split(':');
@@ -321,6 +325,12 @@ export class TrainingsService {
         Trainer: true,
         trainingCategory: true,
       },
+    });
+
+    this.analytics.track(null, 'class_created', {
+      training_id: created.id,
+      studio_id: data.studioId,
+      training_category_id: trainingCategoryId,
     });
 
     return mapTrainingResponse({

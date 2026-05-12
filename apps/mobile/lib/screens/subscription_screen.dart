@@ -6,6 +6,7 @@ import '../constants/colors.dart';
 import '../l10n/locale_provider.dart';
 import '../models/subscription.dart';
 import '../models/subscription_pro_prices.dart';
+import '../services/analytics_service.dart';
 import '../services/auth_service.dart';
 import '../services/subscription_api_service.dart';
 import '../services/subscription_refresh_notifier.dart';
@@ -49,6 +50,7 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
   @override
   void initState() {
     super.initState();
+    AnalyticsService.instance.logEvent('paywall_opened');
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
       _subRefresh = context.read<SubscriptionRefreshNotifier>();
