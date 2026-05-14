@@ -3,11 +3,12 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../constants/colors.dart';
+import '../../constants/layout.dart';
 import '../../services/auth_service.dart';
 import '../../services/dashboard_api_service.dart';
 import '../../utils/show_api_error.dart';
 import '../../utils/color_hex.dart';
-import '../../widgets/owner_training_session_card.dart';
+import '../../widgets/dashboard/owner_daily_schedule_block.dart';
 import 'main_shell.dart';
 import 'owner_training_session_detail_screen.dart';
 
@@ -23,6 +24,8 @@ int _pageForDay(DateTime day) {
 DateTime _dayForPage(int page) {
   return _kBaseDate.add(Duration(days: page - _kDayInitialPage));
 }
+
+DateTime _calendarDateOnly(DateTime d) => DateTime(d.year, d.month, d.day);
 
 /// После остановки свайпа по ленте дней — ждём столько же, затем обновляем
 /// активный пилл, заголовок месяца и Daily schedule.
@@ -43,6 +46,11 @@ class _CalendarScreenState extends State<CalendarScreen> {
   bool _isMonthExpanded = false;
   late final ValueNotifier<DateTime> _stripDayNotifier;
   late final ValueNotifier<DateTime> _scheduleDayNotifier;
+
+  /// День по центру ленты пиллов — для подписи месяца при скролле (не ждать debounce).
+  final ValueNotifier<DateTime> _stripPagerDayNotifier = ValueNotifier(
+    _calendarDateOnly(DateTime.now()),
+  );
   Timer? _stripScheduleDebounce;
 
   /// Пока доезжаем к дню по тапу — игнорируем onPageChanged, иначе промежуточные
@@ -57,10 +65,15 @@ class _CalendarScreenState extends State<CalendarScreen> {
     final today = DateTime(now.year, now.month, now.day);
     _stripDayNotifier = ValueNotifier<DateTime>(today);
     _scheduleDayNotifier = ValueNotifier<DateTime>(today);
+    _stripPagerDayNotifier.value = today;
     _dayPagerController = PageController(
       initialPage: _pageForDay(today),
       viewportFraction: 1 / 7,
     );
+    _dayPagerController.addListener(_onStripPagerScrolled);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _syncStripPagerDayFromController();
+    });
     _loadData();
   }
 
@@ -73,10 +86,30 @@ class _CalendarScreenState extends State<CalendarScreen> {
   void dispose() {
     _clearStripScheduleDebounceTimer();
     _suppressStripSchedulePageChanged = false;
+    _dayPagerController.removeListener(_onStripPagerScrolled);
     _stripDayNotifier.dispose();
     _scheduleDayNotifier.dispose();
+    _stripPagerDayNotifier.dispose();
     _dayPagerController.dispose();
     super.dispose();
+  }
+
+  void _onStripPagerScrolled() {
+    if (!mounted || !_dayPagerController.hasClients) return;
+    final page = _dayPagerController.page;
+    if (page == null) return;
+    final day = _dayForPage(page.round());
+    final normalized = DateTime(day.year, day.month, day.day);
+    if (_stripPagerDayNotifier.value == normalized) return;
+    _stripPagerDayNotifier.value = normalized;
+  }
+
+  void _syncStripPagerDayFromController() {
+    if (!_dayPagerController.hasClients) return;
+    final page = _dayPagerController.page;
+    if (page == null) return;
+    final day = _dayForPage(page.round());
+    _stripPagerDayNotifier.value = DateTime(day.year, day.month, day.day);
   }
 
   /// Один таймер на подсветку пилла + расписание (только после свайпа ленты).
@@ -155,28 +188,23 @@ class _CalendarScreenState extends State<CalendarScreen> {
     Navigator.of(context).pushNamed('/trainings/new');
   }
 
-  String _monthNameRu(int month) {
-    const months = [
-      'Январь',
-      'Февраль',
-      'Март',
-      'Апрель',
-      'Май',
-      'Июнь',
-      'Июль',
-      'Август',
-      'Сентябрь',
-      'Октябрь',
-      'Ноябрь',
-      'Декабрь',
-    ];
-    return months[month - 1];
-  }
+  static const _kEnMon = [
+    'JAN',
+    'FEB',
+    'MAR',
+    'APR',
+    'MAY',
+    'JUN',
+    'JUL',
+    'AUG',
+    'SEP',
+    'OCT',
+    'NOV',
+    'DEC',
+  ];
 
-  /// Заголовок показывает месяц дня в ленте
-  String _headerTitle(DateTime stripDay) {
-    return '${_monthNameRu(stripDay.month)} ${stripDay.year}';
-  }
+  /// «MAY 2026» как на макете.
+  String _monthYearUpperEn(DateTime d) => '${_kEnMon[d.month - 1]} ${d.year}';
 
   void _shiftMonth(int deltaMonths) {
     final strip = _stripDayNotifier.value;
@@ -196,12 +224,35 @@ class _CalendarScreenState extends State<CalendarScreen> {
   }
 
   /// Перепрыгнуть на конкретный день — используется из месячного вида и кнопки "Сегодня"
-  void _jumpToDay(DateTime day) {
+  /// [afterBuild]: вызвать после кадра, если [PageView] ещё не в дереве (сворачивание месяца).
+  void _jumpToDay(DateTime day, {bool afterBuild = false}) {
     final normalized = DateTime(day.year, day.month, day.day);
     _clearStripScheduleDebounceTimer();
     _stripDayNotifier.value = normalized;
     _scheduleDayNotifier.value = normalized;
-    _dayPagerController.jumpToPage(_pageForDay(normalized));
+    _stripPagerDayNotifier.value = normalized;
+
+    void jumpPager({int attempt = 0}) {
+      if (!_dayPagerController.hasClients) {
+        if (attempt >= 16) return;
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) jumpPager(attempt: attempt + 1);
+        });
+        return;
+      }
+      _dayPagerController.jumpToPage(_pageForDay(normalized));
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _syncStripPagerDayFromController();
+      });
+    }
+
+    if (afterBuild) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) jumpPager();
+      });
+    } else {
+      jumpPager();
+    }
   }
 
   List<DateTime?> _monthCells(DateTime monthDate) {
@@ -216,16 +267,16 @@ class _CalendarScreenState extends State<CalendarScreen> {
     });
   }
 
-  Widget _buildMonthExpanded(DateTime stripDay) {
-    final cells = _monthCells(stripDay);
-    const dow = ['ПН', 'ВТ', 'СР', 'ЧТ', 'ПТ', 'СБ', 'ВС'];
+  Widget _buildMonthExpanded(DateTime monthAnchor) {
+    final monthStart = DateTime(monthAnchor.year, monthAnchor.month, 1);
+    final cells = _monthCells(monthStart);
+    const dow = ['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN'];
     return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(10),
+      width: double.infinity,
+      padding: const EdgeInsets.fromLTRB(12, 16, 12, 16),
       decoration: BoxDecoration(
         color: AppColors.backgroundPrimary,
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: AppColors.borderPrimary),
       ),
       child: Column(
         children: [
@@ -236,9 +287,10 @@ class _CalendarScreenState extends State<CalendarScreen> {
                 child: Center(
                   child: Text(
                     dow[i],
-                    style: const TextStyle(
-                      fontSize: 10,
-                      fontWeight: FontWeight.w700,
+                    style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w400,
+                      letterSpacing: -0.3,
                       color: AppColors.textSecondary,
                     ),
                   ),
@@ -246,49 +298,66 @@ class _CalendarScreenState extends State<CalendarScreen> {
               ),
             ),
           ),
-          const SizedBox(height: 8),
-          GridView.builder(
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            itemCount: cells.length,
-            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 7,
-              mainAxisSpacing: 6,
-              crossAxisSpacing: 6,
-              childAspectRatio: 1.0,
-            ),
-            itemBuilder: (_, index) {
-              final day = cells[index];
-              if (day == null) return const SizedBox.shrink();
-              final selected = _isSameDay(day, stripDay);
-              return InkWell(
-                onTap: () {
-                  setState(() => _isMonthExpanded = false);
-                  _jumpToDay(day);
-                },
-                borderRadius: BorderRadius.circular(20),
-                child: Container(
-                  decoration: BoxDecoration(
-                    color: selected
-                        ? AppColors.primary500
-                        : AppColors.backgroundSecondary,
-                    borderRadius: BorderRadius.circular(20),
-                    border: Border.all(
-                      color: selected
-                          ? AppColors.primary500
-                          : AppColors.borderPrimary,
-                    ),
-                  ),
-                  alignment: Alignment.center,
-                  child: Text(
-                    '${day.day}',
-                    style: TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w700,
-                      color: selected ? Colors.white : AppColors.textPrimary,
-                    ),
-                  ),
+          const SizedBox(height: 12),
+          ValueListenableBuilder<DateTime>(
+            valueListenable: _scheduleDayNotifier,
+            builder: (context, selectedDay, _) {
+              return GridView.builder(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                itemCount: cells.length,
+                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: 7,
+                  mainAxisSpacing: 8,
+                  crossAxisSpacing: 4,
+                  childAspectRatio: 1.0,
                 ),
+                itemBuilder: (_, index) {
+                  final day = cells[index];
+                  if (day == null) return const SizedBox.shrink();
+                  final selected = _isSameDay(day, selectedDay);
+                  return Center(
+                    child: Material(
+                      color: Colors.transparent,
+                      child: InkWell(
+                        customBorder: const CircleBorder(),
+                        onTap: () {
+                          final d = DateTime(day.year, day.month, day.day);
+                          setState(() => _isMonthExpanded = false);
+                          _jumpToDay(d, afterBuild: true);
+                        },
+                        child: Container(
+                          width: 36,
+                          height: 36,
+                          alignment: Alignment.center,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: selected
+                                ? AppColors.primary500
+                                : AppColors.backgroundTertiary,
+                            border: Border.all(
+                              color: selected
+                                  ? AppColors.primary500
+                                  : AppColors.borderPrimary.withValues(
+                                      alpha: 0.5,
+                                    ),
+                            ),
+                          ),
+                          child: Text(
+                            '${day.day}',
+                            style: TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w500,
+                              color: selected
+                                  ? Colors.white
+                                  : AppColors.textPrimary,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  );
+                },
               );
             },
           ),
@@ -306,119 +375,180 @@ class _CalendarScreenState extends State<CalendarScreen> {
   /// PageView сам плавно выравнивает ближайший день при отпускании — никакого jumpToPage.
   Widget _buildDayStrip() {
     return SizedBox(
-      height: 74,
-      child: PageView.builder(
-        controller: _dayPagerController,
-        physics: const _SmoothDayPageScrollPhysics(),
-        onPageChanged: (page) {
-          if (_suppressStripSchedulePageChanged) return;
-          final day = _dayForPage(page);
-          if (_isSameDay(day, _stripDayNotifier.value) &&
-              _isSameDay(day, _scheduleDayNotifier.value)) {
-            return;
+      height: 86,
+      child: NotificationListener<ScrollNotification>(
+        onNotification: (ScrollNotification n) {
+          if (n.metrics.axis == Axis.horizontal) {
+            _onStripPagerScrolled();
           }
-          _debounceStripAndScheduleDay(day);
+          return false;
         },
-        itemBuilder: (context, index) {
-          final day = _dayForPage(index);
-          final sessionsCount = _sessionCountByDay[_dayKey(day)] ?? 0;
-          final isToday = _isSameDay(day, DateTime.now());
+        child: PageView.builder(
+          controller: _dayPagerController,
+          physics: const _SmoothDayPageScrollPhysics(),
+          onPageChanged: (page) {
+            final day = _dayForPage(page);
+            final normalized = DateTime(day.year, day.month, day.day);
+            if (_stripPagerDayNotifier.value != normalized) {
+              _stripPagerDayNotifier.value = normalized;
+            }
+            if (_suppressStripSchedulePageChanged) return;
+            if (_isSameDay(day, _stripDayNotifier.value) &&
+                _isSameDay(day, _scheduleDayNotifier.value)) {
+              return;
+            }
+            _debounceStripAndScheduleDay(day);
+          },
+          itemBuilder: (context, index) {
+            final day = _dayForPage(index);
+            final sessionsCount = _sessionCountByDay[_dayKey(day)] ?? 0;
+            final isToday = _isSameDay(day, DateTime.now());
 
-          return ValueListenableBuilder<DateTime>(
-            valueListenable: _stripDayNotifier,
-            builder: (context, stripDay, _) {
-              final selected = _isSameDay(day, stripDay);
-              return Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 3),
-                child: GestureDetector(
-                  onTap: () {
-                    _clearStripScheduleDebounceTimer();
-                    _stripDayNotifier.value = day;
-                    _scheduleDayNotifier.value = day;
-                    _suppressStripSchedulePageChanged = true;
-                    _dayPagerController
-                        .animateToPage(
-                          index,
-                          duration: const Duration(milliseconds: 300),
-                          curve: Curves.easeOutCubic,
-                        )
-                        .whenComplete(() {
-                          if (mounted) {
-                            _suppressStripSchedulePageChanged = false;
-                          }
-                        });
-                  },
-                  child: Container(
-                    height: 74,
-                    decoration: BoxDecoration(
-                      color: selected
-                          ? AppColors.primary500
-                          : AppColors.backgroundPrimary,
-                      borderRadius: BorderRadius.circular(22),
-                      border: Border.all(
+            return ValueListenableBuilder<DateTime>(
+              valueListenable: _stripDayNotifier,
+              builder: (context, stripDay, _) {
+                final selected = _isSameDay(day, stripDay);
+                return Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 3),
+                  child: GestureDetector(
+                    onTap: () {
+                      _clearStripScheduleDebounceTimer();
+                      final normalized = DateTime(day.year, day.month, day.day);
+                      _stripDayNotifier.value = normalized;
+                      _scheduleDayNotifier.value = normalized;
+                      _stripPagerDayNotifier.value = normalized;
+                      _suppressStripSchedulePageChanged = true;
+                      _dayPagerController
+                          .animateToPage(
+                            index,
+                            duration: const Duration(milliseconds: 300),
+                            curve: Curves.easeOutCubic,
+                          )
+                          .whenComplete(() {
+                            if (mounted) {
+                              _suppressStripSchedulePageChanged = false;
+                              _syncStripPagerDayFromController();
+                            }
+                          });
+                    },
+                    child: Container(
+                      height: 86,
+                      decoration: BoxDecoration(
                         color: selected
                             ? AppColors.primary500
-                            : isToday
-                            ? AppColors.primary500.withOpacity(0.4)
-                            : AppColors.borderPrimary,
+                            : AppColors.backgroundPrimary,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: selected
+                              ? AppColors.primary500
+                              : isToday
+                              ? AppColors.primary500.withValues(alpha: 0.45)
+                              : AppColors.borderPrimary,
+                        ),
+                      ),
+                      padding: const EdgeInsets.symmetric(vertical: 8),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text(
+                            _weekdayShort(day),
+                            style: TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w400,
+                              letterSpacing: -0.3,
+                              color: selected
+                                  ? Colors.white
+                                  : AppColors.textSecondary,
+                            ),
+                          ),
+                          const SizedBox(height: 3),
+                          Text(
+                            '${day.day}',
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.w600,
+                              letterSpacing: -0.3,
+                              color: selected
+                                  ? Colors.white
+                                  : AppColors.textPrimary,
+                            ),
+                          ),
+                          const SizedBox(height: 3),
+                          Text(
+                            '$sessionsCount',
+                            style: TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w400,
+                              color: selected
+                                  ? Colors.white
+                                  : AppColors.primary500,
+                            ),
+                          ),
+                        ],
                       ),
                     ),
-                    padding: const EdgeInsets.symmetric(vertical: 8),
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Text(
-                          _weekdayShort(day),
-                          style: TextStyle(
-                            fontSize: 9,
-                            fontWeight: FontWeight.w700,
-                            color: selected
-                                ? Colors.white
-                                : AppColors.textSecondary,
-                          ),
-                        ),
-                        const SizedBox(height: 3),
-                        Text(
-                          '${day.day}',
-                          style: TextStyle(
-                            fontSize: 15,
-                            fontWeight: FontWeight.w800,
-                            color: selected
-                                ? Colors.white
-                                : AppColors.textPrimary,
-                          ),
-                        ),
-                        const SizedBox(height: 2),
-                        if (sessionsCount > 0)
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: List.generate(
-                              sessionsCount.clamp(1, 3),
-                              (_) => Container(
-                                width: 4,
-                                height: 4,
-                                margin: const EdgeInsets.symmetric(
-                                  horizontal: 1,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: selected
-                                      ? Colors.white70
-                                      : AppColors.primary500,
-                                  shape: BoxShape.circle,
-                                ),
-                              ),
-                            ),
-                          )
-                        else
-                          const SizedBox(height: 4),
-                      ],
-                    ),
                   ),
-                ),
-              );
-            },
-          );
-        },
+                );
+              },
+            );
+          },
+        ),
+      ),
+    );
+  }
+
+  Widget _todayButton() {
+    return TextButton(
+      onPressed: () {
+        final now = DateTime.now();
+        _jumpToDay(DateTime(now.year, now.month, now.day));
+      },
+      style: TextButton.styleFrom(
+        backgroundColor: AppColors.primary500,
+        foregroundColor: Colors.white,
+        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 8),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(22)),
+        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+      ),
+      child: const Text(
+        'Today',
+        style: TextStyle(fontWeight: FontWeight.w500, fontSize: 14),
+      ),
+    );
+  }
+
+  Widget _expandCollapseButton() {
+    return OutlinedButton(
+      onPressed: () {
+        setState(() => _isMonthExpanded = !_isMonthExpanded);
+        if (!_isMonthExpanded) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (mounted) _syncStripPagerDayFromController();
+          });
+        }
+      },
+      style: OutlinedButton.styleFrom(
+        backgroundColor: AppColors.backgroundPrimary,
+        foregroundColor: AppColors.textPrimary,
+        side: const BorderSide(color: AppColors.borderPrimary),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(22)),
+        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            Icons.calendar_month_outlined,
+            size: 18,
+            color: AppColors.textPrimary,
+          ),
+          const SizedBox(width: 6),
+          Text(
+            _isMonthExpanded ? 'Collapse' : 'Expand',
+            style: const TextStyle(fontWeight: FontWeight.w500, fontSize: 14),
+          ),
+        ],
       ),
     );
   }
@@ -426,6 +556,61 @@ class _CalendarScreenState extends State<CalendarScreen> {
   String _weekdayShort(DateTime day) {
     const names = ['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN'];
     return names[day.weekday - 1];
+  }
+
+  /// Верхний ряд: месяц/год + Today + Expand (месяц от скролла пиллов или от выбранного дня в сетке).
+  Widget _monthYearAndActionsRow() {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(
+        kScreenPaddingHorizontal,
+        16,
+        kScreenPaddingHorizontal,
+        0,
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          Expanded(
+            child: _isMonthExpanded
+                ? ValueListenableBuilder<DateTime>(
+                    valueListenable: _stripDayNotifier,
+                    builder: (context, stripDay, _) {
+                      return Text(
+                        _monthYearUpperEn(stripDay),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: -0.3,
+                          color: AppColors.textPrimary,
+                        ),
+                      );
+                    },
+                  )
+                : ValueListenableBuilder<DateTime>(
+                    valueListenable: _stripPagerDayNotifier,
+                    builder: (context, pagerDay, _) {
+                      return Text(
+                        _monthYearUpperEn(pagerDay),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: -0.3,
+                          color: AppColors.textPrimary,
+                        ),
+                      );
+                    },
+                  ),
+          ),
+          _todayButton(),
+          const SizedBox(width: 10),
+          _expandCollapseButton(),
+        ],
+      ),
+    );
   }
 
   @override
@@ -451,207 +636,108 @@ class _CalendarScreenState extends State<CalendarScreen> {
               ? const Center(
                   child: CircularProgressIndicator(color: AppColors.primary500),
                 )
-              : CustomScrollView(
-                  physics: const AlwaysScrollableScrollPhysics(),
-                  slivers: [
-                    // ── Заголовок (месяц следует за лентой дней) ───────────
-                    ValueListenableBuilder<DateTime>(
-                      valueListenable: _stripDayNotifier,
-                      builder: (context, stripDay, _) {
-                        return SliverPadding(
-                          padding: const EdgeInsets.fromLTRB(12, 16, 12, 0),
-                          sliver: SliverToBoxAdapter(
-                            child: Row(
-                              children: [
-                                Expanded(
-                                  child: Text(
-                                    _headerTitle(stripDay),
-                                    style: const TextStyle(
-                                      fontSize: 14,
-                                      fontWeight: FontWeight.w700,
-                                      color: AppColors.textPrimary,
-                                    ),
-                                  ),
-                                ),
-                                OutlinedButton(
-                                  onPressed: () {
-                                    final now = DateTime.now();
-                                    _jumpToDay(
-                                      DateTime(now.year, now.month, now.day),
-                                    );
-                                  },
-                                  style: OutlinedButton.styleFrom(
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(12),
-                                    ),
-                                    side: const BorderSide(
-                                      color: AppColors.borderPrimary,
-                                    ),
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 8,
-                                      vertical: 8,
-                                    ),
-                                  ),
-                                  child: const Text(
-                                    'Сегодня',
-                                    style: TextStyle(
-                                      color: AppColors.textPrimary,
-                                    ),
-                                  ),
-                                ),
-                                const SizedBox(width: 8),
-                                OutlinedButton.icon(
-                                  onPressed: () => setState(
-                                    () => _isMonthExpanded = !_isMonthExpanded,
-                                  ),
-                                  style: OutlinedButton.styleFrom(
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(12),
-                                    ),
-                                    side: const BorderSide(
-                                      color: AppColors.borderPrimary,
-                                    ),
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 8,
-                                      vertical: 8,
-                                    ),
-                                  ),
-                                  icon: const SizedBox.shrink(),
-                                  label: Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      const Icon(
-                                        Icons.calendar_month_outlined,
-                                        color: AppColors.textPrimary,
-                                      ),
-                                      const SizedBox(width: 4),
-                                      Text(
-                                        _isMonthExpanded
-                                            ? 'Свернуть'
-                                            : 'Развернуть',
-                                        style: const TextStyle(
-                                          color: AppColors.textPrimary,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        );
-                      },
-                    ),
-
-                    // ── Месячный вид или лента дней ────────────────────────
-                    if (_isMonthExpanded)
-                      ValueListenableBuilder<DateTime>(
-                        valueListenable: _stripDayNotifier,
-                        builder: (context, stripDay, _) {
-                          return SliverPadding(
-                            padding: const EdgeInsets.fromLTRB(12, 0, 12, 0),
-                            sliver: SliverToBoxAdapter(
-                              child: GestureDetector(
-                                onHorizontalDragEnd: (details) {
-                                  const threshold = 90.0;
-                                  if ((details.primaryVelocity ?? 0) <
-                                      -threshold) {
-                                    _shiftMonth(1);
-                                  } else if ((details.primaryVelocity ?? 0) >
-                                      threshold) {
-                                    _shiftMonth(-1);
-                                  }
-                                },
-                                child: _buildMonthExpanded(stripDay),
-                              ),
-                            ),
-                          );
-                        },
-                      )
-                    else
-                      // Pinned — лента дней остаётся видна при скролле расписания
-                      ValueListenableBuilder<DateTime>(
-                        valueListenable: _stripDayNotifier,
-                        builder: (context, stripDay, _) {
-                          return SliverPersistentHeader(
-                            pinned: true,
-                            delegate: _PinnedDayStripDelegate(
-                              height: 74 + 12,
-                              backgroundColor: AppColors.backgroundSecondary,
-                              stripDayKey: _dayKey(stripDay),
-                              strip: Padding(
-                                padding: const EdgeInsets.fromLTRB(
-                                  12,
-                                  12,
-                                  12,
-                                  0,
-                                ),
-                                child: _buildDayStrip(),
-                              ),
-                            ),
-                          );
-                        },
+              : Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    _monthYearAndActionsRow(),
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(
+                        kScreenPaddingHorizontal,
+                        5,
+                        kScreenPaddingHorizontal,
+                        7,
                       ),
-
-                    // ── Расписание дня (обновляется с debounce после свайпа) ─
-                    ValueListenableBuilder<DateTime>(
-                      valueListenable: _scheduleDayNotifier,
-                      builder: (context, scheduleDay, _) {
-                        final daySessions =
-                            _sessionsByDay[_dayKey(scheduleDay)] ??
-                            const <OwnerTrainingSession>[];
-                        return SliverPadding(
-                          padding: const EdgeInsets.fromLTRB(12, 26, 12, 0),
-                          sliver: SliverList(
-                            delegate: SliverChildBuilderDelegate(
-                              (context, index) {
-                                if (index == 0) {
-                                  return const Padding(
-                                    padding: EdgeInsets.only(bottom: 16),
-                                    child: Text(
-                                      'Daily schedule',
-                                      style: TextStyle(
-                                        fontSize: 18,
-                                        fontWeight: FontWeight.w700,
-                                        color: AppColors.textPrimary,
-                                      ),
+                      child: const Text(
+                        'Schedule',
+                        style: TextStyle(
+                          fontSize: 24,
+                          fontWeight: FontWeight.w700,
+                          height: 1,
+                          letterSpacing: -0.8,
+                          color: AppColors.textPrimary,
+                        ),
+                      ),
+                    ),
+                    Expanded(
+                      child: CustomScrollView(
+                        physics: const AlwaysScrollableScrollPhysics(),
+                        slivers: [
+                          if (!_isMonthExpanded) ...[
+                            AnimatedBuilder(
+                              animation: Listenable.merge([
+                                _stripDayNotifier,
+                                _stripPagerDayNotifier,
+                              ]),
+                              builder: (context, _) {
+                                return SliverPersistentHeader(
+                                  pinned: true,
+                                  delegate: _PinnedDayStripDelegate(
+                                    height: 86 + 12,
+                                    backgroundColor:
+                                        AppColors.backgroundSecondary,
+                                    stripDayKey: Object.hash(
+                                      _dayKey(_stripDayNotifier.value),
+                                      _dayKey(_stripPagerDayNotifier.value),
                                     ),
-                                  );
-                                }
-                                if (daySessions.isEmpty) {
-                                  return Container(
-                                    padding: const EdgeInsets.all(16),
-                                    decoration: BoxDecoration(
-                                      color: AppColors.backgroundPrimary,
-                                      borderRadius: BorderRadius.circular(12),
-                                      border: Border.all(
-                                        color: AppColors.borderPrimary,
+                                    strip: Padding(
+                                      padding: const EdgeInsets.fromLTRB(
+                                        kScreenPaddingHorizontal,
+                                        12,
+                                        kScreenPaddingHorizontal,
+                                        0,
                                       ),
+                                      child: _buildDayStrip(),
                                     ),
-                                    child: const Text(
-                                      'No trainings for selected day',
-                                      style: TextStyle(
-                                        color: AppColors.textSecondary,
-                                        fontSize: 14,
-                                      ),
-                                    ),
-                                  );
-                                }
-                                final cardIndex = index - 1;
-                                final s = daySessions[cardIndex];
-                                return Padding(
-                                  padding: EdgeInsets.only(
-                                    bottom: cardIndex == daySessions.length - 1
-                                        ? 0
-                                        : 12,
                                   ),
-                                  child: OwnerTrainingSessionCard(
-                                    session: s,
-                                    trainingColor: parseHexColor(
-                                      s.trainingDisplayColorHex,
+                                );
+                              },
+                            ),
+                          ] else ...[
+                            ValueListenableBuilder<DateTime>(
+                              valueListenable: _stripDayNotifier,
+                              builder: (context, stripDay, _) {
+                                return SliverToBoxAdapter(
+                                  child: Padding(
+                                    padding: const EdgeInsets.fromLTRB(
+                                      kScreenPaddingHorizontal,
+                                      12,
+                                      kScreenPaddingHorizontal,
+                                      12,
                                     ),
-                                    trainerFallbackName: trainerFb,
-                                    onTap: () {
+                                    child: GestureDetector(
+                                      onHorizontalDragEnd: (details) {
+                                        const threshold = 90.0;
+                                        if ((details.primaryVelocity ?? 0) <
+                                            -threshold) {
+                                          _shiftMonth(1);
+                                        } else if ((details.primaryVelocity ??
+                                                0) >
+                                            threshold) {
+                                          _shiftMonth(-1);
+                                        }
+                                      },
+                                      child: _buildMonthExpanded(stripDay),
+                                    ),
+                                  ),
+                                );
+                              },
+                            ),
+                          ],
+                          ValueListenableBuilder<DateTime>(
+                            valueListenable: _scheduleDayNotifier,
+                            builder: (context, scheduleDay, _) {
+                              final daySessions =
+                                  _sessionsByDay[_dayKey(scheduleDay)] ??
+                                  const <OwnerTrainingSession>[];
+                              return SliverPadding(
+                                padding: const EdgeInsets.fromLTRB(0, 20, 0, 0),
+                                sliver: SliverToBoxAdapter(
+                                  child: OwnerDailyScheduleBlock(
+                                    sessions: daySessions,
+                                    emptyMessage:
+                                        'No trainings for selected day',
+                                    ownerTrainerFallback: trainerFb,
+                                    onSessionTap: (s) {
                                       Navigator.of(context).push<void>(
                                         MaterialPageRoute<void>(
                                           builder: (_) => OwnerTrainingSessionDetailScreen(
@@ -696,17 +782,14 @@ class _CalendarScreenState extends State<CalendarScreen> {
                                       );
                                     },
                                   ),
-                                );
-                              },
-                              childCount: daySessions.isEmpty
-                                  ? 2
-                                  : daySessions.length + 1,
-                            ),
+                                ),
+                              );
+                            },
                           ),
-                        );
-                      },
+                          const SliverToBoxAdapter(child: SizedBox(height: 20)),
+                        ],
+                      ),
                     ),
-                    const SliverToBoxAdapter(child: SizedBox(height: 20)),
                   ],
                 ),
         ),

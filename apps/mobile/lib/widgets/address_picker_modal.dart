@@ -6,6 +6,7 @@ import 'package:latlong2/latlong.dart';
 import 'package:provider/provider.dart';
 
 import '../constants/colors.dart';
+import 'app_search_prefix_icon.dart';
 import '../l10n/locale_provider.dart';
 import '../services/mapbox_api_service.dart';
 
@@ -235,9 +236,7 @@ class _AddressPickerModalState extends State<AddressPickerModal> {
                     },
                     decoration: InputDecoration(
                       hintText: t('addressPicker.searchHint'),
-                      prefixIcon: const Icon(
-                        Icons.search,
-                        size: 20,
+                      prefixIcon: const AppSearchPrefixIcon(
                         color: AppColors.textSecondary,
                       ),
                       suffixIcon: _loadingSuggestions

@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
 import '../constants/colors.dart';
+import '../constants/layout.dart';
 import '../models/salon.dart';
 import '../models/service_item.dart';
 import '../models/training_category_option.dart';
@@ -14,6 +15,12 @@ import '../services/cache/salon_cache.dart';
 import '../services/cache/services_staff_cache.dart';
 import '../services/services_api_service.dart';
 import '../utils/show_api_error.dart';
+import 'main_shell.dart';
+
+/// Matches registration / mock secondary controls (chevron, pin tint).
+const Color _kFormAccentPurple = Color(0xFF6C5CE7);
+
+const Color _kRegHintMuted = Color(0x993F3F3F);
 
 String _formatThousandsDots(int value) {
   final raw = value.abs().toString();
@@ -39,7 +46,7 @@ class _AddTrainingScreenState extends State<AddTrainingScreen> {
   final _nameController = TextEditingController();
   final _nameFocusNode = FocusNode();
   final _durationController = TextEditingController(text: '60');
-  final _priceController = TextEditingController(text: '200.000');
+  final _priceController = TextEditingController();
   final _capacityController = TextEditingController(text: '10');
 
   bool _loading = true;
@@ -157,7 +164,10 @@ class _AddTrainingScreenState extends State<AddTrainingScreen> {
                     minuteInterval: 5,
                     initialDateTime: initialDateTime,
                     onDateTimeChanged: (value) {
-                      selected = TimeOfDay(hour: value.hour, minute: value.minute);
+                      selected = TimeOfDay(
+                        hour: value.hour,
+                        minute: value.minute,
+                      );
                     },
                   ),
                 ),
@@ -169,30 +179,109 @@ class _AddTrainingScreenState extends State<AddTrainingScreen> {
     );
   }
 
-  InputDecoration _step1Decoration({required bool invalid, String? hintText}) {
-    final danger = AppColors.error600;
-    final normal = AppColors.borderPrimary;
+  /// Same geometry and typography as [BusinessRegistrationScreen] fields.
+  InputDecoration _regInputDecoration({
+    required bool invalid,
+    String? hintText,
+    IconData? prefixIcon,
+    Widget? suffix,
+    String? suffixText,
+  }) {
+    const radius = BorderRadius.all(Radius.circular(12));
+    final errorSide = BorderSide(color: AppColors.error600, width: 1.2);
+    final noneSide = BorderSide.none;
+    final focusSide = BorderSide(
+      color: invalid ? AppColors.error600 : AppColors.primary500,
+      width: 1.2,
+    );
     return InputDecoration(
       hintText: hintText,
+      hintStyle: const TextStyle(
+        color: _kRegHintMuted,
+        fontSize: 16,
+        fontWeight: FontWeight.w500,
+      ),
+      prefixIcon: prefixIcon == null
+          ? null
+          : Padding(
+              padding: const EdgeInsets.only(left: 13, right: 8),
+              child: Icon(prefixIcon, color: _kFormAccentPurple, size: 22),
+            ),
+      prefixIconConstraints: const BoxConstraints(minWidth: 0, minHeight: 0),
+      suffix: suffix,
+      suffixText: suffixText,
+      suffixStyle: const TextStyle(
+        fontSize: 16,
+        fontWeight: FontWeight.w600,
+        color: AppColors.textPrimary,
+      ),
+      filled: true,
+      fillColor: AppColors.backgroundPrimary,
+      contentPadding: EdgeInsets.only(
+        top: 8,
+        bottom: 12,
+        right: 18,
+        left: prefixIcon == null ? 13 : 0,
+      ),
+      border: OutlineInputBorder(borderRadius: radius, borderSide: noneSide),
       enabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
-        borderSide: BorderSide(
-          color: invalid ? danger : normal,
-          width: invalid ? 1.5 : 1,
-        ),
+        borderRadius: radius,
+        borderSide: invalid ? errorSide : noneSide,
       ),
       focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
-        borderSide: BorderSide(
-          color: invalid ? danger : AppColors.primary500,
-          width: invalid ? 1.5 : 2,
-        ),
+        borderRadius: radius,
+        borderSide: focusSide,
       ),
-      border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
-        borderSide: BorderSide(
-          color: invalid ? danger : normal,
-          width: invalid ? 1.5 : 1,
+    );
+  }
+
+  static const TextStyle _stepFieldInputStyle = TextStyle(
+    fontSize: 16,
+    color: AppColors.textPrimary,
+  );
+
+  Widget _stepFormLabel(String text) => Padding(
+        padding: const EdgeInsets.only(bottom: 10, left: 12),
+        child: Text(
+          text.toUpperCase(),
+          style: const TextStyle(
+            fontSize: 13,
+            fontWeight: FontWeight.w600,
+            letterSpacing: -0.3,
+            color: AppColors.textPrimary,
+          ),
+        ),
+      );
+
+  void _onCloseAddTraining() {
+    context.findAncestorStateOfType<MainShellState>()?.restoreShellTab(
+      MainShellState.scheduleTabIndex,
+    );
+    if (Navigator.of(context).canPop()) {
+      Navigator.of(context).pop();
+    }
+  }
+
+  Widget _step1CloseLeading() {
+    return Padding(
+      padding: const EdgeInsets.only(left: 8),
+      child: Center(
+        child: Material(
+          color: AppColors.backgroundPrimary,
+          shape: const CircleBorder(),
+          child: InkWell(
+            customBorder: const CircleBorder(),
+            onTap: _onCloseAddTraining,
+            child: const SizedBox(
+              width: 40,
+              height: 40,
+              child: Icon(
+                Icons.close,
+                size: 20,
+                color: AppColors.textSecondary,
+              ),
+            ),
+          ),
         ),
       ),
     );
@@ -269,24 +358,6 @@ class _AddTrainingScreenState extends State<AddTrainingScreen> {
     if (days < 1) return 1;
     if (days > 60) return 60;
     return days;
-  }
-
-  void _showCategoryInfo() {
-    showDialog<void>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Информация'),
-        content: const Text(
-          'Если нет категории для вашей услуги, пожалуйста сообщите нам об этом, и мы добавим ее как можно скорее.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(ctx).pop(),
-            child: const Text('Понятно'),
-          ),
-        ],
-      ),
-    );
   }
 
   String _categoryLabel(String localeCode) {
@@ -574,40 +645,49 @@ class _AddTrainingScreenState extends State<AddTrainingScreen> {
     final ownerName = user?.name?.trim().isNotEmpty == true
         ? user!.name!.trim()
         : (user?.email ?? 'Владелец студии');
+    final textTheme = Theme.of(context).textTheme;
     return Scaffold(
       backgroundColor: AppColors.backgroundSecondary,
       appBar: AppBar(
+        automaticallyImplyLeading: _step != 1,
+        leading: _step == 1 ? _step1CloseLeading() : null,
+        leadingWidth: _step == 1 ? 56 : null,
         title: Text(
           _step == 1
-              ? 'Добавить тренировку • 1/2'
-              : 'Добавить тренировку • 2/2',
+              ? 'Добавить тренировку · 1/2'
+              : 'Добавить тренировку · 2/2',
+          style: const TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.w600,
+            color: AppColors.textPrimary,
+          ),
         ),
-        backgroundColor: AppColors.backgroundPrimary,
+        centerTitle: true,
+        backgroundColor: AppColors.backgroundSecondary,
         foregroundColor: AppColors.textPrimary,
+        elevation: 0,
+        scrolledUnderElevation: 0,
       ),
       body: _loading
           ? const Center(
               child: CircularProgressIndicator(color: AppColors.primary500),
             )
           : ListView(
-              padding: const EdgeInsets.all(16),
+              padding: const EdgeInsets.symmetric(
+                horizontal: kScreenPaddingHorizontal,
+                vertical: 10,
+              ),
               children: _step == 1
                   ? [
-                      const Text(
-                        'Название',
-                        style: TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w600,
-                          color: AppColors.textPrimary,
-                        ),
-                      ),
-                      const SizedBox(height: 6),
+                      _stepFormLabel('Название'),
                       if (_existing.isEmpty)
                         TextField(
                           controller: _nameController,
+                          style: _stepFieldInputStyle,
+                          textInputAction: TextInputAction.next,
                           onChanged: (_) =>
                               setState(() => _step1NameError = false),
-                          decoration: _step1Decoration(
+                          decoration: _regInputDecoration(
                             invalid: _step1NameError,
                             hintText: 'Например: Vinyasa Flow',
                           ),
@@ -640,9 +720,11 @@ class _AddTrainingScreenState extends State<AddTrainingScreen> {
                                 return TextField(
                                   controller: ctrl,
                                   focusNode: focusNode,
+                                  style: _stepFieldInputStyle,
+                                  textInputAction: TextInputAction.next,
                                   onChanged: (_) =>
                                       setState(() => _step1NameError = false),
-                                  decoration: _step1Decoration(
+                                  decoration: _regInputDecoration(
                                     invalid: _step1NameError,
                                     hintText: 'Например: Vinyasa Flow',
                                   ),
@@ -660,7 +742,8 @@ class _AddTrainingScreenState extends State<AddTrainingScreen> {
                                         MediaQuery.of(context).size.height *
                                         0.4,
                                     maxWidth:
-                                        MediaQuery.of(context).size.width - 32,
+                                        MediaQuery.of(context).size.width -
+                                        2 * kScreenPaddingHorizontal,
                                   ),
                                   child: ListView(
                                     shrinkWrap: true,
@@ -701,129 +784,38 @@ class _AddTrainingScreenState extends State<AddTrainingScreen> {
                           ),
                         ),
                       ],
-                      const SizedBox(height: 16),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                const Text(
-                                  'Длительность (мин)',
-                                  style: TextStyle(
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.w600,
-                                    color: AppColors.textPrimary,
-                                  ),
-                                ),
-                                const SizedBox(height: 6),
-                                TextField(
-                                  controller: _durationController,
-                                  keyboardType: TextInputType.number,
-                                  onChanged: (_) => setState(
-                                    () => _step1DurationError = false,
-                                  ),
-                                  decoration: _step1Decoration(
-                                    invalid: _step1DurationError,
-                                    hintText: '60',
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                          const SizedBox(width: 10),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                const Text(
-                                  'Вместительность',
-                                  style: TextStyle(
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.w600,
-                                    color: AppColors.textPrimary,
-                                  ),
-                                ),
-                                const SizedBox(height: 6),
-                                TextField(
-                                  controller: _capacityController,
-                                  keyboardType: TextInputType.number,
-                                  onChanged: (_) => setState(
-                                    () => _step1CapacityError = false,
-                                  ),
-                                  decoration: _step1Decoration(
-                                    invalid: _step1CapacityError,
-                                    hintText: '10',
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 16),
+                      const SizedBox(height: 22),
                       Consumer<LocaleProvider>(
                         builder: (context, locale, _) {
                           return Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
                             children: [
-                              Row(
-                                children: [
-                                  const Text(
-                                    'Категория',
-                                    style: TextStyle(
-                                      fontSize: 14,
-                                      fontWeight: FontWeight.w600,
-                                      color: AppColors.textPrimary,
-                                    ),
-                                  ),
-                                  const SizedBox(width: 6),
-                                  InkWell(
-                                    borderRadius: BorderRadius.circular(12),
-                                    onTap: _showCategoryInfo,
-                                    child: const Padding(
-                                      padding: EdgeInsets.all(2),
-                                      child: Icon(
-                                        Icons.info_outline,
-                                        size: 16,
-                                        color: AppColors.textSecondary,
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                              const SizedBox(height: 6),
+                              _stepFormLabel('Категория'),
                               InkWell(
-                                borderRadius: BorderRadius.circular(12),
+                                borderRadius: BorderRadius.circular(999),
                                 onTap: _categories.isEmpty
                                     ? null
                                     : _openCategoryBottomSheet,
                                 child: InputDecorator(
-                                  decoration: _step1Decoration(
+                                  decoration: _regInputDecoration(
                                     invalid: _step1CategoryError,
+                                    suffix: const Icon(
+                                      CupertinoIcons.chevron_down,
+                                      color: _kFormAccentPurple,
+                                      size: 18,
+                                    ),
                                   ),
-                                  child: Row(
-                                    children: [
-                                      Expanded(
-                                        child: Text(
-                                          _categoryLabel(locale.localeCode),
-                                          maxLines: 1,
-                                          overflow: TextOverflow.ellipsis,
-                                          style: TextStyle(
-                                            fontSize: 14,
-                                            fontWeight: FontWeight.w500,
-                                            color: _selectedCategoryId == null
-                                                ? AppColors.textSecondary
-                                                : AppColors.textPrimary,
-                                          ),
-                                        ),
-                                      ),
-                                      const SizedBox(width: 8),
-                                      const Icon(
-                                        Icons.keyboard_arrow_down_rounded,
-                                        color: AppColors.textSecondary,
-                                      ),
-                                    ],
+                                  child: Text(
+                                    _categoryLabel(locale.localeCode),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.w400,
+                                      color: _selectedCategoryId == null
+                                          ? AppColors.textSecondary
+                                          : AppColors.textPrimary,
+                                    ),
                                   ),
                                 ),
                               ),
@@ -831,30 +823,156 @@ class _AddTrainingScreenState extends State<AddTrainingScreen> {
                           );
                         },
                       ),
-                      const SizedBox(height: 16),
-                      const Text(
-                        'Цена',
-                        style: TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w600,
-                          color: AppColors.textPrimary,
+                      const SizedBox(height: 22),
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 10),
+                        child: Text(
+                          'Main studio',
+                          style: const TextStyle(
+                            color: AppColors.textSecondary,
+                            fontSize: 16,
+                            fontWeight: FontWeight.w500,
+                            letterSpacing: 0.2,
+                          ),
                         ),
                       ),
-                      const SizedBox(height: 6),
+                      Material(
+                        color: AppColors.backgroundPrimary,
+                        borderRadius: BorderRadius.circular(28),
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 14,
+                          ),
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.center,
+                            children: [
+                              Icon(
+                                Icons.location_on_rounded,
+                                color: _kFormAccentPurple,
+                                size: 26,
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      _studio?.name?.trim().isNotEmpty == true
+                                          ? _studio!.name!.trim()
+                                          : 'Студия',
+                                      style: const TextStyle(
+                                        fontSize: 19,
+                                        fontWeight: FontWeight.w700,
+                                        color: AppColors.textPrimary,
+                                      ),
+                                    ),
+                                    if ((_studio?.address ?? '')
+                                        .trim()
+                                        .isNotEmpty) ...[
+                                      const SizedBox(height: 4),
+                                      Text(
+                                        _studio!.address!.trim(),
+                                        style: const TextStyle(
+                                          fontSize: 14,
+                                          height: 1.25,
+                                          fontWeight: FontWeight.w400,
+                                          color: AppColors.textSecondary,
+                                        ),
+                                      ),
+                                    ] else
+                                      const Padding(
+                                        padding: EdgeInsets.only(top: 4),
+                                        child: Text(
+                                          'Адрес не указан',
+                                          style: TextStyle(
+                                            fontSize: 14,
+                                            color: AppColors.textTertiary,
+                                          ),
+                                        ),
+                                      ),
+                                  ],
+                                ),
+                              ),
+                              const Icon(
+                                CupertinoIcons.chevron_forward,
+                                color: _kFormAccentPurple,
+                                size: 18,
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 22),
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.stretch,
+                              children: [
+                                _stepFormLabel('Длительность'),
+                                TextField(
+                                  controller: _durationController,
+                                  style: _stepFieldInputStyle,
+                                  keyboardType: TextInputType.number,
+                                  textInputAction: TextInputAction.next,
+                                  onChanged: (_) => setState(
+                                    () => _step1DurationError = false,
+                                  ),
+                                  decoration: _regInputDecoration(
+                                    invalid: _step1DurationError,
+                                    hintText: '60',
+                                    prefixIcon: Icons.access_time_rounded,
+                                    suffixText: 'мин',
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.stretch,
+                              children: [
+                                _stepFormLabel('Вместительность'),
+                                TextField(
+                                  controller: _capacityController,
+                                  style: _stepFieldInputStyle,
+                                  keyboardType: TextInputType.number,
+                                  textInputAction: TextInputAction.next,
+                                  onChanged: (_) => setState(
+                                    () => _step1CapacityError = false,
+                                  ),
+                                  decoration: _regInputDecoration(
+                                    invalid: _step1CapacityError,
+                                    hintText: '10',
+                                    prefixIcon: Icons.groups_rounded,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 22),
+                      _stepFormLabel('Цена'),
                       TextField(
                         controller: _priceController,
+                        style: _stepFieldInputStyle,
                         keyboardType: TextInputType.number,
+                        textInputAction: TextInputAction.done,
                         inputFormatters: [_VndThousandsFormatter()],
                         onChanged: (_) =>
                             setState(() => _step1PriceError = false),
-                        decoration: _step1Decoration(
+                        decoration: _regInputDecoration(
                           invalid: _step1PriceError,
-                          hintText: '100.000',
+                          hintText: 'Введите цену',
                         ),
                       ),
-                      const SizedBox(height: 24),
+                      const SizedBox(height: 30),
                       SizedBox(
-                        height: 46,
+                        height: 60,
                         child: FilledButton(
                           onPressed: () {
                             if (!_validateStep1()) return;
@@ -862,8 +980,19 @@ class _AddTrainingScreenState extends State<AddTrainingScreen> {
                           },
                           style: FilledButton.styleFrom(
                             backgroundColor: AppColors.primary500,
+                            foregroundColor: AppColors.textInverse,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(999),
+                            ),
                           ),
-                          child: const Text('Далее'),
+                          child: Text(
+                            'Следующий шаг',
+                            style: textTheme.titleLarge?.copyWith(
+                              fontWeight: FontWeight.w600,
+                              fontSize: 16,
+                              color: AppColors.textInverse,
+                            ),
+                          ),
                         ),
                       ),
                     ]

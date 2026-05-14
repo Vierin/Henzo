@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 
 import '../constants/colors.dart';
+import '../widgets/app_search_prefix_icon.dart';
 import '../services/mapbox_api_service.dart';
 
 class LocationPickerScreen extends StatefulWidget {
@@ -95,7 +96,7 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
               onChanged: _onChanged,
               decoration: InputDecoration(
                 hintText: 'Enter city or address',
-                prefixIcon: const Icon(Icons.search),
+                prefixIcon: const AppSearchPrefixIcon(),
                 suffixIcon: _isLoading
                     ? const Padding(
                         padding: EdgeInsets.all(12),

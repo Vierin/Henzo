@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:provider/provider.dart';
+import '../shell/shell_tab_route_args.dart';
 import '../../constants/colors.dart';
 import '../../l10n/locale_provider.dart';
 import '../../services/auth_service.dart';
@@ -26,6 +27,9 @@ class MainShell extends StatefulWidget {
 }
 
 class MainShellState extends State<MainShell> {
+  /// Bottom bar: 0 Home, 1 Schedule, 2 Clients, 3 Settings.
+  static const int scheduleTabIndex = 1;
+
   int _currentIndex = 0;
   bool _salonLoading = true;
   final GlobalKey<NavigatorState> _homeNavigatorKey =
@@ -65,12 +69,14 @@ class MainShellState extends State<MainShell> {
   /// Переключиться на первую вкладку и открыть маршрут (например /trainers, /offerings).
   void navigateToTab0Route(String routeName, {Object? arguments}) {
     final nav = _homeNavigatorKey.currentState;
+    final tabBeforeSwitch = _currentIndex;
     if (_currentIndex != 0) {
       setState(() => _currentIndex = 0);
     }
+    final pushArgs = mergeRestoreShellTabArguments(arguments, tabBeforeSwitch);
     void push(NavigatorState n) {
-      if (arguments != null) {
-        n.pushNamed(routeName, arguments: arguments);
+      if (pushArgs != null) {
+        n.pushNamed(routeName, arguments: pushArgs);
       } else {
         n.pushNamed(routeName);
       }
@@ -86,6 +92,13 @@ class MainShellState extends State<MainShell> {
     });
   }
 
+  /// Вернуть нижнюю навигацию на вкладку (после закрытия экрана с другой вкладки).
+  void restoreShellTab(int index) {
+    if (!mounted) return;
+    if (index < 0 || index >= _screens.length) return;
+    setState(() => _currentIndex = index);
+  }
+
   Widget _buildHomeNavigator() {
     return Navigator(
       key: _homeNavigatorKey,
@@ -95,7 +108,10 @@ class MainShellState extends State<MainShell> {
           case '/':
             return MaterialPageRoute(builder: (_) => const DashboardScreen());
           case '/trainings/new':
-            return MaterialPageRoute(builder: (_) => const AddTrainingScreen());
+            return MaterialPageRoute<bool?>(
+              builder: (_) => const AddTrainingScreen(),
+              settings: settings,
+            );
           case '/owner/session/edit':
             return MaterialPageRoute<bool?>(
               builder: (_) => const OwnerEditTrainingSessionScreen(),
@@ -161,7 +177,7 @@ class MainShellState extends State<MainShell> {
             padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
             decoration: BoxDecoration(
               color: AppColors.backgroundPrimary,
-              borderRadius: BorderRadius.circular(18),
+              borderRadius: BorderRadius.circular(16),
               border: Border.all(color: const Color(0xFFE6E3E2), width: 1),
             ),
             child: Consumer<LocaleProvider>(
@@ -239,15 +255,15 @@ class _NavItem extends StatelessWidget {
         onTap: onTap,
         borderRadius: BorderRadius.circular(12),
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 0),
+          padding: const EdgeInsets.symmetric(horizontal: 0, vertical: 0),
           child: AnimatedContainer(
             duration: const Duration(milliseconds: 170),
             curve: Curves.easeOutCubic,
-            height: 60,
+            height: 58,
             padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
             decoration: BoxDecoration(
               color: isSelected ? AppColors.primary500 : Colors.transparent,
-              borderRadius: BorderRadius.circular(20),
+              borderRadius: BorderRadius.circular(12),
             ),
             child: Column(
               mainAxisSize: MainAxisSize.min,

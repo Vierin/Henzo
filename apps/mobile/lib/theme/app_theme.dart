@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../constants/colors.dart';
+import '../constants/layout.dart';
 
 /// Единая тема приложения на основе AppColors.
 /// Подключается в main.dart как theme и darkTheme.
@@ -106,7 +107,12 @@ class AppTheme {
       ),
       snackBarTheme: SnackBarThemeData(
         behavior: SnackBarBehavior.floating,
-        insetPadding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
+        insetPadding: const EdgeInsets.fromLTRB(
+          kScreenPaddingHorizontal,
+          0,
+          kScreenPaddingHorizontal,
+          24,
+        ),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         elevation: 6,
         contentTextStyle: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500, color: Colors.white),
