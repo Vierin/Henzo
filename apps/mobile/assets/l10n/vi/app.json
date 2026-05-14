@@ -30,6 +30,13 @@
 		"analytics": "Phân tích",
 		"profile": "Hồ sơ"
 	},
+	"shell": {
+		"tabHome": "Trang chủ",
+		"tabSchedule": "Lịch tập",
+		"tabClients": "Khách",
+		"tabSettings": "Cài đặt",
+		"loadingWorkspace": "Đang tải dữ liệu…"
+	},
 	"auth": {
 		"signInTitle": "Đăng nhập",
 		"ownerPanel": "Bảng điều khiển business",
@@ -133,6 +140,10 @@
 	},
 	"ownerSession": {
 		"detailTitle": "Buổi tập",
+		"share": "Chia sẻ",
+		"capacityWaitlistLine": "Còn {spots} chỗ · {waitlist} trong danh sách chờ",
+		"attendanceColumnLabel": "VẮNG / ĐÃ THAM GIA",
+		"noShowOnlyAfterSession": "Chỉ có thể đánh dấu vắng sau khi buổi tập kết thúc.",
 		"capacityLabel": "SỨC CHỨA",
 		"bookedSummary": "{current}/{max} đã đặt",
 		"instructorRole": "Huấn luyện viên",
@@ -300,6 +311,7 @@
 		"languageVi": "Tiếng Việt",
 		"title": "Cài đặt",
 		"changeLanguage": "Đổi ngôn ngữ",
+		"chooseLanguage": "Chọn ngôn ngữ",
 		"languageComingSoon": "Tính năng đổi ngôn ngữ đang phát triển",
 		"privacyPolicy": "Chính sách bảo mật",
 		"privacyComingSoon": "Chính sách bảo mật đang phát triển",
@@ -436,5 +448,12 @@
 		"mapHint": "Chạm vào bản đồ để đặt ghim đúng vị trí.",
 		"selectAddressOnMap": "Chọn địa chỉ để xem trên bản đồ",
 		"select": "Chọn"
+	},
+	"addTraining": {
+		"categorySheetTitle": "CHỌN DANH MỤC",
+		"categorySearchHint": "Chọn danh mục",
+		"pickCategory": "Chọn danh mục",
+		"apply": "Áp dụng",
+		"categoryOtherChip": "+ Khác"
 	}
 }

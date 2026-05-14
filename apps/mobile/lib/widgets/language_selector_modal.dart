@@ -1,21 +1,22 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
 import '../constants/colors.dart';
 import '../l10n/app_locales.dart';
 import '../l10n/locale_provider.dart';
 
-/// Shared language picker modal: centered card, dimmed barrier, list with checkmark.
+/// Shared language picker: bottom sheet with flags, radios, and Cancel.
 /// Optional [onLocaleSelected] (e.g. to re-register push token after change).
 void showLanguageSelectorModal(
   BuildContext context,
   LocaleProvider locale, {
   void Function(String code)? onLocaleSelected,
 }) {
-  showDialog<void>(
+  showModalBottomSheet<void>(
     context: context,
+    backgroundColor: Colors.transparent,
     barrierColor: Colors.black54,
-    builder: (ctx) => _LanguageSelectorModalContent(
-      locale: locale,
+    builder: (sheetCtx) => _LanguageBottomSheet(
       onLocaleSelected: onLocaleSelected,
     ),
   );
@@ -27,88 +28,154 @@ const Map<String, String> _languageLabels = {
   'vi': 'Tiếng Việt',
 };
 
-class _LanguageSelectorModalContent extends StatelessWidget {
-  const _LanguageSelectorModalContent({
-    required this.locale,
-    this.onLocaleSelected,
-  });
+const Map<String, String> _languageFlags = {
+  'en': '🇺🇸',
+  'ru': '🇷🇺',
+  'vi': '🇻🇳',
+};
 
-  final LocaleProvider locale;
+class _LanguageBottomSheet extends StatelessWidget {
+  const _LanguageBottomSheet({this.onLocaleSelected});
+
   final void Function(String code)? onLocaleSelected;
+
+  Future<void> _select(
+    BuildContext context,
+    LocaleProvider loc,
+    String code,
+  ) async {
+    if (loc.localeCode != code) {
+      await loc.setLocale(code);
+      onLocaleSelected?.call(code);
+    }
+    if (context.mounted) Navigator.of(context).pop();
+  }
 
   @override
   Widget build(BuildContext context) {
-    return Center(
-      child: Material(
-        color: Colors.transparent,
-        child: Container(
-          margin: const EdgeInsets.symmetric(horizontal: 32),
-          constraints: const BoxConstraints(maxWidth: 320),
-          decoration: BoxDecoration(
-            color: Theme.of(context).dialogBackgroundColor,
-            borderRadius: BorderRadius.circular(20),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black26,
-                blurRadius: 20,
-                offset: const Offset(0, 10),
+    return Consumer<LocaleProvider>(
+      builder: (context, loc, _) {
+        final bottomInset = MediaQuery.paddingOf(context).bottom;
+        return Padding(
+          padding: EdgeInsets.only(bottom: bottomInset),
+          child: DecoratedBox(
+            decoration: const BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+            ),
+            child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const SizedBox(height: 10),
+                  Center(
+                    child: Container(
+                      width: 40,
+                      height: 4,
+                      decoration: BoxDecoration(
+                        color: AppColors.neutral300,
+                        borderRadius: BorderRadius.circular(2),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    loc.t('settings.chooseLanguage'),
+                    style: const TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.textPrimary,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  for (var i = 0; i < supportedLocaleCodes.length; i++) ...[
+                    if (i > 0)
+                      Divider(
+                        height: 1,
+                        thickness: 1,
+                        color: AppColors.neutral200,
+                      ),
+                    _LanguageRow(
+                      code: supportedLocaleCodes[i],
+                      label: _languageLabels[supportedLocaleCodes[i]] ??
+                          supportedLocaleCodes[i],
+                      flag: _languageFlags[supportedLocaleCodes[i]] ?? '',
+                      groupValue: loc.localeCode,
+                      onSelect: () => _select(context, loc, supportedLocaleCodes[i]),
+                    ),
+                  ],
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(20, 12, 20, 16),
+                    child: SizedBox(
+                      width: double.infinity,
+                      child: TextButton(
+                        style: TextButton.styleFrom(
+                          backgroundColor: AppColors.primary50,
+                          foregroundColor: AppColors.primary500,
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                        onPressed: () => Navigator.of(context).pop(),
+                        child: Text(loc.t('common.cancel')),
+                      ),
+                    ),
+                  ),
+                ],
               ),
-            ],
           ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
+        );
+      },
+    );
+  }
+}
+
+class _LanguageRow extends StatelessWidget {
+  const _LanguageRow({
+    required this.code,
+    required this.label,
+    required this.flag,
+    required this.groupValue,
+    required this.onSelect,
+  });
+
+  final String code;
+  final String label;
+  final String flag;
+  final String groupValue;
+  final VoidCallback onSelect;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onSelect,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+          child: Row(
             children: [
-              Padding(
-                padding: const EdgeInsets.fromLTRB(24, 20, 24, 8),
+              Text(flag, style: const TextStyle(fontSize: 22)),
+              const SizedBox(width: 12),
+              Expanded(
                 child: Text(
-                  locale.t('settings.changeLanguage'),
+                  label,
                   style: const TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.w600,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w500,
                     color: AppColors.textPrimary,
                   ),
                 ),
               ),
-              const Divider(height: 1),
-              for (final code in supportedLocaleCodes)
-                InkWell(
-                  onTap: () async {
-                    await locale.setLocale(code);
-                    onLocaleSelected?.call(code);
-                    if (context.mounted) Navigator.of(context).pop();
-                  },
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 24,
-                      vertical: 16,
-                    ),
-                    child: Row(
-                      children: [
-                        Expanded(
-                          child: Text(
-                            _languageLabels[code] ?? code.toUpperCase(),
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: locale.localeCode == code
-                                  ? FontWeight.w600
-                                  : FontWeight.w500,
-                              color: locale.localeCode == code
-                                  ? AppColors.primary500
-                                  : AppColors.textPrimary,
-                            ),
-                          ),
-                        ),
-                        if (locale.localeCode == code)
-                          Icon(
-                            Icons.check_circle,
-                            size: 22,
-                            color: AppColors.primary500,
-                          ),
-                      ],
-                    ),
-                  ),
-                ),
-              const SizedBox(height: 8),
+              Icon(
+                code == groupValue
+                    ? Icons.radio_button_checked
+                    : Icons.radio_button_unchecked,
+                color: code == groupValue
+                    ? AppColors.primary500
+                    : AppColors.neutral400,
+                size: 24,
+              ),
             ],
           ),
         ),

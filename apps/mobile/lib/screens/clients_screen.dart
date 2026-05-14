@@ -35,10 +35,10 @@ class ClientsScreen extends StatefulWidget {
   final String? initialQuery;
 
   @override
-  State<ClientsScreen> createState() => _ClientsScreenState();
+  State<ClientsScreen> createState() => ClientsScreenState();
 }
 
-class _ClientsScreenState extends State<ClientsScreen> {
+class ClientsScreenState extends State<ClientsScreen> {
   bool _isLoading = true;
   final _searchController = TextEditingController();
   Timer? _searchDebounce;
@@ -57,6 +57,19 @@ class _ClientsScreenState extends State<ClientsScreen> {
     }
     WidgetsBinding.instance.addPostFrameCallback((_) => _loadData());
     _searchController.addListener(_onSearchChanged);
+  }
+
+  /// Used when switching to the Clients tab from [MainShellState] (single list).
+  void applyRouteArgs({String? filter, String? query}) {
+    final q = query?.trim();
+    setState(() {
+      _filter = _parseFilter(filter);
+      if (q != null && q.isNotEmpty) {
+        _searchController.text = q;
+        _searchQuery = q;
+      }
+    });
+    _loadData();
   }
 
   ClientFilter _parseFilter(String? raw) {

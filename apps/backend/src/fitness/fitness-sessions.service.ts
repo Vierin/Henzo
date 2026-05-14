@@ -36,7 +36,7 @@ const clientScheduleEnrollmentSelect =
             displayColor: true,
             trainingCategoryId: true,
             trainingCategory: {
-              select: { main_category_id: true },
+              select: { chip_bg_hex: true },
             },
           },
         },
@@ -324,7 +324,7 @@ export class FitnessSessionsService {
             displayColor: true,
             trainingCategory: {
               select: {
-                main_category_id: true,
+                chip_bg_hex: true,
                 name_en: true,
                 name_vn: true,
                 name_ru: true,
@@ -360,7 +360,7 @@ export class FitnessSessionsService {
             trainingId: s.trainingId,
             trainingName: s.Training?.name,
             trainingCategoryId: s.Training?.trainingCategoryId,
-            mainCategoryId: s.Training?.trainingCategory?.main_category_id,
+            categoryChipBgHex: s.Training?.trainingCategory?.chip_bg_hex,
             existingColor: s.Training?.displayColor,
           }),
           price:
@@ -821,8 +821,8 @@ export class FitnessSessionsService {
               trainingId: e.TrainingSession.Training.id,
               trainingName: e.TrainingSession.Training.name,
               trainingCategoryId: e.TrainingSession.Training.trainingCategoryId,
-              mainCategoryId:
-                e.TrainingSession.Training.trainingCategory?.main_category_id,
+              categoryChipBgHex:
+                e.TrainingSession.Training.trainingCategory?.chip_bg_hex,
               existingColor: e.TrainingSession.Training.displayColor,
             }),
           }

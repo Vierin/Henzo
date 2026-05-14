@@ -30,6 +30,13 @@
 		"analytics": "Analytics",
 		"profile": "Profile"
 	},
+	"shell": {
+		"tabHome": "Home",
+		"tabSchedule": "Schedule",
+		"tabClients": "Clients",
+		"tabSettings": "Settings",
+		"loadingWorkspace": "Loading your workspace…"
+	},
 	"auth": {
 		"signInTitle": "Sign in",
 		"ownerPanel": "Business panel",
@@ -133,6 +140,10 @@
 	},
 	"ownerSession": {
 		"detailTitle": "Class",
+		"share": "Share",
+		"capacityWaitlistLine": "{spots} spots left · {waitlist} on waitlist",
+		"attendanceColumnLabel": "NO SHOW / COMPLETED",
+		"noShowOnlyAfterSession": "No-show can be marked only after the class has ended.",
 		"capacityLabel": "CAPACITY",
 		"bookedSummary": "{current} of {max} booked",
 		"instructorRole": "Instructor",
@@ -300,6 +311,7 @@
 		"languageVi": "Vietnamese",
 		"title": "Settings",
 		"changeLanguage": "Change language",
+		"chooseLanguage": "Choose language",
 		"languageComingSoon": "Language setting coming soon",
 		"privacyPolicy": "Privacy policy",
 		"privacyComingSoon": "Privacy policy coming soon",
@@ -435,5 +447,12 @@
 		"mapHint": "Tap on the map to place the marker at the right location.",
 		"selectAddressOnMap": "Select an address to preview on the map",
 		"select": "Select"
+	},
+	"addTraining": {
+		"categorySheetTitle": "SELECT A CATEGORY",
+		"categorySearchHint": "Select a category",
+		"pickCategory": "Choose category",
+		"apply": "Apply",
+		"categoryOtherChip": "+ Other"
 	}
 }

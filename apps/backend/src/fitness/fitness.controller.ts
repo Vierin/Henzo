@@ -64,7 +64,7 @@ export class FitnessController {
 
   @Get('studios/categories')
   async getStudioCategories() {
-    return this.studiosService.getStudioCategories();
+    return await this.studiosService.getStudioCategories();
   }
 
   @Get('studios/current')

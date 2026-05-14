@@ -275,12 +275,13 @@ model PushToken {
 }
 
 model TrainingCategory {
-  id               Int       @id @default(autoincrement())
-  name_en          String    @unique
-  name_vn          String    @unique
-  name_ru          String    @unique
-  main_category_id Int?
-  Training         Training[]
+  id          Int    @id @default(autoincrement())
+  name_en     String @unique
+  name_vn     String @unique
+  name_ru     String @unique
+  chip_bg_hex String
+  chip_fg_hex String?
+  Training    Training[]
 }
 
 enum BookingStatus {

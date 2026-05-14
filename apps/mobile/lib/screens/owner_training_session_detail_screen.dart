@@ -1,6 +1,10 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
+import 'package:share_plus/share_plus.dart';
 
 import '../constants/colors.dart';
 import '../l10n/locale_provider.dart';
@@ -8,19 +12,6 @@ import '../services/auth_service.dart';
 import '../services/dashboard_api_service.dart';
 import '../utils/color_hex.dart';
 import '../utils/show_api_error.dart';
-
-int _sessionDurationMinutes(OwnerTrainingSession session) {
-  final d = session.endsAt.difference(session.startsAt);
-  return d.inMinutes.clamp(0, 24 * 60);
-}
-
-String _displayTrainerName(OwnerTrainingSession session, String? fallbackName) {
-  final raw = session.trainerName.trim();
-  if (raw.isNotEmpty && raw != '—' && raw != '-') return session.trainerName;
-  final f = fallbackName?.trim();
-  if (f != null && f.isNotEmpty) return f;
-  return '—';
-}
 
 /// Full-screen session detail for studio owners (replaces bottom sheet modal).
 class OwnerTrainingSessionDetailScreen extends StatefulWidget {
@@ -30,8 +21,9 @@ class OwnerTrainingSessionDetailScreen extends StatefulWidget {
     this.statusBadge,
     this.trainerFallbackName,
     this.trainingColor,
+    this.venueName,
     this.onEditSession,
-    this.onEditService,
+    @Deprecated('Removed from UI; ignored.') this.onEditService,
     this.onParticipantsChanged,
   });
 
@@ -39,7 +31,11 @@ class OwnerTrainingSessionDetailScreen extends StatefulWidget {
   final Widget? statusBadge;
   final String? trainerFallbackName;
   final Color? trainingColor;
+
+  /// Studio name or address (from [SalonCache]); shown next to the pin icon.
+  final String? venueName;
   final VoidCallback? onEditSession;
+  @Deprecated('Removed from UI; ignored.')
   final VoidCallback? onEditService;
   final VoidCallback? onParticipantsChanged;
 
@@ -51,6 +47,14 @@ class OwnerTrainingSessionDetailScreen extends StatefulWidget {
 class _OwnerTrainingSessionDetailScreenState
     extends State<OwnerTrainingSessionDetailScreen> {
   late Future<List<OwnerSessionEnrollment>> _enrollmentsFuture;
+  late AuthService _authService;
+
+  /// Optimistic overrides before PATCH (enrollmentId → ACTIVE | NO_SHOW).
+  final Map<String, String> _pendingStatusByEnrollmentId = {};
+  Timer? _attendanceDebounceTimer;
+
+  static const Color _attendanceOnTrack = Color(0xFFB7D356);
+  static const Duration _kAttendanceFlushDebounce = Duration(minutes: 1);
 
   Color get _accent =>
       widget.trainingColor ??
@@ -60,7 +64,62 @@ class _OwnerTrainingSessionDetailScreenState
   @override
   void initState() {
     super.initState();
+    _authService = context.read<AuthService>();
     _enrollmentsFuture = _loadEnrollments();
+  }
+
+  @override
+  void dispose() {
+    _attendanceDebounceTimer?.cancel();
+    final pending = Map<String, String>.from(_pendingStatusByEnrollmentId);
+    if (pending.isNotEmpty) {
+      unawaited(_flushPendingMap(pending));
+    }
+    super.dispose();
+  }
+
+  void _scheduleAttendanceFlush() {
+    _attendanceDebounceTimer?.cancel();
+    if (_pendingStatusByEnrollmentId.isEmpty) return;
+    _attendanceDebounceTimer = Timer(_kAttendanceFlushDebounce, () {
+      if (!mounted) return;
+      unawaited(_flushPendingMap(Map.from(_pendingStatusByEnrollmentId)));
+    });
+  }
+
+  String _effectiveEnrollmentStatus(OwnerSessionEnrollment e) =>
+      _pendingStatusByEnrollmentId[e.enrollmentId] ?? e.status;
+
+  Future<void> _flushPendingMap(Map<String, String> pending) async {
+    if (pending.isEmpty) return;
+    final token = _authService.accessToken;
+    if (token == null || token.isEmpty) return;
+    try {
+      for (final entry in pending.entries) {
+        await DashboardApiService.updateOwnerEnrollmentStatus(
+          token,
+          entry.key,
+          entry.value,
+        );
+      }
+      if (mounted) {
+        setState(() {
+          for (final k in pending.keys) {
+            _pendingStatusByEnrollmentId.remove(k);
+          }
+        });
+        widget.onParticipantsChanged?.call();
+        _refreshEnrollmentsOnly();
+      }
+    } catch (err) {
+      if (mounted) {
+        setState(() {
+          _pendingStatusByEnrollmentId.clear();
+        });
+        showApiError(context, err);
+        _reloadEnrollments();
+      }
+    }
   }
 
   Future<List<OwnerSessionEnrollment>> _loadEnrollments() async {
@@ -79,6 +138,65 @@ class _OwnerTrainingSessionDetailScreenState
   void _reloadEnrollments() {
     _refreshEnrollmentsOnly();
     widget.onParticipantsChanged?.call();
+  }
+
+  Color _onAccentContent(Color accent) =>
+      ThemeData.estimateBrightnessForColor(accent) == Brightness.dark
+      ? Colors.white
+      : AppColors.textPrimary;
+
+  Future<void> _shareSession() async {
+    final locale = context.read<LocaleProvider>();
+    final s = widget.session;
+    final startsLocal = s.startsAt.toLocal();
+    final endsLocal = s.endsAt.toLocal();
+    final dateFmt = DateFormat('EEEE, d MMM', locale.localeCode);
+    final timeFmt = DateFormat('HH:mm', locale.localeCode);
+    final buf = StringBuffer()
+      ..writeln(s.trainingName)
+      ..writeln(dateFmt.format(startsLocal))
+      ..writeln(
+        '${timeFmt.format(startsLocal)} – ${timeFmt.format(endsLocal)}',
+      );
+    final v = widget.venueName?.trim();
+    if (v != null && v.isNotEmpty) buf.writeln(v);
+    await Share.share(buf.toString().trim());
+  }
+
+  void _onAttendanceToggle(OwnerSessionEnrollment e, bool attended) {
+    final session = widget.session;
+    final now = DateTime.now();
+    final sessionEnded = !session.endsAt.isAfter(now);
+    if (!attended && !sessionEnded) {
+      final msg = context.read<LocaleProvider>().t(
+        'ownerSession.noShowOnlyAfterSession',
+      );
+      ScaffoldMessenger.maybeOf(context)?.showSnackBar(
+        SnackBar(content: Text(msg), backgroundColor: Colors.red.shade700),
+      );
+      return;
+    }
+    final next = attended ? 'ACTIVE' : 'NO_SHOW';
+    final baseline = e.status;
+    if (next == baseline && !_pendingStatusByEnrollmentId.containsKey(
+          e.enrollmentId,
+        )) {
+      return;
+    }
+
+    setState(() {
+      if (next == baseline) {
+        _pendingStatusByEnrollmentId.remove(e.enrollmentId);
+      } else {
+        _pendingStatusByEnrollmentId[e.enrollmentId] = next;
+      }
+    });
+
+    if (_pendingStatusByEnrollmentId.isEmpty) {
+      _attendanceDebounceTimer?.cancel();
+    } else {
+      _scheduleAttendanceFlush();
+    }
   }
 
   Future<void> _confirmCancelSession() async {
@@ -120,8 +238,9 @@ class _OwnerTrainingSessionDetailScreenState
         'CANCELLED',
       );
       widget.onParticipantsChanged?.call();
+      if (!mounted) return;
       showSuccess(context, tr('ownerSession.sessionCancelled'));
-      if (mounted) Navigator.of(context).pop();
+      Navigator.of(context).pop();
     } catch (e) {
       if (mounted) showApiError(context, e);
     }
@@ -315,15 +434,15 @@ class _OwnerTrainingSessionDetailScreenState
     final tr = locale.t;
     final session = widget.session;
     final startsLocal = session.startsAt.toLocal();
+    final endsLocal = session.endsAt.toLocal();
     final dateFmt = DateFormat('EEEE, MMM d', locale.localeCode);
-    final timeFmt = DateFormat('HH:mm');
-    final durationMinutesLine =
-        session.trainingDurationMinutes ?? _sessionDurationMinutes(session);
+    final matLoc = MaterialLocalizations.of(context);
+    final startTod = TimeOfDay.fromDateTime(startsLocal);
+    final endTod = TimeOfDay.fromDateTime(endsLocal);
+    final timeRangeLabel =
+        '${matLoc.formatTimeOfDay(startTod, alwaysUse24HourFormat: true)} – '
+        '${matLoc.formatTimeOfDay(endTod, alwaysUse24HourFormat: true)}';
     final categoryLabel = session.categoryLabelForLocale(locale.localeCode);
-    final trainerLabel = _displayTrainerName(
-      session,
-      widget.trainerFallbackName,
-    );
     final enrolled = session.enrolledCount;
     final cap = session.capacity;
     final fillRatio = cap > 0 ? (enrolled / cap).clamp(0.0, 1.0) : 0.0;
@@ -331,6 +450,11 @@ class _OwnerTrainingSessionDetailScreenState
     final canCancelSession =
         session.sessionId.isNotEmpty &&
         session.status.toUpperCase() == 'ACTIVE';
+    final sessionEnded = !session.endsAt.isAfter(DateTime.now());
+    final spotsLeft = cap > 0 ? (cap - enrolled).clamp(0, cap) : 0;
+    const waitlistCount = 0;
+    final venueLine = widget.venueName?.trim();
+    final accentContent = _onAccentContent(_accent);
 
     Widget statusBadgeForParticipant(String status) {
       late Color bg;
@@ -386,51 +510,92 @@ class _OwnerTrainingSessionDetailScreenState
               SliverToBoxAdapter(
                 child: Padding(
                   padding: const EdgeInsets.fromLTRB(8, 4, 8, 0),
-                  child: Row(
-                    children: [
-                      IconButton(
-                        onPressed: () => Navigator.of(context).pop(),
-                        style: IconButton.styleFrom(
-                          backgroundColor: AppColors.neutral200,
-                          shape: const CircleBorder(),
+                  child: LayoutBuilder(
+                    builder: (context, constraints) {
+                      final w = constraints.maxWidth;
+                      final titlePad = (w * 0.22).clamp(56.0, 120.0);
+                      return SizedBox(
+                        height: 48,
+                        child: Stack(
+                          alignment: Alignment.center,
+                          clipBehavior: Clip.none,
+                          children: [
+                            Positioned.fill(
+                              child: Center(
+                                child: Padding(
+                                  padding: EdgeInsets.symmetric(
+                                    horizontal: titlePad,
+                                  ),
+                                  child: Text(
+                                    tr('ownerSession.detailTitle'),
+                                    textAlign: TextAlign.center,
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: const TextStyle(
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.w700,
+                                      color: AppColors.textPrimary,
+                                      height: 1,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                            Row(
+                              crossAxisAlignment: CrossAxisAlignment.center,
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                IconButton(
+                                  onPressed: () => Navigator.of(context).pop(),
+                                  style: IconButton.styleFrom(
+                                    backgroundColor:
+                                        AppColors.backgroundPrimary,
+                                    shape: const CircleBorder(),
+                                    side: const BorderSide(
+                                      color: AppColors.borderPrimary,
+                                    ),
+                                  ),
+                                  icon: const Icon(
+                                    Icons.arrow_back,
+                                    color: AppColors.textPrimary,
+                                    size: 20,
+                                  ),
+                                ),
+                                FilledButton.icon(
+                                  onPressed: _shareSession,
+                                  icon: SvgPicture.asset(
+                                    'assets/icons/icon-share.svg',
+                                    width: 16,
+                                    height: 12,
+                                    fit: BoxFit.contain,
+                                    excludeFromSemantics: true,
+                                    colorFilter: const ColorFilter.mode(
+                                      AppColors.textInverse,
+                                      BlendMode.srcIn,
+                                    ),
+                                  ),
+                                  label: Text(locale.t('ownerSession.share')),
+                                  style: FilledButton.styleFrom(
+                                    backgroundColor: AppColors.primary500,
+                                    foregroundColor: AppColors.textInverse,
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 12,
+                                      vertical: 8,
+                                    ),
+                                    tapTargetSize:
+                                        MaterialTapTargetSize.shrinkWrap,
+                                    visualDensity: VisualDensity.compact,
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(999),
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
                         ),
-                        icon: const Icon(
-                          Icons.arrow_back,
-                          color: AppColors.textPrimary,
-                          size: 20,
-                        ),
-                      ),
-                      Expanded(
-                        child: Text(
-                          tr('ownerSession.detailTitle'),
-                          textAlign: TextAlign.center,
-                          style: const TextStyle(
-                            fontSize: 20,
-                            fontWeight: FontWeight.w700,
-                            color: AppColors.textPrimary,
-                            height: 1,
-                          ),
-                        ),
-                      ),
-                      if (widget.onEditSession != null)
-                        IconButton(
-                          onPressed: () {
-                            Navigator.of(context).pop();
-                            widget.onEditSession!();
-                          },
-                          style: IconButton.styleFrom(
-                            backgroundColor: AppColors.neutral200,
-                            shape: const CircleBorder(),
-                          ),
-                          icon: const Icon(
-                            Icons.edit_outlined,
-                            color: AppColors.textPrimary,
-                            size: 20,
-                          ),
-                        )
-                      else
-                        const SizedBox(width: 48),
-                    ],
+                      );
+                    },
                   ),
                 ),
               ),
@@ -445,20 +610,20 @@ class _OwnerTrainingSessionDetailScreenState
                             categoryLabel.trim().isNotEmpty)
                           Container(
                             padding: const EdgeInsets.symmetric(
-                              horizontal: 10,
-                              vertical: 5,
+                              horizontal: 12,
+                              vertical: 6,
                             ),
                             decoration: BoxDecoration(
-                              color: _accent.withValues(alpha: 0.14),
+                              color: _accent,
                               borderRadius: BorderRadius.circular(999),
                             ),
                             child: Text(
                               categoryLabel.trim().toUpperCase(),
                               style: TextStyle(
-                                fontSize: 11,
-                                fontWeight: FontWeight.w800,
-                                letterSpacing: 0.6,
-                                color: AppColors.textPrimary,
+                                fontSize: 13,
+                                fontWeight: FontWeight.w600,
+                                letterSpacing: -0.3,
+                                color: accentContent,
                               ),
                             ),
                           ),
@@ -467,11 +632,12 @@ class _OwnerTrainingSessionDetailScreenState
                           const SizedBox(width: 10),
                         Expanded(
                           child: Text(
-                            dateFmt.format(startsLocal),
+                            dateFmt.format(startsLocal).toUpperCase(),
                             style: const TextStyle(
                               fontSize: 14,
-                              fontWeight: FontWeight.w500,
-                              color: AppColors.textSecondary,
+                              fontWeight: FontWeight.w400,
+                              color: AppColors.textPrimary,
+                              letterSpacing: -0.3,
                             ),
                           ),
                         ),
@@ -482,189 +648,247 @@ class _OwnerTrainingSessionDetailScreenState
                     Text(
                       session.trainingName,
                       style: const TextStyle(
-                        fontSize: 24,
+                        fontSize: 26,
                         fontWeight: FontWeight.w700,
                         color: AppColors.textPrimary,
-                        height: 1.2,
+                        height: 1.15,
+                      ),
+                    ),
+                    const SizedBox(height: 18),
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        Container(
+                          width: 36,
+                          height: 36,
+                          decoration: BoxDecoration(
+                            color: _accent,
+                            shape: BoxShape.circle,
+                          ),
+                          child: Icon(
+                            Icons.schedule_rounded,
+                            size: 18,
+                            color: accentContent,
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                        Flexible(
+                          child: Text(
+                            timeRangeLabel,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              fontSize: 15,
+                              fontWeight: FontWeight.w400,
+                              color: AppColors.textPrimary,
+                              letterSpacing: -0.3,
+                            ),
+                          ),
+                        ),
+                        if (venueLine != null && venueLine.isNotEmpty) ...[
+                          const SizedBox(width: 14),
+                          Container(
+                            width: 36,
+                            height: 36,
+                            decoration: BoxDecoration(
+                              color: _accent,
+                              shape: BoxShape.circle,
+                            ),
+                            child: Icon(
+                              Icons.place_outlined,
+                              size: 18,
+                              color: accentContent,
+                            ),
+                          ),
+                          const SizedBox(width: 10),
+                          Flexible(
+                            child: Text(
+                              venueLine,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(
+                                fontSize: 15,
+                                fontWeight: FontWeight.w400,
+                                letterSpacing: -0.3,
+                                color: AppColors.textPrimary,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+                    Container(
+                      padding: const EdgeInsets.fromLTRB(15, 11, 15, 11),
+                      decoration: BoxDecoration(
+                        color: AppColors.backgroundPrimary,
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: IntrinsicHeight(
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.end,
+                          children: [
+                            SizedBox(
+                              width: 64,
+                              height: 64,
+                              child: Stack(
+                                alignment: Alignment.center,
+                                children: [
+                                  SizedBox.expand(
+                                    child: CircularProgressIndicator(
+                                      value: fillRatio,
+                                      strokeWidth: 6,
+                                      backgroundColor: _accent.withValues(
+                                        alpha: 0.22,
+                                      ),
+                                      color: _accent,
+                                      strokeCap: StrokeCap.round,
+                                    ),
+                                  ),
+                                  Column(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Text(
+                                        '$pct%',
+                                        style: const TextStyle(
+                                          fontSize: 16,
+                                          fontWeight: FontWeight.w800,
+                                          color: AppColors.textPrimary,
+                                          letterSpacing: -0.5,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ],
+                              ),
+                            ),
+                            const SizedBox(width: 14),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Text(
+                                    tr('ownerSession.capacityLabel'),
+                                    style: TextStyle(
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.w500,
+                                      letterSpacing: -0.3,
+                                      color: AppColors.textPrimary.withValues(
+                                        alpha: 0.4,
+                                      ),
+                                    ),
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    tr('ownerSession.bookedSummary')
+                                        .replaceAll('{current}', '$enrolled')
+                                        .replaceAll('{max}', '$cap'),
+                                    style: const TextStyle(
+                                      fontSize: 15,
+                                      letterSpacing: -0.3,
+                                      fontWeight: FontWeight.w700,
+                                      color: AppColors.textPrimary,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    tr('ownerSession.capacityWaitlistLine')
+                                        .replaceAll('{spots}', '$spotsLeft')
+                                        .replaceAll(
+                                          '{waitlist}',
+                                          '$waitlistCount',
+                                        ),
+                                    style: TextStyle(
+                                      fontSize: 11,
+                                      letterSpacing: -0.3,
+                                      fontWeight: FontWeight.w500,
+                                      color: AppColors.textPrimary.withValues(
+                                        alpha: 0.4,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            const SizedBox(width: 10),
+                            FilledButton.icon(
+                              onPressed: session.sessionId.isEmpty
+                                  ? null
+                                  : _showAddParticipantSheet,
+                              style: FilledButton.styleFrom(
+                                backgroundColor: AppColors.primary500,
+                                foregroundColor: AppColors.textInverse,
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 12,
+                                  vertical: 10,
+                                ),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(18),
+                                ),
+                              ),
+                              icon: const Icon(Icons.add, size: 20),
+                              label: Text(tr('ownerSession.add')),
+                            ),
+                          ],
+                        ),
                       ),
                     ),
                     const SizedBox(height: 16),
                     Row(
                       children: [
                         Expanded(
-                          child: _InfoCard(
-                            icon: Icons.schedule_rounded,
-                            iconBg: _accent.withValues(alpha: 0.14),
-                            iconColor: _accent,
-                            title: timeFmt.format(startsLocal),
-                            subtitle: '$durationMinutesLine min',
-                          ),
-                        ),
-                        const SizedBox(width: 10),
-                        Expanded(
-                          child: _InfoCard(
-                            icon: Icons.person_outline_rounded,
-                            iconBg: _accent.withValues(alpha: 0.14),
-                            iconColor: _accent,
-                            title: trainerLabel,
-                            subtitle: tr('ownerSession.instructorRole'),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 14),
-                    Container(
-                      padding: const EdgeInsets.all(16),
-                      decoration: BoxDecoration(
-                        color: AppColors.backgroundPrimary,
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                      child: Row(
-                        crossAxisAlignment: CrossAxisAlignment.center,
-                        children: [
-                          SizedBox(
-                            width: 76,
-                            height: 76,
-                            child: Stack(
-                              alignment: Alignment.center,
-                              children: [
-                                SizedBox.expand(
-                                  child: CircularProgressIndicator(
-                                    value: fillRatio,
-                                    strokeWidth: 7,
-                                    backgroundColor: AppColors.primary100,
-                                    color: _accent,
-                                    strokeCap: StrokeCap.round,
-                                  ),
-                                ),
-                                Column(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    Text(
-                                      '$pct%',
-                                      style: const TextStyle(
-                                        fontSize: 14,
-                                        fontWeight: FontWeight.w800,
-                                        color: AppColors.textPrimary,
-                                      ),
-                                    ),
-                                    Text(
-                                      '$enrolled/$cap',
-                                      style: const TextStyle(
-                                        fontSize: 11,
-                                        fontWeight: FontWeight.w600,
-                                        color: AppColors.textSecondary,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ],
-                            ),
-                          ),
-                          const SizedBox(width: 14),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  tr('ownerSession.capacityLabel'),
-                                  style: const TextStyle(
-                                    fontSize: 11,
-                                    fontWeight: FontWeight.w700,
-                                    letterSpacing: 0.8,
-                                    color: AppColors.textSecondary,
-                                  ),
-                                ),
-                                const SizedBox(height: 4),
-                                Text(
-                                  tr('ownerSession.bookedSummary')
-                                      .replaceAll('{current}', '$enrolled')
-                                      .replaceAll('{max}', '$cap'),
-                                  style: const TextStyle(
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.w700,
-                                    color: AppColors.textPrimary,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                          FilledButton.icon(
-                            onPressed: session.sessionId.isEmpty
-                                ? null
-                                : _showAddParticipantSheet,
+                          child: FilledButton(
+                            onPressed: widget.onEditSession,
                             style: FilledButton.styleFrom(
                               backgroundColor: AppColors.primary500,
                               foregroundColor: AppColors.textInverse,
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 14,
-                                vertical: 10,
+                              minimumSize: const Size.fromHeight(50),
+                              textStyle: const TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w500,
+                                letterSpacing: -0.3,
                               ),
                               shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(14),
+                                borderRadius: BorderRadius.circular(12),
                               ),
                             ),
-                            icon: const Icon(Icons.add, size: 20),
-                            label: Text(tr('ownerSession.add')),
+                            child: Text(tr('common.edit')),
                           ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 14),
-                    Text(
-                      tr('ownerSession.quickActions'),
-                      style: const TextStyle(
-                        color: AppColors.textSecondary,
-                        fontSize: 14,
-                        fontWeight: FontWeight.w500,
-                        letterSpacing: 0.2,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Row(
-                      children: [
+                        ),
+                        const SizedBox(width: 12),
                         Expanded(
-                          child: _QuickAction(
-                            icon: Icons.cancel_outlined,
-                            label: tr('ownerSession.quickActionCancel'),
-                            accent: _accent,
-                            onTap: canCancelSession
+                          child: FilledButton(
+                            onPressed: canCancelSession
                                 ? _confirmCancelSession
                                 : null,
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: _QuickAction(
-                            icon: Icons.edit_calendar_outlined,
-                            label: tr('ownerSession.quickActionsEditSession'),
-                            accent: _accent,
-                            onTap: widget.onEditSession == null
-                                ? null
-                                : () {
-                                    Navigator.of(context).pop();
-                                    widget.onEditSession!();
-                                  },
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: _QuickAction(
-                            icon: Icons.edit_outlined,
-                            label: tr('ownerSession.quickActionsEditAll'),
-                            accent: _accent,
-                            onTap: widget.onEditService == null
-                                ? null
-                                : () {
-                                    Navigator.of(context).pop();
-                                    widget.onEditService!();
-                                  },
+                            style: FilledButton.styleFrom(
+                              backgroundColor: AppColors.backgroundPrimary,
+                              foregroundColor: AppColors.textSecondary,
+                              elevation: 0,
+                              shadowColor: Colors.transparent,
+                              disabledBackgroundColor:
+                                  AppColors.backgroundPrimary,
+                              disabledForegroundColor: AppColors.textTertiary,
+                              minimumSize: const Size.fromHeight(50),
+                              textStyle: const TextStyle(
+                                fontSize: 14,
+                                color: AppColors.textPrimary,
+                                fontWeight: FontWeight.w500,
+                                letterSpacing: -0.3,
+                              ),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                            ),
+                            child: Text(tr('ownerSession.quickActionCancel')),
                           ),
                         ),
                       ],
                     ),
                     const SizedBox(height: 20),
                     Row(
+                      crossAxisAlignment: CrossAxisAlignment.end,
                       children: [
                         Expanded(
                           child: Text(
@@ -672,10 +896,21 @@ class _OwnerTrainingSessionDetailScreenState
                               'ownerSession.attendeesHeading',
                             ).replaceAll('{count}', '${session.enrolledCount}'),
                             style: const TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w700,
+                              fontSize: 13,
+                              fontWeight: FontWeight.w800,
+                              letterSpacing: 0.6,
                               color: AppColors.textPrimary,
                             ),
+                          ),
+                        ),
+                        Text(
+                          tr('ownerSession.attendanceColumnLabel'),
+                          textAlign: TextAlign.end,
+                          style: const TextStyle(
+                            fontSize: 10,
+                            fontWeight: FontWeight.w700,
+                            letterSpacing: 0.35,
+                            color: AppColors.textSecondary,
                           ),
                         ),
                       ],
@@ -728,6 +963,11 @@ class _OwnerTrainingSessionDetailScreenState
                             final subtitle = e.phone?.isNotEmpty == true
                                 ? e.phone!
                                 : (e.email ?? '');
+                            final effectiveStatus =
+                                _effectiveEnrollmentStatus(e);
+                            final attended = effectiveStatus == 'ACTIVE';
+                            final cancelled = e.status == 'CANCELLED';
+                            final canToggle = !cancelled && sessionEnded;
                             return Padding(
                               padding: const EdgeInsets.only(bottom: 10),
                               child: Container(
@@ -781,7 +1021,51 @@ class _OwnerTrainingSessionDetailScreenState
                                         ],
                                       ),
                                     ),
-                                    statusBadgeForParticipant(e.status),
+                                    if (cancelled)
+                                      statusBadgeForParticipant(e.status)
+                                    else
+                                      Theme(
+                                        data: Theme.of(context).copyWith(
+                                          switchTheme: SwitchThemeData(
+                                            thumbColor:
+                                                const WidgetStatePropertyAll<
+                                                  Color
+                                                >(Colors.white),
+                                            trackColor:
+                                                WidgetStateProperty.resolveWith(
+                                                  (states) {
+                                                    if (states.contains(
+                                                      WidgetState.selected,
+                                                    )) {
+                                                      return _attendanceOnTrack;
+                                                    }
+                                                    return AppColors.primary200;
+                                                  },
+                                                ),
+                                            trackOutlineColor:
+                                                const WidgetStatePropertyAll<
+                                                  Color
+                                                >(Colors.transparent),
+                                          ),
+                                        ),
+                                        child: Transform.scale(
+                                          scale: 0.92,
+                                          child: Switch(
+                                            value: attended,
+                                            onChanged: canToggle
+                                                ? (v) => _onAttendanceToggle(
+                                                      e,
+                                                      v,
+                                                    )
+                                                : null,
+                                            inactiveThumbColor:
+                                                AppColors.primary500,
+                                            inactiveTrackColor: AppColors
+                                                .primary500
+                                                .withValues(alpha: 0.35),
+                                          ),
+                                        ),
+                                      ),
                                   ],
                                 ),
                               ),
@@ -791,135 +1075,6 @@ class _OwnerTrainingSessionDetailScreenState
                       },
                     ),
                   ]),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _InfoCard extends StatelessWidget {
-  const _InfoCard({
-    required this.icon,
-    required this.iconBg,
-    required this.iconColor,
-    required this.title,
-    required this.subtitle,
-  });
-
-  final IconData icon;
-  final Color iconBg;
-  final Color iconColor;
-  final String title;
-  final String subtitle;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: AppColors.backgroundPrimary,
-        borderRadius: BorderRadius.circular(20),
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            width: 40,
-            height: 40,
-            decoration: BoxDecoration(
-              color: iconBg,
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Icon(icon, color: iconColor, size: 22),
-          ),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: const TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w700,
-                    color: AppColors.textPrimary,
-                    height: 1.2,
-                  ),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  subtitle,
-                  style: const TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w500,
-                    color: AppColors.textSecondary,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _QuickAction extends StatelessWidget {
-  const _QuickAction({
-    required this.icon,
-    required this.label,
-    required this.accent,
-    this.onTap,
-  });
-
-  final IconData icon;
-  final String label;
-  final Color accent;
-  final VoidCallback? onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final enabled = onTap != null;
-    return Material(
-      color: AppColors.backgroundPrimary,
-      borderRadius: BorderRadius.circular(16),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(16),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 6),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: accent.withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Icon(
-                  icon,
-                  color: enabled ? accent : AppColors.textTertiary,
-                  size: 22,
-                ),
-              ),
-              const SizedBox(height: 6),
-              Text(
-                label,
-                textAlign: TextAlign.center,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(
-                  fontSize: 11,
-                  fontWeight: FontWeight.w600,
-                  color: enabled
-                      ? AppColors.textPrimary
-                      : AppColors.textTertiary,
-                  height: 1.1,
                 ),
               ),
             ],

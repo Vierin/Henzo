@@ -1,3 +1,5 @@
+import 'package:flutter/material.dart';
+
 /// Row from GET /trainings/categories (TrainingCategory).
 class TrainingCategoryOption {
   const TrainingCategoryOption({
@@ -5,12 +7,16 @@ class TrainingCategoryOption {
     required this.nameEn,
     required this.nameRu,
     required this.nameVn,
+    required this.chipBgHex,
+    this.chipFgHex,
   });
 
   final int id;
   final String nameEn;
   final String nameRu;
   final String nameVn;
+  final String chipBgHex;
+  final String? chipFgHex;
 
   String label(String localeCode) {
     switch (localeCode) {
@@ -23,12 +29,41 @@ class TrainingCategoryOption {
     }
   }
 
+  Color backgroundColor([Color fallback = const Color(0xFF6B7280)]) =>
+      _parseHex(chipBgHex, fallback);
+
+  Color foregroundColorOn(Color background) {
+    final raw = chipFgHex;
+    if (raw != null && raw.trim().isNotEmpty) {
+      return _parseHex(raw, _contrastLabelOn(background));
+    }
+    return _contrastLabelOn(background);
+  }
+
   factory TrainingCategoryOption.fromJson(Map<String, dynamic> json) {
     return TrainingCategoryOption(
       id: (json['id'] as num).toInt(),
       nameEn: (json['name_en'] ?? '').toString(),
       nameRu: (json['name_ru'] ?? '').toString(),
       nameVn: (json['name_vn'] ?? '').toString(),
+      chipBgHex: (json['chip_bg_hex'] ?? '#6B7280').toString(),
+      chipFgHex: json['chip_fg_hex']?.toString(),
     );
   }
+
+  static Color _parseHex(String? raw, Color fallback) {
+    if (raw == null || raw.isEmpty) return fallback;
+    var s = raw.trim().replaceFirst('#', '');
+    if (s.length == 6) {
+      s = 'FF$s';
+    }
+    if (s.length != 8) return fallback;
+    final v = int.tryParse(s, radix: 16);
+    if (v == null) return fallback;
+    return Color(v);
+  }
+
+  /// Picks a readable label color on [bg].
+  static Color _contrastLabelOn(Color bg) =>
+      bg.computeLuminance() > 0.55 ? const Color(0xFF171717) : Colors.white;
 }

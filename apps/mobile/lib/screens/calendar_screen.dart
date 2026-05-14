@@ -5,6 +5,8 @@ import 'package:provider/provider.dart';
 import '../../constants/colors.dart';
 import '../../constants/layout.dart';
 import '../../services/auth_service.dart';
+import '../../services/cache/salon_cache.dart';
+import '../../services/cache/owner_sessions_cache.dart';
 import '../../services/dashboard_api_service.dart';
 import '../../utils/show_api_error.dart';
 import '../../utils/color_hex.dart';
@@ -35,10 +37,10 @@ class CalendarScreen extends StatefulWidget {
   const CalendarScreen({super.key});
 
   @override
-  State<CalendarScreen> createState() => _CalendarScreenState();
+  State<CalendarScreen> createState() => CalendarScreenState();
 }
 
-class _CalendarScreenState extends State<CalendarScreen> {
+class CalendarScreenState extends State<CalendarScreen> {
   final Map<int, int> _sessionCountByDay = <int, int>{};
   final Map<int, List<OwnerTrainingSession>> _sessionsByDay =
       <int, List<OwnerTrainingSession>>{};
@@ -74,6 +76,14 @@ class _CalendarScreenState extends State<CalendarScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) _syncStripPagerDayFromController();
     });
+  }
+
+  bool _sessionsLoadStarted = false;
+
+  /// Called when the Schedule tab is first shown (avoids fetch on app cold start).
+  void ensureSessionsLoaded() {
+    if (_sessionsLoadStarted) return;
+    _sessionsLoadStarted = true;
     _loadData();
   }
 
@@ -122,6 +132,12 @@ class _CalendarScreenState extends State<CalendarScreen> {
     });
   }
 
+  Future<void> _onPullRefresh() async {
+    if (!mounted) return;
+    context.read<OwnerSessionsCache>().invalidate();
+    await _loadData();
+  }
+
   Future<void> _loadData() async {
     if (!mounted) return;
     setState(() => _isLoading = true);
@@ -132,12 +148,12 @@ class _CalendarScreenState extends State<CalendarScreen> {
     }
     try {
       final now = DateTime.now();
-      final from = now.subtract(const Duration(days: 30)).toIso8601String();
-      final to = now.add(const Duration(days: 90)).toIso8601String();
-      final sessions = await DashboardApiService.getOwnerTrainingSessions(
+      final fromUtc = now.subtract(const Duration(days: 14)).toUtc();
+      final toUtc = now.add(const Duration(days: 56)).toUtc();
+      final sessions = await context.read<OwnerSessionsCache>().getSessions(
         token,
-        fromIso: from,
-        toIso: to,
+        fromUtc: fromUtc,
+        toUtc: toUtc,
       );
       final grouped = <int, List<OwnerTrainingSession>>{};
       final counts = <int, int>{};
@@ -221,6 +237,17 @@ class _CalendarScreenState extends State<CalendarScreen> {
       targetDay,
     );
     _jumpToDay(nextSelected);
+  }
+
+  /// Внешний вызов (дашборд «See all»): вкладка Schedule + сегодня, без развёрнутого месяца.
+  void jumpToToday() {
+    if (!mounted) return;
+    final n = DateTime.now();
+    final today = DateTime(n.year, n.month, n.day);
+    setState(() => _isMonthExpanded = false);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _jumpToDay(today);
+    });
   }
 
   /// Перепрыгнуть на конкретный день — используется из месячного вида и кнопки "Сегодня"
@@ -630,7 +657,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
       floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
       body: SafeArea(
         child: RefreshIndicator(
-          onRefresh: _loadData,
+          onRefresh: _onPullRefresh,
           color: AppColors.primary500,
           child: _isLoading
               ? const Center(
@@ -737,49 +764,70 @@ class _CalendarScreenState extends State<CalendarScreen> {
                                     emptyMessage:
                                         'No trainings for selected day',
                                     ownerTrainerFallback: trainerFb,
-                                    onSessionTap: (s) {
-                                      Navigator.of(context).push<void>(
-                                        MaterialPageRoute<void>(
-                                          builder: (_) => OwnerTrainingSessionDetailScreen(
-                                            session: s,
-                                            trainingColor: parseHexColor(
-                                              s.trainingDisplayColorHex,
+                                    onSessionTap: (s) async {
+                                      final token = context
+                                          .read<AuthService>()
+                                          .accessToken;
+                                      final salon =
+                                          (token != null &&
+                                              token.isNotEmpty)
+                                          ? await context
+                                                .read<SalonCache>()
+                                                .getSalon(token)
+                                          : null;
+                                      if (!context.mounted) return;
+                                      String? venue;
+                                      if (salon != null) {
+                                        final n = salon.name?.trim();
+                                        if (n != null && n.isNotEmpty) {
+                                          venue = n;
+                                        } else {
+                                          final a = salon.address?.trim();
+                                          if (a != null && a.isNotEmpty) {
+                                            venue = a;
+                                          }
+                                        }
+                                      }
+                                      final shell = context
+                                          .findAncestorStateOfType<
+                                            MainShellState
+                                          >();
+                                      await Navigator.of(context)
+                                          .push<void>(
+                                            MaterialPageRoute<void>(
+                                              builder: (_) =>
+                                                  OwnerTrainingSessionDetailScreen(
+                                                    session: s,
+                                                    trainingColor:
+                                                        parseHexColor(
+                                                          s
+                                                              .trainingDisplayColorHex,
+                                                        ),
+                                                    venueName: venue,
+                                                    trainerFallbackName:
+                                                        trainerFb,
+                                                    onParticipantsChanged: () {
+                                                      context
+                                                          .read<
+                                                            OwnerSessionsCache
+                                                          >()
+                                                          .invalidate();
+                                                      _loadData();
+                                                    },
+                                                    onEditSession:
+                                                        s.sessionId.isNotEmpty
+                                                        ? () {
+                                                            shell
+                                                                ?.navigateToTab0Route(
+                                                                  '/owner/session/edit',
+                                                                  arguments: s
+                                                                      .toRouteArgs(),
+                                                                );
+                                                          }
+                                                        : null,
+                                                  ),
                                             ),
-                                            trainerFallbackName: trainerFb,
-                                            onParticipantsChanged: _loadData,
-                                            onEditSession:
-                                                s.sessionId.isNotEmpty
-                                                ? () {
-                                                    final shell = context
-                                                        .findAncestorStateOfType<
-                                                          MainShellState
-                                                        >();
-                                                    shell?.navigateToTab0Route(
-                                                      '/owner/session/edit',
-                                                      arguments: s
-                                                          .toRouteArgs(),
-                                                    );
-                                                  }
-                                                : null,
-                                            onEditService:
-                                                s.trainingId.isNotEmpty
-                                                ? () {
-                                                    final shell = context
-                                                        .findAncestorStateOfType<
-                                                          MainShellState
-                                                        >();
-                                                    shell?.navigateToTab0Route(
-                                                      '/services',
-                                                      arguments: {
-                                                        'editTrainingId':
-                                                            s.trainingId,
-                                                      },
-                                                    );
-                                                  }
-                                                : null,
-                                          ),
-                                        ),
-                                      );
+                                          );
                                     },
                                   ),
                                 ),

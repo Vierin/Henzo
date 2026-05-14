@@ -12,6 +12,7 @@ import '../services/cache/services_staff_cache.dart';
 import '../widgets/language_selector_modal.dart';
 import '../services/push_notification_service.dart';
 import 'account_settings_screen.dart';
+import 'analytics_screen.dart';
 import 'online_booking_screen.dart';
 import 'profile_screen.dart';
 import 'settings_screen.dart';
@@ -194,6 +195,16 @@ class _AppSettingsScreenState extends State<AppSettingsScreen> {
                     trailingText: _statsLoading ? '' : '$_staffCount',
                     onTap: () => Navigator.of(context).push(
                       MaterialPageRoute(builder: (_) => const StaffScreen()),
+                    ),
+                  ),
+                  _settingsTile(
+                    icon: Icons.insights_outlined,
+                    title: locale.t('nav.analytics'),
+                    trailingText: '',
+                    onTap: () => Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (_) => const AnalyticsScreen(),
+                      ),
                     ),
                   ),
                 ]),

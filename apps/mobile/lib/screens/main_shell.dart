@@ -17,6 +17,7 @@ import 'services_screen.dart';
 import 'staff_screen.dart';
 import 'clients_screen.dart';
 import 'all_bookings_screen.dart';
+import 'analytics_screen.dart';
 import 'owner_edit_training_session_screen.dart';
 
 class MainShell extends StatefulWidget {
@@ -32,12 +33,27 @@ class MainShellState extends State<MainShell> {
 
   int _currentIndex = 0;
   bool _salonLoading = true;
+  final GlobalKey<CalendarScreenState> _scheduleCalendarKey =
+      GlobalKey<CalendarScreenState>();
   final GlobalKey<NavigatorState> _homeNavigatorKey =
       GlobalKey<NavigatorState>();
+  final GlobalKey<ClientsScreenState> _clientsTabKey =
+      GlobalKey<ClientsScreenState>();
+
+  late final List<Widget> _shellBodyTabs;
 
   @override
   void initState() {
     super.initState();
+    _shellBodyTabs = <Widget>[
+      _buildHomeNavigator(),
+      CalendarScreen(key: _scheduleCalendarKey),
+      ClientsScreen(key: _clientsTabKey),
+      const AppSettingsScreen(
+        initialSection: SettingsHubSection.studio,
+        embeddedInShell: true,
+      ),
+    ];
     WidgetsBinding.instance.addPostFrameCallback((_) => _loadSalon());
   }
 
@@ -47,22 +63,25 @@ class MainShellState extends State<MainShell> {
       if (mounted) setState(() => _salonLoading = false);
       return;
     }
+    final salonCache = context.read<SalonCache>();
+    final bookingsCache = context.read<BookingsCache>();
     try {
-      await context.read<SalonCache>().getSalon(token);
-      await context.read<BookingsCache>().getBookings(token);
+      await salonCache.getSalon(token);
+      await bookingsCache.getBookings(token);
     } catch (_) {
       // показываем интерфейс даже при ошибке
     }
     if (mounted) {
       setState(() => _salonLoading = false);
-      final locale = context.read<LocaleProvider>();
-      await PushNotificationService.requestNotificationPermission();
-      if (mounted) {
-        PushNotificationService.registerToken(
-          accessToken: token,
-          language: locale.localeCode,
-        );
-      }
+    }
+    if (!mounted) return;
+    final locale = context.read<LocaleProvider>();
+    await PushNotificationService.requestNotificationPermission();
+    if (mounted) {
+      PushNotificationService.registerToken(
+        accessToken: token,
+        language: locale.localeCode,
+      );
     }
   }
 
@@ -95,8 +114,28 @@ class MainShellState extends State<MainShell> {
   /// Вернуть нижнюю навигацию на вкладку (после закрытия экрана с другой вкладки).
   void restoreShellTab(int index) {
     if (!mounted) return;
-    if (index < 0 || index >= _screens.length) return;
+    if (index < 0 || index >= _shellBodyTabs.length) return;
     setState(() => _currentIndex = index);
+  }
+
+  /// Дашборд «See all»: открыть календарь на сегодня (вкладка Schedule).
+  void openScheduleTabForToday() {
+    setState(() => _currentIndex = scheduleTabIndex);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _scheduleCalendarKey.currentState?.ensureSessionsLoaded();
+      _scheduleCalendarKey.currentState?.jumpToToday();
+    });
+  }
+
+  /// Opens the Clients shell tab and applies optional filter/search (one list).
+  void openClientsTab({String? initialFilter, String? initialQuery}) {
+    setState(() => _currentIndex = 2);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _clientsTabKey.currentState?.applyRouteArgs(
+        filter: initialFilter,
+        query: initialQuery,
+      );
+    });
   }
 
   Widget _buildHomeNavigator() {
@@ -127,16 +166,13 @@ class MainShellState extends State<MainShell> {
           case '/staff':
             return MaterialPageRoute(builder: (_) => const StaffScreen());
           case '/clients':
-            final args = settings.arguments;
-            if (args is Map<String, dynamic>) {
-              return MaterialPageRoute(
-                builder: (_) => ClientsScreen(
-                  initialFilter: args['filter']?.toString(),
-                  initialQuery: args['query']?.toString(),
-                ),
-              );
-            }
-            return MaterialPageRoute(builder: (_) => const ClientsScreen());
+            return MaterialPageRoute<void>(
+              builder: (_) => _ClientsTabOpener(args: settings.arguments),
+            );
+          case '/analytics':
+            return MaterialPageRoute<void>(
+              builder: (_) => const AnalyticsScreen(),
+            );
           case '/profile':
             return MaterialPageRoute(builder: (_) => const ProfileScreen());
           case '/all-bookings':
@@ -148,22 +184,12 @@ class MainShellState extends State<MainShell> {
     );
   }
 
-  List<Widget> get _screens => [
-    _buildHomeNavigator(),
-    CalendarScreen(),
-    const ClientsScreen(),
-    const AppSettingsScreen(
-      initialSection: SettingsHubSection.studio,
-      embeddedInShell: true,
-    ),
-  ];
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       body: Stack(
         children: [
-          IndexedStack(index: _currentIndex, children: _screens),
+          IndexedStack(index: _currentIndex, children: _shellBodyTabs),
           if (_salonLoading) const _SalonLoadingCurtain(),
         ],
       ),
@@ -181,43 +207,52 @@ class MainShellState extends State<MainShell> {
               border: Border.all(color: const Color(0xFFE6E3E2), width: 1),
             ),
             child: Consumer<LocaleProvider>(
-              builder: (context, locale, _) => Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Expanded(
-                    child: _NavItem(
-                      svgAsset: 'assets/icons/icon-house.svg',
-                      label: 'Home',
-                      isSelected: _currentIndex == 0,
-                      onTap: () => setState(() => _currentIndex = 0),
+              builder: (context, locale, _) {
+                final t = locale.t;
+                return Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Expanded(
+                      child: _NavItem(
+                        svgAsset: 'assets/icons/icon-house.svg',
+                        label: t('shell.tabHome'),
+                        isSelected: _currentIndex == 0,
+                        onTap: () => setState(() => _currentIndex = 0),
+                      ),
                     ),
-                  ),
-                  Expanded(
-                    child: _NavItem(
-                      svgAsset: 'assets/icons/icon-schedule.svg',
-                      label: 'Schedule',
-                      isSelected: _currentIndex == 1,
-                      onTap: () => setState(() => _currentIndex = 1),
+                    Expanded(
+                      child: _NavItem(
+                        svgAsset: 'assets/icons/icon-schedule.svg',
+                        label: t('shell.tabSchedule'),
+                        isSelected: _currentIndex == 1,
+                        onTap: () {
+                          setState(() => _currentIndex = 1);
+                          WidgetsBinding.instance.addPostFrameCallback((_) {
+                            _scheduleCalendarKey.currentState
+                                ?.ensureSessionsLoaded();
+                          });
+                        },
+                      ),
                     ),
-                  ),
-                  Expanded(
-                    child: _NavItem(
-                      svgAsset: 'assets/icons/icon-clients.svg',
-                      label: 'Clients',
-                      isSelected: _currentIndex == 2,
-                      onTap: () => setState(() => _currentIndex = 2),
+                    Expanded(
+                      child: _NavItem(
+                        svgAsset: 'assets/icons/icon-clients.svg',
+                        label: t('shell.tabClients'),
+                        isSelected: _currentIndex == 2,
+                        onTap: () => setState(() => _currentIndex = 2),
+                      ),
                     ),
-                  ),
-                  Expanded(
-                    child: _NavItem(
-                      svgAsset: 'assets/icons/icon-settings.svg',
-                      label: 'Settings',
-                      isSelected: _currentIndex == 3,
-                      onTap: () => setState(() => _currentIndex = 3),
+                    Expanded(
+                      child: _NavItem(
+                        svgAsset: 'assets/icons/icon-settings.svg',
+                        label: t('shell.tabSettings'),
+                        isSelected: _currentIndex == 3,
+                        onTap: () => setState(() => _currentIndex = 3),
+                      ),
                     ),
-                  ),
-                ],
-              ),
+                  ],
+                );
+              },
             ),
           ),
         ),
@@ -297,7 +332,7 @@ class _NavItem extends StatelessWidget {
   }
 }
 
-/// Занавес при загрузке данных салона: логотип и подпись «Подгружаем данные».
+/// Занавес при загрузке данных салона: логотип и подпись.
 class _SalonLoadingCurtain extends StatelessWidget {
   const _SalonLoadingCurtain();
 
@@ -317,15 +352,17 @@ class _SalonLoadingCurtain extends StatelessWidget {
                   height: 80,
                   width: 160,
                   fit: BoxFit.contain,
-                  errorBuilder: (_, __, ___) =>
+                  errorBuilder: (_, _, _) =>
                       Icon(Icons.store, size: 80, color: AppColors.primary500),
                 ),
                 const SizedBox(height: 24),
-                Text(
-                  'Подгружаем данные',
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: AppColors.textSecondary,
+                Consumer<LocaleProvider>(
+                  builder: (context, loc, _) => Text(
+                    loc.t('shell.loadingWorkspace'),
+                    style: const TextStyle(
+                      fontSize: 14,
+                      color: AppColors.textSecondary,
+                    ),
                   ),
                 ),
               ],
@@ -333,6 +370,43 @@ class _SalonLoadingCurtain extends StatelessWidget {
           ),
         ),
       ),
+    );
+  }
+}
+
+/// Pops immediately and switches the shell Clients tab (avoids a second list).
+class _ClientsTabOpener extends StatefulWidget {
+  const _ClientsTabOpener({this.args});
+
+  final Object? args;
+
+  @override
+  State<_ClientsTabOpener> createState() => _ClientsTabOpenerState();
+}
+
+class _ClientsTabOpenerState extends State<_ClientsTabOpener> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      final shell = context.findAncestorStateOfType<MainShellState>();
+      String? f;
+      String? q;
+      if (widget.args is Map<String, dynamic>) {
+        final m = widget.args! as Map<String, dynamic>;
+        f = m['filter']?.toString();
+        q = m['query']?.toString();
+      }
+      Navigator.of(context).pop();
+      shell?.openClientsTab(initialFilter: f, initialQuery: q);
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return const Scaffold(
+      body: Center(child: CircularProgressIndicator(color: AppColors.primary500)),
     );
   }
 }

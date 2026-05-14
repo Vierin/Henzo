@@ -11,16 +11,36 @@ import '../models/training_category_option.dart';
 import '../l10n/locale_provider.dart';
 import '../services/auth_service.dart';
 import '../services/dashboard_api_service.dart';
+import '../services/cache/owner_sessions_cache.dart';
 import '../services/cache/salon_cache.dart';
 import '../services/cache/services_staff_cache.dart';
 import '../services/services_api_service.dart';
 import '../utils/show_api_error.dart';
+import '../widgets/app_search_prefix_icon.dart';
 import 'main_shell.dart';
 
 /// Matches registration / mock secondary controls (chevron, pin tint).
 const Color _kFormAccentPurple = Color(0xFF6C5CE7);
 
 const Color _kRegHintMuted = Color(0x993F3F3F);
+
+bool _trainingCategoryIsOther(TrainingCategoryOption c) =>
+    c.nameEn.trim().toLowerCase() == 'other';
+
+List<TrainingCategoryOption> _categoriesWithOtherLast(
+  List<TrainingCategoryOption> list,
+) {
+  final rest = <TrainingCategoryOption>[];
+  final other = <TrainingCategoryOption>[];
+  for (final c in list) {
+    if (_trainingCategoryIsOther(c)) {
+      other.add(c);
+    } else {
+      rest.add(c);
+    }
+  }
+  return [...rest, ...other];
+}
 
 String _formatThousandsDots(int value) {
   final raw = value.abs().toString();
@@ -360,123 +380,265 @@ class _AddTrainingScreenState extends State<AddTrainingScreen> {
     return days;
   }
 
-  String _categoryLabel(String localeCode) {
+  String _categoryLabel(LocaleProvider loc) {
     final id = _selectedCategoryId;
-    if (id == null) return 'Выберите категорию';
+    if (id == null) return loc.t('addTraining.pickCategory');
+    final code = loc.localeCode;
     for (final c in _categories) {
-      if (c.id == id) return c.label(localeCode);
+      if (c.id == id) return c.label(code);
     }
-    return 'Выберите категорию';
+    return loc.t('addTraining.pickCategory');
   }
 
   Future<void> _openCategoryBottomSheet() async {
     if (_categories.isEmpty) return;
+    final loc = context.read<LocaleProvider>();
+    final localeCode = loc.localeCode;
     int? temp = _selectedCategoryId;
-    final localeCode = context.read<LocaleProvider>().localeCode;
-    final result = await showModalBottomSheet<int?>(
+    var searchQuery = '';
+    final result = await showModalBottomSheet<_CategoryPickResult?>(
       context: context,
       showDragHandle: false,
       isScrollControlled: true,
       backgroundColor: AppColors.backgroundPrimary,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
       sheetAnimationStyle: const AnimationStyle(
         duration: Duration(milliseconds: 320),
         reverseDuration: Duration(milliseconds: 220),
       ),
-      builder: (ctx) {
+      builder: (sheetCtx) {
+        final h = MediaQuery.sizeOf(sheetCtx).height;
+        void popCancel() =>
+            Navigator.of(sheetCtx).pop(const _CategoryPickResult.cancelled());
         return SafeArea(
           child: Padding(
-            padding: const EdgeInsets.fromLTRB(14, 10, 14, 14),
-            child: StatefulBuilder(
-              builder: (context, setModalState) {
-                return Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        const Expanded(
-                          child: Text(
-                            'Категория',
-                            style: TextStyle(
-                              fontSize: 20,
-                              fontWeight: FontWeight.w800,
-                              color: AppColors.textPrimary,
-                            ),
-                          ),
-                        ),
-                        IconButton(
-                          onPressed: () => Navigator.of(ctx).pop(),
-                          icon: const Icon(Icons.close),
-                          color: AppColors.textSecondary,
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 6),
-                    Flexible(
-                      child: ListView(
-                        shrinkWrap: true,
-                        itemExtent: 44,
-                        children: _categories.map((c) {
-                          final selected = temp == c.id;
-                          return ListTile(
-                            dense: true,
-                            minVerticalPadding: 0,
-                            visualDensity: const VisualDensity(
-                              vertical: -3,
-                              horizontal: 0,
-                            ),
-                            contentPadding: const EdgeInsets.symmetric(
-                              horizontal: 4,
-                            ),
-                            title: Text(c.label(localeCode)),
-                            trailing: selected
-                                ? const Icon(
-                                    Icons.check,
-                                    color: AppColors.primary500,
-                                  )
-                                : null,
-                            onTap: () => setModalState(() => temp = c.id),
-                          );
-                        }).toList(),
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: OutlinedButton(
-                            onPressed: () => setModalState(() => temp = null),
-                            style: OutlinedButton.styleFrom(
-                              side: const BorderSide(
-                                color: AppColors.borderPrimary,
+            padding: EdgeInsets.fromLTRB(
+              16,
+              8,
+              8,
+              12 + MediaQuery.viewInsetsOf(sheetCtx).bottom,
+            ),
+            child: SizedBox(
+              height: h * 0.58,
+              child: StatefulBuilder(
+                builder: (context, setModalState) {
+                  final q = searchQuery.trim().toLowerCase();
+                  final filtered = q.isEmpty
+                      ? _categories
+                      : _categories.where((c) {
+                          final label = c.label(localeCode).toLowerCase();
+                          return label.contains(q) ||
+                              c.nameEn.toLowerCase().contains(q) ||
+                              c.nameRu.toLowerCase().contains(q) ||
+                              c.nameVn.toLowerCase().contains(q);
+                        }).toList();
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Expanded(
+                            child: Padding(
+                              padding: const EdgeInsets.only(top: 4, left: 4),
+                              child: Text(
+                                loc.t('addTraining.categorySheetTitle'),
+                                style: const TextStyle(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w600,
+                                  letterSpacing: 0.4,
+                                  color: AppColors.textSecondary,
+                                ),
                               ),
                             ),
-                            child: const Text('Сбросить'),
                           ),
+                          IconButton(
+                            onPressed: popCancel,
+                            icon: const Icon(Icons.close),
+                            color: AppColors.textSecondary,
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 4),
+                      TextField(
+                        onChanged: (v) =>
+                            setModalState(() => searchQuery = v),
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w400,
+                          color: AppColors.textPrimary,
                         ),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: FilledButton(
-                            onPressed: () => Navigator.of(ctx).pop(temp),
-                            style: FilledButton.styleFrom(
-                              backgroundColor: AppColors.primary500,
+                        decoration: InputDecoration(
+                          hintText: loc.t('addTraining.categorySearchHint'),
+                          hintStyle: const TextStyle(
+                            color: _kRegHintMuted,
+                            fontSize: 16,
+                            fontWeight: FontWeight.w500,
+                          ),
+                          isDense: true,
+                          filled: true,
+                          fillColor: AppColors.backgroundPrimary,
+                          prefixIcon: const Padding(
+                            padding: EdgeInsets.only(left: 12, right: 6),
+                            child: AppSearchPrefixIcon(
+                              width: 14,
+                              height: 15,
                             ),
-                            child: const Text('Применить'),
+                          ),
+                          prefixIconConstraints: const BoxConstraints(
+                            minWidth: 0,
+                            minHeight: 0,
+                          ),
+                          contentPadding: const EdgeInsets.fromLTRB(
+                            0,
+                            12,
+                            14,
+                            12,
+                          ),
+                          enabledBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: const BorderSide(
+                              color: AppColors.primary500,
+                              width: 1.2,
+                            ),
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: const BorderSide(
+                              color: AppColors.primary500,
+                              width: 1.4,
+                            ),
                           ),
                         ),
-                      ],
-                    ),
-                  ],
-                );
-              },
+                      ),
+                      const SizedBox(height: 14),
+                      Expanded(
+                        child: SingleChildScrollView(
+                          child: Wrap(
+                            spacing: 8,
+                            runSpacing: 8,
+                            children: filtered.map((c) {
+                              final selected = temp == c.id;
+                              final isOther = _trainingCategoryIsOther(c);
+                              final Color bg;
+                              final Color fg;
+                              if (isOther) {
+                                bg = AppColors.backgroundPrimary;
+                                fg = AppColors.textPrimary;
+                              } else {
+                                final chipBg = c.backgroundColor(
+                                  AppColors.neutral500,
+                                );
+                                bg = chipBg;
+                                fg = c.foregroundColorOn(chipBg);
+                              }
+                              final borderW = selected ? 2.0 : 1.0;
+                              final borderColor = selected
+                                  ? AppColors.primary500
+                                  : (isOther
+                                      ? AppColors.primary300
+                                      : Colors.transparent);
+                              final chipLabel = isOther
+                                  ? loc.t('addTraining.categoryOtherChip')
+                                  : c.label(localeCode);
+                              return Material(
+                                color: Colors.transparent,
+                                child: InkWell(
+                                  onTap: () =>
+                                      setModalState(() => temp = c.id),
+                                  borderRadius: BorderRadius.circular(999),
+                                  child: Ink(
+                                    decoration: BoxDecoration(
+                                      color: bg,
+                                      borderRadius:
+                                          BorderRadius.circular(999),
+                                      border: Border.all(
+                                        color: borderColor,
+                                        width: borderW,
+                                      ),
+                                    ),
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 14,
+                                      vertical: 10,
+                                    ),
+                                    child: Text(
+                                      chipLabel,
+                                      style: TextStyle(
+                                        color: fg,
+                                        fontWeight: FontWeight.w600,
+                                        fontSize: 13,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              );
+                            }).toList(),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: SizedBox(
+                              height: 48,
+                              child: OutlinedButton(
+                                onPressed: popCancel,
+                                style: OutlinedButton.styleFrom(
+                                  foregroundColor: AppColors.textPrimary,
+                                  side: const BorderSide(
+                                    color: AppColors.primary500,
+                                    width: 1.2,
+                                  ),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                ),
+                                child: Text(loc.t('common.cancel')),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: SizedBox(
+                              height: 48,
+                              child: FilledButton(
+                                onPressed: () => Navigator.of(sheetCtx).pop(
+                                  _CategoryPickResult.apply(temp),
+                                ),
+                                style: FilledButton.styleFrom(
+                                  backgroundColor: AppColors.primary500,
+                                  foregroundColor: Colors.white,
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                ),
+                                child: Text(
+                                  loc.t('addTraining.apply'),
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  );
+                },
+              ),
             ),
           ),
         );
       },
     );
     if (!mounted) return;
+    if (result == null || !result.applied) return;
     setState(() {
-      _selectedCategoryId = result;
+      _selectedCategoryId = result.categoryId;
       _step1CategoryError = false;
     });
   }
@@ -530,7 +692,7 @@ class _AddTrainingScreenState extends State<AddTrainingScreen> {
       setState(() {
         _studio = studio;
         _existing = list;
-        _categories = categories;
+        _categories = _categoriesWithOtherLast(categories);
         _loading = false;
       });
     } catch (e) {
@@ -626,6 +788,7 @@ class _AddTrainingScreenState extends State<AddTrainingScreen> {
           ),
         );
         context.read<ServicesStaffCache>().invalidateServices(studioId);
+        context.read<OwnerSessionsCache>().invalidate();
         Navigator.of(context).pop(true);
       } else {
         ScaffoldMessenger.maybeOf(context)?.showSnackBar(
@@ -806,7 +969,7 @@ class _AddTrainingScreenState extends State<AddTrainingScreen> {
                                     ),
                                   ),
                                   child: Text(
-                                    _categoryLabel(locale.localeCode),
+                                    _categoryLabel(locale),
                                     maxLines: 1,
                                     overflow: TextOverflow.ellipsis,
                                     style: TextStyle(
@@ -968,6 +1131,42 @@ class _AddTrainingScreenState extends State<AddTrainingScreen> {
                         decoration: _regInputDecoration(
                           invalid: _step1PriceError,
                           hintText: 'Введите цену',
+                        ),
+                      ),
+                      const SizedBox(height: 22),
+                      _stepFormLabel('Тренер'),
+                      InputDecorator(
+                        decoration: InputDecoration(
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          enabledBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: const BorderSide(
+                              color: AppColors.borderPrimary,
+                            ),
+                          ),
+                          filled: true,
+                          fillColor: AppColors.backgroundPrimary,
+                          contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 14,
+                          ),
+                        ),
+                        child: Text(
+                          ownerName,
+                          style: const TextStyle(
+                            fontSize: 14,
+                            color: AppColors.textPrimary,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      const Text(
+                        'Для добавления тренеров выкупите подписку Pro',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: AppColors.textSecondary,
                         ),
                       ),
                       const SizedBox(height: 30),
@@ -1214,50 +1413,6 @@ class _AddTrainingScreenState extends State<AddTrainingScreen> {
                           },
                         ),
                       ],
-                      const SizedBox(height: 16),
-                      const Text(
-                        'Тренер',
-                        style: TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w600,
-                          color: AppColors.textPrimary,
-                        ),
-                      ),
-                      const SizedBox(height: 6),
-                      InputDecorator(
-                        decoration: InputDecoration(
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          enabledBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
-                            borderSide: const BorderSide(
-                              color: AppColors.borderPrimary,
-                            ),
-                          ),
-                          filled: true,
-                          fillColor: AppColors.backgroundPrimary,
-                          contentPadding: const EdgeInsets.symmetric(
-                            horizontal: 12,
-                            vertical: 14,
-                          ),
-                        ),
-                        child: Text(
-                          ownerName,
-                          style: const TextStyle(
-                            fontSize: 14,
-                            color: AppColors.textPrimary,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      const Text(
-                        'Для добавления тренеров выкупите подписку Pro',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: AppColors.textSecondary,
-                        ),
-                      ),
                       const SizedBox(height: 24),
                       Row(
                         children: [
@@ -1299,6 +1454,18 @@ class _AddTrainingScreenState extends State<AddTrainingScreen> {
             ),
     );
   }
+}
+
+/// [applied] false: sheet closed without confirming (barrier / Cancel / X).
+class _CategoryPickResult {
+  const _CategoryPickResult.cancelled()
+      : applied = false,
+        categoryId = null;
+
+  const _CategoryPickResult.apply(this.categoryId) : applied = true;
+
+  final bool applied;
+  final int? categoryId;
 }
 
 class _VndThousandsFormatter extends TextInputFormatter {

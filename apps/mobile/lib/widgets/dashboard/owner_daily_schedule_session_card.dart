@@ -124,10 +124,10 @@ class OwnerDailyScheduleSessionCard extends StatelessWidget {
                         const SizedBox(height: 4),
                         Row(
                           children: [
-                            const Icon(
+                            Icon(
                               Icons.place_outlined,
                               size: 13,
-                              color: AppColors.primary500,
+                              color: accent,
                             ),
                             const SizedBox(width: 3),
                             Flexible(

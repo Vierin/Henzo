@@ -10,6 +10,7 @@ import '../../models/salon.dart';
 import '../../models/user_model.dart';
 import '../../services/auth_service.dart';
 import '../../services/api_client.dart';
+import '../../services/cache/owner_sessions_cache.dart';
 import '../../services/cache/salon_cache.dart';
 import '../../services/dashboard_api_service.dart';
 import '../../services/notifications_store.dart';
@@ -19,8 +20,8 @@ import '../../widgets/dashboard/owner_checklist_card.dart';
 import '../../widgets/dashboard/dashboard_setup_card.dart';
 import '../../widgets/dashboard/owner_daily_schedule_block.dart';
 import '../owner_training_session_detail_screen.dart';
-import '../calendar_screen.dart';
 import '../app_settings_screen.dart';
+import '../main_shell.dart';
 import '../notifications_screen.dart';
 import '../salon_setup_screen.dart';
 
@@ -79,6 +80,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
       return;
     }
     try {
+      final cache = context.read<OwnerSessionsCache>();
       final salon = await context.read<SalonCache>().getSalon(token);
       final now = DateTime.now();
       final from = DateTime(now.year, now.month, now.day);
@@ -86,10 +88,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
       List<OwnerTrainingSession> sessions = [];
       StudioOnboardingChecklist? checklist;
       try {
-        sessions = await DashboardApiService.getOwnerTrainingSessions(
+        final fromUtc = from.toUtc();
+        final toUtc = to.toUtc();
+        sessions = await cache.getSessions(
           token,
-          fromIso: from.toUtc().toIso8601String(),
-          toIso: to.toUtc().toIso8601String(),
+          fromUtc: fromUtc,
+          toUtc: toUtc,
         );
         sessions.sort((a, b) => a.startsAt.compareTo(b.startsAt));
       } catch (_) {
@@ -125,13 +129,20 @@ class _DashboardScreenState extends State<DashboardScreen> {
     }
   }
 
-  Future<void> _handleRefresh() => _loadData();
+  Future<void> _handleRefresh() async {
+    if (!mounted) return;
+    context.read<OwnerSessionsCache>().invalidate();
+    await _loadData();
+  }
 
   Future<void> _openTrainingSetup() async {
     final changed = await Navigator.of(
       context,
     ).pushNamed<bool>('/trainings/new');
-    if (changed == true && mounted) await _loadData();
+    if (changed == true && mounted) {
+      context.read<OwnerSessionsCache>().invalidate();
+      await _loadData();
+    }
   }
 
   Future<void> _openSettings() async {
@@ -180,6 +191,16 @@ class _DashboardScreenState extends State<DashboardScreen> {
     } finally {
       if (mounted) setState(() => _isPublishing = false);
     }
+  }
+
+  String? _venueLabel() {
+    final s = _salon;
+    if (s == null) return null;
+    final n = s.name?.trim();
+    if (n != null && n.isNotEmpty) return n;
+    final a = s.address?.trim();
+    if (a != null && a.isNotEmpty) return a;
+    return null;
   }
 
   String? _ownerTrainerFallback() {
@@ -245,24 +266,23 @@ class _DashboardScreenState extends State<DashboardScreen> {
         builder: (_) => OwnerTrainingSessionDetailScreen(
           session: s,
           trainingColor: parseHexColor(s.trainingDisplayColorHex),
+          venueName: _venueLabel(),
           trainerFallbackName: _ownerTrainerFallback(),
-          onParticipantsChanged: _loadData,
+          onParticipantsChanged: () {
+            context.read<OwnerSessionsCache>().invalidate();
+            _loadData();
+          },
           onEditSession: s.sessionId.isNotEmpty
               ? () async {
                   final changed = await Navigator.of(context).pushNamed<bool>(
                     '/owner/session/edit',
                     arguments: s.toRouteArgs(),
                   );
-                  if (changed == true && context.mounted) _loadData();
-                }
-              : null,
-          onEditService: s.trainingId.isNotEmpty
-              ? () async {
-                  final changed = await Navigator.of(context).pushNamed<bool?>(
-                    '/services',
-                    arguments: {'editTrainingId': s.trainingId},
-                  );
-                  if (changed == true && context.mounted) await _loadData();
+                  if (changed == true) {
+                    if (!mounted) return;
+                    context.read<OwnerSessionsCache>().invalidate();
+                    await _loadData();
+                  }
                 }
               : null,
         ),
@@ -275,7 +295,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
     final changed = await Navigator.of(
       context,
     ).pushNamed<bool>('/owner/session/edit', arguments: s.toRouteArgs());
-    if (changed == true && mounted) _loadData();
+    if (changed == true && mounted) {
+      context.read<OwnerSessionsCache>().invalidate();
+      await _loadData();
+    }
   }
 
   // --- UI ---------------------------------------------------------------
@@ -779,6 +802,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                           builder: (_) => SalonSetupScreen(
                             onSaved: () {
                               Navigator.pop(context);
+                              context.read<OwnerSessionsCache>().invalidate();
                               _loadData();
                             },
                           ),
@@ -792,11 +816,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   OwnerDailyScheduleBlock(
                     sessions: _todaySessions,
                     emptyMessage: 'No trainings scheduled for today',
-                    onSeeAll: () => Navigator.of(context).push(
-                      MaterialPageRoute(
-                        builder: (_) => const CalendarScreen(),
-                      ),
-                    ),
+                    onSeeAll: () => context
+                        .findAncestorStateOfType<MainShellState>()
+                        ?.openScheduleTabForToday(),
                     onSessionTap: _openSessionDetail,
                     ownerTrainerFallback: _ownerTrainerFallback(),
                   ),
