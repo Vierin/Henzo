@@ -16,7 +16,9 @@ export class AnalyticsService {
     this.measurementId = this.config.get<string>('GA4_MEASUREMENT_ID');
     this.apiSecret = this.config.get<string>('GA4_API_SECRET');
     if (!this.measurementId || !this.apiSecret) {
-      this.logger.log('GA4 disabled (missing GA4_MEASUREMENT_ID/GA4_API_SECRET)');
+      this.logger.log(
+        'GA4 disabled (missing GA4_MEASUREMENT_ID/GA4_API_SECRET)',
+      );
     }
   }
 

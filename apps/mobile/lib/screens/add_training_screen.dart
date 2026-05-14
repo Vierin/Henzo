@@ -17,6 +17,7 @@ import '../services/cache/salon_cache.dart';
 import '../services/cache/services_staff_cache.dart';
 import '../services/services_api_service.dart';
 import '../utils/show_api_error.dart';
+import '../widgets/schedule_style_date_picker.dart';
 import 'main_shell.dart';
 
 /// Matches registration / mock secondary controls (chevron, pin tint).
@@ -396,6 +397,31 @@ class _AddTrainingScreenState extends State<AddTrainingScreen> {
     );
   }
 
+  Widget _step2BackLeading() {
+    return Padding(
+      padding: const EdgeInsets.only(left: 8),
+      child: Center(
+        child: Material(
+          color: AppColors.backgroundPrimary,
+          shape: const CircleBorder(),
+          child: InkWell(
+            customBorder: const CircleBorder(),
+            onTap: () => setState(() => _step = 1),
+            child: const SizedBox(
+              width: 40,
+              height: 40,
+              child: Icon(
+                Icons.arrow_back_rounded,
+                size: 22,
+                color: AppColors.textSecondary,
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
   bool _validateStep1() {
     final nameOk = _nameController.text.trim().isNotEmpty;
     final duration = int.tryParse(_durationController.text.trim()) ?? 0;
@@ -456,17 +482,6 @@ class _AddTrainingScreenState extends State<AddTrainingScreen> {
       parts.add('${_formatThousandsDots(p.round())} ₫');
     }
     return parts.isEmpty ? '—' : parts.join(' · ');
-  }
-
-  int _bookingPeriodDays() {
-    final raw = _studio?.reminderSettings?['bookingPeriodDays'];
-    int days = 14;
-    if (raw is int) days = raw;
-    if (raw is num) days = raw.toInt();
-    if (raw is String) days = int.tryParse(raw) ?? 14;
-    if (days < 1) return 1;
-    if (days > 60) return 60;
-    return days;
   }
 
   String _categoryLabel(LocaleProvider loc) {
@@ -616,13 +631,16 @@ class _AddTrainingScreenState extends State<AddTrainingScreen> {
     });
   }
 
+  DateTime _addCalendarMonths(DateTime dayOnly, int months) =>
+      DateTime(dayOnly.year, dayOnly.month + months, dayOnly.day);
+
   DateTime _recurringRangeCap() {
     final start = DateTime(
       _sessionDate.year,
       _sessionDate.month,
       _sessionDate.day,
     );
-    return start.add(Duration(days: _bookingPeriodDays()));
+    return _addCalendarMonths(start, 2);
   }
 
   void _clampRecurringEndToPolicy() {
@@ -644,12 +662,14 @@ class _AddTrainingScreenState extends State<AddTrainingScreen> {
 
   String _narrowWeekday(int weekday, LocaleProvider loc) {
     final d = DateTime(2024, 1, weekday);
-    return DateFormat.E(loc.localeCode).format(d);
+    return DateFormat.E(loc.localeCode).format(d).toUpperCase();
   }
 
   String _fullWeekday(int weekday, LocaleProvider loc) {
     final d = DateTime(2024, 1, weekday);
-    return DateFormat.EEEE(loc.localeCode).format(d);
+    final raw = DateFormat.EEEE(loc.localeCode).format(d);
+    if (raw.isEmpty) return raw;
+    return raw.substring(0, 1).toUpperCase() + raw.substring(1);
   }
 
   List<DateTime> _buildRecurringPreview() {
@@ -689,7 +709,7 @@ class _AddTrainingScreenState extends State<AddTrainingScreen> {
   }
 
   Future<void> _pickSessionDateOnStep2() async {
-    final picked = await showDatePicker(
+    final picked = await showScheduleStyleDatePicker(
       context: context,
       initialDate: _sessionDate,
       firstDate: DateTime.now().subtract(const Duration(days: 1)),
@@ -711,7 +731,7 @@ class _AddTrainingScreenState extends State<AddTrainingScreen> {
     );
     final cap = _recurringRangeCap();
     final last = cap.isBefore(start) ? start : cap;
-    final picked = await showDatePicker(
+    final picked = await showScheduleStyleDatePicker(
       context: context,
       initialDate: _recurringEndDate.isBefore(start)
           ? start
@@ -810,9 +830,7 @@ class _AddTrainingScreenState extends State<AddTrainingScreen> {
               style: TextStyle(
                 fontSize: 12,
                 fontWeight: FontWeight.w700,
-                color: selected
-                    ? AppColors.textInverse
-                    : AppColors.textPrimary,
+                color: selected ? AppColors.textInverse : AppColors.textPrimary,
               ),
             ),
           ),
@@ -876,7 +894,7 @@ class _AddTrainingScreenState extends State<AddTrainingScreen> {
     );
   }
 
-  List<Widget> _buildStep2Widgets(LocaleProvider loc, String ownerName) {
+  List<Widget> _buildStep2Widgets(LocaleProvider loc) {
     final w = <Widget>[
       const SizedBox(height: 4),
       InkWell(
@@ -910,6 +928,10 @@ class _AddTrainingScreenState extends State<AddTrainingScreen> {
       InkWell(
         onTap: () => setState(() {
           _isRecurring = true;
+          final now = DateTime.now();
+          final today = DateTime(now.year, now.month, now.day);
+          _sessionDate = today;
+          _recurringEndDate = _addCalendarMonths(today, 2);
           _clampRecurringEndToPolicy();
         }),
         borderRadius: BorderRadius.circular(8),
@@ -1005,28 +1027,6 @@ class _AddTrainingScreenState extends State<AddTrainingScreen> {
                 color: AppColors.textPrimary,
               ),
             ),
-          ),
-        ),
-        const SizedBox(height: 18),
-        _stepFormLabel(loc.t('addTraining.step2.trainer')),
-        InputDecorator(
-          decoration: _step2FieldDecoration(),
-          child: Text(
-            ownerName,
-            style: const TextStyle(
-              fontSize: 15,
-              fontWeight: FontWeight.w500,
-              color: AppColors.textPrimary,
-            ),
-          ),
-        ),
-        const SizedBox(height: 8),
-        Text(
-          loc.t('addTraining.step2.trainerProNote'),
-          style: const TextStyle(
-            fontSize: 12,
-            height: 1.35,
-            color: AppColors.textSecondary,
           ),
         ),
         const SizedBox(height: 28),
@@ -1237,23 +1237,60 @@ class _AddTrainingScreenState extends State<AddTrainingScreen> {
           },
         ),
         const SizedBox(height: 20),
-        SizedBox(
-          height: 48,
-          width: double.infinity,
-          child: OutlinedButton(
-            onPressed: _saving ? null : () => setState(() => _step = 1),
-            style: OutlinedButton.styleFrom(
-              foregroundColor: AppColors.textPrimary,
-              side: const BorderSide(color: AppColors.primary500, width: 1.2),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
+        Row(
+          children: [
+            Expanded(
+              child: SizedBox(
+                height: 48,
+                child: OutlinedButton(
+                  onPressed: _saving ? null : () => setState(() => _step = 1),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: AppColors.textPrimary,
+                    side: const BorderSide(
+                      color: AppColors.primary500,
+                      width: 1.2,
+                    ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                  child: Text(
+                    loc.t('addTraining.step2.back'),
+                    style: const TextStyle(fontWeight: FontWeight.w600),
+                  ),
+                ),
               ),
             ),
-            child: Text(
-              loc.t('addTraining.step2.back'),
-              style: const TextStyle(fontWeight: FontWeight.w600),
+            const SizedBox(width: 10),
+            Expanded(
+              child: SizedBox(
+                height: 48,
+                child: FilledButton(
+                  onPressed: _saving ? null : _save,
+                  style: FilledButton.styleFrom(
+                    backgroundColor: AppColors.primary500,
+                    foregroundColor: AppColors.textInverse,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                  child: _saving
+                      ? const SizedBox(
+                          height: 20,
+                          width: 20,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: AppColors.textInverse,
+                          ),
+                        )
+                      : Text(
+                          loc.t('common.save'),
+                          style: const TextStyle(fontWeight: FontWeight.w700),
+                        ),
+                ),
+              ),
             ),
-          ),
+          ],
         ),
       ]);
     }
@@ -1288,7 +1325,7 @@ class _AddTrainingScreenState extends State<AddTrainingScreen> {
           _sessionDate.month,
           _sessionDate.day,
         );
-        _recurringEndDate = start.add(Duration(days: _bookingPeriodDays()));
+        _recurringEndDate = _addCalendarMonths(start, 2);
         _clampRecurringEndToPolicy();
       });
     } catch (e) {
@@ -1417,7 +1454,7 @@ class _AddTrainingScreenState extends State<AddTrainingScreen> {
         backgroundColor: AppColors.backgroundSecondary,
         appBar: AppBar(
           automaticallyImplyLeading: false,
-          leading: _step1CloseLeading(),
+          leading: _step == 1 ? _step1CloseLeading() : _step2BackLeading(),
           leadingWidth: 56,
           title: Text(
             _step == 1
@@ -1434,36 +1471,6 @@ class _AddTrainingScreenState extends State<AddTrainingScreen> {
           foregroundColor: AppColors.textPrimary,
           elevation: 0,
           scrolledUnderElevation: 0,
-          actions: _step == 2 && _isRecurring
-              ? [
-                  Padding(
-                    padding: const EdgeInsets.only(right: 8),
-                    child: Center(
-                      child: FilledButton(
-                        onPressed: _saving ? null : _save,
-                        style: FilledButton.styleFrom(
-                          backgroundColor: AppColors.primary500,
-                          foregroundColor: AppColors.textInverse,
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 16,
-                            vertical: 8,
-                          ),
-                          minimumSize: const Size(0, 36),
-                          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                          shape: const StadiumBorder(),
-                        ),
-                        child: Text(
-                          loc.t('common.save'),
-                          style: const TextStyle(
-                            fontWeight: FontWeight.w700,
-                            fontSize: 14,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                ]
-              : null,
         ),
         body: _loading
             ? const Center(
@@ -1775,6 +1782,43 @@ class _AddTrainingScreenState extends State<AddTrainingScreen> {
                             hintText: 'Введите цену',
                           ),
                         ),
+                        const SizedBox(height: 22),
+                        _stepFormLabel(loc.t('addTraining.step2.trainer')),
+                        InputDecorator(
+                          decoration: InputDecoration(
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            enabledBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide: const BorderSide(
+                                color: AppColors.borderPrimary,
+                              ),
+                            ),
+                            filled: true,
+                            fillColor: AppColors.backgroundPrimary,
+                            contentPadding: const EdgeInsets.symmetric(
+                              horizontal: 12,
+                              vertical: 14,
+                            ),
+                          ),
+                          child: Text(
+                            ownerName,
+                            style: const TextStyle(
+                              fontSize: 14,
+                              color: AppColors.textPrimary,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          loc.t('addTraining.step2.trainerProNote'),
+                          style: const TextStyle(
+                            fontSize: 12,
+                            height: 1.35,
+                            color: AppColors.textSecondary,
+                          ),
+                        ),
                         const SizedBox(height: 30),
                         SizedBox(
                           height: 60,
@@ -1801,7 +1845,7 @@ class _AddTrainingScreenState extends State<AddTrainingScreen> {
                           ),
                         ),
                       ]
-                    : _buildStep2Widgets(loc, ownerName),
+                    : _buildStep2Widgets(loc),
               ),
       ),
     );

@@ -649,6 +649,10 @@ class CalendarScreenState extends State<CalendarScreen> {
         minimum: const EdgeInsets.only(bottom: 8),
         child: FloatingActionButton(
           onPressed: _openCreateTraining,
+          elevation: 0,
+          focusElevation: 0,
+          hoverElevation: 0,
+          highlightElevation: 0,
           backgroundColor: AppColors.primary500,
           foregroundColor: Colors.white,
           child: const Icon(Icons.add),

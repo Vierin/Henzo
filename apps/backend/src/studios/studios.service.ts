@@ -509,9 +509,7 @@ export class StudiosService {
     let studioCatsForFilter: { id: number; name: string; slug: string }[] = [];
     if (
       csvSlugs.length > 0 ||
-      (category &&
-        category !== 'all' &&
-        Number.isNaN(parseInt(category, 10)))
+      (category && category !== 'all' && Number.isNaN(parseInt(category, 10)))
     ) {
       studioCatsForFilter = await this.getStudioCategories();
     }
@@ -945,8 +943,7 @@ export class StudiosService {
   async getStudioCategories(): Promise<
     { id: number; name: string; slug: string }[]
   > {
-    const repo =
-      this.prisma.trainingCategory ?? this.prisma.TrainingCategory;
+    const repo = this.prisma.trainingCategory ?? this.prisma.TrainingCategory;
     if (!repo) return [];
     const rows = await repo.findMany({
       orderBy: { name_en: 'asc' },
