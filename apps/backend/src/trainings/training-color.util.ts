@@ -6,7 +6,8 @@ type ComputeTrainingDisplayColorInput = {
   trainingId?: string | null;
   trainingName?: string | null;
   trainingCategoryId?: NullableNumber;
-  mainCategoryId?: NullableNumber;
+  /** DB `TrainingCategory.chip_bg_hex` — canonical class color. */
+  categoryChipBgHex?: string | null;
   existingColor?: string | null;
 };
 
@@ -45,9 +46,10 @@ export function computeTrainingDisplayColor(
   const explicit = normalizeHexColor(input.existingColor);
   if (explicit) return explicit;
 
-  const familySeed = normalizeCategorySeed(
-    input.mainCategoryId ?? input.trainingCategoryId ?? 0,
-  );
+  const fromCategory = normalizeHexColor(input.categoryChipBgHex);
+  if (fromCategory) return fromCategory;
+
+  const familySeed = normalizeCategorySeed(input.trainingCategoryId ?? 0);
   const familyHash = parseHexHashPart(String(familySeed));
   const familyIndex = familyHash % FAMILY_PALETTES.length;
 

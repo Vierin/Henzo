@@ -1,8 +1,9 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { EmailService } from '../email/email.service';
+import { AnalyticsService } from '../analytics/analytics.service';
 import { InputJsonValue } from '@prisma/client/runtime/library';
-import { toZonedTime, formatInTimeZone } from 'date-fns-tz';
+import { formatInTimeZone } from 'date-fns-tz';
 
 type BookingWithRelations = {
   id: string;
@@ -56,6 +57,7 @@ export class RemindersService {
   constructor(
     private prisma: PrismaService,
     private emailService: EmailService,
+    private analytics: AnalyticsService,
   ) {}
 
   async sendBookingReminders() {
@@ -67,8 +69,8 @@ export class RemindersService {
       console.log(`⏰ Current time (UTC): ${now.toISOString()}`);
       console.log(`⏰ Current time (local): ${now.toString()}`);
 
-      // Define all possible reminder intervals in hours
-      const possibleIntervals = [3, 24]; // 3 hours, 1 day
+      // Only one reminder: 24 hours before booking.
+      const possibleIntervals = [24];
       const windowMinutes = 15; // ±15 minutes window
 
       let totalSent = 0;
@@ -251,7 +253,6 @@ export class RemindersService {
             // salonTimezone already defined above
 
             const bookingDate = new Date(booking.startsAt);
-            const zonedDate = toZonedTime(bookingDate, salonTimezone);
 
             const dateStr = formatInTimeZone(
               bookingDate,
@@ -310,6 +311,12 @@ export class RemindersService {
             console.log(
               `✅ ${intervalHours}h reminder sent for booking ${booking.id} to ${booking.User.email}`,
             );
+            this.analytics.track(booking.User.id, 'reminder_sent', {
+              booking_id: booking.id,
+              studio_id: booking.studioId,
+              interval_hours: intervalHours,
+              channel: 'email',
+            });
             totalSent++;
           } catch (error) {
             console.error(
@@ -332,85 +339,6 @@ export class RemindersService {
       };
     } catch (error) {
       console.error('❌ Error in sendBookingReminders:', error);
-      throw error;
-    }
-  }
-
-  async cancelPendingBookingsAfter3Hours() {
-    try {
-      console.log('🔄 Starting auto-cancel for pending bookings...');
-
-      // Get current date and time
-      const now = new Date();
-      const threeHoursAgo = new Date(now.getTime() - 3 * 60 * 60 * 1000);
-
-      // Find pending bookings older than 3 hours
-      const pendingBookings = await this.prisma.sessionBooking.findMany({
-        where: {
-          status: 'PENDING',
-          createdAt: {
-            lt: threeHoursAgo,
-          },
-        },
-        include: {
-          User: {
-            select: {
-              id: true,
-              name: true,
-              email: true,
-            },
-          },
-          Training: {
-            select: {
-              id: true,
-              name: true,
-            },
-          },
-          Studio: {
-            select: {
-              id: true,
-              name: true,
-            },
-          },
-        },
-      });
-
-      console.log(
-        `📊 Found ${pendingBookings.length} pending bookings to cancel`,
-      );
-
-      let cancelledCount = 0;
-      let errorCount = 0;
-
-      // Cancel each pending booking
-      for (const booking of pendingBookings) {
-        try {
-          await this.prisma.sessionBooking.update({
-            where: { id: booking.id },
-            data: { status: 'CANCELED' },
-          });
-
-          console.log(
-            `✅ Cancelled booking ${booking.id} (created at ${booking.createdAt.toISOString()})`,
-          );
-          cancelledCount++;
-        } catch (error) {
-          console.error(`❌ Error cancelling booking ${booking.id}:`, error);
-          errorCount++;
-        }
-      }
-
-      console.log(
-        `🔄 Auto-cancel completed: ${cancelledCount} cancelled, ${errorCount} errors`,
-      );
-
-      return {
-        total: pendingBookings.length,
-        cancelled: cancelledCount,
-        errors: errorCount,
-      };
-    } catch (error) {
-      console.error('❌ Error in cancelPendingBookingsAfter3Hours:', error);
       throw error;
     }
   }

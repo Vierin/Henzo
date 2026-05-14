@@ -20,6 +20,7 @@ import { CreateStudioDto } from './dto/create-studio.dto';
 import { AuthService } from '../auth/auth.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { NotificationsService } from '../notifications/notifications.service';
+import { AnalyticsService } from '../analytics/analytics.service';
 import { generateStudioSlug } from '../utils/slug';
 
 @Controller('studios')
@@ -51,6 +52,7 @@ export class StudiosController {
     private readonly authService: AuthService,
     private readonly prisma: PrismaService,
     private readonly notificationsService: NotificationsService,
+    private readonly analytics: AnalyticsService,
   ) {}
 
   @Get('with-services')
@@ -170,7 +172,7 @@ export class StudiosController {
   @Get('categories')
   @Header('Cache-Control', 'public, max-age=86400') // Cache for 24 hours - categories rarely change
   async getStudioCategories() {
-    return this.studiosService.getStudioCategories();
+    return await this.studiosService.getStudioCategories();
   }
 
   @Get('current')
@@ -776,33 +778,26 @@ export class StudiosController {
 
       try {
         if (session.Studio?.ownerId) {
-          const tokens = await this.notificationsService.getPushTokensByUserId(
-            session.Studio.ownerId,
-          );
-          if (tokens.length > 0) {
-            const title = 'New class booking';
-            const body = `${currentUser.user.name || currentUser.user.email} booked ${session.Training?.name || 'a class'}`;
-            await this.notificationsService.sendPushNotification(
-              tokens,
-              title,
-              body,
-              {
-                type: 'NEW_CLASS_BOOKING',
-                sessionId: session.id,
-                studioId: session.studioId,
-                trainingName: session.Training?.name || '',
-                startsAt: session.startsAt.toISOString(),
-                clientName:
-                  currentUser.user.name || currentUser.user.email || 'Client',
-              },
-              undefined,
-              'henzo_default',
-            );
-          }
+          await this.notificationsService.sendGroupClassBookingNotification({
+            salonId: session.studioId,
+            studioId: session.studioId,
+            sessionId: session.id,
+            trainingName: session.Training?.name || 'class',
+            startsAt: session.startsAt,
+            clientName:
+              currentUser.user.name || currentUser.user.email || 'Client',
+          });
         }
       } catch (pushError) {
         console.error('⚠️ Failed to send class booking push:', pushError);
       }
+
+      this.analytics.track(userId, 'booking_created', {
+        session_id: session.id,
+        studio_id: session.studioId,
+        training_id: session.Training?.id,
+        source: 'client_self',
+      });
 
       return {
         success: true,

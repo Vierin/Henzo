@@ -9,6 +9,7 @@ import type Stripe from 'stripe';
 
 import { PrismaService } from '../prisma/prisma.service';
 import { StripeCheckoutService } from './stripe-checkout.service';
+import { AnalyticsService } from '../analytics/analytics.service';
 
 /** ISO 4217 zero-decimal currencies (Stripe `unit_amount` is whole major units). */
 const ZERO_DECIMAL_CURRENCIES = new Set([
@@ -45,6 +46,7 @@ export class SubscriptionsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly checkout: StripeCheckoutService,
+    private readonly analytics: AnalyticsService,
   ) {}
 
   async getCurrentForOwner(userId: string) {
@@ -66,6 +68,11 @@ export class SubscriptionsService {
       await this.checkout.retrieveCheckoutSessionExpanded(sessionId);
 
     if (session.payment_status !== 'paid') {
+      this.analytics.track(userId, 'subscription_failed', {
+        stripe_session_id: sessionId,
+        reason: 'not_paid',
+        payment_status: session.payment_status,
+      });
       throw new BadRequestException('Checkout session is not paid');
     }
 
@@ -74,6 +81,10 @@ export class SubscriptionsService {
         session.metadata?.userId?.trim()) ??
       '';
     if (!refUserId || refUserId !== userId) {
+      this.analytics.track(userId, 'subscription_failed', {
+        stripe_session_id: sessionId,
+        reason: 'user_mismatch',
+      });
       throw new ForbiddenException('Checkout session belongs to another user');
     }
 
@@ -115,6 +126,14 @@ export class SubscriptionsService {
     const updated = await this.prisma.subscription.update({
       where: { studioId: studio.id },
       data: updateData,
+    });
+
+    this.analytics.track(userId, 'subscription_started', {
+      studio_id: studio.id,
+      stripe_session_id: sessionId,
+      stripe_price_id: price?.id,
+      amount: amount ?? null,
+      currency: price?.currency ?? null,
     });
 
     return this.toCurrentPayload(updated);

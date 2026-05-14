@@ -15,6 +15,8 @@ class LocaleProvider extends ChangeNotifier {
 
   String _localeCode = defaultLocaleCode;
   Map<String, dynamic> _strings = {};
+  /// English strings for fallback when a key is missing in the active locale.
+  Map<String, dynamic> _englishStrings = {};
   bool _loaded = false;
 
   String get localeCode => _localeCode;
@@ -40,17 +42,32 @@ class LocaleProvider extends ChangeNotifier {
     await loadStrings();
   }
 
+  static Map<String, dynamic> _decodeRootObject(String data) {
+    final raw = json.decode(data);
+    if (raw is Map) {
+      return Map<String, dynamic>.from(raw);
+    }
+    return {};
+  }
+
   /// Load app.json for current locale. Call after setLocale.
   Future<void> loadStrings() async {
     try {
-      final key = 'assets/l10n/$_localeCode/app.json';
-      final data = await rootBundle.loadString(key);
-      final decoded = json.decode(data) as Map<String, dynamic>?;
-      _strings = decoded ?? {};
+      final primaryPath = 'assets/l10n/$_localeCode/app.json';
+      final primaryData = await rootBundle.loadString(primaryPath);
+      _strings = _decodeRootObject(primaryData);
+
+      if (_localeCode == 'en') {
+        _englishStrings = _strings;
+      } else {
+        final enData = await rootBundle.loadString('assets/l10n/en/app.json');
+        _englishStrings = _decodeRootObject(enData);
+      }
       _loaded = true;
     } catch (e) {
       if (kDebugMode) debugPrint('[LocaleProvider] loadStrings: $e');
       _strings = {};
+      _englishStrings = {};
       _loaded = true;
     }
     notifyListeners();
@@ -67,17 +84,28 @@ class LocaleProvider extends ChangeNotifier {
     await loadStrings();
   }
 
+  /// Walk nested maps from JSON (nested maps are not always [Map<String, dynamic>]).
+  static dynamic _walk(dynamic root, List<String> parts) {
+    dynamic cur = root;
+    for (final p in parts) {
+      if (cur is! Map || !cur.containsKey(p)) return null;
+      cur = cur[p];
+    }
+    return cur;
+  }
+
   /// Get translation by key. Supports nested keys: t('nav.dashboard') -> map['nav']['dashboard'].
-  /// Returns [key] if not found.
+  /// Falls back to English if the key is missing in the current locale.
+  /// Returns [key] if not found anywhere.
   String t(String key) {
     if (key.isEmpty) return key;
     final parts = key.split('.');
-    dynamic current = _strings;
-    for (final part in parts) {
-      if (current is! Map<String, dynamic>) return key;
-      current = current[part];
+    final primary = _walk(_strings, parts);
+    if (primary is String) return primary;
+    if (!identical(_strings, _englishStrings)) {
+      final fb = _walk(_englishStrings, parts);
+      if (fb is String) return fb;
     }
-    if (current is String) return current;
     return key;
   }
 
@@ -85,13 +113,12 @@ class LocaleProvider extends ChangeNotifier {
   List<String> tList(String key) {
     if (key.isEmpty) return [];
     final parts = key.split('.');
-    dynamic current = _strings;
-    for (final part in parts) {
-      if (current is! Map<String, dynamic>) return [];
-      current = current[part];
+    dynamic node = _walk(_strings, parts);
+    if (node is! List && !identical(_strings, _englishStrings)) {
+      node = _walk(_englishStrings, parts);
     }
-    if (current is List) {
-      return current.map((e) => e?.toString() ?? '').toList();
+    if (node is List) {
+      return node.map((e) => e?.toString() ?? '').toList();
     }
     return [];
   }

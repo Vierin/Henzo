@@ -1,18 +1,32 @@
-import 'package:flutter/material.dart';
 import 'dart:async';
+
+import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+
 import '../../constants/colors.dart';
+import '../../constants/layout.dart';
 import '../../models/booking.dart';
 import '../../models/client_summary.dart';
 import '../../services/auth_service.dart';
 import '../../services/cache/bookings_cache.dart';
 import '../../services/dashboard_api_service.dart';
 import '../../utils/client_identity.dart';
+import '../../widgets/app_search_prefix_icon.dart';
 import '../../widgets/clients/client_list_tile.dart';
 import '../../widgets/clients/clients_filter_chip.dart';
 import 'client_detail_screen.dart';
 
 enum ClientFilter { all, sleepers, whiteList, blocked }
+
+class _ClientsListRow {
+  const _ClientsListRow.header(this.letter) : client = null;
+  const _ClientsListRow.tile(this.client) : letter = null;
+
+  final String? letter;
+  final ClientSummary? client;
+
+  bool get isHeader => client == null;
+}
 
 class ClientsScreen extends StatefulWidget {
   const ClientsScreen({super.key, this.initialFilter, this.initialQuery});
@@ -21,10 +35,10 @@ class ClientsScreen extends StatefulWidget {
   final String? initialQuery;
 
   @override
-  State<ClientsScreen> createState() => _ClientsScreenState();
+  State<ClientsScreen> createState() => ClientsScreenState();
 }
 
-class _ClientsScreenState extends State<ClientsScreen> {
+class ClientsScreenState extends State<ClientsScreen> {
   bool _isLoading = true;
   final _searchController = TextEditingController();
   Timer? _searchDebounce;
@@ -43,6 +57,19 @@ class _ClientsScreenState extends State<ClientsScreen> {
     }
     WidgetsBinding.instance.addPostFrameCallback((_) => _loadData());
     _searchController.addListener(_onSearchChanged);
+  }
+
+  /// Used when switching to the Clients tab from [MainShellState] (single list).
+  void applyRouteArgs({String? filter, String? query}) {
+    final q = query?.trim();
+    setState(() {
+      _filter = _parseFilter(filter);
+      if (q != null && q.isNotEmpty) {
+        _searchController.text = q;
+        _searchQuery = q;
+      }
+    });
+    _loadData();
   }
 
   ClientFilter _parseFilter(String? raw) {
@@ -118,10 +145,14 @@ class _ClientsScreenState extends State<ClientsScreen> {
       return;
     }
     try {
-      final primaryBookings = await context.read<BookingsCache>().getBookings(token);
+      final primaryBookings = await context.read<BookingsCache>().getBookings(
+        token,
+      );
       final enrollmentBookings =
           await DashboardApiService.getOwnerEnrollmentBookings(token);
-      final blocklist = await DashboardApiService.getOwnerClientBlocklist(token);
+      final blocklist = await DashboardApiService.getOwnerClientBlocklist(
+        token,
+      );
       final blockedUserIds = blocklist
           .map((b) => b.userId)
           .whereType<String>()
@@ -150,7 +181,8 @@ class _ClientsScreenState extends State<ClientsScreen> {
               lastVisit: c.lastVisit,
               isSleeper: c.isSleeper,
               visitsCount: c.visitsCount,
-              isBlocked: (userId != null && blockedUserIds.contains(userId)) ||
+              isBlocked:
+                  (userId != null && blockedUserIds.contains(userId)) ||
                   (email != null && blockedEmails.contains(email)) ||
                   (phone != null && blockedPhones.contains(phone)),
             );
@@ -199,165 +231,373 @@ class _ClientsScreenState extends State<ClientsScreen> {
     return list;
   }
 
+  int _countFor(ClientFilter filter) {
+    switch (filter) {
+      case ClientFilter.all:
+        return _clients.length;
+      case ClientFilter.sleepers:
+        return _clients.where((c) => c.isSleeper).length;
+      case ClientFilter.whiteList:
+        return _clients.where((c) => !c.isBlocked).length;
+      case ClientFilter.blocked:
+        return _clients.where((c) => c.isBlocked).length;
+    }
+  }
+
+  static String _groupLetter(String name) {
+    final t = name.trim();
+    if (t.isEmpty) return '#';
+    final ch = t.characters.first.toUpperCase();
+    final r = ch.runes.first;
+    final latin = r >= 0x41 && r <= 0x5A;
+    final cyr = (r >= 0x0410 && r <= 0x042F) || r == 0x0401;
+    return (latin || cyr) ? ch : '#';
+  }
+
+  static int _compareGroupKeys(String a, String b) {
+    const hash = '#';
+    if (a == hash && b != hash) return 1;
+    if (b == hash && a != hash) return -1;
+    return a.compareTo(b);
+  }
+
+  List<_ClientsListRow> _flattenGrouped(List<ClientSummary> list) {
+    if (list.isEmpty) return [];
+    final sorted = [...list]
+      ..sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
+    final groups = <String, List<ClientSummary>>{};
+    for (final c in sorted) {
+      final key = _groupLetter(c.name);
+      groups.putIfAbsent(key, () => []).add(c);
+    }
+    final keys = groups.keys.toList()..sort(_compareGroupKeys);
+    final out = <_ClientsListRow>[];
+    for (final k in keys) {
+      out.add(_ClientsListRow.header(k));
+      for (final c in groups[k]!) {
+        out.add(_ClientsListRow.tile(c));
+      }
+    }
+    return out;
+  }
+
+  static String _membersOverline(int n) {
+    final h = n % 100;
+    if (h >= 11 && h <= 14) return '$n КЛИЕНТОВ';
+    switch (n % 10) {
+      case 1:
+        return '$n КЛИЕНТ';
+      case 2:
+      case 3:
+      case 4:
+        return '$n КЛИЕНТА';
+      default:
+        return '$n КЛИЕНТОВ';
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final textTheme = theme.textTheme;
     final clients = _filteredClients;
+    final rows = _flattenGrouped(clients);
+    final canPop = Navigator.of(context).canPop();
+    final total = _clients.length;
 
     return SafeArea(
       bottom: false,
       child: Scaffold(
         backgroundColor: AppColors.backgroundSecondary,
-        appBar: AppBar(
-          backgroundColor: AppColors.backgroundPrimary,
-          foregroundColor: AppColors.textPrimary,
-          elevation: 0,
-          leading: IconButton(
-            onPressed: () => Navigator.of(context).pop(),
-            icon: const Icon(Icons.arrow_back),
-            color: AppColors.textPrimary,
-          ),
-          title: const Text(
-            'Клиенты',
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.w600,
-              color: AppColors.textPrimary,
-            ),
-          ),
-          centerTitle: true,
-        ),
         body: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             Padding(
-              padding: const EdgeInsets.fromLTRB(12, 16, 12, 12),
+              padding: const EdgeInsets.fromLTRB(
+                kScreenPaddingHorizontal,
+                12,
+                kScreenPaddingHorizontal,
+                4,
+              ),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  if (canPop)
+                    IconButton(
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(
+                        minWidth: 40,
+                        minHeight: 40,
+                      ),
+                      onPressed: () => Navigator.of(context).pop(),
+                      icon: const Icon(Icons.arrow_back),
+                      color: AppColors.textPrimary,
+                    ),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          _membersOverline(total),
+                          style:
+                              textTheme.labelSmall?.copyWith(
+                                color: AppColors.textPrimary,
+                                letterSpacing: -0.3,
+                                fontSize: 14,
+                                fontWeight: FontWeight.w500,
+                              ) ??
+                              TextStyle(
+                                fontSize: 14,
+                                color: AppColors.textPrimary,
+                                fontWeight: FontWeight.w500,
+                                letterSpacing: -0.3,
+                              ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          'Клиенты',
+                          style:
+                              textTheme.headlineSmall?.copyWith(
+                                fontWeight: FontWeight.w700,
+                                color: AppColors.textPrimary,
+                              ) ??
+                              const TextStyle(
+                                fontSize: 24,
+                                fontWeight: FontWeight.w700,
+                                color: AppColors.textPrimary,
+                                letterSpacing: -0.3,
+                              ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Tooltip(
+                    message: 'Добавить клиента',
+                    child: SizedBox(
+                      width: 36,
+                      height: 36,
+                      child: Material(
+                        color: AppColors.primary500,
+                        shape: const CircleBorder(),
+                        elevation: 0,
+                        clipBehavior: Clip.antiAlias,
+                        child: InkWell(
+                          onTap: () {},
+                          customBorder: const CircleBorder(),
+                          child: const Center(
+                            child: Icon(
+                              Icons.add,
+                              size: 20,
+                              color: AppColors.textInverse,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(
+                kScreenPaddingHorizontal,
+                12,
+                kScreenPaddingHorizontal,
+                8,
+              ),
               child: TextField(
                 controller: _searchController,
                 decoration: InputDecoration(
-                  hintText: 'Поиск',
-                  prefixIcon: const Icon(
-                    Icons.search,
-                    size: 22,
-                    color: AppColors.textSecondary,
+                  hintText: 'Поиск по имени, email или телефону',
+                  hintStyle: TextStyle(
+                    fontSize: 14,
+                    color: AppColors.textTertiary,
+                  ),
+                  prefixIcon: const AppSearchPrefixIcon(width: 14, height: 14),
+                  prefixIconConstraints: const BoxConstraints(
+                    minWidth: 28,
+                    minHeight: 40,
                   ),
                   filled: true,
                   fillColor: AppColors.backgroundPrimary,
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide.none,
+                    borderSide: const BorderSide(
+                      color: AppColors.borderPrimary,
+                    ),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: const BorderSide(
+                      color: AppColors.borderPrimary,
+                      width: 1,
+                    ),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: const BorderSide(
+                      color: AppColors.primary500,
+                      width: 1.5,
+                    ),
                   ),
                   contentPadding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 12,
+                    horizontal: 18,
+                    vertical: 14,
                   ),
                 ),
               ),
             ),
             SingleChildScrollView(
               scrollDirection: Axis.horizontal,
-              padding: const EdgeInsets.fromLTRB(12, 12, 12, 0),
+              padding: const EdgeInsets.fromLTRB(
+                kScreenPaddingHorizontal,
+                4,
+                kScreenPaddingHorizontal,
+                0,
+              ),
               child: Row(
                 children: [
                   ClientsFilterChip(
                     label: 'Все',
+                    count: _countFor(ClientFilter.all),
                     isSelected: _filter == ClientFilter.all,
                     onTap: () => setState(() => _filter = ClientFilter.all),
                   ),
-                  const SizedBox(width: 8),
+                  const SizedBox(width: 4),
                   ClientsFilterChip(
                     label: 'Спящие',
+                    count: _countFor(ClientFilter.sleepers),
                     isSelected: _filter == ClientFilter.sleepers,
-                    onTap: () => setState(() => _filter = ClientFilter.sleepers),
+                    onTap: () =>
+                        setState(() => _filter = ClientFilter.sleepers),
                   ),
-                  const SizedBox(width: 8),
+                  const SizedBox(width: 4),
                   ClientsFilterChip(
                     label: 'Белый список',
+                    count: _countFor(ClientFilter.whiteList),
                     isSelected: _filter == ClientFilter.whiteList,
                     onTap: () =>
                         setState(() => _filter = ClientFilter.whiteList),
                   ),
-                  const SizedBox(width: 8),
+                  const SizedBox(width: 4),
                   ClientsFilterChip(
                     label: 'Заблокированные',
+                    count: _countFor(ClientFilter.blocked),
                     isSelected: _filter == ClientFilter.blocked,
                     onTap: () => setState(() => _filter = ClientFilter.blocked),
                   ),
                 ],
               ),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 12),
             Expanded(
-            child: _isLoading
-                ? const Center(
-                    child: CircularProgressIndicator(
+              child: _isLoading
+                  ? const Center(
+                      child: CircularProgressIndicator(
+                        color: AppColors.primary500,
+                      ),
+                    )
+                  : RefreshIndicator(
+                      onRefresh: _loadData,
                       color: AppColors.primary500,
-                    ),
-                  )
-                : RefreshIndicator(
-                    onRefresh: _loadData,
-                    color: AppColors.primary500,
-                    child: clients.isEmpty
-                        ? ListView(
-                            physics: const AlwaysScrollableScrollPhysics(),
-                            children: [
-                              SizedBox(
-                                height:
-                                    MediaQuery.of(context).size.height * 0.45,
-                                child: Center(
-                                  child: Column(
-                                    mainAxisAlignment: MainAxisAlignment.center,
-                                    children: [
-                                      Icon(
-                                        Icons.people_outline,
-                                        size: 64,
-                                        color: AppColors.neutral300,
-                                      ),
-                                      const SizedBox(height: 16),
-                                      Text(
-                                        _filter == ClientFilter.all &&
-                                                _searchQuery.isEmpty
-                                            ? 'Нет клиентов'
-                                            : 'Ничего не найдено',
-                                        style: TextStyle(
-                                          fontSize: 16,
-                                          color: AppColors.textSecondary,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
+                      child: clients.isEmpty
+                          ? ListView(
+                              physics: const AlwaysScrollableScrollPhysics(),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: kScreenPaddingHorizontal,
                               ),
-                            ],
-                          )
-                        : ListView.builder(
-                            padding: const EdgeInsets.symmetric(horizontal: 12),
-                            physics: const AlwaysScrollableScrollPhysics(),
-                            itemCount: clients.length,
-                            itemBuilder: (context, i) {
-                              final c = clients[i];
-                              return ClientListTile(
-                                name: c.name,
-                                subtitle: c.email ?? c.phone ?? '',
-                                visitsCount: c.visitsCount,
-                                onTap: () => Navigator.of(context).push(
-                                  MaterialPageRoute(
-                                    builder: (_) => ClientDetailScreen(
-                                      clientKey: c.key,
-                                      name: c.name,
-                                      userId: c.userId,
-                                      email: c.email,
-                                      phone: c.phone,
-                                      initialBlocked: c.isBlocked,
+                              children: [
+                                SizedBox(
+                                  height:
+                                      MediaQuery.of(context).size.height * 0.45,
+                                  child: Center(
+                                    child: Column(
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.center,
+                                      children: [
+                                        Icon(
+                                          Icons.people_outline,
+                                          size: 64,
+                                          color: AppColors.neutral300,
+                                        ),
+                                        const SizedBox(height: 16),
+                                        Text(
+                                          _filter == ClientFilter.all &&
+                                                  _searchQuery.isEmpty
+                                              ? 'Нет клиентов'
+                                              : 'Ничего не найдено',
+                                          style: TextStyle(
+                                            fontSize: 16,
+                                            color: AppColors.textSecondary,
+                                          ),
+                                        ),
+                                      ],
                                     ),
                                   ),
                                 ),
-                              );
-                            },
-                          ),
-                  ),
-          ),
-        ],
-      ),
+                              ],
+                            )
+                          : ListView.builder(
+                              padding: const EdgeInsets.fromLTRB(
+                                kScreenPaddingHorizontal,
+                                0,
+                                kScreenPaddingHorizontal,
+                                24,
+                              ),
+                              physics: const AlwaysScrollableScrollPhysics(),
+                              itemCount: rows.length,
+                              itemBuilder: (context, i) {
+                                final row = rows[i];
+                                if (row.isHeader) {
+                                  final letter = row.letter!;
+                                  final isFirst = i == 0;
+                                  return Padding(
+                                    padding: EdgeInsets.only(
+                                      top: isFirst ? 0 : 14,
+                                      bottom: 6,
+                                    ),
+                                    child: Align(
+                                      alignment: Alignment.centerLeft,
+                                      child: Text(
+                                        letter,
+                                        style:
+                                            textTheme.titleSmall?.copyWith(
+                                              fontWeight: FontWeight.w700,
+                                              color: AppColors.textPrimary,
+                                            ) ??
+                                            const TextStyle(
+                                              fontSize: 15,
+                                              fontWeight: FontWeight.w700,
+                                              color: AppColors.textPrimary,
+                                            ),
+                                      ),
+                                    ),
+                                  );
+                                }
+                                final c = row.client!;
+                                return ClientListTile(
+                                  name: c.name,
+                                  visitsCount: c.visitsCount,
+                                  onTap: () => Navigator.of(context).push(
+                                    MaterialPageRoute(
+                                      builder: (_) => ClientDetailScreen(
+                                        clientKey: c.key,
+                                        name: c.name,
+                                        userId: c.userId,
+                                        email: c.email,
+                                        phone: c.phone,
+                                        initialBlocked: c.isBlocked,
+                                      ),
+                                    ),
+                                  ),
+                                );
+                              },
+                            ),
+                    ),
+            ),
+          ],
+        ),
       ),
     );
   }

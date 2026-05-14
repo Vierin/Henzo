@@ -6,17 +6,28 @@ describe('computeTrainingDisplayColor', () => {
       trainingId: 'trn_123',
       trainingName: 'Vinyasa Flow',
       trainingCategoryId: 7,
-      mainCategoryId: 2,
+      categoryChipBgHex: '#ABCDEF',
     });
     const second = computeTrainingDisplayColor({
       trainingId: 'trn_123',
       trainingName: 'Vinyasa Flow',
       trainingCategoryId: 7,
-      mainCategoryId: 2,
+      categoryChipBgHex: '#ABCDEF',
     });
 
     expect(first).toBe(second);
     expect(first).toMatch(/^#[0-9A-F]{6}$/);
+  });
+
+  it('prefers category chip color when no explicit display color', () => {
+    expect(
+      computeTrainingDisplayColor({
+        trainingId: 'a',
+        trainingName: 'b',
+        trainingCategoryId: 1,
+        categoryChipBgHex: '#ff00aa',
+      }),
+    ).toBe('#FF00AA');
   });
 
   it('keeps same family while varying variant within category', () => {
@@ -26,7 +37,6 @@ describe('computeTrainingDisplayColor', () => {
           trainingId: id,
           trainingName: id,
           trainingCategoryId: 11,
-          mainCategoryId: 3,
         }),
       ),
     );
@@ -39,7 +49,7 @@ describe('computeTrainingDisplayColor', () => {
       trainingId: 'trn_existing',
       trainingName: 'Existing',
       trainingCategoryId: 1,
-      mainCategoryId: 1,
+      categoryChipBgHex: '#111111',
       existingColor: '#12AB34',
     });
 

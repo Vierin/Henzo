@@ -1,14 +1,15 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import { ConfigService } from '@nestjs/config';
 import { FirebaseAdminService } from './firebase-admin.service';
-import { getNotificationText } from './notification-translations';
+import {
+  formatNotificationTemplate,
+  getNotificationText,
+} from './notification-translations';
 
 @Injectable()
 export class NotificationsService {
   constructor(
     private prisma: PrismaService,
-    private configService: ConfigService,
     private firebaseAdmin: FirebaseAdminService,
   ) {}
 
@@ -171,151 +172,45 @@ export class NotificationsService {
           return t;
         });
 
-      // Separate Expo tokens and FCM/APNs tokens
-      const expoTokens: Array<{ token: string; language: string }> = [];
-      const nativeTokens: Array<{ token: string; language: string }> = [];
-
-      tokenObjects.forEach((tokenObj) => {
-        // Expo tokens start with ExponentPushToken or ExpoPushToken
-        if (
-          tokenObj.token.startsWith('ExponentPushToken[') ||
-          tokenObj.token.startsWith('ExpoPushToken')
-        ) {
-          expoTokens.push(tokenObj);
-        } else {
-          // Native tokens (FCM/APNs) - any other format
-          nativeTokens.push(tokenObj);
-        }
-      });
-
       console.log(
-        `📱 Token types: ${expoTokens.length} Expo, ${nativeTokens.length} Native (FCM/APNs)`,
+        `📱 Sending ${tokenObjects.length} FCM token(s); Expo path removed`,
       );
-
-      // Send Expo tokens via Expo API
-      if (expoTokens.length > 0) {
-        console.log(
-          `📤 Sending ${expoTokens.length} Expo token(s) via Expo API...`,
+      if (!this.firebaseAdmin.isInitialized()) {
+        console.warn('⚠️ Firebase Admin not initialized. Push cannot be sent.');
+        console.warn(
+          '   Set FIREBASE_SERVICE_ACCOUNT or FIREBASE_SERVICE_ACCOUNT_PATH environment variable',
         );
-        try {
-          const messages = expoTokens.map((tokenObj) => ({
-            to: tokenObj.token,
-            sound: 'default',
-            title,
-            body,
-            data: data || {},
-            badge: 1,
-            // Android-specific: use bookings channel for booking notifications
-            channelId: data?.type === 'NEW_BOOKING' ? 'bookings' : 'default',
-          }));
-
-          console.log(
-            `📤 Sending to Expo API:`,
-            JSON.stringify(messages, null, 2),
-          );
-
-          const response = await fetch('https://exp.host/--/api/v2/push/send', {
-            method: 'POST',
-            headers: {
-              Accept: 'application/json',
-              'Accept-Encoding': 'gzip, deflate',
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(messages),
-          });
-
-          if (!response.ok) {
-            const error = await response.json();
-            console.error('❌ Failed to send Expo push notification:', error);
-            throw new Error('Failed to send Expo push notification');
-          }
-
-          const result = await response.json();
-          console.log(
-            '✅ Expo push notifications sent:',
-            JSON.stringify(result, null, 2),
-          );
-
-          // Check for errors in response
-          if (result.data && Array.isArray(result.data)) {
-            result.data.forEach((item: any, index: number) => {
-              if (item.status === 'error') {
-                console.error(
-                  `❌ Expo push notification error for token ${index}:`,
-                  item.message,
-                );
-                if (item.message?.includes('FCM server key')) {
-                  console.error(
-                    '⚠️ FCM Server Key not configured in Expo. For Android production, you need to:',
-                  );
-                  console.error(
-                    '   1. Get FCM Server Key from Firebase Console',
-                  );
-                  console.error(
-                    '   2. Configure it in Expo Dashboard or via EAS CLI',
-                  );
-                  console.error(
-                    '   3. See apps/mobile/FIREBASE_SETUP.md for details',
-                  );
-                }
-              }
-            });
-          }
-        } catch (error) {
-          console.error('❌ Error sending Expo push notifications:', error);
-          // Don't throw, try Firebase Admin as fallback if available
-        }
+        return;
       }
-
-      // Send native tokens (FCM/APNs) via Firebase Admin
-      if (nativeTokens.length > 0) {
-        console.log(
-          `📤 Sending ${nativeTokens.length} native token(s) (FCM/APNs) via Firebase Admin...`,
-        );
-        if (this.firebaseAdmin.isInitialized()) {
-          try {
-            const channelId = androidChannelId ?? 'henzo_default';
-            console.log(`[Push] FCM channelId: ${channelId}`);
-            const response = await this.firebaseAdmin.sendMulticast(
-              nativeTokens.map((t) => t.token),
-              { title, body },
-              data
-                ? Object.keys(data).reduce(
-                    (acc, key) => {
-                      acc[key] = String(data[key]);
-                      return acc;
-                    },
-                    {} as Record<string, string>,
-                  )
-                : undefined,
-              {
-                channelId,
-                priority: 'high',
-                actions,
+      const channelId = androidChannelId ?? 'henzo_default';
+      console.log(`[Push] FCM channelId: ${channelId}`);
+      const response = await this.firebaseAdmin.sendMulticast(
+        tokenObjects.map((t) => t.token),
+        { title, body },
+        data
+          ? Object.keys(data).reduce(
+              (acc, key) => {
+                acc[key] = String(data[key]);
+                return acc;
               },
-            );
-            console.log(
-              `✅ Native push notifications sent: ${response.successCount} successful, ${response.failureCount} failed`,
-            );
-            if (response.failureCount > 0) {
-              response.responses.forEach((resp, index) => {
-                if (!resp.success) {
-                  console.error(`❌ Native token ${index} failed:`, resp.error);
-                }
-              });
-            }
-          } catch (error) {
-            console.error('❌ Error sending native push notifications:', error);
-            throw error;
+              {} as Record<string, string>,
+            )
+          : undefined,
+        {
+          channelId,
+          priority: 'high',
+          actions,
+        },
+      );
+      console.log(
+        `✅ Push notifications sent: ${response.successCount} successful, ${response.failureCount} failed`,
+      );
+      if (response.failureCount > 0) {
+        response.responses.forEach((resp, index) => {
+          if (!resp.success) {
+            console.error(`❌ Token ${index} failed:`, resp.error);
           }
-        } else {
-          console.warn(
-            '⚠️ Firebase Admin not initialized. Native tokens (FCM/APNs) cannot be sent.',
-          );
-          console.warn(
-            '   Set FIREBASE_SERVICE_ACCOUNT or FIREBASE_SERVICE_ACCOUNT_PATH environment variable',
-          );
-        }
+        });
       }
     } catch (error) {
       console.error('❌ Error sending push notification:', error);
@@ -329,12 +224,10 @@ export class NotificationsService {
     clientName: string,
     serviceName: string,
     dateTime: Date,
-    bookingStatus: 'PENDING' | 'CONFIRMED' = 'PENDING',
   ): Promise<void> {
     try {
-      const isInformational = bookingStatus === 'CONFIRMED';
       console.log(
-        `📤 Preparing to send booking notification for salon: ${salonId} (${isInformational ? 'informational' : 'request to confirm'})`,
+        `📤 Preparing to send booking notification for salon: ${salonId} (informational)`,
       );
       const tokens = await this.getPushTokensBySalonOwner(salonId);
 
@@ -375,27 +268,14 @@ export class NotificationsService {
           minute: '2-digit',
         });
 
-        const title = isInformational
-          ? getNotificationText(language, 'newBookingConfirmed')
-          : getNotificationText(language, 'newBookingRequest');
-        const verbText = isInformational
-          ? getNotificationText(language, 'booked')
-          : getNotificationText(language, 'requested');
+        const title = getNotificationText(language, 'newBookingConfirmed');
+        const verbText = getNotificationText(language, 'booked');
         const body = `${verbText} ${serviceName}`;
-
-        // Only show confirm/reject actions when booking is PENDING
-        const actions = isInformational
-          ? undefined
-          : [
-              { action: 'CONFIRM_BOOKING', title: '✓' },
-              { action: 'REJECT_BOOKING', title: '✕' },
-            ];
 
         console.log(`📤 Sending booking notification (${language}):`, {
           title,
           body,
           bookingId,
-          isInformational,
         });
 
         await this.sendPushNotification(
@@ -411,7 +291,7 @@ export class NotificationsService {
             dateTime: dateTime.toISOString(),
             formattedDate: formattedDateStr,
           },
-          actions,
+          undefined,
           'henzo_default',
         );
       }
@@ -501,6 +381,63 @@ export class NotificationsService {
         error,
       );
       // Don't throw - we don't want to fail booking cancellation if notification fails
+    }
+  }
+
+  async sendGroupClassBookingNotification(params: {
+    salonId: string;
+    studioId: string;
+    sessionId: string;
+    clientName: string;
+    trainingName: string;
+    startsAt: Date;
+  }): Promise<void> {
+    try {
+      const tokens = await this.getPushTokensBySalonOwner(params.salonId);
+      if (tokens.length === 0) {
+        return;
+      }
+      const tokensByLanguage = new Map<
+        string,
+        Array<{ token: string; language: string }>
+      >();
+      tokens.forEach((tokenObj) => {
+        const lang = tokenObj.language || 'en';
+        if (!tokensByLanguage.has(lang)) {
+          tokensByLanguage.set(lang, []);
+        }
+        tokensByLanguage.get(lang)!.push(tokenObj);
+      });
+      for (const [language, languageTokens] of tokensByLanguage.entries()) {
+        const title = getNotificationText(language, 'classBookingTitle');
+        const body = formatNotificationTemplate(
+          getNotificationText(language, 'classBookingBody'),
+          {
+            client: params.clientName,
+            class: params.trainingName || 'class',
+          },
+        );
+        await this.sendPushNotification(
+          languageTokens,
+          title,
+          body,
+          {
+            type: 'NEW_CLASS_BOOKING',
+            sessionId: params.sessionId,
+            studioId: params.studioId,
+            trainingName: params.trainingName,
+            startsAt: params.startsAt.toISOString(),
+            clientName: params.clientName,
+          },
+          undefined,
+          'henzo_default',
+        );
+      }
+    } catch (error) {
+      console.error(
+        '❌ Error sending group class booking notification:',
+        error,
+      );
     }
   }
 }

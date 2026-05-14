@@ -2,6 +2,7 @@ import { Injectable, Inject } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { UpdateTrainingScheduleDto } from './dto/update-training-schedule.dto';
 import { computeTrainingDisplayColor } from './training-color.util';
+import { AnalyticsService } from '../analytics/analytics.service';
 
 /** Normalize Training payload for JSON (hide Prisma relation names where redundant). */
 function mapTrainingResponse(t: any) {
@@ -10,7 +11,7 @@ function mapTrainingResponse(t: any) {
     trainingId: t.id,
     trainingName: t.name,
     trainingCategoryId: t.trainingCategoryId,
-    mainCategoryId: t.trainingCategory?.main_category_id,
+    categoryChipBgHex: t.trainingCategory?.chip_bg_hex ?? null,
     existingColor: t.displayColor,
   });
   return {
@@ -23,7 +24,10 @@ function mapTrainingResponse(t: any) {
 
 @Injectable()
 export class TrainingsService {
-  constructor(@Inject(PrismaService) private prisma: any) {}
+  constructor(
+    @Inject(PrismaService) private prisma: any,
+    private readonly analytics: AnalyticsService,
+  ) {}
 
   private parseHm(value: string): { hour: number; minute: number } {
     const [h, m] = value.split(':');
@@ -100,20 +104,6 @@ export class TrainingsService {
     return this.prisma.trainingCategory ?? this.prisma.TrainingCategory;
   }
 
-  private async resolveMainCategoryId(
-    trainingCategoryId: number | null | undefined,
-  ): Promise<number | null> {
-    if (trainingCategoryId == null) return null;
-    const repo = this.trainingCategory;
-    if (!repo) return null;
-    const row = await repo.findUnique({
-      where: { id: trainingCategoryId },
-      select: { main_category_id: true },
-    });
-    const raw = row?.main_category_id;
-    return typeof raw === 'number' ? raw : null;
-  }
-
   async findByStudioId(studioId: string) {
     const items = await this.training.findMany({
       where: { studioId },
@@ -144,7 +134,8 @@ export class TrainingsService {
             name_en: true,
             name_vn: true,
             name_ru: true,
-            main_category_id: true,
+            chip_bg_hex: true,
+            chip_fg_hex: true,
           },
         },
       },
@@ -201,7 +192,8 @@ export class TrainingsService {
             name_en: true,
             name_vn: true,
             name_ru: true,
-            main_category_id: true,
+            chip_bg_hex: true,
+            chip_fg_hex: true,
           },
         },
       },
@@ -293,11 +285,18 @@ export class TrainingsService {
       }
     }
 
-    const mainCategoryId = await this.resolveMainCategoryId(trainingCategoryId);
+    let categoryChipBgHex: string | null = null;
+    if (trainingCategoryId != null) {
+      const cat = await this.trainingCategory.findUnique({
+        where: { id: trainingCategoryId },
+        select: { chip_bg_hex: true },
+      });
+      categoryChipBgHex = cat?.chip_bg_hex ?? null;
+    }
     const displayColor = computeTrainingDisplayColor({
       trainingName: data.name,
       trainingCategoryId,
-      mainCategoryId,
+      categoryChipBgHex,
     });
 
     const created = await this.training.create({
@@ -321,6 +320,12 @@ export class TrainingsService {
         Trainer: true,
         trainingCategory: true,
       },
+    });
+
+    this.analytics.track(null, 'class_created', {
+      training_id: created.id,
+      studio_id: data.studioId,
+      training_category_id: trainingCategoryId,
     });
 
     return mapTrainingResponse({
@@ -422,12 +427,19 @@ export class TrainingsService {
       resolvedCategory !== undefined
         ? resolvedCategory
         : existing.trainingCategoryId;
-    const nextMainCategoryId = await this.resolveMainCategoryId(nextCategoryId);
+    let categoryChipBgHex: string | null = null;
+    if (nextCategoryId != null) {
+      const catRow = await this.trainingCategory.findUnique({
+        where: { id: nextCategoryId },
+        select: { chip_bg_hex: true },
+      });
+      categoryChipBgHex = catRow?.chip_bg_hex ?? null;
+    }
     const nextDisplayColor = computeTrainingDisplayColor({
       trainingId: existing.id,
       trainingName: nextName,
       trainingCategoryId: nextCategoryId,
-      mainCategoryId: nextMainCategoryId,
+      categoryChipBgHex,
       existingColor: existing.displayColor,
     });
 
@@ -681,7 +693,8 @@ export class TrainingsService {
             name_en: true,
             name_vn: true,
             name_ru: true,
-            main_category_id: true,
+            chip_bg_hex: true,
+            chip_fg_hex: true,
           },
         },
         Studio: {
@@ -718,7 +731,8 @@ export class TrainingsService {
         trainingCategory: {
           select: {
             name_en: true,
-            main_category_id: true,
+            chip_bg_hex: true,
+            chip_fg_hex: true,
           },
         },
       },
@@ -749,7 +763,8 @@ export class TrainingsService {
         trainingCategory: {
           select: {
             name_en: true,
-            main_category_id: true,
+            chip_bg_hex: true,
+            chip_fg_hex: true,
           },
         },
       },

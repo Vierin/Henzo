@@ -7,6 +7,7 @@ import {
 } from '@prisma/client';
 import { AuthService } from '../auth/auth.service';
 import { PrismaService } from '../prisma/prisma.service';
+import { AnalyticsService } from '../analytics/analytics.service';
 import { CreateRecurringTrainingSessionsDto } from './dto/create-recurring-training-sessions.dto';
 import { UpdateOwnerTrainingSessionDto } from './dto/update-owner-training-session.dto';
 import { computeTrainingDisplayColor } from '../trainings/training-color.util';
@@ -35,7 +36,7 @@ const clientScheduleEnrollmentSelect =
             displayColor: true,
             trainingCategoryId: true,
             trainingCategory: {
-              select: { main_category_id: true },
+              select: { chip_bg_hex: true },
             },
           },
         },
@@ -61,6 +62,7 @@ export class FitnessSessionsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly authService: AuthService,
+    private readonly analytics: AnalyticsService,
   ) {}
 
   /**
@@ -322,7 +324,7 @@ export class FitnessSessionsService {
             displayColor: true,
             trainingCategory: {
               select: {
-                main_category_id: true,
+                chip_bg_hex: true,
                 name_en: true,
                 name_vn: true,
                 name_ru: true,
@@ -358,7 +360,7 @@ export class FitnessSessionsService {
             trainingId: s.trainingId,
             trainingName: s.Training?.name,
             trainingCategoryId: s.Training?.trainingCategoryId,
-            mainCategoryId: s.Training?.trainingCategory?.main_category_id,
+            categoryChipBgHex: s.Training?.trainingCategory?.chip_bg_hex,
             existingColor: s.Training?.displayColor,
           }),
           price:
@@ -623,6 +625,7 @@ export class FitnessSessionsService {
       throw new HttpException('No spots left', HttpStatus.BAD_REQUEST);
     }
 
+    let wasCreated = false;
     await this.prisma.$transaction(async (tx) => {
       if (existing) {
         if (existing.status === SessionEnrollmentStatus.ACTIVE) {
@@ -635,6 +638,7 @@ export class FitnessSessionsService {
             cancelledAt: null,
           },
         });
+        wasCreated = true;
       } else {
         await tx.sessionEnrollment.create({
           data: {
@@ -647,8 +651,17 @@ export class FitnessSessionsService {
           where: { id: sessionId },
           data: { bookedCount: { increment: 1 } },
         });
+        wasCreated = true;
       }
     });
+
+    if (wasCreated) {
+      this.analytics.track(targetUserId!, 'booking_created', {
+        session_id: sessionId,
+        studio_id: (session as any).studioId,
+        source: 'owner_added',
+      });
+    }
 
     return { success: true };
   }
@@ -729,6 +742,25 @@ export class FitnessSessionsService {
       }
     });
 
+    if (
+      row.status === SessionEnrollmentStatus.ACTIVE &&
+      nextStatus === SessionEnrollmentStatus.CANCELLED
+    ) {
+      const enrollment = await this.prisma.sessionEnrollment.findUnique({
+        where: { id: enrollmentId },
+        select: {
+          userId: true,
+          TrainingSession: { select: { studioId: true } },
+        },
+      });
+      this.analytics.track(enrollment?.userId ?? null, 'booking_cancelled', {
+        enrollment_id: enrollmentId,
+        session_id: row.sessionId,
+        studio_id: enrollment?.TrainingSession?.studioId,
+        source: 'owner_cancelled',
+      });
+    }
+
     return { success: true };
   }
 
@@ -789,8 +821,8 @@ export class FitnessSessionsService {
               trainingId: e.TrainingSession.Training.id,
               trainingName: e.TrainingSession.Training.name,
               trainingCategoryId: e.TrainingSession.Training.trainingCategoryId,
-              mainCategoryId:
-                e.TrainingSession.Training.trainingCategory?.main_category_id,
+              categoryChipBgHex:
+                e.TrainingSession.Training.trainingCategory?.chip_bg_hex,
               existingColor: e.TrainingSession.Training.displayColor,
             }),
           }

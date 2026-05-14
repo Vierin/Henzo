@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../constants/colors.dart';
+import '../widgets/app_search_prefix_icon.dart';
 
 class PublicHomeSearchScreen extends StatefulWidget {
   const PublicHomeSearchScreen({super.key, required this.locationLabel});
@@ -89,6 +90,10 @@ class _PublicHomeSearchScreenState extends State<PublicHomeSearchScreen> {
                         Icons.arrow_back,
                         color: AppColors.textPrimary,
                       ),
+                    ),
+                    const Padding(
+                      padding: EdgeInsets.only(left: 4, right: 8),
+                      child: AppSearchPrefixIcon(),
                     ),
                     Expanded(
                       child: TextField(

@@ -44,7 +44,7 @@ export function LandingPhoneShowcaseSection() {
 		}
 
 		const ctx = gsap.context(() => {
-			gsap.set([phone, phoneFrame, circlesEl], {
+			gsap.set([phone, phoneFrame], {
 				willChange: 'transform, opacity',
 				backfaceVisibility: 'hidden',
 				transformPerspective: 1000,
@@ -52,7 +52,6 @@ export function LandingPhoneShowcaseSection() {
 			gsap.set(phone, {
 				x: 0,
 				xPercent: 0,
-				force3D: true,
 			});
 
 			const makeCardLoop = (cardWrap: HTMLDivElement, delaySec: number) => {
@@ -147,9 +146,7 @@ export function LandingPhoneShowcaseSection() {
 						end: 'bottom bottom',
 						pin: phone,
 						pinSpacing: false,
-						pinType: 'transform',
-						pinReparent: true,
-						scrub: 0.15,
+						scrub: true,
 						anticipatePin: 1,
 						invalidateOnRefresh: true,
 						fastScrollEnd: true,
@@ -159,8 +156,6 @@ export function LandingPhoneShowcaseSection() {
 				phoneTl.to(phoneFrame, {
 					scale: 0.9,
 					ease: 'none',
-					transformOrigin: 'center center',
-					force3D: true,
 				});
 			});
 

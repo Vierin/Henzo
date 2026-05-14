@@ -111,6 +111,20 @@ export class EnvironmentVariables {
   @IsString()
   @IsOptional()
   STRIPE_CHECKOUT_CANCEL_URL?: string;
+
+  // GA4 Measurement Protocol (optional — server-side events)
+  @IsString()
+  @IsOptional()
+  GA4_MEASUREMENT_ID?: string;
+
+  @IsString()
+  @IsOptional()
+  GA4_API_SECRET?: string;
+
+  // Sentry (optional — backend error tracking)
+  @IsString()
+  @IsOptional()
+  SENTRY_DSN?: string;
 }
 
 export function validate(config: Record<string, unknown>) {

@@ -7,6 +7,7 @@ import { TranslationService } from '../trainings/translation.service';
 import { computeTrainingDisplayColor } from '../trainings/training-color.util';
 import { generateStudioSlug } from '../utils/slug';
 import { nanoid } from 'nanoid';
+import { AnalyticsService } from '../analytics/analytics.service';
 
 @Injectable()
 export class StudiosService {
@@ -18,6 +19,7 @@ export class StudiosService {
     @Inject(PrismaService) private prisma: any,
     private mapboxService: MapboxService,
     private translationService: TranslationService,
+    private analytics: AnalyticsService,
   ) {}
 
   private normalizeReminderSettings(input: any): Record<string, unknown> {
@@ -347,7 +349,7 @@ export class StudiosService {
                   displayColor: true,
                   trainingCategory: {
                     select: {
-                      main_category_id: true,
+                      chip_bg_hex: true,
                     },
                   },
                 },
@@ -455,7 +457,7 @@ export class StudiosService {
     search?: string;
     location?: string;
     category?: string;
-    /** Comma-separated main category slugs (e.g. hair-barber,massage-spa) for map filters */
+    /** Comma-separated training category slugs (e.g. yoga,strength) */
     categories?: string;
     sortBy?: string;
     minRating?: number;
@@ -499,6 +501,19 @@ export class StudiosService {
 
     const skip = (page - 1) * limit;
 
+    const csvSlugs = categoriesCsv
+      .split(',')
+      .map((s) => s.trim())
+      .filter(Boolean);
+
+    let studioCatsForFilter: { id: number; name: string; slug: string }[] = [];
+    if (
+      csvSlugs.length > 0 ||
+      (category && category !== 'all' && Number.isNaN(parseInt(category, 10)))
+    ) {
+      studioCatsForFilter = await this.getStudioCategories();
+    }
+
     // Build where clause
     const where: any = {
       status: 'ACTIVE', // Only show active Studios in public search
@@ -506,19 +521,13 @@ export class StudiosService {
 
     // Build category service filter first (needed for combining with search)
     let categoryServiceFilter: any = null;
-    const csvSlugs = categoriesCsv
-      .split(',')
-      .map((s) => s.trim())
-      .filter(Boolean);
     if (csvSlugs.length > 0) {
-      const mainCats = this.getStudioCategories().filter((c) =>
+      const matched = studioCatsForFilter.filter((c) =>
         csvSlugs.includes(c.slug),
       );
-      if (mainCats.length > 0) {
+      if (matched.length > 0) {
         categoryServiceFilter = {
-          trainingCategory: {
-            main_category_id: { in: mainCats.map((c) => c.id) },
-          },
+          trainingCategoryId: { in: matched.map((c) => c.id) },
         };
       }
     } else if (category && category !== 'all') {
@@ -528,19 +537,9 @@ export class StudiosService {
         // Numeric ID - treat as trainingCategoryId for backward compatibility
         categoryServiceFilter = { trainingCategoryId: categoryId };
       } else {
-        // String - check if it's a main category slug (e.g., "hair-barber", "massage-spa")
-        const mainCategories = this.getStudioCategories();
-        const mainCategory = mainCategories.find(
-          (cat) => cat.slug === category,
-        );
-
-        if (mainCategory) {
-          // Filter by main_category_id through trainingCategory JOIN
-          categoryServiceFilter = {
-            trainingCategory: {
-              main_category_id: mainCategory.id,
-            },
-          };
+        const bySlug = studioCatsForFilter.find((cat) => cat.slug === category);
+        if (bySlug) {
+          categoryServiceFilter = { trainingCategoryId: bySlug.id };
         } else {
           // Fallback: filter by training category name
           categoryServiceFilter = {
@@ -937,40 +936,32 @@ export class StudiosService {
     return result;
   }
 
-  // Single source of truth for Studio categories
-  getStudioCategories() {
-    return [
-      {
-        id: 1,
-        name: 'Strength & Conditioning',
-        slug: 'strength-conditioning',
-      },
-      {
-        id: 2,
-        name: 'Cardio & HIIT',
-        slug: 'cardio-hiit',
-      },
-      {
-        id: 3,
-        name: 'Yoga & Mobility',
-        slug: 'yoga-mobility',
-      },
-      {
-        id: 4,
-        name: 'Pilates',
-        slug: 'pilates',
-      },
-      {
-        id: 5,
-        name: 'Personal Training',
-        slug: 'personal-training',
-      },
-      {
-        id: 6,
-        name: 'Recovery & Rehab',
-        slug: 'recovery-rehab',
-      },
-    ];
+  /**
+   * Public filter chips: DB training categories with stable URL slugs
+   * (`slugFromCategoryNameEn`).
+   */
+  async getStudioCategories(): Promise<
+    { id: number; name: string; slug: string }[]
+  > {
+    const repo = this.prisma.trainingCategory ?? this.prisma.TrainingCategory;
+    if (!repo) return [];
+    const rows = await repo.findMany({
+      orderBy: { name_en: 'asc' },
+      select: { id: true, name_en: true },
+    });
+    return rows.map((r: { id: number; name_en: string }) => ({
+      id: r.id,
+      name: r.name_en,
+      slug: StudiosService.slugFromCategoryNameEn(r.name_en),
+    }));
+  }
+
+  private static slugFromCategoryNameEn(nameEn: string): string {
+    return nameEn
+      .trim()
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-+|-+$/g, '');
   }
 
   async getCurrentUserStudio(userId: string) {
@@ -1292,6 +1283,9 @@ export class StudiosService {
       console.log(
         `✅ Created Studio "${result.name}" with default FREEMIUM subscription`,
       );
+      this.analytics.track(userId, 'studio_created', {
+        studio_id: (result as any).id,
+      });
       return result;
     } catch (error) {
       console.error('❌ Database error creating Studio:', error.message);
@@ -1682,8 +1676,8 @@ export class StudiosService {
                     trainingId: session.Training.id,
                     trainingName: session.Training.name,
                     trainingCategoryId: session.Training.trainingCategoryId,
-                    mainCategoryId:
-                      session.Training.trainingCategory?.main_category_id,
+                    categoryChipBgHex:
+                      session.Training.trainingCategory?.chip_bg_hex,
                     existingColor: session.Training.displayColor,
                   }),
                 }
@@ -2001,7 +1995,7 @@ export class StudiosService {
             displayColor: true,
             trainingCategory: {
               select: {
-                main_category_id: true,
+                chip_bg_hex: true,
               },
             },
           },
@@ -2038,7 +2032,7 @@ export class StudiosService {
               trainingId: s.Training.id,
               trainingName: s.Training.name,
               trainingCategoryId: s.Training.trainingCategoryId,
-              mainCategoryId: s.Training.trainingCategory?.main_category_id,
+              categoryChipBgHex: s.Training.trainingCategory?.chip_bg_hex,
               existingColor: s.Training.displayColor,
             }),
           }
@@ -2176,7 +2170,6 @@ export class StudiosService {
           select: {
             name_en: true,
             name_vn: true,
-            main_category_id: true,
           },
         },
       },
@@ -2197,10 +2190,9 @@ export class StudiosService {
       ]),
     );
 
-    // Group categories by studioId (names, leaf training category IDs, main category IDs)
+    // Group categories by studioId (names and training category IDs)
     const categoryMap = new Map<string, Set<string>>();
     const categoryIdsMap = new Map<string, Set<number>>();
-    const mainCategoryIdsMap = new Map<string, Set<number>>();
     categoryData.forEach((item) => {
       if (!item.trainingCategory || !item.trainingCategoryId) return;
       const categoryName =
@@ -2210,14 +2202,9 @@ export class StudiosService {
       if (!categoryMap.has(item.studioId)) {
         categoryMap.set(item.studioId, new Set());
         categoryIdsMap.set(item.studioId, new Set());
-        mainCategoryIdsMap.set(item.studioId, new Set());
       }
       categoryMap.get(item.studioId)?.add(categoryName);
       categoryIdsMap.get(item.studioId)?.add(item.trainingCategoryId);
-      const mid = item.trainingCategory.main_category_id;
-      if (mid != null) {
-        mainCategoryIdsMap.get(item.studioId)?.add(mid);
-      }
     });
 
     // Enrich Studios with aggregated data
@@ -2231,9 +2218,6 @@ export class StudiosService {
       const trainingCategoryIds = Array.from(
         categoryIdsMap.get(Studio.id) || [],
       );
-      const mainCategoryIds = Array.from(
-        mainCategoryIdsMap.get(Studio.id) || [],
-      );
 
       return {
         id: Studio.id,
@@ -2245,7 +2229,6 @@ export class StudiosService {
         avgRating: Math.round(ratingData.avgRating * 10) / 10, // Round to 1 decimal
         categories,
         trainingCategoryIds,
-        mainCategoryIds,
         _count: {
           Training: Studio._count?.Training || 0,
           Review: ratingData.reviewCount,

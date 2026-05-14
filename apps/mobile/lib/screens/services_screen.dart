@@ -11,6 +11,7 @@ import '../../services/cache/salon_cache.dart';
 import '../../services/cache/services_staff_cache.dart';
 import '../../services/services_api_service.dart';
 import '../../utils/show_api_error.dart';
+import '../../widgets/app_search_prefix_icon.dart';
 import 'add_training_screen.dart';
 
 enum ServicesSort {
@@ -543,6 +544,11 @@ class _ServicesScreenState extends State<ServicesScreen> {
                             controller: _searchController,
                             decoration: InputDecoration(
                               hintText: locale.t('servicesScreen.searchByName'),
+                              prefixIcon: const AppSearchPrefixIcon(),
+                              prefixIconConstraints: const BoxConstraints(
+                                minWidth: 40,
+                                minHeight: 40,
+                              ),
                               filled: true,
                               fillColor: AppColors.backgroundPrimary,
                               border: OutlineInputBorder(

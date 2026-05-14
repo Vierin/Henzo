@@ -31,7 +31,7 @@ describe('RemindersService', () => {
 
     const prisma = {
       sessionBooking: {
-        findMany: jest.fn().mockResolvedValueOnce([]).mockResolvedValueOnce([booking]),
+        findMany: jest.fn().mockResolvedValueOnce([booking]),
         findUnique: jest.fn().mockResolvedValue({ remindersSentIntervals: [] }),
         update: jest.fn().mockResolvedValue({}),
       },

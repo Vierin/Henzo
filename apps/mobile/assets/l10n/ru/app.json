@@ -30,6 +30,13 @@
 		"analytics": "Аналитика",
 		"profile": "Профиль"
 	},
+	"shell": {
+		"tabHome": "Главная",
+		"tabSchedule": "Расписание",
+		"tabClients": "Клиенты",
+		"tabSettings": "Настройки",
+		"loadingWorkspace": "Загружаем данные…"
+	},
 	"auth": {
 		"signInTitle": "Вход",
 		"ownerPanel": "Бизнес-панель",
@@ -133,6 +140,10 @@
 	},
 	"ownerSession": {
 		"detailTitle": "Занятие",
+		"share": "Поделиться",
+		"capacityWaitlistLine": "Осталось мест: {spots} · в листе ожидания: {waitlist}",
+		"attendanceColumnLabel": "НЕ ПРИШЁЛ / ПРИШЁЛ",
+		"noShowOnlyAfterSession": "No-show можно отметить только после окончания занятия.",
 		"capacityLabel": "ЗАПОЛНЕНИЕ",
 		"bookedSummary": "{current} из {max} записано",
 		"instructorRole": "Тренер",
@@ -300,6 +311,7 @@
 		"languageVi": "Tiếng Việt",
 		"title": "Настройки",
 		"changeLanguage": "Сменить язык",
+		"chooseLanguage": "Выберите язык",
 		"languageComingSoon": "Смена языка в разработке",
 		"privacyPolicy": "Политика конфиденциальности",
 		"privacyComingSoon": "Политика конфиденциальности в разработке",
@@ -434,5 +446,34 @@
 		"mapHint": "Нажмите на карту, чтобы установить маркер в нужное место.",
 		"selectAddressOnMap": "Выберите адрес для просмотра на карте",
 		"select": "Выбрать"
+	},
+	"addTraining": {
+		"categorySheetTitle": "ВЫБЕРИТЕ КАТЕГОРИЮ",
+		"pickCategory": "Выберите категорию",
+		"categoryOtherChip": "+ Другое",
+		"addressSectionLabel": "Адрес",
+		"durationSuffix": "мин",
+		"newClassStep1": "Новый класс · 1/2",
+		"newClassStep2": "Новый класс · 2/2",
+		"step2": {
+			"oneTraining": "Одна тренировка",
+			"repeatedTraining": "Повторяющаяся",
+			"repeatedHint": "Можно создать те же занятия на другие дни недели",
+			"date": "Дата",
+			"selectDate": "Выберите дату",
+			"time": "Время",
+			"enterTime": "Укажите время",
+			"trainer": "Тренер",
+			"trainerProNote": "Чтобы добавить тренеров, оформите подписку Pro",
+			"createClass": "Создать класс",
+			"dateRange": "Период",
+			"startDate": "Начало",
+			"endDate": "Конец",
+			"repeatOn": "Дни повтора",
+			"schedule": "Расписание",
+			"scheduleHint": "Время для каждого выбранного дня",
+			"sessionsPlanned": "Занятий в периоде: {count}",
+			"back": "Назад"
+		}
 	}
 }

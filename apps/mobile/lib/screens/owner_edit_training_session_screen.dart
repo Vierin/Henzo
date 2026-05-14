@@ -5,6 +5,7 @@ import '../constants/colors.dart';
 import '../models/staff_member.dart';
 import '../services/auth_service.dart';
 import '../services/cache/salon_cache.dart';
+import '../services/cache/owner_sessions_cache.dart';
 import '../services/dashboard_api_service.dart';
 import '../services/staff_api_service.dart';
 import '../utils/show_api_error.dart';
@@ -183,6 +184,7 @@ class _OwnerEditTrainingSessionScreenState
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Сохранено')),
       );
+      context.read<OwnerSessionsCache>().invalidate();
       Navigator.of(context).pop(true);
     } catch (e) {
       if (mounted) showApiError(context, e);
@@ -229,6 +231,7 @@ class _OwnerEditTrainingSessionScreenState
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Занятие отменено')),
       );
+      context.read<OwnerSessionsCache>().invalidate();
       Navigator.of(context).pop(true);
     } catch (e) {
       if (mounted) showApiError(context, e);

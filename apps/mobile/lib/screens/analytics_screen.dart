@@ -8,6 +8,7 @@ import '../services/dashboard_api_service.dart';
 import '../utils/show_api_error.dart';
 import '../utils/currency_format.dart';
 import 'clients_screen.dart';
+import 'main_shell.dart';
 import 'period_picker_screen.dart';
 import 'subscription_screen.dart';
 
@@ -79,6 +80,11 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
   }
 
   void _openClients({String? filter}) {
+    final shell = context.findAncestorStateOfType<MainShellState>();
+    if (shell != null) {
+      shell.openClientsTab(initialFilter: filter);
+      return;
+    }
     Navigator.of(context).push(
       MaterialPageRoute(
         builder: (_) => ClientsScreen(initialFilter: filter),

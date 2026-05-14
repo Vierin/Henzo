@@ -1,28 +1,27 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import '../../constants/colors.dart';
+import '../../constants/layout.dart';
 import '../../l10n/locale_provider.dart';
-import '../../utils/currency_format.dart';
 import '../../utils/show_api_error.dart';
 import '../../models/salon.dart';
-import '../../models/subscription.dart';
+import '../../models/user_model.dart';
 import '../../services/auth_service.dart';
 import '../../services/api_client.dart';
+import '../../services/cache/owner_sessions_cache.dart';
 import '../../services/cache/salon_cache.dart';
 import '../../services/dashboard_api_service.dart';
 import '../../services/notifications_store.dart';
-import '../../services/subscription_api_service.dart';
 import '../../services/subscription_refresh_notifier.dart';
 import '../../utils/color_hex.dart';
-import '../../widgets/dashboard/dashboard_header_pill.dart';
 import '../../widgets/dashboard/owner_checklist_card.dart';
 import '../../widgets/dashboard/dashboard_setup_card.dart';
-import '../../widgets/dashboard/owner_weekly_insight_strip.dart';
-import '../../widgets/owner_training_session_card.dart';
+import '../../widgets/dashboard/owner_daily_schedule_block.dart';
 import '../owner_training_session_detail_screen.dart';
 import '../app_settings_screen.dart';
-import 'owner_studio_reviews_screen.dart';
+import '../main_shell.dart';
 import '../notifications_screen.dart';
 import '../salon_setup_screen.dart';
 
@@ -34,11 +33,13 @@ class DashboardScreen extends StatefulWidget {
 }
 
 class _DashboardScreenState extends State<DashboardScreen> {
+  // Custom palette matching the design mock.
+  static const _statGreen = Color(0xFFBDE03A); // lime-yellow stat card
+  static const _statPink = Color(0xFFFAD0C5); // salmon stat card
+
   Salon? _salon;
-  Subscription? _subscription;
   StudioOnboardingChecklist? _checklist;
   List<OwnerTrainingSession> _todaySessions = [];
-  StudioAnalytics? _weekLast;
   bool _isLoading = false;
   bool _isPublishing = false;
   SubscriptionRefreshNotifier? _subRefresh;
@@ -73,65 +74,46 @@ class _DashboardScreenState extends State<DashboardScreen> {
       if (mounted) {
         setState(() {
           _salon = null;
-          _subscription = null;
-          _weekLast = null;
           _isLoading = false;
         });
       }
       return;
     }
     try {
+      final cache = context.read<OwnerSessionsCache>();
       final salon = await context.read<SalonCache>().getSalon(token);
-      Subscription? subscription;
-      try {
-        subscription = await SubscriptionApiService.getCurrent(token);
-      } catch (_) {
-        subscription = null;
-      }
       final now = DateTime.now();
       final from = DateTime(now.year, now.month, now.day);
       final to = from.add(const Duration(days: 1));
       List<OwnerTrainingSession> sessions = [];
       StudioOnboardingChecklist? checklist;
-      StudioAnalytics? weekLast;
       try {
-        sessions = await DashboardApiService.getOwnerTrainingSessions(
+        final fromUtc = from.toUtc();
+        final toUtc = to.toUtc();
+        sessions = await cache.getSessions(
           token,
-          fromIso: from.toUtc().toIso8601String(),
-          toIso: to.toUtc().toIso8601String(),
+          fromUtc: fromUtc,
+          toUtc: toUtc,
         );
         sessions.sort((a, b) => a.startsAt.compareTo(b.startsAt));
       } catch (_) {
-        // Daily sessions are non-blocking for dashboard bootstrap.
         sessions = [];
       }
       if (salon != null) {
-        final lastWeek = _lastCompletedCalendarWeekLocal();
-        final checklistFuture =
-            DashboardApiService.getCurrentStudioOnboardingChecklist(token);
-        final analyticsFuture = DashboardApiService.getCurrentStudioAnalytics(
-          token,
-          fromIso: lastWeek.from.toUtc().toIso8601String(),
-          toIso: lastWeek.to.toUtc().toIso8601String(),
-        );
-        checklist = await checklistFuture;
         try {
-          weekLast = await analyticsFuture;
+          checklist =
+              await DashboardApiService.getCurrentStudioOnboardingChecklist(
+                token,
+              );
         } catch (_) {
-          weekLast = null;
+          checklist = null;
         }
       }
       if (mounted) {
         setState(() {
           _salon = salon;
-          _subscription = subscription;
           _checklist = checklist;
           _todaySessions = sessions;
-          _weekLast = weekLast;
-          if (salon == null) {
-            _weekLast = null;
-            _subscription = null;
-          }
           _isLoading = false;
         });
       }
@@ -140,8 +122,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
         setState(() {
           _checklist = null;
           _todaySessions = [];
-          _weekLast = null;
-          _subscription = null;
           _isLoading = false;
         });
         showApiError(context, e);
@@ -149,165 +129,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
     }
   }
 
-  /// Mon 00:00 – Sun 23:59:59 of the last full calendar week (before current week).
-  ({DateTime from, DateTime to}) _lastCompletedCalendarWeekLocal() {
-    final now = DateTime.now();
-    final todayStart = DateTime(now.year, now.month, now.day);
-    final thisMonday = todayStart.subtract(
-      Duration(days: todayStart.weekday - 1),
-    );
-    final lastSunday = thisMonday.subtract(const Duration(days: 1));
-    final to = DateTime(
-      lastSunday.year,
-      lastSunday.month,
-      lastSunday.day,
-      23,
-      59,
-      59,
-    );
-    final from = thisMonday.subtract(const Duration(days: 7));
-    return (from: from, to: to);
-  }
-
-  double _thirdMetricValue(StudioAnalytics a) {
-    if (a.isPro) return a.trainingSessionsScheduled.toDouble();
-    if (a.bookingCount <= 0) return 0;
-    return a.revenueTotal / a.bookingCount;
-  }
-
-  String _subscriptionStatusLine(LocaleProvider loc, String status) {
-    switch (status.toUpperCase()) {
-      case 'ACTIVE':
-        return loc.t('profile.active');
-      case 'CANCELLED':
-        return loc.t('profile.cancelled');
-      case 'EXPIRED':
-        return loc.t('profile.expired');
-      default:
-        return loc.t('profile.inactive');
-    }
-  }
-
-  String? _formatPeriodEndIso(String? iso, String localeCode) {
-    if (iso == null || iso.isEmpty) return null;
-    final dt = DateTime.tryParse(iso);
-    if (dt == null) return null;
-    return DateFormat.yMMMd(localeCode).format(dt.toLocal());
-  }
-
-  Widget _buildSubscriptionSummary(LocaleProvider loc) {
-    final sub = _subscription!;
-    final isPro = sub.type.toUpperCase() == 'PRO';
-    final until = _formatPeriodEndIso(sub.currentPeriodEnd, loc.localeCode);
-
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-      decoration: BoxDecoration(
-        color: AppColors.backgroundPrimary,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: AppColors.borderPrimary),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Expanded(
-                child: Text(
-                  '${loc.t('profile.package')}: ${isPro ? loc.t('profile.pro') : loc.t('profile.free')}',
-                  style: const TextStyle(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w700,
-                    color: AppColors.textPrimary,
-                  ),
-                ),
-              ),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                decoration: BoxDecoration(
-                  color: AppColors.primary500.withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Text(
-                  isPro ? 'PRO' : 'FREE',
-                  style: const TextStyle(
-                    fontSize: 10,
-                    fontWeight: FontWeight.w800,
-                    color: AppColors.primary500,
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 6),
-          Text(
-            '${loc.t('profile.status')}: ${_subscriptionStatusLine(loc, sub.status)}',
-            style: const TextStyle(
-              fontSize: 13,
-              color: AppColors.textSecondary,
-            ),
-          ),
-          if (isPro && until != null) ...[
-            const SizedBox(height: 4),
-            Text(
-              '${loc.t('profile.validUntil')}: $until',
-              style: const TextStyle(
-                fontSize: 13,
-                color: AppColors.textSecondary,
-              ),
-            ),
-          ],
-        ],
-      ),
-    );
-  }
-
-  Widget _buildWeeklyInsights(LocaleProvider loc) {
-    final current = _weekLast;
-    if (current == null) return const SizedBox.shrink();
-
-    final t = loc.t;
-
-    final todayClasses = _todaySessions.length;
-    final todayBookings = _todaySessions.fold<int>(
-      0,
-      (a, s) => a + s.enrolledCount,
-    );
-    final todayLine = t('dashboard.todaySummary')
-        .replaceAll('{classes}', '$todayClasses')
-        .replaceAll('{bookings}', '$todayBookings');
-
-    final showSessions = current.isPro;
-
-    return OwnerWeeklyInsightStrip(
-      todaySummaryLine: todayLine,
-      sectionTitle: t('dashboard.weeklyInsightsTitle'),
-      cards: [
-        OwnerWeeklyInsightCard(
-          label: t('dashboard.weeklyRevenueLabel'),
-          value: formatVnd(current.revenueTotal),
-          brandVariant: 0,
-        ),
-        OwnerWeeklyInsightCard(
-          label: t('dashboard.weeklyBookingsLabel'),
-          value: '${current.bookingCount}',
-          brandVariant: 1,
-        ),
-        OwnerWeeklyInsightCard(
-          label: showSessions
-              ? t('dashboard.weeklySessionsLabel')
-              : t('dashboard.weeklyAvgTicketLabel'),
-          value: showSessions
-              ? '${current.trainingSessionsScheduled}'
-              : formatVnd(_thirdMetricValue(current)),
-          brandVariant: 2,
-        ),
-      ],
-    );
-  }
-
   Future<void> _handleRefresh() async {
+    if (!mounted) return;
+    context.read<OwnerSessionsCache>().invalidate();
     await _loadData();
   }
 
@@ -315,21 +139,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
     final changed = await Navigator.of(
       context,
     ).pushNamed<bool>('/trainings/new');
-    if (changed == true && mounted) await _loadData();
+    if (changed == true && mounted) {
+      context.read<OwnerSessionsCache>().invalidate();
+      await _loadData();
+    }
   }
 
   Future<void> _openSettings() async {
-    final changed = await Navigator.push<bool>(
-      context,
-      MaterialPageRoute(
-        builder: (_) =>
-            const AppSettingsScreen(initialSection: SettingsHubSection.studio),
-      ),
-    );
-    if (changed == true && mounted) await _loadData();
-  }
-
-  Future<void> _openBookingSettings() async {
     final changed = await Navigator.push<bool>(
       context,
       MaterialPageRoute(
@@ -377,6 +193,16 @@ class _DashboardScreenState extends State<DashboardScreen> {
     }
   }
 
+  String? _venueLabel() {
+    final s = _salon;
+    if (s == null) return null;
+    final n = s.name?.trim();
+    if (n != null && n.isNotEmpty) return n;
+    final a = s.address?.trim();
+    if (a != null && a.isNotEmpty) return a;
+    return null;
+  }
+
   String? _ownerTrainerFallback() {
     final u = context.read<AuthService>().user;
     if (u == null) return null;
@@ -387,107 +213,563 @@ class _DashboardScreenState extends State<DashboardScreen> {
     return null;
   }
 
-  Widget _buildDailySchedule() {
-    return Container(
-      width: double.infinity,
-      margin: const EdgeInsets.symmetric(horizontal: 10),
+  String _displayTrainer(OwnerTrainingSession s) {
+    final raw = s.trainerName.trim();
+    if (raw.isNotEmpty && raw != '—' && raw != '-') return s.trainerName;
+    final f = _ownerTrainerFallback()?.trim();
+    if (f != null && f.isNotEmpty) return f;
+    return '—';
+  }
+
+  OwnerTrainingSession? get _featuredSession {
+    if (_todaySessions.isEmpty) return null;
+    final now = DateTime.now();
+    for (final s in _todaySessions) {
+      if (s.endsAt.isAfter(now)) return s;
+    }
+    return _todaySessions.last;
+  }
+
+  String _formatDateHeader(String localeCode) {
+    final f = DateFormat('EEEE, d MMM', localeCode);
+    return f.format(DateTime.now()).toUpperCase();
+  }
+
+  String _formatTimeRange(OwnerTrainingSession s) {
+    final start = TimeOfDay.fromDateTime(s.startsAt.toLocal());
+    final end = TimeOfDay.fromDateTime(s.endsAt.toLocal());
+    final startStr = MaterialLocalizations.of(
+      context,
+    ).formatTimeOfDay(start, alwaysUse24HourFormat: true);
+    final endStr = MaterialLocalizations.of(
+      context,
+    ).formatTimeOfDay(end, alwaysUse24HourFormat: true);
+    return '$startStr - $endStr';
+  }
+
+  int get _todayBookings =>
+      _todaySessions.fold<int>(0, (a, s) => a + s.enrolledCount);
+
+  int get _todayWaitlist {
+    int total = 0;
+    for (final s in _todaySessions) {
+      if (s.capacity > 0 && s.enrolledCount > s.capacity) {
+        total += (s.enrolledCount - s.capacity);
+      }
+    }
+    return total;
+  }
+
+  void _openSessionDetail(OwnerTrainingSession s) {
+    Navigator.of(context).push<void>(
+      MaterialPageRoute<void>(
+        builder: (_) => OwnerTrainingSessionDetailScreen(
+          session: s,
+          trainingColor: parseHexColor(s.trainingDisplayColorHex),
+          venueName: _venueLabel(),
+          trainerFallbackName: _ownerTrainerFallback(),
+          onParticipantsChanged: () {
+            context.read<OwnerSessionsCache>().invalidate();
+            _loadData();
+          },
+          onEditSession: s.sessionId.isNotEmpty
+              ? () async {
+                  final changed = await Navigator.of(context).pushNamed<bool>(
+                    '/owner/session/edit',
+                    arguments: s.toRouteArgs(),
+                  );
+                  if (changed == true) {
+                    if (!mounted) return;
+                    context.read<OwnerSessionsCache>().invalidate();
+                    await _loadData();
+                  }
+                }
+              : null,
+        ),
+      ),
+    );
+  }
+
+  Future<void> _openEditCurrentSession(OwnerTrainingSession s) async {
+    if (s.sessionId.isEmpty) return;
+    final changed = await Navigator.of(
+      context,
+    ).pushNamed<bool>('/owner/session/edit', arguments: s.toRouteArgs());
+    if (changed == true && mounted) {
+      context.read<OwnerSessionsCache>().invalidate();
+      await _loadData();
+    }
+  }
+
+  // --- UI ---------------------------------------------------------------
+
+  Widget _header(LocaleProvider loc) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(12, 12, 12, 0),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          Expanded(
+            child: Text(
+              _formatDateHeader(loc.localeCode),
+              style: const TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w700,
+                letterSpacing: 1.1,
+                color: AppColors.textPrimary,
+              ),
+            ),
+          ),
+          Consumer<NotificationsStore>(
+            builder: (context, store, _) {
+              final count = store.unreadCount;
+              final hasUnread = count > 0;
+              return GestureDetector(
+                behavior: HitTestBehavior.opaque,
+                onTap: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => const NotificationsScreen(),
+                  ),
+                ),
+                child: Container(
+                  padding: EdgeInsets.symmetric(
+                    horizontal: hasUnread ? 14 : 10,
+                    vertical: 8,
+                  ),
+                  decoration: BoxDecoration(
+                    color: hasUnread
+                        ? AppColors.primary500
+                        : AppColors.backgroundPrimary,
+                    borderRadius: BorderRadius.circular(999),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      SvgPicture.asset(
+                        'assets/icons/icon-bell.svg',
+                        width: 18,
+                        height: 22,
+                        colorFilter: ColorFilter.mode(
+                          hasUnread ? Colors.white : AppColors.textPrimary,
+                          BlendMode.srcIn,
+                        ),
+                      ),
+                      if (hasUnread) ...[
+                        const SizedBox(width: 6),
+                        Text(
+                          count > 99 ? '99+' : '$count',
+                          style: const TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w700,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+              );
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
+  String _greetingUserLine(UserModel? user) {
+    final n = user?.name?.trim();
+    if (n != null && n.isNotEmpty) return n;
+    final e = user?.email.trim() ?? '';
+    if (e.isNotEmpty) return e;
+    return '';
+  }
+
+  Widget _greeting(UserModel? user) {
+    final name = _greetingUserLine(user);
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(12, 8, 12, 20),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            children: [
-              const Expanded(
-                child: Text(
-                  'Daily schedule',
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.w700,
-                    color: AppColors.textPrimary,
-                  ),
-                ),
-              ),
-              Container(
-                width: 26,
-                height: 26,
-                decoration: const BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: AppColors.primary500,
-                ),
-                alignment: Alignment.center,
-                child: Text(
-                  '${_todaySessions.length}',
-                  style: const TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w700,
-                    color: Colors.white,
-                  ),
-                ),
-              ),
-            ],
+          const Text(
+            'Hello,',
+            style: TextStyle(
+              fontSize: 28,
+              fontWeight: FontWeight.w400,
+              height: 1.1,
+              color: AppColors.textPrimary,
+            ),
           ),
-          const SizedBox(height: 12),
-          if (_todaySessions.isEmpty)
+          if (name.isNotEmpty) ...[
+            const SizedBox(height: 2),
             Text(
-              'No trainings scheduled for today',
-              style: TextStyle(fontSize: 14, color: AppColors.textSecondary),
-            )
-          else
-            ..._todaySessions.map((s) {
-              final isPast = s.endsAt.isBefore(DateTime.now());
-              return OwnerTrainingSessionCard(
-                session: s,
-                trainingColor: parseHexColor(s.trainingDisplayColorHex),
-                margin: const EdgeInsets.only(top: -10),
-                isPast: isPast,
-                pastLabel: isPast ? 'Past' : null,
-                trainerFallbackName: _ownerTrainerFallback(),
-                onTap: () {
-                  Navigator.of(context).push<void>(
-                    MaterialPageRoute<void>(
-                      builder: (_) => OwnerTrainingSessionDetailScreen(
-                        session: s,
-                        trainingColor: parseHexColor(s.trainingDisplayColorHex),
-                        trainerFallbackName: _ownerTrainerFallback(),
-                        onParticipantsChanged: _loadData,
-                        onEditSession: s.sessionId.isNotEmpty
-                            ? () async {
-                                final changed = await Navigator.of(context)
-                                    .pushNamed<bool>(
-                                      '/owner/session/edit',
-                                      arguments: s.toRouteArgs(),
-                                    );
-                                if (changed == true && context.mounted) {
-                                  _loadData();
-                                }
-                              }
-                            : null,
-                        onEditService: s.trainingId.isNotEmpty
-                            ? () async {
-                                final changed = await Navigator.of(context)
-                                    .pushNamed<bool?>(
-                                      '/services',
-                                      arguments: {
-                                        'editTrainingId': s.trainingId,
-                                      },
-                                    );
-                                if (changed == true && context.mounted) {
-                                  await _loadData();
-                                }
-                              }
-                            : null,
+              name,
+              style: const TextStyle(
+                fontSize: 28,
+                fontWeight: FontWeight.w400,
+                height: 1.15,
+                color: AppColors.textPrimary,
+              ),
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _statCard({
+    required String value,
+    required String label,
+    required Color background,
+    Color textColor = AppColors.textPrimary,
+    bool bordered = false,
+  }) {
+    return AspectRatio(
+      aspectRatio: 1,
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.fromLTRB(12, 16, 12, 10),
+        decoration: BoxDecoration(
+          color: background,
+          borderRadius: BorderRadius.circular(18),
+          border: bordered
+              ? Border.all(color: AppColors.borderPrimary, width: 1)
+              : null,
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            FittedBox(
+              fit: BoxFit.scaleDown,
+              alignment: Alignment.centerLeft,
+              child: Text(
+                value,
+                style: TextStyle(
+                  fontSize: 30,
+                  fontWeight: FontWeight.w500,
+                  height: 0.8,
+                  color: textColor,
+                ),
+              ),
+            ),
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w400,
+                height: 1,
+                color: textColor,
+              ),
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _statsRow() {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(10, 0, 10, 20),
+      child: Row(
+        children: [
+          Expanded(
+            child: _statCard(
+              value: '${_todaySessions.length}',
+              label: 'Classes today',
+              background: _statGreen,
+            ),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: _statCard(
+              value: '$_todayBookings',
+              label: 'Bookings',
+              background: _statPink,
+            ),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: _statCard(
+              value: '$_todayWaitlist',
+              label: 'Waitlist',
+              background: AppColors.backgroundPrimary,
+              bordered: true,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _featuredCard(OwnerTrainingSession s) {
+    final cap = s.capacity;
+    final enrolled = s.enrolledCount;
+    final progress = cap > 0 ? (enrolled / cap).clamp(0.0, 1.0) : 0.0;
+    final percent = (progress * 100).round();
+    final fillLabel = cap > 0 ? '$enrolled / $cap' : '$enrolled';
+    final trainer = _displayTrainer(s);
+
+    const double _ringsBox = 200;
+    const double _editHalf = 15;
+    // Stack coords: edit button center ≈ (w - _editHalf, _editHalf) in top row.
+    const double _ringsRight = _editHalf - _ringsBox / 2;
+    const double _ringsTop = _editHalf - _ringsBox / 2;
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(12, 0, 12, 20),
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: () => _openSessionDetail(s),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(22),
+          child: ColoredBox(
+            color: AppColors.primary500,
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(14, 20, 14, 20),
+              child: Stack(
+                clipBehavior: Clip.none,
+                children: [
+                  Positioned(
+                    right: _ringsRight,
+                    top: _ringsTop,
+                    width: _ringsBox,
+                    height: _ringsBox,
+                    child: IgnorePointer(
+                      child: Opacity(
+                        opacity: 0.18,
+                        child: CustomPaint(
+                          painter: _RingsPainter(color: Colors.white),
+                        ),
                       ),
                     ),
-                  );
-                },
-              );
-            }),
-        ],
+                  ),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          SvgPicture.asset(
+                            'assets/icons/icon-pin.svg',
+                            width: 8,
+                            height: 12,
+                          ),
+                          const SizedBox(width: 6),
+                          Text(
+                            'TODAY',
+                            style: TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w700,
+                              letterSpacing: 1.2,
+                              color: Colors.white.withValues(alpha: 0.95),
+                            ),
+                          ),
+                          const Spacer(),
+                          if (s.sessionId.isNotEmpty)
+                            GestureDetector(
+                              behavior: HitTestBehavior.opaque,
+                              onTap: () => _openEditCurrentSession(s),
+                              child: Container(
+                                width: 30,
+                                height: 30,
+                                decoration: const BoxDecoration(
+                                  color: Colors.white,
+                                  shape: BoxShape.circle,
+                                ),
+                                alignment: Alignment.center,
+                                child: const Icon(
+                                  Icons.edit_outlined,
+                                  size: 16,
+                                  color: AppColors.primary500,
+                                ),
+                              ),
+                            ),
+                        ],
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        s.trainingName,
+                        style: const TextStyle(
+                          fontSize: 24,
+                          fontWeight: FontWeight.w700,
+                          height: 1,
+                          color: Colors.white,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      const SizedBox(height: 6),
+                      Text(
+                        '${_formatTimeRange(s)} · With $trainer',
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w500,
+                          color: Colors.white,
+                          letterSpacing: -0.15,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      const SizedBox(height: 18),
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: [
+                          SizedBox(
+                            width: 54,
+                            height: 54,
+                            child: Stack(
+                              fit: StackFit.expand,
+                              children: [
+                                CircularProgressIndicator(
+                                  value: progress,
+                                  strokeWidth: 5,
+                                  backgroundColor: Colors.white.withValues(
+                                    alpha: 0.35,
+                                  ),
+                                  valueColor:
+                                      const AlwaysStoppedAnimation<Color>(
+                                        Colors.white,
+                                      ),
+                                ),
+                                Center(
+                                  child: Text(
+                                    '$percent%',
+                                    style: const TextStyle(
+                                      fontSize: 15,
+                                      fontWeight: FontWeight.w700,
+                                      color: Colors.white,
+                                      height: 1,
+                                      letterSpacing: -0.15,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Text(
+                                  fillLabel,
+                                  style: const TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w700,
+                                    color: Colors.white,
+                                    height: 1,
+                                    letterSpacing: -0.8,
+                                  ),
+                                ),
+                                Text(
+                                  'booked',
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w400,
+                                    color: Colors.white,
+                                    letterSpacing: -0.15,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          GestureDetector(
+                            behavior: HitTestBehavior.opaque,
+                            onTap: () => _openSessionDetail(s),
+                            child: Container(
+                              margin: const EdgeInsets.only(top: 15),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 14,
+                                vertical: 10,
+                              ),
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                borderRadius: BorderRadius.circular(999),
+                              ),
+                              child: const Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Text(
+                                    'Show more',
+                                    style: TextStyle(
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w600,
+                                      color: AppColors.textPrimary,
+                                    ),
+                                  ),
+                                  SizedBox(width: 2),
+                                  Icon(
+                                    Icons.chevron_right,
+                                    size: 20,
+                                    color: AppColors.textPrimary,
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _checklistBlock() {
+    if (_checklist == null) return const SizedBox.shrink();
+    final c = _checklist!;
+    final allDone =
+        c.hasTraining.completed &&
+        c.hasPhoto.completed &&
+        c.bookingWindowConfigured.completed &&
+        c.contactsConfigured.completed;
+    if (allDone) return const SizedBox.shrink();
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(
+        kScreenPaddingHorizontal,
+        4,
+        kScreenPaddingHorizontal,
+        16,
+      ),
+      child: OwnerChecklistCard(
+        hasTraining: c.hasTraining.completed,
+        hasPhoto: c.hasPhoto.completed,
+        hasLogo: c.hasLogo.completed,
+        bookingWindowConfigured: c.bookingWindowConfigured.completed,
+        contactsConfigured: c.contactsConfigured.completed,
+        canPublish: c.canPublish,
+        isStudioActive: c.status.toUpperCase() == 'ACTIVE',
+        isPublishing: _isPublishing,
+        missingRequiredSteps: c.missingRequiredSteps
+            .map(_humanizeChecklistStep)
+            .toList(),
+        onCreateTrainingTap: _openTrainingSetup,
+        onAddPhotoTap: _openSettings,
+        onAddLogoTap: _openSettings,
+        onBookingWindowTap: _openSettings,
+        onContactsTap: _openSettings,
+        onPublishTap: _publishStudio,
       ),
     );
   }
 
   @override
   Widget build(BuildContext context) {
+    final loc = context.watch<LocaleProvider>();
+    final authUser = context.watch<AuthService>().user;
+    final featured = _featuredSession;
+
     return Scaffold(
       backgroundColor: AppColors.backgroundSecondary,
       body: SafeArea(
@@ -499,122 +781,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Header
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(12, 16, 12, 16),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    crossAxisAlignment: CrossAxisAlignment.center,
-                    children: [
-                      Expanded(
-                        child: Text(
-                          _isLoading || _salon == null
-                              ? context.watch<LocaleProvider>().t(
-                                  'nav.dashboard',
-                                )
-                              : (_salon!.name ?? ''),
-                          style: const TextStyle(
-                            fontSize: 24,
-                            fontWeight: FontWeight.bold,
-                            color: AppColors.textPrimary,
-                          ),
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Wrap(
-                        spacing: 8,
-                        runSpacing: 4,
-                        alignment: WrapAlignment.end,
-                        children: [
-                          if (_salon != null)
-                            DashboardHeaderPill(
-                              icon: Icons.star_rounded,
-                              label: _salon!.rating != null
-                                  ? _salon!.rating!.toStringAsFixed(1)
-                                  : '—',
-                              onTap: () => Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (_) => OwnerStudioReviewsScreen(
-                                    studioId: _salon!.id,
-                                    headerAvgRating: _salon!.rating,
-                                  ),
-                                ),
-                              ),
-                            ),
-                          Consumer<NotificationsStore>(
-                            builder: (context, store, _) {
-                              final count = store.unreadCount;
-                              return Stack(
-                                clipBehavior: Clip.none,
-                                children: [
-                                  DashboardHeaderIconPill(
-                                    icon: Icons.notifications_outlined,
-                                    onTap: () => Navigator.push(
-                                      context,
-                                      MaterialPageRoute(
-                                        builder: (_) =>
-                                            const NotificationsScreen(),
-                                      ),
-                                    ),
-                                  ),
-                                  if (count > 0)
-                                    Positioned(
-                                      top: -4,
-                                      right: -4,
-                                      child: Container(
-                                        padding: const EdgeInsets.all(4),
-                                        constraints: const BoxConstraints(
-                                          minWidth: 18,
-                                          minHeight: 18,
-                                        ),
-                                        decoration: const BoxDecoration(
-                                          color: AppColors.primary500,
-                                          shape: BoxShape.circle,
-                                        ),
-                                        alignment: Alignment.center,
-                                        child: Text(
-                                          count > 99 ? '99+' : '$count',
-                                          style: const TextStyle(
-                                            fontSize: 10,
-                                            fontWeight: FontWeight.w600,
-                                            color: Colors.white,
-                                          ),
-                                        ),
-                                      ),
-                                    ),
-                                ],
-                              );
-                            },
-                          ),
-                          DashboardHeaderIconPill(
-                            icon: Icons.settings_outlined,
-                            onTap: () => Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (_) => const AppSettingsScreen(),
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 16),
-                if (!_isLoading &&
-                    _salon != null &&
-                    _subscription != null)
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
-                    child: _buildSubscriptionSummary(
-                      context.watch<LocaleProvider>(),
-                    ),
-                  ),
-                if (_isLoading)
-                  const SizedBox(
-                    height: 120,
+                _header(loc),
+                _greeting(authUser),
+                if (_isLoading && _salon == null)
+                  const Padding(
+                    padding: EdgeInsets.symmetric(vertical: 40),
                     child: Center(
                       child: CircularProgressIndicator(
                         color: AppColors.primary500,
@@ -622,57 +793,38 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     ),
                   )
                 else if (_salon == null)
-                  DashboardSetupCard(
-                    onSetupTap: () => Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => SalonSetupScreen(
-                          onSaved: () {
-                            Navigator.pop(context);
-                            _loadData();
-                          },
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 12),
+                    child: DashboardSetupCard(
+                      onSetupTap: () => Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => SalonSetupScreen(
+                            onSaved: () {
+                              Navigator.pop(context);
+                              context.read<OwnerSessionsCache>().invalidate();
+                              _loadData();
+                            },
+                          ),
                         ),
                       ),
                     ),
                   )
-                else
-                  Column(
-                    children: [
-                      if (_checklist != null &&
-                          !(_checklist!.hasTraining.completed &&
-                              _checklist!.hasPhoto.completed &&
-                              _checklist!.bookingWindowConfigured.completed &&
-                              _checklist!.contactsConfigured.completed)) ...[
-                        OwnerChecklistCard(
-                          hasTraining: _checklist!.hasTraining.completed,
-                          hasPhoto: _checklist!.hasPhoto.completed,
-                          hasLogo: _checklist!.hasLogo.completed,
-                          bookingWindowConfigured:
-                              _checklist!.bookingWindowConfigured.completed,
-                          contactsConfigured:
-                              _checklist!.contactsConfigured.completed,
-                          canPublish: _checklist!.canPublish,
-                          isStudioActive:
-                              _checklist!.status.toUpperCase() == 'ACTIVE',
-                          isPublishing: _isPublishing,
-                          missingRequiredSteps: _checklist!.missingRequiredSteps
-                              .map(_humanizeChecklistStep)
-                              .toList(),
-                          onCreateTrainingTap: _openTrainingSetup,
-                          onAddPhotoTap: _openSettings,
-                          onAddLogoTap: _openSettings,
-                          onBookingWindowTap: _openBookingSettings,
-                          onContactsTap: _openSettings,
-                          onPublishTap: _publishStudio,
-                        ),
-                        const SizedBox(height: 12),
-                      ],
-                      _buildWeeklyInsights(context.watch<LocaleProvider>()),
-                      const SizedBox(height: 16),
-                      _buildDailySchedule(),
-                    ],
+                else ...[
+                  _statsRow(),
+                  if (featured != null) _featuredCard(featured),
+                  OwnerDailyScheduleBlock(
+                    sessions: _todaySessions,
+                    emptyMessage: 'No trainings scheduled for today',
+                    onSeeAll: () => context
+                        .findAncestorStateOfType<MainShellState>()
+                        ?.openScheduleTabForToday(),
+                    onSessionTap: _openSessionDetail,
+                    ownerTrainerFallback: _ownerTrainerFallback(),
                   ),
-                const SizedBox(height: 24),
+                  _checklistBlock(),
+                ],
+                const SizedBox(height: 16),
               ],
             ),
           ),
@@ -680,4 +832,25 @@ class _DashboardScreenState extends State<DashboardScreen> {
       ),
     );
   }
+}
+
+class _RingsPainter extends CustomPainter {
+  _RingsPainter({required this.color});
+  final Color color;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = color
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1.4;
+    final center = Offset(size.width / 2, size.height / 2);
+    const radii = <double>[10, 30, 50, 70, 90];
+    for (final r in radii) {
+      canvas.drawCircle(center, r, paint);
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant _RingsPainter old) => old.color != color;
 }

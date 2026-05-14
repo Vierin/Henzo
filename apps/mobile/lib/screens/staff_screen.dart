@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../constants/colors.dart';
+import '../../constants/layout.dart';
 import '../../l10n/locale_provider.dart';
 import '../../models/salon.dart';
 import '../../models/service_item.dart';
@@ -851,7 +852,12 @@ class _StaffServicesPickerSheetBodyState
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             Padding(
-              padding: const EdgeInsets.fromLTRB(20, 16, 16, 8),
+              padding: const EdgeInsets.fromLTRB(
+                kScreenPaddingHorizontal,
+                16,
+                kScreenPaddingHorizontal,
+                8,
+              ),
               child: Row(
                 children: [
                   Expanded(
@@ -900,7 +906,7 @@ class _StaffServicesPickerSheetBodyState
                     ),
                     controlAffinity: ListTileControlAffinity.leading,
                     contentPadding: const EdgeInsets.symmetric(
-                      horizontal: 20,
+                      horizontal: kScreenPaddingHorizontal,
                       vertical: 4,
                     ),
                   );
