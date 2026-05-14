@@ -451,9 +451,31 @@
 	},
 	"addTraining": {
 		"categorySheetTitle": "CHỌN DANH MỤC",
-		"categorySearchHint": "Chọn danh mục",
 		"pickCategory": "Chọn danh mục",
-		"apply": "Áp dụng",
-		"categoryOtherChip": "+ Khác"
+		"categoryOtherChip": "+ Khác",
+		"addressSectionLabel": "Địa chỉ",
+		"durationSuffix": "phút",
+		"newClassStep1": "Lớp mới · 1/2",
+		"newClassStep2": "Lớp mới · 2/2",
+		"step2": {
+			"oneTraining": "Một buổi tập",
+			"repeatedTraining": "Tập lặp lại",
+			"repeatedHint": "Bạn có thể tạo cùng buổi tập vào các ngày khác",
+			"date": "Ngày",
+			"selectDate": "Chọn ngày",
+			"time": "Giờ",
+			"enterTime": "Nhập giờ",
+			"trainer": "Huấn luyện viên",
+			"trainerProNote": "Để thêm HLV, hãy mua gói Pro",
+			"createClass": "Tạo lớp mới",
+			"dateRange": "Khoảng ngày",
+			"startDate": "Ngày bắt đầu",
+			"endDate": "Ngày kết thúc",
+			"repeatOn": "Lặp vào",
+			"schedule": "Lịch",
+			"scheduleHint": "Chỉnh giờ cho từng ngày đã chọn",
+			"sessionsPlanned": "{count} buổi trong khoảng này",
+			"back": "Quay lại"
+		}
 	}
 }

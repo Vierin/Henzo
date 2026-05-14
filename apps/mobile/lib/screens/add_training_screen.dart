@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/services.dart';
+import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
 import '../constants/colors.dart';
@@ -16,7 +17,6 @@ import '../services/cache/salon_cache.dart';
 import '../services/cache/services_staff_cache.dart';
 import '../services/services_api_service.dart';
 import '../utils/show_api_error.dart';
-import '../widgets/app_search_prefix_icon.dart';
 import 'main_shell.dart';
 
 /// Matches registration / mock secondary controls (chevron, pin tint).
@@ -65,6 +65,7 @@ class AddTrainingScreen extends StatefulWidget {
 class _AddTrainingScreenState extends State<AddTrainingScreen> {
   final _nameController = TextEditingController();
   final _nameFocusNode = FocusNode();
+  final _durationFocusNode = FocusNode();
   final _durationController = TextEditingController(text: '60');
   final _priceController = TextEditingController();
   final _capacityController = TextEditingController(text: '10');
@@ -77,6 +78,7 @@ class _AddTrainingScreenState extends State<AddTrainingScreen> {
   final Map<int, TimeOfDay> _recurringDayTimes = {};
   DateTime _sessionDate = DateTime.now();
   TimeOfDay _sessionTime = const TimeOfDay(hour: 9, minute: 0);
+  DateTime _recurringEndDate = DateTime.now();
   Salon? _studio;
   List<ServiceItem> _existing = [];
   List<TrainingCategoryOption> _categories = [];
@@ -94,13 +96,18 @@ class _AddTrainingScreenState extends State<AddTrainingScreen> {
     for (final day in _recurringDays) {
       _recurringDayTimes[day] = _sessionTime;
     }
+    _durationFocusNode.addListener(_onDurationFocusChanged);
     WidgetsBinding.instance.addPostFrameCallback((_) => _load());
   }
+
+  void _onDurationFocusChanged() => setState(() {});
 
   @override
   void dispose() {
     _nameController.dispose();
     _nameFocusNode.dispose();
+    _durationFocusNode.removeListener(_onDurationFocusChanged);
+    _durationFocusNode.dispose();
     _durationController.dispose();
     _priceController.dispose();
     _capacityController.dispose();
@@ -255,23 +262,105 @@ class _AddTrainingScreenState extends State<AddTrainingScreen> {
     );
   }
 
+  /// Duration with unit immediately after digits (not trailing the full field).
+  Widget _durationMinutesField(LocaleProvider loc) {
+    const radius = BorderRadius.all(Radius.circular(12));
+    final invalid = _step1DurationError;
+    final focused = _durationFocusNode.hasFocus;
+    final errorSide = BorderSide(color: AppColors.error600, width: 1.2);
+    final noneSide = BorderSide.none;
+    final focusSide = BorderSide(
+      color: invalid ? AppColors.error600 : AppColors.primary500,
+      width: 1.2,
+    );
+    final side = invalid ? errorSide : (focused ? focusSide : noneSide);
+    return Container(
+      decoration: BoxDecoration(
+        color: AppColors.backgroundPrimary,
+        borderRadius: radius,
+        border: Border.fromBorderSide(side),
+      ),
+      padding: const EdgeInsets.only(top: 2, bottom: 4, right: 10),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          const Padding(
+            padding: EdgeInsets.only(left: 13, right: 8),
+            child: Icon(
+              Icons.access_time_rounded,
+              color: _kFormAccentPurple,
+              size: 22,
+            ),
+          ),
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.baseline,
+            textBaseline: TextBaseline.alphabetic,
+            children: [
+              SizedBox(
+                width: 52,
+                child: TextField(
+                  controller: _durationController,
+                  focusNode: _durationFocusNode,
+                  style: _stepFieldInputStyle,
+                  keyboardType: TextInputType.number,
+                  textInputAction: TextInputAction.next,
+                  onChanged: (_) => setState(() => _step1DurationError = false),
+                  decoration: InputDecoration(
+                    hintText: '60',
+                    hintStyle: const TextStyle(
+                      color: _kRegHintMuted,
+                      fontSize: 16,
+                      fontWeight: FontWeight.w500,
+                    ),
+                    border: InputBorder.none,
+                    enabledBorder: InputBorder.none,
+                    focusedBorder: InputBorder.none,
+                    isDense: true,
+                    contentPadding: const EdgeInsets.only(
+                      top: 8,
+                      bottom: 10,
+                      right: 2,
+                    ),
+                  ),
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.only(bottom: 10),
+                child: Text(
+                  loc.t('addTraining.durationSuffix'),
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.textPrimary,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const Spacer(),
+        ],
+      ),
+    );
+  }
+
   static const TextStyle _stepFieldInputStyle = TextStyle(
     fontSize: 16,
     color: AppColors.textPrimary,
   );
 
   Widget _stepFormLabel(String text) => Padding(
-        padding: const EdgeInsets.only(bottom: 10, left: 12),
-        child: Text(
-          text.toUpperCase(),
-          style: const TextStyle(
-            fontSize: 13,
-            fontWeight: FontWeight.w600,
-            letterSpacing: -0.3,
-            color: AppColors.textPrimary,
-          ),
-        ),
-      );
+    padding: const EdgeInsets.only(bottom: 10, left: 12),
+    child: Text(
+      text.toUpperCase(),
+      style: const TextStyle(
+        fontSize: 13,
+        fontWeight: FontWeight.w600,
+        letterSpacing: -0.3,
+        color: AppColors.textPrimary,
+      ),
+    ),
+  );
 
   void _onCloseAddTraining() {
     context.findAncestorStateOfType<MainShellState>()?.restoreShellTab(
@@ -394,8 +483,6 @@ class _AddTrainingScreenState extends State<AddTrainingScreen> {
     if (_categories.isEmpty) return;
     final loc = context.read<LocaleProvider>();
     final localeCode = loc.localeCode;
-    int? temp = _selectedCategoryId;
-    var searchQuery = '';
     final result = await showModalBottomSheet<_CategoryPickResult?>(
       context: context,
       showDragHandle: false,
@@ -421,214 +508,100 @@ class _AddTrainingScreenState extends State<AddTrainingScreen> {
               12 + MediaQuery.viewInsetsOf(sheetCtx).bottom,
             ),
             child: SizedBox(
-              height: h * 0.58,
-              child: StatefulBuilder(
-                builder: (context, setModalState) {
-                  final q = searchQuery.trim().toLowerCase();
-                  final filtered = q.isEmpty
-                      ? _categories
-                      : _categories.where((c) {
-                          final label = c.label(localeCode).toLowerCase();
-                          return label.contains(q) ||
-                              c.nameEn.toLowerCase().contains(q) ||
-                              c.nameRu.toLowerCase().contains(q) ||
-                              c.nameVn.toLowerCase().contains(q);
-                        }).toList();
-                  return Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
+              height: h * 0.42,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Expanded(
-                            child: Padding(
-                              padding: const EdgeInsets.only(top: 4, left: 4),
-                              child: Text(
-                                loc.t('addTraining.categorySheetTitle'),
-                                style: const TextStyle(
-                                  fontSize: 13,
-                                  fontWeight: FontWeight.w600,
-                                  letterSpacing: 0.4,
-                                  color: AppColors.textSecondary,
-                                ),
-                              ),
-                            ),
-                          ),
-                          IconButton(
-                            onPressed: popCancel,
-                            icon: const Icon(Icons.close),
-                            color: AppColors.textSecondary,
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 4),
-                      TextField(
-                        onChanged: (v) =>
-                            setModalState(() => searchQuery = v),
-                        style: const TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w400,
-                          color: AppColors.textPrimary,
-                        ),
-                        decoration: InputDecoration(
-                          hintText: loc.t('addTraining.categorySearchHint'),
-                          hintStyle: const TextStyle(
-                            color: _kRegHintMuted,
-                            fontSize: 16,
-                            fontWeight: FontWeight.w500,
-                          ),
-                          isDense: true,
-                          filled: true,
-                          fillColor: AppColors.backgroundPrimary,
-                          prefixIcon: const Padding(
-                            padding: EdgeInsets.only(left: 12, right: 6),
-                            child: AppSearchPrefixIcon(
-                              width: 14,
-                              height: 15,
-                            ),
-                          ),
-                          prefixIconConstraints: const BoxConstraints(
-                            minWidth: 0,
-                            minHeight: 0,
-                          ),
-                          contentPadding: const EdgeInsets.fromLTRB(
-                            0,
-                            12,
-                            14,
-                            12,
-                          ),
-                          enabledBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
-                            borderSide: const BorderSide(
-                              color: AppColors.primary500,
-                              width: 1.2,
-                            ),
-                          ),
-                          focusedBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
-                            borderSide: const BorderSide(
-                              color: AppColors.primary500,
-                              width: 1.4,
-                            ),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 14),
                       Expanded(
-                        child: SingleChildScrollView(
-                          child: Wrap(
-                            spacing: 8,
-                            runSpacing: 8,
-                            children: filtered.map((c) {
-                              final selected = temp == c.id;
-                              final isOther = _trainingCategoryIsOther(c);
-                              final Color bg;
-                              final Color fg;
-                              if (isOther) {
-                                bg = AppColors.backgroundPrimary;
-                                fg = AppColors.textPrimary;
-                              } else {
-                                final chipBg = c.backgroundColor(
-                                  AppColors.neutral500,
-                                );
-                                bg = chipBg;
-                                fg = c.foregroundColorOn(chipBg);
-                              }
-                              final borderW = selected ? 2.0 : 1.0;
-                              final borderColor = selected
-                                  ? AppColors.primary500
-                                  : (isOther
-                                      ? AppColors.primary300
-                                      : Colors.transparent);
-                              final chipLabel = isOther
-                                  ? loc.t('addTraining.categoryOtherChip')
-                                  : c.label(localeCode);
-                              return Material(
-                                color: Colors.transparent,
-                                child: InkWell(
-                                  onTap: () =>
-                                      setModalState(() => temp = c.id),
-                                  borderRadius: BorderRadius.circular(999),
-                                  child: Ink(
-                                    decoration: BoxDecoration(
-                                      color: bg,
-                                      borderRadius:
-                                          BorderRadius.circular(999),
-                                      border: Border.all(
-                                        color: borderColor,
-                                        width: borderW,
-                                      ),
-                                    ),
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 14,
-                                      vertical: 10,
-                                    ),
-                                    child: Text(
-                                      chipLabel,
-                                      style: TextStyle(
-                                        color: fg,
-                                        fontWeight: FontWeight.w600,
-                                        fontSize: 13,
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              );
-                            }).toList(),
+                        child: Padding(
+                          padding: const EdgeInsets.only(top: 4, left: 4),
+                          child: Text(
+                            loc.t('addTraining.categorySheetTitle'),
+                            style: const TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w600,
+                              letterSpacing: 0.4,
+                              color: AppColors.textSecondary,
+                            ),
                           ),
                         ),
                       ),
-                      const SizedBox(height: 12),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: SizedBox(
-                              height: 48,
-                              child: OutlinedButton(
-                                onPressed: popCancel,
-                                style: OutlinedButton.styleFrom(
-                                  foregroundColor: AppColors.textPrimary,
-                                  side: const BorderSide(
-                                    color: AppColors.primary500,
-                                    width: 1.2,
-                                  ),
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(12),
-                                  ),
-                                ),
-                                child: Text(loc.t('common.cancel')),
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: 10),
-                          Expanded(
-                            child: SizedBox(
-                              height: 48,
-                              child: FilledButton(
-                                onPressed: () => Navigator.of(sheetCtx).pop(
-                                  _CategoryPickResult.apply(temp),
-                                ),
-                                style: FilledButton.styleFrom(
-                                  backgroundColor: AppColors.primary500,
-                                  foregroundColor: Colors.white,
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(12),
-                                  ),
-                                ),
-                                child: Text(
-                                  loc.t('addTraining.apply'),
-                                  style: const TextStyle(
-                                    fontWeight: FontWeight.w700,
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ),
-                        ],
+                      IconButton(
+                        onPressed: popCancel,
+                        icon: const Icon(Icons.close),
+                        color: AppColors.textSecondary,
                       ),
                     ],
-                  );
-                },
+                  ),
+                  const SizedBox(height: 8),
+                  Expanded(
+                    child: SingleChildScrollView(
+                      child: Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
+                        children: _categories.map((c) {
+                          final selected = _selectedCategoryId == c.id;
+                          final isOther = _trainingCategoryIsOther(c);
+                          final Color bg;
+                          final Color fg;
+                          if (isOther) {
+                            bg = AppColors.backgroundPrimary;
+                            fg = AppColors.textPrimary;
+                          } else {
+                            final chipBg = c.backgroundColor(
+                              AppColors.neutral500,
+                            );
+                            bg = chipBg;
+                            fg = c.foregroundColorOn(chipBg);
+                          }
+                          final borderW = selected ? 2.0 : 1.0;
+                          final borderColor = selected
+                              ? AppColors.primary500
+                              : (isOther
+                                    ? AppColors.primary300
+                                    : Colors.transparent);
+                          final chipLabel = isOther
+                              ? loc.t('addTraining.categoryOtherChip')
+                              : c.label(localeCode);
+                          return Material(
+                            color: Colors.transparent,
+                            child: InkWell(
+                              onTap: () => Navigator.of(
+                                sheetCtx,
+                              ).pop(_CategoryPickResult.apply(c.id)),
+                              borderRadius: BorderRadius.circular(999),
+                              child: Ink(
+                                decoration: BoxDecoration(
+                                  color: bg,
+                                  borderRadius: BorderRadius.circular(999),
+                                  border: Border.all(
+                                    color: borderColor,
+                                    width: borderW,
+                                  ),
+                                ),
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 14,
+                                  vertical: 10,
+                                ),
+                                child: Text(
+                                  chipLabel,
+                                  style: TextStyle(
+                                    color: fg,
+                                    fontWeight: FontWeight.w600,
+                                    fontSize: 13,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          );
+                        }).toList(),
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ),
           ),
@@ -643,6 +616,42 @@ class _AddTrainingScreenState extends State<AddTrainingScreen> {
     });
   }
 
+  DateTime _recurringRangeCap() {
+    final start = DateTime(
+      _sessionDate.year,
+      _sessionDate.month,
+      _sessionDate.day,
+    );
+    return start.add(Duration(days: _bookingPeriodDays()));
+  }
+
+  void _clampRecurringEndToPolicy() {
+    final start = DateTime(
+      _sessionDate.year,
+      _sessionDate.month,
+      _sessionDate.day,
+    );
+    final cap = _recurringRangeCap();
+    if (_recurringEndDate.isBefore(start)) {
+      _recurringEndDate = start;
+    } else if (_recurringEndDate.isAfter(cap)) {
+      _recurringEndDate = cap;
+    }
+  }
+
+  String _formatYMMMd(DateTime d, LocaleProvider loc) =>
+      DateFormat.yMMMd(loc.localeCode).format(d);
+
+  String _narrowWeekday(int weekday, LocaleProvider loc) {
+    final d = DateTime(2024, 1, weekday);
+    return DateFormat.E(loc.localeCode).format(d);
+  }
+
+  String _fullWeekday(int weekday, LocaleProvider loc) {
+    final d = DateTime(2024, 1, weekday);
+    return DateFormat.EEEE(loc.localeCode).format(d);
+  }
+
   List<DateTime> _buildRecurringPreview() {
     if (!_isRecurring || _recurringDays.isEmpty) return [];
     final start = DateTime(
@@ -650,11 +659,19 @@ class _AddTrainingScreenState extends State<AddTrainingScreen> {
       _sessionDate.month,
       _sessionDate.day,
     );
-    final end = start.add(Duration(days: _bookingPeriodDays()));
+    var endDay = DateTime(
+      _recurringEndDate.year,
+      _recurringEndDate.month,
+      _recurringEndDate.day,
+    );
+    final cap = _recurringRangeCap();
+    if (endDay.isAfter(cap)) endDay = cap;
+    if (endDay.isBefore(start)) endDay = start;
     final sortedDays = _recurringDays.toList()..sort();
     final dates = <DateTime>[];
-    for (var i = 0; i <= _bookingPeriodDays(); i++) {
+    for (var i = 0; ; i++) {
       final day = start.add(Duration(days: i));
+      if (day.isAfter(endDay)) break;
       final weekday = _weekdayFromDate(day);
       if (!sortedDays.contains(weekday)) continue;
       final t = _recurringDayTimes[weekday] ?? _sessionTime;
@@ -665,12 +682,584 @@ class _AddTrainingScreenState extends State<AddTrainingScreen> {
         t.hour,
         t.minute,
       );
-      if (!candidate.isAfter(end)) {
-        dates.add(candidate);
-      }
+      dates.add(candidate);
     }
     dates.sort((a, b) => a.compareTo(b));
     return dates;
+  }
+
+  Future<void> _pickSessionDateOnStep2() async {
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: _sessionDate,
+      firstDate: DateTime.now().subtract(const Duration(days: 1)),
+      lastDate: DateTime.now().add(const Duration(days: 365)),
+    );
+    if (picked != null && mounted) {
+      setState(() {
+        _sessionDate = picked;
+        _clampRecurringEndToPolicy();
+      });
+    }
+  }
+
+  Future<void> _pickRecurringEndDateOnStep2() async {
+    final start = DateTime(
+      _sessionDate.year,
+      _sessionDate.month,
+      _sessionDate.day,
+    );
+    final cap = _recurringRangeCap();
+    final last = cap.isBefore(start) ? start : cap;
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: _recurringEndDate.isBefore(start)
+          ? start
+          : (_recurringEndDate.isAfter(last) ? last : _recurringEndDate),
+      firstDate: start,
+      lastDate: last,
+    );
+    if (picked != null && mounted) {
+      setState(() {
+        _recurringEndDate = DateTime(picked.year, picked.month, picked.day);
+        _clampRecurringEndToPolicy();
+      });
+    }
+  }
+
+  static const double _kStep2FieldRadius = 12;
+
+  InputDecoration _step2FieldDecoration({Widget? suffixIcon}) {
+    final r = BorderRadius.circular(_kStep2FieldRadius);
+    return InputDecoration(
+      filled: true,
+      fillColor: AppColors.backgroundPrimary,
+      suffixIcon: suffixIcon,
+      suffixIconConstraints: suffixIcon == null
+          ? null
+          : const BoxConstraints(minWidth: 44, minHeight: 44),
+      border: OutlineInputBorder(
+        borderRadius: r,
+        borderSide: const BorderSide(color: AppColors.borderPrimary),
+      ),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: r,
+        borderSide: const BorderSide(color: AppColors.borderPrimary),
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: r,
+        borderSide: const BorderSide(color: AppColors.primary500, width: 1.6),
+      ),
+      contentPadding: const EdgeInsets.fromLTRB(16, 16, 8, 16),
+    );
+  }
+
+  Widget _step2RadioDot({required bool selected}) {
+    return Container(
+      width: 22,
+      height: 22,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        border: Border.all(color: _kFormAccentPurple, width: 2),
+        color: selected ? _kFormAccentPurple : Colors.transparent,
+      ),
+      alignment: Alignment.center,
+      child: selected
+          ? Container(
+              width: 8,
+              height: 8,
+              decoration: const BoxDecoration(
+                shape: BoxShape.circle,
+                color: Colors.white,
+              ),
+            )
+          : null,
+    );
+  }
+
+  Widget _step2WeekdayChip(LocaleProvider loc, int day) {
+    final selected = _recurringDays.contains(day);
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: () => setState(() {
+          if (selected) {
+            _recurringDays.remove(day);
+            _recurringDayTimes.remove(day);
+          } else {
+            _recurringDays.add(day);
+            _recurringDayTimes[day] = _sessionTime;
+          }
+        }),
+        borderRadius: BorderRadius.circular(999),
+        child: Ink(
+          height: 38,
+          decoration: BoxDecoration(
+            color: selected
+                ? AppColors.primary500
+                : AppColors.backgroundPrimary,
+            borderRadius: BorderRadius.circular(999),
+            border: Border.all(
+              color: selected ? AppColors.primary500 : AppColors.borderPrimary,
+              width: 1,
+            ),
+          ),
+          child: Center(
+            child: Text(
+              _narrowWeekday(day, loc),
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w700,
+                color: selected
+                    ? AppColors.textInverse
+                    : AppColors.textPrimary,
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _step2RangeDateCard({
+    required String caption,
+    required String value,
+    required VoidCallback onTap,
+  }) {
+    return Expanded(
+      child: Material(
+        color: AppColors.backgroundPrimary,
+        borderRadius: BorderRadius.circular(_kStep2FieldRadius),
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(_kStep2FieldRadius),
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(12, 12, 8, 12),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        caption,
+                        style: const TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.textSecondary,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        value,
+                        style: const TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.textPrimary,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const Icon(
+                  Icons.calendar_today_outlined,
+                  size: 18,
+                  color: AppColors.textTertiary,
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  List<Widget> _buildStep2Widgets(LocaleProvider loc, String ownerName) {
+    final w = <Widget>[
+      const SizedBox(height: 4),
+      InkWell(
+        onTap: () => setState(() => _isRecurring = false),
+        borderRadius: BorderRadius.circular(8),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 6),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Padding(
+                padding: const EdgeInsets.only(top: 1),
+                child: _step2RadioDot(selected: !_isRecurring),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  loc.t('addTraining.step2.oneTraining').toUpperCase(),
+                  style: const TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: 0.35,
+                    color: AppColors.textPrimary,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+      InkWell(
+        onTap: () => setState(() {
+          _isRecurring = true;
+          _clampRecurringEndToPolicy();
+        }),
+        borderRadius: BorderRadius.circular(8),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 6),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Padding(
+                padding: const EdgeInsets.only(top: 1),
+                child: _step2RadioDot(selected: _isRecurring),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      loc.t('addTraining.step2.repeatedTraining').toUpperCase(),
+                      style: const TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: 0.35,
+                        color: AppColors.textPrimary,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      loc.t('addTraining.step2.repeatedHint'),
+                      style: const TextStyle(
+                        fontSize: 12,
+                        height: 1.35,
+                        color: AppColors.textSecondary,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+      const SizedBox(height: 18),
+    ];
+
+    if (!_isRecurring) {
+      w.addAll([
+        _stepFormLabel(loc.t('addTraining.step2.date')),
+        InkWell(
+          onTap: _pickSessionDateOnStep2,
+          borderRadius: BorderRadius.circular(_kStep2FieldRadius),
+          child: InputDecorator(
+            decoration: _step2FieldDecoration(
+              suffixIcon: const Icon(
+                Icons.calendar_today_outlined,
+                size: 20,
+                color: AppColors.textSecondary,
+              ),
+            ),
+            child: Text(
+              _formatYMMMd(_sessionDate, loc),
+              style: const TextStyle(
+                fontSize: 15,
+                fontWeight: FontWeight.w600,
+                color: AppColors.textPrimary,
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(height: 18),
+        _stepFormLabel(loc.t('addTraining.step2.time')),
+        InkWell(
+          onTap: () async {
+            final picked = await _pickTimeWithWheel(_sessionTime);
+            if (picked != null && mounted) {
+              setState(() => _sessionTime = picked);
+            }
+          },
+          borderRadius: BorderRadius.circular(_kStep2FieldRadius),
+          child: InputDecorator(
+            decoration: _step2FieldDecoration(
+              suffixIcon: const Icon(
+                CupertinoIcons.chevron_down,
+                color: _kFormAccentPurple,
+                size: 18,
+              ),
+            ),
+            child: Text(
+              _timeToHm(_sessionTime),
+              style: const TextStyle(
+                fontSize: 15,
+                fontWeight: FontWeight.w600,
+                color: AppColors.textPrimary,
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(height: 18),
+        _stepFormLabel(loc.t('addTraining.step2.trainer')),
+        InputDecorator(
+          decoration: _step2FieldDecoration(),
+          child: Text(
+            ownerName,
+            style: const TextStyle(
+              fontSize: 15,
+              fontWeight: FontWeight.w500,
+              color: AppColors.textPrimary,
+            ),
+          ),
+        ),
+        const SizedBox(height: 8),
+        Text(
+          loc.t('addTraining.step2.trainerProNote'),
+          style: const TextStyle(
+            fontSize: 12,
+            height: 1.35,
+            color: AppColors.textSecondary,
+          ),
+        ),
+        const SizedBox(height: 28),
+        SizedBox(
+          height: 56,
+          width: double.infinity,
+          child: FilledButton(
+            onPressed: _saving ? null : _save,
+            style: FilledButton.styleFrom(
+              backgroundColor: AppColors.primary500,
+              foregroundColor: AppColors.textInverse,
+              shape: const StadiumBorder(),
+            ),
+            child: _saving
+                ? const SizedBox(
+                    height: 22,
+                    width: 22,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: AppColors.textInverse,
+                    ),
+                  )
+                : Text(
+                    loc.t('addTraining.step2.createClass'),
+                    style: const TextStyle(
+                      fontWeight: FontWeight.w700,
+                      fontSize: 16,
+                    ),
+                  ),
+          ),
+        ),
+      ]);
+    } else {
+      w.addAll([
+        _stepFormLabel(loc.t('addTraining.step2.dateRange')),
+        const SizedBox(height: 8),
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            _step2RangeDateCard(
+              caption: loc.t('addTraining.step2.startDate'),
+              value: _formatYMMMd(
+                DateTime(
+                  _sessionDate.year,
+                  _sessionDate.month,
+                  _sessionDate.day,
+                ),
+                loc,
+              ),
+              onTap: _pickSessionDateOnStep2,
+            ),
+            const Padding(
+              padding: EdgeInsets.symmetric(horizontal: 6),
+              child: Icon(
+                Icons.arrow_forward_rounded,
+                size: 22,
+                color: AppColors.textSecondary,
+              ),
+            ),
+            _step2RangeDateCard(
+              caption: loc.t('addTraining.step2.endDate'),
+              value: _formatYMMMd(
+                DateTime(
+                  _recurringEndDate.year,
+                  _recurringEndDate.month,
+                  _recurringEndDate.day,
+                ),
+                loc,
+              ),
+              onTap: _pickRecurringEndDateOnStep2,
+            ),
+          ],
+        ),
+        const SizedBox(height: 20),
+        _stepFormLabel(loc.t('addTraining.step2.repeatOn')),
+        const SizedBox(height: 10),
+        Row(
+          children: List.generate(7, (i) {
+            final day = i + 1;
+            return Expanded(
+              child: Padding(
+                padding: EdgeInsets.only(left: i == 0 ? 0 : 4),
+                child: _step2WeekdayChip(loc, day),
+              ),
+            );
+          }),
+        ),
+        const SizedBox(height: 20),
+        _stepFormLabel(loc.t('addTraining.step2.schedule')),
+        const SizedBox(height: 6),
+        Text(
+          loc.t('addTraining.step2.scheduleHint'),
+          style: const TextStyle(
+            fontSize: 12,
+            height: 1.35,
+            color: AppColors.textSecondary,
+          ),
+        ),
+        const SizedBox(height: 10),
+        ...(_recurringDays.toList()..sort()).map((day) {
+          final time = _recurringDayTimes[day] ?? _sessionTime;
+          return Padding(
+            padding: const EdgeInsets.only(bottom: 8),
+            child: Material(
+              color: AppColors.backgroundPrimary,
+              borderRadius: BorderRadius.circular(_kStep2FieldRadius),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 6,
+                ),
+                child: Row(
+                  children: [
+                    SizedBox(
+                      width: 110,
+                      child: Text(
+                        _fullWeekday(day, loc),
+                        style: const TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.textPrimary,
+                        ),
+                      ),
+                    ),
+                    Expanded(
+                      child: InkWell(
+                        onTap: () async {
+                          final picked = await _pickTimeWithWheel(time);
+                          if (picked != null && mounted) {
+                            setState(() => _recurringDayTimes[day] = picked);
+                          }
+                        },
+                        borderRadius: BorderRadius.circular(10),
+                        child: InputDecorator(
+                          decoration: InputDecoration(
+                            filled: true,
+                            fillColor: AppColors.backgroundPrimary,
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(10),
+                              borderSide: const BorderSide(
+                                color: AppColors.borderPrimary,
+                              ),
+                            ),
+                            enabledBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(10),
+                              borderSide: const BorderSide(
+                                color: AppColors.borderPrimary,
+                              ),
+                            ),
+                            focusedBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(10),
+                              borderSide: const BorderSide(
+                                color: AppColors.primary500,
+                                width: 1.4,
+                              ),
+                            ),
+                            contentPadding: const EdgeInsets.symmetric(
+                              horizontal: 12,
+                              vertical: 10,
+                            ),
+                            suffixIcon: const Icon(
+                              CupertinoIcons.chevron_down,
+                              color: _kFormAccentPurple,
+                              size: 18,
+                            ),
+                          ),
+                          child: Text(
+                            _timeToHm(time),
+                            style: const TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w600,
+                              color: AppColors.textPrimary,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                    IconButton(
+                      onPressed: () => setState(() {
+                        _recurringDays.remove(day);
+                        _recurringDayTimes.remove(day);
+                      }),
+                      icon: const Icon(Icons.delete_outline_rounded),
+                      color: AppColors.primary500,
+                      tooltip: loc.t('common.delete'),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          );
+        }),
+        Builder(
+          builder: (ctx) {
+            final n = _buildRecurringPreview().length;
+            return Padding(
+              padding: const EdgeInsets.only(top: 4),
+              child: Text(
+                loc
+                    .t('addTraining.step2.sessionsPlanned')
+                    .replaceAll('{count}', '$n'),
+                style: const TextStyle(
+                  fontSize: 12,
+                  color: AppColors.textSecondary,
+                ),
+              ),
+            );
+          },
+        ),
+        const SizedBox(height: 20),
+        SizedBox(
+          height: 48,
+          width: double.infinity,
+          child: OutlinedButton(
+            onPressed: _saving ? null : () => setState(() => _step = 1),
+            style: OutlinedButton.styleFrom(
+              foregroundColor: AppColors.textPrimary,
+              side: const BorderSide(color: AppColors.primary500, width: 1.2),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+            child: Text(
+              loc.t('addTraining.step2.back'),
+              style: const TextStyle(fontWeight: FontWeight.w600),
+            ),
+          ),
+        ),
+      ]);
+    }
+
+    w.add(const SizedBox(height: 24));
+    return w;
   }
 
   Future<void> _load() async {
@@ -694,6 +1283,13 @@ class _AddTrainingScreenState extends State<AddTrainingScreen> {
         _existing = list;
         _categories = _categoriesWithOtherLast(categories);
         _loading = false;
+        final start = DateTime(
+          _sessionDate.year,
+          _sessionDate.month,
+          _sessionDate.day,
+        );
+        _recurringEndDate = start.add(Duration(days: _bookingPeriodDays()));
+        _clampRecurringEndToPolicy();
       });
     } catch (e) {
       if (!mounted) return;
@@ -804,663 +1400,417 @@ class _AddTrainingScreenState extends State<AddTrainingScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final loc = context.watch<LocaleProvider>();
     final user = context.read<AuthService>().user;
     final ownerName = user?.name?.trim().isNotEmpty == true
         ? user!.name!.trim()
         : (user?.email ?? 'Владелец студии');
     final textTheme = Theme.of(context).textTheme;
-    return Scaffold(
-      backgroundColor: AppColors.backgroundSecondary,
-      appBar: AppBar(
-        automaticallyImplyLeading: _step != 1,
-        leading: _step == 1 ? _step1CloseLeading() : null,
-        leadingWidth: _step == 1 ? 56 : null,
-        title: Text(
-          _step == 1
-              ? 'Добавить тренировку · 1/2'
-              : 'Добавить тренировку · 2/2',
-          style: const TextStyle(
-            fontSize: 14,
-            fontWeight: FontWeight.w600,
-            color: AppColors.textPrimary,
-          ),
-        ),
-        centerTitle: true,
+    return PopScope(
+      canPop: _step == 1,
+      onPopInvokedWithResult: (didPop, result) {
+        if (!didPop && _step == 2) {
+          setState(() => _step = 1);
+        }
+      },
+      child: Scaffold(
         backgroundColor: AppColors.backgroundSecondary,
-        foregroundColor: AppColors.textPrimary,
-        elevation: 0,
-        scrolledUnderElevation: 0,
-      ),
-      body: _loading
-          ? const Center(
-              child: CircularProgressIndicator(color: AppColors.primary500),
-            )
-          : ListView(
-              padding: const EdgeInsets.symmetric(
-                horizontal: kScreenPaddingHorizontal,
-                vertical: 10,
-              ),
-              children: _step == 1
-                  ? [
-                      _stepFormLabel('Название'),
-                      if (_existing.isEmpty)
-                        TextField(
-                          controller: _nameController,
-                          style: _stepFieldInputStyle,
-                          textInputAction: TextInputAction.next,
-                          onChanged: (_) =>
-                              setState(() => _step1NameError = false),
-                          decoration: _regInputDecoration(
-                            invalid: _step1NameError,
-                            hintText: 'Например: Vinyasa Flow',
+        appBar: AppBar(
+          automaticallyImplyLeading: false,
+          leading: _step1CloseLeading(),
+          leadingWidth: 56,
+          title: Text(
+            _step == 1
+                ? loc.t('addTraining.newClassStep1')
+                : loc.t('addTraining.newClassStep2'),
+            style: const TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+              color: AppColors.textPrimary,
+            ),
+          ),
+          centerTitle: true,
+          backgroundColor: AppColors.backgroundSecondary,
+          foregroundColor: AppColors.textPrimary,
+          elevation: 0,
+          scrolledUnderElevation: 0,
+          actions: _step == 2 && _isRecurring
+              ? [
+                  Padding(
+                    padding: const EdgeInsets.only(right: 8),
+                    child: Center(
+                      child: FilledButton(
+                        onPressed: _saving ? null : _save,
+                        style: FilledButton.styleFrom(
+                          backgroundColor: AppColors.primary500,
+                          foregroundColor: AppColors.textInverse,
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 8,
                           ),
-                        )
-                      else
-                        RawAutocomplete<ServiceItem>(
-                          textEditingController: _nameController,
-                          focusNode: _nameFocusNode,
-                          displayStringForOption: (option) =>
-                              option.displayName,
-                          optionsBuilder: (value) {
-                            final q = value.text.trim().toLowerCase();
-                            final sorted = [..._existing]
-                              ..sort(
-                                (a, b) => a.displayName.toLowerCase().compareTo(
-                                  b.displayName.toLowerCase(),
+                          minimumSize: const Size(0, 36),
+                          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                          shape: const StadiumBorder(),
+                        ),
+                        child: Text(
+                          loc.t('common.save'),
+                          style: const TextStyle(
+                            fontWeight: FontWeight.w700,
+                            fontSize: 14,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ]
+              : null,
+        ),
+        body: _loading
+            ? const Center(
+                child: CircularProgressIndicator(color: AppColors.primary500),
+              )
+            : ListView(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: kScreenPaddingHorizontal,
+                  vertical: 10,
+                ),
+                children: _step == 1
+                    ? [
+                        _stepFormLabel('Название'),
+                        if (_existing.isEmpty)
+                          TextField(
+                            controller: _nameController,
+                            style: _stepFieldInputStyle,
+                            textInputAction: TextInputAction.next,
+                            onChanged: (_) =>
+                                setState(() => _step1NameError = false),
+                            decoration: _regInputDecoration(
+                              invalid: _step1NameError,
+                              hintText: 'Например: Vinyasa Flow',
+                            ),
+                          )
+                        else
+                          RawAutocomplete<ServiceItem>(
+                            textEditingController: _nameController,
+                            focusNode: _nameFocusNode,
+                            displayStringForOption: (option) =>
+                                option.displayName,
+                            optionsBuilder: (value) {
+                              final q = value.text.trim().toLowerCase();
+                              final sorted = [..._existing]
+                                ..sort(
+                                  (a, b) => a.displayName
+                                      .toLowerCase()
+                                      .compareTo(b.displayName.toLowerCase()),
+                                );
+                              if (q.isEmpty) return sorted.take(8);
+                              return sorted
+                                  .where(
+                                    (e) =>
+                                        e.displayName.toLowerCase().contains(q),
+                                  )
+                                  .take(8);
+                            },
+                            onSelected: _applyExistingTrainingSelection,
+                            fieldViewBuilder:
+                                (context, ctrl, focusNode, onSubmit) {
+                                  return TextField(
+                                    controller: ctrl,
+                                    focusNode: focusNode,
+                                    style: _stepFieldInputStyle,
+                                    textInputAction: TextInputAction.next,
+                                    onChanged: (_) =>
+                                        setState(() => _step1NameError = false),
+                                    decoration: _regInputDecoration(
+                                      invalid: _step1NameError,
+                                      hintText: 'Например: Vinyasa Flow',
+                                    ),
+                                  );
+                                },
+                            optionsViewBuilder: (context, onSelected, options) {
+                              return Align(
+                                alignment: Alignment.topLeft,
+                                child: Material(
+                                  elevation: 4,
+                                  borderRadius: BorderRadius.circular(12),
+                                  child: ConstrainedBox(
+                                    constraints: BoxConstraints(
+                                      maxHeight:
+                                          MediaQuery.of(context).size.height *
+                                          0.4,
+                                      maxWidth:
+                                          MediaQuery.of(context).size.width -
+                                          2 * kScreenPaddingHorizontal,
+                                    ),
+                                    child: ListView(
+                                      shrinkWrap: true,
+                                      padding: EdgeInsets.zero,
+                                      children: options.map((e) {
+                                        final sub = _suggestionSubtitle(e);
+                                        return ListTile(
+                                          dense: true,
+                                          title: Text(
+                                            e.displayName,
+                                            maxLines: 2,
+                                            overflow: TextOverflow.ellipsis,
+                                          ),
+                                          subtitle: Text(
+                                            sub,
+                                            style: TextStyle(
+                                              fontSize: 12,
+                                              color: AppColors.textSecondary,
+                                              fontWeight: FontWeight.w500,
+                                            ),
+                                          ),
+                                          onTap: () => onSelected(e),
+                                        );
+                                      }).toList(),
+                                    ),
+                                  ),
                                 ),
                               );
-                            if (q.isEmpty) return sorted.take(8);
-                            return sorted
-                                .where(
-                                  (e) =>
-                                      e.displayName.toLowerCase().contains(q),
-                                )
-                                .take(8);
-                          },
-                          onSelected: _applyExistingTrainingSelection,
-                          fieldViewBuilder:
-                              (context, ctrl, focusNode, onSubmit) {
-                                return TextField(
-                                  controller: ctrl,
-                                  focusNode: focusNode,
-                                  style: _stepFieldInputStyle,
-                                  textInputAction: TextInputAction.next,
-                                  onChanged: (_) =>
-                                      setState(() => _step1NameError = false),
-                                  decoration: _regInputDecoration(
-                                    invalid: _step1NameError,
-                                    hintText: 'Например: Vinyasa Flow',
-                                  ),
-                                );
-                              },
-                          optionsViewBuilder: (context, onSelected, options) {
-                            return Align(
-                              alignment: Alignment.topLeft,
-                              child: Material(
-                                elevation: 4,
-                                borderRadius: BorderRadius.circular(12),
-                                child: ConstrainedBox(
-                                  constraints: BoxConstraints(
-                                    maxHeight:
-                                        MediaQuery.of(context).size.height *
-                                        0.4,
-                                    maxWidth:
-                                        MediaQuery.of(context).size.width -
-                                        2 * kScreenPaddingHorizontal,
-                                  ),
-                                  child: ListView(
-                                    shrinkWrap: true,
-                                    padding: EdgeInsets.zero,
-                                    children: options.map((e) {
-                                      final sub = _suggestionSubtitle(e);
-                                      return ListTile(
-                                        dense: true,
-                                        title: Text(
-                                          e.displayName,
-                                          maxLines: 2,
-                                          overflow: TextOverflow.ellipsis,
-                                        ),
-                                        subtitle: Text(
-                                          sub,
-                                          style: TextStyle(
-                                            fontSize: 12,
-                                            color: AppColors.textSecondary,
-                                            fontWeight: FontWeight.w500,
-                                          ),
-                                        ),
-                                        onTap: () => onSelected(e),
-                                      );
-                                    }).toList(),
+                            },
+                          ),
+                        if (_existing.isEmpty) ...[
+                          const SizedBox(height: 8),
+                          const Text(
+                            'У этой студии пока нет тренировок. Введите название новой.',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: AppColors.textSecondary,
+                            ),
+                          ),
+                        ],
+                        const SizedBox(height: 22),
+                        Consumer<LocaleProvider>(
+                          builder: (context, locale, _) {
+                            return Column(
+                              crossAxisAlignment: CrossAxisAlignment.stretch,
+                              children: [
+                                _stepFormLabel('Категория'),
+                                InkWell(
+                                  borderRadius: BorderRadius.circular(999),
+                                  onTap: _categories.isEmpty
+                                      ? null
+                                      : _openCategoryBottomSheet,
+                                  child: InputDecorator(
+                                    decoration: _regInputDecoration(
+                                      invalid: _step1CategoryError,
+                                      suffix: const Icon(
+                                        CupertinoIcons.chevron_down,
+                                        color: _kFormAccentPurple,
+                                        size: 18,
+                                      ),
+                                    ),
+                                    child: Text(
+                                      _categoryLabel(locale),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: TextStyle(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.w400,
+                                        color: _selectedCategoryId == null
+                                            ? AppColors.textSecondary
+                                            : AppColors.textPrimary,
+                                      ),
+                                    ),
                                   ),
                                 ),
-                              ),
+                              ],
                             );
                           },
                         ),
-                      if (_existing.isEmpty) ...[
-                        const SizedBox(height: 8),
-                        const Text(
-                          'У этой студии пока нет тренировок. Введите название новой.',
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: AppColors.textSecondary,
+                        const SizedBox(height: 22),
+                        Consumer<LocaleProvider>(
+                          builder: (context, loc, _) {
+                            return Column(
+                              crossAxisAlignment: CrossAxisAlignment.stretch,
+                              children: [
+                                _stepFormLabel(
+                                  loc.t('addTraining.addressSectionLabel'),
+                                ),
+                                Material(
+                                  color: AppColors.backgroundPrimary,
+                                  borderRadius: BorderRadius.circular(28),
+                                  child: Padding(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 12,
+                                      vertical: 14,
+                                    ),
+                                    child: Row(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Padding(
+                                          padding: const EdgeInsets.only(
+                                            top: 2,
+                                          ),
+                                          child: Icon(
+                                            Icons.location_on_rounded,
+                                            color: _kFormAccentPurple,
+                                            size: 26,
+                                          ),
+                                        ),
+                                        const SizedBox(width: 12),
+                                        Expanded(
+                                          child: Column(
+                                            crossAxisAlignment:
+                                                CrossAxisAlignment.start,
+                                            children: [
+                                              Text(
+                                                _studio?.name
+                                                            ?.trim()
+                                                            .isNotEmpty ==
+                                                        true
+                                                    ? _studio!.name!.trim()
+                                                    : 'Студия',
+                                                style: const TextStyle(
+                                                  fontSize: 19,
+                                                  fontWeight: FontWeight.w700,
+                                                  color: AppColors.textPrimary,
+                                                ),
+                                              ),
+                                              if ((_studio?.address ?? '')
+                                                  .trim()
+                                                  .isNotEmpty) ...[
+                                                const SizedBox(height: 4),
+                                                Text(
+                                                  _studio!.address!.trim(),
+                                                  style: const TextStyle(
+                                                    fontSize: 14,
+                                                    height: 1.25,
+                                                    fontWeight: FontWeight.w400,
+                                                    color:
+                                                        AppColors.textSecondary,
+                                                  ),
+                                                ),
+                                              ] else
+                                                const Padding(
+                                                  padding: EdgeInsets.only(
+                                                    top: 4,
+                                                  ),
+                                                  child: Text(
+                                                    'Адрес не указан',
+                                                    style: TextStyle(
+                                                      fontSize: 14,
+                                                      color: AppColors
+                                                          .textTertiary,
+                                                    ),
+                                                  ),
+                                                ),
+                                            ],
+                                          ),
+                                        ),
+                                        Padding(
+                                          padding: const EdgeInsets.only(
+                                            top: 4,
+                                          ),
+                                          child: const Icon(
+                                            CupertinoIcons.chevron_forward,
+                                            color: _kFormAccentPurple,
+                                            size: 18,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            );
+                          },
+                        ),
+                        const SizedBox(height: 22),
+                        Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.stretch,
+                                children: [
+                                  _stepFormLabel('Длительность'),
+                                  Consumer<LocaleProvider>(
+                                    builder: (context, loc, _) =>
+                                        _durationMinutesField(loc),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.stretch,
+                                children: [
+                                  _stepFormLabel('Вместительность'),
+                                  TextField(
+                                    controller: _capacityController,
+                                    style: _stepFieldInputStyle,
+                                    keyboardType: TextInputType.number,
+                                    textInputAction: TextInputAction.next,
+                                    onChanged: (_) => setState(
+                                      () => _step1CapacityError = false,
+                                    ),
+                                    decoration: _regInputDecoration(
+                                      invalid: _step1CapacityError,
+                                      hintText: '10',
+                                      prefixIcon: Icons.groups_rounded,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 22),
+                        _stepFormLabel('Цена'),
+                        TextField(
+                          controller: _priceController,
+                          style: _stepFieldInputStyle,
+                          keyboardType: TextInputType.number,
+                          textInputAction: TextInputAction.done,
+                          inputFormatters: [_VndThousandsFormatter()],
+                          onChanged: (_) =>
+                              setState(() => _step1PriceError = false),
+                          decoration: _regInputDecoration(
+                            invalid: _step1PriceError,
+                            hintText: 'Введите цену',
                           ),
                         ),
-                      ],
-                      const SizedBox(height: 22),
-                      Consumer<LocaleProvider>(
-                        builder: (context, locale, _) {
-                          return Column(
-                            crossAxisAlignment: CrossAxisAlignment.stretch,
-                            children: [
-                              _stepFormLabel('Категория'),
-                              InkWell(
+                        const SizedBox(height: 30),
+                        SizedBox(
+                          height: 60,
+                          child: FilledButton(
+                            onPressed: () {
+                              if (!_validateStep1()) return;
+                              setState(() => _step = 2);
+                            },
+                            style: FilledButton.styleFrom(
+                              backgroundColor: AppColors.primary500,
+                              foregroundColor: AppColors.textInverse,
+                              shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(999),
-                                onTap: _categories.isEmpty
-                                    ? null
-                                    : _openCategoryBottomSheet,
-                                child: InputDecorator(
-                                  decoration: _regInputDecoration(
-                                    invalid: _step1CategoryError,
-                                    suffix: const Icon(
-                                      CupertinoIcons.chevron_down,
-                                      color: _kFormAccentPurple,
-                                      size: 18,
-                                    ),
-                                  ),
-                                  child: Text(
-                                    _categoryLabel(locale),
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                    style: TextStyle(
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.w400,
-                                      color: _selectedCategoryId == null
-                                          ? AppColors.textSecondary
-                                          : AppColors.textPrimary,
-                                    ),
-                                  ),
-                                ),
                               ),
-                            ],
-                          );
-                        },
-                      ),
-                      const SizedBox(height: 22),
-                      Padding(
-                        padding: const EdgeInsets.only(bottom: 10),
-                        child: Text(
-                          'Main studio',
-                          style: const TextStyle(
-                            color: AppColors.textSecondary,
-                            fontSize: 16,
-                            fontWeight: FontWeight.w500,
-                            letterSpacing: 0.2,
-                          ),
-                        ),
-                      ),
-                      Material(
-                        color: AppColors.backgroundPrimary,
-                        borderRadius: BorderRadius.circular(28),
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 12,
-                            vertical: 14,
-                          ),
-                          child: Row(
-                            crossAxisAlignment: CrossAxisAlignment.center,
-                            children: [
-                              Icon(
-                                Icons.location_on_rounded,
-                                color: _kFormAccentPurple,
-                                size: 26,
-                              ),
-                              const SizedBox(width: 12),
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      _studio?.name?.trim().isNotEmpty == true
-                                          ? _studio!.name!.trim()
-                                          : 'Студия',
-                                      style: const TextStyle(
-                                        fontSize: 19,
-                                        fontWeight: FontWeight.w700,
-                                        color: AppColors.textPrimary,
-                                      ),
-                                    ),
-                                    if ((_studio?.address ?? '')
-                                        .trim()
-                                        .isNotEmpty) ...[
-                                      const SizedBox(height: 4),
-                                      Text(
-                                        _studio!.address!.trim(),
-                                        style: const TextStyle(
-                                          fontSize: 14,
-                                          height: 1.25,
-                                          fontWeight: FontWeight.w400,
-                                          color: AppColors.textSecondary,
-                                        ),
-                                      ),
-                                    ] else
-                                      const Padding(
-                                        padding: EdgeInsets.only(top: 4),
-                                        child: Text(
-                                          'Адрес не указан',
-                                          style: TextStyle(
-                                            fontSize: 14,
-                                            color: AppColors.textTertiary,
-                                          ),
-                                        ),
-                                      ),
-                                  ],
-                                ),
-                              ),
-                              const Icon(
-                                CupertinoIcons.chevron_forward,
-                                color: _kFormAccentPurple,
-                                size: 18,
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 22),
-                      Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.stretch,
-                              children: [
-                                _stepFormLabel('Длительность'),
-                                TextField(
-                                  controller: _durationController,
-                                  style: _stepFieldInputStyle,
-                                  keyboardType: TextInputType.number,
-                                  textInputAction: TextInputAction.next,
-                                  onChanged: (_) => setState(
-                                    () => _step1DurationError = false,
-                                  ),
-                                  decoration: _regInputDecoration(
-                                    invalid: _step1DurationError,
-                                    hintText: '60',
-                                    prefixIcon: Icons.access_time_rounded,
-                                    suffixText: 'мин',
-                                  ),
-                                ),
-                              ],
                             ),
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.stretch,
-                              children: [
-                                _stepFormLabel('Вместительность'),
-                                TextField(
-                                  controller: _capacityController,
-                                  style: _stepFieldInputStyle,
-                                  keyboardType: TextInputType.number,
-                                  textInputAction: TextInputAction.next,
-                                  onChanged: (_) => setState(
-                                    () => _step1CapacityError = false,
-                                  ),
-                                  decoration: _regInputDecoration(
-                                    invalid: _step1CapacityError,
-                                    hintText: '10',
-                                    prefixIcon: Icons.groups_rounded,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 22),
-                      _stepFormLabel('Цена'),
-                      TextField(
-                        controller: _priceController,
-                        style: _stepFieldInputStyle,
-                        keyboardType: TextInputType.number,
-                        textInputAction: TextInputAction.done,
-                        inputFormatters: [_VndThousandsFormatter()],
-                        onChanged: (_) =>
-                            setState(() => _step1PriceError = false),
-                        decoration: _regInputDecoration(
-                          invalid: _step1PriceError,
-                          hintText: 'Введите цену',
-                        ),
-                      ),
-                      const SizedBox(height: 22),
-                      _stepFormLabel('Тренер'),
-                      InputDecorator(
-                        decoration: InputDecoration(
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          enabledBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
-                            borderSide: const BorderSide(
-                              color: AppColors.borderPrimary,
-                            ),
-                          ),
-                          filled: true,
-                          fillColor: AppColors.backgroundPrimary,
-                          contentPadding: const EdgeInsets.symmetric(
-                            horizontal: 12,
-                            vertical: 14,
-                          ),
-                        ),
-                        child: Text(
-                          ownerName,
-                          style: const TextStyle(
-                            fontSize: 14,
-                            color: AppColors.textPrimary,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      const Text(
-                        'Для добавления тренеров выкупите подписку Pro',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: AppColors.textSecondary,
-                        ),
-                      ),
-                      const SizedBox(height: 30),
-                      SizedBox(
-                        height: 60,
-                        child: FilledButton(
-                          onPressed: () {
-                            if (!_validateStep1()) return;
-                            setState(() => _step = 2);
-                          },
-                          style: FilledButton.styleFrom(
-                            backgroundColor: AppColors.primary500,
-                            foregroundColor: AppColors.textInverse,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(999),
-                            ),
-                          ),
-                          child: Text(
-                            'Следующий шаг',
-                            style: textTheme.titleLarge?.copyWith(
-                              fontWeight: FontWeight.w600,
-                              fontSize: 16,
-                              color: AppColors.textInverse,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ]
-                  : [
-                      const Text(
-                        'Дата тренировки',
-                        style: TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w600,
-                          color: AppColors.textPrimary,
-                        ),
-                      ),
-                      const SizedBox(height: 6),
-                      InkWell(
-                        onTap: () async {
-                          final picked = await showDatePicker(
-                            context: context,
-                            initialDate: _sessionDate,
-                            firstDate: DateTime.now().subtract(
-                              const Duration(days: 1),
-                            ),
-                            lastDate: DateTime.now().add(
-                              const Duration(days: 365),
-                            ),
-                          );
-                          if (picked != null && mounted) {
-                            setState(() => _sessionDate = picked);
-                          }
-                        },
-                        borderRadius: BorderRadius.circular(12),
-                        child: InputDecorator(
-                          decoration: InputDecoration(
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                          ),
-                          child: Text(
-                            '${_sessionDate.day.toString().padLeft(2, '0')}.${_sessionDate.month.toString().padLeft(2, '0')}.${_sessionDate.year}',
-                            style: const TextStyle(
-                              fontSize: 14,
-                              color: AppColors.textPrimary,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-                      const Text(
-                        'Время тренировки',
-                        style: TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w600,
-                          color: AppColors.textPrimary,
-                        ),
-                      ),
-                      const SizedBox(height: 6),
-                      InkWell(
-                        onTap: () async {
-                          final picked = await _pickTimeWithWheel(_sessionTime);
-                          if (picked != null && mounted) {
-                            setState(() => _sessionTime = picked);
-                          }
-                        },
-                        borderRadius: BorderRadius.circular(12),
-                        child: InputDecorator(
-                          decoration: InputDecoration(
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                          ),
-                          child: Text(
-                            _timeToHm(_sessionTime),
-                            style: const TextStyle(
-                              fontSize: 14,
-                              color: AppColors.textPrimary,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-                      SwitchListTile(
-                        contentPadding: EdgeInsets.zero,
-                        value: _isRecurring,
-                        onChanged: (v) => setState(() => _isRecurring = v),
-                        title: const Text(
-                          'Повторяемая тренировка',
-                          style: TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w700,
-                            color: AppColors.textPrimary,
-                          ),
-                        ),
-                        subtitle: const Text(
-                          'Если включено, занятия создаются по дням недели',
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: AppColors.textSecondary,
-                          ),
-                        ),
-                      ),
-                      if (_isRecurring) ...[
-                        const SizedBox(height: 8),
-                        const Text(
-                          'Дни недели',
-                          style: TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w600,
-                            color: AppColors.textPrimary,
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        Wrap(
-                          spacing: 8,
-                          runSpacing: 8,
-                          children: List.generate(7, (index) {
-                            final day = index + 1;
-                            final selected = _recurringDays.contains(day);
-                            return FilterChip(
-                              label: Text(_weekdayLabel(day)),
-                              selected: selected,
-                              onSelected: (v) {
-                                setState(() {
-                                  if (v) {
-                                    _recurringDays.add(day);
-                                    _recurringDayTimes[day] =
-                                        _recurringDayTimes[day] ?? _sessionTime;
-                                  } else {
-                                    _recurringDays.remove(day);
-                                    _recurringDayTimes.remove(day);
-                                  }
-                                });
-                              },
-                            );
-                          }),
-                        ),
-                        const SizedBox(height: 16),
-                        ...(_recurringDays.toList()..sort()).map((day) {
-                          final time = _recurringDayTimes[day] ?? _sessionTime;
-                          return Padding(
-                            padding: const EdgeInsets.only(bottom: 8),
-                            child: Row(
-                              children: [
-                                SizedBox(
-                                  width: 48,
-                                  child: Text(
-                                    _weekdayLabel(day),
-                                    style: const TextStyle(
-                                      fontSize: 13,
-                                      fontWeight: FontWeight.w700,
-                                      color: AppColors.textPrimary,
-                                    ),
-                                  ),
-                                ),
-                                const SizedBox(width: 8),
-                                Expanded(
-                                  child: InkWell(
-                                    onTap: () async {
-                                      final picked = await _pickTimeWithWheel(
-                                        time,
-                                      );
-                                      if (picked != null && mounted) {
-                                        setState(
-                                          () =>
-                                              _recurringDayTimes[day] = picked,
-                                        );
-                                      }
-                                    },
-                                    borderRadius: BorderRadius.circular(12),
-                                    child: InputDecorator(
-                                      decoration: InputDecoration(
-                                        border: OutlineInputBorder(
-                                          borderRadius: BorderRadius.circular(
-                                            12,
-                                          ),
-                                        ),
-                                      ),
-                                      child: Text(
-                                        _timeToHm(time),
-                                        style: const TextStyle(
-                                          fontSize: 14,
-                                          color: AppColors.textPrimary,
-                                          fontWeight: FontWeight.w600,
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          );
-                        }),
-                        const SizedBox(height: 8),
-                        Builder(
-                          builder: (_) {
-                            final preview = _buildRecurringPreview();
-                            final firstThree = preview
-                                .take(3)
-                                .map((d) {
-                                  final dd = d.day.toString().padLeft(2, '0');
-                                  final mm = d.month.toString().padLeft(2, '0');
-                                  final hh = d.hour.toString().padLeft(2, '0');
-                                  final min = d.minute.toString().padLeft(
-                                    2,
-                                    '0',
-                                  );
-                                  return '$dd.$mm $hh:$min';
-                                })
-                                .join(', ');
-                            return Text(
-                              preview.isEmpty
-                                  ? 'Будет создано 0 занятий'
-                                  : 'Будет создано ${preview.length} занятий. Ближайшие: $firstThree',
-                              style: const TextStyle(
-                                fontSize: 12,
-                                color: AppColors.textSecondary,
-                              ),
-                            );
-                          },
-                        ),
-                      ],
-                      const SizedBox(height: 24),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: SizedBox(
-                              height: 46,
-                              child: OutlinedButton(
-                                onPressed: _saving
-                                    ? null
-                                    : () => setState(() => _step = 1),
-                                child: const Text('Назад'),
+                            child: Text(
+                              'Следующий шаг',
+                              style: textTheme.titleLarge?.copyWith(
+                                fontWeight: FontWeight.w600,
+                                fontSize: 16,
+                                color: AppColors.textInverse,
                               ),
                             ),
                           ),
-                          const SizedBox(width: 10),
-                          Expanded(
-                            child: SizedBox(
-                              height: 46,
-                              child: FilledButton(
-                                onPressed: _saving ? null : _save,
-                                style: FilledButton.styleFrom(
-                                  backgroundColor: AppColors.primary500,
-                                ),
-                                child: _saving
-                                    ? const SizedBox(
-                                        height: 18,
-                                        width: 18,
-                                        child: CircularProgressIndicator(
-                                          strokeWidth: 2,
-                                        ),
-                                      )
-                                    : const Text('Сохранить'),
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-            ),
+                        ),
+                      ]
+                    : _buildStep2Widgets(loc, ownerName),
+              ),
+      ),
     );
   }
 }
 
 /// [applied] false: sheet closed without confirming (barrier / Cancel / X).
 class _CategoryPickResult {
-  const _CategoryPickResult.cancelled()
-      : applied = false,
-        categoryId = null;
+  const _CategoryPickResult.cancelled() : applied = false, categoryId = null;
 
   const _CategoryPickResult.apply(this.categoryId) : applied = true;
 

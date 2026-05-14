@@ -450,9 +450,31 @@
 	},
 	"addTraining": {
 		"categorySheetTitle": "SELECT A CATEGORY",
-		"categorySearchHint": "Select a category",
 		"pickCategory": "Choose category",
-		"apply": "Apply",
-		"categoryOtherChip": "+ Other"
+		"categoryOtherChip": "+ Other",
+		"addressSectionLabel": "Address",
+		"durationSuffix": "min",
+		"newClassStep1": "New class · 1/2",
+		"newClassStep2": "New class · 2/2",
+		"step2": {
+			"oneTraining": "One training",
+			"repeatedTraining": "Repeated training",
+			"repeatedHint": "You can create the same workouts on other days",
+			"date": "Date",
+			"selectDate": "Select a date",
+			"time": "Time",
+			"enterTime": "Enter the time",
+			"trainer": "Trainer",
+			"trainerProNote": "To add a trainer, purchase a Pro subscription",
+			"createClass": "Create new class",
+			"dateRange": "Date range",
+			"startDate": "Start date",
+			"endDate": "End date",
+			"repeatOn": "Repeat on",
+			"schedule": "Schedule",
+			"scheduleHint": "Edit time for each selected day",
+			"sessionsPlanned": "{count} sessions in this range",
+			"back": "Back"
+		}
 	}
 }
