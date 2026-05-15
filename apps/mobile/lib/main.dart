@@ -3,6 +3,7 @@ import 'dart:ui';
 
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_crashlytics/firebase_crashlytics.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
@@ -125,6 +126,29 @@ class MyApp extends StatefulWidget {
   State<MyApp> createState() => _MyAppState();
 }
 
+/// Reloads [LocaleProvider] after hot restart (assets are not updated on hot reload).
+class _L10nHotReload extends StatefulWidget {
+  const _L10nHotReload({required this.child});
+
+  final Widget child;
+
+  @override
+  State<_L10nHotReload> createState() => _L10nHotReloadState();
+}
+
+class _L10nHotReloadState extends State<_L10nHotReload> {
+  @override
+  void reassemble() {
+    super.reassemble();
+    if (kDebugMode) {
+      context.read<LocaleProvider>().loadStrings();
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) => widget.child;
+}
+
 class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
   @override
   void initState() {
@@ -175,9 +199,10 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
         if (widget.notificationsStore != null)
           ChangeNotifierProvider.value(value: widget.notificationsStore!),
       ],
-      child: Consumer<LocaleProvider>(
-        builder: (context, locale, _) {
-          if (!locale.isLoaded) {
+      child: _L10nHotReload(
+        child: Consumer<LocaleProvider>(
+          builder: (context, locale, _) {
+            if (!locale.isLoaded) {
             return MaterialApp(
               title: 'Henzo',
               theme: AppTheme.light,
@@ -221,7 +246,8 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
             supportedLocales: const [Locale('en'), Locale('ru'), Locale('vi')],
             home: const AuthWrapper(),
           );
-        },
+          },
+        ),
       ),
     );
   }

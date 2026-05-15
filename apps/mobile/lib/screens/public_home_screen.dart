@@ -18,6 +18,7 @@ import '../services/client_favorites_store.dart';
 import '../services/mapbox_api_service.dart';
 import '../utils/nearby_payload.dart';
 import '../services/client_favorites_mutations.dart';
+import '../widgets/map/henzo_map_layers.dart';
 import '../widgets/public/top_studio_card.dart';
 import 'location_picker_screen.dart';
 import 'public_studio_detail_screen.dart';
@@ -571,21 +572,14 @@ class _PublicHomeScreenState extends State<PublicHomeScreen> {
                                               _selectedLon!,
                                             ),
                                             initialZoom: 13,
+                                            interactionOptions:
+                                                HenzoMapLayers
+                                                    .interactionOptions(
+                                                  interactive: false,
+                                                ),
                                           ),
                                           children: [
-                                            TileLayer(
-                                              urlTemplate:
-                                                  'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',
-                                              subdomains: const [
-                                                'a',
-                                                'b',
-                                                'c',
-                                                'd',
-                                              ],
-                                              retinaMode: true,
-                                              userAgentPackageName:
-                                                  'com.henzo.mobile',
-                                            ),
+                                            HenzoMapLayers.cartoLightTileLayer(),
                                             MarkerLayer(
                                               markers: [
                                                 Marker(
@@ -603,6 +597,7 @@ class _PublicHomeScreenState extends State<PublicHomeScreen> {
                                                 ),
                                               ],
                                             ),
+                                            HenzoMapLayers.cartoAttribution(),
                                           ],
                                         ),
                                       )

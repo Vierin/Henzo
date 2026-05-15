@@ -5,6 +5,7 @@ import '../services/auth_service.dart';
 import '../services/cache/salon_cache.dart';
 import '../services/dashboard_api_service.dart';
 import '../utils/show_api_error.dart';
+import '../l10n/locale_provider.dart';
 import '../widgets/address_picker_modal.dart';
 
 class SalonSetupScreen extends StatefulWidget {
@@ -117,19 +118,20 @@ class _SalonSetupScreenState extends State<SalonSetupScreen> {
               onTap: _isLoading
                   ? null
                   : () async {
-                      await AddressPickerModal.show(
+                      final locale = context.read<LocaleProvider>();
+                      final selection = await AddressPickerModal.show(
                         context,
+                        initialLocationName: locale.t('locations.mainStudio'),
                         initialAddress: _addressController.text,
                         initialLat: _addressLat,
                         initialLon: _addressLon,
-                        onSelect: (address, lat, lon) {
-                          setState(() {
-                            _addressController.text = address;
-                            _addressLat = lat;
-                            _addressLon = lon;
-                          });
-                        },
                       );
+                      if (selection == null || !mounted) return;
+                      setState(() {
+                        _addressController.text = selection.address;
+                        _addressLat = selection.lat;
+                        _addressLon = selection.lon;
+                      });
                     },
               borderRadius: BorderRadius.circular(4),
               child: InputDecorator(

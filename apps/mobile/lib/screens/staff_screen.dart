@@ -12,10 +12,9 @@ import '../../services/cache/services_staff_cache.dart';
 import '../../services/dashboard_api_service.dart';
 import '../../services/staff_api_service.dart';
 import '../../utils/show_api_error.dart';
+import '../../widgets/settings/branded_settings_app_bar.dart';
 import '../../widgets/staff/staff_person_tile.dart';
 import 'add_staff_screen.dart';
-
-enum StaffSort { nameAz, nameZa }
 
 class StaffScreen extends StatefulWidget {
   const StaffScreen({super.key});
@@ -30,7 +29,6 @@ class _StaffScreenState extends State<StaffScreen> {
   bool _isLoading = false;
   bool _isActionLoading = false;
   bool _isProPlan = false;
-  StaffSort _sort = StaffSort.nameAz;
 
   @override
   void initState() {
@@ -125,13 +123,10 @@ class _StaffScreenState extends State<StaffScreen> {
   }
 
   void _openAddStaff() {
+    final locale = context.read<LocaleProvider>();
     if (!_isProPlan) {
       ScaffoldMessenger.maybeOf(context)?.showSnackBar(
-        const SnackBar(
-          content: Text(
-            'Добавление новых тренеров доступно только в пакете Pro',
-          ),
-        ),
+        SnackBar(content: Text(locale.t('staffScreen.addStaffProRequired'))),
       );
       return;
     }
@@ -145,72 +140,14 @@ class _StaffScreenState extends State<StaffScreen> {
     });
   }
 
-  List<StaffMember> get _sortedStaff {
-    final list = List<StaffMember>.from(_staff);
-    list.sort((a, b) {
-      switch (_sort) {
-        case StaffSort.nameAz:
-          return a.name.compareTo(b.name);
-        case StaffSort.nameZa:
-          return b.name.compareTo(a.name);
-      }
-    });
+  List<StaffMember> _staffExcludingOwner(String? ownerEmail) {
+    final ownerKey = ownerEmail?.trim().toLowerCase() ?? '';
+    final list = _staff.where((m) {
+      if (ownerKey.isEmpty) return true;
+      return (m.email ?? '').trim().toLowerCase() != ownerKey;
+    }).toList();
+    list.sort((a, b) => a.name.compareTo(b.name));
     return list;
-  }
-
-  void _showSortMenu() {
-    final locale = context.read<LocaleProvider>();
-    showModalBottomSheet(
-      context: context,
-      builder: (ctx) => SafeArea(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Padding(
-              padding: const EdgeInsets.all(16),
-              child: Text(
-                locale.t('staffScreen.sortTitle'),
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w600,
-                  color: AppColors.textPrimary,
-                ),
-              ),
-            ),
-            ListTile(
-              title: Text(locale.t('staffScreen.sortNameAsc')),
-              leading: Radio<StaffSort>(
-                value: StaffSort.nameAz,
-                groupValue: _sort,
-                onChanged: (v) {
-                  if (v != null) setState(() => _sort = v);
-                  Navigator.pop(ctx);
-                },
-              ),
-              onTap: () {
-                setState(() => _sort = StaffSort.nameAz);
-                Navigator.pop(ctx);
-              },
-            ),
-            ListTile(
-              title: Text(locale.t('staffScreen.sortNameDesc')),
-              leading: Radio<StaffSort>(
-                value: StaffSort.nameZa,
-                groupValue: _sort,
-                onChanged: (v) {
-                  if (v != null) setState(() => _sort = v);
-                  Navigator.pop(ctx);
-                },
-              ),
-              onTap: () {
-                setState(() => _sort = StaffSort.nameZa);
-                Navigator.pop(ctx);
-              },
-            ),
-          ],
-        ),
-      ),
-    );
   }
 
   void _openEditDialog(StaffMember member) {
@@ -595,8 +532,9 @@ class _StaffScreenState extends State<StaffScreen> {
   @override
   Widget build(BuildContext context) {
     final locale = context.watch<LocaleProvider>();
-    final textTheme = Theme.of(context).textTheme;
     final owner = context.read<AuthService>().user;
+    final extraStaff = _staffExcludingOwner(owner?.email);
+    final showAddFab = _salon != null && !_isLoading;
     final ownerName = (owner?.name?.trim().isNotEmpty ?? false)
         ? owner!.name!.trim()
         : owner?.email ?? locale.t('settings.owner.ownerRole');
@@ -609,42 +547,26 @@ class _StaffScreenState extends State<StaffScreen> {
 
     return Scaffold(
       backgroundColor: AppColors.backgroundSecondary,
-      appBar: AppBar(
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
-          onPressed: () => Navigator.of(context).pop(),
-          color: AppColors.textPrimary,
-        ),
-        title: Text(
-          locale.t('staffScreen.title'),
-          style:
-              textTheme.headlineSmall?.copyWith(
-                fontSize: 24,
-                fontWeight: FontWeight.w700,
-                letterSpacing: -0.3,
-                color: AppColors.textPrimary,
-              ) ??
-              const TextStyle(
-                fontSize: 24,
-                fontWeight: FontWeight.w700,
-                letterSpacing: -0.3,
-                color: AppColors.textPrimary,
-              ),
-        ),
-        centerTitle: false,
-        backgroundColor: AppColors.backgroundSecondary,
-        foregroundColor: AppColors.textPrimary,
-        elevation: 0,
-        scrolledUnderElevation: 0,
-        actions: [
-          if (_salon != null)
-            IconButton(
-              icon: const Icon(Icons.filter_list),
-              tooltip: locale.t('staffScreen.sortAndFiltersTooltip'),
-              onPressed: _isLoading ? null : _showSortMenu,
-            ),
-        ],
+      appBar: buildBrandedSettingsAppBar(
+        context,
+        title: locale.t('staffScreen.title'),
       ),
+      floatingActionButton: showAddFab
+          ? SafeArea(
+              minimum: const EdgeInsets.only(bottom: 8),
+              child: FloatingActionButton(
+                onPressed: _isActionLoading ? null : _openAddStaff,
+                elevation: 0,
+                focusElevation: 0,
+                hoverElevation: 0,
+                highlightElevation: 0,
+                backgroundColor: AppColors.primary500,
+                foregroundColor: Colors.white,
+                child: const Icon(Icons.add),
+              ),
+            )
+          : null,
+      floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
       body: _isLoading
           ? const Center(
               child: CircularProgressIndicator(color: AppColors.primary500),
@@ -666,44 +588,18 @@ class _StaffScreenState extends State<StaffScreen> {
               onRefresh: _loadData,
               color: AppColors.primary500,
               child: ListView(
-                padding: const EdgeInsets.fromLTRB(
+                padding: EdgeInsets.fromLTRB(
                   kScreenPaddingHorizontal,
                   12,
                   kScreenPaddingHorizontal,
-                  100,
+                  showAddFab ? 88 : 24,
                 ),
                 children: [
                   StaffPersonTile(
                     name: ownerName,
                     secondaryLine: ownerSubtitle,
                   ),
-                  if (_staff.isEmpty) ...[
-                    const SizedBox(height: 20),
-                    Icon(
-                      Icons.people_outline,
-                      size: 56,
-                      color: AppColors.textSecondary,
-                    ),
-                    const SizedBox(height: 12),
-                    Text(
-                      locale.t('staffScreen.emptyTitle'),
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.w600,
-                        color: AppColors.textPrimary,
-                      ),
-                      textAlign: TextAlign.center,
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      locale.t('staffScreen.emptySubtitle'),
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: AppColors.textSecondary,
-                      ),
-                      textAlign: TextAlign.center,
-                    ),
-                  ] else ..._sortedStaff.map((member) {
+                  ...extraStaff.map((member) {
                     return StaffPersonTile(
                       name: member.name,
                       secondaryLine: _contactSubtitle(
@@ -752,22 +648,6 @@ class _StaffScreenState extends State<StaffScreen> {
                 ],
               ),
             ),
-      floatingActionButton: _salon != null && !_isLoading
-          ? FloatingActionButton(
-              onPressed: _openAddStaff,
-              tooltip: _isProPlan
-                  ? locale.t('staffScreen.addStaff')
-                  : 'Доступно в Pro',
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-              backgroundColor: _isProPlan
-                  ? AppColors.primary500
-                  : AppColors.neutral400,
-              foregroundColor: Colors.white,
-              child: Icon(_isProPlan ? Icons.add : Icons.lock_outline),
-            )
-          : null,
     );
   }
 }

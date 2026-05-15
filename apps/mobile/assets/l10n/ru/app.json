@@ -313,7 +313,9 @@
 		"servicesSelected": "услуг выбрано",
 		"selectServicesHint": "Выберите услуги, которые может выполнять этот сотрудник.",
 		"enterFullName": "Введите полное имя",
-		"staffServicesTitle": "Услуги сотрудника"
+		"staffServicesTitle": "Услуги сотрудника",
+		"addStaff": "Добавить сотрудника",
+		"addStaffProRequired": "Добавление тренеров доступно в подписке Pro."
 	},
 	"servicesScreen": {
 		"title": "Услуги",
@@ -514,8 +516,16 @@
 		"salonDescriptionHint": "Укажите детали о вашем салоне, включая название, описание, адрес, контактную информацию, фотографии и часы работы.",
 		"deleteWarning": "После удаления аккаунта восстановление невозможно. Все данные будут удалены."
 	},
+	"locations": {
+		"mainStudio": "Основная студия"
+	},
 	"addressPicker": {
 		"title": "Выберите адрес",
+		"locationNameLabel": "Название локации",
+		"locationNameHint": "Например, Основная студия",
+		"nameRequired": "Укажите название локации",
+		"enterNameFirstHint": "Сначала укажите название локации",
+		"enableMapHint": "Введите адрес, чтобы включить карту",
 		"searchHint": "Поиск по адресу",
 		"mapHint": "Нажмите на карту, чтобы установить маркер в нужное место.",
 		"selectAddressOnMap": "Выберите адрес для просмотра на карте",
@@ -526,6 +536,13 @@
 		"pickCategory": "Выберите категорию",
 		"categoryOtherChip": "+ Другое",
 		"addressSectionLabel": "Адрес",
+		"locationSheetTitle": "Выберите локацию",
+		"defaultLocationBadge": "По умолчанию",
+		"addNewLocation": "Добавить новую локацию",
+		"locationNameDialogTitle": "Название локации",
+		"locationNameHint": "Например, Зал на крыше",
+		"noAddress": "Адрес не указан",
+		"studioNameFallback": "Студия",
 		"durationSuffix": "мин",
 		"newClassStep1": "Новый класс · 1/2",
 		"newClassStep2": "Новый класс · 2/2",

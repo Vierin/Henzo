@@ -9,6 +9,7 @@ import '../constants/colors.dart';
 import '../services/api_client.dart';
 import '../services/cache/client_nearby_cache.dart';
 import '../utils/nearby_payload.dart';
+import '../widgets/map/henzo_map_layers.dart';
 import 'location_picker_screen.dart';
 
 class ClientMapScreen extends StatefulWidget {
@@ -222,15 +223,10 @@ class _ClientMapScreenState extends State<ClientMapScreen> {
                 initialCenter: center,
                 initialZoom: hasCoords ? 14 : 10,
                 onPositionChanged: _handleMapPositionChanged,
+                interactionOptions: HenzoMapLayers.interactionOptions(),
               ),
               children: [
-                TileLayer(
-                  urlTemplate:
-                      'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',
-                  subdomains: const ['a', 'b', 'c', 'd'],
-                  retinaMode: true,
-                  userAgentPackageName: 'com.henzo.mobile',
-                ),
+                HenzoMapLayers.cartoLightTileLayer(),
                 MarkerLayer(
                   markers: _nearbyStudios
                       .where((s) => s.lat != null && s.lon != null)
@@ -272,6 +268,7 @@ class _ClientMapScreenState extends State<ClientMapScreen> {
                       ),
                     ],
                   ),
+                HenzoMapLayers.cartoAttribution(),
               ],
             ),
           ),

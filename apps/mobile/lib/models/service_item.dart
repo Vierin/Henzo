@@ -16,6 +16,8 @@ class ServiceItem {
   /// Название категории для тега.
   final String? categoryName;
   final String? displayColor;
+  /// Имена привязанных тренеров (из API Staff).
+  final List<String> trainerNames;
 
   ServiceItem({
     required this.id,
@@ -31,9 +33,13 @@ class ServiceItem {
     this.serviceCategoryId,
     this.categoryName,
     this.displayColor,
+    this.trainerNames = const [],
   });
 
   String get displayName => name;
+
+  String get trainerLabel =>
+      trainerNames.isEmpty ? '' : trainerNames.join(', ');
 
   static double? _parseDouble(dynamic v) {
     if (v == null) return null;
@@ -83,6 +89,20 @@ class ServiceItem {
     if (cat is! Map) cat = json['service_categories'];
     if (cat is Map) categoryName = _categoryLabelFromMap(cat);
 
+    final trainers = <String>[];
+    final staffRaw = json['staff'] ?? json['Staff'];
+    if (staffRaw is List) {
+      for (final entry in staffRaw) {
+        if (entry is Map) {
+          final n = (entry['name'] as String?)?.trim();
+          if (n != null && n.isNotEmpty) trainers.add(n);
+        }
+      }
+    } else if (staffRaw is Map) {
+      final n = (staffRaw['name'] as String?)?.trim();
+      if (n != null && n.isNotEmpty) trainers.add(n);
+    }
+
     return ServiceItem(
       id: id,
       name: name,
@@ -97,6 +117,7 @@ class ServiceItem {
       serviceCategoryId: _parseInt(json['serviceCategoryId']) ?? trainingCatId,
       categoryName: categoryName,
       displayColor: json['displayColor']?.toString(),
+      trainerNames: trainers,
     );
   }
 
@@ -115,6 +136,7 @@ class ServiceItem {
       'serviceCategoryId': serviceCategoryId,
       'categoryName': categoryName,
       'displayColor': displayColor,
+      'trainerNames': trainerNames,
     };
   }
 }

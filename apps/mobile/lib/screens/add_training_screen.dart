@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
@@ -9,6 +10,7 @@ import '../constants/layout.dart';
 import '../models/salon.dart';
 import '../models/service_item.dart';
 import '../models/training_category_option.dart';
+import '../models/training_location_item.dart';
 import '../l10n/locale_provider.dart';
 import '../services/auth_service.dart';
 import '../services/dashboard_api_service.dart';
@@ -17,7 +19,10 @@ import '../services/cache/salon_cache.dart';
 import '../services/cache/services_staff_cache.dart';
 import '../services/services_api_service.dart';
 import '../utils/show_api_error.dart';
+import '../utils/training_locations_storage.dart';
+import '../widgets/address_picker_modal.dart';
 import '../widgets/schedule_style_date_picker.dart';
+import '../widgets/training/training_location_picker_sheet.dart';
 import 'main_shell.dart';
 
 /// Matches registration / mock secondary controls (chevron, pin tint).
@@ -81,6 +86,8 @@ class _AddTrainingScreenState extends State<AddTrainingScreen> {
   TimeOfDay _sessionTime = const TimeOfDay(hour: 9, minute: 0);
   DateTime _recurringEndDate = DateTime.now();
   Salon? _studio;
+  List<TrainingLocationItem> _locations = [];
+  String _selectedLocationId = 'default';
   List<ServiceItem> _existing = [];
   List<TrainingCategoryOption> _categories = [];
   int? _selectedCategoryId;
@@ -113,6 +120,98 @@ class _AddTrainingScreenState extends State<AddTrainingScreen> {
     _priceController.dispose();
     _capacityController.dispose();
     super.dispose();
+  }
+
+  TrainingLocationItem? get _selectedLocation {
+    for (final loc in _locations) {
+      if (loc.id == _selectedLocationId) return loc;
+    }
+    return _locations.isNotEmpty ? _locations.first : null;
+  }
+
+  void _applyLocationsFromStudio(Salon? studio, LocaleProvider locale) {
+    _locations = TrainingLocationItem.listFromSalon(
+      studio,
+      mainStudioName: locale.t('locations.mainStudio'),
+    );
+    if (_locations.isEmpty) {
+      _selectedLocationId = 'default';
+      return;
+    }
+    final stillValid = _locations.any((l) => l.id == _selectedLocationId);
+    if (!stillValid) {
+      _selectedLocationId = _locations.first.id;
+    }
+  }
+
+  Future<void> _openLocationPicker() async {
+    final locale = context.read<LocaleProvider>();
+    if (_locations.isEmpty && _studio != null) {
+      _applyLocationsFromStudio(_studio, locale);
+    }
+    if (_locations.isEmpty) return;
+
+    final result = await showTrainingLocationPickerSheet(
+      context,
+      locations: _locations,
+      selectedId: _selectedLocationId,
+    );
+    if (!mounted || result == null) return;
+
+    switch (result) {
+      case TrainingLocationPicked(:final location):
+        setState(() => _selectedLocationId = location.id);
+      case TrainingLocationAddRequested():
+        await _addNewTrainingLocation();
+    }
+  }
+
+  Future<void> _addNewTrainingLocation() async {
+    final locale = context.read<LocaleProvider>();
+    final studio = _studio;
+    if (studio == null) return;
+
+    final seed = _selectedLocation ??
+        TrainingLocationItem.defaultFromSalon(
+          studio,
+          mainStudioName: locale.t('locations.mainStudio'),
+        );
+
+    final selection = await AddressPickerModal.show(
+      context,
+      initialAddress: seed.address,
+      initialLat: seed.latitude ?? studio.latitude,
+      initialLon: seed.longitude ?? studio.longitude,
+    );
+    if (!mounted || selection == null) return;
+
+    final newLoc = TrainingLocationItem(
+      id: 'loc_${DateTime.now().millisecondsSinceEpoch}',
+      name: selection.locationName,
+      address: selection.address.trim(),
+      latitude: selection.lat,
+      longitude: selection.lon,
+    );
+    final updatedList = [..._locations, newLoc];
+
+    try {
+      final updatedSalon = await persistExtraTrainingLocations(
+        context,
+        studio,
+        updatedList,
+      );
+      if (!mounted) return;
+      setState(() {
+        _studio = updatedSalon ?? studio;
+        _locations = TrainingLocationItem.listFromSalon(
+          _studio,
+          mainStudioName: locale.t('locations.mainStudio'),
+        );
+        _selectedLocationId = newLoc.id;
+      });
+    } catch (e) {
+      if (mounted) showApiError(context, e);
+    }
   }
 
   String _weekdayLabel(int weekday) {
@@ -1315,8 +1414,10 @@ class _AddTrainingScreenState extends State<AddTrainingScreen> {
           : <ServiceItem>[];
       final categories = await ServicesApiService.getTrainingCategories(token);
       if (!mounted) return;
+      final locale = context.read<LocaleProvider>();
       setState(() {
         _studio = studio;
+        _applyLocationsFromStudio(studio, locale);
         _existing = list;
         _categories = _categoriesWithOtherLast(categories);
         _loading = false;
@@ -1630,6 +1731,12 @@ class _AddTrainingScreenState extends State<AddTrainingScreen> {
                         const SizedBox(height: 22),
                         Consumer<LocaleProvider>(
                           builder: (context, loc, _) {
+                            final selected = _selectedLocation;
+                            final displayName = selected?.name.trim().isNotEmpty ==
+                                    true
+                                ? selected!.name
+                                : loc.t('addTraining.studioNameFallback');
+                            final address = selected?.address.trim() ?? '';
                             return Column(
                               crossAxisAlignment: CrossAxisAlignment.stretch,
                               children: [
@@ -1639,86 +1746,92 @@ class _AddTrainingScreenState extends State<AddTrainingScreen> {
                                 Material(
                                   color: AppColors.backgroundPrimary,
                                   borderRadius: BorderRadius.circular(28),
-                                  child: Padding(
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 12,
-                                      vertical: 14,
-                                    ),
-                                    child: Row(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      children: [
-                                        Padding(
-                                          padding: const EdgeInsets.only(
-                                            top: 2,
-                                          ),
-                                          child: Icon(
-                                            Icons.location_on_rounded,
-                                            color: _kFormAccentPurple,
-                                            size: 26,
-                                          ),
-                                        ),
-                                        const SizedBox(width: 12),
-                                        Expanded(
-                                          child: Column(
-                                            crossAxisAlignment:
-                                                CrossAxisAlignment.start,
-                                            children: [
-                                              Text(
-                                                _studio?.name
-                                                            ?.trim()
-                                                            .isNotEmpty ==
-                                                        true
-                                                    ? _studio!.name!.trim()
-                                                    : 'Студия',
-                                                style: const TextStyle(
-                                                  fontSize: 19,
-                                                  fontWeight: FontWeight.w700,
-                                                  color: AppColors.textPrimary,
-                                                ),
+                                  clipBehavior: Clip.antiAlias,
+                                  child: InkWell(
+                                    onTap: _openLocationPicker,
+                                    borderRadius: BorderRadius.circular(28),
+                                    child: Padding(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 12,
+                                        vertical: 14,
+                                      ),
+                                      child: Row(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          Padding(
+                                            padding: const EdgeInsets.only(
+                                              top: 2,
+                                            ),
+                                            child: SvgPicture.asset(
+                                              'assets/icons/icon-pin.svg',
+                                              width: 15,
+                                              height: 21,
+                                              colorFilter:
+                                                  const ColorFilter.mode(
+                                                _kFormAccentPurple,
+                                                BlendMode.srcIn,
                                               ),
-                                              if ((_studio?.address ?? '')
-                                                  .trim()
-                                                  .isNotEmpty) ...[
-                                                const SizedBox(height: 4),
+                                            ),
+                                          ),
+                                          const SizedBox(width: 12),
+                                          Expanded(
+                                            child: Column(
+                                              crossAxisAlignment:
+                                                  CrossAxisAlignment.start,
+                                              children: [
                                                 Text(
-                                                  _studio!.address!.trim(),
+                                                  displayName,
                                                   style: const TextStyle(
-                                                    fontSize: 14,
-                                                    height: 1.25,
-                                                    fontWeight: FontWeight.w400,
+                                                    fontSize: 19,
+                                                    fontWeight: FontWeight.w700,
                                                     color:
-                                                        AppColors.textSecondary,
+                                                        AppColors.textPrimary,
                                                   ),
                                                 ),
-                                              ] else
-                                                const Padding(
-                                                  padding: EdgeInsets.only(
-                                                    top: 4,
-                                                  ),
-                                                  child: Text(
-                                                    'Адрес не указан',
-                                                    style: TextStyle(
+                                                if (address.isNotEmpty) ...[
+                                                  const SizedBox(height: 4),
+                                                  Text(
+                                                    address,
+                                                    style: const TextStyle(
                                                       fontSize: 14,
+                                                      height: 1.25,
+                                                      fontWeight:
+                                                          FontWeight.w400,
                                                       color: AppColors
-                                                          .textTertiary,
+                                                          .textSecondary,
                                                     ),
                                                   ),
-                                                ),
-                                            ],
+                                                ] else
+                                                  Padding(
+                                                    padding:
+                                                        const EdgeInsets.only(
+                                                      top: 4,
+                                                    ),
+                                                    child: Text(
+                                                      loc.t(
+                                                        'addTraining.noAddress',
+                                                      ),
+                                                      style: const TextStyle(
+                                                        fontSize: 14,
+                                                        color: AppColors
+                                                            .textTertiary,
+                                                      ),
+                                                    ),
+                                                  ),
+                                              ],
+                                            ),
                                           ),
-                                        ),
-                                        Padding(
-                                          padding: const EdgeInsets.only(
-                                            top: 4,
+                                          const Padding(
+                                            padding: EdgeInsets.only(top: 4),
+                                            child: Icon(
+                                              CupertinoIcons.chevron_forward,
+                                              color: _kFormAccentPurple,
+                                              size: 18,
+                                            ),
                                           ),
-                                          child: const Icon(
-                                            CupertinoIcons.chevron_forward,
-                                            color: _kFormAccentPurple,
-                                            size: 18,
-                                          ),
-                                        ),
-                                      ],
+                                        ],
+                                      ),
                                     ),
                                   ),
                                 ),

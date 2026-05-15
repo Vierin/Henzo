@@ -16,6 +16,7 @@ import '../../services/cache/salon_cache.dart';
 import '../../services/dashboard_api_service.dart';
 import '../../utils/show_api_error.dart';
 import '../../widgets/address_picker_modal.dart';
+import '../../widgets/settings/settings_typography.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -436,8 +437,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
   Widget build(BuildContext context) {
     return Consumer<LocaleProvider>(
       builder: (context, locale, _) {
-        final textTheme = Theme.of(context).textTheme;
-
         return PopScope(
           canPop: !_hasUnsavedChanges,
           onPopInvokedWithResult: (didPop, _) async {
@@ -448,26 +447,22 @@ class _SettingsScreenState extends State<SettingsScreen> {
             backgroundColor: AppColors.backgroundSecondary,
             appBar: AppBar(
               leading: IconButton(
-                icon: const Icon(Icons.arrow_back),
                 onPressed: _handleBackPressed,
-                color: AppColors.textPrimary,
+                style: IconButton.styleFrom(
+                  backgroundColor: AppColors.neutral200,
+                  shape: const CircleBorder(),
+                ),
+                icon: const Icon(
+                  Icons.arrow_back,
+                  color: AppColors.textPrimary,
+                  size: 20,
+                ),
               ),
               title: Text(
                 locale.t('settings.owner.studioProfile'),
-                style:
-                    textTheme.headlineSmall?.copyWith(
-                      fontWeight: FontWeight.w700,
-                      color: AppColors.textPrimary,
-                      letterSpacing: -0.3,
-                    ) ??
-                    const TextStyle(
-                      fontSize: 24,
-                      fontWeight: FontWeight.w700,
-                      color: AppColors.textPrimary,
-                      letterSpacing: -0.3,
-                    ),
+                style: SettingsTypography.screenTitle(context),
               ),
-              centerTitle: false,
+              centerTitle: true,
               backgroundColor: AppColors.backgroundSecondary,
               foregroundColor: AppColors.textPrimary,
               elevation: 0,
@@ -573,21 +568,21 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                         label: locale.t('profileForm.address'),
                                         child: InkWell(
                                           onTap: () async {
-                                            await AddressPickerModal.show(
+                                            final selection =
+                                                await AddressPickerModal.show(
                                               context,
                                               initialAddress:
                                                   _salonAddressController.text,
                                               initialLat: _salonLat,
                                               initialLon: _salonLon,
-                                              onSelect: (address, lat, lon) {
-                                                setState(() {
-                                                  _salonAddressController.text =
-                                                      address;
-                                                  _salonLat = lat;
-                                                  _salonLon = lon;
-                                                });
-                                              },
                                             );
+                                            if (selection == null) return;
+                                            setState(() {
+                                              _salonAddressController.text =
+                                                  selection.address;
+                                              _salonLat = selection.lat;
+                                              _salonLon = selection.lon;
+                                            });
                                           },
                                           borderRadius: BorderRadius.circular(
                                             10,
@@ -872,15 +867,7 @@ class _SectionCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              title.toUpperCase(),
-              style: const TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w500,
-                letterSpacing: -0.2,
-                color: AppColors.textSecondary,
-              ),
-            ),
+            Text(title, style: SettingsTypography.screenTitle(context)),
             const SizedBox(height: 12),
             child,
           ],

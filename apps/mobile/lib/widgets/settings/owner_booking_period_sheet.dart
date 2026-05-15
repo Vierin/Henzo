@@ -8,6 +8,7 @@ import '../../services/auth_service.dart';
 import '../../services/cache/salon_cache.dart';
 import '../../services/dashboard_api_service.dart';
 import '../../utils/show_api_error.dart';
+import '../common/sheet_action_button_style.dart';
 
 /// 4 weeks — default booking window for new studios.
 const int kDefaultBookingPeriodDays = 28;
@@ -212,6 +213,7 @@ Future<bool?> showOwnerBookingPeriodSheet(
                               onPressed: applying
                                   ? null
                                   : () => Navigator.of(sheetContext).pop(false),
+                              style: sheetCancelButtonStyle(),
                               child: Text(locale.t('common.cancel')),
                             ),
                           ),
@@ -222,9 +224,7 @@ Future<bool?> showOwnerBookingPeriodSheet(
                             height: 46,
                             child: FilledButton(
                               onPressed: applying ? null : onApply,
-                              style: FilledButton.styleFrom(
-                                backgroundColor: AppColors.primary500,
-                              ),
+                              style: sheetPrimaryButtonStyle(),
                               child: applying
                                   ? const SizedBox(
                                       height: 20,

@@ -13,6 +13,7 @@ import '../../services/services_api_service.dart';
 import '../../utils/show_api_error.dart';
 import '../../constants/layout.dart';
 import '../../widgets/app_search_prefix_icon.dart';
+import '../../widgets/settings/branded_settings_app_bar.dart';
 import '../../widgets/training/owner_training_catalog_card.dart';
 import 'add_training_screen.dart';
 
@@ -374,6 +375,15 @@ class _ServicesScreenState extends State<ServicesScreen> {
     );
   }
 
+  String _trainerLabelForItem(ServiceItem item, LocaleProvider locale) {
+    final fromApi = item.trainerLabel.trim();
+    if (fromApi.isNotEmpty) return fromApi;
+    final owner = context.read<AuthService>().user;
+    final ownerName = owner?.name?.trim();
+    if (ownerName != null && ownerName.isNotEmpty) return ownerName;
+    return locale.t('settings.owner.ownerRole');
+  }
+
   Future<void> _openEditTrainingPage(ServiceItem item) async {
     final token = context.read<AuthService>().accessToken;
     if (token == null || token.isEmpty) return;
@@ -418,26 +428,9 @@ class _ServicesScreenState extends State<ServicesScreen> {
             )
           : null,
       floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
-      appBar: AppBar(
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
-          onPressed: () => Navigator.of(context).pop(),
-          color: AppColors.textPrimary,
-        ),
-        title: Text(
-          locale.t('settings.owner.trainings'),
-          style: const TextStyle(
-            fontSize: 24,
-            fontWeight: FontWeight.w700,
-            letterSpacing: -0.3,
-            color: AppColors.textPrimary,
-          ),
-        ),
-        centerTitle: false,
-        backgroundColor: AppColors.backgroundSecondary,
-        foregroundColor: AppColors.textPrimary,
-        elevation: 0,
-        scrolledUnderElevation: 0,
+      appBar: buildBrandedSettingsAppBar(
+        context,
+        title: locale.t('settings.owner.trainings'),
         actions: [
           if (_salon != null)
             IconButton(
@@ -652,7 +645,7 @@ class _ServicesScreenState extends State<ServicesScreen> {
                               item: item,
                               durationLabel: _formatDuration(item.duration),
                               priceLabel: formatVnd(item.price),
-                              subtitle: item.categoryName?.trim() ?? '',
+                              trainerLabel: _trainerLabelForItem(item, locale),
                               onTap: _isActionLoading
                                   ? () {}
                                   : () => _openEditTrainingPage(item),

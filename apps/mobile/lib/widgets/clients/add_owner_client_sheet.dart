@@ -9,6 +9,8 @@ import '../../models/owner_studio_client.dart';
 import '../../services/auth_service.dart';
 import '../../services/dashboard_api_service.dart';
 import '../../utils/synthetic_guest.dart';
+import '../app_search_prefix_icon.dart';
+import '../common/sheet_action_button_style.dart';
 
 enum AddOwnerClientMode {
   directoryOnly,
@@ -660,7 +662,7 @@ class _EnrollParticipantSheetState extends State<_EnrollParticipantSheet> {
               enabled: !_saving,
               decoration: InputDecoration(
                 labelText: tr('ownerClient.searchClientsPlaceholder'),
-                prefixIcon: const Icon(Icons.search, size: 20),
+                prefixIcon: const AppSearchPrefixIcon(width: 14, height: 14),
               ),
             ),
             const SizedBox(height: 6),
@@ -955,6 +957,7 @@ class _SheetActions extends StatelessWidget {
     final tr = context.read<LocaleProvider>().t;
     final primary = FilledButton(
       onPressed: (saving || !primaryEnabled) ? null : onPrimary,
+      style: sheetPrimaryButtonStyle(),
       child: saving
           ? const SizedBox(
               width: 18,
@@ -974,6 +977,7 @@ class _SheetActions extends StatelessWidget {
         Expanded(
           child: OutlinedButton(
             onPressed: saving ? null : onCancel,
+            style: sheetCancelButtonStyle(),
             child: Text(tr('common.cancel')),
           ),
         ),

@@ -313,7 +313,9 @@
 		"servicesSelected": "dịch vụ đã chọn",
 		"selectServicesHint": "Chọn các dịch vụ mà nhân viên này có thể thực hiện.",
 		"enterFullName": "Nhập họ và tên",
-		"staffServicesTitle": "Dịch vụ của nhân viên"
+		"staffServicesTitle": "Dịch vụ của nhân viên",
+		"addStaff": "Thêm nhân viên",
+		"addStaffProRequired": "Thêm huấn luyện viên chỉ có trong gói Pro."
 	},
 	"servicesScreen": {
 		"title": "Dịch vụ",
@@ -516,8 +518,16 @@
 		"salonDescriptionHint": "Nhập thông tin salon: tên, mô tả, địa chỉ, liên hệ, ảnh và giờ mở cửa.",
 		"deleteWarning": "Xóa tài khoản là vĩnh viễn. Mọi dữ liệu sẽ mất."
 	},
+	"locations": {
+		"mainStudio": "Studio chính"
+	},
 	"addressPicker": {
 		"title": "Chọn địa chỉ",
+		"locationNameLabel": "Tên địa điểm",
+		"locationNameHint": "VD: Studio chính",
+		"nameRequired": "Nhập tên địa điểm",
+		"enterNameFirstHint": "Nhập tên địa điểm trước khi tìm địa chỉ",
+		"enableMapHint": "Nhập địa chỉ để dùng bản đồ",
 		"searchHint": "Tìm theo địa chỉ",
 		"mapHint": "Chạm vào bản đồ để đặt ghim đúng vị trí.",
 		"selectAddressOnMap": "Chọn địa chỉ để xem trên bản đồ",
@@ -528,6 +538,13 @@
 		"pickCategory": "Chọn danh mục",
 		"categoryOtherChip": "+ Khác",
 		"addressSectionLabel": "Địa chỉ",
+		"locationSheetTitle": "Chọn địa điểm",
+		"defaultLocationBadge": "Mặc định",
+		"addNewLocation": "Thêm địa điểm mới",
+		"locationNameDialogTitle": "Tên địa điểm",
+		"locationNameHint": "VD: Phòng trên sân thượng",
+		"noAddress": "Chưa có địa chỉ",
+		"studioNameFallback": "Studio",
 		"durationSuffix": "phút",
 		"newClassStep1": "Lớp mới · 1/2",
 		"newClassStep2": "Lớp mới · 2/2",

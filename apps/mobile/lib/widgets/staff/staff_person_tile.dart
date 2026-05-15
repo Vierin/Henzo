@@ -69,7 +69,7 @@ class StaffPersonAvatar extends StatelessWidget {
   }
 }
 
-/// Карточка сотрудника / владельца — как [ClientListTile], аватар справа.
+/// Карточка сотрудника / владельца — layout как [ClientListTile].
 class StaffPersonTile extends StatelessWidget {
   const StaffPersonTile({
     super.key,
@@ -102,10 +102,15 @@ class StaffPersonTile extends StatelessWidget {
           onTap: onTap,
           borderRadius: BorderRadius.circular(_cardRadius),
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+            padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
+                StaffPersonAvatar(
+                  displayName: name,
+                  photoUrl: photoUrl,
+                ),
+                const SizedBox(width: 14),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -117,14 +122,14 @@ class StaffPersonTile extends StatelessWidget {
                         overflow: TextOverflow.ellipsis,
                         style:
                             theme.textTheme.titleMedium?.copyWith(
-                              fontWeight: FontWeight.w600,
+                              fontWeight: FontWeight.w500,
                               fontSize: 16,
                               letterSpacing: -0.3,
                               color: AppColors.textPrimary,
                             ) ??
                             const TextStyle(
                               fontSize: 16,
-                              fontWeight: FontWeight.w600,
+                              fontWeight: FontWeight.w500,
                               letterSpacing: -0.3,
                               color: AppColors.textPrimary,
                             ),
@@ -157,11 +162,6 @@ class StaffPersonTile extends StatelessWidget {
                   const SizedBox(width: 8),
                   trailing!,
                 ],
-                const SizedBox(width: 10),
-                StaffPersonAvatar(
-                  displayName: name,
-                  photoUrl: photoUrl,
-                ),
               ],
             ),
           ),

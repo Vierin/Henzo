@@ -87,9 +87,9 @@ flutter:
     - assets/logo.png
     - assets/icons/
     - assets/public/
-    - assets/l10n/en/
-    - assets/l10n/ru/
-    - assets/l10n/vi/
+    - assets/l10n/en/app.json
+    - assets/l10n/ru/app.json
+    - assets/l10n/vi/app.json
 
   # The following line ensures that the Material Icons font is
   # included with your application, so that you can use the icons in

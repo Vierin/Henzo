@@ -11,14 +11,14 @@ class OwnerTrainingCatalogCard extends StatelessWidget {
     required this.item,
     required this.durationLabel,
     required this.priceLabel,
-    required this.subtitle,
+    required this.trainerLabel,
     required this.onTap,
   });
 
   final ServiceItem item;
   final String durationLabel;
   final String priceLabel;
-  final String subtitle;
+  final String trainerLabel;
   final VoidCallback onTap;
 
   @override
@@ -55,7 +55,7 @@ class OwnerTrainingCatalogCard extends StatelessWidget {
                       Text(
                         durationLabel,
                         style: const TextStyle(
-                          fontSize: 17,
+                          fontSize: 15,
                           fontWeight: FontWeight.w600,
                           height: 1,
                           letterSpacing: -0.3,
@@ -88,19 +88,19 @@ class OwnerTrainingCatalogCard extends StatelessWidget {
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
-                      if (subtitle.isNotEmpty) ...[
+                      if (trainerLabel.isNotEmpty) ...[
                         const SizedBox(height: 4),
                         Row(
                           children: [
-                            Icon(
-                              Icons.label_outline,
+                            const Icon(
+                              Icons.person_outline,
                               size: 13,
-                              color: accent,
+                              color: AppColors.textSecondary,
                             ),
                             const SizedBox(width: 3),
                             Flexible(
                               child: Text(
-                                subtitle,
+                                trainerLabel,
                                 style: const TextStyle(
                                   fontSize: 13,
                                   fontWeight: FontWeight.w400,
@@ -125,10 +125,10 @@ class OwnerTrainingCatalogCard extends StatelessWidget {
                   children: [
                     Text(
                       priceLabel,
-                      style: TextStyle(
+                      style: const TextStyle(
                         fontSize: 15,
                         fontWeight: FontWeight.w600,
-                        color: accent,
+                        color: AppColors.textPrimary,
                       ),
                       textAlign: TextAlign.right,
                     ),

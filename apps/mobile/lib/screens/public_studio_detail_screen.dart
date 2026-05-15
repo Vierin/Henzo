@@ -11,6 +11,7 @@ import '../services/auth_service.dart';
 import '../services/cache/studio_public_detail_cache.dart';
 import '../services/client_favorites_store.dart';
 import '../utils/color_hex.dart';
+import '../widgets/map/henzo_map_layers.dart';
 import '../widgets/public/cached_salon_network_image.dart';
 import 'public_studio_schedule_screen.dart';
 
@@ -413,15 +414,13 @@ class _DetailContent extends StatelessWidget {
                       options: MapOptions(
                         initialCenter: LatLng(lat, lon),
                         initialZoom: 15.2,
+                        interactionOptions:
+                            HenzoMapLayers.interactionOptions(
+                          interactive: false,
+                        ),
                       ),
                       children: [
-                        TileLayer(
-                          urlTemplate:
-                              'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',
-                          subdomains: const ['a', 'b', 'c', 'd'],
-                          retinaMode: true,
-                          userAgentPackageName: 'com.henzo.mobile',
-                        ),
+                        HenzoMapLayers.cartoLightTileLayer(),
                         MarkerLayer(
                           markers: [
                             Marker(
@@ -436,6 +435,7 @@ class _DetailContent extends StatelessWidget {
                             ),
                           ],
                         ),
+                        HenzoMapLayers.cartoAttribution(),
                       ],
                     ),
                   ),

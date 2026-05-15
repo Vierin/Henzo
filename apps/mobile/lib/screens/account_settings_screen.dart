@@ -2,7 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../constants/colors.dart';
+import '../constants/layout.dart';
 import '../l10n/locale_provider.dart';
+import '../widgets/settings/branded_settings_app_bar.dart';
+import '../widgets/settings/settings_typography.dart';
 import '../services/auth_service.dart';
 import '../utils/auth_ui_result.dart';
 
@@ -191,15 +194,19 @@ class _AccountSettingsScreenState extends State<AccountSettingsScreen> {
     final locale = context.watch<LocaleProvider>();
     return Scaffold(
       backgroundColor: AppColors.backgroundSecondary,
-      appBar: AppBar(
-        title: const Text('Настройки аккаунта'),
-        backgroundColor: AppColors.backgroundPrimary,
-        foregroundColor: AppColors.textPrimary,
+      appBar: buildBrandedSettingsAppBar(
+        context,
+        title: locale.t('profileForm.accountSettings'),
       ),
       body: user == null
           ? const Center(child: CircularProgressIndicator())
           : ListView(
-              padding: const EdgeInsets.all(12),
+              padding: const EdgeInsets.fromLTRB(
+                kScreenPaddingHorizontal,
+                8,
+                kScreenPaddingHorizontal,
+                24,
+              ),
               children: [
                 _Card(
                   title: locale.t('profileForm.personalData'),
@@ -332,14 +339,7 @@ class _Card extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            title,
-            style: const TextStyle(
-              fontSize: 17,
-              fontWeight: FontWeight.w700,
-              color: AppColors.textPrimary,
-            ),
-          ),
+          Text(title, style: SettingsTypography.screenTitle(context)),
           const SizedBox(height: 12),
           child,
         ],

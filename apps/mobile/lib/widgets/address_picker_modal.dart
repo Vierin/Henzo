@@ -2,46 +2,75 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:provider/provider.dart';
 
 import '../constants/colors.dart';
-import 'app_search_prefix_icon.dart';
+import '../constants/layout.dart';
+import 'common/sheet_action_button_style.dart';
 import '../l10n/locale_provider.dart';
 import '../services/mapbox_api_service.dart';
+import 'map/henzo_map_layers.dart';
 
-/// Модалка выбора адреса: подсказки Mapbox (через бэкенд) + карта (OSM, как Leaflet на вебе).
-/// По образцу веб-версии: AddressSelectModal + MapComponentWithCoords.
+/// Result of address + location name pick.
+class AddressPickerSelection {
+  const AddressPickerSelection({
+    required this.locationName,
+    required this.address,
+    required this.lat,
+    required this.lon,
+  });
+
+  final String locationName;
+  final String address;
+  final double lat;
+  final double lon;
+}
+
+/// Bottom sheet: location name → address search → map (Mapbox + CARTO).
 class AddressPickerModal extends StatefulWidget {
   const AddressPickerModal({
     super.key,
+    this.initialLocationName = '',
     required this.initialAddress,
     this.initialLat,
     this.initialLon,
-    required this.onSelect,
   });
 
+  final String initialLocationName;
   final String initialAddress;
   final double? initialLat;
   final double? initialLon;
-  final void Function(String address, double lat, double lon) onSelect;
 
-  static Future<void> show(
+  static Future<AddressPickerSelection?> show(
     BuildContext context, {
+    String initialLocationName = '',
     required String initialAddress,
     double? initialLat,
     double? initialLon,
-    required void Function(String address, double lat, double lon) onSelect,
   }) {
-    return showDialog<void>(
+    return showModalBottomSheet<AddressPickerSelection>(
       context: context,
-      barrierDismissible: false,
-      builder: (ctx) => AddressPickerModal(
-        initialAddress: initialAddress,
-        initialLat: initialLat,
-        initialLon: initialLon,
-        onSelect: onSelect,
-      ),
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      isDismissible: false,
+      enableDrag: true,
+      builder: (sheetCtx) {
+        final viewInsets = MediaQuery.viewInsetsOf(sheetCtx).bottom;
+        return Padding(
+          padding: EdgeInsets.only(top: 12, bottom: viewInsets),
+          child: FractionallySizedBox(
+            heightFactor: 0.92,
+            child: AddressPickerModal(
+              initialLocationName: initialLocationName,
+              initialAddress: initialAddress,
+              initialLat: initialLat,
+              initialLon: initialLon,
+            ),
+          ),
+        );
+      },
     );
   }
 
@@ -50,6 +79,7 @@ class AddressPickerModal extends StatefulWidget {
 }
 
 class _AddressPickerModalState extends State<AddressPickerModal> {
+  final _nameController = TextEditingController();
   final _searchController = TextEditingController();
   final _mapController = MapController();
   final _searchFocus = FocusNode();
@@ -67,22 +97,28 @@ class _AddressPickerModalState extends State<AddressPickerModal> {
   @override
   void initState() {
     super.initState();
+    _nameController.text = widget.initialLocationName;
     _address = widget.initialAddress;
     _searchController.text = widget.initialAddress;
     _lat = widget.initialLat;
     _lon = widget.initialLon;
-    if (_address.isNotEmpty && _lat != null && _lon != null) {
-      // already have coords
-    }
   }
 
   @override
   void dispose() {
     _debounceTimer?.cancel();
+    _nameController.dispose();
     _searchController.dispose();
     _searchFocus.dispose();
     super.dispose();
   }
+
+  bool get _hasLocationName => _nameController.text.trim().isNotEmpty;
+
+  bool get _hasSearchInput => _searchController.text.trim().isNotEmpty;
+
+  bool get _mapInteractive =>
+      _hasLocationName && _searchController.text.trim().length > 3;
 
   Future<void> _fetchSuggestions(String query) async {
     if (query.trim().length < 2) {
@@ -103,6 +139,17 @@ class _AddressPickerModalState extends State<AddressPickerModal> {
       _suggestions = list;
       _showSuggestions = list.isNotEmpty;
       _loadingSuggestions = false;
+    });
+  }
+
+  void _clearAddressSearch() {
+    _searchController.clear();
+    setState(() {
+      _address = '';
+      _lat = null;
+      _lon = null;
+      _suggestions = [];
+      _showSuggestions = false;
     });
   }
 
@@ -135,8 +182,7 @@ class _AddressPickerModalState extends State<AddressPickerModal> {
   }
 
   Future<void> _onMapTap(TapPosition position, LatLng latLng) async {
-    final hasSearchInput = _searchController.text.trim().isNotEmpty;
-    if (!hasSearchInput) return;
+    if (!_mapInteractive) return;
 
     setState(() {
       _lat = latLng.latitude;
@@ -158,72 +204,138 @@ class _AddressPickerModalState extends State<AddressPickerModal> {
   }
 
   void _confirm() {
+    final locale = context.read<LocaleProvider>();
+    final name = _nameController.text.trim();
+    if (name.isEmpty) {
+      ScaffoldMessenger.maybeOf(context)?.showSnackBar(
+        SnackBar(content: Text(locale.t('addressPicker.nameRequired'))),
+      );
+      return;
+    }
     if (_lat != null && _lon != null && _address.trim().isNotEmpty) {
-      widget.onSelect(_address.trim(), _lat!, _lon!);
-      Navigator.of(context).pop();
+      Navigator.of(context).pop(
+        AddressPickerSelection(
+          locationName: name,
+          address: _address.trim(),
+          lat: _lat!,
+          lon: _lon!,
+        ),
+      );
     }
   }
 
   LatLng get _center {
     if (_lat != null && _lon != null) return LatLng(_lat!, _lon!);
-    return const LatLng(21.0285, 105.8542); // Hanoi
+    return const LatLng(21.0285, 105.8542);
+  }
+
+  InputDecoration _fieldDecoration({
+    required String hint,
+    Widget? suffixIcon,
+  }) {
+    return InputDecoration(
+      hintText: hint,
+      hintStyle: const TextStyle(
+        fontSize: 16,
+        color: AppColors.textTertiary,
+      ),
+      filled: true,
+      fillColor: AppColors.backgroundPrimary,
+      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: const BorderSide(color: AppColors.borderPrimary),
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: const BorderSide(color: AppColors.primary500, width: 1.5),
+      ),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+      suffixIcon: suffixIcon,
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     final t = context.read<LocaleProvider>().t;
     final hasCoords = _lat != null && _lon != null;
-    final hasSearchInput = _searchController.text.trim().isNotEmpty;
-    final hasEnoughCharsForMapHintHide =
-        _searchController.text.trim().length > 3;
-    final screenWidth = MediaQuery.of(context).size.width;
-    final screenHeight = MediaQuery.of(context).size.height;
+    final canConfirm = _hasLocationName && hasCoords && _address.trim().isNotEmpty;
 
-    return Dialog(
-      insetPadding: EdgeInsets.zero,
-      backgroundColor: Colors.transparent,
-      child: Container(
-        width: screenWidth,
-        height: screenHeight * 0.85,
-        decoration: BoxDecoration(
-          color: AppColors.backgroundPrimary,
-          borderRadius: BorderRadius.circular(16),
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.max,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            // Header
-            Padding(
-              padding: const EdgeInsets.fromLTRB(12, 12, 12, 12),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: Text(
-                      t('addressPicker.title'),
-                      style: TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.w600,
-                        color: AppColors.textPrimary,
-                      ),
-                    ),
-                  ),
-                  IconButton(
-                    icon: const Icon(Icons.close),
-                    onPressed: () => Navigator.of(context).pop(),
-                    style: IconButton.styleFrom(
-                      foregroundColor: AppColors.textSecondary,
-                    ),
-                  ),
-                ],
+    return Material(
+      color: AppColors.backgroundPrimary,
+      borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+      clipBehavior: Clip.antiAlias,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          const SizedBox(height: 10),
+          Center(
+            child: Container(
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: AppColors.borderPrimary,
+                borderRadius: BorderRadius.circular(999),
               ),
             ),
-            // Search + suggestions
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 12),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
+          ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(8, 12, 8, 8),
+            child: Row(
+              children: [
+                const SizedBox(width: 48),
+                Expanded(
+                  child: Text(
+                    t('addressPicker.title'),
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: -0.3,
+                      color: AppColors.textPrimary,
+                    ),
+                  ),
+                ),
+                IconButton(
+                  onPressed: () => Navigator.of(context).pop(),
+                  icon: const Icon(Icons.close, color: AppColors.textSecondary),
+                ),
+              ],
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: kScreenPaddingHorizontal),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Text(
+                  t('addressPicker.locationNameLabel'),
+                  style: const TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
+                    color: AppColors.textPrimary,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                TextField(
+                  controller: _nameController,
+                  textCapitalization: TextCapitalization.sentences,
+                  onChanged: (_) => setState(() {}),
+                  decoration: _fieldDecoration(
+                    hint: t('addressPicker.locationNameHint'),
+                  ),
+                ),
+                if (_hasLocationName) ...[
+                  const SizedBox(height: 16),
+                  Text(
+                    t('profileForm.address'),
+                    style: const TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w500,
+                      color: AppColors.textPrimary,
+                    ),
+                  ),
+                  const SizedBox(height: 6),
                   TextField(
                     controller: _searchController,
                     focusNode: _searchFocus,
@@ -234,11 +346,8 @@ class _AddressPickerModalState extends State<AddressPickerModal> {
                         _fetchSuggestions(_searchController.text);
                       }
                     },
-                    decoration: InputDecoration(
-                      hintText: t('addressPicker.searchHint'),
-                      prefixIcon: const AppSearchPrefixIcon(
-                        color: AppColors.textSecondary,
-                      ),
+                    decoration: _fieldDecoration(
+                      hint: t('addressPicker.searchHint'),
                       suffixIcon: _loadingSuggestions
                           ? const Padding(
                               padding: EdgeInsets.all(12),
@@ -251,300 +360,297 @@ class _AddressPickerModalState extends State<AddressPickerModal> {
                                 ),
                               ),
                             )
+                          : _hasSearchInput
+                          ? IconButton(
+                              onPressed: _clearAddressSearch,
+                              icon: const Icon(
+                                Icons.close,
+                                size: 20,
+                                color: AppColors.textSecondary,
+                              ),
+                            )
                           : null,
-                      filled: true,
-                      fillColor: AppColors.backgroundSecondary,
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      enabledBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: const BorderSide(
-                          color: AppColors.borderPrimary,
+                    ).copyWith(
+                      prefixIcon: Padding(
+                        padding: const EdgeInsets.only(left: 12, right: 2),
+                        child: SvgPicture.asset(
+                          'assets/icons/icon-pin.svg',
+                          width: 15,
+                          height: 21,
+                          colorFilter: const ColorFilter.mode(
+                            Color(0xFF2563EB),
+                            BlendMode.srcIn,
+                          ),
                         ),
                       ),
-                      contentPadding: const EdgeInsets.symmetric(
-                        horizontal: 14,
-                        vertical: 12,
+                      prefixIconConstraints: const BoxConstraints(
+                        minWidth: 32,
+                        minHeight: 40,
                       ),
                     ),
                   ),
                 ],
-              ),
+              ],
             ),
-            const SizedBox(height: 12),
-            // Map
-            Expanded(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 12),
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(12),
-                  child: Container(
-                    decoration: BoxDecoration(
-                      color: AppColors.backgroundTertiary,
-                      border: Border.all(color: AppColors.borderPrimary),
-                    ),
-                    child: Stack(
-                      children: [
-                        FlutterMap(
-                          mapController: _mapController,
-                          options: MapOptions(
-                            initialCenter: _center,
-                            initialZoom: hasCoords ? 16 : 10,
-                            onTap: _onMapTap,
-                            interactionOptions: const InteractionOptions(
-                              flags: InteractiveFlag.all,
-                            ),
+          ),
+          const SizedBox(height: 12),
+          Expanded(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(
+                horizontal: kScreenPaddingHorizontal,
+              ),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(12),
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: AppColors.backgroundTertiary,
+                    border: Border.all(color: AppColors.borderPrimary),
+                  ),
+                  child: Stack(
+                    children: [
+                      FlutterMap(
+                        mapController: _mapController,
+                        options: MapOptions(
+                          initialCenter: _center,
+                          initialZoom: hasCoords ? 16 : 10,
+                          onTap: _onMapTap,
+                          interactionOptions: HenzoMapLayers.interactionOptions(
+                            interactive: _mapInteractive,
                           ),
-                          children: [
-                            ColorFiltered(
-                              colorFilter: ColorFilter.mode(
-                                Colors.grey.withOpacity(0.65),
-                                BlendMode.saturation,
-                              ),
-                              child: TileLayer(
-                                urlTemplate:
-                                    'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-                                userAgentPackageName: 'com.henzo.mobile',
-                              ),
+                        ),
+                        children: [
+                          ColorFiltered(
+                            colorFilter: ColorFilter.mode(
+                              Colors.grey.withValues(alpha: 0.65),
+                              BlendMode.saturation,
                             ),
-                            if (hasCoords)
-                              MarkerLayer(
-                                markers: [
-                                  Marker(
-                                    point: LatLng(_lat!, _lon!),
-                                    width: 28,
-                                    height: 28,
-                                    alignment: Alignment.center,
-                                    child: Container(
-                                      decoration: BoxDecoration(
-                                        color: AppColors.primary500,
-                                        shape: BoxShape.circle,
-                                        border: Border.all(
-                                          color: Colors.white,
-                                          width: 3,
-                                        ),
-                                        boxShadow: [
-                                          BoxShadow(
-                                            color: Colors.black.withOpacity(
-                                              0.3,
-                                            ),
-                                            blurRadius: 6,
-                                            offset: const Offset(0, 2),
-                                          ),
-                                        ],
+                            child: HenzoMapLayers.cartoLightTileLayer(),
+                          ),
+                          HenzoMapLayers.cartoAttribution(),
+                          if (hasCoords)
+                            MarkerLayer(
+                              markers: [
+                                Marker(
+                                  point: LatLng(_lat!, _lon!),
+                                  width: 28,
+                                  height: 28,
+                                  alignment: Alignment.center,
+                                  child: Container(
+                                    decoration: BoxDecoration(
+                                      color: AppColors.primary500,
+                                      shape: BoxShape.circle,
+                                      border: Border.all(
+                                        color: Colors.white,
+                                        width: 3,
                                       ),
+                                      boxShadow: [
+                                        BoxShadow(
+                                          color: Colors.black.withValues(
+                                            alpha: 0.3,
+                                          ),
+                                          blurRadius: 6,
+                                          offset: const Offset(0, 2),
+                                        ),
+                                      ],
                                     ),
                                   ),
-                                ],
-                              ),
+                                ),
+                              ],
+                            ),
+                        ],
+                      ),
+                      Positioned(
+                        top: 8,
+                        left: 8,
+                        child: Column(
+                          children: [
+                            _MapZoomButton(
+                              icon: Icons.add,
+                              enabled: _mapInteractive,
+                              onPressed: () {
+                                final zoom = _mapController.camera.zoom + 1;
+                                _mapController.move(
+                                  _mapController.camera.center,
+                                  zoom.clamp(3.0, 19.0),
+                                );
+                              },
+                            ),
+                            const SizedBox(height: 4),
+                            _MapZoomButton(
+                              icon: Icons.remove,
+                              enabled: _mapInteractive,
+                              onPressed: () {
+                                final zoom = _mapController.camera.zoom - 1;
+                                _mapController.move(
+                                  _mapController.camera.center,
+                                  zoom.clamp(3.0, 19.0),
+                                );
+                              },
+                            ),
                           ],
                         ),
-                        // Zoom controls (like Leaflet on web)
+                      ),
+                      if (_showSuggestions && _suggestions.isNotEmpty)
                         Positioned(
                           top: 8,
                           left: 8,
-                          child: Column(
-                            children: [
-                              _MapZoomButton(
-                                icon: Icons.add,
-                                enabled: hasSearchInput,
-                                onPressed: () {
-                                  final zoom = _mapController.camera.zoom + 1;
-                                  _mapController.move(
-                                    _mapController.camera.center,
-                                    zoom.clamp(3.0, 19.0),
-                                  );
-                                },
-                              ),
-                              const SizedBox(height: 4),
-                              _MapZoomButton(
-                                icon: Icons.remove,
-                                enabled: hasSearchInput,
-                                onPressed: () {
-                                  final zoom = _mapController.camera.zoom - 1;
-                                  _mapController.move(
-                                    _mapController.camera.center,
-                                    zoom.clamp(3.0, 19.0),
-                                  );
-                                },
-                              ),
-                            ],
-                          ),
-                        ),
-                        if (_showSuggestions && _suggestions.isNotEmpty)
-                          Positioned(
-                            top: 8,
-                            left: 8,
-                            right: 8,
-                            child: Material(
-                              elevation: 8,
-                              borderRadius: BorderRadius.circular(12),
-                              child: Container(
-                                constraints: const BoxConstraints(
-                                  maxHeight: 220,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: AppColors.backgroundSecondary,
-                                  borderRadius: BorderRadius.circular(12),
-                                  border: Border.all(
-                                    color: AppColors.borderPrimary,
-                                  ),
-                                ),
-                                child: ListView.builder(
-                                  shrinkWrap: true,
-                                  itemCount: _suggestions.length,
-                                  itemBuilder: (context, i) {
-                                    final s = _suggestions[i];
-                                    return ListTile(
-                                      leading: Icon(
-                                        Icons.location_on_outlined,
-                                        size: 20,
-                                        color: AppColors.textSecondary,
-                                      ),
-                                      title: Text(
-                                        s.address,
-                                        style: const TextStyle(
-                                          fontSize: 14,
-                                          color: AppColors.textPrimary,
-                                        ),
-                                      ),
-                                      onTap: () => _onSelectSuggestion(s),
-                                    );
-                                  },
-                                ),
-                              ),
-                            ),
-                          ),
-                        // Hint overlay
-                        if (hasCoords)
-                          Positioned(
-                            bottom: 8,
-                            left: 0,
-                            right: 0,
-                            child: Center(
-                              child: Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 12,
-                                  vertical: 6,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: Colors.black.withOpacity(0.5),
-                                  borderRadius: BorderRadius.circular(8),
-                                ),
-                                child: Text(
-                                  t('addressPicker.mapHint'),
-                                  style: TextStyle(
-                                    fontSize: 12,
-                                    color: Colors.white.withOpacity(0.95),
-                                  ),
-                                  textAlign: TextAlign.center,
-                                ),
-                              ),
-                            ),
-                          ),
-                        if (_reverseGeocodeLoading)
-                          const Positioned.fill(
-                            child: Center(
-                              child: CircularProgressIndicator(
-                                color: AppColors.primary500,
-                              ),
-                            ),
-                          ),
-                        if (!hasEnoughCharsForMapHintHide)
-                          Positioned.fill(
+                          right: 8,
+                          child: Material(
+                            elevation: 8,
+                            borderRadius: BorderRadius.circular(12),
                             child: Container(
-                              color: Colors.grey.withOpacity(0.4),
-                              alignment: Alignment.center,
-                              child: Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 12,
-                                  vertical: 8,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: Colors.black.withOpacity(0.55),
-                                  borderRadius: BorderRadius.circular(8),
-                                ),
-                                child: Text(
-                                  'Введите адрес, чтобы включить карту',
-                                  style: const TextStyle(
-                                    fontSize: 12,
-                                    color: Colors.white,
-                                  ),
-                                  textAlign: TextAlign.center,
+                              constraints: const BoxConstraints(maxHeight: 220),
+                              decoration: BoxDecoration(
+                                color: AppColors.backgroundPrimary,
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(
+                                  color: AppColors.borderPrimary,
                                 ),
                               ),
-                            ),
-                          ),
-                        if (!hasEnoughCharsForMapHintHide)
-                          const Positioned.fill(
-                            child: AbsorbPointer(
-                              absorbing: true,
-                              child: SizedBox(),
-                            ),
-                          ),
-                        if (!hasCoords &&
-                            hasSearchInput &&
-                            !(_showSuggestions && _suggestions.isNotEmpty))
-                          Positioned.fill(
-                            child: Center(
-                              child: Column(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Icon(
-                                    Icons.map_outlined,
-                                    size: 48,
-                                    color: AppColors.textTertiary,
-                                  ),
-                                  SizedBox(height: 8),
-                                  Text(
-                                    t('addressPicker.selectAddressOnMap'),
-                                    style: TextStyle(
-                                      fontSize: 14,
+                              child: ListView.builder(
+                                shrinkWrap: true,
+                                itemCount: _suggestions.length,
+                                itemBuilder: (context, i) {
+                                  final s = _suggestions[i];
+                                  return ListTile(
+                                    leading: const Icon(
+                                      Icons.location_on_outlined,
+                                      size: 20,
                                       color: AppColors.textSecondary,
                                     ),
-                                    textAlign: TextAlign.center,
-                                  ),
-                                ],
+                                    title: Text(
+                                      s.address,
+                                      style: const TextStyle(
+                                        fontSize: 14,
+                                        color: AppColors.textPrimary,
+                                      ),
+                                    ),
+                                    onTap: () => _onSelectSuggestion(s),
+                                  );
+                                },
                               ),
                             ),
                           ),
-                      ],
-                    ),
+                        ),
+                      if (hasCoords && _mapInteractive)
+                        Positioned(
+                          bottom: 8,
+                          left: 0,
+                          right: 0,
+                          child: Center(
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 12,
+                                vertical: 6,
+                              ),
+                              decoration: BoxDecoration(
+                                color: Colors.black.withValues(alpha: 0.5),
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: Text(
+                                t('addressPicker.mapHint'),
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: Colors.white.withValues(alpha: 0.95),
+                                ),
+                                textAlign: TextAlign.center,
+                              ),
+                            ),
+                          ),
+                        ),
+                      if (_reverseGeocodeLoading)
+                        const Positioned.fill(
+                          child: Center(
+                            child: CircularProgressIndicator(
+                              color: AppColors.primary500,
+                            ),
+                          ),
+                        ),
+                      if (!_mapInteractive)
+                        Positioned.fill(
+                          child: Container(
+                            color: Colors.grey.withValues(alpha: 0.4),
+                            alignment: Alignment.center,
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(horizontal: 24),
+                              child: Text(
+                                _hasLocationName
+                                    ? t('addressPicker.enableMapHint')
+                                    : t('addressPicker.enterNameFirstHint'),
+                                style: const TextStyle(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w500,
+                                  color: Colors.white,
+                                ),
+                                textAlign: TextAlign.center,
+                              ),
+                            ),
+                          ),
+                        ),
+                      if (!hasCoords &&
+                          _hasSearchInput &&
+                          _mapInteractive &&
+                          !(_showSuggestions && _suggestions.isNotEmpty))
+                        Positioned.fill(
+                          child: Center(
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  Icons.map_outlined,
+                                  size: 48,
+                                  color: AppColors.textTertiary,
+                                ),
+                                const SizedBox(height: 8),
+                                Text(
+                                  t('addressPicker.selectAddressOnMap'),
+                                  style: const TextStyle(
+                                    fontSize: 14,
+                                    color: AppColors.textSecondary,
+                                  ),
+                                  textAlign: TextAlign.center,
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                    ],
                   ),
                 ),
               ),
             ),
-            const SizedBox(height: 12),
-            // Buttons
-            Padding(
-              padding: const EdgeInsets.fromLTRB(24, 0, 24, 16),
+          ),
+          SafeArea(
+            top: false,
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(
+                kScreenPaddingHorizontal,
+                8,
+                kScreenPaddingHorizontal,
+                12,
+              ),
               child: Row(
-                mainAxisAlignment: MainAxisAlignment.end,
                 children: [
-                  OutlinedButton(
-                    onPressed: () => Navigator.of(context).pop(),
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: AppColors.textPrimary,
-                      side: const BorderSide(color: AppColors.borderPrimary),
+                  Expanded(
+                    child: OutlinedButton(
+                      onPressed: () => Navigator.of(context).pop(),
+                      style: sheetCancelButtonStyle(),
+                      child: Text(t('common.cancel')),
                     ),
-                    child: Text(t('common.cancel')),
                   ),
                   const SizedBox(width: 12),
-                  FilledButton(
-                    onPressed: (hasCoords && _address.trim().isNotEmpty)
-                        ? _confirm
-                        : null,
-                    style: FilledButton.styleFrom(
-                      backgroundColor: AppColors.primary500,
+                  Expanded(
+                    child: FilledButton(
+                      onPressed: canConfirm ? _confirm : null,
+                      style: sheetPrimaryButtonStyle(),
+                      child: Text(t('addressPicker.select')),
                     ),
-                    child: Text(t('addressPicker.select')),
                   ),
                 ],
               ),
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
@@ -570,10 +676,9 @@ class _MapZoomButton extends StatelessWidget {
       child: InkWell(
         onTap: enabled ? onPressed : null,
         borderRadius: BorderRadius.circular(8),
-        child: Container(
+        child: SizedBox(
           width: 36,
           height: 36,
-          alignment: Alignment.center,
           child: Icon(
             icon,
             size: 20,

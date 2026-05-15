@@ -313,7 +313,9 @@
 		"servicesSelected": "services selected",
 		"selectServicesHint": "Select services this staff member can perform.",
 		"enterFullName": "Enter full name",
-		"staffServicesTitle": "Staff services"
+		"staffServicesTitle": "Staff services",
+		"addStaff": "Add staff",
+		"addStaffProRequired": "Adding trainers is available with a Pro subscription."
 	},
 	"servicesScreen": {
 		"title": "Services",
@@ -515,8 +517,16 @@
 		"salonDescriptionHint": "Enter your salon details: name, description, address, contacts, photos and opening hours.",
 		"deleteWarning": "Account deletion is permanent. All data will be lost."
 	},
+	"locations": {
+		"mainStudio": "Main studio"
+	},
 	"addressPicker": {
 		"title": "Select address",
+		"locationNameLabel": "Location name",
+		"locationNameHint": "e.g. Main studio",
+		"nameRequired": "Enter a location name",
+		"enterNameFirstHint": "Enter a location name to search for an address",
+		"enableMapHint": "Enter an address to use the map",
 		"searchHint": "Search by address",
 		"mapHint": "Tap on the map to place the marker at the right location.",
 		"selectAddressOnMap": "Select an address to preview on the map",
@@ -527,6 +537,13 @@
 		"pickCategory": "Choose category",
 		"categoryOtherChip": "+ Other",
 		"addressSectionLabel": "Address",
+		"locationSheetTitle": "Choose location",
+		"defaultLocationBadge": "Default",
+		"addNewLocation": "Add new location",
+		"locationNameDialogTitle": "Location name",
+		"locationNameHint": "e.g. Rooftop hall",
+		"noAddress": "No address set",
+		"studioNameFallback": "Studio",
 		"durationSuffix": "min",
 		"newClassStep1": "New class · 1/2",
 		"newClassStep2": "New class · 2/2",

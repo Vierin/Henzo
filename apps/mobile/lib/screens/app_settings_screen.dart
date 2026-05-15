@@ -18,6 +18,7 @@ import '../services/push_notification_service.dart';
 import '../widgets/language_selector_modal.dart';
 import 'account_settings_screen.dart';
 import '../widgets/settings/owner_booking_period_sheet.dart';
+import '../widgets/settings/settings_typography.dart';
 import 'settings_screen.dart';
 import 'services_screen.dart';
 import 'staff_screen.dart';
@@ -161,8 +162,6 @@ class _AppSettingsScreenState extends State<AppSettingsScreen> {
   Widget build(BuildContext context) {
     return Consumer<LocaleProvider>(
       builder: (context, locale, _) {
-        final theme = Theme.of(context);
-        final textTheme = theme.textTheme;
         final user = context.watch<AuthService>().user;
         final ownerName = (user?.name?.trim().isNotEmpty ?? false)
             ? user!.name!.trim()
@@ -216,18 +215,7 @@ class _AppSettingsScreenState extends State<AppSettingsScreen> {
                 children: [
                   Text(
                     locale.t('settings.title'),
-                    style:
-                        textTheme.headlineSmall?.copyWith(
-                          fontWeight: FontWeight.w700,
-                          color: AppColors.textPrimary,
-                          letterSpacing: -0.3,
-                        ) ??
-                        const TextStyle(
-                          fontSize: 24,
-                          fontWeight: FontWeight.w700,
-                          color: AppColors.textPrimary,
-                          letterSpacing: -0.3,
-                        ),
+                    style: SettingsTypography.screenTitle(context),
                   ),
                   const SizedBox(height: 16),
                   _OwnerHeroCard(
@@ -242,6 +230,27 @@ class _AppSettingsScreenState extends State<AppSettingsScreen> {
                     ),
                   ),
                   const SizedBox(height: 20),
+                  _SectionLabel(
+                    title: locale.t('settings.owner.sectionAccount'),
+                  ),
+                  const SizedBox(height: 8),
+                  _SettingsGroupCard(
+                    children: [
+                      _SettingsTile(
+                        icon: Icons.credit_card_outlined,
+                        title: locale.t('settings.owner.subscriptionBilling'),
+                        onTap: () async {
+                          await Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (_) => const SubscriptionScreen(),
+                            ),
+                          );
+                          if (mounted) await _loadData();
+                        },
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
                   _SectionLabel(
                     title: locale.t('settings.owner.sectionStudio'),
                   ),
@@ -290,27 +299,6 @@ class _AppSettingsScreenState extends State<AppSettingsScreen> {
                             builder: (_) => const StaffScreen(),
                           ),
                         ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 16),
-                  _SectionLabel(
-                    title: locale.t('settings.owner.sectionAccount'),
-                  ),
-                  const SizedBox(height: 8),
-                  _SettingsGroupCard(
-                    children: [
-                      _SettingsTile(
-                        icon: Icons.credit_card_outlined,
-                        title: locale.t('settings.owner.subscriptionBilling'),
-                        onTap: () async {
-                          await Navigator.of(context).push(
-                            MaterialPageRoute(
-                              builder: (_) => const SubscriptionScreen(),
-                            ),
-                          );
-                          if (mounted) await _loadData();
-                        },
                       ),
                     ],
                   ),
@@ -373,23 +361,7 @@ class _SectionLabel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final textTheme = Theme.of(context).textTheme;
-    return Text(
-      title.toUpperCase(),
-      style:
-          textTheme.labelSmall?.copyWith(
-            color: AppColors.textSecondary,
-            fontSize: 14,
-            fontWeight: FontWeight.w500,
-            letterSpacing: -0.2,
-          ) ??
-          const TextStyle(
-            color: AppColors.textSecondary,
-            fontSize: 14,
-            fontWeight: FontWeight.w500,
-            letterSpacing: -0.2,
-          ),
-    );
+    return Text(title, style: SettingsTypography.screenTitle(context));
   }
 }
 
