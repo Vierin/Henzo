@@ -221,6 +221,7 @@
 		"noVisitsYet": "Пока без визитов",
 		"rejectedVisitsStat": "Отмены и неявки",
 		"totalVisitsStat": "Всего визитов",
+		"noShowStat": "Неявка",
 		"visitsSection": "ВИЗИТЫ",
 		"block": "Блок",
 		"unblock": "Разблок",
@@ -362,7 +363,21 @@
 	"notifications": {
 		"title": "Уведомления",
 		"empty": "Нет уведомлений",
-		"cleared": "Уведомления очищены"
+		"emptyTitle": "Всё просмотрено!",
+		"emptySubtitle": "Новых уведомлений нет.\nЗагляните позже — возможно, появятся обновления.",
+		"cleared": "Уведомления очищены",
+		"filterAll": "Все",
+		"filterBookings": "Записи",
+		"filterReviews": "Отзывы",
+		"filterEmpty": "Нет уведомлений в этом разделе",
+		"typeBooking": "ЗАПИСЬ",
+		"typeReview": "ОТЗЫВ",
+		"typeAnnouncement": "ОБЪЯВЛЕНИЕ",
+		"sessionDate": "Тренировка: {date}",
+		"justNow": "только что",
+		"minsAgo": "{n} мин. назад",
+		"hoursAgo": "{n} ч. назад",
+		"daysAgo": "{n} дн. назад"
 	},
 	"settings": {
 		"languageEn": "English",

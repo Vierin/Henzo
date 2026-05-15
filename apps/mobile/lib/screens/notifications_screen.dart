@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
 import 'package:flutter_slidable/flutter_slidable.dart';
+import 'package:flutter_svg/flutter_svg.dart';
+import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
 import '../constants/colors.dart';
@@ -36,7 +37,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
   Widget build(BuildContext context) {
     final locale = context.watch<LocaleProvider>();
     final store = context.watch<NotificationsStore>();
-    final items = store.items;
+    final items = store.items.where((n) => !_isReminder(n)).toList();
     final filteredItems = items.where(_matchesFilter).toList();
 
     return Scaffold(
@@ -44,106 +45,77 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
+        scrolledUnderElevation: 0,
         leading: IconButton(
           onPressed: () => Navigator.pop(context),
           style: IconButton.styleFrom(
-            backgroundColor: AppColors.neutral200,
+            backgroundColor: AppColors.backgroundPrimary,
             shape: const CircleBorder(),
           ),
           icon: const Icon(
-            Icons.arrow_back,
+            Icons.arrow_back_ios_new,
             color: AppColors.textPrimary,
-            size: 20,
+            size: 18,
           ),
         ),
         title: Text(
           locale.t('notifications.title'),
           style: const TextStyle(
             fontSize: 18,
-            fontWeight: FontWeight.bold,
+            fontWeight: FontWeight.w700,
+            letterSpacing: -0.3,
             color: AppColors.textPrimary,
           ),
         ),
         centerTitle: true,
-        actions: const [SizedBox(width: 8)],
       ),
       body: RefreshIndicator(
+        color: AppColors.primary500,
         onRefresh: () => store.load(),
-        child: items.isEmpty
-            ? SingleChildScrollView(
-                physics: const AlwaysScrollableScrollPhysics(),
-                child: SizedBox(
-                  height: 400,
-                  child: Center(
-                    child: Padding(
-                      padding: const EdgeInsets.all(32),
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Text('😔', style: TextStyle(fontSize: 64, height: 1)),
-                          const SizedBox(height: 24),
-                          Text(
-                            locale.t('notifications.empty'),
-                            style: const TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w500,
-                              color: AppColors.textSecondary,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            return ListView(
+              physics: const AlwaysScrollableScrollPhysics(),
+              padding: const EdgeInsets.fromLTRB(16, 4, 16, 24),
+              children: [
+                _FiltersRow(
+                  value: _filter,
+                  onChanged: (v) => setState(() => _filter = v),
                 ),
-              )
-            : ListView(
-                physics: const AlwaysScrollableScrollPhysics(),
-                padding: const EdgeInsets.symmetric(
-                  vertical: 12,
-                  horizontal: 12,
-                ),
-                children: [
-                  _FiltersRow(
-                    value: _filter,
-                    onChanged: (v) => setState(() => _filter = v),
-                  ),
-                  const SizedBox(height: 12),
-                  if (filteredItems.isEmpty)
-                    const Padding(
-                      padding: EdgeInsets.only(top: 36),
-                      child: Center(
-                        child: Text(
-                          'No notifications in this section',
-                          style: TextStyle(
-                            fontSize: 14,
-                            color: AppColors.textSecondary,
-                          ),
+                const SizedBox(height: 16),
+                if (items.isEmpty)
+                  SizedBox(
+                    height: (constraints.maxHeight - 72).clamp(280.0, 520.0),
+                    child: _NotificationsEmptyState(locale: locale),
+                  )
+                else if (filteredItems.isEmpty)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 48),
+                    child: Center(
+                      child: Text(
+                        locale.t('notifications.filterEmpty'),
+                        style: const TextStyle(
+                          fontSize: 14,
+                          color: AppColors.textSecondary,
                         ),
-                      ),
-                    )
-                  else
-                    Container(
-                      decoration: BoxDecoration(
-                        border: Border.all(color: AppColors.borderPrimary),
-                        color: AppColors.backgroundPrimary,
-                      ),
-                      child: Column(
-                        children: [
-                          for (var i = 0; i < filteredItems.length; i++) ...[
-                            _NotificationTile(notification: filteredItems[i]),
-                            if (i != filteredItems.length - 1)
-                              const Divider(
-                                height: 1,
-                                thickness: 1,
-                                color: AppColors.borderPrimary,
-                              ),
-                          ],
-                        ],
+                        textAlign: TextAlign.center,
                       ),
                     ),
-                ],
-              ),
+                  )
+                else
+                  ...[
+                    for (var i = 0; i < filteredItems.length; i++) ...[
+                      if (i > 0) const SizedBox(height: 10),
+                      _NotificationCard(
+                        notification: filteredItems[i],
+                        locale: locale,
+                      ),
+                    ],
+                  ],
+              ],
+            );
+          },
+        ),
       ),
     );
   }
@@ -153,31 +125,153 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
       case NotificationFilter.all:
         return true;
       case NotificationFilter.bookings:
-        return _notificationType(n) == _NotificationType.booking;
+        return _notificationKind(n) == _NotificationKind.booking;
       case NotificationFilter.reviews:
-        return _notificationType(n) == _NotificationType.review;
+        return _notificationKind(n) == _NotificationKind.review;
     }
   }
 }
 
 enum NotificationFilter { all, bookings, reviews }
 
-enum _NotificationType { booking, review, other }
+enum _NotificationKind { booking, system, review }
 
-_NotificationType _notificationType(AppNotification n) {
+bool _isReminder(AppNotification n) {
+  final type = (n.data['type'] ?? n.data['eventType'] ?? '').toLowerCase();
+  final text = '${n.title} ${n.body}'.toLowerCase();
+  return type.contains('reminder') || text.contains('reminder');
+}
+
+_NotificationKind _notificationKind(AppNotification n) {
   final type = (n.data['type'] ?? n.data['eventType'] ?? '').toLowerCase();
   final text = '${n.title} ${n.body}'.toLowerCase();
   if (type.contains('review') || text.contains('review')) {
-    return _NotificationType.review;
+    return _NotificationKind.review;
   }
   if (type.contains('booking') ||
+      type.contains('booked') ||
+      type.contains('reserve') ||
+      type.contains('reservation') ||
+      type.contains('cancelled') ||
       text.contains('booking') ||
       text.contains('booked') ||
       text.contains('reserve') ||
       text.contains('reservation')) {
-    return _NotificationType.booking;
+    return _NotificationKind.booking;
   }
-  return _NotificationType.other;
+  if (type.contains('announcement') ||
+      type.contains('system') ||
+      type.contains('test')) {
+    return _NotificationKind.system;
+  }
+  return _NotificationKind.system;
+}
+
+class _NotificationTheme {
+  const _NotificationTheme({
+    required this.accent,
+    required this.iconBackground,
+    required this.icon,
+    required this.typeLabelKey,
+  });
+
+  final Color accent;
+  final Color iconBackground;
+  final IconData icon;
+  final String typeLabelKey;
+
+  static _NotificationTheme forKind(
+    _NotificationKind kind,
+  ) {
+    return switch (kind) {
+      _NotificationKind.booking => const _NotificationTheme(
+        accent: AppColors.primary500,
+        iconBackground: AppColors.primary50,
+        icon: Icons.calendar_today_outlined,
+        typeLabelKey: 'notifications.typeBooking',
+      ),
+      _NotificationKind.review => const _NotificationTheme(
+        accent: AppColors.profilePurple,
+        iconBackground: AppColors.profilePurpleLight,
+        icon: Icons.star_outline_rounded,
+        typeLabelKey: 'notifications.typeReview',
+      ),
+      _NotificationKind.system => const _NotificationTheme(
+        accent: AppColors.warning600,
+        iconBackground: AppColors.warning50,
+        icon: Icons.campaign_outlined,
+        typeLabelKey: 'notifications.typeAnnouncement',
+      ),
+    };
+  }
+}
+
+class _NotificationsEmptyState extends StatelessWidget {
+  const _NotificationsEmptyState({required this.locale});
+
+  final LocaleProvider locale;
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 32),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            SizedBox(
+              width: 88,
+              height: 88,
+              child: Stack(
+                alignment: Alignment.center,
+                children: [
+                  Container(
+                    width: 88,
+                    height: 88,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: AppColors.primary500.withValues(alpha: 0.12),
+                    ),
+                  ),
+                  SvgPicture.asset(
+                    'assets/icons/icon-bell.svg',
+                    width: 40,
+                    height: 50,
+                    colorFilter: const ColorFilter.mode(
+                      AppColors.primary500,
+                      BlendMode.srcIn,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 24),
+            Text(
+              locale.t('notifications.emptyTitle'),
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.w700,
+                letterSpacing: -0.3,
+                color: AppColors.textPrimary,
+              ),
+            ),
+            const SizedBox(height: 10),
+            Text(
+              locale.t('notifications.emptySubtitle'),
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                fontSize: 15,
+                height: 1.45,
+                fontWeight: FontWeight.w500,
+                color: AppColors.textSecondary,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 }
 
 class _FiltersRow extends StatelessWidget {
@@ -188,29 +282,33 @@ class _FiltersRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
-      child: Row(
-        children: [
-          _FilterPill(
-            label: 'All',
+    final locale = context.watch<LocaleProvider>();
+    return Row(
+      children: [
+        Expanded(
+          child: _FilterPill(
+            label: locale.t('notifications.filterAll'),
             selected: value == NotificationFilter.all,
             onTap: () => onChanged(NotificationFilter.all),
           ),
-          const SizedBox(width: 10),
-          _FilterPill(
-            label: 'Bookings',
+        ),
+        const SizedBox(width: 8),
+        Expanded(
+          child: _FilterPill(
+            label: locale.t('notifications.filterBookings'),
             selected: value == NotificationFilter.bookings,
             onTap: () => onChanged(NotificationFilter.bookings),
           ),
-          const SizedBox(width: 10),
-          _FilterPill(
-            label: 'Reviews',
+        ),
+        const SizedBox(width: 8),
+        Expanded(
+          child: _FilterPill(
+            label: locale.t('notifications.filterReviews'),
             selected: value == NotificationFilter.reviews,
             onTap: () => onChanged(NotificationFilter.reviews),
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 }
@@ -228,24 +326,30 @@ class _FilterPill extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(999),
-      child: Ink(
-        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 6),
-        decoration: BoxDecoration(
-          color: selected ? AppColors.primary500 : AppColors.backgroundPrimary,
-          borderRadius: BorderRadius.circular(999),
-          border: Border.all(
-            color: selected ? AppColors.primary500 : AppColors.borderPrimary,
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(999),
+        child: Ink(
+          decoration: BoxDecoration(
+            color: selected ? AppColors.primary500 : AppColors.backgroundPrimary,
+            borderRadius: BorderRadius.circular(999),
+            border: Border.all(
+              color: selected ? AppColors.primary500 : AppColors.borderPrimary,
+            ),
           ),
-        ),
-        child: Text(
-          label,
-          style: TextStyle(
-            fontSize: 15,
-            fontWeight: FontWeight.w600,
-            color: selected ? Colors.white : AppColors.textSecondary,
+          child: Container(
+            alignment: Alignment.center,
+            padding: const EdgeInsets.symmetric(vertical: 10),
+            child: Text(
+              label,
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                color: selected ? Colors.white : AppColors.textPrimary,
+              ),
+            ),
           ),
         ),
       ),
@@ -253,27 +357,26 @@ class _FilterPill extends StatelessWidget {
   }
 }
 
-class _NotificationTile extends StatelessWidget {
-  const _NotificationTile({required this.notification});
+class _NotificationCard extends StatelessWidget {
+  const _NotificationCard({
+    required this.notification,
+    required this.locale,
+  });
 
   final AppNotification notification;
-
-  static final DateFormat _dateFormat = DateFormat('dd.MM.yyyy HH:mm');
+  final LocaleProvider locale;
 
   @override
   Widget build(BuildContext context) {
-    final timeStr = _relativeTime(notification.createdAt);
-    final type = _notificationType(notification);
-    final typeLabel = switch (type) {
-      _NotificationType.booking => 'BOOKING',
-      _NotificationType.review => 'REVIEW',
-      _NotificationType.other => 'NOTICE',
-    };
-    final icon = switch (type) {
-      _NotificationType.booking => Icons.calendar_today_outlined,
-      _NotificationType.review => Icons.star_border_rounded,
-      _NotificationType.other => Icons.notifications_none_rounded,
-    };
+    final kind = _notificationKind(notification);
+    final theme = _NotificationTheme.forKind(kind);
+    final timeStr = _relativeTime(notification.createdAt, locale);
+    final message = notification.body.isNotEmpty
+        ? notification.body
+        : notification.title;
+    final sessionDate = kind == _NotificationKind.booking
+        ? _bookingSessionDate(notification, locale)
+        : null;
 
     return Slidable(
       key: ValueKey(notification.id),
@@ -296,30 +399,27 @@ class _NotificationTile extends StatelessWidget {
       ),
       child: Material(
         color: AppColors.backgroundPrimary,
+        borderRadius: BorderRadius.circular(16),
+        clipBehavior: Clip.antiAlias,
         child: InkWell(
           onTap: () {
             context.read<NotificationsStore>().markRead(notification.id);
           },
-          child: Container(
-            decoration: BoxDecoration(
-              border: Border(
-                left: BorderSide(
-                  color: notification.read
-                      ? Colors.transparent
-                      : AppColors.primary500,
-                  width: 3,
-                ),
-              ),
-            ),
-            padding: const EdgeInsets.fromLTRB(12, 12, 12, 12),
+          borderRadius: BorderRadius.circular(16),
+          child: Padding(
+            padding: const EdgeInsets.all(14),
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Container(
-                  width: 30,
-                  height: 30,
+                  width: 48,
+                  height: 48,
+                  decoration: BoxDecoration(
+                    color: theme.iconBackground,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
                   alignment: Alignment.center,
-                  child: Icon(icon, size: 22, color: AppColors.textSecondary),
+                  child: Icon(theme.icon, size: 24, color: theme.accent),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
@@ -328,77 +428,56 @@ class _NotificationTile extends StatelessWidget {
                     children: [
                       Row(
                         children: [
+                          Container(
+                            width: 6,
+                            height: 6,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: theme.accent,
+                            ),
+                          ),
+                          const SizedBox(width: 6),
                           Text(
-                            typeLabel,
-                            style: const TextStyle(
-                              fontSize: 13,
+                            locale.t(theme.typeLabelKey),
+                            style: TextStyle(
+                              fontSize: 12,
                               fontWeight: FontWeight.w700,
-                              letterSpacing: 0.3,
-                              color: AppColors.primary600,
+                              letterSpacing: 0.4,
+                              color: theme.accent,
                             ),
                           ),
                           const Spacer(),
                           Text(
                             timeStr,
                             style: const TextStyle(
-                              fontSize: 13,
-                              fontWeight: FontWeight.w600,
+                              fontSize: 12,
+                              fontWeight: FontWeight.w500,
                               color: AppColors.textSecondary,
                             ),
                           ),
-                          if (!notification.read) ...[
-                            const SizedBox(width: 8),
-                            Container(
-                              width: 8,
-                              height: 8,
-                              decoration: const BoxDecoration(
-                                shape: BoxShape.circle,
-                                color: AppColors.primary500,
-                              ),
-                            ),
-                          ],
                         ],
                       ),
-                      const SizedBox(height: 4),
+                      const SizedBox(height: 8),
                       Text(
-                        notification.body.isNotEmpty
-                            ? notification.body
-                            : notification.title,
+                        message,
                         style: const TextStyle(
-                          fontSize: 15.5,
+                          fontSize: 15,
                           height: 1.35,
+                          fontWeight: FontWeight.w500,
                           color: AppColors.textPrimary,
                         ),
                       ),
-                      if (type == _NotificationType.booking) ...[
-                        const SizedBox(height: 8),
+                      if (sessionDate != null) ...[
+                        const SizedBox(height: 6),
                         Text(
-                          'View Details',
-                          style: TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w700,
-                            color: AppColors.primary500,
-                          ),
-                        ),
-                      ],
-                      if (type == _NotificationType.review &&
-                          notification.title.isNotEmpty) ...[
-                        const SizedBox(height: 10),
-                        Container(
-                          width: double.infinity,
-                          padding: const EdgeInsets.all(10),
-                          decoration: BoxDecoration(
-                            color: AppColors.backgroundSecondary,
-                            borderRadius: BorderRadius.circular(10),
-                            border: Border.all(color: AppColors.borderPrimary),
-                          ),
-                          child: Text(
-                            '"${notification.title}"',
-                            style: const TextStyle(
-                              fontSize: 14,
-                              fontStyle: FontStyle.italic,
-                              color: AppColors.textSecondary,
-                            ),
+                          locale
+                              .t('notifications.sessionDate')
+                              .replaceAll('{date}', sessionDate),
+                          style: const TextStyle(
+                            fontSize: 13,
+                            height: 1.3,
+                            fontWeight: FontWeight.w500,
+                            color: AppColors.textSecondary,
                           ),
                         ),
                       ],
@@ -413,13 +492,45 @@ class _NotificationTile extends StatelessWidget {
     );
   }
 
-  String _relativeTime(DateTime date) {
+  String? _bookingSessionDate(
+    AppNotification n,
+    LocaleProvider locale,
+  ) {
+    final formatted = n.data['formattedDate']?.trim();
+    if (formatted != null && formatted.isNotEmpty) return formatted;
+
+    final raw = n.data['dateTime']?.trim();
+    if (raw == null || raw.isEmpty) return null;
+
+    try {
+      final dt = DateTime.parse(raw).toLocal();
+      final tag = locale.languageTag.replaceAll('-', '_');
+      return DateFormat('d MMM yyyy, HH:mm', tag).format(dt);
+    } catch (_) {
+      return null;
+    }
+  }
+
+  String _relativeTime(DateTime date, LocaleProvider locale) {
     final now = DateTime.now();
     final diff = now.difference(date);
-    if (diff.inMinutes < 1) return 'just now';
-    if (diff.inMinutes < 60) return '${diff.inMinutes} mins ago';
-    if (diff.inHours < 24) return '${diff.inHours} hours ago';
-    if (diff.inDays < 7) return '${diff.inDays} days ago';
-    return _dateFormat.format(date);
+    if (diff.inMinutes < 1) return locale.t('notifications.justNow');
+    if (diff.inMinutes < 60) {
+      return locale
+          .t('notifications.minsAgo')
+          .replaceAll('{n}', '${diff.inMinutes}');
+    }
+    if (diff.inHours < 24) {
+      return locale
+          .t('notifications.hoursAgo')
+          .replaceAll('{n}', '${diff.inHours}');
+    }
+    if (diff.inDays < 7) {
+      return locale
+          .t('notifications.daysAgo')
+          .replaceAll('{n}', '${diff.inDays}');
+    }
+    final tag = locale.languageTag.replaceAll('-', '_');
+    return DateFormat('d MMM yyyy', tag).format(date);
   }
 }

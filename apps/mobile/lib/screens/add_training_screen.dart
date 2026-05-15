@@ -171,7 +171,8 @@ class _AddTrainingScreenState extends State<AddTrainingScreen> {
     final studio = _studio;
     if (studio == null) return;
 
-    final seed = _selectedLocation ??
+    final seed =
+        _selectedLocation ??
         TrainingLocationItem.defaultFromSalon(
           studio,
           mainStudioName: locale.t('locations.mainStudio'),
@@ -1732,8 +1733,8 @@ class _AddTrainingScreenState extends State<AddTrainingScreen> {
                         Consumer<LocaleProvider>(
                           builder: (context, loc, _) {
                             final selected = _selectedLocation;
-                            final displayName = selected?.name.trim().isNotEmpty ==
-                                    true
+                            final displayName =
+                                selected?.name.trim().isNotEmpty == true
                                 ? selected!.name
                                 : loc.t('addTraining.studioNameFallback');
                             final address = selected?.address.trim() ?? '';
@@ -1745,11 +1746,11 @@ class _AddTrainingScreenState extends State<AddTrainingScreen> {
                                 ),
                                 Material(
                                   color: AppColors.backgroundPrimary,
-                                  borderRadius: BorderRadius.circular(28),
+                                  borderRadius: BorderRadius.circular(12),
                                   clipBehavior: Clip.antiAlias,
                                   child: InkWell(
                                     onTap: _openLocationPicker,
-                                    borderRadius: BorderRadius.circular(28),
+                                    borderRadius: BorderRadius.circular(12),
                                     child: Padding(
                                       padding: const EdgeInsets.symmetric(
                                         horizontal: 12,
@@ -1767,11 +1768,6 @@ class _AddTrainingScreenState extends State<AddTrainingScreen> {
                                               'assets/icons/icon-pin.svg',
                                               width: 15,
                                               height: 21,
-                                              colorFilter:
-                                                  const ColorFilter.mode(
-                                                _kFormAccentPurple,
-                                                BlendMode.srcIn,
-                                              ),
                                             ),
                                           ),
                                           const SizedBox(width: 12),
@@ -1806,8 +1802,8 @@ class _AddTrainingScreenState extends State<AddTrainingScreen> {
                                                   Padding(
                                                     padding:
                                                         const EdgeInsets.only(
-                                                      top: 4,
-                                                    ),
+                                                          top: 4,
+                                                        ),
                                                     child: Text(
                                                       loc.t(
                                                         'addTraining.noAddress',

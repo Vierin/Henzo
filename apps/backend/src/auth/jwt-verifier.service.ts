@@ -68,41 +68,91 @@ export class JwtVerifierService implements OnModuleInit {
     });
   };
 
+  private static readonly jwksAlgorithms = ['ES256', 'RS256'] as const;
+
+  private assertNotExpired(decoded: DecodedToken): void {
+    if (decoded.exp && decoded.exp < Date.now() / 1000) {
+      throw new Error('Token expired');
+    }
+  }
+
+  private verifyWithJwks(
+    token: string,
+    algorithms: readonly ('ES256' | 'RS256')[],
+  ): Promise<DecodedToken> {
+    return new Promise((resolve, reject) => {
+      jwt.verify(
+        token,
+        this.getKey,
+        {
+          algorithms: [...algorithms],
+          issuer: `${this.supabaseUrl}/auth/v1`,
+          audience: 'authenticated',
+        },
+        (err, decoded) => {
+          if (err) {
+            reject(err);
+            return;
+          }
+          resolve(decoded as DecodedToken);
+        },
+      );
+    });
+  }
+
+  private verifyWithSecret(token: string): Promise<DecodedToken> {
+    if (!this.jwtSecret) {
+      return Promise.reject(
+        new Error('SUPABASE_JWT_SECRET is not configured for HS256 tokens'),
+      );
+    }
+
+    return new Promise((resolve, reject) => {
+      jwt.verify(
+        token,
+        this.jwtSecret!,
+        {
+          algorithms: ['HS256'],
+          issuer: `${this.supabaseUrl}/auth/v1`,
+          audience: 'authenticated',
+        },
+        (err, decoded) => {
+          if (err) {
+            reject(err);
+            return;
+          }
+          resolve(decoded as DecodedToken);
+        },
+      );
+    });
+  }
+
   /**
    * Верифицировать JWT токен локально (без сетевых запросов)
-   * Использует JWKS для автоматической загрузки публичных ключей
+   * Использует JWKS (ES256 / RS256) или legacy HS256 + SUPABASE_JWT_SECRET
    */
   async verifyToken(token: string): Promise<DecodedToken> {
     try {
-      // Supabase использует RS256 алгоритм для подписи JWT
-      const decoded = await new Promise<DecodedToken>((resolve, reject) => {
-        jwt.verify(
-          token,
-          this.getKey,
-          {
-            algorithms: ['RS256'],
-            issuer: `${this.supabaseUrl}/auth/v1`,
-            audience: 'authenticated',
-          },
-          (err, decoded) => {
-            if (err) {
-              reject(err);
-              return;
-            }
-            resolve(decoded as DecodedToken);
-          },
-        );
-      });
+      const header = jwt.decode(token, { complete: true })?.header;
+      const alg = header?.alg;
 
-      // Проверка срока действия токена
-      if (decoded.exp && decoded.exp < Date.now() / 1000) {
-        throw new Error('Token expired');
+      let decoded: DecodedToken;
+
+      if (alg === 'HS256') {
+        decoded = await this.verifyWithSecret(token);
+      } else if (alg === 'ES256' || alg === 'RS256') {
+        decoded = await this.verifyWithJwks(token, [alg]);
+      } else {
+        // Unknown alg: try JWKS (current Supabase default: ES256)
+        decoded = await this.verifyWithJwks(
+          token,
+          JwtVerifierService.jwksAlgorithms,
+        );
       }
 
+      this.assertNotExpired(decoded);
       return decoded;
     } catch (error: any) {
-      // Если локальная верификация не удалась, пробрасываем ошибку
-      // Вызывающий код может использовать fallback на Supabase API
       throw new Error(`JWT verification failed: ${error.message}`);
     }
   }

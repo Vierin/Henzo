@@ -10,6 +10,10 @@ import { Response } from 'express';
 import * as Sentry from '@sentry/nestjs';
 import { Counter, register } from 'prom-client';
 import type { RequestWithId } from './request-id.middleware';
+import {
+  databaseUnavailableMessage,
+  isDatabaseUnavailableError,
+} from './prisma-errors';
 
 /// Singleton Prometheus counter (защита от двойной регистрации при HMR/тестах).
 function getErrorsCounter(): Counter<string> {
@@ -34,13 +38,19 @@ export class AllExceptionsFilter implements ExceptionFilter {
     const request = ctx.getRequest<RequestWithId>();
 
     const isHttp = exception instanceof HttpException;
+    const isDbUnavailable =
+      !isHttp && isDatabaseUnavailableError(exception);
+
     const status = isHttp
       ? exception.getStatus()
-      : HttpStatus.INTERNAL_SERVER_ERROR;
+      : isDbUnavailable
+        ? HttpStatus.SERVICE_UNAVAILABLE
+        : HttpStatus.INTERNAL_SERVER_ERROR;
 
     const errorResponse = isHttp ? exception.getResponse() : null;
-    const message =
-      typeof errorResponse === 'string'
+    const message = isDbUnavailable
+      ? databaseUnavailableMessage
+      : typeof errorResponse === 'string'
         ? errorResponse
         : ((errorResponse as Record<string, unknown>)?.message as string) ||
           (exception instanceof Error ? exception.message : 'Internal error');

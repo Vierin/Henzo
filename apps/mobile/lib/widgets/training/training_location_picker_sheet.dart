@@ -210,9 +210,10 @@ class _LocationOptionCard extends StatelessWidget {
                 const Padding(
                   padding: EdgeInsets.only(left: 8, top: 2),
                   child: Icon(
-                    Icons.check_circle,
+                    Icons.check,
                     color: AppColors.primary500,
                     size: 24,
+                    weight: 700,
                   ),
                 ),
             ],

@@ -221,6 +221,7 @@
 		"noVisitsYet": "Chưa có lượt đến",
 		"rejectedVisitsStat": "Lượt từ chối / vắng",
 		"totalVisitsStat": "Tổng lượt đến",
+		"noShowStat": "Vắng mặt",
 		"visitsSection": "LƯỢT ĐẾN",
 		"block": "Chặn",
 		"unblock": "Bỏ chặn",
@@ -362,7 +363,21 @@
 	"notifications": {
 		"title": "Thông báo",
 		"empty": "Không có thông báo",
-		"cleared": "Đã xóa thông báo"
+		"emptyTitle": "Đã xem hết!",
+		"emptySubtitle": "Bạn không có thông báo mới.\nHãy quay lại sau để xem cập nhật.",
+		"cleared": "Đã xóa thông báo",
+		"filterAll": "Tất cả",
+		"filterBookings": "Đặt lịch",
+		"filterReviews": "Đánh giá",
+		"filterEmpty": "Không có thông báo trong mục này",
+		"typeBooking": "ĐẶT LỊCH",
+		"typeReview": "ĐÁNH GIÁ",
+		"typeAnnouncement": "THÔNG BÁO",
+		"sessionDate": "Buổi tập: {date}",
+		"justNow": "vừa xong",
+		"minsAgo": "{n} phút trước",
+		"hoursAgo": "{n} giờ trước",
+		"daysAgo": "{n} ngày trước"
 	},
 	"settings": {
 		"languageEn": "English",

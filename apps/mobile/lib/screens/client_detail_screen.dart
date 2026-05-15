@@ -157,13 +157,8 @@ class _ClientDetailScreenState extends State<ClientDetailScreen> {
             .map((b) => b.dateTime)
             .reduce((a, b) => a.isBefore(b) ? a : b);
 
-  int get _rejectedVisits => _bookings
-      .where(
-        (b) =>
-            b.status == BookingStatus.canceled ||
-            b.status == BookingStatus.noShow,
-      )
-      .length;
+  int get _noShowVisits =>
+      _bookings.where((b) => b.status == BookingStatus.noShow).length;
 
   int get _totalVisits => _bookings.length;
 
@@ -410,9 +405,7 @@ class _ClientDetailScreenState extends State<ClientDetailScreen> {
           padding: const EdgeInsets.only(left: 8),
           child: Center(
             child: Material(
-              color: Colors.white,
-              elevation: 2,
-              shadowColor: const Color(0x33000000),
+              color: AppColors.backgroundPrimary,
               shape: const CircleBorder(),
               child: InkWell(
                 customBorder: const CircleBorder(),
@@ -421,8 +414,8 @@ class _ClientDetailScreenState extends State<ClientDetailScreen> {
                   width: 40,
                   height: 40,
                   child: Icon(
-                    Icons.arrow_back,
-                    size: 20,
+                    Icons.arrow_back_ios_new,
+                    size: 18,
                     color: AppColors.textPrimary,
                   ),
                 ),
@@ -452,31 +445,37 @@ class _ClientDetailScreenState extends State<ClientDetailScreen> {
               child: _blocked
                   ? OutlinedButton.icon(
                       onPressed: _blockUpdating ? null : _toggleBlocked,
-                      icon: const Icon(Icons.lock_open_outlined, size: 18),
+                      icon: const Icon(Icons.lock_open_outlined, size: 16),
                       label: Text(tr('ownerClient.unblock')),
                       style: OutlinedButton.styleFrom(
                         foregroundColor: AppColors.primary500,
                         side: const BorderSide(color: AppColors.primary500),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(999),
+                        ),
                         visualDensity: VisualDensity.compact,
                         padding: const EdgeInsets.symmetric(
-                          horizontal: 12,
-                          vertical: 14,
+                          horizontal: 14,
+                          vertical: 10,
                         ),
                         minimumSize: Size.zero,
                         tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                         textStyle: const TextStyle(
                           fontSize: 14,
-                          fontWeight: FontWeight.w500,
+                          fontWeight: FontWeight.w600,
                         ),
                       ),
                     )
                   : FilledButton.icon(
                       onPressed: _blockUpdating ? null : _toggleBlocked,
-                      icon: const Icon(Icons.block, size: 18),
+                      icon: const Icon(Icons.block, size: 16),
                       label: Text(tr('ownerClient.block')),
                       style: FilledButton.styleFrom(
                         backgroundColor: AppColors.primary500,
                         foregroundColor: AppColors.textInverse,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(999),
+                        ),
                         visualDensity: VisualDensity.compact,
                         padding: const EdgeInsets.symmetric(
                           horizontal: 12,
@@ -486,7 +485,7 @@ class _ClientDetailScreenState extends State<ClientDetailScreen> {
                         tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                         textStyle: const TextStyle(
                           fontSize: 14,
-                          fontWeight: FontWeight.w500,
+                          fontWeight: FontWeight.w600,
                         ),
                       ),
                     ),
@@ -509,98 +508,35 @@ class _ClientDetailScreenState extends State<ClientDetailScreen> {
                 physics: const AlwaysScrollableScrollPhysics(),
                 padding: const EdgeInsets.fromLTRB(
                   kScreenPaddingHorizontal,
-                  12,
+                  4,
                   kScreenPaddingHorizontal,
                   24,
                 ),
                 children: [
-                  DecoratedBox(
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(24),
-                      boxShadow: _kClientDetailCardShadow,
-                    ),
-                    child: Padding(
-                      padding: const EdgeInsets.fromLTRB(18, 20, 18, 20),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: [
-                          Row(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              _ClientAvatarWithBadge(
-                                initials: _initials(widget.name),
-                              ),
-                              const SizedBox(width: 16),
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      widget.name,
-                                      style: const TextStyle(
-                                        fontSize: 22,
-                                        fontWeight: FontWeight.w700,
-                                        letterSpacing: -0.3,
-                                        color: AppColors.textPrimary,
-                                      ),
-                                    ),
-                                    const SizedBox(height: 4),
-                                    Text(
-                                      _firstVisit != null
-                                          ? tr(
-                                              'ownerClient.memberSince',
-                                            ).replaceAll(
-                                              '{monthYear}',
-                                              DateFormat(
-                                                'MMMM yyyy',
-                                                localeCode,
-                                              ).format(_firstVisit!.toLocal()),
-                                            )
-                                          : tr('ownerClient.noVisitsYet'),
-                                      style: const TextStyle(
-                                        fontSize: 14,
-                                        fontWeight: FontWeight.w500,
-                                        color: AppColors.textSecondary,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 18),
-                          Row(
-                            children: [
-                              Expanded(
-                                child: _ProfileStatChip(
-                                  value: '$_totalVisits',
-                                  label: tr('ownerClient.totalVisitsStat'),
-                                  backgroundColor: const Color(0xFFE8F5D0),
-                                  labelColor: AppColors.textSecondary,
-                                ),
-                              ),
-                              const SizedBox(width: 10),
-                              Expanded(
-                                child: _ProfileStatChip(
-                                  value: '$_rejectedVisits',
-                                  label: tr('ownerClient.rejectedVisitsStat'),
-                                  backgroundColor: const Color(0xFFFFE8E8),
-                                  labelColor: const Color(0xFFB42318),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
-                    ),
+                  _ClientProfileHeader(
+                    name: widget.name,
+                    initials: _initials(widget.name),
+                    memberSinceLabel: _firstVisit != null
+                        ? tr('ownerClient.memberSince').replaceAll(
+                            '{monthYear}',
+                            DateFormat(
+                              'MMMM yyyy',
+                              localeCode,
+                            ).format(_firstVisit!.toLocal()),
+                          )
+                        : tr('ownerClient.noVisitsYet'),
+                    totalVisits: _totalVisits,
+                    noShowVisits: _noShowVisits,
+                    totalVisitsLabel: tr('ownerClient.totalVisitsStat'),
+                    noShowLabel: tr('ownerClient.noShowStat'),
                   ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 12),
                   Row(
                     crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
                       Expanded(
                         child: _ClientActionTile(
+                          iconTopPadding: 4,
                           icon: SvgPicture.asset(
                             'assets/icons/icon-phone.svg',
                             width: 15,
@@ -623,6 +559,7 @@ class _ClientDetailScreenState extends State<ClientDetailScreen> {
                       const SizedBox(width: 8),
                       Expanded(
                         child: _ClientActionTile(
+                          iconTopPadding: 4,
                           icon: SvgPicture.asset(
                             'assets/icons/icon-mail.svg',
                             width: 15,
@@ -658,13 +595,13 @@ class _ClientDetailScreenState extends State<ClientDetailScreen> {
                       ),
                     ],
                   ),
-                  const SizedBox(height: 24),
+                  const SizedBox(height: 20),
                   Text(
                     tr('ownerClient.visitsSection'),
                     style: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w800,
-                      letterSpacing: 0.6,
+                      fontSize: 13,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: 0.8,
                       color: AppColors.textPrimary,
                     ),
                   ),
@@ -719,26 +656,113 @@ class _ClientDetailScreenState extends State<ClientDetailScreen> {
   }
 }
 
-class _ClientAvatarWithBadge extends StatelessWidget {
-  const _ClientAvatarWithBadge({required this.initials});
+class _ClientProfileHeader extends StatelessWidget {
+  const _ClientProfileHeader({
+    required this.name,
+    required this.initials,
+    required this.memberSinceLabel,
+    required this.totalVisits,
+    required this.noShowVisits,
+    required this.totalVisitsLabel,
+    required this.noShowLabel,
+  });
 
+  final String name;
   final String initials;
+  final String memberSinceLabel;
+  final int totalVisits;
+  final int noShowVisits;
+  final String totalVisitsLabel;
+  final String noShowLabel;
+
+  static const double _avatarSize = 100;
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
-      width: 92,
-      height: 92,
-      child: Stack(
-        clipBehavior: Clip.none,
-        children: [
-          Positioned.fill(
+    return Stack(
+      clipBehavior: Clip.none,
+      children: [
+        Padding(
+          padding: const EdgeInsets.only(top: 20),
+          child: DecoratedBox(
+            decoration: BoxDecoration(
+              color: AppColors.backgroundPrimary,
+              borderRadius: BorderRadius.circular(20),
+              boxShadow: _kClientDetailCardShadow,
+            ),
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.only(left: _avatarSize + 12),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          name,
+                          style: const TextStyle(
+                            fontSize: 20,
+                            fontWeight: FontWeight.w700,
+                            letterSpacing: -0.3,
+                            height: 1.2,
+                            color: AppColors.textPrimary,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          memberSinceLabel,
+                          style: const TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w500,
+                            color: AppColors.textSecondary,
+                          ),
+                        ),
+                        const SizedBox(height: 10),
+                        Row(
+                          children: [
+                            _InlineStat(
+                              label: totalVisitsLabel,
+                              value: totalVisits,
+                            ),
+                            const SizedBox(width: 16),
+                            _InlineStat(
+                              label: noShowLabel,
+                              value: noShowVisits,
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+        Positioned(
+          left: 16,
+          top: 0,
+          child: Container(
+            width: _avatarSize,
+            height: _avatarSize,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              boxShadow: const <BoxShadow>[
+                BoxShadow(
+                  color: Color(0x1A000000),
+                  blurRadius: 12,
+                  offset: Offset(0, 4),
+                ),
+              ],
+            ),
             child: CircleAvatar(
               backgroundColor: AppColors.primary100,
               child: Text(
                 initials,
                 style: const TextStyle(
-                  fontSize: 28,
+                  fontSize: 32,
                   fontWeight: FontWeight.w700,
                   color: AppColors.primary500,
                   height: 1,
@@ -746,80 +770,42 @@ class _ClientAvatarWithBadge extends StatelessWidget {
               ),
             ),
           ),
-          Positioned(
-            right: -2,
-            bottom: -2,
-            child: Container(
-              width: 28,
-              height: 28,
-              decoration: const BoxDecoration(
-                color: AppColors.primary500,
-                shape: BoxShape.circle,
-                boxShadow: <BoxShadow>[
-                  BoxShadow(
-                    color: Color(0x33000000),
-                    blurRadius: 4,
-                    offset: Offset(0, 2),
-                  ),
-                ],
-              ),
-              child: const Icon(
-                Icons.star_rounded,
-                size: 16,
-                color: Colors.white,
-              ),
-            ),
-          ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 }
 
-class _ProfileStatChip extends StatelessWidget {
-  const _ProfileStatChip({
-    required this.value,
-    required this.label,
-    required this.backgroundColor,
-    required this.labelColor,
-  });
+class _InlineStat extends StatelessWidget {
+  const _InlineStat({required this.label, required this.value});
 
-  final String value;
   final String label;
-  final Color backgroundColor;
-  final Color labelColor;
+  final int value;
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-      decoration: BoxDecoration(
-        color: backgroundColor,
-        borderRadius: BorderRadius.circular(14),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.center,
+    return Text.rich(
+      TextSpan(
+        style: const TextStyle(
+          fontSize: 14,
+          fontWeight: FontWeight.w600,
+          color: AppColors.textPrimary,
+          height: 1.3,
+        ),
         children: [
-          Text(
-            value,
-            style: const TextStyle(
-              fontSize: 22,
-              fontWeight: FontWeight.w800,
-              letterSpacing: -0.5,
-              color: AppColors.textPrimary,
+          TextSpan(text: label),
+          const TextSpan(
+            text: ' · ',
+            style: TextStyle(
+              fontWeight: FontWeight.w500,
+              color: AppColors.textSecondary,
             ),
           ),
-          const SizedBox(height: 4),
-          Text(
-            label,
-            textAlign: TextAlign.center,
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-            style: TextStyle(
-              fontSize: 11,
-              fontWeight: FontWeight.w600,
-              color: labelColor,
-              height: 1.2,
+          TextSpan(
+            text: '$value',
+            style: const TextStyle(
+              fontWeight: FontWeight.w700,
+              color: AppColors.textPrimary,
             ),
           ),
         ],
@@ -835,15 +821,17 @@ class _ClientActionTile extends StatelessWidget {
     required this.filled,
     required this.enabled,
     required this.onTap,
+    this.iconTopPadding = 0,
   });
 
-  static const double _tileHeight = 88;
+  static const double _tileHeight = 70;
 
   final Widget icon;
   final String label;
   final bool filled;
   final bool enabled;
   final VoidCallback? onTap;
+  final double iconTopPadding;
 
   @override
   Widget build(BuildContext context) {
@@ -851,24 +839,39 @@ class _ClientActionTile extends StatelessWidget {
     return SizedBox(
       height: _tileHeight,
       child: Material(
-        color: filled ? AppColors.primary500 : Colors.white,
-        elevation: enabled ? 3 : 1.5,
-        shadowColor: const Color(0x28000000),
-        borderRadius: BorderRadius.circular(16),
+        color: filled ? AppColors.primary500 : AppColors.backgroundPrimary,
+        borderRadius: BorderRadius.circular(14),
         child: InkWell(
           onTap: effectiveTap,
-          borderRadius: BorderRadius.circular(16),
-          child: Opacity(
-            opacity: enabled ? 1 : 0.4,
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 6),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.spaceAround,
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  SizedBox(
-                    height: 32,
-                    child: Center(
+          borderRadius: BorderRadius.circular(14),
+          child: DecoratedBox(
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(14),
+              border: filled
+                  ? null
+                  : Border.all(color: AppColors.borderPrimary),
+              boxShadow: filled
+                  ? const <BoxShadow>[
+                      BoxShadow(
+                        color: Color(0x33F15942),
+                        blurRadius: 8,
+                        offset: Offset(0, 3),
+                      ),
+                    ]
+                  : null,
+            ),
+            child: Opacity(
+              opacity: enabled ? 1 : 0.45,
+              child: Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 6,
+                  vertical: 10,
+                ),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Padding(
+                      padding: EdgeInsets.only(top: iconTopPadding),
                       child: IconTheme.merge(
                         data: IconThemeData(
                           color: filled
@@ -878,22 +881,21 @@ class _ClientActionTile extends StatelessWidget {
                         child: icon,
                       ),
                     ),
-                  ),
-                  Text(
-                    label,
-                    textAlign: TextAlign.center,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w600,
-                      letterSpacing: -0.2,
-                      color: filled
-                          ? AppColors.textInverse
-                          : AppColors.textPrimary,
+                    Text(
+                      label,
+                      textAlign: TextAlign.center,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                        color: filled
+                            ? AppColors.textInverse
+                            : AppColors.textPrimary,
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
           ),

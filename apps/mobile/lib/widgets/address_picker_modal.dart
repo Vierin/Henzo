@@ -229,16 +229,10 @@ class _AddressPickerModalState extends State<AddressPickerModal> {
     return const LatLng(21.0285, 105.8542);
   }
 
-  InputDecoration _fieldDecoration({
-    required String hint,
-    Widget? suffixIcon,
-  }) {
+  InputDecoration _fieldDecoration({required String hint, Widget? suffixIcon}) {
     return InputDecoration(
       hintText: hint,
-      hintStyle: const TextStyle(
-        fontSize: 16,
-        color: AppColors.textTertiary,
-      ),
+      hintStyle: const TextStyle(fontSize: 16, color: AppColors.textTertiary),
       filled: true,
       fillColor: AppColors.backgroundPrimary,
       border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
@@ -259,7 +253,8 @@ class _AddressPickerModalState extends State<AddressPickerModal> {
   Widget build(BuildContext context) {
     final t = context.read<LocaleProvider>().t;
     final hasCoords = _lat != null && _lon != null;
-    final canConfirm = _hasLocationName && hasCoords && _address.trim().isNotEmpty;
+    final canConfirm =
+        _hasLocationName && hasCoords && _address.trim().isNotEmpty;
 
     return Material(
       color: AppColors.backgroundPrimary,
@@ -304,7 +299,9 @@ class _AddressPickerModalState extends State<AddressPickerModal> {
             ),
           ),
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: kScreenPaddingHorizontal),
+            padding: const EdgeInsets.symmetric(
+              horizontal: kScreenPaddingHorizontal,
+            ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
@@ -325,71 +322,66 @@ class _AddressPickerModalState extends State<AddressPickerModal> {
                     hint: t('addressPicker.locationNameHint'),
                   ),
                 ),
-                if (_hasLocationName) ...[
-                  const SizedBox(height: 16),
-                  Text(
-                    t('profileForm.address'),
-                    style: const TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w500,
-                      color: AppColors.textPrimary,
-                    ),
+                const SizedBox(height: 16),
+                Text(
+                  t('profileForm.address'),
+                  style: const TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
+                    color: AppColors.textPrimary,
                   ),
-                  const SizedBox(height: 6),
-                  TextField(
-                    controller: _searchController,
-                    focusNode: _searchFocus,
-                    onChanged: _onSearchChanged,
-                    onTap: () {
-                      if (_suggestions.isEmpty &&
-                          _searchController.text.trim().length >= 2) {
-                        _fetchSuggestions(_searchController.text);
-                      }
-                    },
-                    decoration: _fieldDecoration(
-                      hint: t('addressPicker.searchHint'),
-                      suffixIcon: _loadingSuggestions
-                          ? const Padding(
-                              padding: EdgeInsets.all(12),
-                              child: SizedBox(
-                                width: 20,
-                                height: 20,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                  color: AppColors.primary500,
+                ),
+                const SizedBox(height: 6),
+                TextField(
+                  controller: _searchController,
+                  focusNode: _searchFocus,
+                  onChanged: _onSearchChanged,
+                  onTap: () {
+                    if (_suggestions.isEmpty &&
+                        _searchController.text.trim().length >= 2) {
+                      _fetchSuggestions(_searchController.text);
+                    }
+                  },
+                  decoration:
+                      _fieldDecoration(
+                        hint: t('addressPicker.searchHint'),
+                        suffixIcon: _loadingSuggestions
+                            ? const Padding(
+                                padding: EdgeInsets.all(12),
+                                child: SizedBox(
+                                  width: 20,
+                                  height: 20,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    color: AppColors.primary500,
+                                  ),
                                 ),
-                              ),
-                            )
-                          : _hasSearchInput
-                          ? IconButton(
-                              onPressed: _clearAddressSearch,
-                              icon: const Icon(
-                                Icons.close,
-                                size: 20,
-                                color: AppColors.textSecondary,
-                              ),
-                            )
-                          : null,
-                    ).copyWith(
-                      prefixIcon: Padding(
-                        padding: const EdgeInsets.only(left: 12, right: 2),
-                        child: SvgPicture.asset(
-                          'assets/icons/icon-pin.svg',
-                          width: 15,
-                          height: 21,
-                          colorFilter: const ColorFilter.mode(
-                            Color(0xFF2563EB),
-                            BlendMode.srcIn,
+                              )
+                            : _hasSearchInput
+                            ? IconButton(
+                                onPressed: _clearAddressSearch,
+                                icon: const Icon(
+                                  Icons.close,
+                                  size: 20,
+                                  color: AppColors.textSecondary,
+                                ),
+                              )
+                            : null,
+                      ).copyWith(
+                        prefixIcon: Padding(
+                          padding: const EdgeInsets.only(left: 12, right: 2),
+                          child: SvgPicture.asset(
+                            'assets/icons/icon-pin.svg',
+                            width: 15,
+                            height: 21,
                           ),
                         ),
+                        prefixIconConstraints: const BoxConstraints(
+                          minWidth: 32,
+                          minHeight: 40,
+                        ),
                       ),
-                      prefixIconConstraints: const BoxConstraints(
-                        minWidth: 32,
-                        minHeight: 40,
-                      ),
-                    ),
-                  ),
-                ],
+                ),
               ],
             ),
           ),
@@ -572,7 +564,9 @@ class _AddressPickerModalState extends State<AddressPickerModal> {
                             color: Colors.grey.withValues(alpha: 0.4),
                             alignment: Alignment.center,
                             child: Padding(
-                              padding: const EdgeInsets.symmetric(horizontal: 24),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 24,
+                              ),
                               child: Text(
                                 _hasLocationName
                                     ? t('addressPicker.enableMapHint')

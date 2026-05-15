@@ -992,6 +992,10 @@ export class AuthService {
 
         if (error) {
           console.error('❌ Supabase token verification error:', error.message);
+          const cause = (error as { cause?: { code?: string } }).cause;
+          if (cause?.code === 'UND_ERR_CONNECT_TIMEOUT') {
+            throw new Error('Auth service unavailable');
+          }
           throw new Error('Invalid token');
         }
 

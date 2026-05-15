@@ -221,6 +221,7 @@
 		"noVisitsYet": "No visits yet",
 		"rejectedVisitsStat": "Rejected visits",
 		"totalVisitsStat": "Total visits",
+		"noShowStat": "No show",
 		"visitsSection": "VISITS",
 		"block": "Block",
 		"unblock": "Unblock",
@@ -362,7 +363,21 @@
 	"notifications": {
 		"title": "Notifications",
 		"empty": "No notifications",
-		"cleared": "Notifications cleared"
+		"emptyTitle": "All caught up!",
+		"emptySubtitle": "You have no new notifications.\nCheck back later for updates.",
+		"cleared": "Notifications cleared",
+		"filterAll": "All",
+		"filterBookings": "Bookings",
+		"filterReviews": "Reviews",
+		"filterEmpty": "No notifications in this section",
+		"typeBooking": "BOOKING",
+		"typeReview": "REVIEW",
+		"typeAnnouncement": "ANNOUNCEMENT",
+		"sessionDate": "Training: {date}",
+		"justNow": "just now",
+		"minsAgo": "{n} mins ago",
+		"hoursAgo": "{n} hours ago",
+		"daysAgo": "{n} days ago"
 	},
 	"settings": {
 		"languageEn": "English",
