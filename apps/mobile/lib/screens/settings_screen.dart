@@ -7,6 +7,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../constants/colors.dart';
+import '../../constants/layout.dart';
 import '../../config/app_config.dart';
 import '../../l10n/locale_provider.dart';
 import '../../models/salon.dart';
@@ -399,10 +400,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
       hintText: hint,
       filled: true,
       fillColor: AppColors.backgroundPrimary,
-      border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
       enabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(10),
+        borderRadius: BorderRadius.circular(12),
         borderSide: const BorderSide(color: AppColors.borderPrimary),
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: const BorderSide(color: AppColors.primary500, width: 1.5),
       ),
       contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
       alignLabelWithHint: alignLabelWithHint,
@@ -431,26 +436,42 @@ class _SettingsScreenState extends State<SettingsScreen> {
   Widget build(BuildContext context) {
     return Consumer<LocaleProvider>(
       builder: (context, locale, _) {
-        const pageBg = Color(0xFFF8F9FA);
-        const maxContentWidth = 680.0;
+        final textTheme = Theme.of(context).textTheme;
 
         return PopScope(
           canPop: !_hasUnsavedChanges,
-          onPopInvoked: (didPop) async {
+          onPopInvokedWithResult: (didPop, _) async {
             if (didPop) return;
             await _handleBackPressed();
           },
           child: Scaffold(
-            backgroundColor: pageBg,
+            backgroundColor: AppColors.backgroundSecondary,
             appBar: AppBar(
               leading: IconButton(
                 icon: const Icon(Icons.arrow_back),
                 onPressed: _handleBackPressed,
+                color: AppColors.textPrimary,
               ),
-              title: Text(locale.t('profileForm.settings')),
-              backgroundColor: AppColors.backgroundPrimary,
+              title: Text(
+                locale.t('settings.owner.studioProfile'),
+                style:
+                    textTheme.headlineSmall?.copyWith(
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.textPrimary,
+                      letterSpacing: -0.3,
+                    ) ??
+                    const TextStyle(
+                      fontSize: 24,
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.textPrimary,
+                      letterSpacing: -0.3,
+                    ),
+              ),
+              centerTitle: false,
+              backgroundColor: AppColors.backgroundSecondary,
               foregroundColor: AppColors.textPrimary,
               elevation: 0,
+              scrolledUnderElevation: 0,
               actions: [
                 TextButton(
                   onPressed: _canSaveFromAppBar ? _saveSalon : null,
@@ -458,23 +479,36 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       ? const SizedBox(
                           width: 18,
                           height: 18,
-                          child: CircularProgressIndicator(strokeWidth: 2),
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: AppColors.primary500,
+                          ),
                         )
-                      : const Text('Сохранить'),
+                      : Text(
+                          locale.t('common.save'),
+                          style: TextStyle(
+                            fontSize: 15,
+                            fontWeight: FontWeight.w600,
+                            color: _canSaveFromAppBar
+                                ? AppColors.primary500
+                                : AppColors.textTertiary,
+                          ),
+                        ),
                 ),
-                const SizedBox(width: 8),
+                const SizedBox(width: 4),
               ],
             ),
             body: GestureDetector(
               behavior: HitTestBehavior.translucent,
               onTap: () => FocusManager.instance.primaryFocus?.unfocus(),
-              child: Center(
-                child: ConstrainedBox(
-                  constraints: const BoxConstraints(maxWidth: maxContentWidth),
-                  child: ListView(
-                    padding: const EdgeInsets.all(12),
-                    children: [
-                      const SizedBox(height: 8),
+              child: ListView(
+                padding: const EdgeInsets.fromLTRB(
+                  kScreenPaddingHorizontal,
+                  8,
+                  kScreenPaddingHorizontal,
+                  24,
+                ),
+                children: [
 
                     // Секции салона в одной форме
                     _salonLoading
@@ -723,9 +757,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                             ),
                           ),
                     const SizedBox(height: 24),
-                    ],
-                  ),
-                ),
+                ],
               ),
             ),
           ),
@@ -829,32 +861,27 @@ class _SectionCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
+      margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
         color: AppColors.backgroundPrimary,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: AppColors.borderPrimary),
-        boxShadow: const [
-          BoxShadow(
-            color: Color(0x0D000000),
-            blurRadius: 8,
-            offset: Offset(0, 2),
-          ),
-        ],
       ),
       child: Padding(
-        padding: const EdgeInsets.all(20),
+        padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              title,
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.w700,
-                color: AppColors.textPrimary,
+              title.toUpperCase(),
+              style: const TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w500,
+                letterSpacing: -0.2,
+                color: AppColors.textSecondary,
               ),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 12),
             child,
           ],
         ),

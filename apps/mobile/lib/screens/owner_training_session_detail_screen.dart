@@ -12,6 +12,9 @@ import '../services/auth_service.dart';
 import '../services/dashboard_api_service.dart';
 import '../utils/color_hex.dart';
 import '../utils/show_api_error.dart';
+import '../utils/synthetic_guest.dart';
+import '../widgets/clients/add_owner_client_sheet.dart';
+import '../widgets/training/owner_session_cancel_scope_dialog.dart';
 
 /// Full-screen session detail for studio owners (replaces bottom sheet modal).
 class OwnerTrainingSessionDetailScreen extends StatefulWidget {
@@ -132,7 +135,9 @@ class _OwnerTrainingSessionDetailScreenState
   }
 
   void _refreshEnrollmentsOnly() {
-    setState(() => _enrollmentsFuture = _loadEnrollments());
+    setState(() {
+      _enrollmentsFuture = _loadEnrollments();
+    });
   }
 
   void _reloadEnrollments() {
@@ -206,40 +211,28 @@ class _OwnerTrainingSessionDetailScreenState
     final st = session.status.toUpperCase();
     if (st == 'CANCELLED' || st == 'COMPLETED') return;
 
-    final confirm = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: Text(tr('ownerSession.cancelSessionTitle')),
-        content: Text(tr('ownerSession.cancelSessionMessage')),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: Text(tr('common.cancel')),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            style: FilledButton.styleFrom(
-              backgroundColor: AppColors.primary500,
-            ),
-            child: Text(tr('ownerSession.cancelSessionConfirm')),
-          ),
-        ],
-      ),
-    );
-    if (confirm != true || !mounted) return;
+    final scope = await showOwnerSessionCancelScopeDialog(context);
+    if (!mounted || scope == null) return;
 
     final token = context.read<AuthService>().accessToken;
     if (token == null || token.isEmpty) return;
 
     try {
-      await DashboardApiService.updateOwnerTrainingSessionStatus(
+      final body = <String, dynamic>{'status': 'CANCELLED'};
+      if (scope == OwnerSessionCancelScope.thisAndFollowing) {
+        body['applyToFollowing'] = true;
+      }
+      await DashboardApiService.patchOwnerTrainingSession(
         token,
         session.sessionId,
-        'CANCELLED',
+        body,
       );
       widget.onParticipantsChanged?.call();
       if (!mounted) return;
-      showSuccess(context, tr('ownerSession.sessionCancelled'));
+      final msg = scope == OwnerSessionCancelScope.thisAndFollowing
+          ? tr('ownerSession.sessionCancelledBulk')
+          : tr('ownerSession.sessionCancelled');
+      showSuccess(context, msg);
       Navigator.of(context).pop();
     } catch (e) {
       if (mounted) showApiError(context, e);
@@ -247,151 +240,14 @@ class _OwnerTrainingSessionDetailScreenState
   }
 
   Future<void> _showAddParticipantSheet() async {
-    final tr = context.read<LocaleProvider>().t;
-    final session = widget.session;
-    final nameController = TextEditingController();
-    final emailController = TextEditingController();
-    final phoneController = TextEditingController();
-    bool isSaving = false;
-
-    await showModalBottomSheet<void>(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (sheetCtx) => StatefulBuilder(
-        builder: (context, setSheetState) => SafeArea(
-          child: Padding(
-            padding: EdgeInsets.fromLTRB(
-              16,
-              8,
-              16,
-              16 + MediaQuery.of(sheetCtx).viewInsets.bottom,
-            ),
-            child: Container(
-              decoration: BoxDecoration(
-                color: AppColors.backgroundPrimary,
-                borderRadius: BorderRadius.circular(20),
-                border: Border.all(color: AppColors.borderPrimary),
-                boxShadow: const [
-                  BoxShadow(
-                    color: Color(0x14000000),
-                    blurRadius: 16,
-                    offset: Offset(0, 6),
-                  ),
-                ],
-              ),
-              padding: const EdgeInsets.fromLTRB(16, 14, 16, 16),
-              child: SingleChildScrollView(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      tr('ownerSession.addParticipant'),
-                      style: const TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.w800,
-                        color: AppColors.textPrimary,
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    TextField(
-                      controller: nameController,
-                      enabled: !isSaving,
-                      decoration: InputDecoration(
-                        labelText: tr('ownerSession.name'),
-                      ),
-                    ),
-                    const SizedBox(height: 10),
-                    TextField(
-                      controller: emailController,
-                      enabled: !isSaving,
-                      keyboardType: TextInputType.emailAddress,
-                      decoration: InputDecoration(
-                        labelText: tr('ownerSession.email'),
-                      ),
-                    ),
-                    const SizedBox(height: 10),
-                    TextField(
-                      controller: phoneController,
-                      enabled: !isSaving,
-                      keyboardType: TextInputType.phone,
-                      decoration: InputDecoration(
-                        labelText: tr('ownerSession.phone'),
-                      ),
-                    ),
-                    const SizedBox(height: 14),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: OutlinedButton(
-                            onPressed: isSaving
-                                ? null
-                                : () => Navigator.of(sheetCtx).pop(),
-                            child: Text(tr('common.cancel')),
-                          ),
-                        ),
-                        const SizedBox(width: 10),
-                        Expanded(
-                          child: FilledButton(
-                            onPressed: isSaving
-                                ? null
-                                : () async {
-                                    final token = context
-                                        .read<AuthService>()
-                                        .accessToken;
-                                    if (token == null || token.isEmpty) return;
-                                    final messenger = ScaffoldMessenger.maybeOf(
-                                      context,
-                                    );
-                                    setSheetState(() => isSaving = true);
-                                    try {
-                                      await DashboardApiService.addOwnerSessionEnrollment(
-                                        token,
-                                        session.sessionId,
-                                        name: nameController.text.trim(),
-                                        email: emailController.text.trim(),
-                                        phone: phoneController.text.trim(),
-                                      );
-                                      _reloadEnrollments();
-                                      if (sheetCtx.mounted) {
-                                        Navigator.of(sheetCtx).pop();
-                                      }
-                                      if (!mounted) return;
-                                      messenger?.showSnackBar(
-                                        SnackBar(
-                                          content: Text(
-                                            tr('ownerSession.participantAdded'),
-                                          ),
-                                        ),
-                                      );
-                                    } finally {
-                                      if (sheetCtx.mounted) {
-                                        setSheetState(() => isSaving = false);
-                                      }
-                                    }
-                                  },
-                            child: isSaving
-                                ? const SizedBox(
-                                    width: 18,
-                                    height: 18,
-                                    child: CircularProgressIndicator(
-                                      strokeWidth: 2,
-                                      color: Colors.white,
-                                    ),
-                                  )
-                                : Text(tr('ownerSession.add')),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
-        ),
-      ),
+    await showAddOwnerClientSheet(
+      context,
+      mode: AddOwnerClientMode.enrollInSession,
+      sessionId: widget.session.sessionId,
+      onSuccess: () {
+        _reloadEnrollments();
+        widget.onParticipantsChanged?.call();
+      },
     );
   }
 
@@ -450,7 +306,11 @@ class _OwnerTrainingSessionDetailScreenState
     final canCancelSession =
         session.sessionId.isNotEmpty &&
         session.status.toUpperCase() == 'ACTIVE';
-    final sessionEnded = !session.endsAt.isAfter(DateTime.now());
+    final now = DateTime.now();
+    final sessionEnded = !session.endsAt.isAfter(now);
+    final attendanceTogglesVisible = !session.startsAt
+        .subtract(const Duration(hours: 1))
+        .isAfter(now);
     final spotsLeft = cap > 0 ? (cap - enrolled).clamp(0, cap) : 0;
     const waitlistCount = 0;
     final venueLine = widget.venueName?.trim();
@@ -903,16 +763,17 @@ class _OwnerTrainingSessionDetailScreenState
                             ),
                           ),
                         ),
-                        Text(
-                          tr('ownerSession.attendanceColumnLabel'),
-                          textAlign: TextAlign.end,
-                          style: const TextStyle(
-                            fontSize: 10,
-                            fontWeight: FontWeight.w700,
-                            letterSpacing: 0.35,
-                            color: AppColors.textSecondary,
+                        if (attendanceTogglesVisible)
+                          Text(
+                            tr('ownerSession.attendanceColumnLabel'),
+                            textAlign: TextAlign.end,
+                            style: const TextStyle(
+                              fontSize: 10,
+                              fontWeight: FontWeight.w700,
+                              letterSpacing: 0.35,
+                              color: AppColors.textSecondary,
+                            ),
                           ),
-                        ),
                       ],
                     ),
                     const SizedBox(height: 10),
@@ -954,15 +815,20 @@ class _OwnerTrainingSessionDetailScreenState
                         return Column(
                           children: List.generate(list.length, (i) {
                             final e = list[i];
-                            final displayName =
-                                (e.name ??
+                            final anonymous = isSyntheticGuestEmail(e.email) ||
+                                (e.name?.trim().toLowerCase() == 'walk-in');
+                            final displayName = anonymous
+                                ? tr('ownerClient.anonymousRosterTitle')
+                                : (e.name ??
                                         e.email ??
                                         e.phone ??
                                         tr('booking.client'))
                                     .trim();
-                            final subtitle = e.phone?.isNotEmpty == true
-                                ? e.phone!
-                                : (e.email ?? '');
+                            final subtitle = anonymous
+                                ? ''
+                                : (e.phone?.isNotEmpty == true
+                                    ? e.phone!
+                                    : (e.email ?? ''));
                             final effectiveStatus =
                                 _effectiveEnrollmentStatus(e);
                             final attended = effectiveStatus == 'ACTIVE';
@@ -1023,6 +889,10 @@ class _OwnerTrainingSessionDetailScreenState
                                     ),
                                     if (cancelled)
                                       statusBadgeForParticipant(e.status)
+                                    else if (!attendanceTogglesVisible)
+                                      statusBadgeForParticipant(
+                                        effectiveStatus,
+                                      )
                                     else
                                       Theme(
                                         data: Theme.of(context).copyWith(

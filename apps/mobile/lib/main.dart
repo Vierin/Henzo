@@ -11,6 +11,7 @@ import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'config/app_config.dart';
+import 'deep_links/client_invite_deep_link.dart';
 import 'deep_links/subscription_checkout_deep_link.dart';
 import 'firebase_options.dart';
 import 'l10n/locale_provider.dart';
@@ -33,77 +34,82 @@ import 'services/subscription_refresh_notifier.dart';
 import 'theme/app_theme.dart';
 
 Future<void> main() async {
-  runZonedGuarded<Future<void>>(() async {
-    WidgetsFlutterBinding.ensureInitialized();
-    await Future.wait([
-      initializeDateFormatting('en'),
-      initializeDateFormatting('ru'),
-      initializeDateFormatting('vi'),
-    ]);
-    var loadedEnv = 'assets/.env';
-    try {
-      await dotenv.load(fileName: 'assets/.env');
-    } catch (e) {
-      loadedEnv = 'assets/.env.example';
-      await dotenv.load(fileName: 'assets/.env.example');
-      assert(() {
-        // ignore: avoid_print
-        print('[Env] Failed to load assets/.env, fallback to .env.example: $e');
-        return true;
-      }());
-    }
-    assert(() {
-      // ignore: avoid_print
-      print('[Env] Loaded env file: $loadedEnv');
-      if (AppConfig.supabaseUrl.contains('your-project.supabase.co')) {
-        // ignore: avoid_print
-        print(
-          '[Env] Invalid EXPO_PUBLIC_SUPABASE_URL: placeholder value is active',
-        );
+  runZonedGuarded<Future<void>>(
+    () async {
+      WidgetsFlutterBinding.ensureInitialized();
+      await Future.wait([
+        initializeDateFormatting('en'),
+        initializeDateFormatting('ru'),
+        initializeDateFormatting('vi'),
+      ]);
+      var loadedEnv = 'assets/.env';
+      try {
+        await dotenv.load(fileName: 'assets/.env');
+      } catch (e) {
+        loadedEnv = 'assets/.env.example';
+        await dotenv.load(fileName: 'assets/.env.example');
+        assert(() {
+          // ignore: avoid_print
+          print(
+            '[Env] Failed to load assets/.env, fallback to .env.example: $e',
+          );
+          return true;
+        }());
       }
-      return true;
-    }());
-    final notificationsStore = NotificationsStore();
-    await notificationsStore.load();
-    var firebaseReady = false;
-    try {
-      await Firebase.initializeApp(
-        options: DefaultFirebaseOptions.currentPlatform,
-      );
-      firebaseReady = true;
-      await PushNotificationService.initialize(
-        onNotificationReceived: notificationsStore.addFromPush,
-      );
-    } catch (e) {
       assert(() {
         // ignore: avoid_print
-        print('Firebase init skipped: $e');
+        print('[Env] Loaded env file: $loadedEnv');
+        if (AppConfig.supabaseUrl.contains('your-project.supabase.co')) {
+          // ignore: avoid_print
+          print(
+            '[Env] Invalid EXPO_PUBLIC_SUPABASE_URL: placeholder value is active',
+          );
+        }
         return true;
       }());
-    }
+      final notificationsStore = NotificationsStore();
+      await notificationsStore.load();
+      var firebaseReady = false;
+      try {
+        await Firebase.initializeApp(
+          options: DefaultFirebaseOptions.currentPlatform,
+        );
+        firebaseReady = true;
+        await PushNotificationService.initialize(
+          onNotificationReceived: notificationsStore.addFromPush,
+        );
+      } catch (e) {
+        assert(() {
+          // ignore: avoid_print
+          print('Firebase init skipped: $e');
+          return true;
+        }());
+      }
 
-    if (firebaseReady) {
-      await AnalyticsService.instance.load();
-      FlutterError.onError = (details) {
-        FirebaseCrashlytics.instance.recordFlutterFatalError(details);
-      };
-      PlatformDispatcher.instance.onError = (error, stack) {
+      if (firebaseReady) {
+        await AnalyticsService.instance.load();
+        FlutterError.onError = (details) {
+          FirebaseCrashlytics.instance.recordFlutterFatalError(details);
+        };
+        PlatformDispatcher.instance.onError = (error, stack) {
+          FirebaseCrashlytics.instance.recordError(error, stack, fatal: true);
+          return true;
+        };
+        await AnalyticsService.instance.logEvent('app_opened');
+      }
+
+      await Supabase.initialize(
+        url: AppConfig.supabaseUrl,
+        anonKey: AppConfig.supabaseAnonKey,
+      );
+      runApp(MyApp(notificationsStore: notificationsStore));
+    },
+    (error, stack) {
+      if (Firebase.apps.isNotEmpty) {
         FirebaseCrashlytics.instance.recordError(error, stack, fatal: true);
-        return true;
-      };
-      await AnalyticsService.instance.logEvent('app_opened');
-    }
-
-    await Supabase.initialize(
-      url: AppConfig.supabaseUrl,
-      anonKey: AppConfig.supabaseAnonKey,
-    );
-    runApp(MyApp(notificationsStore: notificationsStore));
-  }, (error, stack) {
-    if (Firebase.apps.isNotEmpty) {
-      FirebaseCrashlytics.instance.recordError(error, stack, fatal: true);
-    }
-  });
+      }
+    },
+  );
 }
 
 /// Корневой [Navigator] для deep links после Stripe (например `henzo://subscription-checkout`).
@@ -198,9 +204,12 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
             themeMode: ThemeMode.light,
             builder: (context, child) {
               final layered = _withKeyboardDismiss(context, child);
-              return SubscriptionCheckoutDeepLinkScope(
+              return ClientInviteDeepLinkScope(
                 navigatorKey: henzoRootNavigatorKey,
-                child: layered,
+                child: SubscriptionCheckoutDeepLinkScope(
+                  navigatorKey: henzoRootNavigatorKey,
+                  child: layered,
+                ),
               );
             },
             locale: Locale(locale.languageTag),

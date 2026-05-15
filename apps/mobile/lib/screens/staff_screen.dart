@@ -12,6 +12,7 @@ import '../../services/cache/services_staff_cache.dart';
 import '../../services/dashboard_api_service.dart';
 import '../../services/staff_api_service.dart';
 import '../../utils/show_api_error.dart';
+import '../../widgets/staff/staff_person_tile.dart';
 import 'add_staff_screen.dart';
 
 enum StaffSort { nameAz, nameZa }
@@ -583,15 +584,29 @@ class _StaffScreenState extends State<StaffScreen> {
     );
   }
 
+  String _contactSubtitle({String? email, String? phone}) {
+    final parts = <String>[
+      if (email != null && email.trim().isNotEmpty) email.trim(),
+      if (phone != null && phone.trim().isNotEmpty) phone.trim(),
+    ];
+    return parts.join(' · ');
+  }
+
   @override
   Widget build(BuildContext context) {
     final locale = context.watch<LocaleProvider>();
+    final textTheme = Theme.of(context).textTheme;
     final owner = context.read<AuthService>().user;
     final ownerName = (owner?.name?.trim().isNotEmpty ?? false)
         ? owner!.name!.trim()
-        : owner?.email ?? 'Owner';
+        : owner?.email ?? locale.t('settings.owner.ownerRole');
     final ownerEmail = owner?.email ?? '';
     final ownerPhone = owner?.phone ?? '';
+    final ownerSubtitle = [
+      locale.t('settings.owner.ownerRole'),
+      _contactSubtitle(email: ownerEmail, phone: ownerPhone),
+    ].where((s) => s.isNotEmpty).join(' · ');
+
     return Scaffold(
       backgroundColor: AppColors.backgroundSecondary,
       appBar: AppBar(
@@ -602,16 +617,25 @@ class _StaffScreenState extends State<StaffScreen> {
         ),
         title: Text(
           locale.t('staffScreen.title'),
-          style: TextStyle(
-            fontSize: 24,
-            fontWeight: FontWeight.w600,
-            color: AppColors.textPrimary,
-          ),
+          style:
+              textTheme.headlineSmall?.copyWith(
+                fontSize: 24,
+                fontWeight: FontWeight.w700,
+                letterSpacing: -0.3,
+                color: AppColors.textPrimary,
+              ) ??
+              const TextStyle(
+                fontSize: 24,
+                fontWeight: FontWeight.w700,
+                letterSpacing: -0.3,
+                color: AppColors.textPrimary,
+              ),
         ),
-        centerTitle: true,
-        backgroundColor: AppColors.backgroundPrimary,
+        centerTitle: false,
+        backgroundColor: AppColors.backgroundSecondary,
         foregroundColor: AppColors.textPrimary,
         elevation: 0,
+        scrolledUnderElevation: 0,
         actions: [
           if (_salon != null)
             IconButton(
@@ -642,69 +666,16 @@ class _StaffScreenState extends State<StaffScreen> {
               onRefresh: _loadData,
               color: AppColors.primary500,
               child: ListView(
-                padding: const EdgeInsets.fromLTRB(16, 16, 16, 100),
+                padding: const EdgeInsets.fromLTRB(
+                  kScreenPaddingHorizontal,
+                  12,
+                  kScreenPaddingHorizontal,
+                  100,
+                ),
                 children: [
-                  Card(
-                    margin: const EdgeInsets.only(bottom: 12),
-                    color: AppColors.backgroundPrimary,
-                    child: ListTile(
-                      contentPadding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 8,
-                      ),
-                      leading: CircleAvatar(
-                        backgroundColor: AppColors.primary500.withValues(
-                          alpha: 0.12,
-                        ),
-                        child: const Icon(
-                          Icons.workspace_premium_outlined,
-                          color: AppColors.primary500,
-                        ),
-                      ),
-                      title: Text(
-                        ownerName,
-                        style: const TextStyle(fontWeight: FontWeight.w700),
-                      ),
-                      subtitle: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          if (ownerEmail.isNotEmpty)
-                            Text(
-                              ownerEmail,
-                              style: const TextStyle(
-                                fontSize: 13,
-                                color: AppColors.textSecondary,
-                              ),
-                            ),
-                          if (ownerPhone.isNotEmpty)
-                            Text(
-                              ownerPhone,
-                              style: const TextStyle(
-                                fontSize: 13,
-                                color: AppColors.textSecondary,
-                              ),
-                            ),
-                        ],
-                      ),
-                      trailing: Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 10,
-                          vertical: 5,
-                        ),
-                        decoration: BoxDecoration(
-                          color: AppColors.primary500.withValues(alpha: 0.14),
-                          borderRadius: BorderRadius.circular(999),
-                        ),
-                        child: const Text(
-                          'Владелец',
-                          style: TextStyle(
-                            fontSize: 11,
-                            fontWeight: FontWeight.w700,
-                            color: AppColors.primary500,
-                          ),
-                        ),
-                      ),
-                    ),
+                  StaffPersonTile(
+                    name: ownerName,
+                    secondaryLine: ownerSubtitle,
                   ),
                   if (_staff.isEmpty) ...[
                     const SizedBox(height: 20),
@@ -733,64 +704,49 @@ class _StaffScreenState extends State<StaffScreen> {
                       textAlign: TextAlign.center,
                     ),
                   ] else ..._sortedStaff.map((member) {
-                    return Card(
-                      margin: const EdgeInsets.only(bottom: 12),
-                      child: ListTile(
-                        contentPadding: const EdgeInsets.symmetric(
-                          horizontal: 16,
-                          vertical: 8,
-                        ),
-                        title: Text(
-                          member.name,
-                          style: const TextStyle(
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                        subtitle: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            if (member.email != null && member.email!.isNotEmpty)
-                              Text(
-                                member.email!,
-                                style: TextStyle(
-                                  fontSize: 13,
-                                  color: AppColors.textSecondary,
-                                ),
-                              ),
-                            if (member.phone != null && member.phone!.isNotEmpty)
-                              Text(
-                                member.phone!,
-                                style: TextStyle(
-                                  fontSize: 13,
-                                  color: AppColors.textSecondary,
-                                ),
-                              ),
-                          ],
-                        ),
-                        trailing: _isActionLoading
-                            ? const SizedBox(
-                                width: 24,
-                                height: 24,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                ),
-                              )
-                            : Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  IconButton(
-                                    icon: const Icon(Icons.edit_outlined),
-                                    onPressed: () => _openEditDialog(member),
-                                    color: AppColors.primary500,
-                                  ),
-                                  IconButton(
-                                    icon: const Icon(Icons.delete_outline),
-                                    onPressed: () => _deleteStaff(member),
-                                    color: Colors.red,
-                                  ),
-                                ],
-                              ),
+                    return StaffPersonTile(
+                      name: member.name,
+                      secondaryLine: _contactSubtitle(
+                        email: member.email,
+                        phone: member.phone,
                       ),
+                      trailing: _isActionLoading
+                          ? const SizedBox(
+                              width: 24,
+                              height: 24,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: AppColors.primary500,
+                              ),
+                            )
+                          : Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                IconButton(
+                                  padding: EdgeInsets.zero,
+                                  constraints: const BoxConstraints(
+                                    minWidth: 36,
+                                    minHeight: 36,
+                                  ),
+                                  icon: const Icon(Icons.edit_outlined, size: 20),
+                                  onPressed: () => _openEditDialog(member),
+                                  color: AppColors.primary500,
+                                ),
+                                IconButton(
+                                  padding: EdgeInsets.zero,
+                                  constraints: const BoxConstraints(
+                                    minWidth: 36,
+                                    minHeight: 36,
+                                  ),
+                                  icon: const Icon(
+                                    Icons.delete_outline,
+                                    size: 20,
+                                  ),
+                                  onPressed: () => _deleteStaff(member),
+                                  color: AppColors.error500,
+                                ),
+                              ],
+                            ),
                     );
                   }),
                 ],

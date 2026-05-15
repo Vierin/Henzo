@@ -19,9 +19,11 @@ import '../../utils/color_hex.dart';
 import '../../widgets/dashboard/owner_checklist_card.dart';
 import '../../widgets/dashboard/dashboard_setup_card.dart';
 import '../../widgets/dashboard/owner_daily_schedule_block.dart';
+import '../../widgets/training/owner_session_edit_scope_dialog.dart';
 import '../owner_training_session_detail_screen.dart';
-import '../app_settings_screen.dart';
 import '../main_shell.dart';
+import '../settings_screen.dart';
+import '../../widgets/settings/owner_booking_period_sheet.dart';
 import '../notifications_screen.dart';
 import '../salon_setup_screen.dart';
 
@@ -145,14 +147,20 @@ class _DashboardScreenState extends State<DashboardScreen> {
     }
   }
 
-  Future<void> _openSettings() async {
-    final changed = await Navigator.push<bool>(
+  Future<void> _openStudioProfileSettings() async {
+    await Navigator.push<void>(
       context,
-      MaterialPageRoute(
-        builder: (_) =>
-            const AppSettingsScreen(initialSection: SettingsHubSection.studio),
-      ),
+      MaterialPageRoute(builder: (_) => const SettingsScreen()),
     );
+    if (mounted) await _loadData();
+  }
+
+  Future<void> _openOnlineBookingSettings() async {
+    final token = context.read<AuthService>().accessToken;
+    if (token == null || token.isEmpty) return;
+    final salon = await context.read<SalonCache>().getSalon(token);
+    if (!mounted || salon == null) return;
+    final changed = await showOwnerBookingPeriodSheet(context, salon: salon);
     if (changed == true && mounted) await _loadData();
   }
 
@@ -274,9 +282,17 @@ class _DashboardScreenState extends State<DashboardScreen> {
           },
           onEditSession: s.sessionId.isNotEmpty
               ? () async {
+                  final scope =
+                      await showOwnerSessionEditScopeDialog(context);
+                  if (!mounted || scope == null) return;
+                  final args = {
+                    ...s.toRouteArgs(),
+                    if (scope == OwnerSessionEditScope.thisAndFollowing)
+                      'applyToFollowing': true,
+                  };
                   final changed = await Navigator.of(context).pushNamed<bool>(
                     '/owner/session/edit',
-                    arguments: s.toRouteArgs(),
+                    arguments: args,
                   );
                   if (changed == true) {
                     if (!mounted) return;
@@ -292,9 +308,16 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   Future<void> _openEditCurrentSession(OwnerTrainingSession s) async {
     if (s.sessionId.isEmpty) return;
+    final scope = await showOwnerSessionEditScopeDialog(context);
+    if (!mounted || scope == null) return;
+    final args = {
+      ...s.toRouteArgs(),
+      if (scope == OwnerSessionEditScope.thisAndFollowing)
+        'applyToFollowing': true,
+    };
     final changed = await Navigator.of(
       context,
-    ).pushNamed<bool>('/owner/session/edit', arguments: s.toRouteArgs());
+    ).pushNamed<bool>('/owner/session/edit', arguments: args);
     if (changed == true && mounted) {
       context.read<OwnerSessionsCache>().invalidate();
       await _loadData();
@@ -755,10 +778,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
             .map(_humanizeChecklistStep)
             .toList(),
         onCreateTrainingTap: _openTrainingSetup,
-        onAddPhotoTap: _openSettings,
-        onAddLogoTap: _openSettings,
-        onBookingWindowTap: _openSettings,
-        onContactsTap: _openSettings,
+        onAddPhotoTap: _openStudioProfileSettings,
+        onAddLogoTap: _openStudioProfileSettings,
+        onBookingWindowTap: _openOnlineBookingSettings,
+        onContactsTap: _openStudioProfileSettings,
         onPublishTap: _publishStudio,
       ),
     );

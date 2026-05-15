@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../constants/colors.dart';
+import '../l10n/locale_provider.dart';
 import '../models/staff_member.dart';
 import '../services/auth_service.dart';
 import '../services/cache/salon_cache.dart';
@@ -9,6 +10,7 @@ import '../services/cache/owner_sessions_cache.dart';
 import '../services/dashboard_api_service.dart';
 import '../services/staff_api_service.dart';
 import '../utils/show_api_error.dart';
+import '../widgets/training/owner_session_cancel_scope_dialog.dart';
 
 /// Редактирование одного слота групповой тренировки (время, тренер, отмена).
 /// Не меняет карточку услуги — для этого вкладка «Услуги».
@@ -30,6 +32,7 @@ class _OwnerEditTrainingSessionScreenState
   bool _loadingSubscription = true;
   bool _isProPlan = false;
   bool _saving = false;
+  var _applyToFollowing = false;
 
   @override
   void didChangeDependencies() {
@@ -38,9 +41,10 @@ class _OwnerEditTrainingSessionScreenState
     final raw = ModalRoute.of(context)?.settings.arguments;
     if (raw is Map) {
       try {
-        _initial = OwnerTrainingSession.fromRouteArgs(
-          Map<String, dynamic>.from(raw),
-        );
+        final m = Map<String, dynamic>.from(raw);
+        _applyToFollowing = m['applyToFollowing'] == true;
+        m.remove('applyToFollowing');
+        _initial = OwnerTrainingSession.fromRouteArgs(m);
         _startsAt = _initial!.startsAt.toLocal();
         _trainerId = _initial!.trainerId;
       } catch (_) {
@@ -172,6 +176,9 @@ class _OwnerEditTrainingSessionScreenState
       if (mounted) Navigator.of(context).pop(false);
       return;
     }
+    if (_applyToFollowing) {
+      body['applyToFollowing'] = true;
+    }
 
     setState(() => _saving = true);
     try {
@@ -196,41 +203,29 @@ class _OwnerEditTrainingSessionScreenState
   Future<void> _cancelSession() async {
     final session = _initial;
     if (session == null) return;
-    final ok = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Отменить занятие?'),
-        content: const Text(
-          'Слот будет помечен как отменённый. Клиенты увидят отмену в расписании.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(ctx).pop(false),
-            child: const Text('Нет'),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.of(ctx).pop(true),
-            child: const Text('Отменить'),
-          ),
-        ],
-      ),
-    );
-    if (ok != true || !mounted) return;
+    final tr = context.read<LocaleProvider>().t;
+    final scope = await showOwnerSessionCancelScopeDialog(context);
+    if (!mounted || scope == null) return;
 
     final token = context.read<AuthService>().accessToken;
     if (token == null || token.isEmpty) return;
 
     setState(() => _saving = true);
     try {
+      final body = <String, dynamic>{'status': 'CANCELLED'};
+      if (scope == OwnerSessionCancelScope.thisAndFollowing) {
+        body['applyToFollowing'] = true;
+      }
       await DashboardApiService.patchOwnerTrainingSession(
         token,
         session.sessionId,
-        {'status': 'CANCELLED'},
+        body,
       );
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Занятие отменено')),
-      );
+      final msg = scope == OwnerSessionCancelScope.thisAndFollowing
+          ? tr('ownerSession.sessionCancelledBulk')
+          : tr('ownerSession.sessionCancelled');
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
       context.read<OwnerSessionsCache>().invalidate();
       Navigator.of(context).pop(true);
     } catch (e) {
@@ -252,6 +247,7 @@ class _OwnerEditTrainingSessionScreenState
 
     final completed = session.status.toUpperCase() == 'COMPLETED';
     final trainerReadOnly = completed || !_isProPlan;
+    final tr = context.read<LocaleProvider>().t;
 
     return Scaffold(
       backgroundColor: AppColors.backgroundSecondary,
@@ -264,6 +260,25 @@ class _OwnerEditTrainingSessionScreenState
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
+          if (_applyToFollowing)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 12),
+              child: Material(
+                color: AppColors.primary50,
+                borderRadius: BorderRadius.circular(12),
+                child: Padding(
+                  padding: const EdgeInsets.all(12),
+                  child: Text(
+                    tr('ownerSession.editBulkSessionsBanner'),
+                    style: const TextStyle(
+                      fontSize: 13,
+                      height: 1.35,
+                      color: AppColors.textPrimary,
+                    ),
+                  ),
+                ),
+              ),
+            ),
           if (completed)
             Padding(
               padding: const EdgeInsets.only(bottom: 16),

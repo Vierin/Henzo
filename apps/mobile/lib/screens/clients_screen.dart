@@ -5,13 +5,17 @@ import 'package:provider/provider.dart';
 
 import '../../constants/colors.dart';
 import '../../constants/layout.dart';
+import '../../l10n/locale_provider.dart';
 import '../../models/booking.dart';
 import '../../models/client_summary.dart';
+import '../../models/owner_studio_client.dart';
 import '../../services/auth_service.dart';
 import '../../services/cache/bookings_cache.dart';
 import '../../services/dashboard_api_service.dart';
 import '../../utils/client_identity.dart';
+import '../../utils/synthetic_guest.dart';
 import '../../widgets/app_search_prefix_icon.dart';
+import '../../widgets/clients/add_owner_client_sheet.dart';
 import '../../widgets/clients/client_list_tile.dart';
 import '../../widgets/clients/clients_filter_chip.dart';
 import 'client_detail_screen.dart';
@@ -103,12 +107,78 @@ class ClientsScreenState extends State<ClientsScreen> {
     });
   }
 
-  List<ClientSummary> _buildUniqueClients(List<Booking> bookings) {
+  bool? _guestFromEmail(String? email) {
+    final e = email?.toLowerCase();
+    if (e != null && e.endsWith('@henzo.local')) return true;
+    return null;
+  }
+
+  String _bookingRowName(
+    String? userName,
+    String? email,
+    String Function(String) tr,
+  ) {
+    if (isSyntheticGuestEmail(email)) {
+      return tr('ownerClient.anonymousRosterTitle');
+    }
+    final n = userName?.trim() ?? '';
+    if (n.isNotEmpty) return n;
+    final em = email?.trim();
+    if (em != null && em.isNotEmpty) return em;
+    return tr('ownerClient.fallbackClientName');
+  }
+
+  String _rosterRowTitle(OwnerStudioClientRow r, String Function(String) tr) {
+    if (isSyntheticGuestEmail(r.email) ||
+        (r.name ?? '').trim().toLowerCase() == 'walk-in') {
+      return tr('ownerClient.anonymousRosterTitle');
+    }
+    if (r.isGuest == true) {
+      final n = (r.name ?? '').trim();
+      if (n.isNotEmpty && !n.contains('@')) return n;
+      return tr('ownerClient.guestTag');
+    }
+    if ((r.name ?? '').trim().isNotEmpty) return r.name!.trim();
+    return r.email ?? r.phone ?? tr('ownerClient.fallbackClientName');
+  }
+
+  String _clientCardTitle(ClientSummary c, String Function(String) tr) {
+    if (isSyntheticGuestEmail(c.email) ||
+        c.name.trim().toLowerCase() == 'walk-in') {
+      return tr('ownerClient.anonymousRosterTitle');
+    }
+    if (c.isGuest == true) {
+      final n = c.name.trim();
+      if (n.isNotEmpty && !n.contains('@')) return n;
+      return tr('ownerClient.guestTag');
+    }
+    final n = c.name.trim();
+    if (n.isNotEmpty) return n;
+    return c.email?.trim() ??
+        c.phone?.trim() ??
+        tr('ownerClient.fallbackClientName');
+  }
+
+  String _clientCardSecondary(ClientSummary c, String Function(String) tr) {
+    final visits = tr(
+      'ownerClient.cardVisits',
+    ).replaceAll('{count}', '${c.visitsCount}');
+    if (c.isGuest == true && !isSyntheticGuestEmail(c.email)) {
+      return '$visits · ${tr('ownerClient.guestTag')}';
+    }
+    return visits;
+  }
+
+  List<ClientSummary> _buildUniqueClients(
+    List<Booking> bookings,
+    String Function(String) tr,
+  ) {
     final map = <String, ClientSummary>{};
     final now = DateTime.now();
     final threeMonthsAgo = now.subtract(const Duration(days: 90));
     for (final b in bookings) {
       final u = b.user;
+      if (isAnonymousRosterClient(email: u?.email, name: u?.name)) continue;
       final key = clientIdentityKey(b);
       if (key.isEmpty) continue;
       final existing = map[key];
@@ -121,7 +191,7 @@ class ClientsScreenState extends State<ClientsScreen> {
           : existing.lastVisit;
       map[key] = ClientSummary(
         key: key,
-        name: u?.name ?? u?.email ?? 'Клиент',
+        name: _bookingRowName(u?.name, email, tr),
         userId: userId,
         email: email,
         phone: phone,
@@ -129,6 +199,7 @@ class ClientsScreenState extends State<ClientsScreen> {
         isSleeper: latestVisit.isBefore(threeMonthsAgo),
         visitsCount: (existing?.visitsCount ?? 0) + 1,
         isBlocked: existing?.isBlocked ?? false,
+        isGuest: _guestFromEmail(email) ?? existing?.isGuest,
       );
     }
     final items = map.values.toList();
@@ -145,6 +216,7 @@ class ClientsScreenState extends State<ClientsScreen> {
       return;
     }
     try {
+      final tr = context.read<LocaleProvider>().t;
       final primaryBookings = await context.read<BookingsCache>().getBookings(
         token,
       );
@@ -166,27 +238,119 @@ class ClientsScreenState extends State<ClientsScreen> {
           .whereType<String>()
           .toSet();
       final bookings = <Booking>[...primaryBookings, ...enrollmentBookings];
+      final roster = await DashboardApiService.getOwnerStudioClients(token);
+      final now = DateTime.now();
+      final threeMonthsAgo = now.subtract(const Duration(days: 90));
+
+      ClientSummary mergeTwo(ClientSummary a, ClientSummary b) {
+        final last = a.lastVisit.isAfter(b.lastVisit)
+            ? a.lastVisit
+            : b.lastVisit;
+        final visits = a.visitsCount > b.visitsCount
+            ? a.visitsCount
+            : b.visitsCount;
+        final guest = a.isGuest == true || b.isGuest == true
+            ? true
+            : (a.isGuest ?? b.isGuest);
+        return ClientSummary(
+          key: a.key,
+          name: a.name.trim().isNotEmpty ? a.name : b.name,
+          userId: a.userId ?? b.userId,
+          email: a.email ?? b.email,
+          phone: a.phone ?? b.phone,
+          lastVisit: last,
+          isSleeper: last.isBefore(threeMonthsAgo),
+          visitsCount: visits,
+          isBlocked: a.isBlocked || b.isBlocked,
+          isGuest: guest,
+        );
+      }
+
+      final merged = <String, ClientSummary>{};
+      void addOrMerge(ClientSummary c) {
+        if (c.key.isEmpty) return;
+        final ex = merged[c.key];
+        merged[c.key] = ex == null ? c : mergeTwo(ex, c);
+      }
+
+      final bookingClients = _buildUniqueClients(bookings, tr);
+      for (final c in bookingClients) {
+        final userId = c.userId;
+        final email = c.email?.trim().toLowerCase();
+        final phone = c.phone?.trim();
+        final blocked =
+            (userId != null && blockedUserIds.contains(userId)) ||
+            (email != null && blockedEmails.contains(email)) ||
+            (phone != null && blockedPhones.contains(phone));
+        addOrMerge(
+          ClientSummary(
+            key: c.key,
+            name: c.name,
+            userId: c.userId,
+            email: c.email,
+            phone: c.phone,
+            lastVisit: c.lastVisit,
+            isSleeper: c.isSleeper,
+            visitsCount: c.visitsCount,
+            isBlocked: blocked,
+            isGuest: c.isGuest,
+          ),
+        );
+      }
+
+      for (final r in roster) {
+        if (isAnonymousRosterClient(email: r.email, name: r.name)) continue;
+        final displayName = _rosterRowTitle(r, tr);
+        final key = clientProfileIdentityKey(
+          userId: r.userId,
+          email: r.email,
+          phone: r.phone,
+          name: displayName,
+        );
+        final userId = r.userId;
+        final email = r.email?.trim().toLowerCase();
+        final phone = r.phone?.trim();
+        final blocked =
+            (blockedUserIds.contains(userId)) ||
+            (email != null && blockedEmails.contains(email)) ||
+            (phone != null && blockedPhones.contains(phone));
+        addOrMerge(
+          ClientSummary(
+            key: key,
+            name: displayName,
+            userId: r.userId,
+            email: r.email,
+            phone: r.phone,
+            lastVisit: r.lastVisit,
+            isSleeper: r.lastVisit.isBefore(threeMonthsAgo),
+            visitsCount: r.visitsCount,
+            isBlocked: blocked,
+            isGuest: r.isGuest,
+          ),
+        );
+      }
+
+      final byUserId = <String, ClientSummary>{};
+      final withoutUserId = <ClientSummary>[];
+      for (final c in merged.values) {
+        final uid = c.userId?.trim();
+        if (uid != null && uid.isNotEmpty) {
+          final ex = byUserId[uid];
+          byUserId[uid] = ex == null ? c : mergeTwo(ex, c);
+        } else {
+          withoutUserId.add(c);
+        }
+      }
+      final list = [...byUserId.values, ...withoutUserId]
+          .where(
+            (c) => !isAnonymousRosterClient(email: c.email, name: c.name),
+          )
+          .toList()
+        ..sort((a, b) => b.lastVisit.compareTo(a.lastVisit));
+
       if (mounted) {
         setState(() {
-          _clients = _buildUniqueClients(bookings).map((c) {
-            final userId = c.userId;
-            final email = c.email?.trim().toLowerCase();
-            final phone = c.phone?.trim();
-            return ClientSummary(
-              key: c.key,
-              name: c.name,
-              userId: c.userId,
-              email: c.email,
-              phone: c.phone,
-              lastVisit: c.lastVisit,
-              isSleeper: c.isSleeper,
-              visitsCount: c.visitsCount,
-              isBlocked:
-                  (userId != null && blockedUserIds.contains(userId)) ||
-                  (email != null && blockedEmails.contains(email)) ||
-                  (phone != null && blockedPhones.contains(phone)),
-            );
-          }).toList();
+          _clients = list;
           _isLoading = false;
         });
       }
@@ -300,6 +464,7 @@ class ClientsScreenState extends State<ClientsScreen> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final textTheme = theme.textTheme;
+    final tr = context.read<LocaleProvider>().t;
     final clients = _filteredClients;
     final rows = _flattenGrouped(clients);
     final canPop = Navigator.of(context).canPop();
@@ -383,7 +548,17 @@ class ClientsScreenState extends State<ClientsScreen> {
                         elevation: 0,
                         clipBehavior: Clip.antiAlias,
                         child: InkWell(
-                          onTap: () {},
+                          onTap: () async {
+                            final token = context
+                                .read<AuthService>()
+                                .accessToken;
+                            if (token == null || token.isEmpty) return;
+                            await showAddOwnerClientSheet(
+                              context,
+                              mode: AddOwnerClientMode.directoryOnly,
+                              onSuccess: _loadData,
+                            );
+                          },
                           customBorder: const CircleBorder(),
                           child: const Center(
                             child: Icon(
@@ -556,6 +731,7 @@ class ClientsScreenState extends State<ClientsScreen> {
                                     padding: EdgeInsets.only(
                                       top: isFirst ? 0 : 14,
                                       bottom: 6,
+                                      left: 12,
                                     ),
                                     child: Align(
                                       alignment: Alignment.centerLeft,
@@ -564,10 +740,11 @@ class ClientsScreenState extends State<ClientsScreen> {
                                         style:
                                             textTheme.titleSmall?.copyWith(
                                               fontWeight: FontWeight.w700,
+                                              fontSize: 16,
                                               color: AppColors.textPrimary,
                                             ) ??
                                             const TextStyle(
-                                              fontSize: 15,
+                                              fontSize: 16,
                                               fontWeight: FontWeight.w700,
                                               color: AppColors.textPrimary,
                                             ),
@@ -577,8 +754,8 @@ class ClientsScreenState extends State<ClientsScreen> {
                                 }
                                 final c = row.client!;
                                 return ClientListTile(
-                                  name: c.name,
-                                  visitsCount: c.visitsCount,
+                                  name: _clientCardTitle(c, tr),
+                                  secondaryLine: _clientCardSecondary(c, tr),
                                   onTap: () => Navigator.of(context).push(
                                     MaterialPageRoute(
                                       builder: (_) => ClientDetailScreen(

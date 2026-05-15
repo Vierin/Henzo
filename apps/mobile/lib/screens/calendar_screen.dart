@@ -11,6 +11,7 @@ import '../../services/dashboard_api_service.dart';
 import '../../utils/show_api_error.dart';
 import '../../utils/color_hex.dart';
 import '../../widgets/dashboard/owner_daily_schedule_block.dart';
+import '../../widgets/training/owner_session_edit_scope_dialog.dart';
 import 'main_shell.dart';
 import 'owner_training_session_detail_screen.dart';
 
@@ -267,9 +268,18 @@ class CalendarScreenState extends State<CalendarScreen> {
         });
         return;
       }
+      _suppressStripSchedulePageChanged = true;
       _dayPagerController.jumpToPage(_pageForDay(normalized));
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted) _syncStripPagerDayFromController();
+        if (!mounted) return;
+        _clearStripScheduleDebounceTimer();
+        _syncStripPagerDayFromController();
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) {
+            _suppressStripSchedulePageChanged = false;
+            _clearStripScheduleDebounceTimer();
+          }
+        });
       });
     }
 
@@ -547,8 +557,12 @@ class CalendarScreenState extends State<CalendarScreen> {
   Widget _expandCollapseButton() {
     return OutlinedButton(
       onPressed: () {
+        final wasExpanded = _isMonthExpanded;
+        if (!wasExpanded) {
+          _clearStripScheduleDebounceTimer();
+        }
         setState(() => _isMonthExpanded = !_isMonthExpanded);
-        if (!_isMonthExpanded) {
+        if (wasExpanded) {
           WidgetsBinding.instance.addPostFrameCallback((_) {
             if (mounted) _syncStripPagerDayFromController();
           });
@@ -820,13 +834,29 @@ class CalendarScreenState extends State<CalendarScreen> {
                                                     },
                                                     onEditSession:
                                                         s.sessionId.isNotEmpty
-                                                        ? () {
+                                                        ? () async {
+                                                            final scope =
+                                                                await showOwnerSessionEditScopeDialog(
+                                                              context,
+                                                            );
+                                                            if (!mounted ||
+                                                                scope ==
+                                                                    null) {
+                                                              return;
+                                                            }
+                                                            final args = {
+                                                              ...s.toRouteArgs(),
+                                                              if (scope ==
+                                                                  OwnerSessionEditScope
+                                                                      .thisAndFollowing)
+                                                                'applyToFollowing':
+                                                                    true,
+                                                            };
                                                             shell
                                                                 ?.navigateToTab0Route(
-                                                                  '/owner/session/edit',
-                                                                  arguments: s
-                                                                      .toRouteArgs(),
-                                                                );
+                                                              '/owner/session/edit',
+                                                              arguments: args,
+                                                            );
                                                           }
                                                         : null,
                                                   ),

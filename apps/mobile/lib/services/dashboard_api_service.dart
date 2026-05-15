@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 
 import 'api_client.dart';
 import '../models/booking.dart';
+import '../models/owner_studio_client.dart';
 import '../models/salon.dart';
 import '../models/subscription.dart';
 import '../models/time_block.dart';
@@ -936,6 +937,9 @@ class DashboardApiService {
     String? name,
     String? email,
     String? phone,
+    bool sendConfirmationEmail = false,
+    bool anonymousSpot = false,
+    String? locale,
   }) async {
     await ApiClient.post(
       '/fitness/owner/training-sessions/$sessionId/enrollments',
@@ -945,6 +949,60 @@ class DashboardApiService {
         if (name != null && name.isNotEmpty) 'name': name,
         if (email != null && email.isNotEmpty) 'email': email,
         if (phone != null && phone.isNotEmpty) 'phone': phone,
+        'sendConfirmationEmail': sendConfirmationEmail,
+        'anonymousSpot': anonymousSpot,
+        if (locale != null && locale.isNotEmpty) 'locale': locale,
+      },
+    );
+  }
+
+  static Future<List<OwnerStudioClientRow>> getOwnerStudioClients(
+    String accessToken,
+  ) async {
+    final raw = await ApiClient.get(
+      '/fitness/owner/studio-clients',
+      accessToken,
+    );
+    if (raw is! List) return [];
+    return raw
+        .map((e) => OwnerStudioClientRow.fromJson(
+              Map<String, dynamic>.from(e as Map),
+            ))
+        .toList();
+  }
+
+  static Future<List<OwnerStudioClientSearchHit>> searchOwnerStudioClients(
+    String accessToken,
+    String query,
+  ) async {
+    final q = Uri.encodeComponent(query.trim());
+    final raw = await ApiClient.get(
+      '/fitness/owner/studio-clients/search?q=$q',
+      accessToken,
+    );
+    if (raw is! List) return [];
+    return raw
+        .map((e) => OwnerStudioClientSearchHit.fromJson(
+              Map<String, dynamic>.from(e as Map),
+            ))
+        .toList();
+  }
+
+  static Future<void> createOwnerStudioDirectoryClient(
+    String accessToken, {
+    String? name,
+    String? email,
+    String? phone,
+    String? notes,
+  }) async {
+    await ApiClient.post(
+      '/fitness/owner/studio-clients',
+      accessToken,
+      body: {
+        if (name != null && name.isNotEmpty) 'name': name,
+        if (email != null && email.isNotEmpty) 'email': email,
+        if (phone != null && phone.isNotEmpty) 'phone': phone,
+        if (notes != null && notes.isNotEmpty) 'notes': notes,
       },
     );
   }

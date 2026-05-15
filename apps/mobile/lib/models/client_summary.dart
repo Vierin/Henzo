@@ -10,6 +10,7 @@ class ClientSummary {
     required this.isSleeper,
     required this.visitsCount,
     required this.isBlocked,
+    this.isGuest,
   });
 
   final String key;
@@ -21,4 +22,6 @@ class ClientSummary {
   final bool isSleeper;
   final int visitsCount;
   final bool isBlocked;
+  /// From salon roster API; null if unknown (legacy booking-only row).
+  final bool? isGuest;
 }

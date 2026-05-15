@@ -12,7 +12,7 @@ import { AnalyticsService } from '../analytics/analytics.service';
 @Injectable()
 export class StudiosService {
   private static readonly MAX_STUDIO_PHOTOS = 5;
-  private static readonly DEFAULT_BOOKING_PERIOD_DAYS = 14;
+  private static readonly DEFAULT_BOOKING_PERIOD_DAYS = 28;
   private static readonly MAX_BOOKING_PERIOD_DAYS = 60;
 
   constructor(
@@ -25,10 +25,16 @@ export class StudiosService {
   private normalizeReminderSettings(input: any): Record<string, unknown> {
     const base = input && typeof input === 'object' ? { ...input } : {};
     const raw = (base as Record<string, unknown>)['bookingPeriodDays'];
-    let parsed = 14;
+    let parsed = StudiosService.DEFAULT_BOOKING_PERIOD_DAYS;
     if (typeof raw === 'number') parsed = Math.floor(raw);
-    if (typeof raw === 'string') parsed = Number.parseInt(raw, 10) || 14;
-    if (Number.isNaN(parsed)) parsed = 14;
+    if (typeof raw === 'string') {
+      parsed =
+        Number.parseInt(raw, 10) ||
+        StudiosService.DEFAULT_BOOKING_PERIOD_DAYS;
+    }
+    if (Number.isNaN(parsed)) {
+      parsed = StudiosService.DEFAULT_BOOKING_PERIOD_DAYS;
+    }
     (base as Record<string, unknown>)['bookingPeriodDays'] = Math.max(
       1,
       Math.min(60, parsed),

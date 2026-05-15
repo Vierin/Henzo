@@ -2,15 +2,20 @@ import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
 import {
   Prisma,
   SessionEnrollmentStatus,
+  StudioClientSource,
   TrainingSessionStatus,
-  UserRole,
 } from '@prisma/client';
 import { AuthService } from '../auth/auth.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { AnalyticsService } from '../analytics/analytics.service';
+import { EmailService } from '../email/email.service';
 import { CreateRecurringTrainingSessionsDto } from './dto/create-recurring-training-sessions.dto';
 import { UpdateOwnerTrainingSessionDto } from './dto/update-owner-training-session.dto';
 import { computeTrainingDisplayColor } from '../trainings/training-color.util';
+import {
+  isDeliverableClientEmail,
+  StudioClientsService,
+} from './studio-clients.service';
 
 type SessionStatus = 'ACTIVE' | 'CANCELLED' | 'COMPLETED';
 
@@ -63,6 +68,8 @@ export class FitnessSessionsService {
     private readonly prisma: PrismaService,
     private readonly authService: AuthService,
     private readonly analytics: AnalyticsService,
+    private readonly studioClients: StudioClientsService,
+    private readonly emailService: EmailService,
   ) {}
 
   /**
@@ -116,7 +123,7 @@ export class FitnessSessionsService {
   }
 
   private extractBookingPeriodDays(reminderSettings: unknown): number {
-    const fallback = 14;
+    const fallback = 28;
     if (!reminderSettings || typeof reminderSettings !== 'object')
       return fallback;
     const raw = (reminderSettings as Record<string, unknown>)[
@@ -412,6 +419,9 @@ export class FitnessSessionsService {
       return { success: true };
     }
 
+    const applyToFollowing = dto.applyToFollowing === true;
+    const anchorOriginalStart = session.startsAt;
+
     let startsAt = session.startsAt;
     let endsAt = session.endsAt;
     let trainerId: string | null = session.trainerId;
@@ -447,14 +457,99 @@ export class FitnessSessionsService {
       status = dto.status;
     }
 
-    if (status === 'ACTIVE') {
+    if (!applyToFollowing) {
+      if (status === TrainingSessionStatus.ACTIVE) {
+        const overlapWhere: Prisma.TrainingSessionWhereInput = {
+          studioId: session.studioId,
+          id: { not: sessionId },
+          status: TrainingSessionStatus.ACTIVE,
+          startsAt: { lt: endsAt },
+          endsAt: { gt: startsAt },
+          ...(trainerId ? { trainerId } : {}),
+        };
+        const overlap = await this.prisma.trainingSession.findFirst({
+          where: overlapWhere,
+          select: { id: true },
+        });
+        if (overlap) {
+          throw new HttpException(
+            'Time slot conflicts with another session',
+            HttpStatus.BAD_REQUEST,
+          );
+        }
+      }
+
+      await this.prisma.trainingSession.update({
+        where: { id: sessionId },
+        data: {
+          startsAt,
+          endsAt,
+          trainerId,
+          status,
+        },
+      });
+
+      return { success: true };
+    }
+
+    const timeDeltaMs =
+      dto.startsAt !== undefined
+        ? startsAt.getTime() - anchorOriginalStart.getTime()
+        : null;
+
+    const rows = await this.prisma.trainingSession.findMany({
+      where: {
+        studioId: session.studioId,
+        trainingId: session.trainingId,
+        startsAt: { gte: anchorOriginalStart },
+        status: TrainingSessionStatus.ACTIVE,
+      },
+      orderBy: { startsAt: 'asc' },
+      include: { Training: { select: { duration: true } } },
+    });
+
+    const batchIds = rows.map((r) => r.id);
+
+    type Plan = {
+      id: string;
+      startsAt: Date;
+      endsAt: Date;
+      trainerId: string | null;
+      status: TrainingSessionStatus;
+    };
+
+    const planned: Plan[] = rows.map((row) => {
+      let ns = row.startsAt;
+      let ne = row.endsAt;
+      if (timeDeltaMs !== null) {
+        ns = new Date(row.startsAt.getTime() + timeDeltaMs);
+        ne = new Date(ns);
+        ne.setMinutes(ne.getMinutes() + row.Training.duration);
+      }
+      const tid =
+        dto.trainerId !== undefined ? trainerId : row.trainerId;
+      const st =
+        dto.status !== undefined ? status : row.status;
+      return {
+        id: row.id,
+        startsAt: ns,
+        endsAt: ne,
+        trainerId: tid,
+        status: st,
+      };
+    });
+
+    for (const p of planned) {
+      if (p.status !== TrainingSessionStatus.ACTIVE) {
+        continue;
+      }
       const overlapWhere: Prisma.TrainingSessionWhereInput = {
         studioId: session.studioId,
-        id: { not: sessionId },
-        status: 'ACTIVE',
-        startsAt: { lt: endsAt },
-        endsAt: { gt: startsAt },
-        ...(trainerId ? { trainerId } : {}),
+        id: { notIn: batchIds },
+        status: TrainingSessionStatus.ACTIVE,
+        startsAt: { lt: p.endsAt },
+        endsAt: { gt: p.startsAt },
+        ...(p.trainerId ? { trainerId: p.trainerId } : {}),
       };
       const overlap = await this.prisma.trainingSession.findFirst({
         where: overlapWhere,
@@ -468,15 +563,19 @@ export class FitnessSessionsService {
       }
     }
 
-    await this.prisma.trainingSession.update({
-      where: { id: sessionId },
-      data: {
-        startsAt,
-        endsAt,
-        trainerId,
-        status,
-      },
-    });
+    await this.prisma.$transaction(
+      planned.map((p) =>
+        this.prisma.trainingSession.update({
+          where: { id: p.id },
+          data: {
+            startsAt: p.startsAt,
+            endsAt: p.endsAt,
+            trainerId: p.trainerId,
+            status: p.status,
+          },
+        }),
+      ),
+    );
 
     return { success: true };
   }
@@ -567,52 +666,38 @@ export class FitnessSessionsService {
       name?: string;
       email?: string;
       phone?: string;
+      sendConfirmationEmail?: boolean;
+      anonymousSpot?: boolean;
+      locale?: 'en' | 'ru' | 'vi';
     },
   ) {
     const { session } = await this.getOwnedSessionOrThrow(
       authHeader,
       sessionId,
     );
+    const studioId = session.studioId;
     let targetUserId = payload.userId?.trim();
 
-    if (!targetUserId) {
-      const email = payload.email?.trim().toLowerCase();
-      const phone = payload.phone?.trim();
-      const name = payload.name?.trim() || null;
-      if (!email && !phone) {
+    if (payload.anonymousSpot) {
+      const u = await this.studioClients.createAnonymousSpotUser();
+      targetUserId = u.id;
+    } else if (!targetUserId) {
+      const name = payload.name?.trim() || '';
+      const emailRaw = payload.email?.trim().toLowerCase() || '';
+      if (name.length === 0 || emailRaw.length === 0) {
         throw new HttpException(
-          'email or phone is required',
+          'name and email are required',
           HttpStatus.BAD_REQUEST,
         );
       }
-
-      let user = email
-        ? await this.prisma.user.findUnique({
-            where: { email },
-            select: { id: true },
-          })
-        : null;
-      if (!user && phone) {
-        user = await this.prisma.user.findFirst({
-          where: { phone },
-          select: { id: true },
-        });
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailRaw)) {
+        throw new HttpException('invalid email', HttpStatus.BAD_REQUEST);
       }
-      if (!user) {
-        const generatedEmail =
-          email ??
-          `guest-${Date.now()}-${Math.floor(Math.random() * 100000)}@henzo.local`;
-        user = await this.prisma.user.create({
-          data: {
-            email: generatedEmail,
-            name,
-            phone: phone ?? null,
-            role: UserRole.CLIENT,
-            isGuest: true,
-          },
-          select: { id: true },
-        });
-      }
+      const user = await this.studioClients.findOrCreateClientUser({
+        name,
+        email: emailRaw,
+        phone: payload.phone?.trim() || null,
+      });
       targetUserId = user.id;
     }
 
@@ -655,15 +740,98 @@ export class FitnessSessionsService {
       }
     });
 
+    await this.studioClients.ensureStudioClient(
+      studioId,
+      targetUserId!,
+      StudioClientSource.ENROLLMENT,
+    );
+
     if (wasCreated) {
       this.analytics.track(targetUserId!, 'booking_created', {
         session_id: sessionId,
-        studio_id: (session as any).studioId,
+        studio_id: studioId,
         source: 'owner_added',
       });
     }
 
+    try {
+      if (payload.sendConfirmationEmail && !payload.anonymousSpot) {
+        await this.sendEnrollmentConfirmationEmail(
+          sessionId,
+          targetUserId!,
+          payload.locale,
+        );
+      }
+    } catch (e) {
+      console.error('post-enrollment email failed:', e);
+    }
+
     return { success: true };
+  }
+
+  private async sendEnrollmentConfirmationEmail(
+    sessionId: string,
+    userId: string,
+    locale?: 'en' | 'ru' | 'vi',
+  ) {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { email: true, name: true },
+    });
+    if (!user || !isDeliverableClientEmail(user.email)) {
+      return;
+    }
+    const row = await this.prisma.trainingSession.findUnique({
+      where: { id: sessionId },
+      include: {
+        Studio: {
+          select: {
+            name: true,
+            address: true,
+            phone: true,
+            timezone: true,
+          },
+        },
+        Training: { select: { name: true, duration: true, price: true } },
+        Trainer: { select: { name: true } },
+      },
+    });
+    if (!row?.Studio) {
+      return;
+    }
+    const salonTz = row.Studio.timezone ?? 'Asia/Ho_Chi_Minh';
+    const loc =
+      locale === 'ru' ? 'ru-RU' : locale === 'vi' ? 'vi-VN' : 'en-US';
+    const dateFmt = new Intl.DateTimeFormat(loc, {
+      timeZone: salonTz,
+      weekday: 'short',
+      month: 'short',
+      day: 'numeric',
+    }).format(row.startsAt);
+    const timeFmt = new Intl.DateTimeFormat(loc, {
+      timeZone: salonTz,
+      hour: '2-digit',
+      minute: '2-digit',
+    }).format(row.startsAt);
+
+    await this.emailService.sendBookingConfirmation(
+      user.email,
+      (user.name ?? user.email).trim(),
+      {
+        serviceName: row.Training?.name ?? 'Class',
+        date: dateFmt,
+        time: timeFmt,
+        duration: row.Training?.duration ?? 60,
+        price: Number(row.Training?.price ?? 0),
+        salonName: row.Studio.name,
+        salonAddress: row.Studio.address ?? undefined,
+        salonPhone: row.Studio.phone ?? undefined,
+        staffName: row.Trainer?.name,
+        dateTime: row.startsAt,
+        salonTimezone: salonTz,
+        locale,
+      },
+    );
   }
 
   async updateOwnerEnrollmentStatus(

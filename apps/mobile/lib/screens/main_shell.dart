@@ -49,10 +49,7 @@ class MainShellState extends State<MainShell> {
       _buildHomeNavigator(),
       CalendarScreen(key: _scheduleCalendarKey),
       ClientsScreen(key: _clientsTabKey),
-      const AppSettingsScreen(
-        initialSection: SettingsHubSection.studio,
-        embeddedInShell: true,
-      ),
+      const AppSettingsScreen(embeddedInShell: true),
     ];
     WidgetsBinding.instance.addPostFrameCallback((_) => _loadSalon());
   }

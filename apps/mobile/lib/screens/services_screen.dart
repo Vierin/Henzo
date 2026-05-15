@@ -11,7 +11,9 @@ import '../../services/cache/salon_cache.dart';
 import '../../services/cache/services_staff_cache.dart';
 import '../../services/services_api_service.dart';
 import '../../utils/show_api_error.dart';
+import '../../constants/layout.dart';
 import '../../widgets/app_search_prefix_icon.dart';
+import '../../widgets/training/owner_training_catalog_card.dart';
 import 'add_training_screen.dart';
 
 enum ServicesSort {
@@ -27,11 +29,9 @@ class ServicesScreen extends StatefulWidget {
   const ServicesScreen({
     super.key,
     this.openCreateOnStart = false,
-    this.trainingMode = false,
   });
 
   final bool openCreateOnStart;
-  final bool trainingMode;
 
   @override
   State<ServicesScreen> createState() => _ServicesScreenState();
@@ -424,18 +424,20 @@ class _ServicesScreenState extends State<ServicesScreen> {
           onPressed: () => Navigator.of(context).pop(),
           color: AppColors.textPrimary,
         ),
-        title: const Text(
-          'Тренировки',
-          style: TextStyle(
+        title: Text(
+          locale.t('settings.owner.trainings'),
+          style: const TextStyle(
             fontSize: 24,
-            fontWeight: FontWeight.w600,
+            fontWeight: FontWeight.w700,
+            letterSpacing: -0.3,
             color: AppColors.textPrimary,
           ),
         ),
-        centerTitle: true,
-        backgroundColor: AppColors.backgroundPrimary,
+        centerTitle: false,
+        backgroundColor: AppColors.backgroundSecondary,
         foregroundColor: AppColors.textPrimary,
         elevation: 0,
+        scrolledUnderElevation: 0,
         actions: [
           if (_salon != null)
             IconButton(
@@ -633,17 +635,28 @@ class _ServicesScreenState extends State<ServicesScreen> {
                     )
                   else
                     SliverPadding(
-                      padding: const EdgeInsets.fromLTRB(12, 0, 12, 96),
+                      padding: const EdgeInsets.fromLTRB(
+                        kScreenPaddingHorizontal,
+                        0,
+                        kScreenPaddingHorizontal,
+                        96,
+                      ),
                       sliver: SliverList(
                         delegate: SliverChildBuilderDelegate((context, index) {
                           final item = _filteredAndSortedServices[index];
-                          return _ServiceCard(
-                            item: item,
-                            formatPrice: formatVnd,
-                            formatDuration: _formatDuration,
-                            isActionLoading: _isActionLoading,
-                            onEdit: () => _openEditTrainingPage(item),
-                            onDelete: () => _deleteService(item),
+                          return GestureDetector(
+                            onLongPress: _isActionLoading
+                                ? null
+                                : () => _deleteService(item),
+                            child: OwnerTrainingCatalogCard(
+                              item: item,
+                              durationLabel: _formatDuration(item.duration),
+                              priceLabel: formatVnd(item.price),
+                              subtitle: item.categoryName?.trim() ?? '',
+                              onTap: _isActionLoading
+                                  ? () {}
+                                  : () => _openEditTrainingPage(item),
+                            ),
                           );
                         }, childCount: _filteredAndSortedServices.length),
                       ),
@@ -1101,144 +1114,3 @@ class _EditTrainingScreenState extends State<_EditTrainingScreen> {
   }
 }
 
-class _ServiceCard extends StatelessWidget {
-  const _ServiceCard({
-    required this.item,
-    required this.formatPrice,
-    required this.formatDuration,
-    required this.isActionLoading,
-    required this.onEdit,
-    required this.onDelete,
-  });
-
-  final ServiceItem item;
-  final String Function(double?) formatPrice;
-  final String Function(int?) formatDuration;
-  final bool isActionLoading;
-  final VoidCallback onEdit;
-  final VoidCallback onDelete;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      decoration: BoxDecoration(
-        color: AppColors.backgroundPrimary,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: AppColors.borderPrimary),
-        boxShadow: const [
-          BoxShadow(
-            color: Color(0x10000000),
-            blurRadius: 10,
-            offset: Offset(0, 3),
-          ),
-        ],
-      ),
-      clipBehavior: Clip.antiAlias,
-      child: IntrinsicHeight(
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Container(
-              width: 4,
-              decoration: const BoxDecoration(color: AppColors.primary500),
-            ),
-            Expanded(
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(14, 14, 8, 14),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      item.displayName,
-                      style: const TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w800,
-                        height: 1.25,
-                        color: AppColors.textPrimary,
-                      ),
-                    ),
-                    if (item.tagNames.isNotEmpty) ...[
-                      const SizedBox(height: 8),
-                      Wrap(
-                        spacing: 6,
-                        runSpacing: 6,
-                        children: item.tagNames.map((tag) {
-                          return Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 8,
-                              vertical: 4,
-                            ),
-                            decoration: BoxDecoration(
-                              color: AppColors.primary50,
-                              borderRadius: BorderRadius.circular(8),
-                              border: Border.all(color: AppColors.primary200),
-                            ),
-                            child: Text(
-                              tag,
-                              style: const TextStyle(
-                                fontSize: 11,
-                                fontWeight: FontWeight.w600,
-                                color: AppColors.primary700,
-                              ),
-                            ),
-                          );
-                        }).toList(),
-                      ),
-                    ],
-                    const SizedBox(height: 10),
-                    Row(
-                      children: [
-                        Text(
-                          formatDuration(item.duration),
-                          style: TextStyle(
-                            fontSize: 13,
-                            fontWeight: FontWeight.w600,
-                            color: AppColors.textSecondary,
-                          ),
-                        ),
-                        const Spacer(),
-                        Text(
-                          formatPrice(item.price),
-                          style: const TextStyle(
-                            fontSize: 17,
-                            fontWeight: FontWeight.w800,
-                            letterSpacing: -0.2,
-                            color: AppColors.primary600,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.only(right: 4, top: 4),
-              child: Opacity(
-                opacity: isActionLoading ? 0.45 : 1,
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    IconButton(
-                      icon: const Icon(Icons.edit_outlined, size: 22),
-                      onPressed: isActionLoading ? null : onEdit,
-                      color: AppColors.primary500,
-                      visualDensity: VisualDensity.compact,
-                    ),
-                    IconButton(
-                      icon: const Icon(Icons.delete_outline, size: 22),
-                      onPressed: isActionLoading ? null : onDelete,
-                      color: AppColors.error600,
-                      visualDensity: VisualDensity.compact,
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
