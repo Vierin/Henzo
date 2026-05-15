@@ -589,11 +589,9 @@ class ClientsScreenState extends State<ClientsScreen> {
                     fontSize: 14,
                     color: AppColors.textTertiary,
                   ),
-                  prefixIcon: const AppSearchPrefixIcon(width: 14, height: 14),
-                  prefixIconConstraints: const BoxConstraints(
-                    minWidth: 28,
-                    minHeight: 40,
-                  ),
+                  prefixIcon: const AppSearchPrefixIcon(),
+                  prefixIconConstraints: AppSearchPrefixIcon.prefixConstraints(),
+                  isDense: true,
                   filled: true,
                   fillColor: AppColors.backgroundPrimary,
                   border: OutlineInputBorder(

@@ -540,10 +540,9 @@ class _ServicesScreenState extends State<ServicesScreen> {
                             decoration: InputDecoration(
                               hintText: locale.t('servicesScreen.searchByName'),
                               prefixIcon: const AppSearchPrefixIcon(),
-                              prefixIconConstraints: const BoxConstraints(
-                                minWidth: 40,
-                                minHeight: 40,
-                              ),
+                              prefixIconConstraints:
+                                  AppSearchPrefixIcon.prefixConstraints(),
+                              isDense: true,
                               filled: true,
                               fillColor: AppColors.backgroundPrimary,
                               border: OutlineInputBorder(

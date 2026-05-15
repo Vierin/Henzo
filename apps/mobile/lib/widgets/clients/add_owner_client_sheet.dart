@@ -662,7 +662,10 @@ class _EnrollParticipantSheetState extends State<_EnrollParticipantSheet> {
               enabled: !_saving,
               decoration: InputDecoration(
                 labelText: tr('ownerClient.searchClientsPlaceholder'),
-                prefixIcon: const AppSearchPrefixIcon(width: 14, height: 14),
+                prefixIcon: const AppSearchPrefixIcon(),
+                prefixIconConstraints:
+                    AppSearchPrefixIcon.prefixConstraints(),
+                isDense: true,
               ),
             ),
             const SizedBox(height: 6),

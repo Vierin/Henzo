@@ -840,25 +840,16 @@ class _ClientActionTile extends StatelessWidget {
       height: _tileHeight,
       child: Material(
         color: filled ? AppColors.primary500 : AppColors.backgroundPrimary,
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(12),
         child: InkWell(
           onTap: effectiveTap,
-          borderRadius: BorderRadius.circular(14),
+          borderRadius: BorderRadius.circular(12),
           child: DecoratedBox(
             decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(14),
+              borderRadius: BorderRadius.circular(12),
               border: filled
                   ? null
                   : Border.all(color: AppColors.borderPrimary),
-              boxShadow: filled
-                  ? const <BoxShadow>[
-                      BoxShadow(
-                        color: Color(0x33F15942),
-                        blurRadius: 8,
-                        offset: Offset(0, 3),
-                      ),
-                    ]
-                  : null,
             ),
             child: Opacity(
               opacity: enabled ? 1 : 0.45,
