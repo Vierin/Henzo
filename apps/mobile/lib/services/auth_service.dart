@@ -542,6 +542,7 @@ class AuthService extends ChangeNotifier {
   Future<AuthUiResult> updateProfile({
     required String name,
     required String phone,
+    String? avatarUrl,
   }) async {
     final token = accessToken;
     if (token == null) {
@@ -559,7 +560,11 @@ class AuthService extends ChangeNotifier {
           'Content-Type': 'application/json',
           'authorization': 'Bearer $token',
         },
-        body: json.encode({'name': name.trim(), 'phone': phone.trim()}),
+        body: json.encode({
+          'name': name.trim(),
+          'phone': phone.trim(),
+          if (avatarUrl != null) 'avatarUrl': avatarUrl.trim(),
+        }),
       );
       if (response.statusCode == 200) {
         final data = json.decode(response.body) as Map<String, dynamic>;

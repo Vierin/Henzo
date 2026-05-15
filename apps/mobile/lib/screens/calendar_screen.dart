@@ -4,6 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../constants/colors.dart';
 import '../../constants/layout.dart';
+import '../../models/salon.dart';
+import '../../models/training_location_item.dart';
 import '../../services/auth_service.dart';
 import '../../services/cache/salon_cache.dart';
 import '../../services/cache/owner_sessions_cache.dart';
@@ -42,6 +44,7 @@ class CalendarScreen extends StatefulWidget {
 }
 
 class CalendarScreenState extends State<CalendarScreen> {
+  Salon? _salon;
   final Map<int, int> _sessionCountByDay = <int, int>{};
   final Map<int, List<OwnerTrainingSession>> _sessionsByDay =
       <int, List<OwnerTrainingSession>>{};
@@ -169,6 +172,7 @@ class CalendarScreenState extends State<CalendarScreen> {
       }
       if (mounted) {
         setState(() {
+          _salon = salon;
           _sessionsByDay
             ..clear()
             ..addAll(grouped);
@@ -184,6 +188,16 @@ class CalendarScreenState extends State<CalendarScreen> {
         showApiError(context, e);
       }
     }
+  }
+
+  List<TrainingLocationItem> _studioLocations() {
+    final salon = _salon;
+    if (salon == null) return const [];
+    final main = salon.name?.trim();
+    return TrainingLocationItem.listFromSalon(
+      salon,
+      mainStudioName: (main != null && main.isNotEmpty) ? main : 'Studio',
+    );
   }
 
   String? _ownerTrainerFallback() {
@@ -782,6 +796,7 @@ class CalendarScreenState extends State<CalendarScreen> {
                                     emptyMessage:
                                         'No trainings for selected day',
                                     ownerTrainerFallback: trainerFb,
+                                    studioLocations: _studioLocations(),
                                     onSessionTap: (s) async {
                                       final token = context
                                           .read<AuthService>()

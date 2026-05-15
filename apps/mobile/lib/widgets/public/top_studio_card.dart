@@ -12,6 +12,7 @@ class TopStudioCard extends StatelessWidget {
     required this.isFavoriteLoading,
     required this.onToggleFavorite,
     required this.onTap,
+    this.homeLayout = false,
   });
 
   final PublicStudioPreview studio;
@@ -19,11 +20,22 @@ class TopStudioCard extends StatelessWidget {
   final bool isFavoriteLoading;
   final VoidCallback onToggleFavorite;
   final VoidCallback onTap;
+  final bool homeLayout;
+
+  String? get _distanceLabel {
+    final km = studio.distanceKm;
+    if (km == null) return null;
+    if (homeLayout) {
+      final mi = km * 0.621371;
+      return '${mi.toStringAsFixed(1)} mi';
+    }
+    return '${km.toStringAsFixed(1)} km';
+  }
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      width: 244,
+      width: homeLayout ? 268 : 244,
       margin: const EdgeInsets.only(right: 12),
       child: Material(
         color: Colors.transparent,
@@ -64,7 +76,7 @@ class TopStudioCard extends StatelessWidget {
                                   ),
                                 ),
                         ),
-                        if (studio.rating > 0)
+                        if (!homeLayout && studio.rating > 0)
                           Positioned(
                             left: 8,
                             top: 8,
@@ -94,6 +106,37 @@ class TopStudioCard extends StatelessWidget {
                                     ),
                                   ),
                                 ],
+                              ),
+                            ),
+                          ),
+                        if (homeLayout)
+                          Positioned(
+                            left: 10,
+                            bottom: 10,
+                            child: Container(
+                              width: 36,
+                              height: 36,
+                              decoration: BoxDecoration(
+                                color: AppColors.backgroundPrimary,
+                                shape: BoxShape.circle,
+                                border: Border.all(
+                                  color: Colors.white,
+                                  width: 2,
+                                ),
+                              ),
+                              child: ClipOval(
+                                child:
+                                    studio.photoUrl != null &&
+                                        studio.photoUrl!.isNotEmpty
+                                    ? CachedSalonNetworkImage(
+                                        imageUrl: studio.photoUrl!,
+                                        fit: BoxFit.cover,
+                                      )
+                                    : const Icon(
+                                        Icons.fitness_center,
+                                        size: 18,
+                                        color: AppColors.primary500,
+                                      ),
                               ),
                             ),
                           ),
@@ -158,49 +201,88 @@ class TopStudioCard extends StatelessWidget {
                       ),
                     ),
                   ],
-                  const SizedBox(height: 4),
+                  const SizedBox(height: 6),
                   Padding(
                     padding: const EdgeInsets.fromLTRB(12, 0, 12, 10),
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.center,
-                      children: [
-                        if (studio.distanceKm != null) ...[
-                          const Icon(
-                            Icons.near_me_outlined,
-                            size: 13,
-                            color: AppColors.textSecondary,
+                    child: homeLayout
+                        ? Row(
+                            children: [
+                              if (studio.rating > 0) ...[
+                                const Icon(
+                                  Icons.star_rounded,
+                                  size: 14,
+                                  color: Color(0xFFFFB800),
+                                ),
+                                const SizedBox(width: 2),
+                                Text(
+                                  studio.rating.toStringAsFixed(1),
+                                  style: const TextStyle(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w700,
+                                    color: AppColors.textPrimary,
+                                  ),
+                                ),
+                                if (studio.reviewCount > 0)
+                                  Text(
+                                    ' (${studio.reviewCount})',
+                                    style: const TextStyle(
+                                      fontSize: 12,
+                                      color: AppColors.textSecondary,
+                                    ),
+                                  ),
+                              ],
+                              const Spacer(),
+                              if (_distanceLabel != null)
+                                Text(
+                                  _distanceLabel!,
+                                  style: const TextStyle(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w600,
+                                    color: AppColors.textSecondary,
+                                  ),
+                                ),
+                            ],
+                          )
+                        : Row(
+                            crossAxisAlignment: CrossAxisAlignment.center,
+                            children: [
+                              if (studio.distanceKm != null) ...[
+                                const Icon(
+                                  Icons.near_me_outlined,
+                                  size: 13,
+                                  color: AppColors.textSecondary,
+                                ),
+                                const SizedBox(width: 3),
+                                Text(
+                                  '${studio.distanceKm!.toStringAsFixed(1)} km',
+                                  style: const TextStyle(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w500,
+                                    color: AppColors.textPrimary,
+                                  ),
+                                ),
+                                const Text(
+                                  '  •  ',
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color: AppColors.textSecondary,
+                                  ),
+                                ),
+                              ],
+                              Expanded(
+                                child: Text(
+                                  studio.address,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  softWrap: false,
+                                  style: const TextStyle(
+                                    fontSize: 12,
+                                    color: AppColors.textSecondary,
+                                  ),
+                                ),
+                              ),
+                            ],
                           ),
-                          const SizedBox(width: 3),
-                          Text(
-                            '${studio.distanceKm!.toStringAsFixed(1)} km',
-                            style: const TextStyle(
-                              fontSize: 12,
-                              fontWeight: FontWeight.w500,
-                              color: AppColors.textPrimary,
-                            ),
-                          ),
-                          const Text(
-                            '  •  ',
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: AppColors.textSecondary,
-                            ),
-                          ),
-                        ],
-                        Expanded(
-                          child: Text(
-                            studio.address,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            softWrap: false,
-                            style: const TextStyle(
-                              fontSize: 12,
-                              color: AppColors.textSecondary,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
                   ),
                 ],
               ),

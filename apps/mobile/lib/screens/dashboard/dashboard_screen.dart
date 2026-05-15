@@ -18,6 +18,7 @@ import '../../services/subscription_refresh_notifier.dart';
 import '../../utils/color_hex.dart';
 import '../../widgets/dashboard/owner_checklist_card.dart';
 import '../../widgets/dashboard/dashboard_setup_card.dart';
+import '../../models/training_location_item.dart';
 import '../../widgets/dashboard/owner_daily_schedule_block.dart';
 import '../../widgets/training/owner_session_edit_scope_dialog.dart';
 import '../owner_training_session_detail_screen.dart';
@@ -209,6 +210,16 @@ class _DashboardScreenState extends State<DashboardScreen> {
     final a = s.address?.trim();
     if (a != null && a.isNotEmpty) return a;
     return null;
+  }
+
+  List<TrainingLocationItem> _studioLocations() {
+    final salon = _salon;
+    if (salon == null) return const [];
+    final main = salon.name?.trim();
+    return TrainingLocationItem.listFromSalon(
+      salon,
+      mainStudioName: (main != null && main.isNotEmpty) ? main : 'Studio',
+    );
   }
 
   String? _ownerTrainerFallback() {
@@ -844,6 +855,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         ?.openScheduleTabForToday(),
                     onSessionTap: _openSessionDetail,
                     ownerTrainerFallback: _ownerTrainerFallback(),
+                    studioLocations: _studioLocations(),
                   ),
                   _checklistBlock(),
                 ],

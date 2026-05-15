@@ -145,9 +145,11 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
               ),
             ),
             centerTitle: true,
-            backgroundColor: AppColors.backgroundPrimary,
+            backgroundColor: AppColors.backgroundSecondary,
             foregroundColor: AppColors.textPrimary,
+            surfaceTintColor: Colors.transparent,
             elevation: 0,
+            scrolledUnderElevation: 0,
           ),
           body: _loading
               ? const Center(child: CircularProgressIndicator())

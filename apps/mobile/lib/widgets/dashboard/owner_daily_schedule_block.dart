@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 
 import '../../constants/colors.dart';
 import '../../constants/layout.dart';
+import '../../models/training_location_item.dart';
 import '../../services/dashboard_api_service.dart';
+import '../../utils/owner_session_card_subtitle.dart';
 import 'owner_daily_schedule_header.dart';
 import 'owner_daily_schedule_session_card.dart';
 
@@ -15,6 +17,7 @@ class OwnerDailyScheduleBlock extends StatelessWidget {
     required this.onSessionTap,
     this.onSeeAll,
     this.ownerTrainerFallback,
+    this.studioLocations = const [],
   });
 
   final List<OwnerTrainingSession> sessions;
@@ -22,6 +25,7 @@ class OwnerDailyScheduleBlock extends StatelessWidget {
   final VoidCallback? onSeeAll;
   final void Function(OwnerTrainingSession s) onSessionTap;
   final String? ownerTrainerFallback;
+  final List<TrainingLocationItem> studioLocations;
 
   @override
   Widget build(BuildContext context) {
@@ -62,15 +66,19 @@ class OwnerDailyScheduleBlock extends StatelessWidget {
           else
             Column(
               children: [
-                for (final s in sessions)
-                  OwnerDailyScheduleSessionCard(
+                ...sessions.map((s) {
+                  final sub = resolveOwnerSessionCardSubtitle(
                     session: s,
-                    trainerLabel: ownerDailyScheduleTrainerLabel(
-                      s,
-                      ownerTrainerFallback,
-                    ),
+                    studioLocations: studioLocations,
+                    ownerTrainerFallback: ownerTrainerFallback,
+                  );
+                  return OwnerDailyScheduleSessionCard(
+                    session: s,
+                    subtitleLabel: sub.label,
+                    showLocationPin: sub.showLocationPin,
                     onTap: () => onSessionTap(s),
-                  ),
+                  );
+                }),
               ],
             ),
         ],

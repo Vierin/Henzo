@@ -51,6 +51,9 @@ class OwnerTrainingSession {
   /// Null when no trainer row or owner-led slot.
   final String? trainerId;
 
+  final String? locationId;
+  final String? locationName;
+
   const OwnerTrainingSession({
     required this.sessionId,
     required this.trainingId,
@@ -69,6 +72,8 @@ class OwnerTrainingSession {
     this.trainingCategoryNameVn,
     required this.trainerName,
     this.trainerId,
+    this.locationId,
+    this.locationName,
   });
 
   factory OwnerTrainingSession.fromJson(Map<String, dynamic> json) {
@@ -131,6 +136,8 @@ class OwnerTrainingSession {
           : trainerIdRaw.toString().trim().isEmpty
           ? null
           : trainerIdRaw.toString(),
+      locationId: json['locationId']?.toString(),
+      locationName: json['locationName']?.toString(),
     );
   }
 
@@ -184,6 +191,8 @@ class OwnerTrainingSession {
       trainerId: trainerRaw == null || trainerRaw.toString().isEmpty
           ? null
           : trainerRaw.toString(),
+      locationId: m['locationId']?.toString(),
+      locationName: m['locationName']?.toString(),
     );
   }
 
@@ -1034,6 +1043,7 @@ class DashboardApiService {
     required String studioId,
     required String trainingId,
     String? trainerId,
+    String? locationId,
     required int capacity,
     List<int>? daysOfWeek,
     String? startTime,
@@ -1051,6 +1061,8 @@ class DashboardApiService {
                 'trainingId': trainingId,
                 if (trainerId != null && trainerId.isNotEmpty)
                   'trainerId': trainerId,
+                if (locationId != null && locationId.isNotEmpty)
+                  'locationId': locationId,
                 'capacity': capacity,
                 if (daysOfWeek != null) 'daysOfWeek': daysOfWeek,
                 if (startTime != null) 'startTime': startTime,

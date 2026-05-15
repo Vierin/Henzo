@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 
 import '../../constants/colors.dart';
 import '../../services/dashboard_api_service.dart';
@@ -20,12 +21,14 @@ class OwnerDailyScheduleSessionCard extends StatelessWidget {
   const OwnerDailyScheduleSessionCard({
     super.key,
     required this.session,
-    required this.trainerLabel,
+    required this.subtitleLabel,
+    this.showLocationPin = false,
     required this.onTap,
   });
 
   final OwnerTrainingSession session;
-  final String trainerLabel;
+  final String subtitleLabel;
+  final bool showLocationPin;
   final VoidCallback onTap;
 
   @override
@@ -121,29 +124,33 @@ class OwnerDailyScheduleSessionCard extends StatelessWidget {
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                         ),
-                        const SizedBox(height: 4),
-                        Row(
-                          children: [
-                            Icon(
-                              Icons.place_outlined,
-                              size: 13,
-                              color: accent,
-                            ),
-                            const SizedBox(width: 3),
-                            Flexible(
-                              child: Text(
-                                trainerLabel,
-                                style: const TextStyle(
-                                  fontSize: 13,
-                                  fontWeight: FontWeight.w400,
-                                  color: AppColors.textSecondary,
+                        if (subtitleLabel.isNotEmpty) ...[
+                          const SizedBox(height: 4),
+                          Row(
+                            children: [
+                              if (showLocationPin) ...[
+                                SvgPicture.asset(
+                                  'assets/icons/icon-pin.svg',
+                                  width: 13,
+                                  height: 18,
                                 ),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
+                                const SizedBox(width: 4),
+                              ],
+                              Flexible(
+                                child: Text(
+                                  subtitleLabel,
+                                  style: const TextStyle(
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w400,
+                                    color: AppColors.textSecondary,
+                                  ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
                               ),
-                            ),
-                          ],
-                        ),
+                            ],
+                          ),
+                        ],
                       ],
                     ),
                   ),

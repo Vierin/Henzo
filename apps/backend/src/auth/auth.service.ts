@@ -1280,6 +1280,7 @@ export class AuthService {
           email: dbUser.email,
           name: dbUser.name,
           phone: dbUser.phone,
+          avatarUrl: dbUser.avatarUrl,
           role: dbUser.role,
         },
       };
@@ -1401,12 +1402,16 @@ export class AuthService {
         data: {
           name: data.name,
           phone: data.phone,
+          ...(data.avatarUrl !== undefined
+            ? { avatarUrl: data.avatarUrl || null }
+            : {}),
         },
         select: {
           id: true,
           email: true,
           name: true,
           phone: true,
+          avatarUrl: true,
           role: true,
         },
       });

@@ -1488,6 +1488,7 @@ class _AddTrainingScreenState extends State<AddTrainingScreen> {
               token,
               studioId: studioId,
               trainingId: created.id,
+              locationId: _selectedLocationId,
               capacity: capacity,
               daysOfWeek: _isRecurring ? null : recurringDays,
               startTime: _isRecurring ? null : _timeToHm(_sessionTime),

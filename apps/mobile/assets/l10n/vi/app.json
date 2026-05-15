@@ -70,6 +70,20 @@
 		"openWebsite": "Mở trang web",
 		"signOut": "Đăng xuất"
 	},
+	"clientHome": {
+		"nowIn": "ĐANG Ở",
+		"setLocation": "Chọn vị trí",
+		"greetingPrefix": "Tìm ",
+		"greetingEmphasis": "nhịp",
+		"searchHint": "Studio, lớp, huấn luyện viên...",
+		"topPicksTitle": "Gợi ý gần bạn",
+		"topPicksSubtitle": "Trong 3 km · đánh giá cao",
+		"popularTodayTitle": "Phổ biến hôm nay",
+		"seeAll": "Xem tất cả",
+		"noClassesToday": "Hôm nay chưa có lớp gần bạn.",
+		"favoritePromoTitle": "Lưu lớp yêu thích",
+		"favoritePromoSubtitle": "Lưu lớp và nhận nhắc nhở"
+	},
 	"publicHome": {
 		"loginLink": "Đăng nhập",
 		"heroTitle": "Tìm studio thể thao chỉ trong vài giây",
@@ -514,6 +528,9 @@
 		"website": "Trang web",
 		"accountSettings": "Cài đặt tài khoản",
 		"personalData": "Dữ liệu cá nhân",
+		"profilePhoto": "Ảnh đại diện",
+		"addProfilePhoto": "Thêm ảnh",
+		"changeProfilePhoto": "Đổi ảnh",
 		"name": "Tên",
 		"enterName": "Nhập tên",
 		"phone": "Điện thoại",

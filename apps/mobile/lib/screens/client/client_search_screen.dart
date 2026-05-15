@@ -68,6 +68,15 @@ class ClientSearchScreenState extends State<ClientSearchScreen> {
     _loadExplore();
   }
 
+  /// Home category chips → open Explore with filter applied.
+  void selectCategory(int? categoryId) {
+    setState(() {
+      _selectedCategoryId = categoryId;
+      _derivedInputsHash = 0;
+    });
+    _ensureDerivedLists();
+  }
+
   Future<void> _loadSavedLocationOnly() async {
     final prefs = await SharedPreferences.getInstance();
     final city = prefs.getString(_cityKey)?.trim();

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../constants/colors.dart';
+import '../../constants/layout.dart';
 import '../../services/auth_service.dart';
 import '../../services/client_schedule_store.dart';
 import '../../utils/formatters.dart';
@@ -128,7 +129,7 @@ class _ClientPassesHistoryListState extends State<ClientPassesHistoryList>
     }
     if (_error != null) {
       return ListView(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(kScreenPaddingHorizontal),
         children: [
           ClientPlaceholderCard(
             title: 'Failed to load passes',
@@ -139,7 +140,7 @@ class _ClientPassesHistoryListState extends State<ClientPassesHistoryList>
     }
     if (_items.isEmpty) {
       return ListView(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(kScreenPaddingHorizontal),
         children: const [
           ClientPlaceholderCard(
             title: 'No classes yet',

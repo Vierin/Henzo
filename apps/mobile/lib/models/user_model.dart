@@ -3,6 +3,7 @@ class UserModel {
   final String email;
   final String? name;
   final String? phone;
+  final String? avatarUrl;
   final String role;
 
   const UserModel({
@@ -10,6 +11,7 @@ class UserModel {
     required this.email,
     this.name,
     this.phone,
+    this.avatarUrl,
     required this.role,
   });
 
@@ -19,6 +21,7 @@ class UserModel {
       email: json['email'] as String,
       name: json['name'] as String?,
       phone: json['phone'] as String?,
+      avatarUrl: json['avatarUrl'] as String?,
       role: json['role'] as String,
     );
   }

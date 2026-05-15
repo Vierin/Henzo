@@ -361,7 +361,10 @@ class _SectionLabel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Text(title, style: SettingsTypography.screenTitle(context));
+    return Text(
+      title.toUpperCase(),
+      style: SettingsTypography.sectionTitle(context),
+    );
   }
 }
 

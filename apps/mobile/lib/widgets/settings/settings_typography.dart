@@ -2,9 +2,19 @@ import 'package:flutter/material.dart';
 
 import '../../constants/colors.dart';
 
-/// Titles for settings hub, account, studio profile (screen + section headers).
+/// Screen titles (AppBar) vs section headers inside settings forms.
 class SettingsTypography {
   SettingsTypography._();
+
+  /// Section labels: «ОСНОВНАЯ ИНФОРМАЦИЯ», «АККАУНТ», …
+  static TextStyle sectionTitle(BuildContext context) {
+    return const TextStyle(
+      fontSize: 14,
+      fontWeight: FontWeight.w500,
+      letterSpacing: -0.2,
+      color: AppColors.textSecondary,
+    );
+  }
 
   static TextStyle screenTitle(BuildContext context) {
     final textTheme = Theme.of(context).textTheme;

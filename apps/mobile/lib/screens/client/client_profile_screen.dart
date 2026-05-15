@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../../constants/brand_typography.dart';
 import '../../constants/colors.dart';
+import '../../constants/layout.dart';
 import '../../services/api_client.dart';
 import '../../services/auth_service.dart';
 import 'client_passes_tab.dart';
@@ -91,7 +93,12 @@ class _ClientProfileScreenState extends State<ClientProfileScreen>
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               Padding(
-                padding: const EdgeInsets.fromLTRB(16, 16, 8, 8),
+                padding: const EdgeInsets.fromLTRB(
+                  kScreenPaddingHorizontal,
+                  16,
+                  kScreenPaddingHorizontal,
+                  8,
+                ),
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -101,10 +108,9 @@ class _ClientProfileScreenState extends State<ClientProfileScreen>
                         children: [
                           Text(
                             displayName,
-                            style: const TextStyle(
+                            style: BrandTypography.greeting(context).copyWith(
                               fontSize: 24,
                               fontWeight: FontWeight.w700,
-                              color: AppColors.textPrimary,
                             ),
                           ),
                           const SizedBox(height: 4),
@@ -112,11 +118,7 @@ class _ClientProfileScreenState extends State<ClientProfileScreen>
                             _loadingStats
                                 ? 'Loading classes visited...'
                                 : '$_classesVisited classes visited',
-                            style: const TextStyle(
-                              fontSize: 13,
-                              fontWeight: FontWeight.w500,
-                              color: AppColors.textSecondary,
-                            ),
+                            style: BrandTypography.sectionSubtitle(context),
                           ),
                         ],
                       ),
@@ -138,8 +140,10 @@ class _ClientProfileScreenState extends State<ClientProfileScreen>
                   ],
                 ),
               ),
-              const Padding(
-                padding: EdgeInsets.symmetric(horizontal: 12),
+              Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: kScreenPaddingHorizontal,
+                ),
                 child: TabBar(
                   labelColor: AppColors.primary500,
                   unselectedLabelColor: AppColors.textSecondary,

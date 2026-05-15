@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../../constants/brand_typography.dart';
 import '../../constants/colors.dart';
+import '../../constants/layout.dart';
 import '../../services/api_client.dart';
 import '../../services/auth_service.dart';
 import '../../services/client_schedule_store.dart';
@@ -126,7 +128,7 @@ class ClientScheduleTabState extends State<ClientScheduleTab>
     }
     if (_items.isEmpty) {
       return ListView(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(kScreenPaddingHorizontal),
         children: const [
           ClientPlaceholderCard(
             title: 'No classes scheduled yet',
@@ -138,7 +140,7 @@ class ClientScheduleTabState extends State<ClientScheduleTab>
     return RefreshIndicator(
       onRefresh: () => _load(force: true),
       child: ListView.separated(
-        padding: const EdgeInsets.all(12),
+        padding: const EdgeInsets.all(kScreenPaddingHorizontal),
         itemCount: _items.length,
         separatorBuilder: (_, __) =>
             const Divider(height: 1, color: AppColors.borderPrimary),

@@ -7,6 +7,7 @@ class PublicStudioPreview {
     required this.address,
     this.distanceKm,
     this.photoUrl,
+    this.reviewCount = 0,
   });
 
   final String id;
@@ -16,6 +17,7 @@ class PublicStudioPreview {
   final String address;
   final double? distanceKm;
   final String? photoUrl;
+  final int reviewCount;
 
   String get primaryCategory => categories.isNotEmpty ? categories.first : 'Fitness';
 }

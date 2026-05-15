@@ -1,12 +1,14 @@
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../constants/colors.dart';
 import '../constants/layout.dart';
 import '../l10n/locale_provider.dart';
 import '../widgets/settings/branded_settings_app_bar.dart';
-import '../widgets/settings/settings_typography.dart';
 import '../services/auth_service.dart';
+import '../services/owner_photo_storage_service.dart';
 import '../utils/auth_ui_result.dart';
 
 class AccountSettingsScreen extends StatefulWidget {
@@ -24,8 +26,10 @@ class _AccountSettingsScreenState extends State<AccountSettingsScreen> {
   final _newPasswordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
 
+  String? _avatarUrl;
   bool _isSavingProfile = false;
   bool _isSavingPassword = false;
+  bool _avatarUploading = false;
 
   @override
   void initState() {
@@ -35,6 +39,10 @@ class _AccountSettingsScreenState extends State<AccountSettingsScreen> {
       if (user != null) {
         _nameController.text = user.name ?? '';
         _phoneController.text = user.phone ?? '';
+        _avatarUrl = user.avatarUrl?.trim().isNotEmpty == true
+            ? user.avatarUrl!.trim()
+            : null;
+        setState(() {});
       }
     });
   }
@@ -48,6 +56,53 @@ class _AccountSettingsScreenState extends State<AccountSettingsScreen> {
     super.dispose();
   }
 
+  String _initials(String? name, String email) {
+    final parts = (name ?? '')
+        .trim()
+        .split(RegExp(r'\s+'))
+        .where((e) => e.isNotEmpty)
+        .take(2)
+        .toList();
+    if (parts.isNotEmpty) {
+      return parts.map((p) => p[0].toUpperCase()).join();
+    }
+    final mail = email.trim();
+    if (mail.isNotEmpty) return mail[0].toUpperCase();
+    return '?';
+  }
+
+  Future<void> _pickProfilePhoto() async {
+    if (_avatarUploading) return;
+    final picked = await ImagePicker().pickImage(
+      source: ImageSource.gallery,
+      imageQuality: 85,
+    );
+    if (picked == null) return;
+
+    final userId =
+        Supabase.instance.client.auth.currentUser?.id ??
+        context.read<AuthService>().user?.id;
+    if (userId == null) return;
+
+    setState(() => _avatarUploading = true);
+    try {
+      final upload = await OwnerPhotoStorageService.uploadProfileAvatar(
+        file: picked,
+        userId: userId,
+      );
+      if (!mounted) return;
+      if (upload.url != null) {
+        setState(() => _avatarUrl = upload.url);
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(upload.error ?? 'Upload failed')),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _avatarUploading = false);
+    }
+  }
+
   Future<void> _saveProfile() async {
     if (!(_profileFormKey.currentState?.validate() ?? false)) return;
     setState(() => _isSavingProfile = true);
@@ -55,13 +110,18 @@ class _AccountSettingsScreenState extends State<AccountSettingsScreen> {
     final result = await auth.updateProfile(
       name: _nameController.text.trim(),
       phone: _phoneController.text.trim(),
+      avatarUrl: _avatarUrl,
     );
     if (!mounted) return;
     setState(() => _isSavingProfile = false);
     if (result.success) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('Профиль обновлён')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            context.read<LocaleProvider>().t('profileForm.profileUpdated'),
+          ),
+        ),
+      );
     } else {
       final loc = context.read<LocaleProvider>();
       ScaffoldMessenger.of(context).showSnackBar(
@@ -214,6 +274,16 @@ class _AccountSettingsScreenState extends State<AccountSettingsScreen> {
                     key: _profileFormKey,
                     child: Column(
                       children: [
+                        _ProfilePhotoPicker(
+                          avatarUrl: _avatarUrl,
+                          initials: _initials(user.name, user.email),
+                          isUploading: _avatarUploading,
+                          addLabel: locale.t('profileForm.addProfilePhoto'),
+                          changeLabel:
+                              locale.t('profileForm.changeProfilePhoto'),
+                          onTap: _pickProfilePhoto,
+                        ),
+                        const SizedBox(height: 16),
                         TextFormField(
                           controller: _nameController,
                           decoration: InputDecoration(
@@ -246,7 +316,9 @@ class _AccountSettingsScreenState extends State<AccountSettingsScreen> {
                           child: FilledButton(
                             onPressed: _isSavingProfile ? null : _saveProfile,
                             child: Text(
-                              _isSavingProfile ? '...' : locale.t('common.save'),
+                              _isSavingProfile
+                                  ? '...'
+                                  : locale.t('common.save'),
                             ),
                           ),
                         ),
@@ -321,6 +393,109 @@ class _AccountSettingsScreenState extends State<AccountSettingsScreen> {
   }
 }
 
+class _ProfilePhotoPicker extends StatelessWidget {
+  const _ProfilePhotoPicker({
+    required this.avatarUrl,
+    required this.initials,
+    required this.isUploading,
+    required this.addLabel,
+    required this.changeLabel,
+    required this.onTap,
+  });
+
+  final String? avatarUrl;
+  final String initials;
+  final bool isUploading;
+  final String addLabel;
+  final String changeLabel;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final hasPhoto = avatarUrl != null && avatarUrl!.isNotEmpty;
+
+    return Column(
+      children: [
+        Material(
+          color: Colors.transparent,
+          child: InkWell(
+            onTap: isUploading ? null : onTap,
+            customBorder: const CircleBorder(),
+            child: Stack(
+              alignment: Alignment.center,
+              children: [
+                CircleAvatar(
+                  radius: 44,
+                  backgroundColor: AppColors.primary100,
+                  backgroundImage:
+                      hasPhoto ? NetworkImage(avatarUrl!) : null,
+                  child: hasPhoto
+                      ? null
+                      : Text(
+                          initials,
+                          style: const TextStyle(
+                            fontSize: 28,
+                            fontWeight: FontWeight.w700,
+                            color: AppColors.primary500,
+                          ),
+                        ),
+                ),
+                if (isUploading)
+                  const Positioned.fill(
+                    child: ColoredBox(
+                      color: Color(0x66FFFFFF),
+                      child: Center(
+                        child: SizedBox(
+                          width: 28,
+                          height: 28,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2.5,
+                            color: AppColors.primary500,
+                          ),
+                        ),
+                      ),
+                    ),
+                  )
+                else
+                  Positioned(
+                    right: 0,
+                    bottom: 0,
+                    child: Container(
+                      width: 28,
+                      height: 28,
+                      decoration: BoxDecoration(
+                        color: AppColors.primary500,
+                        shape: BoxShape.circle,
+                        border: Border.all(
+                          color: AppColors.backgroundPrimary,
+                          width: 2,
+                        ),
+                      ),
+                      child: const Icon(
+                        Icons.camera_alt_outlined,
+                        size: 14,
+                        color: Colors.white,
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+          ),
+        ),
+        const SizedBox(height: 8),
+        Text(
+          hasPhoto ? changeLabel : addLabel,
+          style: const TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.w600,
+            color: AppColors.primary500,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
 class _Card extends StatelessWidget {
   const _Card({required this.title, required this.child});
 
@@ -339,7 +514,14 @@ class _Card extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(title, style: SettingsTypography.screenTitle(context)),
+          Text(
+            title,
+            style: const TextStyle(
+              fontSize: 17,
+              fontWeight: FontWeight.w700,
+              color: AppColors.textPrimary,
+            ),
+          ),
           const SizedBox(height: 12),
           child,
         ],
@@ -347,4 +529,3 @@ class _Card extends StatelessWidget {
     );
   }
 }
-

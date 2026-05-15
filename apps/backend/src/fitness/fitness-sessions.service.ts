@@ -16,6 +16,10 @@ import {
   isDeliverableClientEmail,
   StudioClientsService,
 } from './studio-clients.service';
+import {
+  countTrainingLocations,
+  resolveTrainingLocationName,
+} from '../lib/training-locations';
 
 type SessionStatus = 'ACTIVE' | 'CANCELLED' | 'COMPLETED';
 
@@ -147,7 +151,7 @@ export class FitnessSessionsService {
 
     const studio = await this.prisma.studio.findFirst({
       where: { id: dto.studioId, ownerId: currentUser.user.id },
-      select: { id: true, reminderSettings: true },
+      select: { id: true, name: true, reminderSettings: true },
     });
     if (!studio) {
       throw new Error('Studio not found or not owned by user');
@@ -254,11 +258,17 @@ export class FitnessSessionsService {
         continue;
       }
 
+      const locationId =
+        dto.locationId?.trim() && dto.locationId.trim().length > 0
+          ? dto.locationId.trim()
+          : null;
+
       const created = await this.prisma.trainingSession.create({
         data: {
           studioId: dto.studioId,
           trainingId: dto.trainingId,
           trainerId: dto.trainerId ?? null,
+          locationId,
           startsAt: slot.startsAt,
           endsAt: slot.endsAt,
           capacity: dto.capacity,
@@ -305,9 +315,12 @@ export class FitnessSessionsService {
 
     const studio = await this.prisma.studio.findFirst({
       where: { ownerId: currentUser.user.id },
-      select: { id: true },
+      select: { id: true, name: true, reminderSettings: true },
     });
     if (!studio) return [];
+
+    const studioName = studio.name?.trim() ?? 'Studio';
+    const locationCount = countTrainingLocations(studio.reminderSettings);
 
     await this.completePastTrainingSessions();
 
@@ -352,6 +365,15 @@ export class FitnessSessionsService {
       const activeEnrollments = (s.Enrollments || []).filter(
         (e: any) => e.status === 'ACTIVE' || e.status === 'NO_SHOW',
       ).length;
+      const locationName =
+        locationCount > 1
+          ? (resolveTrainingLocationName(
+              studio.reminderSettings,
+              s.locationId,
+              studioName,
+            ) ?? studioName)
+          : null;
+
       return {
         sessionId: s.id,
         trainingId: s.trainingId,
@@ -361,6 +383,8 @@ export class FitnessSessionsService {
         capacity: s.capacity,
         enrolledCount: activeEnrollments,
         attendanceSummary: { attended: activeEnrollments },
+        locationId: s.locationId ?? null,
+        locationName,
         training: {
           name: s.Training?.name || 'Training',
           displayColor: computeTrainingDisplayColor({

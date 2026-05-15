@@ -1,19 +1,17 @@
-import 'dart:typed_data';
-
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/foundation.dart';
-import 'package:flutter_image_compress/flutter_image_compress.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../constants/colors.dart';
 import '../../constants/layout.dart';
-import '../../config/app_config.dart';
 import '../../l10n/locale_provider.dart';
 import '../../models/salon.dart';
 import '../../services/auth_service.dart';
 import '../../services/cache/salon_cache.dart';
 import '../../services/dashboard_api_service.dart';
+import '../../services/owner_photo_storage_service.dart';
 import '../../utils/show_api_error.dart';
 import '../../widgets/address_picker_modal.dart';
 import '../../widgets/settings/settings_typography.dart';
@@ -27,11 +25,6 @@ class SettingsScreen extends StatefulWidget {
 
 class _SettingsScreenState extends State<SettingsScreen> {
   static const int _maxStudioPhotos = 5;
-  static const int _maxPhotoBytes = 3 * 1024 * 1024;
-  String get _studioPhotosBucket {
-    final configured = (AppConfig.studioPhotosBucket).trim();
-    return configured.isEmpty ? 'studio-photos' : configured;
-  }
 
   final _salonFormKey = GlobalKey<FormState>();
   final _salonNameController = TextEditingController();
@@ -196,6 +189,22 @@ class _SettingsScreenState extends State<SettingsScreen> {
     Navigator.of(context).pop();
   }
 
+  Future<void> _openSalonAddressPicker() async {
+    final selection = await AddressPickerModal.show(
+      context,
+      initialLocationName: _salonNameController.text.trim(),
+      initialAddress: _salonAddressController.text.trim(),
+      initialLat: _salonLat,
+      initialLon: _salonLon,
+    );
+    if (selection == null || !mounted) return;
+    setState(() {
+      _salonAddressController.text = selection.address;
+      _salonLat = selection.lat;
+      _salonLon = selection.lon;
+    });
+  }
+
   Future<void> _saveSalon() async {
     if (!_hasUnsavedChanges) return;
     if (!(_salonFormKey.currentState?.validate() ?? false)) return;
@@ -276,6 +285,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
       _showSnack('Лишние фото пропущены. Лимит: $_maxStudioPhotos');
     }
 
+    final userId =
+        Supabase.instance.client.auth.currentUser?.id ??
+        context.read<AuthService>().user?.id;
+    if (userId == null) {
+      _showSnack('Войдите в аккаунт, чтобы загрузить фото');
+      return;
+    }
+
     setState(() => _photosProcessing = true);
     setState(() => _photoProgressText = 'Оптимизация...');
     final uploadedUrls = <String>[];
@@ -283,19 +300,21 @@ class _SettingsScreenState extends State<SettingsScreen> {
     var failedUploadsCount = 0;
     final uploadErrors = <String>{};
     for (final file in filesToProcess) {
-      final photoBytes = await _convertToWebpBytes(file);
-      if (photoBytes == null) {
-        oversizedCount++;
-        continue;
-      }
       if (mounted) {
         setState(() => _photoProgressText = 'Загрузка...');
       }
-      final upload = await _uploadPhotoToStorage(photoBytes);
+      final upload = await OwnerPhotoStorageService.uploadStudioGalleryPhoto(
+        file: file,
+        userId: userId,
+      );
       if (upload.url == null) {
-        failedUploadsCount++;
-        if (upload.error != null && upload.error!.isNotEmpty) {
-          uploadErrors.add(upload.error!);
+        if (upload.error == 'Фото больше 3 MB') {
+          oversizedCount++;
+        } else {
+          failedUploadsCount++;
+          if (upload.error != null && upload.error!.isNotEmpty) {
+            uploadErrors.add(upload.error!);
+          }
         }
         continue;
       }
@@ -317,69 +336,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
         _showSnack(uploadErrors.first);
       }
     }
-  }
-
-  Future<Uint8List?> _convertToWebpBytes(XFile file) async {
-    final bytesLength = await file.length();
-    if (bytesLength > _maxPhotoBytes) {
-      return null;
-    }
-    final original = await file.readAsBytes();
-    final compressed = await FlutterImageCompress.compressWithList(
-      original,
-      minWidth: 1000,
-      quality: 82,
-      format: CompressFormat.webp,
-      keepExif: false,
-    );
-    return Uint8List.fromList(compressed.isEmpty ? original : compressed);
-  }
-
-  Future<({String? url, String? error})> _uploadPhotoToStorage(
-    Uint8List bytes,
-  ) async {
-    try {
-      final userId =
-          Supabase.instance.client.auth.currentUser?.id ??
-          context.read<AuthService>().user?.id ??
-          'unknown';
-      final fileName =
-          'owners/$userId/${DateTime.now().millisecondsSinceEpoch}_${_randomSuffix()}.webp';
-      await Supabase.instance.client.storage
-          .from(_studioPhotosBucket)
-          .uploadBinary(
-            fileName,
-            bytes,
-            fileOptions: const FileOptions(
-              cacheControl: '3600',
-              upsert: false,
-              contentType: 'image/webp',
-            ),
-          );
-      final publicUrl = Supabase.instance.client.storage
-          .from(_studioPhotosBucket)
-          .getPublicUrl(fileName);
-      return (url: publicUrl, error: null);
-    } on StorageException catch (e) {
-      if (kDebugMode) {
-        debugPrint('[StudioPhotoUpload] StorageException: ${e.message}');
-      }
-      return (
-        url: null,
-        error:
-            'Storage error: ${e.message}. Проверь bucket "$_studioPhotosBucket" и policy на insert.',
-      );
-    } catch (e) {
-      if (kDebugMode) {
-        debugPrint('[StudioPhotoUpload] Unknown error: $e');
-      }
-      return (url: null, error: 'Upload error: $e');
-    }
-  }
-
-  String _randomSuffix() {
-    final ms = DateTime.now().microsecondsSinceEpoch.toRadixString(36);
-    return ms.substring(ms.length > 6 ? ms.length - 6 : 0);
   }
 
   void _removePhotoAt(int index) {
@@ -566,56 +522,129 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                       const SizedBox(height: 16),
                                       _labeledField(
                                         label: locale.t('profileForm.address'),
-                                        child: InkWell(
-                                          onTap: () async {
-                                            final selection =
-                                                await AddressPickerModal.show(
-                                              context,
-                                              initialAddress:
-                                                  _salonAddressController.text,
-                                              initialLat: _salonLat,
-                                              initialLon: _salonLon,
-                                            );
-                                            if (selection == null) return;
-                                            setState(() {
-                                              _salonAddressController.text =
-                                                  selection.address;
-                                              _salonLat = selection.lat;
-                                              _salonLon = selection.lon;
-                                            });
-                                          },
-                                          borderRadius: BorderRadius.circular(
-                                            10,
-                                          ),
-                                          child: InputDecorator(
-                                            decoration:
-                                                _inputDecoration(
-                                                  hint: locale.t(
-                                                    'profileForm.enterAddress',
-                                                  ),
-                                                ).copyWith(
-                                                  suffixIcon: Icon(
-                                                    Icons.location_on_outlined,
-                                                    size: 20,
-                                                    color:
-                                                        AppColors.textSecondary,
-                                                  ),
+                                        child: Material(
+                                          color: AppColors.backgroundPrimary,
+                                          borderRadius:
+                                              BorderRadius.circular(12),
+                                          clipBehavior: Clip.antiAlias,
+                                          child: InkWell(
+                                            onTap: _openSalonAddressPicker,
+                                            borderRadius:
+                                                BorderRadius.circular(12),
+                                            child: Container(
+                                              decoration: BoxDecoration(
+                                                borderRadius:
+                                                    BorderRadius.circular(12),
+                                                border: Border.all(
+                                                  color:
+                                                      AppColors.borderPrimary,
                                                 ),
-                                            child: Text(
-                                              _salonAddressController
-                                                      .text
-                                                      .isEmpty
-                                                  ? ''
-                                                  : _salonAddressController
-                                                        .text,
-                                              style: TextStyle(
-                                                fontSize: 16,
-                                                color:
-                                                    _salonAddressController
-                                                        .text
-                                                        .isEmpty
-                                                    ? AppColors.textSecondary
-                                                    : AppColors.textPrimary,
+                                              ),
+                                              padding:
+                                                  const EdgeInsets.symmetric(
+                                                horizontal: 12,
+                                                vertical: 14,
+                                              ),
+                                              child: Row(
+                                                crossAxisAlignment:
+                                                    CrossAxisAlignment.start,
+                                                children: [
+                                                  Padding(
+                                                    padding:
+                                                        const EdgeInsets.only(
+                                                      top: 2,
+                                                    ),
+                                                    child: SvgPicture.asset(
+                                                      'assets/icons/icon-pin.svg',
+                                                      width: 15,
+                                                      height: 21,
+                                                    ),
+                                                  ),
+                                                  const SizedBox(width: 12),
+                                                  Expanded(
+                                                    child: Column(
+                                                      crossAxisAlignment:
+                                                          CrossAxisAlignment
+                                                              .start,
+                                                      children: [
+                                                        Text(
+                                                          _salonNameController
+                                                                  .text
+                                                                  .trim()
+                                                                  .isNotEmpty
+                                                              ? _salonNameController
+                                                                  .text
+                                                                  .trim()
+                                                              : locale.t(
+                                                                  'addTraining.studioNameFallback',
+                                                                ),
+                                                          style:
+                                                              const TextStyle(
+                                                            fontSize: 16,
+                                                            fontWeight:
+                                                                FontWeight
+                                                                    .w700,
+                                                            color: AppColors
+                                                                .textPrimary,
+                                                          ),
+                                                        ),
+                                                        if (_salonAddressController
+                                                            .text
+                                                            .trim()
+                                                            .isNotEmpty) ...[
+                                                          const SizedBox(
+                                                            height: 4,
+                                                          ),
+                                                          Text(
+                                                            _salonAddressController
+                                                                .text
+                                                                .trim(),
+                                                            style:
+                                                                const TextStyle(
+                                                              fontSize: 14,
+                                                              height: 1.25,
+                                                              fontWeight:
+                                                                  FontWeight
+                                                                      .w400,
+                                                              color: AppColors
+                                                                  .textSecondary,
+                                                            ),
+                                                          ),
+                                                        ] else
+                                                          Padding(
+                                                            padding:
+                                                                const EdgeInsets
+                                                                    .only(
+                                                              top: 4,
+                                                            ),
+                                                            child: Text(
+                                                              locale.t(
+                                                                'addTraining.noAddress',
+                                                              ),
+                                                              style:
+                                                                  const TextStyle(
+                                                                fontSize: 14,
+                                                                color: AppColors
+                                                                    .textTertiary,
+                                                              ),
+                                                            ),
+                                                          ),
+                                                      ],
+                                                    ),
+                                                  ),
+                                                  const Padding(
+                                                    padding: EdgeInsets.only(
+                                                      top: 4,
+                                                    ),
+                                                    child: Icon(
+                                                      CupertinoIcons
+                                                          .chevron_forward,
+                                                      size: 18,
+                                                      color: AppColors
+                                                          .textTertiary,
+                                                    ),
+                                                  ),
+                                                ],
                                               ),
                                             ),
                                           ),
@@ -867,7 +896,10 @@ class _SectionCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(title, style: SettingsTypography.screenTitle(context)),
+            Text(
+              title.toUpperCase(),
+              style: SettingsTypography.sectionTitle(context),
+            ),
             const SizedBox(height: 12),
             child,
           ],

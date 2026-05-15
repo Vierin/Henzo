@@ -8,6 +8,10 @@ import { computeTrainingDisplayColor } from '../trainings/training-color.util';
 import { generateStudioSlug } from '../utils/slug';
 import { nanoid } from 'nanoid';
 import { AnalyticsService } from '../analytics/analytics.service';
+import {
+  countTrainingLocations,
+  resolveTrainingLocationName,
+} from '../lib/training-locations';
 
 @Injectable()
 export class StudiosService {
@@ -1943,6 +1947,7 @@ export class StudiosService {
       where: { id },
       select: {
         id: true,
+        name: true,
         status: true,
         timezone: true,
         reminderSettings: true,
@@ -2017,13 +2022,28 @@ export class StudiosService {
       take,
     });
 
-    return sessions.map((s) => ({
+    const studioName = studio.name?.trim() ?? 'Studio';
+    const locationCount = countTrainingLocations(studio.reminderSettings);
+
+    return sessions.map((s) => {
+      const locationName =
+        locationCount > 1
+          ? (resolveTrainingLocationName(
+              studio.reminderSettings,
+              s.locationId,
+              studioName,
+            ) ?? studioName)
+          : null;
+
+      return {
       id: s.id,
       startsAt: s.startsAt.toISOString(),
       endsAt: s.endsAt.toISOString(),
       status: s.status,
       capacity: s.capacity,
       bookedCount: s.bookedCount,
+      locationId: s.locationId ?? null,
+      locationName,
       training: s.Training
         ? {
             id: s.Training.id,
@@ -2050,7 +2070,9 @@ export class StudiosService {
           }
         : null,
       timezone: studio.timezone,
-    }));
+      studio: { locationCount },
+    };
+    });
   }
 
   // New optimized methods for better performance
