@@ -164,9 +164,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       builder: (dialogContext) {
         return AlertDialog(
           title: const Text('Изменения не сохранены'),
-          content: const Text(
-            'Вы уверены, что хотите выйти без сохранения?',
-          ),
+          content: const Text('Вы уверены, что хотите выйти без сохранения?'),
           actions: [
             TextButton(
               onPressed: () => Navigator.of(dialogContext).pop(false),
@@ -461,327 +459,309 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   24,
                 ),
                 children: [
-
-                    // Секции салона в одной форме
-                    _salonLoading
-                        ? _SectionCard(
-                            title: locale.t('profileForm.mainInfo'),
-                            child: const Padding(
-                              padding: EdgeInsets.symmetric(vertical: 24),
-                              child: Center(child: CircularProgressIndicator()),
-                            ),
-                          )
-                        : Form(
-                            key: _salonFormKey,
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.stretch,
-                              children: [
-                                _SectionCard(
-                                  title: locale.t('profileForm.mainInfo'),
-                                  child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.stretch,
-                                    children: [
-                                      _labeledField(
-                                        label: locale.t(
-                                          'profileForm.salonName',
-                                        ),
-                                        child: TextFormField(
-                                          controller: _salonNameController,
-                                          decoration: _inputDecoration(
-                                            hint: locale.t(
-                                              'profileForm.enterSalonName',
-                                            ),
+                  // Секции салона в одной форме
+                  _salonLoading
+                      ? _SectionCard(
+                          title: locale.t('profileForm.mainInfo'),
+                          child: const Padding(
+                            padding: EdgeInsets.symmetric(vertical: 24),
+                            child: Center(child: CircularProgressIndicator()),
+                          ),
+                        )
+                      : Form(
+                          key: _salonFormKey,
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [
+                              _SectionCard(
+                                title: locale.t('profileForm.mainInfo'),
+                                child: Column(
+                                  crossAxisAlignment:
+                                      CrossAxisAlignment.stretch,
+                                  children: [
+                                    _labeledField(
+                                      label: locale.t('profileForm.salonName'),
+                                      child: TextFormField(
+                                        controller: _salonNameController,
+                                        decoration: _inputDecoration(
+                                          hint: locale.t(
+                                            'profileForm.enterSalonName',
                                           ),
-                                          textCapitalization:
-                                              TextCapitalization.words,
-                                          validator: (v) =>
-                                              (v == null || v.trim().isEmpty)
-                                              ? locale.t(
-                                                  'profileForm.requiredField',
-                                                )
-                                              : null,
                                         ),
+                                        textCapitalization:
+                                            TextCapitalization.words,
+                                        validator: (v) =>
+                                            (v == null || v.trim().isEmpty)
+                                            ? locale.t(
+                                                'profileForm.requiredField',
+                                              )
+                                            : null,
                                       ),
-                                      const SizedBox(height: 16),
-                                      _labeledField(
-                                        label: locale.t(
-                                          'profileForm.description',
-                                        ),
-                                        child: TextFormField(
-                                          controller:
-                                              _salonDescriptionController,
-                                          decoration: _inputDecoration(
-                                            hint: locale.t(
-                                              'profileForm.enterDescription',
-                                            ),
-                                            alignLabelWithHint: true,
+                                    ),
+                                    const SizedBox(height: 16),
+                                    _labeledField(
+                                      label: locale.t(
+                                        'profileForm.description',
+                                      ),
+                                      child: TextFormField(
+                                        controller: _salonDescriptionController,
+                                        decoration: _inputDecoration(
+                                          hint: locale.t(
+                                            'profileForm.enterDescription',
                                           ),
-                                          maxLines: 4,
+                                          alignLabelWithHint: true,
                                         ),
+                                        maxLines: 4,
                                       ),
-                                      const SizedBox(height: 16),
-                                      _labeledField(
-                                        label: locale.t('profileForm.address'),
-                                        child: Material(
-                                          color: AppColors.backgroundPrimary,
-                                          borderRadius:
-                                              BorderRadius.circular(12),
-                                          clipBehavior: Clip.antiAlias,
-                                          child: InkWell(
-                                            onTap: _openSalonAddressPicker,
-                                            borderRadius:
-                                                BorderRadius.circular(12),
-                                            child: Container(
-                                              decoration: BoxDecoration(
-                                                borderRadius:
-                                                    BorderRadius.circular(12),
-                                                border: Border.all(
-                                                  color:
-                                                      AppColors.borderPrimary,
-                                                ),
+                                    ),
+                                    const SizedBox(height: 16),
+                                    _labeledField(
+                                      label: locale.t('profileForm.address'),
+                                      child: Material(
+                                        color: AppColors.backgroundPrimary,
+                                        borderRadius: BorderRadius.circular(12),
+                                        clipBehavior: Clip.antiAlias,
+                                        child: InkWell(
+                                          onTap: _openSalonAddressPicker,
+                                          borderRadius: BorderRadius.circular(
+                                            12,
+                                          ),
+                                          child: Container(
+                                            decoration: BoxDecoration(
+                                              borderRadius:
+                                                  BorderRadius.circular(12),
+                                              border: Border.all(
+                                                color: AppColors.borderPrimary,
                                               ),
-                                              padding:
-                                                  const EdgeInsets.symmetric(
-                                                horizontal: 12,
-                                                vertical: 14,
-                                              ),
-                                              child: Row(
-                                                crossAxisAlignment:
-                                                    CrossAxisAlignment.start,
-                                                children: [
-                                                  Padding(
-                                                    padding:
-                                                        const EdgeInsets.only(
-                                                      top: 2,
-                                                    ),
-                                                    child: SvgPicture.asset(
-                                                      'assets/icons/icon-pin.svg',
-                                                      width: 15,
-                                                      height: 21,
-                                                    ),
+                                            ),
+                                            padding: const EdgeInsets.symmetric(
+                                              horizontal: 12,
+                                              vertical: 14,
+                                            ),
+                                            child: Row(
+                                              crossAxisAlignment:
+                                                  CrossAxisAlignment.start,
+                                              children: [
+                                                Padding(
+                                                  padding:
+                                                      const EdgeInsets.only(
+                                                        top: 2,
+                                                      ),
+                                                  child: SvgPicture.asset(
+                                                    'assets/icons/icon-pin.svg',
+                                                    width: 15,
+                                                    height: 21,
                                                   ),
-                                                  const SizedBox(width: 12),
-                                                  Expanded(
-                                                    child: Column(
-                                                      crossAxisAlignment:
-                                                          CrossAxisAlignment
-                                                              .start,
-                                                      children: [
+                                                ),
+                                                const SizedBox(width: 12),
+                                                Expanded(
+                                                  child: Column(
+                                                    crossAxisAlignment:
+                                                        CrossAxisAlignment
+                                                            .start,
+                                                    children: [
+                                                      Text(
+                                                        _salonNameController
+                                                                .text
+                                                                .trim()
+                                                                .isNotEmpty
+                                                            ? _salonNameController
+                                                                  .text
+                                                                  .trim()
+                                                            : locale.t(
+                                                                'addTraining.studioNameFallback',
+                                                              ),
+                                                        style: const TextStyle(
+                                                          fontSize: 16,
+                                                          fontWeight:
+                                                              FontWeight.w700,
+                                                          color: AppColors
+                                                              .textPrimary,
+                                                        ),
+                                                      ),
+                                                      if (_salonAddressController
+                                                          .text
+                                                          .trim()
+                                                          .isNotEmpty) ...[
+                                                        const SizedBox(
+                                                          height: 4,
+                                                        ),
                                                         Text(
-                                                          _salonNameController
-                                                                  .text
-                                                                  .trim()
-                                                                  .isNotEmpty
-                                                              ? _salonNameController
-                                                                  .text
-                                                                  .trim()
-                                                              : locale.t(
-                                                                  'addTraining.studioNameFallback',
-                                                                ),
-                                                          style:
-                                                              const TextStyle(
-                                                            fontSize: 16,
+                                                          _salonAddressController
+                                                              .text
+                                                              .trim(),
+                                                          style: const TextStyle(
+                                                            fontSize: 14,
+                                                            height: 1.25,
                                                             fontWeight:
-                                                                FontWeight
-                                                                    .w700,
+                                                                FontWeight.w400,
                                                             color: AppColors
-                                                                .textPrimary,
+                                                                .textSecondary,
                                                           ),
                                                         ),
-                                                        if (_salonAddressController
-                                                            .text
-                                                            .trim()
-                                                            .isNotEmpty) ...[
-                                                          const SizedBox(
-                                                            height: 4,
-                                                          ),
-                                                          Text(
-                                                            _salonAddressController
-                                                                .text
-                                                                .trim(),
-                                                            style:
-                                                                const TextStyle(
+                                                      ] else
+                                                        Padding(
+                                                          padding:
+                                                              const EdgeInsets.only(
+                                                                top: 4,
+                                                              ),
+                                                          child: Text(
+                                                            locale.t(
+                                                              'addTraining.noAddress',
+                                                            ),
+                                                            style: const TextStyle(
                                                               fontSize: 14,
-                                                              height: 1.25,
-                                                              fontWeight:
-                                                                  FontWeight
-                                                                      .w400,
                                                               color: AppColors
-                                                                  .textSecondary,
+                                                                  .textTertiary,
                                                             ),
                                                           ),
-                                                        ] else
-                                                          Padding(
-                                                            padding:
-                                                                const EdgeInsets
-                                                                    .only(
-                                                              top: 4,
-                                                            ),
-                                                            child: Text(
-                                                              locale.t(
-                                                                'addTraining.noAddress',
-                                                              ),
-                                                              style:
-                                                                  const TextStyle(
-                                                                fontSize: 14,
-                                                                color: AppColors
-                                                                    .textTertiary,
-                                                              ),
-                                                            ),
-                                                          ),
-                                                      ],
-                                                    ),
+                                                        ),
+                                                    ],
                                                   ),
-                                                  const Padding(
-                                                    padding: EdgeInsets.only(
-                                                      top: 4,
-                                                    ),
-                                                    child: Icon(
-                                                      CupertinoIcons
-                                                          .chevron_forward,
-                                                      size: 18,
-                                                      color: AppColors
-                                                          .textTertiary,
-                                                    ),
+                                                ),
+                                                const Padding(
+                                                  padding: EdgeInsets.only(
+                                                    top: 4,
                                                   ),
-                                                ],
-                                              ),
+                                                  child: Icon(
+                                                    CupertinoIcons
+                                                        .chevron_forward,
+                                                    size: 18,
+                                                    color:
+                                                        AppColors.textTertiary,
+                                                  ),
+                                                ),
+                                              ],
                                             ),
                                           ),
                                         ),
                                       ),
-                                    ],
-                                  ),
+                                    ),
+                                  ],
                                 ),
-                                const SizedBox(height: 24),
-                                _SectionCard(
-                                  title: 'Фотографии студии',
-                                  child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.stretch,
-                                    children: [
-                                      Text(
-                                        'До $_maxStudioPhotos фото, максимум 3MB на фото.',
-                                        style: const TextStyle(
-                                          color: AppColors.textSecondary,
-                                          fontSize: 13,
-                                        ),
+                              ),
+                              const SizedBox(height: 24),
+                              _SectionCard(
+                                title: 'Фотографии студии',
+                                child: Column(
+                                  crossAxisAlignment:
+                                      CrossAxisAlignment.stretch,
+                                  children: [
+                                    Text(
+                                      'До $_maxStudioPhotos фото, максимум 3MB на фото.',
+                                      style: const TextStyle(
+                                        color: AppColors.textSecondary,
+                                        fontSize: 13,
                                       ),
-                                      const SizedBox(height: 12),
-                                      Wrap(
-                                        spacing: 10,
-                                        runSpacing: 10,
+                                    ),
+                                    const SizedBox(height: 12),
+                                    Wrap(
+                                      spacing: 10,
+                                      runSpacing: 10,
+                                      children: [
+                                        ...List.generate(
+                                          _studioPhotos.length,
+                                          (index) => _StudioPhotoTile(
+                                            photo: _studioPhotos[index],
+                                            onRemove: () =>
+                                                _removePhotoAt(index),
+                                          ),
+                                        ),
+                                        if (_studioPhotos.length <
+                                            _maxStudioPhotos)
+                                          _AddStudioPhotoTile(
+                                            loading: _photosProcessing,
+                                            onTap: _pickStudioPhotos,
+                                          ),
+                                      ],
+                                    ),
+                                    if (_photosProcessing &&
+                                        _photoProgressText != null) ...[
+                                      const SizedBox(height: 10),
+                                      Row(
                                         children: [
-                                          ...List.generate(
-                                            _studioPhotos.length,
-                                            (index) => _StudioPhotoTile(
-                                              photo: _studioPhotos[index],
-                                              onRemove: () =>
-                                                  _removePhotoAt(index),
+                                          const SizedBox(
+                                            width: 16,
+                                            height: 16,
+                                            child: CircularProgressIndicator(
+                                              strokeWidth: 2,
                                             ),
                                           ),
-                                          if (_studioPhotos.length <
-                                              _maxStudioPhotos)
-                                            _AddStudioPhotoTile(
-                                              loading: _photosProcessing,
-                                              onTap: _pickStudioPhotos,
+                                          const SizedBox(width: 8),
+                                          Text(
+                                            _photoProgressText!,
+                                            style: const TextStyle(
+                                              color: AppColors.textSecondary,
+                                              fontSize: 13,
                                             ),
+                                          ),
                                         ],
                                       ),
-                                      if (_photosProcessing &&
-                                          _photoProgressText != null) ...[
-                                        const SizedBox(height: 10),
-                                        Row(
-                                          children: [
-                                            const SizedBox(
-                                              width: 16,
-                                              height: 16,
-                                              child: CircularProgressIndicator(
-                                                strokeWidth: 2,
-                                              ),
-                                            ),
-                                            const SizedBox(width: 8),
-                                            Text(
-                                              _photoProgressText!,
-                                              style: const TextStyle(
-                                                color: AppColors.textSecondary,
-                                                fontSize: 13,
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                      ],
                                     ],
-                                  ),
+                                  ],
                                 ),
-                                const SizedBox(height: 24),
-                                _SectionCard(
-                                  title: locale.t('profileForm.contactInfo'),
-                                  child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.stretch,
-                                    children: [
-                                      _labeledField(
-                                        label: locale.t(
-                                          'profileForm.salonPhone',
-                                        ),
-                                        child: TextFormField(
-                                          controller: _salonPhoneController,
-                                          decoration: _inputDecoration(
-                                            hint: locale.t(
-                                              'profileForm.enterPhone',
-                                            ),
-                                          ),
-                                          keyboardType: TextInputType.phone,
-                                        ),
-                                      ),
-                                      const SizedBox(height: 16),
-                                      _labeledField(
-                                        label: locale.t(
-                                          'profileForm.salonEmail',
-                                        ),
-                                        child: TextFormField(
-                                          controller: _salonEmailController,
-                                          decoration: _inputDecoration(
-                                            hint: locale.t(
-                                              'profileForm.enterEmail',
-                                            ),
-                                          ),
-                                          keyboardType:
-                                              TextInputType.emailAddress,
-                                        ),
-                                      ),
-                                      const SizedBox(height: 16),
-                                      _labeledField(
-                                        label: 'Facebook',
-                                        child: TextFormField(
-                                          controller: _salonFacebookController,
-                                          decoration: _inputDecoration(
-                                            hint: 'https://facebook.com/...',
-                                          ),
-                                          keyboardType: TextInputType.url,
-                                        ),
-                                      ),
-                                      const SizedBox(height: 16),
-                                      _labeledField(
-                                        label: locale.t(
-                                          'profileForm.instagram',
-                                        ),
-                                        child: TextFormField(
-                                          controller: _salonInstagramController,
-                                          decoration: _inputDecoration(
-                                            hint: '@username',
+                              ),
+                              const SizedBox(height: 24),
+                              _SectionCard(
+                                title: locale.t('profileForm.contactInfo'),
+                                child: Column(
+                                  crossAxisAlignment:
+                                      CrossAxisAlignment.stretch,
+                                  children: [
+                                    _labeledField(
+                                      label: locale.t('profileForm.salonPhone'),
+                                      child: TextFormField(
+                                        controller: _salonPhoneController,
+                                        decoration: _inputDecoration(
+                                          hint: locale.t(
+                                            'profileForm.enterPhone',
                                           ),
                                         ),
+                                        keyboardType: TextInputType.phone,
                                       ),
-                                    ],
-                                  ),
+                                    ),
+                                    const SizedBox(height: 16),
+                                    _labeledField(
+                                      label: locale.t('profileForm.salonEmail'),
+                                      child: TextFormField(
+                                        controller: _salonEmailController,
+                                        decoration: _inputDecoration(
+                                          hint: locale.t(
+                                            'profileForm.enterEmail',
+                                          ),
+                                        ),
+                                        keyboardType:
+                                            TextInputType.emailAddress,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 16),
+                                    _labeledField(
+                                      label: 'Facebook',
+                                      child: TextFormField(
+                                        controller: _salonFacebookController,
+                                        decoration: _inputDecoration(
+                                          hint: 'https://facebook.com/...',
+                                        ),
+                                        keyboardType: TextInputType.url,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 16),
+                                    _labeledField(
+                                      label: locale.t('profileForm.instagram'),
+                                      child: TextFormField(
+                                        controller: _salonInstagramController,
+                                        decoration: _inputDecoration(
+                                          hint: '@username',
+                                        ),
+                                      ),
+                                    ),
+                                  ],
                                 ),
-                              ],
-                            ),
+                              ),
+                            ],
                           ),
-                    const SizedBox(height: 24),
+                        ),
+                  const SizedBox(height: 24),
                 ],
               ),
             ),

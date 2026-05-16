@@ -1,21 +1,34 @@
+import Image from 'next/image';
+
 import { cn } from '@/lib/utils';
 
-/** Decorative phone chrome for landing sections (no interactive UI). */
+/** Phone mock image for landing sections (decorative, not interactive). */
 export function StudioPhoneFrame({ className }: { className?: string }) {
 	return (
 		<div
 			className={cn(
-				'relative mx-auto w-[min(72vw,400px)] shrink-0 select-none',
+				'relative mx-auto w-[min(72vw,400px)] shrink-0 select-none ',
 				className,
 			)}
 		>
-			<div className="relative rounded-[2.75rem] bg-gradient-to-b from-[#3d3d45] to-[#12141a] p-[11px] ring-1 ring-black/20">
-				<div className="aspect-[9/19.5] overflow-hidden rounded-[2.35rem] bg-white">
-					<div className="flex justify-center pb-2 pt-3">
-						<div className="h-[24px] w-[78px] rounded-full bg-[#1A202C]" />
-					</div>
-				</div>
-			</div>
+			<Image
+				src="/images/screen-calendar.webp"
+				alt=""
+				width={417}
+				height={799}
+				className="block absolute inset-[15px_20px] w-[calc(100%-40px)] overflow-hidden h-[calc(100%-30px)] rounded-[2rem]"
+				draggable={false}
+				sizes="(max-width: 768px) 72vw, 400px"
+			/>
+			<Image
+				src="/images/mockup.webp"
+				alt=""
+				width={417}
+				height={799}
+				className="block h-auto w-full relative z-2"
+				draggable={false}
+				sizes="(max-width: 768px) 72vw, 400px"
+			/>
 		</div>
 	);
 }
