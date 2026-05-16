@@ -145,7 +145,7 @@ class TopStudioCard extends StatelessWidget {
                       0,
                     ),
                     child: Text(
-                      studio.name,
+                      studio.studioName,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(

@@ -9,12 +9,17 @@ import '../../constants/colors.dart';
 import '../../constants/layout.dart';
 import '../../l10n/locale_provider.dart';
 import '../../models/salon.dart';
+import '../../models/training_location_item.dart';
 import '../../services/auth_service.dart';
 import '../../services/cache/salon_cache.dart';
 import '../../services/dashboard_api_service.dart';
 import '../../services/owner_photo_storage_service.dart';
+import '../../utils/default_training_location_swap.dart';
 import '../../utils/show_api_error.dart';
+import '../../utils/training_locations_storage.dart';
 import '../../widgets/address_picker_modal.dart';
+import '../../widgets/training/training_location_picker_sheet.dart';
+import '../../widgets/settings/settings_form_tokens.dart';
 import '../../widgets/settings/settings_typography.dart';
 
 class SettingsScreen extends StatefulWidget {
@@ -44,6 +49,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   double? _salonLat;
   double? _salonLon;
   List<String> _studioPhotos = <String>[];
+  List<TrainingLocationItem> _locations = [];
   String _initialSnapshot = '';
 
   @override
@@ -103,8 +109,27 @@ class _SettingsScreenState extends State<SettingsScreen> {
     _salonLat = s.latitude;
     _salonLon = s.longitude;
     _studioPhotos = List<String>.from(s.photos ?? <String>[]);
+    final locale = context.read<LocaleProvider>();
+    _locations = TrainingLocationItem.listFromSalon(
+      s,
+      mainStudioName: locale.t('locations.mainStudio'),
+    );
     _initialSnapshot = _buildSnapshot();
     if (mounted) setState(() {});
+  }
+
+  TrainingLocationItem? get _primaryLocation {
+    for (final loc in _locations) {
+      if (loc.isDefault) return loc;
+    }
+    return _locations.isNotEmpty ? _locations.first : null;
+  }
+
+  void _applyLocationsFromSalon(Salon? salon, LocaleProvider locale) {
+    _locations = TrainingLocationItem.listFromSalon(
+      salon,
+      mainStudioName: locale.t('locations.mainStudio'),
+    );
   }
 
   @override
@@ -143,6 +168,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       _salonLat?.toStringAsFixed(6) ?? '',
       _salonLon?.toStringAsFixed(6) ?? '',
       photos.join('|'),
+      TrainingLocationItem.extraLocationsToJson(_locations).toString(),
     ].join('::');
   }
 
@@ -188,21 +214,121 @@ class _SettingsScreenState extends State<SettingsScreen> {
     Navigator.of(context).pop();
   }
 
-  Future<void> _openSalonAddressPicker() async {
+  Future<void> _openDefaultLocationPicker() async {
+    final locale = context.read<LocaleProvider>();
+    final salon = _salon;
+    if (salon == null) {
+      final selection = await AddressPickerModal.show(
+        context,
+        initialLocationName: locale.t('locations.mainStudio'),
+        initialAddress: _salonAddressController.text.trim(),
+        initialLat: _salonLat,
+        initialLon: _salonLon,
+      );
+      if (selection == null || !mounted) return;
+      setState(() {
+        _salonAddressController.text = selection.address;
+        _salonLat = selection.lat;
+        _salonLon = selection.lon;
+      });
+      return;
+    }
+
+    if (_locations.isEmpty) {
+      _applyLocationsFromSalon(salon, locale);
+    }
+
+    const defaultId = 'default';
+    final result = await showTrainingLocationPickerSheet(
+      context,
+      locations: _locations,
+      selectedId: defaultId,
+      mode: TrainingLocationPickerMode.setDefault,
+      titleL10nKey: 'profileForm.chooseDefaultLocationSheetTitle',
+    );
+    if (!mounted || result == null) return;
+
+    switch (result) {
+      case TrainingLocationPicked(:final location):
+        if (location.id == defaultId) return;
+        final swap = swapSalonDefaultTrainingLocation(
+          salon: salon,
+          locations: _locations,
+          newDefaultId: location.id,
+          mainStudioName: locale.t('locations.mainStudio'),
+        );
+        if (swap == null) return;
+        setState(() {
+          _salonAddressController.text = swap.address;
+          _salonLat = swap.latitude;
+          _salonLon = swap.longitude;
+          _locations = [
+            TrainingLocationItem(
+              id: defaultId,
+              name: swap.primaryName,
+              address: swap.address,
+              isDefault: true,
+              latitude: swap.latitude,
+              longitude: swap.longitude,
+            ),
+            ...swap.extraLocations,
+          ];
+        });
+      case TrainingLocationAddRequested():
+        await _addNewTrainingLocationFromSettings();
+    }
+  }
+
+  Future<void> _addNewTrainingLocationFromSettings() async {
+    final locale = context.read<LocaleProvider>();
+    final salon = _salon;
+    if (salon == null) return;
+
+    if (_locations.isEmpty) {
+      _applyLocationsFromSalon(salon, locale);
+    }
+
+    final seed =
+        _primaryLocation ??
+        TrainingLocationItem.defaultFromSalon(
+          salon,
+          mainStudioName: locale.t('locations.mainStudio'),
+        );
+
     final selection = await AddressPickerModal.show(
       context,
-      initialLocationName: _salonNameController.text.trim(),
-      initialAddress: _salonAddressController.text.trim(),
-      initialLat: _salonLat,
-      initialLon: _salonLon,
+      initialLocationName: seed.name.trim().isNotEmpty
+          ? seed.name.trim()
+          : locale.t('locations.mainStudio'),
+      initialAddress: seed.address,
+      initialLat: seed.latitude ?? salon.latitude,
+      initialLon: seed.longitude ?? salon.longitude,
     );
-    if (selection == null || !mounted) return;
-    setState(() {
-      _salonNameController.text = selection.locationName;
-      _salonAddressController.text = selection.address;
-      _salonLat = selection.lat;
-      _salonLon = selection.lon;
-    });
+    if (!mounted || selection == null) return;
+
+    final newLoc = TrainingLocationItem(
+      id: 'loc_${DateTime.now().millisecondsSinceEpoch}',
+      name: selection.locationName,
+      address: selection.address.trim(),
+      latitude: selection.lat,
+      longitude: selection.lon,
+    );
+    final updatedList = [..._locations, newLoc];
+
+    try {
+      final updatedSalon = await persistExtraTrainingLocations(
+        context,
+        salon,
+        updatedList,
+      );
+      if (!mounted) return;
+      setState(() {
+        _salon = updatedSalon ?? salon;
+        _applyLocationsFromSalon(_salon, locale);
+      });
+    } catch (e) {
+      if (mounted) showApiError(context, e);
+    }
   }
 
   Future<void> _saveSalon() async {
@@ -234,12 +360,19 @@ class _SettingsScreenState extends State<SettingsScreen> {
         payload['latitude'] = _salonLat;
         payload['longitude'] = _salonLon;
       }
+      if (_locations.isNotEmpty) {
+        final reminderSettings = <String, dynamic>{
+          ...?_salon?.reminderSettings,
+          'trainingLocations': TrainingLocationItem.extraLocationsToJson(
+            _locations,
+          ),
+        };
+        payload['reminderSettings'] = reminderSettings;
+      }
       Salon result;
       if (hadSalon) {
         if (_salon!.workingHours != null)
           payload['workingHours'] = _salon!.workingHours;
-        if (_salon!.reminderSettings != null)
-          payload['reminderSettings'] = _salon!.reminderSettings;
         result = await DashboardApiService.updateCurrentSalon(token, payload);
       } else {
         result = await DashboardApiService.createCurrentSalon(token, payload);
@@ -352,24 +485,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
   InputDecoration _inputDecoration({
     required String hint,
     bool alignLabelWithHint = false,
-  }) {
-    return InputDecoration(
-      hintText: hint,
-      filled: true,
-      fillColor: AppColors.backgroundPrimary,
-      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-      enabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
-        borderSide: const BorderSide(color: AppColors.borderPrimary),
-      ),
-      focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
-        borderSide: const BorderSide(color: AppColors.primary500, width: 1.5),
-      ),
-      contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-      alignLabelWithHint: alignLabelWithHint,
-    );
-  }
+    int maxLines = 1,
+  }) =>
+      settingsInputDecoration(
+        hintText: hint,
+        alignLabelWithHint: alignLabelWithHint,
+        maxLines: maxLines,
+      );
 
   Widget _labeledField({required String label, required Widget child}) {
     return Column(
@@ -511,6 +633,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                             'profileForm.enterDescription',
                                           ),
                                           alignLabelWithHint: true,
+                                          maxLines: 4,
                                         ),
                                         maxLines: 4,
                                       ),
@@ -520,17 +643,23 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                       label: locale.t('profileForm.address'),
                                       child: Material(
                                         color: AppColors.backgroundPrimary,
-                                        borderRadius: BorderRadius.circular(12),
+                                        borderRadius:
+                                            settingsInputBorderRadius(
+                                              maxLines: 2,
+                                            ),
                                         clipBehavior: Clip.antiAlias,
                                         child: InkWell(
-                                          onTap: _openSalonAddressPicker,
-                                          borderRadius: BorderRadius.circular(
-                                            12,
-                                          ),
+                                          onTap: _openDefaultLocationPicker,
+                                          borderRadius:
+                                              settingsInputBorderRadius(
+                                                maxLines: 2,
+                                              ),
                                           child: Container(
                                             decoration: BoxDecoration(
                                               borderRadius:
-                                                  BorderRadius.circular(12),
+                                                  settingsInputBorderRadius(
+                                                    maxLines: 2,
+                                                  ),
                                               border: Border.all(
                                                 color: AppColors.borderPrimary,
                                               ),
@@ -561,62 +690,83 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                                         CrossAxisAlignment
                                                             .start,
                                                     children: [
-                                                      Text(
-                                                        _salonNameController
-                                                                .text
-                                                                .trim()
-                                                                .isNotEmpty
-                                                            ? _salonNameController
-                                                                  .text
+                                                      Builder(
+                                                        builder: (context) {
+                                                          final primary =
+                                                              _primaryLocation;
+                                                          final displayName =
+                                                              primary?.name
+                                                                      .trim()
+                                                                      .isNotEmpty ==
+                                                                  true
+                                                              ? primary!.name
                                                                   .trim()
-                                                            : locale.t(
-                                                                'addTraining.studioNameFallback',
+                                                              : locale.t(
+                                                                  'addTraining.studioNameFallback',
+                                                                );
+                                                          final address =
+                                                              primary?.address
+                                                                      .trim() ??
+                                                                  _salonAddressController
+                                                                      .text
+                                                                      .trim();
+                                                          return Column(
+                                                            crossAxisAlignment:
+                                                                CrossAxisAlignment
+                                                                    .start,
+                                                            children: [
+                                                              Text(
+                                                                displayName,
+                                                                style: const TextStyle(
+                                                                  fontSize: 16,
+                                                                  fontWeight:
+                                                                      FontWeight
+                                                                          .w700,
+                                                                  color: AppColors
+                                                                      .textPrimary,
+                                                                ),
                                                               ),
-                                                        style: const TextStyle(
-                                                          fontSize: 16,
-                                                          fontWeight:
-                                                              FontWeight.w700,
-                                                          color: AppColors
-                                                              .textPrimary,
-                                                        ),
+                                                              if (address
+                                                                  .isNotEmpty) ...[
+                                                                const SizedBox(
+                                                                  height: 4,
+                                                                ),
+                                                                Text(
+                                                                  address,
+                                                                  style: const TextStyle(
+                                                                    fontSize:
+                                                                        14,
+                                                                    height: 1.25,
+                                                                    fontWeight:
+                                                                        FontWeight
+                                                                            .w400,
+                                                                    color: AppColors
+                                                                        .textSecondary,
+                                                                  ),
+                                                                ),
+                                                              ] else
+                                                                Padding(
+                                                                  padding:
+                                                                      const EdgeInsets
+                                                                          .only(
+                                                                    top: 4,
+                                                                  ),
+                                                                  child: Text(
+                                                                    locale.t(
+                                                                      'addTraining.noAddress',
+                                                                    ),
+                                                                    style: const TextStyle(
+                                                                      fontSize:
+                                                                          14,
+                                                                      color: AppColors
+                                                                          .textTertiary,
+                                                                    ),
+                                                                  ),
+                                                                ),
+                                                            ],
+                                                          );
+                                                        },
                                                       ),
-                                                      if (_salonAddressController
-                                                          .text
-                                                          .trim()
-                                                          .isNotEmpty) ...[
-                                                        const SizedBox(
-                                                          height: 4,
-                                                        ),
-                                                        Text(
-                                                          _salonAddressController
-                                                              .text
-                                                              .trim(),
-                                                          style: const TextStyle(
-                                                            fontSize: 14,
-                                                            height: 1.25,
-                                                            fontWeight:
-                                                                FontWeight.w400,
-                                                            color: AppColors
-                                                                .textSecondary,
-                                                          ),
-                                                        ),
-                                                      ] else
-                                                        Padding(
-                                                          padding:
-                                                              const EdgeInsets.only(
-                                                                top: 4,
-                                                              ),
-                                                          child: Text(
-                                                            locale.t(
-                                                              'addTraining.noAddress',
-                                                            ),
-                                                            style: const TextStyle(
-                                                              fontSize: 14,
-                                                              color: AppColors
-                                                                  .textTertiary,
-                                                            ),
-                                                          ),
-                                                        ),
                                                     ],
                                                   ),
                                                 ),
@@ -868,11 +1018,7 @@ class _SectionCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
-      decoration: BoxDecoration(
-        color: AppColors.backgroundPrimary,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.borderPrimary),
-      ),
+      decoration: settingsSectionDecoration(),
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(

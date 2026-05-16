@@ -8,6 +8,9 @@ import '../../constants/colors.dart';
 import '../../constants/layout.dart';
 import '../../l10n/locale_provider.dart';
 import '../../models/booking.dart';
+import '../../models/salon.dart';
+import '../../models/training_location_item.dart';
+import '../../widgets/dashboard/owner_daily_schedule_session_card.dart';
 import '../../services/auth_service.dart';
 import '../../services/cache/bookings_cache.dart';
 import '../../services/cache/salon_cache.dart';
@@ -389,7 +392,7 @@ class _ClientDetailScreenState extends State<ClientDetailScreen> {
     final tr = context.watch<LocaleProvider>().t;
     final localeCode = context.watch<LocaleProvider>().localeCode;
     final auth = context.watch<AuthService>();
-    final salonName = context.watch<SalonCache>().salon?.name?.trim() ?? '';
+    final salon = context.watch<SalonCache>().salon;
     final identity = _resolveClientIdentity();
     final resolvedPhone = identity.phone ?? '';
     final resolvedEmail = identity.email ?? '';
@@ -530,7 +533,7 @@ class _ClientDetailScreenState extends State<ClientDetailScreen> {
                     totalVisitsLabel: tr('ownerClient.totalVisitsStat'),
                     noShowLabel: tr('ownerClient.noShowStat'),
                   ),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 14),
                   Row(
                     crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
@@ -579,12 +582,12 @@ class _ClientDetailScreenState extends State<ClientDetailScreen> {
                               : null,
                         ),
                       ),
-                      const SizedBox(width: 8),
+                      const SizedBox(width: 4),
                       Expanded(
                         child: _ClientActionTile(
                           icon: const Icon(
                             Icons.add,
-                            size: 24,
+                            size: 21,
                             color: AppColors.textInverse,
                           ),
                           label: tr('booking.book'),
@@ -624,7 +627,7 @@ class _ClientDetailScreenState extends State<ClientDetailScreen> {
                       (b) => _ClientVisitCard(
                         booking: b,
                         accent: _visitAccent(b),
-                        salonName: salonName,
+                        locationLabel: _visitLocationLabel(b, salon, tr),
                         trainerLabel: _trainerLine(b, ownerName, tr),
                         durationLabel: _durationLabel(b, tr),
                         onTap: () => BookingDetailModal.show(
@@ -640,6 +643,41 @@ class _ClientDetailScreenState extends State<ClientDetailScreen> {
               ),
             ),
     );
+  }
+
+  String _visitLocationLabel(
+    Booking b,
+    Salon? salon,
+    String Function(String) tr,
+  ) {
+    final direct = b.locationName?.trim();
+    if (direct != null && direct.isNotEmpty) return direct;
+
+    if (salon == null) return '';
+
+    final locations = TrainingLocationItem.listFromSalon(
+      salon,
+      mainStudioName: tr('locations.mainStudio'),
+    );
+    if (locations.isEmpty) return '';
+
+    final id = b.locationId?.trim();
+    if (id != null && id.isNotEmpty) {
+      for (final loc in locations) {
+        if (loc.id != id) continue;
+        final name = loc.name.trim();
+        if (name.isNotEmpty) return name;
+      }
+    }
+
+    for (final loc in locations) {
+      if (!loc.isDefault) continue;
+      final name = loc.name.trim();
+      if (name.isNotEmpty) return name;
+    }
+
+    final fallback = locations.first.name.trim();
+    return fallback.isNotEmpty ? fallback : '';
   }
 
   String _trainerLine(Booking b, String ownerName, String Function(String) tr) {
@@ -675,103 +713,86 @@ class _ClientProfileHeader extends StatelessWidget {
   final String totalVisitsLabel;
   final String noShowLabel;
 
-  static const double _avatarSize = 100;
+  static const double _avatarSize = 72;
 
   @override
   Widget build(BuildContext context) {
-    return Stack(
-      clipBehavior: Clip.none,
-      children: [
-        Padding(
-          padding: const EdgeInsets.only(top: 20),
-          child: DecoratedBox(
-            decoration: BoxDecoration(
-              color: AppColors.backgroundPrimary,
-              borderRadius: BorderRadius.circular(20),
-              boxShadow: _kClientDetailCardShadow,
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: AppColors.backgroundPrimary,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: _kClientDetailCardShadow,
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+              width: _avatarSize,
+              height: _avatarSize,
+              decoration: const BoxDecoration(
+                shape: BoxShape.circle,
+                boxShadow: <BoxShadow>[
+                  BoxShadow(
+                    color: Color(0x14000000),
+                    blurRadius: 10,
+                    offset: Offset(0, 3),
+                  ),
+                ],
+              ),
+              child: CircleAvatar(
+                radius: _avatarSize / 2,
+                backgroundColor: AppColors.primary100,
+                child: Text(
+                  initials,
+                  style: const TextStyle(
+                    fontSize: 28,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.primary500,
+                    height: 1,
+                  ),
+                ),
+              ),
             ),
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
+            const SizedBox(width: 14),
+            Expanded(
               child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Padding(
-                    padding: const EdgeInsets.only(left: _avatarSize + 12),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          name,
-                          style: const TextStyle(
-                            fontSize: 20,
-                            fontWeight: FontWeight.w700,
-                            letterSpacing: -0.3,
-                            height: 1.2,
-                            color: AppColors.textPrimary,
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          memberSinceLabel,
-                          style: const TextStyle(
-                            fontSize: 13,
-                            fontWeight: FontWeight.w500,
-                            color: AppColors.textSecondary,
-                          ),
-                        ),
-                        const SizedBox(height: 10),
-                        Row(
-                          children: [
-                            _InlineStat(
-                              label: totalVisitsLabel,
-                              value: totalVisits,
-                            ),
-                            const SizedBox(width: 16),
-                            _InlineStat(
-                              label: noShowLabel,
-                              value: noShowVisits,
-                            ),
-                          ],
-                        ),
-                      ],
+                  Text(
+                    name,
+                    style: const TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: -0.3,
+                      height: 1.2,
+                      color: AppColors.textPrimary,
                     ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    memberSinceLabel,
+                    style: const TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w500,
+                      color: AppColors.textSecondary,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  Row(
+                    children: [
+                      _InlineStat(label: totalVisitsLabel, value: totalVisits),
+                      const SizedBox(width: 20),
+                      _InlineStat(label: noShowLabel, value: noShowVisits),
+                    ],
                   ),
                 ],
               ),
             ),
-          ),
+          ],
         ),
-        Positioned(
-          left: 16,
-          top: 0,
-          child: Container(
-            width: _avatarSize,
-            height: _avatarSize,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              boxShadow: const <BoxShadow>[
-                BoxShadow(
-                  color: Color(0x1A000000),
-                  blurRadius: 12,
-                  offset: Offset(0, 4),
-                ),
-              ],
-            ),
-            child: CircleAvatar(
-              backgroundColor: AppColors.primary100,
-              child: Text(
-                initials,
-                style: const TextStyle(
-                  fontSize: 32,
-                  fontWeight: FontWeight.w700,
-                  color: AppColors.primary500,
-                  height: 1,
-                ),
-              ),
-            ),
-          ),
-        ),
-      ],
+      ),
     );
   }
 }
@@ -789,11 +810,13 @@ class _InlineStat extends StatelessWidget {
         style: const TextStyle(
           fontSize: 14,
           fontWeight: FontWeight.w600,
-          color: AppColors.textPrimary,
           height: 1.3,
         ),
         children: [
-          TextSpan(text: label),
+          TextSpan(
+            text: label,
+            style: const TextStyle(color: AppColors.textPrimary),
+          ),
           const TextSpan(
             text: ' · ',
             style: TextStyle(
@@ -804,8 +827,8 @@ class _InlineStat extends StatelessWidget {
           TextSpan(
             text: '$value',
             style: const TextStyle(
-              fontWeight: FontWeight.w700,
-              color: AppColors.textPrimary,
+              fontWeight: FontWeight.w500,
+              color: AppColors.textSecondary,
             ),
           ),
         ],
@@ -824,7 +847,7 @@ class _ClientActionTile extends StatelessWidget {
     this.iconTopPadding = 0,
   });
 
-  static const double _tileHeight = 70;
+  static const double _tileHeight = 72;
 
   final Widget icon;
   final String label;
@@ -840,26 +863,21 @@ class _ClientActionTile extends StatelessWidget {
       height: _tileHeight,
       child: Material(
         color: filled ? AppColors.primary500 : AppColors.backgroundPrimary,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(14),
         child: InkWell(
           onTap: effectiveTap,
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(14),
           child: DecoratedBox(
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(12),
-              border: filled
-                  ? null
-                  : Border.all(color: AppColors.borderPrimary),
-            ),
+            decoration: BoxDecoration(borderRadius: BorderRadius.circular(14)),
             child: Opacity(
               opacity: enabled ? 1 : 0.45,
               child: Padding(
                 padding: const EdgeInsets.symmetric(
-                  horizontal: 6,
-                  vertical: 10,
+                  horizontal: 8,
+                  vertical: 12,
                 ),
                 child: Column(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     Padding(
                       padding: EdgeInsets.only(top: iconTopPadding),
@@ -872,6 +890,7 @@ class _ClientActionTile extends StatelessWidget {
                         child: icon,
                       ),
                     ),
+                    const SizedBox(height: 8),
                     Text(
                       label,
                       textAlign: TextAlign.center,
@@ -896,11 +915,23 @@ class _ClientActionTile extends StatelessWidget {
   }
 }
 
+Widget _clientVisitTrainerIcon() {
+  return Padding(
+    padding: const EdgeInsets.only(top: 1),
+    child: SvgPicture.asset(
+      'assets/icons/icon-profile.svg',
+      width: 11,
+      height: 13,
+      colorFilter: const ColorFilter.mode(Color(0xFF4D39A8), BlendMode.srcIn),
+    ),
+  );
+}
+
 class _ClientVisitCard extends StatelessWidget {
   const _ClientVisitCard({
     required this.booking,
     required this.accent,
-    required this.salonName,
+    required this.locationLabel,
     required this.trainerLabel,
     required this.durationLabel,
     required this.onTap,
@@ -908,7 +939,7 @@ class _ClientVisitCard extends StatelessWidget {
 
   final Booking booking;
   final Color accent;
-  final String salonName;
+  final String locationLabel;
   final String trainerLabel;
   final String durationLabel;
   final VoidCallback onTap;
@@ -924,9 +955,10 @@ class _ClientVisitCard extends StatelessWidget {
     );
     final dateLabel = DateFormat('dd.MM.yy', locale.toString()).format(localDt);
     final title = booking.service?.name ?? '—';
-    final pinLine = salonName.isNotEmpty
-        ? '$salonName • $trainerLabel'
-        : trainerLabel;
+    final location = locationLabel.trim();
+    final trainer = trainerLabel.trim();
+    final showTrainer =
+        trainer.isNotEmpty && !isPlaceholderScheduleTrainerName(trainer);
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 10),
@@ -991,25 +1023,57 @@ class _ClientVisitCard extends StatelessWidget {
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                         ),
-                        const SizedBox(height: 4),
-                        Row(
-                          children: [
-                            Icon(Icons.place_outlined, size: 13, color: accent),
-                            const SizedBox(width: 3),
-                            Flexible(
-                              child: Text(
-                                pinLine,
-                                style: const TextStyle(
-                                  fontSize: 13,
-                                  fontWeight: FontWeight.w400,
-                                  color: AppColors.textSecondary,
+                        if (location.isNotEmpty) ...[
+                          const SizedBox(height: 8),
+                          Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Padding(
+                                padding: const EdgeInsets.only(top: 1),
+                                child: SvgPicture.asset(
+                                  'assets/icons/icon-pin.svg',
+                                  width: 11,
+                                  height: 15,
                                 ),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
                               ),
-                            ),
-                          ],
-                        ),
+                              const SizedBox(width: 4),
+                              Flexible(
+                                child: Text(
+                                  location,
+                                  style: const TextStyle(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w400,
+                                    color: AppColors.textPrimary,
+                                  ),
+                                  maxLines: 2,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                        if (showTrainer) ...[
+                          if (location.isEmpty) const SizedBox(height: 8),
+                          if (location.isNotEmpty) const SizedBox(height: 4),
+                          Row(
+                            children: [
+                              _clientVisitTrainerIcon(),
+                              const SizedBox(width: 3),
+                              Expanded(
+                                child: Text(
+                                  trainer,
+                                  style: const TextStyle(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w400,
+                                    color: AppColors.textPrimary,
+                                  ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
                       ],
                     ),
                   ),

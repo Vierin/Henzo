@@ -231,7 +231,7 @@ class _AppSettingsScreenState extends State<AppSettingsScreen> {
                   ),
                   const SizedBox(height: 20),
                   _SectionLabel(
-                    title: locale.t('settings.owner.sectionAccount'),
+                    title: locale.t('settings.owner.sectionPayments'),
                   ),
                   const SizedBox(height: 8),
                   _SettingsGroupCard(
@@ -484,7 +484,6 @@ class _SettingsGroupCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: AppColors.backgroundPrimary,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.borderPrimary),
       ),
       child: Column(
         children: [

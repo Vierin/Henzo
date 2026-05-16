@@ -110,35 +110,24 @@ class _PublicHomeScreenState extends State<PublicHomeScreen> {
       for (final item in list) {
         if (item is! Map) continue;
         final data = Map<String, dynamic>.from(item);
-        final categories = data['categories'];
-        final parsedCategories = categories is List
-            ? categories
-                  .where((c) => c != null)
-                  .map((c) => c.toString().trim())
-                  .where((c) => c.isNotEmpty)
-                  .toList()
-            : <String>[];
-        final rating = (data['avgRating'] as num?)?.toDouble() ?? 0;
-        final address = (data['address'] ?? '').toString();
+        final preview = parsePublicStudioPreviewFromNearby(data);
         final distanceKm = _distanceKmForStudio(
           data,
-          (data['distance'] as num?)?.toDouble(),
+          preview.distanceKm,
         );
-        final photos = data['photos'];
-        final photoUrl = photos is List && photos.isNotEmpty
-            ? photos.first?.toString()
-            : null;
         mapped.add(
-          PublicStudioPreview(
-            id: (data['id'] ?? '').toString(),
-            name: (data['name'] ?? 'Studio').toString(),
-            categories: parsedCategories,
-            rating: rating,
-            address: address.isNotEmpty ? address : '—',
-            distanceKm: distanceKm,
-            photoUrl: photoUrl,
-            reviewCount: (data['reviewCount'] as num?)?.toInt() ?? 0,
-          ),
+          preview.distanceKm == distanceKm
+              ? preview
+              : PublicStudioPreview(
+                  id: preview.id,
+                  studioName: preview.studioName,
+                  categories: preview.categories,
+                  rating: preview.rating,
+                  address: preview.address,
+                  distanceKm: distanceKm,
+                  photoUrl: preview.photoUrl,
+                  reviewCount: preview.reviewCount,
+                ),
         );
       }
       if (!mounted) return;
@@ -418,9 +407,11 @@ class _PublicHomeScreenState extends State<PublicHomeScreen> {
     }
 
     merged.sort((a, b) {
-      final aa = parseApiDateTime(a['startsAt']) ??
+      final aa =
+          parseApiDateTime(a['startsAt']) ??
           DateTime.fromMillisecondsSinceEpoch(0);
-      final bb = parseApiDateTime(b['startsAt']) ??
+      final bb =
+          parseApiDateTime(b['startsAt']) ??
           DateTime.fromMillisecondsSinceEpoch(0);
       return aa.compareTo(bb);
     });
@@ -611,10 +602,7 @@ class _PublicHomeScreenState extends State<PublicHomeScreen> {
           ),
           if (subtitle != null) ...[
             const SizedBox(height: 2),
-            Text(
-              subtitle,
-              style: BrandTypography.sectionSubtitle(context),
-            ),
+            Text(subtitle, style: BrandTypography.sectionSubtitle(context)),
           ],
         ],
       ),
@@ -658,7 +646,7 @@ class _PublicHomeScreenState extends State<PublicHomeScreen> {
                             children: [
                               const Icon(
                                 Icons.location_on_outlined,
-                                size: 18,
+                                size: 20,
                                 color: AppColors.primary500,
                               ),
                               const SizedBox(width: 4),
@@ -668,7 +656,7 @@ class _PublicHomeScreenState extends State<PublicHomeScreen> {
                                   overflow: TextOverflow.ellipsis,
                                   text: TextSpan(
                                     style: const TextStyle(
-                                      fontSize: 13,
+                                      fontSize: 14,
                                       color: AppColors.textSecondary,
                                       height: 1.25,
                                     ),
@@ -681,6 +669,7 @@ class _PublicHomeScreenState extends State<PublicHomeScreen> {
                                         text: locationLabel,
                                         style: const TextStyle(
                                           fontWeight: FontWeight.w700,
+                                          fontSize: 14,
                                           color: AppColors.textPrimary,
                                         ),
                                       ),
@@ -691,7 +680,7 @@ class _PublicHomeScreenState extends State<PublicHomeScreen> {
                               const Icon(
                                 Icons.keyboard_arrow_down_rounded,
                                 size: 20,
-                                color: AppColors.textSecondary,
+                                color: AppColors.textPrimary,
                               ),
                             ],
                           ),
@@ -956,23 +945,25 @@ class _PublicHomeScreenState extends State<PublicHomeScreen> {
         ? Map<String, dynamic>.from(item['studio'] as Map)
         : <String, dynamic>{};
     final studioId = (studio['id'] ?? '').toString();
-    final sessionId =
-        (item['id'] ?? item['sessionId'] ?? '').toString();
+    final sessionId = (item['id'] ?? item['sessionId'] ?? '').toString();
     final startsHint = parseApiDateTime(item['startsAt']);
     final locationCount = (studio['locationCount'] as num?)?.toInt() ?? 1;
     final sub = resolveOwnerSessionCardSubtitleForPublic(
       session: session,
       studioLocationCount: locationCount,
     );
-    final trainerLine = sub.showLocationPin
-        ? ownerDailyScheduleTrainerLabel(session, null)
-        : null;
-
-    return OwnerDailyScheduleSessionCard(
+    final rows = layoutOwnerSessionCardRows(
       session: session,
       subtitleLabel: sub.label,
       showLocationPin: sub.showLocationPin,
-      trainerLine: trainerLine,
+    );
+
+    return OwnerDailyScheduleSessionCard(
+      session: session,
+      subtitleLabel: rows.subtitleLabel,
+      showLocationPin: rows.showLocationPin,
+      showSubtitleLeadingIcon: rows.showSubtitleLeadingIcon,
+      trainerLine: rows.trainerLine,
       onTap: () {
         if (studioId.isEmpty || sessionId.isEmpty || startsHint == null) {
           return;

@@ -72,17 +72,18 @@ class OwnerDailyScheduleBlock extends StatelessWidget {
                     studioLocations: studioLocations,
                     ownerTrainerFallback: ownerTrainerFallback,
                   );
-                  final trainerLine = sub.showLocationPin
-                      ? ownerDailyScheduleTrainerLabel(
-                          s,
-                          ownerTrainerFallback,
-                        )
-                      : null;
-                  return OwnerDailyScheduleSessionCard(
+                  final rows = layoutOwnerSessionCardRows(
                     session: s,
                     subtitleLabel: sub.label,
                     showLocationPin: sub.showLocationPin,
-                    trainerLine: trainerLine,
+                    ownerTrainerFallback: ownerTrainerFallback,
+                  );
+                  return OwnerDailyScheduleSessionCard(
+                    session: s,
+                    subtitleLabel: rows.subtitleLabel,
+                    showLocationPin: rows.showLocationPin,
+                    showSubtitleLeadingIcon: rows.showSubtitleLeadingIcon,
+                    trainerLine: rows.trainerLine,
                     onTap: () => onSessionTap(s),
                   );
                 }),

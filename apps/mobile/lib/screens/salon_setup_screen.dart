@@ -130,7 +130,6 @@ class _SalonSetupScreenState extends State<SalonSetupScreen> {
                       );
                       if (selection == null || !mounted) return;
                       setState(() {
-                        _nameController.text = selection.locationName;
                         _addressController.text = selection.address;
                         _addressLat = selection.lat;
                         _addressLon = selection.lon;

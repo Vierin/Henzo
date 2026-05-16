@@ -8,6 +8,7 @@ import '../constants/colors.dart';
 import '../constants/layout.dart';
 import '../l10n/locale_provider.dart';
 import '../widgets/settings/branded_settings_app_bar.dart';
+import '../widgets/settings/settings_form_tokens.dart';
 import '../services/auth_service.dart';
 import '../services/owner_photo_storage_service.dart';
 import '../utils/auth_ui_result.dart';
@@ -287,28 +288,24 @@ class _AccountSettingsScreenState extends State<AccountSettingsScreen> {
                         const SizedBox(height: 16),
                         TextFormField(
                           controller: _nameController,
-                          decoration: InputDecoration(
+                          decoration: settingsInputDecoration(
                             labelText: locale.t('profileForm.name'),
-                            border: const OutlineInputBorder(),
                           ),
                         ),
                         const SizedBox(height: 12),
                         TextFormField(
                           initialValue: user.email,
                           readOnly: true,
-                          decoration: InputDecoration(
+                          decoration: settingsInputDecoration(
                             labelText: locale.t('profileForm.email'),
-                            border: const OutlineInputBorder(),
-                            filled: true,
-                            fillColor: AppColors.backgroundTertiary,
+                            readOnly: true,
                           ),
                         ),
                         const SizedBox(height: 12),
                         TextFormField(
                           controller: _phoneController,
-                          decoration: InputDecoration(
+                          decoration: settingsInputDecoration(
                             labelText: locale.t('profileForm.phone'),
-                            border: const OutlineInputBorder(),
                           ),
                         ),
                         const SizedBox(height: 14),
@@ -337,18 +334,17 @@ class _AccountSettingsScreenState extends State<AccountSettingsScreen> {
                         TextFormField(
                           controller: _newPasswordController,
                           obscureText: true,
-                          decoration: InputDecoration(
+                          decoration: settingsInputDecoration(
                             labelText: locale.t('profileForm.newPassword'),
-                            border: const OutlineInputBorder(),
                           ),
                         ),
                         const SizedBox(height: 12),
                         TextFormField(
                           controller: _confirmPasswordController,
                           obscureText: true,
-                          decoration: InputDecoration(
-                            labelText: locale.t('profileForm.confirmPassword'),
-                            border: const OutlineInputBorder(),
+                          decoration: settingsInputDecoration(
+                            labelText:
+                                locale.t('profileForm.confirmPassword'),
                           ),
                         ),
                         const SizedBox(height: 14),
@@ -368,25 +364,10 @@ class _AccountSettingsScreenState extends State<AccountSettingsScreen> {
                     ),
                   ),
                 ),
-                const SizedBox(height: 12),
-                _Card(
-                  title: locale.t('profileForm.dangerZone'),
-                  child: Column(
-                    children: [
-                      SizedBox(
-                        width: double.infinity,
-                        child: OutlinedButton.icon(
-                          onPressed: _showDeleteAccountDialog,
-                          icon: const Icon(Icons.delete_forever),
-                          label: Text(locale.t('profileForm.deleteAccount')),
-                          style: OutlinedButton.styleFrom(
-                            foregroundColor: AppColors.error600,
-                            side: const BorderSide(color: AppColors.error600),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
+                const SizedBox(height: 20),
+                _DeleteAccountButton(
+                  label: locale.t('profileForm.deleteAccount'),
+                  onPressed: _showDeleteAccountDialog,
                 ),
               ],
             ),
@@ -497,6 +478,54 @@ class _ProfilePhotoPicker extends StatelessWidget {
   }
 }
 
+class _DeleteAccountButton extends StatelessWidget {
+  const _DeleteAccountButton({
+    required this.label,
+    required this.onPressed,
+  });
+
+  final String label;
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onPressed,
+        borderRadius: BorderRadius.circular(kSettingsInputBorderRadius),
+        child: Container(
+          width: double.infinity,
+          padding: const EdgeInsets.symmetric(vertical: 14),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(kSettingsInputBorderRadius),
+            border: Border.all(color: AppColors.error600, width: 1.5),
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Icon(
+                Icons.delete_forever_outlined,
+                size: 20,
+                color: AppColors.error600,
+              ),
+              const SizedBox(width: 8),
+              Text(
+                label,
+                style: const TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.error600,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 class _Card extends StatelessWidget {
   const _Card({required this.title, required this.child});
 
@@ -507,11 +536,7 @@ class _Card extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: AppColors.backgroundPrimary,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.borderPrimary),
-      ),
+      decoration: settingsSectionDecoration(),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [

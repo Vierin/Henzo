@@ -588,6 +588,8 @@ class _DetailContent extends StatelessWidget {
                         studioId: (studio['id'] ?? '').toString(),
                         studioName: (studio['name'] ?? 'Studio').toString(),
                         bookingPeriodDays: bookingPeriodDays,
+                        studioLocationCount:
+                            (studio['locationCount'] as num?)?.toInt() ?? 1,
                       ),
                     ),
                   );

@@ -467,7 +467,6 @@ class ClientsScreenState extends State<ClientsScreen> {
     final tr = context.read<LocaleProvider>().t;
     final clients = _filteredClients;
     final rows = _flattenGrouped(clients);
-    final canPop = Navigator.of(context).canPop();
     final total = _clients.length;
 
     return SafeArea(
@@ -487,17 +486,6 @@ class ClientsScreenState extends State<ClientsScreen> {
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                  if (canPop)
-                    IconButton(
-                      padding: EdgeInsets.zero,
-                      constraints: const BoxConstraints(
-                        minWidth: 40,
-                        minHeight: 40,
-                      ),
-                      onPressed: () => Navigator.of(context).pop(),
-                      icon: const Icon(Icons.arrow_back),
-                      color: AppColors.textPrimary,
-                    ),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,

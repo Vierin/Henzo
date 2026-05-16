@@ -723,6 +723,8 @@ class DashboardApiService {
               staff: Staff(id: s.trainerId, name: s.trainerName),
               staffId: s.trainerId,
               serviceId: s.trainingId,
+              locationId: s.locationId,
+              locationName: s.locationName,
             ),
           );
         }

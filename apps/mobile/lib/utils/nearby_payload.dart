@@ -1,3 +1,5 @@
+import '../models/public_studio_preview.dart';
+
 /// Normalizes various `/studios/nearby` JSON shapes to a raw studio list.
 List<dynamic> extractStudiosListFromNearby(dynamic raw) {
   if (raw is List) return raw;
@@ -12,4 +14,38 @@ List<dynamic> extractStudiosListFromNearby(dynamic raw) {
     if (raw['studios'] is List) return raw['studios'] as List<dynamic>;
   }
   return const <dynamic>[];
+}
+
+PublicStudioPreview parsePublicStudioPreviewFromNearby(
+  Map<String, dynamic> data,
+) {
+  final categories = data['categories'];
+  final parsedCategories = categories is List
+      ? categories
+            .where((c) => c != null)
+            .map((c) => c.toString().trim())
+            .where((c) => c.isNotEmpty)
+            .toList()
+      : <String>[];
+  final rating = (data['avgRating'] as num?)?.toDouble() ?? 0;
+  final address = (data['address'] ?? '').toString();
+  final distanceKm = (data['distance'] as num?)?.toDouble();
+  final photos = data['photos'];
+  final photoUrl = photos is List && photos.isNotEmpty
+      ? photos.first?.toString()
+      : null;
+  final studioName = (data['studioName'] ?? data['name'] ?? 'Studio')
+      .toString()
+      .trim();
+
+  return PublicStudioPreview(
+    id: (data['id'] ?? '').toString(),
+    studioName: studioName.isNotEmpty ? studioName : 'Studio',
+    categories: parsedCategories,
+    rating: rating,
+    address: address.isNotEmpty ? address : '—',
+    distanceKm: distanceKm,
+    photoUrl: photoUrl,
+    reviewCount: (data['reviewCount'] as num?)?.toInt() ?? 0,
+  );
 }

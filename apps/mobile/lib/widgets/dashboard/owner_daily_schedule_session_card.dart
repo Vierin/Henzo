@@ -29,6 +29,42 @@ Widget _scheduleTrainerIcon() {
   );
 }
 
+String? scheduleTrainerLineOrNull(
+  OwnerTrainingSession session,
+  String? ownerFallback,
+) {
+  final label = ownerDailyScheduleTrainerLabel(session, ownerFallback);
+  return isPlaceholderScheduleTrainerName(label) ? null : label;
+}
+
+/// Trainer on [trainerLine] only; subtitle holds location (pin) or studio.
+({
+  String subtitleLabel,
+  bool showLocationPin,
+  bool showSubtitleLeadingIcon,
+  String? trainerLine,
+})
+layoutOwnerSessionCardRows({
+  required OwnerTrainingSession session,
+  required String subtitleLabel,
+  required bool showLocationPin,
+  String? ownerTrainerFallback,
+}) {
+  final trainerLine = scheduleTrainerLineOrNull(session, ownerTrainerFallback);
+  var label = subtitleLabel;
+  if (!showLocationPin &&
+      trainerLine != null &&
+      label.trim() == trainerLine.trim()) {
+    label = '';
+  }
+  return (
+    subtitleLabel: label,
+    showLocationPin: showLocationPin,
+    showSubtitleLeadingIcon: showLocationPin,
+    trainerLine: trainerLine,
+  );
+}
+
 bool isPlaceholderScheduleTrainerName(String value) {
   final t = value.trim();
   if (t.isEmpty) return true;
@@ -112,9 +148,9 @@ class OwnerDailyScheduleSessionCard extends StatelessWidget {
     final priceText = trailingPriceLabel?.trim() ?? '';
     final hasBookAction = onBookAgain != null || bookActionLoading;
     final hasCancelAction = onCancelBooking != null || cancelActionLoading;
-    final trailingInset = (hasBookAction || hasCancelAction) && priceText.isEmpty
-        ? 8.0
-        : 14.0;
+    final showPriceAboveBook = priceText.isNotEmpty && hasBookAction;
+    final trailingInset =
+        (hasBookAction || hasCancelAction) && !showPriceAboveBook ? 8.0 : 14.0;
 
     final card = Container(
       margin: const EdgeInsets.only(bottom: 10),
@@ -183,21 +219,16 @@ class OwnerDailyScheduleSessionCard extends StatelessWidget {
                       Row(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          if (showSubtitleLeadingIcon) ...[
-                            if (showLocationPin) ...[
-                              Padding(
-                                padding: const EdgeInsets.only(top: 1),
-                                child: SvgPicture.asset(
-                                  'assets/icons/icon-pin.svg',
-                                  width: 11,
-                                  height: 15,
-                                ),
+                          if (showSubtitleLeadingIcon && showLocationPin) ...[
+                            Padding(
+                              padding: const EdgeInsets.only(top: 1),
+                              child: SvgPicture.asset(
+                                'assets/icons/icon-pin.svg',
+                                width: 11,
+                                height: 15,
                               ),
-                              const SizedBox(width: 4),
-                            ] else ...[
-                              _scheduleTrainerIcon(),
-                              const SizedBox(width: 3),
-                            ],
+                            ),
+                            const SizedBox(width: 4),
                           ],
                           Flexible(
                             child: Text(
@@ -215,6 +246,7 @@ class OwnerDailyScheduleSessionCard extends StatelessWidget {
                       ),
                     ],
                     if (trainerRowText.isNotEmpty) ...[
+                      if (subtitleLabel.isNotEmpty) const SizedBox(height: 4),
                       Row(
                         children: [
                           _scheduleTrainerIcon(),
@@ -240,7 +272,29 @@ class OwnerDailyScheduleSessionCard extends StatelessWidget {
             ),
             Padding(
               padding: EdgeInsets.fromLTRB(0, 14, trailingInset, 14),
-              child: priceText.isNotEmpty
+              child: showPriceAboveBook
+                  ? Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text(
+                          priceText,
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            fontSize: 15,
+                            fontWeight: FontWeight.w800,
+                            color: accent,
+                            height: 1.1,
+                          ),
+                        ),
+                        const SizedBox(height: 6),
+                        _ScheduleBookButton(
+                          label: bookActionLabel,
+                          loading: bookActionLoading,
+                          onPressed: onBookAgain,
+                        ),
+                      ],
+                    )
+                  : priceText.isNotEmpty
                   ? Center(
                       child: Text(
                         priceText,
@@ -255,44 +309,16 @@ class OwnerDailyScheduleSessionCard extends StatelessWidget {
                     )
                   : hasBookAction
                   ? Center(
-                      child: TextButton(
-                        onPressed:
-                            bookActionLoading ? null : onBookAgain,
-                        style: TextButton.styleFrom(
-                          backgroundColor: AppColors.primary500,
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 12,
-                            vertical: 8,
-                          ),
-                          minimumSize: Size.zero,
-                          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                        ),
-                        child: bookActionLoading
-                            ? const SizedBox(
-                                width: 18,
-                                height: 18,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                  color: AppColors.backgroundPrimary,
-                                ),
-                              )
-                            : Text(
-                                bookActionLabel,
-                                textAlign: TextAlign.center,
-                                style: const TextStyle(
-                                  fontSize: 12,
-                                  color: AppColors.backgroundPrimary,
-                                  fontWeight: FontWeight.w700,
-                                  height: 1.15,
-                                ),
-                              ),
+                      child: _ScheduleBookButton(
+                        label: bookActionLabel,
+                        loading: bookActionLoading,
+                        onPressed: onBookAgain,
                       ),
                     )
                   : hasCancelAction
                   ? Center(
                       child: TextButton(
-                        onPressed:
-                            cancelActionLoading ? null : onCancelBooking,
+                        onPressed: cancelActionLoading ? null : onCancelBooking,
                         style: TextButton.styleFrom(
                           foregroundColor: AppColors.error500,
                           side: const BorderSide(color: AppColors.error500),
@@ -366,6 +392,50 @@ class OwnerDailyScheduleSessionCard extends StatelessWidget {
       behavior: HitTestBehavior.opaque,
       onTap: onTap,
       child: wrapped,
+    );
+  }
+}
+
+class _ScheduleBookButton extends StatelessWidget {
+  const _ScheduleBookButton({
+    required this.label,
+    required this.loading,
+    required this.onPressed,
+  });
+
+  final String label;
+  final bool loading;
+  final VoidCallback? onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    return TextButton(
+      onPressed: loading ? null : onPressed,
+      style: TextButton.styleFrom(
+        backgroundColor: AppColors.primary500,
+        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 8),
+        minimumSize: Size.zero,
+        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+      ),
+      child: loading
+          ? const SizedBox(
+              width: 18,
+              height: 18,
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+                color: AppColors.backgroundPrimary,
+              ),
+            )
+          : Text(
+              label,
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                fontSize: 12,
+                color: AppColors.backgroundPrimary,
+                fontWeight: FontWeight.w700,
+                height: 1.15,
+              ),
+            ),
     );
   }
 }

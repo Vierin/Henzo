@@ -1,7 +1,7 @@
 class PublicStudioPreview {
   const PublicStudioPreview({
     required this.id,
-    required this.name,
+    required this.studioName,
     required this.categories,
     required this.rating,
     required this.address,
@@ -11,7 +11,9 @@ class PublicStudioPreview {
   });
 
   final String id;
-  final String name;
+
+  /// Studio brand (not a training-location label).
+  final String studioName;
   final List<String> categories;
   final double rating;
   final String address;
@@ -19,5 +21,9 @@ class PublicStudioPreview {
   final String? photoUrl;
   final int reviewCount;
 
-  String get primaryCategory => categories.isNotEmpty ? categories.first : 'Fitness';
+  /// Back-compat for search / favorites keyed by display name.
+  String get name => studioName;
+
+  String get primaryCategory =>
+      categories.isNotEmpty ? categories.first : 'Fitness';
 }

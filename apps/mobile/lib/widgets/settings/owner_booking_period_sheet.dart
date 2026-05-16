@@ -10,6 +10,7 @@ import '../../services/cache/salon_cache.dart';
 import '../../services/dashboard_api_service.dart';
 import '../../utils/show_api_error.dart';
 import '../common/sheet_action_button_style.dart';
+import 'settings_form_tokens.dart';
 
 /// 4 weeks — default booking window for new studios.
 const int kDefaultBookingPeriodDays = 28;
@@ -151,23 +152,14 @@ Future<bool?> showOwnerBookingPeriodSheet(
                     const SizedBox(height: 16),
                     Row(
                       children: [
-                        Container(
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            border: Border.all(
-                              color: AppColors.borderPrimary,
-                              width: 1.5,
-                            ),
-                          ),
-                          child: IconButton.filled(
-                            onPressed: applying
-                                ? null
-                                : () => applyDays(localDays - 1),
-                            icon: const Icon(Icons.remove),
-                            style: IconButton.styleFrom(
-                              backgroundColor: AppColors.backgroundSecondary,
-                              foregroundColor: AppColors.textPrimary,
-                            ),
+                        IconButton.filled(
+                          onPressed: applying
+                              ? null
+                              : () => applyDays(localDays - 1),
+                          icon: const Icon(Icons.remove),
+                          style: IconButton.styleFrom(
+                            backgroundColor: AppColors.backgroundSecondary,
+                            foregroundColor: AppColors.textPrimary,
                           ),
                         ),
                         const SizedBox(width: 12),
@@ -177,12 +169,9 @@ Future<bool?> showOwnerBookingPeriodSheet(
                             keyboardType: TextInputType.number,
                             textAlign: TextAlign.center,
                             enabled: !applying,
-                            decoration: InputDecoration(
+                            decoration: settingsInputDecoration(
                               labelText: locale.t(
                                 'settings.owner.bookingPeriodDaysLabel',
-                              ),
-                              border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(12),
                               ),
                             ),
                             onChanged: (value) {

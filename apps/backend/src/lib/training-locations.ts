@@ -20,6 +20,57 @@ export function countTrainingLocations(reminderSettings: unknown): number {
   return count;
 }
 
+export function humanizeStudioSlug(
+  slug: string | null | undefined,
+): string | null {
+  const raw = slug?.trim();
+  if (!raw) return null;
+  return raw
+    .split(/[-_]+/)
+    .filter(Boolean)
+    .map((w) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())
+    .join(' ');
+}
+
+export function listExtraTrainingLocationNames(
+  reminderSettings: unknown,
+): string[] {
+  const out: string[] = [];
+  if (!reminderSettings || typeof reminderSettings !== 'object') {
+    return out;
+  }
+  const raw = (reminderSettings as Record<string, unknown>)
+    .trainingLocations;
+  if (!Array.isArray(raw)) return out;
+  for (const entry of raw) {
+    if (!entry || typeof entry !== 'object') continue;
+    const name = String((entry as TrainingLocationJson).name ?? '').trim();
+    if (name.length > 0) out.push(name);
+  }
+  return out;
+}
+
+/** Brand label for discovery cards (not a branch location name). */
+export function resolveStudioBrandNameForDiscovery(studio: {
+  name: string | null;
+  slug?: string | null;
+  reminderSettings?: unknown;
+}): string {
+  const name = studio.name?.trim() ?? '';
+  const fromSlug = humanizeStudioSlug(studio.slug);
+  const locCount = countTrainingLocations(studio.reminderSettings);
+
+  if (locCount <= 1) {
+    return name || fromSlug || 'Studio';
+  }
+
+  const extraNames = listExtraTrainingLocationNames(studio.reminderSettings);
+  if (name.length > 0 && extraNames.includes(name)) {
+    return fromSlug ?? name;
+  }
+  return name || fromSlug || 'Studio';
+}
+
 export function resolveTrainingLocationName(
   reminderSettings: unknown,
   locationId: string | null | undefined,

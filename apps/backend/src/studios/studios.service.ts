@@ -10,6 +10,7 @@ import { nanoid } from 'nanoid';
 import { AnalyticsService } from '../analytics/analytics.service';
 import {
   countTrainingLocations,
+  resolveStudioBrandNameForDiscovery,
   resolveTrainingLocationName,
 } from '../lib/training-locations';
 
@@ -2260,11 +2261,13 @@ export class StudiosService {
       select: {
         id: true,
         name: true,
+        slug: true,
         address: true,
         latitude: true,
         longitude: true,
         logoUrl: true,
         photos: true,
+        reminderSettings: true,
         _count: {
           select: {
             Training: true,
@@ -2295,10 +2298,16 @@ export class StudiosService {
 
       const categories = categoriesByStudio.get(Studio.id) ?? [];
       const trainingCategoryIds = categoryIdsByStudio.get(Studio.id) ?? [];
+      const studioName = resolveStudioBrandNameForDiscovery({
+        name: Studio.name,
+        slug: Studio.slug,
+        reminderSettings: Studio.reminderSettings,
+      });
 
       return {
         id: Studio.id,
-        name: Studio.name,
+        name: studioName,
+        studioName,
         address: Studio.address,
         latitude: Studio.latitude ?? undefined,
         longitude: Studio.longitude ?? undefined,
@@ -2379,11 +2388,13 @@ export class StudiosService {
       select: {
         id: true,
         name: true,
+        slug: true,
         address: true,
         latitude: true,
         longitude: true,
         logoUrl: true,
         photos: true,
+        reminderSettings: true,
         _count: {
           select: {
             Review: true,
@@ -2428,9 +2439,15 @@ export class StudiosService {
 
     return StudiosWithDistance.map((s) => {
       const r = ratingMap.get(s.id) || { avgRating: 0, reviewCount: 0 };
+      const studioName = resolveStudioBrandNameForDiscovery({
+        name: s.name,
+        slug: s.slug,
+        reminderSettings: s.reminderSettings,
+      });
       return {
         id: s.id,
-        name: s.name,
+        name: studioName,
+        studioName,
         address: s.address,
         latitude: s.latitude ?? undefined,
         longitude: s.longitude ?? undefined,

@@ -20,11 +20,21 @@ final class TrainingLocationAddRequested extends TrainingLocationPickerResult {
   const TrainingLocationAddRequested();
 }
 
+enum TrainingLocationPickerMode {
+  /// Session location: checkmark on selected row.
+  select,
+
+  /// Settings default: “Default” badge moves on tap (no checkmark).
+  setDefault,
+}
+
 /// Bottom sheet: pick studio location (mockup layout, Henzo branding).
 Future<TrainingLocationPickerResult?> showTrainingLocationPickerSheet(
   BuildContext context, {
   required List<TrainingLocationItem> locations,
   required String selectedId,
+  TrainingLocationPickerMode mode = TrainingLocationPickerMode.select,
+  String? titleL10nKey,
 }) async {
   await context.read<LocaleProvider>().loadStrings();
   if (!context.mounted) return null;
@@ -69,7 +79,9 @@ Future<TrainingLocationPickerResult?> showTrainingLocationPickerSheet(
                       ),
                       const SizedBox(height: 16),
                       Text(
-                        locale.t('addTraining.locationSheetTitle'),
+                        locale.t(
+                          titleL10nKey ?? 'addTraining.locationSheetTitle',
+                        ),
                         textAlign: TextAlign.center,
                         style: const TextStyle(
                           fontSize: 18,
@@ -80,15 +92,23 @@ Future<TrainingLocationPickerResult?> showTrainingLocationPickerSheet(
                       ),
                       const SizedBox(height: 16),
                       ...locations.map((loc) {
-                        final selected = loc.id == currentId;
+                        final isHighlighted = loc.id == currentId;
+                        final showDefaultBadge = mode ==
+                                TrainingLocationPickerMode.setDefault
+                            ? isHighlighted
+                            : loc.isDefault;
                         return Padding(
                           padding: const EdgeInsets.only(bottom: 10),
                           child: _LocationOptionCard(
                             location: loc,
-                            selected: selected,
+                            showCheckmark: mode ==
+                                    TrainingLocationPickerMode.select &&
+                                isHighlighted,
+                            showDefaultBadge: showDefaultBadge,
                             defaultBadgeLabel: locale.t(
                               'addTraining.defaultLocationBadge',
                             ),
+                            highlightBorder: isHighlighted,
                             onTap: () {
                               setModalState(() => currentId = loc.id);
                               Navigator.of(sheetCtx).pop(
@@ -119,14 +139,18 @@ Future<TrainingLocationPickerResult?> showTrainingLocationPickerSheet(
 class _LocationOptionCard extends StatelessWidget {
   const _LocationOptionCard({
     required this.location,
-    required this.selected,
+    required this.showCheckmark,
+    required this.showDefaultBadge,
     required this.defaultBadgeLabel,
+    required this.highlightBorder,
     required this.onTap,
   });
 
   final TrainingLocationItem location;
-  final bool selected;
+  final bool showCheckmark;
+  final bool showDefaultBadge;
   final String defaultBadgeLabel;
+  final bool highlightBorder;
   final VoidCallback onTap;
 
   @override
@@ -142,8 +166,10 @@ class _LocationOptionCard extends StatelessWidget {
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(14),
             border: Border.all(
-              color: selected ? AppColors.primary500 : AppColors.borderPrimary,
-              width: selected ? 1.5 : 1,
+              color: highlightBorder
+                  ? AppColors.primary500
+                  : AppColors.borderPrimary,
+              width: highlightBorder ? 1.5 : 1,
             ),
           ),
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
@@ -183,7 +209,7 @@ class _LocationOptionCard extends StatelessWidget {
                         ),
                       ),
                     ],
-                    if (location.isDefault) ...[
+                    if (showDefaultBadge) ...[
                       const SizedBox(height: 8),
                       Container(
                         padding: const EdgeInsets.symmetric(
@@ -207,7 +233,7 @@ class _LocationOptionCard extends StatelessWidget {
                   ],
                 ),
               ),
-              if (selected)
+              if (showCheckmark)
                 const Padding(
                   padding: EdgeInsets.only(left: 8, top: 2),
                   child: Icon(
