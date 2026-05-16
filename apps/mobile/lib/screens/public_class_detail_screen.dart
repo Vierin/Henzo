@@ -277,10 +277,8 @@ class _ClassDetailBody extends StatelessWidget {
     final trainer = session['trainer'] is Map
         ? Map<String, dynamic>.from(session['trainer'] as Map)
         : <String, dynamic>{};
-    final startsAt =
-        DateTime.tryParse((session['startsAt'] ?? '').toString())?.toLocal();
-    final endsAt =
-        DateTime.tryParse((session['endsAt'] ?? '').toString())?.toLocal();
+    final startsAt = parseApiDateTime(session['startsAt']);
+    final endsAt = parseApiDateTime(session['endsAt']);
     final durationMin = training['duration'] != null
         ? (training['duration'] as num).toInt()
         : (startsAt != null && endsAt != null

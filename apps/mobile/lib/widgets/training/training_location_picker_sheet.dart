@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../common/henzo_modal.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:provider/provider.dart';
 
@@ -28,7 +29,7 @@ Future<TrainingLocationPickerResult?> showTrainingLocationPickerSheet(
   await context.read<LocaleProvider>().loadStrings();
   if (!context.mounted) return null;
 
-  return showModalBottomSheet<TrainingLocationPickerResult>(
+  return showHenzoModalBottomSheet<TrainingLocationPickerResult>(
     context: context,
     isScrollControlled: true,
     backgroundColor: Colors.transparent,

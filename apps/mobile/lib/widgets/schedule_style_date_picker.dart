@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'common/henzo_modal.dart';
 import 'package:provider/provider.dart';
 
 import '../constants/colors.dart';import '../l10n/locale_provider.dart';
@@ -88,7 +89,7 @@ Future<DateTime?> showScheduleStyleDatePicker({
   if (initial.isBefore(first)) initial = first;
   if (initial.isAfter(last)) initial = last;
 
-  return showModalBottomSheet<DateTime>(
+  return showHenzoModalBottomSheet<DateTime>(
     context: context,
     isScrollControlled: true,
     backgroundColor: Colors.transparent,

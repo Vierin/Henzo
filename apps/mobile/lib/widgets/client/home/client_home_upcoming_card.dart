@@ -20,20 +20,22 @@ class ClientHomeUpcomingCard extends StatelessWidget {
   final VoidCallback? onTap;
 
   String get _minutesLabel {
-    final diff = startsAt.difference(DateTime.now());
+    final diff = startsAt.toLocal().difference(DateTime.now());
     if (diff.isNegative) return 'NOW';
     final mins = diff.inMinutes;
     if (mins < 60) return 'IN $mins MIN';
     final h = diff.inHours;
     if (h < 24) return 'IN $h H';
-    return DateFormat('MMM d').format(startsAt).toUpperCase();
+    return DateFormat('MMM d').format(startsAt.toLocal()).toUpperCase();
   }
 
   @override
   Widget build(BuildContext context) {
-    final isToday = DateUtils.isSameDay(startsAt, DateTime.now());
-    final dayLabel = isToday ? 'TODAY' : DateFormat('EEE').format(startsAt).toUpperCase();
-    final timeLabel = DateFormat('H:mm').format(startsAt);
+    final local = startsAt.toLocal();
+    final isToday = DateUtils.isSameDay(local, DateTime.now());
+    final dayLabel =
+        isToday ? 'TODAY' : DateFormat('EEE').format(local).toUpperCase();
+    final timeLabel = DateFormat('H:mm').format(local);
 
     return Padding(
       padding: screenPaddingH(),

@@ -3,6 +3,7 @@ import 'dart:convert';
 
 import 'package:app_links/app_links.dart';
 import 'package:flutter/material.dart';
+import '../widgets/common/henzo_modal.dart';
 import 'package:http/http.dart' as http;
 
 import '../config/app_config.dart';
@@ -62,11 +63,11 @@ class _ClientInviteDeepLinkScopeState extends State<ClientInviteDeepLinkScope> {
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
-      _confirmAndShowDialog(token);
+      _confirmAndshowHenzoDialog(token);
     });
   }
 
-  Future<void> _confirmAndShowDialog(String token) async {
+  Future<void> _confirmAndshowHenzoDialog(String token) async {
     final nav = widget.navigatorKey.currentState;
     if (nav == null) return;
     final ctx = nav.context;
@@ -91,7 +92,7 @@ class _ClientInviteDeepLinkScopeState extends State<ClientInviteDeepLinkScope> {
                 : 'You are enrolled. See you in class!')
           : (body?['message'] as String? ?? 'Request failed');
       if (!ctx.mounted) return;
-      await showDialog<void>(
+      await showHenzoDialog<void>(
         context: ctx,
         builder: (dCtx) => AlertDialog(
           title: Text(ok ? 'Henzo' : 'Error'),
@@ -106,7 +107,7 @@ class _ClientInviteDeepLinkScopeState extends State<ClientInviteDeepLinkScope> {
       );
     } catch (e) {
       if (!ctx.mounted) return;
-      await showDialog<void>(
+      await showHenzoDialog<void>(
         context: ctx,
         builder: (dCtx) => AlertDialog(
           title: const Text('Error'),

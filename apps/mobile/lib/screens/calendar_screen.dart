@@ -13,6 +13,7 @@ import '../../services/dashboard_api_service.dart';
 import '../../utils/show_api_error.dart';
 import '../../utils/color_hex.dart';
 import '../../widgets/dashboard/owner_daily_schedule_block.dart';
+import '../../widgets/schedule/calendar_day_pill.dart';
 import '../../widgets/training/owner_session_edit_scope_dialog.dart';
 import 'main_shell.dart';
 import 'owner_training_session_detail_screen.dart';
@@ -462,7 +463,11 @@ class CalendarScreenState extends State<CalendarScreen> {
                 final selected = _isSameDay(day, stripDay);
                 return Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 3),
-                  child: GestureDetector(
+                  child: CalendarDayPill(
+                    day: day,
+                    selected: selected,
+                    sessionsCount: sessionsCount,
+                    isToday: isToday,
                     onTap: () {
                       _clearStripScheduleDebounceTimer();
                       final normalized = DateTime(day.year, day.month, day.day);
@@ -483,62 +488,6 @@ class CalendarScreenState extends State<CalendarScreen> {
                             }
                           });
                     },
-                    child: Container(
-                      height: 86,
-                      decoration: BoxDecoration(
-                        color: selected
-                            ? AppColors.primary500
-                            : AppColors.backgroundPrimary,
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(
-                          color: selected
-                              ? AppColors.primary500
-                              : isToday
-                              ? AppColors.primary500.withValues(alpha: 0.45)
-                              : AppColors.borderPrimary,
-                        ),
-                      ),
-                      padding: const EdgeInsets.symmetric(vertical: 8),
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Text(
-                            _weekdayShort(day),
-                            style: TextStyle(
-                              fontSize: 11,
-                              fontWeight: FontWeight.w400,
-                              letterSpacing: -0.3,
-                              color: selected
-                                  ? Colors.white
-                                  : AppColors.textSecondary,
-                            ),
-                          ),
-                          const SizedBox(height: 3),
-                          Text(
-                            '${day.day}',
-                            style: TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.w600,
-                              letterSpacing: -0.3,
-                              color: selected
-                                  ? Colors.white
-                                  : AppColors.textPrimary,
-                            ),
-                          ),
-                          const SizedBox(height: 3),
-                          Text(
-                            '$sessionsCount',
-                            style: TextStyle(
-                              fontSize: 11,
-                              fontWeight: FontWeight.w400,
-                              color: selected
-                                  ? Colors.white
-                                  : AppColors.primary500,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
                   ),
                 );
               },
@@ -607,11 +556,6 @@ class CalendarScreenState extends State<CalendarScreen> {
         ],
       ),
     );
-  }
-
-  String _weekdayShort(DateTime day) {
-    const names = ['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN'];
-    return names[day.weekday - 1];
   }
 
   /// Верхний ряд: месяц/год + Today + Expand (месяц от скролла пиллов или от выбранного дня в сетке).

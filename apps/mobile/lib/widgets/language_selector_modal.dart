@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'common/henzo_modal.dart';
 import 'package:provider/provider.dart';
 
 import '../constants/colors.dart';
@@ -12,10 +13,9 @@ void showLanguageSelectorModal(
   LocaleProvider locale, {
   void Function(String code)? onLocaleSelected,
 }) {
-  showModalBottomSheet<void>(
+  showHenzoModalBottomSheet<void>(
     context: context,
     backgroundColor: Colors.transparent,
-    barrierColor: Colors.black54,
     builder: (sheetCtx) => _LanguageBottomSheet(
       onLocaleSelected: onLocaleSelected,
     ),

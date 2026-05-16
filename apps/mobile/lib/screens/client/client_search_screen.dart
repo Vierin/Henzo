@@ -1,4 +1,5 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
+import '../../widgets/common/henzo_modal.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -69,7 +70,7 @@ class ClientSearchScreenState extends State<ClientSearchScreen> {
     _loadExplore();
   }
 
-  /// Home category chips → open Explore with filter applied.
+  /// Home category chips ? open Explore with filter applied.
   void selectCategory(int? categoryId) {
     setState(() {
       _selectedCategoryId = categoryId;
@@ -134,12 +135,9 @@ class ClientSearchScreenState extends State<ClientSearchScreen> {
             : <String, dynamic>{};
         final studioLocationCount =
             (studioBlock['locationCount'] as num?)?.toInt() ?? 1;
-        final endsAt =
-            DateTime.tryParse((map['endsAt'] ?? '').toString())?.toLocal();
+        final endsAt = parseApiDateTime(map['endsAt']);
         final locationName = map['locationName']?.toString();
-        final startsAt = DateTime.tryParse(
-          (map['startsAt'] ?? '').toString(),
-        )?.toLocal();
+        final startsAt = parseApiDateTime(map['startsAt']);
         if (startsAt == null) continue;
         final trainingCategoryId = training['trainingCategoryId'] == null
             ? null
@@ -193,7 +191,7 @@ class ClientSearchScreenState extends State<ClientSearchScreen> {
       trainingDurationMinutes: c.durationMin,
       trainingDisplayColorHex: c.displayColorHex,
       trainingPrice: c.price,
-      trainerName: c.trainerName.trim().isEmpty ? '—' : c.trainerName,
+      trainerName: c.trainerName.trim().isEmpty ? '?' : c.trainerName,
       trainerId: null,
       locationId: null,
       locationName: (c.locationName ?? '').trim().isEmpty
@@ -581,7 +579,7 @@ class ClientSearchScreenState extends State<ClientSearchScreen> {
     final localeCode = context.read<LocaleProvider>().localeCode;
     var tempSelection = _selectedCategoryId ?? -1;
 
-    final result = await showModalBottomSheet<int>(
+    final result = await showHenzoModalBottomSheet<int>(
       context: context,
       showDragHandle: false,
       isScrollControlled: true,
@@ -725,7 +723,7 @@ class ClientSearchScreenState extends State<ClientSearchScreen> {
   Future<void> _openTimeFilterSheet() async {
     final tempPeriods = Set<String>.from(_timePeriods);
     RangeValues tempRange = _alignTimeRangeToSlider(_timeRange);
-    final result = await showModalBottomSheet<Map<String, dynamic>>(
+    final result = await showHenzoModalBottomSheet<Map<String, dynamic>>(
       context: context,
       showDragHandle: false,
       backgroundColor: AppColors.backgroundPrimary,
@@ -967,7 +965,7 @@ class ClientSearchScreenState extends State<ClientSearchScreen> {
 
   Future<void> _openSortSheet() async {
     String temp = _sortBy;
-    final result = await showModalBottomSheet<String>(
+    final result = await showHenzoModalBottomSheet<String>(
       context: context,
       showDragHandle: false,
       backgroundColor: AppColors.backgroundPrimary,
@@ -1130,7 +1128,7 @@ class ClientSearchScreenState extends State<ClientSearchScreen> {
     final tempPeriods = Set<String>.from(_timePeriods);
     RangeValues tempRange = _alignTimeRangeToSlider(_timeRange);
 
-    final result = await showModalBottomSheet<Map<String, dynamic>>(
+    final result = await showHenzoModalBottomSheet<Map<String, dynamic>>(
       context: context,
       showDragHandle: false,
       isScrollControlled: true,
@@ -1809,7 +1807,7 @@ class ClientSearchScreenState extends State<ClientSearchScreen> {
                                                         ),
                                                         Text(
                                                           distanceText.isNotEmpty
-                                                              ? '$distanceText  Â·  ${s.rating.toStringAsFixed(1)}  ${s.reviewCount} reviews'
+                                                              ? '$distanceText  ·  ${s.rating.toStringAsFixed(1)}  ${s.reviewCount} reviews'
                                                               : '${s.rating.toStringAsFixed(1)}  ${s.reviewCount} reviews',
                                                           style: const TextStyle(
                                                             color: AppColors

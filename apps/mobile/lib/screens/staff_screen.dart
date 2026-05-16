@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../widgets/common/henzo_modal.dart';
 import 'package:provider/provider.dart';
 import '../../constants/colors.dart';
 import '../../constants/layout.dart';
@@ -71,7 +72,7 @@ class _StaffScreenState extends State<StaffScreen> {
 
   Future<void> _deleteStaff(StaffMember member) async {
     final locale = context.read<LocaleProvider>();
-    final confirm = await showDialog<bool>(
+    final confirm = await showHenzoDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
         title: Text(locale.t('staffScreen.deleteStaffTitle')),
@@ -158,7 +159,7 @@ class _StaffScreenState extends State<StaffScreen> {
     final selectedServiceIds = <String>[];
     final screenWidth = MediaQuery.of(context).size.width;
     final dialogWidth = (screenWidth * 0.92).clamp(320.0, 560.0);
-    showDialog(
+    showHenzoDialog(
       context: context,
       builder: (ctx) => Dialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
@@ -316,7 +317,7 @@ class _StaffScreenState extends State<StaffScreen> {
                                   .getServicesForSalon(token, member.salonId);
                               if (!ctx.mounted) return;
                               final result =
-                                  await showModalBottomSheet<List<String>>(
+                                  await showHenzoModalBottomSheet<List<String>>(
                                     context: context,
                                     isScrollControlled: true,
                                     useSafeArea: true,

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../../../constants/colors.dart';
 import '../../../models/training_category_option.dart';
-
 class ClientHomeCategoryChip extends StatelessWidget {
   const ClientHomeCategoryChip({
     super.key,
@@ -16,8 +16,13 @@ class ClientHomeCategoryChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final bg = category.backgroundColor();
-    final fg = category.foregroundColorOn(bg);
+    final isOther = category.isOtherCategory;
+    final bg = isOther
+        ? AppColors.backgroundPrimary
+        : category.backgroundColor();
+    final fg = isOther
+        ? AppColors.textPrimary
+        : category.foregroundColorOn(bg);
 
     return Material(
       color: Colors.transparent,
@@ -29,6 +34,9 @@ class ClientHomeCategoryChip extends StatelessWidget {
           decoration: BoxDecoration(
             color: bg,
             borderRadius: BorderRadius.circular(999),
+            border: isOther
+                ? Border.all(color: AppColors.primary300, width: 1)
+                : null,
           ),
           child: Text(
             label,

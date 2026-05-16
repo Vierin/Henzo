@@ -1,5 +1,6 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import '../widgets/common/henzo_modal.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
@@ -159,7 +160,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   Future<bool> _confirmDiscardChanges() async {
     if (!_hasUnsavedChanges) return true;
-    final shouldLeave = await showDialog<bool>(
+    final shouldLeave = await showHenzoDialog<bool>(
       context: context,
       builder: (dialogContext) {
         return AlertDialog(

@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 
+import '../utils/formatters.dart';
 import 'api_client.dart';
 
 /// Notifies tabs when [ClientScheduleStore] cache changes (upcoming vs passes).
@@ -82,11 +83,10 @@ class ClientScheduleStore {
   static DateTime? sessionEndLocal(Map<String, dynamic> item) {
     final endsRaw = item['endsAt'];
     if (endsRaw != null && endsRaw.toString().trim().isNotEmpty) {
-      final e = DateTime.tryParse(endsRaw.toString())?.toLocal();
+      final e = parseApiDateTime(endsRaw);
       if (e != null) return e;
     }
-    final startsAt =
-        DateTime.tryParse((item['startsAt'] ?? '').toString())?.toLocal();
+    final startsAt = parseApiDateTime(item['startsAt']);
     if (startsAt == null) return null;
     final training = item['training'];
     if (training is Map) {
@@ -103,8 +103,7 @@ class ClientScheduleStore {
   static bool sessionHasEnded(Map<String, dynamic> item, DateTime now) {
     final end = sessionEndLocal(item);
     if (end != null) return !end.isAfter(now);
-    final startsAt =
-        DateTime.tryParse((item['startsAt'] ?? '').toString())?.toLocal();
+    final startsAt = parseApiDateTime(item['startsAt']);
     if (startsAt == null) return true;
     return startsAt.isBefore(now);
   }
@@ -144,9 +143,9 @@ class ClientScheduleStore {
       return true;
     }).toList();
     upcoming.sort((a, b) {
-      final aa = DateTime.tryParse((a['startsAt'] ?? '').toString()) ??
+      final aa = parseApiDateTime(a['startsAt']) ??
           DateTime.fromMillisecondsSinceEpoch(0);
-      final bb = DateTime.tryParse((b['startsAt'] ?? '').toString()) ??
+      final bb = parseApiDateTime(b['startsAt']) ??
           DateTime.fromMillisecondsSinceEpoch(0);
       return aa.compareTo(bb);
     });
@@ -167,9 +166,9 @@ class ClientScheduleStore {
       return sessionHasEnded(item, now);
     }).toList();
     past.sort((a, b) {
-      final aa = DateTime.tryParse((a['startsAt'] ?? '').toString()) ??
+      final aa = parseApiDateTime(a['startsAt']) ??
           DateTime.fromMillisecondsSinceEpoch(0);
-      final bb = DateTime.tryParse((b['startsAt'] ?? '').toString()) ??
+      final bb = parseApiDateTime(b['startsAt']) ??
           DateTime.fromMillisecondsSinceEpoch(0);
       return bb.compareTo(aa);
     });

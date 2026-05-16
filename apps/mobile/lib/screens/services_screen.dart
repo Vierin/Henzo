@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
+import '../widgets/common/henzo_modal.dart';
 import 'package:provider/provider.dart';
 import '../../constants/colors.dart';
 import '../../l10n/locale_provider.dart';
 import '../../models/salon.dart';
 import '../../models/training_category_option.dart';
+import '../../models/training_location_item.dart';
 import '../../utils/currency_format.dart';
 import '../../models/service_item.dart';
 import '../../services/auth_service.dart';
@@ -15,6 +17,7 @@ import '../../constants/layout.dart';
 import '../../widgets/app_search_prefix_icon.dart';
 import '../../widgets/settings/branded_settings_app_bar.dart';
 import '../../widgets/training/owner_training_catalog_card.dart';
+import '../../widgets/training/training_filter_chip.dart';
 import 'add_training_screen.dart';
 
 enum ServicesSort {
@@ -164,64 +167,8 @@ class _ServicesScreenState extends State<ServicesScreen> {
     return list;
   }
 
-  void _showSortMenu() {
-    final locale = context.read<LocaleProvider>();
-    showModalBottomSheet(
-      context: context,
-      builder: (ctx) => SafeArea(
-        child: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Padding(
-                padding: EdgeInsets.all(16),
-                child: Text(
-                  locale.t('servicesScreen.sortBy'),
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
-                ),
-              ),
-              ...ServicesSort.values.map((value) {
-                final labels = {
-                  ServicesSort.nameAz: locale.t('servicesScreen.sortNameAsc'),
-                  ServicesSort.nameZa: locale.t('servicesScreen.sortNameDesc'),
-                  ServicesSort.priceAsc: locale.t(
-                    'servicesScreen.sortPriceAsc',
-                  ),
-                  ServicesSort.priceDesc: locale.t(
-                    'servicesScreen.sortPriceDesc',
-                  ),
-                  ServicesSort.durationAsc: locale.t(
-                    'servicesScreen.sortDurationAsc',
-                  ),
-                  ServicesSort.durationDesc: locale.t(
-                    'servicesScreen.sortDurationDesc',
-                  ),
-                };
-                return ListTile(
-                  title: Text(labels[value]!),
-                  leading: Radio<ServicesSort>(
-                    value: value,
-                    groupValue: _sort,
-                    onChanged: (v) {
-                      if (v != null) setState(() => _sort = v);
-                      Navigator.pop(ctx);
-                    },
-                  ),
-                  onTap: () {
-                    setState(() => _sort = value);
-                    Navigator.pop(ctx);
-                  },
-                );
-              }),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
   Future<void> _deleteService(ServiceItem item) async {
-    final confirm = await showDialog<bool>(
+    final confirm = await showHenzoDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
         title: const Text('Удалить тренировку'),
@@ -298,9 +245,8 @@ class _ServicesScreenState extends State<ServicesScreen> {
   }
 
   void _showCategoryInfo() {
-    showDialog<void>(
+    showHenzoDialog<void>(
       context: context,
-      barrierColor: Colors.black.withValues(alpha: 0.45),
       builder: (ctx) => Dialog(
         backgroundColor: Colors.transparent,
         insetPadding: const EdgeInsets.symmetric(horizontal: 18, vertical: 24),
@@ -375,6 +321,25 @@ class _ServicesScreenState extends State<ServicesScreen> {
     );
   }
 
+  String _locationLabelForCatalog() {
+    final salon = _salon;
+    if (salon == null) return '';
+    final studioName = salon.name?.trim() ?? 'Studio';
+    final locations = TrainingLocationItem.listFromSalon(
+      salon,
+      mainStudioName: studioName,
+    );
+    if (locations.isNotEmpty) {
+      final defaultLoc = locations.firstWhere(
+        (l) => l.isDefault,
+        orElse: () => locations.first,
+      );
+      final name = defaultLoc.name.trim();
+      if (name.isNotEmpty) return name;
+    }
+    return studioName;
+  }
+
   String _trainerLabelForItem(ServiceItem item, LocaleProvider locale) {
     final fromApi = item.trainerLabel.trim();
     if (fromApi.isNotEmpty) return fromApi;
@@ -431,14 +396,6 @@ class _ServicesScreenState extends State<ServicesScreen> {
       appBar: buildBrandedSettingsAppBar(
         context,
         title: locale.t('settings.owner.trainings'),
-        actions: [
-          if (_salon != null)
-            IconButton(
-              icon: const Icon(Icons.filter_list),
-              tooltip: locale.t('servicesScreen.sortAndFiltersTooltip'),
-              onPressed: _isLoading ? null : _showSortMenu,
-            ),
-        ],
       ),
       body: _isLoading
           ? const Center(
@@ -506,28 +463,26 @@ class _ServicesScreenState extends State<ServicesScreen> {
                               children: [
                                 Padding(
                                   padding: const EdgeInsets.only(right: 8),
-                                  child: FilterChip(
-                                    label: Text(
-                                      locale.t('servicesScreen.allCategories'),
+                                  child: TrainingFilterChip(
+                                    label: locale.t(
+                                      'servicesScreen.allCategories',
                                     ),
                                     selected: _selectedCategory == null,
                                     onSelected: (_) => setState(
                                       () => _selectedCategory = null,
                                     ),
-                                    selectedColor: AppColors.primary100,
-                                    checkmarkColor: AppColors.primary500,
                                   ),
                                 ),
                                 ..._uniqueCategories.map(
                                   (c) => Padding(
                                     padding: const EdgeInsets.only(right: 8),
-                                    child: FilterChip(
-                                      label: Text(c),
+                                    child: TrainingFilterChip(
+                                      label: c,
                                       selected: _selectedCategory == c,
-                                      onSelected: (_) =>
-                                          setState(() => _selectedCategory = c),
-                                      selectedColor: AppColors.primary100,
-                                      checkmarkColor: AppColors.primary500,
+                                      onSelected: (on) {
+                                        if (!on) return;
+                                        setState(() => _selectedCategory = c);
+                                      },
                                     ),
                                   ),
                                 ),
@@ -644,6 +599,7 @@ class _ServicesScreenState extends State<ServicesScreen> {
                               item: item,
                               durationLabel: _formatDuration(item.duration),
                               priceLabel: formatVnd(item.price),
+                              addressLabel: _locationLabelForCatalog(),
                               trainerLabel: _trainerLabelForItem(item, locale),
                               onTap: _isActionLoading
                                   ? () {}
@@ -1006,8 +962,8 @@ class _EditTrainingScreenState extends State<_EditTrainingScreen> {
                   final day = i + 1;
                   const labels = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'];
                   final selected = _recurringDays.contains(day);
-                  return FilterChip(
-                    label: Text(labels[i]),
+                  return TrainingFilterChip(
+                    label: labels[i],
                     selected: selected,
                     onSelected: (on) {
                       setState(() {
@@ -1021,8 +977,6 @@ class _EditTrainingScreenState extends State<_EditTrainingScreen> {
                         }
                       });
                     },
-                    selectedColor: AppColors.primary100,
-                    checkmarkColor: AppColors.primary500,
                   );
                 }),
               ),

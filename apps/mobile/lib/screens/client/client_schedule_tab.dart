@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import '../../constants/colors.dart';
 import '../../constants/layout.dart';
 import '../../services/api_client.dart';
 import '../../services/auth_service.dart';
@@ -168,62 +167,28 @@ class ClientScheduleTabState extends State<ClientScheduleTab>
           final item = _items[index];
           final session = mapClientScheduleItemToOwnerSession(item);
           if (session == null) return const SizedBox.shrink();
-          final sub = subtitleForClientScheduleItem(session, item);
-          final trainerLine = sub.showLocationPin
-              ? ownerDailyScheduleTrainerLabel(session, null)
-              : null;
+          final presentation = presentationForClientScheduleItem(
+            session,
+            item,
+          );
           final canCancel = _canCancelBooking(item);
           final bookingId = _bookingId(item);
           final isCanceling =
               bookingId != null && _cancelingBookingIds.contains(bookingId);
 
-          return Padding(
-            padding: const EdgeInsets.only(bottom: 10),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                OwnerDailyScheduleSessionCard(
-                  session: session,
-                  subtitleLabel: sub.label,
-                  showLocationPin: sub.showLocationPin,
-                  trainerLine: trainerLine,
-                  onTap: () => _openStudio(item),
-                ),
-                if (canCancel) ...[
-                  const SizedBox(height: 8),
-                  Align(
-                    alignment: Alignment.centerRight,
-                    child: SizedBox(
-                      height: 36,
-                      child: OutlinedButton(
-                        onPressed: isCanceling
-                            ? null
-                            : () => _cancelBooking(item),
-                        style: OutlinedButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(horizontal: 16),
-                          side: const BorderSide(color: AppColors.error500),
-                          foregroundColor: AppColors.error500,
-                          textStyle: const TextStyle(
-                            fontSize: 13,
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
-                        child: isCanceling
-                            ? const SizedBox(
-                                width: 16,
-                                height: 16,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                  color: AppColors.error500,
-                                ),
-                              )
-                            : const Text('Cancel booking'),
-                      ),
-                    ),
-                  ),
-                ],
-              ],
-            ),
+          return OwnerDailyScheduleSessionCard(
+            session: session,
+            subtitleLabel: presentation.subtitleLabel,
+            showLocationPin: presentation.showLocationPin,
+            showSubtitleLeadingIcon: presentation.showSubtitleLeadingIcon,
+            trainerLine: presentation.trainerLine,
+            dimPastSessions: false,
+            cancelActionLabel: 'Cancel booking',
+            cancelActionLoading: isCanceling,
+            onCancelBooking: canCancel && !isCanceling
+                ? () => _cancelBooking(item)
+                : null,
+            onTap: () => _openStudio(item),
           );
         },
       ),

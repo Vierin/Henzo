@@ -1,11 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../constants/brand_typography.dart';
 import '../constants/colors.dart';
+import '../constants/layout.dart';
 import '../services/api_client.dart';
 import '../services/auth_service.dart';
-import '../utils/color_hex.dart';
-import '../widgets/public/class_schedule_card.dart';
+import '../services/dashboard_api_service.dart';
+import '../utils/formatters.dart';
+import '../widgets/dashboard/owner_daily_schedule_session_card.dart';
+import '../widgets/schedule/calendar_day_pill.dart';
 
 class PublicStudioScheduleScreen extends StatefulWidget {
   const PublicStudioScheduleScreen({
@@ -81,17 +85,16 @@ class _PublicStudioScheduleScreenState extends State<PublicStudioScheduleScreen>
       for (final item in list) {
         if (item is! Map) continue;
         final map = Map<String, dynamic>.from(item);
-        final startsAt = DateTime.tryParse((map['startsAt'] ?? '').toString())
-            ?.toLocal();
+        final startsAt = parseApiDateTime(map['startsAt']);
         if (startsAt == null) continue;
         final key = _dayKey(startsAt);
         (grouped[key] ??= <Map<String, dynamic>>[]).add(map);
       }
       for (final sessions in grouped.values) {
         sessions.sort((a, b) {
-          final aa = DateTime.tryParse((a['startsAt'] ?? '').toString()) ??
+          final aa = parseApiDateTime(a['startsAt']) ??
               DateTime.fromMillisecondsSinceEpoch(0);
-          final bb = DateTime.tryParse((b['startsAt'] ?? '').toString()) ??
+          final bb = parseApiDateTime(b['startsAt']) ??
               DateTime.fromMillisecondsSinceEpoch(0);
           return aa.compareTo(bb);
         });
@@ -170,47 +173,40 @@ class _PublicStudioScheduleScreenState extends State<PublicStudioScheduleScreen>
     return _sessionsByDay[_dayKey(day)] ?? const [];
   }
 
-  String _weekdayLetter(DateTime day) {
-    const names = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
-    return names[day.weekday - 1];
-  }
+  String _monthTitle(DateTime d) => CalendarDayPill.monthDayYearUpperEn(d);
 
-  String _monthTitle(DateTime d) {
-    const months = [
-      'Jan',
-      'Feb',
-      'Mar',
-      'Apr',
-      'May',
-      'Jun',
-      'Jul',
-      'Aug',
-      'Sep',
-      'Oct',
-      'Nov',
-      'Dec',
-    ];
-    return '${months[d.month - 1]} ${d.day}, ${d.year}';
-  }
+  OwnerTrainingSession? _mapOwnerSession(Map<String, dynamic> item) {
+    final training = item['training'] is Map
+        ? Map<String, dynamic>.from(item['training'] as Map)
+        : <String, dynamic>{};
+    final startsAt = parseApiDateTime(item['startsAt']);
+    if (startsAt == null) return null;
 
-  String _timeLabel(DateTime? dt) {
-    if (dt == null) return '--:--';
-    final h = dt.hour.toString().padLeft(2, '0');
-    final mm = dt.minute.toString().padLeft(2, '0');
-    return '$h:$mm';
-  }
+    final durationMin = (training['duration'] as num?)?.toInt() ?? 60;
+    final endsAt =
+        parseApiDateTime(item['endsAt']) ??
+        startsAt.add(Duration(minutes: durationMin));
 
-  String _formatVnd(num value) {
-    final digits = value.round().toString();
-    final out = StringBuffer();
-    for (int i = 0; i < digits.length; i++) {
-      out.write(digits[i]);
-      final left = digits.length - i - 1;
-      if (left > 0 && left % 3 == 0) {
-        out.write('.');
-      }
-    }
-    return out.toString();
+    final trainer = item['trainer'] is Map
+        ? Map<String, dynamic>.from(item['trainer'] as Map)
+        : <String, dynamic>{};
+
+    return OwnerTrainingSession(
+      sessionId: (item['id'] ?? item['sessionId'] ?? '').toString(),
+      trainingId: (training['id'] ?? '').toString(),
+      startsAt: startsAt,
+      endsAt: endsAt,
+      status: (item['status'] ?? 'ACTIVE').toString(),
+      capacity: (item['capacity'] as num?)?.toInt() ?? 0,
+      enrolledCount: (item['bookedCount'] as num?)?.toInt() ?? 0,
+      attendedCount: (item['bookedCount'] as num?)?.toInt() ?? 0,
+      trainingName: (training['name'] ?? 'Class').toString(),
+      trainingPrice: (training['price'] as num?)?.toDouble(),
+      trainingDurationMinutes: durationMin,
+      trainingDisplayColorHex: training['displayColor']?.toString(),
+      trainerName: (trainer['name'] ?? '—').toString(),
+      trainerId: trainer['id']?.toString(),
+    );
   }
 
   Future<void> _bookSession(Map<String, dynamic> session) async {
@@ -273,12 +269,13 @@ class _PublicStudioScheduleScreenState extends State<PublicStudioScheduleScreen>
     return Scaffold(
       backgroundColor: AppColors.backgroundSecondary,
       appBar: AppBar(
-        backgroundColor: AppColors.backgroundPrimary,
+        backgroundColor: AppColors.backgroundSecondary,
         foregroundColor: AppColors.textPrimary,
         elevation: 0,
-        title: const Text(
+        scrolledUnderElevation: 0,
+        title: Text(
           'Schedule',
-          style: TextStyle(fontWeight: FontWeight.w800),
+          style: BrandTypography.appBarTitle(context),
         ),
       ),
       body: _loading
@@ -286,8 +283,13 @@ class _PublicStudioScheduleScreenState extends State<PublicStudioScheduleScreen>
           : Column(
               children: [
                 Container(
-                  color: AppColors.backgroundPrimary,
-                  padding: const EdgeInsets.fromLTRB(12, 6, 12, 10),
+                  color: AppColors.backgroundSecondary,
+                  padding: const EdgeInsets.fromLTRB(
+                    kScreenPaddingHorizontal,
+                    8,
+                    kScreenPaddingHorizontal,
+                    10,
+                  ),
                   child: Column(
                     children: [
                       Row(
@@ -295,122 +297,97 @@ class _PublicStudioScheduleScreenState extends State<PublicStudioScheduleScreen>
                           IconButton(
                             onPressed: canGoPrevWeek
                                 ? () {
-                              setState(() {
-                                _weekStart = _weekStart.subtract(
-                                  const Duration(days: 7),
-                                );
-                                _selectedDay = _selectedDay.subtract(
-                                  const Duration(days: 7),
-                                );
-                              });
-                            }
+                                    setState(() {
+                                      _weekStart = _weekStart.subtract(
+                                        const Duration(days: 7),
+                                      );
+                                      _selectedDay = _selectedDay.subtract(
+                                        const Duration(days: 7),
+                                      );
+                                    });
+                                  }
                                 : null,
-                            icon: const Icon(Icons.chevron_left),
+                            icon: const Icon(Icons.chevron_left_rounded),
+                            color: AppColors.textSecondary,
                           ),
                           Expanded(
-                            child: Center(
-                              child: Text(
-                                _monthTitle(_selectedDay),
-                                style: const TextStyle(
-                                  fontSize: 30 / 1.6,
-                                  fontWeight: FontWeight.w700,
-                                  color: AppColors.textPrimary,
-                                ),
+                            child: Text(
+                              _monthTitle(_selectedDay),
+                              textAlign: TextAlign.center,
+                              style: const TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w700,
+                                letterSpacing: -0.3,
+                                color: AppColors.textPrimary,
                               ),
                             ),
                           ),
                           IconButton(
                             onPressed: canGoNextWeek
                                 ? () {
-                              setState(() {
-                                _weekStart = _weekStart.add(
-                                  const Duration(days: 7),
-                                );
-                                _selectedDay = _selectedDay.add(
-                                  const Duration(days: 7),
-                                );
-                              });
-                            }
+                                    setState(() {
+                                      _weekStart = _weekStart.add(
+                                        const Duration(days: 7),
+                                      );
+                                      _selectedDay = _selectedDay.add(
+                                        const Duration(days: 7),
+                                      );
+                                    });
+                                  }
                                 : null,
-                            icon: const Icon(Icons.chevron_right),
+                            icon: const Icon(Icons.chevron_right_rounded),
+                            color: AppColors.textSecondary,
                           ),
                         ],
                       ),
-                      const SizedBox(height: 6),
-                      Row(
-                        children: List.generate(7, (i) {
-                          final day = _weekStart.add(Duration(days: i));
-                          final isInRange = _isDayInRange(day);
-                          final selected = day.year == _selectedDay.year &&
-                              day.month == _selectedDay.month &&
-                              day.day == _selectedDay.day;
-                          return Expanded(
-                            child: GestureDetector(
-                              onTap: isInRange
-                                  ? () => setState(() => _selectedDay = day)
-                                  : null,
-                              child: Column(
-                                children: [
-                                  Text(
-                                    _weekdayLetter(day),
-                                    style: TextStyle(
-                                      color: isInRange
-                                          ? AppColors.textSecondary
-                                          : AppColors.textSecondary.withValues(
-                                              alpha: 0.38,
-                                            ),
-                                      fontSize: 12,
-                                      fontWeight: FontWeight.w600,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 7),
-                                  Container(
-                                    width: 40,
-                                    height: 40,
-                                    decoration: BoxDecoration(
-                                      color: selected
-                                          ? AppColors.textPrimary
-                                          : Colors.transparent,
-                                      border: !selected && isInRange
-                                          ? Border.all(
-                                              color: AppColors.borderPrimary,
-                                            )
-                                          : null,
-                                      shape: BoxShape.circle,
-                                    ),
-                                    alignment: Alignment.center,
-                                    child: Text(
-                                      '${day.day}',
-                                      style: TextStyle(
-                                        color: selected
-                                            ? Colors.white
-                                            : isInRange
-                                            ? AppColors.textPrimary
-                                            : AppColors.textSecondary
-                                                  .withValues(alpha: 0.38),
-                                        fontWeight: FontWeight.w700,
-                                      ),
-                                    ),
-                                  ),
-                                ],
+                      const SizedBox(height: 8),
+                      SizedBox(
+                        height: 86,
+                        child: Row(
+                          children: List.generate(7, (i) {
+                            final day = _weekStart.add(Duration(days: i));
+                            final isInRange = _isDayInRange(day);
+                            final selected = CalendarDayPill.isSameDay(
+                              day,
+                              _selectedDay,
+                            );
+                            return Expanded(
+                              child: Padding(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 3,
+                                ),
+                                child: CalendarDayPill(
+                                  day: day,
+                                  selected: selected,
+                                  sessionsCount:
+                                      _sessionsForDay(day).length,
+                                  enabled: isInRange,
+                                  onTap: isInRange
+                                      ? () => setState(
+                                          () => _selectedDay = day,
+                                        )
+                                      : null,
+                                ),
                               ),
-                            ),
-                          );
-                        }),
+                            );
+                          }),
+                        ),
                       ),
                       const SizedBox(height: 8),
                       Text(
-                        'Booking window: ${_monthTitle(_minBookableDay)} - ${_monthTitle(_maxBookableDay)}',
+                        'Booking window: '
+                        '${_monthTitle(_minBookableDay)} – '
+                        '${_monthTitle(_maxBookableDay)}',
                         style: const TextStyle(
                           fontSize: 12,
                           color: AppColors.textSecondary,
                           fontWeight: FontWeight.w500,
+                          letterSpacing: -0.3,
                         ),
                       ),
                     ],
                   ),
                 ),
-                const Divider(height: 1, color: AppColors.borderPrimary),
                 Expanded(
                   child: _loadError != null
                       ? Center(
@@ -452,45 +429,47 @@ class _PublicStudioScheduleScreenState extends State<PublicStudioScheduleScreen>
                             ),
                           ),
                         )
-                      : ListView.separated(
-                          itemCount: sessions.length,
-                          separatorBuilder: (_, __) => const Divider(
-                            height: 1,
-                            color: AppColors.borderPrimary,
+                      : ListView.builder(
+                          padding: const EdgeInsets.fromLTRB(
+                            kScreenPaddingHorizontal,
+                            12,
+                            kScreenPaddingHorizontal,
+                            24,
                           ),
+                          itemCount: sessions.length,
                           itemBuilder: (_, index) {
-                            final s = sessions[index];
-                            final training = s['training'] is Map
-                                ? Map<String, dynamic>.from(s['training'] as Map)
-                                : <String, dynamic>{};
-                            final trainer = s['trainer'] is Map
-                                ? (s['trainer']['name'] ?? '').toString()
-                                : '';
-                            final startsAt = DateTime.tryParse(
-                              (s['startsAt'] ?? '').toString(),
-                            )?.toLocal();
-                            final duration = (training['duration'] as num?)?.toInt();
-                            final price = (training['price'] as num?)?.toDouble();
-                            final capacity = (s['capacity'] as num?)?.toInt();
-                            final bookedCount = (s['bookedCount'] as num?)?.toInt() ?? 0;
-                            final trainingColor = parseHexColor(
-                              training['displayColor']?.toString(),
+                            final raw = sessions[index];
+                            final session = _mapOwnerSession(raw);
+                            if (session == null) {
+                              return const SizedBox.shrink();
+                            }
+                            final capacity =
+                                (raw['capacity'] as num?)?.toInt() ?? 0;
+                            final bookedCount =
+                                (raw['bookedCount'] as num?)?.toInt() ?? 0;
+                            final hasCapacity = capacity > 0;
+                            final isFull =
+                                hasCapacity && bookedCount >= capacity;
+                            final sessionId =
+                                (raw['id'] ?? '').toString();
+                            final isBooking =
+                                _bookingInProgress.contains(sessionId);
+                            final trainerLabel =
+                                ownerDailyScheduleTrainerLabel(
+                              session,
+                              null,
                             );
-                            final hasCapacity = capacity != null && capacity > 0;
-                            final isFull = hasCapacity && bookedCount >= capacity;
-                            final sessionId = (s['id'] ?? '').toString();
-                            final isBooking = _bookingInProgress.contains(sessionId);
-                            return ClassScheduleCard(
-                              timeLabel: _timeLabel(startsAt),
-                              durationMin: duration,
-                              className: (training['name'] ?? 'Class').toString(),
-                              trainerName: trainer,
-                              priceLabel: price != null ? _formatVnd(price) : null,
-                              bookedCount: bookedCount,
-                              capacity: capacity,
-                              trainingColor: trainingColor,
-                              isBooking: isBooking,
-                              onBook: isFull ? null : () => _bookSession(s),
+                            return OwnerDailyScheduleSessionCard(
+                              session: session,
+                              subtitleLabel: trainerLabel,
+                              showSubtitleLeadingIcon: true,
+                              dimPastSessions: false,
+                              bookActionLabel: 'Book',
+                              bookActionLoading: isBooking,
+                              onBookAgain: isFull || isBooking
+                                  ? null
+                                  : () => _bookSession(raw),
+                              onTap: () {},
                             );
                           },
                         ),

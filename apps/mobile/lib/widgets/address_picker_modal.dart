@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'common/henzo_modal.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:latlong2/latlong.dart';
@@ -50,7 +51,7 @@ class AddressPickerModal extends StatefulWidget {
     double? initialLat,
     double? initialLon,
   }) {
-    return showModalBottomSheet<AddressPickerSelection>(
+    return showHenzoModalBottomSheet<AddressPickerSelection>(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,

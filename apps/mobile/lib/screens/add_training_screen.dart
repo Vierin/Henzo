@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../widgets/common/henzo_modal.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_svg/flutter_svg.dart';
@@ -29,24 +30,6 @@ import 'main_shell.dart';
 const Color _kFormAccentPurple = Color(0xFF6C5CE7);
 
 const Color _kRegHintMuted = Color(0x993F3F3F);
-
-bool _trainingCategoryIsOther(TrainingCategoryOption c) =>
-    c.nameEn.trim().toLowerCase() == 'other';
-
-List<TrainingCategoryOption> _categoriesWithOtherLast(
-  List<TrainingCategoryOption> list,
-) {
-  final rest = <TrainingCategoryOption>[];
-  final other = <TrainingCategoryOption>[];
-  for (final c in list) {
-    if (_trainingCategoryIsOther(c)) {
-      other.add(c);
-    } else {
-      rest.add(c);
-    }
-  }
-  return [...rest, ...other];
-}
 
 String _formatThousandsDots(int value) {
   final raw = value.abs().toString();
@@ -256,7 +239,7 @@ class _AddTrainingScreenState extends State<AddTrainingScreen> {
       initialTime.hour,
       initialTime.minute,
     );
-    return showModalBottomSheet<TimeOfDay>(
+    return showHenzoModalBottomSheet<TimeOfDay>(
       context: context,
       backgroundColor: AppColors.backgroundPrimary,
       shape: const RoundedRectangleBorder(
@@ -601,7 +584,7 @@ class _AddTrainingScreenState extends State<AddTrainingScreen> {
     if (_categories.isEmpty) return;
     final loc = context.read<LocaleProvider>();
     final localeCode = loc.localeCode;
-    final result = await showModalBottomSheet<_CategoryPickResult?>(
+    final result = await showHenzoModalBottomSheet<_CategoryPickResult?>(
       context: context,
       showDragHandle: false,
       isScrollControlled: true,
@@ -662,7 +645,7 @@ class _AddTrainingScreenState extends State<AddTrainingScreen> {
                         runSpacing: 8,
                         children: _categories.map((c) {
                           final selected = _selectedCategoryId == c.id;
-                          final isOther = _trainingCategoryIsOther(c);
+                          final isOther = c.isOtherCategory;
                           final Color bg;
                           final Color fg;
                           if (isOther) {
@@ -1423,7 +1406,7 @@ class _AddTrainingScreenState extends State<AddTrainingScreen> {
         _studio = studio;
         _applyLocationsFromStudio(studio, locale);
         _existing = list;
-        _categories = _categoriesWithOtherLast(categories);
+        _categories = TrainingCategoryOption.withOtherLast(categories);
         _loading = false;
         final start = DateTime(
           _sessionDate.year,

@@ -25,10 +25,6 @@ class TopStudioCard extends StatelessWidget {
   String? get _distanceLabel {
     final km = studio.distanceKm;
     if (km == null) return null;
-    if (homeLayout) {
-      final mi = km * 0.621371;
-      return '${mi.toStringAsFixed(1)} mi';
-    }
     return '${km.toStringAsFixed(1)} km';
   }
 

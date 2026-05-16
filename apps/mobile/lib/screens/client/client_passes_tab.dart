@@ -149,17 +149,19 @@ class _ClientPassesHistoryListState extends State<ClientPassesHistoryList>
           final item = _items[index];
           final session = mapClientScheduleItemToOwnerSession(item);
           if (session == null) return const SizedBox.shrink();
-          final sub = subtitleForClientScheduleItem(session, item);
-          final trainerLine = sub.showLocationPin
-              ? ownerDailyScheduleTrainerLabel(session, null)
-              : null;
+          final presentation = presentationForClientScheduleItem(
+            session,
+            item,
+          );
 
           return OwnerDailyScheduleSessionCard(
             session: session,
-            subtitleLabel: sub.label,
-            showLocationPin: sub.showLocationPin,
-            trainerLine: trainerLine,
+            subtitleLabel: presentation.subtitleLabel,
+            showLocationPin: presentation.showLocationPin,
+            showSubtitleLeadingIcon: presentation.showSubtitleLeadingIcon,
+            trainerLine: presentation.trainerLine,
             dimPastSessions: false,
+            bookActionLabel: 'Book again',
             onBookAgain: () => _bookAgain(item),
             onTap: () => _bookAgain(item),
           );

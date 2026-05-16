@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../widgets/common/henzo_modal.dart';
 import 'package:provider/provider.dart';
 
 import '../constants/colors.dart';
@@ -93,7 +94,7 @@ class _LoginScreenState extends State<LoginScreen> {
     final emailController = TextEditingController(text: _emailController.text);
     final formKey = GlobalKey<FormState>();
     if (!mounted) return;
-    await showDialog<void>(
+    await showHenzoDialog<void>(
       context: context,
       builder: (ctx) => AlertDialog(
         title: Text(locale.t('auth.forgotPassword')),

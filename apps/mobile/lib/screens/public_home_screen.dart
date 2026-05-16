@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import '../widgets/common/henzo_modal.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:geolocator/geolocator.dart';
@@ -21,6 +22,7 @@ import '../services/cache/client_nearby_cache.dart';
 import '../services/client_favorites_store.dart';
 import '../services/client_schedule_store.dart';
 import '../services/mapbox_api_service.dart';
+import '../utils/formatters.dart';
 import '../utils/nearby_payload.dart';
 import '../services/client_favorites_mutations.dart';
 import '../widgets/client/home/client_home_category_chip.dart';
@@ -223,7 +225,7 @@ class _PublicHomeScreenState extends State<PublicHomeScreen> {
   }
 
   Future<void> _showLocationRequestModal() async {
-    await showModalBottomSheet<void>(
+    await showHenzoModalBottomSheet<void>(
       context: context,
       isDismissible: true,
       showDragHandle: true,
@@ -416,11 +418,9 @@ class _PublicHomeScreenState extends State<PublicHomeScreen> {
     }
 
     merged.sort((a, b) {
-      final aa =
-          DateTime.tryParse((a['startsAt'] ?? '').toString()) ??
+      final aa = parseApiDateTime(a['startsAt']) ??
           DateTime.fromMillisecondsSinceEpoch(0);
-      final bb =
-          DateTime.tryParse((b['startsAt'] ?? '').toString()) ??
+      final bb = parseApiDateTime(b['startsAt']) ??
           DateTime.fromMillisecondsSinceEpoch(0);
       return aa.compareTo(bb);
     });
@@ -445,7 +445,7 @@ class _PublicHomeScreenState extends State<PublicHomeScreen> {
       }
       if (!mounted) return;
       setState(() {
-        _trainingCategories = list;
+        _trainingCategories = TrainingCategoryOption.withOtherLast(list);
         _loadingCategories = false;
       });
     } catch (_) {
@@ -895,7 +895,7 @@ class _PublicHomeScreenState extends State<PublicHomeScreen> {
     final trainer = item['trainer'] is Map
         ? (item['trainer']['name'] ?? '').toString()
         : '';
-    final startsAt = DateTime.tryParse((item['startsAt'] ?? '').toString());
+    final startsAt = parseApiDateTime(item['startsAt']);
     if (startsAt == null) return const SizedBox.shrink();
 
     return ClientHomeUpcomingCard(
@@ -911,13 +911,12 @@ class _PublicHomeScreenState extends State<PublicHomeScreen> {
     final training = item['training'] is Map
         ? Map<String, dynamic>.from(item['training'] as Map)
         : <String, dynamic>{};
-    final startsAt =
-        DateTime.tryParse((item['startsAt'] ?? '').toString())?.toLocal();
+    final startsAt = parseApiDateTime(item['startsAt']);
     if (startsAt == null) return null;
 
     final durationMin = (training['duration'] as num?)?.toInt() ?? 60;
     final endsAt =
-        DateTime.tryParse((item['endsAt'] ?? '').toString())?.toLocal() ??
+        parseApiDateTime(item['endsAt']) ??
         startsAt.add(Duration(minutes: durationMin));
 
     final capacity = (item['capacity'] as num?)?.toInt() ?? 0;
@@ -959,8 +958,7 @@ class _PublicHomeScreenState extends State<PublicHomeScreen> {
     final studioId = (studio['id'] ?? '').toString();
     final sessionId =
         (item['id'] ?? item['sessionId'] ?? '').toString();
-    final startsHint =
-        DateTime.tryParse((item['startsAt'] ?? '').toString())?.toLocal();
+    final startsHint = parseApiDateTime(item['startsAt']);
     final locationCount = (studio['locationCount'] as num?)?.toInt() ?? 1;
     final sub = resolveOwnerSessionCardSubtitleForPublic(
       session: session,

@@ -1,6 +1,8 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import '../common/henzo_modal.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:provider/provider.dart';
 
 import '../../constants/colors.dart';
@@ -12,10 +14,7 @@ import '../../utils/synthetic_guest.dart';
 import '../app_search_prefix_icon.dart';
 import '../common/sheet_action_button_style.dart';
 
-enum AddOwnerClientMode {
-  directoryOnly,
-  enrollInSession,
-}
+enum AddOwnerClientMode { directoryOnly, enrollInSession }
 
 String _emailLocale(LocaleProvider loc) {
   final c = loc.localeCode;
@@ -44,11 +43,13 @@ class _ClientPick {
   final String? email;
   final String? phone;
   final bool isGuest;
+
   /// Anonymous roster slot (@henzo.local / legacy "Walk-in" name).
   final bool isSyntheticSpot;
 
   factory _ClientPick.fromRow(OwnerStudioClientRow r) {
-    final synthetic = isSyntheticGuestEmail(r.email) ||
+    final synthetic =
+        isSyntheticGuestEmail(r.email) ||
         (r.name ?? '').trim().toLowerCase() == 'walk-in';
     final name = synthetic
         ? '—'
@@ -66,7 +67,8 @@ class _ClientPick {
   }
 
   factory _ClientPick.fromHit(OwnerStudioClientSearchHit h) {
-    final synthetic = isSyntheticGuestEmail(h.email) ||
+    final synthetic =
+        isSyntheticGuestEmail(h.email) ||
         (h.name ?? '').trim().toLowerCase() == 'walk-in';
     final name = synthetic
         ? '—'
@@ -104,7 +106,7 @@ Future<void> showAddOwnerClientSheet(
   String? sessionId,
   VoidCallback? onSuccess,
 }) async {
-  await showModalBottomSheet<void>(
+  await showHenzoModalBottomSheet<void>(
     context: context,
     isScrollControlled: true,
     backgroundColor: Colors.transparent,
@@ -114,10 +116,7 @@ Future<void> showAddOwnerClientSheet(
         if (sid == null || sid.isEmpty) {
           return const SizedBox.shrink();
         }
-        return _EnrollParticipantSheet(
-          sessionId: sid,
-          onSuccess: onSuccess,
-        );
+        return _EnrollParticipantSheet(sessionId: sid, onSuccess: onSuccess);
       }
       return _DirectoryAddSheet(onSuccess: onSuccess);
     },
@@ -163,10 +162,7 @@ class _DirectoryAddSheetState extends State<_DirectoryAddSheet> {
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  tr('ownerClient.addToDirectory'),
-                  style: _sheetTitleStyle,
-                ),
+                Text(tr('ownerClient.addToDirectory'), style: _sheetTitleStyle),
                 const SizedBox(height: 8),
                 Text(
                   tr('ownerClient.directoryFormHint'),
@@ -266,10 +262,7 @@ class _DirectoryAddSheetState extends State<_DirectoryAddSheet> {
 
 /// First screen: anonymous spot | roster | new client → detail step.
 class _EnrollParticipantSheet extends StatefulWidget {
-  const _EnrollParticipantSheet({
-    required this.sessionId,
-    this.onSuccess,
-  });
+  const _EnrollParticipantSheet({required this.sessionId, this.onSuccess});
 
   final String sessionId;
   final VoidCallback? onSuccess;
@@ -353,10 +346,7 @@ class _EnrollParticipantSheetState extends State<_EnrollParticipantSheet> {
     }
     setState(() => _loadingSearch = true);
     try {
-      final hits = await DashboardApiService.searchOwnerStudioClients(
-        token,
-        q,
-      );
+      final hits = await DashboardApiService.searchOwnerStudioClients(token, q);
       if (!mounted) return;
       setState(() {
         _searchHits = hits
@@ -446,8 +436,9 @@ class _EnrollParticipantSheetState extends State<_EnrollParticipantSheet> {
   }
 
   Future<void> _enrollAnonymous() async {
-    final addedMsg =
-        context.read<LocaleProvider>().t('ownerSession.participantAdded');
+    final addedMsg = context.read<LocaleProvider>().t(
+      'ownerSession.participantAdded',
+    );
     final token = context.read<AuthService>().accessToken;
     if (token == null || token.isEmpty) return;
     final messenger = ScaffoldMessenger.maybeOf(context);
@@ -487,7 +478,6 @@ class _EnrollParticipantSheetState extends State<_EnrollParticipantSheet> {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 _buildHeader(context, tr),
-                const SizedBox(height: 8),
                 Flexible(
                   child: SingleChildScrollView(
                     child: _buildStepBody(context, tr),
@@ -528,7 +518,7 @@ class _EnrollParticipantSheetState extends State<_EnrollParticipantSheet> {
                     primaryLabel: tr('ownerSession.add'),
                     primaryEnabled: _step == _EnrollStep.newWalkIn
                         ? _name.text.trim().isNotEmpty &&
-                            _isValidEmail(_email.text)
+                              _isValidEmail(_email.text)
                         : _selected != null,
                     showCancel: false,
                   ),
@@ -543,22 +533,42 @@ class _EnrollParticipantSheetState extends State<_EnrollParticipantSheet> {
 
   Widget _buildHeader(BuildContext context, String Function(String) tr) {
     Widget closeBtn() => IconButton(
-          padding: EdgeInsets.zero,
-          constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
-          onPressed: _saving ? null : () => Navigator.of(context).pop(),
-          icon: const Icon(Icons.close, color: AppColors.textPrimary),
-        );
+      padding: EdgeInsets.zero,
+      constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+      onPressed: _saving ? null : () => Navigator.of(context).pop(),
+      icon: const Icon(Icons.close, color: AppColors.textPrimary),
+    );
     if (_step == _EnrollStep.chooseSource) {
       return Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Expanded(
-            child: Text(
-              tr('ownerSession.addParticipant'),
-              style: _sheetTitleStyle,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  tr('ownerSession.addParticipant').toUpperCase(),
+                  style: _sheetTitleStyle.copyWith(
+                    fontSize: 16,
+                    letterSpacing: 0.4,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  tr('ownerClient.addParticipantHow'),
+                  style: const TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w400,
+                    color: AppColors.textSecondary,
+                    height: 1.3,
+                  ),
+                ),
+              ],
             ),
           ),
-          closeBtn(),
+          _ParticipantSheetCloseButton(
+            onPressed: _saving ? null : () => Navigator.of(context).pop(),
+          ),
         ],
       );
     }
@@ -566,7 +576,7 @@ class _EnrollParticipantSheetState extends State<_EnrollParticipantSheet> {
       children: [
         IconButton(
           padding: EdgeInsets.zero,
-          constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
+          constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
           onPressed: _saving
               ? null
               : () {
@@ -583,8 +593,8 @@ class _EnrollParticipantSheetState extends State<_EnrollParticipantSheet> {
             _step == _EnrollStep.pickFromList
                 ? tr('ownerClient.pickFromRosterTitle')
                 : _step == _EnrollStep.anonymousSpot
-                    ? tr('ownerClient.anonymousSpotTitle')
-                    : tr('ownerClient.newWalkInClient'),
+                ? tr('ownerClient.anonymousSpotTitle')
+                : tr('ownerClient.newWalkInClient'),
             style: _sheetTitleStyle,
           ),
         ),
@@ -599,26 +609,9 @@ class _EnrollParticipantSheetState extends State<_EnrollParticipantSheet> {
         return Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Text(
-              tr('ownerClient.addParticipantHow'),
-              style: TextStyle(
-                fontSize: 14,
-                color: AppColors.textSecondary,
-                height: 1.3,
-              ),
-            ),
-            const SizedBox(height: 14),
+            const SizedBox(height: 8),
             _SourceCard(
-              icon: Icons.event_seat_outlined,
-              title: tr('ownerClient.anonymousSpotTitle'),
-              subtitle: tr('ownerClient.anonymousSpotSubtitle'),
-              onTap: _saving
-                  ? null
-                  : () => setState(() => _step = _EnrollStep.anonymousSpot),
-            ),
-            const SizedBox(height: 10),
-            _SourceCard(
-              icon: Icons.people_outline,
+              iconAsset: 'assets/icons/icon-people.svg',
               title: tr('ownerClient.pickFromRoster'),
               subtitle: tr('ownerClient.pickFromRosterSubtitle'),
               onTap: _saving
@@ -630,12 +623,21 @@ class _EnrollParticipantSheetState extends State<_EnrollParticipantSheet> {
             ),
             const SizedBox(height: 10),
             _SourceCard(
-              icon: Icons.person_add_alt_1_outlined,
+              iconAsset: 'assets/icons/icon-add-people.svg',
               title: tr('ownerClient.newWalkInClient'),
               subtitle: tr('ownerClient.newWalkInClientSubtitle'),
               onTap: _saving
                   ? null
                   : () => setState(() => _step = _EnrollStep.newWalkIn),
+            ),
+            const SizedBox(height: 10),
+            _SourceCard(
+              iconAsset: 'assets/icons/icon-profile.svg',
+              title: tr('ownerClient.anonymousSpotTitle'),
+              subtitle: tr('ownerClient.anonymousSpotSubtitle'),
+              onTap: _saving
+                  ? null
+                  : () => setState(() => _step = _EnrollStep.anonymousSpot),
             ),
           ],
         );
@@ -663,8 +665,7 @@ class _EnrollParticipantSheetState extends State<_EnrollParticipantSheet> {
               decoration: InputDecoration(
                 labelText: tr('ownerClient.searchClientsPlaceholder'),
                 prefixIcon: const AppSearchPrefixIcon(),
-                prefixIconConstraints:
-                    AppSearchPrefixIcon.prefixConstraints(),
+                prefixIconConstraints: AppSearchPrefixIcon.prefixConstraints(),
                 isDense: true,
               ),
             ),
@@ -680,10 +681,7 @@ class _EnrollParticipantSheetState extends State<_EnrollParticipantSheet> {
               ),
             ),
             const SizedBox(height: 8),
-            SizedBox(
-              height: 240,
-              child: _buildPickList(context, tr),
-            ),
+            SizedBox(height: 240, child: _buildPickList(context, tr)),
           ],
         );
       case _EnrollStep.newWalkIn:
@@ -704,9 +702,7 @@ class _EnrollParticipantSheetState extends State<_EnrollParticipantSheet> {
               enabled: !_saving,
               textCapitalization: TextCapitalization.words,
               onChanged: (_) => setState(() {}),
-              decoration: InputDecoration(
-                labelText: tr('ownerSession.name'),
-              ),
+              decoration: InputDecoration(labelText: tr('ownerSession.name')),
             ),
             const SizedBox(height: 10),
             TextField(
@@ -714,18 +710,14 @@ class _EnrollParticipantSheetState extends State<_EnrollParticipantSheet> {
               enabled: !_saving,
               keyboardType: TextInputType.emailAddress,
               onChanged: (_) => setState(() {}),
-              decoration: InputDecoration(
-                labelText: tr('ownerSession.email'),
-              ),
+              decoration: InputDecoration(labelText: tr('ownerSession.email')),
             ),
             const SizedBox(height: 10),
             TextField(
               controller: _phone,
               enabled: !_saving,
               keyboardType: TextInputType.phone,
-              decoration: InputDecoration(
-                labelText: tr('ownerSession.phone'),
-              ),
+              decoration: InputDecoration(labelText: tr('ownerSession.phone')),
             ),
           ],
         );
@@ -733,9 +725,7 @@ class _EnrollParticipantSheetState extends State<_EnrollParticipantSheet> {
   }
 
   Widget _buildPickList(BuildContext context, String Function(String) tr) {
-    if (_loadingRecent &&
-        _search.text.trim().length < 2 &&
-        _recent.isEmpty) {
+    if (_loadingRecent && _search.text.trim().length < 2 && _recent.isEmpty) {
       return const Center(
         child: SizedBox(
           width: 28,
@@ -773,10 +763,7 @@ class _EnrollParticipantSheetState extends State<_EnrollParticipantSheet> {
         final title = p.isSyntheticSpot
             ? tr('ownerClient.anonymousRosterTitle')
             : p.displayName;
-        final sub = [
-          if (!p.isSyntheticSpot) p.email,
-          p.phone,
-        ]
+        final sub = [if (!p.isSyntheticSpot) p.email, p.phone]
             .whereType<String>()
             .map((s) => s.trim())
             .where((s) => s.isNotEmpty)
@@ -791,9 +778,7 @@ class _EnrollParticipantSheetState extends State<_EnrollParticipantSheet> {
             ),
           ),
           child: InkWell(
-            onTap: _saving
-                ? null
-                : () => setState(() => _selected = p),
+            onTap: _saving ? null : () => setState(() => _selected = p),
             borderRadius: BorderRadius.circular(12),
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
@@ -801,9 +786,7 @@ class _EnrollParticipantSheetState extends State<_EnrollParticipantSheet> {
                 children: [
                   Icon(
                     sel ? Icons.check_circle : Icons.circle_outlined,
-                    color: sel
-                        ? AppColors.primary500
-                        : AppColors.textTertiary,
+                    color: sel ? AppColors.primary500 : AppColors.textTertiary,
                     size: 22,
                   ),
                   const SizedBox(width: 10),
@@ -851,15 +834,38 @@ class _EnrollParticipantSheetState extends State<_EnrollParticipantSheet> {
   }
 }
 
+class _ParticipantSheetCloseButton extends StatelessWidget {
+  const _ParticipantSheetCloseButton({this.onPressed});
+
+  final VoidCallback? onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: AppColors.primary500,
+      shape: const CircleBorder(),
+      child: InkWell(
+        onTap: onPressed,
+        customBorder: const CircleBorder(),
+        child: const SizedBox(
+          width: 32,
+          height: 32,
+          child: Icon(Icons.close, size: 18, color: AppColors.textInverse),
+        ),
+      ),
+    );
+  }
+}
+
 class _SourceCard extends StatelessWidget {
   const _SourceCard({
-    required this.icon,
+    required this.iconAsset,
     required this.title,
     required this.subtitle,
     this.onTap,
   });
 
-  final IconData icon;
+  final String iconAsset;
   final String title;
   final String subtitle;
   final VoidCallback? onTap;
@@ -867,18 +873,22 @@ class _SourceCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Material(
-      color: AppColors.backgroundSecondary,
-      borderRadius: BorderRadius.circular(14),
+      color: AppColors.backgroundBrand,
+      borderRadius: BorderRadius.circular(12),
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(12),
         child: Padding(
-          padding: const EdgeInsets.all(14),
+          padding: const EdgeInsets.fromLTRB(14, 14, 16, 14),
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Icon(icon, size: 28, color: AppColors.primary500),
-              const SizedBox(width: 12),
+              SvgPicture.asset(
+                iconAsset,
+                width: 24,
+                height: 20,
+              ),
+              const SizedBox(width: 14),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -889,6 +899,7 @@ class _SourceCard extends StatelessWidget {
                         fontSize: 16,
                         fontWeight: FontWeight.w700,
                         color: AppColors.textPrimary,
+                        height: 1.2,
                       ),
                     ),
                     const SizedBox(height: 4),
@@ -896,6 +907,7 @@ class _SourceCard extends StatelessWidget {
                       subtitle,
                       style: const TextStyle(
                         fontSize: 13,
+                        fontWeight: FontWeight.w400,
                         height: 1.35,
                         color: AppColors.textSecondary,
                       ),
@@ -903,7 +915,6 @@ class _SourceCard extends StatelessWidget {
                   ],
                 ),
               ),
-              const Icon(Icons.chevron_right, color: AppColors.textTertiary),
             ],
           ),
         ),
@@ -922,7 +933,7 @@ class _SheetChrome extends StatelessWidget {
     return Container(
       decoration: BoxDecoration(
         color: AppColors.backgroundPrimary,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(24),
         border: Border.all(color: AppColors.borderPrimary),
         boxShadow: const [
           BoxShadow(

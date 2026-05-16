@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../common/henzo_modal.dart';
 
 import '../../constants/colors.dart';
 
@@ -31,7 +32,7 @@ class WorkScheduleTimeModal extends StatefulWidget {
     String title = 'Work schedule',
     String subtitle = 'Укажите временной диапазон работы',
   }) {
-    return showModalBottomSheet<(int, int, int, int)?>(
+    return showHenzoModalBottomSheet<(int, int, int, int)?>(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,

@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 
+import '../utils/formatters.dart';
 import 'api_client.dart';
 import '../models/booking.dart';
 import '../models/owner_studio_client.dart';
@@ -100,11 +101,8 @@ class OwnerTrainingSession {
                   '')
               .toString(),
       startsAt:
-          DateTime.tryParse((json['startsAt'] ?? '').toString()) ??
-          DateTime.now(),
-      endsAt:
-          DateTime.tryParse((json['endsAt'] ?? '').toString()) ??
-          DateTime.now(),
+          parseApiDateTime(json['startsAt']) ?? DateTime.now(),
+      endsAt: parseApiDateTime(json['endsAt']) ?? DateTime.now(),
       status: (json['status'] ?? 'ACTIVE').toString(),
       capacity: (json['capacity'] as num?)?.toInt() ?? 0,
       enrolledCount: (json['enrolledCount'] as num?)?.toInt() ?? 0,
@@ -172,10 +170,8 @@ class OwnerTrainingSession {
     return OwnerTrainingSession(
       sessionId: (m['sessionId'] ?? '').toString(),
       trainingId: (m['trainingId'] ?? '').toString(),
-      startsAt:
-          DateTime.tryParse((m['startsAt'] ?? '').toString()) ?? DateTime.now(),
-      endsAt:
-          DateTime.tryParse((m['endsAt'] ?? '').toString()) ?? DateTime.now(),
+      startsAt: parseApiDateTime(m['startsAt']) ?? DateTime.now(),
+      endsAt: parseApiDateTime(m['endsAt']) ?? DateTime.now(),
       status: (m['status'] ?? 'ACTIVE').toString(),
       capacity: (m['capacity'] as num?)?.toInt() ?? 0,
       enrolledCount: (m['enrolledCount'] as num?)?.toInt() ?? 0,
@@ -195,6 +191,33 @@ class OwnerTrainingSession {
       locationName: m['locationName']?.toString(),
     );
   }
+
+  OwnerTrainingSession copyWith({
+    int? enrolledCount,
+    int? attendedCount,
+    String? status,
+  }) =>
+      OwnerTrainingSession(
+        sessionId: sessionId,
+        trainingId: trainingId,
+        startsAt: startsAt,
+        endsAt: endsAt,
+        status: status ?? this.status,
+        capacity: capacity,
+        enrolledCount: enrolledCount ?? this.enrolledCount,
+        attendedCount: attendedCount ?? this.attendedCount,
+        trainingName: trainingName,
+        trainingPrice: trainingPrice,
+        trainingDurationMinutes: trainingDurationMinutes,
+        trainingDisplayColorHex: trainingDisplayColorHex,
+        trainingCategoryNameEn: trainingCategoryNameEn,
+        trainingCategoryNameRu: trainingCategoryNameRu,
+        trainingCategoryNameVn: trainingCategoryNameVn,
+        trainerName: trainerName,
+        trainerId: trainerId,
+        locationId: locationId,
+        locationName: locationName,
+      );
 
   /// Training category label for UI (matches studio locale).
   String? categoryLabelForLocale(String localeCode) {

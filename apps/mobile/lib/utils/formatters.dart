@@ -1,5 +1,13 @@
 /// Shared formatting helpers for client UI (VND, time).
 
+/// API timestamps are UTC ISO strings; convert once for display and filters.
+DateTime? parseApiDateTime(Object? raw) {
+  if (raw == null) return null;
+  final text = raw.toString().trim();
+  if (text.isEmpty) return null;
+  return DateTime.tryParse(text)?.toLocal();
+}
+
 String formatVnd(num value) {
   final digits = value.round().toString();
   final out = StringBuffer();
@@ -12,8 +20,9 @@ String formatVnd(num value) {
 }
 
 String formatTime24(DateTime dt) {
-  final h = dt.hour.toString().padLeft(2, '0');
-  final m = dt.minute.toString().padLeft(2, '0');
+  final local = dt.toLocal();
+  final h = local.hour.toString().padLeft(2, '0');
+  final m = local.minute.toString().padLeft(2, '0');
   return '$h:$m';
 }
 
@@ -26,14 +35,14 @@ String formatMinutesSliderLabel(double minutes) {
 
 String timeLabelHm(DateTime? dt) {
   if (dt == null) return '--:--';
-  final h = dt.hour.toString().padLeft(2, '0');
-  final m = dt.minute.toString().padLeft(2, '0');
-  return '$h:$m';
+  return formatTime24(dt);
 }
 
 /// Passes list: `01.05 14:30`
 String dateTimeLabelDayMonthHm(DateTime? dt) {
   if (dt == null) return 'Date TBD';
+  final local = dt.toLocal();
   String two(int v) => v.toString().padLeft(2, '0');
-  return '${two(dt.day)}.${two(dt.month)} ${two(dt.hour)}:${two(dt.minute)}';
+  return '${two(local.day)}.${two(local.month)} '
+      '${two(local.hour)}:${two(local.minute)}';
 }

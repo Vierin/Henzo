@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../widgets/common/henzo_modal.dart';
 import 'package:provider/provider.dart';
 
 import '../constants/colors.dart';
@@ -128,7 +129,7 @@ class _OwnerEditTrainingSessionScreenState
   }
 
   Future<void> _showTrainerPlanInfo() async {
-    await showDialog<void>(
+    await showHenzoDialog<void>(
       context: context,
       builder: (ctx) => AlertDialog(
         title: const Text('Тренер'),

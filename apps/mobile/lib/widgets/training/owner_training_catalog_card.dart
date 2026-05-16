@@ -1,8 +1,20 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 
 import '../../constants/colors.dart';
 import '../../models/service_item.dart';
 import '../../utils/color_hex.dart';
+
+Widget _catalogTrainerIcon() {
+  return Padding(
+    padding: const EdgeInsets.only(top: 1),
+    child: SvgPicture.asset(
+      'assets/icons/icon-profile.svg',
+      width: 11,
+      height: 13,
+    ),
+  );
+}
 
 /// Карточка типа тренировки — тот же layout, что [OwnerDailyScheduleSessionCard].
 class OwnerTrainingCatalogCard extends StatelessWidget {
@@ -11,6 +23,7 @@ class OwnerTrainingCatalogCard extends StatelessWidget {
     required this.item,
     required this.durationLabel,
     required this.priceLabel,
+    this.addressLabel = '',
     required this.trainerLabel,
     required this.onTap,
   });
@@ -18,6 +31,7 @@ class OwnerTrainingCatalogCard extends StatelessWidget {
   final ServiceItem item;
   final String durationLabel;
   final String priceLabel;
+  final String addressLabel;
   final String trainerLabel;
   final VoidCallback onTap;
 
@@ -25,6 +39,8 @@ class OwnerTrainingCatalogCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final accent =
         parseHexColor(item.displayColor) ?? AppColors.primary500;
+    final address = addressLabel.trim();
+    final trainer = trainerLabel.trim();
 
     return GestureDetector(
       behavior: HitTestBehavior.opaque,
@@ -45,33 +61,30 @@ class OwnerTrainingCatalogCard extends StatelessWidget {
                 decoration: BoxDecoration(color: accent),
               ),
               Padding(
-                padding: const EdgeInsets.fromLTRB(12, 14, 0, 14),
+                padding: const EdgeInsets.fromLTRB(12, 10, 0, 10),
                 child: SizedBox(
                   width: 56,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisAlignment: MainAxisAlignment.spaceAround,
-                    children: [
-                      Text(
-                        durationLabel,
-                        style: const TextStyle(
-                          fontSize: 15,
-                          fontWeight: FontWeight.w600,
-                          height: 1,
-                          letterSpacing: -0.3,
-                          color: AppColors.textPrimary,
-                        ),
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
+                  child: Align(
+                    alignment: Alignment.centerLeft,
+                    child: Text(
+                      durationLabel,
+                      style: const TextStyle(
+                        fontSize: 17,
+                        fontWeight: FontWeight.w600,
+                        height: 1,
+                        letterSpacing: -0.3,
+                        color: AppColors.textPrimary,
                       ),
-                    ],
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
                   ),
                 ),
               ),
               Container(width: 1, color: accent),
               Expanded(
                 child: Padding(
-                  padding: const EdgeInsets.fromLTRB(12, 14, 12, 14),
+                  padding: const EdgeInsets.fromLTRB(12, 8, 12, 10),
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -88,23 +101,48 @@ class OwnerTrainingCatalogCard extends StatelessWidget {
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
-                      if (trainerLabel.isNotEmpty) ...[
-                        const SizedBox(height: 4),
+                      if (address.isNotEmpty) ...[
+                        const SizedBox(height: 8),
                         Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            const Icon(
-                              Icons.person_outline,
-                              size: 13,
-                              color: AppColors.textSecondary,
+                            Padding(
+                              padding: const EdgeInsets.only(top: 1),
+                              child: SvgPicture.asset(
+                                'assets/icons/icon-pin.svg',
+                                width: 11,
+                                height: 15,
+                              ),
                             ),
-                            const SizedBox(width: 3),
+                            const SizedBox(width: 4),
                             Flexible(
                               child: Text(
-                                trainerLabel,
+                                address,
                                 style: const TextStyle(
-                                  fontSize: 13,
+                                  fontSize: 14,
                                   fontWeight: FontWeight.w400,
-                                  color: AppColors.textSecondary,
+                                  color: AppColors.textPrimary,
+                                ),
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                      if (trainer.isNotEmpty) ...[
+                        if (address.isEmpty) const SizedBox(height: 8),
+                        Row(
+                          children: [
+                            _catalogTrainerIcon(),
+                            const SizedBox(width: 3),
+                            Expanded(
+                              child: Text(
+                                trainer,
+                                style: const TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w400,
+                                  color: AppColors.textPrimary,
                                 ),
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
@@ -119,20 +157,17 @@ class OwnerTrainingCatalogCard extends StatelessWidget {
               ),
               Padding(
                 padding: const EdgeInsets.fromLTRB(0, 14, 14, 14),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Text(
-                      priceLabel,
-                      style: const TextStyle(
-                        fontSize: 15,
-                        fontWeight: FontWeight.w600,
-                        color: AppColors.textPrimary,
-                      ),
-                      textAlign: TextAlign.right,
+                child: Center(
+                  child: Text(
+                    priceLabel,
+                    style: TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w800,
+                      color: accent,
+                      height: 1.1,
                     ),
-                  ],
+                    textAlign: TextAlign.right,
+                  ),
                 ),
               ),
             ],

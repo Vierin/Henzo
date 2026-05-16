@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../common/henzo_modal.dart';
 import 'package:provider/provider.dart';
 
 import '../../constants/colors.dart';
@@ -18,7 +19,7 @@ Future<OwnerSessionEditScope?> showOwnerSessionEditScopeDialog(
   BuildContext context,
 ) {
   final tr = context.read<LocaleProvider>().t;
-  return showDialog<OwnerSessionEditScope>(
+  return showHenzoDialog<OwnerSessionEditScope>(
     context: context,
     builder: (ctx) {
       final maxW = MediaQuery.sizeOf(ctx).width - 32;

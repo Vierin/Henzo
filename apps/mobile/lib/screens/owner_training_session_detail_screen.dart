@@ -9,6 +9,7 @@ import 'package:share_plus/share_plus.dart';
 import '../constants/colors.dart';
 import '../l10n/locale_provider.dart';
 import '../services/auth_service.dart';
+import '../services/cache/owner_sessions_cache.dart';
 import '../services/dashboard_api_service.dart';
 import '../utils/color_hex.dart';
 import '../utils/show_api_error.dart';
@@ -51,6 +52,7 @@ class _OwnerTrainingSessionDetailScreenState
     extends State<OwnerTrainingSessionDetailScreen> {
   late Future<List<OwnerSessionEnrollment>> _enrollmentsFuture;
   late AuthService _authService;
+  late OwnerTrainingSession _session;
 
   /// Optimistic overrides before PATCH (enrollmentId → ACTIVE | NO_SHOW).
   final Map<String, String> _pendingStatusByEnrollmentId = {};
@@ -61,15 +63,31 @@ class _OwnerTrainingSessionDetailScreenState
 
   Color get _accent =>
       widget.trainingColor ??
-      parseHexColor(widget.session.trainingDisplayColorHex) ??
+      parseHexColor(_session.trainingDisplayColorHex) ??
       AppColors.primary500;
 
   @override
   void initState() {
     super.initState();
     _authService = context.read<AuthService>();
-    _enrollmentsFuture = _loadEnrollments();
+    _session = widget.session;
+    _enrollmentsFuture = _loadEnrollmentsAndSyncCounts();
   }
+
+  Future<List<OwnerSessionEnrollment>> _loadEnrollmentsAndSyncCounts() async {
+    final list = await _loadEnrollments();
+    if (mounted) {
+      setState(() {
+        _session = _session.copyWith(
+          enrolledCount: _activeEnrollmentCount(list),
+        );
+      });
+    }
+    return list;
+  }
+
+  static int _activeEnrollmentCount(List<OwnerSessionEnrollment> list) =>
+      list.where((e) => e.status.toUpperCase() != 'CANCELLED').length;
 
   @override
   void dispose() {
@@ -126,23 +144,34 @@ class _OwnerTrainingSessionDetailScreenState
   }
 
   Future<List<OwnerSessionEnrollment>> _loadEnrollments() async {
-    final token = context.read<AuthService>().accessToken;
+    final token = _authService.accessToken;
     if (token == null || token.isEmpty) return [];
-    return DashboardApiService.getOwnerSessionEnrollments(
-      token,
-      widget.session.sessionId,
-    );
+    final sessionId = _session.sessionId;
+    if (sessionId.isEmpty) return [];
+    return DashboardApiService.getOwnerSessionEnrollments(token, sessionId);
+  }
+
+  Future<void> _syncEnrollmentsFromServer({bool notifyParent = false}) async {
+    final list = await _loadEnrollmentsAndSyncCounts();
+    if (!mounted) return;
+    setState(() {
+      _session = _session.copyWith(
+        enrolledCount: _activeEnrollmentCount(list),
+      );
+      _enrollmentsFuture = Future.value(list);
+    });
+    if (notifyParent) {
+      context.read<OwnerSessionsCache>().invalidate();
+      widget.onParticipantsChanged?.call();
+    }
   }
 
   void _refreshEnrollmentsOnly() {
-    setState(() {
-      _enrollmentsFuture = _loadEnrollments();
-    });
+    unawaited(_syncEnrollmentsFromServer());
   }
 
   void _reloadEnrollments() {
-    _refreshEnrollmentsOnly();
-    widget.onParticipantsChanged?.call();
+    unawaited(_syncEnrollmentsFromServer(notifyParent: true));
   }
 
   Color _onAccentContent(Color accent) =>
@@ -152,7 +181,7 @@ class _OwnerTrainingSessionDetailScreenState
 
   Future<void> _shareSession() async {
     final locale = context.read<LocaleProvider>();
-    final s = widget.session;
+    final s = _session;
     final startsLocal = s.startsAt.toLocal();
     final endsLocal = s.endsAt.toLocal();
     final dateFmt = DateFormat('EEEE, d MMM', locale.localeCode);
@@ -169,7 +198,7 @@ class _OwnerTrainingSessionDetailScreenState
   }
 
   void _onAttendanceToggle(OwnerSessionEnrollment e, bool attended) {
-    final session = widget.session;
+    final session = _session;
     final now = DateTime.now();
     final sessionEnded = !session.endsAt.isAfter(now);
     if (!attended && !sessionEnded) {
@@ -206,7 +235,7 @@ class _OwnerTrainingSessionDetailScreenState
 
   Future<void> _confirmCancelSession() async {
     final tr = context.read<LocaleProvider>().t;
-    final session = widget.session;
+    final session = _session;
     if (session.sessionId.isEmpty) return;
     final st = session.status.toUpperCase();
     if (st == 'CANCELLED' || st == 'COMPLETED') return;
@@ -243,11 +272,8 @@ class _OwnerTrainingSessionDetailScreenState
     await showAddOwnerClientSheet(
       context,
       mode: AddOwnerClientMode.enrollInSession,
-      sessionId: widget.session.sessionId,
-      onSuccess: () {
-        _reloadEnrollments();
-        widget.onParticipantsChanged?.call();
-      },
+      sessionId: _session.sessionId,
+      onSuccess: _reloadEnrollments,
     );
   }
 
@@ -288,7 +314,7 @@ class _OwnerTrainingSessionDetailScreenState
   Widget build(BuildContext context) {
     final locale = context.watch<LocaleProvider>();
     final tr = locale.t;
-    final session = widget.session;
+    final session = _session;
     final startsLocal = session.startsAt.toLocal();
     final endsLocal = session.endsAt.toLocal();
     final dateFmt = DateFormat('EEEE, MMM d', locale.localeCode);

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../widgets/common/henzo_modal.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -217,7 +218,7 @@ class _AccountSettingsScreenState extends State<AccountSettingsScreen> {
   }
 
   void _showDeleteAccountDialog() {
-    showDialog<void>(
+    showHenzoDialog<void>(
       context: context,
       barrierDismissible: false,
       builder: (dialogContext) => AlertDialog(

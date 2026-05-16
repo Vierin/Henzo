@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../widgets/common/henzo_modal.dart';
 import 'package:provider/provider.dart';
 
 import '../../constants/colors.dart';
@@ -122,7 +123,7 @@ class _ClientEditProfileScreenState extends State<ClientEditProfileScreen> {
   }
 
   Future<void> _deleteAccount() async {
-    final shouldDelete = await showDialog<bool>(
+    final shouldDelete = await showHenzoDialog<bool>(
       context: context,
       builder: (dialogContext) => AlertDialog(
         title: const Text('Delete account'),

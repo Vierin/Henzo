@@ -13,19 +13,23 @@ class ShellNavItem extends StatelessWidget {
     required this.label,
     required this.isSelected,
     required this.onTap,
+    this.inactiveIconColor,
+    this.inactiveLabelColor,
   });
 
   final String svgAsset;
   final String label;
   final bool isSelected;
   final VoidCallback onTap;
+  final Color? inactiveIconColor;
+  final Color? inactiveLabelColor;
 
   @override
   Widget build(BuildContext context) {
-    final iconColor =
-        isSelected ? AppColors.textInverse : inactiveIconAndLabel;
-    final textColor =
-        isSelected ? AppColors.textInverse : inactiveIconAndLabel;
+    final inactiveColor = inactiveIconColor ?? inactiveIconAndLabel;
+    final inactiveLabel = inactiveLabelColor ?? inactiveColor;
+    final iconColor = isSelected ? AppColors.textInverse : inactiveColor;
+    final textColor = isSelected ? AppColors.textInverse : inactiveLabel;
     return Material(
       color: Colors.transparent,
       child: InkWell(

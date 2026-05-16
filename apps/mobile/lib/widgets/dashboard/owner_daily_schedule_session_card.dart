@@ -10,7 +10,7 @@ String ownerDailyScheduleTrainerLabel(
   String? ownerFallback,
 ) {
   final raw = session.trainerName.trim();
-  if (raw.isNotEmpty && !_isPlaceholderTrainerName(raw)) {
+  if (raw.isNotEmpty && !isPlaceholderScheduleTrainerName(raw)) {
     return raw;
   }
   final f = ownerFallback?.trim();
@@ -18,7 +18,18 @@ String ownerDailyScheduleTrainerLabel(
   return '—';
 }
 
-bool _isPlaceholderTrainerName(String value) {
+Widget _scheduleTrainerIcon() {
+  return Padding(
+    padding: const EdgeInsets.only(top: 1),
+    child: SvgPicture.asset(
+      'assets/icons/icon-profile.svg',
+      width: 11,
+      height: 13,
+    ),
+  );
+}
+
+bool isPlaceholderScheduleTrainerName(String value) {
   final t = value.trim();
   if (t.isEmpty) return true;
   if (t == '-' || t == '—') return true;
@@ -37,6 +48,11 @@ class OwnerDailyScheduleSessionCard extends StatelessWidget {
     this.showLocationPin = false,
     this.trainerLine,
     this.onBookAgain,
+    this.bookActionLabel = 'Book again',
+    this.bookActionLoading = false,
+    this.onCancelBooking,
+    this.cancelActionLabel = 'Cancel',
+    this.cancelActionLoading = false,
     this.dimPastSessions = true,
     this.trailingPriceLabel,
     this.showSubtitleLeadingIcon = true,
@@ -50,8 +66,14 @@ class OwnerDailyScheduleSessionCard extends StatelessWidget {
   /// Shown under [subtitleLabel] when [showLocationPin] (location row).
   final String? trainerLine;
 
-  /// When set, right column shows «Book again» instead of capacity/fill.
+  /// When set, right column shows [bookActionLabel] instead of capacity/fill.
   final VoidCallback? onBookAgain;
+  final String bookActionLabel;
+  final bool bookActionLoading;
+
+  final VoidCallback? onCancelBooking;
+  final String cancelActionLabel;
+  final bool cancelActionLoading;
 
   /// When false, past sessions keep full opacity (e.g. Passes history).
   final bool dimPastSessions;
@@ -88,221 +110,253 @@ class OwnerDailyScheduleSessionCard extends StatelessWidget {
 
     final trainerRowText = trainerLine?.trim() ?? '';
     final priceText = trailingPriceLabel?.trim() ?? '';
+    final hasBookAction = onBookAgain != null || bookActionLoading;
+    final hasCancelAction = onCancelBooking != null || cancelActionLoading;
+    final trailingInset = (hasBookAction || hasCancelAction) && priceText.isEmpty
+        ? 8.0
+        : 14.0;
 
     final card = Container(
-          margin: const EdgeInsets.only(bottom: 10),
-          clipBehavior: Clip.hardEdge,
-          decoration: BoxDecoration(
-            color: AppColors.backgroundPrimary,
-            borderRadius: BorderRadius.circular(14),
-          ),
-          child: IntrinsicHeight(
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Container(width: 4, decoration: BoxDecoration(color: accent)),
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(12, 14, 0, 14),
-                  child: SizedBox(
-                    width: 56,
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisAlignment: MainAxisAlignment.spaceAround,
-                      children: [
-                        Text(
-                          startLabel,
-                          style: const TextStyle(
-                            fontSize: 17,
-                            fontWeight: FontWeight.w600,
-                            height: 1,
-                            letterSpacing: -0.3,
-                            color: AppColors.textPrimary,
-                          ),
-                        ),
-                        Text(
-                          '$duration min',
-                          style: const TextStyle(
-                            fontSize: 11,
-                            fontWeight: FontWeight.w600,
-                            color: Color(0xFFA4A4A4),
-                          ),
-                        ),
-                      ],
+      margin: const EdgeInsets.only(bottom: 10),
+      clipBehavior: Clip.hardEdge,
+      decoration: BoxDecoration(
+        color: AppColors.backgroundPrimary,
+        borderRadius: BorderRadius.circular(14),
+      ),
+      child: IntrinsicHeight(
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Container(width: 4, decoration: BoxDecoration(color: accent)),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(12, 10, 0, 10),
+              child: SizedBox(
+                width: 56,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      startLabel,
+                      style: const TextStyle(
+                        fontSize: 17,
+                        fontWeight: FontWeight.w600,
+                        height: 1,
+                        letterSpacing: -0.3,
+                        color: AppColors.textPrimary,
+                      ),
                     ),
-                  ),
-                ),
-                Container(width: 1, color: accent),
-                Expanded(
-                  child: Padding(
-                    padding: const EdgeInsets.fromLTRB(12, 14, 12, 14),
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          s.trainingName,
-                          style: const TextStyle(
-                            fontSize: 17,
-                            fontWeight: FontWeight.w700,
-                            height: 1,
-                            letterSpacing: -0.3,
-                            color: AppColors.textPrimary,
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                        if (subtitleLabel.isNotEmpty) ...[
-                          const SizedBox(height: 4),
-                          Row(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              if (showSubtitleLeadingIcon) ...[
-                                if (showLocationPin) ...[
-                                  Padding(
-                                    padding: const EdgeInsets.only(top: 1),
-                                    child: SvgPicture.asset(
-                                      'assets/icons/icon-pin.svg',
-                                      width: 11,
-                                      height: 15,
-                                    ),
-                                  ),
-                                  const SizedBox(width: 4),
-                                ] else ...[
-                                  Padding(
-                                    padding: const EdgeInsets.only(top: 1),
-                                    child: Icon(
-                                      Icons.person_outline,
-                                      size: 13,
-                                      color: AppColors.textSecondary,
-                                    ),
-                                  ),
-                                  const SizedBox(width: 3),
-                                ],
-                              ],
-                              Flexible(
-                                child: Text(
-                                  subtitleLabel,
-                                  style: const TextStyle(
-                                    fontSize: 13,
-                                    fontWeight: FontWeight.w400,
-                                    color: AppColors.textSecondary,
-                                  ),
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ],
-                        if (trainerRowText.isNotEmpty) ...[
-                          const SizedBox(height: 3),
-                          Row(
-                            children: [
-                              Icon(
-                                Icons.person_outline,
-                                size: 13,
-                                color: AppColors.textSecondary,
-                              ),
-                              const SizedBox(width: 3),
-                              Expanded(
-                                child: Text(
-                                  trainerRowText,
-                                  style: const TextStyle(
-                                    fontSize: 13,
-                                    fontWeight: FontWeight.w400,
-                                    color: AppColors.textSecondary,
-                                  ),
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ],
-                      ],
+                    const SizedBox(height: 8),
+                    Text(
+                      '$duration min',
+                      style: const TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                        color: Color(0xFFA4A4A4),
+                      ),
                     ),
-                  ),
+                  ],
                 ),
-                Padding(
-                  padding: EdgeInsets.fromLTRB(
-                    0,
-                    14,
-                    onBookAgain != null && priceText.isEmpty ? 8 : 14,
-                    14,
-                  ),
-                  child: priceText.isNotEmpty
-                      ? Center(
-                          child: Text(
-                            priceText,
-                            textAlign: TextAlign.center,
-                            style: TextStyle(
-                              fontSize: 15,
-                              fontWeight: FontWeight.w800,
-                              color: accent,
-                              height: 1.1,
-                            ),
-                          ),
-                        )
-                      : onBookAgain != null
-                          ? Center(
-                              child: TextButton(
-                                onPressed: onBookAgain,
-                                style: TextButton.styleFrom(
-                                  backgroundColor: AppColors.primary500,
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 12,
-                                    vertical: 8,
-                                  ),
-                                  minimumSize: Size.zero,
-                                  tapTargetSize:
-                                      MaterialTapTargetSize.shrinkWrap,
-                                ),
-                                child: const Text(
-                                  'Book again',
-                                  textAlign: TextAlign.center,
-                                  style: TextStyle(
-                                    fontSize: 12,
-                                    color: AppColors.backgroundPrimary,
-                                    fontWeight: FontWeight.w700,
-                                    height: 1.15,
-                                  ),
-                                ),
-                              ),
-                            )
-                          : Column(
-                              crossAxisAlignment: CrossAxisAlignment.center,
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Text(
-                                  fillLabel,
-                                  style: const TextStyle(
-                                    fontSize: 15,
-                                    fontWeight: FontWeight.w500,
-                                    color: AppColors.textPrimary,
-                                  ),
-                                ),
-                                const SizedBox(height: 6),
-                                SizedBox(
-                                  width: 52,
-                                  child: ClipRRect(
-                                    borderRadius: BorderRadius.circular(999),
-                                    child: LinearProgressIndicator(
-                                      minHeight: 4,
-                                      value: progress,
-                                      backgroundColor: AppColors.borderPrimary,
-                                      valueColor: AlwaysStoppedAnimation<Color>(
-                                        progressColor,
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                ),
-              ],
+              ),
             ),
-          ),
-        );
+            Container(width: 1, color: accent),
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(12, 8, 12, 10),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      s.trainingName,
+                      style: const TextStyle(
+                        fontSize: 17,
+                        fontWeight: FontWeight.w700,
+                        height: 1,
+                        letterSpacing: -0.3,
+                        color: AppColors.textPrimary,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    if (subtitleLabel.isNotEmpty) ...[
+                      const SizedBox(height: 8),
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          if (showSubtitleLeadingIcon) ...[
+                            if (showLocationPin) ...[
+                              Padding(
+                                padding: const EdgeInsets.only(top: 1),
+                                child: SvgPicture.asset(
+                                  'assets/icons/icon-pin.svg',
+                                  width: 11,
+                                  height: 15,
+                                ),
+                              ),
+                              const SizedBox(width: 4),
+                            ] else ...[
+                              _scheduleTrainerIcon(),
+                              const SizedBox(width: 3),
+                            ],
+                          ],
+                          Flexible(
+                            child: Text(
+                              subtitleLabel,
+                              style: const TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w400,
+                                color: AppColors.textPrimary,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                    if (trainerRowText.isNotEmpty) ...[
+                      Row(
+                        children: [
+                          _scheduleTrainerIcon(),
+                          const SizedBox(width: 3),
+                          Expanded(
+                            child: Text(
+                              trainerRowText,
+                              style: const TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w400,
+                                color: AppColors.textPrimary,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+            ),
+            Padding(
+              padding: EdgeInsets.fromLTRB(0, 14, trailingInset, 14),
+              child: priceText.isNotEmpty
+                  ? Center(
+                      child: Text(
+                        priceText,
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w800,
+                          color: accent,
+                          height: 1.1,
+                        ),
+                      ),
+                    )
+                  : hasBookAction
+                  ? Center(
+                      child: TextButton(
+                        onPressed:
+                            bookActionLoading ? null : onBookAgain,
+                        style: TextButton.styleFrom(
+                          backgroundColor: AppColors.primary500,
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 8,
+                          ),
+                          minimumSize: Size.zero,
+                          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                        ),
+                        child: bookActionLoading
+                            ? const SizedBox(
+                                width: 18,
+                                height: 18,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  color: AppColors.backgroundPrimary,
+                                ),
+                              )
+                            : Text(
+                                bookActionLabel,
+                                textAlign: TextAlign.center,
+                                style: const TextStyle(
+                                  fontSize: 12,
+                                  color: AppColors.backgroundPrimary,
+                                  fontWeight: FontWeight.w700,
+                                  height: 1.15,
+                                ),
+                              ),
+                      ),
+                    )
+                  : hasCancelAction
+                  ? Center(
+                      child: TextButton(
+                        onPressed:
+                            cancelActionLoading ? null : onCancelBooking,
+                        style: TextButton.styleFrom(
+                          foregroundColor: AppColors.error500,
+                          side: const BorderSide(color: AppColors.error500),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 10,
+                            vertical: 8,
+                          ),
+                          minimumSize: Size.zero,
+                          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                        ),
+                        child: cancelActionLoading
+                            ? const SizedBox(
+                                width: 18,
+                                height: 18,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  color: AppColors.error500,
+                                ),
+                              )
+                            : Text(
+                                cancelActionLabel,
+                                textAlign: TextAlign.center,
+                                style: const TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w700,
+                                  height: 1.15,
+                                ),
+                              ),
+                      ),
+                    )
+                  : Column(
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text(
+                          fillLabel,
+                          style: const TextStyle(
+                            fontSize: 15,
+                            fontWeight: FontWeight.w500,
+                            color: AppColors.textPrimary,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        SizedBox(
+                          width: 55,
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(999),
+                            child: LinearProgressIndicator(
+                              minHeight: 4,
+                              value: progress,
+                              backgroundColor: AppColors.borderPrimary,
+                              valueColor: AlwaysStoppedAnimation<Color>(
+                                progressColor,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+            ),
+          ],
+        ),
+      ),
+    );
 
     final wrapped = dimPastSessions && isPast
         ? Opacity(opacity: 0.65, child: card)

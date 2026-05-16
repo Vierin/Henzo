@@ -62,6 +62,7 @@ const clientScheduleEnrollmentSelect =
             name: true,
             address: true,
             reminderSettings: true,
+            User: { select: { name: true, email: true } },
           },
         },
       },
@@ -1077,6 +1078,10 @@ export class FitnessSessionsService {
     return enrollments.map((e) => {
       const studio = e.TrainingSession.Studio;
       const studioName = studio?.name?.trim() ?? 'Studio';
+      const ownerDisplayName =
+        studio?.User?.name?.trim() ||
+        studio?.User?.email?.trim() ||
+        studioName;
       const locationCount = studio
         ? countTrainingLocations(studio.reminderSettings)
         : 1;
@@ -1116,12 +1121,13 @@ export class FitnessSessionsService {
             }),
           }
         : null,
-      trainer: e.TrainingSession.Trainer
-        ? {
-            id: e.TrainingSession.Trainer.id,
-            name: e.TrainingSession.Trainer.name,
-          }
-        : null,
+      trainer: (() => {
+        const tr = e.TrainingSession.Trainer;
+        if (tr?.name && String(tr.name).trim().length > 0) {
+          return { id: tr.id, name: String(tr.name).trim() };
+        }
+        return { id: tr?.id ?? null, name: ownerDisplayName };
+      })(),
       studio: e.TrainingSession.Studio
         ? {
             id: e.TrainingSession.Studio.id,

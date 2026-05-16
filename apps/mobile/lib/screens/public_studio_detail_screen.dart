@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import '../widgets/common/henzo_modal.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:provider/provider.dart';
@@ -11,6 +12,7 @@ import '../services/auth_service.dart';
 import '../services/cache/studio_public_detail_cache.dart';
 import '../services/client_favorites_store.dart';
 import '../utils/color_hex.dart';
+import '../utils/formatters.dart';
 import '../widgets/map/henzo_map_layers.dart';
 import '../widgets/public/cached_salon_network_image.dart';
 import 'public_studio_schedule_screen.dart';
@@ -475,8 +477,7 @@ class _DetailContent extends StatelessWidget {
                   final trainer = item['trainer'] is Map<String, dynamic>
                       ? (item['trainer']['name'] ?? '').toString()
                       : '';
-                  final start = DateTime.tryParse((item['startsAt'] ?? '').toString())
-                      ?.toLocal();
+                  final start = parseApiDateTime(item['startsAt']);
                   final duration = (training['duration'] as num?)?.toInt();
                   final price = (training['price'] as num?)?.toDouble();
                   final accentColor = parseHexColor(
@@ -621,11 +622,7 @@ class _DetailContent extends StatelessWidget {
     );
   }
 
-  String _formatClassDate(DateTime? dt) {
-    if (dt == null) return 'Date TBD';
-    String two(int v) => v.toString().padLeft(2, '0');
-    return '${two(dt.day)}.${two(dt.month)} ${two(dt.hour)}:${two(dt.minute)}';
-  }
+  String _formatClassDate(DateTime? dt) => dateTimeLabelDayMonthHm(dt);
 
   String _formatVnd(num value) {
     final digits = value.round().toString();
@@ -641,7 +638,7 @@ class _DetailContent extends StatelessWidget {
   }
 
   void _showAllClasses(BuildContext context, List<dynamic> classes) {
-    showModalBottomSheet<void>(
+    showHenzoModalBottomSheet<void>(
       context: context,
       showDragHandle: true,
       backgroundColor: AppColors.backgroundPrimary,
@@ -658,8 +655,7 @@ class _DetailContent extends StatelessWidget {
                   ? Map<String, dynamic>.from(item['training'] as Map)
                   : <String, dynamic>{};
               final title = (training['name'] ?? 'Class').toString();
-              final start = DateTime.tryParse((item['startsAt'] ?? '').toString())
-                  ?.toLocal();
+              final start = parseApiDateTime(item['startsAt']);
               return ListTile(
                 contentPadding: EdgeInsets.zero,
                 title: Text(title),

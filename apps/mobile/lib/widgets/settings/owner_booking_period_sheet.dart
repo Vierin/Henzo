@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../common/henzo_modal.dart';
 import 'package:provider/provider.dart';
 
 import '../../constants/colors.dart';
@@ -77,7 +78,7 @@ Future<bool?> showOwnerBookingPeriodSheet(
   final startDays =
       initialDays ?? extractBookingPeriodDays(salon) ?? kDefaultBookingPeriodDays;
 
-  return showModalBottomSheet<bool>(
+  return showHenzoModalBottomSheet<bool>(
     context: context,
     isScrollControlled: true,
     backgroundColor: Colors.transparent,

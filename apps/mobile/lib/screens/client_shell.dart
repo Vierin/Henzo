@@ -100,9 +100,10 @@ class _ClientShellState extends State<ClientShell> {
                   ),
                   Expanded(
                     child: ShellNavItem(
-                      svgAsset: 'assets/icons/icon-settings.svg',
+                      svgAsset: 'assets/icons/icon-profile.svg',
                       label: 'Profile',
                       isSelected: _currentIndex == 3,
+                      inactiveIconColor: AppColors.textPrimary,
                       onTap: () => setState(() => _currentIndex = 3),
                     ),
                   ),
