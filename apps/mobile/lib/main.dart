@@ -33,11 +33,13 @@ import 'services/notifications_store.dart';
 import 'services/push_notification_service.dart';
 import 'services/subscription_refresh_notifier.dart';
 import 'theme/app_theme.dart';
+import 'utils/owner_image_picker.dart';
 
 Future<void> main() async {
   runZonedGuarded<Future<void>>(
     () async {
       WidgetsFlutterBinding.ensureInitialized();
+      OwnerImagePicker.configure();
       await Future.wait([
         initializeDateFormatting('en'),
         initializeDateFormatting('ru'),

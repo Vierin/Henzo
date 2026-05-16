@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:provider/provider.dart';
@@ -8,6 +10,7 @@ import '../../services/auth_service.dart';
 import '../../services/cache/bookings_cache.dart';
 import '../../services/cache/salon_cache.dart';
 import '../../services/push_notification_service.dart';
+import '../../utils/owner_navigation_restore.dart';
 import 'dashboard/dashboard_screen.dart';
 import 'calendar_screen.dart';
 import 'app_settings_screen.dart';
@@ -27,7 +30,7 @@ class MainShell extends StatefulWidget {
   State<MainShell> createState() => MainShellState();
 }
 
-class MainShellState extends State<MainShell> {
+class MainShellState extends State<MainShell> with WidgetsBindingObserver {
   /// Bottom bar: 0 Home, 1 Schedule, 2 Clients, 3 Settings.
   static const int scheduleTabIndex = 1;
 
@@ -45,13 +48,39 @@ class MainShellState extends State<MainShell> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _shellBodyTabs = <Widget>[
       _buildHomeNavigator(),
       CalendarScreen(key: _scheduleCalendarKey),
       ClientsScreen(key: _clientsTabKey),
       const AppSettingsScreen(embeddedInShell: true),
     ];
-    WidgetsBinding.instance.addPostFrameCallback((_) => _loadSalon());
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      await _restoreShellTabIfNeeded();
+      if (mounted) await _loadSalon();
+    });
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.inactive ||
+        state == AppLifecycleState.paused) {
+      unawaited(OwnerNavigationRestore.saveShellTabIndex(_currentIndex));
+    }
+  }
+
+  Future<void> _restoreShellTabIfNeeded() async {
+    final saved = await OwnerNavigationRestore.readShellTabIndex();
+    if (!mounted || saved == null) return;
+    if (saved < 0 || saved >= _shellBodyTabs.length) return;
+    if (saved == _currentIndex) return;
+    setState(() => _currentIndex = saved);
   }
 
   Future<void> _loadSalon() async {

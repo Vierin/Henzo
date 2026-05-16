@@ -20,6 +20,7 @@ import {
   countTrainingLocations,
   resolveTrainingLocationName,
 } from '../lib/training-locations';
+import { resolveTrainerIdForSession } from './trainer-display.util';
 
 type SessionStatus = 'ACTIVE' | 'CANCELLED' | 'COMPLETED';
 
@@ -154,7 +155,12 @@ export class FitnessSessionsService {
 
     const studio = await this.prisma.studio.findFirst({
       where: { id: dto.studioId, ownerId: currentUser.user.id },
-      select: { id: true, name: true, reminderSettings: true },
+      select: {
+        id: true,
+        name: true,
+        reminderSettings: true,
+        User: { select: { id: true, name: true, email: true } },
+      },
     });
     if (!studio) {
       throw new Error('Studio not found or not owned by user');
@@ -168,14 +174,17 @@ export class FitnessSessionsService {
       throw new Error('Training not found');
     }
 
-    if (dto.trainerId) {
-      const trainer = await this.prisma.trainer.findFirst({
-        where: { id: dto.trainerId, studioId: dto.studioId },
-        select: { id: true },
-      });
-      if (!trainer) {
-        throw new Error('Trainer not found');
-      }
+    const resolvedTrainerId = studio.User
+      ? await resolveTrainerIdForSession(
+          this.prisma,
+          dto.studioId,
+          studio.User,
+          dto.trainerId,
+        )
+      : (dto.trainerId?.trim() ?? null);
+
+    if (dto.trainerId?.trim() && !resolvedTrainerId) {
+      throw new Error('Trainer not found');
     }
 
     const startsFrom = dto.startsFromDate
@@ -248,7 +257,7 @@ export class FitnessSessionsService {
       const overlap = await this.prisma.trainingSession.findFirst({
         where: {
           studioId: dto.studioId,
-          trainerId: dto.trainerId ?? undefined,
+          trainerId: resolvedTrainerId ?? undefined,
           startsAt: { lt: slot.endsAt },
           endsAt: { gt: slot.startsAt },
           status: 'ACTIVE',
@@ -270,7 +279,7 @@ export class FitnessSessionsService {
         data: {
           studioId: dto.studioId,
           trainingId: dto.trainingId,
-          trainerId: dto.trainerId ?? null,
+          trainerId: resolvedTrainerId,
           locationId,
           startsAt: slot.startsAt,
           endsAt: slot.endsAt,

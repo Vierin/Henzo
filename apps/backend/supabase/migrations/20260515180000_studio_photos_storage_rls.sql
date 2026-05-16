@@ -16,13 +16,13 @@ ON storage.objects FOR SELECT
 TO public
 USING (bucket_id = 'studio-photos');
 
+-- Path must be owners/{auth.uid()}/… (mobile: avatar.webp, gallery *.webp)
 CREATE POLICY "studio_photos_owner_insert"
 ON storage.objects FOR INSERT
 TO authenticated
 WITH CHECK (
   bucket_id = 'studio-photos'
-  AND (storage.foldername(name))[1] = 'owners'
-  AND (storage.foldername(name))[2] = (auth.uid())::text
+  AND name LIKE 'owners/' || auth.uid()::text || '/%'
 );
 
 CREATE POLICY "studio_photos_owner_update"
@@ -30,13 +30,11 @@ ON storage.objects FOR UPDATE
 TO authenticated
 USING (
   bucket_id = 'studio-photos'
-  AND (storage.foldername(name))[1] = 'owners'
-  AND (storage.foldername(name))[2] = (auth.uid())::text
+  AND name LIKE 'owners/' || auth.uid()::text || '/%'
 )
 WITH CHECK (
   bucket_id = 'studio-photos'
-  AND (storage.foldername(name))[1] = 'owners'
-  AND (storage.foldername(name))[2] = (auth.uid())::text
+  AND name LIKE 'owners/' || auth.uid()::text || '/%'
 );
 
 CREATE POLICY "studio_photos_owner_delete"
@@ -44,6 +42,5 @@ ON storage.objects FOR DELETE
 TO authenticated
 USING (
   bucket_id = 'studio-photos'
-  AND (storage.foldername(name))[1] = 'owners'
-  AND (storage.foldername(name))[2] = (auth.uid())::text
+  AND name LIKE 'owners/' || auth.uid()::text || '/%'
 );

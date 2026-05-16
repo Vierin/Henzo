@@ -23,6 +23,8 @@ import 'settings_screen.dart';
 import 'services_screen.dart';
 import 'staff_screen.dart';
 import 'subscription_screen.dart';
+import '../main.dart';
+import '../utils/owner_navigation_restore.dart';
 
 class AppSettingsScreen extends StatefulWidget {
   const AppSettingsScreen({super.key, this.embeddedInShell = false});
@@ -48,7 +50,31 @@ class _AppSettingsScreenState extends State<AppSettingsScreen> {
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) => _loadData());
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      await _loadData();
+      await _reopenAccountSettingsAfterPhotoInterrupt();
+    });
+  }
+
+  Future<void> _reopenAccountSettingsAfterPhotoInterrupt() async {
+    final pending =
+        await OwnerNavigationRestore.consumePendingProfilePhotoUpload();
+    if (!pending || !mounted) return;
+
+    await Navigator.of(
+      context,
+    ).push(MaterialPageRoute(builder: (_) => const AccountSettingsScreen()));
+    if (!mounted) return;
+
+    final rootCtx = henzoRootNavigatorKey.currentContext;
+    final messenger = rootCtx != null
+        ? ScaffoldMessenger.maybeOf(rootCtx)
+        : ScaffoldMessenger.maybeOf(context);
+    messenger?.showSnackBar(
+      const SnackBar(
+        content: Text('Приложение перезапустилось. Выберите фото ещё раз.'),
+      ),
+    );
   }
 
   Future<void> _loadData() async {
@@ -222,6 +248,9 @@ class _AppSettingsScreenState extends State<AppSettingsScreen> {
                     name: ownerName,
                     subtitle: _ownerSubtitle(locale),
                     initials: initials.isEmpty ? 'OW' : initials,
+                    avatarUrl: user?.avatarUrl?.trim().isNotEmpty == true
+                        ? user!.avatarUrl!.trim()
+                        : null,
                     planLabel: _planBadgeLabel(locale),
                     onTap: () => Navigator.of(context).push(
                       MaterialPageRoute(
@@ -314,8 +343,9 @@ class _AppSettingsScreenState extends State<AppSettingsScreen> {
                           context,
                           locale,
                           onLocaleSelected: (code) {
-                            final token =
-                                context.read<AuthService>().accessToken;
+                            final token = context
+                                .read<AuthService>()
+                                .accessToken;
                             if (token != null && token.isNotEmpty) {
                               PushNotificationService.registerToken(
                                 accessToken: token,
@@ -373,6 +403,7 @@ class _OwnerHeroCard extends StatelessWidget {
     required this.name,
     required this.subtitle,
     required this.initials,
+    required this.avatarUrl,
     required this.planLabel,
     required this.onTap,
   });
@@ -380,13 +411,17 @@ class _OwnerHeroCard extends StatelessWidget {
   final String name;
   final String subtitle;
   final String initials;
+  final String? avatarUrl;
   final String planLabel;
   final VoidCallback onTap;
 
   static const double _radius = 16;
+  static const double _avatarRadius = 38;
 
   @override
   Widget build(BuildContext context) {
+    final hasPhoto = avatarUrl != null && avatarUrl!.isNotEmpty;
+
     return Material(
       color: AppColors.backgroundPrimary,
       borderRadius: BorderRadius.circular(_radius),
@@ -399,17 +434,20 @@ class _OwnerHeroCard extends StatelessWidget {
           child: Row(
             children: [
               CircleAvatar(
-                radius: 28,
+                radius: _avatarRadius,
                 backgroundColor: AppColors.primary100,
-                child: Text(
-                  initials,
-                  style: const TextStyle(
-                    color: AppColors.primary500,
-                    fontSize: 22,
-                    fontWeight: FontWeight.w600,
-                    height: 1,
-                  ),
-                ),
+                backgroundImage: hasPhoto ? NetworkImage(avatarUrl!) : null,
+                child: hasPhoto
+                    ? null
+                    : Text(
+                        initials,
+                        style: const TextStyle(
+                          color: AppColors.primary500,
+                          fontSize: 24,
+                          fontWeight: FontWeight.w600,
+                          height: 1,
+                        ),
+                      ),
               ),
               const SizedBox(width: 14),
               Expanded(

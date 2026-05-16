@@ -2,6 +2,16 @@ import 'package:flutter/material.dart';
 
 import '../../constants/colors.dart';
 
+/// PageView physics for day strip (7 pills visible per viewport).
+class SmoothDayPageScrollPhysics extends PageScrollPhysics {
+  const SmoothDayPageScrollPhysics({super.parent});
+
+  @override
+  SmoothDayPageScrollPhysics applyTo(ScrollPhysics? ancestor) {
+    return SmoothDayPageScrollPhysics(parent: buildParent(ancestor));
+  }
+}
+
 /// Day pill in owner calendar strip and client studio schedule.
 class CalendarDayPill extends StatelessWidget {
   const CalendarDayPill({

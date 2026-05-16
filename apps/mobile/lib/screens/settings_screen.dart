@@ -2,7 +2,6 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import '../widgets/common/henzo_modal.dart';
 import 'package:flutter_svg/flutter_svg.dart';
-import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../constants/colors.dart';
@@ -16,6 +15,7 @@ import '../../services/dashboard_api_service.dart';
 import '../../services/owner_photo_storage_service.dart';
 import '../../utils/default_training_location_swap.dart';
 import '../../utils/show_api_error.dart';
+import '../../utils/owner_image_picker.dart';
 import '../../utils/training_locations_storage.dart';
 import '../../widgets/address_picker_modal.dart';
 import '../../widgets/training/training_location_picker_sheet.dart';
@@ -408,8 +408,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
       return;
     }
 
-    final picker = ImagePicker();
-    final picked = await picker.pickMultiImage();
+    final picked = await OwnerImagePicker.pickMultipleFromGallery(
+      limit: availableSlots,
+    );
     if (picked.isEmpty) return;
 
     var filesToProcess = picked;
@@ -418,10 +419,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       _showSnack('Лишние фото пропущены. Лимит: $_maxStudioPhotos');
     }
 
-    final userId =
-        Supabase.instance.client.auth.currentUser?.id ??
-        context.read<AuthService>().user?.id;
-    if (userId == null) {
+    if (Supabase.instance.client.auth.currentUser?.id == null) {
       _showSnack('Войдите в аккаунт, чтобы загрузить фото');
       return;
     }
@@ -438,7 +436,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
       }
       final upload = await OwnerPhotoStorageService.uploadStudioGalleryPhoto(
         file: file,
-        userId: userId,
       );
       if (upload.url == null) {
         if (upload.error == 'Фото больше 3 MB') {

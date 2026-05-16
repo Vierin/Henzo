@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import '../widgets/common/henzo_modal.dart';
-import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -11,7 +10,10 @@ import '../widgets/settings/branded_settings_app_bar.dart';
 import '../widgets/settings/settings_form_tokens.dart';
 import '../services/auth_service.dart';
 import '../services/owner_photo_storage_service.dart';
+import '../main.dart';
 import '../utils/auth_ui_result.dart';
+import '../utils/owner_image_picker.dart';
+import '../utils/owner_navigation_restore.dart';
 
 class AccountSettingsScreen extends StatefulWidget {
   const AccountSettingsScreen({super.key});
@@ -58,6 +60,11 @@ class _AccountSettingsScreenState extends State<AccountSettingsScreen> {
     super.dispose();
   }
 
+  String _avatarUrlWithCacheBust(String url) {
+    final base = url.split('?').first;
+    return '$base?v=${DateTime.now().millisecondsSinceEpoch}';
+  }
+
   String _initials(String? name, String email) {
     final parts = (name ?? '')
         .trim()
@@ -73,34 +80,61 @@ class _AccountSettingsScreenState extends State<AccountSettingsScreen> {
     return '?';
   }
 
+  void _showSnack(String message) {
+    var messenger = ScaffoldMessenger.maybeOf(context);
+    if (messenger == null) {
+      final rootCtx = henzoRootNavigatorKey.currentContext;
+      if (rootCtx != null) {
+        messenger = ScaffoldMessenger.maybeOf(rootCtx);
+      }
+    }
+    messenger?.showSnackBar(SnackBar(content: Text(message)));
+  }
+
   Future<void> _pickProfilePhoto() async {
     if (_avatarUploading) return;
-    final picked = await ImagePicker().pickImage(
-      source: ImageSource.gallery,
-      imageQuality: 85,
-    );
-    if (picked == null) return;
-
-    final userId =
-        Supabase.instance.client.auth.currentUser?.id ??
-        context.read<AuthService>().user?.id;
-    if (userId == null) return;
 
     setState(() => _avatarUploading = true);
     try {
+      await OwnerNavigationRestore.markPendingProfilePhotoUpload();
+      final picked = await OwnerImagePicker.pickSingleFromGallery();
+      await OwnerNavigationRestore.clearPendingProfilePhotoUpload();
+
+      if (!mounted) return;
+      if (picked == null) return;
+
+      if (Supabase.instance.client.auth.currentUser?.id == null) {
+        _showSnack('Войдите снова, чтобы загрузить фото');
+        return;
+      }
+
       final upload = await OwnerPhotoStorageService.uploadProfileAvatar(
         file: picked,
-        userId: userId,
       );
       if (!mounted) return;
       if (upload.url != null) {
-        setState(() => _avatarUrl = upload.url);
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(upload.error ?? 'Upload failed')),
+        final busted = _avatarUrlWithCacheBust(upload.url!);
+        setState(() => _avatarUrl = busted);
+        final result = await context.read<AuthService>().updateProfile(
+          name: _nameController.text.trim(),
+          phone: _phoneController.text.trim(),
+          avatarUrl: busted,
         );
+        if (!mounted) return;
+        if (!result.success) {
+          _showSnack(
+            resolveAuthUiMessage(context.read<LocaleProvider>(), result),
+          );
+        }
+      } else {
+        _showSnack(upload.error ?? 'Не удалось загрузить фото');
+      }
+    } catch (e) {
+      if (mounted) {
+        _showSnack('Ошибка загрузки: $e');
       }
     } finally {
+      await OwnerNavigationRestore.clearPendingProfilePhotoUpload();
       if (mounted) setState(() => _avatarUploading = false);
     }
   }
@@ -281,8 +315,9 @@ class _AccountSettingsScreenState extends State<AccountSettingsScreen> {
                           initials: _initials(user.name, user.email),
                           isUploading: _avatarUploading,
                           addLabel: locale.t('profileForm.addProfilePhoto'),
-                          changeLabel:
-                              locale.t('profileForm.changeProfilePhoto'),
+                          changeLabel: locale.t(
+                            'profileForm.changeProfilePhoto',
+                          ),
                           onTap: _pickProfilePhoto,
                         ),
                         const SizedBox(height: 16),
@@ -343,16 +378,16 @@ class _AccountSettingsScreenState extends State<AccountSettingsScreen> {
                           controller: _confirmPasswordController,
                           obscureText: true,
                           decoration: settingsInputDecoration(
-                            labelText:
-                                locale.t('profileForm.confirmPassword'),
+                            labelText: locale.t('profileForm.confirmPassword'),
                           ),
                         ),
                         const SizedBox(height: 14),
                         SizedBox(
                           width: double.infinity,
                           child: FilledButton(
-                            onPressed:
-                                _isSavingPassword ? null : _changePassword,
+                            onPressed: _isSavingPassword
+                                ? null
+                                : _changePassword,
                             child: Text(
                               _isSavingPassword
                                   ? '...'
@@ -409,8 +444,7 @@ class _ProfilePhotoPicker extends StatelessWidget {
                 CircleAvatar(
                   radius: 44,
                   backgroundColor: AppColors.primary100,
-                  backgroundImage:
-                      hasPhoto ? NetworkImage(avatarUrl!) : null,
+                  backgroundImage: hasPhoto ? NetworkImage(avatarUrl!) : null,
                   child: hasPhoto
                       ? null
                       : Text(
@@ -479,10 +513,7 @@ class _ProfilePhotoPicker extends StatelessWidget {
 }
 
 class _DeleteAccountButton extends StatelessWidget {
-  const _DeleteAccountButton({
-    required this.label,
-    required this.onPressed,
-  });
+  const _DeleteAccountButton({required this.label, required this.onPressed});
 
   final String label;
   final VoidCallback onPressed;

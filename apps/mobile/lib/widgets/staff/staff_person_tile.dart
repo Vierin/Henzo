@@ -1,3 +1,4 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 
 import '../../constants/colors.dart';
@@ -30,22 +31,39 @@ class StaffPersonAvatar extends StatelessWidget {
   Widget build(BuildContext context) {
     final url = photoUrl?.trim();
     if (url != null && url.isNotEmpty) {
-      return CircleAvatar(
-        radius: radius,
-        backgroundColor: AppColors.primary100,
+      final size = radius * 2;
+      return SizedBox(
+        width: size,
+        height: size,
         child: ClipOval(
-          child: Image.network(
-            url,
-            width: radius * 2,
-            height: radius * 2,
+          child: CachedNetworkImage(
+            imageUrl: url,
+            width: size,
+            height: size,
             fit: BoxFit.cover,
-            errorBuilder: (_, _, _) => Center(
-              child: Text(
-                staffPersonInitials(displayName),
-                style: TextStyle(
-                  fontSize: radius * 0.78,
-                  fontWeight: FontWeight.w600,
-                  color: AppColors.primary500,
+            placeholder: (_, _) => ColoredBox(
+              color: AppColors.primary100,
+              child: Center(
+                child: Text(
+                  staffPersonInitials(displayName),
+                  style: TextStyle(
+                    fontSize: radius * 0.78,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.primary500,
+                  ),
+                ),
+              ),
+            ),
+            errorWidget: (_, _, _) => ColoredBox(
+              color: AppColors.primary100,
+              child: Center(
+                child: Text(
+                  staffPersonInitials(displayName),
+                  style: TextStyle(
+                    fontSize: radius * 0.78,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.primary500,
+                  ),
                 ),
               ),
             ),

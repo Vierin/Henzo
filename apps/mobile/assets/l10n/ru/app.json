@@ -385,6 +385,7 @@
 		"filterReviews": "Отзывы",
 		"filterEmpty": "Нет уведомлений в этом разделе",
 		"typeBooking": "ЗАПИСЬ",
+		"typeBookingCancelled": "ЗАПИСЬ ОТМЕНЕНА",
 		"typeReview": "ОТЗЫВ",
 		"typeAnnouncement": "ОБЪЯВЛЕНИЕ",
 		"sessionDate": "Тренировка: {date}",

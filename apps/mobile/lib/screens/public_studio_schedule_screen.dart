@@ -1,6 +1,6 @@
-import 'package:flutter/material.dart';
+import 'dart:async';
 
-import 'package:provider/provider.dart';
+import 'package:flutter/material.dart';
 
 import '../constants/brand_typography.dart';
 
@@ -10,17 +10,14 @@ import '../constants/layout.dart';
 
 import '../services/api_client.dart';
 
-import '../services/auth_service.dart';
-
 import '../services/dashboard_api_service.dart';
 
 import '../utils/formatters.dart';
 
-import '../utils/owner_session_card_subtitle.dart';
-
 import '../widgets/dashboard/owner_daily_schedule_session_card.dart';
 
 import '../widgets/schedule/calendar_day_pill.dart';
+import 'public_class_detail_screen.dart';
 
 class PublicStudioScheduleScreen extends StatefulWidget {
   const PublicStudioScheduleScreen({
@@ -56,16 +53,22 @@ class _PublicStudioScheduleScreenState
 
   static const int _maxBookingPeriodDays = 60;
 
-  static const double _dayPillWidth = 52;
+  static const Duration _kStripScheduleDebounce = Duration(milliseconds: 1400);
 
   final Map<int, List<Map<String, dynamic>>> _sessionsByDay =
       <int, List<Map<String, dynamic>>>{};
 
-  final Set<String> _bookingInProgress = <String>{};
+  late final PageController _dayPagerController;
 
-  final ScrollController _dayStripScrollController = ScrollController();
+  late final ValueNotifier<DateTime> _stripDayNotifier;
 
-  late DateTime _selectedDay;
+  late final ValueNotifier<DateTime> _scheduleDayNotifier;
+
+  final ValueNotifier<DateTime> _stripPagerDayNotifier = ValueNotifier(
+    DateTime.now(),
+  );
+
+  Timer? _stripScheduleDebounce;
 
   late DateTime _minBookableDay;
 
@@ -80,23 +83,62 @@ class _PublicStudioScheduleScreenState
     super.initState();
 
     final now = DateTime.now();
+    final today = _normalizeDay(now);
 
-    _selectedDay = _normalizeDay(now);
+    _stripDayNotifier = ValueNotifier<DateTime>(today);
+    _scheduleDayNotifier = ValueNotifier<DateTime>(today);
+    _stripPagerDayNotifier.value = today;
 
-    _minBookableDay = _selectedDay;
+    _minBookableDay = today;
 
-    _maxBookableDay = _selectedDay.add(
+    _maxBookableDay = today.add(
       const Duration(days: _defaultBookingPeriodDays),
     );
+
+    _dayPagerController = PageController(
+      initialPage: 0,
+      viewportFraction: 1 / 7,
+    );
+    _dayPagerController.addListener(_onStripPagerScrolled);
 
     _loadSchedule();
   }
 
   @override
   void dispose() {
-    _dayStripScrollController.dispose();
+    _clearStripScheduleDebounceTimer();
+    _dayPagerController.removeListener(_onStripPagerScrolled);
+    _stripDayNotifier.dispose();
+    _scheduleDayNotifier.dispose();
+    _stripPagerDayNotifier.dispose();
+    _dayPagerController.dispose();
 
     super.dispose();
+  }
+
+  void _clearStripScheduleDebounceTimer() {
+    _stripScheduleDebounce?.cancel();
+    _stripScheduleDebounce = null;
+  }
+
+  void _onStripPagerScrolled() {
+    if (!mounted || !_dayPagerController.hasClients) return;
+    final page = _dayPagerController.page;
+    if (page == null) return;
+    final day = _bookableDayAt(page.round().clamp(0, _bookableDayCount - 1));
+    final normalized = DateTime(day.year, day.month, day.day);
+    if (_stripPagerDayNotifier.value == normalized) return;
+    _stripPagerDayNotifier.value = normalized;
+  }
+
+  void _debounceStripAndScheduleDay(DateTime day) {
+    _clearStripScheduleDebounceTimer();
+    _stripScheduleDebounce = Timer(_kStripScheduleDebounce, () {
+      if (!mounted) return;
+      _stripDayNotifier.value = day;
+      _scheduleDayNotifier.value = day;
+      _stripScheduleDebounce = null;
+    });
   }
 
   int get _bookableDayCount =>
@@ -104,39 +146,6 @@ class _PublicStudioScheduleScreenState
 
   DateTime _bookableDayAt(int index) =>
       _minBookableDay.add(Duration(days: index));
-
-  void _scrollDayStripToSelected({bool animated = true}) {
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted || !_dayStripScrollController.hasClients) return;
-
-      final index = _selectedDay
-          .difference(_minBookableDay)
-          .inDays
-          .clamp(0, _bookableDayCount - 1);
-
-      const pillStride = _dayPillWidth + 6;
-
-      final viewport = _dayStripScrollController.position.viewportDimension;
-
-      var target = index * pillStride - (viewport - pillStride) / 2;
-
-      final maxExtent = _dayStripScrollController.position.maxScrollExtent;
-
-      target = target.clamp(0.0, maxExtent);
-
-      if (animated) {
-        _dayStripScrollController.animateTo(
-          target,
-
-          duration: const Duration(milliseconds: 280),
-
-          curve: Curves.easeOutCubic,
-        );
-      } else {
-        _dayStripScrollController.jumpTo(target);
-      }
-    });
-  }
 
   Future<void> _loadSchedule() async {
     if (!mounted) return;
@@ -160,7 +169,11 @@ class _PublicStudioScheduleScreenState
 
       final maxDay = minDay.add(Duration(days: parsedBookingPeriod));
 
-      final clampedSelectedDay = _clampDay(_selectedDay, minDay, maxDay);
+      final clampedSelectedDay = _clampDay(
+        _scheduleDayNotifier.value,
+        minDay,
+        maxDay,
+      );
 
       final from = clampedSelectedDay;
 
@@ -210,7 +223,7 @@ class _PublicStudioScheduleScreenState
 
       if (!mounted) return;
 
-      final selectedKey = _dayKey(_selectedDay);
+      final selectedKey = _dayKey(clampedSelectedDay);
 
       DateTime? nextDayWithSessions;
 
@@ -235,20 +248,18 @@ class _PublicStudioScheduleScreenState
 
         _maxBookableDay = maxDay;
 
-        _selectedDay = clampedSelectedDay;
+        final scheduleDay = nextDayWithSessions != null
+            ? _clampDay(nextDayWithSessions, minDay, maxDay)
+            : clampedSelectedDay;
 
-        if (nextDayWithSessions != null) {
-          final clampedNext = _clampDay(nextDayWithSessions, minDay, maxDay);
-
-          _selectedDay = clampedNext;
-        }
+        _stripDayNotifier.value = scheduleDay;
+        _scheduleDayNotifier.value = scheduleDay;
+        _stripPagerDayNotifier.value = scheduleDay;
 
         _loading = false;
 
         _loadError = null;
       });
-
-      _scrollDayStripToSelected(animated: false);
     } catch (e) {
       if (!mounted) return;
 
@@ -341,7 +352,7 @@ class _PublicStudioScheduleScreenState
 
       trainingDisplayColorHex: training['displayColor']?.toString(),
 
-      trainerName: (trainer['name'] ?? '—').toString(),
+      trainerName: (trainer['name'] ?? '').toString().trim(),
 
       trainerId: trainer['id']?.toString(),
 
@@ -351,133 +362,91 @@ class _PublicStudioScheduleScreenState
     );
   }
 
-  Future<void> _bookSession(Map<String, dynamic> session) async {
-    final token = context.read<AuthService>().accessToken;
+  void _openClassDetail(Map<String, dynamic> raw) {
+    final sessionId = (raw['id'] ?? raw['sessionId'] ?? '').toString();
+    final startsAt = parseApiDateTime(raw['startsAt']);
+    if (sessionId.isEmpty || startsAt == null) return;
 
-    if (token == null || token.isEmpty) {
-      if (!mounted) return;
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please sign in to book a class')),
-      );
-
-      return;
-    }
-
-    final sessionId = (session['id'] ?? '').toString();
-
-    if (sessionId.isEmpty || _bookingInProgress.contains(sessionId)) return;
-
-    setState(() => _bookingInProgress.add(sessionId));
-
-    try {
-      final raw = await ApiClient.post(
-        '/studios/sessions/$sessionId/book',
-
-        token,
-
-        body: const <String, dynamic>{},
-      );
-
-      if (!mounted) return;
-
-      final map = raw is Map<String, dynamic> ? raw : <String, dynamic>{};
-
-      final booking = map['booking'] is Map<String, dynamic>
-          ? map['booking'] as Map<String, dynamic>
-          : null;
-
-      final alreadyBooked = map['alreadyBooked'] == true;
-
-      if (booking != null) {
-        session['bookedCount'] =
-            (booking['bookedCount'] as num?)?.toInt() ?? session['bookedCount'];
-      } else if (!alreadyBooked && session['bookedCount'] is num) {
-        session['bookedCount'] = (session['bookedCount'] as num).toInt() + 1;
-      }
-
-      setState(() {});
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            alreadyBooked
-                ? 'You are already booked for this class'
-                : 'You have successfully booked this training',
+    Navigator.of(context)
+        .push(
+          MaterialPageRoute(
+            builder: (_) => PublicClassDetailScreen(
+              studioId: widget.studioId,
+              sessionId: sessionId,
+              sessionStartsAtHint: startsAt,
+            ),
           ),
-        ),
-      );
-    } catch (e) {
-      if (!mounted) return;
-
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Booking failed: $e')));
-    } finally {
-      if (!mounted) return;
-
-      setState(() => _bookingInProgress.remove(sessionId));
-    }
+        )
+        .then((_) {
+          if (mounted) _loadSchedule();
+        });
   }
 
   Widget _buildDayStrip() {
     return SizedBox(
       height: 86,
-
-      child: ListView.builder(
-        controller: _dayStripScrollController,
-
-        scrollDirection: Axis.horizontal,
-
-        padding: const EdgeInsets.symmetric(
-          horizontal: kScreenPaddingHorizontal,
-        ),
-
-        clipBehavior: Clip.hardEdge,
-
-        itemCount: _bookableDayCount,
-
-        itemBuilder: (_, index) {
-          final day = _bookableDayAt(index);
-
-          final isInRange = _isDayInRange(day);
-
-          final selected = CalendarDayPill.isSameDay(day, _selectedDay);
-
-          return SizedBox(
-            width: _dayPillWidth,
-
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 3),
-
-              child: CalendarDayPill(
-                day: day,
-
-                selected: selected,
-
-                sessionsCount: _sessionsForDay(day).length,
-
-                enabled: isInRange,
-
-                onTap: isInRange
-                    ? () {
-                        setState(() => _selectedDay = day);
-
-                        _scrollDayStripToSelected();
-                      }
-                    : null,
-              ),
-            ),
-          );
+      child: NotificationListener<ScrollNotification>(
+        onNotification: (ScrollNotification n) {
+          if (n.metrics.axis == Axis.horizontal) {
+            _onStripPagerScrolled();
+          }
+          return false;
         },
+        child: PageView.builder(
+          controller: _dayPagerController,
+          physics: const SmoothDayPageScrollPhysics(),
+          padEnds: false,
+          itemCount: _bookableDayCount,
+          onPageChanged: (index) {
+            final day = _bookableDayAt(index);
+            final normalized = DateTime(day.year, day.month, day.day);
+            if (_stripPagerDayNotifier.value != normalized) {
+              _stripPagerDayNotifier.value = normalized;
+            }
+            if (CalendarDayPill.isSameDay(day, _stripDayNotifier.value) &&
+                CalendarDayPill.isSameDay(day, _scheduleDayNotifier.value)) {
+              return;
+            }
+            _debounceStripAndScheduleDay(normalized);
+          },
+          itemBuilder: (_, index) {
+            final day = _bookableDayAt(index);
+            return ValueListenableBuilder<DateTime>(
+              valueListenable: _stripDayNotifier,
+              builder: (context, stripDay, _) {
+                final selected = CalendarDayPill.isSameDay(day, stripDay);
+                return Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 3),
+                  child: CalendarDayPill(
+                    day: day,
+                    selected: selected,
+                    sessionsCount: _sessionsForDay(day).length,
+                    enabled: _isDayInRange(day),
+                    onTap: _isDayInRange(day)
+                        ? () {
+                            _clearStripScheduleDebounceTimer();
+                            final normalized = DateTime(
+                              day.year,
+                              day.month,
+                              day.day,
+                            );
+                            _stripDayNotifier.value = normalized;
+                            _scheduleDayNotifier.value = normalized;
+                            _stripPagerDayNotifier.value = normalized;
+                          }
+                        : null,
+                  ),
+                );
+              },
+            );
+          },
+        ),
       ),
     );
   }
 
   @override
   Widget build(BuildContext context) {
-    final sessions = _sessionsForDay(_selectedDay);
-
     return Scaffold(
       backgroundColor: AppColors.backgroundSecondary,
 
@@ -512,20 +481,20 @@ class _PublicStudioScheduleScreenState
 
                   child: Column(
                     children: [
-                      Text(
-                        _monthTitle(_selectedDay),
-
-                        textAlign: TextAlign.center,
-
-                        style: const TextStyle(
-                          fontSize: 14,
-
-                          fontWeight: FontWeight.w700,
-
-                          letterSpacing: -0.3,
-
-                          color: AppColors.textPrimary,
-                        ),
+                      ValueListenableBuilder<DateTime>(
+                        valueListenable: _stripPagerDayNotifier,
+                        builder: (context, pagerDay, _) {
+                          return Text(
+                            _monthTitle(pagerDay),
+                            textAlign: TextAlign.center,
+                            style: const TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w700,
+                              letterSpacing: -0.3,
+                              color: AppColors.textPrimary,
+                            ),
+                          );
+                        },
                       ),
 
                       const SizedBox(height: 8),
@@ -554,8 +523,12 @@ class _PublicStudioScheduleScreenState
                 ),
 
                 Expanded(
-                  child: _loadError != null
-                      ? Center(
+                  child: ValueListenableBuilder<DateTime>(
+                    valueListenable: _scheduleDayNotifier,
+                    builder: (context, scheduleDay, _) {
+                      final sessions = _sessionsForDay(scheduleDay);
+                      if (_loadError != null) {
+                        return Center(
                           child: Padding(
                             padding: const EdgeInsets.symmetric(horizontal: 24),
 
@@ -589,26 +562,26 @@ class _PublicStudioScheduleScreenState
 
                                 FilledButton(
                                   onPressed: _loadSchedule,
-
                                   child: const Text('Retry'),
                                 ),
                               ],
                             ),
                           ),
-                        )
-                      : sessions.isEmpty
-                      ? Center(
+                        );
+                      }
+                      if (sessions.isEmpty) {
+                        return Center(
                           child: Text(
                             'No classes for selected day',
-
                             style: TextStyle(
                               color: AppColors.textSecondary.withValues(
                                 alpha: 0.9,
                               ),
                             ),
                           ),
-                        )
-                      : ListView.builder(
+                        );
+                      }
+                      return ListView.builder(
                           padding: const EdgeInsets.fromLTRB(
                             kScreenPaddingHorizontal,
 
@@ -630,38 +603,23 @@ class _PublicStudioScheduleScreenState
                               return const SizedBox.shrink();
                             }
 
-                            final locName = session.locationName?.trim() ?? '';
-                            final sub = locName.isNotEmpty
-                                ? OwnerSessionCardSubtitle(
-                                    label: locName,
-                                    showLocationPin: true,
-                                  )
-                                : resolveOwnerSessionCardSubtitleForPublic(
-                                    session: session,
-                                    studioLocationCount:
-                                        widget.studioLocationCount,
-                                  );
+                            final locName =
+                                session.locationName?.trim() ?? '';
+                            final hasMultiple =
+                                widget.studioLocationCount > 1;
+                            final studioLabel =
+                                widget.studioName.trim().isNotEmpty
+                                ? widget.studioName.trim()
+                                : 'Studio';
+                            final subtitleLabel = hasMultiple
+                                ? (locName.isNotEmpty
+                                      ? locName
+                                      : studioLabel)
+                                : studioLabel;
                             final rows = layoutOwnerSessionCardRows(
                               session: session,
-                              subtitleLabel: sub.label,
-                              showLocationPin: sub.showLocationPin,
-                            );
-
-                            final capacity =
-                                (raw['capacity'] as num?)?.toInt() ?? 0;
-
-                            final bookedCount =
-                                (raw['bookedCount'] as num?)?.toInt() ?? 0;
-
-                            final hasCapacity = capacity > 0;
-
-                            final isFull =
-                                hasCapacity && bookedCount >= capacity;
-
-                            final sessionId = (raw['id'] ?? '').toString();
-
-                            final isBooking = _bookingInProgress.contains(
-                              sessionId,
+                              subtitleLabel: subtitleLabel,
+                              showLocationPin: hasMultiple,
                             );
 
                             final price = session.trainingPrice;
@@ -686,16 +644,14 @@ class _PublicStudioScheduleScreenState
 
                               bookActionLabel: 'Book',
 
-                              bookActionLoading: isBooking,
+                              onBookAgain: () => _openClassDetail(raw),
 
-                              onBookAgain: isFull || isBooking
-                                  ? null
-                                  : () => _bookSession(raw),
-
-                              onTap: () {},
+                              onTap: () => _openClassDetail(raw),
                             );
                           },
-                        ),
+                        );
+                    },
+                  ),
                 ),
               ],
             ),

@@ -191,7 +191,7 @@ class ClientSearchScreenState extends State<ClientSearchScreen> {
       trainingDurationMinutes: c.durationMin,
       trainingDisplayColorHex: c.displayColorHex,
       trainingPrice: c.price,
-      trainerName: c.trainerName.trim().isEmpty ? '?' : c.trainerName,
+      trainerName: c.trainerName.trim(),
       trainerId: null,
       locationId: null,
       locationName: (c.locationName ?? '').trim().isEmpty
@@ -1691,14 +1691,8 @@ class ClientSearchScreenState extends State<ClientSearchScreen> {
                               final loc = (c.locationName ?? '').trim();
                               final showPin = multi && loc.isNotEmpty;
                               final subtitle = showPin ? loc : c.studioName;
-                              final trainerLine = showPin
-                                  ? ownerDailyScheduleTrainerLabel(
-                                      session,
-                                      null,
-                                    )
-                                  : (c.trainerName.trim().isNotEmpty
-                                        ? c.trainerName.trim()
-                                        : null);
+                              final trainerLine =
+                                  scheduleTrainerLineOrNull(session, null);
                               return OwnerDailyScheduleSessionCard(
                                 session: session,
                                 subtitleLabel: subtitle,
@@ -1807,7 +1801,7 @@ class ClientSearchScreenState extends State<ClientSearchScreen> {
                                                         ),
                                                         Text(
                                                           distanceText.isNotEmpty
-                                                              ? '$distanceText  Â·  ${s.rating.toStringAsFixed(1)}  ${s.reviewCount} reviews'
+                                                              ? '$distanceText  ·  ${s.rating.toStringAsFixed(1)}  ${s.reviewCount} reviews'
                                                               : '${s.rating.toStringAsFixed(1)}  ${s.reviewCount} reviews',
                                                           style: const TextStyle(
                                                             color: AppColors

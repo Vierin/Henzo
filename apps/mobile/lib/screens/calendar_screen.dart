@@ -438,7 +438,7 @@ class CalendarScreenState extends State<CalendarScreen> {
         },
         child: PageView.builder(
           controller: _dayPagerController,
-          physics: const _SmoothDayPageScrollPhysics(),
+          physics: const SmoothDayPageScrollPhysics(),
           onPageChanged: (page) {
             final day = _dayForPage(page);
             final normalized = DateTime(day.year, day.month, day.day);
@@ -877,11 +877,3 @@ class _PinnedDayStripDelegate extends SliverPersistentHeaderDelegate {
       stripDayKey != old.stripDayKey;
 }
 
-class _SmoothDayPageScrollPhysics extends PageScrollPhysics {
-  const _SmoothDayPageScrollPhysics({super.parent});
-
-  @override
-  _SmoothDayPageScrollPhysics applyTo(ScrollPhysics? ancestor) {
-    return _SmoothDayPageScrollPhysics(parent: buildParent(ancestor));
-  }
-}

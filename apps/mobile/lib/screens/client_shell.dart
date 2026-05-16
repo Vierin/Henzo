@@ -85,7 +85,7 @@ class _ClientShellState extends State<ClientShell> {
                   Expanded(
                     child: ShellNavItem(
                       svgAsset: 'assets/icons/icon-search.svg',
-                      label: 'Explore',
+                      label: 'Browse',
                       isSelected: _currentIndex == 1,
                       onTap: () => goToExploreTab(),
                     ),
@@ -100,10 +100,9 @@ class _ClientShellState extends State<ClientShell> {
                   ),
                   Expanded(
                     child: ShellNavItem(
-                      svgAsset: 'assets/icons/icon-profile.svg',
+                      svgAsset: 'assets/icons/icon-profile-large.svg',
                       label: 'Profile',
                       isSelected: _currentIndex == 3,
-                      inactiveIconColor: AppColors.textPrimary,
                       onTap: () => setState(() => _currentIndex = 3),
                     ),
                   ),

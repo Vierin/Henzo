@@ -13,6 +13,7 @@ import {
   resolveStudioBrandNameForDiscovery,
   resolveTrainingLocationName,
 } from '../lib/training-locations';
+import { buildPublicTrainerPayload } from '../fitness/trainer-display.util';
 
 @Injectable()
 export class StudiosService {
@@ -1578,7 +1579,7 @@ export class StudiosService {
             select: {
               id: true,
               name: true,
-              // Removed email - not used on frontend
+              email: true,
             },
           },
         },
@@ -1693,12 +1694,16 @@ export class StudiosService {
                   }),
                 }
               : null,
-            trainer: session.Trainer
-              ? {
-                  id: session.Trainer.id,
-                  name: session.Trainer.name,
-                }
-              : null,
+            trainer: buildPublicTrainerPayload(
+              session.Trainer,
+              (Studio as any).User
+                ? {
+                    id: (Studio as any).User.id,
+                    name: (Studio as any).User.name,
+                    email: (Studio as any).User.email,
+                  }
+                : null,
+            ),
           }),
         ),
       };
@@ -1952,11 +1957,22 @@ export class StudiosService {
         status: true,
         timezone: true,
         reminderSettings: true,
+        User: {
+          select: { id: true, name: true, email: true },
+        },
       },
     });
     if (!studio || studio.status !== 'ACTIVE') {
       return [];
     }
+
+    const studioOwner = studio.User
+      ? {
+          id: studio.User.id,
+          name: studio.User.name,
+          email: studio.User.email,
+        }
+      : null;
 
     const fromDate = params?.fromIso ? new Date(params.fromIso) : new Date();
     if (Number.isNaN(fromDate.getTime())) {
@@ -1994,6 +2010,7 @@ export class StudiosService {
         status: true,
         capacity: true,
         bookedCount: true,
+        locationId: true,
         Training: {
           select: {
             id: true,
@@ -2085,12 +2102,7 @@ export class StudiosService {
               : null,
           }
         : null,
-      trainer: s.Trainer
-        ? {
-            id: s.Trainer.id,
-            name: s.Trainer.name,
-          }
-        : null,
+      trainer: buildPublicTrainerPayload(s.Trainer, studioOwner),
       timezone: studio.timezone,
       studio: { locationCount },
     };

@@ -385,6 +385,7 @@
 		"filterReviews": "Reviews",
 		"filterEmpty": "No notifications in this section",
 		"typeBooking": "BOOKING",
+		"typeBookingCancelled": "BOOKING CANCELLED",
 		"typeReview": "REVIEW",
 		"typeAnnouncement": "ANNOUNCEMENT",
 		"sessionDate": "Training: {date}",

@@ -385,6 +385,7 @@
 		"filterReviews": "Đánh giá",
 		"filterEmpty": "Không có thông báo trong mục này",
 		"typeBooking": "ĐẶT LỊCH",
+		"typeBookingCancelled": "ĐẶT LỊCH ĐÃ HỦY",
 		"typeReview": "ĐÁNH GIÁ",
 		"typeAnnouncement": "THÔNG BÁO",
 		"sessionDate": "Buổi tập: {date}",

@@ -151,6 +151,11 @@ class _StaffScreenState extends State<StaffScreen> {
     return list;
   }
 
+  String? _ownerAvatarUrl(String? avatarUrl) {
+    final url = avatarUrl?.trim();
+    return url != null && url.isNotEmpty ? url : null;
+  }
+
   void _openEditDialog(StaffMember member) {
     final locale = context.read<LocaleProvider>();
     final nameController = TextEditingController(text: member.name);
@@ -533,7 +538,7 @@ class _StaffScreenState extends State<StaffScreen> {
   @override
   Widget build(BuildContext context) {
     final locale = context.watch<LocaleProvider>();
-    final owner = context.read<AuthService>().user;
+    final owner = context.watch<AuthService>().user;
     final extraStaff = _staffExcludingOwner(owner?.email);
     final showAddFab = _salon != null && !_isLoading;
     final ownerName = (owner?.name?.trim().isNotEmpty ?? false)
@@ -599,6 +604,7 @@ class _StaffScreenState extends State<StaffScreen> {
                   StaffPersonTile(
                     name: ownerName,
                     secondaryLine: ownerSubtitle,
+                    photoUrl: _ownerAvatarUrl(owner?.avatarUrl),
                   ),
                   ...extraStaff.map((member) {
                     return StaffPersonTile(
