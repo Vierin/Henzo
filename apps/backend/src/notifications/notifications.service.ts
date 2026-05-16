@@ -126,18 +126,18 @@ export class NotificationsService {
   ): Promise<Array<{ token: string; language: string }>> {
     try {
       // Find salon owner
-      const salon = await this.prisma.salon.findUnique({
+      const studio = await this.prisma.studio.findUnique({
         where: { id: salonId },
         select: {
           ownerId: true,
         },
       });
 
-      if (!salon) {
+      if (!studio) {
         return [];
       }
 
-      return this.getPushTokensByUserId(salon.ownerId);
+      return this.getPushTokensByUserId(studio.ownerId);
     } catch (error) {
       console.error('❌ Error getting push tokens for salon owner:', error);
       return [];

@@ -21,6 +21,8 @@ class CalendarDayPill extends StatelessWidget {
     required this.sessionsCount,
     this.isToday,
     this.enabled = true,
+    this.showBorder = true,
+    this.highlightTodayWhenUnselected = true,
     this.onTap,
   });
 
@@ -29,6 +31,10 @@ class CalendarDayPill extends StatelessWidget {
   final int sessionsCount;
   final bool? isToday;
   final bool enabled;
+  final bool showBorder;
+
+  /// When false, unselected today has no fill (e.g. Browse on beige).
+  final bool highlightTodayWhenUnselected;
   final VoidCallback? onTap;
 
   static const _weekdayNames = [
@@ -72,20 +78,29 @@ class CalendarDayPill extends StatelessWidget {
     final today = isToday ?? isSameDay(day, DateTime.now());
     final canTap = enabled && onTap != null;
 
+    final Color unselectedColor;
+    if (today && !selected) {
+      unselectedColor = highlightTodayWhenUnselected
+          ? AppColors.primary50
+          : Colors.transparent;
+    } else {
+      unselectedColor = AppColors.backgroundPrimary;
+    }
+
     Widget pill = Container(
       height: 86,
       decoration: BoxDecoration(
-        color: selected
-            ? AppColors.primary500
-            : AppColors.backgroundPrimary,
+        color: selected ? AppColors.primary500 : unselectedColor,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: selected
-              ? AppColors.primary500
-              : today
-              ? AppColors.primary500.withValues(alpha: 0.45)
-              : AppColors.borderPrimary,
-        ),
+        border: showBorder
+            ? Border.all(
+                color: selected
+                    ? AppColors.primary500
+                    : today
+                    ? AppColors.primary500.withValues(alpha: 0.45)
+                    : AppColors.borderPrimary,
+              )
+            : null,
       ),
       padding: const EdgeInsets.symmetric(vertical: 8),
       child: Column(

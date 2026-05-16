@@ -8,6 +8,7 @@ import '../services/api_client.dart';
 import '../services/auth_service.dart';
 import '../utils/color_hex.dart';
 import '../utils/formatters.dart';
+import '../services/client_schedule_store.dart';
 import '../widgets/public/cached_salon_network_image.dart';
 import 'public_studio_detail_screen.dart';
 
@@ -38,6 +39,7 @@ class _PublicClassDetailScreenState extends State<PublicClassDetailScreen> {
   Map<String, dynamic>? _studio;
   Map<String, dynamic>? _session;
   bool _booking = false;
+  bool _isBookedByMe = false;
 
   @override
   void initState() {
@@ -91,9 +93,27 @@ class _PublicClassDetailScreenState extends State<PublicClassDetailScreen> {
           break;
         }
       }
+      var isBookedByMe = false;
+      final token = context.read<AuthService>().accessToken;
+      if (token != null &&
+          token.isNotEmpty &&
+          found != null &&
+          widget.sessionId.isNotEmpty) {
+        try {
+          final enr = await ApiClient.get(
+            '/studios/sessions/${widget.sessionId}/my-enrollment',
+            token,
+          );
+          if (enr is Map) {
+            isBookedByMe = enr['enrolled'] == true;
+          }
+        } catch (_) {}
+      }
+      if (!mounted) return;
       setState(() {
         _studio = studioMap;
         _session = found;
+        _isBookedByMe = isBookedByMe;
         _loading = false;
         if (found == null) {
           _error = 'This class is no longer available.';
@@ -127,12 +147,6 @@ class _PublicClassDetailScreenState extends State<PublicClassDetailScreen> {
     return w[d.weekday - 1];
   }
 
-  String _locationLetter(String? name) {
-    final t = name?.trim() ?? '';
-    if (t.isEmpty) return 'S';
-    return t.substring(0, 1).toUpperCase();
-  }
-
   Future<void> _book() async {
     final token = context.read<AuthService>().accessToken;
     if (token == null || token.isEmpty) {
@@ -150,12 +164,23 @@ class _PublicClassDetailScreenState extends State<PublicClassDetailScreen> {
         body: const <String, dynamic>{},
       );
       if (!mounted) return;
+      ClientScheduleStore.invalidate();
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Booking confirmed')),
       );
       await _load();
     } catch (e) {
       if (!mounted) return;
+      final msg = e.toString();
+      final alreadyBooked = msg.contains('409') ||
+          msg.toLowerCase().contains('already booked');
+      if (alreadyBooked) {
+        setState(() => _isBookedByMe = true);
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('You are already booked for this class')),
+        );
+        return;
+      }
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Booking failed: $e')),
       );
@@ -205,9 +230,9 @@ class _PublicClassDetailScreenState extends State<PublicClassDetailScreen> {
                       );
                     },
                     weekdayShort: _weekdayShort,
-                    locationLetter: _locationLetter,
                     onBook: _book,
                     booking: _booking,
+                    isBookedByMe: _isBookedByMe,
                   ),
       ),
     );
@@ -252,9 +277,9 @@ class _ClassDetailBody extends StatelessWidget {
     required this.distanceKm,
     required this.onOpenStudio,
     required this.weekdayShort,
-    required this.locationLetter,
     required this.onBook,
     required this.booking,
+    required this.isBookedByMe,
   });
 
   final Map<String, dynamic>? studio;
@@ -265,9 +290,9 @@ class _ClassDetailBody extends StatelessWidget {
   final double? distanceKm;
   final VoidCallback onOpenStudio;
   final String Function(DateTime d) weekdayShort;
-  final String Function(String? name) locationLetter;
   final VoidCallback onBook;
   final bool booking;
+  final bool isBookedByMe;
 
   @override
   Widget build(BuildContext context) {
@@ -303,9 +328,11 @@ class _ClassDetailBody extends StatelessWidget {
       }
     }
     final locName = (session['locationName'] ?? '').toString().trim();
-    final studioName =
-        (studio?['name'] ?? 'Studio').toString();
+    final studioName = (studio?['name'] ?? 'Studio').toString();
     final logoUrl = (studio?['logoUrl'] ?? '').toString();
+    final owner = studio?['owner'] is Map
+        ? Map<String, dynamic>.from(studio!['owner'] as Map)
+        : <String, dynamic>{};
     final cat = training['trainingCategory'] is Map
         ? Map<String, dynamic>.from(
             training['trainingCategory'] as Map,
@@ -315,14 +342,23 @@ class _ClassDetailBody extends StatelessWidget {
     final chipFg = parseHexColor(cat['chip_fg_hex']?.toString());
     final catLabel = (cat['name_en'] ?? '').toString().trim();
     final trainerName = (trainer['name'] ?? '').toString().trim();
-    final initials = trainerName.isEmpty
+    final ownerName = (owner['name'] ?? '').toString().trim();
+    final displayTrainerName =
+        trainerName.isNotEmpty ? trainerName : ownerName;
+    final trainerPhotoUrl = (owner['avatarUrl'] ?? '').toString().trim();
+    final initials = displayTrainerName.isEmpty
         ? '?'
-        : trainerName
+        : displayTrainerName
             .split(RegExp(r'\s+'))
             .where((p) => p.isNotEmpty)
             .take(2)
             .map((p) => p[0].toUpperCase())
             .join();
+    final locationLabel = locName.isNotEmpty
+        ? locName
+        : ((studio?['address'] ?? '').toString().trim().isNotEmpty
+            ? (studio!['address'] ?? '').toString().trim()
+            : studioName);
 
     final distLabel = distanceKm != null
         ? '${distanceKm!.toStringAsFixed(1)} km'
@@ -419,18 +455,18 @@ class _ClassDetailBody extends StatelessWidget {
               _InfoGrid(
                 accent: accent,
                 durationMin: durationMin,
-                locationLetter: locationLetter(
-                  locName.isNotEmpty ? locName : studioName,
-                ),
+                locationLabel: locationLabel,
                 capacity: cap,
               ),
               const SizedBox(height: 16),
-              if (trainerName.isNotEmpty)
+              if (displayTrainerName.isNotEmpty)
                 _TrainerCard(
-                  name: trainerName,
+                  name: displayTrainerName,
                   initials: initials,
+                  photoUrl:
+                      trainerPhotoUrl.isNotEmpty ? trainerPhotoUrl : null,
                 ),
-              if (trainerName.isNotEmpty) const SizedBox(height: 16),
+              if (displayTrainerName.isNotEmpty) const SizedBox(height: 16),
               _SpotsCard(
                 accent: accent,
                 booked: booked,
@@ -448,7 +484,8 @@ class _ClassDetailBody extends StatelessWidget {
             priceLabel: price != null ? formatVnd(price) : null,
             onBook: onBook,
             booking: booking,
-            canBook: cap == 0 || booked < cap,
+            isBookedByMe: isBookedByMe,
+            canBook: !isBookedByMe && (cap == 0 || booked < cap),
           ),
       ],
     );
@@ -561,13 +598,13 @@ class _InfoGrid extends StatelessWidget {
   const _InfoGrid({
     required this.accent,
     required this.durationMin,
-    required this.locationLetter,
+    required this.locationLabel,
     required this.capacity,
   });
 
   final Color accent;
   final int durationMin;
-  final String locationLetter;
+  final String locationLabel;
   final int capacity;
 
   @override
@@ -586,9 +623,10 @@ class _InfoGrid extends StatelessWidget {
         Expanded(
           child: _InfoTile(
             icon: Icons.place_outlined,
-            value: locationLetter,
+            value: locationLabel,
             caption: 'location',
             accent: accent,
+            compactValue: true,
           ),
         ),
         const SizedBox(width: 10),
@@ -611,12 +649,14 @@ class _InfoTile extends StatelessWidget {
     required this.value,
     required this.caption,
     required this.accent,
+    this.compactValue = false,
   });
 
   final IconData icon;
   final String value;
   final String caption;
   final Color accent;
+  final bool compactValue;
 
   @override
   Widget build(BuildContext context) {
@@ -633,9 +673,13 @@ class _InfoTile extends StatelessWidget {
           const SizedBox(height: 8),
           Text(
             value,
+            maxLines: compactValue ? 2 : 1,
+            overflow: TextOverflow.ellipsis,
+            textAlign: TextAlign.center,
             style: GoogleFonts.fraunces(
-              fontSize: 22,
+              fontSize: compactValue ? 13 : 22,
               fontWeight: FontWeight.w600,
+              height: 1.2,
               color: AppColors.textPrimary,
             ),
           ),
@@ -654,10 +698,15 @@ class _InfoTile extends StatelessWidget {
 }
 
 class _TrainerCard extends StatelessWidget {
-  const _TrainerCard({required this.name, required this.initials});
+  const _TrainerCard({
+    required this.name,
+    required this.initials,
+    this.photoUrl,
+  });
 
   final String name;
   final String initials;
+  final String? photoUrl;
 
   @override
   Widget build(BuildContext context) {
@@ -675,13 +724,22 @@ class _TrainerCard extends StatelessWidget {
           CircleAvatar(
             radius: 28,
             backgroundColor: AppColors.primary100,
-            child: Text(
-              initials,
-              style: const TextStyle(
-                fontWeight: FontWeight.w800,
-                color: AppColors.primary700,
-              ),
-            ),
+            child: photoUrl != null && photoUrl!.isNotEmpty
+                ? ClipOval(
+                    child: CachedSalonNetworkImage(
+                      imageUrl: photoUrl!,
+                      width: 56,
+                      height: 56,
+                      fit: BoxFit.cover,
+                    ),
+                  )
+                : Text(
+                    initials,
+                    style: const TextStyle(
+                      fontWeight: FontWeight.w800,
+                      color: AppColors.primary700,
+                    ),
+                  ),
           ),
           const SizedBox(width: 14),
           Expanded(
@@ -799,6 +857,7 @@ class _BookBar extends StatelessWidget {
     required this.priceLabel,
     required this.onBook,
     required this.booking,
+    required this.isBookedByMe,
     required this.canBook,
   });
 
@@ -808,6 +867,7 @@ class _BookBar extends StatelessWidget {
   final String? priceLabel;
   final VoidCallback onBook;
   final bool booking;
+  final bool isBookedByMe;
   final bool canBook;
 
   @override
@@ -828,16 +888,15 @@ class _BookBar extends StatelessWidget {
           12 + MediaQuery.paddingOf(context).bottom,
         ),
         decoration: const BoxDecoration(
-          color: AppColors.backgroundPrimary,
-          border: Border(
-            top: BorderSide(color: AppColors.borderPrimary),
-          ),
+          color: AppColors.backgroundSecondary,
         ),
         child: FilledButton(
           onPressed: (!canBook || started || booking) ? null : onBook,
           style: FilledButton.styleFrom(
-            backgroundColor: accent,
-            foregroundColor: AppColors.backgroundPrimary,
+            backgroundColor: AppColors.primary500,
+            disabledBackgroundColor: AppColors.primary500,
+            disabledForegroundColor: Colors.white70,
+            foregroundColor: Colors.white,
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(16),
@@ -877,9 +936,11 @@ class _BookBar extends StatelessWidget {
                   height: 22,
                   child: CircularProgressIndicator(
                     strokeWidth: 2,
-                    color: AppColors.backgroundPrimary,
+                    color: Colors.white,
                   ),
                 )
+              else if (isBookedByMe)
+                const Icon(Icons.check_circle_outline, size: 24)
               else
                 const Row(
                   mainAxisSize: MainAxisSize.min,

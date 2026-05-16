@@ -287,7 +287,7 @@ class OwnerDailyScheduleSessionCard extends StatelessWidget {
                             height: 1.1,
                           ),
                         ),
-                        const SizedBox(height: 6),
+                        const SizedBox(height: 10),
                         _ScheduleBookButton(
                           label: bookActionLabel,
                           loading: bookActionLoading,

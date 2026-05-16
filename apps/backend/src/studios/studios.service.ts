@@ -1580,6 +1580,7 @@ export class StudiosService {
               id: true,
               name: true,
               email: true,
+              avatarUrl: true,
             },
           },
         },
@@ -1653,7 +1654,7 @@ export class StudiosService {
           ? {
               id: (Studio as any).User.id,
               name: (Studio as any).User.name,
-              // Removed email - not used on frontend
+              avatarUrl: (Studio as any).User.avatarUrl ?? null,
             }
           : undefined,
         // Add derived categories from services
