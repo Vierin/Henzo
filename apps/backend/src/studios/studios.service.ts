@@ -2000,6 +2000,10 @@ export class StudiosService {
             nameEn: true,
             nameVi: true,
             nameRu: true,
+            description: true,
+            descriptionEn: true,
+            descriptionVi: true,
+            descriptionRu: true,
             duration: true,
             price: true,
             trainingCategoryId: true,
@@ -2007,6 +2011,10 @@ export class StudiosService {
             trainingCategory: {
               select: {
                 chip_bg_hex: true,
+                chip_fg_hex: true,
+                name_en: true,
+                name_vn: true,
+                name_ru: true,
               },
             },
           },
@@ -2051,6 +2059,10 @@ export class StudiosService {
             nameEn: s.Training.nameEn,
             nameVi: s.Training.nameVi,
             nameRu: s.Training.nameRu,
+            description: s.Training.description,
+            descriptionEn: s.Training.descriptionEn,
+            descriptionVi: s.Training.descriptionVi,
+            descriptionRu: s.Training.descriptionRu,
             duration: s.Training.duration,
             price: s.Training.price,
             trainingCategoryId: s.Training.trainingCategoryId,
@@ -2061,6 +2073,15 @@ export class StudiosService {
               categoryChipBgHex: s.Training.trainingCategory?.chip_bg_hex,
               existingColor: s.Training.displayColor,
             }),
+            trainingCategory: s.Training.trainingCategory
+              ? {
+                  chip_bg_hex: s.Training.trainingCategory.chip_bg_hex,
+                  chip_fg_hex: s.Training.trainingCategory.chip_fg_hex,
+                  name_en: s.Training.trainingCategory.name_en,
+                  name_vn: s.Training.trainingCategory.name_vn,
+                  name_ru: s.Training.trainingCategory.name_ru,
+                }
+              : null,
           }
         : null,
       trainer: s.Trainer
@@ -2139,6 +2160,97 @@ export class StudiosService {
     };
   }
 
+  /**
+   * Ratings + distinct training categories per studio (indexed by studioId).
+   * Used by featured and nearby list — two queries, not per-studio.
+   */
+  private async getStudioDiscoveryMeta(studioIds: string[]): Promise<{
+    ratingMap: Map<string, { avgRating: number; reviewCount: number }>;
+    categoriesByStudio: Map<string, string[]>;
+    categoryIdsByStudio: Map<string, number[]>;
+  }> {
+    const empty = {
+      ratingMap: new Map<
+        string,
+        { avgRating: number; reviewCount: number }
+      >(),
+      categoriesByStudio: new Map<string, string[]>(),
+      categoryIdsByStudio: new Map<string, number[]>(),
+    };
+    if (studioIds.length === 0) return empty;
+
+    const [ratingAggregates, categoryData] = await Promise.all([
+      this.prisma.review.groupBy({
+        by: ['studioId'],
+        where: { studioId: { in: studioIds } },
+        _avg: { rating: true },
+        _count: { rating: true },
+      }),
+      this.prisma.training.findMany({
+        where: {
+          studioId: { in: studioIds },
+          trainingCategoryId: { not: null },
+        },
+        select: {
+          studioId: true,
+          trainingCategoryId: true,
+          trainingCategory: {
+            select: {
+              name_en: true,
+              name_vn: true,
+              name_ru: true,
+            },
+          },
+        },
+        distinct: ['studioId', 'trainingCategoryId'],
+      }),
+    ]);
+
+    const ratingEntries: [
+      string,
+      { avgRating: number; reviewCount: number },
+    ][] = ratingAggregates.map((agg) => [
+      String(agg.studioId),
+      {
+        avgRating: Math.round((agg._avg.rating || 0) * 10) / 10,
+        reviewCount: agg._count.rating,
+      },
+    ]);
+    const ratingMap = new Map(ratingEntries);
+
+    type Pair = { id: number; label: string };
+    const pairMap = new Map<string, Pair[]>();
+    for (const item of categoryData) {
+      if (!item.trainingCategoryId || !item.trainingCategory) continue;
+      const tc = item.trainingCategory;
+      const label =
+        tc.name_en?.trim() ||
+        tc.name_ru?.trim() ||
+        tc.name_vn?.trim() ||
+        '';
+      if (!label) continue;
+      const list = pairMap.get(item.studioId) ?? [];
+      list.push({ id: item.trainingCategoryId, label });
+      pairMap.set(item.studioId, list);
+    }
+
+    const categoriesByStudio = new Map<string, string[]>();
+    const categoryIdsByStudio = new Map<string, number[]>();
+    for (const [sid, pairs] of pairMap) {
+      pairs.sort((a, b) => a.id - b.id);
+      categoriesByStudio.set(
+        sid,
+        pairs.map((p) => p.label),
+      );
+      categoryIdsByStudio.set(
+        sid,
+        pairs.map((p) => p.id),
+      );
+    }
+
+    return { ratingMap, categoriesByStudio, categoryIdsByStudio };
+  }
+
   async findFeaturedStudios(limit: number) {
     // Get Studios with minimal data
     const Studios = await this.prisma.Studio.findMany({
@@ -2171,69 +2283,8 @@ export class StudiosService {
     // Get Studio IDs for aggregate queries
     const StudioIds = Studios.map((s) => s.id);
 
-    // Calculate average ratings using aggregate (much faster than loading all reviews)
-    const ratingAggregates = await this.prisma.review.groupBy({
-      by: ['studioId'],
-      where: {
-        studioId: { in: StudioIds },
-      },
-      _avg: {
-        rating: true,
-      },
-      _count: {
-        rating: true,
-      },
-    });
-
-    // Get unique categories from trainings (only need category names and IDs)
-    const categoryData = await this.prisma.training.findMany({
-      where: {
-        studioId: { in: StudioIds },
-        trainingCategoryId: { not: null },
-      },
-      select: {
-        studioId: true,
-        trainingCategoryId: true,
-        trainingCategory: {
-          select: {
-            name_en: true,
-            name_vn: true,
-          },
-        },
-      },
-      distinct: ['studioId', 'trainingCategoryId'],
-    });
-
-    // Create maps for quick lookup
-    const ratingMap = new Map<
-      string,
-      { avgRating: number; reviewCount: number }
-    >(
-      ratingAggregates.map((agg) => [
-        agg.studioId,
-        {
-          avgRating: agg._avg.rating || 0,
-          reviewCount: agg._count.rating,
-        },
-      ]),
-    );
-
-    // Group categories by studioId (names and training category IDs)
-    const categoryMap = new Map<string, Set<string>>();
-    const categoryIdsMap = new Map<string, Set<number>>();
-    categoryData.forEach((item) => {
-      if (!item.trainingCategory || !item.trainingCategoryId) return;
-      const categoryName =
-        item.trainingCategory.name_en || item.trainingCategory.name_vn;
-      if (!categoryName) return;
-
-      if (!categoryMap.has(item.studioId)) {
-        categoryMap.set(item.studioId, new Set());
-        categoryIdsMap.set(item.studioId, new Set());
-      }
-      categoryMap.get(item.studioId)?.add(categoryName);
-      categoryIdsMap.get(item.studioId)?.add(item.trainingCategoryId);
-    });
+    const { ratingMap, categoriesByStudio, categoryIdsByStudio } =
+      await this.getStudioDiscoveryMeta(StudioIds);
 
     // Enrich Studios with aggregated data
     const enriched = Studios.map((Studio) => {
@@ -2242,10 +2293,8 @@ export class StudiosService {
         reviewCount: 0,
       };
 
-      const categories = Array.from(categoryMap.get(Studio.id) || []);
-      const trainingCategoryIds = Array.from(
-        categoryIdsMap.get(Studio.id) || [],
-      );
+      const categories = categoriesByStudio.get(Studio.id) ?? [];
+      const trainingCategoryIds = categoryIdsByStudio.get(Studio.id) ?? [];
 
       return {
         id: Studio.id,
@@ -2254,7 +2303,8 @@ export class StudiosService {
         latitude: Studio.latitude ?? undefined,
         longitude: Studio.longitude ?? undefined,
         photos: Studio.photos,
-        avgRating: Math.round(ratingData.avgRating * 10) / 10, // Round to 1 decimal
+        avgRating: ratingData.avgRating,
+        reviewCount: ratingData.reviewCount,
         categories,
         trainingCategoryIds,
         _count: {
@@ -2372,7 +2422,28 @@ export class StudiosService {
       return this.findFeaturedStudios(limit);
     }
 
-    return StudiosWithDistance;
+    const nearbyIds = StudiosWithDistance.map((s) => s.id);
+    const { ratingMap, categoriesByStudio, categoryIdsByStudio } =
+      await this.getStudioDiscoveryMeta(nearbyIds);
+
+    return StudiosWithDistance.map((s) => {
+      const r = ratingMap.get(s.id) || { avgRating: 0, reviewCount: 0 };
+      return {
+        id: s.id,
+        name: s.name,
+        address: s.address,
+        latitude: s.latitude ?? undefined,
+        longitude: s.longitude ?? undefined,
+        photos: s.photos,
+        logoUrl: s.logoUrl,
+        distance: s.distance,
+        avgRating: r.avgRating,
+        reviewCount: r.reviewCount,
+        categories: categoriesByStudio.get(s.id) ?? [],
+        trainingCategoryIds: categoryIdsByStudio.get(s.id) ?? [],
+        _count: s._count,
+      };
+    });
   }
 
   async getStudioStats(StudioId: string) {

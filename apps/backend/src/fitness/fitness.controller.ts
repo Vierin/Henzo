@@ -264,6 +264,17 @@ export class FitnessController {
     return this.fitnessSessionsService.getClientSchedule(authHeader, from, to);
   }
 
+  @Put('client/enrollments/:id/cancel')
+  async cancelClientEnrollment(
+    @Headers('authorization') authHeader: string,
+    @Param('id') id: string,
+  ) {
+    return this.fitnessSessionsService.cancelClientOwnEnrollment(
+      authHeader,
+      id,
+    );
+  }
+
   @Get('client/profile-stats')
   async getClientProfileStats(@Headers('authorization') authHeader: string) {
     return this.fitnessSessionsService.getClientProfileStats(authHeader);

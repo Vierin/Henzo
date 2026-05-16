@@ -42,6 +42,11 @@ class ExploreClassItem {
     required this.rating,
     required this.reviewCount,
     this.trainingCategoryId,
+    this.trainingId = '',
+    this.endsAt,
+    this.locationName,
+    this.studioLocationCount = 1,
+    this.distanceKm,
   });
   final String sessionId;
   final String studioId;
@@ -58,4 +63,11 @@ class ExploreClassItem {
   final double rating;
   final int reviewCount;
   final int? trainingCategoryId;
+
+  /// Training template id (public schedule `training.id`).
+  final String trainingId;
+  final DateTime? endsAt;
+  final String? locationName;
+  final int studioLocationCount;
+  final double? distanceKm;
 }

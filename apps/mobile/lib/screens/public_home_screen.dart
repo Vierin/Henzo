@@ -32,6 +32,7 @@ import '../widgets/public/top_studio_card.dart';
 import 'client/client_shell_scope.dart';
 import 'location_picker_screen.dart';
 import 'notifications_screen.dart';
+import 'public_class_detail_screen.dart';
 import 'public_studio_detail_screen.dart';
 
 class PublicHomeScreen extends StatefulWidget {
@@ -799,7 +800,7 @@ class _PublicHomeScreenState extends State<PublicHomeScreen> {
               ),
               SliverToBoxAdapter(
                 child: SizedBox(
-                  height: 248,
+                  height: 212,
                   child: _isLoadingStudios
                       ? const Center(child: CircularProgressIndicator())
                       : studios.isEmpty
@@ -956,21 +957,35 @@ class _PublicHomeScreenState extends State<PublicHomeScreen> {
         ? Map<String, dynamic>.from(item['studio'] as Map)
         : <String, dynamic>{};
     final studioId = (studio['id'] ?? '').toString();
+    final sessionId =
+        (item['id'] ?? item['sessionId'] ?? '').toString();
+    final startsHint =
+        DateTime.tryParse((item['startsAt'] ?? '').toString())?.toLocal();
     final locationCount = (studio['locationCount'] as num?)?.toInt() ?? 1;
     final sub = resolveOwnerSessionCardSubtitleForPublic(
       session: session,
       studioLocationCount: locationCount,
     );
+    final trainerLine = sub.showLocationPin
+        ? ownerDailyScheduleTrainerLabel(session, null)
+        : null;
 
     return OwnerDailyScheduleSessionCard(
       session: session,
       subtitleLabel: sub.label,
       showLocationPin: sub.showLocationPin,
+      trainerLine: trainerLine,
       onTap: () {
-        if (studioId.isEmpty) return;
+        if (studioId.isEmpty || sessionId.isEmpty || startsHint == null) {
+          return;
+        }
         Navigator.of(context).push(
           MaterialPageRoute(
-            builder: (_) => PublicStudioDetailScreen(studioId: studioId),
+            builder: (_) => PublicClassDetailScreen(
+              studioId: studioId,
+              sessionId: sessionId,
+              sessionStartsAtHint: startsHint,
+            ),
           ),
         );
       },

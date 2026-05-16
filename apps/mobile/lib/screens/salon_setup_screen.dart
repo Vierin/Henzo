@@ -121,13 +121,16 @@ class _SalonSetupScreenState extends State<SalonSetupScreen> {
                       final locale = context.read<LocaleProvider>();
                       final selection = await AddressPickerModal.show(
                         context,
-                        initialLocationName: locale.t('locations.mainStudio'),
+                        initialLocationName: _nameController.text.trim().isNotEmpty
+                            ? _nameController.text.trim()
+                            : locale.t('locations.mainStudio'),
                         initialAddress: _addressController.text,
                         initialLat: _addressLat,
                         initialLon: _addressLon,
                       );
                       if (selection == null || !mounted) return;
                       setState(() {
+                        _nameController.text = selection.locationName;
                         _addressController.text = selection.address;
                         _addressLat = selection.lat;
                         _addressLon = selection.lon;

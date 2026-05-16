@@ -36,6 +36,7 @@ const clientScheduleEnrollmentSelect =
         endsAt: true,
         capacity: true,
         bookedCount: true,
+        locationId: true,
         Training: {
           select: {
             id: true,
@@ -60,6 +61,7 @@ const clientScheduleEnrollmentSelect =
             id: true,
             name: true,
             address: true,
+            reminderSettings: true,
           },
         },
       },
@@ -322,6 +324,11 @@ export class FitnessSessionsService {
     const studioName = studio.name?.trim() ?? 'Studio';
     const locationCount = countTrainingLocations(studio.reminderSettings);
 
+    const ownerDisplayName =
+      (currentUser.user.name && String(currentUser.user.name).trim()) ||
+      (currentUser.user.email && String(currentUser.user.email).trim()) ||
+      studioName;
+
     await this.completePastTrainingSessions();
 
     const where: any = { studioId: studio.id };
@@ -407,9 +414,16 @@ export class FitnessSessionsService {
               }
             : null,
         },
-        trainer: s.Trainer
-          ? { id: s.Trainer.id, name: s.Trainer.name }
-          : { id: null, name: '—' },
+        trainer: (() => {
+          const tr = s.Trainer as { id: string; name: string } | null;
+          if (tr?.name && String(tr.name).trim().length > 0) {
+            return { id: tr.id, name: String(tr.name).trim() };
+          }
+          if (tr?.id) {
+            return { id: tr.id, name: ownerDisplayName };
+          }
+          return { id: null, name: ownerDisplayName };
+        })(),
       };
     });
   }
@@ -956,6 +970,72 @@ export class FitnessSessionsService {
     return { success: true };
   }
 
+  /** Client cancels their own class enrollment (group session). */
+  async cancelClientOwnEnrollment(authHeader: string, enrollmentId: string) {
+    const currentUser = await this.authService.getCurrentUser(authHeader);
+    const row = await this.prisma.sessionEnrollment.findFirst({
+      where: { id: enrollmentId, userId: currentUser.user.id },
+      select: {
+        id: true,
+        status: true,
+        sessionId: true,
+      },
+    });
+    if (!row) {
+      throw new HttpException('Enrollment not found', HttpStatus.NOT_FOUND);
+    }
+    if (row.status !== SessionEnrollmentStatus.ACTIVE) {
+      return { success: true };
+    }
+
+    await this.completePastTrainingSessions();
+
+    const sessionRow = await this.prisma.trainingSession.findUnique({
+      where: { id: row.sessionId },
+      select: { endsAt: true },
+    });
+    if (!sessionRow) {
+      throw new HttpException('Session not found', HttpStatus.NOT_FOUND);
+    }
+    const now = new Date();
+    if (sessionRow.endsAt <= now) {
+      throw new HttpException(
+        'Session already ended',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
+    await this.prisma.$transaction(async (tx) => {
+      await tx.sessionEnrollment.update({
+        where: { id: enrollmentId },
+        data: {
+          status: SessionEnrollmentStatus.CANCELLED,
+          cancelledAt: new Date(),
+        },
+      });
+      await tx.trainingSession.update({
+        where: { id: row.sessionId },
+        data: { bookedCount: { decrement: 1 } },
+      });
+    });
+
+    const enrollment = await this.prisma.sessionEnrollment.findUnique({
+      where: { id: enrollmentId },
+      select: {
+        userId: true,
+        TrainingSession: { select: { studioId: true } },
+      },
+    });
+    this.analytics.track(enrollment?.userId ?? null, 'booking_cancelled', {
+      enrollment_id: enrollmentId,
+      session_id: row.sessionId,
+      studio_id: enrollment?.TrainingSession?.studioId,
+      source: 'client_cancelled',
+    });
+
+    return { success: true };
+  }
+
   async getClientSchedule(
     authHeader: string,
     fromIso?: string,
@@ -994,7 +1074,22 @@ export class FitnessSessionsService {
       take: 300,
     });
 
-    return enrollments.map((e) => ({
+    return enrollments.map((e) => {
+      const studio = e.TrainingSession.Studio;
+      const studioName = studio?.name?.trim() ?? 'Studio';
+      const locationCount = studio
+        ? countTrainingLocations(studio.reminderSettings)
+        : 1;
+      const locationName =
+        locationCount > 1
+          ? (resolveTrainingLocationName(
+              studio?.reminderSettings,
+              e.TrainingSession.locationId,
+              studioName,
+            ) ?? studioName)
+          : null;
+
+      return {
       enrollmentId: e.id,
       bookedAt: e.createdAt.toISOString(),
       sessionId: e.TrainingSession.id,
@@ -1003,6 +1098,8 @@ export class FitnessSessionsService {
       sessionStatus: e.TrainingSession.status,
       capacity: e.TrainingSession.capacity,
       bookedCount: e.TrainingSession.bookedCount,
+      locationId: e.TrainingSession.locationId ?? null,
+      locationName,
       training: e.TrainingSession.Training
         ? {
             id: e.TrainingSession.Training.id,
@@ -1030,9 +1127,11 @@ export class FitnessSessionsService {
             id: e.TrainingSession.Studio.id,
             name: e.TrainingSession.Studio.name,
             address: e.TrainingSession.Studio.address,
+            locationCount,
           }
         : null,
-    }));
+    };
+    });
   }
 
   async getClientProfileStats(authHeader: string): Promise<{

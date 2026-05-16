@@ -199,6 +199,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
     if (selection == null || !mounted) return;
     setState(() {
+      _salonNameController.text = selection.locationName;
       _salonAddressController.text = selection.address;
       _salonLat = selection.lat;
       _salonLon = selection.lon;

@@ -8,12 +8,13 @@ import '../../l10n/locale_provider.dart';
 import '../../models/training_category_option.dart';
 import '../../services/api_client.dart';
 import '../../services/cache/client_nearby_cache.dart';
-import '../../utils/color_hex.dart';
+import '../../services/dashboard_api_service.dart';
 import '../../utils/formatters.dart';
 import '../../utils/nearby_payload.dart';
+import '../../widgets/dashboard/owner_daily_schedule_session_card.dart';
 import '../../widgets/public/cached_salon_network_image.dart';
+import '../public_class_detail_screen.dart';
 import '../public_studio_detail_screen.dart';
-import '../../widgets/public/class_schedule_card.dart';
 import 'client_explore_models.dart';
 import '../../widgets/client/client_explore_filter_chip.dart';
 
@@ -128,6 +129,14 @@ class ClientSearchScreenState extends State<ClientSearchScreen> {
         final training = map['training'] is Map
             ? Map<String, dynamic>.from(map['training'] as Map)
             : <String, dynamic>{};
+        final studioBlock = map['studio'] is Map
+            ? Map<String, dynamic>.from(map['studio'] as Map)
+            : <String, dynamic>{};
+        final studioLocationCount =
+            (studioBlock['locationCount'] as num?)?.toInt() ?? 1;
+        final endsAt =
+            DateTime.tryParse((map['endsAt'] ?? '').toString())?.toLocal();
+        final locationName = map['locationName']?.toString();
         final startsAt = DateTime.tryParse(
           (map['startsAt'] ?? '').toString(),
         )?.toLocal();
@@ -154,6 +163,11 @@ class ClientSearchScreenState extends State<ClientSearchScreen> {
             rating: studio.rating,
             reviewCount: studio.reviewCount,
             trainingCategoryId: trainingCategoryId,
+            trainingId: (training['id'] ?? '').toString(),
+            endsAt: endsAt,
+            locationName: locationName,
+            studioLocationCount: studioLocationCount,
+            distanceKm: studio.distanceKm,
           ),
         );
       }
@@ -161,6 +175,31 @@ class ClientSearchScreenState extends State<ClientSearchScreen> {
     } catch (_) {
       return const [];
     }
+  }
+
+  OwnerTrainingSession _ownerSessionFromExplore(ExploreClassItem c) {
+    final ends = c.endsAt ??
+        c.startsAt.add(Duration(minutes: c.durationMin ?? 60));
+    return OwnerTrainingSession(
+      sessionId: c.sessionId,
+      trainingId: c.trainingId,
+      startsAt: c.startsAt,
+      endsAt: ends,
+      status: 'ACTIVE',
+      capacity: c.capacity ?? 0,
+      enrolledCount: c.bookedCount,
+      attendedCount: c.bookedCount,
+      trainingName: c.className,
+      trainingDurationMinutes: c.durationMin,
+      trainingDisplayColorHex: c.displayColorHex,
+      trainingPrice: c.price,
+      trainerName: c.trainerName.trim().isEmpty ? '—' : c.trainerName,
+      trainerId: null,
+      locationId: null,
+      locationName: (c.locationName ?? '').trim().isEmpty
+          ? null
+          : c.locationName!.trim(),
+    );
   }
 
   Future<void> _loadExplore() async {
@@ -1649,18 +1688,42 @@ class ClientSearchScreenState extends State<ClientSearchScreen> {
                             ),
                             itemBuilder: (_, index) {
                               final c = _derivedDayClasses[index];
-                              return ClassScheduleCard(
-                                timeLabel: formatTime24(c.startsAt),
-                                durationMin: c.durationMin,
-                                className: c.className,
-                                trainerName: c.trainerName,
-                                trainingColor: parseHexColor(c.displayColorHex),
-                                priceLabel: c.price != null
+                              final session = _ownerSessionFromExplore(c);
+                              final multi = c.studioLocationCount > 1;
+                              final loc = (c.locationName ?? '').trim();
+                              final showPin = multi && loc.isNotEmpty;
+                              final subtitle = showPin ? loc : c.studioName;
+                              final trainerLine = showPin
+                                  ? ownerDailyScheduleTrainerLabel(
+                                      session,
+                                      null,
+                                    )
+                                  : (c.trainerName.trim().isNotEmpty
+                                        ? c.trainerName.trim()
+                                        : null);
+                              return OwnerDailyScheduleSessionCard(
+                                session: session,
+                                subtitleLabel: subtitle,
+                                showLocationPin: showPin,
+                                trainerLine: trainerLine,
+                                showSubtitleLeadingIcon: showPin,
+                                dimPastSessions: false,
+                                trailingPriceLabel: c.price != null
                                     ? formatVnd(c.price!)
                                     : null,
-                                bookedCount: c.bookedCount,
-                                capacity: c.capacity,
-                                onBook: () {},
+                                onTap: () {
+                                  Navigator.of(context).push(
+                                    MaterialPageRoute(
+                                      builder: (_) =>
+                                          PublicClassDetailScreen(
+                                        studioId: c.studioId,
+                                        sessionId: c.sessionId,
+                                        sessionStartsAtHint: c.startsAt,
+                                        distanceKm: c.distanceKm,
+                                      ),
+                                    ),
+                                  );
+                                },
                               );
                             },
                           )

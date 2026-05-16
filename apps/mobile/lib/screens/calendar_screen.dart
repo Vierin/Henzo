@@ -151,6 +151,7 @@ class CalendarScreenState extends State<CalendarScreen> {
       return;
     }
     try {
+      final salon = await context.read<SalonCache>().getSalon(token);
       final now = DateTime.now();
       final fromUtc = now.subtract(const Duration(days: 14)).toUtc();
       final toUtc = now.add(const Duration(days: 56)).toUtc();

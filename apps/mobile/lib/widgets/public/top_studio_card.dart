@@ -35,7 +35,7 @@ class TopStudioCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      width: homeLayout ? 268 : 244,
+      width: homeLayout ? 210 : 236,
       margin: const EdgeInsets.only(right: 12),
       child: Material(
         color: Colors.transparent,
@@ -55,7 +55,7 @@ class TopStudioCard extends StatelessWidget {
                 children: [
                   SizedBox(
                     width: double.infinity,
-                    height: 118,
+                    height: homeLayout ? 120 : 118,
                     child: Stack(
                       children: [
                         Positioned.fill(
@@ -109,37 +109,6 @@ class TopStudioCard extends StatelessWidget {
                               ),
                             ),
                           ),
-                        if (homeLayout)
-                          Positioned(
-                            left: 10,
-                            bottom: 10,
-                            child: Container(
-                              width: 36,
-                              height: 36,
-                              decoration: BoxDecoration(
-                                color: AppColors.backgroundPrimary,
-                                shape: BoxShape.circle,
-                                border: Border.all(
-                                  color: Colors.white,
-                                  width: 2,
-                                ),
-                              ),
-                              child: ClipOval(
-                                child:
-                                    studio.photoUrl != null &&
-                                        studio.photoUrl!.isNotEmpty
-                                    ? CachedSalonNetworkImage(
-                                        imageUrl: studio.photoUrl!,
-                                        fit: BoxFit.cover,
-                                      )
-                                    : const Icon(
-                                        Icons.fitness_center,
-                                        size: 18,
-                                        color: AppColors.primary500,
-                                      ),
-                              ),
-                            ),
-                          ),
                         Positioned(
                           right: 8,
                           top: 8,
@@ -173,37 +142,55 @@ class TopStudioCard extends StatelessWidget {
                     ),
                   ),
                   Padding(
-                    padding: const EdgeInsets.fromLTRB(12, 8, 12, 0),
+                    padding: EdgeInsets.fromLTRB(
+                      homeLayout ? 10 : 12,
+                      homeLayout ? 6 : 8,
+                      homeLayout ? 10 : 12,
+                      0,
+                    ),
                     child: Text(
                       studio.name,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        fontSize: 19,
+                      style: TextStyle(
+                        fontSize: homeLayout ? 17 : 19,
                         fontWeight: FontWeight.w600,
                         color: AppColors.textPrimary,
                       ),
                     ),
                   ),
                   if (studio.categories.isNotEmpty) ...[
-                    const SizedBox(height: 4),
+                    SizedBox(height: homeLayout ? 3 : 4),
                     Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 12),
+                      padding: EdgeInsets.symmetric(
+                        horizontal: homeLayout ? 10 : 12,
+                      ),
                       child: Text(
-                        studio.categories.take(3).join(' · '),
+                        homeLayout
+                            ? studio.categories.take(2).join(' · ')
+                            : studio.categories.take(3).join(' · '),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                          fontSize: 11,
-                          fontWeight: FontWeight.w600,
-                          color: AppColors.textSecondary,
+                        style: TextStyle(
+                          fontSize: homeLayout ? 12 : 11,
+                          fontWeight: homeLayout
+                              ? FontWeight.w500
+                              : FontWeight.w600,
+                          color: homeLayout
+                              ? AppColors.textPrimary
+                              : AppColors.textSecondary,
                         ),
                       ),
                     ),
                   ],
-                  const SizedBox(height: 6),
+                  SizedBox(height: homeLayout ? 4 : 6),
                   Padding(
-                    padding: const EdgeInsets.fromLTRB(12, 0, 12, 10),
+                    padding: EdgeInsets.fromLTRB(
+                      homeLayout ? 10 : 12,
+                      0,
+                      homeLayout ? 10 : 12,
+                      homeLayout ? 8 : 10,
+                    ),
                     child: homeLayout
                         ? Row(
                             children: [

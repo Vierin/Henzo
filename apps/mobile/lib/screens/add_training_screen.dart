@@ -180,6 +180,9 @@ class _AddTrainingScreenState extends State<AddTrainingScreen> {
 
     final selection = await AddressPickerModal.show(
       context,
+      initialLocationName: seed.name.trim().isNotEmpty
+          ? seed.name.trim()
+          : locale.t('locations.mainStudio'),
       initialAddress: seed.address,
       initialLat: seed.latitude ?? studio.latitude,
       initialLon: seed.longitude ?? studio.longitude,

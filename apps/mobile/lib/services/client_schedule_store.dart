@@ -112,6 +112,8 @@ class ClientScheduleStore {
   static String? bookingIdFromItem(Map<String, dynamic> item) {
     final bookingId = item['bookingId']?.toString().trim();
     if (bookingId != null && bookingId.isNotEmpty) return bookingId;
+    final enrollmentId = item['enrollmentId']?.toString().trim();
+    if (enrollmentId != null && enrollmentId.isNotEmpty) return enrollmentId;
     final id = item['id']?.toString().trim();
     if (id != null && id.isNotEmpty) return id;
     return null;
