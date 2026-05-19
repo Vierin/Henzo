@@ -1,4 +1,4 @@
-import { Injectable, Inject } from '@nestjs/common';
+import { HttpException, HttpStatus, Injectable, Inject } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { UpdateStudioDto } from './dto/update-studio.dto';
 import { CreateStudioDto } from './dto/create-studio.dto';
@@ -2574,5 +2574,79 @@ export class StudiosService {
     }
 
     return cleaned.trim();
+  }
+
+  async createClientStudioReview(
+    userId: string,
+    studioId: string,
+    data: {
+      rating: number;
+      comment?: string;
+      enrollmentId?: string;
+    },
+  ): Promise<{ success: boolean; reviewId: string }> {
+    const rating = Math.round(Number(data.rating));
+    if (!Number.isFinite(rating) || rating < 1 || rating > 5) {
+      throw new HttpException(
+        'Rating must be between 1 and 5',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
+    const studio = await this.prisma.studio.findFirst({
+      where: { id: studioId, isDeleted: false },
+      select: { id: true },
+    });
+    if (!studio) {
+      throw new HttpException('Studio not found', HttpStatus.NOT_FOUND);
+    }
+
+    if (data.enrollmentId) {
+      const enrollment = await this.prisma.sessionEnrollment.findFirst({
+        where: {
+          id: data.enrollmentId,
+          userId,
+          status: { not: 'CANCELLED' },
+          TrainingSession: { studioId },
+        },
+        select: {
+          TrainingSession: { select: { endsAt: true } },
+        },
+      });
+      if (!enrollment) {
+        throw new HttpException('Booking not found', HttpStatus.NOT_FOUND);
+      }
+      if (enrollment.TrainingSession.endsAt > new Date()) {
+        throw new HttpException(
+          'You can review after the class ends',
+          HttpStatus.BAD_REQUEST,
+        );
+      }
+    }
+
+    const existing = await this.prisma.review.findFirst({
+      where: { userId, studioId, bookingId: null },
+      select: { id: true },
+    });
+    if (existing) {
+      throw new HttpException(
+        'You already left a review for this studio',
+        HttpStatus.CONFLICT,
+      );
+    }
+
+    const comment = data.comment?.trim();
+    const review = await this.prisma.review.create({
+      data: {
+        studioId,
+        userId,
+        rating,
+        comment: comment && comment.length > 0 ? comment : null,
+        bookingId: null,
+      },
+      select: { id: true },
+    });
+
+    return { success: true, reviewId: review.id };
   }
 }

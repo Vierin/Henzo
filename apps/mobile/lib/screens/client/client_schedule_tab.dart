@@ -182,6 +182,7 @@ class ClientScheduleTabState extends State<ClientScheduleTab>
             showLocationPin: presentation.showLocationPin,
             showSubtitleLeadingIcon: presentation.showSubtitleLeadingIcon,
             trainerLine: presentation.trainerLine,
+            showDateAboveTime: true,
             dimPastSessions: false,
             cancelActionLabel: 'Cancel booking',
             cancelActionLoading: isCanceling,

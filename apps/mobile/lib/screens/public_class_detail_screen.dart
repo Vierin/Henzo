@@ -10,6 +10,7 @@ import '../utils/color_hex.dart';
 import '../utils/formatters.dart';
 import '../services/client_schedule_store.dart';
 import '../widgets/public/cached_salon_network_image.dart';
+import 'client/class_booking_confirmation_screen.dart';
 import 'public_studio_detail_screen.dart';
 
 /// Public class detail (client Explore / home). No bell, no «what to bring»,
@@ -158,17 +159,29 @@ class _PublicClassDetailScreenState extends State<PublicClassDetailScreen> {
     if (_booking) return;
     setState(() => _booking = true);
     try {
-      await ApiClient.post(
+      final raw = await ApiClient.post(
         '/studios/sessions/${widget.sessionId}/book',
         token,
         body: const <String, dynamic>{},
       );
       if (!mounted) return;
       ClientScheduleStore.invalidate();
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Booking confirmed')),
+      var spotNumber = (_session?['bookedCount'] as num?)?.toInt() ?? 0;
+      if (raw is Map && raw['booking'] is Map) {
+        final b = Map<String, dynamic>.from(raw['booking'] as Map);
+        spotNumber = (b['bookedCount'] as num?)?.toInt() ?? spotNumber;
+      }
+      final session = _session;
+      if (session == null) return;
+      await Navigator.of(context).pushReplacement(
+        MaterialPageRoute<void>(
+          builder: (_) => ClassBookingConfirmationScreen.fromMaps(
+            session: session,
+            studio: _studio,
+            spotNumber: spotNumber > 0 ? spotNumber : null,
+          ),
+        ),
       );
-      await _load();
     } catch (e) {
       if (!mounted) return;
       final msg = e.toString();

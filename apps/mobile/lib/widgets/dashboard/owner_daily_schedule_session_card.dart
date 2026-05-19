@@ -4,6 +4,7 @@ import 'package:flutter_svg/flutter_svg.dart';
 import '../../constants/colors.dart';
 import '../../services/dashboard_api_service.dart';
 import '../../utils/color_hex.dart';
+import '../../utils/formatters.dart';
 
 String ownerDailyScheduleTrainerLabel(
   OwnerTrainingSession session,
@@ -87,6 +88,10 @@ class OwnerDailyScheduleSessionCard extends StatelessWidget {
     this.onBookAgain,
     this.bookActionLabel = 'Book again',
     this.bookActionLoading = false,
+    this.onLeaveReview,
+    this.leaveReviewLabel = 'Leave review',
+    this.leaveReviewLoading = false,
+    this.showDateAboveTime = false,
     this.onCancelBooking,
     this.cancelActionLabel = 'Cancel',
     this.cancelActionLoading = false,
@@ -107,6 +112,13 @@ class OwnerDailyScheduleSessionCard extends StatelessWidget {
   final VoidCallback? onBookAgain;
   final String bookActionLabel;
   final bool bookActionLoading;
+
+  final VoidCallback? onLeaveReview;
+  final String leaveReviewLabel;
+  final bool leaveReviewLoading;
+
+  /// Client bookings: small `dd.MM.yy` above start time.
+  final bool showDateAboveTime;
 
   final VoidCallback? onCancelBooking;
   final String cancelActionLabel;
@@ -148,10 +160,15 @@ class OwnerDailyScheduleSessionCard extends StatelessWidget {
     final trainerRowText = trainerLine?.trim() ?? '';
     final priceText = trailingPriceLabel?.trim() ?? '';
     final hasBookAction = onBookAgain != null || bookActionLoading;
+    final hasReviewAction = onLeaveReview != null || leaveReviewLoading;
     final hasCancelAction = onCancelBooking != null || cancelActionLoading;
     final showPriceAboveBook = priceText.isNotEmpty && hasBookAction;
-    final trailingInset =
-        (hasBookAction || hasCancelAction) && !showPriceAboveBook ? 8.0 : 14.0;
+    final trailingInset = (hasBookAction ||
+            hasReviewAction ||
+            hasCancelAction) &&
+            !showPriceAboveBook
+        ? 8.0
+        : 14.0;
 
     final card = Container(
       margin: const EdgeInsets.only(bottom: 10),
@@ -172,6 +189,18 @@ class OwnerDailyScheduleSessionCard extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    if (showDateAboveTime) ...[
+                      Text(
+                        formatBookingCardDate(s.startsAt),
+                        style: const TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w600,
+                          height: 1,
+                          color: AppColors.textTertiary,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                    ],
                     Text(
                       startLabel,
                       style: const TextStyle(
@@ -288,10 +317,13 @@ class OwnerDailyScheduleSessionCard extends StatelessWidget {
                           ),
                         ),
                         const SizedBox(height: 10),
-                        _ScheduleBookButton(
-                          label: bookActionLabel,
-                          loading: bookActionLoading,
-                          onPressed: onBookAgain,
+                        _ScheduleTrailingActions(
+                          bookLabel: bookActionLabel,
+                          bookLoading: bookActionLoading,
+                          onBook: onBookAgain,
+                          reviewLabel: leaveReviewLabel,
+                          reviewLoading: leaveReviewLoading,
+                          onReview: onLeaveReview,
                         ),
                       ],
                     )
@@ -308,12 +340,15 @@ class OwnerDailyScheduleSessionCard extends StatelessWidget {
                         ),
                       ),
                     )
-                  : hasBookAction
+                  : hasBookAction || hasReviewAction
                   ? Center(
-                      child: _ScheduleBookButton(
-                        label: bookActionLabel,
-                        loading: bookActionLoading,
-                        onPressed: onBookAgain,
+                      child: _ScheduleTrailingActions(
+                        bookLabel: bookActionLabel,
+                        bookLoading: bookActionLoading,
+                        onBook: hasBookAction ? onBookAgain : null,
+                        reviewLabel: leaveReviewLabel,
+                        reviewLoading: leaveReviewLoading,
+                        onReview: onLeaveReview,
                       ),
                     )
                   : hasCancelAction
@@ -393,6 +428,93 @@ class OwnerDailyScheduleSessionCard extends StatelessWidget {
       behavior: HitTestBehavior.opaque,
       onTap: onTap,
       child: wrapped,
+    );
+  }
+}
+
+class _ScheduleTrailingActions extends StatelessWidget {
+  const _ScheduleTrailingActions({
+    required this.bookLabel,
+    required this.bookLoading,
+    required this.onBook,
+    required this.reviewLabel,
+    required this.reviewLoading,
+    required this.onReview,
+  });
+
+  final String bookLabel;
+  final bool bookLoading;
+  final VoidCallback? onBook;
+  final String reviewLabel;
+  final bool reviewLoading;
+  final VoidCallback? onReview;
+
+  @override
+  Widget build(BuildContext context) {
+    final showBook = onBook != null || bookLoading;
+    final showReview = onReview != null || reviewLoading;
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        if (showBook)
+          _ScheduleBookButton(
+            label: bookLabel,
+            loading: bookLoading,
+            onPressed: onBook,
+          ),
+        if (showReview) ...[
+          if (showBook) const SizedBox(height: 6),
+          _ScheduleReviewButton(
+            label: reviewLabel,
+            loading: reviewLoading,
+            onPressed: onReview,
+          ),
+        ],
+      ],
+    );
+  }
+}
+
+class _ScheduleReviewButton extends StatelessWidget {
+  const _ScheduleReviewButton({
+    required this.label,
+    required this.loading,
+    required this.onPressed,
+  });
+
+  final String label;
+  final bool loading;
+  final VoidCallback? onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    return TextButton(
+      onPressed: loading ? null : onPressed,
+      style: TextButton.styleFrom(
+        foregroundColor: AppColors.primary500,
+        side: const BorderSide(color: AppColors.primary500),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        minimumSize: Size.zero,
+        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+      ),
+      child: loading
+          ? const SizedBox(
+              width: 18,
+              height: 18,
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+                color: AppColors.primary500,
+              ),
+            )
+          : Text(
+              label,
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w700,
+                height: 1.15,
+              ),
+            ),
     );
   }
 }

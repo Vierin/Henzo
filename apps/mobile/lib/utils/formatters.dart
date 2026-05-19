@@ -19,6 +19,14 @@ String formatVnd(num value) {
   return out.toString();
 }
 
+/// Booking cards: `12.06.26`
+String formatBookingCardDate(DateTime dt) {
+  final local = dt.toLocal();
+  String two(int v) => v.toString().padLeft(2, '0');
+  final yy = (local.year % 100).toString().padLeft(2, '0');
+  return '${two(local.day)}.${two(local.month)}.$yy';
+}
+
 String formatTime24(DateTime dt) {
   final local = dt.toLocal();
   final h = local.hour.toString().padLeft(2, '0');

@@ -866,6 +866,31 @@ export class StudiosController {
     }
   }
 
+  @Post(':id/reviews')
+  async createClientStudioReview(
+    @Param('id') id: string,
+    @Headers('authorization') authHeader: string,
+    @Body()
+    body: { rating: number; comment?: string; enrollmentId?: string },
+  ) {
+    try {
+      const currentUser = await this.authService.getCurrentUser(authHeader);
+      return await this.studiosService.createClientStudioReview(
+        currentUser.user.id,
+        id,
+        body ?? {},
+      );
+    } catch (error) {
+      if (error instanceof HttpException) {
+        throw error;
+      }
+      throw new HttpException(
+        error?.message || 'Failed to submit review',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+  }
+
   @Get(':id')
   @Header('Cache-Control', 'public, max-age=120, stale-while-revalidate=300')
   async getStudioById(@Param('id') id: string) {

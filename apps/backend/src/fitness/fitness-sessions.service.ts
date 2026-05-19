@@ -1084,6 +1084,28 @@ export class FitnessSessionsService {
       take: 300,
     });
 
+    const studioIds = [
+      ...new Set(
+        enrollments
+          .map((e) => e.TrainingSession.Studio?.id)
+          .filter((id): id is string => Boolean(id)),
+      ),
+    ];
+    const reviewedStudioRows =
+      studioIds.length > 0
+        ? await this.prisma.review.findMany({
+            where: {
+              userId,
+              studioId: { in: studioIds },
+              bookingId: null,
+            },
+            select: { studioId: true },
+          })
+        : [];
+    const reviewedStudioIds = new Set(
+      reviewedStudioRows.map((r) => r.studioId),
+    );
+
     return enrollments.map((e) => {
       const studio = e.TrainingSession.Studio;
       const studioName = studio?.name?.trim() ?? 'Studio';
@@ -1145,6 +1167,9 @@ export class FitnessSessionsService {
             locationCount,
           }
         : null,
+      hasReview: studio?.id
+        ? reviewedStudioIds.has(studio.id)
+        : false,
     };
     });
   }

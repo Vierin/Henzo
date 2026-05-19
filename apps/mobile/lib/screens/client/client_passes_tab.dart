@@ -5,10 +5,9 @@ import '../../constants/layout.dart';
 import '../../services/auth_service.dart';
 import '../../services/client_schedule_store.dart';
 import '../../utils/client_schedule_owner_session.dart';
+import '../../widgets/client/client_leave_review_sheet.dart';
 import '../../widgets/client/client_placeholder_card.dart';
 import '../../widgets/dashboard/owner_daily_schedule_session_card.dart';
-import '../public_studio_schedule_screen.dart';
-
 class ClientPassesTab extends StatelessWidget {
   const ClientPassesTab({super.key});
 
@@ -31,6 +30,7 @@ class _ClientPassesHistoryListState extends State<ClientPassesHistoryList>
   bool _loading = true;
   String? _error;
   List<Map<String, dynamic>> _items = const [];
+  final Set<String> _submittingReviewEnrollmentIds = <String>{};
 
   @override
   void initState() {
@@ -85,26 +85,39 @@ class _ClientPassesHistoryListState extends State<ClientPassesHistoryList>
     }
   }
 
-  void _bookAgain(Map<String, dynamic> item) {
+  Future<void> _leaveReview(Map<String, dynamic> item) async {
     final studio = item['studio'] is Map
         ? Map<String, dynamic>.from(item['studio'] as Map)
         : <String, dynamic>{};
     final studioId = (studio['id'] ?? item['studioId'] ?? '').toString();
     final studioName = (studio['name'] ?? 'Studio').toString();
+    final enrollmentId = (item['enrollmentId'] ?? '').toString();
     if (studioId.isEmpty) {
       ScaffoldMessenger.maybeOf(context)?.showSnackBar(
-        const SnackBar(content: Text('Studio is unavailable for rebooking')),
+        const SnackBar(content: Text('Studio is unavailable')),
       );
       return;
     }
-    Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (_) => PublicStudioScheduleScreen(
-          studioId: studioId,
-          studioName: studioName,
-        ),
-      ),
+    if (enrollmentId.isNotEmpty) {
+      setState(() => _submittingReviewEnrollmentIds.add(enrollmentId));
+    }
+    final submitted = await showClientLeaveReviewSheet(
+      context,
+      studioId: studioId,
+      studioName: studioName,
+      enrollmentId: enrollmentId.isNotEmpty ? enrollmentId : null,
     );
+    if (!mounted) return;
+    if (enrollmentId.isNotEmpty) {
+      setState(() => _submittingReviewEnrollmentIds.remove(enrollmentId));
+    }
+    if (submitted == true) {
+      ClientScheduleStore.invalidate();
+      ScaffoldMessenger.maybeOf(context)?.showSnackBar(
+        const SnackBar(content: Text('Thank you for your review')),
+      );
+      await _load(force: true);
+    }
   }
 
   @override
@@ -154,16 +167,22 @@ class _ClientPassesHistoryListState extends State<ClientPassesHistoryList>
             item,
           );
 
+          final enrollmentId = (item['enrollmentId'] ?? '').toString();
+          final hasReview = item['hasReview'] == true;
+          final isReviewing = enrollmentId.isNotEmpty &&
+              _submittingReviewEnrollmentIds.contains(enrollmentId);
+
           return OwnerDailyScheduleSessionCard(
             session: session,
             subtitleLabel: presentation.subtitleLabel,
             showLocationPin: presentation.showLocationPin,
             showSubtitleLeadingIcon: presentation.showSubtitleLeadingIcon,
             trainerLine: presentation.trainerLine,
+            showDateAboveTime: true,
             dimPastSessions: false,
-            bookActionLabel: 'Book again',
-            onBookAgain: () => _bookAgain(item),
-            onTap: () => _bookAgain(item),
+            onLeaveReview: hasReview ? null : () => _leaveReview(item),
+            leaveReviewLoading: isReviewing,
+            onTap: () {},
           );
         },
       ),
