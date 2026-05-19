@@ -68,7 +68,10 @@ class PushNotificationService {
 
       FirebaseMessaging.onMessage.listen(_onForegroundMessage);
       FirebaseMessaging.onMessageOpenedApp.listen(_onMessageOpenedApp);
-      final initial = await _messaging.getInitialMessage();
+      final initial = await _messaging.getInitialMessage().timeout(
+        const Duration(seconds: 5),
+        onTimeout: () => null,
+      );
       if (initial != null) {
         _log('initialMessage: ${initial.notification?.title}');
         _notifyReceived(

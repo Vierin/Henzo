@@ -84,6 +84,11 @@
 				<key>NSExceptionAllowsInsecureHTTPLoads</key>
 				<true/>
 			</dict>
+			<key>192.168.110.9</key>
+			<dict>
+				<key>NSExceptionAllowsInsecureHTTPLoads</key>
+				<true/>
+			</dict>
 		</dict>
 	</dict>
 	<key>CFBundleURLTypes</key>
@@ -96,6 +101,16 @@
 			<key>CFBundleURLSchemes</key>
 			<array>
 				<string>henzo</string>
+			</array>
+		</dict>
+		<dict>
+			<key>CFBundleTypeRole</key>
+			<string>Editor</string>
+			<key>CFBundleURLName</key>
+			<string>google-sign-in</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>com.googleusercontent.apps.601312951370-dgu1ua1lnb32mmk7oqpjbrbpvod67vg3</string>
 			</array>
 		</dict>
 	</array>

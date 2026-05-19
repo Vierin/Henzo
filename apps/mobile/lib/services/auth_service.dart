@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io' show Platform;
-
 import 'package:flutter/foundation.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:http/http.dart' as http;
@@ -215,6 +214,7 @@ class AuthService extends ChangeNotifier {
         serverClientId: webClientId,
         clientId: Platform.isIOS ? iosClientId : null,
       );
+      await googleSignIn.signOut();
       final account = await googleSignIn.signIn();
       if (account == null) {
         if (kDebugMode) debugPrint('[Auth] Google sign in cancelled');
@@ -686,6 +686,19 @@ class AuthService extends ChangeNotifier {
         errorL10nKey: AuthErrorKeys.network,
         errorRaw: e.toString(),
       );
+    }
+  }
+
+  String _extractNonceFromJwt(String token) {
+    try {
+      final parts = token.split('.');
+      if (parts.length != 3) return '';
+      final payload = base64Url.normalize(parts[1]);
+      final decoded = jsonDecode(utf8.decode(base64Url.decode(payload)))
+          as Map<String, dynamic>;
+      return decoded['nonce'] as String? ?? '';
+    } catch (_) {
+      return '';
     }
   }
 }
