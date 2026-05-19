@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import '../constants/colors.dart';
 import '../l10n/app_locales.dart';
 import '../l10n/locale_provider.dart';
+import 'auth/auth_form_styles.dart';
 
 /// Shared language picker: bottom sheet with flags, radios, and Cancel.
 /// Optional [onLocaleSelected] (e.g. to re-register push token after change).
@@ -167,19 +168,43 @@ class _LanguageRow extends StatelessWidget {
                   ),
                 ),
               ),
-              Icon(
-                code == groupValue
-                    ? Icons.radio_button_checked
-                    : Icons.radio_button_unchecked,
-                color: code == groupValue
-                    ? AppColors.primary500
-                    : AppColors.neutral400,
-                size: 24,
-              ),
+              _LanguageRadioDot(selected: code == groupValue),
             ],
           ),
         ),
       ),
+    );
+  }
+}
+
+/// Same accent radio as [AddTrainingScreen] step 2.
+class _LanguageRadioDot extends StatelessWidget {
+  const _LanguageRadioDot({required this.selected});
+
+  final bool selected;
+
+  @override
+  Widget build(BuildContext context) {
+    const accent = AuthFormStyles.accentIcon;
+    return Container(
+      width: 22,
+      height: 22,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        border: Border.all(color: accent, width: 2),
+        color: selected ? accent : Colors.transparent,
+      ),
+      alignment: Alignment.center,
+      child: selected
+          ? Container(
+              width: 8,
+              height: 8,
+              decoration: const BoxDecoration(
+                shape: BoxShape.circle,
+                color: Colors.white,
+              ),
+            )
+          : null,
     );
   }
 }

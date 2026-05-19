@@ -1,0 +1,35 @@
+import 'package:flutter/material.dart';
+
+import '../services/dashboard_api_service.dart';
+import '../screens/owner_edit_training_session_screen.dart';
+import '../widgets/training/owner_session_edit_scope_dialog.dart';
+
+/// Opens scope picker, then pushes [OwnerEditTrainingSessionScreen] on the
+/// same [Navigator] as [context] (must be the session detail route).
+Future<bool?> openOwnerEditTrainingSessionFlow(
+  BuildContext context,
+  OwnerTrainingSession session,
+) async {
+  if (session.sessionId.isEmpty) return null;
+  final scope = await showOwnerSessionEditScopeDialog(context);
+  if (!context.mounted || scope == null) return null;
+  return pushOwnerEditTrainingSession(context, session, scope);
+}
+
+Future<bool?> pushOwnerEditTrainingSession(
+  BuildContext context,
+  OwnerTrainingSession session,
+  OwnerSessionEditScope scope,
+) {
+  final args = <String, dynamic>{
+    ...session.toRouteArgs(),
+    if (scope == OwnerSessionEditScope.thisAndFollowing)
+      'applyToFollowing': true,
+  };
+  return Navigator.of(context).push<bool>(
+    MaterialPageRoute<bool>(
+      builder: (_) => const OwnerEditTrainingSessionScreen(),
+      settings: RouteSettings(arguments: args),
+    ),
+  );
+}

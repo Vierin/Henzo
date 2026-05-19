@@ -10,16 +10,25 @@ class ServicesApiService {
     String id, {
     required List<Map<String, dynamic>> slots,
     required DateTime effectiveFrom,
+    int? capacity,
+    String? locationId,
   }) async {
     try {
+      final body = <String, dynamic>{
+        'slots': slots,
+        'effectiveFrom': effectiveFrom.toUtc().toIso8601String(),
+      };
+      if (capacity != null && capacity > 0) {
+        body['capacity'] = capacity;
+      }
+      if (locationId != null) {
+        body['locationId'] = locationId;
+      }
       final map =
           await ApiClient.patch(
                 '/trainings/$id/schedule',
                 accessToken,
-                body: {
-                  'slots': slots,
-                  'effectiveFrom': effectiveFrom.toUtc().toIso8601String(),
-                },
+                body: body,
               )
               as Map<String, dynamic>?;
       if (map == null) return null;
@@ -125,6 +134,36 @@ class ServicesApiService {
     } on ApiException catch (e) {
       if (kDebugMode) debugPrint('[ServicesAPI] create: $e');
       return null;
+    }
+  }
+
+  /// PATCH /trainings/:id/session-defaults — capacity/location for future sessions.
+  static Future<bool> updateTrainingSessionDefaults(
+    String accessToken,
+    String id, {
+    int? capacity,
+    String? locationId,
+  }) async {
+    try {
+      final body = <String, dynamic>{};
+      if (capacity != null && capacity > 0) {
+        body['capacity'] = capacity;
+      }
+      if (locationId != null) {
+        body['locationId'] = locationId;
+      }
+      if (body.isEmpty) return true;
+      await ApiClient.patch(
+        '/trainings/$id/session-defaults',
+        accessToken,
+        body: body,
+      );
+      return true;
+    } on ApiException catch (e) {
+      if (kDebugMode) {
+        debugPrint('[ServicesAPI] updateTrainingSessionDefaults: $e');
+      }
+      return false;
     }
   }
 

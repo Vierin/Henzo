@@ -95,6 +95,8 @@ class _AddressPickerModalState extends State<AddressPickerModal> {
   bool _loadingSuggestions = false;
   bool _reverseGeocodeLoading = false;
   bool _currentLocationLoading = false;
+  /// Bumps when user types in address; in-flight [_useCurrentLocation] ignores stale session.
+  int _locationLoadSession = 0;
   Timer? _debounceTimer;
 
   double? _lat;
@@ -330,6 +332,12 @@ class _AddressPickerModalState extends State<AddressPickerModal> {
   }
 
   void _onSearchChanged(String value) {
+    if (value.isNotEmpty) {
+      _locationLoadSession++;
+      if (_currentLocationLoading) {
+        setState(() => _currentLocationLoading = false);
+      }
+    }
     _debounceTimer?.cancel();
     setState(() {
       _address = value;
@@ -440,6 +448,7 @@ class _AddressPickerModalState extends State<AddressPickerModal> {
     if (!await _ensureLocationAccess(locale)) return;
     if (!mounted) return;
 
+    final session = ++_locationLoadSession;
     setState(() {
       _currentLocationLoading = true;
       _showSuggestions = false;
@@ -447,7 +456,7 @@ class _AddressPickerModalState extends State<AddressPickerModal> {
 
     try {
       final resolved = await _resolveDevicePosition();
-      if (!mounted) return;
+      if (!mounted || session != _locationLoadSession) return;
       if (resolved == null) {
         _showPickerSnack(
           '${t('addressPicker.locationDetectFailed')}\n'
@@ -460,6 +469,7 @@ class _AddressPickerModalState extends State<AddressPickerModal> {
       if (resolved.isCached) {
         _showPickerSnack(t('addressPicker.locationUsingCachedPosition'));
       }
+      if (!mounted || session != _locationLoadSession) return;
 
       ReverseGeocodeResult? result;
       try {
@@ -471,6 +481,8 @@ class _AddressPickerModalState extends State<AddressPickerModal> {
         if (kDebugMode) debugPrint('[AddressPicker] reverse geocode: $e');
         result = null;
       }
+
+      if (!mounted || session != _locationLoadSession) return;
 
       final geocoded = result?.address.trim() ?? '';
       final address = geocoded.isNotEmpty
@@ -485,10 +497,10 @@ class _AddressPickerModalState extends State<AddressPickerModal> {
       );
     } catch (e) {
       if (kDebugMode) debugPrint('[AddressPicker] useCurrentLocation: $e');
-      if (!mounted) return;
+      if (!mounted || session != _locationLoadSession) return;
       _showPickerSnack(t('addressPicker.locationDetectFailed'));
     } finally {
-      if (mounted) {
+      if (mounted && session == _locationLoadSession) {
         setState(() => _currentLocationLoading = false);
       }
     }
@@ -850,6 +862,29 @@ class _AddressPickerModalState extends State<AddressPickerModal> {
                           ],
                         ),
                       ),
+                      if (!_mapInteractive)
+                        Positioned.fill(
+                          child: Container(
+                            color: Colors.grey.withValues(alpha: 0.4),
+                            alignment: Alignment.center,
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 24,
+                              ),
+                              child: Text(
+                                _hasLocationName
+                                    ? t('addressPicker.enableMapHint')
+                                    : t('addressPicker.enterNameFirstHint'),
+                                style: const TextStyle(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w500,
+                                  color: Colors.white,
+                                ),
+                                textAlign: TextAlign.center,
+                              ),
+                            ),
+                          ),
+                        ),
                       if (_showSuggestions && _suggestions.isNotEmpty)
                         Positioned(
                           top: 8,
@@ -923,29 +958,6 @@ class _AddressPickerModalState extends State<AddressPickerModal> {
                           child: Center(
                             child: CircularProgressIndicator(
                               color: AppColors.primary500,
-                            ),
-                          ),
-                        ),
-                      if (!_mapInteractive)
-                        Positioned.fill(
-                          child: Container(
-                            color: Colors.grey.withValues(alpha: 0.4),
-                            alignment: Alignment.center,
-                            child: Padding(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 24,
-                              ),
-                              child: Text(
-                                _hasLocationName
-                                    ? t('addressPicker.enableMapHint')
-                                    : t('addressPicker.enterNameFirstHint'),
-                                style: const TextStyle(
-                                  fontSize: 13,
-                                  fontWeight: FontWeight.w500,
-                                  color: Colors.white,
-                                ),
-                                textAlign: TextAlign.center,
-                              ),
                             ),
                           ),
                         ),

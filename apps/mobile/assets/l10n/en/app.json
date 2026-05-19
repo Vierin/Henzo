@@ -433,6 +433,7 @@
 			"trainings": "Trainings",
 			"team": "Team",
 			"subscriptionBilling": "Subscription & billing",
+			"activeProPlan": "Active Pro plan",
 			"bookingWindowDays": "{count} days",
 			"trainingsCount": "{count}",
 			"bookingPeriodTitle": "Booking period",

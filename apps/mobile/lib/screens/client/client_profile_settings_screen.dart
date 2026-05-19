@@ -58,7 +58,7 @@ class ClientProfileSettingsScreen extends StatelessWidget {
                 SettingsGroupCard(
                   children: [
                     SettingsListTile(
-                      icon: Icons.person_outline,
+                      svgAsset: 'assets/icons/icon-profile.svg',
                       title: locale.t('profileForm.personalData'),
                       onTap: () {
                         Navigator.of(context).push(
@@ -89,7 +89,7 @@ class ClientProfileSettingsScreen extends StatelessWidget {
                           _openWebPage(context, locale, '/terms-of-service'),
                     ),
                     SettingsListTile(
-                      icon: Icons.privacy_tip_outlined,
+                      svgAsset: 'assets/icons/icon-settings.svg',
                       title: locale.t('settings.privacyPolicy'),
                       onTap: () =>
                           _openWebPage(context, locale, '/privacy-policy'),

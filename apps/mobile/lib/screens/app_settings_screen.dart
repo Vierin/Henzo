@@ -19,6 +19,7 @@ import '../widgets/language_selector_modal.dart';
 import 'account_settings_screen.dart';
 import '../widgets/settings/feedback_sheet.dart';
 import '../widgets/settings/owner_booking_period_sheet.dart';
+import '../widgets/settings/settings_list_widgets.dart';
 import '../widgets/settings/settings_typography.dart';
 import 'settings_screen.dart';
 import 'services_screen.dart';
@@ -161,8 +162,18 @@ class _AppSettingsScreenState extends State<AppSettingsScreen> {
     }
   }
 
+  bool get _hasActiveProPlan {
+    final sub = _subscription;
+    if (sub == null) return false;
+    if (sub.type.toUpperCase() != 'PRO') return false;
+    return (sub.amount ?? 0) > 0;
+  }
+
   String _planBadgeLabel(LocaleProvider locale) {
     if (_subscriptionLoading) return locale.t('common.loading');
+    if (_hasActiveProPlan) {
+      return locale.t('settings.owner.activeProPlan');
+    }
     final sub = _subscription;
     final isFree =
         sub == null ||
@@ -253,6 +264,7 @@ class _AppSettingsScreenState extends State<AppSettingsScreen> {
                         ? user!.avatarUrl!.trim()
                         : null,
                     planLabel: _planBadgeLabel(locale),
+                    isProPlan: _hasActiveProPlan,
                     onTap: () => Navigator.of(context).push(
                       MaterialPageRoute(
                         builder: (_) => const AccountSettingsScreen(),
@@ -260,14 +272,14 @@ class _AppSettingsScreenState extends State<AppSettingsScreen> {
                     ),
                   ),
                   const SizedBox(height: 20),
-                  _SectionLabel(
+                  SettingsSectionLabel(
                     title: locale.t('settings.owner.sectionPayments'),
                   ),
                   const SizedBox(height: 8),
-                  _SettingsGroupCard(
+                  SettingsGroupCard(
                     children: [
-                      _SettingsTile(
-                        icon: Icons.credit_card_outlined,
+                      SettingsListTile(
+                        svgAsset: 'assets/icons/icon-card.svg',
                         title: locale.t('settings.owner.subscriptionBilling'),
                         onTap: () async {
                           await Navigator.of(context).push(
@@ -281,14 +293,14 @@ class _AppSettingsScreenState extends State<AppSettingsScreen> {
                     ],
                   ),
                   const SizedBox(height: 16),
-                  _SectionLabel(
+                  SettingsSectionLabel(
                     title: locale.t('settings.owner.sectionStudio'),
                   ),
                   const SizedBox(height: 8),
-                  _SettingsGroupCard(
+                  SettingsGroupCard(
                     children: [
-                      _SettingsTile(
-                        icon: Icons.storefront_outlined,
+                      SettingsListTile(
+                        svgAsset: 'assets/icons/icon-studio.svg',
                         title: locale.t('settings.owner.studioProfile'),
                         trailingText: _studioName?.trim() ?? '',
                         onTap: () async {
@@ -300,14 +312,14 @@ class _AppSettingsScreenState extends State<AppSettingsScreen> {
                           if (mounted) await _loadData();
                         },
                       ),
-                      _SettingsTile(
-                        icon: Icons.calendar_month_outlined,
+                      SettingsListTile(
+                        svgAsset: 'assets/icons/icon-calendar.svg',
                         title: locale.t('settings.owner.onlineBooking'),
                         trailingText: bookingTrailing,
                         onTap: _openBookingPeriodSheet,
                       ),
-                      _SettingsTile(
-                        icon: Icons.fitness_center_outlined,
+                      SettingsListTile(
+                        svgAsset: 'assets/icons/icon-train.svg',
                         title: locale.t('settings.owner.trainings'),
                         trailingText: _statsLoading
                             ? ''
@@ -320,8 +332,8 @@ class _AppSettingsScreenState extends State<AppSettingsScreen> {
                           ),
                         ),
                       ),
-                      _SettingsTile(
-                        icon: Icons.groups_outlined,
+                      SettingsListTile(
+                        svgAsset: 'assets/icons/icon-people.svg',
                         title: locale.t('settings.owner.team'),
                         trailingText: _statsLoading ? '' : '$_staffCount',
                         onTap: () => Navigator.of(context).push(
@@ -333,11 +345,13 @@ class _AppSettingsScreenState extends State<AppSettingsScreen> {
                     ],
                   ),
                   const SizedBox(height: 16),
-                  _SectionLabel(title: locale.t('settings.owner.sectionApp')),
+                  SettingsSectionLabel(
+                    title: locale.t('settings.owner.sectionApp'),
+                  ),
                   const SizedBox(height: 8),
-                  _SettingsGroupCard(
+                  SettingsGroupCard(
                     children: [
-                      _SettingsTile(
+                      SettingsListTile(
                         icon: Icons.language_outlined,
                         title: locale.t('settings.changeLanguage'),
                         onTap: () => showLanguageSelectorModal(
@@ -356,19 +370,19 @@ class _AppSettingsScreenState extends State<AppSettingsScreen> {
                           },
                         ),
                       ),
-                      _SettingsTile(
-                        icon: Icons.privacy_tip_outlined,
+                      SettingsListTile(
+                        svgAsset: 'assets/icons/icon-shield.svg',
                         title: locale.t('settings.privacyPolicy'),
                         onTap: () =>
                             _openWebPage(context, locale, '/privacy-policy'),
                       ),
-                      _SettingsTile(
+                      SettingsListTile(
                         icon: Icons.description_outlined,
                         title: locale.t('settings.termsOfUse'),
                         onTap: () =>
                             _openWebPage(context, locale, '/terms-of-service'),
                       ),
-                      _SettingsTile(
+                      SettingsListTile(
                         icon: Icons.chat_bubble_outline,
                         title: locale.t('settings.feedback.sendFeedback'),
                         onTap: () => showFeedbackSheet(context),
@@ -376,7 +390,7 @@ class _AppSettingsScreenState extends State<AppSettingsScreen> {
                     ],
                   ),
                   const SizedBox(height: 20),
-                  _LogoutButton(
+                  SettingsLogoutButton(
                     label: locale.t('settings.logOut'),
                     onTap: () => context.read<AuthService>().logout(),
                   ),
@@ -390,20 +404,6 @@ class _AppSettingsScreenState extends State<AppSettingsScreen> {
   }
 }
 
-class _SectionLabel extends StatelessWidget {
-  const _SectionLabel({required this.title});
-
-  final String title;
-
-  @override
-  Widget build(BuildContext context) {
-    return Text(
-      title.toUpperCase(),
-      style: SettingsTypography.sectionTitle(context),
-    );
-  }
-}
-
 class _OwnerHeroCard extends StatelessWidget {
   const _OwnerHeroCard({
     required this.name,
@@ -411,6 +411,7 @@ class _OwnerHeroCard extends StatelessWidget {
     required this.initials,
     required this.avatarUrl,
     required this.planLabel,
+    required this.isProPlan,
     required this.onTap,
   });
 
@@ -419,9 +420,10 @@ class _OwnerHeroCard extends StatelessWidget {
   final String initials;
   final String? avatarUrl;
   final String planLabel;
+  final bool isProPlan;
   final VoidCallback onTap;
 
-  static const double _radius = 16;
+  static const double _radius = 14;
   static const double _avatarRadius = 38;
 
   @override
@@ -486,17 +488,21 @@ class _OwnerHeroCard extends StatelessWidget {
                     Container(
                       padding: const EdgeInsets.symmetric(
                         horizontal: 10,
-                        vertical: 4,
+                        vertical: 5,
                       ),
                       decoration: BoxDecoration(
-                        color: AppColors.primary100,
-                        borderRadius: BorderRadius.circular(8),
+                        color: isProPlan
+                            ? kSettingsProBadgeBackground
+                            : AppColors.primary100,
+                        borderRadius: BorderRadius.circular(20),
                       ),
                       child: Text(
                         planLabel,
-                        style: const TextStyle(
-                          color: AppColors.primary700,
-                          fontSize: 13,
+                        style: TextStyle(
+                          color: isProPlan
+                              ? kSettingsProBadgeText
+                              : AppColors.primary700,
+                          fontSize: 12,
                           fontWeight: FontWeight.w600,
                         ),
                       ),
@@ -509,158 +515,6 @@ class _OwnerHeroCard extends StatelessWidget {
                 color: AppColors.textSecondary,
                 size: 22,
               ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _SettingsGroupCard extends StatelessWidget {
-  const _SettingsGroupCard({required this.children});
-
-  final List<Widget> children;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        color: AppColors.backgroundPrimary,
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Column(
-        children: [
-          for (int i = 0; i < children.length; i++) ...[
-            children[i],
-            if (i != children.length - 1)
-              const Divider(
-                height: 1,
-                indent: 58,
-                endIndent: 12,
-                color: AppColors.borderPrimary,
-              ),
-          ],
-        ],
-      ),
-    );
-  }
-}
-
-class _SettingsTile extends StatelessWidget {
-  const _SettingsTile({
-    required this.icon,
-    required this.title,
-    required this.onTap,
-    this.trailingText = '',
-  });
-
-  final IconData icon;
-  final String title;
-  final String trailingText;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final trailing = Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        if (trailingText.isNotEmpty) ...[
-          ConstrainedBox(
-            constraints: BoxConstraints(
-              maxWidth: MediaQuery.sizeOf(context).width * 0.34,
-            ),
-            child: Text(
-              trailingText,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              textAlign: TextAlign.right,
-              style: const TextStyle(
-                color: AppColors.textSecondary,
-                fontSize: 14,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-          ),
-          const SizedBox(width: 4),
-        ],
-        const Icon(
-          Icons.chevron_right,
-          size: 20,
-          color: AppColors.textSecondary,
-        ),
-      ],
-    );
-
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: onTap,
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-          child: Row(
-            children: [
-              Container(
-                width: 40,
-                height: 40,
-                decoration: BoxDecoration(
-                  color: AppColors.primary100,
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Icon(icon, color: AppColors.primary500, size: 22),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Text(
-                  title,
-                  style: const TextStyle(
-                    color: AppColors.textPrimary,
-                    fontSize: 15,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ),
-              trailing,
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _LogoutButton extends StatelessWidget {
-  const _LogoutButton({required this.label, required this.onTap});
-
-  final String label;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(12),
-        child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 14),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: AppColors.error500, width: 1.5),
-          ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Text(
-                label,
-                style: const TextStyle(
-                  fontSize: 15,
-                  fontWeight: FontWeight.w600,
-                  color: AppColors.error500,
-                ),
-              ),
-              const SizedBox(width: 8),
-              const Icon(Icons.logout, size: 20, color: AppColors.error500),
             ],
           ),
         ),

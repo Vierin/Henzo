@@ -8,6 +8,7 @@ import '../screens/registration_role_screen.dart';
 import '../services/auth_service.dart';
 import '../utils/auth_ui_result.dart';
 import '../utils/show_api_error.dart';
+import '../widgets/auth/auth_form_styles.dart';
 import '../widgets/language_selector_modal.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -18,7 +19,6 @@ class LoginScreen extends StatefulWidget {
 }
 
 class _LoginScreenState extends State<LoginScreen> {
-  static const _placeholderMuted = Color(0x993F3F3F);
   final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
@@ -228,123 +228,41 @@ class _LoginScreenState extends State<LoginScreen> {
                     controller: _emailController,
                     keyboardType: TextInputType.emailAddress,
                     textInputAction: TextInputAction.next,
-                    decoration: InputDecoration(
+                    decoration: AuthFormStyles.fieldDecoration(
                       hintText: locale.t('auth.email'),
-                      hintStyle: const TextStyle(
-                        color: _placeholderMuted,
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                      ),
-                      prefixIcon: const Padding(
-                        padding: EdgeInsets.only(left: 22, right: 8),
-                        child: Icon(
-                          Icons.email,
-                          color: _placeholderMuted,
-                          size: 20,
-                        ),
-                      ),
-                      prefixIconConstraints: const BoxConstraints(
-                        minWidth: 0,
-                        minHeight: 0,
-                      ),
-                      filled: true,
-                      fillColor: AppColors.backgroundPrimary,
-                      contentPadding: const EdgeInsets.only(
-                        top: 18,
-                        bottom: 18,
-                        right: 18,
-                      ),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(999),
-                        borderSide: BorderSide.none,
-                      ),
-                      enabledBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(999),
-                        borderSide: BorderSide.none,
-                      ),
-                      focusedBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(999),
-                        borderSide: const BorderSide(
-                          color: AppColors.primary500,
-                          width: 1.2,
-                        ),
-                      ),
+                      prefixIcon: Icons.email_rounded,
                     ),
-                    style: const TextStyle(
-                      fontSize: 19,
-                      color: AppColors.textPrimary,
-                    ),
+                    style: AuthFormStyles.fieldTextStyle,
                     validator: (v) {
                       if (v == null || v.isEmpty) return locale.t('auth.enterEmail');
                       if (!v.contains('@')) return locale.t('auth.invalidEmail');
                       return null;
                     },
                   ),
-                  const SizedBox(height: 10),
+                  const SizedBox(height: AuthFormStyles.fieldGap),
                   TextFormField(
                     controller: _passwordController,
                     obscureText: _obscurePassword,
                     textInputAction: TextInputAction.done,
                     onFieldSubmitted: (_) => _submit(),
-                    decoration: InputDecoration(
+                    decoration: AuthFormStyles.fieldDecoration(
                       hintText: locale.t('auth.password'),
-                      hintStyle: const TextStyle(
-                        color: _placeholderMuted,
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                      ),
-                      prefixIcon: const Padding(
-                        padding: EdgeInsets.only(left: 22, right: 8),
-                        child: Icon(
-                          Icons.lock,
-                          color: _placeholderMuted,
-                          size: 20,
-                        ),
-                      ),
-                      prefixIconConstraints: const BoxConstraints(
-                        minWidth: 0,
-                        minHeight: 0,
-                      ),
+                      prefixIcon: Icons.lock_rounded,
                       suffixIcon: IconButton(
                         icon: Icon(
                           _obscurePassword
                               ? Icons.visibility_outlined
                               : Icons.visibility_off_outlined,
-                          color: _placeholderMuted,
+                          color: AuthFormStyles.hintMuted,
                           size: 22,
                         ),
-                        padding: EdgeInsets.only(right: 12),
+                        padding: const EdgeInsets.only(right: 12),
                         onPressed: () {
                           setState(() => _obscurePassword = !_obscurePassword);
                         },
                       ),
-                      filled: true,
-                      fillColor: AppColors.backgroundPrimary,
-                      contentPadding: const EdgeInsets.only(
-                        top: 18,
-                        bottom: 18,
-                        right: 18,
-                      ),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(999),
-                        borderSide: BorderSide.none,
-                      ),
-                      enabledBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(999),
-                        borderSide: BorderSide.none,
-                      ),
-                      focusedBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(999),
-                        borderSide: const BorderSide(
-                          color: AppColors.primary500,
-                          width: 1.2,
-                        ),
-                      ),
                     ),
-                    style: const TextStyle(
-                      fontSize: 19,
-                      color: AppColors.textPrimary,
-                    ),
+                    style: AuthFormStyles.fieldTextStyle,
                     validator: (v) {
                       if (v == null || v.isEmpty) return locale.t('auth.enterPassword');
                       if (v.length < 6) return locale.t('auth.passwordMin');
@@ -375,16 +293,10 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
                   const SizedBox(height: 24),
                   SizedBox(
-                    height: 50,
+                    height: AuthFormStyles.buttonHeight,
                     child: FilledButton(
                       onPressed: _isSubmitting ? null : _submit,
-                      style: FilledButton.styleFrom(
-                        backgroundColor: AppColors.primary500,
-                        foregroundColor: AppColors.textInverse,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(999),
-                        ),
-                      ),
+                      style: AuthFormStyles.primaryButtonStyle(),
                       child: _isSubmitting
                           ? const SizedBox(
                               height: 22,
@@ -451,7 +363,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
                   const SizedBox(height: 14),
                   SizedBox(
-                    height: 50,
+                    height: AuthFormStyles.buttonHeight,
                     child: OutlinedButton.icon(
                       onPressed: (_isSubmitting || _isGoogleLoading)
                           ? null
@@ -473,13 +385,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           color: AppColors.textPrimary,
                         ),
                       ),
-                      style: OutlinedButton.styleFrom(
-                        backgroundColor: AppColors.backgroundPrimary,
-                        side: BorderSide.none,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(999),
-                        ),
-                      ),
+                      style: AuthFormStyles.googleButtonStyle(),
                     ),
                   ),
                   const SizedBox(height: 8),

@@ -20,7 +20,7 @@ import '../../widgets/dashboard/owner_checklist_card.dart';
 import '../../widgets/dashboard/dashboard_setup_card.dart';
 import '../../models/training_location_item.dart';
 import '../../widgets/dashboard/owner_daily_schedule_block.dart';
-import '../../widgets/training/owner_session_edit_scope_dialog.dart';
+import '../../navigation/owner_session_navigation.dart';
 import '../owner_training_session_detail_screen.dart';
 import '../main_shell.dart';
 import '../settings_screen.dart';
@@ -282,7 +282,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   void _openSessionDetail(OwnerTrainingSession s) {
     Navigator.of(context).push<void>(
       MaterialPageRoute<void>(
-        builder: (_) => OwnerTrainingSessionDetailScreen(
+        builder: (detailCtx) => OwnerTrainingSessionDetailScreen(
           session: s,
           trainingColor: parseHexColor(s.trainingDisplayColorHex),
           venueName: _venueLabel(),
@@ -292,45 +292,26 @@ class _DashboardScreenState extends State<DashboardScreen> {
             _loadData();
           },
           onEditSession: s.sessionId.isNotEmpty
-              ? () async {
-                  final scope = await showOwnerSessionEditScopeDialog(context);
-                  if (!mounted || scope == null) return;
-                  final args = {
-                    ...s.toRouteArgs(),
-                    if (scope == OwnerSessionEditScope.thisAndFollowing)
-                      'applyToFollowing': true,
-                  };
-                  final changed = await Navigator.of(
-                    context,
-                  ).pushNamed<bool>('/owner/session/edit', arguments: args);
-                  if (changed == true) {
-                    if (!mounted) return;
-                    context.read<OwnerSessionsCache>().invalidate();
-                    await _loadData();
-                  }
-                }
+              ? () => _handleSessionEditFromDetail(detailCtx, s)
               : null,
         ),
       ),
     );
   }
 
-  Future<void> _openEditCurrentSession(OwnerTrainingSession s) async {
-    if (s.sessionId.isEmpty) return;
-    final scope = await showOwnerSessionEditScopeDialog(context);
-    if (!mounted || scope == null) return;
-    final args = {
-      ...s.toRouteArgs(),
-      if (scope == OwnerSessionEditScope.thisAndFollowing)
-        'applyToFollowing': true,
-    };
-    final changed = await Navigator.of(
-      context,
-    ).pushNamed<bool>('/owner/session/edit', arguments: args);
+  Future<void> _handleSessionEditFromDetail(
+    BuildContext detailCtx,
+    OwnerTrainingSession s,
+  ) async {
+    final changed = await openOwnerEditTrainingSessionFlow(detailCtx, s);
     if (changed == true && mounted) {
       context.read<OwnerSessionsCache>().invalidate();
       await _loadData();
     }
+  }
+
+  Future<void> _openEditCurrentSession(OwnerTrainingSession s) async {
+    await _handleSessionEditFromDetail(context, s);
   }
 
   // --- UI ---------------------------------------------------------------

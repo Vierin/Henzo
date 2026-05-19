@@ -484,6 +484,12 @@ export class TrainingsService {
     if (slots.length === 0) {
       throw new Error('At least one recurrence slot is required');
     }
+    const nextCapacity =
+      dto.capacity != null && dto.capacity > 0 ? dto.capacity : undefined;
+    const nextLocationId =
+      dto.locationId !== undefined
+        ? dto.locationId?.trim() || null
+        : undefined;
     const invalidSlot = slots.find(
       (s) =>
         !Number.isInteger(s.day) ||
@@ -545,7 +551,9 @@ export class TrainingsService {
         id: true,
         trainerId: true,
         capacity: true,
+        locationId: true,
         startsAt: true,
+        endsAt: true,
         Enrollments: { select: { status: true } },
       },
       orderBy: { startsAt: 'asc' },
@@ -600,9 +608,28 @@ export class TrainingsService {
           row.startsAt.getTime() !== d.startsAt.getTime() ||
           row.endsAt.getTime() !== d.endsAt.getTime();
         if (needsUpdate) {
+          const patch: Record<string, unknown> = {
+            startsAt: d.startsAt,
+            endsAt: d.endsAt,
+          };
+          if (nextCapacity != null) patch.capacity = nextCapacity;
+          if (nextLocationId !== undefined) {
+            patch.locationId = nextLocationId;
+          }
           await this.prisma.trainingSession.update({
             where: { id: row.id },
-            data: { startsAt: d.startsAt, endsAt: d.endsAt },
+            data: patch,
+          });
+          updatedCount += 1;
+        } else if (nextCapacity != null || nextLocationId !== undefined) {
+          const patch: Record<string, unknown> = {};
+          if (nextCapacity != null) patch.capacity = nextCapacity;
+          if (nextLocationId !== undefined) {
+            patch.locationId = nextLocationId;
+          }
+          await this.prisma.trainingSession.update({
+            where: { id: row.id },
+            data: patch,
           });
           updatedCount += 1;
         }
@@ -631,9 +658,13 @@ export class TrainingsService {
           studioId: training.studioId,
           trainingId: id,
           trainerId: template.trainerId ?? null,
+          locationId:
+            nextLocationId !== undefined
+              ? nextLocationId
+              : template.locationId ?? null,
           startsAt: d.startsAt,
           endsAt: d.endsAt,
-          capacity: template.capacity ?? 1,
+          capacity: nextCapacity ?? template.capacity ?? 1,
           status: 'ACTIVE',
         },
       });
@@ -659,6 +690,40 @@ export class TrainingsService {
         skippedConflicts,
       },
     };
+  }
+
+  async updateTrainingFutureSessionDefaults(
+    id: string,
+    data: { capacity?: number; locationId?: string },
+  ) {
+    const training = await this.training.findUnique({
+      where: { id },
+      select: { studioId: true },
+    });
+    if (!training) {
+      throw new Error('Training not found');
+    }
+    const patch: Record<string, unknown> = {};
+    if (data.capacity != null && data.capacity > 0) {
+      patch.capacity = data.capacity;
+    }
+    if (data.locationId !== undefined) {
+      patch.locationId = data.locationId?.trim() || null;
+    }
+    if (Object.keys(patch).length === 0) {
+      return { success: true, updatedCount: 0 };
+    }
+    const rangeStart = this.normalizeDateOnly(new Date());
+    const result = await this.prisma.trainingSession.updateMany({
+      where: {
+        trainingId: id,
+        studioId: training.studioId,
+        status: 'ACTIVE',
+        startsAt: { gte: rangeStart },
+      },
+      data: patch,
+    });
+    return { success: true, updatedCount: result.count };
   }
 
   async deleteTraining(id: string) {

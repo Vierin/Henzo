@@ -15,8 +15,7 @@ import '../services/dashboard_api_service.dart';
 import '../services/notifications_store.dart';
 import '../utils/color_hex.dart';
 import '../utils/show_api_error.dart';
-import '../widgets/training/owner_session_edit_scope_dialog.dart';
-import 'main_shell.dart';
+import '../navigation/owner_session_navigation.dart';
 import 'owner_training_session_detail_screen.dart';
 
 class NotificationsScreen extends StatefulWidget {
@@ -806,7 +805,6 @@ Future<void> _openBookingSessionDetail(
   } catch (_) {}
 
   final venue = salon?.name?.trim();
-  final shell = context.findAncestorStateOfType<MainShellState>();
 
   if (!context.mounted) return;
   await Navigator.of(context).push<void>(
@@ -820,17 +818,13 @@ Future<void> _openBookingSessionDetail(
         },
         onEditSession: match.sessionId.isNotEmpty
             ? () async {
-                final scope = await showOwnerSessionEditScopeDialog(navCtx);
-                if (!navCtx.mounted || scope == null) return;
-                final args = {
-                  ...match!.toRouteArgs(),
-                  if (scope == OwnerSessionEditScope.thisAndFollowing)
-                    'applyToFollowing': true,
-                };
-                shell?.navigateToTab0Route(
-                  '/owner/session/edit',
-                  arguments: args,
+                final changed = await openOwnerEditTrainingSessionFlow(
+                  navCtx,
+                  match!,
                 );
+                if (changed == true && navCtx.mounted) {
+                  navCtx.read<OwnerSessionsCache>().invalidate();
+                }
               }
             : null,
       ),

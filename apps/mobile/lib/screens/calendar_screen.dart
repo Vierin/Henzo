@@ -14,7 +14,7 @@ import '../../utils/show_api_error.dart';
 import '../../utils/color_hex.dart';
 import '../../widgets/dashboard/owner_daily_schedule_block.dart';
 import '../../widgets/schedule/calendar_day_pill.dart';
-import '../../widgets/training/owner_session_edit_scope_dialog.dart';
+import '../../navigation/owner_session_navigation.dart';
 import 'main_shell.dart';
 import 'owner_training_session_detail_screen.dart';
 
@@ -766,14 +766,10 @@ class CalendarScreenState extends State<CalendarScreen> {
                                           }
                                         }
                                       }
-                                      final shell = context
-                                          .findAncestorStateOfType<
-                                            MainShellState
-                                          >();
                                       await Navigator.of(context)
                                           .push<void>(
                                             MaterialPageRoute<void>(
-                                              builder: (_) =>
+                                              builder: (detailCtx) =>
                                                   OwnerTrainingSessionDetailScreen(
                                                     session: s,
                                                     trainingColor:
@@ -795,28 +791,21 @@ class CalendarScreenState extends State<CalendarScreen> {
                                                     onEditSession:
                                                         s.sessionId.isNotEmpty
                                                         ? () async {
-                                                            final scope =
-                                                                await showOwnerSessionEditScopeDialog(
-                                                              context,
+                                                            final changed =
+                                                                await openOwnerEditTrainingSessionFlow(
+                                                              detailCtx,
+                                                              s,
                                                             );
-                                                            if (!mounted ||
-                                                                scope ==
-                                                                    null) {
-                                                              return;
+                                                            if (changed ==
+                                                                    true &&
+                                                                mounted) {
+                                                              context
+                                                                  .read<
+                                                                    OwnerSessionsCache
+                                                                  >()
+                                                                  .invalidate();
+                                                              await _loadData();
                                                             }
-                                                            final args = {
-                                                              ...s.toRouteArgs(),
-                                                              if (scope ==
-                                                                  OwnerSessionEditScope
-                                                                      .thisAndFollowing)
-                                                                'applyToFollowing':
-                                                                    true,
-                                                            };
-                                                            shell
-                                                                ?.navigateToTab0Route(
-                                                              '/owner/session/edit',
-                                                              arguments: args,
-                                                            );
                                                           }
                                                         : null,
                                                   ),

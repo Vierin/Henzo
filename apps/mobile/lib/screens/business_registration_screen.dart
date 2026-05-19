@@ -5,6 +5,7 @@ import '../constants/colors.dart';
 import '../l10n/locale_provider.dart';
 import '../services/auth_service.dart';
 import '../utils/show_api_error.dart';
+import '../widgets/auth/auth_form_styles.dart';
 
 class BusinessRegistrationScreen extends StatefulWidget {
   const BusinessRegistrationScreen({super.key});
@@ -16,7 +17,6 @@ class BusinessRegistrationScreen extends StatefulWidget {
 
 class _BusinessRegistrationScreenState
     extends State<BusinessRegistrationScreen> {
-  static const _placeholderMuted = Color(0x993F3F3F);
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
   final _emailController = TextEditingController();
@@ -148,28 +148,22 @@ class _BusinessRegistrationScreenState
                 TextFormField(
                   controller: _nameController,
                   textInputAction: TextInputAction.next,
-                  decoration: _roundedInputDecoration(
+                  decoration: AuthFormStyles.fieldDecoration(
                     hintText: locale.t('auth.businessName'),
                     prefixIcon: Icons.person_outline_rounded,
                   ),
-                  style: const TextStyle(
-                    fontSize: 19,
-                    color: AppColors.textPrimary,
-                  ),
+                  style: AuthFormStyles.fieldTextStyle,
                 ),
-                const SizedBox(height: 12),
+                const SizedBox(height: AuthFormStyles.fieldGap),
                 TextFormField(
                   controller: _emailController,
                   keyboardType: TextInputType.emailAddress,
                   textInputAction: TextInputAction.next,
-                  decoration: _roundedInputDecoration(
+                  decoration: AuthFormStyles.fieldDecoration(
                     hintText: locale.t('auth.email'),
                     prefixIcon: Icons.email_rounded,
                   ),
-                  style: const TextStyle(
-                    fontSize: 19,
-                    color: AppColors.textPrimary,
-                  ),
+                  style: AuthFormStyles.fieldTextStyle,
                   validator: (v) {
                     if (v == null || v.trim().isEmpty) {
                       return locale.t('auth.enterEmail');
@@ -180,12 +174,12 @@ class _BusinessRegistrationScreenState
                     return null;
                   },
                 ),
-                const SizedBox(height: 12),
+                const SizedBox(height: AuthFormStyles.fieldGap),
                 TextFormField(
                   controller: _passwordController,
                   obscureText: _obscurePassword,
                   textInputAction: TextInputAction.next,
-                  decoration: _roundedInputDecoration(
+                  decoration: AuthFormStyles.fieldDecoration(
                     hintText: locale.t('auth.password'),
                     prefixIcon: Icons.lock_rounded,
                     suffixIcon: IconButton(
@@ -197,14 +191,11 @@ class _BusinessRegistrationScreenState
                         _obscurePassword
                             ? Icons.visibility_outlined
                             : Icons.visibility_off_outlined,
-                        color: _placeholderMuted,
+                        color: AuthFormStyles.hintMuted,
                       ),
                     ),
                   ),
-                  style: const TextStyle(
-                    fontSize: 19,
-                    color: AppColors.textPrimary,
-                  ),
+                  style: AuthFormStyles.fieldTextStyle,
                   validator: (v) {
                     if (v == null || v.isEmpty) {
                       return locale.t('auth.enterPassword');
@@ -215,13 +206,13 @@ class _BusinessRegistrationScreenState
                     return null;
                   },
                 ),
-                const SizedBox(height: 12),
+                const SizedBox(height: AuthFormStyles.fieldGap),
                 TextFormField(
                   controller: _confirmPasswordController,
                   obscureText: _obscureConfirmPassword,
                   textInputAction: TextInputAction.done,
                   onFieldSubmitted: (_) => _submit(),
-                  decoration: _roundedInputDecoration(
+                  decoration: AuthFormStyles.fieldDecoration(
                     hintText: locale.t('auth.confirmPassword'),
                     prefixIcon: Icons.lock_rounded,
                     suffixIcon: IconButton(
@@ -236,14 +227,11 @@ class _BusinessRegistrationScreenState
                         _obscureConfirmPassword
                             ? Icons.visibility_outlined
                             : Icons.visibility_off_outlined,
-                        color: _placeholderMuted,
+                        color: AuthFormStyles.hintMuted,
                       ),
                     ),
                   ),
-                  style: const TextStyle(
-                    fontSize: 19,
-                    color: AppColors.textPrimary,
-                  ),
+                  style: AuthFormStyles.fieldTextStyle,
                   validator: (v) {
                     if (v == null || v.isEmpty) {
                       return locale.t('auth.enterPassword');
@@ -256,18 +244,12 @@ class _BusinessRegistrationScreenState
                 ),
                 const SizedBox(height: 30),
                 SizedBox(
-                  height: 60,
+                  height: AuthFormStyles.buttonHeight,
                   child: FilledButton(
                     onPressed: (_isSubmitting || _isGoogleSubmitting)
                         ? null
                         : _submit,
-                    style: FilledButton.styleFrom(
-                      backgroundColor: AppColors.primary500,
-                      foregroundColor: AppColors.textInverse,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(999),
-                      ),
-                    ),
+                    style: AuthFormStyles.primaryButtonStyle(),
                     child: _isSubmitting
                         ? const SizedBox(
                             width: 22,
@@ -317,7 +299,7 @@ class _BusinessRegistrationScreenState
                 ),
                 const SizedBox(height: 22),
                 SizedBox(
-                  height: 60,
+                  height: AuthFormStyles.buttonHeight,
                   child: OutlinedButton.icon(
                     onPressed: (_isSubmitting || _isGoogleSubmitting)
                         ? null
@@ -337,55 +319,13 @@ class _BusinessRegistrationScreenState
                         color: AppColors.textPrimary,
                       ),
                     ),
-                    style: OutlinedButton.styleFrom(
-                      backgroundColor: AppColors.backgroundPrimary,
-                      side: BorderSide.none,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(999),
-                      ),
-                    ),
+                    style: AuthFormStyles.googleButtonStyle(),
                   ),
                 ),
               ],
             ),
           ),
         ),
-      ),
-    );
-  }
-
-  InputDecoration _roundedInputDecoration({
-    required String hintText,
-    required IconData prefixIcon,
-    Widget? suffixIcon,
-  }) {
-    return InputDecoration(
-      hintText: hintText,
-      hintStyle: const TextStyle(
-        color: _placeholderMuted,
-        fontSize: 16,
-        fontWeight: FontWeight.w600,
-      ),
-      prefixIcon: Padding(
-        padding: const EdgeInsets.only(left: 22, right: 8),
-        child: Icon(prefixIcon, color: _placeholderMuted, size: 20),
-      ),
-      prefixIconConstraints: const BoxConstraints(minWidth: 0, minHeight: 0),
-      suffixIcon: suffixIcon,
-      filled: true,
-      fillColor: AppColors.backgroundPrimary,
-      contentPadding: const EdgeInsets.only(top: 18, bottom: 18, right: 18),
-      border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(999),
-        borderSide: BorderSide.none,
-      ),
-      enabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(999),
-        borderSide: BorderSide.none,
-      ),
-      focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(999),
-        borderSide: const BorderSide(color: AppColors.primary500, width: 1.2),
       ),
     );
   }

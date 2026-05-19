@@ -433,6 +433,7 @@
 			"trainings": "Тренировки",
 			"team": "Команда",
 			"subscriptionBilling": "Подписка и оплата",
+			"activeProPlan": "Активный Pro",
 			"bookingWindowDays": "{count} дн.",
 			"trainingsCount": "{count}",
 			"bookingPeriodTitle": "Период бронирования",

@@ -152,14 +152,30 @@ Future<bool?> showOwnerBookingPeriodSheet(
                     const SizedBox(height: 16),
                     Row(
                       children: [
-                        IconButton.filled(
-                          onPressed: applying
-                              ? null
-                              : () => applyDays(localDays - 1),
-                          icon: const Icon(Icons.remove),
-                          style: IconButton.styleFrom(
-                            backgroundColor: AppColors.backgroundSecondary,
-                            foregroundColor: AppColors.textPrimary,
+                        SizedBox(
+                          width: 48,
+                          height: 48,
+                          child: OutlinedButton(
+                            onPressed: applying
+                                ? null
+                                : () => applyDays(localDays - 1),
+                            style: OutlinedButton.styleFrom(
+                              padding: EdgeInsets.zero,
+                              minimumSize: const Size(48, 48),
+                              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                              backgroundColor: Colors.transparent,
+                              foregroundColor: AppColors.primary500,
+                              side: const BorderSide(
+                                color: AppColors.primary500,
+                                width: 1.5,
+                              ),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(
+                                  kSettingsInputBorderRadius,
+                                ),
+                              ),
+                            ),
+                            child: const Icon(Icons.remove, size: 22),
                           ),
                         ),
                         const SizedBox(width: 12),

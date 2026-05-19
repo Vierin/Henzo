@@ -12,6 +12,10 @@ Widget _catalogTrainerIcon() {
       'assets/icons/icon-profile.svg',
       width: 11,
       height: 13,
+      colorFilter: const ColorFilter.mode(
+        Color(0xFF4D39A8),
+        BlendMode.srcIn,
+      ),
     ),
   );
 }

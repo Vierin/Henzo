@@ -1,5 +1,9 @@
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import '../widgets/common/henzo_modal.dart';
+import 'package:flutter/services.dart';
+import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import '../../constants/colors.dart';
 import '../../l10n/locale_provider.dart';
@@ -11,13 +15,19 @@ import '../../models/service_item.dart';
 import '../../services/auth_service.dart';
 import '../../services/cache/salon_cache.dart';
 import '../../services/cache/services_staff_cache.dart';
+import '../../services/dashboard_api_service.dart';
 import '../../services/services_api_service.dart';
 import '../../utils/show_api_error.dart';
+import '../../utils/training_locations_storage.dart';
 import '../../constants/layout.dart';
 import '../../widgets/app_search_prefix_icon.dart';
+import '../../widgets/address_picker_modal.dart';
 import '../../widgets/settings/branded_settings_app_bar.dart';
 import '../../widgets/training/owner_training_catalog_card.dart';
+import '../../widgets/training/training_category_picker_sheet.dart';
 import '../../widgets/training/training_filter_chip.dart';
+import '../../widgets/training/training_location_picker_sheet.dart';
+import '../../widgets/training/training_time_picker_sheet.dart';
 import 'add_training_screen.dart';
 
 enum ServicesSort {
@@ -358,6 +368,7 @@ class _ServicesScreenState extends State<ServicesScreen> {
         builder: (_) => _EditTrainingScreen(
           token: token,
           item: item,
+          salon: _salon,
           categories: categories,
           onShowCategoryInfo: _showCategoryInfo,
         ),
@@ -616,16 +627,49 @@ class _ServicesScreenState extends State<ServicesScreen> {
   }
 }
 
+String _editServiceThousandsFormat(int value) {
+  final raw = value.abs().toString();
+  final chars = raw.split('').reversed.toList();
+  final parts = <String>[];
+  for (var i = 0; i < chars.length; i++) {
+    parts.add(chars[i]);
+    if ((i + 1) % 3 == 0 && i + 1 < chars.length) {
+      parts.add('.');
+    }
+  }
+  return parts.reversed.join();
+}
+
+class _EditTemplateVndThousandsFormatter extends TextInputFormatter {
+  @override
+  TextEditingValue formatEditUpdate(
+    TextEditingValue oldValue,
+    TextEditingValue newValue,
+  ) {
+    final digits = newValue.text.replaceAll(RegExp(r'[^0-9]'), '');
+    if (digits.isEmpty) return const TextEditingValue(text: '');
+    final number = int.tryParse(digits);
+    if (number == null) return oldValue;
+    final formatted = _editServiceThousandsFormat(number);
+    return TextEditingValue(
+      text: formatted,
+      selection: TextSelection.collapsed(offset: formatted.length),
+    );
+  }
+}
+
 class _EditTrainingScreen extends StatefulWidget {
   const _EditTrainingScreen({
     required this.token,
     required this.item,
+    required this.salon,
     required this.categories,
     required this.onShowCategoryInfo,
   });
 
   final String token;
   final ServiceItem item;
+  final Salon? salon;
   final List<TrainingCategoryOption> categories;
   final VoidCallback onShowCategoryInfo;
 
@@ -634,48 +678,455 @@ class _EditTrainingScreen extends StatefulWidget {
 }
 
 class _EditTrainingScreenState extends State<_EditTrainingScreen> {
+  static const Color _kFormAccent = Color(0xFF6C5CE7);
+  static const Color _kHintMuted = Color(0x993F3F3F);
+  static const TextStyle _kFieldInputStyle = TextStyle(
+    fontSize: 16,
+    color: AppColors.textPrimary,
+  );
+
+  static const double _kStep2FieldRadius = 12;
+
   late final TextEditingController _nameController;
   late final TextEditingController _durationController;
   late final TextEditingController _priceController;
+  late final TextEditingController _capacityController;
+  final FocusNode _durationFocusNode = FocusNode();
   int? _selectedCategoryId;
   bool _saving = false;
   bool _applyScheduleChanges = false;
   bool _applyFromToday = true;
   late DateTime _effectiveFromDate;
-  late TimeOfDay _defaultSlotTime;
+  late TimeOfDay _sessionTime;
+  Salon? _studio;
+  List<TrainingLocationItem> _locations = [];
+  String _selectedLocationId = 'default';
+  int? _initialCapacity;
+  String? _initialLocationId;
   final Set<int> _recurringDays = <int>{1, 3, 5};
   final Map<int, TimeOfDay> _recurringDayTimes = <int, TimeOfDay>{};
 
   String _formatThousandsDots(int value) {
-    final raw = value.abs().toString();
-    final chars = raw.split('').reversed.toList();
-    final parts = <String>[];
-    for (var i = 0; i < chars.length; i++) {
-      parts.add(chars[i]);
-      if ((i + 1) % 3 == 0 && i + 1 < chars.length) {
-        parts.add('.');
-      }
-    }
-    return parts.reversed.join();
+    return _editServiceThousandsFormat(value);
   }
 
-  InputDecoration _fieldDecoration({String? hintText}) {
+  InputDecoration _editRegInputDecoration({
+    bool invalid = false,
+    String? hintText,
+    IconData? prefixIcon,
+    Widget? suffix,
+    String? suffixText,
+  }) {
+    const radius = BorderRadius.all(Radius.circular(12));
+    final errorSide = BorderSide(color: AppColors.error600, width: 1.2);
+    final noneSide = BorderSide.none;
+    final focusSide = BorderSide(
+      color: invalid ? AppColors.error600 : AppColors.primary500,
+      width: 1.2,
+    );
     return InputDecoration(
       hintText: hintText,
+      hintStyle: const TextStyle(
+        color: _kHintMuted,
+        fontSize: 16,
+        fontWeight: FontWeight.w500,
+      ),
+      prefixIcon: prefixIcon == null
+          ? null
+          : Padding(
+              padding: const EdgeInsets.only(left: 13, right: 8),
+              child: Icon(prefixIcon, color: _kFormAccent, size: 22),
+            ),
+      prefixIconConstraints: const BoxConstraints(minWidth: 0, minHeight: 0),
+      suffix: suffix,
+      suffixText: suffixText,
+      suffixStyle: const TextStyle(
+        fontSize: 16,
+        fontWeight: FontWeight.w600,
+        color: AppColors.textPrimary,
+      ),
       filled: true,
       fillColor: AppColors.backgroundPrimary,
-      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+      contentPadding: EdgeInsets.only(
+        top: 8,
+        bottom: 12,
+        right: 18,
+        left: prefixIcon == null ? 13 : 0,
+      ),
+      border: OutlineInputBorder(borderRadius: radius, borderSide: noneSide),
       enabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: radius,
+        borderSide: invalid ? errorSide : noneSide,
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: radius,
+        borderSide: focusSide,
+      ),
+    );
+  }
+
+  Widget _editFormLabel(String text, {Widget? trailing}) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 10, left: 12),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          Expanded(
+            child: Text(
+              text.toUpperCase(),
+              style: const TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+                letterSpacing: -0.3,
+                color: AppColors.textPrimary,
+              ),
+            ),
+          ),
+          if (trailing != null) trailing,
+        ],
+      ),
+    );
+  }
+
+  Widget _editDurationMinutesField(LocaleProvider loc) {
+    const radius = BorderRadius.all(Radius.circular(12));
+    final focused = _durationFocusNode.hasFocus;
+    const noneSide = BorderSide.none;
+    const focusSide = BorderSide(
+      color: AppColors.primary500,
+      width: 1.2,
+    );
+    final side = focused ? focusSide : noneSide;
+    return Container(
+      decoration: BoxDecoration(
+        color: AppColors.backgroundPrimary,
+        borderRadius: radius,
+        border: Border.fromBorderSide(side),
+      ),
+      padding: const EdgeInsets.only(top: 2, bottom: 4, right: 10),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          const Padding(
+            padding: EdgeInsets.only(left: 13, right: 8),
+            child: Icon(
+              Icons.access_time_rounded,
+              color: _kFormAccent,
+              size: 22,
+            ),
+          ),
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.baseline,
+            textBaseline: TextBaseline.alphabetic,
+            children: [
+              SizedBox(
+                width: 52,
+                child: TextField(
+                  controller: _durationController,
+                  focusNode: _durationFocusNode,
+                  style: _kFieldInputStyle,
+                  keyboardType: TextInputType.number,
+                  textInputAction: TextInputAction.next,
+                  decoration: InputDecoration(
+                    hintText: '60',
+                    hintStyle: const TextStyle(
+                      color: _kHintMuted,
+                      fontSize: 16,
+                      fontWeight: FontWeight.w500,
+                    ),
+                    border: InputBorder.none,
+                    enabledBorder: InputBorder.none,
+                    focusedBorder: InputBorder.none,
+                    isDense: true,
+                    contentPadding: const EdgeInsets.only(
+                      top: 8,
+                      bottom: 10,
+                      right: 2,
+                    ),
+                  ),
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.only(bottom: 10),
+                child: Text(
+                  loc.t('addTraining.durationSuffix'),
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.textPrimary,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const Spacer(),
+        ],
+      ),
+    );
+  }
+
+  void _onDurationFocusChanged() => setState(() {});
+
+  TrainingLocationItem? get _selectedLocation {
+    for (final loc in _locations) {
+      if (loc.id == _selectedLocationId) return loc;
+    }
+    return _locations.isNotEmpty ? _locations.first : null;
+  }
+
+  void _applyLocationsFromStudio(Salon? salon, LocaleProvider locale) {
+    _studio = salon;
+    _locations = TrainingLocationItem.listFromSalon(
+      salon,
+      mainStudioName: locale.t('locations.mainStudio'),
+    );
+    if (_locations.isEmpty) return;
+    final stillValid = _locations.any((l) => l.id == _selectedLocationId);
+    if (!stillValid) {
+      _selectedLocationId = _locations.first.id;
+    }
+  }
+
+  String _categoryLabel(LocaleProvider locale) {
+    final id = _selectedCategoryId;
+    if (id == null) return locale.t('addTraining.pickCategory');
+    for (final c in widget.categories) {
+      if (c.id == id) return c.label(locale.localeCode);
+    }
+    return locale.t('addTraining.pickCategory');
+  }
+
+  String _narrowWeekday(int weekday, LocaleProvider loc) {
+    final d = DateTime(2024, 1, weekday);
+    return DateFormat.E(loc.localeCode).format(d).toUpperCase();
+  }
+
+  String _fullWeekday(int weekday, LocaleProvider loc) {
+    final d = DateTime(2024, 1, weekday);
+    final raw = DateFormat.EEEE(loc.localeCode).format(d);
+    if (raw.isEmpty) return raw;
+    return raw.substring(0, 1).toUpperCase() + raw.substring(1);
+  }
+
+  InputDecoration _step2FieldDecoration({Widget? suffixIcon}) {
+    final r = BorderRadius.circular(_kStep2FieldRadius);
+    return InputDecoration(
+      filled: true,
+      fillColor: AppColors.backgroundPrimary,
+      suffixIcon: suffixIcon,
+      suffixIconConstraints: suffixIcon == null
+          ? null
+          : const BoxConstraints(minWidth: 44, minHeight: 44),
+      border: OutlineInputBorder(
+        borderRadius: r,
         borderSide: const BorderSide(color: AppColors.borderPrimary),
       ),
-      contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: r,
+        borderSide: const BorderSide(color: AppColors.borderPrimary),
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: r,
+        borderSide: const BorderSide(color: AppColors.primary500, width: 1.6),
+      ),
+      contentPadding: const EdgeInsets.fromLTRB(16, 16, 8, 16),
     );
+  }
+
+  Widget _step2WeekdayChip(LocaleProvider loc, int day) {
+    final selected = _recurringDays.contains(day);
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: () => setState(() {
+          if (selected) {
+            _recurringDays.remove(day);
+            _recurringDayTimes.remove(day);
+          } else {
+            _recurringDays.add(day);
+            _recurringDayTimes[day] = _sessionTime;
+          }
+        }),
+        borderRadius: BorderRadius.circular(999),
+        child: Ink(
+          height: 38,
+          decoration: BoxDecoration(
+            color: selected
+                ? AppColors.primary500
+                : AppColors.backgroundPrimary,
+            borderRadius: BorderRadius.circular(999),
+            border: Border.all(
+              color: selected ? AppColors.primary500 : AppColors.borderPrimary,
+            ),
+          ),
+          child: Center(
+            child: Text(
+              _narrowWeekday(day, loc),
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w700,
+                color: selected ? AppColors.textInverse : AppColors.textPrimary,
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _openCategoryBottomSheet() async {
+    final loc = context.read<LocaleProvider>();
+    final result = await showTrainingCategoryPickerSheet(
+      context: context,
+      locale: loc,
+      categories: widget.categories,
+      selectedCategoryId: _selectedCategoryId,
+    );
+    if (!mounted || result == null || !result.applied) return;
+    setState(() => _selectedCategoryId = result.categoryId);
+  }
+
+  Future<void> _openLocationPicker() async {
+    final locale = context.read<LocaleProvider>();
+    if (_locations.isEmpty && _studio != null) {
+      _applyLocationsFromStudio(_studio, locale);
+    }
+    if (_locations.isEmpty) return;
+
+    final result = await showTrainingLocationPickerSheet(
+      context,
+      locations: _locations,
+      selectedId: _selectedLocationId,
+      onDeleteLocation: _deleteTrainingLocation,
+    );
+    if (!mounted || result == null) return;
+
+    switch (result) {
+      case TrainingLocationPicked(:final location):
+        setState(() => _selectedLocationId = location.id);
+      case TrainingLocationAddRequested():
+        await _addNewTrainingLocation();
+    }
+  }
+
+  Future<bool> _deleteTrainingLocation(TrainingLocationItem loc) async {
+    final studio = _studio;
+    if (studio == null || loc.id == 'default') return false;
+
+    final updated = _locations.where((l) => l.id != loc.id).toList();
+    try {
+      final updatedSalon = await persistExtraTrainingLocations(
+        context,
+        studio,
+        updated,
+      );
+      if (!mounted) return false;
+      final locale = context.read<LocaleProvider>();
+      setState(() {
+        _studio = updatedSalon ?? studio;
+        _applyLocationsFromStudio(_studio, locale);
+        if (_selectedLocationId == loc.id && _locations.isNotEmpty) {
+          _selectedLocationId = _locations.first.id;
+        }
+      });
+      return true;
+    } catch (e) {
+      if (mounted) showApiError(context, e);
+      return false;
+    }
+  }
+
+  Future<void> _addNewTrainingLocation() async {
+    final locale = context.read<LocaleProvider>();
+    final studio = _studio;
+    if (studio == null) return;
+
+    final selection = await AddressPickerModal.show(
+      context,
+      initialAddress: '',
+    );
+    if (!mounted || selection == null) return;
+
+    final newLoc = TrainingLocationItem(
+      id: 'loc_${DateTime.now().millisecondsSinceEpoch}',
+      name: selection.locationName,
+      address: selection.address.trim(),
+      latitude: selection.lat,
+      longitude: selection.lon,
+    );
+    final updatedList = [..._locations, newLoc];
+
+    try {
+      final updatedSalon = await persistExtraTrainingLocations(
+        context,
+        studio,
+        updatedList,
+      );
+      if (!mounted) return;
+      setState(() {
+        _studio = updatedSalon ?? studio;
+        _applyLocationsFromStudio(_studio, locale);
+        _selectedLocationId = newLoc.id;
+      });
+    } catch (e) {
+      if (mounted) showApiError(context, e);
+    }
+  }
+
+  Future<void> _loadSessionDefaults() async {
+    final locale = context.read<LocaleProvider>();
+    var salon = widget.salon;
+    if (salon == null) {
+      salon = await context.read<SalonCache>().getSalon(widget.token);
+    }
+    if (!mounted) return;
+    _applyLocationsFromStudio(salon, locale);
+
+    final now = DateTime.now();
+    final sessions = await DashboardApiService.getOwnerTrainingSessions(
+      widget.token,
+      fromIso: now.toUtc().toIso8601String(),
+    );
+    if (!mounted) return;
+    final mine = sessions
+        .where((s) => s.trainingId == widget.item.id)
+        .toList()
+      ..sort((a, b) => a.startsAt.compareTo(b.startsAt));
+
+    if (mine.isNotEmpty) {
+      final first = mine.first;
+      _capacityController.text = '${first.capacity}';
+      _initialCapacity = first.capacity;
+      final locId = first.locationId?.trim();
+      if (locId != null && locId.isNotEmpty) {
+        _selectedLocationId = locId;
+        _initialLocationId = locId;
+      }
+      final days = <int>{};
+      final times = <int, TimeOfDay>{};
+      for (final s in mine) {
+        final wd = s.startsAt.weekday;
+        days.add(wd);
+        times.putIfAbsent(wd, () => TimeOfDay.fromDateTime(s.startsAt));
+      }
+      if (days.isNotEmpty) {
+        _recurringDays
+          ..clear()
+          ..addAll(days);
+        _recurringDayTimes
+          ..clear()
+          ..addAll(times);
+        _sessionTime = times.values.first;
+      }
+    }
+    if (mounted) setState(() {});
   }
 
   @override
   void initState() {
     super.initState();
+    _durationFocusNode.addListener(_onDurationFocusChanged);
     _nameController = TextEditingController(text: widget.item.name);
     _durationController = TextEditingController(
       text: (widget.item.duration ?? 30).toString(),
@@ -683,24 +1134,29 @@ class _EditTrainingScreenState extends State<_EditTrainingScreen> {
     _priceController = TextEditingController(
       text: _formatThousandsDots((widget.item.price ?? 0).round()),
     );
+    _capacityController = TextEditingController(text: '10');
     final now = DateTime.now();
     _effectiveFromDate = DateTime(now.year, now.month, now.day);
-    _defaultSlotTime = TimeOfDay.fromDateTime(now);
+    _sessionTime = TimeOfDay.fromDateTime(now);
     for (final day in _recurringDays) {
-      _recurringDayTimes[day] = _defaultSlotTime;
+      _recurringDayTimes[day] = _sessionTime;
     }
     _selectedCategoryId = widget.item.trainingCategoryId;
     if (_selectedCategoryId != null &&
         !widget.categories.any((c) => c.id == _selectedCategoryId)) {
       _selectedCategoryId = null;
     }
+    WidgetsBinding.instance.addPostFrameCallback((_) => _loadSessionDefaults());
   }
 
   @override
   void dispose() {
+    _durationFocusNode.removeListener(_onDurationFocusChanged);
+    _durationFocusNode.dispose();
     _nameController.dispose();
     _durationController.dispose();
     _priceController.dispose();
+    _capacityController.dispose();
     super.dispose();
   }
 
@@ -719,9 +1175,14 @@ class _EditTrainingScreenState extends State<_EditTrainingScreen> {
         ) ??
         0.0;
     final duration = int.tryParse(_durationController.text.trim()) ?? 0;
-    if (price <= 0 || duration <= 0) {
+    final capacity = int.tryParse(_capacityController.text.trim()) ?? 0;
+    if (price <= 0 || duration <= 0 || capacity <= 0) {
       ScaffoldMessenger.maybeOf(context)?.showSnackBar(
-        const SnackBar(content: Text('Цена и длительность должны быть > 0')),
+        const SnackBar(
+          content: Text(
+            'Цена, длительность и вместительность должны быть > 0',
+          ),
+        ),
       );
       return;
     }
@@ -737,11 +1198,15 @@ class _EditTrainingScreenState extends State<_EditTrainingScreen> {
         .map(
           (d) => {
             'day': d,
-            'startTime':
-                '${_recurringDayTimes[d]?.hour.toString().padLeft(2, '0') ?? _defaultSlotTime.hour.toString().padLeft(2, '0')}:${_recurringDayTimes[d]?.minute.toString().padLeft(2, '0') ?? _defaultSlotTime.minute.toString().padLeft(2, '0')}',
+            'startTime': trainingTimeToHm(
+              _recurringDayTimes[d] ?? _sessionTime,
+            ),
           },
         )
         .toList();
+    final locationId = _selectedLocationId.trim();
+    final capacityChanged = _initialCapacity != capacity;
+    final locationChanged = _initialLocationId != locationId;
 
     setState(() => _saving = true);
     try {
@@ -761,6 +1226,8 @@ class _EditTrainingScreenState extends State<_EditTrainingScreen> {
             widget.item.id,
             slots: slots,
             effectiveFrom: _applyFromToday ? DateTime.now() : _effectiveFromDate,
+            capacity: capacity,
+            locationId: locationId,
           );
           if (scheduleRes == null && mounted) {
             ScaffoldMessenger.maybeOf(context)?.showSnackBar(
@@ -786,6 +1253,21 @@ class _EditTrainingScreenState extends State<_EditTrainingScreen> {
           ScaffoldMessenger.maybeOf(context)?.showSnackBar(
             SnackBar(content: Text(summary)),
           );
+        } else if (capacityChanged || locationChanged) {
+          final ok = await ServicesApiService.updateTrainingSessionDefaults(
+            widget.token,
+            widget.item.id,
+            capacity: capacityChanged ? capacity : null,
+            locationId: locationChanged ? locationId : null,
+          );
+          if (!ok && mounted) {
+            ScaffoldMessenger.maybeOf(context)?.showSnackBar(
+              const SnackBar(
+                content: Text('Не удалось обновить вместимость или адрес'),
+              ),
+            );
+            return;
+          }
         }
         Navigator.of(context).pop(true);
         return;
@@ -806,11 +1288,14 @@ class _EditTrainingScreenState extends State<_EditTrainingScreen> {
   @override
   Widget build(BuildContext context) {
     final locale = context.watch<LocaleProvider>();
+    final textTheme = Theme.of(context).textTheme;
     return Scaffold(
       backgroundColor: AppColors.backgroundSecondary,
       appBar: AppBar(
-        backgroundColor: AppColors.backgroundPrimary,
+        backgroundColor: AppColors.backgroundSecondary,
+        foregroundColor: AppColors.textPrimary,
         elevation: 0,
+        scrolledUnderElevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
           color: AppColors.textPrimary,
@@ -820,131 +1305,199 @@ class _EditTrainingScreenState extends State<_EditTrainingScreen> {
         title: const Text(
           'Редактировать тренировку',
           style: TextStyle(
-            fontSize: 18,
+            fontSize: 14,
             fontWeight: FontWeight.w600,
             color: AppColors.textPrimary,
           ),
         ),
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.fromLTRB(12, 16, 12, 24),
+        padding: const EdgeInsets.fromLTRB(
+          kScreenPaddingHorizontal,
+          10,
+          kScreenPaddingHorizontal,
+          24,
+        ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              'Название тренировки',
-              style: TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w500,
-                color: AppColors.textPrimary,
-              ),
-            ),
-            const SizedBox(height: 6),
+            _editFormLabel('Название тренировки'),
             TextField(
               controller: _nameController,
-              decoration: _fieldDecoration(hintText: 'Например: Vinyasa Flow'),
+              style: _kFieldInputStyle,
+              textInputAction: TextInputAction.next,
+              decoration: _editRegInputDecoration(
+                hintText: 'Например: Vinyasa Flow',
+              ),
             ),
-            const SizedBox(height: 16),
-            Row(
-              children: [
-                Text(
-                  'Категория',
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w500,
-                    color: AppColors.textPrimary,
+            const SizedBox(height: 22),
+            _editFormLabel(
+              'Категория',
+              trailing: InkWell(
+                borderRadius: BorderRadius.circular(12),
+                onTap: widget.onShowCategoryInfo,
+                child: const Padding(
+                  padding: EdgeInsets.all(2),
+                  child: Icon(
+                    Icons.info_outline,
+                    size: 16,
+                    color: AppColors.textSecondary,
                   ),
                 ),
-                const SizedBox(width: 6),
-                InkWell(
-                  borderRadius: BorderRadius.circular(12),
-                  onTap: widget.onShowCategoryInfo,
-                  child: const Padding(
-                    padding: EdgeInsets.all(2),
-                    child: Icon(
-                      Icons.info_outline,
-                      size: 16,
-                      color: AppColors.textSecondary,
+              ),
+            ),
+            InkWell(
+              borderRadius: BorderRadius.circular(999),
+              onTap: widget.categories.isEmpty ? null : _openCategoryBottomSheet,
+              child: InputDecorator(
+                decoration: _editRegInputDecoration(
+                  suffix: const Icon(
+                    CupertinoIcons.chevron_down,
+                    color: _kFormAccent,
+                    size: 18,
+                  ),
+                ),
+                child: Text(
+                  _categoryLabel(locale),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w400,
+                    color: _selectedCategoryId == null
+                        ? AppColors.textSecondary
+                        : AppColors.textPrimary,
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(height: 22),
+            Consumer<LocaleProvider>(
+              builder: (context, loc, _) {
+                final selected = _selectedLocation;
+                final displayName = selected?.name.trim().isNotEmpty == true
+                    ? selected!.name
+                    : loc.t('addTraining.studioNameFallback');
+                final address = selected?.address.trim() ?? '';
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    _editFormLabel(loc.t('addTraining.addressSectionLabel')),
+                    Material(
+                      color: AppColors.backgroundPrimary,
+                      borderRadius: BorderRadius.circular(12),
+                      clipBehavior: Clip.antiAlias,
+                      child: InkWell(
+                        onTap: _openLocationPicker,
+                        borderRadius: BorderRadius.circular(12),
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 14,
+                          ),
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Padding(
+                                padding: const EdgeInsets.only(top: 2),
+                                child: SvgPicture.asset(
+                                  'assets/icons/icon-pin.svg',
+                                  width: 15,
+                                  height: 21,
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment:
+                                      CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      displayName,
+                                      style: const TextStyle(
+                                        fontSize: 19,
+                                        fontWeight: FontWeight.w700,
+                                        color: AppColors.textPrimary,
+                                      ),
+                                    ),
+                                    if (address.isNotEmpty) ...[
+                                      const SizedBox(height: 4),
+                                      Text(
+                                        address,
+                                        style: const TextStyle(
+                                          fontSize: 14,
+                                          height: 1.35,
+                                          color: AppColors.textSecondary,
+                                        ),
+                                      ),
+                                    ],
+                                  ],
+                                ),
+                              ),
+                              const Padding(
+                                padding: EdgeInsets.only(top: 4),
+                                child: Icon(
+                                  CupertinoIcons.chevron_forward,
+                                  color: _kFormAccent,
+                                  size: 18,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
                     ),
+                  ],
+                );
+              },
+            ),
+            const SizedBox(height: 22),
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      _editFormLabel('Длительность'),
+                      _editDurationMinutesField(locale),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      _editFormLabel('Вместительность'),
+                      TextField(
+                        controller: _capacityController,
+                        style: _kFieldInputStyle,
+                        keyboardType: TextInputType.number,
+                        textInputAction: TextInputAction.next,
+                        decoration: _editRegInputDecoration(
+                          hintText: '10',
+                          prefixIcon: Icons.groups_rounded,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ],
             ),
-            const SizedBox(height: 6),
-            DropdownButtonFormField<int>(
-              isExpanded: true,
-              isDense: true,
-              value: _selectedCategoryId,
-              dropdownColor: AppColors.backgroundPrimary,
-              borderRadius: BorderRadius.circular(12),
-              menuMaxHeight: 320,
-              icon: const Icon(
-                Icons.keyboard_arrow_down_rounded,
-                color: AppColors.textSecondary,
-              ),
-              style: const TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w500,
-                color: AppColors.textPrimary,
-              ),
-              hint: const Text(
-                'Выберите категорию',
-                style: TextStyle(
-                  color: AppColors.textSecondary,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-              items: widget.categories
-                  .map(
-                    (TrainingCategoryOption c) => DropdownMenuItem<int>(
-                      value: c.id,
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 2),
-                        child: Text(
-                          c.label(locale.localeCode),
-                          overflow: TextOverflow.ellipsis,
-                          maxLines: 1,
-                        ),
-                      ),
-                    ),
-                  )
-                  .toList(),
-              onChanged: widget.categories.isEmpty
-                  ? null
-                  : (v) => setState(() => _selectedCategoryId = v),
-              decoration: _fieldDecoration(),
-            ),
-            const SizedBox(height: 16),
-            Text(
-              'Длительность (мин)',
-              style: TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w500,
-                color: AppColors.textPrimary,
-              ),
-            ),
-            const SizedBox(height: 6),
-            TextField(
-              controller: _durationController,
-              keyboardType: TextInputType.number,
-              decoration: _fieldDecoration(),
-            ),
-            const SizedBox(height: 16),
-            Text(
-              'Цена',
-              style: TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w500,
-                color: AppColors.textPrimary,
-              ),
-            ),
-            const SizedBox(height: 6),
+            const SizedBox(height: 22),
+            _editFormLabel('Цена'),
             TextField(
               controller: _priceController,
+              style: _kFieldInputStyle,
               keyboardType: TextInputType.number,
-              decoration: _fieldDecoration(),
+              textInputAction: TextInputAction.done,
+              inputFormatters: [_EditTemplateVndThousandsFormatter()],
+              decoration: _editRegInputDecoration(
+                hintText: 'Введите цену',
+              ),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 22),
             SwitchListTile(
               value: _applyScheduleChanges,
               onChanged: (v) => setState(() => _applyScheduleChanges = v),
@@ -954,68 +1507,117 @@ class _EditTrainingScreenState extends State<_EditTrainingScreen> {
               contentPadding: EdgeInsets.zero,
             ),
             if (_applyScheduleChanges) ...[
-              const SizedBox(height: 8),
-              Wrap(
-                spacing: 8,
-                runSpacing: 8,
+              const SizedBox(height: 12),
+              _editFormLabel(locale.t('addTraining.step2.repeatOn')),
+              const SizedBox(height: 10),
+              Row(
                 children: List.generate(7, (i) {
                   final day = i + 1;
-                  const labels = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'];
-                  final selected = _recurringDays.contains(day);
-                  return TrainingFilterChip(
-                    label: labels[i],
-                    selected: selected,
-                    onSelected: (on) {
-                      setState(() {
-                        if (on) {
-                          _recurringDays.add(day);
-                          _recurringDayTimes[day] =
-                              _recurringDayTimes[day] ?? _defaultSlotTime;
-                        } else {
-                          _recurringDays.remove(day);
-                          _recurringDayTimes.remove(day);
-                        }
-                      });
-                    },
+                  return Expanded(
+                    child: Padding(
+                      padding: EdgeInsets.only(left: i == 0 ? 0 : 4),
+                      child: _step2WeekdayChip(locale, day),
+                    ),
                   );
                 }),
               ),
+              const SizedBox(height: 20),
+              _editFormLabel(locale.t('addTraining.step2.schedule')),
+              const SizedBox(height: 6),
+              Text(
+                locale.t('addTraining.step2.scheduleHint'),
+                style: const TextStyle(
+                  fontSize: 12,
+                  height: 1.35,
+                  color: AppColors.textSecondary,
+                ),
+              ),
               const SizedBox(height: 10),
               ...(_recurringDays.toList()..sort()).map((day) {
-                const labels = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'];
-                final time = _recurringDayTimes[day] ?? _defaultSlotTime;
-                return ListTile(
-                  contentPadding: EdgeInsets.zero,
-                  title: Text('Время (${labels[day - 1]})'),
-                  subtitle: Text(time.format(context)),
-                  trailing: const Icon(Icons.schedule),
-                  onTap: () async {
-                    final picked = await showTimePicker(
-                      context: context,
-                      initialTime: time,
-                    );
-                    if (picked == null || !mounted) return;
-                    setState(() => _recurringDayTimes[day] = picked);
-                  },
+                final time = _recurringDayTimes[day] ?? _sessionTime;
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: 8),
+                  child: Material(
+                    color: AppColors.backgroundPrimary,
+                    borderRadius: BorderRadius.circular(_kStep2FieldRadius),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 6,
+                      ),
+                      child: Row(
+                        children: [
+                          SizedBox(
+                            width: 110,
+                            child: Text(
+                              _fullWeekday(day, locale),
+                              style: const TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w700,
+                                color: AppColors.textPrimary,
+                              ),
+                            ),
+                          ),
+                          Expanded(
+                            child: InkWell(
+                              onTap: () async {
+                                final picked = await showTrainingTimePickerSheet(
+                                  context,
+                                  time,
+                                );
+                                if (picked != null && mounted) {
+                                  setState(
+                                    () => _recurringDayTimes[day] = picked,
+                                  );
+                                }
+                              },
+                              borderRadius: BorderRadius.circular(10),
+                              child: InputDecorator(
+                                decoration: _step2FieldDecoration(
+                                  suffixIcon: const Icon(
+                                    CupertinoIcons.chevron_down,
+                                    color: _kFormAccent,
+                                    size: 18,
+                                  ),
+                                ),
+                                child: Text(
+                                  trainingTimeToHm(time),
+                                  style: const TextStyle(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w600,
+                                    color: AppColors.textPrimary,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                          IconButton(
+                            onPressed: () => setState(() {
+                              _recurringDays.remove(day);
+                              _recurringDayTimes.remove(day);
+                            }),
+                            icon: const Icon(Icons.delete_outline_rounded),
+                            color: AppColors.primary500,
+                            tooltip: locale.t('common.delete'),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
                 );
               }),
-              const SizedBox(height: 8),
+              const SizedBox(height: 12),
               SwitchListTile(
                 value: _applyFromToday,
                 onChanged: (v) => setState(() => _applyFromToday = v),
                 title: const Text('Применить с сегодняшнего дня'),
                 contentPadding: EdgeInsets.zero,
               ),
-              if (!_applyFromToday)
-                ListTile(
-                  contentPadding: EdgeInsets.zero,
-                  title: const Text('Дата начала изменений'),
-                  subtitle: Text(
-                    MaterialLocalizations.of(
-                      context,
-                    ).formatFullDate(_effectiveFromDate),
-                  ),
-                  trailing: const Icon(Icons.calendar_today_outlined),
+              if (!_applyFromToday) ...[
+                const SizedBox(height: 8),
+                _editFormLabel('Дата начала изменений'),
+                const SizedBox(height: 6),
+                InkWell(
                   onTap: () async {
                     final picked = await showDatePicker(
                       context: context,
@@ -1023,21 +1625,48 @@ class _EditTrainingScreenState extends State<_EditTrainingScreen> {
                       firstDate: DateTime.now().subtract(
                         const Duration(days: 365),
                       ),
-                      lastDate: DateTime.now().add(const Duration(days: 365 * 2)),
+                      lastDate: DateTime.now().add(
+                        const Duration(days: 365 * 2),
+                      ),
                     );
                     if (picked == null || !mounted) return;
                     setState(() => _effectiveFromDate = picked);
                   },
+                  borderRadius: BorderRadius.circular(_kStep2FieldRadius),
+                  child: InputDecorator(
+                    decoration: _step2FieldDecoration(
+                      suffixIcon: const Icon(
+                        Icons.calendar_today_outlined,
+                        size: 18,
+                        color: AppColors.textTertiary,
+                      ),
+                    ),
+                    child: Text(
+                      DateFormat.yMMMd(locale.localeCode).format(
+                        _effectiveFromDate,
+                      ),
+                      style: const TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.textPrimary,
+                      ),
+                    ),
+                  ),
                 ),
+              ],
             ],
-            const SizedBox(height: 24),
+            const SizedBox(height: 30),
             SizedBox(
               width: double.infinity,
-              height: 46,
+              height: 60,
               child: FilledButton(
                 onPressed: _saving ? null : _submit,
                 style: FilledButton.styleFrom(
                   backgroundColor: AppColors.primary500,
+                  foregroundColor: AppColors.textInverse,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(999),
+                  ),
                 ),
                 child: _saving
                     ? const SizedBox(
@@ -1050,7 +1679,19 @@ class _EditTrainingScreenState extends State<_EditTrainingScreen> {
                           ),
                         ),
                       )
-                    : Text(locale.t('common.update')),
+                    : Text(
+                        locale.t('common.update'),
+                        style: textTheme.titleLarge?.copyWith(
+                              fontWeight: FontWeight.w600,
+                              fontSize: 16,
+                              color: AppColors.textInverse,
+                            ) ??
+                            const TextStyle(
+                              fontWeight: FontWeight.w600,
+                              fontSize: 16,
+                              color: AppColors.textInverse,
+                            ),
+                      ),
               ),
             ),
           ],

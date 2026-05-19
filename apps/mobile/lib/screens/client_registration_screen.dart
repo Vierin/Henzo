@@ -7,6 +7,7 @@ import '../constants/colors.dart';
 import '../l10n/locale_provider.dart';
 import '../services/auth_service.dart';
 import '../utils/show_api_error.dart';
+import '../widgets/auth/auth_form_styles.dart';
 
 class ClientRegistrationScreen extends StatefulWidget {
   const ClientRegistrationScreen({super.key});
@@ -17,8 +18,6 @@ class ClientRegistrationScreen extends StatefulWidget {
 }
 
 class _ClientRegistrationScreenState extends State<ClientRegistrationScreen> {
-  static const _placeholderMuted = Color(0x993F3F3F);
-
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
   final _emailController = TextEditingController();
@@ -172,42 +171,6 @@ class _ClientRegistrationScreenState extends State<ClientRegistrationScreen> {
     );
   }
 
-  InputDecoration _roundedInputDecoration({
-    required String hintText,
-    required IconData prefixIcon,
-    Widget? suffixIcon,
-  }) {
-    return InputDecoration(
-      hintText: hintText,
-      hintStyle: const TextStyle(
-        color: _placeholderMuted,
-        fontSize: 16,
-        fontWeight: FontWeight.w600,
-      ),
-      prefixIcon: Padding(
-        padding: const EdgeInsets.only(left: 22, right: 8),
-        child: Icon(prefixIcon, color: _placeholderMuted, size: 20),
-      ),
-      prefixIconConstraints: const BoxConstraints(minWidth: 0, minHeight: 0),
-      suffixIcon: suffixIcon,
-      filled: true,
-      fillColor: AppColors.backgroundPrimary,
-      contentPadding: const EdgeInsets.only(top: 18, bottom: 18, right: 18),
-      border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(999),
-        borderSide: BorderSide.none,
-      ),
-      enabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(999),
-        borderSide: BorderSide.none,
-      ),
-      focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(999),
-        borderSide: const BorderSide(color: AppColors.primary500, width: 1.2),
-      ),
-    );
-  }
-
   Widget _buildGoogleIcon() {
     return Image.asset(
       'assets/public/icon-google.png',
@@ -291,28 +254,22 @@ class _ClientRegistrationScreenState extends State<ClientRegistrationScreen> {
             controller: _nameController,
             textInputAction: TextInputAction.next,
             textCapitalization: TextCapitalization.words,
-            decoration: _roundedInputDecoration(
+            decoration: AuthFormStyles.fieldDecoration(
               hintText: 'Name',
               prefixIcon: Icons.person_outline_rounded,
             ),
-            style: const TextStyle(
-              fontSize: 19,
-              color: AppColors.textPrimary,
-            ),
+            style: AuthFormStyles.fieldTextStyle,
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: AuthFormStyles.fieldGap),
           TextFormField(
             controller: _emailController,
             keyboardType: TextInputType.emailAddress,
             textInputAction: TextInputAction.next,
-            decoration: _roundedInputDecoration(
+            decoration: AuthFormStyles.fieldDecoration(
               hintText: locale.t('auth.email'),
               prefixIcon: Icons.email_rounded,
             ),
-            style: const TextStyle(
-              fontSize: 19,
-              color: AppColors.textPrimary,
-            ),
+            style: AuthFormStyles.fieldTextStyle,
             validator: (v) {
               if (v == null || v.trim().isEmpty) {
                 return locale.t('auth.enterEmail');
@@ -321,26 +278,23 @@ class _ClientRegistrationScreenState extends State<ClientRegistrationScreen> {
               return null;
             },
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: AuthFormStyles.fieldGap),
           TextFormField(
             controller: _phoneController,
             textInputAction: TextInputAction.next,
             keyboardType: TextInputType.phone,
-            decoration: _roundedInputDecoration(
+            decoration: AuthFormStyles.fieldDecoration(
               hintText: 'Phone',
               prefixIcon: Icons.phone_rounded,
             ),
-            style: const TextStyle(
-              fontSize: 19,
-              color: AppColors.textPrimary,
-            ),
+            style: AuthFormStyles.fieldTextStyle,
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: AuthFormStyles.fieldGap),
           TextFormField(
             controller: _passwordController,
             obscureText: _obscurePassword,
             textInputAction: TextInputAction.next,
-            decoration: _roundedInputDecoration(
+            decoration: AuthFormStyles.fieldDecoration(
               hintText: locale.t('auth.password'),
               prefixIcon: Icons.lock_rounded,
               suffixIcon: IconButton(
@@ -352,27 +306,24 @@ class _ClientRegistrationScreenState extends State<ClientRegistrationScreen> {
                   _obscurePassword
                       ? Icons.visibility_outlined
                       : Icons.visibility_off_outlined,
-                  color: _placeholderMuted,
+                  color: AuthFormStyles.hintMuted,
                 ),
               ),
             ),
-            style: const TextStyle(
-              fontSize: 19,
-              color: AppColors.textPrimary,
-            ),
+            style: AuthFormStyles.fieldTextStyle,
             validator: (v) {
               if (v == null || v.isEmpty) return locale.t('auth.enterPassword');
               if (v.length < 6) return locale.t('auth.passwordMin');
               return null;
             },
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: AuthFormStyles.fieldGap),
           TextFormField(
             controller: _confirmPasswordController,
             obscureText: _obscureConfirmPassword,
             textInputAction: TextInputAction.done,
             onFieldSubmitted: (_) => _submit(),
-            decoration: _roundedInputDecoration(
+            decoration: AuthFormStyles.fieldDecoration(
               hintText: locale.t('auth.confirmPassword'),
               prefixIcon: Icons.lock_rounded,
               suffixIcon: IconButton(
@@ -386,14 +337,11 @@ class _ClientRegistrationScreenState extends State<ClientRegistrationScreen> {
                   _obscureConfirmPassword
                       ? Icons.visibility_outlined
                       : Icons.visibility_off_outlined,
-                  color: _placeholderMuted,
+                  color: AuthFormStyles.hintMuted,
                 ),
               ),
             ),
-            style: const TextStyle(
-              fontSize: 19,
-              color: AppColors.textPrimary,
-            ),
+            style: AuthFormStyles.fieldTextStyle,
             validator: (v) {
               if (v == null || v.isEmpty) return locale.t('auth.enterPassword');
               if (v != _passwordController.text) {
@@ -404,17 +352,11 @@ class _ClientRegistrationScreenState extends State<ClientRegistrationScreen> {
           ),
           const SizedBox(height: 30),
           SizedBox(
-            height: 60,
+            height: AuthFormStyles.buttonHeight,
             child: FilledButton(
               onPressed:
                   (_isSubmitting || _isGoogleLoading) ? null : _submit,
-              style: FilledButton.styleFrom(
-                backgroundColor: AppColors.primary500,
-                foregroundColor: AppColors.textInverse,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(999),
-                ),
-              ),
+              style: AuthFormStyles.primaryButtonStyle(),
               child: _isSubmitting
                   ? const SizedBox(
                       width: 22,
@@ -464,7 +406,7 @@ class _ClientRegistrationScreenState extends State<ClientRegistrationScreen> {
           ),
           const SizedBox(height: 22),
           SizedBox(
-            height: 60,
+            height: AuthFormStyles.buttonHeight,
             child: OutlinedButton.icon(
               onPressed:
                   (_isSubmitting || _isGoogleLoading) ? null : _submitGoogle,
@@ -485,13 +427,7 @@ class _ClientRegistrationScreenState extends State<ClientRegistrationScreen> {
                   color: AppColors.textPrimary,
                 ),
               ),
-              style: OutlinedButton.styleFrom(
-                backgroundColor: AppColors.backgroundPrimary,
-                side: BorderSide.none,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(999),
-                ),
-              ),
+              style: AuthFormStyles.googleButtonStyle(),
             ),
           ),
         ],
@@ -613,16 +549,10 @@ class _ClientRegistrationScreenState extends State<ClientRegistrationScreen> {
                 ),
                 const SizedBox(height: 14),
                 SizedBox(
-                  height: 60,
+                  height: AuthFormStyles.buttonHeight,
                   child: FilledButton(
                     onPressed: _isVerifyingCode ? null : _verifyCode,
-                    style: FilledButton.styleFrom(
-                      backgroundColor: AppColors.primary500,
-                      foregroundColor: AppColors.textInverse,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(999),
-                      ),
-                    ),
+                    style: AuthFormStyles.primaryButtonStyle(),
                     child: _isVerifyingCode
                         ? const SizedBox(
                             width: 22,
