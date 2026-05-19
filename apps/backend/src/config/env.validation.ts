@@ -114,6 +114,18 @@ export class EnvironmentVariables {
 
   @IsString()
   @IsOptional()
+  REVENUECAT_SECRET_API_KEY?: string;
+
+  @IsString()
+  @IsOptional()
+  REVENUECAT_ENTITLEMENT_ID?: string;
+
+  @IsString()
+  @IsOptional()
+  REVENUECAT_WEBHOOK_AUTHORIZATION?: string;
+
+  @IsString()
+  @IsOptional()
   STRIPE_CHECKOUT_SUCCESS_URL?: string;
 
   @IsString()

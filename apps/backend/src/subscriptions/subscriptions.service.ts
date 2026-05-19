@@ -9,6 +9,7 @@ import type Stripe from 'stripe';
 
 import { PrismaService } from '../prisma/prisma.service';
 import { StripeCheckoutService } from './stripe-checkout.service';
+import { RevenueCatService } from './revenuecat.service';
 import { AnalyticsService } from '../analytics/analytics.service';
 
 /** ISO 4217 zero-decimal currencies (Stripe `unit_amount` is whole major units). */
@@ -46,8 +47,13 @@ export class SubscriptionsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly checkout: StripeCheckoutService,
+    private readonly revenueCat: RevenueCatService,
     private readonly analytics: AnalyticsService,
   ) {}
+
+  async syncRevenueCat(userId: string) {
+    return this.revenueCat.syncOwnerFromRevenueCat(userId);
+  }
 
   async getCurrentForOwner(userId: string) {
     const studio = await this.prisma.studio.findFirst({

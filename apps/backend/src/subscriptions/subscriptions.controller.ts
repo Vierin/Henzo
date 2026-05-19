@@ -23,7 +23,20 @@ export class SubscriptionsController {
   ) {}
 
   /**
-   * Stripe Checkout (subscription) — редирект на оплату Pro (mobile / web).
+   * After RevenueCat purchase / restore — pull entitlements and persist Pro in DB.
+   */
+  @Post('sync-revenuecat')
+  async syncRevenueCat(@Headers('authorization') authHeader: string) {
+    const { user } = await this.authService.getCurrentUser(authHeader);
+    if (user.role !== 'OWNER') {
+      throw new ForbiddenException('Only studio owners can sync subscriptions');
+    }
+    const data = await this.subscriptions.syncRevenueCat(user.id);
+    return { success: true, data };
+  }
+
+  /**
+   * Stripe Checkout (subscription) — web only; mobile uses RevenueCat IAP.
    */
   @Post('create-checkout-session')
   async createCheckoutSession(

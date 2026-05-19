@@ -31,6 +31,7 @@ import 'services/cache/salon_cache.dart';
 import 'services/cache/services_staff_cache.dart';
 import 'services/notifications_store.dart';
 import 'services/push_notification_service.dart';
+import 'services/revenuecat_service.dart';
 import 'services/subscription_refresh_notifier.dart';
 import 'theme/app_theme.dart';
 import 'utils/owner_image_picker.dart';
@@ -105,6 +106,7 @@ Future<void> main() async {
         url: AppConfig.supabaseUrl,
         anonKey: AppConfig.supabaseAnonKey,
       );
+      await RevenueCatService.configure();
       runApp(MyApp(notificationsStore: notificationsStore));
     },
     (error, stack) {

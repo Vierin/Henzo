@@ -287,7 +287,14 @@
 		"checkoutSuccessBody": "Оформление Pro завершено. Обновление плана в приложении может занять короткое время.",
 		"checkoutCancelledTitle": "Оплата не завершена",
 		"checkoutCancelledBody": "Оплата отменена или не была завершена. Вы можете повторить попытку в разделе «Подписка».",
-		"checkoutDone": "Понятно"
+		"checkoutDone": "Понятно",
+		"restorePurchases": "Восстановить покупки",
+		"restoreNothing": "Активная подписка для этого аккаунта не найдена.",
+		"manageSubscription": "Управление подпиской",
+		"purchaseSuccess": "Подписка Pro активирована.",
+		"offeringsUnavailable": "Тарифы временно недоступны. Попробуйте позже.",
+		"storeNotConfigured": "Внутриигровые покупки не настроены для этой сборки.",
+		"rcEntitlementNotLinked": "Покупка в RevenueCat есть, но Pro не применился. Привяжи продукты к entitlement «pro» в дашборде RevenueCat."
 	},
 	"profile": {
 		"title": "Профиль",

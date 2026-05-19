@@ -19,6 +19,7 @@ import '../widgets/language_selector_modal.dart';
 import 'account_settings_screen.dart';
 import '../widgets/settings/feedback_sheet.dart';
 import '../widgets/settings/owner_booking_period_sheet.dart';
+import '../widgets/settings/settings_header_back_button.dart';
 import '../widgets/settings/settings_list_widgets.dart';
 import '../widgets/settings/settings_typography.dart';
 import 'settings_screen.dart';
@@ -225,17 +226,8 @@ class _AppSettingsScreenState extends State<AppSettingsScreen> {
               : AppBar(
                   backgroundColor: Colors.transparent,
                   elevation: 0,
-                  leading: IconButton(
+                  leading: SettingsHeaderBackButton(
                     onPressed: () => Navigator.pop(context),
-                    style: IconButton.styleFrom(
-                      backgroundColor: AppColors.neutral200,
-                      shape: const CircleBorder(),
-                    ),
-                    icon: const Icon(
-                      Icons.arrow_back,
-                      color: AppColors.textPrimary,
-                      size: 20,
-                    ),
                   ),
                 ),
           body: SafeArea(

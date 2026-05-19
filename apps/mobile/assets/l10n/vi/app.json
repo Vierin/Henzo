@@ -287,7 +287,14 @@
 		"checkoutSuccessBody": "Bạn đã hoàn tất thanh toán gói Pro. Có thể mất vài phút để gói cập nhật trong ứng dụng.",
 		"checkoutCancelledTitle": "Chưa thanh toán",
 		"checkoutCancelledBody": "Thanh toán bị hủy hoặc chưa hoàn tất. Bạn có thể thử lại bất cứ lúc nào trong mục Đăng ký.",
-		"checkoutDone": "Đồng ý"
+		"checkoutDone": "Đồng ý",
+		"restorePurchases": "Khôi phục giao dịch",
+		"restoreNothing": "Không tìm thấy gói đăng ký đang hoạt động.",
+		"manageSubscription": "Quản lý đăng ký",
+		"purchaseSuccess": "Gói Pro đã được kích hoạt.",
+		"offeringsUnavailable": "Gói tạm thời không khả dụng. Thử lại sau.",
+		"storeNotConfigured": "Mua trong ứng dụng chưa được cấu hình cho bản build này.",
+		"rcEntitlementNotLinked": "Đã ghi nhận mua trên RevenueCat nhưng chưa kích hoạt Pro. Gắn sản phẩm với entitlement \"pro\" trong RevenueCat."
 	},
 	"profile": {
 		"title": "Hồ sơ",

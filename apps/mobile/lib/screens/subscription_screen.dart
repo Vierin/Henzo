@@ -1,27 +1,20 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:purchases_flutter/purchases_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import '../config/app_config.dart';
 import '../constants/colors.dart';
 import '../l10n/locale_provider.dart';
 import '../models/subscription.dart';
-import '../models/subscription_pro_prices.dart';
 import '../services/analytics_service.dart';
 import '../services/auth_service.dart';
+import '../services/revenuecat_service.dart';
 import '../services/subscription_api_service.dart';
 import '../services/subscription_refresh_notifier.dart';
 import '../utils/show_api_error.dart';
-
-String _formatVndSite(int amount) {
-  final raw = amount.toString();
-  final buf = StringBuffer();
-  final len = raw.length;
-  for (var i = 0; i < len; i++) {
-    if (i > 0 && (len - i) % 3 == 0) buf.write('.');
-    buf.write(raw[i]);
-  }
-  return '${buf.toString()} VND';
-}
+import '../widgets/auth/auth_form_styles.dart';
 
 List<String> _proFeatureLabels(LocaleProvider locale) => [
   locale.t('subscription.feature1'),
@@ -41,9 +34,13 @@ class SubscriptionScreen extends StatefulWidget {
 
 class _SubscriptionScreenState extends State<SubscriptionScreen> {
   Subscription? _subscription;
-  SubscriptionProPrices _prices = SubscriptionProPrices.fallbackStatic();
+  Package? _monthlyPackage;
+  Package? _annualPackage;
+  int? _annualSavePercent;
   bool _loading = true;
+  bool _offeringsError = false;
   String? _checkoutLoading; // 'monthly' | 'annual'
+  bool _restoreLoading = false;
   String _billingInterval = 'monthly';
   SubscriptionRefreshNotifier? _subRefresh;
 
@@ -77,16 +74,31 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
     }
     setState(() => _loading = true);
     try {
-      final results = await Future.wait<Object?>([
-        SubscriptionApiService.getCurrent(token),
-        SubscriptionApiService.getProPrices(token),
-      ]);
-      final sub = results[0] as Subscription?;
-      final priceObj = results[1] as SubscriptionProPrices?;
+      final sub = await SubscriptionApiService.getCurrent(token);
+      Offering? offering;
+      Package? monthly;
+      Package? annual;
+      var offeringsError = false;
+      if (RevenueCatService.isConfigured) {
+        final offerings = await RevenueCatService.fetchOfferings();
+        offering = offerings?.current;
+        monthly = RevenueCatService.packageForInterval(offering, 'monthly');
+        annual = RevenueCatService.packageForInterval(offering, 'annual');
+        offeringsError = offering == null ||
+            (monthly == null && annual == null);
+      } else {
+        offeringsError = true;
+      }
       if (mounted) {
         setState(() {
           _subscription = sub;
-          _prices = priceObj ?? SubscriptionProPrices.fallbackStatic();
+          _monthlyPackage = monthly;
+          _annualPackage = annual;
+          _annualSavePercent = RevenueCatService.annualSavePercent(
+            monthly: monthly,
+            annual: annual,
+          );
+          _offeringsError = offeringsError;
           _loading = false;
         });
       }
@@ -97,6 +109,19 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
 
   bool get _isPro => _subscription?.type.toUpperCase() == 'PRO';
 
+  Package? _packageForInterval(String interval) =>
+      interval == 'annual' ? _annualPackage : _monthlyPackage;
+
+  String? _priceLabelForInterval(String interval) {
+    final pkg = _packageForInterval(interval);
+    return pkg?.storeProduct.priceString;
+  }
+
+  String? _comparePriceLabel() {
+    if (_billingInterval != 'annual') return null;
+    return _monthlyPackage?.storeProduct.priceString;
+  }
+
   Future<void> _openUrl(String? url) async {
     if (url == null || url.isEmpty) return;
     final uri = Uri.tryParse(url);
@@ -106,27 +131,107 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
     }
   }
 
+  Future<void> _afterStorePurchase(String accessToken) async {
+    bool synced = false;
+    try {
+      synced = await RevenueCatService.syncWithBackend(accessToken);
+    } catch (e) {
+      if (mounted) showApiError(context, e);
+      return;
+    }
+    if (!mounted) return;
+    if (synced) {
+      if (!mounted) return;
+      context.read<SubscriptionRefreshNotifier>().notifySubscriptionMaybeChanged();
+      await _load();
+      if (!mounted) return;
+      final locale = context.read<LocaleProvider>();
+      ScaffoldMessenger.maybeOf(context)?.showSnackBar(
+        SnackBar(content: Text(locale.t('subscription.purchaseSuccess'))),
+      );
+    } else {
+      ScaffoldMessenger.maybeOf(context)?.showSnackBar(
+        const SnackBar(content: Text('Подписка оформлена, обновите экран')),
+      );
+    }
+  }
+
   Future<void> _handleSelectPlan(String interval) async {
+    final locale = context.read<LocaleProvider>();
+    if (!RevenueCatService.isConfigured) {
+      ScaffoldMessenger.maybeOf(context)?.showSnackBar(
+        SnackBar(content: Text(locale.t('subscription.storeNotConfigured'))),
+      );
+      return;
+    }
+    final pkg = _packageForInterval(interval);
+    if (pkg == null) {
+      ScaffoldMessenger.maybeOf(context)?.showSnackBar(
+        SnackBar(content: Text(locale.t('subscription.offeringsUnavailable'))),
+      );
+      return;
+    }
     final token = context.read<AuthService>().accessToken;
     if (token == null) return;
     setState(() => _checkoutLoading = interval);
     try {
-      final url = await SubscriptionApiService.createCheckoutSession(
-        token,
-        interval,
-      );
-      if (mounted && url != null) {
-        await _openUrl(url);
-      } else if (mounted) {
-        ScaffoldMessenger.maybeOf(context)?.showSnackBar(
-          const SnackBar(content: Text('Не удалось перейти к оплате')),
-        );
+      final info = await RevenueCatService.purchasePackage(pkg);
+      if (!mounted) return;
+      if (info != null) {
+        RevenueCatService.debugLogEntitlements(info);
+        await _afterStorePurchase(token);
+        if (!mounted) return;
+        if (!RevenueCatService.hasActiveProEntitlement(info)) {
+          ScaffoldMessenger.maybeOf(context)?.showSnackBar(
+            SnackBar(
+              content: Text(
+                locale.t('subscription.rcEntitlementNotLinked'),
+              ),
+            ),
+          );
+        }
       }
     } catch (e) {
       if (mounted) showApiError(context, e);
     } finally {
       if (mounted) setState(() => _checkoutLoading = null);
     }
+  }
+
+  Future<void> _restorePurchases() async {
+    final locale = context.read<LocaleProvider>();
+    if (!RevenueCatService.isConfigured) {
+      ScaffoldMessenger.maybeOf(context)?.showSnackBar(
+        SnackBar(content: Text(locale.t('subscription.storeNotConfigured'))),
+      );
+      return;
+    }
+    final token = context.read<AuthService>().accessToken;
+    if (token == null) return;
+    setState(() => _restoreLoading = true);
+    try {
+      final info = await RevenueCatService.restorePurchases();
+      if (!mounted) return;
+      if (info != null) {
+        RevenueCatService.debugLogEntitlements(info);
+        if (RevenueCatService.hasActiveProEntitlement(info)) {
+          await _afterStorePurchase(token);
+        } else {
+          ScaffoldMessenger.maybeOf(context)?.showSnackBar(
+            SnackBar(content: Text(locale.t('subscription.restoreNothing'))),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) showApiError(context, e);
+    } finally {
+      if (mounted) setState(() => _restoreLoading = false);
+    }
+  }
+
+  Future<void> _openManageSubscription() async {
+    final url = await RevenueCatService.managementUrl();
+    await _openUrl(url);
   }
 
   @override
@@ -165,22 +270,69 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
                         _CurrentPlanCard(isPro: _isPro),
                         const SizedBox(height: 16),
                         if (!_isPro) ...[
-                          _BillingToggle(
-                            billingInterval: _billingInterval,
-                            annualSavePercent: _prices.annualSavePercent,
-                            onChanged: (v) =>
-                                setState(() => _billingInterval = v),
-                          ),
+                          if (_offeringsError)
+                            Padding(
+                              padding: const EdgeInsets.only(bottom: 12),
+                              child: Text(
+                                locale.t('subscription.offeringsUnavailable'),
+                                style: const TextStyle(
+                                  fontSize: 13,
+                                  color: AppColors.error600,
+                                ),
+                              ),
+                            ),
+                          if (_monthlyPackage != null &&
+                              _annualPackage != null)
+                            _BillingToggle(
+                              billingInterval: _billingInterval,
+                              annualSavePercent: _annualSavePercent ?? 0,
+                              onChanged: (v) =>
+                                  setState(() => _billingInterval = v),
+                            ),
                           const SizedBox(height: 16),
                           _PlanCard(
-                            prices: _prices,
+                            priceLabel:
+                                _priceLabelForInterval(_billingInterval) ??
+                                '—',
+                            comparePriceLabel: _comparePriceLabel(),
                             isAnnual: _billingInterval == 'annual',
                             onSubscribe: () =>
                                 _handleSelectPlan(_billingInterval),
                             checkoutLoading: _checkoutLoading,
                           ),
-                        ] else
+                          const SizedBox(height: 12),
+                          TextButton(
+                            onPressed: _restoreLoading
+                                ? null
+                                : _restorePurchases,
+                            child: Text(
+                              _restoreLoading
+                                  ? locale.t('common.loading')
+                                  : locale.t('subscription.restorePurchases'),
+                            ),
+                          ),
+                        ] else ...[
                           const _ProEnabledCard(),
+                          const SizedBox(height: 12),
+                          TextButton(
+                            onPressed: _openManageSubscription,
+                            child: Text(
+                              locale.t('subscription.manageSubscription'),
+                            ),
+                          ),
+                        ],
+                        if (!AppConfig.isRevenueCatEnabled && !kReleaseMode)
+                          Padding(
+                            padding: const EdgeInsets.only(top: 16),
+                            child: Text(
+                              locale.t('subscription.storeNotConfigured'),
+                              style: const TextStyle(
+                                fontSize: 12,
+                                color: AppColors.textTertiary,
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
+                          ),
                       ],
                     ),
                   ),
@@ -396,6 +548,7 @@ class _BillingToggle extends StatelessWidget {
                                 : AppColors.textPrimary,
                           ),
                         ),
+                        if (annualSavePercent > 0) ...[
                         const SizedBox(width: 6),
                         Container(
                           padding: const EdgeInsets.symmetric(
@@ -415,6 +568,7 @@ class _BillingToggle extends StatelessWidget {
                             ),
                           ),
                         ),
+                        ],
                       ],
                     ),
                   ),
@@ -431,13 +585,15 @@ class _BillingToggle extends StatelessWidget {
 class _PlanCard extends StatelessWidget {
   static const Color _fireAccent = Color(0xFFE65100);
 
-  final SubscriptionProPrices prices;
+  final String priceLabel;
+  final String? comparePriceLabel;
   final bool isAnnual;
   final VoidCallback onSubscribe;
   final String? checkoutLoading;
 
   const _PlanCard({
-    required this.prices,
+    required this.priceLabel,
+    this.comparePriceLabel,
     required this.isAnnual,
     required this.onSubscribe,
     this.checkoutLoading,
@@ -446,7 +602,6 @@ class _PlanCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final locale = context.read<LocaleProvider>();
-    final price = isAnnual ? prices.annualVnd : prices.monthlyVnd;
     final periodLabel = locale.t(
       isAnnual ? 'subscription.perYearShort' : 'subscription.perMonthShort',
     );
@@ -503,11 +658,11 @@ class _PlanCard extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 20),
-          if (isAnnual)
+          if (isAnnual && comparePriceLabel != null)
             Padding(
               padding: const EdgeInsets.only(bottom: 8),
               child: Text(
-                _formatVndSite(prices.twelveMonthsCompareVnd),
+                comparePriceLabel!,
                 style: TextStyle(
                   fontSize: 18,
                   color: AppColors.textTertiary.withValues(alpha: 0.9),
@@ -519,7 +674,7 @@ class _PlanCard extends StatelessWidget {
               ),
             ),
           Text(
-            _formatVndSite(price),
+            priceLabel,
             style: const TextStyle(
               fontSize: 26,
               fontWeight: FontWeight.w800,
@@ -566,13 +721,10 @@ class _PlanCard extends StatelessWidget {
           const SizedBox(height: 16),
           SizedBox(
             width: double.infinity,
+            height: AuthFormStyles.buttonHeight,
             child: FilledButton(
               onPressed: checkoutLoading != null ? null : onSubscribe,
-              style: FilledButton.styleFrom(
-                backgroundColor: AppColors.primary500,
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(vertical: 14),
-              ),
+              style: AuthFormStyles.primaryButtonStyle(),
               child: Text(
                 checkoutLoading != null
                     ? locale.t('common.loading')

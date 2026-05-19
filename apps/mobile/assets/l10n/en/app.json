@@ -287,7 +287,14 @@
 		"checkoutSuccessBody": "Your Pro subscription checkout completed. It may take a moment for the plan to update in the app.",
 		"checkoutCancelledTitle": "Payment not completed",
 		"checkoutCancelledBody": "Checkout was cancelled or could not be completed. You can try again anytime from Subscription.",
-		"checkoutDone": "OK"
+		"checkoutDone": "OK",
+		"restorePurchases": "Restore purchases",
+		"restoreNothing": "No active subscription found for this account.",
+		"manageSubscription": "Manage subscription",
+		"purchaseSuccess": "Pro subscription is active.",
+		"offeringsUnavailable": "Plans are temporarily unavailable. Try again later.",
+		"storeNotConfigured": "In-app purchases are not configured for this build.",
+		"rcEntitlementNotLinked": "Purchase recorded in RevenueCat but Pro was not applied. Link products to the \"pro\" entitlement in the RevenueCat dashboard."
 	},
 	"profile": {
 		"title": "Profile",

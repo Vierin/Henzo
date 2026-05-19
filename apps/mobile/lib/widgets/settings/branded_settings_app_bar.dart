@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../constants/colors.dart';
+import 'settings_header_back_button.dart';
 import 'settings_typography.dart';
 
 /// App bar for owner settings sub-screens (centered title, secondary bg).
@@ -16,17 +17,8 @@ PreferredSizeWidget buildBrandedSettingsAppBar(
     elevation: 0,
     scrolledUnderElevation: 0,
     centerTitle: true,
-    leading: IconButton(
+    leading: SettingsHeaderBackButton(
       onPressed: onBack ?? () => Navigator.of(context).maybePop(),
-      style: IconButton.styleFrom(
-        backgroundColor: AppColors.neutral200,
-        shape: const CircleBorder(),
-      ),
-      icon: const Icon(
-        Icons.arrow_back,
-        color: AppColors.textPrimary,
-        size: 20,
-      ),
     ),
     title: Text(title, style: SettingsTypography.screenTitle(context)),
     actions: actions,

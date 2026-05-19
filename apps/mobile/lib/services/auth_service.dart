@@ -12,6 +12,7 @@ import '../models/user_model.dart';
 import '../utils/auth_ui_result.dart';
 import '../utils/owner_navigation_restore.dart';
 import 'analytics_service.dart';
+import 'revenuecat_service.dart';
 
 class AuthService extends ChangeNotifier {
   AuthService() {
@@ -155,6 +156,12 @@ class AuthService extends ChangeNotifier {
         if (_user != null) {
           unawaited(
             AnalyticsService.instance.setUser(_user!.id, role: _user!.role),
+          );
+          unawaited(
+            RevenueCatService.onAuthUserChanged(
+              userId: _user!.id,
+              isOwner: isStudioOperator,
+            ),
           );
         }
         return (ok: true, errorL10nKey: null, errorRaw: null);
@@ -535,6 +542,9 @@ class AuthService extends ChangeNotifier {
     _isAuthenticated = false;
     notifyListeners();
     unawaited(AnalyticsService.instance.setUser(null));
+    unawaited(
+      RevenueCatService.onAuthUserChanged(userId: null, isOwner: false),
+    );
     await OwnerNavigationRestore.clearOwnerNavigationRestore();
     try {
       await _supabase.auth.signOut();
