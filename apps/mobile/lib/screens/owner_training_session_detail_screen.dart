@@ -329,9 +329,12 @@ class _OwnerTrainingSessionDetailScreenState
     final cap = session.capacity;
     final fillRatio = cap > 0 ? (enrolled / cap).clamp(0.0, 1.0) : 0.0;
     final pct = cap > 0 ? (fillRatio * 100).round() : 0;
-    final canCancelSession =
-        session.sessionId.isNotEmpty &&
-        session.status.toUpperCase() == 'ACTIVE';
+    final statusUpper = session.status.toUpperCase();
+    final isFutureSession = session.startsAt.isAfter(DateTime.now());
+    final canCancelSession = session.sessionId.isNotEmpty &&
+        statusUpper != 'CANCELLED' &&
+        (statusUpper == 'ACTIVE' ||
+            (isFutureSession && statusUpper == 'COMPLETED'));
     final now = DateTime.now();
     final sessionEnded = !session.endsAt.isAfter(now);
     final attendanceTogglesVisible = !session.startsAt

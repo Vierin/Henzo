@@ -38,6 +38,10 @@ export class TrainingsService {
     return new Date(date.getFullYear(), date.getMonth(), date.getDate());
   }
 
+  private sessionSlotKey(date: Date): string {
+    return `${date.getFullYear()}-${date.getMonth()}-${date.getDate()}-${date.getHours()}-${date.getMinutes()}`;
+  }
+
   private buildOccurrenceDates(
     startsFromDate: Date,
     daysOfWeek: number[],
@@ -553,42 +557,30 @@ export class TrainingsService {
     const mutableIds = mutable.map((s: any) => s.id);
     const template = mutable[0] ?? existing[0] ?? null;
 
-    const pairCount = Math.min(mutable.length, desired.length);
+    const desiredBySlot = new Map<
+      string,
+      { startsAt: Date; endsAt: Date }
+    >();
+    for (const d of desired) {
+      desiredBySlot.set(this.sessionSlotKey(d.startsAt), d);
+    }
+
+    const mutableBySlot = new Map<string, (typeof mutable)[number]>();
+    for (const row of mutable) {
+      mutableBySlot.set(this.sessionSlotKey(row.startsAt), row);
+    }
+
     let updatedCount = 0;
     let createdCount = 0;
     let skippedConflicts = 0;
 
-    const usedStartsAt = new Set<number>();
-    for (let i = 0; i < pairCount; i += 1) {
-      const d = desired[i]!;
-      usedStartsAt.add(d.startsAt.getTime());
-      const row = mutable[i]!;
-      const overlap = await this.prisma.trainingSession.findFirst({
-        where: {
-          studioId: training.studioId,
-          id: { notIn: mutableIds },
-          status: 'ACTIVE',
-          startsAt: { lt: d.endsAt },
-          endsAt: { gt: d.startsAt },
-          ...(row.trainerId ? { trainerId: row.trainerId } : {}),
-        },
-        select: { id: true },
-      });
-      if (overlap) {
-        skippedConflicts += 1;
-        continue;
-      }
-      await this.prisma.trainingSession.update({
-        where: { id: row.id },
-        data: { startsAt: d.startsAt, endsAt: d.endsAt },
-      });
-      updatedCount += 1;
-    }
+    const toDelete = mutable
+      .filter((row) => !desiredBySlot.has(this.sessionSlotKey(row.startsAt)))
+      .map((row) => row.id);
 
-    if (template) {
-      for (let i = pairCount; i < desired.length; i += 1) {
-        const d = desired[i]!;
-        if (usedStartsAt.has(d.startsAt.getTime())) continue;
+    for (const [slotKey, d] of desiredBySlot) {
+      const row = mutableBySlot.get(slotKey);
+      if (row) {
         const overlap = await this.prisma.trainingSession.findFirst({
           where: {
             studioId: training.studioId,
@@ -596,7 +588,7 @@ export class TrainingsService {
             status: 'ACTIVE',
             startsAt: { lt: d.endsAt },
             endsAt: { gt: d.startsAt },
-            ...(template.trainerId ? { trainerId: template.trainerId } : {}),
+            ...(row.trainerId ? { trainerId: row.trainerId } : {}),
           },
           select: { id: true },
         });
@@ -604,25 +596,53 @@ export class TrainingsService {
           skippedConflicts += 1;
           continue;
         }
-        await this.prisma.trainingSession.create({
-          data: {
-            studioId: training.studioId,
-            trainingId: id,
-            trainerId: template.trainerId ?? null,
-            startsAt: d.startsAt,
-            endsAt: d.endsAt,
-            capacity: template.capacity ?? 1,
-            status: 'ACTIVE',
-          },
-        });
-        createdCount += 1;
+        const needsUpdate =
+          row.startsAt.getTime() !== d.startsAt.getTime() ||
+          row.endsAt.getTime() !== d.endsAt.getTime();
+        if (needsUpdate) {
+          await this.prisma.trainingSession.update({
+            where: { id: row.id },
+            data: { startsAt: d.startsAt, endsAt: d.endsAt },
+          });
+          updatedCount += 1;
+        }
+        continue;
       }
+
+      if (!template) continue;
+
+      const overlap = await this.prisma.trainingSession.findFirst({
+        where: {
+          studioId: training.studioId,
+          id: { notIn: mutableIds },
+          status: 'ACTIVE',
+          startsAt: { lt: d.endsAt },
+          endsAt: { gt: d.startsAt },
+          ...(template.trainerId ? { trainerId: template.trainerId } : {}),
+        },
+        select: { id: true },
+      });
+      if (overlap) {
+        skippedConflicts += 1;
+        continue;
+      }
+      await this.prisma.trainingSession.create({
+        data: {
+          studioId: training.studioId,
+          trainingId: id,
+          trainerId: template.trainerId ?? null,
+          startsAt: d.startsAt,
+          endsAt: d.endsAt,
+          capacity: template.capacity ?? 1,
+          status: 'ACTIVE',
+        },
+      });
+      createdCount += 1;
     }
 
-    const extraIds = mutable.slice(pairCount).map((s: any) => s.id);
-    if (extraIds.length > 0) {
+    if (toDelete.length > 0) {
       await this.prisma.trainingSession.deleteMany({
-        where: { id: { in: extraIds } },
+        where: { id: { in: toDelete } },
       });
     }
 
@@ -634,7 +654,7 @@ export class TrainingsService {
         desiredCount: desired.length,
         updatedCount,
         createdCount,
-        removedCount: extraIds.length,
+        removedCount: toDelete.length,
         skippedBookedCount: existing.length - mutable.length,
         skippedConflicts,
       },

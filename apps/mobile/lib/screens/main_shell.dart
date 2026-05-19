@@ -30,11 +30,13 @@ class MainShell extends StatefulWidget {
   State<MainShell> createState() => MainShellState();
 }
 
-class MainShellState extends State<MainShell> with WidgetsBindingObserver {
+class MainShellState extends State<MainShell> {
   /// Bottom bar: 0 Home, 1 Schedule, 2 Clients, 3 Settings.
   static const int scheduleTabIndex = 1;
 
   int _currentIndex = 0;
+
+  int get currentTabIndex => _currentIndex;
   bool _salonLoading = true;
   final GlobalKey<CalendarScreenState> _scheduleCalendarKey =
       GlobalKey<CalendarScreenState>();
@@ -48,7 +50,6 @@ class MainShellState extends State<MainShell> with WidgetsBindingObserver {
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addObserver(this);
     _shellBodyTabs = <Widget>[
       _buildHomeNavigator(),
       CalendarScreen(key: _scheduleCalendarKey),
@@ -61,21 +62,13 @@ class MainShellState extends State<MainShell> with WidgetsBindingObserver {
     });
   }
 
-  @override
-  void dispose() {
-    WidgetsBinding.instance.removeObserver(this);
-    super.dispose();
-  }
-
-  @override
-  void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (state == AppLifecycleState.inactive ||
-        state == AppLifecycleState.paused) {
-      unawaited(OwnerNavigationRestore.saveShellTabIndex(_currentIndex));
-    }
-  }
-
   Future<void> _restoreShellTabIfNeeded() async {
+    final pendingPhoto =
+        await OwnerNavigationRestore.hasPendingProfilePhotoUpload();
+    if (!pendingPhoto) {
+      await OwnerNavigationRestore.clearShellTabIndex();
+      return;
+    }
     final saved = await OwnerNavigationRestore.readShellTabIndex();
     if (!mounted || saved == null) return;
     if (saved < 0 || saved >= _shellBodyTabs.length) return;
@@ -151,6 +144,14 @@ class MainShellState extends State<MainShell> with WidgetsBindingObserver {
       _scheduleCalendarKey.currentState?.ensureSessionsLoaded();
       _scheduleCalendarKey.currentState?.jumpToToday();
     });
+  }
+
+  void _openHomeTab() {
+    setState(() => _currentIndex = 0);
+    final nav = _homeNavigatorKey.currentState;
+    if (nav != null && nav.canPop()) {
+      nav.popUntil((route) => route.isFirst);
+    }
   }
 
   /// Opens the Clients shell tab and applies optional filter/search (one list).
@@ -243,7 +244,7 @@ class MainShellState extends State<MainShell> with WidgetsBindingObserver {
                         svgAsset: 'assets/icons/icon-house.svg',
                         label: t('shell.tabHome'),
                         isSelected: _currentIndex == 0,
-                        onTap: () => setState(() => _currentIndex = 0),
+                        onTap: _openHomeTab,
                       ),
                     ),
                     Expanded(

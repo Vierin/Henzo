@@ -55,6 +55,14 @@ export class EnvironmentVariables {
   @IsOptional()
   EMAIL_FROM_NAME?: string;
 
+  @IsString()
+  @IsOptional()
+  TELEGRAM_BOT_TOKEN?: string;
+
+  @IsString()
+  @IsOptional()
+  TELEGRAM_FEEDBACK_CHAT_ID?: string;
+
   // Application
   @IsNumberString()
   @IsOptional()

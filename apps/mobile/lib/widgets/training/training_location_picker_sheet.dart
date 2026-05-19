@@ -35,6 +35,7 @@ Future<TrainingLocationPickerResult?> showTrainingLocationPickerSheet(
   required String selectedId,
   TrainingLocationPickerMode mode = TrainingLocationPickerMode.select,
   String? titleL10nKey,
+  Future<bool> Function(TrainingLocationItem location)? onDeleteLocation,
 }) async {
   await context.read<LocaleProvider>().loadStrings();
   if (!context.mounted) return null;
@@ -45,6 +46,7 @@ Future<TrainingLocationPickerResult?> showTrainingLocationPickerSheet(
     backgroundColor: Colors.transparent,
     builder: (sheetCtx) {
       var currentId = selectedId;
+      var items = List<TrainingLocationItem>.from(locations);
       return StatefulBuilder(
         builder: (context, setModalState) {
           return Consumer<LocaleProvider>(
@@ -91,12 +93,17 @@ Future<TrainingLocationPickerResult?> showTrainingLocationPickerSheet(
                         ),
                       ),
                       const SizedBox(height: 16),
-                      ...locations.map((loc) {
+                      ...items.map((loc) {
                         final isHighlighted = loc.id == currentId;
                         final showDefaultBadge = mode ==
                                 TrainingLocationPickerMode.setDefault
                             ? isHighlighted
                             : loc.isDefault;
+                        final canDelete = onDeleteLocation != null &&
+                            items.length > 1 &&
+                            loc.id != 'default';
+                        final showDeleteOnCard = onDeleteLocation != null &&
+                            !isHighlighted;
                         return Padding(
                           padding: const EdgeInsets.only(bottom: 10),
                           child: _LocationOptionCard(
@@ -109,6 +116,23 @@ Future<TrainingLocationPickerResult?> showTrainingLocationPickerSheet(
                               'addTraining.defaultLocationBadge',
                             ),
                             highlightBorder: isHighlighted,
+                            showDelete: showDeleteOnCard,
+                            canDelete: canDelete,
+                            deleteTooltip: locale.t('common.delete'),
+                            onDelete: canDelete
+                                ? () async {
+                                    final ok = await onDeleteLocation(loc);
+                                    if (!ok || !sheetCtx.mounted) return;
+                                    setModalState(() {
+                                      items = items
+                                          .where((l) => l.id != loc.id)
+                                          .toList();
+                                      if (currentId == loc.id) {
+                                        currentId = items.first.id;
+                                      }
+                                    });
+                                  }
+                                : null,
                             onTap: () {
                               setModalState(() => currentId = loc.id);
                               Navigator.of(sheetCtx).pop(
@@ -144,6 +168,10 @@ class _LocationOptionCard extends StatelessWidget {
     required this.defaultBadgeLabel,
     required this.highlightBorder,
     required this.onTap,
+    required this.showDelete,
+    required this.canDelete,
+    required this.deleteTooltip,
+    this.onDelete,
   });
 
   final TrainingLocationItem location;
@@ -152,9 +180,17 @@ class _LocationOptionCard extends StatelessWidget {
   final String defaultBadgeLabel;
   final bool highlightBorder;
   final VoidCallback onTap;
+  final bool showDelete;
+  final bool canDelete;
+  final String deleteTooltip;
+  final VoidCallback? onDelete;
 
   @override
   Widget build(BuildContext context) {
+    final deleteColor = canDelete
+        ? AppColors.textSecondary
+        : AppColors.textSecondary.withValues(alpha: 0.35);
+
     return Material(
       color: AppColors.backgroundPrimary,
       borderRadius: BorderRadius.circular(14),
@@ -172,75 +208,109 @@ class _LocationOptionCard extends StatelessWidget {
               width: highlightBorder ? 1.5 : 1,
             ),
           ),
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
+          padding: EdgeInsets.fromLTRB(
+            14,
+            14,
+            showDelete ? 6 : 14,
+            14,
+          ),
+          child: Stack(
             children: [
-              Padding(
-                padding: const EdgeInsets.only(top: 2),
-                child: SvgPicture.asset(
-                  'assets/icons/icon-pin.svg',
-                  width: 15,
-                  height: 21,
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      location.name,
-                      style: const TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w700,
-                        color: AppColors.textPrimary,
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.only(top: 2),
+                    child: SvgPicture.asset(
+                      'assets/icons/icon-pin.svg',
+                      width: 15,
+                      height: 21,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Padding(
+                      padding: EdgeInsets.only(
+                        right: showDelete ? 28 : 0,
+                        top: showDelete ? 2 : 0,
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            location.name,
+                            style: const TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w700,
+                              color: AppColors.textPrimary,
+                            ),
+                          ),
+                          if (location.address.isNotEmpty) ...[
+                            const SizedBox(height: 4),
+                            Text(
+                              location.address,
+                              style: const TextStyle(
+                                fontSize: 14,
+                                height: 1.25,
+                                fontWeight: FontWeight.w400,
+                                color: AppColors.textSecondary,
+                              ),
+                            ),
+                          ],
+                          if (showDefaultBadge) ...[
+                            const SizedBox(height: 8),
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 10,
+                                vertical: 4,
+                              ),
+                              decoration: BoxDecoration(
+                                color: AppColors.neutral100,
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: Text(
+                                defaultBadgeLabel,
+                                style: const TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w500,
+                                  color: AppColors.textSecondary,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ],
                       ),
                     ),
-                    if (location.address.isNotEmpty) ...[
-                      const SizedBox(height: 4),
-                      Text(
-                        location.address,
-                        style: const TextStyle(
-                          fontSize: 14,
-                          height: 1.25,
-                          fontWeight: FontWeight.w400,
-                          color: AppColors.textSecondary,
-                        ),
+                  ),
+                  if (showCheckmark)
+                    const Padding(
+                      padding: EdgeInsets.only(left: 8, top: 2),
+                      child: Icon(
+                        Icons.check,
+                        color: AppColors.primary500,
+                        size: 24,
+                        weight: 700,
                       ),
-                    ],
-                    if (showDefaultBadge) ...[
-                      const SizedBox(height: 8),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 10,
-                          vertical: 4,
-                        ),
-                        decoration: BoxDecoration(
-                          color: AppColors.neutral100,
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: Text(
-                          defaultBadgeLabel,
-                          style: const TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w500,
-                            color: AppColors.textSecondary,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ],
-                ),
+                    ),
+                ],
               ),
-              if (showCheckmark)
-                const Padding(
-                  padding: EdgeInsets.only(left: 8, top: 2),
-                  child: Icon(
-                    Icons.check,
-                    color: AppColors.primary500,
-                    size: 24,
-                    weight: 700,
+              if (showDelete)
+                Positioned(
+                  top: 0,
+                  right: 0,
+                  child: IconButton(
+                    onPressed: onDelete,
+                    tooltip: deleteTooltip,
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(
+                      minWidth: 36,
+                      minHeight: 36,
+                    ),
+                    icon: Icon(
+                      Icons.delete_outline_rounded,
+                      size: 20,
+                      color: deleteColor,
+                    ),
                   ),
                 ),
             ],

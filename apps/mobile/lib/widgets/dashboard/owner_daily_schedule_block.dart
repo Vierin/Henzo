@@ -50,7 +50,6 @@ class OwnerDailyScheduleBlock extends StatelessWidget {
               decoration: BoxDecoration(
                 color: AppColors.backgroundPrimary,
                 borderRadius: BorderRadius.circular(14),
-                border: Border.all(color: AppColors.borderPrimary),
               ),
               alignment: Alignment.center,
               child: Text(

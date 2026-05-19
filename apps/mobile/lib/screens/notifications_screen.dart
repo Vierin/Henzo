@@ -7,7 +7,17 @@ import 'package:provider/provider.dart';
 import '../constants/colors.dart';
 import '../l10n/locale_provider.dart';
 import '../models/app_notification.dart';
+import '../models/salon.dart';
+import '../services/auth_service.dart';
+import '../services/cache/owner_sessions_cache.dart';
+import '../services/cache/salon_cache.dart';
+import '../services/dashboard_api_service.dart';
 import '../services/notifications_store.dart';
+import '../utils/color_hex.dart';
+import '../utils/show_api_error.dart';
+import '../widgets/training/owner_session_edit_scope_dialog.dart';
+import 'main_shell.dart';
+import 'owner_training_session_detail_screen.dart';
 
 class NotificationsScreen extends StatefulWidget {
   const NotificationsScreen({
@@ -192,19 +202,21 @@ _NotificationKind _notificationKind(AppNotification n) {
 class _NotificationTheme {
   const _NotificationTheme({
     required this.accent,
-    required this.icon,
     required this.typeLabelKey,
+    this.icon,
+    this.svgAsset,
   });
 
   final Color accent;
-  final IconData icon;
+  final IconData? icon;
+  final String? svgAsset;
   final String typeLabelKey;
 
   static _NotificationTheme forKind(_NotificationKind kind) {
     return switch (kind) {
       _NotificationKind.booking => const _NotificationTheme(
         accent: AppColors.primary500,
-        icon: Icons.calendar_today_outlined,
+        svgAsset: 'assets/icons/icon-calendar.svg',
         typeLabelKey: 'notifications.typeBooking',
       ),
       _NotificationKind.bookingCancelled => const _NotificationTheme(
@@ -219,7 +231,7 @@ class _NotificationTheme {
       ),
       _NotificationKind.system => const _NotificationTheme(
         accent: AppColors.neutral500,
-        icon: Icons.campaign_outlined,
+        svgAsset: 'assets/icons/icon-megaphone.svg',
         typeLabelKey: 'notifications.typeAnnouncement',
       ),
     };
@@ -426,12 +438,6 @@ class _NotificationCard extends StatelessWidget {
   final AppNotification notification;
   final LocaleProvider locale;
 
-  static const _cardShadow = BoxShadow(
-    color: Color(0x14000000),
-    blurRadius: 10,
-    offset: Offset(0, 2),
-  );
-
   @override
   Widget build(BuildContext context) {
     final kind = _notificationKind(notification);
@@ -464,16 +470,14 @@ class _NotificationCard extends StatelessWidget {
         decoration: BoxDecoration(
           color: AppColors.backgroundPrimary,
           borderRadius: BorderRadius.circular(16),
-          boxShadow: const [_cardShadow],
+          border: Border.all(color: AppColors.borderPrimary),
         ),
         child: Material(
           color: Colors.transparent,
           borderRadius: BorderRadius.circular(16),
           clipBehavior: Clip.antiAlias,
           child: InkWell(
-            onTap: () {
-              context.read<NotificationsStore>().markRead(notification.id);
-            },
+            onTap: () => _onNotificationTap(context, notification, kind),
             borderRadius: BorderRadius.circular(16),
             child: Padding(
               padding: const EdgeInsets.fromLTRB(14, 14, 12, 14),
@@ -483,6 +487,7 @@ class _NotificationCard extends StatelessWidget {
                   _TypeIconCircle(
                     accent: theme.accent,
                     icon: theme.icon,
+                    svgAsset: theme.svgAsset,
                   ),
                   const SizedBox(width: 12),
                   Expanded(
@@ -581,9 +586,16 @@ class _NotificationCard extends StatelessWidget {
     const normal = TextStyle(fontWeight: FontWeight.w400);
 
     final clientName = n.data['clientName']?.trim();
-    final serviceName = n.data['serviceName']?.trim();
+    final serviceName = _serviceOrClassName(n);
+    final body = n.body.trim();
 
     if (clientName != null && clientName.isNotEmpty) {
+      if (body.startsWith(clientName)) {
+        return [
+          TextSpan(text: clientName, style: bold),
+          TextSpan(text: body.substring(clientName.length), style: normal),
+        ];
+      }
       return switch (kind) {
         _NotificationKind.bookingCancelled => [
           TextSpan(text: clientName, style: bold),
@@ -610,6 +622,14 @@ class _NotificationCard extends StatelessWidget {
     return [_plainMessageSpan(n)];
   }
 
+  String? _serviceOrClassName(AppNotification n) {
+    final service = n.data['serviceName']?.trim();
+    if (service != null && service.isNotEmpty) return service;
+    final training = n.data['trainingName']?.trim();
+    if (training != null && training.isNotEmpty) return training;
+    return null;
+  }
+
   TextSpan _plainMessageSpan(AppNotification n) {
     final text = n.body.isNotEmpty ? n.body : n.title;
     return TextSpan(text: text);
@@ -617,20 +637,20 @@ class _NotificationCard extends StatelessWidget {
 
   String _bookedMessageSuffix(AppNotification n, String? serviceName) {
     if (serviceName != null && serviceName.isNotEmpty) {
-      return ' booked $serviceName session.';
+      return ' booked $serviceName';
     }
     final body = n.body.trim();
     if (body.isNotEmpty) return ' $body';
-    return ' booked a session.';
+    return ' booked a session';
   }
 
   String _cancelledMessageSuffix(AppNotification n, String? serviceName) {
     if (serviceName != null && serviceName.isNotEmpty) {
-      return ' cancelled $serviceName session.';
+      return ' cancelled $serviceName';
     }
     final body = n.body.trim();
     if (body.isNotEmpty) return ' $body';
-    return ' cancelled a session.';
+    return ' cancelled a session';
   }
 
   String _reviewMessageSuffix(AppNotification n) {
@@ -643,7 +663,8 @@ class _NotificationCard extends StatelessWidget {
     AppNotification n,
     LocaleProvider locale,
   ) {
-    final raw = n.data['dateTime']?.trim();
+    final raw =
+        n.data['dateTime']?.trim() ?? n.data['startsAt']?.trim();
     if (raw != null && raw.isNotEmpty) {
       try {
         final dt = DateTime.parse(raw).toLocal();
@@ -667,6 +688,16 @@ class _NotificationCard extends StatelessWidget {
       time: DateFormat('HH:mm', tag).format(dt),
       date: DateFormat('d MMM', tag).format(dt),
     );
+  }
+
+  Future<void> _onNotificationTap(
+    BuildContext context,
+    AppNotification notification,
+    _NotificationKind kind,
+  ) async {
+    context.read<NotificationsStore>().markRead(notification.id);
+    if (!_isBookingFilterKind(kind)) return;
+    await _openBookingSessionDetail(context, notification);
   }
 
   String _relativeTime(DateTime date, LocaleProvider locale) {
@@ -700,13 +731,126 @@ class _BookingSessionParts {
   final String date;
 }
 
+Future<void> _openBookingSessionDetail(
+  BuildContext context,
+  AppNotification notification,
+) async {
+  final token = context.read<AuthService>().accessToken;
+  if (token == null || token.isEmpty) return;
+
+  final sessionId = notification.data['sessionId']?.trim() ?? '';
+  final dateRaw =
+      notification.data['dateTime']?.trim() ??
+      notification.data['startsAt']?.trim();
+  DateTime? anchor;
+  if (dateRaw != null && dateRaw.isNotEmpty) {
+    anchor = DateTime.tryParse(dateRaw)?.toLocal();
+  }
+
+  final day = anchor ?? DateTime.now();
+  final dayStart = DateTime(day.year, day.month, day.day);
+  final fromUtc = dayStart.toUtc();
+  final toUtc = dayStart.add(const Duration(days: 2)).toUtc();
+
+  List<OwnerTrainingSession> sessions;
+  try {
+    sessions = await context.read<OwnerSessionsCache>().getSessions(
+      token,
+      fromUtc: fromUtc,
+      toUtc: toUtc,
+    );
+  } catch (e) {
+    if (context.mounted) showApiError(context, e);
+    return;
+  }
+
+  OwnerTrainingSession? match;
+  if (sessionId.isNotEmpty) {
+    for (final s in sessions) {
+      if (s.sessionId == sessionId) {
+        match = s;
+        break;
+      }
+    }
+  }
+
+  if (match == null && anchor != null) {
+    final nameHint =
+        notification.data['trainingName']?.trim() ??
+        notification.data['serviceName']?.trim();
+    if (nameHint != null && nameHint.isNotEmpty) {
+      final hint = nameHint.toLowerCase();
+      for (final s in sessions) {
+        final sameDay = s.startsAt.year == anchor.year &&
+            s.startsAt.month == anchor.month &&
+            s.startsAt.day == anchor.day;
+        if (sameDay && s.trainingName.toLowerCase() == hint) {
+          match = s;
+          break;
+        }
+      }
+    }
+  }
+
+  if (!context.mounted) return;
+  if (match == null) {
+    ScaffoldMessenger.maybeOf(context)?.showSnackBar(
+      const SnackBar(content: Text('Session not found')),
+    );
+    return;
+  }
+
+  Salon? salon;
+  try {
+    salon = await context.read<SalonCache>().getSalon(token);
+  } catch (_) {}
+
+  final venue = salon?.name?.trim();
+  final shell = context.findAncestorStateOfType<MainShellState>();
+
+  if (!context.mounted) return;
+  await Navigator.of(context).push<void>(
+    MaterialPageRoute<void>(
+      builder: (navCtx) => OwnerTrainingSessionDetailScreen(
+        session: match!,
+        trainingColor: parseHexColor(match.trainingDisplayColorHex),
+        venueName: venue,
+        onParticipantsChanged: () {
+          navCtx.read<OwnerSessionsCache>().invalidate();
+        },
+        onEditSession: match.sessionId.isNotEmpty
+            ? () async {
+                final scope = await showOwnerSessionEditScopeDialog(navCtx);
+                if (!navCtx.mounted || scope == null) return;
+                final args = {
+                  ...match!.toRouteArgs(),
+                  if (scope == OwnerSessionEditScope.thisAndFollowing)
+                    'applyToFollowing': true,
+                };
+                shell?.navigateToTab0Route(
+                  '/owner/session/edit',
+                  arguments: args,
+                );
+              }
+            : null,
+      ),
+    ),
+  );
+}
+
 class _TypeIconCircle extends StatelessWidget {
-  const _TypeIconCircle({required this.accent, required this.icon});
+  const _TypeIconCircle({
+    required this.accent,
+    this.icon,
+    this.svgAsset,
+  });
 
   final Color accent;
-  final IconData icon;
+  final IconData? icon;
+  final String? svgAsset;
 
-  static const double _size = 44;
+  static const double _size = 38;
+  static const double _iconSize = 16;
 
   @override
   Widget build(BuildContext context) {
@@ -715,7 +859,14 @@ class _TypeIconCircle extends StatelessWidget {
       height: _size,
       decoration: BoxDecoration(shape: BoxShape.circle, color: accent),
       alignment: Alignment.center,
-      child: Icon(icon, size: 22, color: Colors.white),
+      child: svgAsset != null
+          ? SvgPicture.asset(
+              svgAsset!,
+              width: _iconSize,
+              height: _iconSize,
+              fit: BoxFit.contain,
+            )
+          : Icon(icon, size: _iconSize, color: Colors.white),
     );
   }
 }

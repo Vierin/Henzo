@@ -138,6 +138,7 @@ class _AddTrainingScreenState extends State<AddTrainingScreen> {
       context,
       locations: _locations,
       selectedId: _selectedLocationId,
+      onDeleteLocation: _deleteTrainingLocation,
     );
     if (!mounted || result == null) return;
 
@@ -149,26 +150,41 @@ class _AddTrainingScreenState extends State<AddTrainingScreen> {
     }
   }
 
+  Future<bool> _deleteTrainingLocation(TrainingLocationItem loc) async {
+    final studio = _studio;
+    if (studio == null || loc.id == 'default') return false;
+
+    final updated = _locations.where((l) => l.id != loc.id).toList();
+    try {
+      final updatedSalon = await persistExtraTrainingLocations(
+        context,
+        studio,
+        updated,
+      );
+      if (!mounted) return false;
+      final locale = context.read<LocaleProvider>();
+      setState(() {
+        _studio = updatedSalon ?? studio;
+        _applyLocationsFromStudio(_studio, locale);
+        if (_selectedLocationId == loc.id && _locations.isNotEmpty) {
+          _selectedLocationId = _locations.first.id;
+        }
+      });
+      return true;
+    } catch (e) {
+      if (mounted) showApiError(context, e);
+      return false;
+    }
+  }
+
   Future<void> _addNewTrainingLocation() async {
     final locale = context.read<LocaleProvider>();
     final studio = _studio;
     if (studio == null) return;
 
-    final seed =
-        _selectedLocation ??
-        TrainingLocationItem.defaultFromSalon(
-          studio,
-          mainStudioName: locale.t('locations.mainStudio'),
-        );
-
     final selection = await AddressPickerModal.show(
       context,
-      initialLocationName: seed.name.trim().isNotEmpty
-          ? seed.name.trim()
-          : locale.t('locations.mainStudio'),
-      initialAddress: seed.address,
-      initialLat: seed.latitude ?? studio.latitude,
-      initialLon: seed.longitude ?? studio.longitude,
+      initialAddress: '',
     );
     if (!mounted || selection == null) return;
 

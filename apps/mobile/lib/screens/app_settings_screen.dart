@@ -17,6 +17,7 @@ import '../services/dashboard_api_service.dart';
 import '../services/push_notification_service.dart';
 import '../widgets/language_selector_modal.dart';
 import 'account_settings_screen.dart';
+import '../widgets/settings/feedback_sheet.dart';
 import '../widgets/settings/owner_booking_period_sheet.dart';
 import '../widgets/settings/settings_typography.dart';
 import 'settings_screen.dart';
@@ -366,6 +367,11 @@ class _AppSettingsScreenState extends State<AppSettingsScreen> {
                         title: locale.t('settings.termsOfUse'),
                         onTap: () =>
                             _openWebPage(context, locale, '/terms-of-service'),
+                      ),
+                      _SettingsTile(
+                        icon: Icons.chat_bubble_outline,
+                        title: locale.t('settings.feedback.sendFeedback'),
+                        onTap: () => showFeedbackSheet(context),
                       ),
                     ],
                   ),

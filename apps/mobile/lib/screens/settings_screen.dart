@@ -245,6 +245,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       selectedId: defaultId,
       mode: TrainingLocationPickerMode.setDefault,
       titleL10nKey: 'profileForm.chooseDefaultLocationSheetTitle',
+      onDeleteLocation: _deleteTrainingLocationFromSettings,
     );
     if (!mounted || result == null) return;
 
@@ -279,6 +280,32 @@ class _SettingsScreenState extends State<SettingsScreen> {
     }
   }
 
+  Future<bool> _deleteTrainingLocationFromSettings(
+    TrainingLocationItem loc,
+  ) async {
+    final salon = _salon;
+    if (salon == null || loc.id == 'default') return false;
+
+    final updated = _locations.where((l) => l.id != loc.id).toList();
+    try {
+      final updatedSalon = await persistExtraTrainingLocations(
+        context,
+        salon,
+        updated,
+      );
+      if (!mounted) return false;
+      final locale = context.read<LocaleProvider>();
+      setState(() {
+        _salon = updatedSalon ?? salon;
+        _applyLocationsFromSalon(_salon, locale);
+      });
+      return true;
+    } catch (e) {
+      if (mounted) showApiError(context, e);
+      return false;
+    }
+  }
+
   Future<void> _addNewTrainingLocationFromSettings() async {
     final locale = context.read<LocaleProvider>();
     final salon = _salon;
@@ -288,21 +315,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
       _applyLocationsFromSalon(salon, locale);
     }
 
-    final seed =
-        _primaryLocation ??
-        TrainingLocationItem.defaultFromSalon(
-          salon,
-          mainStudioName: locale.t('locations.mainStudio'),
-        );
-
     final selection = await AddressPickerModal.show(
       context,
-      initialLocationName: seed.name.trim().isNotEmpty
-          ? seed.name.trim()
-          : locale.t('locations.mainStudio'),
-      initialAddress: seed.address,
-      initialLat: seed.latitude ?? salon.latitude,
-      initialLon: seed.longitude ?? salon.longitude,
+      initialAddress: '',
     );
     if (!mounted || selection == null) return;
 

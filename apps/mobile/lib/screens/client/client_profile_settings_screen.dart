@@ -8,6 +8,7 @@ import '../../constants/layout.dart';
 import '../../l10n/locale_provider.dart';
 import '../../services/auth_service.dart';
 import '../../widgets/language_selector_modal.dart';
+import '../../widgets/settings/feedback_sheet.dart';
 import '../../widgets/settings/branded_settings_app_bar.dart';
 import '../../widgets/settings/settings_list_widgets.dart';
 import 'client_edit_profile_screen.dart';
@@ -92,6 +93,11 @@ class ClientProfileSettingsScreen extends StatelessWidget {
                       title: locale.t('settings.privacyPolicy'),
                       onTap: () =>
                           _openWebPage(context, locale, '/privacy-policy'),
+                    ),
+                    SettingsListTile(
+                      icon: Icons.chat_bubble_outline,
+                      title: locale.t('settings.feedback.sendFeedback'),
+                      onTap: () => showFeedbackSheet(context),
                     ),
                   ],
                 ),

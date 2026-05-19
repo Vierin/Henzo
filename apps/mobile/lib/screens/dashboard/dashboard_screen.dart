@@ -37,7 +37,7 @@ class DashboardScreen extends StatefulWidget {
 
 class _DashboardScreenState extends State<DashboardScreen> {
   // Custom palette matching the design mock.
-  static const _statGreen = Color(0xFFBDE03A); // lime-yellow stat card
+  static const _statGreen = Color(0xFFC2F600); // lime-yellow stat card
   static const _statPink = Color(0xFFFAD0C5); // salmon stat card
 
   Salon? _salon;
@@ -293,18 +293,16 @@ class _DashboardScreenState extends State<DashboardScreen> {
           },
           onEditSession: s.sessionId.isNotEmpty
               ? () async {
-                  final scope =
-                      await showOwnerSessionEditScopeDialog(context);
+                  final scope = await showOwnerSessionEditScopeDialog(context);
                   if (!mounted || scope == null) return;
                   final args = {
                     ...s.toRouteArgs(),
                     if (scope == OwnerSessionEditScope.thisAndFollowing)
                       'applyToFollowing': true,
                   };
-                  final changed = await Navigator.of(context).pushNamed<bool>(
-                    '/owner/session/edit',
-                    arguments: args,
-                  );
+                  final changed = await Navigator.of(
+                    context,
+                  ).pushNamed<bool>('/owner/session/edit', arguments: args);
                   if (changed == true) {
                     if (!mounted) return;
                     context.read<OwnerSessionsCache>().invalidate();
@@ -469,9 +467,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
         decoration: BoxDecoration(
           color: background,
           borderRadius: BorderRadius.circular(18),
-          border: bordered
-              ? Border.all(color: AppColors.borderPrimary, width: 1)
-              : null,
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,

@@ -10,6 +10,7 @@ import '../config/app_config.dart';
 import '../l10n/auth_error_keys.dart';
 import '../models/user_model.dart';
 import '../utils/auth_ui_result.dart';
+import '../utils/owner_navigation_restore.dart';
 import 'analytics_service.dart';
 
 class AuthService extends ChangeNotifier {
@@ -534,6 +535,7 @@ class AuthService extends ChangeNotifier {
     _isAuthenticated = false;
     notifyListeners();
     unawaited(AnalyticsService.instance.setUser(null));
+    await OwnerNavigationRestore.clearOwnerNavigationRestore();
     try {
       await _supabase.auth.signOut();
     } catch (_) {}

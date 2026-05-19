@@ -1,14 +1,19 @@
 import 'dart:async';
+import 'dart:io' show Platform;
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'common/henzo_modal.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:geolocator/geolocator.dart';
 import 'package:latlong2/latlong.dart';
+import 'package:permission_handler/permission_handler.dart';
 import 'package:provider/provider.dart';
 
 import '../constants/colors.dart';
 import '../constants/layout.dart';
+import '../main.dart';
 import 'common/sheet_action_button_style.dart';
 import '../l10n/locale_provider.dart';
 import '../services/mapbox_api_service.dart';
@@ -89,6 +94,7 @@ class _AddressPickerModalState extends State<AddressPickerModal> {
   bool _showSuggestions = false;
   bool _loadingSuggestions = false;
   bool _reverseGeocodeLoading = false;
+  bool _currentLocationLoading = false;
   Timer? _debounceTimer;
 
   double? _lat;
@@ -118,8 +124,177 @@ class _AddressPickerModalState extends State<AddressPickerModal> {
 
   bool get _hasSearchInput => _searchController.text.trim().isNotEmpty;
 
+  bool get _hasCoordinates => _lat != null && _lon != null;
+
   bool get _mapInteractive =>
-      _hasLocationName && _searchController.text.trim().length > 3;
+      _hasCoordinates ||
+      (_hasLocationName && _searchController.text.trim().length > 3);
+
+  bool _isUsablePosition(Position? position) {
+    if (position == null) return false;
+    final lat = position.latitude;
+    final lon = position.longitude;
+    if (lat.isNaN || lon.isNaN) return false;
+    if (lat.abs() < 1e-6 && lon.abs() < 1e-6) return false;
+    return lat.abs() <= 90 && lon.abs() <= 180;
+  }
+
+  bool _geoPermissionGranted(LocationPermission permission) =>
+      permission == LocationPermission.always ||
+      permission == LocationPermission.whileInUse;
+
+  static const _freshLastKnownMaxAge = Duration(minutes: 5);
+
+  LocationSettings _gpsSettings({
+    Duration timeLimit = const Duration(seconds: 20),
+    bool forceLocationManager = false,
+    LocationAccuracy accuracy = LocationAccuracy.low,
+  }) {
+    if (Platform.isAndroid) {
+      return AndroidSettings(
+        accuracy: accuracy,
+        timeLimit: timeLimit,
+        distanceFilter: 0,
+        forceLocationManager: forceLocationManager,
+      );
+    }
+    if (Platform.isIOS) {
+      return AppleSettings(
+        accuracy: accuracy,
+        timeLimit: timeLimit,
+        distanceFilter: 0,
+      );
+    }
+    return LocationSettings(
+      accuracy: accuracy,
+      timeLimit: timeLimit,
+      distanceFilter: 0,
+    );
+  }
+
+  Future<Position?> _readLastKnownPosition() async {
+    try {
+      return await Geolocator.getLastKnownPosition();
+    } catch (e) {
+      if (kDebugMode) debugPrint('[AddressPicker] lastKnown failed: $e');
+      return null;
+    }
+  }
+
+  bool _isFreshLastKnown(Position position) {
+    final age = DateTime.now().difference(position.timestamp);
+    return age <= _freshLastKnownMaxAge;
+  }
+
+  Future<bool> _ensureLocationAccess(LocaleProvider locale) async {
+    final t = locale.t;
+    final serviceEnabled = await Geolocator.isLocationServiceEnabled();
+    if (!serviceEnabled) {
+      _showPickerSnack(t('addressPicker.locationServiceDisabled'));
+      await Geolocator.openLocationSettings();
+      return false;
+    }
+
+    var geoPermission = await Geolocator.checkPermission();
+    if (geoPermission == LocationPermission.denied) {
+      geoPermission = await Geolocator.requestPermission();
+    }
+
+    if (!_geoPermissionGranted(geoPermission)) {
+      var phStatus = await Permission.location.status;
+      if (!phStatus.isGranted && !phStatus.isLimited) {
+        phStatus = await Permission.location.request();
+      }
+      geoPermission = await Geolocator.checkPermission();
+    }
+
+    if (_geoPermissionGranted(geoPermission)) return true;
+
+    if (geoPermission == LocationPermission.deniedForever ||
+        await Permission.location.isPermanentlyDenied) {
+      _showPickerSnack(t('addressPicker.locationPermissionDenied'));
+      await openAppSettings();
+      return false;
+    }
+
+    _showPickerSnack(t('addressPicker.locationPermissionDenied'));
+    return false;
+  }
+
+  Future<Position?> _tryCurrentPosition({
+    required bool forceLocationManager,
+    LocationAccuracy accuracy = LocationAccuracy.low,
+    Duration timeout = const Duration(seconds: 18),
+  }) async {
+    try {
+      final pos = await Geolocator.getCurrentPosition(
+        locationSettings: _gpsSettings(
+          forceLocationManager: forceLocationManager,
+          accuracy: accuracy,
+        ),
+      ).timeout(timeout);
+      return _isUsablePosition(pos) ? pos : null;
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint(
+          '[AddressPicker] getCurrentPosition '
+          '(force=$forceLocationManager, accuracy=$accuracy): $e',
+        );
+      }
+      return null;
+    }
+  }
+
+  Future<Position?> _tryPositionStream({
+    required bool forceLocationManager,
+  }) async {
+    StreamSubscription<Position>? sub;
+    try {
+      final completer = Completer<Position?>();
+      final stream = Geolocator.getPositionStream(
+        locationSettings: _gpsSettings(
+          forceLocationManager: forceLocationManager,
+          timeLimit: const Duration(seconds: 22),
+          accuracy: LocationAccuracy.lowest,
+        ),
+      );
+      sub = stream.listen(
+        (position) {
+          if (_isUsablePosition(position) && !completer.isCompleted) {
+            completer.complete(position);
+          }
+        },
+        onError: (Object e) {
+          if (kDebugMode) debugPrint('[AddressPicker] stream error: $e');
+          if (!completer.isCompleted) completer.complete(null);
+        },
+        cancelOnError: true,
+      );
+      final pos = await completer.future.timeout(
+        const Duration(seconds: 24),
+        onTimeout: () => null,
+      );
+      if (pos != null && kDebugMode) {
+        debugPrint(
+          '[AddressPicker] stream ${pos.latitude},${pos.longitude}',
+        );
+      }
+      return _isUsablePosition(pos) ? pos : null;
+    } catch (e) {
+      if (kDebugMode) debugPrint('[AddressPicker] stream failed: $e');
+      return null;
+    } finally {
+      await sub?.cancel();
+    }
+  }
+
+  void _showPickerSnack(String message) {
+    final rootCtx = henzoRootNavigatorKey.currentContext;
+    final messenger = rootCtx != null
+        ? ScaffoldMessenger.maybeOf(rootCtx)
+        : ScaffoldMessenger.maybeOf(context);
+    messenger?.showSnackBar(SnackBar(content: Text(message)));
+  }
 
   Future<void> _fetchSuggestions(String query) async {
     if (query.trim().length < 2) {
@@ -180,6 +355,143 @@ class _AddressPickerModalState extends State<AddressPickerModal> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) _mapController.move(LatLng(s.lat, s.lon), 16);
     });
+  }
+
+  /// Fresh GPS fix, or cached coordinates when satellite fix times out.
+  Future<({Position position, bool isCached})?> _resolveDevicePosition() async {
+    final lastKnown = await _readLastKnownPosition();
+    if (_isUsablePosition(lastKnown) && _isFreshLastKnown(lastKnown!)) {
+      if (kDebugMode) {
+        final age = DateTime.now().difference(lastKnown.timestamp);
+        debugPrint(
+          '[AddressPicker] fresh lastKnown ${lastKnown.latitude},'
+          '${lastKnown.longitude} age=${age.inSeconds}s',
+        );
+      }
+      return (position: lastKnown, isCached: false);
+    }
+
+    if (Platform.isAndroid) {
+      var pos = await _tryCurrentPosition(forceLocationManager: true);
+      if (pos != null) return (position: pos, isCached: false);
+
+      pos = await _tryCurrentPosition(forceLocationManager: false);
+      if (pos != null) return (position: pos, isCached: false);
+
+      pos = await _tryPositionStream(forceLocationManager: true);
+      if (pos != null) return (position: pos, isCached: false);
+
+      pos = await _tryCurrentPosition(
+        forceLocationManager: true,
+        accuracy: LocationAccuracy.medium,
+        timeout: const Duration(seconds: 22),
+      );
+      if (pos != null) return (position: pos, isCached: false);
+    } else {
+      var pos = await _tryCurrentPosition(forceLocationManager: false);
+      if (pos != null) return (position: pos, isCached: false);
+
+      pos = await _tryPositionStream(forceLocationManager: false);
+      if (pos != null) return (position: pos, isCached: false);
+    }
+
+    if (_isUsablePosition(lastKnown)) {
+      if (kDebugMode) {
+        final age = DateTime.now().difference(lastKnown!.timestamp);
+        debugPrint(
+          '[AddressPicker] stale lastKnown ${lastKnown.latitude},'
+          '${lastKnown.longitude} age=${age.inMinutes}m',
+        );
+      }
+      return (position: lastKnown!, isCached: true);
+    }
+
+    final retryLastKnown = await _readLastKnownPosition();
+    if (_isUsablePosition(retryLastKnown)) {
+      return (position: retryLastKnown!, isCached: true);
+    }
+
+    return null;
+  }
+
+  void _applyResolvedCoordinates({
+    required double lat,
+    required double lon,
+    required String address,
+  }) {
+    setState(() {
+      _lat = lat;
+      _lon = lon;
+      _address = address;
+      _searchController.text = address;
+      _suggestions = [];
+      _showSuggestions = false;
+    });
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _mapController.move(LatLng(lat, lon), 16);
+    });
+  }
+
+  Future<void> _useCurrentLocation() async {
+    final locale = context.read<LocaleProvider>();
+    final t = locale.t;
+    FocusScope.of(context).unfocus();
+
+    if (!await _ensureLocationAccess(locale)) return;
+    if (!mounted) return;
+
+    setState(() {
+      _currentLocationLoading = true;
+      _showSuggestions = false;
+    });
+
+    try {
+      final resolved = await _resolveDevicePosition();
+      if (!mounted) return;
+      if (resolved == null) {
+        _showPickerSnack(
+          '${t('addressPicker.locationDetectFailed')}\n'
+          '${t('addressPicker.locationDetectFailedHint')}',
+        );
+        return;
+      }
+
+      final pos = resolved.position;
+      if (resolved.isCached) {
+        _showPickerSnack(t('addressPicker.locationUsingCachedPosition'));
+      }
+
+      ReverseGeocodeResult? result;
+      try {
+        result = await MapboxApiService.reverseGeocode(
+          pos.latitude,
+          pos.longitude,
+        );
+      } catch (e) {
+        if (kDebugMode) debugPrint('[AddressPicker] reverse geocode: $e');
+        result = null;
+      }
+
+      final geocoded = result?.address.trim() ?? '';
+      final address = geocoded.isNotEmpty
+          ? geocoded
+          : '${pos.latitude.toStringAsFixed(6)}, '
+              '${pos.longitude.toStringAsFixed(6)}';
+
+      _applyResolvedCoordinates(
+        lat: pos.latitude,
+        lon: pos.longitude,
+        address: address,
+      );
+    } catch (e) {
+      if (kDebugMode) debugPrint('[AddressPicker] useCurrentLocation: $e');
+      if (!mounted) return;
+      _showPickerSnack(t('addressPicker.locationDetectFailed'));
+    } finally {
+      if (mounted) {
+        setState(() => _currentLocationLoading = false);
+      }
+    }
   }
 
   Future<void> _onMapTap(TapPosition position, LatLng latLng) async {
@@ -324,13 +636,68 @@ class _AddressPickerModalState extends State<AddressPickerModal> {
                   ),
                 ),
                 const SizedBox(height: 16),
-                Text(
-                  t('profileForm.address'),
-                  style: const TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w500,
-                    color: AppColors.textPrimary,
-                  ),
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    Expanded(
+                      child: Text(
+                        t('profileForm.address'),
+                        style: const TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w500,
+                          color: AppColors.textPrimary,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    InkWell(
+                      onTap: _currentLocationLoading
+                          ? null
+                          : _useCurrentLocation,
+                      borderRadius: BorderRadius.circular(6),
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 2,
+                          vertical: 2,
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            if (_currentLocationLoading)
+                              const SizedBox(
+                                width: 14,
+                                height: 14,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  color: AppColors.primary500,
+                                ),
+                              )
+                            else
+                              SvgPicture.asset(
+                                'assets/icons/icon-pin.svg',
+                                width: 11,
+                                height: 15,
+                                colorFilter: const ColorFilter.mode(
+                                  AppColors.primary500,
+                                  BlendMode.srcIn,
+                                ),
+                              ),
+                            const SizedBox(width: 4),
+                            Text(
+                              t('addressPicker.useCurrentLocation'),
+                              style: TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w600,
+                                color: _currentLocationLoading
+                                    ? AppColors.textTertiary
+                                    : AppColors.primary500,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
                 const SizedBox(height: 6),
                 TextField(

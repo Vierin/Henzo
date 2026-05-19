@@ -118,5 +118,9 @@
 	<string>601312951370-1fg9fqajecnjlspki91hendb4csikqd5.apps.googleusercontent.com</string>
 	<key>NSUserTrackingUsageDescription</key>
 	<string>We use anonymous analytics to understand how the app is used and improve your experience. No personal data is shared.</string>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>Your location is used to fill in the studio address on the map.</string>
+	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+	<string>Your location is used to fill in the studio address on the map.</string>
 </dict>
 </plist>

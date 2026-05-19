@@ -246,7 +246,9 @@ class _OwnerEditTrainingSessionScreenState
       );
     }
 
-    final completed = session.status.toUpperCase() == 'COMPLETED';
+    final statusUpper = session.status.toUpperCase();
+    final isFutureSession = session.startsAt.isAfter(DateTime.now());
+    final completed = statusUpper == 'COMPLETED' && !isFutureSession;
     final trainerReadOnly = completed || !_isProPlan;
     final tr = context.read<LocaleProvider>().t;
 

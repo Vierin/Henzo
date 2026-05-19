@@ -14,6 +14,7 @@ import '../main.dart';
 import '../utils/auth_ui_result.dart';
 import '../utils/owner_image_picker.dart';
 import '../utils/owner_navigation_restore.dart';
+import 'main_shell.dart';
 
 class AccountSettingsScreen extends StatefulWidget {
   const AccountSettingsScreen({super.key});
@@ -96,7 +97,12 @@ class _AccountSettingsScreenState extends State<AccountSettingsScreen> {
 
     setState(() => _avatarUploading = true);
     try {
-      await OwnerNavigationRestore.markPendingProfilePhotoUpload();
+      final shellTab =
+          context.findAncestorStateOfType<MainShellState>()?.currentTabIndex ??
+          3;
+      await OwnerNavigationRestore.markPendingProfilePhotoUpload(
+        shellTabIndex: shellTab,
+      );
       final picked = await OwnerImagePicker.pickSingleFromGallery();
       await OwnerNavigationRestore.clearPendingProfilePhotoUpload();
 
