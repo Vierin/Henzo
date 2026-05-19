@@ -6,7 +6,7 @@ import '../../constants/colors.dart';
 abstract final class AuthFormStyles {
   static const double fieldBorderRadius = 12;
   static const double buttonHeight = 60;
-  static const double buttonBorderRadius = 999;
+  static const double buttonBorderRadius = 12;
   static const double fieldGap = 12;
 
   static const Color hintMuted = Color(0x993F3F3F);
@@ -14,6 +14,7 @@ abstract final class AuthFormStyles {
 
   static const TextStyle fieldTextStyle = TextStyle(
     fontSize: 16,
+    fontWeight: FontWeight.w600,
     color: AppColors.textPrimary,
   );
 
@@ -77,18 +78,18 @@ abstract final class AuthFormStyles {
   }
 
   static ButtonStyle primaryButtonStyle() => FilledButton.styleFrom(
-        backgroundColor: AppColors.primary500,
-        foregroundColor: AppColors.textInverse,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(buttonBorderRadius),
-        ),
-      );
+    backgroundColor: AppColors.primary500,
+    foregroundColor: AppColors.textInverse,
+    shape: RoundedRectangleBorder(
+      borderRadius: BorderRadius.circular(buttonBorderRadius),
+    ),
+  );
 
   static ButtonStyle googleButtonStyle() => OutlinedButton.styleFrom(
-        backgroundColor: AppColors.backgroundPrimary,
-        side: BorderSide.none,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(buttonBorderRadius),
-        ),
-      );
+    backgroundColor: AppColors.backgroundPrimary,
+    side: BorderSide.none,
+    shape: RoundedRectangleBorder(
+      borderRadius: BorderRadius.circular(buttonBorderRadius),
+    ),
+  );
 }

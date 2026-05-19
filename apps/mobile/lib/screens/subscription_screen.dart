@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:purchases_flutter/purchases_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -13,8 +14,19 @@ import '../services/auth_service.dart';
 import '../services/revenuecat_service.dart';
 import '../services/subscription_api_service.dart';
 import '../services/subscription_refresh_notifier.dart';
+import '../utils/formatters.dart';
 import '../utils/show_api_error.dart';
 import '../widgets/auth/auth_form_styles.dart';
+import '../widgets/settings/branded_settings_app_bar.dart';
+
+const Color _fireAccent = Color(0xFFE65100);
+const Color _activeBadgeBg = Color(0xFFE8F5E9);
+const Color _activeBadgeFg = Color(0xFF2E7D32);
+
+BoxDecoration _subscriptionCardDecoration() => BoxDecoration(
+  color: AppColors.backgroundPrimary,
+  borderRadius: BorderRadius.circular(14),
+);
 
 List<String> _proFeatureLabels(LocaleProvider locale) => [
   locale.t('subscription.feature1'),
@@ -84,8 +96,8 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
         offering = offerings?.current;
         monthly = RevenueCatService.packageForInterval(offering, 'monthly');
         annual = RevenueCatService.packageForInterval(offering, 'annual');
-        offeringsError = offering == null ||
-            (monthly == null && annual == null);
+        offeringsError =
+            offering == null || (monthly == null && annual == null);
       } else {
         offeringsError = true;
       }
@@ -142,7 +154,9 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
     if (!mounted) return;
     if (synced) {
       if (!mounted) return;
-      context.read<SubscriptionRefreshNotifier>().notifySubscriptionMaybeChanged();
+      context
+          .read<SubscriptionRefreshNotifier>()
+          .notifySubscriptionMaybeChanged();
       await _load();
       if (!mounted) return;
       final locale = context.read<LocaleProvider>();
@@ -184,9 +198,7 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
         if (!RevenueCatService.hasActiveProEntitlement(info)) {
           ScaffoldMessenger.maybeOf(context)?.showSnackBar(
             SnackBar(
-              content: Text(
-                locale.t('subscription.rcEntitlementNotLinked'),
-              ),
+              content: Text(locale.t('subscription.rcEntitlementNotLinked')),
             ),
           );
         }
@@ -234,27 +246,36 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
     await _openUrl(url);
   }
 
+  String _proPriceDisplay() {
+    final amount = _subscription?.amount;
+    if (amount != null && amount > 0) {
+      return '${formatVnd(amount)} VND';
+    }
+    final store =
+        _monthlyPackage?.storeProduct.priceString ??
+        _annualPackage?.storeProduct.priceString;
+    if (store != null && store.isNotEmpty) return store;
+    return '—';
+  }
+
+  String? _nextPaymentDateLabel(BuildContext context) {
+    final cpe = _subscription?.currentPeriodEnd;
+    if (cpe == null || cpe.isEmpty) return null;
+    final dt = DateTime.tryParse(cpe)?.toLocal();
+    if (dt == null) return null;
+    final locale = Localizations.localeOf(context);
+    return DateFormat.yMMMMd(locale.toString()).format(dt);
+  }
+
   @override
   Widget build(BuildContext context) {
     return Consumer<LocaleProvider>(
       builder: (context, locale, _) {
         return Scaffold(
           backgroundColor: AppColors.backgroundSecondary,
-          appBar: AppBar(
-            title: Text(
-              locale.t('subscription.title'),
-              style: const TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.w600,
-                color: AppColors.textPrimary,
-              ),
-            ),
-            centerTitle: true,
-            backgroundColor: AppColors.backgroundSecondary,
-            foregroundColor: AppColors.textPrimary,
-            surfaceTintColor: Colors.transparent,
-            elevation: 0,
-            scrolledUnderElevation: 0,
+          appBar: buildBrandedSettingsAppBar(
+            context,
+            title: locale.t('subscription.title'),
           ),
           body: _loading
               ? const Center(child: CircularProgressIndicator())
@@ -267,9 +288,9 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
                         const SizedBox(height: 8),
-                        _CurrentPlanCard(isPro: _isPro),
-                        const SizedBox(height: 16),
                         if (!_isPro) ...[
+                          _CurrentPlanCard(isPro: false),
+                          const SizedBox(height: 16),
                           if (_offeringsError)
                             Padding(
                               padding: const EdgeInsets.only(bottom: 12),
@@ -281,8 +302,7 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
                                 ),
                               ),
                             ),
-                          if (_monthlyPackage != null &&
-                              _annualPackage != null)
+                          if (_monthlyPackage != null && _annualPackage != null)
                             _BillingToggle(
                               billingInterval: _billingInterval,
                               annualSavePercent: _annualSavePercent ?? 0,
@@ -292,8 +312,7 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
                           const SizedBox(height: 16),
                           _PlanCard(
                             priceLabel:
-                                _priceLabelForInterval(_billingInterval) ??
-                                '—',
+                                _priceLabelForInterval(_billingInterval) ?? '—',
                             comparePriceLabel: _comparePriceLabel(),
                             isAnnual: _billingInterval == 'annual',
                             onSubscribe: () =>
@@ -312,12 +331,33 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
                             ),
                           ),
                         ] else ...[
-                          const _ProEnabledCard(),
+                          _ProStatusCard(
+                            priceLabel: _proPriceDisplay(),
+                            periodLabel: locale.t('subscription.perOneMonth'),
+                            nextPaymentDate:
+                                _nextPaymentDateLabel(context) ?? '—',
+                            activeLabel: locale.t('profile.active'),
+                            planTitle: locale.t('profile.pro'),
+                            tagline: locale.t('subscription.proTagline'),
+                            nextPaymentLabel: locale.t(
+                              'subscription.nextPayment',
+                            ),
+                          ),
                           const SizedBox(height: 12),
-                          TextButton(
-                            onPressed: _openManageSubscription,
-                            child: Text(
-                              locale.t('subscription.manageSubscription'),
+                          _ProWhatsIncludedCard(
+                            title: locale.t('subscription.whatsIncluded'),
+                            features: _proFeatureLabels(locale),
+                          ),
+                          const SizedBox(height: 12),
+                          SizedBox(
+                            width: double.infinity,
+                            height: AuthFormStyles.buttonHeight,
+                            child: FilledButton(
+                              onPressed: _openManageSubscription,
+                              style: AuthFormStyles.primaryButtonStyle(),
+                              child: Text(
+                                locale.t('subscription.manageSubscription'),
+                              ),
                             ),
                           ),
                         ],
@@ -352,18 +392,7 @@ class _CurrentPlanCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: AppColors.backgroundPrimary,
-        border: Border.all(color: AppColors.borderPrimary),
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.04),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
+      decoration: _subscriptionCardDecoration(),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -427,46 +456,213 @@ class _CurrentPlanCard extends StatelessWidget {
   }
 }
 
-class _ProEnabledCard extends StatelessWidget {
-  const _ProEnabledCard();
+class _ProStatusCard extends StatelessWidget {
+  final String planTitle;
+  final String tagline;
+  final String activeLabel;
+  final String priceLabel;
+  final String periodLabel;
+  final String nextPaymentLabel;
+  final String nextPaymentDate;
+
+  const _ProStatusCard({
+    required this.planTitle,
+    required this.tagline,
+    required this.activeLabel,
+    required this.priceLabel,
+    required this.periodLabel,
+    required this.nextPaymentLabel,
+    required this.nextPaymentDate,
+  });
 
   @override
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: AppColors.backgroundPrimary,
-        border: Border.all(color: AppColors.borderPrimary),
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.04),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
+      decoration: _subscriptionCardDecoration(),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Icon(Icons.check_circle, color: AppColors.primary500, size: 20),
-              const SizedBox(width: 8),
-              const Text(
-                'План Pro активен',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                  color: AppColors.textPrimary,
+              Icon(
+                Icons.rocket_launch_rounded,
+                color: AppColors.primary500,
+                size: 28,
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      planTitle,
+                      style: const TextStyle(
+                        fontSize: 24,
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.textPrimary,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      tagline,
+                      style: const TextStyle(
+                        fontSize: 14,
+                        height: 1.25,
+                        color: AppColors.textSecondary,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 4,
+                ),
+                decoration: BoxDecoration(
+                  color: _activeBadgeBg,
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Text(
+                  activeLabel,
+                  style: const TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    color: _activeBadgeFg,
+                  ),
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 8),
-          const Text(
-            'Спасибо за подписку. Все функции Pro уже доступны в приложении.',
-            style: TextStyle(fontSize: 14, color: AppColors.textSecondary),
+          const SizedBox(height: 20),
+          IntrinsicHeight(
+            child: Row(
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        priceLabel,
+                        style: const TextStyle(
+                          fontSize: 22,
+                          fontWeight: FontWeight.w800,
+                          color: AppColors.primary500,
+                          letterSpacing: -0.3,
+                        ),
+                      ),
+                      Text(
+                        periodLabel,
+                        style: const TextStyle(
+                          fontSize: 13,
+                          color: AppColors.textSecondary,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Container(
+                  width: 1,
+                  margin: const EdgeInsets.symmetric(horizontal: 16),
+                  color: AppColors.borderPrimary,
+                ),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        nextPaymentLabel,
+                        style: const TextStyle(
+                          fontSize: 13,
+                          color: AppColors.textSecondary,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        nextPaymentDate,
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.textPrimary,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ProWhatsIncludedCard extends StatelessWidget {
+  final String title;
+  final List<String> features;
+
+  const _ProWhatsIncludedCard({required this.title, required this.features});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.fromLTRB(12, 16, 12, 16),
+      decoration: _subscriptionCardDecoration(),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Text(
+            title,
+            style: const TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w700,
+              color: AppColors.textPrimary,
+            ),
+          ),
+          const SizedBox(height: 12),
+          LayoutBuilder(
+            builder: (context, constraints) {
+              const gap = 12.0;
+              final itemWidth = (constraints.maxWidth - gap) / 2;
+              return Wrap(
+                spacing: gap,
+                runSpacing: 0,
+                children: features
+                    .map(
+                      (f) => Padding(
+                        padding: const EdgeInsets.only(bottom: 8),
+                        child: SizedBox(
+                          width: itemWidth,
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Icon(
+                                Icons.local_fire_department_rounded,
+                                size: 20,
+                                color: _fireAccent,
+                              ),
+                              const SizedBox(width: 6),
+                              Expanded(
+                                child: Text(
+                                  f,
+                                  style: const TextStyle(
+                                    fontSize: 13,
+                                    height: 1.25,
+                                    color: AppColors.textPrimary,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    )
+                    .toList(),
+              );
+            },
           ),
         ],
       ),
@@ -491,7 +687,6 @@ class _BillingToggle extends StatelessWidget {
       padding: const EdgeInsets.all(4),
       decoration: BoxDecoration(
         color: AppColors.backgroundTertiary,
-        border: Border.all(color: AppColors.borderPrimary),
         borderRadius: BorderRadius.circular(12),
       ),
       child: Row(
@@ -501,10 +696,10 @@ class _BillingToggle extends StatelessWidget {
               color: billingInterval == 'monthly'
                   ? AppColors.backgroundPrimary
                   : Colors.transparent,
-              borderRadius: BorderRadius.circular(10),
+              borderRadius: BorderRadius.circular(12),
               child: InkWell(
                 onTap: () => onChanged('monthly'),
-                borderRadius: BorderRadius.circular(10),
+                borderRadius: BorderRadius.circular(12),
                 child: Padding(
                   padding: const EdgeInsets.symmetric(vertical: 12),
                   child: Center(
@@ -549,25 +744,25 @@ class _BillingToggle extends StatelessWidget {
                           ),
                         ),
                         if (annualSavePercent > 0) ...[
-                        const SizedBox(width: 6),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 6,
-                            vertical: 2,
-                          ),
-                          decoration: BoxDecoration(
-                            color: AppColors.primary500,
-                            borderRadius: BorderRadius.circular(6),
-                          ),
-                          child: Text(
-                            '-$annualSavePercent%',
-                            style: const TextStyle(
-                              fontSize: 11,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.white,
+                          const SizedBox(width: 6),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 6,
+                              vertical: 2,
+                            ),
+                            decoration: BoxDecoration(
+                              color: AppColors.primary500,
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            child: Text(
+                              '-$annualSavePercent%',
+                              style: const TextStyle(
+                                fontSize: 11,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white,
+                              ),
                             ),
                           ),
-                        ),
                         ],
                       ],
                     ),
@@ -583,8 +778,6 @@ class _BillingToggle extends StatelessWidget {
 }
 
 class _PlanCard extends StatelessWidget {
-  static const Color _fireAccent = Color(0xFFE65100);
-
   final String priceLabel;
   final String? comparePriceLabel;
   final bool isAnnual;
