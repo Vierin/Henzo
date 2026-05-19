@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../constants/brand_typography.dart';
 import '../../constants/colors.dart';
+import '../../widgets/common/henzo_header_back_button.dart';
 import 'client_passes_tab.dart';
 import 'client_schedule_tab.dart';
 
@@ -34,6 +35,9 @@ class _ClientBookingsScreenState extends State<ClientBookingsScreen>
     return Scaffold(
       backgroundColor: AppColors.backgroundSecondary,
       appBar: AppBar(
+        leading: henzoAppBarLeading(context),
+        leadingWidth: 56,
+        automaticallyImplyLeading: false,
         title: Text(
           'Bookings',
           style: BrandTypography.appBarTitle(context),

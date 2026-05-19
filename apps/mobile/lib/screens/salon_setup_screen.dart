@@ -7,6 +7,7 @@ import '../services/dashboard_api_service.dart';
 import '../utils/show_api_error.dart';
 import '../l10n/locale_provider.dart';
 import '../widgets/address_picker_modal.dart';
+import '../widgets/common/henzo_header_back_button.dart';
 
 class SalonSetupScreen extends StatefulWidget {
   const SalonSetupScreen({super.key, required this.onSaved});
@@ -86,6 +87,9 @@ class _SalonSetupScreenState extends State<SalonSetupScreen> {
     return Scaffold(
       backgroundColor: AppColors.backgroundSecondary,
       appBar: AppBar(
+        leading: henzoAppBarLeading(context),
+        leadingWidth: 56,
+        automaticallyImplyLeading: false,
         title: const Text(
           'Настройка бизнес-аккаунта',
           style: TextStyle(

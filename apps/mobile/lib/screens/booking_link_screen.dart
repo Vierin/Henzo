@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import 'package:share_plus/share_plus.dart';
 import '../../constants/colors.dart';
+import '../../widgets/common/henzo_header_back_button.dart';
 import '../../config/app_config.dart';
 import '../../models/salon.dart';
 
@@ -22,10 +23,10 @@ class BookingLinkScreen extends StatelessWidget {
     return Scaffold(
       backgroundColor: AppColors.backgroundSecondary,
       appBar: AppBar(
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: AppColors.textPrimary),
+        leading: HenzoHeaderBackButton(
           onPressed: () => Navigator.of(context).pop(),
         ),
+        leadingWidth: 56,
         title: const Text(
           'Booking link',
           style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600, color: AppColors.textPrimary),

@@ -163,6 +163,8 @@ class OwnerTrainingSession {
       'trainingCategoryNameVn': trainingCategoryNameVn,
     'trainerName': trainerName,
     if (trainerId != null) 'trainerId': trainerId,
+    if (locationId != null) 'locationId': locationId,
+    if (locationName != null) 'locationName': locationName,
   };
 
   factory OwnerTrainingSession.fromRouteArgs(Map<String, dynamic> m) {
@@ -193,15 +195,19 @@ class OwnerTrainingSession {
   }
 
   OwnerTrainingSession copyWith({
+    DateTime? startsAt,
+    DateTime? endsAt,
     int? enrolledCount,
     int? attendedCount,
     String? status,
+    String? locationId,
+    String? locationName,
   }) =>
       OwnerTrainingSession(
         sessionId: sessionId,
         trainingId: trainingId,
-        startsAt: startsAt,
-        endsAt: endsAt,
+        startsAt: startsAt ?? this.startsAt,
+        endsAt: endsAt ?? this.endsAt,
         status: status ?? this.status,
         capacity: capacity,
         enrolledCount: enrolledCount ?? this.enrolledCount,
@@ -215,8 +221,8 @@ class OwnerTrainingSession {
         trainingCategoryNameVn: trainingCategoryNameVn,
         trainerName: trainerName,
         trainerId: trainerId,
-        locationId: locationId,
-        locationName: locationName,
+        locationId: locationId ?? this.locationId,
+        locationName: locationName ?? this.locationName,
       );
 
   /// Training category label for UI (matches studio locale).

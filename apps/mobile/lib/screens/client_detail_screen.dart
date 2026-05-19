@@ -17,6 +17,7 @@ import '../../services/cache/salon_cache.dart';
 import '../../services/dashboard_api_service.dart';
 import '../../utils/client_identity.dart';
 import '../../utils/show_api_error.dart';
+import '../../widgets/common/henzo_header_back_button.dart';
 import '../../widgets/dashboard/booking_detail_modal.dart';
 import 'main_shell.dart';
 
@@ -403,29 +404,10 @@ class _ClientDetailScreenState extends State<ClientDetailScreen> {
     return Scaffold(
       backgroundColor: _kClientPageBg,
       appBar: AppBar(
-        leadingWidth: 52,
-        leading: Padding(
-          padding: const EdgeInsets.only(left: 8),
-          child: Center(
-            child: Material(
-              color: AppColors.backgroundPrimary,
-              shape: const CircleBorder(),
-              child: InkWell(
-                customBorder: const CircleBorder(),
-                onTap: () => Navigator.of(context).pop(),
-                child: const SizedBox(
-                  width: 40,
-                  height: 40,
-                  child: Icon(
-                    Icons.arrow_back_ios_new,
-                    size: 18,
-                    color: AppColors.textPrimary,
-                  ),
-                ),
-              ),
-            ),
-          ),
+        leading: HenzoHeaderBackButton(
+          onPressed: () => Navigator.of(context).pop(),
         ),
+        leadingWidth: 56,
         title: Text(
           tr('booking.client'),
           style: const TextStyle(

@@ -12,6 +12,7 @@ import '../../services/auth_service.dart';
 import '../../services/dashboard_api_service.dart';
 import '../../utils/synthetic_guest.dart';
 import '../app_search_prefix_icon.dart';
+import '../common/henzo_header_back_button.dart';
 import '../common/sheet_action_button_style.dart';
 
 enum AddOwnerClientMode { directoryOnly, enrollInSession }
@@ -574,18 +575,16 @@ class _EnrollParticipantSheetState extends State<_EnrollParticipantSheet> {
     }
     return Row(
       children: [
-        IconButton(
-          padding: EdgeInsets.zero,
-          constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
-          onPressed: _saving
-              ? null
-              : () {
-                  setState(() {
-                    _step = _EnrollStep.chooseSource;
-                    _selected = null;
-                  });
-                },
-          icon: const Icon(Icons.arrow_back, color: AppColors.textPrimary),
+        IgnorePointer(
+          ignoring: _saving,
+          child: HenzoHeaderBackButton(
+            onPressed: () {
+              setState(() {
+                _step = _EnrollStep.chooseSource;
+                _selected = null;
+              });
+            },
+          ),
         ),
         const SizedBox(width: 4),
         Expanded(
@@ -632,7 +631,7 @@ class _EnrollParticipantSheetState extends State<_EnrollParticipantSheet> {
             ),
             const SizedBox(height: 10),
             _SourceCard(
-              iconAsset: 'assets/icons/icon-profile.svg',
+              iconAsset: 'assets/icons/icon-profile-large.svg',
               title: tr('ownerClient.anonymousSpotTitle'),
               subtitle: tr('ownerClient.anonymousSpotSubtitle'),
               onTap: _saving
@@ -883,11 +882,7 @@ class _SourceCard extends StatelessWidget {
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              SvgPicture.asset(
-                iconAsset,
-                width: 24,
-                height: 20,
-              ),
+              SvgPicture.asset(iconAsset, width: 24, height: 20),
               const SizedBox(width: 14),
               Expanded(
                 child: Column(

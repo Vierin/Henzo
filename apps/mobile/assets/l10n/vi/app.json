@@ -201,7 +201,14 @@
 		"actionSetActive": "Chuyển sang active",
 		"actionSetNoShow": "Đánh dấu no-show",
 		"actionCancelParticipant": "Hủy tham gia",
-		"actionDeleteParticipant": "Xóa"
+		"actionDeleteParticipant": "Xóa",
+		"noTrainer": "Không có huấn luyện viên",
+		"editSessionHint": "Ngày, giờ, huấn luyện viên và địa điểm chỉ áp dụng cho buổi này. Để đổi tên hoặc giá dịch vụ, mở mục Dịch vụ.",
+		"editSessionCompleted": "Buổi học đã kết thúc — không thể đổi giờ và huấn luyện viên.",
+		"trainerFreePlanNote": "Gói Free không cho phép đổi huấn luyện viên.",
+		"trainerPlanInfoTitle": "Huấn luyện viên",
+		"trainerPlanInfoBody": "Gói Free chỉ xem được huấn luyện viên.\n\nĐể đổi hoặc thêm huấn luyện viên, nâng cấp lên Pro.",
+		"selectTrainer": "Chọn huấn luyện viên"
 	},
 	"ownerClient": {
 		"addToDirectory": "Thêm khách",

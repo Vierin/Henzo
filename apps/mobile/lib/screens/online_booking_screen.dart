@@ -7,6 +7,7 @@ import '../../models/salon.dart';
 import '../../services/auth_service.dart';
 import '../../services/cache/salon_cache.dart';
 import '../../utils/show_api_error.dart';
+import '../../widgets/common/henzo_header_back_button.dart';
 import '../../widgets/settings/owner_booking_period_sheet.dart';
 
 class OnlineBookingScreen extends StatefulWidget {
@@ -66,6 +67,9 @@ class _OnlineBookingScreenState extends State<OnlineBookingScreen> {
     return Scaffold(
       backgroundColor: AppColors.backgroundSecondary,
       appBar: AppBar(
+        leading: henzoAppBarLeading(context),
+        leadingWidth: 56,
+        automaticallyImplyLeading: false,
         title: Text(locale.t('settings.owner.onlineBooking')),
         backgroundColor: AppColors.backgroundPrimary,
         foregroundColor: AppColors.textPrimary,

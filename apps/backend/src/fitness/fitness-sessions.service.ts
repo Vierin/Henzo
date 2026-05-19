@@ -462,6 +462,7 @@ export class FitnessSessionsService {
     const hasPatch =
       dto.startsAt !== undefined ||
       dto.trainerId !== undefined ||
+      dto.locationId !== undefined ||
       dto.status !== undefined;
     if (!hasPatch) {
       return { success: true };
@@ -473,6 +474,7 @@ export class FitnessSessionsService {
     let startsAt = session.startsAt;
     let endsAt = session.endsAt;
     let trainerId: string | null = session.trainerId;
+    let locationId: string | null = session.locationId;
     let status = session.status;
 
     if (dto.startsAt !== undefined) {
@@ -499,6 +501,14 @@ export class FitnessSessionsService {
         }
         trainerId = raw;
       }
+    }
+
+    if (dto.locationId !== undefined) {
+      const raw = dto.locationId;
+      locationId =
+        raw === null || raw === ''
+          ? null
+          : raw.trim();
     }
 
     if (dto.status !== undefined) {
@@ -533,6 +543,7 @@ export class FitnessSessionsService {
           startsAt,
           endsAt,
           trainerId,
+          locationId,
           status,
         },
       });
@@ -563,6 +574,7 @@ export class FitnessSessionsService {
       startsAt: Date;
       endsAt: Date;
       trainerId: string | null;
+      locationId: string | null;
       status: TrainingSessionStatus;
     };
 
@@ -574,15 +586,18 @@ export class FitnessSessionsService {
         ne = new Date(ns);
         ne.setMinutes(ne.getMinutes() + row.Training.duration);
       }
-      const tid =
+      final tid =
         dto.trainerId !== undefined ? trainerId : row.trainerId;
-      const st =
+      final lid =
+        dto.locationId !== undefined ? locationId : row.locationId;
+      final st =
         dto.status !== undefined ? status : row.status;
       return {
         id: row.id,
         startsAt: ns,
         endsAt: ne,
         trainerId: tid,
+        locationId: lid,
         status: st,
       };
     });
@@ -619,6 +634,7 @@ export class FitnessSessionsService {
             startsAt: p.startsAt,
             endsAt: p.endsAt,
             trainerId: p.trainerId,
+            locationId: p.locationId,
             status: p.status,
           },
         }),

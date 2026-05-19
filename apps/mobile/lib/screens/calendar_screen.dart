@@ -14,7 +14,6 @@ import '../../utils/show_api_error.dart';
 import '../../utils/color_hex.dart';
 import '../../widgets/dashboard/owner_daily_schedule_block.dart';
 import '../../widgets/schedule/calendar_day_pill.dart';
-import '../../navigation/owner_session_navigation.dart';
 import 'main_shell.dart';
 import 'owner_training_session_detail_screen.dart';
 
@@ -788,26 +787,6 @@ class CalendarScreenState extends State<CalendarScreen> {
                                                           .invalidate();
                                                       _loadData();
                                                     },
-                                                    onEditSession:
-                                                        s.sessionId.isNotEmpty
-                                                        ? () async {
-                                                            final changed =
-                                                                await openOwnerEditTrainingSessionFlow(
-                                                              detailCtx,
-                                                              s,
-                                                            );
-                                                            if (changed ==
-                                                                    true &&
-                                                                mounted) {
-                                                              context
-                                                                  .read<
-                                                                    OwnerSessionsCache
-                                                                  >()
-                                                                  .invalidate();
-                                                              await _loadData();
-                                                            }
-                                                          }
-                                                        : null,
                                                   ),
                                             ),
                                           );

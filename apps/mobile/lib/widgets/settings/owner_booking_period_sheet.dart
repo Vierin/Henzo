@@ -77,7 +77,9 @@ Future<bool?> showOwnerBookingPeriodSheet(
 }) async {
   final locale = context.read<LocaleProvider>();
   final startDays =
-      initialDays ?? extractBookingPeriodDays(salon) ?? kDefaultBookingPeriodDays;
+      initialDays ??
+      extractBookingPeriodDays(salon) ??
+      kDefaultBookingPeriodDays;
 
   return showHenzoModalBottomSheet<bool>(
     context: context,
@@ -152,30 +154,20 @@ Future<bool?> showOwnerBookingPeriodSheet(
                     const SizedBox(height: 16),
                     Row(
                       children: [
-                        SizedBox(
-                          width: 48,
-                          height: 48,
-                          child: OutlinedButton(
-                            onPressed: applying
-                                ? null
-                                : () => applyDays(localDays - 1),
-                            style: OutlinedButton.styleFrom(
-                              padding: EdgeInsets.zero,
-                              minimumSize: const Size(48, 48),
-                              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                              backgroundColor: Colors.transparent,
-                              foregroundColor: AppColors.primary500,
-                              side: const BorderSide(
-                                color: AppColors.primary500,
-                                width: 1.5,
-                              ),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(
-                                  kSettingsInputBorderRadius,
-                                ),
-                              ),
+                        IconButton.outlined(
+                          onPressed: applying
+                              ? null
+                              : () => applyDays(localDays - 1),
+                          icon: const Icon(Icons.remove, size: 22),
+                          style: IconButton.styleFrom(
+                            fixedSize: const Size(48, 48),
+                            padding: EdgeInsets.zero,
+                            foregroundColor: AppColors.primary500,
+                            side: const BorderSide(
+                              color: AppColors.primary500,
+                              width: 1.5,
                             ),
-                            child: const Icon(Icons.remove, size: 22),
+                            shape: const CircleBorder(),
                           ),
                         ),
                         const SizedBox(width: 12),
@@ -203,8 +195,11 @@ Future<bool?> showOwnerBookingPeriodSheet(
                               : () => applyDays(localDays + 1),
                           icon: const Icon(Icons.add),
                           style: IconButton.styleFrom(
+                            fixedSize: const Size(48, 48),
+                            padding: EdgeInsets.zero,
                             backgroundColor: AppColors.primary500,
                             foregroundColor: Colors.white,
+                            shape: const CircleBorder(),
                           ),
                         ),
                       ],

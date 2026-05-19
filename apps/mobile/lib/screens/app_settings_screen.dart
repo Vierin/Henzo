@@ -166,8 +166,7 @@ class _AppSettingsScreenState extends State<AppSettingsScreen> {
   bool get _hasActiveProPlan {
     final sub = _subscription;
     if (sub == null) return false;
-    if (sub.type.toUpperCase() != 'PRO') return false;
-    return (sub.amount ?? 0) > 0;
+    return sub.type.toUpperCase() == 'PRO' && sub.isActive;
   }
 
   String _planBadgeLabel(LocaleProvider locale) {
@@ -478,15 +477,15 @@ class _OwnerHeroCard extends StatelessWidget {
                     ),
                     const SizedBox(height: 8),
                     Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 10,
-                        vertical: 5,
+                      padding: EdgeInsets.symmetric(
+                        horizontal: isProPlan ? 14 : 10,
+                        vertical: isProPlan ? 6 : 5,
                       ),
                       decoration: BoxDecoration(
                         color: isProPlan
                             ? kSettingsProBadgeBackground
                             : AppColors.primary100,
-                        borderRadius: BorderRadius.circular(20),
+                        borderRadius: BorderRadius.circular(999),
                       ),
                       child: Text(
                         planLabel,
@@ -494,8 +493,11 @@ class _OwnerHeroCard extends StatelessWidget {
                           color: isProPlan
                               ? kSettingsProBadgeText
                               : AppColors.primary700,
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600,
+                          fontSize: isProPlan ? 13 : 12,
+                          fontWeight:
+                              isProPlan ? FontWeight.w500 : FontWeight.w600,
+                          height: 1.15,
+                          letterSpacing: isProPlan ? -0.1 : 0,
                         ),
                       ),
                     ),

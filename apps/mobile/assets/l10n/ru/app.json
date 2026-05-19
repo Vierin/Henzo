@@ -201,7 +201,14 @@
 		"actionSetActive": "Сделать активным",
 		"actionSetNoShow": "Отметить no-show",
 		"actionCancelParticipant": "Отменить участие",
-		"actionDeleteParticipant": "Удалить"
+		"actionDeleteParticipant": "Удалить",
+		"noTrainer": "Без тренера",
+		"editSessionHint": "Дата, время, тренер и место относятся только к этому дню. Название и цену услуги меняют в разделе «Услуги».",
+		"editSessionCompleted": "Занятие уже завершено — время и тренер не меняются.",
+		"trainerFreePlanNote": "На Free изменение тренера недоступно.",
+		"trainerPlanInfoTitle": "Тренер",
+		"trainerPlanInfoBody": "На плане Free поле тренера только для чтения.\n\nИзменять тренера и добавлять новых можно на плане Pro.",
+		"selectTrainer": "Выберите тренера"
 	},
 	"ownerClient": {
 		"addToDirectory": "Добавить клиента",
@@ -443,7 +450,7 @@
 			"trainings": "Тренировки",
 			"team": "Команда",
 			"subscriptionBilling": "Подписка и оплата",
-			"activeProPlan": "Активный Pro",
+			"activeProPlan": "Pro plan активен",
 			"bookingWindowDays": "{count} дн.",
 			"trainingsCount": "{count}",
 			"bookingPeriodTitle": "Период бронирования",

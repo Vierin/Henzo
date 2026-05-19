@@ -7,6 +7,7 @@ import '../../services/cache/services_staff_cache.dart';
 import '../../services/staff_api_service.dart';
 import '../../services/services_api_service.dart';
 import '../../utils/show_api_error.dart';
+import '../../widgets/common/henzo_header_back_button.dart';
 
 /// Полноэкранная форма добавления сотрудника (как на вебе: имя, email, телефон, выбор услуг).
 class AddStaffScreen extends StatefulWidget {
@@ -131,10 +132,10 @@ class _AddStaffScreenState extends State<AddStaffScreen> {
         backgroundColor: AppColors.backgroundPrimary,
         foregroundColor: AppColors.textPrimary,
         elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
+        leading: HenzoHeaderBackButton(
           onPressed: () => Navigator.pop(context),
         ),
+        leadingWidth: 56,
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(24),

@@ -579,7 +579,6 @@ class _ProStatusCard extends StatelessWidget {
                           color: AppColors.textSecondary,
                         ),
                       ),
-                      const SizedBox(height: 4),
                       Text(
                         nextPaymentDate,
                         style: const TextStyle(

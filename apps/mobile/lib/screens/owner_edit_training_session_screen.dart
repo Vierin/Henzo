@@ -1,20 +1,35 @@
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import '../../widgets/common/henzo_modal.dart';
+import 'package:flutter_svg/flutter_svg.dart';
+import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
 import '../constants/colors.dart';
+import '../constants/layout.dart';
 import '../l10n/locale_provider.dart';
+import '../models/salon.dart';
 import '../models/staff_member.dart';
+import '../models/training_location_item.dart';
 import '../services/auth_service.dart';
 import '../services/cache/salon_cache.dart';
 import '../services/cache/owner_sessions_cache.dart';
 import '../services/dashboard_api_service.dart';
 import '../services/staff_api_service.dart';
 import '../utils/show_api_error.dart';
+import '../utils/training_locations_storage.dart';
+import '../widgets/address_picker_modal.dart';
+import '../widgets/auth/auth_form_styles.dart';
+import '../widgets/common/henzo_modal.dart';
+import '../widgets/schedule_style_date_picker.dart';
+import '../widgets/settings/branded_settings_app_bar.dart';
 import '../widgets/training/owner_session_cancel_scope_dialog.dart';
+import '../widgets/training/training_location_picker_sheet.dart';
 
-/// Редактирование одного слота групповой тренировки (время, тренер, отмена).
-/// Не меняет карточку услуги — для этого вкладка «Услуги».
+/// Matches [AddTrainingScreen] step-2 pickers.
+const Color _kFormAccentPurple = Color(0xFF6C5CE7);
+const double _kFieldRadius = 12;
+
+/// Редактирование одного слота (время, место, тренер, отмена).
 class OwnerEditTrainingSessionScreen extends StatefulWidget {
   const OwnerEditTrainingSessionScreen({super.key});
 
@@ -26,14 +41,26 @@ class OwnerEditTrainingSessionScreen extends StatefulWidget {
 class _OwnerEditTrainingSessionScreenState
     extends State<OwnerEditTrainingSessionScreen> {
   OwnerTrainingSession? _initial;
-  late DateTime _startsAt;
+  late DateTime _sessionDate;
+  late TimeOfDay _sessionTime;
   String? _trainerId;
+  String _selectedLocationId = 'default';
   List<StaffMember> _trainers = [];
+  List<TrainingLocationItem> _locations = [];
+  Salon? _salon;
   bool _loadingTrainers = true;
   bool _loadingSubscription = true;
   bool _isProPlan = false;
   bool _saving = false;
   var _applyToFollowing = false;
+
+  DateTime get _startsAt => DateTime(
+    _sessionDate.year,
+    _sessionDate.month,
+    _sessionDate.day,
+    _sessionTime.hour,
+    _sessionTime.minute,
+  );
 
   @override
   void didChangeDependencies() {
@@ -46,8 +73,11 @@ class _OwnerEditTrainingSessionScreenState
         _applyToFollowing = m['applyToFollowing'] == true;
         m.remove('applyToFollowing');
         _initial = OwnerTrainingSession.fromRouteArgs(m);
-        _startsAt = _initial!.startsAt.toLocal();
+        final local = _initial!.startsAt.toLocal();
+        _sessionDate = DateTime(local.year, local.month, local.day);
+        _sessionTime = TimeOfDay.fromDateTime(local);
         _trainerId = _initial!.trainerId;
+        _selectedLocationId = _effectiveLocationId(_initial!.locationId);
       } catch (_) {
         _initial = null;
       }
@@ -77,12 +107,25 @@ class _OwnerEditTrainingSessionScreenState
         });
         return;
       }
+      final locale = context.read<LocaleProvider>();
       final list = await StaffApiService.getBySalon(token, salon.id);
       final sub = await DashboardApiService.getCurrentSubscription(token);
-      String? selectedTrainerId = _trainerId;
+      final locations = TrainingLocationItem.listFromSalon(
+        salon,
+        mainStudioName: locale.t('locations.mainStudio'),
+      );
+      var selectedLocationId = _selectedLocationId;
+      if (!locations.any((l) => l.id == selectedLocationId)) {
+        selectedLocationId =
+            locations.isNotEmpty ? locations.first.id : 'default';
+      }
+      var selectedTrainerId = _trainerId?.trim();
+      if (selectedTrainerId != null && selectedTrainerId.isEmpty) {
+        selectedTrainerId = null;
+      }
       if (selectedTrainerId == null) {
         final currentName = _initial?.trainerName.trim() ?? '';
-        if (currentName.isNotEmpty && currentName != '—' && currentName != '-') {
+        if (!_isTrainerNamePlaceholder(currentName)) {
           final matched = list.where(
             (t) => t.name.trim().toLowerCase() == currentName.toLowerCase(),
           );
@@ -90,11 +133,17 @@ class _OwnerEditTrainingSessionScreenState
             selectedTrainerId = matched.first.id;
           }
         }
+      } else if (!list.any((t) => t.id == selectedTrainerId)) {
+        // Keep id from session even if not in roster (API may still accept it).
+        selectedTrainerId = _trainerId?.trim();
       }
       if (!mounted) return;
       setState(() {
+        _salon = salon;
         _trainers = list;
         _trainerId = selectedTrainerId;
+        _locations = locations;
+        _selectedLocationId = selectedLocationId;
         _loadingTrainers = false;
         _loadingSubscription = false;
         _isProPlan = (sub?.type.toUpperCase() ?? 'FREEMIUM') == 'PRO';
@@ -109,7 +158,94 @@ class _OwnerEditTrainingSessionScreenState
     }
   }
 
-  Future<void> _pickStart() async {
+  String _effectiveLocationId(String? raw) {
+    final id = raw?.trim();
+    if (id == null || id.isEmpty) return 'default';
+    return id;
+  }
+
+  TrainingLocationItem? get _selectedLocation {
+    for (final l in _locations) {
+      if (l.id == _selectedLocationId) return l;
+    }
+    return null;
+  }
+
+  String _formatYMMMd(DateTime d, LocaleProvider loc) =>
+      DateFormat.yMMMd(loc.localeCode).format(d);
+
+  String _timeToHm(TimeOfDay t) {
+    final hh = t.hour.toString().padLeft(2, '0');
+    final mm = t.minute.toString().padLeft(2, '0');
+    return '$hh:$mm';
+  }
+
+  Widget _formLabel(String text) => Padding(
+    padding: const EdgeInsets.only(bottom: 10, left: 12),
+    child: Text(
+      text.toUpperCase(),
+      style: const TextStyle(
+        fontSize: 13,
+        fontWeight: FontWeight.w600,
+        letterSpacing: -0.3,
+        color: AppColors.textPrimary,
+      ),
+    ),
+  );
+
+  InputDecoration _fieldDecoration({Widget? suffixIcon}) {
+    final r = BorderRadius.circular(_kFieldRadius);
+    return InputDecoration(
+      filled: true,
+      fillColor: AppColors.backgroundPrimary,
+      suffixIcon: suffixIcon,
+      suffixIconConstraints: suffixIcon == null
+          ? null
+          : const BoxConstraints(minWidth: 44, minHeight: 44),
+      border: OutlineInputBorder(
+        borderRadius: r,
+        borderSide: const BorderSide(color: AppColors.borderPrimary),
+      ),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: r,
+        borderSide: const BorderSide(color: AppColors.borderPrimary),
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: r,
+        borderSide: const BorderSide(color: AppColors.primary500, width: 1.6),
+      ),
+      contentPadding: const EdgeInsets.fromLTRB(16, 16, 8, 16),
+    );
+  }
+
+  Widget _pickerField({
+    required String value,
+    Widget? suffixIcon,
+    required VoidCallback? onTap,
+  }) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(_kFieldRadius),
+        child: InputDecorator(
+          decoration: _fieldDecoration(suffixIcon: suffixIcon),
+          child: Text(
+            value,
+            style: TextStyle(
+              fontSize: 15,
+              fontWeight: FontWeight.w600,
+              color: onTap == null
+                  ? AppColors.textSecondary
+                  : AppColors.textPrimary,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _pickStartDateThenTime() async {
     final initial = _startsAt;
     final d = await showDatePicker(
       context: context,
@@ -124,27 +260,587 @@ class _OwnerEditTrainingSessionScreenState
     );
     if (t == null || !mounted) return;
     setState(() {
-      _startsAt = DateTime(d.year, d.month, d.day, t.hour, t.minute);
+      _sessionDate = DateTime(d.year, d.month, d.day);
+      _sessionTime = t;
     });
   }
 
-  Future<void> _showTrainerPlanInfo() async {
+  Future<void> _pickSessionDate() async {
+    final picked = await showScheduleStyleDatePicker(
+      context: context,
+      initialDate: _sessionDate,
+      firstDate: DateTime.now().subtract(const Duration(days: 1)),
+      lastDate: DateTime.now().add(const Duration(days: 365 * 2)),
+    );
+    if (picked != null && mounted) {
+      setState(() {
+        _sessionDate = DateTime(picked.year, picked.month, picked.day);
+      });
+    }
+  }
+
+  Future<TimeOfDay?> _pickTimeWithWheel(TimeOfDay initialTime) {
+    var selected = initialTime;
+    final initialDateTime = DateTime(
+      2000,
+      1,
+      1,
+      initialTime.hour,
+      initialTime.minute,
+    );
+    final loc = context.read<LocaleProvider>();
+    return showHenzoModalBottomSheet<TimeOfDay>(
+      context: context,
+      backgroundColor: AppColors.backgroundPrimary,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (ctx) {
+        return SafeArea(
+          child: SizedBox(
+            height: 320,
+            child: Column(
+              children: [
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(12, 8, 12, 6),
+                  child: Row(
+                    children: [
+                      TextButton(
+                        onPressed: () => Navigator.of(ctx).pop(),
+                        child: Text(loc.t('common.cancel')),
+                      ),
+                      const Spacer(),
+                      TextButton(
+                        onPressed: () => Navigator.of(ctx).pop(selected),
+                        child: Text(
+                          loc.t('common.done'),
+                          style: const TextStyle(fontWeight: FontWeight.w700),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const Divider(height: 1),
+                Expanded(
+                  child: CupertinoDatePicker(
+                    mode: CupertinoDatePickerMode.time,
+                    use24hFormat: true,
+                    minuteInterval: 5,
+                    initialDateTime: initialDateTime,
+                    onDateTimeChanged: (value) {
+                      selected = TimeOfDay(
+                        hour: value.hour,
+                        minute: value.minute,
+                      );
+                    },
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Future<void> _openLocationPicker(LocaleProvider locale) async {
+    if (_locations.isEmpty && _salon != null) {
+      _locations = TrainingLocationItem.listFromSalon(
+        _salon,
+        mainStudioName: locale.t('locations.mainStudio'),
+      );
+    }
+    if (_locations.isEmpty) return;
+
+    final result = await showTrainingLocationPickerSheet(
+      context,
+      locations: _locations,
+      selectedId: _selectedLocationId,
+      titleL10nKey: 'addTraining.locationSheetTitle',
+      onDeleteLocation: _deleteTrainingLocation,
+    );
+    if (!mounted || result == null) return;
+
+    switch (result) {
+      case TrainingLocationPicked(:final location):
+        setState(() => _selectedLocationId = location.id);
+      case TrainingLocationAddRequested():
+        await _addNewTrainingLocation(locale);
+    }
+  }
+
+  Future<bool> _deleteTrainingLocation(TrainingLocationItem loc) async {
+    final studio = _salon;
+    if (studio == null || loc.id == 'default') return false;
+
+    final updated = _locations.where((l) => l.id != loc.id).toList();
+    try {
+      final updatedSalon = await persistExtraTrainingLocations(
+        context,
+        studio,
+        updated,
+      );
+      if (!mounted) return false;
+      final locale = context.read<LocaleProvider>();
+      setState(() {
+        _salon = updatedSalon ?? studio;
+        _locations = TrainingLocationItem.listFromSalon(
+          _salon,
+          mainStudioName: locale.t('locations.mainStudio'),
+        );
+        if (_selectedLocationId == loc.id && _locations.isNotEmpty) {
+          _selectedLocationId = _locations.first.id;
+        }
+      });
+      return true;
+    } catch (e) {
+      if (mounted) showApiError(context, e);
+      return false;
+    }
+  }
+
+  Future<void> _addNewTrainingLocation(LocaleProvider locale) async {
+    final studio = _salon;
+    if (studio == null) return;
+
+    final selection = await AddressPickerModal.show(
+      context,
+      initialAddress: '',
+    );
+    if (!mounted || selection == null) return;
+
+    final newLoc = TrainingLocationItem(
+      id: 'loc_${DateTime.now().millisecondsSinceEpoch}',
+      name: selection.locationName,
+      address: selection.address.trim(),
+      latitude: selection.lat,
+      longitude: selection.lon,
+    );
+    final updatedList = [..._locations, newLoc];
+
+    try {
+      final updatedSalon = await persistExtraTrainingLocations(
+        context,
+        studio,
+        updatedList,
+      );
+      if (!mounted) return;
+      setState(() {
+        _salon = updatedSalon ?? studio;
+        _locations = TrainingLocationItem.listFromSalon(
+          _salon,
+          mainStudioName: locale.t('locations.mainStudio'),
+        );
+        _selectedLocationId = newLoc.id;
+      });
+    } catch (e) {
+      if (mounted) showApiError(context, e);
+    }
+  }
+
+  String _locationDisplayName(LocaleProvider locale) {
+    final selected = _selectedLocation;
+    if (_loadingTrainers) {
+      final n = _initial?.locationName?.trim();
+      if (n != null && n.isNotEmpty) return n;
+      return locale.t('common.loading');
+    }
+    if (selected?.name.trim().isNotEmpty == true) return selected!.name;
+    final n = _initial?.locationName?.trim();
+    if (n != null && n.isNotEmpty) return n;
+    return locale.t('addTraining.studioNameFallback');
+  }
+
+  static const TextStyle _compactCaptionStyle = TextStyle(
+    fontSize: 11,
+    fontWeight: FontWeight.w600,
+    color: AppColors.textSecondary,
+  );
+
+  static const TextStyle _compactValueStyle = TextStyle(
+    fontSize: 14,
+    fontWeight: FontWeight.w700,
+    color: AppColors.textPrimary,
+  );
+
+  Widget _locationField({
+    required LocaleProvider locale,
+    required bool canEdit,
+  }) {
+    final displayName = _locationDisplayName(locale);
+    final address = _selectedLocation?.address.trim() ?? '';
+
+    return Material(
+      color: AppColors.backgroundPrimary,
+      borderRadius: BorderRadius.circular(_kFieldRadius),
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: canEdit ? () => _openLocationPicker(locale) : null,
+        borderRadius: BorderRadius.circular(_kFieldRadius),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Padding(
+                padding: const EdgeInsets.only(top: 2),
+                child: SvgPicture.asset(
+                  'assets/icons/icon-pin.svg',
+                  width: 15,
+                  height: 21,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      displayName,
+                      style: const TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.textPrimary,
+                      ),
+                    ),
+                    if (address.isNotEmpty) ...[
+                      const SizedBox(height: 4),
+                      Text(
+                        address,
+                        style: const TextStyle(
+                          fontSize: 13,
+                          height: 1.25,
+                          color: AppColors.textSecondary,
+                        ),
+                      ),
+                    ] else if (!_loadingTrainers) ...[
+                      const SizedBox(height: 4),
+                      Text(
+                        locale.t('addTraining.noAddress'),
+                        style: const TextStyle(
+                          fontSize: 13,
+                          color: AppColors.textTertiary,
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+              if (canEdit)
+                const Icon(
+                  Icons.chevron_right,
+                  color: AppColors.textSecondary,
+                  size: 22,
+                ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _compactPickerCard({
+    required String caption,
+    required String value,
+    Widget? trailing,
+    VoidCallback? onTap,
+  }) {
+    final valueStyle = _compactValueStyle.copyWith(
+      color: onTap == null ? AppColors.textSecondary : AppColors.textPrimary,
+    );
+    return Expanded(
+      child: Material(
+        color: AppColors.backgroundPrimary,
+        borderRadius: BorderRadius.circular(_kFieldRadius),
+        clipBehavior: Clip.antiAlias,
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(_kFieldRadius),
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(12, 12, 8, 12),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  caption.toUpperCase(),
+                  style: _compactCaptionStyle,
+                ),
+                const SizedBox(height: 4),
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        value,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: valueStyle,
+                      ),
+                    ),
+                    if (trailing != null) trailing,
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  InputDecoration _trainerInputDecoration() => const InputDecoration(
+    border: InputBorder.none,
+    enabledBorder: InputBorder.none,
+    focusedBorder: InputBorder.none,
+    filled: true,
+    fillColor: AppColors.backgroundPrimary,
+    contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+  );
+
+  Future<void> _pickTrainer(LocaleProvider locale) async {
+    if (_loadingTrainers || _loadingSubscription) return;
+
+    final picked = await showHenzoModalBottomSheet<String?>(
+      context: context,
+      backgroundColor: AppColors.backgroundPrimary,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (ctx) {
+        return SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+                child: Text(
+                  locale.t('ownerSession.selectTrainer').toUpperCase(),
+                  style: const TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: 0.35,
+                    color: AppColors.textPrimary,
+                  ),
+                ),
+              ),
+              ListTile(
+                title: Text(locale.t('ownerSession.noTrainer')),
+                trailing: _trainerId == null
+                    ? const Icon(Icons.check, color: _kFormAccentPurple)
+                    : null,
+                onTap: () => Navigator.of(ctx).pop(''),
+              ),
+              ..._trainers.map(
+                (t) => ListTile(
+                  title: Text(t.name),
+                  trailing: _trainerId == t.id
+                      ? const Icon(Icons.check, color: _kFormAccentPurple)
+                      : null,
+                  onTap: () => Navigator.of(ctx).pop(t.id),
+                ),
+              ),
+              const SizedBox(height: 8),
+            ],
+          ),
+        );
+      },
+    );
+    if (!mounted || picked == null) return;
+    setState(() => _trainerId = picked.isEmpty ? null : picked);
+  }
+
+  Future<void> _showTrainerPlanInfo(LocaleProvider locale) async {
     await showHenzoDialog<void>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Тренер'),
-        content: const Text(
-          'На плане Free поле тренера доступно только для чтения.\n\n'
-          'Изменять тренера и добавлять новых тренеров можно на плане Pro.',
-        ),
+        title: Text(locale.t('ownerSession.trainerPlanInfoTitle')),
+        content: Text(locale.t('ownerSession.trainerPlanInfoBody')),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(),
-            child: const Text('Понятно'),
+            child: Text(locale.t('common.close')),
           ),
         ],
       ),
     );
+  }
+
+  Widget _bulkTrainerField({
+    required LocaleProvider locale,
+    required bool completed,
+  }) {
+    final trainerReadOnly = completed || !_isProPlan || _loadingTrainers;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Row(
+          children: [
+            Expanded(
+              child: _formLabel(locale.t('addTraining.step2.trainer')),
+            ),
+            InkWell(
+              borderRadius: BorderRadius.circular(12),
+              onTap: () => _showTrainerPlanInfo(locale),
+              child: const Padding(
+                padding: EdgeInsets.only(bottom: 10, right: 4),
+                child: Icon(
+                  Icons.info_outline,
+                  size: 18,
+                  color: AppColors.textSecondary,
+                ),
+              ),
+            ),
+          ],
+        ),
+        if (_loadingTrainers || _loadingSubscription)
+          const Padding(
+            padding: EdgeInsets.all(12),
+            child: Center(child: CircularProgressIndicator()),
+          )
+        else
+          Material(
+            color: AppColors.backgroundPrimary,
+            borderRadius: BorderRadius.circular(_kFieldRadius),
+            clipBehavior: Clip.antiAlias,
+            child: InkWell(
+              onTap: trainerReadOnly ? null : () => _pickTrainer(locale),
+              borderRadius: BorderRadius.circular(_kFieldRadius),
+              child: InputDecorator(
+                decoration: _fieldDecoration(
+                  suffixIcon: trainerReadOnly
+                      ? null
+                      : const Icon(
+                          CupertinoIcons.chevron_down,
+                          color: _kFormAccentPurple,
+                          size: 18,
+                        ),
+                ),
+                child: Text(
+                  _trainerDisplayName(locale),
+                  style: const TextStyle(
+                    fontSize: 14,
+                    color: AppColors.textPrimary,
+                  ),
+                ),
+              ),
+            ),
+          ),
+        if (!_isProPlan && !completed)
+          Padding(
+            padding: const EdgeInsets.only(top: 8, left: 12),
+            child: Text(
+              locale.t('ownerSession.trainerFreePlanNote'),
+              style: const TextStyle(
+                fontSize: 12,
+                height: 1.35,
+                color: AppColors.textSecondary,
+              ),
+            ),
+          ),
+      ],
+    );
+  }
+
+  Widget _thisClassOnlyTrainerField({
+    required LocaleProvider locale,
+    required bool completed,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        _formLabel(locale.t('addTraining.step2.trainer')),
+        InputDecorator(
+          decoration: _trainerInputDecoration(),
+          child: Text(
+            _trainerDisplayName(locale),
+            style: const TextStyle(
+              fontSize: 14,
+              color: AppColors.textPrimary,
+            ),
+          ),
+        ),
+        if (!completed) ...[
+          const SizedBox(height: 8),
+          Text(
+            locale.t('addTraining.step2.trainerProNote'),
+            style: const TextStyle(
+              fontSize: 12,
+              height: 1.35,
+              color: AppColors.textSecondary,
+            ),
+          ),
+        ],
+      ],
+    );
+  }
+
+  bool _isTrainerNamePlaceholder(String name) {
+    final n = name.trim();
+    return n.isEmpty || n == '—' || n == '-';
+  }
+
+  String _trainerDisplayName(LocaleProvider locale) {
+    final fallback = _initial?.trainerName.trim() ?? '';
+    final hasFallback = !_isTrainerNamePlaceholder(fallback);
+
+    if (_loadingTrainers) {
+      if (hasFallback) return fallback;
+      return locale.t('common.loading');
+    }
+
+    final id = _trainerId?.trim();
+    if (id != null && id.isNotEmpty) {
+      final match = _trainers.where((t) => t.id == id);
+      if (match.isNotEmpty) return match.first.name;
+      if (hasFallback) return fallback;
+    }
+
+    if (hasFallback) return fallback;
+
+    return locale.t('ownerSession.noTrainer');
+  }
+
+  OwnerTrainingSession _buildUpdatedSession({String? statusOverride}) {
+    final base = _initial!;
+    final durationMin = base.trainingDurationMinutes ?? 60;
+    final loc = _selectedLocation;
+    final locName = loc?.name.trim();
+    final resolvedLocName =
+        locName != null && locName.isNotEmpty ? locName : base.locationName;
+    final trainerName = _resolveTrainerNameForSession(base);
+    return OwnerTrainingSession(
+      sessionId: base.sessionId,
+      trainingId: base.trainingId,
+      startsAt: _startsAt,
+      endsAt: _startsAt.add(Duration(minutes: durationMin)),
+      status: statusOverride ?? base.status,
+      capacity: base.capacity,
+      enrolledCount: base.enrolledCount,
+      attendedCount: base.attendedCount,
+      trainingName: base.trainingName,
+      trainingPrice: base.trainingPrice,
+      trainingDurationMinutes: base.trainingDurationMinutes,
+      trainingDisplayColorHex: base.trainingDisplayColorHex,
+      trainingCategoryNameEn: base.trainingCategoryNameEn,
+      trainingCategoryNameRu: base.trainingCategoryNameRu,
+      trainingCategoryNameVn: base.trainingCategoryNameVn,
+      trainerName: trainerName,
+      trainerId: _trainerId,
+      locationId:
+          _selectedLocationId == 'default' ? null : _selectedLocationId,
+      locationName: resolvedLocName,
+    );
+  }
+
+  String _resolveTrainerNameForSession(OwnerTrainingSession base) {
+    final id = _trainerId?.trim();
+    if (id != null && id.isNotEmpty) {
+      final match = _trainers.where((t) => t.id == id);
+      if (match.isNotEmpty) return match.first.name;
+    }
+    final fallback = base.trainerName.trim();
+    if (!_isTrainerNamePlaceholder(fallback)) return fallback;
+    return '—';
   }
 
   bool _sameStartLocal(OwnerTrainingSession session) {
@@ -157,7 +853,7 @@ class _OwnerEditTrainingSessionScreenState
         a.minute == b.minute;
   }
 
-  Future<void> _save() async {
+  Future<void> _save(LocaleProvider locale) async {
     final session = _initial;
     if (session == null) return;
     final token = context.read<AuthService>().accessToken;
@@ -167,14 +863,20 @@ class _OwnerEditTrainingSessionScreenState
     if (!_sameStartLocal(session)) {
       body['startsAt'] = _startsAt.toUtc().toIso8601String();
     }
-    final trainerBefore = session.trainerId;
-    final trainerAfter = _trainerId;
-    if (_isProPlan && trainerBefore != trainerAfter) {
-      body['trainerId'] = trainerAfter;
+    final locationBefore = _effectiveLocationId(session.locationId);
+    if (_selectedLocationId != locationBefore) {
+      body['locationId'] = _selectedLocationId;
+    }
+    if (_applyToFollowing) {
+      final trainerBefore = session.trainerId;
+      final trainerAfter = _trainerId;
+      if (_isProPlan && trainerBefore != trainerAfter) {
+        body['trainerId'] = trainerAfter;
+      }
     }
 
     if (body.isEmpty) {
-      if (mounted) Navigator.of(context).pop(false);
+      if (mounted) Navigator.of(context).pop();
       return;
     }
     if (_applyToFollowing) {
@@ -190,10 +892,10 @@ class _OwnerEditTrainingSessionScreenState
       );
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Сохранено')),
+        SnackBar(content: Text(locale.t('common.changesSaved'))),
       );
       context.read<OwnerSessionsCache>().invalidate();
-      Navigator.of(context).pop(true);
+      Navigator.of(context).pop(_buildUpdatedSession());
     } catch (e) {
       if (mounted) showApiError(context, e);
     } finally {
@@ -201,10 +903,9 @@ class _OwnerEditTrainingSessionScreenState
     }
   }
 
-  Future<void> _cancelSession() async {
+  Future<void> _cancelSession(LocaleProvider locale) async {
     final session = _initial;
     if (session == null) return;
-    final tr = context.read<LocaleProvider>().t;
     final scope = await showOwnerSessionCancelScopeDialog(context);
     if (!mounted || scope == null) return;
 
@@ -224,11 +925,13 @@ class _OwnerEditTrainingSessionScreenState
       );
       if (!mounted) return;
       final msg = scope == OwnerSessionCancelScope.thisAndFollowing
-          ? tr('ownerSession.sessionCancelledBulk')
-          : tr('ownerSession.sessionCancelled');
+          ? locale.t('ownerSession.sessionCancelledBulk')
+          : locale.t('ownerSession.sessionCancelled');
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
       context.read<OwnerSessionsCache>().invalidate();
-      Navigator.of(context).pop(true);
+      Navigator.of(context).pop(
+        _buildUpdatedSession(statusOverride: 'CANCELLED'),
+      );
     } catch (e) {
       if (mounted) showApiError(context, e);
     } finally {
@@ -239,209 +942,250 @@ class _OwnerEditTrainingSessionScreenState
   @override
   Widget build(BuildContext context) {
     final session = _initial;
+    final locale = context.watch<LocaleProvider>();
+
     if (session == null) {
       return Scaffold(
-        appBar: AppBar(title: const Text('Занятие')),
-        body: const Center(child: Text('Нет данных')),
+        appBar: buildBrandedSettingsAppBar(
+          context,
+          title: locale.t('ownerSession.detailTitle'),
+        ),
+        body: Center(child: Text(locale.t('common.nothingFound'))),
       );
     }
 
     final statusUpper = session.status.toUpperCase();
-    final isFutureSession = session.startsAt.isAfter(DateTime.now());
-    final completed = statusUpper == 'COMPLETED' && !isFutureSession;
-    final trainerReadOnly = completed || !_isProPlan;
-    final tr = context.read<LocaleProvider>().t;
+    final completed = !session.endsAt.toLocal().isAfter(DateTime.now());
+    final canEditSchedule = !completed;
+    final canPickLocation =
+        canEditSchedule && !_loadingTrainers && _locations.length > 1;
+
+    final screenTitle = _applyToFollowing
+        ? locale.t('ownerSession.editScopeFollowing')
+        : locale.t('ownerSession.editScopeThisOnly');
+
+    final formChildren = _applyToFollowing
+        ? _buildBulkFollowingForm(
+            locale: locale,
+            completed: completed,
+            canEditSchedule: canEditSchedule,
+            canPickLocation: canPickLocation,
+            statusUpper: statusUpper,
+          )
+        : _buildThisClassOnlyForm(
+            locale: locale,
+            completed: completed,
+            canEditSchedule: canEditSchedule,
+            canPickLocation: canPickLocation,
+            statusUpper: statusUpper,
+          );
 
     return Scaffold(
       backgroundColor: AppColors.backgroundSecondary,
-      appBar: AppBar(
-        title: Text(
-          session.trainingName,
-          style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w700),
+      appBar: buildBrandedSettingsAppBar(context, title: screenTitle),
+      body: ListView(
+        padding: const EdgeInsets.fromLTRB(
+          kScreenPaddingHorizontal,
+          8,
+          kScreenPaddingHorizontal,
+          24,
+        ),
+        children: formChildren,
+      ),
+    );
+  }
+
+  List<Widget> _buildThisClassOnlyForm({
+    required LocaleProvider locale,
+    required bool completed,
+    required bool canEditSchedule,
+    required bool canPickLocation,
+    required String statusUpper,
+  }) {
+    return [
+      if (completed)
+        Padding(
+          padding: const EdgeInsets.only(bottom: 12),
+          child: Text(
+            locale.t('ownerSession.editSessionCompleted'),
+            style: const TextStyle(
+              color: AppColors.textSecondary,
+              fontSize: 13,
+              height: 1.35,
+            ),
+          ),
+        ),
+      Text(
+        locale.t('ownerSession.editSessionHint'),
+        style: const TextStyle(
+          color: AppColors.textSecondary,
+          fontSize: 13,
+          height: 1.35,
         ),
       ),
-      body: ListView(
-        padding: const EdgeInsets.all(16),
+      const SizedBox(height: 20),
+      Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          if (_applyToFollowing)
-            Padding(
-              padding: const EdgeInsets.only(bottom: 12),
-              child: Material(
-                color: AppColors.primary50,
-                borderRadius: BorderRadius.circular(12),
-                child: Padding(
-                  padding: const EdgeInsets.all(12),
-                  child: Text(
-                    tr('ownerSession.editBulkSessionsBanner'),
-                    style: const TextStyle(
-                      fontSize: 13,
-                      height: 1.35,
-                      color: AppColors.textPrimary,
-                    ),
-                  ),
-                ),
-              ),
+          _compactPickerCard(
+            caption: locale.t('addTraining.step2.date'),
+            value: _formatYMMMd(_sessionDate, locale),
+            trailing: const Icon(
+              Icons.calendar_today_outlined,
+              size: 18,
+              color: AppColors.textSecondary,
             ),
-          if (completed)
-            Padding(
-              padding: const EdgeInsets.only(bottom: 16),
-              child: Text(
-                'Занятие уже завершено — время и тренер не меняются.',
-                style: TextStyle(color: AppColors.textSecondary, fontSize: 14),
-              ),
-            ),
-          Text(
-            'Время и тренер относятся только к этому дню. '
-            'Чтобы поменять название или цену услуги, откройте «Услуги».',
-            style: TextStyle(color: AppColors.textSecondary, fontSize: 13),
+            onTap: canEditSchedule ? _pickSessionDate : null,
           ),
-          const SizedBox(height: 20),
-          ListTile(
-            contentPadding: EdgeInsets.zero,
-            title: const Text(
-              'Дата и время',
-              style: TextStyle(
-                fontSize: 13,
-                fontWeight: FontWeight.w600,
-                color: AppColors.textSecondary,
-              ),
+          const SizedBox(width: 12),
+          _compactPickerCard(
+            caption: locale.t('addTraining.step2.time'),
+            value: _timeToHm(_sessionTime),
+            trailing: const Icon(
+              CupertinoIcons.chevron_down,
+              color: _kFormAccentPurple,
+              size: 18,
             ),
-            subtitle: Text(
-              '${MaterialLocalizations.of(context).formatFullDate(_startsAt)} · ${TimeOfDay.fromDateTime(_startsAt).format(context)}',
+            onTap: canEditSchedule
+                ? () async {
+                    final picked = await _pickTimeWithWheel(_sessionTime);
+                    if (picked != null && mounted) {
+                      setState(() => _sessionTime = picked);
+                    }
+                  }
+                : null,
+          ),
+        ],
+      ),
+      const SizedBox(height: 18),
+      _formLabel(locale.t('addTraining.addressSectionLabel')),
+      _locationField(locale: locale, canEdit: canPickLocation),
+      const SizedBox(height: 18),
+      _thisClassOnlyTrainerField(locale: locale, completed: completed),
+      ..._saveCancelActions(locale, completed, statusUpper),
+    ];
+  }
+
+  List<Widget> _buildBulkFollowingForm({
+    required LocaleProvider locale,
+    required bool completed,
+    required bool canEditSchedule,
+    required bool canPickLocation,
+    required String statusUpper,
+  }) {
+    final matLoc = MaterialLocalizations.of(context);
+    final startsLocal = _startsAt;
+    final dateTimeLabel =
+        '${matLoc.formatFullDate(startsLocal)} · '
+        '${matLoc.formatTimeOfDay(
+          TimeOfDay.fromDateTime(startsLocal),
+          alwaysUse24HourFormat: true,
+        )}';
+
+    return [
+      Padding(
+        padding: const EdgeInsets.only(bottom: 16),
+        child: Material(
+          color: AppColors.primary50,
+          borderRadius: BorderRadius.circular(12),
+          child: Padding(
+            padding: const EdgeInsets.all(12),
+            child: Text(
+              locale.t('ownerSession.editBulkSessionsBanner'),
               style: const TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w700,
+                fontSize: 13,
+                height: 1.35,
                 color: AppColors.textPrimary,
               ),
             ),
-            trailing: const Icon(Icons.schedule),
-            onTap: completed ? null : _pickStart,
           ),
-          const SizedBox(height: 8),
-          Row(
-            children: [
-              Text(
-                'Тренер',
-                style: TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w600,
-                  color: AppColors.textSecondary,
-                ),
-              ),
-              const SizedBox(width: 6),
-              InkWell(
-                borderRadius: BorderRadius.circular(12),
-                onTap: _showTrainerPlanInfo,
-                child: const Padding(
-                  padding: EdgeInsets.all(2),
-                  child: Icon(
-                    Icons.info_outline,
-                    size: 16,
-                    color: AppColors.textSecondary,
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          if (_loadingTrainers || _loadingSubscription)
-            const Padding(
-              padding: EdgeInsets.all(12),
-              child: Center(child: CircularProgressIndicator()),
-            )
-          else
-            Builder(
-              builder: (context) {
-                final orphanId = _trainerId;
-                final hasOrphan = orphanId != null &&
-                    !_trainers.any((t) => t.id == orphanId);
-                final items = <DropdownMenuItem<String?>>[
-                  const DropdownMenuItem<String?>(
-                    value: null,
-                    child: Text('Без тренера'),
-                  ),
-                  if (hasOrphan)
-                    DropdownMenuItem<String?>(
-                      value: orphanId,
-                      child: Text(session.trainerName),
-                    ),
-                  ..._trainers.map(
-                    (t) => DropdownMenuItem<String?>(
-                      value: t.id,
-                      child: Text(t.name),
-                    ),
-                  ),
-                ];
-                return InputDecorator(
-                  decoration: InputDecoration(
-                    filled: true,
-                    fillColor: AppColors.backgroundPrimary,
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide:
-                          const BorderSide(color: AppColors.borderPrimary),
-                    ),
-                    contentPadding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 4,
-                    ),
-                  ),
-                  child: DropdownButtonHideUnderline(
-                    child: DropdownButton<String?>(
-                      isExpanded: true,
-                      value: _trainerId,
-                      items: items,
-                      onChanged: trainerReadOnly
-                          ? null
-                          : (v) => setState(() => _trainerId = v),
-                    ),
-                  ),
-                );
-              },
-            ),
-          if (!_isProPlan && !completed)
-            Padding(
-              padding: const EdgeInsets.only(top: 8),
-              child: Text(
-                'На Free изменение тренера недоступно.',
-                style: TextStyle(
-                  color: AppColors.textSecondary,
-                  fontSize: 12,
-                ),
-              ),
-            ),
-          const SizedBox(height: 28),
-          SizedBox(
-            width: double.infinity,
-            height: 48,
-            child: FilledButton(
-              onPressed: (_saving || completed) ? null : _save,
-              style: FilledButton.styleFrom(
-                backgroundColor: AppColors.primary500,
-              ),
-              child: _saving
-                  ? const SizedBox(
-                      width: 22,
-                      height: 22,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    )
-                  : const Text('Сохранить'),
-            ),
-          ),
-          if (!completed &&
-              session.status.toUpperCase() != 'CANCELLED') ...[
-            const SizedBox(height: 12),
-            SizedBox(
-              width: double.infinity,
-              height: 48,
-              child: OutlinedButton(
-                onPressed: _saving ? null : _cancelSession,
-                child: const Text('Отменить занятие'),
-              ),
-            ),
-          ],
-        ],
+        ),
       ),
-    );
+      if (completed)
+        Padding(
+          padding: const EdgeInsets.only(bottom: 12),
+          child: Text(
+            locale.t('ownerSession.editSessionCompleted'),
+            style: const TextStyle(
+              color: AppColors.textSecondary,
+              fontSize: 13,
+              height: 1.35,
+            ),
+          ),
+        ),
+      Text(
+        locale.t('ownerSession.editScopeFollowingHint'),
+        style: const TextStyle(
+          color: AppColors.textSecondary,
+          fontSize: 13,
+          height: 1.35,
+        ),
+      ),
+      const SizedBox(height: 20),
+      _formLabel(locale.t('booking.dateTime')),
+      _pickerField(
+        value: dateTimeLabel,
+        suffixIcon: const Icon(
+          Icons.schedule,
+          color: AppColors.textSecondary,
+          size: 22,
+        ),
+        onTap: canEditSchedule ? _pickStartDateThenTime : null,
+      ),
+      const SizedBox(height: 18),
+      _formLabel(locale.t('addTraining.addressSectionLabel')),
+      _locationField(locale: locale, canEdit: canPickLocation),
+      const SizedBox(height: 18),
+      _bulkTrainerField(locale: locale, completed: completed),
+      ..._saveCancelActions(locale, completed, statusUpper),
+    ];
+  }
+
+  List<Widget> _saveCancelActions(
+    LocaleProvider locale,
+    bool completed,
+    String statusUpper,
+  ) {
+    return [
+      const SizedBox(height: 28),
+      SizedBox(
+        width: double.infinity,
+        height: AuthFormStyles.buttonHeight,
+        child: FilledButton(
+          onPressed: (_saving || completed) ? null : () => _save(locale),
+          style: AuthFormStyles.primaryButtonStyle(),
+          child: _saving
+              ? const SizedBox(
+                  width: 22,
+                  height: 22,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    color: AppColors.textInverse,
+                  ),
+                )
+              : Text(locale.t('common.save')),
+        ),
+      ),
+      if (!completed && statusUpper != 'CANCELLED') ...[
+        const SizedBox(height: 12),
+        SizedBox(
+          width: double.infinity,
+          height: AuthFormStyles.buttonHeight,
+          child: OutlinedButton(
+            onPressed: _saving ? null : () => _cancelSession(locale),
+            style: OutlinedButton.styleFrom(
+              foregroundColor: AppColors.error600,
+              side: const BorderSide(color: AppColors.error600),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(
+                  AuthFormStyles.fieldBorderRadius,
+                ),
+              ),
+            ),
+            child: Text(locale.t('ownerSession.cancelSessionConfirm')),
+          ),
+        ),
+      ],
+    ];
   }
 }

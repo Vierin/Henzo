@@ -18,6 +18,7 @@ import '../../utils/show_api_error.dart';
 import '../../utils/owner_image_picker.dart';
 import '../../utils/training_locations_storage.dart';
 import '../../widgets/address_picker_modal.dart';
+import '../../widgets/common/henzo_header_back_button.dart';
 import '../../widgets/training/training_location_picker_sheet.dart';
 import '../../widgets/settings/settings_form_tokens.dart';
 import '../../widgets/settings/settings_typography.dart';
@@ -536,18 +537,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
           child: Scaffold(
             backgroundColor: AppColors.backgroundSecondary,
             appBar: AppBar(
-              leading: IconButton(
-                onPressed: _handleBackPressed,
-                style: IconButton.styleFrom(
-                  backgroundColor: AppColors.neutral200,
-                  shape: const CircleBorder(),
-                ),
-                icon: const Icon(
-                  Icons.arrow_back,
-                  color: AppColors.textPrimary,
-                  size: 20,
-                ),
+              leading: HenzoHeaderBackButton(
+                onPressed: () => _handleBackPressed(),
               ),
+              leadingWidth: 56,
               title: Text(
                 locale.t('settings.owner.studioProfile'),
                 style: SettingsTypography.screenTitle(context),

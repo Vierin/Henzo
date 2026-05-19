@@ -10,9 +10,9 @@ const double _settingsSvgIconSize = 13;
 const double _settingsMaterialIconSize = 18;
 const double _settingsTileGap = 8;
 
-/// Lime badge for active Pro (matches settings mockup).
+/// Lime pill badge for active Pro on Settings hero card.
 const Color kSettingsProBadgeBackground = Color(0xFFD4F06A);
-const Color kSettingsProBadgeText = Color(0xFF3F3F3F);
+const Color kSettingsProBadgeText = Color(0xFF000000);
 
 class SettingsSectionLabel extends StatelessWidget {
   const SettingsSectionLabel({super.key, required this.title});

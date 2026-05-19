@@ -201,7 +201,14 @@
 		"actionSetActive": "Set active",
 		"actionSetNoShow": "Mark no-show",
 		"actionCancelParticipant": "Cancel participation",
-		"actionDeleteParticipant": "Delete"
+		"actionDeleteParticipant": "Delete",
+		"noTrainer": "No trainer",
+		"editSessionHint": "Date, time, trainer, and location apply to this day only. To change the service name or price, open Services.",
+		"editSessionCompleted": "This class has ended — time and trainer cannot be changed.",
+		"trainerFreePlanNote": "Trainer cannot be changed on the Free plan.",
+		"trainerPlanInfoTitle": "Trainer",
+		"trainerPlanInfoBody": "On the Free plan the trainer field is read-only.\n\nTo change trainers or add staff, upgrade to Pro.",
+		"selectTrainer": "Select trainer"
 	},
 	"ownerClient": {
 		"addToDirectory": "Add client",
@@ -443,7 +450,7 @@
 			"trainings": "Trainings",
 			"team": "Team",
 			"subscriptionBilling": "Subscription & billing",
-			"activeProPlan": "Active Pro plan",
+			"activeProPlan": "Pro plan Active",
 			"bookingWindowDays": "{count} days",
 			"trainingsCount": "{count}",
 			"bookingPeriodTitle": "Booking period",

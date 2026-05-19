@@ -15,6 +15,8 @@ import '../utils/color_hex.dart';
 import '../utils/show_api_error.dart';
 import '../utils/synthetic_guest.dart';
 import '../widgets/clients/add_owner_client_sheet.dart';
+import '../widgets/common/henzo_header_back_button.dart';
+import '../navigation/owner_session_navigation.dart';
 import '../widgets/training/owner_session_cancel_scope_dialog.dart';
 
 /// Full-screen session detail for studio owners (replaces bottom sheet modal).
@@ -233,12 +235,21 @@ class _OwnerTrainingSessionDetailScreenState
     }
   }
 
+  Future<void> _handleEditSession() async {
+    final updated = await openOwnerEditTrainingSessionFlow(context, _session);
+    if (!mounted || updated == null) return;
+    setState(() => _session = updated);
+    context.read<OwnerSessionsCache>().invalidate();
+    widget.onParticipantsChanged?.call();
+  }
+
   Future<void> _confirmCancelSession() async {
     final tr = context.read<LocaleProvider>().t;
     final session = _session;
     if (session.sessionId.isEmpty) return;
     final st = session.status.toUpperCase();
-    if (st == 'CANCELLED' || st == 'COMPLETED') return;
+    if (st == 'CANCELLED') return;
+    if (!session.endsAt.toLocal().isAfter(DateTime.now())) return;
 
     final scope = await showOwnerSessionCancelScopeDialog(context);
     if (!mounted || scope == null) return;
@@ -330,13 +341,11 @@ class _OwnerTrainingSessionDetailScreenState
     final fillRatio = cap > 0 ? (enrolled / cap).clamp(0.0, 1.0) : 0.0;
     final pct = cap > 0 ? (fillRatio * 100).round() : 0;
     final statusUpper = session.status.toUpperCase();
-    final isFutureSession = session.startsAt.isAfter(DateTime.now());
+    final now = DateTime.now();
+    final sessionEnded = !session.endsAt.toLocal().isAfter(now);
     final canCancelSession = session.sessionId.isNotEmpty &&
         statusUpper != 'CANCELLED' &&
-        (statusUpper == 'ACTIVE' ||
-            (isFutureSession && statusUpper == 'COMPLETED'));
-    final now = DateTime.now();
-    final sessionEnded = !session.endsAt.isAfter(now);
+        sessionEnded == false;
     final attendanceTogglesVisible = !session.startsAt
         .subtract(const Duration(hours: 1))
         .isAfter(now);
@@ -434,21 +443,9 @@ class _OwnerTrainingSessionDetailScreenState
                               crossAxisAlignment: CrossAxisAlignment.center,
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
-                                IconButton(
-                                  onPressed: () => Navigator.of(context).pop(),
-                                  style: IconButton.styleFrom(
-                                    backgroundColor:
-                                        AppColors.backgroundPrimary,
-                                    shape: const CircleBorder(),
-                                    side: const BorderSide(
-                                      color: AppColors.borderPrimary,
-                                    ),
-                                  ),
-                                  icon: const Icon(
-                                    Icons.arrow_back,
-                                    color: AppColors.textPrimary,
-                                    size: 20,
-                                  ),
+                                HenzoHeaderBackButton(
+                                  onPressed: () =>
+                                      Navigator.of(context).pop(),
                                 ),
                                 FilledButton.icon(
                                   onPressed: _shareSession,
@@ -728,7 +725,9 @@ class _OwnerTrainingSessionDetailScreenState
                       children: [
                         Expanded(
                           child: FilledButton(
-                            onPressed: widget.onEditSession,
+                            onPressed: _session.sessionId.isNotEmpty
+                                ? _handleEditSession
+                                : null,
                             style: FilledButton.styleFrom(
                               backgroundColor: AppColors.primary500,
                               foregroundColor: AppColors.textInverse,

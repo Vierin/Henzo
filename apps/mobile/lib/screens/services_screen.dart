@@ -22,6 +22,7 @@ import '../../utils/training_locations_storage.dart';
 import '../../constants/layout.dart';
 import '../../widgets/app_search_prefix_icon.dart';
 import '../../widgets/address_picker_modal.dart';
+import '../../widgets/common/henzo_header_back_button.dart';
 import '../../widgets/settings/branded_settings_app_bar.dart';
 import '../../widgets/training/owner_training_catalog_card.dart';
 import '../../widgets/training/training_category_picker_sheet.dart';
@@ -1296,11 +1297,10 @@ class _EditTrainingScreenState extends State<_EditTrainingScreen> {
         foregroundColor: AppColors.textPrimary,
         elevation: 0,
         scrolledUnderElevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
-          color: AppColors.textPrimary,
+        leading: HenzoHeaderBackButton(
           onPressed: () => Navigator.of(context).pop(),
         ),
+        leadingWidth: 56,
         centerTitle: true,
         title: const Text(
           'Редактировать тренировку',

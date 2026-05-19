@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../constants/colors.dart';
-import 'settings_header_back_button.dart';
+import '../common/henzo_header_back_button.dart';
 import 'settings_typography.dart';
 
 /// App bar for owner settings sub-screens (centered title, secondary bg).
@@ -17,9 +17,10 @@ PreferredSizeWidget buildBrandedSettingsAppBar(
     elevation: 0,
     scrolledUnderElevation: 0,
     centerTitle: true,
-    leading: SettingsHeaderBackButton(
+    leading: HenzoHeaderBackButton(
       onPressed: onBack ?? () => Navigator.of(context).maybePop(),
     ),
+    leadingWidth: 56,
     title: Text(title, style: SettingsTypography.screenTitle(context)),
     actions: actions,
   );

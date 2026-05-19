@@ -6,7 +6,7 @@ import '../widgets/training/owner_session_edit_scope_dialog.dart';
 
 /// Opens scope picker, then pushes [OwnerEditTrainingSessionScreen] on the
 /// same [Navigator] as [context] (must be the session detail route).
-Future<bool?> openOwnerEditTrainingSessionFlow(
+Future<OwnerTrainingSession?> openOwnerEditTrainingSessionFlow(
   BuildContext context,
   OwnerTrainingSession session,
 ) async {
@@ -16,7 +16,7 @@ Future<bool?> openOwnerEditTrainingSessionFlow(
   return pushOwnerEditTrainingSession(context, session, scope);
 }
 
-Future<bool?> pushOwnerEditTrainingSession(
+Future<OwnerTrainingSession?> pushOwnerEditTrainingSession(
   BuildContext context,
   OwnerTrainingSession session,
   OwnerSessionEditScope scope,
@@ -26,8 +26,8 @@ Future<bool?> pushOwnerEditTrainingSession(
     if (scope == OwnerSessionEditScope.thisAndFollowing)
       'applyToFollowing': true,
   };
-  return Navigator.of(context).push<bool>(
-    MaterialPageRoute<bool>(
+  return Navigator.of(context).push<OwnerTrainingSession>(
+    MaterialPageRoute<OwnerTrainingSession>(
       builder: (_) => const OwnerEditTrainingSessionScreen(),
       settings: RouteSettings(arguments: args),
     ),

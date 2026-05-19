@@ -14,8 +14,8 @@ import '../services/cache/salon_cache.dart';
 import '../services/dashboard_api_service.dart';
 import '../services/notifications_store.dart';
 import '../utils/color_hex.dart';
+import '../widgets/common/henzo_header_back_button.dart';
 import '../utils/show_api_error.dart';
-import '../navigation/owner_session_navigation.dart';
 import 'owner_training_session_detail_screen.dart';
 
 class NotificationsScreen extends StatefulWidget {
@@ -62,18 +62,10 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
         backgroundColor: Colors.transparent,
         elevation: 0,
         scrolledUnderElevation: 0,
-        leading: IconButton(
+        leading: HenzoHeaderBackButton(
           onPressed: () => Navigator.pop(context),
-          style: IconButton.styleFrom(
-            backgroundColor: AppColors.backgroundPrimary,
-            shape: const CircleBorder(),
-          ),
-          icon: const Icon(
-            Icons.arrow_back_ios_new,
-            color: AppColors.textPrimary,
-            size: 18,
-          ),
         ),
+        leadingWidth: 56,
         title: Text(
           locale.t('notifications.title'),
           style: const TextStyle(
@@ -816,17 +808,6 @@ Future<void> _openBookingSessionDetail(
         onParticipantsChanged: () {
           navCtx.read<OwnerSessionsCache>().invalidate();
         },
-        onEditSession: match.sessionId.isNotEmpty
-            ? () async {
-                final changed = await openOwnerEditTrainingSessionFlow(
-                  navCtx,
-                  match!,
-                );
-                if (changed == true && navCtx.mounted) {
-                  navCtx.read<OwnerSessionsCache>().invalidate();
-                }
-              }
-            : null,
       ),
     ),
   );

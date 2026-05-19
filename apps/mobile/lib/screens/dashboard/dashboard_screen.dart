@@ -291,27 +291,18 @@ class _DashboardScreenState extends State<DashboardScreen> {
             context.read<OwnerSessionsCache>().invalidate();
             _loadData();
           },
-          onEditSession: s.sessionId.isNotEmpty
-              ? () => _handleSessionEditFromDetail(detailCtx, s)
-              : null,
         ),
       ),
     );
   }
 
-  Future<void> _handleSessionEditFromDetail(
-    BuildContext detailCtx,
-    OwnerTrainingSession s,
-  ) async {
-    final changed = await openOwnerEditTrainingSessionFlow(detailCtx, s);
-    if (changed == true && mounted) {
+  Future<void> _openEditCurrentSession(OwnerTrainingSession s) async {
+    if (s.sessionId.isEmpty) return;
+    final updated = await openOwnerEditTrainingSessionFlow(context, s);
+    if (updated != null && mounted) {
       context.read<OwnerSessionsCache>().invalidate();
       await _loadData();
     }
-  }
-
-  Future<void> _openEditCurrentSession(OwnerTrainingSession s) async {
-    await _handleSessionEditFromDetail(context, s);
   }
 
   // --- UI ---------------------------------------------------------------

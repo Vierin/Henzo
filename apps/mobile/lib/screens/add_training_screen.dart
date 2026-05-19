@@ -22,7 +22,9 @@ import '../services/services_api_service.dart';
 import '../utils/show_api_error.dart';
 import '../utils/training_locations_storage.dart';
 import '../widgets/address_picker_modal.dart';
+import '../widgets/auth/auth_form_styles.dart';
 import '../widgets/schedule_style_date_picker.dart';
+import '../widgets/common/henzo_header_back_button.dart';
 import '../widgets/training/training_location_picker_sheet.dart';
 import 'main_shell.dart';
 
@@ -500,27 +502,8 @@ class _AddTrainingScreenState extends State<AddTrainingScreen> {
   }
 
   Widget _step2BackLeading() {
-    return Padding(
-      padding: const EdgeInsets.only(left: 8),
-      child: Center(
-        child: Material(
-          color: AppColors.backgroundPrimary,
-          shape: const CircleBorder(),
-          child: InkWell(
-            customBorder: const CircleBorder(),
-            onTap: () => setState(() => _step = 1),
-            child: const SizedBox(
-              width: 40,
-              height: 40,
-              child: Icon(
-                Icons.arrow_back_rounded,
-                size: 22,
-                color: AppColors.textSecondary,
-              ),
-            ),
-          ),
-        ),
-      ),
+    return HenzoHeaderBackButton(
+      onPressed: () => setState(() => _step = 1),
     );
   }
 
@@ -1939,13 +1922,7 @@ class _AddTrainingScreenState extends State<AddTrainingScreen> {
                               if (!_validateStep1()) return;
                               setState(() => _step = 2);
                             },
-                            style: FilledButton.styleFrom(
-                              backgroundColor: AppColors.primary500,
-                              foregroundColor: AppColors.textInverse,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(999),
-                              ),
-                            ),
+                            style: AuthFormStyles.primaryButtonStyle(),
                             child: Text(
                               'Следующий шаг',
                               style: textTheme.titleLarge?.copyWith(
