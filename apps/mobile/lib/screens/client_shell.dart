@@ -59,54 +59,59 @@ class _ClientShellState extends State<ClientShell> {
               ),
           ],
         ),
-        bottomNavigationBar: ColoredBox(
-          color: AppColors.backgroundSecondary,
+        bottomNavigationBar: Container(
+          decoration: BoxDecoration(
+            color: AppColors.backgroundPrimary,
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.06),
+                blurRadius: 12,
+                offset: const Offset(0, -2),
+              ),
+            ],
+          ),
           child: SafeArea(
             top: false,
-            minimum: const EdgeInsets.fromLTRB(10, 10, 10, 18),
-            child: Container(
-              height: 70,
-              padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
-              decoration: BoxDecoration(
-                color: AppColors.backgroundPrimary,
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: const Color(0xFFE6E3E2)),
-              ),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: ShellNavItem(
-                      svgAsset: 'assets/icons/icon-house.svg',
-                      label: 'Home',
-                      isSelected: _currentIndex == 0,
-                      onTap: () => setState(() => _currentIndex = 0),
+            child: SizedBox(
+              height: 64,
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: ShellNavItem(
+                        svgAsset: 'assets/icons/icon-house.svg',
+                        label: 'Home',
+                        isSelected: _currentIndex == 0,
+                        onTap: () => setState(() => _currentIndex = 0),
+                      ),
                     ),
-                  ),
-                  Expanded(
-                    child: ShellNavItem(
-                      svgAsset: 'assets/icons/icon-search.svg',
-                      label: 'Browse',
-                      isSelected: _currentIndex == 1,
-                      onTap: () => goToExploreTab(),
+                    Expanded(
+                      child: ShellNavItem(
+                        svgAsset: 'assets/icons/icon-search.svg',
+                        label: 'Browse',
+                        isSelected: _currentIndex == 1,
+                        onTap: () => goToExploreTab(),
+                      ),
                     ),
-                  ),
-                  Expanded(
-                    child: ShellNavItem(
-                      svgAsset: 'assets/icons/icon-schedule.svg',
-                      label: 'Bookings',
-                      isSelected: _currentIndex == 2,
-                      onTap: () => setState(() => _currentIndex = 2),
+                    Expanded(
+                      child: ShellNavItem(
+                        svgAsset: 'assets/icons/icon-schedule.svg',
+                        label: 'Bookings',
+                        isSelected: _currentIndex == 2,
+                        onTap: () => setState(() => _currentIndex = 2),
+                      ),
                     ),
-                  ),
-                  Expanded(
-                    child: ShellNavItem(
-                      svgAsset: 'assets/icons/icon-profile-large.svg',
-                      label: 'Profile',
-                      isSelected: _currentIndex == 3,
-                      onTap: () => setState(() => _currentIndex = 3),
+                    Expanded(
+                      child: ShellNavItem(
+                        svgAsset: 'assets/icons/icon-profile-large.svg',
+                        label: 'Profile',
+                        isSelected: _currentIndex == 3,
+                        onTap: () => setState(() => _currentIndex = 3),
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
           ),

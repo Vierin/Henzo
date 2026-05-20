@@ -73,6 +73,7 @@
 	"clientHome": {
 		"nowIn": "NOW IN",
 		"setLocation": "Set location",
+		"greetingHello": "Hello, ",
 		"greetingPrefix": "Find your ",
 		"greetingEmphasis": "flow",
 		"searchHint": "Studios, classes, teachers...",

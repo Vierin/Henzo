@@ -5,7 +5,7 @@ import '../../constants/colors.dart';
 
 /// Bottom tab item — same look as owner [MainShell] nav.
 class ShellNavItem extends StatelessWidget {
-  static const inactiveIconAndLabel = AppColors.brandText;
+  static const inactiveIconAndLabel = AppColors.textSecondary;
 
   const ShellNavItem({
     super.key,
@@ -42,7 +42,7 @@ class ShellNavItem extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
           decoration: BoxDecoration(
             color: isSelected ? AppColors.primary500 : Colors.transparent,
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(14),
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,

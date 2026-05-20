@@ -73,6 +73,7 @@
 	"clientHome": {
 		"nowIn": "ĐANG Ở",
 		"setLocation": "Chọn vị trí",
+		"greetingHello": "Xin chào, ",
 		"greetingPrefix": "Tìm ",
 		"greetingEmphasis": "nhịp",
 		"searchHint": "Studio, lớp, huấn luyện viên...",

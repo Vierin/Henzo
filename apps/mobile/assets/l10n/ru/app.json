@@ -73,6 +73,7 @@
 	"clientHome": {
 		"nowIn": "СЕЙЧАС В",
 		"setLocation": "Указать город",
+		"greetingHello": "Привет, ",
 		"greetingPrefix": "Найди свой ",
 		"greetingEmphasis": "ритм",
 		"searchHint": "Студии, занятия, тренеры...",
