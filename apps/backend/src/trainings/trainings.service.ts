@@ -439,12 +439,16 @@ export class TrainingsService {
       });
       categoryChipBgHex = catRow?.chip_bg_hex ?? null;
     }
+    const categoryChanged =
+      resolvedCategory !== undefined &&
+      resolvedCategory !== existing.trainingCategoryId;
     const nextDisplayColor = computeTrainingDisplayColor({
       trainingId: existing.id,
       trainingName: nextName,
       trainingCategoryId: nextCategoryId,
       categoryChipBgHex,
-      existingColor: existing.displayColor,
+      // Re-derive from the new category chip when category changes.
+      existingColor: categoryChanged ? undefined : existing.displayColor,
     });
 
     const updated = await this.training.update({
@@ -586,96 +590,111 @@ export class TrainingsService {
       .filter((row) => !desiredBySlot.has(this.sessionSlotKey(row.startsAt)))
       .map((row) => row.id);
 
+    const rangeEndExclusive = new Date(rangeEnd);
+    rangeEndExclusive.setDate(rangeEndExclusive.getDate() + 1);
+
+    const busySessions: Array<{
+      id: string;
+      trainerId: string | null;
+      startsAt: Date;
+      endsAt: Date;
+    }> = await this.prisma.trainingSession.findMany({
+      where: {
+        studioId: training.studioId,
+        status: 'ACTIVE',
+        id: { notIn: mutableIds },
+        startsAt: { lt: rangeEndExclusive },
+        endsAt: { gt: rangeStart },
+      },
+      select: {
+        id: true,
+        trainerId: true,
+        startsAt: true,
+        endsAt: true,
+      },
+    });
+
+    const hasOverlap = (
+      startsAt: Date,
+      endsAt: Date,
+      trainerId: string | null,
+    ): boolean =>
+      busySessions.some(
+        (s) =>
+          startsAt < s.endsAt &&
+          endsAt > s.startsAt &&
+          (!trainerId || !s.trainerId || s.trainerId === trainerId),
+      );
+
+    const updateOps: Array<{
+      where: { id: string };
+      data: Record<string, unknown>;
+    }> = [];
+    const createRows: Array<Record<string, unknown>> = [];
+
     for (const [slotKey, d] of desiredBySlot) {
       const row = mutableBySlot.get(slotKey);
       if (row) {
-        const overlap = await this.prisma.trainingSession.findFirst({
-          where: {
-            studioId: training.studioId,
-            id: { notIn: mutableIds },
-            status: 'ACTIVE',
-            startsAt: { lt: d.endsAt },
-            endsAt: { gt: d.startsAt },
-            ...(row.trainerId ? { trainerId: row.trainerId } : {}),
-          },
-          select: { id: true },
-        });
-        if (overlap) {
+        if (hasOverlap(d.startsAt, d.endsAt, row.trainerId)) {
           skippedConflicts += 1;
           continue;
         }
-        const needsUpdate =
+        const needsTime =
           row.startsAt.getTime() !== d.startsAt.getTime() ||
           row.endsAt.getTime() !== d.endsAt.getTime();
-        if (needsUpdate) {
-          const patch: Record<string, unknown> = {
-            startsAt: d.startsAt,
-            endsAt: d.endsAt,
-          };
-          if (nextCapacity != null) patch.capacity = nextCapacity;
-          if (nextLocationId !== undefined) {
-            patch.locationId = nextLocationId;
-          }
-          await this.prisma.trainingSession.update({
-            where: { id: row.id },
-            data: patch,
-          });
-          updatedCount += 1;
-        } else if (nextCapacity != null || nextLocationId !== undefined) {
-          const patch: Record<string, unknown> = {};
-          if (nextCapacity != null) patch.capacity = nextCapacity;
-          if (nextLocationId !== undefined) {
-            patch.locationId = nextLocationId;
-          }
-          await this.prisma.trainingSession.update({
-            where: { id: row.id },
-            data: patch,
-          });
-          updatedCount += 1;
+        const needsCapacity = nextCapacity != null;
+        const needsLocation = nextLocationId !== undefined;
+        if (!needsTime && !needsCapacity && !needsLocation) continue;
+
+        const patch: Record<string, unknown> = {};
+        if (needsTime) {
+          patch.startsAt = d.startsAt;
+          patch.endsAt = d.endsAt;
         }
+        if (nextCapacity != null) patch.capacity = nextCapacity;
+        if (nextLocationId !== undefined) {
+          patch.locationId = nextLocationId;
+        }
+        updateOps.push({ where: { id: row.id }, data: patch });
+        updatedCount += 1;
         continue;
       }
 
       if (!template) continue;
 
-      const overlap = await this.prisma.trainingSession.findFirst({
-        where: {
-          studioId: training.studioId,
-          id: { notIn: mutableIds },
-          status: 'ACTIVE',
-          startsAt: { lt: d.endsAt },
-          endsAt: { gt: d.startsAt },
-          ...(template.trainerId ? { trainerId: template.trainerId } : {}),
-        },
-        select: { id: true },
-      });
-      if (overlap) {
+      if (hasOverlap(d.startsAt, d.endsAt, template.trainerId)) {
         skippedConflicts += 1;
         continue;
       }
-      await this.prisma.trainingSession.create({
-        data: {
-          studioId: training.studioId,
-          trainingId: id,
-          trainerId: template.trainerId ?? null,
-          locationId:
-            nextLocationId !== undefined
-              ? nextLocationId
-              : template.locationId ?? null,
-          startsAt: d.startsAt,
-          endsAt: d.endsAt,
-          capacity: nextCapacity ?? template.capacity ?? 1,
-          status: 'ACTIVE',
-        },
+      createRows.push({
+        studioId: training.studioId,
+        trainingId: id,
+        trainerId: template.trainerId ?? null,
+        locationId:
+          nextLocationId !== undefined
+            ? nextLocationId
+            : template.locationId ?? null,
+        startsAt: d.startsAt,
+        endsAt: d.endsAt,
+        capacity: nextCapacity ?? template.capacity ?? 1,
+        status: 'ACTIVE',
       });
       createdCount += 1;
     }
 
-    if (toDelete.length > 0) {
-      await this.prisma.trainingSession.deleteMany({
-        where: { id: { in: toDelete } },
-      });
-    }
+    await this.prisma.$transaction(async (tx: any) => {
+      for (const op of updateOps) {
+        await tx.trainingSession.update(op);
+      }
+      if (createRows.length > 0) {
+        await tx.trainingSession.createMany({ data: createRows });
+      }
+      if (toDelete.length > 0) {
+        await tx.trainingSession.deleteMany({
+          where: { id: { in: toDelete } },
+        });
+      }
+    });
 
     return {
       success: true,

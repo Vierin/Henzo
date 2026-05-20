@@ -202,6 +202,13 @@ class OwnerTrainingSession {
     String? status,
     String? locationId,
     String? locationName,
+    String? trainingName,
+    double? trainingPrice,
+    int? trainingDurationMinutes,
+    String? trainingDisplayColorHex,
+    String? trainingCategoryNameEn,
+    String? trainingCategoryNameRu,
+    String? trainingCategoryNameVn,
   }) =>
       OwnerTrainingSession(
         sessionId: sessionId,
@@ -212,18 +219,35 @@ class OwnerTrainingSession {
         capacity: capacity,
         enrolledCount: enrolledCount ?? this.enrolledCount,
         attendedCount: attendedCount ?? this.attendedCount,
-        trainingName: trainingName,
-        trainingPrice: trainingPrice,
-        trainingDurationMinutes: trainingDurationMinutes,
-        trainingDisplayColorHex: trainingDisplayColorHex,
-        trainingCategoryNameEn: trainingCategoryNameEn,
-        trainingCategoryNameRu: trainingCategoryNameRu,
-        trainingCategoryNameVn: trainingCategoryNameVn,
+        trainingName: trainingName ?? this.trainingName,
+        trainingPrice: trainingPrice ?? this.trainingPrice,
+        trainingDurationMinutes:
+            trainingDurationMinutes ?? this.trainingDurationMinutes,
+        trainingDisplayColorHex:
+            trainingDisplayColorHex ?? this.trainingDisplayColorHex,
+        trainingCategoryNameEn:
+            trainingCategoryNameEn ?? this.trainingCategoryNameEn,
+        trainingCategoryNameRu:
+            trainingCategoryNameRu ?? this.trainingCategoryNameRu,
+        trainingCategoryNameVn:
+            trainingCategoryNameVn ?? this.trainingCategoryNameVn,
         trainerName: trainerName,
         trainerId: trainerId,
         locationId: locationId ?? this.locationId,
         locationName: locationName ?? this.locationName,
       );
+
+  /// When API [endsAt] is missing or invalid, derive from [startsAt] + duration.
+  DateTime get effectiveEndsAt {
+    final start = startsAt.toLocal();
+    final end = endsAt.toLocal();
+    if (end.isAfter(start)) return end;
+    final mins = trainingDurationMinutes;
+    if (mins != null && mins > 0) {
+      return start.add(Duration(minutes: mins));
+    }
+    return start.add(const Duration(hours: 1));
+  }
 
   /// Training category label for UI (matches studio locale).
   String? categoryLabelForLocale(String localeCode) {

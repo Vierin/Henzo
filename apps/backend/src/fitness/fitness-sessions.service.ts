@@ -586,11 +586,11 @@ export class FitnessSessionsService {
         ne = new Date(ns);
         ne.setMinutes(ne.getMinutes() + row.Training.duration);
       }
-      final tid =
+      const tid =
         dto.trainerId !== undefined ? trainerId : row.trainerId;
-      final lid =
+      const lid =
         dto.locationId !== undefined ? locationId : row.locationId;
-      final st =
+      const st =
         dto.status !== undefined ? status : row.status;
       return {
         id: row.id,

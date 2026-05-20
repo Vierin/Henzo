@@ -13,6 +13,7 @@ import '../../models/training_location_item.dart';
 import '../../utils/currency_format.dart';
 import '../../models/service_item.dart';
 import '../../services/auth_service.dart';
+import '../../services/cache/owner_sessions_cache.dart';
 import '../../services/cache/salon_cache.dart';
 import '../../services/cache/services_staff_cache.dart';
 import '../../services/dashboard_api_service.dart';
@@ -205,6 +206,7 @@ class _ServicesScreenState extends State<ServicesScreen> {
       final ok = await ServicesApiService.delete(token, item.id);
       if (!mounted) return;
       if (ok) {
+        context.read<OwnerSessionsCache>().invalidate();
         context.read<ServicesStaffCache>().invalidateServices(_salon?.id);
         await _loadData();
         ScaffoldMessenger.maybeOf(context)?.showSnackBar(
@@ -364,9 +366,9 @@ class _ServicesScreenState extends State<ServicesScreen> {
     final token = context.read<AuthService>().accessToken;
     if (token == null || token.isEmpty) return;
     final categories = await ServicesApiService.getTrainingCategories(token);
-    final changed = await Navigator.of(context).push<bool>(
+    final changed = await Navigator.of(context).push<ServiceItem?>(
       MaterialPageRoute(
-        builder: (_) => _EditTrainingScreen(
+        builder: (_) => EditTrainingScreen(
           token: token,
           item: item,
           salon: _salon,
@@ -375,7 +377,8 @@ class _ServicesScreenState extends State<ServicesScreen> {
         ),
       ),
     );
-    if (changed != true || !mounted) return;
+    if (changed == null || !mounted) return;
+    context.read<OwnerSessionsCache>().invalidate();
     context.read<ServicesStaffCache>().invalidateServices(_salon?.id);
     await _loadData();
     if (!mounted) return;
@@ -659,13 +662,15 @@ class _EditTemplateVndThousandsFormatter extends TextInputFormatter {
   }
 }
 
-class _EditTrainingScreen extends StatefulWidget {
-  const _EditTrainingScreen({
+class EditTrainingScreen extends StatefulWidget {
+  const EditTrainingScreen({
     required this.token,
     required this.item,
     required this.salon,
     required this.categories,
     required this.onShowCategoryInfo,
+    this.scheduleEffectiveFrom,
+    this.title,
   });
 
   final String token;
@@ -674,11 +679,15 @@ class _EditTrainingScreen extends StatefulWidget {
   final List<TrainingCategoryOption> categories;
   final VoidCallback onShowCategoryInfo;
 
+  /// Anchor date for schedule changes (from session detail flow).
+  final DateTime? scheduleEffectiveFrom;
+  final String? title;
+
   @override
-  State<_EditTrainingScreen> createState() => _EditTrainingScreenState();
+  State<EditTrainingScreen> createState() => EditTrainingScreenState();
 }
 
-class _EditTrainingScreenState extends State<_EditTrainingScreen> {
+class EditTrainingScreenState extends State<EditTrainingScreen> {
   static const Color _kFormAccent = Color(0xFF6C5CE7);
   static const Color _kHintMuted = Color(0x993F3F3F);
   static const TextStyle _kFieldInputStyle = TextStyle(
@@ -1137,8 +1146,16 @@ class _EditTrainingScreenState extends State<_EditTrainingScreen> {
     );
     _capacityController = TextEditingController(text: '10');
     final now = DateTime.now();
-    _effectiveFromDate = DateTime(now.year, now.month, now.day);
-    _sessionTime = TimeOfDay.fromDateTime(now);
+    final anchor = widget.scheduleEffectiveFrom;
+    if (anchor != null) {
+      final local = anchor.toLocal();
+      _effectiveFromDate = DateTime(local.year, local.month, local.day);
+      _applyFromToday = true;
+      _sessionTime = TimeOfDay.fromDateTime(local);
+    } else {
+      _effectiveFromDate = DateTime(now.year, now.month, now.day);
+      _sessionTime = TimeOfDay.fromDateTime(now);
+    }
     for (final day in _recurringDays) {
       _recurringDayTimes[day] = _sessionTime;
     }
@@ -1222,11 +1239,18 @@ class _EditTrainingScreenState extends State<_EditTrainingScreen> {
       if (!mounted) return;
       if (updated != null) {
         if (_applyScheduleChanges) {
+          final effectiveFrom = _applyFromToday
+              ? DateTime.now()
+              : DateTime(
+                  _effectiveFromDate.year,
+                  _effectiveFromDate.month,
+                  _effectiveFromDate.day,
+                );
           final scheduleRes = await ServicesApiService.updateTrainingSchedule(
             widget.token,
             widget.item.id,
             slots: slots,
-            effectiveFrom: _applyFromToday ? DateTime.now() : _effectiveFromDate,
+            effectiveFrom: effectiveFrom,
             capacity: capacity,
             locationId: locationId,
           );
@@ -1270,7 +1294,9 @@ class _EditTrainingScreenState extends State<_EditTrainingScreen> {
             return;
           }
         }
-        Navigator.of(context).pop(true);
+        if (!mounted) return;
+        context.read<OwnerSessionsCache>().invalidate();
+        if (mounted) Navigator.of(context).pop(updated);
         return;
       }
       ScaffoldMessenger.maybeOf(context)?.showSnackBar(
@@ -1302,9 +1328,9 @@ class _EditTrainingScreenState extends State<_EditTrainingScreen> {
         ),
         leadingWidth: 56,
         centerTitle: true,
-        title: const Text(
-          'Редактировать тренировку',
-          style: TextStyle(
+        title: Text(
+          widget.title ?? 'Редактировать тренировку',
+          style: const TextStyle(
             fontSize: 14,
             fontWeight: FontWeight.w600,
             color: AppColors.textPrimary,
@@ -1699,5 +1725,55 @@ class _EditTrainingScreenState extends State<_EditTrainingScreen> {
       ),
     );
   }
+}
+
+/// Result of editing a training template from a session card.
+typedef OwnerSessionTrainingEditResult = ({
+  ServiceItem training,
+  List<TrainingCategoryOption> categories,
+});
+
+/// Full training editor (step-1 fields + schedule toggle) from a session card.
+Future<OwnerSessionTrainingEditResult?> openEditTrainingFromOwnerSession(
+  BuildContext context,
+  OwnerTrainingSession session,
+) async {
+  final token = context.read<AuthService>().accessToken;
+  if (token == null || token.isEmpty) return null;
+
+  final salon = await context.read<SalonCache>().getSalon(token);
+  if (salon == null || !context.mounted) return null;
+
+  final services = await ServicesApiService.getByStudio(token, salon.id);
+  ServiceItem? item;
+  for (final s in services) {
+    if (s.id == session.trainingId) {
+      item = s;
+      break;
+    }
+  }
+  if (item == null || !context.mounted) return null;
+
+  final categories = await ServicesApiService.getTrainingCategories(token);
+  if (!context.mounted) return null;
+
+  final locale = context.read<LocaleProvider>();
+  final title = locale.t('ownerSession.editScopeFollowing');
+
+  final updated = await Navigator.of(context).push<ServiceItem?>(
+    MaterialPageRoute<ServiceItem?>(
+      builder: (ctx) => EditTrainingScreen(
+        token: token,
+        item: item!,
+        salon: salon,
+        categories: categories,
+        onShowCategoryInfo: () {},
+        scheduleEffectiveFrom: session.startsAt,
+        title: title,
+      ),
+    ),
+  );
+  if (updated == null || !context.mounted) return null;
+  return (training: updated, categories: categories);
 }
 

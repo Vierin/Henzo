@@ -64,8 +64,8 @@ class _OwnerTrainingSessionDetailScreenState
   static const Duration _kAttendanceFlushDebounce = Duration(minutes: 1);
 
   Color get _accent =>
-      widget.trainingColor ??
       parseHexColor(_session.trainingDisplayColorHex) ??
+      widget.trainingColor ??
       AppColors.primary500;
 
   @override
@@ -239,17 +239,20 @@ class _OwnerTrainingSessionDetailScreenState
     final updated = await openOwnerEditTrainingSessionFlow(context, _session);
     if (!mounted || updated == null) return;
     setState(() => _session = updated);
-    context.read<OwnerSessionsCache>().invalidate();
     widget.onParticipantsChanged?.call();
+  }
+
+  static bool _canCancelOwnerSession(OwnerTrainingSession session) {
+    if (session.sessionId.isEmpty) return false;
+    final st = session.status.toUpperCase();
+    if (st == 'CANCELLED' || st == 'COMPLETED') return false;
+    return session.effectiveEndsAt.isAfter(DateTime.now());
   }
 
   Future<void> _confirmCancelSession() async {
     final tr = context.read<LocaleProvider>().t;
     final session = _session;
-    if (session.sessionId.isEmpty) return;
-    final st = session.status.toUpperCase();
-    if (st == 'CANCELLED') return;
-    if (!session.endsAt.toLocal().isAfter(DateTime.now())) return;
+    if (!_canCancelOwnerSession(session)) return;
 
     final scope = await showOwnerSessionCancelScopeDialog(context);
     if (!mounted || scope == null) return;
@@ -258,17 +261,22 @@ class _OwnerTrainingSessionDetailScreenState
     if (token == null || token.isEmpty) return;
 
     try {
-      final body = <String, dynamic>{'status': 'CANCELLED'};
       if (scope == OwnerSessionCancelScope.thisAndFollowing) {
-        body['applyToFollowing'] = true;
+        await DashboardApiService.patchOwnerTrainingSession(
+          token,
+          session.sessionId,
+          {'status': 'CANCELLED', 'applyToFollowing': true},
+        );
+      } else {
+        await DashboardApiService.updateOwnerTrainingSessionStatus(
+          token,
+          session.sessionId,
+          'CANCELLED',
+        );
       }
-      await DashboardApiService.patchOwnerTrainingSession(
-        token,
-        session.sessionId,
-        body,
-      );
-      widget.onParticipantsChanged?.call();
       if (!mounted) return;
+      context.read<OwnerSessionsCache>().invalidate();
+      widget.onParticipantsChanged?.call();
       final msg = scope == OwnerSessionCancelScope.thisAndFollowing
           ? tr('ownerSession.sessionCancelledBulk')
           : tr('ownerSession.sessionCancelled');
@@ -340,12 +348,9 @@ class _OwnerTrainingSessionDetailScreenState
     final cap = session.capacity;
     final fillRatio = cap > 0 ? (enrolled / cap).clamp(0.0, 1.0) : 0.0;
     final pct = cap > 0 ? (fillRatio * 100).round() : 0;
-    final statusUpper = session.status.toUpperCase();
     final now = DateTime.now();
-    final sessionEnded = !session.endsAt.toLocal().isAfter(now);
-    final canCancelSession = session.sessionId.isNotEmpty &&
-        statusUpper != 'CANCELLED' &&
-        sessionEnded == false;
+    final sessionEnded = !session.effectiveEndsAt.isAfter(now);
+    final canCancelSession = _canCancelOwnerSession(session);
     final attendanceTogglesVisible = !session.startsAt
         .subtract(const Duration(hours: 1))
         .isAfter(now);

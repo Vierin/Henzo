@@ -11,10 +11,25 @@ class OwnerSessionsCache extends ChangeNotifier {
   DateTime? _fromUtc;
   DateTime? _toUtc;
 
+  /// Set by [invalidate]; cleared when [getSessions] finishes a fetch.
+  bool _needsRefresh = false;
+
+  bool get needsRefresh => _needsRefresh;
+
   void invalidate() {
     _sessions = const [];
     _fromUtc = null;
     _toUtc = null;
+    _needsRefresh = true;
+    notifyListeners();
+  }
+
+  /// Drops cached slots for a deleted training (instant UI before refetch).
+  void removeByTrainingId(String trainingId) {
+    final id = trainingId.trim();
+    if (id.isEmpty) return;
+    _sessions = _sessions.where((s) => s.trainingId != id).toList();
+    _needsRefresh = true;
     notifyListeners();
   }
 
@@ -62,7 +77,7 @@ class OwnerSessionsCache extends ChangeNotifier {
     _sessions = list;
     _fromUtc = fetchFrom;
     _toUtc = fetchTo;
-    notifyListeners();
+    _needsRefresh = false;
     return _inRange(list, fromUtc, toUtc);
   }
 }

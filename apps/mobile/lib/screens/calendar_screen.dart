@@ -83,6 +83,41 @@ class CalendarScreenState extends State<CalendarScreen> {
   }
 
   bool _sessionsLoadStarted = false;
+  OwnerSessionsCache? _sessionsCache;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final cache = context.read<OwnerSessionsCache>();
+    if (_sessionsCache != cache) {
+      _sessionsCache?.removeListener(_onOwnerSessionsCacheChanged);
+      _sessionsCache = cache;
+      _sessionsCache!.addListener(_onOwnerSessionsCacheChanged);
+    }
+  }
+
+  bool _sessionsReloadInFlight = false;
+
+  void _onOwnerSessionsCacheChanged() {
+    if (!mounted || !_sessionsLoadStarted) return;
+    if (!context.read<OwnerSessionsCache>().needsRefresh) return;
+    if (_sessionsReloadInFlight) return;
+    setState(() {
+      _sessionsByDay.clear();
+      _sessionCountByDay.clear();
+    });
+    unawaited(_reloadSessionsFromCache());
+  }
+
+  Future<void> _reloadSessionsFromCache() async {
+    if (_sessionsReloadInFlight) return;
+    _sessionsReloadInFlight = true;
+    try {
+      await _loadData(showLoading: false);
+    } finally {
+      _sessionsReloadInFlight = false;
+    }
+  }
 
   /// Called when the Schedule tab is first shown (avoids fetch on app cold start).
   void ensureSessionsLoaded() {
@@ -98,6 +133,7 @@ class CalendarScreenState extends State<CalendarScreen> {
 
   @override
   void dispose() {
+    _sessionsCache?.removeListener(_onOwnerSessionsCacheChanged);
     _clearStripScheduleDebounceTimer();
     _suppressStripSchedulePageChanged = false;
     _dayPagerController.removeListener(_onStripPagerScrolled);
@@ -142,9 +178,9 @@ class CalendarScreenState extends State<CalendarScreen> {
     await _loadData();
   }
 
-  Future<void> _loadData() async {
+  Future<void> _loadData({bool showLoading = true}) async {
     if (!mounted) return;
-    setState(() => _isLoading = true);
+    if (showLoading) setState(() => _isLoading = true);
     final token = context.read<AuthService>().accessToken;
     if (token == null) {
       if (mounted) setState(() => _isLoading = false);

@@ -10,7 +10,7 @@ abstract final class AuthFormStyles {
   static const double fieldGap = 12;
 
   static const Color hintMuted = Color(0x993F3F3F);
-  static const Color accentIcon = Color(0xFF6C5CE7);
+  static const Color accentIcon = hintMuted;
 
   static const TextStyle fieldTextStyle = TextStyle(
     fontSize: 16,
