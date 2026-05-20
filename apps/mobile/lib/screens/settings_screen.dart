@@ -45,7 +45,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
   bool _salonLoading = true;
   bool _salonSaving = false;
   bool _photosProcessing = false;
+  bool _logoUploading = false;
   String? _photoProgressText;
+  String? _logoUrl;
   double? _salonLat;
   double? _salonLon;
   List<String> _studioPhotos = <String>[];
@@ -106,6 +108,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     _salonLat = s.latitude;
     _salonLon = s.longitude;
     _studioPhotos = List<String>.from(s.photos ?? <String>[]);
+    _logoUrl = s.logoUrl?.trim().isNotEmpty == true ? s.logoUrl!.trim() : null;
     _socialLinks = studioSocialLinksFromSalon(s);
     final locale = context.read<LocaleProvider>();
     _locations = TrainingLocationItem.listFromSalon(
@@ -159,6 +162,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       _salonEmailController.text.trim(),
       _salonLat?.toStringAsFixed(6) ?? '',
       _salonLon?.toStringAsFixed(6) ?? '',
+      _logoUrl ?? '',
       photos.join('|'),
       studioSocialLinksSnapshot(_socialLinks),
       _primaryLocation?.name.trim() ?? '',
@@ -175,6 +179,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     return !_salonSaving &&
         !_salonLoading &&
         !_photosProcessing &&
+        !_logoUploading &&
         _hasUnsavedChanges;
   }
 
@@ -399,14 +404,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
         'website': socialPayload.website ?? '',
         'instagram': socialPayload.instagram ?? '',
         'photos': _studioPhotos,
+        'logoUrl': _logoUrl ?? '',
       };
       if (_salonLat != null && _salonLon != null) {
         payload['latitude'] = _salonLat;
         payload['longitude'] = _salonLon;
       }
-      final reminderSettings = <String, dynamic>{
-        ...?_salon?.reminderSettings,
-      };
+      final reminderSettings = <String, dynamic>{...?_salon?.reminderSettings};
       if (_locations.isNotEmpty) {
         reminderSettings['trainingLocations'] =
             TrainingLocationItem.extraLocationsToJson(_locations);
@@ -452,6 +456,37 @@ class _SettingsScreenState extends State<SettingsScreen> {
       setState(() => _salonSaving = false);
       showApiError(context, e);
     }
+  }
+
+  Future<void> _pickStudioLogo() async {
+    if (_logoUploading || _photosProcessing) return;
+
+    final picked = await OwnerImagePicker.pickSingleFromGallery();
+    if (picked == null) return;
+
+    if (Supabase.instance.client.auth.currentUser?.id == null) {
+      _showSnack('Войдите в аккаунт, чтобы загрузить логотип');
+      return;
+    }
+
+    setState(() => _logoUploading = true);
+    try {
+      final upload = await OwnerPhotoStorageService.uploadStudioLogo(
+        file: picked,
+      );
+      if (!mounted) return;
+      if (upload.url == null) {
+        _showSnack(upload.error ?? 'Не удалось загрузить логотип');
+        return;
+      }
+      setState(() => _logoUrl = upload.url);
+    } finally {
+      if (mounted) setState(() => _logoUploading = false);
+    }
+  }
+
+  void _removeStudioLogo() {
+    setState(() => _logoUrl = null);
   }
 
   Future<void> _pickStudioPhotos() async {
@@ -578,12 +613,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
     required String hint,
     bool alignLabelWithHint = false,
     int maxLines = 1,
-  }) =>
-      settingsBorderlessInputDecoration(
-        hintText: hint,
-        alignLabelWithHint: alignLabelWithHint,
-        maxLines: maxLines,
-      );
+  }) => settingsBorderlessInputDecoration(
+    hintText: hint,
+    alignLabelWithHint: alignLabelWithHint,
+    maxLines: maxLines,
+  );
 
   @override
   Widget build(BuildContext context) {
@@ -663,7 +697,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   // Секции салона в одной форме
                   _salonLoading
                       ? _ProfileSection(
-                          title: locale.t('profileForm.studioPhotos'),
+                          title: locale.t('profileForm.studioLogo'),
                           child: const Padding(
                             padding: EdgeInsets.symmetric(vertical: 24),
                             child: Center(child: CircularProgressIndicator()),
@@ -674,6 +708,40 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.stretch,
                             children: [
+                              _ProfileSection(
+                                title: locale.t('profileForm.studioLogo'),
+                                child: Column(
+                                  crossAxisAlignment:
+                                      CrossAxisAlignment.stretch,
+                                  children: [
+                                    Text(
+                                      locale.t('profileForm.studioLogoHint'),
+                                      style: const TextStyle(
+                                        color: AppColors.textSecondary,
+                                        fontSize: 13,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 12),
+                                    Center(
+                                      child: _StudioLogoTile(
+                                        logoUrl: _logoUrl,
+                                        loading: _logoUploading,
+                                        addLabel: locale.t(
+                                          'profileForm.addStudioLogo',
+                                        ),
+                                        changeLabel: locale.t(
+                                          'profileForm.changeStudioLogo',
+                                        ),
+                                        onTap: _pickStudioLogo,
+                                        onRemove: _logoUrl != null
+                                            ? _removeStudioLogo
+                                            : null,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              const SizedBox(height: 24),
                               _ProfileSection(
                                 title: locale.t('profileForm.studioPhotos'),
                                 child: Column(
@@ -692,7 +760,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                       height: _StudioPhotoGallery.tileSize,
                                       child: ListView.separated(
                                         scrollDirection: Axis.horizontal,
-                                        itemCount: _studioPhotos.length +
+                                        itemCount:
+                                            _studioPhotos.length +
                                             (_studioPhotos.length <
                                                     _maxStudioPhotos
                                                 ? 1
@@ -702,7 +771,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                         itemBuilder: (context, index) {
                                           final hasAddSlot =
                                               _studioPhotos.length <
-                                                  _maxStudioPhotos;
+                                              _maxStudioPhotos;
                                           if (hasAddSlot && index == 0) {
                                             return _AddStudioPhotoTile(
                                               loading: _photosProcessing,
@@ -787,141 +856,134 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                     ),
                                     const SizedBox(height: 16),
                                     Material(
-                                        color: AppColors.backgroundPrimary,
-                                        borderRadius:
-                                            settingsInputBorderRadius(
-                                              maxLines: 2,
-                                            ),
-                                        clipBehavior: Clip.antiAlias,
-                                        child: InkWell(
-                                          onTap: _openDefaultLocationPicker,
-                                          borderRadius:
-                                              settingsInputBorderRadius(
-                                                maxLines: 2,
-                                              ),
-                                          child: Padding(
-                                            padding: const EdgeInsets.symmetric(
-                                              horizontal: 12,
-                                              vertical: 14,
-                                            ),
-                                            child: Row(
-                                              crossAxisAlignment:
-                                                  CrossAxisAlignment.start,
-                                              children: [
-                                                Padding(
-                                                  padding:
-                                                      const EdgeInsets.only(
-                                                        top: 2,
-                                                      ),
-                                                  child: SvgPicture.asset(
-                                                    'assets/icons/icon-pin.svg',
-                                                    width: 15,
-                                                    height: 21,
-                                                  ),
+                                      color: AppColors.backgroundPrimary,
+                                      borderRadius: settingsInputBorderRadius(
+                                        maxLines: 2,
+                                      ),
+                                      clipBehavior: Clip.antiAlias,
+                                      child: InkWell(
+                                        onTap: _openDefaultLocationPicker,
+                                        borderRadius: settingsInputBorderRadius(
+                                          maxLines: 2,
+                                        ),
+                                        child: Padding(
+                                          padding: const EdgeInsets.symmetric(
+                                            horizontal: 12,
+                                            vertical: 14,
+                                          ),
+                                          child: Row(
+                                            crossAxisAlignment:
+                                                CrossAxisAlignment.start,
+                                            children: [
+                                              Padding(
+                                                padding: const EdgeInsets.only(
+                                                  top: 2,
                                                 ),
-                                                const SizedBox(width: 12),
-                                                Expanded(
-                                                  child: Column(
-                                                    crossAxisAlignment:
-                                                        CrossAxisAlignment
-                                                            .start,
-                                                    children: [
-                                                      Builder(
-                                                        builder: (context) {
-                                                          final primary =
-                                                              _primaryLocation;
-                                                          final displayName =
-                                                              primary?.name
-                                                                      .trim()
-                                                                      .isNotEmpty ==
-                                                                  true
-                                                              ? primary!.name
+                                                child: SvgPicture.asset(
+                                                  'assets/icons/icon-pin.svg',
+                                                  width: 15,
+                                                  height: 21,
+                                                ),
+                                              ),
+                                              const SizedBox(width: 12),
+                                              Expanded(
+                                                child: Column(
+                                                  crossAxisAlignment:
+                                                      CrossAxisAlignment.start,
+                                                  children: [
+                                                    Builder(
+                                                      builder: (context) {
+                                                        final primary =
+                                                            _primaryLocation;
+                                                        final displayName =
+                                                            primary?.name
+                                                                    .trim()
+                                                                    .isNotEmpty ==
+                                                                true
+                                                            ? primary!.name
                                                                   .trim()
-                                                              : locale.t(
-                                                                  'addTraining.studioNameFallback',
-                                                                );
-                                                          final address =
-                                                              primary?.address
-                                                                      .trim() ??
-                                                                  _salonAddressController
-                                                                      .text
-                                                                      .trim();
-                                                          return Column(
-                                                            crossAxisAlignment:
-                                                                CrossAxisAlignment
-                                                                    .start,
-                                                            children: [
+                                                            : locale.t(
+                                                                'addTraining.studioNameFallback',
+                                                              );
+                                                        final address =
+                                                            primary?.address
+                                                                .trim() ??
+                                                            _salonAddressController
+                                                                .text
+                                                                .trim();
+                                                        return Column(
+                                                          crossAxisAlignment:
+                                                              CrossAxisAlignment
+                                                                  .start,
+                                                          children: [
+                                                            Text(
+                                                              displayName,
+                                                              style: const TextStyle(
+                                                                fontSize: 16,
+                                                                fontWeight:
+                                                                    FontWeight
+                                                                        .w700,
+                                                                color: AppColors
+                                                                    .textPrimary,
+                                                              ),
+                                                            ),
+                                                            if (address
+                                                                .isNotEmpty) ...[
+                                                              const SizedBox(
+                                                                height: 4,
+                                                              ),
                                                               Text(
-                                                                displayName,
+                                                                address,
                                                                 style: const TextStyle(
-                                                                  fontSize: 16,
+                                                                  fontSize: 14,
+                                                                  height: 1.25,
                                                                   fontWeight:
                                                                       FontWeight
-                                                                          .w700,
+                                                                          .w400,
                                                                   color: AppColors
-                                                                      .textPrimary,
+                                                                      .textSecondary,
                                                                 ),
                                                               ),
-                                                              if (address
-                                                                  .isNotEmpty) ...[
-                                                                const SizedBox(
-                                                                  height: 4,
-                                                                ),
-                                                                Text(
-                                                                  address,
+                                                            ] else
+                                                              Padding(
+                                                                padding:
+                                                                    const EdgeInsets.only(
+                                                                      top: 4,
+                                                                    ),
+                                                                child: Text(
+                                                                  locale.t(
+                                                                    'addTraining.noAddress',
+                                                                  ),
                                                                   style: const TextStyle(
                                                                     fontSize:
                                                                         14,
-                                                                    height: 1.25,
-                                                                    fontWeight:
-                                                                        FontWeight
-                                                                            .w400,
                                                                     color: AppColors
-                                                                        .textSecondary,
+                                                                        .textTertiary,
                                                                   ),
                                                                 ),
-                                                              ] else
-                                                                Padding(
-                                                                  padding:
-                                                                      const EdgeInsets
-                                                                          .only(
-                                                                    top: 4,
-                                                                  ),
-                                                                  child: Text(
-                                                                    locale.t(
-                                                                      'addTraining.noAddress',
-                                                                    ),
-                                                                    style: const TextStyle(
-                                                                      fontSize:
-                                                                          14,
-                                                                      color: AppColors
-                                                                          .textTertiary,
-                                                                    ),
-                                                                  ),
-                                                                ),
-                                                            ],
-                                                          );
-                                                        },
-                                                      ),
-                                                    ],
-                                                  ),
+                                                              ),
+                                                          ],
+                                                        );
+                                                      },
+                                                    ),
+                                                  ],
                                                 ),
-                                                const Padding(
-                                                  padding: EdgeInsets.only(
-                                                    top: 4,
-                                                  ),
-                                                  child: Icon(
-                                                    CupertinoIcons
-                                                        .chevron_forward,
-                                                    size: 18,
-                                                    color:
-                                                        AppColors.textTertiary,
-                                                  ),
+                                              ),
+                                              const Padding(
+                                                padding: EdgeInsets.only(
+                                                  top: 4,
                                                 ),
-                                              ],
-                                            ),
+                                                child: Icon(
+                                                  CupertinoIcons
+                                                      .chevron_forward,
+                                                  size: 18,
+                                                  color: AppColors.textTertiary,
+                                                ),
+                                              ),
+                                            ],
                                           ),
                                         ),
+                                      ),
                                     ),
                                   ],
                                 ),
@@ -1020,8 +1082,141 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 }
 
+class _StudioLogoTile extends StatelessWidget {
+  const _StudioLogoTile({
+    required this.logoUrl,
+    required this.loading,
+    required this.addLabel,
+    required this.changeLabel,
+    required this.onTap,
+    this.onRemove,
+  });
+
+  static const double tileSize = 120;
+
+  final String? logoUrl;
+  final bool loading;
+  final String addLabel;
+  final String changeLabel;
+  final VoidCallback onTap;
+  final VoidCallback? onRemove;
+
+  @override
+  Widget build(BuildContext context) {
+    final hasLogo = logoUrl != null && logoUrl!.isNotEmpty;
+    final actionLabel = hasLogo ? changeLabel : addLabel;
+
+    return Column(
+      children: [
+        SizedBox(
+          width: tileSize,
+          height: tileSize,
+          child: Stack(
+            clipBehavior: Clip.none,
+            children: [
+              Material(
+                color: AppColors.backgroundSecondary,
+                borderRadius: BorderRadius.circular(kSettingsInputBorderRadius),
+                clipBehavior: Clip.antiAlias,
+                child: InkWell(
+                  onTap: loading ? null : onTap,
+                  borderRadius: BorderRadius.circular(
+                    kSettingsInputBorderRadius,
+                  ),
+                  child: SizedBox(
+                    width: tileSize,
+                    height: tileSize,
+                    child: hasLogo
+                        ? Image.network(
+                            logoUrl!,
+                            fit: BoxFit.cover,
+                            width: tileSize,
+                            height: tileSize,
+                            errorBuilder: (_, __, ___) => Center(
+                              child: SvgPicture.asset(
+                                'assets/icons/icon-add-photo.svg',
+                                width: 35,
+                                height: 35,
+                              ),
+                            ),
+                          )
+                        : Center(
+                            child: loading
+                                ? const SizedBox(
+                                    width: 20,
+                                    height: 20,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                    ),
+                                  )
+                                : SvgPicture.asset(
+                                    'assets/icons/icon-add-photo.svg',
+                                    width: 35,
+                                    height: 35,
+                                  ),
+                          ),
+                  ),
+                ),
+              ),
+              if (hasLogo && onRemove != null)
+                Positioned(
+                  top: 6,
+                  right: 6,
+                  child: Material(
+                    color: Colors.white,
+                    shape: const CircleBorder(),
+                    elevation: 1,
+                    child: InkWell(
+                      customBorder: const CircleBorder(),
+                      onTap: loading ? null : onRemove,
+                      child: const Padding(
+                        padding: EdgeInsets.all(4),
+                        child: Icon(
+                          Icons.close,
+                          size: 14,
+                          color: AppColors.textPrimary,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              if (loading && hasLogo)
+                Positioned.fill(
+                  child: DecoratedBox(
+                    decoration: BoxDecoration(
+                      color: Colors.white.withValues(alpha: 0.65),
+                      borderRadius: BorderRadius.circular(
+                        kSettingsInputBorderRadius,
+                      ),
+                    ),
+                    child: const Center(
+                      child: SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      ),
+                    ),
+                  ),
+                ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 8),
+        Text(
+          actionLabel,
+          style: const TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.w600,
+            color: AppColors.primary500,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
 class _StudioPhotoGallery {
-  static const double tileSize = 96;
+  static const double tileSize = 120;
 }
 
 class _StudioPhotoTile extends StatelessWidget {
@@ -1092,26 +1287,23 @@ class _StudioPhotoTile extends StatelessWidget {
           ),
           if (isMain)
             Positioned(
-              left: 0,
-              right: 0,
+              left: 8,
               bottom: 8,
-              child: Center(
-                child: Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 10,
-                    vertical: 3,
-                  ),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.92),
-                    borderRadius: BorderRadius.circular(999),
-                  ),
-                  child: Text(
-                    mainLabel,
-                    style: const TextStyle(
-                      fontSize: 11,
-                      fontWeight: FontWeight.w600,
-                      color: AppColors.textPrimary,
-                    ),
+              child: Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 3,
+                ),
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.92),
+                  borderRadius: BorderRadius.circular(999),
+                ),
+                child: Text(
+                  mainLabel,
+                  style: const TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.textPrimary,
                   ),
                 ),
               ),

@@ -288,7 +288,7 @@ Future<String?> showStudioSocialLinkEditSheet(
                   TextField(
                     controller: controller,
                     autofocus: true,
-                    decoration: settingsBorderlessInputDecoration(
+                    decoration: settingsInputDecoration(
                       hintText: platform.valueHint(locale),
                     ),
                     keyboardType: platform == StudioSocialPlatform.whatsApp
