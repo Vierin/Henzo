@@ -212,13 +212,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
     return null;
   }
 
-  List<TrainingLocationItem> _studioLocations() {
+  List<TrainingLocationItem> _studioLocations(BuildContext context) {
     final salon = _salon;
     if (salon == null) return const [];
-    final main = salon.name?.trim();
+    final locale = context.read<LocaleProvider>();
     return TrainingLocationItem.listFromSalon(
       salon,
-      mainStudioName: (main != null && main.isNotEmpty) ? main : 'Studio',
+      mainStudioName: locale.t('locations.mainStudio'),
     );
   }
 
@@ -822,7 +822,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         ?.openScheduleTabForToday(),
                     onSessionTap: _openSessionDetail,
                     ownerTrainerFallback: _ownerTrainerFallback(),
-                    studioLocations: _studioLocations(),
+                    studioLocations: _studioLocations(context),
                   ),
                   _checklistBlock(),
                 ],

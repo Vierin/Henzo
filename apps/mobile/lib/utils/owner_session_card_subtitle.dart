@@ -22,28 +22,33 @@ OwnerSessionCardSubtitle resolveOwnerSessionCardSubtitle({
     session,
     ownerTrainerFallback,
   );
-  if (studioLocations.length <= 1) {
+  final hasMultiple = studioLocations.length > 1;
+  final locationName = _resolveSessionLocationName(session, studioLocations);
+
+  if (hasMultiple) {
+    final defaultName = _defaultLocationName(studioLocations);
+    final hasLocationName =
+        locationName != null && locationName.isNotEmpty;
+    final showingLocation = hasLocationName || defaultName.isNotEmpty;
+    final label = hasLocationName
+        ? locationName!
+        : (defaultName.isNotEmpty ? defaultName : trainer);
     return OwnerSessionCardSubtitle(
-      label: trainer,
-      showLocationPin: false,
+      label: label,
+      showLocationPin: showingLocation,
     );
   }
 
-  final locationName = _resolveSessionLocationName(session, studioLocations);
-  final fallback = studioLocations
-      .firstWhere(
-        (l) => l.isDefault,
-        orElse: () => studioLocations.first,
-      )
-      .name
-      .trim();
-  final label = (locationName != null && locationName.isNotEmpty)
-      ? locationName
-      : (fallback.isNotEmpty ? fallback : trainer);
+  if (locationName != null && locationName.isNotEmpty) {
+    return OwnerSessionCardSubtitle(
+      label: locationName,
+      showLocationPin: true,
+    );
+  }
 
   return OwnerSessionCardSubtitle(
-    label: label,
-    showLocationPin: true,
+    label: trainer,
+    showLocationPin: false,
   );
 }
 
@@ -62,13 +67,26 @@ OwnerSessionCardSubtitle resolveOwnerSessionCardSubtitleForPublic({
     );
   }
   final locationName = session.locationName?.trim();
+  final trainer = ownerDailyScheduleTrainerLabel(
+    session,
+    ownerTrainerFallback,
+  );
   final label = (locationName != null && locationName.isNotEmpty)
       ? locationName
-      : ownerDailyScheduleTrainerLabel(session, ownerTrainerFallback);
+      : trainer;
   return OwnerSessionCardSubtitle(
     label: label,
     showLocationPin: true,
   );
+}
+
+String _defaultLocationName(List<TrainingLocationItem> locations) {
+  for (final loc in locations) {
+    if (loc.isDefault || loc.id == 'default') {
+      return loc.name.trim();
+    }
+  }
+  return locations.isNotEmpty ? locations.first.name.trim() : '';
 }
 
 String? _resolveSessionLocationName(
@@ -78,8 +96,8 @@ String? _resolveSessionLocationName(
   final fromApi = session.locationName?.trim();
   if (fromApi != null && fromApi.isNotEmpty) return fromApi;
 
-  final id = session.locationId?.trim();
-  if (id == null || id.isEmpty) return null;
+  final idRaw = session.locationId?.trim();
+  final id = (idRaw == null || idRaw.isEmpty) ? 'default' : idRaw;
 
   for (final loc in locations) {
     if (loc.id == id) {

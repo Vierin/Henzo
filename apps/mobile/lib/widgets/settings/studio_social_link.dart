@@ -1,0 +1,368 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
+import 'package:provider/provider.dart';
+
+import '../../constants/colors.dart';
+import '../../l10n/locale_provider.dart';
+import '../../models/salon.dart';
+import '../common/henzo_modal.dart';
+import '../common/sheet_action_button_style.dart';
+import 'settings_form_tokens.dart';
+
+enum StudioSocialPlatform {
+  instagram,
+  facebook,
+  whatsApp,
+  website,
+  telegram;
+
+  static StudioSocialPlatform? fromId(String? raw) {
+    if (raw == null || raw.isEmpty) return null;
+    for (final p in StudioSocialPlatform.values) {
+      if (p.name == raw) return p;
+    }
+    return null;
+  }
+
+  /// Placeholder icon — replace asset paths when brand icons are ready.
+  String get iconAsset => 'assets/icons/icon-share.svg';
+
+  String label(LocaleProvider locale) => switch (this) {
+        StudioSocialPlatform.instagram => locale.t('profileForm.instagram'),
+        StudioSocialPlatform.facebook => locale.t('profileForm.facebook'),
+        StudioSocialPlatform.whatsApp => locale.t('profileForm.whatsApp'),
+        StudioSocialPlatform.website => locale.t('profileForm.website'),
+        StudioSocialPlatform.telegram => locale.t('profileForm.telegram'),
+      };
+
+  String valueHint(LocaleProvider locale) => switch (this) {
+        StudioSocialPlatform.instagram => '@username',
+        StudioSocialPlatform.facebook => 'https://facebook.com/...',
+        StudioSocialPlatform.whatsApp => '+84...',
+        StudioSocialPlatform.website => 'https://...',
+        StudioSocialPlatform.telegram => '@username',
+      };
+}
+
+class StudioSocialLink {
+  StudioSocialLink({required this.platform, required this.value});
+
+  final StudioSocialPlatform platform;
+  String value;
+
+  String displayValue() {
+    final trimmed = value.trim();
+    if (trimmed.isEmpty) return '—';
+    return trimmed;
+  }
+}
+
+List<StudioSocialLink> studioSocialLinksFromSalon(Salon salon) {
+  final links = <StudioSocialLink>[];
+  final instagram = salon.instagram?.trim();
+  if (instagram != null && instagram.isNotEmpty) {
+    links.add(
+      StudioSocialLink(
+        platform: StudioSocialPlatform.instagram,
+        value: instagram,
+      ),
+    );
+  }
+
+  final website = salon.website?.trim();
+  if (website != null && website.isNotEmpty) {
+    final isFacebook = RegExp(
+      r'facebook\.com|fb\.com|fb\.me',
+      caseSensitive: false,
+    ).hasMatch(website);
+    links.add(
+      StudioSocialLink(
+        platform: isFacebook
+            ? StudioSocialPlatform.facebook
+            : StudioSocialPlatform.website,
+        value: website,
+      ),
+    );
+  }
+
+  final extra = salon.reminderSettings?['socialLinks'];
+  if (extra is List) {
+    for (final item in extra) {
+      if (item is! Map) continue;
+      final platform = StudioSocialPlatform.fromId(item['platform']?.toString());
+      final value = item['value']?.toString().trim() ?? '';
+      if (platform == null || value.isEmpty) continue;
+      if (links.any((l) => l.platform == platform)) continue;
+      links.add(StudioSocialLink(platform: platform, value: value));
+    }
+  }
+  return links;
+}
+
+({String? instagram, String? website, List<Map<String, String>> extras})
+    studioSocialLinksToPayload(List<StudioSocialLink> links) {
+  String? instagram;
+  String? website;
+  final extras = <Map<String, String>>[];
+
+  for (final link in links) {
+    final value = link.value.trim();
+    if (value.isEmpty) continue;
+    switch (link.platform) {
+      case StudioSocialPlatform.instagram:
+        instagram = value;
+      case StudioSocialPlatform.facebook:
+      case StudioSocialPlatform.website:
+        website = value;
+      case StudioSocialPlatform.whatsApp:
+      case StudioSocialPlatform.telegram:
+        extras.add({
+          'platform': link.platform.name,
+          'value': value,
+        });
+    }
+  }
+  return (instagram: instagram, website: website, extras: extras);
+}
+
+String studioSocialLinksSnapshot(List<StudioSocialLink> links) {
+  final sorted = links
+      .map((l) => '${l.platform.name}:${l.value.trim()}')
+      .toList()
+    ..sort();
+  return sorted.join('|');
+}
+
+Future<StudioSocialPlatform?> showStudioSocialPlatformPickerSheet(
+  BuildContext context, {
+  required Set<StudioSocialPlatform> excluded,
+}) {
+  final locale = context.read<LocaleProvider>();
+  final options = StudioSocialPlatform.values
+      .where((p) => !excluded.contains(p))
+      .toList();
+  if (options.isEmpty) return Future.value(null);
+
+  return showHenzoModalBottomSheet<StudioSocialPlatform>(
+    context: context,
+    isScrollControlled: true,
+    backgroundColor: Colors.transparent,
+    builder: (sheetCtx) {
+      return SafeArea(
+        top: false,
+        child: Container(
+          margin: const EdgeInsets.only(top: 24),
+          decoration: const BoxDecoration(
+            color: AppColors.backgroundPrimary,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+          ),
+          child: Padding(
+            padding: EdgeInsets.fromLTRB(
+              16,
+              12,
+              8,
+              16 + MediaQuery.viewInsetsOf(sheetCtx).bottom,
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        locale.t('profileForm.addSocialLinkSheetTitle'),
+                        style: const TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                          letterSpacing: 0.4,
+                          color: AppColors.textSecondary,
+                        ),
+                      ),
+                    ),
+                    Material(
+                      color: AppColors.primary500,
+                      shape: const CircleBorder(),
+                      child: InkWell(
+                        onTap: () => Navigator.of(sheetCtx).pop(),
+                        customBorder: const CircleBorder(),
+                        child: const SizedBox(
+                          width: 32,
+                          height: 32,
+                          child: Icon(
+                            Icons.close,
+                            size: 18,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                ...options.map((platform) {
+                  return Padding(
+                    padding: const EdgeInsets.only(bottom: 8),
+                    child: Material(
+                      color: AppColors.backgroundSecondary,
+                      borderRadius: BorderRadius.circular(
+                        kSettingsInputBorderRadius,
+                      ),
+                      clipBehavior: Clip.antiAlias,
+                      child: InkWell(
+                        onTap: () =>
+                            Navigator.of(sheetCtx).pop(platform),
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 14,
+                            vertical: 12,
+                          ),
+                          child: Row(
+                            children: [
+                              _SocialPlatformIcon(platform: platform),
+                              const SizedBox(width: 12),
+                              Text(
+                                platform.label(locale),
+                                style: const TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w600,
+                                  color: AppColors.textPrimary,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  );
+                }),
+              ],
+            ),
+          ),
+        ),
+      );
+    },
+  );
+}
+
+Future<String?> showStudioSocialLinkEditSheet(
+  BuildContext context, {
+  required StudioSocialPlatform platform,
+  String initialValue = '',
+}) {
+  final locale = context.read<LocaleProvider>();
+  final controller = TextEditingController(text: initialValue);
+
+  return showHenzoModalBottomSheet<String>(
+    context: context,
+    isScrollControlled: true,
+    backgroundColor: Colors.transparent,
+    builder: (sheetCtx) {
+      return Padding(
+        padding: EdgeInsets.only(
+          bottom: MediaQuery.viewInsetsOf(sheetCtx).bottom,
+        ),
+        child: SafeArea(
+          top: false,
+          child: Container(
+            margin: const EdgeInsets.only(top: 24),
+            decoration: const BoxDecoration(
+              color: AppColors.backgroundPrimary,
+              borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+            ),
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Text(
+                    platform.label(locale),
+                    style: const TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.textPrimary,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  TextField(
+                    controller: controller,
+                    autofocus: true,
+                    decoration: settingsBorderlessInputDecoration(
+                      hintText: platform.valueHint(locale),
+                    ),
+                    keyboardType: platform == StudioSocialPlatform.whatsApp
+                        ? TextInputType.phone
+                        : TextInputType.url,
+                  ),
+                  const SizedBox(height: 20),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: SizedBox(
+                          height: 46,
+                          child: OutlinedButton(
+                            onPressed: () => Navigator.of(sheetCtx).pop(),
+                            style: sheetCancelButtonStyle(),
+                            child: Text(locale.t('common.cancel')),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: SizedBox(
+                          height: 46,
+                          child: FilledButton(
+                            onPressed: () => Navigator.of(sheetCtx)
+                                .pop(controller.text.trim()),
+                            style: sheetPrimaryButtonStyle(),
+                            child: Text(locale.t('common.save')),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      );
+    },
+  );
+}
+
+class SocialPlatformIcon extends StatelessWidget {
+  const SocialPlatformIcon({super.key, required this.platform});
+
+  final StudioSocialPlatform platform;
+
+  @override
+  Widget build(BuildContext context) => _SocialPlatformIcon(platform: platform);
+}
+
+class _SocialPlatformIcon extends StatelessWidget {
+  const _SocialPlatformIcon({required this.platform});
+
+  final StudioSocialPlatform platform;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 44,
+      height: 44,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        color: AppColors.backgroundPrimary,
+        border: Border.all(color: AppColors.borderPrimary),
+      ),
+      child: Center(
+        child: SvgPicture.asset(
+          platform.iconAsset,
+          width: 20,
+          height: 20,
+        ),
+      ),
+    );
+  }
+}

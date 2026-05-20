@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../constants/colors.dart';
 import '../../constants/layout.dart';
+import '../../l10n/locale_provider.dart';
 import '../../models/salon.dart';
 import '../../models/training_location_item.dart';
 import '../../services/auth_service.dart';
@@ -227,13 +228,13 @@ class CalendarScreenState extends State<CalendarScreen> {
     }
   }
 
-  List<TrainingLocationItem> _studioLocations() {
+  List<TrainingLocationItem> _studioLocations(BuildContext context) {
     final salon = _salon;
     if (salon == null) return const [];
-    final main = salon.name?.trim();
+    final locale = context.read<LocaleProvider>();
     return TrainingLocationItem.listFromSalon(
       salon,
-      mainStudioName: (main != null && main.isNotEmpty) ? main : 'Studio',
+      mainStudioName: locale.t('locations.mainStudio'),
     );
   }
 
@@ -776,7 +777,7 @@ class CalendarScreenState extends State<CalendarScreen> {
                                     emptyMessage:
                                         'No trainings for selected day',
                                     ownerTrainerFallback: trainerFb,
-                                    studioLocations: _studioLocations(),
+                                    studioLocations: _studioLocations(context),
                                     onSessionTap: (s) async {
                                       final token = context
                                           .read<AuthService>()

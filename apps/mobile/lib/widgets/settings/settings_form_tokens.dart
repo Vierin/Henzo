@@ -15,6 +15,16 @@ BorderRadius settingsInputBorderRadius({int maxLines = 1}) =>
           : kSettingsInputBorderRadius,
     );
 
+OutlineInputBorder _settingsInputOutline({
+  required BorderRadius radius,
+  Color borderColor = AppColors.borderPrimary,
+  double width = 1,
+}) =>
+    OutlineInputBorder(
+      borderRadius: radius,
+      borderSide: BorderSide(color: borderColor, width: width),
+    );
+
 InputDecoration settingsInputDecoration({
   String? hintText,
   String? labelText,
@@ -23,10 +33,7 @@ InputDecoration settingsInputDecoration({
   bool readOnly = false,
 }) {
   final radius = settingsInputBorderRadius(maxLines: maxLines);
-  final outline = OutlineInputBorder(
-    borderRadius: radius,
-    borderSide: const BorderSide(color: AppColors.borderPrimary),
-  );
+  final outline = _settingsInputOutline(radius: radius);
   return InputDecoration(
     hintText: hintText,
     labelText: labelText,
@@ -36,10 +43,40 @@ InputDecoration settingsInputDecoration({
         : AppColors.backgroundPrimary,
     border: OutlineInputBorder(borderRadius: radius),
     enabledBorder: outline,
-    focusedBorder: OutlineInputBorder(
-      borderRadius: radius,
-      borderSide: const BorderSide(color: AppColors.primary500, width: 1.5),
+    focusedBorder: _settingsInputOutline(
+      radius: radius,
+      borderColor: AppColors.primary500,
+      width: 1.5,
     ),
+    contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+    alignLabelWithHint: alignLabelWithHint,
+  );
+}
+
+/// Studio profile and other owner forms without input strokes.
+InputDecoration settingsBorderlessInputDecoration({
+  String? hintText,
+  String? labelText,
+  bool alignLabelWithHint = false,
+  int maxLines = 1,
+  bool readOnly = false,
+}) {
+  final radius = settingsInputBorderRadius(maxLines: maxLines);
+  final none = _settingsInputOutline(
+    radius: radius,
+    borderColor: Colors.transparent,
+    width: 0,
+  );
+  return InputDecoration(
+    hintText: hintText,
+    labelText: labelText,
+    filled: true,
+    fillColor: readOnly
+        ? AppColors.backgroundTertiary
+        : AppColors.backgroundPrimary,
+    border: none,
+    enabledBorder: none,
+    focusedBorder: none,
     contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
     alignLabelWithHint: alignLabelWithHint,
   );

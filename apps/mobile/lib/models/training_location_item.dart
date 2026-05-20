@@ -18,13 +18,34 @@ class TrainingLocationItem {
   final double? latitude;
   final double? longitude;
 
+  static const defaultLocationNameKey = 'defaultLocationName';
+
+  static String? readDefaultLocationName(Salon? salon) {
+    final raw = salon?.reminderSettings?[defaultLocationNameKey];
+    if (raw is String && raw.trim().isNotEmpty) return raw.trim();
+    return null;
+  }
+
+  static void writeDefaultLocationName(
+    Map<String, dynamic> reminderSettings,
+    String? name,
+  ) {
+    final trimmed = name?.trim();
+    if (trimmed != null && trimmed.isNotEmpty) {
+      reminderSettings[defaultLocationNameKey] = trimmed;
+    } else {
+      reminderSettings.remove(defaultLocationNameKey);
+    }
+  }
+
   factory TrainingLocationItem.defaultFromSalon(
     Salon salon, {
     required String mainStudioName,
   }) {
+    final storedName = readDefaultLocationName(salon);
     return TrainingLocationItem(
       id: 'default',
-      name: mainStudioName,
+      name: storedName ?? mainStudioName,
       address: salon.address?.trim() ?? '',
       isDefault: true,
       latitude: salon.latitude,

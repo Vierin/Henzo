@@ -19,6 +19,75 @@ Future<Salon?> persistExtraTrainingLocations(
     ...?salon.reminderSettings,
     'trainingLocations': TrainingLocationItem.extraLocationsToJson(locations),
   };
+  final primary = () {
+    for (final loc in locations) {
+      if (loc.isDefault || loc.id == 'default') return loc;
+    }
+    return locations.isNotEmpty ? locations.first : null;
+  }();
+  if (primary != null) {
+    TrainingLocationItem.writeDefaultLocationName(
+      reminderSettings,
+      primary.name,
+    );
+  }
+
+  return _updateSalonReminderSettings(context, salon, reminderSettings);
+}
+
+Future<Salon?> persistTrainingLocationDefaultSwap(
+  BuildContext context,
+  Salon salon, {
+  required String address,
+  required double? latitude,
+  required double? longitude,
+  required String defaultLocationName,
+  required List<TrainingLocationItem> locations,
+}) async {
+  final token = context.read<AuthService>().accessToken;
+  if (token == null || token.isEmpty) return null;
+
+  final reminderSettings = <String, dynamic>{
+    ...?salon.reminderSettings,
+    'trainingLocations': TrainingLocationItem.extraLocationsToJson(locations),
+  };
+  TrainingLocationItem.writeDefaultLocationName(
+    reminderSettings,
+    defaultLocationName,
+  );
+
+  final payload = <String, dynamic>{
+    'name': salon.name ?? '',
+    if (salon.description != null) 'description': salon.description,
+    'address': address,
+    if (salon.phone != null) 'phone': salon.phone,
+    if (salon.email != null) 'email': salon.email,
+    if (salon.website != null) 'website': salon.website,
+    if (salon.instagram != null) 'instagram': salon.instagram,
+    if (salon.photos != null) 'photos': salon.photos,
+    if (salon.workingHours != null) 'workingHours': salon.workingHours,
+    if (latitude != null) 'latitude': latitude,
+    if (longitude != null) 'longitude': longitude,
+    if (salon.autoConfirmBookings != null)
+      'autoConfirmBookings': salon.autoConfirmBookings,
+    'reminderSettings': reminderSettings,
+  };
+
+  final updated = await DashboardApiService.updateCurrentSalon(token, payload);
+  if (context.mounted) {
+    context.read<SalonCache>().invalidate();
+  }
+  return updated;
+}
+
+Future<Salon?> _updateSalonReminderSettings(
+  BuildContext context,
+  Salon salon,
+  Map<String, dynamic> reminderSettings,
+) async {
+  final token = context.read<AuthService>().accessToken;
+  if (token == null || token.isEmpty) return null;
+
   final payload = <String, dynamic>{
     'name': salon.name ?? '',
     if (salon.description != null) 'description': salon.description,

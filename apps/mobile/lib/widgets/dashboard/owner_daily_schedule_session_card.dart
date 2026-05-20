@@ -19,6 +19,17 @@ String ownerDailyScheduleTrainerLabel(
   return '—';
 }
 
+Widget _scheduleLocationPin() {
+  return Padding(
+    padding: const EdgeInsets.only(top: 1),
+    child: SvgPicture.asset(
+      'assets/icons/icon-pin.svg',
+      width: 11,
+      height: 15,
+    ),
+  );
+}
+
 Widget _scheduleTrainerIcon() {
   return Padding(
     padding: const EdgeInsets.only(top: 1),
@@ -249,15 +260,8 @@ class OwnerDailyScheduleSessionCard extends StatelessWidget {
                       Row(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          if (showSubtitleLeadingIcon && showLocationPin) ...[
-                            Padding(
-                              padding: const EdgeInsets.only(top: 1),
-                              child: SvgPicture.asset(
-                                'assets/icons/icon-pin.svg',
-                                width: 11,
-                                height: 15,
-                              ),
-                            ),
+                          if (showLocationPin) ...[
+                            _scheduleLocationPin(),
                             const SizedBox(width: 4),
                           ],
                           Flexible(

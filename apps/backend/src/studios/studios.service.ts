@@ -11,7 +11,7 @@ import { AnalyticsService } from '../analytics/analytics.service';
 import {
   countTrainingLocations,
   resolveStudioBrandNameForDiscovery,
-  resolveTrainingLocationName,
+  resolveSessionLocationDisplayName,
 } from '../lib/training-locations';
 import { buildPublicTrainerPayload } from '../fitness/trainer-display.util';
 
@@ -2052,14 +2052,11 @@ export class StudiosService {
     const locationCount = countTrainingLocations(studio.reminderSettings);
 
     return sessions.map((s) => {
-      const locationName =
-        locationCount > 1
-          ? (resolveTrainingLocationName(
-              studio.reminderSettings,
-              s.locationId,
-              studioName,
-            ) ?? studioName)
-          : null;
+      const locationName = resolveSessionLocationDisplayName(
+        studio.reminderSettings,
+        s.locationId,
+        studioName,
+      );
 
       return {
         id: s.id,
