@@ -84,6 +84,11 @@
 				<key>NSExceptionAllowsInsecureHTTPLoads</key>
 				<true/>
 			</dict>
+			<key>192.168.110.9</key>
+			<dict>
+				<key>NSExceptionAllowsInsecureHTTPLoads</key>
+				<true/>
+			</dict>
 		</dict>
 	</dict>
 	<key>CFBundleURLTypes</key>
@@ -98,10 +103,24 @@
 				<string>henzo</string>
 			</array>
 		</dict>
+		<dict>
+			<key>CFBundleTypeRole</key>
+			<string>Editor</string>
+			<key>CFBundleURLName</key>
+			<string>google-sign-in</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>com.googleusercontent.apps.601312951370-dgu1ua1lnb32mmk7oqpjbrbpvod67vg3</string>
+			</array>
+		</dict>
 	</array>
 	<key>GIDServerClientID</key>
 	<string>601312951370-1fg9fqajecnjlspki91hendb4csikqd5.apps.googleusercontent.com</string>
 	<key>NSUserTrackingUsageDescription</key>
 	<string>We use anonymous analytics to understand how the app is used and improve your experience. No personal data is shared.</string>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>Your location is used to fill in the studio address on the map.</string>
+	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+	<string>Your location is used to fill in the studio address on the map.</string>
 </dict>
 </plist>

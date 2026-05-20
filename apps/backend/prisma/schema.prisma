@@ -93,6 +93,8 @@ model Studio {
   Subscription     Subscription?
   TrainingSession  TrainingSession[]
   ClientBlocks     StudioClientBlock[]
+  StudioClients    StudioClient[]
+  ClientInvitations ClientInvitation[]
 
   @@index([latitude, longitude])
   @@index([ownerId, createdAt])
@@ -180,6 +182,7 @@ model TrainingSession {
   studioId    String
   trainingId  String
   trainerId   String?
+  locationId  String?
   startsAt    DateTime
   endsAt      DateTime
   capacity    Int                 @default(1)
@@ -191,6 +194,7 @@ model TrainingSession {
   Training    Training            @relation(fields: [trainingId], references: [id], onDelete: Cascade)
   Trainer     Trainer?            @relation(fields: [trainerId], references: [id], onDelete: SetNull)
   Enrollments SessionEnrollment[]
+  ClientInvitations ClientInvitation[]
 
   @@index([studioId, startsAt])
   @@index([studioId, status, startsAt])
@@ -218,6 +222,7 @@ model User {
   email            String       @unique
   name             String?
   phone            String?
+  avatarUrl        String?
   role             UserRole     @default(OWNER)
   /// Indicates that the user was created implicitly (e.g. via booking magic link)
   /// and has not yet completed full account registration.
@@ -230,6 +235,42 @@ model User {
   Studio           Studio[]
   SessionEnrollment SessionEnrollment[]
   StudioClientBlocks StudioClientBlock[]
+  StudioClients      StudioClient[]
+  ClientInvitationsCreated ClientInvitation[] @relation("ClientInvitationCreatedBy")
+}
+
+model StudioClient {
+  id        String             @id @default(cuid())
+  studioId  String
+  userId    String
+  source    StudioClientSource @default(MANUAL)
+  notes     String?
+  createdAt DateTime           @default(now())
+  updatedAt DateTime           @updatedAt
+  Studio    Studio             @relation(fields: [studioId], references: [id], onDelete: Cascade)
+  User      User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([studioId, userId])
+  @@index([studioId, createdAt])
+}
+
+/// Email invite to confirm / join a class (token stored hashed).
+model ClientInvitation {
+  id              String    @id @default(cuid())
+  studioId        String
+  email           String
+  tokenHash       String    @unique
+  expiresAt       DateTime
+  sessionId       String?
+  createdByUserId String?
+  consumedAt      DateTime?
+  createdAt       DateTime  @default(now())
+  Studio          Studio    @relation(fields: [studioId], references: [id], onDelete: Cascade)
+  TrainingSession TrainingSession? @relation(fields: [sessionId], references: [id], onDelete: SetNull)
+  CreatedBy       User?     @relation("ClientInvitationCreatedBy", fields: [createdByUserId], references: [id], onDelete: SetNull)
+
+  @@index([studioId, email])
+  @@index([expiresAt])
 }
 
 model PendingBusinessRegistration {
@@ -325,4 +366,10 @@ enum UserRole {
   OWNER
   ADMIN
   CLIENT
+}
+
+enum StudioClientSource {
+  MANUAL
+  ENROLLMENT
+  INVITE
 }

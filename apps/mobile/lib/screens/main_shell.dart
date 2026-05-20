@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:provider/provider.dart';
@@ -8,6 +10,7 @@ import '../../services/auth_service.dart';
 import '../../services/cache/bookings_cache.dart';
 import '../../services/cache/salon_cache.dart';
 import '../../services/push_notification_service.dart';
+import '../../utils/owner_navigation_restore.dart';
 import 'dashboard/dashboard_screen.dart';
 import 'calendar_screen.dart';
 import 'app_settings_screen.dart';
@@ -32,6 +35,8 @@ class MainShellState extends State<MainShell> {
   static const int scheduleTabIndex = 1;
 
   int _currentIndex = 0;
+
+  int get currentTabIndex => _currentIndex;
   bool _salonLoading = true;
   final GlobalKey<CalendarScreenState> _scheduleCalendarKey =
       GlobalKey<CalendarScreenState>();
@@ -49,12 +54,26 @@ class MainShellState extends State<MainShell> {
       _buildHomeNavigator(),
       CalendarScreen(key: _scheduleCalendarKey),
       ClientsScreen(key: _clientsTabKey),
-      const AppSettingsScreen(
-        initialSection: SettingsHubSection.studio,
-        embeddedInShell: true,
-      ),
+      const AppSettingsScreen(embeddedInShell: true),
     ];
-    WidgetsBinding.instance.addPostFrameCallback((_) => _loadSalon());
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      await _restoreShellTabIfNeeded();
+      if (mounted) await _loadSalon();
+    });
+  }
+
+  Future<void> _restoreShellTabIfNeeded() async {
+    final pendingPhoto =
+        await OwnerNavigationRestore.hasPendingProfilePhotoUpload();
+    if (!pendingPhoto) {
+      await OwnerNavigationRestore.clearShellTabIndex();
+      return;
+    }
+    final saved = await OwnerNavigationRestore.readShellTabIndex();
+    if (!mounted || saved == null) return;
+    if (saved < 0 || saved >= _shellBodyTabs.length) return;
+    if (saved == _currentIndex) return;
+    setState(() => _currentIndex = saved);
   }
 
   Future<void> _loadSalon() async {
@@ -125,6 +144,14 @@ class MainShellState extends State<MainShell> {
       _scheduleCalendarKey.currentState?.ensureSessionsLoaded();
       _scheduleCalendarKey.currentState?.jumpToToday();
     });
+  }
+
+  void _openHomeTab() {
+    setState(() => _currentIndex = 0);
+    final nav = _homeNavigatorKey.currentState;
+    if (nav != null && nav.canPop()) {
+      nav.popUntil((route) => route.isFirst);
+    }
   }
 
   /// Opens the Clients shell tab and applies optional filter/search (one list).
@@ -217,7 +244,7 @@ class MainShellState extends State<MainShell> {
                         svgAsset: 'assets/icons/icon-house.svg',
                         label: t('shell.tabHome'),
                         isSelected: _currentIndex == 0,
-                        onTap: () => setState(() => _currentIndex = 0),
+                        onTap: _openHomeTab,
                       ),
                     ),
                     Expanded(

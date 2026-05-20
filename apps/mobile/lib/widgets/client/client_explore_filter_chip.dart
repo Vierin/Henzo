@@ -3,10 +3,18 @@ import 'package:flutter/material.dart';
 import '../../constants/colors.dart';
 
 class ClientExploreFilterChip extends StatelessWidget {
-  const ClientExploreFilterChip({super.key, required this.label, this.onTap});
+  const ClientExploreFilterChip({
+    super.key,
+    required this.label,
+    this.onTap,
+    this.badgeCount,
+    this.isActive = false,
+  });
 
   final String label;
   final VoidCallback? onTap;
+  final int? badgeCount;
+  final bool isActive;
 
   @override
   Widget build(BuildContext context) {
@@ -22,17 +30,38 @@ class ClientExploreFilterChip extends StatelessWidget {
         decoration: BoxDecoration(
           color: AppColors.backgroundPrimary,
           borderRadius: BorderRadius.circular(999),
-          border: Border.all(color: AppColors.borderPrimary),
+          border: isActive
+              ? Border.all(color: AppColors.primary500, width: 1.5)
+              : null,
         ),
         child: Row(
+          mainAxisSize: MainAxisSize.min,
           children: [
             Text(
               label,
-              style: const TextStyle(
-                color: AppColors.textPrimary,
-                fontWeight: FontWeight.w500,
+              style: TextStyle(
+                color: isActive ? AppColors.primary500 : AppColors.textPrimary,
+                fontWeight: isActive ? FontWeight.w600 : FontWeight.w500,
               ),
             ),
+            if (badgeCount != null && badgeCount! > 0) ...[
+              const SizedBox(width: 6),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                decoration: BoxDecoration(
+                  color: AppColors.primary500,
+                  borderRadius: BorderRadius.circular(999),
+                ),
+                child: Text(
+                  '$badgeCount',
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 11,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+            ],
             const SizedBox(width: 6),
             const Icon(
               Icons.keyboard_arrow_down,

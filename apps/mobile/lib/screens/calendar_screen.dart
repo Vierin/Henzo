@@ -4,6 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../constants/colors.dart';
 import '../../constants/layout.dart';
+import '../../models/salon.dart';
+import '../../models/training_location_item.dart';
 import '../../services/auth_service.dart';
 import '../../services/cache/salon_cache.dart';
 import '../../services/cache/owner_sessions_cache.dart';
@@ -11,6 +13,7 @@ import '../../services/dashboard_api_service.dart';
 import '../../utils/show_api_error.dart';
 import '../../utils/color_hex.dart';
 import '../../widgets/dashboard/owner_daily_schedule_block.dart';
+import '../../widgets/schedule/calendar_day_pill.dart';
 import 'main_shell.dart';
 import 'owner_training_session_detail_screen.dart';
 
@@ -41,6 +44,7 @@ class CalendarScreen extends StatefulWidget {
 }
 
 class CalendarScreenState extends State<CalendarScreen> {
+  Salon? _salon;
   final Map<int, int> _sessionCountByDay = <int, int>{};
   final Map<int, List<OwnerTrainingSession>> _sessionsByDay =
       <int, List<OwnerTrainingSession>>{};
@@ -79,6 +83,41 @@ class CalendarScreenState extends State<CalendarScreen> {
   }
 
   bool _sessionsLoadStarted = false;
+  OwnerSessionsCache? _sessionsCache;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final cache = context.read<OwnerSessionsCache>();
+    if (_sessionsCache != cache) {
+      _sessionsCache?.removeListener(_onOwnerSessionsCacheChanged);
+      _sessionsCache = cache;
+      _sessionsCache!.addListener(_onOwnerSessionsCacheChanged);
+    }
+  }
+
+  bool _sessionsReloadInFlight = false;
+
+  void _onOwnerSessionsCacheChanged() {
+    if (!mounted || !_sessionsLoadStarted) return;
+    if (!context.read<OwnerSessionsCache>().needsRefresh) return;
+    if (_sessionsReloadInFlight) return;
+    setState(() {
+      _sessionsByDay.clear();
+      _sessionCountByDay.clear();
+    });
+    unawaited(_reloadSessionsFromCache());
+  }
+
+  Future<void> _reloadSessionsFromCache() async {
+    if (_sessionsReloadInFlight) return;
+    _sessionsReloadInFlight = true;
+    try {
+      await _loadData(showLoading: false);
+    } finally {
+      _sessionsReloadInFlight = false;
+    }
+  }
 
   /// Called when the Schedule tab is first shown (avoids fetch on app cold start).
   void ensureSessionsLoaded() {
@@ -94,6 +133,7 @@ class CalendarScreenState extends State<CalendarScreen> {
 
   @override
   void dispose() {
+    _sessionsCache?.removeListener(_onOwnerSessionsCacheChanged);
     _clearStripScheduleDebounceTimer();
     _suppressStripSchedulePageChanged = false;
     _dayPagerController.removeListener(_onStripPagerScrolled);
@@ -138,15 +178,16 @@ class CalendarScreenState extends State<CalendarScreen> {
     await _loadData();
   }
 
-  Future<void> _loadData() async {
+  Future<void> _loadData({bool showLoading = true}) async {
     if (!mounted) return;
-    setState(() => _isLoading = true);
+    if (showLoading) setState(() => _isLoading = true);
     final token = context.read<AuthService>().accessToken;
     if (token == null) {
       if (mounted) setState(() => _isLoading = false);
       return;
     }
     try {
+      final salon = await context.read<SalonCache>().getSalon(token);
       final now = DateTime.now();
       final fromUtc = now.subtract(const Duration(days: 14)).toUtc();
       final toUtc = now.add(const Duration(days: 56)).toUtc();
@@ -168,6 +209,7 @@ class CalendarScreenState extends State<CalendarScreen> {
       }
       if (mounted) {
         setState(() {
+          _salon = salon;
           _sessionsByDay
             ..clear()
             ..addAll(grouped);
@@ -183,6 +225,16 @@ class CalendarScreenState extends State<CalendarScreen> {
         showApiError(context, e);
       }
     }
+  }
+
+  List<TrainingLocationItem> _studioLocations() {
+    final salon = _salon;
+    if (salon == null) return const [];
+    final main = salon.name?.trim();
+    return TrainingLocationItem.listFromSalon(
+      salon,
+      mainStudioName: (main != null && main.isNotEmpty) ? main : 'Studio',
+    );
   }
 
   String? _ownerTrainerFallback() {
@@ -267,9 +319,18 @@ class CalendarScreenState extends State<CalendarScreen> {
         });
         return;
       }
+      _suppressStripSchedulePageChanged = true;
       _dayPagerController.jumpToPage(_pageForDay(normalized));
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted) _syncStripPagerDayFromController();
+        if (!mounted) return;
+        _clearStripScheduleDebounceTimer();
+        _syncStripPagerDayFromController();
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) {
+            _suppressStripSchedulePageChanged = false;
+            _clearStripScheduleDebounceTimer();
+          }
+        });
       });
     }
 
@@ -412,7 +473,7 @@ class CalendarScreenState extends State<CalendarScreen> {
         },
         child: PageView.builder(
           controller: _dayPagerController,
-          physics: const _SmoothDayPageScrollPhysics(),
+          physics: const SmoothDayPageScrollPhysics(),
           onPageChanged: (page) {
             final day = _dayForPage(page);
             final normalized = DateTime(day.year, day.month, day.day);
@@ -437,7 +498,11 @@ class CalendarScreenState extends State<CalendarScreen> {
                 final selected = _isSameDay(day, stripDay);
                 return Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 3),
-                  child: GestureDetector(
+                  child: CalendarDayPill(
+                    day: day,
+                    selected: selected,
+                    sessionsCount: sessionsCount,
+                    isToday: isToday,
                     onTap: () {
                       _clearStripScheduleDebounceTimer();
                       final normalized = DateTime(day.year, day.month, day.day);
@@ -458,62 +523,6 @@ class CalendarScreenState extends State<CalendarScreen> {
                             }
                           });
                     },
-                    child: Container(
-                      height: 86,
-                      decoration: BoxDecoration(
-                        color: selected
-                            ? AppColors.primary500
-                            : AppColors.backgroundPrimary,
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(
-                          color: selected
-                              ? AppColors.primary500
-                              : isToday
-                              ? AppColors.primary500.withValues(alpha: 0.45)
-                              : AppColors.borderPrimary,
-                        ),
-                      ),
-                      padding: const EdgeInsets.symmetric(vertical: 8),
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Text(
-                            _weekdayShort(day),
-                            style: TextStyle(
-                              fontSize: 11,
-                              fontWeight: FontWeight.w400,
-                              letterSpacing: -0.3,
-                              color: selected
-                                  ? Colors.white
-                                  : AppColors.textSecondary,
-                            ),
-                          ),
-                          const SizedBox(height: 3),
-                          Text(
-                            '${day.day}',
-                            style: TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.w600,
-                              letterSpacing: -0.3,
-                              color: selected
-                                  ? Colors.white
-                                  : AppColors.textPrimary,
-                            ),
-                          ),
-                          const SizedBox(height: 3),
-                          Text(
-                            '$sessionsCount',
-                            style: TextStyle(
-                              fontSize: 11,
-                              fontWeight: FontWeight.w400,
-                              color: selected
-                                  ? Colors.white
-                                  : AppColors.primary500,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
                   ),
                 );
               },
@@ -547,8 +556,12 @@ class CalendarScreenState extends State<CalendarScreen> {
   Widget _expandCollapseButton() {
     return OutlinedButton(
       onPressed: () {
+        final wasExpanded = _isMonthExpanded;
+        if (!wasExpanded) {
+          _clearStripScheduleDebounceTimer();
+        }
         setState(() => _isMonthExpanded = !_isMonthExpanded);
-        if (!_isMonthExpanded) {
+        if (wasExpanded) {
           WidgetsBinding.instance.addPostFrameCallback((_) {
             if (mounted) _syncStripPagerDayFromController();
           });
@@ -578,11 +591,6 @@ class CalendarScreenState extends State<CalendarScreen> {
         ],
       ),
     );
-  }
-
-  String _weekdayShort(DateTime day) {
-    const names = ['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN'];
-    return names[day.weekday - 1];
   }
 
   /// Верхний ряд: месяц/год + Today + Expand (месяц от скролла пиллов или от выбранного дня в сетке).
@@ -768,6 +776,7 @@ class CalendarScreenState extends State<CalendarScreen> {
                                     emptyMessage:
                                         'No trainings for selected day',
                                     ownerTrainerFallback: trainerFb,
+                                    studioLocations: _studioLocations(),
                                     onSessionTap: (s) async {
                                       final token = context
                                           .read<AuthService>()
@@ -792,14 +801,10 @@ class CalendarScreenState extends State<CalendarScreen> {
                                           }
                                         }
                                       }
-                                      final shell = context
-                                          .findAncestorStateOfType<
-                                            MainShellState
-                                          >();
                                       await Navigator.of(context)
                                           .push<void>(
                                             MaterialPageRoute<void>(
-                                              builder: (_) =>
+                                              builder: (detailCtx) =>
                                                   OwnerTrainingSessionDetailScreen(
                                                     session: s,
                                                     trainingColor:
@@ -818,17 +823,6 @@ class CalendarScreenState extends State<CalendarScreen> {
                                                           .invalidate();
                                                       _loadData();
                                                     },
-                                                    onEditSession:
-                                                        s.sessionId.isNotEmpty
-                                                        ? () {
-                                                            shell
-                                                                ?.navigateToTab0Route(
-                                                                  '/owner/session/edit',
-                                                                  arguments: s
-                                                                      .toRouteArgs(),
-                                                                );
-                                                          }
-                                                        : null,
                                                   ),
                                             ),
                                           );
@@ -887,11 +881,3 @@ class _PinnedDayStripDelegate extends SliverPersistentHeaderDelegate {
       stripDayKey != old.stripDayKey;
 }
 
-class _SmoothDayPageScrollPhysics extends PageScrollPhysics {
-  const _SmoothDayPageScrollPhysics({super.parent});
-
-  @override
-  _SmoothDayPageScrollPhysics applyTo(ScrollPhysics? ancestor) {
-    return _SmoothDayPageScrollPhysics(parent: buildParent(ancestor));
-  }
-}

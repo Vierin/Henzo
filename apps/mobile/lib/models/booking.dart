@@ -8,6 +8,8 @@ class Booking {
   final String? staffId;
   final String? serviceId;
   final String? notes;
+  final String? locationId;
+  final String? locationName;
 
   Booking({
     required this.id,
@@ -19,6 +21,8 @@ class Booking {
     this.staffId,
     this.serviceId,
     this.notes,
+    this.locationId,
+    this.locationName,
   });
 
   /// ID сотрудника (из staff.id или staffId в ответе API).
@@ -44,6 +48,8 @@ class Booking {
       staffId: staffId,
       serviceId: serviceId,
       notes: json['notes'] as String?,
+      locationId: json['locationId']?.toString(),
+      locationName: json['locationName']?.toString(),
     );
   }
 

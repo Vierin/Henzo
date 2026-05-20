@@ -38,6 +38,10 @@ export class TrainingsService {
     return new Date(date.getFullYear(), date.getMonth(), date.getDate());
   }
 
+  private sessionSlotKey(date: Date): string {
+    return `${date.getFullYear()}-${date.getMonth()}-${date.getDate()}-${date.getHours()}-${date.getMinutes()}`;
+  }
+
   private buildOccurrenceDates(
     startsFromDate: Date,
     daysOfWeek: number[],
@@ -65,7 +69,7 @@ export class TrainingsService {
   }
 
   private extractBookingPeriodDays(reminderSettings: unknown): number {
-    const fallback = 14;
+    const fallback = 28;
     if (!reminderSettings || typeof reminderSettings !== 'object')
       return fallback;
     const raw = (reminderSettings as Record<string, unknown>)[
@@ -435,12 +439,16 @@ export class TrainingsService {
       });
       categoryChipBgHex = catRow?.chip_bg_hex ?? null;
     }
+    const categoryChanged =
+      resolvedCategory !== undefined &&
+      resolvedCategory !== existing.trainingCategoryId;
     const nextDisplayColor = computeTrainingDisplayColor({
       trainingId: existing.id,
       trainingName: nextName,
       trainingCategoryId: nextCategoryId,
       categoryChipBgHex,
-      existingColor: existing.displayColor,
+      // Re-derive from the new category chip when category changes.
+      existingColor: categoryChanged ? undefined : existing.displayColor,
     });
 
     const updated = await this.training.update({
@@ -480,6 +488,10 @@ export class TrainingsService {
     if (slots.length === 0) {
       throw new Error('At least one recurrence slot is required');
     }
+    const nextCapacity =
+      dto.capacity != null && dto.capacity > 0 ? dto.capacity : undefined;
+    const nextLocationId =
+      dto.locationId !== undefined ? dto.locationId?.trim() || null : undefined;
     const invalidSlot = slots.find(
       (s) =>
         !Number.isInteger(s.day) ||
@@ -541,7 +553,9 @@ export class TrainingsService {
         id: true,
         trainerId: true,
         capacity: true,
+        locationId: true,
         startsAt: true,
+        endsAt: true,
         Enrollments: { select: { status: true } },
       },
       orderBy: { startsAt: 'asc' },
@@ -553,78 +567,129 @@ export class TrainingsService {
     const mutableIds = mutable.map((s: any) => s.id);
     const template = mutable[0] ?? existing[0] ?? null;
 
-    const pairCount = Math.min(mutable.length, desired.length);
+    const desiredBySlot = new Map<string, { startsAt: Date; endsAt: Date }>();
+    for (const d of desired) {
+      desiredBySlot.set(this.sessionSlotKey(d.startsAt), d);
+    }
+
+    const mutableBySlot = new Map<string, (typeof mutable)[number]>();
+    for (const row of mutable) {
+      mutableBySlot.set(this.sessionSlotKey(row.startsAt), row);
+    }
+
     let updatedCount = 0;
     let createdCount = 0;
     let skippedConflicts = 0;
 
-    const usedStartsAt = new Set<number>();
-    for (let i = 0; i < pairCount; i += 1) {
-      const d = desired[i]!;
-      usedStartsAt.add(d.startsAt.getTime());
-      const row = mutable[i]!;
-      const overlap = await this.prisma.trainingSession.findFirst({
-        where: {
-          studioId: training.studioId,
-          id: { notIn: mutableIds },
-          status: 'ACTIVE',
-          startsAt: { lt: d.endsAt },
-          endsAt: { gt: d.startsAt },
-          ...(row.trainerId ? { trainerId: row.trainerId } : {}),
-        },
-        select: { id: true },
-      });
-      if (overlap) {
-        skippedConflicts += 1;
-        continue;
-      }
-      await this.prisma.trainingSession.update({
-        where: { id: row.id },
-        data: { startsAt: d.startsAt, endsAt: d.endsAt },
-      });
-      updatedCount += 1;
-    }
+    const toDelete = mutable
+      .filter((row) => !desiredBySlot.has(this.sessionSlotKey(row.startsAt)))
+      .map((row) => row.id);
 
-    if (template) {
-      for (let i = pairCount; i < desired.length; i += 1) {
-        const d = desired[i]!;
-        if (usedStartsAt.has(d.startsAt.getTime())) continue;
-        const overlap = await this.prisma.trainingSession.findFirst({
-          where: {
-            studioId: training.studioId,
-            id: { notIn: mutableIds },
-            status: 'ACTIVE',
-            startsAt: { lt: d.endsAt },
-            endsAt: { gt: d.startsAt },
-            ...(template.trainerId ? { trainerId: template.trainerId } : {}),
-          },
-          select: { id: true },
-        });
-        if (overlap) {
+    const rangeEndExclusive = new Date(rangeEnd);
+    rangeEndExclusive.setDate(rangeEndExclusive.getDate() + 1);
+
+    const busySessions: Array<{
+      id: string;
+      trainerId: string | null;
+      startsAt: Date;
+      endsAt: Date;
+    }> = await this.prisma.trainingSession.findMany({
+      where: {
+        studioId: training.studioId,
+        status: 'ACTIVE',
+        id: { notIn: mutableIds },
+        startsAt: { lt: rangeEndExclusive },
+        endsAt: { gt: rangeStart },
+      },
+      select: {
+        id: true,
+        trainerId: true,
+        startsAt: true,
+        endsAt: true,
+      },
+    });
+
+    const hasOverlap = (
+      startsAt: Date,
+      endsAt: Date,
+      trainerId: string | null,
+    ): boolean =>
+      busySessions.some(
+        (s) =>
+          startsAt < s.endsAt &&
+          endsAt > s.startsAt &&
+          (!trainerId || !s.trainerId || s.trainerId === trainerId),
+      );
+
+    const updateOps: Array<{
+      where: { id: string };
+      data: Record<string, unknown>;
+    }> = [];
+    const createRows: Array<Record<string, unknown>> = [];
+
+    for (const [slotKey, d] of desiredBySlot) {
+      const row = mutableBySlot.get(slotKey);
+      if (row) {
+        if (hasOverlap(d.startsAt, d.endsAt, row.trainerId)) {
           skippedConflicts += 1;
           continue;
         }
-        await this.prisma.trainingSession.create({
-          data: {
-            studioId: training.studioId,
-            trainingId: id,
-            trainerId: template.trainerId ?? null,
-            startsAt: d.startsAt,
-            endsAt: d.endsAt,
-            capacity: template.capacity ?? 1,
-            status: 'ACTIVE',
-          },
-        });
-        createdCount += 1;
+        const needsTime =
+          row.startsAt.getTime() !== d.startsAt.getTime() ||
+          row.endsAt.getTime() !== d.endsAt.getTime();
+        const needsCapacity = nextCapacity != null;
+        const needsLocation = nextLocationId !== undefined;
+        if (!needsTime && !needsCapacity && !needsLocation) continue;
+
+        const patch: Record<string, unknown> = {};
+        if (needsTime) {
+          patch.startsAt = d.startsAt;
+          patch.endsAt = d.endsAt;
+        }
+        if (nextCapacity != null) patch.capacity = nextCapacity;
+        if (nextLocationId !== undefined) {
+          patch.locationId = nextLocationId;
+        }
+        updateOps.push({ where: { id: row.id }, data: patch });
+        updatedCount += 1;
+        continue;
       }
+
+      if (!template) continue;
+
+      if (hasOverlap(d.startsAt, d.endsAt, template.trainerId)) {
+        skippedConflicts += 1;
+        continue;
+      }
+      createRows.push({
+        studioId: training.studioId,
+        trainingId: id,
+        trainerId: template.trainerId ?? null,
+        locationId:
+          nextLocationId !== undefined
+            ? nextLocationId
+            : (template.locationId ?? null),
+        startsAt: d.startsAt,
+        endsAt: d.endsAt,
+        capacity: nextCapacity ?? template.capacity ?? 1,
+        status: 'ACTIVE',
+      });
+      createdCount += 1;
     }
 
-    const extraIds = mutable.slice(pairCount).map((s: any) => s.id);
-    if (extraIds.length > 0) {
-      await this.prisma.trainingSession.deleteMany({
-        where: { id: { in: extraIds } },
-      });
-    }
+    await this.prisma.$transaction(async (tx: any) => {
+      for (const op of updateOps) {
+        await tx.trainingSession.update(op);
+      }
+      if (createRows.length > 0) {
+        await tx.trainingSession.createMany({ data: createRows });
+      }
+      if (toDelete.length > 0) {
+        await tx.trainingSession.deleteMany({
+          where: { id: { in: toDelete } },
+        });
+      }
+    });
 
     return {
       success: true,
@@ -634,11 +699,45 @@ export class TrainingsService {
         desiredCount: desired.length,
         updatedCount,
         createdCount,
-        removedCount: extraIds.length,
+        removedCount: toDelete.length,
         skippedBookedCount: existing.length - mutable.length,
         skippedConflicts,
       },
     };
+  }
+
+  async updateTrainingFutureSessionDefaults(
+    id: string,
+    data: { capacity?: number; locationId?: string },
+  ) {
+    const training = await this.training.findUnique({
+      where: { id },
+      select: { studioId: true },
+    });
+    if (!training) {
+      throw new Error('Training not found');
+    }
+    const patch: Record<string, unknown> = {};
+    if (data.capacity != null && data.capacity > 0) {
+      patch.capacity = data.capacity;
+    }
+    if (data.locationId !== undefined) {
+      patch.locationId = data.locationId?.trim() || null;
+    }
+    if (Object.keys(patch).length === 0) {
+      return { success: true, updatedCount: 0 };
+    }
+    const rangeStart = this.normalizeDateOnly(new Date());
+    const result = await this.prisma.trainingSession.updateMany({
+      where: {
+        trainingId: id,
+        studioId: training.studioId,
+        status: 'ACTIVE',
+        startsAt: { gte: rangeStart },
+      },
+      data: patch,
+    });
+    return { success: true, updatedCount: result.count };
   }
 
   async deleteTraining(id: string) {

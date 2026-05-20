@@ -106,6 +106,13 @@ class LocaleProvider extends ChangeNotifier {
       final fb = _walk(_englishStrings, parts);
       if (fb is String) return fb;
     }
+    if (kDebugMode) {
+      debugPrint(
+        '[LocaleProvider] missing key "$key" (locale=$_localeCode). '
+        'After editing assets/l10n/*/app.json use Hot Restart (Shift+R), '
+        'not Hot Reload.',
+      );
+    }
     return key;
   }
 

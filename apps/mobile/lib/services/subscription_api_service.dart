@@ -44,7 +44,28 @@ class SubscriptionApiService {
     }
   }
 
-  /// POST /subscriptions/sync-checkout-session — после успешного Stripe Checkout.
+  /// POST /subscriptions/sync-revenuecat — после покупки / restore в App Store / Play.
+  static Future<Subscription?> syncRevenueCat(String accessToken) async {
+    try {
+      final body =
+          await ApiClient.post(
+                '/subscriptions/sync-revenuecat',
+                accessToken,
+              )
+              as Map<String, dynamic>?;
+      if (body == null) return null;
+      final data = body['data'];
+      if (data is Map<String, dynamic>) {
+        return Subscription.fromJson(Map<String, dynamic>.from(data));
+      }
+      return Subscription.fromJson(Map<String, dynamic>.from(body));
+    } on ApiException catch (e) {
+      if (kDebugMode) debugPrint('[SubscriptionAPI] syncRevenueCat: $e');
+      rethrow;
+    }
+  }
+
+  /// POST /subscriptions/sync-checkout-session — после успешного Stripe Checkout (web).
   static Future<Subscription?> syncCheckoutSession(
     String accessToken,
     String sessionId,

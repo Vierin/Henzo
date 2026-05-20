@@ -23,10 +23,14 @@ export class PrismaService
 
     try {
       const url = new URL(databaseUrl);
+      const isPooler =
+        url.hostname.includes('pooler.supabase.com') || url.port === '6543';
+      const defaultConnectionLimit = isPooler ? 5 : 10;
+
       const defaults: Record<string, string> = {
         connection_limit: PrismaService.parsePositiveInt(
           process.env.PRISMA_CONNECTION_LIMIT,
-          10,
+          defaultConnectionLimit,
         ).toString(),
         pool_timeout: PrismaService.parsePositiveInt(
           process.env.PRISMA_POOL_TIMEOUT_SEC,

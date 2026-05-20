@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../widgets/common/henzo_modal.dart';
 import 'package:provider/provider.dart';
 import '../../constants/colors.dart';
 import '../../constants/layout.dart';
@@ -12,9 +13,9 @@ import '../../services/cache/services_staff_cache.dart';
 import '../../services/dashboard_api_service.dart';
 import '../../services/staff_api_service.dart';
 import '../../utils/show_api_error.dart';
+import '../../widgets/settings/branded_settings_app_bar.dart';
+import '../../widgets/staff/staff_person_tile.dart';
 import 'add_staff_screen.dart';
-
-enum StaffSort { nameAz, nameZa }
 
 class StaffScreen extends StatefulWidget {
   const StaffScreen({super.key});
@@ -29,7 +30,6 @@ class _StaffScreenState extends State<StaffScreen> {
   bool _isLoading = false;
   bool _isActionLoading = false;
   bool _isProPlan = false;
-  StaffSort _sort = StaffSort.nameAz;
 
   @override
   void initState() {
@@ -72,7 +72,7 @@ class _StaffScreenState extends State<StaffScreen> {
 
   Future<void> _deleteStaff(StaffMember member) async {
     final locale = context.read<LocaleProvider>();
-    final confirm = await showDialog<bool>(
+    final confirm = await showHenzoDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
         title: Text(locale.t('staffScreen.deleteStaffTitle')),
@@ -124,13 +124,10 @@ class _StaffScreenState extends State<StaffScreen> {
   }
 
   void _openAddStaff() {
+    final locale = context.read<LocaleProvider>();
     if (!_isProPlan) {
       ScaffoldMessenger.maybeOf(context)?.showSnackBar(
-        const SnackBar(
-          content: Text(
-            'Добавление новых тренеров доступно только в пакете Pro',
-          ),
-        ),
+        SnackBar(content: Text(locale.t('staffScreen.addStaffProRequired'))),
       );
       return;
     }
@@ -144,72 +141,19 @@ class _StaffScreenState extends State<StaffScreen> {
     });
   }
 
-  List<StaffMember> get _sortedStaff {
-    final list = List<StaffMember>.from(_staff);
-    list.sort((a, b) {
-      switch (_sort) {
-        case StaffSort.nameAz:
-          return a.name.compareTo(b.name);
-        case StaffSort.nameZa:
-          return b.name.compareTo(a.name);
-      }
-    });
+  List<StaffMember> _staffExcludingOwner(String? ownerEmail) {
+    final ownerKey = ownerEmail?.trim().toLowerCase() ?? '';
+    final list = _staff.where((m) {
+      if (ownerKey.isEmpty) return true;
+      return (m.email ?? '').trim().toLowerCase() != ownerKey;
+    }).toList();
+    list.sort((a, b) => a.name.compareTo(b.name));
     return list;
   }
 
-  void _showSortMenu() {
-    final locale = context.read<LocaleProvider>();
-    showModalBottomSheet(
-      context: context,
-      builder: (ctx) => SafeArea(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Padding(
-              padding: const EdgeInsets.all(16),
-              child: Text(
-                locale.t('staffScreen.sortTitle'),
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w600,
-                  color: AppColors.textPrimary,
-                ),
-              ),
-            ),
-            ListTile(
-              title: Text(locale.t('staffScreen.sortNameAsc')),
-              leading: Radio<StaffSort>(
-                value: StaffSort.nameAz,
-                groupValue: _sort,
-                onChanged: (v) {
-                  if (v != null) setState(() => _sort = v);
-                  Navigator.pop(ctx);
-                },
-              ),
-              onTap: () {
-                setState(() => _sort = StaffSort.nameAz);
-                Navigator.pop(ctx);
-              },
-            ),
-            ListTile(
-              title: Text(locale.t('staffScreen.sortNameDesc')),
-              leading: Radio<StaffSort>(
-                value: StaffSort.nameZa,
-                groupValue: _sort,
-                onChanged: (v) {
-                  if (v != null) setState(() => _sort = v);
-                  Navigator.pop(ctx);
-                },
-              ),
-              onTap: () {
-                setState(() => _sort = StaffSort.nameZa);
-                Navigator.pop(ctx);
-              },
-            ),
-          ],
-        ),
-      ),
-    );
+  String? _ownerAvatarUrl(String? avatarUrl) {
+    final url = avatarUrl?.trim();
+    return url != null && url.isNotEmpty ? url : null;
   }
 
   void _openEditDialog(StaffMember member) {
@@ -220,7 +164,7 @@ class _StaffScreenState extends State<StaffScreen> {
     final selectedServiceIds = <String>[];
     final screenWidth = MediaQuery.of(context).size.width;
     final dialogWidth = (screenWidth * 0.92).clamp(320.0, 560.0);
-    showDialog(
+    showHenzoDialog(
       context: context,
       builder: (ctx) => Dialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
@@ -378,7 +322,7 @@ class _StaffScreenState extends State<StaffScreen> {
                                   .getServicesForSalon(token, member.salonId);
                               if (!ctx.mounted) return;
                               final result =
-                                  await showModalBottomSheet<List<String>>(
+                                  await showHenzoModalBottomSheet<List<String>>(
                                     context: context,
                                     isScrollControlled: true,
                                     useSafeArea: true,
@@ -583,44 +527,52 @@ class _StaffScreenState extends State<StaffScreen> {
     );
   }
 
+  String _contactSubtitle({String? email, String? phone}) {
+    final parts = <String>[
+      if (email != null && email.trim().isNotEmpty) email.trim(),
+      if (phone != null && phone.trim().isNotEmpty) phone.trim(),
+    ];
+    return parts.join(' · ');
+  }
+
   @override
   Widget build(BuildContext context) {
     final locale = context.watch<LocaleProvider>();
-    final owner = context.read<AuthService>().user;
+    final owner = context.watch<AuthService>().user;
+    final extraStaff = _staffExcludingOwner(owner?.email);
+    final showAddFab = _salon != null && !_isLoading;
     final ownerName = (owner?.name?.trim().isNotEmpty ?? false)
         ? owner!.name!.trim()
-        : owner?.email ?? 'Owner';
+        : owner?.email ?? locale.t('settings.owner.ownerRole');
     final ownerEmail = owner?.email ?? '';
     final ownerPhone = owner?.phone ?? '';
+    final ownerSubtitle = [
+      locale.t('settings.owner.ownerRole'),
+      _contactSubtitle(email: ownerEmail, phone: ownerPhone),
+    ].where((s) => s.isNotEmpty).join(' · ');
+
     return Scaffold(
       backgroundColor: AppColors.backgroundSecondary,
-      appBar: AppBar(
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
-          onPressed: () => Navigator.of(context).pop(),
-          color: AppColors.textPrimary,
-        ),
-        title: Text(
-          locale.t('staffScreen.title'),
-          style: TextStyle(
-            fontSize: 24,
-            fontWeight: FontWeight.w600,
-            color: AppColors.textPrimary,
-          ),
-        ),
-        centerTitle: true,
-        backgroundColor: AppColors.backgroundPrimary,
-        foregroundColor: AppColors.textPrimary,
-        elevation: 0,
-        actions: [
-          if (_salon != null)
-            IconButton(
-              icon: const Icon(Icons.filter_list),
-              tooltip: locale.t('staffScreen.sortAndFiltersTooltip'),
-              onPressed: _isLoading ? null : _showSortMenu,
-            ),
-        ],
+      appBar: buildBrandedSettingsAppBar(
+        context,
+        title: locale.t('staffScreen.title'),
       ),
+      floatingActionButton: showAddFab
+          ? SafeArea(
+              minimum: const EdgeInsets.only(bottom: 8),
+              child: FloatingActionButton(
+                onPressed: _isActionLoading ? null : _openAddStaff,
+                elevation: 0,
+                focusElevation: 0,
+                hoverElevation: 0,
+                highlightElevation: 0,
+                backgroundColor: AppColors.primary500,
+                foregroundColor: Colors.white,
+                child: const Icon(Icons.add),
+              ),
+            )
+          : null,
+      floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
       body: _isLoading
           ? const Center(
               child: CircularProgressIndicator(color: AppColors.primary500),
@@ -642,176 +594,67 @@ class _StaffScreenState extends State<StaffScreen> {
               onRefresh: _loadData,
               color: AppColors.primary500,
               child: ListView(
-                padding: const EdgeInsets.fromLTRB(16, 16, 16, 100),
+                padding: EdgeInsets.fromLTRB(
+                  kScreenPaddingHorizontal,
+                  12,
+                  kScreenPaddingHorizontal,
+                  showAddFab ? 88 : 24,
+                ),
                 children: [
-                  Card(
-                    margin: const EdgeInsets.only(bottom: 12),
-                    color: AppColors.backgroundPrimary,
-                    child: ListTile(
-                      contentPadding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 8,
-                      ),
-                      leading: CircleAvatar(
-                        backgroundColor: AppColors.primary500.withValues(
-                          alpha: 0.12,
-                        ),
-                        child: const Icon(
-                          Icons.workspace_premium_outlined,
-                          color: AppColors.primary500,
-                        ),
-                      ),
-                      title: Text(
-                        ownerName,
-                        style: const TextStyle(fontWeight: FontWeight.w700),
-                      ),
-                      subtitle: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          if (ownerEmail.isNotEmpty)
-                            Text(
-                              ownerEmail,
-                              style: const TextStyle(
-                                fontSize: 13,
-                                color: AppColors.textSecondary,
-                              ),
-                            ),
-                          if (ownerPhone.isNotEmpty)
-                            Text(
-                              ownerPhone,
-                              style: const TextStyle(
-                                fontSize: 13,
-                                color: AppColors.textSecondary,
-                              ),
-                            ),
-                        ],
-                      ),
-                      trailing: Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 10,
-                          vertical: 5,
-                        ),
-                        decoration: BoxDecoration(
-                          color: AppColors.primary500.withValues(alpha: 0.14),
-                          borderRadius: BorderRadius.circular(999),
-                        ),
-                        child: const Text(
-                          'Владелец',
-                          style: TextStyle(
-                            fontSize: 11,
-                            fontWeight: FontWeight.w700,
-                            color: AppColors.primary500,
-                          ),
-                        ),
-                      ),
-                    ),
+                  StaffPersonTile(
+                    name: ownerName,
+                    secondaryLine: ownerSubtitle,
+                    photoUrl: _ownerAvatarUrl(owner?.avatarUrl),
                   ),
-                  if (_staff.isEmpty) ...[
-                    const SizedBox(height: 20),
-                    Icon(
-                      Icons.people_outline,
-                      size: 56,
-                      color: AppColors.textSecondary,
-                    ),
-                    const SizedBox(height: 12),
-                    Text(
-                      locale.t('staffScreen.emptyTitle'),
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.w600,
-                        color: AppColors.textPrimary,
+                  ...extraStaff.map((member) {
+                    return StaffPersonTile(
+                      name: member.name,
+                      secondaryLine: _contactSubtitle(
+                        email: member.email,
+                        phone: member.phone,
                       ),
-                      textAlign: TextAlign.center,
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      locale.t('staffScreen.emptySubtitle'),
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: AppColors.textSecondary,
-                      ),
-                      textAlign: TextAlign.center,
-                    ),
-                  ] else ..._sortedStaff.map((member) {
-                    return Card(
-                      margin: const EdgeInsets.only(bottom: 12),
-                      child: ListTile(
-                        contentPadding: const EdgeInsets.symmetric(
-                          horizontal: 16,
-                          vertical: 8,
-                        ),
-                        title: Text(
-                          member.name,
-                          style: const TextStyle(
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                        subtitle: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            if (member.email != null && member.email!.isNotEmpty)
-                              Text(
-                                member.email!,
-                                style: TextStyle(
-                                  fontSize: 13,
-                                  color: AppColors.textSecondary,
-                                ),
+                      trailing: _isActionLoading
+                          ? const SizedBox(
+                              width: 24,
+                              height: 24,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: AppColors.primary500,
                               ),
-                            if (member.phone != null && member.phone!.isNotEmpty)
-                              Text(
-                                member.phone!,
-                                style: TextStyle(
-                                  fontSize: 13,
-                                  color: AppColors.textSecondary,
-                                ),
-                              ),
-                          ],
-                        ),
-                        trailing: _isActionLoading
-                            ? const SizedBox(
-                                width: 24,
-                                height: 24,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                ),
-                              )
-                            : Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  IconButton(
-                                    icon: const Icon(Icons.edit_outlined),
-                                    onPressed: () => _openEditDialog(member),
-                                    color: AppColors.primary500,
+                            )
+                          : Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                IconButton(
+                                  padding: EdgeInsets.zero,
+                                  constraints: const BoxConstraints(
+                                    minWidth: 36,
+                                    minHeight: 36,
                                   ),
-                                  IconButton(
-                                    icon: const Icon(Icons.delete_outline),
-                                    onPressed: () => _deleteStaff(member),
-                                    color: Colors.red,
+                                  icon: const Icon(Icons.edit_outlined, size: 20),
+                                  onPressed: () => _openEditDialog(member),
+                                  color: AppColors.primary500,
+                                ),
+                                IconButton(
+                                  padding: EdgeInsets.zero,
+                                  constraints: const BoxConstraints(
+                                    minWidth: 36,
+                                    minHeight: 36,
                                   ),
-                                ],
-                              ),
-                      ),
+                                  icon: const Icon(
+                                    Icons.delete_outline,
+                                    size: 20,
+                                  ),
+                                  onPressed: () => _deleteStaff(member),
+                                  color: AppColors.error500,
+                                ),
+                              ],
+                            ),
                     );
                   }),
                 ],
               ),
             ),
-      floatingActionButton: _salon != null && !_isLoading
-          ? FloatingActionButton(
-              onPressed: _openAddStaff,
-              tooltip: _isProPlan
-                  ? locale.t('staffScreen.addStaff')
-                  : 'Доступно в Pro',
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-              backgroundColor: _isProPlan
-                  ? AppColors.primary500
-                  : AppColors.neutral400,
-              foregroundColor: Colors.white,
-              child: Icon(_isProPlan ? Icons.add : Icons.lock_outline),
-            )
-          : null,
     );
   }
 }

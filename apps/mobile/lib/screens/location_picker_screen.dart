@@ -97,6 +97,9 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
               decoration: InputDecoration(
                 hintText: 'Enter city or address',
                 prefixIcon: const AppSearchPrefixIcon(),
+                prefixIconConstraints:
+                    AppSearchPrefixIcon.prefixConstraints(),
+                isDense: true,
                 suffixIcon: _isLoading
                     ? const Padding(
                         padding: EdgeInsets.all(12),

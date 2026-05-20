@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io' show Platform;
-
 import 'package:flutter/foundation.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:http/http.dart' as http;
@@ -11,7 +10,9 @@ import '../config/app_config.dart';
 import '../l10n/auth_error_keys.dart';
 import '../models/user_model.dart';
 import '../utils/auth_ui_result.dart';
+import '../utils/owner_navigation_restore.dart';
 import 'analytics_service.dart';
+import 'revenuecat_service.dart';
 
 class AuthService extends ChangeNotifier {
   AuthService() {
@@ -156,6 +157,12 @@ class AuthService extends ChangeNotifier {
           unawaited(
             AnalyticsService.instance.setUser(_user!.id, role: _user!.role),
           );
+          unawaited(
+            RevenueCatService.onAuthUserChanged(
+              userId: _user!.id,
+              isOwner: isStudioOperator,
+            ),
+          );
         }
         return (ok: true, errorL10nKey: null, errorRaw: null);
       }
@@ -215,6 +222,7 @@ class AuthService extends ChangeNotifier {
         serverClientId: webClientId,
         clientId: Platform.isIOS ? iosClientId : null,
       );
+      await googleSignIn.signOut();
       final account = await googleSignIn.signIn();
       if (account == null) {
         if (kDebugMode) debugPrint('[Auth] Google sign in cancelled');
@@ -534,6 +542,10 @@ class AuthService extends ChangeNotifier {
     _isAuthenticated = false;
     notifyListeners();
     unawaited(AnalyticsService.instance.setUser(null));
+    unawaited(
+      RevenueCatService.onAuthUserChanged(userId: null, isOwner: false),
+    );
+    await OwnerNavigationRestore.clearOwnerNavigationRestore();
     try {
       await _supabase.auth.signOut();
     } catch (_) {}
@@ -542,6 +554,7 @@ class AuthService extends ChangeNotifier {
   Future<AuthUiResult> updateProfile({
     required String name,
     required String phone,
+    String? avatarUrl,
   }) async {
     final token = accessToken;
     if (token == null) {
@@ -559,7 +572,11 @@ class AuthService extends ChangeNotifier {
           'Content-Type': 'application/json',
           'authorization': 'Bearer $token',
         },
-        body: json.encode({'name': name.trim(), 'phone': phone.trim()}),
+        body: json.encode({
+          'name': name.trim(),
+          'phone': phone.trim(),
+          if (avatarUrl != null) 'avatarUrl': avatarUrl.trim(),
+        }),
       );
       if (response.statusCode == 200) {
         final data = json.decode(response.body) as Map<String, dynamic>;
@@ -681,6 +698,19 @@ class AuthService extends ChangeNotifier {
         errorL10nKey: AuthErrorKeys.network,
         errorRaw: e.toString(),
       );
+    }
+  }
+
+  String _extractNonceFromJwt(String token) {
+    try {
+      final parts = token.split('.');
+      if (parts.length != 3) return '';
+      final payload = base64Url.normalize(parts[1]);
+      final decoded = jsonDecode(utf8.decode(base64Url.decode(payload)))
+          as Map<String, dynamic>;
+      return decoded['nonce'] as String? ?? '';
+    } catch (_) {
+      return '';
     }
   }
 }

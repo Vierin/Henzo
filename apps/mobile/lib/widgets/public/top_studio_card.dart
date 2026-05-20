@@ -12,6 +12,7 @@ class TopStudioCard extends StatelessWidget {
     required this.isFavoriteLoading,
     required this.onToggleFavorite,
     required this.onTap,
+    this.homeLayout = false,
   });
 
   final PublicStudioPreview studio;
@@ -19,11 +20,18 @@ class TopStudioCard extends StatelessWidget {
   final bool isFavoriteLoading;
   final VoidCallback onToggleFavorite;
   final VoidCallback onTap;
+  final bool homeLayout;
+
+  String? get _distanceLabel {
+    final km = studio.distanceKm;
+    if (km == null) return null;
+    return '${km.toStringAsFixed(1)} km';
+  }
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      width: 244,
+      width: homeLayout ? 210 : 236,
       margin: const EdgeInsets.only(right: 12),
       child: Material(
         color: Colors.transparent,
@@ -43,7 +51,7 @@ class TopStudioCard extends StatelessWidget {
                 children: [
                   SizedBox(
                     width: double.infinity,
-                    height: 118,
+                    height: homeLayout ? 120 : 118,
                     child: Stack(
                       children: [
                         Positioned.fill(
@@ -64,7 +72,7 @@ class TopStudioCard extends StatelessWidget {
                                   ),
                                 ),
                         ),
-                        if (studio.rating > 0)
+                        if (!homeLayout && studio.rating > 0)
                           Positioned(
                             left: 8,
                             top: 8,
@@ -130,77 +138,134 @@ class TopStudioCard extends StatelessWidget {
                     ),
                   ),
                   Padding(
-                    padding: const EdgeInsets.fromLTRB(12, 8, 12, 0),
+                    padding: EdgeInsets.fromLTRB(
+                      homeLayout ? 10 : 12,
+                      homeLayout ? 6 : 8,
+                      homeLayout ? 10 : 12,
+                      0,
+                    ),
                     child: Text(
-                      studio.name,
+                      studio.studioName,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        fontSize: 19,
+                      style: TextStyle(
+                        fontSize: homeLayout ? 17 : 19,
                         fontWeight: FontWeight.w600,
                         color: AppColors.textPrimary,
                       ),
                     ),
                   ),
                   if (studio.categories.isNotEmpty) ...[
-                    const SizedBox(height: 4),
+                    SizedBox(height: homeLayout ? 3 : 4),
                     Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 12),
+                      padding: EdgeInsets.symmetric(
+                        horizontal: homeLayout ? 10 : 12,
+                      ),
                       child: Text(
-                        studio.categories.take(3).join(' · '),
+                        homeLayout
+                            ? studio.categories.take(2).join(' · ')
+                            : studio.categories.take(3).join(' · '),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                          fontSize: 11,
-                          fontWeight: FontWeight.w600,
-                          color: AppColors.textSecondary,
+                        style: TextStyle(
+                          fontSize: homeLayout ? 12 : 11,
+                          fontWeight: homeLayout
+                              ? FontWeight.w500
+                              : FontWeight.w600,
+                          color: homeLayout
+                              ? AppColors.textPrimary
+                              : AppColors.textSecondary,
                         ),
                       ),
                     ),
                   ],
-                  const SizedBox(height: 4),
+                  SizedBox(height: homeLayout ? 4 : 6),
                   Padding(
-                    padding: const EdgeInsets.fromLTRB(12, 0, 12, 10),
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.center,
-                      children: [
-                        if (studio.distanceKm != null) ...[
-                          const Icon(
-                            Icons.near_me_outlined,
-                            size: 13,
-                            color: AppColors.textSecondary,
-                          ),
-                          const SizedBox(width: 3),
-                          Text(
-                            '${studio.distanceKm!.toStringAsFixed(1)} km',
-                            style: const TextStyle(
-                              fontSize: 12,
-                              fontWeight: FontWeight.w500,
-                              color: AppColors.textPrimary,
-                            ),
-                          ),
-                          const Text(
-                            '  •  ',
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: AppColors.textSecondary,
-                            ),
-                          ),
-                        ],
-                        Expanded(
-                          child: Text(
-                            studio.address,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            softWrap: false,
-                            style: const TextStyle(
-                              fontSize: 12,
-                              color: AppColors.textSecondary,
-                            ),
-                          ),
-                        ),
-                      ],
+                    padding: EdgeInsets.fromLTRB(
+                      homeLayout ? 10 : 12,
+                      0,
+                      homeLayout ? 10 : 12,
+                      homeLayout ? 8 : 10,
                     ),
+                    child: homeLayout
+                        ? Row(
+                            children: [
+                              if (studio.rating > 0) ...[
+                                const Icon(
+                                  Icons.star_rounded,
+                                  size: 14,
+                                  color: Color(0xFFFFB800),
+                                ),
+                                const SizedBox(width: 2),
+                                Text(
+                                  studio.rating.toStringAsFixed(1),
+                                  style: const TextStyle(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w700,
+                                    color: AppColors.textPrimary,
+                                  ),
+                                ),
+                                if (studio.reviewCount > 0)
+                                  Text(
+                                    ' (${studio.reviewCount})',
+                                    style: const TextStyle(
+                                      fontSize: 12,
+                                      color: AppColors.textSecondary,
+                                    ),
+                                  ),
+                              ],
+                              const Spacer(),
+                              if (_distanceLabel != null)
+                                Text(
+                                  _distanceLabel!,
+                                  style: const TextStyle(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w600,
+                                    color: AppColors.textSecondary,
+                                  ),
+                                ),
+                            ],
+                          )
+                        : Row(
+                            crossAxisAlignment: CrossAxisAlignment.center,
+                            children: [
+                              if (studio.distanceKm != null) ...[
+                                const Icon(
+                                  Icons.near_me_outlined,
+                                  size: 13,
+                                  color: AppColors.textSecondary,
+                                ),
+                                const SizedBox(width: 3),
+                                Text(
+                                  '${studio.distanceKm!.toStringAsFixed(1)} km',
+                                  style: const TextStyle(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w500,
+                                    color: AppColors.textPrimary,
+                                  ),
+                                ),
+                                const Text(
+                                  '  •  ',
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color: AppColors.textSecondary,
+                                  ),
+                                ),
+                              ],
+                              Expanded(
+                                child: Text(
+                                  studio.address,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  softWrap: false,
+                                  style: const TextStyle(
+                                    fontSize: 12,
+                                    color: AppColors.textSecondary,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
                   ),
                 ],
               ),

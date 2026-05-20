@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../common/henzo_modal.dart';
 import 'package:intl/intl.dart';
 
 import '../../constants/colors.dart';
@@ -14,7 +15,7 @@ class BookingDetailModal {
     Function(String)? onConfirm,
     Function(String)? onReject,
   }) {
-    showModalBottomSheet(
+    showHenzoModalBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
@@ -422,7 +423,7 @@ class _BookingDetailActions extends StatelessWidget {
                 Expanded(
                   child: ElevatedButton(
                     onPressed: () async {
-                      final confirmed = await showDialog<bool>(
+                      final confirmed = await showHenzoDialog<bool>(
                         context: context,
                         builder: (ctx) => AlertDialog(
                           title: const Text('Отменить запись?'),

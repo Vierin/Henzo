@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+
 import '../../constants/colors.dart';
+import 'henzo_header_back_button.dart';
 
 /// Стандартный AppBar приложения: фон, цвет текста и иконок из палитры.
 /// Используй для единообразия на всех экранах.
@@ -32,10 +34,10 @@ class AppAppBar extends StatelessWidget implements PreferredSizeWidget {
         ),
       ),
       leading: leading ??
-          IconButton(
-            icon: const Icon(Icons.arrow_back, color: AppColors.textPrimary),
+          HenzoHeaderBackButton(
             onPressed: () => Navigator.of(context).pop(),
           ),
+      leadingWidth: leading == null ? 56 : null,
       actions: actions,
       centerTitle: centerTitle,
       backgroundColor: AppColors.backgroundPrimary,

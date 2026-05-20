@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
+import '../../constants/brand_typography.dart';
 import '../../constants/colors.dart';
+import '../../constants/layout.dart';
 import '../../services/auth_service.dart';
 import '../../services/client_favorites_mutations.dart';
 import '../../services/client_favorites_store.dart';
@@ -126,7 +128,7 @@ class _ClientFavoritesScreenState extends State<ClientFavoritesScreen> {
                   ? const Center(child: CircularProgressIndicator())
                   : favorites.isEmpty
                   ? Padding(
-                      padding: const EdgeInsets.all(16),
+                      padding: const EdgeInsets.all(kScreenPaddingHorizontal),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         mainAxisAlignment: MainAxisAlignment.center,

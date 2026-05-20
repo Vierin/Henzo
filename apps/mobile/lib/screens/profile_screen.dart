@@ -105,9 +105,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (_) => const AppSettingsScreen(
-                        initialSection: SettingsHubSection.studio,
-                      ),
+                      builder: (_) => const AppSettingsScreen(),
                     ),
                   );
                 },
@@ -314,9 +312,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (_) => const AppSettingsScreen(
-                        initialSection: SettingsHubSection.studio,
-                      ),
+                      builder: (_) => const AppSettingsScreen(),
                     ),
                   );
                 },
@@ -330,9 +326,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (_) => const AppSettingsScreen(
-                        initialSection: SettingsHubSection.studio,
-                      ),
+                      builder: (_) => const AppSettingsScreen(),
                     ),
                   );
                 },
@@ -352,7 +346,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (_) => const ServicesScreen(trainingMode: true),
+                      builder: (_) => const ServicesScreen(),
                     ),
                   ).then((_) {
                     if (mounted) _loadTrainingsCount();

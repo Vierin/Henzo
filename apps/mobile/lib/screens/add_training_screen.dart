@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import '../widgets/common/henzo_modal.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
@@ -9,6 +11,7 @@ import '../constants/layout.dart';
 import '../models/salon.dart';
 import '../models/service_item.dart';
 import '../models/training_category_option.dart';
+import '../models/training_location_item.dart';
 import '../l10n/locale_provider.dart';
 import '../services/auth_service.dart';
 import '../services/dashboard_api_service.dart';
@@ -17,31 +20,18 @@ import '../services/cache/salon_cache.dart';
 import '../services/cache/services_staff_cache.dart';
 import '../services/services_api_service.dart';
 import '../utils/show_api_error.dart';
+import '../utils/training_locations_storage.dart';
+import '../widgets/address_picker_modal.dart';
+import '../widgets/auth/auth_form_styles.dart';
 import '../widgets/schedule_style_date_picker.dart';
+import '../widgets/common/henzo_header_back_button.dart';
+import '../widgets/training/training_location_picker_sheet.dart';
 import 'main_shell.dart';
 
 /// Matches registration / mock secondary controls (chevron, pin tint).
 const Color _kFormAccentPurple = Color(0xFF6C5CE7);
 
 const Color _kRegHintMuted = Color(0x993F3F3F);
-
-bool _trainingCategoryIsOther(TrainingCategoryOption c) =>
-    c.nameEn.trim().toLowerCase() == 'other';
-
-List<TrainingCategoryOption> _categoriesWithOtherLast(
-  List<TrainingCategoryOption> list,
-) {
-  final rest = <TrainingCategoryOption>[];
-  final other = <TrainingCategoryOption>[];
-  for (final c in list) {
-    if (_trainingCategoryIsOther(c)) {
-      other.add(c);
-    } else {
-      rest.add(c);
-    }
-  }
-  return [...rest, ...other];
-}
 
 String _formatThousandsDots(int value) {
   final raw = value.abs().toString();
@@ -81,6 +71,8 @@ class _AddTrainingScreenState extends State<AddTrainingScreen> {
   TimeOfDay _sessionTime = const TimeOfDay(hour: 9, minute: 0);
   DateTime _recurringEndDate = DateTime.now();
   Salon? _studio;
+  List<TrainingLocationItem> _locations = [];
+  String _selectedLocationId = 'default';
   List<ServiceItem> _existing = [];
   List<TrainingCategoryOption> _categories = [];
   int? _selectedCategoryId;
@@ -113,6 +105,118 @@ class _AddTrainingScreenState extends State<AddTrainingScreen> {
     _priceController.dispose();
     _capacityController.dispose();
     super.dispose();
+  }
+
+  TrainingLocationItem? get _selectedLocation {
+    for (final loc in _locations) {
+      if (loc.id == _selectedLocationId) return loc;
+    }
+    return _locations.isNotEmpty ? _locations.first : null;
+  }
+
+  void _applyLocationsFromStudio(Salon? studio, LocaleProvider locale) {
+    _locations = TrainingLocationItem.listFromSalon(
+      studio,
+      mainStudioName: locale.t('locations.mainStudio'),
+    );
+    if (_locations.isEmpty) {
+      _selectedLocationId = 'default';
+      return;
+    }
+    final stillValid = _locations.any((l) => l.id == _selectedLocationId);
+    if (!stillValid) {
+      _selectedLocationId = _locations.first.id;
+    }
+  }
+
+  Future<void> _openLocationPicker() async {
+    final locale = context.read<LocaleProvider>();
+    if (_locations.isEmpty && _studio != null) {
+      _applyLocationsFromStudio(_studio, locale);
+    }
+    if (_locations.isEmpty) return;
+
+    final result = await showTrainingLocationPickerSheet(
+      context,
+      locations: _locations,
+      selectedId: _selectedLocationId,
+      onDeleteLocation: _deleteTrainingLocation,
+    );
+    if (!mounted || result == null) return;
+
+    switch (result) {
+      case TrainingLocationPicked(:final location):
+        setState(() => _selectedLocationId = location.id);
+      case TrainingLocationAddRequested():
+        await _addNewTrainingLocation();
+    }
+  }
+
+  Future<bool> _deleteTrainingLocation(TrainingLocationItem loc) async {
+    final studio = _studio;
+    if (studio == null || loc.id == 'default') return false;
+
+    final updated = _locations.where((l) => l.id != loc.id).toList();
+    try {
+      final updatedSalon = await persistExtraTrainingLocations(
+        context,
+        studio,
+        updated,
+      );
+      if (!mounted) return false;
+      final locale = context.read<LocaleProvider>();
+      setState(() {
+        _studio = updatedSalon ?? studio;
+        _applyLocationsFromStudio(_studio, locale);
+        if (_selectedLocationId == loc.id && _locations.isNotEmpty) {
+          _selectedLocationId = _locations.first.id;
+        }
+      });
+      return true;
+    } catch (e) {
+      if (mounted) showApiError(context, e);
+      return false;
+    }
+  }
+
+  Future<void> _addNewTrainingLocation() async {
+    final locale = context.read<LocaleProvider>();
+    final studio = _studio;
+    if (studio == null) return;
+
+    final selection = await AddressPickerModal.show(
+      context,
+      initialAddress: '',
+    );
+    if (!mounted || selection == null) return;
+
+    final newLoc = TrainingLocationItem(
+      id: 'loc_${DateTime.now().millisecondsSinceEpoch}',
+      name: selection.locationName,
+      address: selection.address.trim(),
+      latitude: selection.lat,
+      longitude: selection.lon,
+    );
+    final updatedList = [..._locations, newLoc];
+
+    try {
+      final updatedSalon = await persistExtraTrainingLocations(
+        context,
+        studio,
+        updatedList,
+      );
+      if (!mounted) return;
+      setState(() {
+        _studio = updatedSalon ?? studio;
+        _locations = TrainingLocationItem.listFromSalon(
+          _studio,
+          mainStudioName: locale.t('locations.mainStudio'),
+        );
+        _selectedLocationId = newLoc.id;
+      });
+    } catch (e) {
+      if (mounted) showApiError(context, e);
+    }
   }
 
   String _weekdayLabel(int weekday) {
@@ -153,7 +257,7 @@ class _AddTrainingScreenState extends State<AddTrainingScreen> {
       initialTime.hour,
       initialTime.minute,
     );
-    return showModalBottomSheet<TimeOfDay>(
+    return showHenzoModalBottomSheet<TimeOfDay>(
       context: context,
       backgroundColor: AppColors.backgroundPrimary,
       shape: const RoundedRectangleBorder(
@@ -398,27 +502,8 @@ class _AddTrainingScreenState extends State<AddTrainingScreen> {
   }
 
   Widget _step2BackLeading() {
-    return Padding(
-      padding: const EdgeInsets.only(left: 8),
-      child: Center(
-        child: Material(
-          color: AppColors.backgroundPrimary,
-          shape: const CircleBorder(),
-          child: InkWell(
-            customBorder: const CircleBorder(),
-            onTap: () => setState(() => _step = 1),
-            child: const SizedBox(
-              width: 40,
-              height: 40,
-              child: Icon(
-                Icons.arrow_back_rounded,
-                size: 22,
-                color: AppColors.textSecondary,
-              ),
-            ),
-          ),
-        ),
-      ),
+    return HenzoHeaderBackButton(
+      onPressed: () => setState(() => _step = 1),
     );
   }
 
@@ -498,7 +583,7 @@ class _AddTrainingScreenState extends State<AddTrainingScreen> {
     if (_categories.isEmpty) return;
     final loc = context.read<LocaleProvider>();
     final localeCode = loc.localeCode;
-    final result = await showModalBottomSheet<_CategoryPickResult?>(
+    final result = await showHenzoModalBottomSheet<_CategoryPickResult?>(
       context: context,
       showDragHandle: false,
       isScrollControlled: true,
@@ -559,7 +644,7 @@ class _AddTrainingScreenState extends State<AddTrainingScreen> {
                         runSpacing: 8,
                         children: _categories.map((c) {
                           final selected = _selectedCategoryId == c.id;
-                          final isOther = _trainingCategoryIsOther(c);
+                          final isOther = c.isOtherCategory;
                           final Color bg;
                           final Color fg;
                           if (isOther) {
@@ -1315,10 +1400,12 @@ class _AddTrainingScreenState extends State<AddTrainingScreen> {
           : <ServiceItem>[];
       final categories = await ServicesApiService.getTrainingCategories(token);
       if (!mounted) return;
+      final locale = context.read<LocaleProvider>();
       setState(() {
         _studio = studio;
+        _applyLocationsFromStudio(studio, locale);
         _existing = list;
-        _categories = _categoriesWithOtherLast(categories);
+        _categories = TrainingCategoryOption.withOtherLast(categories);
         _loading = false;
         final start = DateTime(
           _sessionDate.year,
@@ -1386,6 +1473,7 @@ class _AddTrainingScreenState extends State<AddTrainingScreen> {
               token,
               studioId: studioId,
               trainingId: created.id,
+              locationId: _selectedLocationId,
               capacity: capacity,
               daysOfWeek: _isRecurring ? null : recurringDays,
               startTime: _isRecurring ? null : _timeToHm(_sessionTime),
@@ -1630,6 +1718,12 @@ class _AddTrainingScreenState extends State<AddTrainingScreen> {
                         const SizedBox(height: 22),
                         Consumer<LocaleProvider>(
                           builder: (context, loc, _) {
+                            final selected = _selectedLocation;
+                            final displayName =
+                                selected?.name.trim().isNotEmpty == true
+                                ? selected!.name
+                                : loc.t('addTraining.studioNameFallback');
+                            final address = selected?.address.trim() ?? '';
                             return Column(
                               crossAxisAlignment: CrossAxisAlignment.stretch,
                               children: [
@@ -1638,87 +1732,88 @@ class _AddTrainingScreenState extends State<AddTrainingScreen> {
                                 ),
                                 Material(
                                   color: AppColors.backgroundPrimary,
-                                  borderRadius: BorderRadius.circular(28),
-                                  child: Padding(
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 12,
-                                      vertical: 14,
-                                    ),
-                                    child: Row(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      children: [
-                                        Padding(
-                                          padding: const EdgeInsets.only(
-                                            top: 2,
+                                  borderRadius: BorderRadius.circular(12),
+                                  clipBehavior: Clip.antiAlias,
+                                  child: InkWell(
+                                    onTap: _openLocationPicker,
+                                    borderRadius: BorderRadius.circular(12),
+                                    child: Padding(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 12,
+                                        vertical: 14,
+                                      ),
+                                      child: Row(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          Padding(
+                                            padding: const EdgeInsets.only(
+                                              top: 2,
+                                            ),
+                                            child: SvgPicture.asset(
+                                              'assets/icons/icon-pin.svg',
+                                              width: 15,
+                                              height: 21,
+                                            ),
                                           ),
-                                          child: Icon(
-                                            Icons.location_on_rounded,
-                                            color: _kFormAccentPurple,
-                                            size: 26,
-                                          ),
-                                        ),
-                                        const SizedBox(width: 12),
-                                        Expanded(
-                                          child: Column(
-                                            crossAxisAlignment:
-                                                CrossAxisAlignment.start,
-                                            children: [
-                                              Text(
-                                                _studio?.name
-                                                            ?.trim()
-                                                            .isNotEmpty ==
-                                                        true
-                                                    ? _studio!.name!.trim()
-                                                    : 'Студия',
-                                                style: const TextStyle(
-                                                  fontSize: 19,
-                                                  fontWeight: FontWeight.w700,
-                                                  color: AppColors.textPrimary,
-                                                ),
-                                              ),
-                                              if ((_studio?.address ?? '')
-                                                  .trim()
-                                                  .isNotEmpty) ...[
-                                                const SizedBox(height: 4),
+                                          const SizedBox(width: 12),
+                                          Expanded(
+                                            child: Column(
+                                              crossAxisAlignment:
+                                                  CrossAxisAlignment.start,
+                                              children: [
                                                 Text(
-                                                  _studio!.address!.trim(),
+                                                  displayName,
                                                   style: const TextStyle(
-                                                    fontSize: 14,
-                                                    height: 1.25,
-                                                    fontWeight: FontWeight.w400,
+                                                    fontSize: 19,
+                                                    fontWeight: FontWeight.w700,
                                                     color:
-                                                        AppColors.textSecondary,
+                                                        AppColors.textPrimary,
                                                   ),
                                                 ),
-                                              ] else
-                                                const Padding(
-                                                  padding: EdgeInsets.only(
-                                                    top: 4,
-                                                  ),
-                                                  child: Text(
-                                                    'Адрес не указан',
-                                                    style: TextStyle(
+                                                if (address.isNotEmpty) ...[
+                                                  const SizedBox(height: 4),
+                                                  Text(
+                                                    address,
+                                                    style: const TextStyle(
                                                       fontSize: 14,
+                                                      height: 1.25,
+                                                      fontWeight:
+                                                          FontWeight.w400,
                                                       color: AppColors
-                                                          .textTertiary,
+                                                          .textSecondary,
                                                     ),
                                                   ),
-                                                ),
-                                            ],
+                                                ] else
+                                                  Padding(
+                                                    padding:
+                                                        const EdgeInsets.only(
+                                                          top: 4,
+                                                        ),
+                                                    child: Text(
+                                                      loc.t(
+                                                        'addTraining.noAddress',
+                                                      ),
+                                                      style: const TextStyle(
+                                                        fontSize: 14,
+                                                        color: AppColors
+                                                            .textTertiary,
+                                                      ),
+                                                    ),
+                                                  ),
+                                              ],
+                                            ),
                                           ),
-                                        ),
-                                        Padding(
-                                          padding: const EdgeInsets.only(
-                                            top: 4,
+                                          const Padding(
+                                            padding: EdgeInsets.only(top: 4),
+                                            child: Icon(
+                                              CupertinoIcons.chevron_forward,
+                                              color: _kFormAccentPurple,
+                                              size: 18,
+                                            ),
                                           ),
-                                          child: const Icon(
-                                            CupertinoIcons.chevron_forward,
-                                            color: _kFormAccentPurple,
-                                            size: 18,
-                                          ),
-                                        ),
-                                      ],
+                                        ],
+                                      ),
                                     ),
                                   ),
                                 ),
@@ -1827,13 +1922,7 @@ class _AddTrainingScreenState extends State<AddTrainingScreen> {
                               if (!_validateStep1()) return;
                               setState(() => _step = 2);
                             },
-                            style: FilledButton.styleFrom(
-                              backgroundColor: AppColors.primary500,
-                              foregroundColor: AppColors.textInverse,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(999),
-                              ),
-                            ),
+                            style: AuthFormStyles.primaryButtonStyle(),
                             child: Text(
                               'Следующий шаг',
                               style: textTheme.titleLarge?.copyWith(

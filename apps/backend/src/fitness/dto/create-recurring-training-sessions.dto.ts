@@ -33,6 +33,10 @@ export class CreateRecurringTrainingSessionsDto {
   @IsString()
   trainerId?: string;
 
+  @IsOptional()
+  @IsString()
+  locationId?: string;
+
   @IsInt()
   @Min(1)
   @Max(500)

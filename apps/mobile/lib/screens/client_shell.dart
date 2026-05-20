@@ -1,11 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 
 import '../constants/colors.dart';
-import '../services/auth_service.dart';
-import '../services/client_favorites_store.dart';
-import '../widgets/client/client_nav_item.dart';
-import 'client/client_favorites_screen.dart';
+import '../widgets/shell/shell_nav_item.dart';
+import 'client/client_bookings_screen.dart';
 import 'client/client_profile_screen.dart';
 import 'client/client_search_screen.dart';
 import 'client/client_shell_scope.dart';
@@ -25,27 +22,32 @@ class _ClientShellState extends State<ClientShell> {
   final GlobalKey<ClientSearchScreenState> _exploreScreenKey =
       GlobalKey<ClientSearchScreenState>();
 
-  void goToExploreTab() {
+  void goToExploreTab({int? categoryId}) {
     setState(() => _currentIndex = 1);
     _exploreScreenKey.currentState?.ensureExploreLoaded();
+    if (categoryId != null) {
+      _exploreScreenKey.currentState?.selectCategory(categoryId);
+    }
   }
 
   List<Widget> get _screens => [
     PublicHomeScreen(
-      onOpenMap: () => setState(() {
-        _showMapScreen = true;
-      }),
+      onOpenMap: () => setState(() => _showMapScreen = true),
+      onOpenBrowse: () => goToExploreTab(),
+      onCategorySelected: (id) => goToExploreTab(categoryId: id),
+      onOpenBookings: () => setState(() => _currentIndex = 2),
     ),
     ClientSearchScreen(key: _exploreScreenKey),
-    const ClientFavoritesScreen(),
+    const ClientBookingsScreen(),
     const ClientProfileScreen(),
   ];
 
   @override
   Widget build(BuildContext context) {
     return ClientShellScope(
-      goToExplore: goToExploreTab,
+      goToExplore: () => goToExploreTab(),
       child: Scaffold(
+        backgroundColor: AppColors.backgroundSecondary,
         body: Stack(
           children: [
             IndexedStack(index: _currentIndex, children: _screens),
@@ -58,69 +60,54 @@ class _ClientShellState extends State<ClientShell> {
           ],
         ),
         bottomNavigationBar: ColoredBox(
-          color: AppColors.backgroundPrimary,
+          color: AppColors.backgroundSecondary,
           child: SafeArea(
             top: false,
+            minimum: const EdgeInsets.fromLTRB(10, 10, 10, 18),
             child: Container(
+              height: 70,
+              padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
               decoration: BoxDecoration(
                 color: AppColors.backgroundPrimary,
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.08),
-                    blurRadius: 8,
-                    offset: const Offset(0, -2),
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: const Color(0xFFE6E3E2)),
+              ),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: ShellNavItem(
+                      svgAsset: 'assets/icons/icon-house.svg',
+                      label: 'Home',
+                      isSelected: _currentIndex == 0,
+                      onTap: () => setState(() => _currentIndex = 0),
+                    ),
+                  ),
+                  Expanded(
+                    child: ShellNavItem(
+                      svgAsset: 'assets/icons/icon-search.svg',
+                      label: 'Browse',
+                      isSelected: _currentIndex == 1,
+                      onTap: () => goToExploreTab(),
+                    ),
+                  ),
+                  Expanded(
+                    child: ShellNavItem(
+                      svgAsset: 'assets/icons/icon-schedule.svg',
+                      label: 'Bookings',
+                      isSelected: _currentIndex == 2,
+                      onTap: () => setState(() => _currentIndex = 2),
+                    ),
+                  ),
+                  Expanded(
+                    child: ShellNavItem(
+                      svgAsset: 'assets/icons/icon-profile-large.svg',
+                      label: 'Profile',
+                      isSelected: _currentIndex == 3,
+                      onTap: () => setState(() => _currentIndex = 3),
+                    ),
                   ),
                 ],
               ),
-              constraints: const BoxConstraints(minHeight: 42, maxHeight: 56),
-              padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 6),
-              child: Row(
-              children: [
-                Expanded(
-                  child: ClientNavItem(
-                    icon: Icons.home_outlined,
-                    activeIcon: Icons.home,
-                    label: 'Home',
-                    isSelected: _currentIndex == 0,
-                    onTap: () => setState(() => _currentIndex = 0),
-                  ),
-                ),
-                Expanded(
-                  child: ClientNavItem(
-                    icon: Icons.search_outlined,
-                    activeIcon: Icons.search,
-                    label: 'Explore',
-                    isSelected: _currentIndex == 1,
-                    onTap: () {
-                      setState(() => _currentIndex = 1);
-                      _exploreScreenKey.currentState?.ensureExploreLoaded();
-                    },
-                  ),
-                ),
-                Expanded(
-                  child: ClientNavItem(
-                    icon: Icons.favorite_border,
-                    activeIcon: Icons.favorite,
-                    label: 'Favorites',
-                    isSelected: _currentIndex == 2,
-                    onTap: () {
-                      setState(() => _currentIndex = 2);
-                      final t = context.read<AuthService>().accessToken;
-                      context.read<ClientFavoritesStore>().sync(t, force: false);
-                    },
-                  ),
-                ),
-                Expanded(
-                  child: ClientNavItem(
-                    icon: Icons.person_outline,
-                    activeIcon: Icons.person,
-                    label: 'Profile',
-                    isSelected: _currentIndex == 3,
-                    onTap: () => setState(() => _currentIndex = 3),
-                  ),
-                ),
-              ],
-            ),
             ),
           ),
         ),

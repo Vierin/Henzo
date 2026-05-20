@@ -18,10 +18,13 @@ import '../../services/subscription_refresh_notifier.dart';
 import '../../utils/color_hex.dart';
 import '../../widgets/dashboard/owner_checklist_card.dart';
 import '../../widgets/dashboard/dashboard_setup_card.dart';
+import '../../models/training_location_item.dart';
 import '../../widgets/dashboard/owner_daily_schedule_block.dart';
+import '../../navigation/owner_session_navigation.dart';
 import '../owner_training_session_detail_screen.dart';
-import '../app_settings_screen.dart';
 import '../main_shell.dart';
+import '../settings_screen.dart';
+import '../../widgets/settings/owner_booking_period_sheet.dart';
 import '../notifications_screen.dart';
 import '../salon_setup_screen.dart';
 
@@ -34,7 +37,7 @@ class DashboardScreen extends StatefulWidget {
 
 class _DashboardScreenState extends State<DashboardScreen> {
   // Custom palette matching the design mock.
-  static const _statGreen = Color(0xFFBDE03A); // lime-yellow stat card
+  static const _statGreen = Color(0xFFC2F600); // lime-yellow stat card
   static const _statPink = Color(0xFFFAD0C5); // salmon stat card
 
   Salon? _salon;
@@ -145,14 +148,20 @@ class _DashboardScreenState extends State<DashboardScreen> {
     }
   }
 
-  Future<void> _openSettings() async {
-    final changed = await Navigator.push<bool>(
+  Future<void> _openStudioProfileSettings() async {
+    await Navigator.push<void>(
       context,
-      MaterialPageRoute(
-        builder: (_) =>
-            const AppSettingsScreen(initialSection: SettingsHubSection.studio),
-      ),
+      MaterialPageRoute(builder: (_) => const SettingsScreen()),
     );
+    if (mounted) await _loadData();
+  }
+
+  Future<void> _openOnlineBookingSettings() async {
+    final token = context.read<AuthService>().accessToken;
+    if (token == null || token.isEmpty) return;
+    final salon = await context.read<SalonCache>().getSalon(token);
+    if (!mounted || salon == null) return;
+    final changed = await showOwnerBookingPeriodSheet(context, salon: salon);
     if (changed == true && mounted) await _loadData();
   }
 
@@ -201,6 +210,16 @@ class _DashboardScreenState extends State<DashboardScreen> {
     final a = s.address?.trim();
     if (a != null && a.isNotEmpty) return a;
     return null;
+  }
+
+  List<TrainingLocationItem> _studioLocations() {
+    final salon = _salon;
+    if (salon == null) return const [];
+    final main = salon.name?.trim();
+    return TrainingLocationItem.listFromSalon(
+      salon,
+      mainStudioName: (main != null && main.isNotEmpty) ? main : 'Studio',
+    );
   }
 
   String? _ownerTrainerFallback() {
@@ -263,7 +282,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   void _openSessionDetail(OwnerTrainingSession s) {
     Navigator.of(context).push<void>(
       MaterialPageRoute<void>(
-        builder: (_) => OwnerTrainingSessionDetailScreen(
+        builder: (detailCtx) => OwnerTrainingSessionDetailScreen(
           session: s,
           trainingColor: parseHexColor(s.trainingDisplayColorHex),
           venueName: _venueLabel(),
@@ -272,19 +291,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
             context.read<OwnerSessionsCache>().invalidate();
             _loadData();
           },
-          onEditSession: s.sessionId.isNotEmpty
-              ? () async {
-                  final changed = await Navigator.of(context).pushNamed<bool>(
-                    '/owner/session/edit',
-                    arguments: s.toRouteArgs(),
-                  );
-                  if (changed == true) {
-                    if (!mounted) return;
-                    context.read<OwnerSessionsCache>().invalidate();
-                    await _loadData();
-                  }
-                }
-              : null,
         ),
       ),
     );
@@ -292,10 +298,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   Future<void> _openEditCurrentSession(OwnerTrainingSession s) async {
     if (s.sessionId.isEmpty) return;
-    final changed = await Navigator.of(
-      context,
-    ).pushNamed<bool>('/owner/session/edit', arguments: s.toRouteArgs());
-    if (changed == true && mounted) {
+    final updated = await openOwnerEditTrainingSessionFlow(context, s);
+    if (updated != null && mounted) {
       context.read<OwnerSessionsCache>().invalidate();
       await _loadData();
     }
@@ -435,9 +439,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
         decoration: BoxDecoration(
           color: background,
           borderRadius: BorderRadius.circular(18),
-          border: bordered
-              ? Border.all(color: AppColors.borderPrimary, width: 1)
-              : null,
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -755,10 +756,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
             .map(_humanizeChecklistStep)
             .toList(),
         onCreateTrainingTap: _openTrainingSetup,
-        onAddPhotoTap: _openSettings,
-        onAddLogoTap: _openSettings,
-        onBookingWindowTap: _openSettings,
-        onContactsTap: _openSettings,
+        onAddPhotoTap: _openStudioProfileSettings,
+        onAddLogoTap: _openStudioProfileSettings,
+        onBookingWindowTap: _openOnlineBookingSettings,
+        onContactsTap: _openStudioProfileSettings,
         onPublishTap: _publishStudio,
       ),
     );
@@ -821,6 +822,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         ?.openScheduleTabForToday(),
                     onSessionTap: _openSessionDetail,
                     ownerTrainerFallback: _ownerTrainerFallback(),
+                    studioLocations: _studioLocations(),
                   ),
                   _checklistBlock(),
                 ],

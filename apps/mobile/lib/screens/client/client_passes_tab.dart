@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import '../../constants/colors.dart';
+import '../../constants/layout.dart';
 import '../../services/auth_service.dart';
 import '../../services/client_schedule_store.dart';
-import '../../utils/formatters.dart';
-import '../public_studio_schedule_screen.dart';
+import '../../utils/client_schedule_owner_session.dart';
+import '../../widgets/client/client_leave_review_sheet.dart';
 import '../../widgets/client/client_placeholder_card.dart';
-
+import '../../widgets/dashboard/owner_daily_schedule_session_card.dart';
 class ClientPassesTab extends StatelessWidget {
   const ClientPassesTab({super.key});
 
@@ -30,6 +30,7 @@ class _ClientPassesHistoryListState extends State<ClientPassesHistoryList>
   bool _loading = true;
   String? _error;
   List<Map<String, dynamic>> _items = const [];
+  final Set<String> _submittingReviewEnrollmentIds = <String>{};
 
   @override
   void initState() {
@@ -84,40 +85,39 @@ class _ClientPassesHistoryListState extends State<ClientPassesHistoryList>
     }
   }
 
-  String _statusLabel(Map<String, dynamic> item) {
-    final status = (item['sessionStatus'] ?? '').toString().toUpperCase();
-    final endsAt =
-        DateTime.tryParse((item['endsAt'] ?? '').toString())?.toLocal();
-    if (status == 'COMPLETED') return 'Completed';
-    if (endsAt != null && endsAt.isBefore(DateTime.now())) return 'Completed';
-    return 'Scheduled';
-  }
-
-  Color _statusColor(String status) {
-    if (status == 'Completed') return const Color(0xFF2E7D32);
-    return AppColors.primary500;
-  }
-
-  void _bookAgain(Map<String, dynamic> item) {
+  Future<void> _leaveReview(Map<String, dynamic> item) async {
     final studio = item['studio'] is Map
         ? Map<String, dynamic>.from(item['studio'] as Map)
         : <String, dynamic>{};
     final studioId = (studio['id'] ?? item['studioId'] ?? '').toString();
     final studioName = (studio['name'] ?? 'Studio').toString();
+    final enrollmentId = (item['enrollmentId'] ?? '').toString();
     if (studioId.isEmpty) {
       ScaffoldMessenger.maybeOf(context)?.showSnackBar(
-        const SnackBar(content: Text('Studio is unavailable for rebooking')),
+        const SnackBar(content: Text('Studio is unavailable')),
       );
       return;
     }
-    Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (_) => PublicStudioScheduleScreen(
-          studioId: studioId,
-          studioName: studioName,
-        ),
-      ),
+    if (enrollmentId.isNotEmpty) {
+      setState(() => _submittingReviewEnrollmentIds.add(enrollmentId));
+    }
+    final submitted = await showClientLeaveReviewSheet(
+      context,
+      studioId: studioId,
+      studioName: studioName,
+      enrollmentId: enrollmentId.isNotEmpty ? enrollmentId : null,
     );
+    if (!mounted) return;
+    if (enrollmentId.isNotEmpty) {
+      setState(() => _submittingReviewEnrollmentIds.remove(enrollmentId));
+    }
+    if (submitted == true) {
+      ClientScheduleStore.invalidate();
+      ScaffoldMessenger.maybeOf(context)?.showSnackBar(
+        const SnackBar(content: Text('Thank you for your review')),
+      );
+      await _load(force: true);
+    }
   }
 
   @override
@@ -128,7 +128,7 @@ class _ClientPassesHistoryListState extends State<ClientPassesHistoryList>
     }
     if (_error != null) {
       return ListView(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(kScreenPaddingHorizontal),
         children: [
           ClientPlaceholderCard(
             title: 'Failed to load passes',
@@ -139,7 +139,7 @@ class _ClientPassesHistoryListState extends State<ClientPassesHistoryList>
     }
     if (_items.isEmpty) {
       return ListView(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(kScreenPaddingHorizontal),
         children: const [
           ClientPlaceholderCard(
             title: 'No classes yet',
@@ -150,112 +150,39 @@ class _ClientPassesHistoryListState extends State<ClientPassesHistoryList>
     }
     return RefreshIndicator(
       onRefresh: () => _load(force: true),
-      child: ListView.separated(
-        padding: const EdgeInsets.all(12),
+      child: ListView.builder(
+        padding: const EdgeInsets.fromLTRB(
+          kScreenPaddingHorizontal,
+          12,
+          kScreenPaddingHorizontal,
+          24,
+        ),
         itemCount: _items.length,
-        separatorBuilder: (_, __) =>
-            const Divider(height: 1, color: AppColors.borderPrimary),
         itemBuilder: (_, index) {
           final item = _items[index];
-          final training = item['training'] is Map
-              ? Map<String, dynamic>.from(item['training'] as Map)
-              : <String, dynamic>{};
-          final studio = item['studio'] is Map
-              ? Map<String, dynamic>.from(item['studio'] as Map)
-              : <String, dynamic>{};
-          final studioName = (studio['name'] ?? '').toString();
-          final startsAt =
-              DateTime.tryParse((item['startsAt'] ?? '').toString())?.toLocal();
-          final status = _statusLabel(item);
-          final statusColor = _statusColor(status);
-          // All rows here are past sessions — always offer rebooking.
-          const canBookAgain = true;
+          final session = mapClientScheduleItemToOwnerSession(item);
+          if (session == null) return const SizedBox.shrink();
+          final presentation = presentationForClientScheduleItem(
+            session,
+            item,
+          );
 
-          return Container(
-            color: AppColors.backgroundPrimary,
-            padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Row(
-                  children: [
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            (training['name'] ?? 'Class').toString(),
-                            style: const TextStyle(
-                              fontWeight: FontWeight.w700,
-                              fontSize: 14,
-                              color: AppColors.textPrimary,
-                            ),
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            dateTimeLabelDayMonthHm(startsAt),
-                            style: const TextStyle(
-                              color: AppColors.textSecondary,
-                              fontSize: 12,
-                            ),
-                          ),
-                          if (studioName.isNotEmpty)
-                            Text(
-                              studioName,
-                              style: const TextStyle(
-                                color: AppColors.textSecondary,
-                                fontSize: 12,
-                              ),
-                            ),
-                        ],
-                      ),
-                    ),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 10,
-                        vertical: 5,
-                      ),
-                      decoration: BoxDecoration(
-                        color: statusColor.withValues(alpha: 0.12),
-                        borderRadius: BorderRadius.circular(999),
-                        border: Border.all(
-                          color: statusColor.withValues(alpha: 0.35),
-                        ),
-                      ),
-                      child: Text(
-                        status,
-                        style: TextStyle(
-                          color: statusColor,
-                          fontWeight: FontWeight.w700,
-                          fontSize: 12,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-                if (canBookAgain) ...[
-                  const SizedBox(height: 10),
-                  Align(
-                    alignment: Alignment.centerRight,
-                    child: SizedBox(
-                      height: 32,
-                      child: FilledButton(
-                        onPressed: () => _bookAgain(item),
-                        style: FilledButton.styleFrom(
-                          backgroundColor: AppColors.primary500,
-                          padding: const EdgeInsets.symmetric(horizontal: 12),
-                          textStyle: const TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
-                        child: const Text('Book again'),
-                      ),
-                    ),
-                  ),
-                ],
-              ],
-            ),
+          final enrollmentId = (item['enrollmentId'] ?? '').toString();
+          final hasReview = item['hasReview'] == true;
+          final isReviewing = enrollmentId.isNotEmpty &&
+              _submittingReviewEnrollmentIds.contains(enrollmentId);
+
+          return OwnerDailyScheduleSessionCard(
+            session: session,
+            subtitleLabel: presentation.subtitleLabel,
+            showLocationPin: presentation.showLocationPin,
+            showSubtitleLeadingIcon: presentation.showSubtitleLeadingIcon,
+            trainerLine: presentation.trainerLine,
+            showDateAboveTime: true,
+            dimPastSessions: false,
+            onLeaveReview: hasReview ? null : () => _leaveReview(item),
+            leaveReviewLoading: isReviewing,
+            onTap: () {},
           );
         },
       ),

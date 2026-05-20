@@ -55,6 +55,14 @@ export class EnvironmentVariables {
   @IsOptional()
   EMAIL_FROM_NAME?: string;
 
+  @IsString()
+  @IsOptional()
+  TELEGRAM_BOT_TOKEN?: string;
+
+  @IsString()
+  @IsOptional()
+  TELEGRAM_FEEDBACK_CHAT_ID?: string;
+
   // Application
   @IsNumberString()
   @IsOptional()
@@ -103,6 +111,18 @@ export class EnvironmentVariables {
   @IsString()
   @IsOptional()
   MOBILE_DEEP_LINK_SCHEME?: string;
+
+  @IsString()
+  @IsOptional()
+  REVENUECAT_SECRET_API_KEY?: string;
+
+  @IsString()
+  @IsOptional()
+  REVENUECAT_ENTITLEMENT_ID?: string;
+
+  @IsString()
+  @IsOptional()
+  REVENUECAT_WEBHOOK_AUTHORIZATION?: string;
 
   @IsString()
   @IsOptional()

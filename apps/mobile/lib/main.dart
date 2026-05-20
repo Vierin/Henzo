@@ -3,6 +3,7 @@ import 'dart:ui';
 
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_crashlytics/firebase_crashlytics.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
@@ -11,6 +12,7 @@ import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'config/app_config.dart';
+import 'deep_links/client_invite_deep_link.dart';
 import 'deep_links/subscription_checkout_deep_link.dart';
 import 'firebase_options.dart';
 import 'l10n/locale_provider.dart';
@@ -29,81 +31,90 @@ import 'services/cache/salon_cache.dart';
 import 'services/cache/services_staff_cache.dart';
 import 'services/notifications_store.dart';
 import 'services/push_notification_service.dart';
+import 'services/revenuecat_service.dart';
 import 'services/subscription_refresh_notifier.dart';
 import 'theme/app_theme.dart';
+import 'utils/owner_image_picker.dart';
 
 Future<void> main() async {
-  runZonedGuarded<Future<void>>(() async {
-    WidgetsFlutterBinding.ensureInitialized();
-    await Future.wait([
-      initializeDateFormatting('en'),
-      initializeDateFormatting('ru'),
-      initializeDateFormatting('vi'),
-    ]);
-    var loadedEnv = 'assets/.env';
-    try {
-      await dotenv.load(fileName: 'assets/.env');
-    } catch (e) {
-      loadedEnv = 'assets/.env.example';
-      await dotenv.load(fileName: 'assets/.env.example');
-      assert(() {
-        // ignore: avoid_print
-        print('[Env] Failed to load assets/.env, fallback to .env.example: $e');
-        return true;
-      }());
-    }
-    assert(() {
-      // ignore: avoid_print
-      print('[Env] Loaded env file: $loadedEnv');
-      if (AppConfig.supabaseUrl.contains('your-project.supabase.co')) {
-        // ignore: avoid_print
-        print(
-          '[Env] Invalid EXPO_PUBLIC_SUPABASE_URL: placeholder value is active',
-        );
+  runZonedGuarded<Future<void>>(
+    () async {
+      WidgetsFlutterBinding.ensureInitialized();
+      OwnerImagePicker.configure();
+      await Future.wait([
+        initializeDateFormatting('en'),
+        initializeDateFormatting('ru'),
+        initializeDateFormatting('vi'),
+      ]);
+      var loadedEnv = 'assets/.env';
+      try {
+        await dotenv.load(fileName: 'assets/.env');
+      } catch (e) {
+        loadedEnv = 'assets/.env.example';
+        await dotenv.load(fileName: 'assets/.env.example');
+        assert(() {
+          // ignore: avoid_print
+          print(
+            '[Env] Failed to load assets/.env, fallback to .env.example: $e',
+          );
+          return true;
+        }());
       }
-      return true;
-    }());
-    final notificationsStore = NotificationsStore();
-    await notificationsStore.load();
-    var firebaseReady = false;
-    try {
-      await Firebase.initializeApp(
-        options: DefaultFirebaseOptions.currentPlatform,
-      );
-      firebaseReady = true;
-      await PushNotificationService.initialize(
-        onNotificationReceived: notificationsStore.addFromPush,
-      );
-    } catch (e) {
       assert(() {
         // ignore: avoid_print
-        print('Firebase init skipped: $e');
+        print('[Env] Loaded env file: $loadedEnv');
+        if (AppConfig.supabaseUrl.contains('your-project.supabase.co')) {
+          // ignore: avoid_print
+          print(
+            '[Env] Invalid EXPO_PUBLIC_SUPABASE_URL: placeholder value is active',
+          );
+        }
         return true;
       }());
-    }
+      final notificationsStore = NotificationsStore();
+      await notificationsStore.load();
+      var firebaseReady = false;
+      try {
+        await Firebase.initializeApp(
+          options: DefaultFirebaseOptions.currentPlatform,
+        );
+        firebaseReady = true;
+        await PushNotificationService.initialize(
+          onNotificationReceived: notificationsStore.addFromPush,
+        );
+      } catch (e) {
+        assert(() {
+          // ignore: avoid_print
+          print('Firebase init skipped: $e');
+          return true;
+        }());
+      }
 
-    if (firebaseReady) {
-      await AnalyticsService.instance.load();
-      FlutterError.onError = (details) {
-        FirebaseCrashlytics.instance.recordFlutterFatalError(details);
-      };
-      PlatformDispatcher.instance.onError = (error, stack) {
+      if (firebaseReady) {
+        await AnalyticsService.instance.load();
+        FlutterError.onError = (details) {
+          FirebaseCrashlytics.instance.recordFlutterFatalError(details);
+        };
+        PlatformDispatcher.instance.onError = (error, stack) {
+          FirebaseCrashlytics.instance.recordError(error, stack, fatal: true);
+          return true;
+        };
+        await AnalyticsService.instance.logEvent('app_opened');
+      }
+
+      await Supabase.initialize(
+        url: AppConfig.supabaseUrl,
+        anonKey: AppConfig.supabaseAnonKey,
+      );
+      await RevenueCatService.configure();
+      runApp(MyApp(notificationsStore: notificationsStore));
+    },
+    (error, stack) {
+      if (Firebase.apps.isNotEmpty) {
         FirebaseCrashlytics.instance.recordError(error, stack, fatal: true);
-        return true;
-      };
-      await AnalyticsService.instance.logEvent('app_opened');
-    }
-
-    await Supabase.initialize(
-      url: AppConfig.supabaseUrl,
-      anonKey: AppConfig.supabaseAnonKey,
-    );
-    runApp(MyApp(notificationsStore: notificationsStore));
-  }, (error, stack) {
-    if (Firebase.apps.isNotEmpty) {
-      FirebaseCrashlytics.instance.recordError(error, stack, fatal: true);
-    }
-  });
+      }
+    },
+  );
 }
 
 /// Корневой [Navigator] для deep links после Stripe (например `henzo://subscription-checkout`).
@@ -117,6 +128,29 @@ class MyApp extends StatefulWidget {
 
   @override
   State<MyApp> createState() => _MyAppState();
+}
+
+/// Reloads [LocaleProvider] after hot restart (assets are not updated on hot reload).
+class _L10nHotReload extends StatefulWidget {
+  const _L10nHotReload({required this.child});
+
+  final Widget child;
+
+  @override
+  State<_L10nHotReload> createState() => _L10nHotReloadState();
+}
+
+class _L10nHotReloadState extends State<_L10nHotReload> {
+  @override
+  void reassemble() {
+    super.reassemble();
+    if (kDebugMode) {
+      context.read<LocaleProvider>().loadStrings();
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) => widget.child;
 }
 
 class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
@@ -169,9 +203,10 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
         if (widget.notificationsStore != null)
           ChangeNotifierProvider.value(value: widget.notificationsStore!),
       ],
-      child: Consumer<LocaleProvider>(
-        builder: (context, locale, _) {
-          if (!locale.isLoaded) {
+      child: _L10nHotReload(
+        child: Consumer<LocaleProvider>(
+          builder: (context, locale, _) {
+            if (!locale.isLoaded) {
             return MaterialApp(
               title: 'Henzo',
               theme: AppTheme.light,
@@ -198,9 +233,12 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
             themeMode: ThemeMode.light,
             builder: (context, child) {
               final layered = _withKeyboardDismiss(context, child);
-              return SubscriptionCheckoutDeepLinkScope(
+              return ClientInviteDeepLinkScope(
                 navigatorKey: henzoRootNavigatorKey,
-                child: layered,
+                child: SubscriptionCheckoutDeepLinkScope(
+                  navigatorKey: henzoRootNavigatorKey,
+                  child: layered,
+                ),
               );
             },
             locale: Locale(locale.languageTag),
@@ -212,7 +250,8 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
             supportedLocales: const [Locale('en'), Locale('ru'), Locale('vi')],
             home: const AuthWrapper(),
           );
-        },
+          },
+        ),
       ),
     );
   }

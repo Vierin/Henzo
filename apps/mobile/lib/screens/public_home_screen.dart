@@ -1,31 +1,55 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import '../widgets/common/henzo_modal.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_map/flutter_map.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../constants/brand_typography.dart';
 import '../constants/colors.dart';
+import '../constants/layout.dart';
 import '../l10n/locale_provider.dart';
 import '../models/public_studio_preview.dart';
+import '../models/training_category_option.dart';
 import '../services/api_client.dart';
 import '../services/auth_service.dart';
+import '../services/notifications_store.dart';
 import '../services/cache/client_nearby_cache.dart';
 import '../services/client_favorites_store.dart';
+import '../services/client_schedule_store.dart';
 import '../services/mapbox_api_service.dart';
+import '../utils/formatters.dart';
 import '../utils/nearby_payload.dart';
 import '../services/client_favorites_mutations.dart';
+import '../widgets/client/home/client_home_category_chip.dart';
+import '../services/dashboard_api_service.dart';
+import '../widgets/client/home/client_home_upcoming_card.dart';
+import '../utils/owner_session_card_subtitle.dart';
+import '../widgets/dashboard/owner_daily_schedule_session_card.dart';
 import '../widgets/public/top_studio_card.dart';
+import 'client/client_shell_scope.dart';
 import 'location_picker_screen.dart';
+import 'notifications_screen.dart';
+import 'public_class_detail_screen.dart';
 import 'public_studio_detail_screen.dart';
 
 class PublicHomeScreen extends StatefulWidget {
-  const PublicHomeScreen({super.key, this.onOpenMap});
+  const PublicHomeScreen({
+    super.key,
+    this.onOpenMap,
+    this.onOpenBrowse,
+    this.onCategorySelected,
+    this.onOpenBookings,
+  });
 
   final VoidCallback? onOpenMap;
+  final VoidCallback? onOpenBrowse;
+  final void Function(int categoryId)? onCategorySelected;
+  final VoidCallback? onOpenBookings;
 
   @override
   State<PublicHomeScreen> createState() => _PublicHomeScreenState();
@@ -43,11 +67,17 @@ class _PublicHomeScreenState extends State<PublicHomeScreen> {
   double? _selectedLon;
   bool _locationModalShown = false;
   final Set<String> _favoriteLoadingIds = <String>{};
+  Map<String, dynamic>? _nextBooking;
+  List<Map<String, dynamic>> _todayClasses = const [];
+  bool _loadingTodayClasses = false;
+  List<TrainingCategoryOption> _trainingCategories = const [];
+  bool _loadingCategories = true;
 
   @override
   void initState() {
     super.initState();
     _loadSavedLocation();
+    _loadTrainingCategories();
   }
 
   @override
@@ -80,34 +110,24 @@ class _PublicHomeScreenState extends State<PublicHomeScreen> {
       for (final item in list) {
         if (item is! Map) continue;
         final data = Map<String, dynamic>.from(item);
-        final categories = data['categories'];
-        final parsedCategories = categories is List
-            ? categories
-                  .where((c) => c != null)
-                  .map((c) => c.toString().trim())
-                  .where((c) => c.isNotEmpty)
-                  .toList()
-            : <String>[];
-        final rating = (data['avgRating'] as num?)?.toDouble() ?? 0;
-        final address = (data['address'] ?? '').toString();
+        final preview = parsePublicStudioPreviewFromNearby(data);
         final distanceKm = _distanceKmForStudio(
           data,
-          (data['distance'] as num?)?.toDouble(),
+          preview.distanceKm,
         );
-        final photos = data['photos'];
-        final photoUrl = photos is List && photos.isNotEmpty
-            ? photos.first?.toString()
-            : null;
         mapped.add(
-          PublicStudioPreview(
-            id: (data['id'] ?? '').toString(),
-            name: (data['name'] ?? 'Studio').toString(),
-            categories: parsedCategories,
-            rating: rating,
-            address: address.isNotEmpty ? address : '—',
-            distanceKm: distanceKm,
-            photoUrl: photoUrl,
-          ),
+          preview.distanceKm == distanceKm
+              ? preview
+              : PublicStudioPreview(
+                  id: preview.id,
+                  studioName: preview.studioName,
+                  categories: preview.categories,
+                  rating: preview.rating,
+                  address: preview.address,
+                  distanceKm: distanceKm,
+                  photoUrl: preview.photoUrl,
+                  reviewCount: preview.reviewCount,
+                ),
         );
       }
       if (!mounted) return;
@@ -117,6 +137,8 @@ class _PublicHomeScreenState extends State<PublicHomeScreen> {
       });
       final token = context.read<AuthService>().accessToken;
       unawaited(context.read<ClientFavoritesStore>().sync(token, force: false));
+      unawaited(_loadClientSchedule(token));
+      unawaited(_loadTodayClasses());
     } catch (_) {
       if (!mounted) return;
       setState(() {
@@ -192,7 +214,7 @@ class _PublicHomeScreenState extends State<PublicHomeScreen> {
   }
 
   Future<void> _showLocationRequestModal() async {
-    await showModalBottomSheet<void>(
+    await showHenzoModalBottomSheet<void>(
       context: context,
       isDismissible: true,
       showDragHandle: true,
@@ -200,7 +222,7 @@ class _PublicHomeScreenState extends State<PublicHomeScreen> {
       builder: (ctx) {
         return SafeArea(
           child: Padding(
-            padding: const EdgeInsets.fromLTRB(16, 10, 16, 20),
+            padding: screenPaddingH(top: 10, bottom: 20),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -335,6 +357,158 @@ class _PublicHomeScreenState extends State<PublicHomeScreen> {
     }).toList();
   }
 
+  Future<void> _loadClientSchedule(String? token) async {
+    if (token == null || token.isEmpty) return;
+    try {
+      final all = await ClientScheduleStore.loadFullSchedule(token);
+      final upcoming = ClientScheduleStore.upcomingItems(all);
+      if (!mounted) return;
+      setState(() {
+        _nextBooking = upcoming.isNotEmpty ? upcoming.first : null;
+      });
+    } catch (_) {}
+  }
+
+  Future<void> _loadTodayClasses() async {
+    if (_allStudios.isEmpty) {
+      if (mounted) setState(() => _todayClasses = const []);
+      return;
+    }
+    if (!mounted) return;
+    setState(() => _loadingTodayClasses = true);
+    final now = DateTime.now();
+    final dayStart = DateTime(now.year, now.month, now.day);
+    final dayEnd = dayStart.add(const Duration(days: 1));
+    final fromQuery = Uri.encodeComponent(dayStart.toUtc().toIso8601String());
+    final toQuery = Uri.encodeComponent(dayEnd.toUtc().toIso8601String());
+    final merged = <Map<String, dynamic>>[];
+
+    for (final studio in _allStudios.take(4)) {
+      try {
+        final raw = await ApiClient.get(
+          '/studios/${studio.id}/schedule?from=$fromQuery&to=$toQuery&limit=12',
+          null,
+        );
+        if (raw is! List) continue;
+        for (final row in raw) {
+          if (row is! Map) continue;
+          final map = Map<String, dynamic>.from(row);
+          final apiStudio = map['studio'] is Map
+              ? Map<String, dynamic>.from(map['studio'] as Map)
+              : <String, dynamic>{};
+          map['studio'] = {
+            'id': studio.id,
+            'name': studio.name,
+            'locationCount': apiStudio['locationCount'] ?? 1,
+          };
+          merged.add(map);
+        }
+      } catch (_) {}
+    }
+
+    merged.sort((a, b) {
+      final aa =
+          parseApiDateTime(a['startsAt']) ??
+          DateTime.fromMillisecondsSinceEpoch(0);
+      final bb =
+          parseApiDateTime(b['startsAt']) ??
+          DateTime.fromMillisecondsSinceEpoch(0);
+      return aa.compareTo(bb);
+    });
+
+    if (!mounted) return;
+    setState(() {
+      _todayClasses = merged.take(6).toList();
+      _loadingTodayClasses = false;
+    });
+  }
+
+  Future<void> _loadTrainingCategories() async {
+    try {
+      final raw = await ApiClient.get('/trainings/categories', null);
+      if (raw is! List) return;
+      final list = <TrainingCategoryOption>[];
+      for (final row in raw) {
+        if (row is! Map) continue;
+        list.add(
+          TrainingCategoryOption.fromJson(Map<String, dynamic>.from(row)),
+        );
+      }
+      if (!mounted) return;
+      setState(() {
+        _trainingCategories = TrainingCategoryOption.withOtherLast(list);
+        _loadingCategories = false;
+      });
+    } catch (_) {
+      if (mounted) setState(() => _loadingCategories = false);
+    }
+  }
+
+  void _openBrowse() {
+    widget.onOpenBrowse?.call();
+    ClientShellScope.maybeOf(context)?.goToExplore();
+  }
+
+  void _openCategory(TrainingCategoryOption category) {
+    if (widget.onCategorySelected != null) {
+      widget.onCategorySelected!(category.id);
+      return;
+    }
+    _openBrowse();
+  }
+
+  Widget _notificationBell() {
+    return Consumer<NotificationsStore>(
+      builder: (context, store, _) {
+        final count = store.unreadCount;
+        final hasUnread = count > 0;
+        return GestureDetector(
+          behavior: HitTestBehavior.opaque,
+          onTap: () => Navigator.of(context).push(
+            MaterialPageRoute(builder: (_) => const NotificationsScreen()),
+          ),
+          child: Container(
+            padding: EdgeInsets.symmetric(
+              horizontal: hasUnread ? 14 : 10,
+              vertical: 8,
+            ),
+            decoration: BoxDecoration(
+              color: hasUnread
+                  ? AppColors.primary500
+                  : AppColors.backgroundPrimary,
+              borderRadius: BorderRadius.circular(999),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                SvgPicture.asset(
+                  'assets/icons/icon-bell.svg',
+                  width: 18,
+                  height: 22,
+                  colorFilter: ColorFilter.mode(
+                    hasUnread ? Colors.white : AppColors.textPrimary,
+                    BlendMode.srcIn,
+                  ),
+                ),
+                if (hasUnread) ...[
+                  const SizedBox(width: 6),
+                  Text(
+                    count > 99 ? '99+' : '$count',
+                    style: const TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w700,
+                      color: Colors.white,
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
   Future<void> _toggleFavorite(PublicStudioPreview studio) async {
     final token = context.read<AuthService>().accessToken;
     final favStore = context.read<ClientFavoritesStore>();
@@ -388,276 +562,422 @@ class _PublicHomeScreenState extends State<PublicHomeScreen> {
     setState(() => _favoriteLoadingIds.remove(studio.id));
   }
 
+  Widget _sectionHeader({
+    required String title,
+    String? subtitle,
+    String? actionLabel,
+    VoidCallback? onAction,
+  }) {
+    return Padding(
+      padding: screenPaddingH(top: 20, bottom: 10),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  title,
+                  style: BrandTypography.sectionTitle(context),
+                ),
+              ),
+              if (actionLabel != null && onAction != null)
+                TextButton(
+                  onPressed: onAction,
+                  style: TextButton.styleFrom(
+                    foregroundColor: AppColors.primary500,
+                    padding: EdgeInsets.zero,
+                    minimumSize: const Size(0, 32),
+                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  ),
+                  child: Text(
+                    actionLabel,
+                    style: const TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ),
+            ],
+          ),
+          if (subtitle != null) ...[
+            const SizedBox(height: 2),
+            Text(subtitle, style: BrandTypography.sectionSubtitle(context)),
+          ],
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final locale = context.watch<LocaleProvider>();
     final favStore = context.watch<ClientFavoritesStore>();
-    final localizationLabel = _selectedCity ?? 'Set location';
+    final auth = context.watch<AuthService>();
+    final user = auth.user;
+    final firstName = user?.name?.trim().split(RegExp(r'\s+')).first ?? 'there';
+    final locationLabel = _selectedCity ?? locale.t('clientHome.setLocation');
     final studios = _filteredStudios;
+
     return Scaffold(
       backgroundColor: AppColors.backgroundSecondary,
       body: SafeArea(
-        child: CustomScrollView(
-          slivers: [
-            SliverToBoxAdapter(
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(16, 14, 16, 20),
-                child: Row(
-                  children: [
-                    Image.asset(
-                      'assets/icon.png',
-                      height: 40,
-                      fit: BoxFit.contain,
-                      errorBuilder: (_, _, _) => const Text(
-                        'Henzo',
-                        style: TextStyle(
-                          fontSize: 24,
-                          fontWeight: FontWeight.w800,
-                          color: AppColors.primary500,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: InkWell(
-                        borderRadius: BorderRadius.circular(10),
-                        onTap: _openManualLocationInput,
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 12,
-                            vertical: 9,
-                          ),
-                          decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(10),
-                          ),
+        child: RefreshIndicator(
+          onRefresh: () async {
+            await _loadTopStudiosNearby();
+            if (!mounted) return;
+            final token = context.read<AuthService>().accessToken;
+            await _loadClientSchedule(token);
+          },
+          color: AppColors.primary500,
+          child: CustomScrollView(
+            physics: const AlwaysScrollableScrollPhysics(),
+            slivers: [
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: InkWell(
+                          borderRadius: BorderRadius.circular(10),
+                          onTap: _openManualLocationInput,
                           child: Row(
                             children: [
                               const Icon(
                                 Icons.location_on_outlined,
-                                size: 22,
-                                color: AppColors.textSecondary,
+                                size: 20,
+                                color: AppColors.primary500,
                               ),
-                              const SizedBox(width: 6),
+                              const SizedBox(width: 4),
                               Expanded(
-                                child: Text(
-                                  localizationLabel,
-                                  maxLines: 1,
+                                child: RichText(
+                                  maxLines: 2,
                                   overflow: TextOverflow.ellipsis,
-                                  style: TextStyle(
-                                    fontSize: 13,
-                                    fontWeight: FontWeight.w600,
-                                    color: _selectedCity == null
-                                        ? AppColors.textSecondary
-                                        : AppColors.textPrimary,
+                                  text: TextSpan(
+                                    style: const TextStyle(
+                                      fontSize: 14,
+                                      color: AppColors.textSecondary,
+                                      height: 1.25,
+                                    ),
+                                    children: [
+                                      TextSpan(
+                                        text:
+                                            '${locale.t('clientHome.nowIn')} ',
+                                      ),
+                                      TextSpan(
+                                        text: locationLabel,
+                                        style: const TextStyle(
+                                          fontWeight: FontWeight.w700,
+                                          fontSize: 14,
+                                          color: AppColors.textPrimary,
+                                        ),
+                                      ),
+                                    ],
                                   ),
                                 ),
+                              ),
+                              const Icon(
+                                Icons.keyboard_arrow_down_rounded,
+                                size: 20,
+                                color: AppColors.textPrimary,
                               ),
                             ],
                           ),
                         ),
                       ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-            SliverToBoxAdapter(
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(16, 24, 16, 12),
-                child: Text(
-                  locale.t('publicHome.topStudiosTitle'),
-                  style: const TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.w800,
-                    color: AppColors.textPrimary,
-                  ),
-                ),
-              ),
-            ),
-            SliverToBoxAdapter(
-              child: SizedBox(
-                height: 210,
-                child: _isLoadingStudios
-                    ? const Center(child: CircularProgressIndicator())
-                    : studios.isEmpty
-                    ? Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 16),
-                        child: Center(
-                          child: Text(
-                            locale.t('publicHome.noStudios'),
-                            style: const TextStyle(
-                              color: AppColors.textSecondary,
-                            ),
-                          ),
-                        ),
-                      )
-                    : ListView.builder(
-                        cacheExtent: 320,
-                        padding: const EdgeInsets.symmetric(horizontal: 16),
-                        scrollDirection: Axis.horizontal,
-                        itemCount: studios.length,
-                        itemBuilder: (_, index) {
-                          final studio = studios[index];
-                          return TopStudioCard(
-                            studio: studio,
-                            isFavorite: favStore.isFavorite(studio.id),
-                            isFavoriteLoading: _favoriteLoadingIds.contains(
-                              studio.id,
-                            ),
-                            onToggleFavorite: () => _toggleFavorite(studio),
-                            onTap: () {
-                              Navigator.of(context).push(
-                                MaterialPageRoute(
-                                  builder: (_) => PublicStudioDetailScreen(
-                                    studioId: studio.id,
-                                  ),
-                                ),
-                              );
-                            },
-                          );
-                        },
-                      ),
-              ),
-            ),
-            SliverToBoxAdapter(
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(16, 20, 16, 0),
-                child: Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.all(14),
-                  decoration: BoxDecoration(
-                    color: AppColors.backgroundPrimary,
-                    borderRadius: BorderRadius.circular(18),
-                    border: Border.all(color: AppColors.borderPrimary),
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        'Find nearby',
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.w800,
-                          color: AppColors.textPrimary,
-                        ),
-                      ),
-                      const SizedBox(height: 10),
-                      SizedBox(
-                        height: 180,
-                        width: double.infinity,
-                        child: Stack(
-                          alignment: Alignment.center,
-                          children: [
-                            Container(
-                              height: 180,
-                              width: double.infinity,
-                              decoration: BoxDecoration(
-                                borderRadius: BorderRadius.circular(12),
-                                color: AppColors.neutral100,
-                                border: Border.all(
-                                  color: AppColors.borderPrimary,
-                                ),
-                              ),
-                              child: ClipRRect(
-                                borderRadius: BorderRadius.circular(12),
-                                child:
-                                    (_selectedLat != null &&
-                                        _selectedLon != null)
-                                    ? IgnorePointer(
-                                        child: FlutterMap(
-                                          options: MapOptions(
-                                            initialCenter: LatLng(
-                                              _selectedLat!,
-                                              _selectedLon!,
-                                            ),
-                                            initialZoom: 13,
-                                          ),
-                                          children: [
-                                            TileLayer(
-                                              urlTemplate:
-                                                  'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',
-                                              subdomains: const [
-                                                'a',
-                                                'b',
-                                                'c',
-                                                'd',
-                                              ],
-                                              retinaMode: true,
-                                              userAgentPackageName:
-                                                  'com.henzo.mobile',
-                                            ),
-                                            MarkerLayer(
-                                              markers: [
-                                                Marker(
-                                                  point: LatLng(
-                                                    _selectedLat!,
-                                                    _selectedLon!,
-                                                  ),
-                                                  width: 24,
-                                                  height: 24,
-                                                  child: const Icon(
-                                                    Icons.location_on,
-                                                    color: AppColors.primary500,
-                                                    size: 24,
-                                                  ),
-                                                ),
-                                              ],
-                                            ),
-                                          ],
-                                        ),
-                                      )
-                                    : const Center(
-                                        child: Icon(
-                                          Icons.map_outlined,
-                                          size: 44,
-                                          color: AppColors.textSecondary,
-                                        ),
-                                      ),
-                              ),
-                            ),
-                            Material(
-                              color: AppColors.primary500,
-                              borderRadius: BorderRadius.circular(999),
-                              child: InkWell(
-                                borderRadius: BorderRadius.circular(999),
-                                onTap: widget.onOpenMap,
-                                child: const Padding(
-                                  padding: EdgeInsets.symmetric(
-                                    horizontal: 14,
-                                    vertical: 8,
-                                  ),
-                                  child: Text(
-                                    'View map',
-                                    style: TextStyle(
-                                      fontSize: 13,
-                                      fontWeight: FontWeight.w700,
-                                      color: AppColors.textInverse,
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(height: 10),
-                      if (widget.onOpenMap == null)
-                        const Text(
-                          'Map is not available yet',
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: AppColors.textSecondary,
-                          ),
-                        ),
+                      const SizedBox(width: 8),
+                      _notificationBell(),
                     ],
                   ),
                 ),
               ),
-            ),
-            const SliverToBoxAdapter(child: SizedBox(height: 12)),
-          ],
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: screenPaddingH(top: 16, bottom: 12),
+                  child: RichText(
+                    text: TextSpan(
+                      style: BrandTypography.greeting(context),
+                      children: [
+                        TextSpan(text: locale.t('clientHome.greetingPrefix')),
+                        TextSpan(
+                          text: locale.t('clientHome.greetingEmphasis'),
+                          style: BrandTypography.greetingEmphasis(context),
+                        ),
+                        TextSpan(text: ', $firstName.'),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: screenPaddingH(),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: TextField(
+                          controller: _searchController,
+                          onTap: _openBrowse,
+                          readOnly: true,
+                          decoration: InputDecoration(
+                            hintText: locale.t('clientHome.searchHint'),
+                            prefixIcon: const Icon(
+                              Icons.search,
+                              size: 20,
+                              color: AppColors.textSecondary,
+                            ),
+                            filled: true,
+                            fillColor: AppColors.backgroundPrimary,
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(14),
+                              borderSide: BorderSide.none,
+                            ),
+                            contentPadding: const EdgeInsets.symmetric(
+                              vertical: 12,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              SliverToBoxAdapter(
+                child: SizedBox(
+                  height: 50,
+                  child: _loadingCategories
+                      ? const Center(
+                          child: SizedBox(
+                            width: 22,
+                            height: 22,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          ),
+                        )
+                      : _trainingCategories.isEmpty
+                      ? const SizedBox.shrink()
+                      : ListView.separated(
+                          scrollDirection: Axis.horizontal,
+                          padding: screenPaddingH(top: 12),
+                          itemCount: _trainingCategories.length,
+                          separatorBuilder: (_, _) => const SizedBox(width: 8),
+                          itemBuilder: (_, index) {
+                            final cat = _trainingCategories[index];
+                            return ClientHomeCategoryChip(
+                              category: cat,
+                              label: cat.label(locale.localeCode),
+                              onTap: () => _openCategory(cat),
+                            );
+                          },
+                        ),
+                ),
+              ),
+              if (_nextBooking != null)
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding: const EdgeInsets.only(top: 16),
+                    child: _buildUpcomingCard(_nextBooking!),
+                  ),
+                ),
+              SliverToBoxAdapter(
+                child: _sectionHeader(
+                  title: locale.t('clientHome.topPicksTitle'),
+                  subtitle: locale.t('clientHome.topPicksSubtitle'),
+                  actionLabel: locale.t('clientHome.seeAll'),
+                  onAction: _openBrowse,
+                ),
+              ),
+              SliverToBoxAdapter(
+                child: SizedBox(
+                  height: 212,
+                  child: _isLoadingStudios
+                      ? const Center(child: CircularProgressIndicator())
+                      : studios.isEmpty
+                      ? Padding(
+                          padding: screenPaddingH(),
+                          child: Center(
+                            child: Text(
+                              locale.t('publicHome.noStudios'),
+                              style: BrandTypography.sectionSubtitle(context),
+                            ),
+                          ),
+                        )
+                      : ListView.builder(
+                          cacheExtent: 400,
+                          padding: screenPaddingH(),
+                          scrollDirection: Axis.horizontal,
+                          itemCount: studios.length,
+                          itemBuilder: (_, index) {
+                            final studio = studios[index];
+                            return TopStudioCard(
+                              homeLayout: true,
+                              studio: studio,
+                              isFavorite: favStore.isFavorite(studio.id),
+                              isFavoriteLoading: _favoriteLoadingIds.contains(
+                                studio.id,
+                              ),
+                              onToggleFavorite: () => _toggleFavorite(studio),
+                              onTap: () {
+                                Navigator.of(context).push(
+                                  MaterialPageRoute(
+                                    builder: (_) => PublicStudioDetailScreen(
+                                      studioId: studio.id,
+                                    ),
+                                  ),
+                                );
+                              },
+                            );
+                          },
+                        ),
+                ),
+              ),
+              SliverToBoxAdapter(
+                child: _sectionHeader(
+                  title: locale.t('clientHome.popularTodayTitle'),
+                  actionLabel: locale.t('clientHome.seeAll'),
+                  onAction: _openBrowse,
+                ),
+              ),
+              if (_loadingTodayClasses)
+                const SliverToBoxAdapter(
+                  child: Padding(
+                    padding: EdgeInsets.all(24),
+                    child: Center(child: CircularProgressIndicator()),
+                  ),
+                )
+              else if (_todayClasses.isEmpty)
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding: screenPaddingH(),
+                    child: Text(
+                      locale.t('clientHome.noClassesToday'),
+                      style: BrandTypography.sectionSubtitle(context),
+                    ),
+                  ),
+                )
+              else
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding: screenPaddingH(bottom: 24),
+                    child: Column(
+                      children: [
+                        for (final item in _todayClasses)
+                          _buildPopularSessionCard(item),
+                      ],
+                    ),
+                  ),
+                ),
+            ],
+          ),
         ),
       ),
+    );
+  }
+
+  Widget _buildUpcomingCard(Map<String, dynamic> item) {
+    final training = item['training'] is Map
+        ? Map<String, dynamic>.from(item['training'] as Map)
+        : <String, dynamic>{};
+    final studio = item['studio'] is Map
+        ? Map<String, dynamic>.from(item['studio'] as Map)
+        : <String, dynamic>{};
+    final trainer = item['trainer'] is Map
+        ? (item['trainer']['name'] ?? '').toString()
+        : '';
+    final startsAt = parseApiDateTime(item['startsAt']);
+    if (startsAt == null) return const SizedBox.shrink();
+
+    return ClientHomeUpcomingCard(
+      startsAt: startsAt,
+      className: (training['name'] ?? 'Class').toString(),
+      studioName: (studio['name'] ?? 'Studio').toString(),
+      trainerName: trainer.isEmpty ? null : trainer,
+      onTap: widget.onOpenBookings,
+    );
+  }
+
+  OwnerTrainingSession? _mapToOwnerSession(Map<String, dynamic> item) {
+    final training = item['training'] is Map
+        ? Map<String, dynamic>.from(item['training'] as Map)
+        : <String, dynamic>{};
+    final startsAt = parseApiDateTime(item['startsAt']);
+    if (startsAt == null) return null;
+
+    final durationMin = (training['duration'] as num?)?.toInt() ?? 60;
+    final endsAt =
+        parseApiDateTime(item['endsAt']) ??
+        startsAt.add(Duration(minutes: durationMin));
+
+    final capacity = (item['capacity'] as num?)?.toInt() ?? 0;
+    final enrolled =
+        (item['enrolledCount'] as num?)?.toInt() ??
+        (item['bookedCount'] as num?)?.toInt() ??
+        0;
+
+    final trainer = item['trainer'] is Map
+        ? Map<String, dynamic>.from(item['trainer'] as Map)
+        : <String, dynamic>{};
+
+    return OwnerTrainingSession(
+      sessionId: (item['id'] ?? item['sessionId'] ?? '').toString(),
+      trainingId: (training['id'] ?? '').toString(),
+      startsAt: startsAt,
+      endsAt: endsAt,
+      status: (item['status'] ?? 'ACTIVE').toString(),
+      capacity: capacity,
+      enrolledCount: enrolled,
+      attendedCount: enrolled,
+      trainingName: (training['name'] ?? 'Class').toString(),
+      trainingDurationMinutes: durationMin,
+      trainingDisplayColorHex: training['displayColor']?.toString(),
+      trainerName: (trainer['name'] ?? '—').toString(),
+      trainerId: trainer['id']?.toString(),
+      locationId: item['locationId']?.toString(),
+      locationName: item['locationName']?.toString(),
+    );
+  }
+
+  Widget _buildPopularSessionCard(Map<String, dynamic> item) {
+    final session = _mapToOwnerSession(item);
+    if (session == null) return const SizedBox.shrink();
+
+    final studio = item['studio'] is Map
+        ? Map<String, dynamic>.from(item['studio'] as Map)
+        : <String, dynamic>{};
+    final studioId = (studio['id'] ?? '').toString();
+    final sessionId = (item['id'] ?? item['sessionId'] ?? '').toString();
+    final startsHint = parseApiDateTime(item['startsAt']);
+    final locationCount = (studio['locationCount'] as num?)?.toInt() ?? 1;
+    final sub = resolveOwnerSessionCardSubtitleForPublic(
+      session: session,
+      studioLocationCount: locationCount,
+    );
+    final rows = layoutOwnerSessionCardRows(
+      session: session,
+      subtitleLabel: sub.label,
+      showLocationPin: sub.showLocationPin,
+    );
+
+    return OwnerDailyScheduleSessionCard(
+      session: session,
+      subtitleLabel: rows.subtitleLabel,
+      showLocationPin: rows.showLocationPin,
+      showSubtitleLeadingIcon: rows.showSubtitleLeadingIcon,
+      trainerLine: rows.trainerLine,
+      onTap: () {
+        if (studioId.isEmpty || sessionId.isEmpty || startsHint == null) {
+          return;
+        }
+        Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (_) => PublicClassDetailScreen(
+              studioId: studioId,
+              sessionId: sessionId,
+              sessionStartsAtHint: startsHint,
+            ),
+          ),
+        );
+      },
     );
   }
 }

@@ -7,12 +7,12 @@ class ClientListTile extends StatelessWidget {
   const ClientListTile({
     super.key,
     required this.name,
-    required this.visitsCount,
+    required this.secondaryLine,
     required this.onTap,
   });
 
   final String name;
-  final int visitsCount;
+  final String secondaryLine;
   final VoidCallback onTap;
 
   static const double _cardRadius = 12;
@@ -75,7 +75,9 @@ class ClientListTile extends StatelessWidget {
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        'Визиты: $visitsCount',
+                        secondaryLine,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                         style:
                             theme.textTheme.bodyMedium?.copyWith(
                               fontWeight: FontWeight.w400,

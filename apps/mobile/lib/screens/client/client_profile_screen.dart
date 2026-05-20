@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../../constants/brand_typography.dart';
 import '../../constants/colors.dart';
+import '../../constants/layout.dart';
 import '../../services/api_client.dart';
 import '../../services/auth_service.dart';
-import 'client_passes_tab.dart';
 import 'client_profile_settings_screen.dart';
-import 'client_schedule_tab.dart';
 
 class ClientProfileScreen extends StatefulWidget {
   const ClientProfileScreen({super.key});
@@ -85,80 +85,49 @@ class _ClientProfileScreenState extends State<ClientProfileScreen>
     return Scaffold(
       backgroundColor: AppColors.backgroundSecondary,
       body: SafeArea(
-        child: DefaultTabController(
-          length: 2,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.fromLTRB(
+            kScreenPaddingHorizontal,
+            16,
+            kScreenPaddingHorizontal,
+            24,
+          ),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Padding(
-                padding: const EdgeInsets.fromLTRB(16, 16, 8, 8),
-                child: Row(
+              Expanded(
+                child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            displayName,
-                            style: const TextStyle(
-                              fontSize: 24,
-                              fontWeight: FontWeight.w700,
-                              color: AppColors.textPrimary,
-                            ),
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            _loadingStats
-                                ? 'Loading classes visited...'
-                                : '$_classesVisited classes visited',
-                            style: const TextStyle(
-                              fontSize: 13,
-                              fontWeight: FontWeight.w500,
-                              color: AppColors.textSecondary,
-                            ),
-                          ),
-                        ],
+                    Text(
+                      displayName,
+                      style: BrandTypography.greeting(context).copyWith(
+                        fontSize: 24,
+                        fontWeight: FontWeight.w700,
                       ),
                     ),
-                    IconButton(
-                      tooltip: 'Profile settings',
-                      onPressed: () {
-                        Navigator.of(context).push(
-                          MaterialPageRoute(
-                            builder: (_) => const ClientProfileSettingsScreen(),
-                          ),
-                        );
-                      },
-                      icon: const Icon(
-                        Icons.settings_outlined,
-                        color: AppColors.textPrimary,
-                      ),
+                    const SizedBox(height: 4),
+                    Text(
+                      _loadingStats
+                          ? 'Loading classes visited...'
+                          : '$_classesVisited classes visited',
+                      style: BrandTypography.sectionSubtitle(context),
                     ),
                   ],
                 ),
               ),
-              const Padding(
-                padding: EdgeInsets.symmetric(horizontal: 12),
-                child: TabBar(
-                  labelColor: AppColors.primary500,
-                  unselectedLabelColor: AppColors.textSecondary,
-                  indicatorColor: AppColors.primary500,
-                  indicatorSize: TabBarIndicatorSize.tab,
-                  dividerColor: AppColors.borderPrimary,
-                  tabs: [
-                    Tab(text: 'Schedule'),
-                    Tab(text: 'Passes'),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 8),
-              const Expanded(
-                child: TabBarView(
-                  children: [
-                    ClientScheduleTab(),
-                    ClientPassesTab(),
-                  ],
+              IconButton(
+                tooltip: 'Profile settings',
+                onPressed: () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (_) => const ClientProfileSettingsScreen(),
+                    ),
+                  );
+                },
+                icon: const Icon(
+                  Icons.settings_outlined,
+                  color: AppColors.textPrimary,
                 ),
               ),
             ],

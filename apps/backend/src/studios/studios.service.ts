@@ -1,4 +1,4 @@
-import { Injectable, Inject } from '@nestjs/common';
+import { HttpException, HttpStatus, Injectable, Inject } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { UpdateStudioDto } from './dto/update-studio.dto';
 import { CreateStudioDto } from './dto/create-studio.dto';
@@ -8,11 +8,17 @@ import { computeTrainingDisplayColor } from '../trainings/training-color.util';
 import { generateStudioSlug } from '../utils/slug';
 import { nanoid } from 'nanoid';
 import { AnalyticsService } from '../analytics/analytics.service';
+import {
+  countTrainingLocations,
+  resolveStudioBrandNameForDiscovery,
+  resolveTrainingLocationName,
+} from '../lib/training-locations';
+import { buildPublicTrainerPayload } from '../fitness/trainer-display.util';
 
 @Injectable()
 export class StudiosService {
   private static readonly MAX_STUDIO_PHOTOS = 5;
-  private static readonly DEFAULT_BOOKING_PERIOD_DAYS = 14;
+  private static readonly DEFAULT_BOOKING_PERIOD_DAYS = 28;
   private static readonly MAX_BOOKING_PERIOD_DAYS = 60;
 
   constructor(
@@ -25,10 +31,15 @@ export class StudiosService {
   private normalizeReminderSettings(input: any): Record<string, unknown> {
     const base = input && typeof input === 'object' ? { ...input } : {};
     const raw = (base as Record<string, unknown>)['bookingPeriodDays'];
-    let parsed = 14;
+    let parsed = StudiosService.DEFAULT_BOOKING_PERIOD_DAYS;
     if (typeof raw === 'number') parsed = Math.floor(raw);
-    if (typeof raw === 'string') parsed = Number.parseInt(raw, 10) || 14;
-    if (Number.isNaN(parsed)) parsed = 14;
+    if (typeof raw === 'string') {
+      parsed =
+        Number.parseInt(raw, 10) || StudiosService.DEFAULT_BOOKING_PERIOD_DAYS;
+    }
+    if (Number.isNaN(parsed)) {
+      parsed = StudiosService.DEFAULT_BOOKING_PERIOD_DAYS;
+    }
     (base as Record<string, unknown>)['bookingPeriodDays'] = Math.max(
       1,
       Math.min(60, parsed),
@@ -1567,7 +1578,8 @@ export class StudiosService {
             select: {
               id: true,
               name: true,
-              // Removed email - not used on frontend
+              email: true,
+              avatarUrl: true,
             },
           },
         },
@@ -1641,7 +1653,7 @@ export class StudiosService {
           ? {
               id: (Studio as any).User.id,
               name: (Studio as any).User.name,
-              // Removed email - not used on frontend
+              avatarUrl: (Studio as any).User.avatarUrl ?? null,
             }
           : undefined,
         // Add derived categories from services
@@ -1682,12 +1694,16 @@ export class StudiosService {
                   }),
                 }
               : null,
-            trainer: session.Trainer
-              ? {
-                  id: session.Trainer.id,
-                  name: session.Trainer.name,
-                }
-              : null,
+            trainer: buildPublicTrainerPayload(
+              session.Trainer,
+              (Studio as any).User
+                ? {
+                    id: (Studio as any).User.id,
+                    name: (Studio as any).User.name,
+                    email: (Studio as any).User.email,
+                  }
+                : null,
+            ),
           }),
         ),
       };
@@ -1937,14 +1953,26 @@ export class StudiosService {
       where: { id },
       select: {
         id: true,
+        name: true,
         status: true,
         timezone: true,
         reminderSettings: true,
+        User: {
+          select: { id: true, name: true, email: true },
+        },
       },
     });
     if (!studio || studio.status !== 'ACTIVE') {
       return [];
     }
+
+    const studioOwner = studio.User
+      ? {
+          id: studio.User.id,
+          name: studio.User.name,
+          email: studio.User.email,
+        }
+      : null;
 
     const fromDate = params?.fromIso ? new Date(params.fromIso) : new Date();
     if (Number.isNaN(fromDate.getTime())) {
@@ -1982,6 +2010,7 @@ export class StudiosService {
         status: true,
         capacity: true,
         bookedCount: true,
+        locationId: true,
         Training: {
           select: {
             id: true,
@@ -1989,6 +2018,10 @@ export class StudiosService {
             nameEn: true,
             nameVi: true,
             nameRu: true,
+            description: true,
+            descriptionEn: true,
+            descriptionVi: true,
+            descriptionRu: true,
             duration: true,
             price: true,
             trainingCategoryId: true,
@@ -1996,6 +2029,10 @@ export class StudiosService {
             trainingCategory: {
               select: {
                 chip_bg_hex: true,
+                chip_fg_hex: true,
+                name_en: true,
+                name_vn: true,
+                name_ru: true,
               },
             },
           },
@@ -2011,40 +2048,65 @@ export class StudiosService {
       take,
     });
 
-    return sessions.map((s) => ({
-      id: s.id,
-      startsAt: s.startsAt.toISOString(),
-      endsAt: s.endsAt.toISOString(),
-      status: s.status,
-      capacity: s.capacity,
-      bookedCount: s.bookedCount,
-      training: s.Training
-        ? {
-            id: s.Training.id,
-            name: s.Training.name,
-            nameEn: s.Training.nameEn,
-            nameVi: s.Training.nameVi,
-            nameRu: s.Training.nameRu,
-            duration: s.Training.duration,
-            price: s.Training.price,
-            trainingCategoryId: s.Training.trainingCategoryId,
-            displayColor: computeTrainingDisplayColor({
-              trainingId: s.Training.id,
-              trainingName: s.Training.name,
+    const studioName = studio.name?.trim() ?? 'Studio';
+    const locationCount = countTrainingLocations(studio.reminderSettings);
+
+    return sessions.map((s) => {
+      const locationName =
+        locationCount > 1
+          ? (resolveTrainingLocationName(
+              studio.reminderSettings,
+              s.locationId,
+              studioName,
+            ) ?? studioName)
+          : null;
+
+      return {
+        id: s.id,
+        startsAt: s.startsAt.toISOString(),
+        endsAt: s.endsAt.toISOString(),
+        status: s.status,
+        capacity: s.capacity,
+        bookedCount: s.bookedCount,
+        locationId: s.locationId ?? null,
+        locationName,
+        training: s.Training
+          ? {
+              id: s.Training.id,
+              name: s.Training.name,
+              nameEn: s.Training.nameEn,
+              nameVi: s.Training.nameVi,
+              nameRu: s.Training.nameRu,
+              description: s.Training.description,
+              descriptionEn: s.Training.descriptionEn,
+              descriptionVi: s.Training.descriptionVi,
+              descriptionRu: s.Training.descriptionRu,
+              duration: s.Training.duration,
+              price: s.Training.price,
               trainingCategoryId: s.Training.trainingCategoryId,
-              categoryChipBgHex: s.Training.trainingCategory?.chip_bg_hex,
-              existingColor: s.Training.displayColor,
-            }),
-          }
-        : null,
-      trainer: s.Trainer
-        ? {
-            id: s.Trainer.id,
-            name: s.Trainer.name,
-          }
-        : null,
-      timezone: studio.timezone,
-    }));
+              displayColor: computeTrainingDisplayColor({
+                trainingId: s.Training.id,
+                trainingName: s.Training.name,
+                trainingCategoryId: s.Training.trainingCategoryId,
+                categoryChipBgHex: s.Training.trainingCategory?.chip_bg_hex,
+                existingColor: s.Training.displayColor,
+              }),
+              trainingCategory: s.Training.trainingCategory
+                ? {
+                    chip_bg_hex: s.Training.trainingCategory.chip_bg_hex,
+                    chip_fg_hex: s.Training.trainingCategory.chip_fg_hex,
+                    name_en: s.Training.trainingCategory.name_en,
+                    name_vn: s.Training.trainingCategory.name_vn,
+                    name_ru: s.Training.trainingCategory.name_ru,
+                  }
+                : null,
+            }
+          : null,
+        trainer: buildPublicTrainerPayload(s.Trainer, studioOwner),
+        timezone: studio.timezone,
+        studio: { locationCount },
+      };
+    });
   }
 
   // New optimized methods for better performance
@@ -2111,6 +2173,91 @@ export class StudiosService {
     };
   }
 
+  /**
+   * Ratings + distinct training categories per studio (indexed by studioId).
+   * Used by featured and nearby list — two queries, not per-studio.
+   */
+  private async getStudioDiscoveryMeta(studioIds: string[]): Promise<{
+    ratingMap: Map<string, { avgRating: number; reviewCount: number }>;
+    categoriesByStudio: Map<string, string[]>;
+    categoryIdsByStudio: Map<string, number[]>;
+  }> {
+    const empty = {
+      ratingMap: new Map<string, { avgRating: number; reviewCount: number }>(),
+      categoriesByStudio: new Map<string, string[]>(),
+      categoryIdsByStudio: new Map<string, number[]>(),
+    };
+    if (studioIds.length === 0) return empty;
+
+    const [ratingAggregates, categoryData] = await Promise.all([
+      this.prisma.review.groupBy({
+        by: ['studioId'],
+        where: { studioId: { in: studioIds } },
+        _avg: { rating: true },
+        _count: { rating: true },
+      }),
+      this.prisma.training.findMany({
+        where: {
+          studioId: { in: studioIds },
+          trainingCategoryId: { not: null },
+        },
+        select: {
+          studioId: true,
+          trainingCategoryId: true,
+          trainingCategory: {
+            select: {
+              name_en: true,
+              name_vn: true,
+              name_ru: true,
+            },
+          },
+        },
+        distinct: ['studioId', 'trainingCategoryId'],
+      }),
+    ]);
+
+    const ratingEntries: [
+      string,
+      { avgRating: number; reviewCount: number },
+    ][] = ratingAggregates.map((agg) => [
+      String(agg.studioId),
+      {
+        avgRating: Math.round((agg._avg.rating || 0) * 10) / 10,
+        reviewCount: agg._count.rating,
+      },
+    ]);
+    const ratingMap = new Map(ratingEntries);
+
+    type Pair = { id: number; label: string };
+    const pairMap = new Map<string, Pair[]>();
+    for (const item of categoryData) {
+      if (!item.trainingCategoryId || !item.trainingCategory) continue;
+      const tc = item.trainingCategory;
+      const label =
+        tc.name_en?.trim() || tc.name_ru?.trim() || tc.name_vn?.trim() || '';
+      if (!label) continue;
+      const list = pairMap.get(item.studioId) ?? [];
+      list.push({ id: item.trainingCategoryId, label });
+      pairMap.set(item.studioId, list);
+    }
+
+    const categoriesByStudio = new Map<string, string[]>();
+    const categoryIdsByStudio = new Map<string, number[]>();
+    for (const [sid, pairs] of pairMap) {
+      pairs.sort((a, b) => a.id - b.id);
+      categoriesByStudio.set(
+        sid,
+        pairs.map((p) => p.label),
+      );
+      categoryIdsByStudio.set(
+        sid,
+        pairs.map((p) => p.id),
+      );
+    }
+
+    return { ratingMap, categoriesByStudio, categoryIdsByStudio };
+  }
+
   async findFeaturedStudios(limit: number) {
     // Get Studios with minimal data
     const Studios = await this.prisma.Studio.findMany({
@@ -2120,11 +2267,13 @@ export class StudiosService {
       select: {
         id: true,
         name: true,
+        slug: true,
         address: true,
         latitude: true,
         longitude: true,
         logoUrl: true,
         photos: true,
+        reminderSettings: true,
         _count: {
           select: {
             Training: true,
@@ -2143,69 +2292,8 @@ export class StudiosService {
     // Get Studio IDs for aggregate queries
     const StudioIds = Studios.map((s) => s.id);
 
-    // Calculate average ratings using aggregate (much faster than loading all reviews)
-    const ratingAggregates = await this.prisma.review.groupBy({
-      by: ['studioId'],
-      where: {
-        studioId: { in: StudioIds },
-      },
-      _avg: {
-        rating: true,
-      },
-      _count: {
-        rating: true,
-      },
-    });
-
-    // Get unique categories from trainings (only need category names and IDs)
-    const categoryData = await this.prisma.training.findMany({
-      where: {
-        studioId: { in: StudioIds },
-        trainingCategoryId: { not: null },
-      },
-      select: {
-        studioId: true,
-        trainingCategoryId: true,
-        trainingCategory: {
-          select: {
-            name_en: true,
-            name_vn: true,
-          },
-        },
-      },
-      distinct: ['studioId', 'trainingCategoryId'],
-    });
-
-    // Create maps for quick lookup
-    const ratingMap = new Map<
-      string,
-      { avgRating: number; reviewCount: number }
-    >(
-      ratingAggregates.map((agg) => [
-        agg.studioId,
-        {
-          avgRating: agg._avg.rating || 0,
-          reviewCount: agg._count.rating,
-        },
-      ]),
-    );
-
-    // Group categories by studioId (names and training category IDs)
-    const categoryMap = new Map<string, Set<string>>();
-    const categoryIdsMap = new Map<string, Set<number>>();
-    categoryData.forEach((item) => {
-      if (!item.trainingCategory || !item.trainingCategoryId) return;
-      const categoryName =
-        item.trainingCategory.name_en || item.trainingCategory.name_vn;
-      if (!categoryName) return;
-
-      if (!categoryMap.has(item.studioId)) {
-        categoryMap.set(item.studioId, new Set());
-        categoryIdsMap.set(item.studioId, new Set());
-      }
-      categoryMap.get(item.studioId)?.add(categoryName);
-      categoryIdsMap.get(item.studioId)?.add(item.trainingCategoryId);
-    });
+    const { ratingMap, categoriesByStudio, categoryIdsByStudio } =
+      await this.getStudioDiscoveryMeta(StudioIds);
 
     // Enrich Studios with aggregated data
     const enriched = Studios.map((Studio) => {
@@ -2214,19 +2302,24 @@ export class StudiosService {
         reviewCount: 0,
       };
 
-      const categories = Array.from(categoryMap.get(Studio.id) || []);
-      const trainingCategoryIds = Array.from(
-        categoryIdsMap.get(Studio.id) || [],
-      );
+      const categories = categoriesByStudio.get(Studio.id) ?? [];
+      const trainingCategoryIds = categoryIdsByStudio.get(Studio.id) ?? [];
+      const studioName = resolveStudioBrandNameForDiscovery({
+        name: Studio.name,
+        slug: Studio.slug,
+        reminderSettings: Studio.reminderSettings,
+      });
 
       return {
         id: Studio.id,
-        name: Studio.name,
+        name: studioName,
+        studioName,
         address: Studio.address,
         latitude: Studio.latitude ?? undefined,
         longitude: Studio.longitude ?? undefined,
         photos: Studio.photos,
-        avgRating: Math.round(ratingData.avgRating * 10) / 10, // Round to 1 decimal
+        avgRating: ratingData.avgRating,
+        reviewCount: ratingData.reviewCount,
         categories,
         trainingCategoryIds,
         _count: {
@@ -2301,11 +2394,13 @@ export class StudiosService {
       select: {
         id: true,
         name: true,
+        slug: true,
         address: true,
         latitude: true,
         longitude: true,
         logoUrl: true,
         photos: true,
+        reminderSettings: true,
         _count: {
           select: {
             Review: true,
@@ -2344,7 +2439,34 @@ export class StudiosService {
       return this.findFeaturedStudios(limit);
     }
 
-    return StudiosWithDistance;
+    const nearbyIds = StudiosWithDistance.map((s) => s.id);
+    const { ratingMap, categoriesByStudio, categoryIdsByStudio } =
+      await this.getStudioDiscoveryMeta(nearbyIds);
+
+    return StudiosWithDistance.map((s) => {
+      const r = ratingMap.get(s.id) || { avgRating: 0, reviewCount: 0 };
+      const studioName = resolveStudioBrandNameForDiscovery({
+        name: s.name,
+        slug: s.slug,
+        reminderSettings: s.reminderSettings,
+      });
+      return {
+        id: s.id,
+        name: studioName,
+        studioName,
+        address: s.address,
+        latitude: s.latitude ?? undefined,
+        longitude: s.longitude ?? undefined,
+        photos: s.photos,
+        logoUrl: s.logoUrl,
+        distance: s.distance,
+        avgRating: r.avgRating,
+        reviewCount: r.reviewCount,
+        categories: categoriesByStudio.get(s.id) ?? [],
+        trainingCategoryIds: categoryIdsByStudio.get(s.id) ?? [],
+        _count: s._count,
+      };
+    });
   }
 
   async getStudioStats(StudioId: string) {
@@ -2445,5 +2567,79 @@ export class StudiosService {
     }
 
     return cleaned.trim();
+  }
+
+  async createClientStudioReview(
+    userId: string,
+    studioId: string,
+    data: {
+      rating: number;
+      comment?: string;
+      enrollmentId?: string;
+    },
+  ): Promise<{ success: boolean; reviewId: string }> {
+    const rating = Math.round(Number(data.rating));
+    if (!Number.isFinite(rating) || rating < 1 || rating > 5) {
+      throw new HttpException(
+        'Rating must be between 1 and 5',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
+    const studio = await this.prisma.studio.findFirst({
+      where: { id: studioId, isDeleted: false },
+      select: { id: true },
+    });
+    if (!studio) {
+      throw new HttpException('Studio not found', HttpStatus.NOT_FOUND);
+    }
+
+    if (data.enrollmentId) {
+      const enrollment = await this.prisma.sessionEnrollment.findFirst({
+        where: {
+          id: data.enrollmentId,
+          userId,
+          status: { not: 'CANCELLED' },
+          TrainingSession: { studioId },
+        },
+        select: {
+          TrainingSession: { select: { endsAt: true } },
+        },
+      });
+      if (!enrollment) {
+        throw new HttpException('Booking not found', HttpStatus.NOT_FOUND);
+      }
+      if (enrollment.TrainingSession.endsAt > new Date()) {
+        throw new HttpException(
+          'You can review after the class ends',
+          HttpStatus.BAD_REQUEST,
+        );
+      }
+    }
+
+    const existing = await this.prisma.review.findFirst({
+      where: { userId, studioId, bookingId: null },
+      select: { id: true },
+    });
+    if (existing) {
+      throw new HttpException(
+        'You already left a review for this studio',
+        HttpStatus.CONFLICT,
+      );
+    }
+
+    const comment = data.comment?.trim();
+    const review = await this.prisma.review.create({
+      data: {
+        studioId,
+        userId,
+        rating,
+        comment: comment && comment.length > 0 ? comment : null,
+        bookingId: null,
+      },
+      select: { id: true },
+    });
+
+    return { success: true, reviewId: review.id };
   }
 }

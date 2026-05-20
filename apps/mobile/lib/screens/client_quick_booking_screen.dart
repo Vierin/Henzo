@@ -5,6 +5,7 @@ import '../constants/colors.dart';
 import '../services/api_client.dart';
 import '../services/auth_service.dart';
 import '../utils/show_api_error.dart';
+import '../widgets/common/henzo_header_back_button.dart';
 
 class ClientQuickBookingScreen extends StatefulWidget {
   const ClientQuickBookingScreen({super.key});
@@ -87,6 +88,9 @@ class _ClientQuickBookingScreenState extends State<ClientQuickBookingScreen> {
     return Scaffold(
       backgroundColor: AppColors.backgroundSecondary,
       appBar: AppBar(
+        leading: henzoAppBarLeading(context),
+        leadingWidth: 56,
+        automaticallyImplyLeading: false,
         title: const Text('Quick booking'),
         backgroundColor: AppColors.backgroundPrimary,
       ),

@@ -1,4 +1,8 @@
-﻿import 'package:flutter/material.dart';
+import 'dart:async';
+
+import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
+import '../../widgets/common/henzo_modal.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -8,14 +12,26 @@ import '../../l10n/locale_provider.dart';
 import '../../models/training_category_option.dart';
 import '../../services/api_client.dart';
 import '../../services/cache/client_nearby_cache.dart';
-import '../../utils/color_hex.dart';
+import '../../services/dashboard_api_service.dart';
 import '../../utils/formatters.dart';
 import '../../utils/nearby_payload.dart';
+import '../../widgets/dashboard/owner_daily_schedule_session_card.dart';
 import '../../widgets/public/cached_salon_network_image.dart';
+import '../../widgets/schedule/calendar_day_pill.dart';
+import '../location_picker_screen.dart';
+import '../public_class_detail_screen.dart';
 import '../public_studio_detail_screen.dart';
-import '../../widgets/public/class_schedule_card.dart';
 import 'client_explore_models.dart';
 import '../../widgets/client/client_explore_filter_chip.dart';
+import '../../widgets/training/training_category_color_chip.dart';
+
+const int _kExploreHorizonDays = 31;
+const Duration _kExploreStripDebounce = Duration(milliseconds: 1400);
+
+/// Default ?Activities by start time? on Browse: 05:00?22:00.
+const RangeValues _kExploreDefaultTimeRange = RangeValues(300, 1320);
+const int _kExploreDefaultTimeStartMin = 300;
+const int _kExploreDefaultTimeEndMin = 1320;
 
 class ClientSearchScreen extends StatefulWidget {
   const ClientSearchScreen({super.key});
@@ -29,17 +45,26 @@ class ClientSearchScreenState extends State<ClientSearchScreen> {
   static const _latKey = 'client_lat';
   static const _lonKey = 'client_lon';
   bool _loading = true;
-  bool _showClasses = false;
-  int _selectedDayOffset = 0;
+  bool _showClasses = true;
+  late DateTime _selectedDay;
+  late final ValueNotifier<DateTime> _stripDayNotifier;
+  late final PageController _dayPagerController;
+  final ValueNotifier<DateTime> _stripPagerDayNotifier = ValueNotifier(
+    DateTime.now(),
+  );
+  Timer? _stripScheduleDebounce;
+  final TextEditingController _searchController = TextEditingController();
+  String _searchQuery = '';
   String _locationLabel = 'Set location';
   double? _selectedLat;
   double? _selectedLon;
   String _distanceFilter = 'auto';
   String _sortBy = 'recommended';
   final Set<String> _timePeriods = <String>{};
+
   /// Minutes from midnight; timeline starts at 05:00, max 24:00.
   /// Default active start-time window: 09:00 - 20:00.
-  RangeValues _timeRange = const RangeValues(540, 1200);
+  RangeValues _timeRange = _kExploreDefaultTimeRange;
   List<ExploreStudioItem> _studios = const [];
   List<ExploreClassItem> _classes = const [];
   List<TrainingCategoryOption> _trainingCategories = const [];
@@ -50,13 +75,171 @@ class ClientSearchScreenState extends State<ClientSearchScreen> {
   List<ExploreClassItem> _derivedDayClasses = const [];
   List<ExploreStudioItem> _derivedVisibleStudios = const [];
   Map<String, ExploreClassItem?> _derivedFirstClassByStudio = const {};
+  int _derivedDayClassesCount = 0;
+  int _derivedVisibleStudiosCount = 0;
   final Map<String, double?> _distanceKmMemo = {};
   String _distanceMemoLocationKey = '';
 
   @override
   void initState() {
     super.initState();
+    final today = _calendarDateOnly(DateTime.now());
+    _selectedDay = today;
+    _stripDayNotifier = ValueNotifier<DateTime>(today);
+    _stripPagerDayNotifier.value = today;
+    _dayPagerController = PageController(
+      initialPage: 0,
+      viewportFraction: 1 / 7,
+    );
+    _searchController.addListener(_onSearchChanged);
     _loadSavedLocationOnly();
+  }
+
+  @override
+  void dispose() {
+    _clearStripScheduleDebounceTimer();
+    _searchController.removeListener(_onSearchChanged);
+    _searchController.dispose();
+    _stripDayNotifier.dispose();
+    _stripPagerDayNotifier.dispose();
+    _dayPagerController.dispose();
+    super.dispose();
+  }
+
+  void _clearStripScheduleDebounceTimer() {
+    _stripScheduleDebounce?.cancel();
+    _stripScheduleDebounce = null;
+  }
+
+  void _applyExploreDay(DateTime day) {
+    final normalized = _calendarDateOnly(day);
+    _stripDayNotifier.value = normalized;
+    _stripPagerDayNotifier.value = normalized;
+    if (CalendarDayPill.isSameDay(normalized, _selectedDay)) return;
+    setState(() {
+      _selectedDay = normalized;
+      _derivedInputsHash = 0;
+    });
+  }
+
+  void _debounceExploreDay(DateTime day) {
+    _clearStripScheduleDebounceTimer();
+    _stripScheduleDebounce = Timer(_kExploreStripDebounce, () {
+      if (!mounted) return;
+      _applyExploreDay(day);
+      _stripScheduleDebounce = null;
+    });
+  }
+
+  void _onSearchChanged() {
+    final q = _searchController.text;
+    if (q == _searchQuery) return;
+    setState(() {
+      _searchQuery = q;
+      _derivedInputsHash = 0;
+    });
+  }
+
+  static DateTime _calendarDateOnly(DateTime d) =>
+      DateTime(d.year, d.month, d.day);
+
+  DateTime _exploreDayAt(int index) =>
+      _calendarDateOnly(DateTime.now()).add(Duration(days: index));
+
+  int _sessionsCountForDay(DateTime day) {
+    return _classes.where((c) {
+      if (!CalendarDayPill.isSameDay(c.startsAt, day)) return false;
+      return _classMatchesCategory(c);
+    }).length;
+  }
+
+  bool _matchesSearchClass(ExploreClassItem c) {
+    final q = _searchQuery.trim().toLowerCase();
+    if (q.isEmpty) return true;
+    return c.className.toLowerCase().contains(q) ||
+        c.studioName.toLowerCase().contains(q) ||
+        c.trainerName.toLowerCase().contains(q);
+  }
+
+  bool _matchesSearchStudio(ExploreStudioItem s) {
+    final q = _searchQuery.trim().toLowerCase();
+    if (q.isEmpty) return true;
+    return s.name.toLowerCase().contains(q) ||
+        s.address.toLowerCase().contains(q);
+  }
+
+  String _typesChipLabel(String localeCode) {
+    final id = _selectedCategoryId;
+    if (id == null) return 'Types';
+    return _categoryOptionById(id)?.label(localeCode) ?? 'Types';
+  }
+
+  String get _timeFilterChipLabel {
+    if (_timePeriods.length == 1 && _timePeriods.contains('morning')) {
+      return 'Morning';
+    }
+    if (_timePeriods.length == 1 && _timePeriods.contains('afternoon')) {
+      return 'Afternoon';
+    }
+    if (_timePeriods.length == 1 && _timePeriods.contains('evening')) {
+      return 'Evening';
+    }
+    if (_hasActiveTimeFilter) return _timeChipLabel;
+    return 'Time';
+  }
+
+  String get _distanceChipLabel {
+    switch (_distanceFilter) {
+      case '5':
+        return '5 km';
+      case '10':
+        return '10 km';
+      case '15':
+        return '15 km';
+      case '30+':
+        return '30+ km';
+      case 'auto':
+      default:
+        return 'Distance';
+    }
+  }
+
+  String get _sortChipLabel {
+    switch (_sortBy) {
+      case 'distance':
+        return 'Nearest';
+      case 'ratings':
+        return 'Ratings';
+      case 'recommended':
+      default:
+        return 'Sort';
+    }
+  }
+
+  Future<void> _openLocationPicker() async {
+    final picked = await Navigator.of(context).push<LocationPickerResult>(
+      MaterialPageRoute(
+        builder: (_) => LocationPickerScreen(
+          initialCity: _locationLabel == 'Set location' ? '' : _locationLabel,
+        ),
+      ),
+    );
+    if (picked == null || picked.city.trim().isEmpty || !mounted) return;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_cityKey, picked.city.trim());
+    if (picked.lat != null && picked.lon != null) {
+      await prefs.setDouble(_latKey, picked.lat!);
+      await prefs.setDouble(_lonKey, picked.lon!);
+    }
+    ClientNearbyCache.clear();
+    setState(() {
+      _locationLabel = picked.city.trim();
+      _selectedLat = picked.lat;
+      _selectedLon = picked.lon;
+      _derivedInputsHash = 0;
+      _distanceKmMemo.clear();
+    });
+    await _loadExplore();
   }
 
   /// First call is deferred until user opens the Explore tab (see [ensureExploreLoaded]).
@@ -65,7 +248,18 @@ class ClientSearchScreenState extends State<ClientSearchScreen> {
   void ensureExploreLoaded() {
     if (_exploreLoadRequested) return;
     _exploreLoadRequested = true;
+    _ensureTrainingCategoriesLoaded();
     _loadExplore();
+  }
+
+  /// Home category chips ? open Explore with filter applied.
+  void selectCategory(int? categoryId) {
+    setState(() {
+      _selectedCategoryId = categoryId;
+      _derivedInputsHash = 0;
+    });
+    _ensureTrainingCategoriesLoaded();
+    _ensureDerivedLists();
   }
 
   Future<void> _loadSavedLocationOnly() async {
@@ -119,9 +313,14 @@ class ClientSearchScreenState extends State<ClientSearchScreen> {
         final training = map['training'] is Map
             ? Map<String, dynamic>.from(map['training'] as Map)
             : <String, dynamic>{};
-        final startsAt = DateTime.tryParse(
-          (map['startsAt'] ?? '').toString(),
-        )?.toLocal();
+        final studioBlock = map['studio'] is Map
+            ? Map<String, dynamic>.from(map['studio'] as Map)
+            : <String, dynamic>{};
+        final studioLocationCount =
+            (studioBlock['locationCount'] as num?)?.toInt() ?? 1;
+        final endsAt = parseApiDateTime(map['endsAt']);
+        final locationName = map['locationName']?.toString();
+        final startsAt = parseApiDateTime(map['startsAt']);
         if (startsAt == null) continue;
         final trainingCategoryId = training['trainingCategoryId'] == null
             ? null
@@ -145,6 +344,11 @@ class ClientSearchScreenState extends State<ClientSearchScreen> {
             rating: studio.rating,
             reviewCount: studio.reviewCount,
             trainingCategoryId: trainingCategoryId,
+            trainingId: (training['id'] ?? '').toString(),
+            endsAt: endsAt,
+            locationName: locationName,
+            studioLocationCount: studioLocationCount,
+            distanceKm: studio.distanceKm,
           ),
         );
       }
@@ -152,6 +356,44 @@ class ClientSearchScreenState extends State<ClientSearchScreen> {
     } catch (_) {
       return const [];
     }
+  }
+
+  void _openExploreClassDetail(ExploreClassItem c) {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => PublicClassDetailScreen(
+          studioId: c.studioId,
+          sessionId: c.sessionId,
+          sessionStartsAtHint: c.startsAt,
+          distanceKm: c.distanceKm,
+        ),
+      ),
+    );
+  }
+
+  OwnerTrainingSession _ownerSessionFromExplore(ExploreClassItem c) {
+    final ends =
+        c.endsAt ?? c.startsAt.add(Duration(minutes: c.durationMin ?? 60));
+    return OwnerTrainingSession(
+      sessionId: c.sessionId,
+      trainingId: c.trainingId,
+      startsAt: c.startsAt,
+      endsAt: ends,
+      status: 'ACTIVE',
+      capacity: c.capacity ?? 0,
+      enrolledCount: c.bookedCount,
+      attendedCount: c.bookedCount,
+      trainingName: c.className,
+      trainingDurationMinutes: c.durationMin,
+      trainingDisplayColorHex: c.displayColorHex,
+      trainingPrice: c.price,
+      trainerName: c.trainerName.trim(),
+      trainerId: null,
+      locationId: null,
+      locationName: (c.locationName ?? '').trim().isEmpty
+          ? null
+          : c.locationName!.trim(),
+    );
   }
 
   Future<void> _loadExplore() async {
@@ -246,8 +488,9 @@ class ClientSearchScreenState extends State<ClientSearchScreen> {
       final slice = studios.take(8).toList();
       const concurrency = 4;
       for (var i = 0; i < slice.length; i += concurrency) {
-        final end =
-            i + concurrency > slice.length ? slice.length : i + concurrency;
+        final end = i + concurrency > slice.length
+            ? slice.length
+            : i + concurrency;
         final batch = slice.sublist(i, end);
         final batchResults = await Future.wait(
           batch.map(
@@ -273,13 +516,6 @@ class ClientSearchScreenState extends State<ClientSearchScreen> {
       if (!mounted) return;
       setState(() => _loading = false);
     }
-  }
-
-  String _dayLabel(int offset) {
-    if (offset == 0) return 'Today';
-    final d = DateTime.now().add(Duration(days: offset));
-    const wd = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-    return '${wd[d.weekday - 1]} ${d.day}';
   }
 
   /// Snap to 30-minute steps for [RangeSlider] (min 05:00, max 24:00).
@@ -319,37 +555,9 @@ class ClientSearchScreenState extends State<ClientSearchScreen> {
     if (_timePeriods.isNotEmpty) return true;
     final startMin = _timeRange.start.round();
     final endMin = _timeRange.end.round();
-    if (startMin != 540) return true;
-    if (endMin != 1200) return true;
+    if (startMin != _kExploreDefaultTimeStartMin) return true;
+    if (endMin != _kExploreDefaultTimeEndMin) return true;
     return false;
-  }
-
-  String get _sortChipLabel {
-    switch (_sortBy) {
-      case 'ratings':
-        return 'Sort: Ratings';
-      case 'distance':
-        return 'Sort: Distance';
-      case 'recommended':
-      default:
-        return 'Sort by';
-    }
-  }
-
-  String get _distanceChipLabel {
-    switch (_distanceFilter) {
-      case '5':
-        return '5 km';
-      case '10':
-        return '10 km';
-      case '15':
-        return '15 km';
-      case '30+':
-        return '30+ km';
-      case 'auto':
-      default:
-        return 'Distance';
-    }
   }
 
   String get _timeChipLabel {
@@ -378,17 +586,20 @@ class ClientSearchScreenState extends State<ClientSearchScreen> {
 
   int _computeDerivedInputsHash() {
     return Object.hash(
-      _selectedDayOffset,
+      _dayKey(_selectedDay),
       _classes.length,
       _studios.length,
       _sortBy,
       _distanceFilter,
       _selectedCategoryId,
+      _searchQuery,
       Object.hashAll(_timePeriods),
       _timeRange.start.round(),
       _timeRange.end.round(),
     );
   }
+
+  int _dayKey(DateTime d) => d.year * 10000 + d.month * 100 + d.day;
 
   void _syncDistanceMemoLocation() {
     final k =
@@ -403,18 +614,26 @@ class ClientSearchScreenState extends State<ClientSearchScreen> {
     final h = _computeDerivedInputsHash();
     if (h == _derivedInputsHash) return;
     _derivedInputsHash = h;
-    final selectedDate = DateTime.now().add(Duration(days: _selectedDayOffset));
-    _derivedDayClasses = _classes.where((c) {
-      final d = c.startsAt;
-      return d.year == selectedDate.year &&
-          d.month == selectedDate.month &&
-          d.day == selectedDate.day &&
-          _isClassInSelectedPeriods(c.startsAt) &&
-          _isClassInTimeRange(c.startsAt) &&
-          _classMatchesCategory(c);
+    final selectedDate = _selectedDay;
+    final dayClasses = _classes.where((c) {
+      if (!CalendarDayPill.isSameDay(c.startsAt, selectedDate)) return false;
+      if (!_isClassInSelectedPeriods(c.startsAt)) return false;
+      if (!_isClassInTimeRange(c.startsAt)) return false;
+      if (!_classMatchesCategory(c)) return false;
+      return true;
     }).toList();
+    _derivedDayClassesCount = dayClasses.length;
+    _derivedDayClasses = dayClasses
+        .where(_matchesSearchClass)
+        .toList(growable: false);
 
-    _derivedVisibleStudios = _studios.where(_studioMatchesCategory).toList();
+    final visibleStudios = _studios
+        .where(_studioMatchesCategory)
+        .toList(growable: false);
+    _derivedVisibleStudiosCount = visibleStudios.length;
+    _derivedVisibleStudios = visibleStudios
+        .where(_matchesSearchStudio)
+        .toList(growable: false);
 
     final firstBy = <String, ExploreClassItem?>{};
     for (final s in _derivedVisibleStudios) {
@@ -422,11 +641,7 @@ class ClientSearchScreenState extends State<ClientSearchScreen> {
       for (final c in _classes) {
         if (c.studioId != s.id) continue;
         final d = c.startsAt;
-        if (d.year != selectedDate.year ||
-            d.month != selectedDate.month ||
-            d.day != selectedDate.day) {
-          continue;
-        }
+        if (!CalendarDayPill.isSameDay(d, selectedDate)) continue;
         if (!_isClassInSelectedPeriods(c.startsAt)) continue;
         if (!_isClassInTimeRange(c.startsAt)) continue;
         if (!_classMatchesCategory(c)) continue;
@@ -493,20 +708,12 @@ class ClientSearchScreenState extends State<ClientSearchScreen> {
     }
     final opt = _categoryOptionById(cid);
     if (opt == null || s.categoryNames.isEmpty) return true;
-    final labels = {opt.nameEn, opt.nameRu, opt.nameVn}
-        .map((e) => e.trim().toLowerCase())
-        .where((e) => e.isNotEmpty)
-        .toSet();
-    return s.categoryNames.any(
-      (n) => labels.contains(n.trim().toLowerCase()),
-    );
-  }
-
-  String _categoryChipLabel(String localeCode) {
-    final id = _selectedCategoryId;
-    if (id == null) return 'Categories';
-    final opt = _categoryOptionById(id);
-    return opt?.label(localeCode) ?? 'Categories';
+    final labels = {
+      opt.nameEn,
+      opt.nameRu,
+      opt.nameVn,
+    }.map((e) => e.trim().toLowerCase()).where((e) => e.isNotEmpty).toSet();
+    return s.categoryNames.any((n) => labels.contains(n.trim().toLowerCase()));
   }
 
   Future<void> _ensureTrainingCategoriesLoaded() async {
@@ -518,12 +725,12 @@ class ClientSearchScreenState extends State<ClientSearchScreen> {
       for (final row in raw) {
         if (row is! Map) continue;
         list.add(
-          TrainingCategoryOption.fromJson(
-            Map<String, dynamic>.from(row),
-          ),
+          TrainingCategoryOption.fromJson(Map<String, dynamic>.from(row)),
         );
       }
-      setState(() => _trainingCategories = list);
+      setState(
+        () => _trainingCategories = TrainingCategoryOption.withOtherLast(list),
+      );
     } catch (_) {}
   }
 
@@ -533,62 +740,13 @@ class ClientSearchScreenState extends State<ClientSearchScreen> {
     final localeCode = context.read<LocaleProvider>().localeCode;
     var tempSelection = _selectedCategoryId ?? -1;
 
-    final result = await showModalBottomSheet<int>(
+    final result = await showHenzoModalBottomSheet<int>(
       context: context,
       showDragHandle: false,
       isScrollControlled: true,
       backgroundColor: AppColors.backgroundPrimary,
       builder: (ctx) {
         final maxH = MediaQuery.of(context).size.height * 0.72;
-        Widget rowTile({
-          required String title,
-          required bool selected,
-          required VoidCallback onTap,
-        }) {
-          return InkWell(
-            splashColor: Colors.transparent,
-            highlightColor: Colors.transparent,
-            hoverColor: Colors.transparent,
-            borderRadius: BorderRadius.circular(10),
-            onTap: onTap,
-            child: Container(
-              margin: const EdgeInsets.only(bottom: 10),
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
-              decoration: BoxDecoration(
-                color: AppColors.backgroundPrimary,
-                borderRadius: BorderRadius.circular(10),
-                border: Border.all(
-                  color: selected
-                      ? AppColors.primary500
-                      : AppColors.borderPrimary,
-                  width: selected ? 1.5 : 1,
-                ),
-              ),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: Text(
-                      title,
-                      style: TextStyle(
-                        color: selected
-                            ? AppColors.primary500
-                            : AppColors.textPrimary,
-                        fontWeight: FontWeight.w700,
-                        fontSize: 15,
-                      ),
-                    ),
-                  ),
-                  if (selected)
-                    const Icon(
-                      Icons.check,
-                      color: AppColors.primary500,
-                      size: 22,
-                    ),
-                ],
-              ),
-            ),
-          );
-        }
 
         return StatefulBuilder(
           builder: (context, setModalState) {
@@ -608,27 +766,33 @@ class ClientSearchScreenState extends State<ClientSearchScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        _filterSheetTitleRow(ctx, 'Category'),
-                        const SizedBox(height: 8),
+                        _filterSheetTitleRow(ctx, 'Types'),
+                        const SizedBox(height: 12),
                         Expanded(
-                          child: ListView(
-                            children: [
-                              rowTile(
-                                title: 'All categories',
-                                selected: tempSelection < 0,
-                                onTap: () =>
-                                    setModalState(() => tempSelection = -1),
-                              ),
-                              ..._trainingCategories.map(
-                                (cat) => rowTile(
-                                  title: cat.label(localeCode),
-                                  selected: tempSelection == cat.id,
+                          child: SingleChildScrollView(
+                            child: Wrap(
+                              spacing: 8,
+                              runSpacing: 8,
+                              children: [
+                                TrainingCategoryColorChip(
+                                  label: 'All types',
+                                  selected: tempSelection < 0,
                                   onTap: () => setModalState(
-                                    () => tempSelection = cat.id,
+                                    () => tempSelection = -1,
                                   ),
                                 ),
-                              ),
-                            ],
+                                ..._trainingCategories.map(
+                                  (cat) => TrainingCategoryColorChip(
+                                    category: cat,
+                                    label: cat.label(localeCode),
+                                    selected: tempSelection == cat.id,
+                                    onTap: () => setModalState(
+                                      () => tempSelection = cat.id,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
                           ),
                         ),
                         SizedBox(
@@ -677,7 +841,7 @@ class ClientSearchScreenState extends State<ClientSearchScreen> {
   Future<void> _openTimeFilterSheet() async {
     final tempPeriods = Set<String>.from(_timePeriods);
     RangeValues tempRange = _alignTimeRangeToSlider(_timeRange);
-    final result = await showModalBottomSheet<Map<String, dynamic>>(
+    final result = await showHenzoModalBottomSheet<Map<String, dynamic>>(
       context: context,
       showDragHandle: false,
       backgroundColor: AppColors.backgroundPrimary,
@@ -700,7 +864,7 @@ class ClientSearchScreenState extends State<ClientSearchScreen> {
                 setModalState(() {
                   if (selected) {
                     tempPeriods.clear();
-                    tempRange = const RangeValues(540, 1200);
+                    tempRange = _kExploreDefaultTimeRange;
                     return;
                   }
                   tempPeriods
@@ -711,7 +875,7 @@ class ClientSearchScreenState extends State<ClientSearchScreen> {
                   } else if (id == 'afternoon') {
                     tempRange = const RangeValues(720, 960);
                   } else if (id == 'evening') {
-                    tempRange = const RangeValues(960, 1200);
+                    tempRange = const RangeValues(960, 1320);
                   }
                 });
               },
@@ -838,7 +1002,7 @@ class ClientSearchScreenState extends State<ClientSearchScreen> {
                           onPressed: () {
                             setModalState(() {
                               tempPeriods.clear();
-                              tempRange = const RangeValues(540, 1200);
+                              tempRange = _kExploreDefaultTimeRange;
                             });
                           },
                           child: const Text(
@@ -919,7 +1083,7 @@ class ClientSearchScreenState extends State<ClientSearchScreen> {
 
   Future<void> _openSortSheet() async {
     String temp = _sortBy;
-    final result = await showModalBottomSheet<String>(
+    final result = await showHenzoModalBottomSheet<String>(
       context: context,
       showDragHandle: false,
       backgroundColor: AppColors.backgroundPrimary,
@@ -938,7 +1102,7 @@ class ClientSearchScreenState extends State<ClientSearchScreen> {
             borderRadius: BorderRadius.circular(10),
             onTap: () => setModalState(() => temp = value),
             child: Container(
-              margin: const EdgeInsets.only(bottom: 12),
+              margin: const EdgeInsets.only(bottom: 10),
               padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
               decoration: BoxDecoration(
                 color: AppColors.backgroundPrimary,
@@ -979,14 +1143,13 @@ class ClientSearchScreenState extends State<ClientSearchScreen> {
                       ],
                     ),
                   ),
-                  Radio<String>(
-                    value: value,
-                    groupValue: temp,
-                    activeColor: AppColors.primary500,
-                    onChanged: (v) {
-                      if (v == null) return;
-                      setModalState(() => temp = v);
-                    },
+                  Icon(
+                    selected
+                        ? Icons.radio_button_checked
+                        : Icons.radio_button_off,
+                    color: selected
+                        ? AppColors.primary500
+                        : AppColors.textSecondary,
                   ),
                 ],
               ),
@@ -1011,7 +1174,7 @@ class ClientSearchScreenState extends State<ClientSearchScreen> {
                     mainAxisSize: MainAxisSize.min,
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      _filterSheetTitleRow(ctx, 'Sort by'),
+                      _filterSheetTitleRow(ctx, 'Sort'),
                       const SizedBox(height: 12),
                       option(
                         value: 'recommended',
@@ -1022,16 +1185,16 @@ class ClientSearchScreenState extends State<ClientSearchScreen> {
                       option(
                         value: 'ratings',
                         title: 'Ratings',
-                        subtitle: 'highest to lowest',
+                        subtitle: 'Highest to lowest',
                         setModalState: setModalState,
                       ),
                       option(
                         value: 'distance',
                         title: 'Distance',
-                        subtitle: 'nearest to farthest',
+                        subtitle: 'Nearest to farthest',
                         setModalState: setModalState,
                       ),
-                      const SizedBox(height: 2),
+                      const SizedBox(height: 4),
                       SizedBox(
                         width: double.infinity,
                         child: TextButton(
@@ -1073,7 +1236,172 @@ class ClientSearchScreenState extends State<ClientSearchScreen> {
       final sorted = List<ExploreStudioItem>.from(_studios);
       _applyStudioSortInPlace(sorted);
       _studios = sorted;
+      _derivedInputsHash = 0;
     });
+  }
+
+  Future<void> _openDistanceSheet() async {
+    String tempDistance = _distanceFilter;
+    final result = await showHenzoModalBottomSheet<String>(
+      context: context,
+      showDragHandle: false,
+      backgroundColor: AppColors.backgroundPrimary,
+      builder: (ctx) {
+        Widget option({
+          required String value,
+          required String title,
+          String? subtitle,
+          required StateSetter setModalState,
+        }) {
+          final selected = tempDistance == value;
+          return InkWell(
+            splashColor: Colors.transparent,
+            highlightColor: Colors.transparent,
+            hoverColor: Colors.transparent,
+            borderRadius: BorderRadius.circular(10),
+            onTap: () => setModalState(() => tempDistance = value),
+            child: Container(
+              margin: const EdgeInsets.only(bottom: 10),
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+              decoration: BoxDecoration(
+                color: AppColors.backgroundPrimary,
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(
+                  color: selected
+                      ? AppColors.primary500
+                      : AppColors.borderPrimary,
+                  width: selected ? 1.5 : 1,
+                ),
+              ),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          title,
+                          style: TextStyle(
+                            color: selected
+                                ? AppColors.primary500
+                                : AppColors.textPrimary,
+                            fontWeight: FontWeight.w700,
+                            fontSize: 15,
+                          ),
+                        ),
+                        if (subtitle != null) ...[
+                          const SizedBox(height: 2),
+                          Text(
+                            subtitle,
+                            style: const TextStyle(
+                              color: AppColors.textSecondary,
+                              fontSize: 13,
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
+                  ),
+                  Icon(
+                    selected
+                        ? Icons.radio_button_checked
+                        : Icons.radio_button_off,
+                    color: selected
+                        ? AppColors.primary500
+                        : AppColors.textSecondary,
+                  ),
+                ],
+              ),
+            ),
+          );
+        }
+
+        return StatefulBuilder(
+          builder: (context, setModalState) {
+            return Theme(
+              data: Theme.of(context).copyWith(
+                splashColor: Colors.transparent,
+                highlightColor: Colors.transparent,
+                bottomSheetTheme: const BottomSheetThemeData(
+                  surfaceTintColor: Colors.transparent,
+                ),
+              ),
+              child: SafeArea(
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(14, 0, 14, 14),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _filterSheetTitleRow(ctx, 'Distance'),
+                      const SizedBox(height: 12),
+                      option(
+                        value: 'auto',
+                        title: 'Auto (20 km)',
+                        setModalState: setModalState,
+                      ),
+                      option(
+                        value: '5',
+                        title: '5 km',
+                        setModalState: setModalState,
+                      ),
+                      option(
+                        value: '10',
+                        title: '10 km',
+                        setModalState: setModalState,
+                      ),
+                      option(
+                        value: '15',
+                        title: '15 km',
+                        setModalState: setModalState,
+                      ),
+                      option(
+                        value: '30+',
+                        title: '30+ km',
+                        setModalState: setModalState,
+                      ),
+                      const SizedBox(height: 4),
+                      SizedBox(
+                        width: double.infinity,
+                        child: TextButton(
+                          onPressed: () =>
+                              setModalState(() => tempDistance = 'auto'),
+                          child: const Text(
+                            'Reset',
+                            style: TextStyle(
+                              color: AppColors.textPrimary,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      SizedBox(
+                        width: double.infinity,
+                        child: FilledButton(
+                          onPressed: () => Navigator.of(ctx).pop(tempDistance),
+                          style: FilledButton.styleFrom(
+                            backgroundColor: AppColors.primary500,
+                          ),
+                          child: const Text('Apply'),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+
+    if (result == null || !mounted) return;
+    final distanceChanged = result != _distanceFilter;
+    setState(() => _distanceFilter = result);
+    if (distanceChanged) {
+      await _loadExplore();
+    }
   }
 
   Future<void> _openAllFiltersSheet() async {
@@ -1082,7 +1410,7 @@ class ClientSearchScreenState extends State<ClientSearchScreen> {
     final tempPeriods = Set<String>.from(_timePeriods);
     RangeValues tempRange = _alignTimeRangeToSlider(_timeRange);
 
-    final result = await showModalBottomSheet<Map<String, dynamic>>(
+    final result = await showHenzoModalBottomSheet<Map<String, dynamic>>(
       context: context,
       showDragHandle: false,
       isScrollControlled: true,
@@ -1301,7 +1629,7 @@ class ClientSearchScreenState extends State<ClientSearchScreen> {
                                 setModalState(() {
                                   if (tempPeriods.contains('morning')) {
                                     tempPeriods.clear();
-                                    tempRange = const RangeValues(540, 1200);
+                                    tempRange = _kExploreDefaultTimeRange;
                                     return;
                                   }
                                   tempPeriods
@@ -1320,7 +1648,7 @@ class ClientSearchScreenState extends State<ClientSearchScreen> {
                                 setModalState(() {
                                   if (tempPeriods.contains('afternoon')) {
                                     tempPeriods.clear();
-                                    tempRange = const RangeValues(540, 1200);
+                                    tempRange = _kExploreDefaultTimeRange;
                                     return;
                                   }
                                   tempPeriods
@@ -1339,13 +1667,13 @@ class ClientSearchScreenState extends State<ClientSearchScreen> {
                                 setModalState(() {
                                   if (tempPeriods.contains('evening')) {
                                     tempPeriods.clear();
-                                    tempRange = const RangeValues(540, 1200);
+                                    tempRange = _kExploreDefaultTimeRange;
                                     return;
                                   }
                                   tempPeriods
                                     ..clear()
                                     ..add('evening');
-                                  tempRange = const RangeValues(960, 1200);
+                                  tempRange = const RangeValues(960, 1320);
                                 });
                               },
                             ),
@@ -1382,7 +1710,7 @@ class ClientSearchScreenState extends State<ClientSearchScreen> {
                                 tempSort = 'recommended';
                                 tempDistance = 'auto';
                                 tempPeriods.clear();
-                                tempRange = const RangeValues(540, 1200);
+                                tempRange = _kExploreDefaultTimeRange;
                               });
                             },
                             child: const Text(
@@ -1455,6 +1783,121 @@ class ClientSearchScreenState extends State<ClientSearchScreen> {
     }
   }
 
+  Widget _buildDayStrip() {
+    return SizedBox(
+      height: 86,
+      child: NotificationListener<ScrollNotification>(
+        onNotification: (ScrollNotification n) {
+          if (n.metrics.axis != Axis.horizontal) return false;
+          if (!_dayPagerController.hasClients) return false;
+          final page = _dayPagerController.page;
+          if (page == null) return false;
+          final index = page.round().clamp(0, _kExploreHorizonDays - 1);
+          final day = _exploreDayAt(index);
+          final normalized = _calendarDateOnly(day);
+          if (_stripPagerDayNotifier.value == normalized) return false;
+          _stripPagerDayNotifier.value = normalized;
+          return false;
+        },
+        child: PageView.builder(
+          controller: _dayPagerController,
+          physics: const SmoothDayPageScrollPhysics(),
+          padEnds: false,
+          itemCount: _kExploreHorizonDays,
+          onPageChanged: (index) {
+            final day = _exploreDayAt(index);
+            final normalized = _calendarDateOnly(day);
+            if (_stripPagerDayNotifier.value != normalized) {
+              _stripPagerDayNotifier.value = normalized;
+            }
+            if (CalendarDayPill.isSameDay(day, _stripDayNotifier.value) &&
+                CalendarDayPill.isSameDay(day, _selectedDay)) {
+              return;
+            }
+            _debounceExploreDay(normalized);
+          },
+          itemBuilder: (_, index) {
+            final day = _exploreDayAt(index);
+            final isToday = CalendarDayPill.isSameDay(day, DateTime.now());
+            return ValueListenableBuilder<DateTime>(
+              valueListenable: _stripDayNotifier,
+              builder: (context, stripDay, _) {
+                final selected = CalendarDayPill.isSameDay(day, stripDay);
+                return Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 3),
+                  child: CalendarDayPill(
+                    day: day,
+                    selected: selected,
+                    sessionsCount: _sessionsCountForDay(day),
+                    isToday: isToday,
+                    showBorder: false,
+                    highlightTodayWhenUnselected: false,
+                    onTap: () {
+                      _clearStripScheduleDebounceTimer();
+                      _applyExploreDay(day);
+                    },
+                  ),
+                );
+              },
+            );
+          },
+        ),
+      ),
+    );
+  }
+
+  Widget _browseModeTab({
+    required String label,
+    required String iconAsset,
+    required int count,
+    required bool selected,
+    required VoidCallback onTap,
+  }) {
+    return Expanded(
+      child: GestureDetector(
+        onTap: onTap,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 180),
+          margin: const EdgeInsets.all(3),
+          padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 8),
+          decoration: BoxDecoration(
+            color: selected ? AppColors.primary50 : Colors.transparent,
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              SvgPicture.asset(
+                iconAsset,
+                width: 18,
+                height: 18,
+                colorFilter: ColorFilter.mode(
+                  selected ? AppColors.primary500 : AppColors.textSecondary,
+                  BlendMode.srcIn,
+                ),
+              ),
+              const SizedBox(width: 6),
+              Flexible(
+                child: Text(
+                  '$label $count',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontWeight: FontWeight.w700,
+                    fontSize: 14,
+                    color: selected
+                        ? AppColors.primary500
+                        : AppColors.textSecondary,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final localeCode = context.watch<LocaleProvider>().localeCode;
@@ -1466,100 +1909,161 @@ class ClientSearchScreenState extends State<ClientSearchScreen> {
         child: _loading
             ? const Center(child: CircularProgressIndicator())
             : Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   Padding(
-                    padding: const EdgeInsets.fromLTRB(12, 10, 12, 8),
+                    padding: const EdgeInsets.fromLTRB(16, 8, 12, 4),
+                    child: Row(
+                      children: [
+                        const Expanded(
+                          child: Text(
+                            'Browse',
+                            style: TextStyle(
+                              fontSize: 28,
+                              fontWeight: FontWeight.w800,
+                              color: AppColors.textPrimary,
+                              letterSpacing: -0.5,
+                            ),
+                          ),
+                        ),
+                        Material(
+                          color: Colors.transparent,
+                          child: InkWell(
+                            borderRadius: BorderRadius.circular(12),
+                            onTap: _openLocationPicker,
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 8,
+                                vertical: 6,
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  SvgPicture.asset(
+                                    'assets/icons/icon-pin.svg',
+                                    width: 16,
+                                    height: 16,
+                                    colorFilter: const ColorFilter.mode(
+                                      AppColors.primary500,
+                                      BlendMode.srcIn,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 4),
+                                  ConstrainedBox(
+                                    constraints: const BoxConstraints(
+                                      maxWidth: 140,
+                                    ),
+                                    child: Text(
+                                      _locationLabel,
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: const TextStyle(
+                                        fontWeight: FontWeight.w600,
+                                        color: AppColors.textPrimary,
+                                      ),
+                                    ),
+                                  ),
+                                  const Icon(
+                                    Icons.keyboard_arrow_down,
+                                    size: 18,
+                                    color: AppColors.textSecondary,
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 12),
+                    child: _buildDayStrip(),
+                  ),
+                  const SizedBox(height: 10),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 12),
                     child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 10,
-                      ),
                       decoration: BoxDecoration(
                         color: AppColors.backgroundPrimary,
                         borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: AppColors.borderPrimary),
                       ),
                       child: Row(
                         children: [
-                          const Icon(
-                            Icons.arrow_back,
-                            color: AppColors.textPrimary,
+                          const SizedBox(width: 12),
+                          SvgPicture.asset(
+                            'assets/icons/icon-search.svg',
+                            width: 18,
+                            height: 18,
+                            colorFilter: const ColorFilter.mode(
+                              AppColors.textSecondary,
+                              BlendMode.srcIn,
+                            ),
                           ),
                           const SizedBox(width: 8),
                           Expanded(
-                            child: Text(
-                              _locationLabel,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
+                            child: TextField(
+                              controller: _searchController,
                               style: const TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.w600,
                                 color: AppColors.textPrimary,
                               ),
+                              decoration: const InputDecoration(
+                                hintText: 'Search classes or studios...',
+                                hintStyle: TextStyle(
+                                  color: AppColors.textSecondary,
+                                ),
+                                filled: true,
+                                fillColor: Colors.transparent,
+                                border: InputBorder.none,
+                                enabledBorder: InputBorder.none,
+                                focusedBorder: InputBorder.none,
+                                disabledBorder: InputBorder.none,
+                                errorBorder: InputBorder.none,
+                                focusedErrorBorder: InputBorder.none,
+                                isDense: true,
+                                contentPadding: EdgeInsets.symmetric(
+                                  vertical: 12,
+                                ),
+                              ),
+                            ),
+                          ),
+                          IconButton(
+                            onPressed: _openAllFiltersSheet,
+                            icon: const Icon(
+                              Icons.tune,
+                              color: AppColors.primary500,
                             ),
                           ),
                         ],
                       ),
                     ),
                   ),
+                  const SizedBox(height: 10),
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 12),
-                    child: Row(
-                      children: [
-                        Expanded(
-                          child: Container(
-                            decoration: BoxDecoration(
-                              color: AppColors.backgroundPrimary,
-                              borderRadius: BorderRadius.circular(999),
-                              border: Border.all(
-                                color: AppColors.borderPrimary,
-                              ),
-                            ),
-                            child: Row(
-                              children: [
-                                Expanded(
-                                  child: _segButton(
-                                    label: 'Businesses',
-                                    selected: !_showClasses,
-                                    onTap: () =>
-                                        setState(() => _showClasses = false),
-                                  ),
-                                ),
-                                Expanded(
-                                  child: _segButton(
-                                    label: 'Classes',
-                                    selected: _showClasses,
-                                    onTap: () =>
-                                        setState(() => _showClasses = true),
-                                  ),
-                                ),
-                              ],
-                            ),
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: AppColors.backgroundPrimary,
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Row(
+                        children: [
+                          _browseModeTab(
+                            label: 'Classes',
+                            iconAsset: 'assets/icons/icon-schedule.svg',
+                            count: _derivedDayClassesCount,
+                            selected: _showClasses,
+                            onTap: () => setState(() => _showClasses = true),
                           ),
-                        ),
-                        const SizedBox(width: 10),
-                        Container(
-                          width: 40,
-                          height: 40,
-                          decoration: BoxDecoration(
-                            color: AppColors.backgroundPrimary,
-                            borderRadius: BorderRadius.circular(999),
-                            border: Border.all(color: AppColors.borderPrimary),
+                          _browseModeTab(
+                            label: 'Studios',
+                            iconAsset: 'assets/icons/icon-clients.svg',
+                            count: _derivedVisibleStudiosCount,
+                            selected: !_showClasses,
+                            onTap: () => setState(() => _showClasses = false),
                           ),
-                          child: Material(
-                            color: Colors.transparent,
-                            child: InkWell(
-                              borderRadius: BorderRadius.circular(999),
-                              onTap: _openAllFiltersSheet,
-                              child: const Icon(
-                                Icons.tune,
-                                size: 20,
-                                color: AppColors.textSecondary,
-                              ),
-                            ),
-                          ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
                   ),
                   const SizedBox(height: 10),
@@ -1570,97 +2074,72 @@ class ClientSearchScreenState extends State<ClientSearchScreen> {
                       padding: const EdgeInsets.symmetric(horizontal: 12),
                       children: [
                         ClientExploreFilterChip(
-                          label: _sortChipLabel,
-                          onTap: _openSortSheet,
-                        ),
-                        ClientExploreFilterChip(
-                          label: _categoryChipLabel(localeCode),
+                          label: _typesChipLabel(localeCode),
+                          isActive: _selectedCategoryId != null,
                           onTap: _openCategorySheet,
                         ),
                         ClientExploreFilterChip(
-                          label: _distanceChipLabel,
-                          onTap: _openAllFiltersSheet,
+                          label: _timeFilterChipLabel,
+                          isActive:
+                              _hasActiveTimeFilter || _timePeriods.isNotEmpty,
+                          onTap: _openTimeFilterSheet,
                         ),
                         ClientExploreFilterChip(
-                          label: _timeChipLabel,
-                          onTap: _openTimeFilterSheet,
+                          label: _distanceChipLabel,
+                          isActive: _distanceFilter != 'auto',
+                          onTap: _openDistanceSheet,
+                        ),
+                        ClientExploreFilterChip(
+                          label: _sortChipLabel,
+                          isActive: _sortBy != 'recommended',
+                          onTap: _openSortSheet,
                         ),
                       ],
                     ),
                   ),
-                  const SizedBox(height: 8),
-                  SizedBox(
-                    height: 40,
-                    child: ListView.builder(
-                      scrollDirection: Axis.horizontal,
-                      padding: const EdgeInsets.symmetric(horizontal: 12),
-                      itemCount: 31,
-                      itemBuilder: (_, i) {
-                        final selected = i == _selectedDayOffset;
-                        return GestureDetector(
-                          onTap: () => setState(() => _selectedDayOffset = i),
-                          child: Container(
-                            margin: const EdgeInsets.only(right: 18),
-                            padding: const EdgeInsets.only(bottom: 6),
-                            decoration: BoxDecoration(
-                              border: Border(
-                                bottom: BorderSide(
-                                  color: selected
-                                      ? AppColors.primary500
-                                      : Colors.transparent,
-                                  width: 3,
-                                ),
-                              ),
-                            ),
-                            child: Text(
-                              _dayLabel(i),
-                              style: TextStyle(
-                                fontSize: 24 / 1.6,
-                                fontWeight: selected
-                                    ? FontWeight.w800
-                                    : FontWeight.w500,
-                                color: selected
-                                    ? AppColors.primary500
-                                    : AppColors.textPrimary,
-                              ),
-                            ),
-                          ),
-                        );
-                      },
-                    ),
-                  ),
-                  const Divider(height: 1, color: AppColors.borderPrimary),
+                  const SizedBox(height: 14),
                   Expanded(
                     child: _showClasses
                         ? ListView.separated(
+                            padding: const EdgeInsets.fromLTRB(12, 4, 12, 8),
                             itemCount: _derivedDayClasses.length,
-                            separatorBuilder: (_, __) => const Divider(
-                              height: 1,
-                              color: AppColors.borderPrimary,
-                            ),
+                            separatorBuilder: (_, __) =>
+                                const SizedBox(height: 8),
                             itemBuilder: (_, index) {
                               final c = _derivedDayClasses[index];
-                              return ClassScheduleCard(
-                                timeLabel: formatTime24(c.startsAt),
-                                durationMin: c.durationMin,
-                                className: c.className,
-                                trainerName: c.trainerName,
-                                trainingColor: parseHexColor(c.displayColorHex),
-                                priceLabel: c.price != null
+                              final session = _ownerSessionFromExplore(c);
+                              final multi = c.studioLocationCount > 1;
+                              final loc = (c.locationName ?? '').trim();
+                              final showPin = multi && loc.isNotEmpty;
+                              final subtitle = showPin ? loc : c.studioName;
+                              final trainerLine = scheduleTrainerLineOrNull(
+                                session,
+                                null,
+                              );
+                              return OwnerDailyScheduleSessionCard(
+                                session: session,
+                                subtitleLabel: subtitle,
+                                showLocationPin: showPin,
+                                trainerLine: trainerLine,
+                                showSubtitleLeadingIcon: showPin,
+                                dimPastSessions: false,
+                                trailingPriceLabel: c.price != null
                                     ? formatVnd(c.price!)
                                     : null,
-                                bookedCount: c.bookedCount,
-                                capacity: c.capacity,
-                                onBook: () {},
+                                bookActionLabel: 'Book',
+                                onBookAgain: () => _openExploreClassDetail(c),
+                                onTap: () => _openExploreClassDetail(c),
                               );
                             },
                           )
                         : ListView.separated(
-                            itemCount: _derivedVisibleStudios.length,
-                            separatorBuilder: (_, __) => const Divider(
-                              height: 1,
-                              color: AppColors.borderPrimary,
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 12,
+                              vertical: 6,
                             ),
+                            itemCount: _derivedVisibleStudios.length,
+                            separatorBuilder: (_, __) =>
+                                const SizedBox(height: 8),
                             itemBuilder: (_, index) {
                               final s = _derivedVisibleStudios[index];
                               final firstToday =
@@ -1710,7 +2189,9 @@ class ClientSearchScreenState extends State<ClientSearchScreen> {
                                                     ),
                                                   ),
                                                   const SizedBox(height: 3),
-                                                  if (s.address.trim().isNotEmpty)
+                                                  if (s.address
+                                                      .trim()
+                                                      .isNotEmpty)
                                                     Text(
                                                       s.address.trim(),
                                                       maxLines: 1,
@@ -1736,8 +2217,9 @@ class ClientSearchScreenState extends State<ClientSearchScreen> {
                                                           width: 4,
                                                         ),
                                                         Text(
-                                                          distanceText.isNotEmpty
-                                                              ? '$distanceText  Â·  ${s.rating.toStringAsFixed(1)}  ${s.reviewCount} reviews'
+                                                          distanceText
+                                                                  .isNotEmpty
+                                                              ? '$distanceText  ?  ${s.rating.toStringAsFixed(1)}  ${s.reviewCount} reviews'
                                                               : '${s.rating.toStringAsFixed(1)}  ${s.reviewCount} reviews',
                                                           style: const TextStyle(
                                                             color: AppColors
@@ -1868,35 +2350,6 @@ class ClientSearchScreenState extends State<ClientSearchScreen> {
                   ),
                 ],
               ),
-      ),
-    );
-  }
-
-  Widget _segButton({
-    required String label,
-    required bool selected,
-    required VoidCallback onTap,
-  }) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        margin: const EdgeInsets.all(3),
-        padding: const EdgeInsets.symmetric(vertical: 8),
-        decoration: BoxDecoration(
-          color: selected ? AppColors.primary50 : Colors.transparent,
-          borderRadius: BorderRadius.circular(999),
-          border: Border.all(
-            color: selected ? AppColors.primary500 : Colors.transparent,
-          ),
-        ),
-        alignment: Alignment.center,
-        child: Text(
-          label,
-          style: TextStyle(
-            color: selected ? AppColors.primary500 : AppColors.textPrimary,
-            fontWeight: FontWeight.w700,
-          ),
-        ),
       ),
     );
   }

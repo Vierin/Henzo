@@ -1,7 +1,9 @@
 import 'package:flutter/foundation.dart';
 
+import '../utils/formatters.dart';
 import 'api_client.dart';
 import '../models/booking.dart';
+import '../models/owner_studio_client.dart';
 import '../models/salon.dart';
 import '../models/subscription.dart';
 import '../models/time_block.dart';
@@ -50,6 +52,9 @@ class OwnerTrainingSession {
   /// Null when no trainer row or owner-led slot.
   final String? trainerId;
 
+  final String? locationId;
+  final String? locationName;
+
   const OwnerTrainingSession({
     required this.sessionId,
     required this.trainingId,
@@ -68,6 +73,8 @@ class OwnerTrainingSession {
     this.trainingCategoryNameVn,
     required this.trainerName,
     this.trainerId,
+    this.locationId,
+    this.locationName,
   });
 
   factory OwnerTrainingSession.fromJson(Map<String, dynamic> json) {
@@ -94,11 +101,8 @@ class OwnerTrainingSession {
                   '')
               .toString(),
       startsAt:
-          DateTime.tryParse((json['startsAt'] ?? '').toString()) ??
-          DateTime.now(),
-      endsAt:
-          DateTime.tryParse((json['endsAt'] ?? '').toString()) ??
-          DateTime.now(),
+          parseApiDateTime(json['startsAt']) ?? DateTime.now(),
+      endsAt: parseApiDateTime(json['endsAt']) ?? DateTime.now(),
       status: (json['status'] ?? 'ACTIVE').toString(),
       capacity: (json['capacity'] as num?)?.toInt() ?? 0,
       enrolledCount: (json['enrolledCount'] as num?)?.toInt() ?? 0,
@@ -130,6 +134,8 @@ class OwnerTrainingSession {
           : trainerIdRaw.toString().trim().isEmpty
           ? null
           : trainerIdRaw.toString(),
+      locationId: json['locationId']?.toString(),
+      locationName: json['locationName']?.toString(),
     );
   }
 
@@ -157,6 +163,8 @@ class OwnerTrainingSession {
       'trainingCategoryNameVn': trainingCategoryNameVn,
     'trainerName': trainerName,
     if (trainerId != null) 'trainerId': trainerId,
+    if (locationId != null) 'locationId': locationId,
+    if (locationName != null) 'locationName': locationName,
   };
 
   factory OwnerTrainingSession.fromRouteArgs(Map<String, dynamic> m) {
@@ -164,10 +172,8 @@ class OwnerTrainingSession {
     return OwnerTrainingSession(
       sessionId: (m['sessionId'] ?? '').toString(),
       trainingId: (m['trainingId'] ?? '').toString(),
-      startsAt:
-          DateTime.tryParse((m['startsAt'] ?? '').toString()) ?? DateTime.now(),
-      endsAt:
-          DateTime.tryParse((m['endsAt'] ?? '').toString()) ?? DateTime.now(),
+      startsAt: parseApiDateTime(m['startsAt']) ?? DateTime.now(),
+      endsAt: parseApiDateTime(m['endsAt']) ?? DateTime.now(),
       status: (m['status'] ?? 'ACTIVE').toString(),
       capacity: (m['capacity'] as num?)?.toInt() ?? 0,
       enrolledCount: (m['enrolledCount'] as num?)?.toInt() ?? 0,
@@ -183,7 +189,64 @@ class OwnerTrainingSession {
       trainerId: trainerRaw == null || trainerRaw.toString().isEmpty
           ? null
           : trainerRaw.toString(),
+      locationId: m['locationId']?.toString(),
+      locationName: m['locationName']?.toString(),
     );
+  }
+
+  OwnerTrainingSession copyWith({
+    DateTime? startsAt,
+    DateTime? endsAt,
+    int? enrolledCount,
+    int? attendedCount,
+    String? status,
+    String? locationId,
+    String? locationName,
+    String? trainingName,
+    double? trainingPrice,
+    int? trainingDurationMinutes,
+    String? trainingDisplayColorHex,
+    String? trainingCategoryNameEn,
+    String? trainingCategoryNameRu,
+    String? trainingCategoryNameVn,
+  }) =>
+      OwnerTrainingSession(
+        sessionId: sessionId,
+        trainingId: trainingId,
+        startsAt: startsAt ?? this.startsAt,
+        endsAt: endsAt ?? this.endsAt,
+        status: status ?? this.status,
+        capacity: capacity,
+        enrolledCount: enrolledCount ?? this.enrolledCount,
+        attendedCount: attendedCount ?? this.attendedCount,
+        trainingName: trainingName ?? this.trainingName,
+        trainingPrice: trainingPrice ?? this.trainingPrice,
+        trainingDurationMinutes:
+            trainingDurationMinutes ?? this.trainingDurationMinutes,
+        trainingDisplayColorHex:
+            trainingDisplayColorHex ?? this.trainingDisplayColorHex,
+        trainingCategoryNameEn:
+            trainingCategoryNameEn ?? this.trainingCategoryNameEn,
+        trainingCategoryNameRu:
+            trainingCategoryNameRu ?? this.trainingCategoryNameRu,
+        trainingCategoryNameVn:
+            trainingCategoryNameVn ?? this.trainingCategoryNameVn,
+        trainerName: trainerName,
+        trainerId: trainerId,
+        locationId: locationId ?? this.locationId,
+        locationName: locationName ?? this.locationName,
+      );
+
+  /// When API [endsAt] is missing or invalid, derive from [startsAt] + duration.
+  DateTime get effectiveEndsAt {
+    final start = startsAt.toLocal();
+    final end = endsAt.toLocal();
+    if (end.isAfter(start)) return end;
+    final mins = trainingDurationMinutes;
+    if (mins != null && mins > 0) {
+      return start.add(Duration(minutes: mins));
+    }
+    return start.add(const Duration(hours: 1));
   }
 
   /// Training category label for UI (matches studio locale).
@@ -690,6 +753,8 @@ class DashboardApiService {
               staff: Staff(id: s.trainerId, name: s.trainerName),
               staffId: s.trainerId,
               serviceId: s.trainingId,
+              locationId: s.locationId,
+              locationName: s.locationName,
             ),
           );
         }
@@ -936,6 +1001,9 @@ class DashboardApiService {
     String? name,
     String? email,
     String? phone,
+    bool sendConfirmationEmail = false,
+    bool anonymousSpot = false,
+    String? locale,
   }) async {
     await ApiClient.post(
       '/fitness/owner/training-sessions/$sessionId/enrollments',
@@ -945,6 +1013,60 @@ class DashboardApiService {
         if (name != null && name.isNotEmpty) 'name': name,
         if (email != null && email.isNotEmpty) 'email': email,
         if (phone != null && phone.isNotEmpty) 'phone': phone,
+        'sendConfirmationEmail': sendConfirmationEmail,
+        'anonymousSpot': anonymousSpot,
+        if (locale != null && locale.isNotEmpty) 'locale': locale,
+      },
+    );
+  }
+
+  static Future<List<OwnerStudioClientRow>> getOwnerStudioClients(
+    String accessToken,
+  ) async {
+    final raw = await ApiClient.get(
+      '/fitness/owner/studio-clients',
+      accessToken,
+    );
+    if (raw is! List) return [];
+    return raw
+        .map((e) => OwnerStudioClientRow.fromJson(
+              Map<String, dynamic>.from(e as Map),
+            ))
+        .toList();
+  }
+
+  static Future<List<OwnerStudioClientSearchHit>> searchOwnerStudioClients(
+    String accessToken,
+    String query,
+  ) async {
+    final q = Uri.encodeComponent(query.trim());
+    final raw = await ApiClient.get(
+      '/fitness/owner/studio-clients/search?q=$q',
+      accessToken,
+    );
+    if (raw is! List) return [];
+    return raw
+        .map((e) => OwnerStudioClientSearchHit.fromJson(
+              Map<String, dynamic>.from(e as Map),
+            ))
+        .toList();
+  }
+
+  static Future<void> createOwnerStudioDirectoryClient(
+    String accessToken, {
+    String? name,
+    String? email,
+    String? phone,
+    String? notes,
+  }) async {
+    await ApiClient.post(
+      '/fitness/owner/studio-clients',
+      accessToken,
+      body: {
+        if (name != null && name.isNotEmpty) 'name': name,
+        if (email != null && email.isNotEmpty) 'email': email,
+        if (phone != null && phone.isNotEmpty) 'phone': phone,
+        if (notes != null && notes.isNotEmpty) 'notes': notes,
       },
     );
   }
@@ -976,6 +1098,7 @@ class DashboardApiService {
     required String studioId,
     required String trainingId,
     String? trainerId,
+    String? locationId,
     required int capacity,
     List<int>? daysOfWeek,
     String? startTime,
@@ -993,6 +1116,8 @@ class DashboardApiService {
                 'trainingId': trainingId,
                 if (trainerId != null && trainerId.isNotEmpty)
                   'trainerId': trainerId,
+                if (locationId != null && locationId.isNotEmpty)
+                  'locationId': locationId,
                 'capacity': capacity,
                 if (daysOfWeek != null) 'daysOfWeek': daysOfWeek,
                 if (startTime != null) 'startTime': startTime,

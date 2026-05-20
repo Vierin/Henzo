@@ -1,132 +1,271 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
+
+import '../constants/brand_typography.dart';
 
 import '../constants/colors.dart';
+
+import '../constants/layout.dart';
+
 import '../services/api_client.dart';
-import '../services/auth_service.dart';
-import '../utils/color_hex.dart';
-import '../widgets/public/class_schedule_card.dart';
+
+import '../services/dashboard_api_service.dart';
+
+import '../utils/formatters.dart';
+
+import '../widgets/dashboard/owner_daily_schedule_session_card.dart';
+
+import '../widgets/schedule/calendar_day_pill.dart';
+import 'public_class_detail_screen.dart';
 
 class PublicStudioScheduleScreen extends StatefulWidget {
   const PublicStudioScheduleScreen({
     super.key,
+
     required this.studioId,
+
     required this.studioName,
+
     this.bookingPeriodDays,
+
+    this.studioLocationCount = 1,
   });
 
   final String studioId;
+
   final String studioName;
+
   final int? bookingPeriodDays;
+
+  final int studioLocationCount;
 
   @override
   State<PublicStudioScheduleScreen> createState() =>
       _PublicStudioScheduleScreenState();
 }
 
-class _PublicStudioScheduleScreenState extends State<PublicStudioScheduleScreen> {
-  static const int _defaultBookingPeriodDays = 14;
+class _PublicStudioScheduleScreenState
+    extends State<PublicStudioScheduleScreen> {
+  static const int _defaultBookingPeriodDays = 28;
+
   static const int _minBookingPeriodDays = 1;
+
   static const int _maxBookingPeriodDays = 60;
+
+  static const Duration _kStripScheduleDebounce = Duration(milliseconds: 1400);
 
   final Map<int, List<Map<String, dynamic>>> _sessionsByDay =
       <int, List<Map<String, dynamic>>>{};
-  final Set<String> _bookingInProgress = <String>{};
-  late DateTime _selectedDay;
-  late DateTime _weekStart;
+
+  late final PageController _dayPagerController;
+
+  late final ValueNotifier<DateTime> _stripDayNotifier;
+
+  late final ValueNotifier<DateTime> _scheduleDayNotifier;
+
+  final ValueNotifier<DateTime> _stripPagerDayNotifier = ValueNotifier(
+    DateTime.now(),
+  );
+
+  Timer? _stripScheduleDebounce;
+
   late DateTime _minBookableDay;
+
   late DateTime _maxBookableDay;
+
   bool _loading = true;
+
   String? _loadError;
 
   @override
   void initState() {
     super.initState();
+
     final now = DateTime.now();
-    _selectedDay = _normalizeDay(now);
-    _minBookableDay = _selectedDay;
-    _maxBookableDay = _selectedDay.add(
+    final today = _normalizeDay(now);
+
+    _stripDayNotifier = ValueNotifier<DateTime>(today);
+    _scheduleDayNotifier = ValueNotifier<DateTime>(today);
+    _stripPagerDayNotifier.value = today;
+
+    _minBookableDay = today;
+
+    _maxBookableDay = today.add(
       const Duration(days: _defaultBookingPeriodDays),
     );
-    _weekStart = _selectedDay.subtract(Duration(days: _selectedDay.weekday - 1));
+
+    _dayPagerController = PageController(
+      initialPage: 0,
+      viewportFraction: 1 / 7,
+    );
+    _dayPagerController.addListener(_onStripPagerScrolled);
+
     _loadSchedule();
   }
 
+  @override
+  void dispose() {
+    _clearStripScheduleDebounceTimer();
+    _dayPagerController.removeListener(_onStripPagerScrolled);
+    _stripDayNotifier.dispose();
+    _scheduleDayNotifier.dispose();
+    _stripPagerDayNotifier.dispose();
+    _dayPagerController.dispose();
+
+    super.dispose();
+  }
+
+  void _clearStripScheduleDebounceTimer() {
+    _stripScheduleDebounce?.cancel();
+    _stripScheduleDebounce = null;
+  }
+
+  void _onStripPagerScrolled() {
+    if (!mounted || !_dayPagerController.hasClients) return;
+    final page = _dayPagerController.page;
+    if (page == null) return;
+    final day = _bookableDayAt(page.round().clamp(0, _bookableDayCount - 1));
+    final normalized = DateTime(day.year, day.month, day.day);
+    if (_stripPagerDayNotifier.value == normalized) return;
+    _stripPagerDayNotifier.value = normalized;
+  }
+
+  void _debounceStripAndScheduleDay(DateTime day) {
+    _clearStripScheduleDebounceTimer();
+    _stripScheduleDebounce = Timer(_kStripScheduleDebounce, () {
+      if (!mounted) return;
+      _stripDayNotifier.value = day;
+      _scheduleDayNotifier.value = day;
+      _stripScheduleDebounce = null;
+    });
+  }
+
+  int get _bookableDayCount =>
+      _maxBookableDay.difference(_minBookableDay).inDays + 1;
+
+  DateTime _bookableDayAt(int index) =>
+      _minBookableDay.add(Duration(days: index));
+
   Future<void> _loadSchedule() async {
     if (!mounted) return;
+
     setState(() {
       _loading = true;
+
       _loadError = null;
     });
+
     try {
-      final parsedBookingPeriod = (widget.bookingPeriodDays ??
-              _defaultBookingPeriodDays)
-          .clamp(_minBookingPeriodDays, _maxBookingPeriodDays);
+      final parsedBookingPeriod =
+          (widget.bookingPeriodDays ?? _defaultBookingPeriodDays).clamp(
+            _minBookingPeriodDays,
+            _maxBookingPeriodDays,
+          );
+
       final now = DateTime.now();
+
       final minDay = _normalizeDay(now);
+
       final maxDay = minDay.add(Duration(days: parsedBookingPeriod));
-      final clampedSelectedDay = _clampDay(_selectedDay, minDay, maxDay);
+
+      final clampedSelectedDay = _clampDay(
+        _scheduleDayNotifier.value,
+        minDay,
+        maxDay,
+      );
+
       final from = clampedSelectedDay;
+
       final to = maxDay;
+
       final raw = await ApiClient.get(
         '/studios/${widget.studioId}/schedule?from=${Uri.encodeComponent(from.toUtc().toIso8601String())}&to=${Uri.encodeComponent(to.toUtc().toIso8601String())}&limit=400',
+
         null,
       );
+
       final list = raw is List
           ? raw
           : (raw is Map<String, dynamic> && raw['data'] is List
                 ? raw['data'] as List
                 : <dynamic>[]);
+
       final grouped = <int, List<Map<String, dynamic>>>{};
+
       for (final item in list) {
         if (item is! Map) continue;
+
         final map = Map<String, dynamic>.from(item);
-        final startsAt = DateTime.tryParse((map['startsAt'] ?? '').toString())
-            ?.toLocal();
+
+        final startsAt = parseApiDateTime(map['startsAt']);
+
         if (startsAt == null) continue;
+
         final key = _dayKey(startsAt);
+
         (grouped[key] ??= <Map<String, dynamic>>[]).add(map);
       }
+
       for (final sessions in grouped.values) {
         sessions.sort((a, b) {
-          final aa = DateTime.tryParse((a['startsAt'] ?? '').toString()) ??
+          final aa =
+              parseApiDateTime(a['startsAt']) ??
               DateTime.fromMillisecondsSinceEpoch(0);
-          final bb = DateTime.tryParse((b['startsAt'] ?? '').toString()) ??
+
+          final bb =
+              parseApiDateTime(b['startsAt']) ??
               DateTime.fromMillisecondsSinceEpoch(0);
+
           return aa.compareTo(bb);
         });
       }
+
       if (!mounted) return;
-      final selectedKey = _dayKey(_selectedDay);
+
+      final selectedKey = _dayKey(clampedSelectedDay);
+
       DateTime? nextDayWithSessions;
+
       if (!grouped.containsKey(selectedKey) && grouped.isNotEmpty) {
         final sortedKeys = grouped.keys.toList()..sort();
+
         final fallbackKey = sortedKeys.firstWhere(
           (k) => k >= selectedKey,
+
           orElse: () => sortedKeys.first,
         );
+
         nextDayWithSessions = _dateFromDayKey(fallbackKey);
       }
+
       setState(() {
         _sessionsByDay
           ..clear()
           ..addAll(grouped);
+
         _minBookableDay = minDay;
+
         _maxBookableDay = maxDay;
-        _selectedDay = clampedSelectedDay;
-        _weekStart = _selectedDay.subtract(Duration(days: _selectedDay.weekday - 1));
-        if (nextDayWithSessions != null) {
-          final clampedNext = _clampDay(nextDayWithSessions, minDay, maxDay);
-          _selectedDay = clampedNext;
-          _weekStart = _selectedDay.subtract(Duration(days: _selectedDay.weekday - 1));
-        }
+
+        final scheduleDay = nextDayWithSessions != null
+            ? _clampDay(nextDayWithSessions, minDay, maxDay)
+            : clampedSelectedDay;
+
+        _stripDayNotifier.value = scheduleDay;
+        _scheduleDayNotifier.value = scheduleDay;
+        _stripPagerDayNotifier.value = scheduleDay;
+
         _loading = false;
+
         _loadError = null;
       });
     } catch (e) {
       if (!mounted) return;
+
       setState(() {
         _loading = false;
+
         _loadError = e.toString();
       });
     }
@@ -138,31 +277,28 @@ class _PublicStudioScheduleScreenState extends State<PublicStudioScheduleScreen>
 
   DateTime _clampDay(DateTime d, DateTime minDay, DateTime maxDay) {
     final normalized = _normalizeDay(d);
+
     if (normalized.isBefore(minDay)) return minDay;
+
     if (normalized.isAfter(maxDay)) return maxDay;
+
     return normalized;
   }
 
   bool _isDayInRange(DateTime day) {
     final normalized = _normalizeDay(day);
+
     return !normalized.isBefore(_minBookableDay) &&
         !normalized.isAfter(_maxBookableDay);
   }
 
-  bool _canGoPreviousWeek() {
-    final next = _selectedDay.subtract(const Duration(days: 7));
-    return _isDayInRange(next);
-  }
-
-  bool _canGoNextWeek() {
-    final next = _selectedDay.add(const Duration(days: 7));
-    return _isDayInRange(next);
-  }
-
   DateTime _dateFromDayKey(int key) {
     final year = key ~/ 10000;
+
     final month = (key % 10000) ~/ 100;
+
     final day = key % 100;
+
     return DateTime(year, month, day);
   }
 
@@ -170,271 +306,260 @@ class _PublicStudioScheduleScreenState extends State<PublicStudioScheduleScreen>
     return _sessionsByDay[_dayKey(day)] ?? const [];
   }
 
-  String _weekdayLetter(DateTime day) {
-    const names = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
-    return names[day.weekday - 1];
+  String _monthTitle(DateTime d) => CalendarDayPill.monthDayYearUpperEn(d);
+
+  OwnerTrainingSession? _mapOwnerSession(Map<String, dynamic> item) {
+    final training = item['training'] is Map
+        ? Map<String, dynamic>.from(item['training'] as Map)
+        : <String, dynamic>{};
+
+    final startsAt = parseApiDateTime(item['startsAt']);
+
+    if (startsAt == null) return null;
+
+    final durationMin = (training['duration'] as num?)?.toInt() ?? 60;
+
+    final endsAt =
+        parseApiDateTime(item['endsAt']) ??
+        startsAt.add(Duration(minutes: durationMin));
+
+    final trainer = item['trainer'] is Map
+        ? Map<String, dynamic>.from(item['trainer'] as Map)
+        : <String, dynamic>{};
+
+    return OwnerTrainingSession(
+      sessionId: (item['id'] ?? item['sessionId'] ?? '').toString(),
+
+      trainingId: (training['id'] ?? '').toString(),
+
+      startsAt: startsAt,
+
+      endsAt: endsAt,
+
+      status: (item['status'] ?? 'ACTIVE').toString(),
+
+      capacity: (item['capacity'] as num?)?.toInt() ?? 0,
+
+      enrolledCount: (item['bookedCount'] as num?)?.toInt() ?? 0,
+
+      attendedCount: (item['bookedCount'] as num?)?.toInt() ?? 0,
+
+      trainingName: (training['name'] ?? 'Class').toString(),
+
+      trainingPrice: (training['price'] as num?)?.toDouble(),
+
+      trainingDurationMinutes: durationMin,
+
+      trainingDisplayColorHex: training['displayColor']?.toString(),
+
+      trainerName: (trainer['name'] ?? '').toString().trim(),
+
+      trainerId: trainer['id']?.toString(),
+
+      locationId: item['locationId']?.toString(),
+
+      locationName: item['locationName']?.toString(),
+    );
   }
 
-  String _monthTitle(DateTime d) {
-    const months = [
-      'Jan',
-      'Feb',
-      'Mar',
-      'Apr',
-      'May',
-      'Jun',
-      'Jul',
-      'Aug',
-      'Sep',
-      'Oct',
-      'Nov',
-      'Dec',
-    ];
-    return '${months[d.month - 1]} ${d.day}, ${d.year}';
-  }
+  void _openClassDetail(Map<String, dynamic> raw) {
+    final sessionId = (raw['id'] ?? raw['sessionId'] ?? '').toString();
+    final startsAt = parseApiDateTime(raw['startsAt']);
+    if (sessionId.isEmpty || startsAt == null) return;
 
-  String _timeLabel(DateTime? dt) {
-    if (dt == null) return '--:--';
-    final h = dt.hour.toString().padLeft(2, '0');
-    final mm = dt.minute.toString().padLeft(2, '0');
-    return '$h:$mm';
-  }
-
-  String _formatVnd(num value) {
-    final digits = value.round().toString();
-    final out = StringBuffer();
-    for (int i = 0; i < digits.length; i++) {
-      out.write(digits[i]);
-      final left = digits.length - i - 1;
-      if (left > 0 && left % 3 == 0) {
-        out.write('.');
-      }
-    }
-    return out.toString();
-  }
-
-  Future<void> _bookSession(Map<String, dynamic> session) async {
-    final token = context.read<AuthService>().accessToken;
-    if (token == null || token.isEmpty) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please sign in to book a class')),
-      );
-      return;
-    }
-
-    final sessionId = (session['id'] ?? '').toString();
-    if (sessionId.isEmpty || _bookingInProgress.contains(sessionId)) return;
-    setState(() => _bookingInProgress.add(sessionId));
-    try {
-      final raw = await ApiClient.post(
-        '/studios/sessions/$sessionId/book',
-        token,
-        body: const <String, dynamic>{},
-      );
-      if (!mounted) return;
-      final map = raw is Map<String, dynamic> ? raw : <String, dynamic>{};
-      final booking = map['booking'] is Map<String, dynamic>
-          ? map['booking'] as Map<String, dynamic>
-          : null;
-      final alreadyBooked = map['alreadyBooked'] == true;
-      if (booking != null) {
-        session['bookedCount'] =
-            (booking['bookedCount'] as num?)?.toInt() ?? session['bookedCount'];
-      } else if (!alreadyBooked && session['bookedCount'] is num) {
-        session['bookedCount'] = (session['bookedCount'] as num).toInt() + 1;
-      }
-      setState(() {});
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            alreadyBooked
-                ? 'You are already booked for this class'
-                : 'You have successfully booked this training',
+    Navigator.of(context)
+        .push(
+          MaterialPageRoute(
+            builder: (_) => PublicClassDetailScreen(
+              studioId: widget.studioId,
+              sessionId: sessionId,
+              sessionStartsAtHint: startsAt,
+            ),
           ),
+        )
+        .then((_) {
+          if (mounted) _loadSchedule();
+        });
+  }
+
+  Widget _buildDayStrip() {
+    return SizedBox(
+      height: 86,
+      child: NotificationListener<ScrollNotification>(
+        onNotification: (ScrollNotification n) {
+          if (n.metrics.axis == Axis.horizontal) {
+            _onStripPagerScrolled();
+          }
+          return false;
+        },
+        child: PageView.builder(
+          controller: _dayPagerController,
+          physics: const SmoothDayPageScrollPhysics(),
+          padEnds: false,
+          itemCount: _bookableDayCount,
+          onPageChanged: (index) {
+            final day = _bookableDayAt(index);
+            final normalized = DateTime(day.year, day.month, day.day);
+            if (_stripPagerDayNotifier.value != normalized) {
+              _stripPagerDayNotifier.value = normalized;
+            }
+            if (CalendarDayPill.isSameDay(day, _stripDayNotifier.value) &&
+                CalendarDayPill.isSameDay(day, _scheduleDayNotifier.value)) {
+              return;
+            }
+            _debounceStripAndScheduleDay(normalized);
+          },
+          itemBuilder: (_, index) {
+            final day = _bookableDayAt(index);
+            return ValueListenableBuilder<DateTime>(
+              valueListenable: _stripDayNotifier,
+              builder: (context, stripDay, _) {
+                final selected = CalendarDayPill.isSameDay(day, stripDay);
+                return Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 3),
+                  child: CalendarDayPill(
+                    day: day,
+                    selected: selected,
+                    sessionsCount: _sessionsForDay(day).length,
+                    enabled: _isDayInRange(day),
+                    onTap: _isDayInRange(day)
+                        ? () {
+                            _clearStripScheduleDebounceTimer();
+                            final normalized = DateTime(
+                              day.year,
+                              day.month,
+                              day.day,
+                            );
+                            _stripDayNotifier.value = normalized;
+                            _scheduleDayNotifier.value = normalized;
+                            _stripPagerDayNotifier.value = normalized;
+                          }
+                        : null,
+                  ),
+                );
+              },
+            );
+          },
         ),
-      );
-    } catch (e) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Booking failed: $e')),
-      );
-    } finally {
-      if (!mounted) return;
-      setState(() => _bookingInProgress.remove(sessionId));
-    }
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
-    final sessions = _sessionsForDay(_selectedDay);
-    final canGoPrevWeek = _canGoPreviousWeek();
-    final canGoNextWeek = _canGoNextWeek();
     return Scaffold(
       backgroundColor: AppColors.backgroundSecondary,
+
       appBar: AppBar(
-        backgroundColor: AppColors.backgroundPrimary,
+        backgroundColor: AppColors.backgroundSecondary,
+
         foregroundColor: AppColors.textPrimary,
+
         elevation: 0,
-        title: const Text(
-          'Schedule',
-          style: TextStyle(fontWeight: FontWeight.w800),
-        ),
+
+        scrolledUnderElevation: 0,
+
+        title: Text('Schedule', style: BrandTypography.appBarTitle(context)),
       ),
+
       body: _loading
           ? const Center(child: CircularProgressIndicator())
           : Column(
               children: [
                 Container(
-                  color: AppColors.backgroundPrimary,
-                  padding: const EdgeInsets.fromLTRB(12, 6, 12, 10),
+                  color: AppColors.backgroundSecondary,
+
+                  padding: const EdgeInsets.fromLTRB(
+                    kScreenPaddingHorizontal,
+
+                    8,
+
+                    kScreenPaddingHorizontal,
+
+                    10,
+                  ),
+
                   child: Column(
                     children: [
-                      Row(
-                        children: [
-                          IconButton(
-                            onPressed: canGoPrevWeek
-                                ? () {
-                              setState(() {
-                                _weekStart = _weekStart.subtract(
-                                  const Duration(days: 7),
-                                );
-                                _selectedDay = _selectedDay.subtract(
-                                  const Duration(days: 7),
-                                );
-                              });
-                            }
-                                : null,
-                            icon: const Icon(Icons.chevron_left),
-                          ),
-                          Expanded(
-                            child: Center(
-                              child: Text(
-                                _monthTitle(_selectedDay),
-                                style: const TextStyle(
-                                  fontSize: 30 / 1.6,
-                                  fontWeight: FontWeight.w700,
-                                  color: AppColors.textPrimary,
-                                ),
-                              ),
-                            ),
-                          ),
-                          IconButton(
-                            onPressed: canGoNextWeek
-                                ? () {
-                              setState(() {
-                                _weekStart = _weekStart.add(
-                                  const Duration(days: 7),
-                                );
-                                _selectedDay = _selectedDay.add(
-                                  const Duration(days: 7),
-                                );
-                              });
-                            }
-                                : null,
-                            icon: const Icon(Icons.chevron_right),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 6),
-                      Row(
-                        children: List.generate(7, (i) {
-                          final day = _weekStart.add(Duration(days: i));
-                          final isInRange = _isDayInRange(day);
-                          final selected = day.year == _selectedDay.year &&
-                              day.month == _selectedDay.month &&
-                              day.day == _selectedDay.day;
-                          return Expanded(
-                            child: GestureDetector(
-                              onTap: isInRange
-                                  ? () => setState(() => _selectedDay = day)
-                                  : null,
-                              child: Column(
-                                children: [
-                                  Text(
-                                    _weekdayLetter(day),
-                                    style: TextStyle(
-                                      color: isInRange
-                                          ? AppColors.textSecondary
-                                          : AppColors.textSecondary.withValues(
-                                              alpha: 0.38,
-                                            ),
-                                      fontSize: 12,
-                                      fontWeight: FontWeight.w600,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 7),
-                                  Container(
-                                    width: 40,
-                                    height: 40,
-                                    decoration: BoxDecoration(
-                                      color: selected
-                                          ? AppColors.textPrimary
-                                          : Colors.transparent,
-                                      border: !selected && isInRange
-                                          ? Border.all(
-                                              color: AppColors.borderPrimary,
-                                            )
-                                          : null,
-                                      shape: BoxShape.circle,
-                                    ),
-                                    alignment: Alignment.center,
-                                    child: Text(
-                                      '${day.day}',
-                                      style: TextStyle(
-                                        color: selected
-                                            ? Colors.white
-                                            : isInRange
-                                            ? AppColors.textPrimary
-                                            : AppColors.textSecondary
-                                                  .withValues(alpha: 0.38),
-                                        fontWeight: FontWeight.w700,
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
+                      ValueListenableBuilder<DateTime>(
+                        valueListenable: _stripPagerDayNotifier,
+                        builder: (context, pagerDay, _) {
+                          return Text(
+                            _monthTitle(pagerDay),
+                            textAlign: TextAlign.center,
+                            style: const TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w700,
+                              letterSpacing: -0.3,
+                              color: AppColors.textPrimary,
                             ),
                           );
-                        }),
+                        },
                       ),
+
                       const SizedBox(height: 8),
+
+                      _buildDayStrip(),
+
+                      const SizedBox(height: 8),
+
                       Text(
-                        'Booking window: ${_monthTitle(_minBookableDay)} - ${_monthTitle(_maxBookableDay)}',
+                        'Booking window: '
+                        '${_monthTitle(_minBookableDay)} – '
+                        '${_monthTitle(_maxBookableDay)}',
+
                         style: const TextStyle(
                           fontSize: 12,
+
                           color: AppColors.textSecondary,
+
                           fontWeight: FontWeight.w500,
+
+                          letterSpacing: -0.3,
                         ),
                       ),
                     ],
                   ),
                 ),
-                const Divider(height: 1, color: AppColors.borderPrimary),
+
                 Expanded(
-                  child: _loadError != null
-                      ? Center(
+                  child: ValueListenableBuilder<DateTime>(
+                    valueListenable: _scheduleDayNotifier,
+                    builder: (context, scheduleDay, _) {
+                      final sessions = _sessionsForDay(scheduleDay);
+                      if (_loadError != null) {
+                        return Center(
                           child: Padding(
                             padding: const EdgeInsets.symmetric(horizontal: 24),
+
                             child: Column(
                               mainAxisSize: MainAxisSize.min,
+
                               children: [
                                 const Text(
                                   'Failed to load schedule',
+
                                   style: TextStyle(
                                     fontWeight: FontWeight.w700,
+
                                     color: AppColors.textPrimary,
                                   ),
                                 ),
+
                                 const SizedBox(height: 8),
+
                                 Text(
                                   _loadError!,
+
                                   textAlign: TextAlign.center,
+
                                   style: const TextStyle(
                                     color: AppColors.textSecondary,
                                   ),
                                 ),
+
                                 const SizedBox(height: 12),
+
                                 FilledButton(
                                   onPressed: _loadSchedule,
                                   child: const Text('Retry'),
@@ -442,58 +567,91 @@ class _PublicStudioScheduleScreenState extends State<PublicStudioScheduleScreen>
                               ],
                             ),
                           ),
-                        )
-                      : sessions.isEmpty
-                      ? Center(
+                        );
+                      }
+                      if (sessions.isEmpty) {
+                        return Center(
                           child: Text(
                             'No classes for selected day',
                             style: TextStyle(
-                              color: AppColors.textSecondary.withValues(alpha: 0.9),
+                              color: AppColors.textSecondary.withValues(
+                                alpha: 0.9,
+                              ),
                             ),
                           ),
-                        )
-                      : ListView.separated(
-                          itemCount: sessions.length,
-                          separatorBuilder: (_, __) => const Divider(
-                            height: 1,
-                            color: AppColors.borderPrimary,
+                        );
+                      }
+                      return ListView.builder(
+                          padding: const EdgeInsets.fromLTRB(
+                            kScreenPaddingHorizontal,
+
+                            12,
+
+                            kScreenPaddingHorizontal,
+
+                            24,
                           ),
+
+                          itemCount: sessions.length,
+
                           itemBuilder: (_, index) {
-                            final s = sessions[index];
-                            final training = s['training'] is Map
-                                ? Map<String, dynamic>.from(s['training'] as Map)
-                                : <String, dynamic>{};
-                            final trainer = s['trainer'] is Map
-                                ? (s['trainer']['name'] ?? '').toString()
-                                : '';
-                            final startsAt = DateTime.tryParse(
-                              (s['startsAt'] ?? '').toString(),
-                            )?.toLocal();
-                            final duration = (training['duration'] as num?)?.toInt();
-                            final price = (training['price'] as num?)?.toDouble();
-                            final capacity = (s['capacity'] as num?)?.toInt();
-                            final bookedCount = (s['bookedCount'] as num?)?.toInt() ?? 0;
-                            final trainingColor = parseHexColor(
-                              training['displayColor']?.toString(),
+                            final raw = sessions[index];
+
+                            final session = _mapOwnerSession(raw);
+
+                            if (session == null) {
+                              return const SizedBox.shrink();
+                            }
+
+                            final locName =
+                                session.locationName?.trim() ?? '';
+                            final hasMultiple =
+                                widget.studioLocationCount > 1;
+                            final studioLabel =
+                                widget.studioName.trim().isNotEmpty
+                                ? widget.studioName.trim()
+                                : 'Studio';
+                            final subtitleLabel = hasMultiple
+                                ? (locName.isNotEmpty
+                                      ? locName
+                                      : studioLabel)
+                                : studioLabel;
+                            final rows = layoutOwnerSessionCardRows(
+                              session: session,
+                              subtitleLabel: subtitleLabel,
+                              showLocationPin: hasMultiple,
                             );
-                            final hasCapacity = capacity != null && capacity > 0;
-                            final isFull = hasCapacity && bookedCount >= capacity;
-                            final sessionId = (s['id'] ?? '').toString();
-                            final isBooking = _bookingInProgress.contains(sessionId);
-                            return ClassScheduleCard(
-                              timeLabel: _timeLabel(startsAt),
-                              durationMin: duration,
-                              className: (training['name'] ?? 'Class').toString(),
-                              trainerName: trainer,
-                              priceLabel: price != null ? _formatVnd(price) : null,
-                              bookedCount: bookedCount,
-                              capacity: capacity,
-                              trainingColor: trainingColor,
-                              isBooking: isBooking,
-                              onBook: isFull ? null : () => _bookSession(s),
+
+                            final price = session.trainingPrice;
+
+                            return OwnerDailyScheduleSessionCard(
+                              session: session,
+
+                              subtitleLabel: rows.subtitleLabel,
+
+                              showLocationPin: rows.showLocationPin,
+
+                              showSubtitleLeadingIcon:
+                                  rows.showSubtitleLeadingIcon,
+
+                              trainerLine: rows.trainerLine,
+
+                              dimPastSessions: false,
+
+                              trailingPriceLabel: price != null
+                                  ? formatVnd(price)
+                                  : null,
+
+                              bookActionLabel: 'Book',
+
+                              onBookAgain: () => _openClassDetail(raw),
+
+                              onTap: () => _openClassDetail(raw),
                             );
                           },
-                        ),
+                        );
+                    },
+                  ),
                 ),
               ],
             ),

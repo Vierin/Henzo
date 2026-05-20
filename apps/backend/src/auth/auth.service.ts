@@ -992,6 +992,10 @@ export class AuthService {
 
         if (error) {
           console.error('❌ Supabase token verification error:', error.message);
+          const cause = (error as { cause?: { code?: string } }).cause;
+          if (cause?.code === 'UND_ERR_CONNECT_TIMEOUT') {
+            throw new Error('Auth service unavailable');
+          }
           throw new Error('Invalid token');
         }
 
@@ -1276,6 +1280,7 @@ export class AuthService {
           email: dbUser.email,
           name: dbUser.name,
           phone: dbUser.phone,
+          avatarUrl: dbUser.avatarUrl,
           role: dbUser.role,
         },
       };
@@ -1397,12 +1402,16 @@ export class AuthService {
         data: {
           name: data.name,
           phone: data.phone,
+          ...(data.avatarUrl !== undefined
+            ? { avatarUrl: data.avatarUrl || null }
+            : {}),
         },
         select: {
           id: true,
           email: true,
           name: true,
           phone: true,
+          avatarUrl: true,
           role: true,
         },
       });

@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import '../../constants/colors.dart';
 import '../../l10n/locale_provider.dart';
 import '../../services/api_client.dart';
+import '../../widgets/common/henzo_header_back_button.dart';
 
 /// Owner-facing list of client ratings and comments for this studio (same API as public studio page).
 class OwnerStudioReviewsScreen extends StatefulWidget {
@@ -113,18 +114,10 @@ class _OwnerStudioReviewsScreenState extends State<OwnerStudioReviewsScreen> {
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
-        leading: IconButton(
+        leading: HenzoHeaderBackButton(
           onPressed: () => Navigator.pop(context),
-          style: IconButton.styleFrom(
-            backgroundColor: AppColors.neutral200,
-            shape: const CircleBorder(),
-          ),
-          icon: const Icon(
-            Icons.arrow_back,
-            color: AppColors.textPrimary,
-            size: 20,
-          ),
         ),
+        leadingWidth: 56,
         title: Text(
           title,
           style: const TextStyle(

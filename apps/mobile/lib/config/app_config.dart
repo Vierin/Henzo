@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 
@@ -50,6 +52,46 @@ abstract final class AppConfig {
   }
 
   static bool get isProduction => !isDevelopment;
+
+  static String _firstEnv(List<String> keys) {
+    for (final key in keys) {
+      final value = (dotenv.env[key] ?? '').trim();
+      if (value.isNotEmpty) return value;
+    }
+    return '';
+  }
+
+  /// RevenueCat public SDK key (Test Store `test_`, prod `appl_` / `goog_`).
+  static String get revenueCatApiKey {
+    const sharedKeys = [
+      'EXPO_PUBLIC_REVENUECAT_API_KEY',
+      'REVENUECAT_API_KEY',
+    ];
+    if (Platform.isIOS) {
+      return _firstEnv([
+        'EXPO_PUBLIC_REVENUECAT_IOS_API_KEY',
+        'REVENUECAT_IOS_API_KEY',
+        ...sharedKeys,
+      ]);
+    }
+    if (Platform.isAndroid) {
+      return _firstEnv([
+        'EXPO_PUBLIC_REVENUECAT_ANDROID_API_KEY',
+        'REVENUECAT_ANDROID_API_KEY',
+        ...sharedKeys,
+      ]);
+    }
+    return '';
+  }
+
+  /// Entitlement identifier in RevenueCat (default `pro`).
+  static String get revenueCatEntitlementId =>
+      (dotenv.env['EXPO_PUBLIC_REVENUECAT_ENTITLEMENT_ID'] ??
+              dotenv.env['REVENUECAT_ENTITLEMENT_ID'] ??
+              'pro')
+          .trim();
+
+  static bool get isRevenueCatEnabled => revenueCatApiKey.isNotEmpty;
 
   /// Логирование только в development (например детали ошибок входа).
   static void logIfDevelopment(

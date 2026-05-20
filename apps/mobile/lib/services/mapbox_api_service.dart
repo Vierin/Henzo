@@ -49,7 +49,9 @@ class MapboxApiService {
   static Future<ReverseGeocodeResult?> reverseGeocode(double lat, double lon) async {
     final url = Uri.parse('$_baseUrl/mapbox/reverse-geocode?lat=$lat&lon=$lon');
     try {
-      final response = await http.get(url);
+      final response = await http
+          .get(url)
+          .timeout(const Duration(seconds: 15));
       if (kDebugMode) {
         debugPrint('[MapboxAPI] GET reverse-geocode status=${response.statusCode}');
       }

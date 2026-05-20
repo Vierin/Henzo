@@ -653,6 +653,38 @@ export class StudiosController {
     }
   }
 
+  @Get('sessions/:sessionId/my-enrollment')
+  async getMySessionEnrollment(
+    @Param('sessionId') sessionId: string,
+    @Headers('authorization') authHeader: string,
+  ) {
+    try {
+      const currentUser = await this.authService.getCurrentUser(authHeader);
+      const row = await this.prisma.sessionEnrollment.findUnique({
+        where: {
+          sessionId_userId: {
+            sessionId,
+            userId: currentUser.user.id,
+          },
+        },
+        select: { id: true, status: true },
+      });
+      return {
+        enrolled: row?.status === 'ACTIVE',
+        enrollmentId: row?.id ?? null,
+        status: row?.status ?? null,
+      };
+    } catch (error) {
+      if (error instanceof HttpException) {
+        throw error;
+      }
+      throw new HttpException(
+        error?.message || 'Failed to load enrollment',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+  }
+
   @Post('sessions/:sessionId/book')
   async bookPublicStudioSession(
     @Param('sessionId') sessionId: string,
@@ -721,18 +753,10 @@ export class StudiosController {
       });
 
       if (existing?.status === 'ACTIVE') {
-        return {
-          success: true,
-          alreadyBooked: true,
-          booking: {
-            sessionId: session.id,
-            status: 'ACTIVE',
-            startsAt: session.startsAt,
-            endsAt: session.endsAt,
-            bookedCount: session.bookedCount,
-            capacity: session.capacity,
-          },
-        };
+        throw new HttpException(
+          'You are already booked for this class',
+          HttpStatus.CONFLICT,
+        );
       }
 
       if (session.bookedCount >= session.capacity) {
@@ -740,6 +764,17 @@ export class StudiosController {
       }
 
       const booking = await this.prisma.$transaction(async (tx) => {
+        const activeAgain = await tx.sessionEnrollment.findFirst({
+          where: { sessionId, userId, status: 'ACTIVE' },
+          select: { id: true },
+        });
+        if (activeAgain) {
+          throw new HttpException(
+            'You are already booked for this class',
+            HttpStatus.CONFLICT,
+          );
+        }
+
         if (existing) {
           await tx.sessionEnrollment.update({
             where: { id: existing.id },
@@ -749,16 +784,26 @@ export class StudiosController {
             },
           });
         } else {
-          await tx.sessionEnrollment.create({
-            data: {
-              sessionId,
-              userId,
-              status: 'ACTIVE',
-            },
-          });
+          try {
+            await tx.sessionEnrollment.create({
+              data: {
+                sessionId,
+                userId,
+                status: 'ACTIVE',
+              },
+            });
+          } catch (createError: any) {
+            if (createError?.code === 'P2002') {
+              throw new HttpException(
+                'You are already booked for this class',
+                HttpStatus.CONFLICT,
+              );
+            }
+            throw createError;
+          }
         }
 
-        const updatedSession = await tx.trainingSession.update({
+        return tx.trainingSession.update({
           where: { id: sessionId },
           data: {
             bookedCount: {
@@ -773,7 +818,6 @@ export class StudiosController {
             capacity: true,
           },
         });
-        return updatedSession;
       });
 
       try {
@@ -817,6 +861,31 @@ export class StudiosController {
       }
       throw new HttpException(
         error?.message || 'Failed to book session',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+  }
+
+  @Post(':id/reviews')
+  async createClientStudioReview(
+    @Param('id') id: string,
+    @Headers('authorization') authHeader: string,
+    @Body()
+    body: { rating: number; comment?: string; enrollmentId?: string },
+  ) {
+    try {
+      const currentUser = await this.authService.getCurrentUser(authHeader);
+      return await this.studiosService.createClientStudioReview(
+        currentUser.user.id,
+        id,
+        body ?? {},
+      );
+    } catch (error) {
+      if (error instanceof HttpException) {
+        throw error;
+      }
+      throw new HttpException(
+        error?.message || 'Failed to submit review',
         HttpStatus.BAD_REQUEST,
       );
     }

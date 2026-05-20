@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../constants/colors.dart';
+import '../widgets/common/henzo_header_back_button.dart';
 
 const _monthNamesRu = [
   'Январь', 'Февраль', 'Март', 'Апрель', 'Май', 'Июнь',
@@ -104,14 +105,10 @@ class _PeriodPickerScreenState extends State<PeriodPickerScreen> {
     return Scaffold(
       backgroundColor: AppColors.backgroundSecondary,
       appBar: AppBar(
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
+        leading: HenzoHeaderBackButton(
           onPressed: () => Navigator.of(context).pop(),
-          style: IconButton.styleFrom(
-            backgroundColor: AppColors.neutral200,
-            foregroundColor: AppColors.textPrimary,
-          ),
         ),
+        leadingWidth: 56,
         title: const Text(
           'Период',
           style: TextStyle(

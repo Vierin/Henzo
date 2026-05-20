@@ -1,8 +1,10 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
+import 'common/henzo_modal.dart';
 import 'package:provider/provider.dart';
 
-import '../constants/colors.dart';
-import '../l10n/locale_provider.dart';
+import '../constants/colors.dart';import '../l10n/locale_provider.dart';
 
 /// Same month abbreviations as [CalendarScreen] header.
 const _kEnMon = [
@@ -21,6 +23,12 @@ const _kEnMon = [
 ];
 
 const _kDow = ['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN'];
+
+const int _kGridCrossCount = 7;
+const double _kGridCrossSpacing = 4;
+const double _kGridMainSpacing = 8;
+const double _kActionButtonRadius = 12;
+const double _kActionButtonMinHeight = 48;
 
 List<DateTime?> _monthCells(DateTime monthDate) {
   final firstDay = DateTime(monthDate.year, monthDate.month, 1);
@@ -48,7 +56,27 @@ bool _monthIntersectsRange(
   return !monthEnd.isBefore(firstDate) && !monthFirst.isAfter(lastDate);
 }
 
+DateTime _firstMonthInRange(DateTime firstDate) =>
+    DateTime(firstDate.year, firstDate.month, 1);
+
+DateTime _lastMonthInRange(DateTime lastDate) =>
+    DateTime(lastDate.year, lastDate.month, 1);
+
+int _countMonthPages(DateTime firstDate, DateTime lastDate) {
+  final a = _firstMonthInRange(firstDate);
+  final b = _lastMonthInRange(lastDate);
+  return (b.year - a.year) * 12 + b.month - a.month + 1;
+}
+
+DateTime _pageToMonth(DateTime rangeFirstMonth, int page) =>
+    DateTime(rangeFirstMonth.year, rangeFirstMonth.month + page, 1);
+
+int _monthToPage(DateTime rangeFirstMonth, DateTime monthFirst) =>
+    (monthFirst.year - rangeFirstMonth.year) * 12 +
+    (monthFirst.month - rangeFirstMonth.month);
+
 /// Month grid matching Schedule expanded calendar; header row: ◀ month ▶.
+/// Horizontal swipe on the grid changes the month.
 Future<DateTime?> showScheduleStyleDatePicker({
   required BuildContext context,
   required DateTime initialDate,
@@ -61,7 +89,7 @@ Future<DateTime?> showScheduleStyleDatePicker({
   if (initial.isBefore(first)) initial = first;
   if (initial.isAfter(last)) initial = last;
 
-  return showModalBottomSheet<DateTime>(
+  return showHenzoModalBottomSheet<DateTime>(
     context: context,
     isScrollControlled: true,
     backgroundColor: Colors.transparent,
@@ -91,21 +119,41 @@ class _ScheduleStyleDatePickerSheet extends StatefulWidget {
 
 class _ScheduleStyleDatePickerSheetState
     extends State<_ScheduleStyleDatePickerSheet> {
+  late DateTime _rangeFirstMonth;
+  late int _monthPageCount;
   late DateTime _monthFirst;
   late DateTime _selected;
+  late PageController _pageController;
+  /// Last page reported by [PageView.onPageChanged] (settled index).
+  late int _settledPickerPage;
+  var _pickerPageAnimating = false;
 
   @override
   void initState() {
     super.initState();
     _selected = widget.initialSelected;
+    _rangeFirstMonth = _firstMonthInRange(widget.firstDate);
+    _monthPageCount = _countMonthPages(widget.firstDate, widget.lastDate);
     _monthFirst = DateTime(_selected.year, _selected.month, 1);
     if (!_monthIntersectsRange(
       _monthFirst,
       widget.firstDate,
       widget.lastDate,
     )) {
-      _monthFirst = DateTime(widget.firstDate.year, widget.firstDate.month, 1);
+      _monthFirst = _rangeFirstMonth;
     }
+    var page = _monthToPage(_rangeFirstMonth, _monthFirst);
+    if (page < 0) page = 0;
+    if (page >= _monthPageCount) page = _monthPageCount - 1;
+    _monthFirst = _pageToMonth(_rangeFirstMonth, page);
+    _settledPickerPage = page;
+    _pageController = PageController(initialPage: page);
+  }
+
+  @override
+  void dispose() {
+    _pageController.dispose();
+    super.dispose();
   }
 
   bool _sameDay(DateTime a, DateTime b) =>
@@ -114,33 +162,151 @@ class _ScheduleStyleDatePickerSheetState
   bool _inRange(DateTime d) =>
       !d.isBefore(widget.firstDate) && !d.isAfter(widget.lastDate);
 
-  bool _canPrevMonth() {
-    final prev = DateTime(_monthFirst.year, _monthFirst.month - 1, 1);
-    return _monthIntersectsRange(prev, widget.firstDate, widget.lastDate);
+  bool get _canPrevMonth => _settledPickerPage > 0;
+
+  bool get _canNextMonth => _settledPickerPage < _monthPageCount - 1;
+
+  int _readPickerPageForArrows() {
+    if (!_pageController.hasClients) return _settledPickerPage;
+    final p = _pageController.page;
+    if (p == null) return _settledPickerPage;
+    return p.round().clamp(0, _monthPageCount - 1);
   }
 
-  bool _canNextMonth() {
-    final next = DateTime(_monthFirst.year, _monthFirst.month + 1, 1);
-    return _monthIntersectsRange(next, widget.firstDate, widget.lastDate);
+  Future<void> _animatePickerToPage(int page) async {
+    if (page < 0 || page >= _monthPageCount) return;
+    if (_pickerPageAnimating) return;
+    if (!_pageController.hasClients) return;
+    final cur = _readPickerPageForArrows();
+    if (cur == page) return;
+    _pickerPageAnimating = true;
+    try {
+      await _pageController.animateToPage(
+        page,
+        duration: const Duration(milliseconds: 220),
+        curve: Curves.easeOutCubic,
+      );
+    } finally {
+      if (mounted) {
+        _pickerPageAnimating = false;
+      }
+    }
   }
 
   void _prevMonth() {
-    if (!_canPrevMonth()) return;
-    setState(
-      () => _monthFirst = DateTime(_monthFirst.year, _monthFirst.month - 1, 1),
-    );
+    if (!_canPrevMonth || _pickerPageAnimating) return;
+    final cur = _readPickerPageForArrows();
+    if (cur <= 0) return;
+    unawaited(_animatePickerToPage(cur - 1));
   }
 
   void _nextMonth() {
-    if (!_canNextMonth()) return;
-    setState(
-      () => _monthFirst = DateTime(_monthFirst.year, _monthFirst.month + 1, 1),
+    if (!_canNextMonth || _pickerPageAnimating) return;
+    final cur = _readPickerPageForArrows();
+    if (cur >= _monthPageCount - 1) return;
+    unawaited(_animatePickerToPage(cur + 1));
+  }
+
+  double _calendarBodyHeight(double innerWidth) {
+    const dowRow = 18.0;
+    const gap = 12.0;
+    final tile =
+        (innerWidth - (_kGridCrossCount - 1) * _kGridCrossSpacing) /
+        _kGridCrossCount;
+    const rows = 6;
+    final gridH = rows * tile + (rows - 1) * _kGridMainSpacing;
+    return dowRow + gap + gridH;
+  }
+
+  Widget _buildDayCell(DateTime day) {
+    final inRange = _inRange(day);
+    final selected = _sameDay(day, _selected);
+    final today = _sameDay(day, DateTime.now());
+    return Center(
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          customBorder: const CircleBorder(),
+          onTap: inRange ? () => setState(() => _selected = day) : null,
+          child: Opacity(
+            opacity: inRange ? 1 : 0.28,
+            child: Container(
+              width: 36,
+              height: 36,
+              alignment: Alignment.center,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: selected
+                    ? AppColors.primary500
+                    : (today
+                          ? AppColors.primary100
+                          : AppColors.backgroundTertiary),
+                border: Border.all(
+                  color: selected
+                      ? AppColors.primary500
+                      : AppColors.borderPrimary.withValues(alpha: 0.5),
+                ),
+              ),
+              child: Text(
+                '${day.day}',
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500,
+                  color: selected ? Colors.white : AppColors.textPrimary,
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildMonthPage(DateTime monthFirst) {
+    final cells = _monthCells(monthFirst);
+    return Column(
+      children: [
+        Row(
+          children: List.generate(
+            _kGridCrossCount,
+            (i) => Expanded(
+              child: Center(
+                child: Text(
+                  _kDow[i],
+                  style: const TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w400,
+                    letterSpacing: -0.3,
+                    color: AppColors.textSecondary,
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(height: 12),
+        GridView.builder(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          itemCount: cells.length,
+          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: _kGridCrossCount,
+            mainAxisSpacing: _kGridMainSpacing,
+            crossAxisSpacing: _kGridCrossSpacing,
+            childAspectRatio: 1.0,
+          ),
+          itemBuilder: (_, index) {
+            final day = cells[index];
+            if (day == null) return const SizedBox.shrink();
+            return _buildDayCell(day);
+          },
+        ),
+      ],
     );
   }
 
   @override
   Widget build(BuildContext context) {
-    final cells = _monthCells(_monthFirst);
     final bottomInset = MediaQuery.paddingOf(context).bottom;
 
     return Material(
@@ -166,7 +332,9 @@ class _ScheduleStyleDatePickerSheetState
             Row(
               children: [
                 IconButton(
-                  onPressed: _canPrevMonth() ? _prevMonth : null,
+                  onPressed: (_canPrevMonth && !_pickerPageAnimating)
+                      ? _prevMonth
+                      : null,
                   icon: const Icon(Icons.chevron_left_rounded),
                   color: AppColors.textSecondary,
                 ),
@@ -185,115 +353,67 @@ class _ScheduleStyleDatePickerSheetState
                   ),
                 ),
                 IconButton(
-                  onPressed: _canNextMonth() ? _nextMonth : null,
+                  onPressed: (_canNextMonth && !_pickerPageAnimating)
+                      ? _nextMonth
+                      : null,
                   icon: const Icon(Icons.chevron_right_rounded),
                   color: AppColors.textSecondary,
                 ),
               ],
             ),
             const SizedBox(height: 8),
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.fromLTRB(12, 16, 12, 16),
-              decoration: BoxDecoration(
-                color: AppColors.backgroundPrimary,
-                borderRadius: BorderRadius.circular(14),
-              ),
-              child: Column(
-                children: [
-                  Row(
-                    children: List.generate(
-                      7,
-                      (i) => Expanded(
-                        child: Center(
-                          child: Text(
-                            _kDow[i],
-                            style: const TextStyle(
-                              fontSize: 11,
-                              fontWeight: FontWeight.w400,
-                              letterSpacing: -0.3,
-                              color: AppColors.textSecondary,
-                            ),
-                          ),
-                        ),
-                      ),
+            LayoutBuilder(
+              builder: (context, constraints) {
+                final innerW = constraints.maxWidth - 24;
+                final bodyH = _calendarBodyHeight(innerW);
+                return Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.fromLTRB(12, 16, 12, 16),
+                  decoration: BoxDecoration(
+                    color: AppColors.backgroundPrimary,
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                  child: SizedBox(
+                    height: bodyH,
+                    child: PageView.builder(
+                      controller: _pageController,
+                      onPageChanged: (i) {
+                        setState(() {
+                          _settledPickerPage = i;
+                          _monthFirst = _pageToMonth(_rangeFirstMonth, i);
+                        });
+                      },
+                      itemCount: _monthPageCount,
+                      itemBuilder: (_, page) {
+                        final month = _pageToMonth(_rangeFirstMonth, page);
+                        return _buildMonthPage(month);
+                      },
                     ),
                   ),
-                  const SizedBox(height: 12),
-                  GridView.builder(
-                    shrinkWrap: true,
-                    physics: const NeverScrollableScrollPhysics(),
-                    itemCount: cells.length,
-                    gridDelegate:
-                        const SliverGridDelegateWithFixedCrossAxisCount(
-                          crossAxisCount: 7,
-                          mainAxisSpacing: 8,
-                          crossAxisSpacing: 4,
-                          childAspectRatio: 1.0,
-                        ),
-                    itemBuilder: (_, index) {
-                      final day = cells[index];
-                      if (day == null) return const SizedBox.shrink();
-                      final inRange = _inRange(day);
-                      final selected = _sameDay(day, _selected);
-                      final today = _sameDay(day, DateTime.now());
-                      return Center(
-                        child: Material(
-                          color: Colors.transparent,
-                          child: InkWell(
-                            customBorder: const CircleBorder(),
-                            onTap: inRange
-                                ? () => setState(() => _selected = day)
-                                : null,
-                            child: Opacity(
-                              opacity: inRange ? 1 : 0.28,
-                              child: Container(
-                                width: 36,
-                                height: 36,
-                                alignment: Alignment.center,
-                                decoration: BoxDecoration(
-                                  shape: BoxShape.circle,
-                                  color: selected
-                                      ? AppColors.primary500
-                                      : (today
-                                            ? AppColors.primary100
-                                            : AppColors.backgroundTertiary),
-                                  border: Border.all(
-                                    color: selected
-                                        ? AppColors.primary500
-                                        : AppColors.borderPrimary.withValues(
-                                            alpha: 0.5,
-                                          ),
-                                  ),
-                                ),
-                                child: Text(
-                                  '${day.day}',
-                                  style: TextStyle(
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.w500,
-                                    color: selected
-                                        ? Colors.white
-                                        : AppColors.textPrimary,
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ),
-                        ),
-                      );
-                    },
-                  ),
-                ],
-              ),
+                );
+              },
             ),
             const SizedBox(height: 16),
             Consumer<LocaleProvider>(
               builder: (context, loc, _) {
+                final actionShape = RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(_kActionButtonRadius),
+                );
                 return Row(
                   children: [
                     Expanded(
                       child: OutlinedButton(
                         onPressed: () => Navigator.of(context).pop(),
+                        style: OutlinedButton.styleFrom(
+                          minimumSize: const Size(
+                            0,
+                            _kActionButtonMinHeight,
+                          ),
+                          side: const BorderSide(
+                            color: AppColors.borderPrimary,
+                          ),
+                          shape: actionShape,
+                        ),
                         child: Text(loc.t('common.cancel')),
                       ),
                     ),
@@ -304,8 +424,13 @@ class _ScheduleStyleDatePickerSheetState
                             ? () => Navigator.of(context).pop(_selected)
                             : null,
                         style: FilledButton.styleFrom(
+                          minimumSize: const Size(
+                            0,
+                            _kActionButtonMinHeight,
+                          ),
                           backgroundColor: AppColors.primary500,
                           foregroundColor: Colors.white,
+                          shape: actionShape,
                         ),
                         child: Text(loc.t('common.done')),
                       ),

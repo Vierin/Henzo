@@ -18,6 +18,24 @@ class TrainingCategoryOption {
   final String chipBgHex;
   final String? chipFgHex;
 
+  bool get isOtherCategory => nameEn.trim().toLowerCase() == 'other';
+
+  /// Puts the «Other» category last (matches category picker sheet).
+  static List<TrainingCategoryOption> withOtherLast(
+    List<TrainingCategoryOption> list,
+  ) {
+    final rest = <TrainingCategoryOption>[];
+    final other = <TrainingCategoryOption>[];
+    for (final c in list) {
+      if (c.isOtherCategory) {
+        other.add(c);
+      } else {
+        rest.add(c);
+      }
+    }
+    return [...rest, ...other];
+  }
+
   String label(String localeCode) {
     switch (localeCode) {
       case 'vi':
