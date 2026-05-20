@@ -20,7 +20,9 @@ export class RevenueCatWebhookController {
     @Body() body: Record<string, unknown>,
   ) {
     if (!this.revenueCat.isWebhookAuthorized(authorization)) {
-      throw new UnauthorizedException('Invalid RevenueCat webhook authorization');
+      throw new UnauthorizedException(
+        'Invalid RevenueCat webhook authorization',
+      );
     }
     return this.revenueCat.handleWebhookEvent(body);
   }

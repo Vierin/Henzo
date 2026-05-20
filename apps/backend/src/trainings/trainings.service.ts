@@ -491,9 +491,7 @@ export class TrainingsService {
     const nextCapacity =
       dto.capacity != null && dto.capacity > 0 ? dto.capacity : undefined;
     const nextLocationId =
-      dto.locationId !== undefined
-        ? dto.locationId?.trim() || null
-        : undefined;
+      dto.locationId !== undefined ? dto.locationId?.trim() || null : undefined;
     const invalidSlot = slots.find(
       (s) =>
         !Number.isInteger(s.day) ||
@@ -569,10 +567,7 @@ export class TrainingsService {
     const mutableIds = mutable.map((s: any) => s.id);
     const template = mutable[0] ?? existing[0] ?? null;
 
-    const desiredBySlot = new Map<
-      string,
-      { startsAt: Date; endsAt: Date }
-    >();
+    const desiredBySlot = new Map<string, { startsAt: Date; endsAt: Date }>();
     for (const d of desired) {
       desiredBySlot.set(this.sessionSlotKey(d.startsAt), d);
     }
@@ -673,7 +668,7 @@ export class TrainingsService {
         locationId:
           nextLocationId !== undefined
             ? nextLocationId
-            : template.locationId ?? null,
+            : (template.locationId ?? null),
         startsAt: d.startsAt,
         endsAt: d.endsAt,
         capacity: nextCapacity ?? template.capacity ?? 1,

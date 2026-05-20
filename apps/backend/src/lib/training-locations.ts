@@ -9,8 +9,7 @@ export function countTrainingLocations(reminderSettings: unknown): number {
   if (!reminderSettings || typeof reminderSettings !== 'object') {
     return count;
   }
-  const raw = (reminderSettings as Record<string, unknown>)
-    .trainingLocations;
+  const raw = (reminderSettings as Record<string, unknown>).trainingLocations;
   if (!Array.isArray(raw)) return count;
   for (const entry of raw) {
     if (!entry || typeof entry !== 'object') continue;
@@ -39,8 +38,7 @@ export function listExtraTrainingLocationNames(
   if (!reminderSettings || typeof reminderSettings !== 'object') {
     return out;
   }
-  const raw = (reminderSettings as Record<string, unknown>)
-    .trainingLocations;
+  const raw = (reminderSettings as Record<string, unknown>).trainingLocations;
   if (!Array.isArray(raw)) return out;
   for (const entry of raw) {
     if (!entry || typeof entry !== 'object') continue;
@@ -87,8 +85,7 @@ export function resolveTrainingLocationName(
   if (!reminderSettings || typeof reminderSettings !== 'object') {
     return null;
   }
-  const raw = (reminderSettings as Record<string, unknown>)
-    .trainingLocations;
+  const raw = (reminderSettings as Record<string, unknown>).trainingLocations;
   if (!Array.isArray(raw)) return null;
 
   for (const entry of raw) {

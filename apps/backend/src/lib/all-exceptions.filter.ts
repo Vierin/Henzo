@@ -38,8 +38,7 @@ export class AllExceptionsFilter implements ExceptionFilter {
     const request = ctx.getRequest<RequestWithId>();
 
     const isHttp = exception instanceof HttpException;
-    const isDbUnavailable =
-      !isHttp && isDatabaseUnavailableError(exception);
+    const isDbUnavailable = !isHttp && isDatabaseUnavailableError(exception);
 
     const status = isHttp
       ? exception.getStatus()

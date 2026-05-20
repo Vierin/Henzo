@@ -505,10 +505,7 @@ export class FitnessSessionsService {
 
     if (dto.locationId !== undefined) {
       const raw = dto.locationId;
-      locationId =
-        raw === null || raw === ''
-          ? null
-          : raw.trim();
+      locationId = raw === null || raw === '' ? null : raw.trim();
     }
 
     if (dto.status !== undefined) {
@@ -586,12 +583,9 @@ export class FitnessSessionsService {
         ne = new Date(ns);
         ne.setMinutes(ne.getMinutes() + row.Training.duration);
       }
-      const tid =
-        dto.trainerId !== undefined ? trainerId : row.trainerId;
-      const lid =
-        dto.locationId !== undefined ? locationId : row.locationId;
-      const st =
-        dto.status !== undefined ? status : row.status;
+      const tid = dto.trainerId !== undefined ? trainerId : row.trainerId;
+      const lid = dto.locationId !== undefined ? locationId : row.locationId;
+      const st = dto.status !== undefined ? status : row.status;
       return {
         id: row.id,
         startsAt: ns,
@@ -864,8 +858,7 @@ export class FitnessSessionsService {
       return;
     }
     const salonTz = row.Studio.timezone ?? 'Asia/Ho_Chi_Minh';
-    const loc =
-      locale === 'ru' ? 'ru-RU' : locale === 'vi' ? 'vi-VN' : 'en-US';
+    const loc = locale === 'ru' ? 'ru-RU' : locale === 'vi' ? 'vi-VN' : 'en-US';
     const dateFmt = new Intl.DateTimeFormat(loc, {
       timeZone: salonTz,
       weekday: 'short',
@@ -1025,10 +1018,7 @@ export class FitnessSessionsService {
     }
     const now = new Date();
     if (sessionRow.endsAt <= now) {
-      throw new HttpException(
-        'Session already ended',
-        HttpStatus.BAD_REQUEST,
-      );
+      throw new HttpException('Session already ended', HttpStatus.BAD_REQUEST);
     }
 
     await this.prisma.$transaction(async (tx) => {
@@ -1126,9 +1116,7 @@ export class FitnessSessionsService {
       const studio = e.TrainingSession.Studio;
       const studioName = studio?.name?.trim() ?? 'Studio';
       const ownerDisplayName =
-        studio?.User?.name?.trim() ||
-        studio?.User?.email?.trim() ||
-        studioName;
+        studio?.User?.name?.trim() || studio?.User?.email?.trim() || studioName;
       const locationCount = studio
         ? countTrainingLocations(studio.reminderSettings)
         : 1;
@@ -1142,51 +1130,50 @@ export class FitnessSessionsService {
           : null;
 
       return {
-      enrollmentId: e.id,
-      bookedAt: e.createdAt.toISOString(),
-      sessionId: e.TrainingSession.id,
-      startsAt: e.TrainingSession.startsAt.toISOString(),
-      endsAt: e.TrainingSession.endsAt.toISOString(),
-      sessionStatus: e.TrainingSession.status,
-      capacity: e.TrainingSession.capacity,
-      bookedCount: e.TrainingSession.bookedCount,
-      locationId: e.TrainingSession.locationId ?? null,
-      locationName,
-      training: e.TrainingSession.Training
-        ? {
-            id: e.TrainingSession.Training.id,
-            name: e.TrainingSession.Training.name,
-            duration: e.TrainingSession.Training.duration,
-            price: e.TrainingSession.Training.price,
-            displayColor: computeTrainingDisplayColor({
-              trainingId: e.TrainingSession.Training.id,
-              trainingName: e.TrainingSession.Training.name,
-              trainingCategoryId: e.TrainingSession.Training.trainingCategoryId,
-              categoryChipBgHex:
-                e.TrainingSession.Training.trainingCategory?.chip_bg_hex,
-              existingColor: e.TrainingSession.Training.displayColor,
-            }),
+        enrollmentId: e.id,
+        bookedAt: e.createdAt.toISOString(),
+        sessionId: e.TrainingSession.id,
+        startsAt: e.TrainingSession.startsAt.toISOString(),
+        endsAt: e.TrainingSession.endsAt.toISOString(),
+        sessionStatus: e.TrainingSession.status,
+        capacity: e.TrainingSession.capacity,
+        bookedCount: e.TrainingSession.bookedCount,
+        locationId: e.TrainingSession.locationId ?? null,
+        locationName,
+        training: e.TrainingSession.Training
+          ? {
+              id: e.TrainingSession.Training.id,
+              name: e.TrainingSession.Training.name,
+              duration: e.TrainingSession.Training.duration,
+              price: e.TrainingSession.Training.price,
+              displayColor: computeTrainingDisplayColor({
+                trainingId: e.TrainingSession.Training.id,
+                trainingName: e.TrainingSession.Training.name,
+                trainingCategoryId:
+                  e.TrainingSession.Training.trainingCategoryId,
+                categoryChipBgHex:
+                  e.TrainingSession.Training.trainingCategory?.chip_bg_hex,
+                existingColor: e.TrainingSession.Training.displayColor,
+              }),
+            }
+          : null,
+        trainer: (() => {
+          const tr = e.TrainingSession.Trainer;
+          if (tr?.name && String(tr.name).trim().length > 0) {
+            return { id: tr.id, name: String(tr.name).trim() };
           }
-        : null,
-      trainer: (() => {
-        const tr = e.TrainingSession.Trainer;
-        if (tr?.name && String(tr.name).trim().length > 0) {
-          return { id: tr.id, name: String(tr.name).trim() };
-        }
-        return { id: tr?.id ?? null, name: ownerDisplayName };
-      })(),
-      studio: e.TrainingSession.Studio
-        ? {
-            id: e.TrainingSession.Studio.id,
-            name: e.TrainingSession.Studio.name,
-            address: e.TrainingSession.Studio.address,
-            locationCount,
-          }
-        : null,
-      hasReview: studio?.id
-        ? reviewedStudioIds.has(studio.id)
-        : false,
-    };
+          return { id: tr?.id ?? null, name: ownerDisplayName };
+        })(),
+        studio: e.TrainingSession.Studio
+          ? {
+              id: e.TrainingSession.Studio.id,
+              name: e.TrainingSession.Studio.name,
+              address: e.TrainingSession.Studio.address,
+              locationCount,
+            }
+          : null,
+        hasReview: studio?.id ? reviewedStudioIds.has(studio.id) : false,
+      };
     });
   }
 

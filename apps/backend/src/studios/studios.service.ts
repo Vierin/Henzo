@@ -35,8 +35,7 @@ export class StudiosService {
     if (typeof raw === 'number') parsed = Math.floor(raw);
     if (typeof raw === 'string') {
       parsed =
-        Number.parseInt(raw, 10) ||
-        StudiosService.DEFAULT_BOOKING_PERIOD_DAYS;
+        Number.parseInt(raw, 10) || StudiosService.DEFAULT_BOOKING_PERIOD_DAYS;
     }
     if (Number.isNaN(parsed)) {
       parsed = StudiosService.DEFAULT_BOOKING_PERIOD_DAYS;
@@ -2063,50 +2062,50 @@ export class StudiosService {
           : null;
 
       return {
-      id: s.id,
-      startsAt: s.startsAt.toISOString(),
-      endsAt: s.endsAt.toISOString(),
-      status: s.status,
-      capacity: s.capacity,
-      bookedCount: s.bookedCount,
-      locationId: s.locationId ?? null,
-      locationName,
-      training: s.Training
-        ? {
-            id: s.Training.id,
-            name: s.Training.name,
-            nameEn: s.Training.nameEn,
-            nameVi: s.Training.nameVi,
-            nameRu: s.Training.nameRu,
-            description: s.Training.description,
-            descriptionEn: s.Training.descriptionEn,
-            descriptionVi: s.Training.descriptionVi,
-            descriptionRu: s.Training.descriptionRu,
-            duration: s.Training.duration,
-            price: s.Training.price,
-            trainingCategoryId: s.Training.trainingCategoryId,
-            displayColor: computeTrainingDisplayColor({
-              trainingId: s.Training.id,
-              trainingName: s.Training.name,
+        id: s.id,
+        startsAt: s.startsAt.toISOString(),
+        endsAt: s.endsAt.toISOString(),
+        status: s.status,
+        capacity: s.capacity,
+        bookedCount: s.bookedCount,
+        locationId: s.locationId ?? null,
+        locationName,
+        training: s.Training
+          ? {
+              id: s.Training.id,
+              name: s.Training.name,
+              nameEn: s.Training.nameEn,
+              nameVi: s.Training.nameVi,
+              nameRu: s.Training.nameRu,
+              description: s.Training.description,
+              descriptionEn: s.Training.descriptionEn,
+              descriptionVi: s.Training.descriptionVi,
+              descriptionRu: s.Training.descriptionRu,
+              duration: s.Training.duration,
+              price: s.Training.price,
               trainingCategoryId: s.Training.trainingCategoryId,
-              categoryChipBgHex: s.Training.trainingCategory?.chip_bg_hex,
-              existingColor: s.Training.displayColor,
-            }),
-            trainingCategory: s.Training.trainingCategory
-              ? {
-                  chip_bg_hex: s.Training.trainingCategory.chip_bg_hex,
-                  chip_fg_hex: s.Training.trainingCategory.chip_fg_hex,
-                  name_en: s.Training.trainingCategory.name_en,
-                  name_vn: s.Training.trainingCategory.name_vn,
-                  name_ru: s.Training.trainingCategory.name_ru,
-                }
-              : null,
-          }
-        : null,
-      trainer: buildPublicTrainerPayload(s.Trainer, studioOwner),
-      timezone: studio.timezone,
-      studio: { locationCount },
-    };
+              displayColor: computeTrainingDisplayColor({
+                trainingId: s.Training.id,
+                trainingName: s.Training.name,
+                trainingCategoryId: s.Training.trainingCategoryId,
+                categoryChipBgHex: s.Training.trainingCategory?.chip_bg_hex,
+                existingColor: s.Training.displayColor,
+              }),
+              trainingCategory: s.Training.trainingCategory
+                ? {
+                    chip_bg_hex: s.Training.trainingCategory.chip_bg_hex,
+                    chip_fg_hex: s.Training.trainingCategory.chip_fg_hex,
+                    name_en: s.Training.trainingCategory.name_en,
+                    name_vn: s.Training.trainingCategory.name_vn,
+                    name_ru: s.Training.trainingCategory.name_ru,
+                  }
+                : null,
+            }
+          : null,
+        trainer: buildPublicTrainerPayload(s.Trainer, studioOwner),
+        timezone: studio.timezone,
+        studio: { locationCount },
+      };
     });
   }
 
@@ -2184,10 +2183,7 @@ export class StudiosService {
     categoryIdsByStudio: Map<string, number[]>;
   }> {
     const empty = {
-      ratingMap: new Map<
-        string,
-        { avgRating: number; reviewCount: number }
-      >(),
+      ratingMap: new Map<string, { avgRating: number; reviewCount: number }>(),
       categoriesByStudio: new Map<string, string[]>(),
       categoryIdsByStudio: new Map<string, number[]>(),
     };
@@ -2238,10 +2234,7 @@ export class StudiosService {
       if (!item.trainingCategoryId || !item.trainingCategory) continue;
       const tc = item.trainingCategory;
       const label =
-        tc.name_en?.trim() ||
-        tc.name_ru?.trim() ||
-        tc.name_vn?.trim() ||
-        '';
+        tc.name_en?.trim() || tc.name_ru?.trim() || tc.name_vn?.trim() || '';
       if (!label) continue;
       const list = pairMap.get(item.studioId) ?? [];
       list.push({ id: item.trainingCategoryId, label });

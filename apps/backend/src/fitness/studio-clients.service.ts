@@ -336,10 +336,7 @@ export class StudioClientsService {
     if (!session) {
       throw new HttpException('Session not found', HttpStatus.NOT_FOUND);
     }
-    const days = Math.min(
-      Math.max(1, body.expiresInDays ?? 7),
-      30,
-    );
+    const days = Math.min(Math.max(1, body.expiresInDays ?? 7), 30);
     const expiresAt = new Date();
     expiresAt.setDate(expiresAt.getDate() + days);
     const rawToken = randomBytes(32).toString('hex');

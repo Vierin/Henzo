@@ -112,9 +112,7 @@ export class RevenueCatService {
     return false;
   }
 
-  private resolvePeriodEnd(
-    subscriber: RcSubscriberResponse,
-  ): Date | null {
+  private resolvePeriodEnd(subscriber: RcSubscriberResponse): Date | null {
     const ent = subscriber.subscriber?.entitlements?.[this.entitlementId];
     if (ent?.expires_date) {
       const d = new Date(ent.expires_date);

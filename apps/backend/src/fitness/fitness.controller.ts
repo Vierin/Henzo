@@ -70,8 +70,7 @@ export class FitnessController {
       res.status(400).send('<html><body>Missing token.</body></html>');
       return;
     }
-    const ctx =
-      await this.studioClientsService.getInvitationLandingContext(t);
+    const ctx = await this.studioClientsService.getInvitationLandingContext(t);
     if (!ctx.valid) {
       const msg =
         ctx.reason === 'expired'
@@ -85,10 +84,7 @@ export class FitnessController {
     const title = ctx.trainingName
       ? `${ctx.trainingName} — ${ctx.salonName}`
       : ctx.salonName;
-    const starts =
-      ctx.startsAt != null
-        ? `<p>Starts: ${ctx.startsAt}</p>`
-        : '';
+    const starts = ctx.startsAt != null ? `<p>Starts: ${ctx.startsAt}</p>` : '';
     const apiPath = '/fitness/public/client-invitations/confirm';
     res
       .status(200)
@@ -114,16 +110,12 @@ export class FitnessController {
       return;
     }
     try {
-      const out =
-        await this.studioClientsService.confirmInvitationByToken(raw);
+      const out = await this.studioClientsService.confirmInvitationByToken(raw);
       res.status(200).json(out);
     } catch (e: unknown) {
-      const status =
-        e instanceof HttpException ? e.getStatus() : 400;
+      const status = e instanceof HttpException ? e.getStatus() : 400;
       const msg =
-        e instanceof HttpException
-          ? e.message
-          : 'Failed to confirm invitation';
+        e instanceof HttpException ? e.message : 'Failed to confirm invitation';
       res.status(status).json({ success: false, message: msg });
     }
   }
