@@ -85,6 +85,25 @@
 		"favoritePromoTitle": "Lưu lớp yêu thích",
 		"favoritePromoSubtitle": "Lưu lớp và nhận nhắc nhở"
 	},
+	"clientShell": {
+		"home": "Trang chủ",
+		"browse": "Khám phá",
+		"activity": "Hoạt động",
+		"profile": "Hồ sơ"
+	},
+	"clientActivity": {
+		"title": "Hoạt động",
+		"upcoming": "Sắp tới",
+		"passes": "Gói tập",
+		"favorites": "Yêu thích"
+	},
+	"clientFavorites": {
+		"emptyTitle": "Hãy tìm địa điểm yêu thích của bạn",
+		"emptySubtitle": "Lưu studio vào yêu thích để đặt nhanh hơn.",
+		"explore": "Khám phá",
+		"removed": "Đã xóa khỏi yêu thích",
+		"removeError": "Không thể xóa"
+	},
 	"publicHome": {
 		"loginLink": "Đăng nhập",
 		"heroTitle": "Tìm studio thể thao chỉ trong vài giây",
@@ -564,6 +583,8 @@
 		"addProfilePhoto": "Thêm ảnh",
 		"changeProfilePhoto": "Đổi ảnh",
 		"name": "Tên",
+		"firstName": "Tên",
+		"lastName": "Họ",
 		"enterName": "Nhập tên",
 		"phone": "Điện thoại",
 		"enterPhone": "Nhập số điện thoại",

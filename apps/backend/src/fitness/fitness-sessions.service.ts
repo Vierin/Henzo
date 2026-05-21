@@ -19,6 +19,7 @@ import {
 import {
   countTrainingLocations,
   resolveSessionLocationDisplayName,
+  resolveTrainingLocationName,
 } from '../lib/training-locations';
 import { resolveTrainerIdForSession } from './trainer-display.util';
 

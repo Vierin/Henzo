@@ -9,6 +9,7 @@ class ExploreStudioItem {
     required this.logoUrl,
     required this.lat,
     required this.lng,
+    this.photoUrl,
     this.trainingCategoryIds = const [],
     this.categoryNames = const [],
   });
@@ -19,6 +20,7 @@ class ExploreStudioItem {
   final double rating;
   final int reviewCount;
   final String? logoUrl;
+  final String? photoUrl;
   final double? lat;
   final double? lng;
   final List<int> trainingCategoryIds;

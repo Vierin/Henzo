@@ -12,9 +12,9 @@ import '../../services/owner_photo_storage_service.dart';
 import '../../utils/auth_ui_result.dart';
 import '../../utils/owner_image_picker.dart';
 import '../../utils/owner_navigation_restore.dart';
-import '../../widgets/settings/branded_settings_app_bar.dart';
-import '../../widgets/settings/profile_photo_picker.dart';
-import '../../widgets/settings/settings_form_tokens.dart';
+import '../../widgets/auth/auth_form_styles.dart';
+import '../../widgets/settings/account_profile_form_widgets.dart';
+import '../../widgets/settings/settings_header_back_button.dart';
 
 class ClientEditProfileScreen extends StatefulWidget {
   const ClientEditProfileScreen({super.key});
@@ -298,7 +298,9 @@ class _ClientEditProfileScreenState extends State<ClientEditProfileScreen> {
               Navigator.of(dialogContext).pop();
               _deleteAccount();
             },
-            style: FilledButton.styleFrom(backgroundColor: AppColors.error600),
+            style: FilledButton.styleFrom(
+              backgroundColor: kAccountDangerPurple,
+            ),
             child: Text(locale.t('profileForm.deleteAccount')),
           ),
         ],
@@ -311,135 +313,131 @@ class _ClientEditProfileScreenState extends State<ClientEditProfileScreen> {
     final auth = context.watch<AuthService>();
     final user = auth.user;
     final locale = context.watch<LocaleProvider>();
+    final initials = user != null
+        ? _initials(_fullName.isNotEmpty ? _fullName : user.name, user.email)
+        : '?';
 
     return Scaffold(
       backgroundColor: AppColors.backgroundSecondary,
-      appBar: buildBrandedSettingsAppBar(
-        context,
-        title: locale.t('profileForm.personalData'),
+      appBar: AppBar(
+        backgroundColor: AppColors.backgroundSecondary,
+        elevation: 0,
+        scrolledUnderElevation: 0,
+        centerTitle: true,
+        leading: SettingsHeaderBackButton(
+          onPressed: () => Navigator.of(context).maybePop(),
+        ),
+        title: Text(
+          locale.t('profileForm.personalData'),
+          style: const TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.w600,
+            color: AppColors.textPrimary,
+          ),
+        ),
       ),
       body: user == null
-          ? const Center(
-              child: CircularProgressIndicator(color: AppColors.primary500),
-            )
+          ? const Center(child: CircularProgressIndicator())
           : ListView(
               padding: const EdgeInsets.fromLTRB(
                 kScreenPaddingHorizontal,
-                8,
+                12,
                 kScreenPaddingHorizontal,
-                24,
+                17,
               ),
               children: [
-                SettingsFormCard(
-                  title: locale.t('profileForm.personalData'),
-                  child: Form(
-                    key: _profileFormKey,
-                    child: Column(
-                      children: [
-                        ProfilePhotoPicker(
-                          avatarUrl: _avatarUrl,
-                          initials: _initials(_fullName, user.email),
-                          isUploading: _avatarUploading,
-                          addLabel: locale.t('profileForm.addProfilePhoto'),
-                          changeLabel:
-                              locale.t('profileForm.changeProfilePhoto'),
-                          onTap: _pickProfilePhoto,
+                AccountSectionLabel(
+                  text: locale.t('profileForm.personalData'),
+                ),
+                const SizedBox(height: 10),
+                AccountPhotoCard(
+                  avatarUrl: _avatarUrl,
+                  initials: initials,
+                  isUploading: _avatarUploading,
+                  addLabel: locale.t('profileForm.addProfilePhoto'),
+                  changeLabel: locale.t('profileForm.changeProfilePhoto'),
+                  onTap: _pickProfilePhoto,
+                ),
+                const SizedBox(height: AuthFormStyles.fieldGap),
+                Form(
+                  key: _profileFormKey,
+                  child: Column(
+                    children: [
+                      TextFormField(
+                        controller: _firstNameController,
+                        textCapitalization: TextCapitalization.words,
+                        style: AuthFormStyles.fieldTextStyle,
+                        decoration: AuthFormStyles.fieldDecoration(
+                          hintText: locale.t('profileForm.firstName'),
                         ),
-                        const SizedBox(height: 16),
-                        TextFormField(
-                          controller: _firstNameController,
-                          textCapitalization: TextCapitalization.words,
-                          decoration: settingsInputDecoration(
-                            labelText: locale.t('profileForm.name'),
-                          ),
-                          validator: (v) => (v == null || v.trim().isEmpty)
-                              ? locale.t('profileForm.enterName')
-                              : null,
+                        validator: (v) => (v == null || v.trim().isEmpty)
+                            ? locale.t('profileForm.enterName')
+                            : null,
+                      ),
+                      const SizedBox(height: AuthFormStyles.fieldGap),
+                      TextFormField(
+                        controller: _lastNameController,
+                        textCapitalization: TextCapitalization.words,
+                        style: AuthFormStyles.fieldTextStyle,
+                        decoration: AuthFormStyles.fieldDecoration(
+                          hintText: locale.t('profileForm.lastName'),
                         ),
-                        const SizedBox(height: 12),
-                        TextFormField(
-                          controller: _lastNameController,
-                          textCapitalization: TextCapitalization.words,
-                          decoration: settingsInputDecoration(
-                            labelText: 'Last name',
-                          ),
+                      ),
+                      const SizedBox(height: AuthFormStyles.fieldGap),
+                      TextFormField(
+                        controller: _emailController,
+                        keyboardType: TextInputType.emailAddress,
+                        style: AuthFormStyles.fieldTextStyle,
+                        decoration: AuthFormStyles.fieldDecoration(
+                          hintText: locale.t('profileForm.email'),
                         ),
-                        const SizedBox(height: 12),
-                        TextFormField(
-                          controller: _emailController,
-                          keyboardType: TextInputType.emailAddress,
-                          decoration: settingsInputDecoration(
-                            labelText: locale.t('profileForm.email'),
-                          ),
-                        ),
-                        const SizedBox(height: 14),
-                        SizedBox(
-                          width: double.infinity,
-                          child: FilledButton(
-                            style: FilledButton.styleFrom(
-                              backgroundColor: AppColors.primary500,
-                              foregroundColor: Colors.white,
-                              padding: const EdgeInsets.symmetric(vertical: 14),
-                            ),
-                            onPressed: _savingProfile ? null : _saveProfile,
-                            child: Text(
-                              _savingProfile
-                                  ? '...'
-                                  : locale.t('common.save'),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
+                      ),
+                      const SizedBox(height: 16),
+                      AccountPrimaryButton(
+                        label: locale.t('common.save'),
+                        isLoading: _savingProfile,
+                        onPressed: _saveProfile,
+                      ),
+                    ],
                   ),
                 ),
-                const SizedBox(height: 12),
-                SettingsFormCard(
-                  title: locale.t('profileForm.security'),
-                  child: Form(
-                    key: _passwordFormKey,
-                    child: Column(
-                      children: [
-                        TextFormField(
-                          controller: _newPasswordController,
-                          obscureText: true,
-                          decoration: settingsInputDecoration(
-                            labelText: locale.t('profileForm.newPassword'),
-                          ),
+                const SizedBox(height: 28),
+                AccountSectionLabel(text: locale.t('profileForm.security')),
+                const SizedBox(height: 10),
+                Form(
+                  key: _passwordFormKey,
+                  child: Column(
+                    children: [
+                      TextFormField(
+                        controller: _newPasswordController,
+                        obscureText: true,
+                        style: AuthFormStyles.fieldTextStyle,
+                        decoration: AuthFormStyles.fieldDecoration(
+                          hintText: locale.t('profileForm.newPassword'),
                         ),
-                        const SizedBox(height: 12),
-                        TextFormField(
-                          controller: _confirmPasswordController,
-                          obscureText: true,
-                          decoration: settingsInputDecoration(
-                            labelText:
-                                locale.t('profileForm.confirmPassword'),
-                          ),
+                      ),
+                      const SizedBox(height: AuthFormStyles.fieldGap),
+                      TextFormField(
+                        controller: _confirmPasswordController,
+                        obscureText: true,
+                        style: AuthFormStyles.fieldTextStyle,
+                        decoration: AuthFormStyles.fieldDecoration(
+                          hintText: locale.t('profileForm.confirmPassword'),
                         ),
-                        const SizedBox(height: 14),
-                        SizedBox(
-                          width: double.infinity,
-                          child: FilledButton(
-                            style: FilledButton.styleFrom(
-                              backgroundColor: AppColors.primary500,
-                              foregroundColor: Colors.white,
-                              padding: const EdgeInsets.symmetric(vertical: 14),
-                            ),
-                            onPressed:
-                                _savingPassword ? null : _changePassword,
-                            child: Text(
-                              _savingPassword
-                                  ? '...'
-                                  : locale.t('profileForm.changePassword'),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
+                      ),
+                      const SizedBox(height: 16),
+                      AccountPrimaryButton(
+                        label: locale.t('profileForm.changePassword'),
+                        isLoading: _savingPassword,
+                        onPressed: _changePassword,
+                      ),
+                    ],
                   ),
                 ),
-                const SizedBox(height: 20),
-                SettingsDeleteAccountButton(
+                const SizedBox(height: 28),
+                AccountSectionLabel(text: locale.t('profileForm.dangerZone')),
+                const SizedBox(height: 10),
+                AccountDangerButton(
                   label: locale.t('profileForm.deleteAccount'),
                   onPressed: _showDeleteAccountDialog,
                 ),

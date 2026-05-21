@@ -1,12 +1,15 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
 import '../../constants/brand_typography.dart';
 import '../../constants/colors.dart';
+import '../../l10n/locale_provider.dart';
 import '../../widgets/common/henzo_header_back_button.dart';
+import 'client_favorites_tab.dart';
 import 'client_passes_tab.dart';
 import 'client_schedule_tab.dart';
 
-/// Bottom-nav Bookings: upcoming schedule + passes history.
+/// Bottom-nav Activity: upcoming, passes, favorites.
 class ClientBookingsScreen extends StatefulWidget {
   const ClientBookingsScreen({super.key});
 
@@ -21,7 +24,7 @@ class _ClientBookingsScreenState extends State<ClientBookingsScreen>
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 2, vsync: this);
+    _tabController = TabController(length: 3, vsync: this);
   }
 
   @override
@@ -32,6 +35,8 @@ class _ClientBookingsScreenState extends State<ClientBookingsScreen>
 
   @override
   Widget build(BuildContext context) {
+    final locale = context.watch<LocaleProvider>();
+
     return Scaffold(
       backgroundColor: AppColors.backgroundSecondary,
       appBar: AppBar(
@@ -39,7 +44,7 @@ class _ClientBookingsScreenState extends State<ClientBookingsScreen>
         leadingWidth: 56,
         automaticallyImplyLeading: false,
         title: Text(
-          'Bookings',
+          locale.t('clientActivity.title'),
           style: BrandTypography.appBarTitle(context),
         ),
         centerTitle: false,
@@ -53,9 +58,10 @@ class _ClientBookingsScreenState extends State<ClientBookingsScreen>
           indicatorColor: AppColors.primary500,
           indicatorSize: TabBarIndicatorSize.tab,
           dividerColor: AppColors.borderPrimary,
-          tabs: const [
-            Tab(text: 'Upcoming'),
-            Tab(text: 'Passes'),
+          tabs: [
+            Tab(text: locale.t('clientActivity.upcoming')),
+            Tab(text: locale.t('clientActivity.passes')),
+            Tab(text: locale.t('clientActivity.favorites')),
           ],
         ),
       ),
@@ -64,6 +70,7 @@ class _ClientBookingsScreenState extends State<ClientBookingsScreen>
         children: const [
           ClientScheduleTab(),
           ClientPassesTab(),
+          ClientFavoritesTab(),
         ],
       ),
     );

@@ -85,6 +85,25 @@
 		"favoritePromoTitle": "Добавь в избранное",
 		"favoritePromoSubtitle": "Сохраняй занятия и получай напоминания"
 	},
+	"clientShell": {
+		"home": "Главная",
+		"browse": "Обзор",
+		"activity": "Активность",
+		"profile": "Профиль"
+	},
+	"clientActivity": {
+		"title": "Активность",
+		"upcoming": "Предстоящие",
+		"passes": "Абонементы",
+		"favorites": "Избранное"
+	},
+	"clientFavorites": {
+		"emptyTitle": "Пора найти ваше любимое место",
+		"emptySubtitle": "Соберите студии в избранное, чтобы бронировать быстрее.",
+		"explore": "Обзор",
+		"removed": "Удалено из избранного",
+		"removeError": "Не удалось удалить"
+	},
 	"publicHome": {
 		"loginLink": "Вход",
 		"heroTitle": "Находите спортивные студии за секунды",
@@ -563,6 +582,8 @@
 		"addProfilePhoto": "Добавить фото",
 		"changeProfilePhoto": "Изменить фото",
 		"name": "Имя",
+		"firstName": "Имя",
+		"lastName": "Фамилия",
 		"enterName": "Введите имя",
 		"phone": "Телефон",
 		"security": "Безопасность",

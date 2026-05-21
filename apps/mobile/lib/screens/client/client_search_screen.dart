@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import '../../widgets/common/henzo_modal.dart';
 import 'package:latlong2/latlong.dart';
@@ -8,20 +9,26 @@ import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../constants/colors.dart';
+import '../../constants/layout.dart';
 import '../../l10n/locale_provider.dart';
 import '../../models/training_category_option.dart';
 import '../../services/api_client.dart';
+import '../../services/auth_service.dart';
 import '../../services/cache/client_nearby_cache.dart';
+import '../../services/client_favorites_mutations.dart';
+import '../../services/client_favorites_store.dart';
 import '../../services/dashboard_api_service.dart';
 import '../../utils/formatters.dart';
 import '../../utils/nearby_payload.dart';
 import '../../widgets/dashboard/owner_daily_schedule_session_card.dart';
-import '../../widgets/public/cached_salon_network_image.dart';
 import '../../widgets/schedule/calendar_day_pill.dart';
 import '../location_picker_screen.dart';
 import '../public_class_detail_screen.dart';
 import '../public_studio_detail_screen.dart';
 import 'client_explore_models.dart';
+import '../../widgets/app_search_prefix_icon.dart';
+import '../../widgets/client/browse_day_pill.dart';
+import '../../widgets/client/browse_studio_list_card.dart';
 import '../../widgets/client/client_explore_filter_chip.dart';
 import '../../widgets/training/training_category_color_chip.dart';
 
@@ -41,11 +48,14 @@ class ClientSearchScreen extends StatefulWidget {
 }
 
 class ClientSearchScreenState extends State<ClientSearchScreen> {
+  static const _browseLocationBlue = Color(0xFF4D39A8);
+
   static const _cityKey = 'client_city';
   static const _latKey = 'client_lat';
   static const _lonKey = 'client_lon';
   bool _loading = true;
   bool _showClasses = true;
+  bool _isMonthExpanded = false;
   late DateTime _selectedDay;
   late final ValueNotifier<DateTime> _stripDayNotifier;
   late final PageController _dayPagerController;
@@ -74,11 +84,12 @@ class ClientSearchScreenState extends State<ClientSearchScreen> {
   int _derivedInputsHash = 0;
   List<ExploreClassItem> _derivedDayClasses = const [];
   List<ExploreStudioItem> _derivedVisibleStudios = const [];
-  Map<String, ExploreClassItem?> _derivedFirstClassByStudio = const {};
+  Map<String, List<ExploreClassItem>> _derivedTodayClassesByStudio = const {};
   int _derivedDayClassesCount = 0;
   int _derivedVisibleStudiosCount = 0;
   final Map<String, double?> _distanceKmMemo = {};
   String _distanceMemoLocationKey = '';
+  final Set<String> _favoriteLoadingIds = <String>{};
 
   @override
   void initState() {
@@ -131,6 +142,174 @@ class ClientSearchScreenState extends State<ClientSearchScreen> {
     });
   }
 
+  void _goToToday() {
+    _clearStripScheduleDebounceTimer();
+    final today = _calendarDateOnly(DateTime.now());
+    if (_dayPagerController.hasClients) {
+      _dayPagerController.animateToPage(
+        0,
+        duration: const Duration(milliseconds: 280),
+        curve: Curves.easeOutCubic,
+      );
+    }
+    _applyExploreDay(today);
+  }
+
+  bool _isDayInExploreHorizon(DateTime day) {
+    final normalized = _calendarDateOnly(day);
+    final today = _calendarDateOnly(DateTime.now());
+    final diff = normalized.difference(today).inDays;
+    return diff >= 0 && diff < _kExploreHorizonDays;
+  }
+
+  void _jumpBrowseToDay(DateTime day) {
+    final normalized = _calendarDateOnly(day);
+    if (!_isDayInExploreHorizon(normalized)) return;
+    final index = normalized
+        .difference(_calendarDateOnly(DateTime.now()))
+        .inDays;
+    _clearStripScheduleDebounceTimer();
+    if (_dayPagerController.hasClients) {
+      _dayPagerController.animateToPage(
+        index,
+        duration: const Duration(milliseconds: 280),
+        curve: Curves.easeOutCubic,
+      );
+    }
+    _applyExploreDay(normalized);
+  }
+
+  void _syncBrowseStripPagerToSelectedDay() {
+    final today = _calendarDateOnly(DateTime.now());
+    final index = _selectedDay
+        .difference(today)
+        .inDays
+        .clamp(0, _kExploreHorizonDays - 1);
+    if (_dayPagerController.hasClients) {
+      _dayPagerController.jumpToPage(index);
+    }
+    _stripPagerDayNotifier.value = _selectedDay;
+  }
+
+  List<DateTime?> _browseMonthCells(DateTime monthDate) {
+    final firstDay = DateTime(monthDate.year, monthDate.month, 1);
+    final daysInMonth = DateUtils.getDaysInMonth(
+      monthDate.year,
+      monthDate.month,
+    );
+    final startOffset = firstDay.weekday - 1;
+    final totalCells = ((startOffset + daysInMonth + 6) ~/ 7) * 7;
+    return List.generate(totalCells, (index) {
+      final dayNum = index - startOffset + 1;
+      if (dayNum < 1 || dayNum > daysInMonth) return null;
+      return DateTime(monthDate.year, monthDate.month, dayNum);
+    });
+  }
+
+  Widget _buildBrowseMonthExpanded(DateTime monthAnchor) {
+    final monthStart = DateTime(monthAnchor.year, monthAnchor.month, 1);
+    final cells = _browseMonthCells(monthStart);
+    const dow = ['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN'];
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.fromLTRB(12, 16, 12, 16),
+      decoration: BoxDecoration(
+        color: AppColors.backgroundPrimary,
+        borderRadius: BorderRadius.circular(14),
+      ),
+      child: Column(
+        children: [
+          Row(
+            children: List.generate(
+              7,
+              (i) => Expanded(
+                child: Center(
+                  child: Text(
+                    dow[i],
+                    style: const TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w400,
+                      letterSpacing: -0.3,
+                      color: AppColors.textSecondary,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(height: 12),
+          ValueListenableBuilder<DateTime>(
+            valueListenable: _stripDayNotifier,
+            builder: (context, selectedDay, _) {
+              return GridView.builder(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                itemCount: cells.length,
+                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: 7,
+                  mainAxisSpacing: 8,
+                  crossAxisSpacing: 4,
+                  childAspectRatio: 1,
+                ),
+                itemBuilder: (_, index) {
+                  final day = cells[index];
+                  if (day == null) return const SizedBox.shrink();
+                  final inHorizon = _isDayInExploreHorizon(day);
+                  final selected = CalendarDayPill.isSameDay(day, selectedDay);
+                  return Center(
+                    child: Material(
+                      color: Colors.transparent,
+                      child: InkWell(
+                        customBorder: const CircleBorder(),
+                        onTap: inHorizon
+                            ? () {
+                                setState(() => _isMonthExpanded = false);
+                                _jumpBrowseToDay(day);
+                              }
+                            : null,
+                        child: Opacity(
+                          opacity: inHorizon ? 1 : 0.28,
+                          child: Container(
+                            width: 36,
+                            height: 36,
+                            alignment: Alignment.center,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: selected
+                                  ? AppColors.primary500
+                                  : AppColors.backgroundTertiary,
+                              border: Border.all(
+                                color: selected
+                                    ? AppColors.primary500
+                                    : AppColors.borderPrimary.withValues(
+                                        alpha: 0.5,
+                                      ),
+                              ),
+                            ),
+                            child: Text(
+                              '${day.day}',
+                              style: TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w500,
+                                color: selected
+                                    ? Colors.white
+                                    : AppColors.textPrimary,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  );
+                },
+              );
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
   void _onSearchChanged() {
     final q = _searchController.text;
     if (q == _searchQuery) return;
@@ -145,13 +324,6 @@ class ClientSearchScreenState extends State<ClientSearchScreen> {
 
   DateTime _exploreDayAt(int index) =>
       _calendarDateOnly(DateTime.now()).add(Duration(days: index));
-
-  int _sessionsCountForDay(DateTime day) {
-    return _classes.where((c) {
-      if (!CalendarDayPill.isSameDay(c.startsAt, day)) return false;
-      return _classMatchesCategory(c);
-    }).length;
-  }
 
   bool _matchesSearchClass(ExploreClassItem c) {
     final q = _searchQuery.trim().toLowerCase();
@@ -371,6 +543,46 @@ class ClientSearchScreenState extends State<ClientSearchScreen> {
     );
   }
 
+  Future<void> _toggleBrowseStudioFavorite(ExploreStudioItem studio) async {
+    final token = context.read<AuthService>().accessToken;
+    final favStore = context.read<ClientFavoritesStore>();
+    if (token == null ||
+        token.isEmpty ||
+        _favoriteLoadingIds.contains(studio.id)) {
+      return;
+    }
+    final wasFavorite = favStore.isFavorite(studio.id);
+    setState(() => _favoriteLoadingIds.add(studio.id));
+    final imageUrl = studio.photoUrl ?? studio.logoUrl;
+    final ok = wasFavorite
+        ? await ClientFavoritesMutations.removeStudio(
+            favStore: favStore,
+            token: token,
+            studioId: studio.id,
+          )
+        : await ClientFavoritesMutations.addStudio(
+            favStore: favStore,
+            token: token,
+            studioId: studio.id,
+            optimisticStudioPayload: {
+              'id': studio.id,
+              'name': studio.name,
+              'address': studio.address,
+              if (imageUrl != null && imageUrl.isNotEmpty) 'photos': [imageUrl],
+              'avgRating': studio.rating,
+            },
+          );
+    if (!mounted) return;
+    setState(() => _favoriteLoadingIds.remove(studio.id));
+    if (!ok) {
+      ScaffoldMessenger.of(context)
+        ..hideCurrentSnackBar()
+        ..showSnackBar(
+          const SnackBar(content: Text('Failed to update favorites')),
+        );
+    }
+  }
+
   OwnerTrainingSession _ownerSessionFromExplore(ExploreClassItem c) {
     final ends =
         c.endsAt ?? c.startsAt.add(Duration(minutes: c.durationMin ?? 60));
@@ -452,6 +664,10 @@ class ClientSearchScreenState extends State<ClientSearchScreen> {
             if (s.isNotEmpty) categoryNames.add(s);
           }
         }
+        final photos = map['photos'];
+        final photoUrl = photos is List && photos.isNotEmpty
+            ? photos.first?.toString()
+            : null;
 
         studios.add(
           ExploreStudioItem(
@@ -461,6 +677,7 @@ class ClientSearchScreenState extends State<ClientSearchScreen> {
             distanceKm: (map['distance'] as num?)?.toDouble(),
             rating: avgRating,
             reviewCount: reviewCount,
+            photoUrl: photoUrl,
             logoUrl:
                 (map['logoUrl'] ??
                         map['logo'] ??
@@ -635,23 +852,21 @@ class ClientSearchScreenState extends State<ClientSearchScreen> {
         .where(_matchesSearchStudio)
         .toList(growable: false);
 
-    final firstBy = <String, ExploreClassItem?>{};
+    final classesByStudio = <String, List<ExploreClassItem>>{};
     for (final s in _derivedVisibleStudios) {
-      ExploreClassItem? first;
+      final list = <ExploreClassItem>[];
       for (final c in _classes) {
         if (c.studioId != s.id) continue;
-        final d = c.startsAt;
-        if (!CalendarDayPill.isSameDay(d, selectedDate)) continue;
+        if (!CalendarDayPill.isSameDay(c.startsAt, selectedDate)) continue;
         if (!_isClassInSelectedPeriods(c.startsAt)) continue;
         if (!_isClassInTimeRange(c.startsAt)) continue;
         if (!_classMatchesCategory(c)) continue;
-        if (first == null || c.startsAt.isBefore(first.startsAt)) {
-          first = c;
-        }
+        list.add(c);
       }
-      firstBy[s.id] = first;
+      list.sort((a, b) => a.startsAt.compareTo(b.startsAt));
+      classesByStudio[s.id] = list;
     }
-    _derivedFirstClassByStudio = firstBy;
+    _derivedTodayClassesByStudio = classesByStudio;
   }
 
   double? _resolvedDistanceKmMemo(ExploreStudioItem studio) {
@@ -777,9 +992,8 @@ class ClientSearchScreenState extends State<ClientSearchScreen> {
                                 TrainingCategoryColorChip(
                                   label: 'All types',
                                   selected: tempSelection < 0,
-                                  onTap: () => setModalState(
-                                    () => tempSelection = -1,
-                                  ),
+                                  onTap: () =>
+                                      setModalState(() => tempSelection = -1),
                                 ),
                                 ..._trainingCategories.map(
                                   (cat) => TrainingCategoryColorChip(
@@ -1784,64 +1998,129 @@ class ClientSearchScreenState extends State<ClientSearchScreen> {
   }
 
   Widget _buildDayStrip() {
-    return SizedBox(
-      height: 86,
-      child: NotificationListener<ScrollNotification>(
-        onNotification: (ScrollNotification n) {
-          if (n.metrics.axis != Axis.horizontal) return false;
-          if (!_dayPagerController.hasClients) return false;
-          final page = _dayPagerController.page;
-          if (page == null) return false;
-          final index = page.round().clamp(0, _kExploreHorizonDays - 1);
-          final day = _exploreDayAt(index);
-          final normalized = _calendarDateOnly(day);
-          if (_stripPagerDayNotifier.value == normalized) return false;
-          _stripPagerDayNotifier.value = normalized;
-          return false;
-        },
-        child: PageView.builder(
-          controller: _dayPagerController,
-          physics: const SmoothDayPageScrollPhysics(),
-          padEnds: false,
-          itemCount: _kExploreHorizonDays,
-          onPageChanged: (index) {
-            final day = _exploreDayAt(index);
-            final normalized = _calendarDateOnly(day);
-            if (_stripPagerDayNotifier.value != normalized) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final slotWidth = constraints.maxWidth / 7 - 7;
+        final stripHeight = slotWidth * 3 / 2;
+        return SizedBox(
+          height: stripHeight,
+          child: NotificationListener<ScrollNotification>(
+            onNotification: (ScrollNotification n) {
+              if (n.metrics.axis != Axis.horizontal) return false;
+              if (!_dayPagerController.hasClients) return false;
+              final page = _dayPagerController.page;
+              if (page == null) return false;
+              final index = page.round().clamp(0, _kExploreHorizonDays - 1);
+              final day = _exploreDayAt(index);
+              final normalized = _calendarDateOnly(day);
+              if (_stripPagerDayNotifier.value == normalized) return false;
               _stripPagerDayNotifier.value = normalized;
-            }
-            if (CalendarDayPill.isSameDay(day, _stripDayNotifier.value) &&
-                CalendarDayPill.isSameDay(day, _selectedDay)) {
-              return;
-            }
-            _debounceExploreDay(normalized);
-          },
-          itemBuilder: (_, index) {
-            final day = _exploreDayAt(index);
-            final isToday = CalendarDayPill.isSameDay(day, DateTime.now());
-            return ValueListenableBuilder<DateTime>(
-              valueListenable: _stripDayNotifier,
-              builder: (context, stripDay, _) {
-                final selected = CalendarDayPill.isSameDay(day, stripDay);
-                return Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 3),
-                  child: CalendarDayPill(
-                    day: day,
-                    selected: selected,
-                    sessionsCount: _sessionsCountForDay(day),
-                    isToday: isToday,
-                    showBorder: false,
-                    highlightTodayWhenUnselected: false,
-                    onTap: () {
-                      _clearStripScheduleDebounceTimer();
-                      _applyExploreDay(day);
-                    },
-                  ),
+              return false;
+            },
+            child: PageView.builder(
+              controller: _dayPagerController,
+              physics: const SmoothDayPageScrollPhysics(),
+              padEnds: false,
+              itemCount: _kExploreHorizonDays,
+              onPageChanged: (index) {
+                final day = _exploreDayAt(index);
+                final normalized = _calendarDateOnly(day);
+                if (_stripPagerDayNotifier.value != normalized) {
+                  _stripPagerDayNotifier.value = normalized;
+                }
+                if (CalendarDayPill.isSameDay(day, _stripDayNotifier.value) &&
+                    CalendarDayPill.isSameDay(day, _selectedDay)) {
+                  return;
+                }
+                _debounceExploreDay(normalized);
+              },
+              itemBuilder: (_, index) {
+                final day = _exploreDayAt(index);
+                return ValueListenableBuilder<DateTime>(
+                  valueListenable: _stripDayNotifier,
+                  builder: (context, stripDay, _) {
+                    final selected = CalendarDayPill.isSameDay(day, stripDay);
+                    return Padding(
+                      padding: const EdgeInsets.only(right: 7),
+                      child: BrowseDayPill(
+                        day: day,
+                        selected: selected,
+                        onTap: () {
+                          _clearStripScheduleDebounceTimer();
+                          _applyExploreDay(day);
+                        },
+                      ),
+                    );
+                  },
                 );
               },
-            );
-          },
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _browseTodayButton() {
+    return Material(
+      color: AppColors.primary500,
+      borderRadius: BorderRadius.circular(999),
+      child: InkWell(
+        onTap: _goToToday,
+        borderRadius: BorderRadius.circular(999),
+        child: const Padding(
+          padding: EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+          child: Text(
+            'Today',
+            style: TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+              color: Colors.white,
+              height: 1.1,
+            ),
+          ),
         ),
+      ),
+    );
+  }
+
+  Widget _browseExpandButton() {
+    return OutlinedButton(
+      onPressed: () {
+        final wasExpanded = _isMonthExpanded;
+        if (!wasExpanded) {
+          _clearStripScheduleDebounceTimer();
+        }
+        setState(() => _isMonthExpanded = !_isMonthExpanded);
+        if (wasExpanded) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (!mounted) return;
+            _syncBrowseStripPagerToSelectedDay();
+          });
+        }
+      },
+      style: OutlinedButton.styleFrom(
+        backgroundColor: AppColors.backgroundPrimary,
+        foregroundColor: AppColors.textPrimary,
+        side: BorderSide.none,
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(22)),
+        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const Icon(
+            Icons.calendar_month_outlined,
+            size: 18,
+            color: AppColors.textPrimary,
+          ),
+          const SizedBox(width: 6),
+          Text(
+            _isMonthExpanded ? 'Collapse' : 'Expand',
+            style: const TextStyle(fontWeight: FontWeight.w500, fontSize: 14),
+          ),
+        ],
       ),
     );
   }
@@ -1853,6 +2132,7 @@ class ClientSearchScreenState extends State<ClientSearchScreen> {
     required bool selected,
     required VoidCallback onTap,
   }) {
+    final fg = selected ? Colors.white : AppColors.textPrimary;
     return Expanded(
       child: GestureDetector(
         onTap: onTap,
@@ -1861,7 +2141,7 @@ class ClientSearchScreenState extends State<ClientSearchScreen> {
           margin: const EdgeInsets.all(3),
           padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 8),
           decoration: BoxDecoration(
-            color: selected ? AppColors.primary50 : Colors.transparent,
+            color: selected ? AppColors.primary500 : Colors.transparent,
             borderRadius: BorderRadius.circular(12),
           ),
           child: Row(
@@ -1869,25 +2149,21 @@ class ClientSearchScreenState extends State<ClientSearchScreen> {
             children: [
               SvgPicture.asset(
                 iconAsset,
-                width: 18,
-                height: 18,
-                colorFilter: ColorFilter.mode(
-                  selected ? AppColors.primary500 : AppColors.textSecondary,
-                  BlendMode.srcIn,
-                ),
+                width: 16,
+                height: 16,
+                colorFilter: ColorFilter.mode(fg, BlendMode.srcIn),
               ),
               const SizedBox(width: 6),
               Flexible(
                 child: Text(
-                  '$label $count',
+                  '$label · $count',
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
-                    fontWeight: FontWeight.w700,
+                    fontWeight: FontWeight.w600,
                     fontSize: 14,
-                    color: selected
-                        ? AppColors.primary500
-                        : AppColors.textSecondary,
+                    height: 1.1,
+                    color: fg,
                   ),
                 ),
               ),
@@ -1900,7 +2176,10 @@ class ClientSearchScreenState extends State<ClientSearchScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final localeCode = context.watch<LocaleProvider>().localeCode;
+    final locale = context.watch<LocaleProvider>();
+    final localeCode = locale.localeCode;
+    final locationUpper = _locationLabel.toUpperCase();
+    final favStore = context.watch<ClientFavoritesStore>();
     _ensureDerivedLists();
 
     return Scaffold(
@@ -1912,129 +2191,126 @@ class ClientSearchScreenState extends State<ClientSearchScreen> {
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   Padding(
-                    padding: const EdgeInsets.fromLTRB(16, 8, 12, 4),
+                    padding: const EdgeInsets.fromLTRB(16, 18, 16, 0),
+                    child: InkWell(
+                      borderRadius: BorderRadius.circular(10),
+                      onTap: _openLocationPicker,
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          SvgPicture.asset(
+                            'assets/icons/icon-pin.svg',
+                            width: 12,
+                            height: 16,
+                          ),
+                          const SizedBox(width: 6),
+                          Flexible(
+                            child: Text(
+                              locationUpper,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w800,
+                                letterSpacing: 0.4,
+                                color: AppColors.textPrimary,
+                              ),
+                            ),
+                          ),
+                          const Icon(
+                            Icons.keyboard_arrow_down_rounded,
+                            size: 18,
+                            color: _browseLocationBlue,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 10, 16, 8),
                     child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
                         const Expanded(
                           child: Text(
                             'Browse',
                             style: TextStyle(
                               fontSize: 28,
-                              fontWeight: FontWeight.w800,
+                              fontWeight: FontWeight.w700,
                               color: AppColors.textPrimary,
                               letterSpacing: -0.5,
+                              height: 1.1,
                             ),
                           ),
                         ),
-                        Material(
-                          color: Colors.transparent,
-                          child: InkWell(
-                            borderRadius: BorderRadius.circular(12),
-                            onTap: _openLocationPicker,
-                            child: Padding(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 8,
-                                vertical: 6,
-                              ),
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  SvgPicture.asset(
-                                    'assets/icons/icon-pin.svg',
-                                    width: 16,
-                                    height: 16,
-                                    colorFilter: const ColorFilter.mode(
-                                      AppColors.primary500,
-                                      BlendMode.srcIn,
-                                    ),
-                                  ),
-                                  const SizedBox(width: 4),
-                                  ConstrainedBox(
-                                    constraints: const BoxConstraints(
-                                      maxWidth: 140,
-                                    ),
-                                    child: Text(
-                                      _locationLabel,
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
-                                      style: const TextStyle(
-                                        fontWeight: FontWeight.w600,
-                                        color: AppColors.textPrimary,
-                                      ),
-                                    ),
-                                  ),
-                                  const Icon(
-                                    Icons.keyboard_arrow_down,
-                                    size: 18,
-                                    color: AppColors.textSecondary,
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                        ),
+                        _browseTodayButton(),
+                        const SizedBox(width: 8),
+                        _browseExpandButton(),
                       ],
                     ),
                   ),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 12),
-                    child: _buildDayStrip(),
-                  ),
-                  const SizedBox(height: 10),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 12),
-                    child: Container(
-                      decoration: BoxDecoration(
-                        color: AppColors.backgroundPrimary,
-                        borderRadius: BorderRadius.circular(12),
+                  if (!_isMonthExpanded)
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 12),
+                      child: _buildDayStrip(),
+                    )
+                  else
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(12, 0, 12, 0),
+                      child: ValueListenableBuilder<DateTime>(
+                        valueListenable: _stripDayNotifier,
+                        builder: (context, stripDay, _) =>
+                            _buildBrowseMonthExpanded(stripDay),
                       ),
-                      child: Row(
-                        children: [
-                          const SizedBox(width: 12),
-                          SvgPicture.asset(
-                            'assets/icons/icon-search.svg',
-                            width: 18,
-                            height: 18,
-                            colorFilter: const ColorFilter.mode(
-                              AppColors.textSecondary,
-                              BlendMode.srcIn,
+                    ),
+                  const SizedBox(height: 28),
+                  Padding(
+                    padding: screenPaddingH(),
+                    child: TextField(
+                      controller: _searchController,
+                      style: const TextStyle(
+                        color: AppColors.textPrimary,
+                        fontSize: 14,
+                      ),
+                      decoration: InputDecoration(
+                        hintText: locale.t('clientHome.searchHint'),
+                        hintStyle: const TextStyle(
+                          color: AppColors.textTertiary,
+                          fontSize: 14,
+                        ),
+                        isDense: true,
+                        prefixIcon: const AppSearchPrefixIcon(leftMargin: 12),
+                        prefixIconConstraints:
+                            AppSearchPrefixIcon.prefixConstraints(
+                              leftMargin: 12,
+                              trailingGap: 4,
                             ),
+                        filled: true,
+                        fillColor: AppColors.backgroundPrimary,
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide(
+                            color: AppColors.primary500.withValues(alpha: 0.45),
                           ),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: TextField(
-                              controller: _searchController,
-                              style: const TextStyle(
-                                color: AppColors.textPrimary,
-                              ),
-                              decoration: const InputDecoration(
-                                hintText: 'Search classes or studios...',
-                                hintStyle: TextStyle(
-                                  color: AppColors.textSecondary,
-                                ),
-                                filled: true,
-                                fillColor: Colors.transparent,
-                                border: InputBorder.none,
-                                enabledBorder: InputBorder.none,
-                                focusedBorder: InputBorder.none,
-                                disabledBorder: InputBorder.none,
-                                errorBorder: InputBorder.none,
-                                focusedErrorBorder: InputBorder.none,
-                                isDense: true,
-                                contentPadding: EdgeInsets.symmetric(
-                                  vertical: 12,
-                                ),
-                              ),
-                            ),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: const BorderSide(
+                            color: AppColors.primary500,
+                            width: 1.5,
                           ),
-                          IconButton(
-                            onPressed: _openAllFiltersSheet,
-                            icon: const Icon(
-                              Icons.tune,
-                              color: AppColors.primary500,
-                            ),
+                        ),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide(
+                            color: AppColors.primary500.withValues(alpha: 0.45),
                           ),
-                        ],
+                        ),
+                        contentPadding: const EdgeInsets.symmetric(
+                          vertical: 12,
+                          horizontal: 12,
+                        ),
                       ),
                     ),
                   ),
@@ -2044,20 +2320,20 @@ class ClientSearchScreenState extends State<ClientSearchScreen> {
                     child: Container(
                       decoration: BoxDecoration(
                         color: AppColors.backgroundPrimary,
-                        borderRadius: BorderRadius.circular(12),
+                        borderRadius: BorderRadius.circular(14),
                       ),
                       child: Row(
                         children: [
                           _browseModeTab(
                             label: 'Classes',
-                            iconAsset: 'assets/icons/icon-schedule.svg',
+                            iconAsset: 'assets/icons/icon-clients.svg',
                             count: _derivedDayClassesCount,
                             selected: _showClasses,
                             onTap: () => setState(() => _showClasses = true),
                           ),
                           _browseModeTab(
                             label: 'Studios',
-                            iconAsset: 'assets/icons/icon-clients.svg',
+                            iconAsset: 'assets/icons/icon-studio.svg',
                             count: _derivedVisibleStudiosCount,
                             selected: !_showClasses,
                             onTap: () => setState(() => _showClasses = false),
@@ -2126,6 +2402,7 @@ class ClientSearchScreenState extends State<ClientSearchScreen> {
                                 trailingPriceLabel: c.price != null
                                     ? formatVnd(c.price!)
                                     : null,
+                                trailingPriceColor: AppColors.textPrimary,
                                 bookActionLabel: 'Book',
                                 onBookAgain: () => _openExploreClassDetail(c),
                                 onTap: () => _openExploreClassDetail(c),
@@ -2142,208 +2419,28 @@ class ClientSearchScreenState extends State<ClientSearchScreen> {
                                 const SizedBox(height: 8),
                             itemBuilder: (_, index) {
                               final s = _derivedVisibleStudios[index];
-                              final firstToday =
-                                  _derivedFirstClassByStudio[s.id];
-                              final distanceText = _distanceLabel(
-                                _resolvedDistanceKmMemo(s),
-                              );
-                              return Material(
-                                color: AppColors.backgroundPrimary,
-                                child: InkWell(
-                                  onTap: () {
-                                    Navigator.of(context).push(
-                                      MaterialPageRoute(
-                                        builder: (_) =>
-                                            PublicStudioDetailScreen(
-                                              studioId: s.id,
-                                            ),
-                                      ),
-                                    );
-                                  },
-                                  child: Padding(
-                                    padding: const EdgeInsets.fromLTRB(
-                                      12,
-                                      14,
-                                      12,
-                                      14,
-                                    ),
-                                    child: Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      children: [
-                                        Row(
-                                          crossAxisAlignment:
-                                              CrossAxisAlignment.start,
-                                          children: [
-                                            Expanded(
-                                              child: Column(
-                                                crossAxisAlignment:
-                                                    CrossAxisAlignment.start,
-                                                children: [
-                                                  Text(
-                                                    s.name,
-                                                    style: const TextStyle(
-                                                      fontWeight:
-                                                          FontWeight.w800,
-                                                      fontSize: 22 / 1.2,
-                                                    ),
-                                                  ),
-                                                  const SizedBox(height: 3),
-                                                  if (s.address
-                                                      .trim()
-                                                      .isNotEmpty)
-                                                    Text(
-                                                      s.address.trim(),
-                                                      maxLines: 1,
-                                                      overflow:
-                                                          TextOverflow.ellipsis,
-                                                      style: const TextStyle(
-                                                        color: AppColors
-                                                            .textSecondary,
-                                                      ),
-                                                    ),
-                                                  const SizedBox(height: 6),
-                                                  if (s.rating > 0)
-                                                    Row(
-                                                      children: [
-                                                        const Icon(
-                                                          Icons.star,
-                                                          color: Color(
-                                                            0xFFF7C948,
-                                                          ),
-                                                          size: 16,
-                                                        ),
-                                                        const SizedBox(
-                                                          width: 4,
-                                                        ),
-                                                        Text(
-                                                          distanceText
-                                                                  .isNotEmpty
-                                                              ? '$distanceText  ?  ${s.rating.toStringAsFixed(1)}  ${s.reviewCount} reviews'
-                                                              : '${s.rating.toStringAsFixed(1)}  ${s.reviewCount} reviews',
-                                                          style: const TextStyle(
-                                                            color: AppColors
-                                                                .textSecondary,
-                                                          ),
-                                                        ),
-                                                      ],
-                                                    ),
-                                                  if (s.rating <= 0 &&
-                                                      distanceText.isNotEmpty)
-                                                    Text(
-                                                      distanceText,
-                                                      style: const TextStyle(
-                                                        color: AppColors
-                                                            .textSecondary,
-                                                      ),
-                                                    ),
-                                                ],
-                                              ),
-                                            ),
-                                            if ((s.logoUrl ?? '')
-                                                .isNotEmpty) ...[
-                                              const SizedBox(width: 10),
-                                              ClipRRect(
-                                                borderRadius:
-                                                    BorderRadius.circular(8),
-                                                child: CachedSalonNetworkImage(
-                                                  imageUrl: s.logoUrl!,
-                                                  width: 64,
-                                                  height: 64,
-                                                  fit: BoxFit.contain,
-                                                ),
-                                              ),
-                                            ],
-                                          ],
-                                        ),
-                                        const SizedBox(height: 10),
-                                        const Divider(
-                                          height: 1,
-                                          thickness: 1,
-                                          color: AppColors.borderPrimary,
-                                        ),
-                                        const SizedBox(height: 10),
-                                        if (firstToday == null)
-                                          const Center(
-                                            child: Text(
-                                              'No classes today, try adjusting the filters.',
-                                              style: TextStyle(
-                                                color: AppColors.textSecondary,
-                                              ),
-                                            ),
-                                          )
-                                        else
-                                          Row(
-                                            crossAxisAlignment:
-                                                CrossAxisAlignment.start,
-                                            children: [
-                                              Expanded(
-                                                child: Column(
-                                                  crossAxisAlignment:
-                                                      CrossAxisAlignment.start,
-                                                  children: [
-                                                    Text(
-                                                      firstToday.className,
-                                                      maxLines: 1,
-                                                      overflow:
-                                                          TextOverflow.ellipsis,
-                                                      style: const TextStyle(
-                                                        fontSize: 18 / 1.2,
-                                                        fontWeight:
-                                                            FontWeight.w700,
-                                                        color: AppColors
-                                                            .textPrimary,
-                                                      ),
-                                                    ),
-                                                    const SizedBox(height: 8),
-                                                    Container(
-                                                      padding:
-                                                          const EdgeInsets.symmetric(
-                                                            horizontal: 10,
-                                                            vertical: 6,
-                                                          ),
-                                                      decoration: BoxDecoration(
-                                                        color: AppColors
-                                                            .backgroundSecondary,
-                                                        borderRadius:
-                                                            BorderRadius.circular(
-                                                              8,
-                                                            ),
-                                                        border: Border.all(
-                                                          color: AppColors
-                                                              .borderPrimary,
-                                                        ),
-                                                      ),
-                                                      child: Text(
-                                                        formatTime24(
-                                                          firstToday.startsAt,
-                                                        ),
-                                                        style: const TextStyle(
-                                                          fontWeight:
-                                                              FontWeight.w600,
-                                                          color: AppColors
-                                                              .textPrimary,
-                                                        ),
-                                                      ),
-                                                    ),
-                                                  ],
-                                                ),
-                                              ),
-                                              if (firstToday.price != null)
-                                                Text(
-                                                  formatVnd(firstToday.price!),
-                                                  style: const TextStyle(
-                                                    fontWeight: FontWeight.w800,
-                                                    color: AppColors.primary500,
-                                                    fontSize: 26 / 1.6,
-                                                  ),
-                                                ),
-                                            ],
-                                          ),
-                                      ],
-                                    ),
-                                  ),
+                              final todayClasses =
+                                  _derivedTodayClassesByStudio[s.id] ??
+                                  const [];
+                              return BrowseStudioListCard(
+                                studio: s,
+                                todayClasses: todayClasses,
+                                distanceLabel: _distanceLabel(
+                                  _resolvedDistanceKmMemo(s),
                                 ),
+                                isFavorite: favStore.isFavorite(s.id),
+                                onTap: () {
+                                  Navigator.of(context).push(
+                                    MaterialPageRoute(
+                                      builder: (_) => PublicStudioDetailScreen(
+                                        studioId: s.id,
+                                      ),
+                                    ),
+                                  );
+                                },
+                                onToggleFavorite: () =>
+                                    _toggleBrowseStudioFavorite(s),
+                                onClassTap: _openExploreClassDetail,
                               );
                             },
                           ),

@@ -2584,7 +2584,7 @@ export class StudiosService {
     }
 
     const studio = await this.prisma.studio.findFirst({
-      where: { id: studioId, isDeleted: false },
+      where: { id: studioId, status: 'ACTIVE' },
       select: { id: true },
     });
     if (!studio) {

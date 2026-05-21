@@ -108,6 +108,7 @@ class OwnerDailyScheduleSessionCard extends StatelessWidget {
     this.cancelActionLoading = false,
     this.dimPastSessions = true,
     this.trailingPriceLabel,
+    this.trailingPriceColor,
     this.showSubtitleLeadingIcon = true,
     required this.onTap,
   });
@@ -141,6 +142,9 @@ class OwnerDailyScheduleSessionCard extends StatelessWidget {
   /// When non-null, right column shows price only (Explore list).
   final String? trailingPriceLabel;
 
+  /// Price text color; defaults to training accent when null.
+  final Color? trailingPriceColor;
+
   /// Pin / person icon before [subtitleLabel]; set false for studio-name line.
   final bool showSubtitleLeadingIcon;
   final VoidCallback onTap;
@@ -170,6 +174,7 @@ class OwnerDailyScheduleSessionCard extends StatelessWidget {
 
     final trainerRowText = trainerLine?.trim() ?? '';
     final priceText = trailingPriceLabel?.trim() ?? '';
+    final priceColor = trailingPriceColor ?? accent;
     final hasBookAction = onBookAgain != null || bookActionLoading;
     final hasReviewAction = onLeaveReview != null || leaveReviewLoading;
     final hasCancelAction = onCancelBooking != null || cancelActionLoading;
@@ -316,7 +321,7 @@ class OwnerDailyScheduleSessionCard extends StatelessWidget {
                           style: TextStyle(
                             fontSize: 15,
                             fontWeight: FontWeight.w800,
-                            color: accent,
+                            color: priceColor,
                             height: 1.1,
                           ),
                         ),
@@ -339,7 +344,7 @@ class OwnerDailyScheduleSessionCard extends StatelessWidget {
                         style: TextStyle(
                           fontSize: 15,
                           fontWeight: FontWeight.w800,
-                          color: accent,
+                          color: priceColor,
                           height: 1.1,
                         ),
                       ),

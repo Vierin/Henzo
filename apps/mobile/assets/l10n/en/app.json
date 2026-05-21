@@ -85,6 +85,25 @@
 		"favoritePromoTitle": "Favorite a class",
 		"favoritePromoSubtitle": "Save classes and get reminders"
 	},
+	"clientShell": {
+		"home": "Home",
+		"browse": "Browse",
+		"activity": "Activity",
+		"profile": "Profile"
+	},
+	"clientActivity": {
+		"title": "Activity",
+		"upcoming": "Upcoming",
+		"passes": "Passes",
+		"favorites": "Favorites"
+	},
+	"clientFavorites": {
+		"emptyTitle": "Time to find your favorite spot",
+		"emptySubtitle": "Save studios to favorites to book faster.",
+		"explore": "Explore",
+		"removed": "Removed from favorites",
+		"removeError": "Could not remove"
+	},
 	"publicHome": {
 		"loginLink": "Login",
 		"heroTitle": "Find sports studios in seconds",
@@ -563,6 +582,8 @@
 		"addProfilePhoto": "Add photo",
 		"changeProfilePhoto": "Change photo",
 		"name": "Name",
+		"firstName": "First name",
+		"lastName": "Last name",
 		"enterName": "Enter name",
 		"phone": "Phone",
 		"enterPhone": "Enter phone number",

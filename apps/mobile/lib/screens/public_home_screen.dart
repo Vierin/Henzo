@@ -25,6 +25,7 @@ import '../services/mapbox_api_service.dart';
 import '../utils/formatters.dart';
 import '../utils/nearby_payload.dart';
 import '../services/client_favorites_mutations.dart';
+import '../widgets/app_search_prefix_icon.dart';
 import '../widgets/client/home/client_home_category_chip.dart';
 import '../services/dashboard_api_service.dart';
 import '../widgets/client/home/client_home_upcoming_card.dart';
@@ -742,17 +743,13 @@ class _PublicHomeScreenState extends State<PublicHomeScreen> {
                               fontSize: 14,
                             ),
                             isDense: true,
-                            prefixIcon: const Padding(
-                              padding: EdgeInsets.only(left: 12, right: 4),
-                              child: Icon(
-                                Icons.search,
-                                size: 20,
-                                color: AppColors.primary500,
-                              ),
+                            prefixIcon: const AppSearchPrefixIcon(
+                              leftMargin: 12,
                             ),
-                            prefixIconConstraints: const BoxConstraints(
-                              minWidth: 36,
-                              minHeight: 36,
+                            prefixIconConstraints:
+                                AppSearchPrefixIcon.prefixConstraints(
+                              leftMargin: 12,
+                              trailingGap: 4,
                             ),
                             filled: true,
                             fillColor: AppColors.backgroundPrimary,

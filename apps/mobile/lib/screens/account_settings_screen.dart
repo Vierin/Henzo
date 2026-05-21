@@ -7,6 +7,7 @@ import '../constants/colors.dart';
 import '../constants/layout.dart';
 import '../l10n/locale_provider.dart';
 import '../widgets/auth/auth_form_styles.dart';
+import '../widgets/settings/account_profile_form_widgets.dart';
 import '../widgets/settings/settings_header_back_button.dart';
 import '../services/auth_service.dart';
 import '../services/owner_photo_storage_service.dart';
@@ -15,10 +16,6 @@ import '../utils/auth_ui_result.dart';
 import '../utils/owner_image_picker.dart';
 import '../utils/owner_navigation_restore.dart';
 import 'main_shell.dart';
-
-/// Account settings mock: beige bg, caps section labels, white fields, coral CTAs.
-const Color _kDangerPurple = Color(0xFF5141A8);
-const Color _kAvatarPink = Color(0xFFF5D4D0);
 
 class AccountSettingsScreen extends StatefulWidget {
   const AccountSettingsScreen({super.key});
@@ -283,7 +280,9 @@ class _AccountSettingsScreenState extends State<AccountSettingsScreen> {
               Navigator.of(dialogContext).pop();
               _deleteAccount();
             },
-            style: FilledButton.styleFrom(backgroundColor: _kDangerPurple),
+            style: FilledButton.styleFrom(
+              backgroundColor: kAccountDangerPurple,
+            ),
             child: Text(
               context.read<LocaleProvider>().t('profileForm.deleteAccount'),
             ),
@@ -329,9 +328,11 @@ class _AccountSettingsScreenState extends State<AccountSettingsScreen> {
                 17,
               ),
               children: [
-                _SectionLabel(text: locale.t('profileForm.personalData')),
+                AccountSectionLabel(
+                  text: locale.t('profileForm.personalData'),
+                ),
                 const SizedBox(height: 10),
-                _PhotoCard(
+                AccountPhotoCard(
                   avatarUrl: _avatarUrl,
                   initials: initials,
                   isUploading: _avatarUploading,
@@ -370,7 +371,7 @@ class _AccountSettingsScreenState extends State<AccountSettingsScreen> {
                         ),
                       ),
                       const SizedBox(height: 16),
-                      _AccountPrimaryButton(
+                      AccountPrimaryButton(
                         label: locale.t('common.save'),
                         isLoading: _isSavingProfile,
                         onPressed: _saveProfile,
@@ -379,7 +380,7 @@ class _AccountSettingsScreenState extends State<AccountSettingsScreen> {
                   ),
                 ),
                 const SizedBox(height: 28),
-                _SectionLabel(text: locale.t('profileForm.security')),
+                AccountSectionLabel(text: locale.t('profileForm.security')),
                 const SizedBox(height: 10),
                 Form(
                   key: _passwordFormKey,
@@ -403,7 +404,7 @@ class _AccountSettingsScreenState extends State<AccountSettingsScreen> {
                         ),
                       ),
                       const SizedBox(height: 16),
-                      _AccountPrimaryButton(
+                      AccountPrimaryButton(
                         label: locale.t('profileForm.changePassword'),
                         isLoading: _isSavingPassword,
                         onPressed: _changePassword,
@@ -412,221 +413,14 @@ class _AccountSettingsScreenState extends State<AccountSettingsScreen> {
                   ),
                 ),
                 const SizedBox(height: 28),
-                _SectionLabel(text: locale.t('profileForm.dangerZone')),
+                AccountSectionLabel(text: locale.t('profileForm.dangerZone')),
                 const SizedBox(height: 10),
-                _AccountDangerButton(
+                AccountDangerButton(
                   label: locale.t('profileForm.deleteAccount'),
                   onPressed: _showDeleteAccountDialog,
                 ),
               ],
             ),
-    );
-  }
-}
-
-class _SectionLabel extends StatelessWidget {
-  const _SectionLabel({required this.text});
-
-  final String text;
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(left: 12),
-      child: Text(
-        text.toUpperCase(),
-        style: const TextStyle(
-          fontSize: 12,
-          fontWeight: FontWeight.w600,
-          letterSpacing: 0.4,
-          color: AppColors.textSecondary,
-        ),
-      ),
-    );
-  }
-}
-
-class _PhotoCard extends StatelessWidget {
-  const _PhotoCard({
-    required this.avatarUrl,
-    required this.initials,
-    required this.isUploading,
-    required this.addLabel,
-    required this.changeLabel,
-    required this.onTap,
-  });
-
-  final String? avatarUrl;
-  final String initials;
-  final bool isUploading;
-  final String addLabel;
-  final String changeLabel;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final hasPhoto = avatarUrl != null && avatarUrl!.isNotEmpty;
-    final label = hasPhoto ? changeLabel : addLabel;
-
-    return Material(
-      color: AppColors.backgroundPrimary,
-      borderRadius: BorderRadius.circular(AuthFormStyles.fieldBorderRadius),
-      child: InkWell(
-        onTap: isUploading ? null : onTap,
-        borderRadius: BorderRadius.circular(AuthFormStyles.fieldBorderRadius),
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(0, 15, 0, 12),
-          child: Column(
-            children: [
-              Stack(
-                alignment: Alignment.center,
-                children: [
-                  CircleAvatar(
-                    radius: 52,
-                    backgroundColor: _kAvatarPink,
-                    backgroundImage: hasPhoto ? NetworkImage(avatarUrl!) : null,
-                    child: hasPhoto
-                        ? null
-                        : Text(
-                            initials,
-                            style: const TextStyle(
-                              fontSize: 32,
-                              fontWeight: FontWeight.w700,
-                              color: AppColors.textPrimary,
-                            ),
-                          ),
-                  ),
-                  if (isUploading)
-                    const SizedBox(
-                      width: 104,
-                      height: 104,
-                      child: ColoredBox(
-                        color: Color(0x66FFFFFF),
-                        child: Center(
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2.5,
-                            color: AppColors.primary500,
-                          ),
-                        ),
-                      ),
-                    )
-                  else
-                    Positioned(
-                      right: 0,
-                      bottom: 0,
-                      child: Container(
-                        width: 32,
-                        height: 32,
-                        decoration: BoxDecoration(
-                          color: AppColors.primary500,
-                          shape: BoxShape.circle,
-                          border: Border.all(
-                            color: AppColors.backgroundPrimary,
-                            width: 2.5,
-                          ),
-                        ),
-                        child: const Icon(
-                          Icons.camera_alt_outlined,
-                          size: 16,
-                          color: Colors.white,
-                        ),
-                      ),
-                    ),
-                ],
-              ),
-              const SizedBox(height: 8),
-              Text(
-                label,
-                style: const TextStyle(
-                  fontSize: 15,
-                  fontWeight: FontWeight.w500,
-                  color: AppColors.textPrimary,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _AccountPrimaryButton extends StatelessWidget {
-  const _AccountPrimaryButton({
-    required this.label,
-    required this.onPressed,
-    this.isLoading = false,
-  });
-
-  final String label;
-  final VoidCallback onPressed;
-  final bool isLoading;
-
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      width: double.infinity,
-      height: AuthFormStyles.buttonHeight,
-      child: FilledButton(
-        onPressed: isLoading ? null : onPressed,
-        style: FilledButton.styleFrom(
-          backgroundColor: AppColors.primary500,
-          foregroundColor: AppColors.textInverse,
-          disabledBackgroundColor: AppColors.primary500.withValues(alpha: 0.5),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(
-              AuthFormStyles.fieldBorderRadius,
-            ),
-          ),
-        ),
-        child: isLoading
-            ? const SizedBox(
-                width: 22,
-                height: 22,
-                child: CircularProgressIndicator(
-                  strokeWidth: 2,
-                  color: Colors.white,
-                ),
-              )
-            : Text(
-                label,
-                style: const TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-      ),
-    );
-  }
-}
-
-class _AccountDangerButton extends StatelessWidget {
-  const _AccountDangerButton({required this.label, required this.onPressed});
-
-  final String label;
-  final VoidCallback onPressed;
-
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      width: double.infinity,
-      height: AuthFormStyles.buttonHeight,
-      child: FilledButton(
-        onPressed: onPressed,
-        style: FilledButton.styleFrom(
-          backgroundColor: _kDangerPurple,
-          foregroundColor: AppColors.textInverse,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(
-              AuthFormStyles.fieldBorderRadius,
-            ),
-          ),
-        ),
-        child: Text(
-          label,
-          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-        ),
-      ),
     );
   }
 }
