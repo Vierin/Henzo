@@ -259,7 +259,7 @@
 			name = HenzoWatch;
 			productName = HenzoWatch;
 			productReference = B60FFE192B652415DC07F5F7 /* HenzoWatch.app */;
-			productType = "com.apple.product-type.application.watchapp2";
+			productType = "com.apple.product-type.application";
 		};
 		97C146ED1CF9000F007C117D /* Runner */ = {
 			isa = PBXNativeTarget;
@@ -697,7 +697,7 @@
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = 4;
 				VALIDATE_PRODUCT = YES;
-				WATCHOS_DEPLOYMENT_TARGET = 7.0;
+				WATCHOS_DEPLOYMENT_TARGET = 10.0;
 				WK_APP_BUNDLE_IDENTIFIER = com.henzo.vn.Henzo.watchkitapp;
 				WK_COMPANION_APP_BUNDLE_IDENTIFIER = com.henzo.vn.Henzo;
 			};
@@ -874,6 +874,7 @@
 				CODE_SIGN_ENTITLEMENTS = HenzoWatch/HenzoWatch.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				DEVELOPMENT_TEAM = PR2HAF6344;
+				ONLY_ACTIVE_ARCH = YES;
 				ENABLE_BITCODE = NO;
 				INFOPLIST_FILE = HenzoWatch/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -885,7 +886,7 @@
 				SDKROOT = watchos;
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = 4;
-				WATCHOS_DEPLOYMENT_TARGET = 7.0;
+				WATCHOS_DEPLOYMENT_TARGET = 10.0;
 				WK_APP_BUNDLE_IDENTIFIER = com.henzo.vn.Henzo.watchkitapp;
 				WK_COMPANION_APP_BUNDLE_IDENTIFIER = com.henzo.vn.Henzo;
 			};
@@ -910,7 +911,7 @@
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = 4;
 				VALIDATE_PRODUCT = YES;
-				WATCHOS_DEPLOYMENT_TARGET = 7.0;
+				WATCHOS_DEPLOYMENT_TARGET = 10.0;
 				WK_APP_BUNDLE_IDENTIFIER = com.henzo.vn.Henzo.watchkitapp;
 				WK_COMPANION_APP_BUNDLE_IDENTIFIER = com.henzo.vn.Henzo;
 			};

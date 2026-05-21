@@ -250,9 +250,9 @@ class _ClientProfileScreenState extends State<ClientProfileScreen>
     setState(() => _sendingWorkout = false);
 
     final msg = switch (result.status) {
-      WorkoutSendStatus.sent => 'Тренировка отправлена на часы',
+      WorkoutSendStatus.sent => 'Тренировка отправлена на часы ✓',
       WorkoutSendStatus.notificationOnly =>
-        'Уведомление отправлено (часы не подключены)',
+        'Уведомление отправлено — проверь часы',
       WorkoutSendStatus.failed => 'Не удалось отправить',
     };
 
