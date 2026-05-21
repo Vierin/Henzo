@@ -34,6 +34,7 @@ class _ClientProfileScreenState extends State<ClientProfileScreen>
   HealthData? _health;
   bool _loadingHealth = true;
   bool _healthPermissionDenied = false;
+  bool _healthNeedsInstall = false;
 
   bool _sendingWorkout = false;
   String _selectedWorkout = 'Yoga';
@@ -42,7 +43,7 @@ class _ClientProfileScreenState extends State<ClientProfileScreen>
   void initState() {
     super.initState();
     _loadStats();
-    _loadHealth();
+    _probeHealth();
   }
 
   @override
@@ -89,9 +90,86 @@ class _ClientProfileScreenState extends State<ClientProfileScreen>
     }
   }
 
-  Future<void> _loadHealth({bool force = false}) async {
-    if (!force &&
-        _cachedHealth != null &&
+  Future<void> _probeHealth() async {
+    if (mounted) setState(() => _loadingHealth = true);
+    final hasAccess = await HealthService.hasAccess();
+    if (!hasAccess) {
+      if (!mounted) return;
+      setState(() {
+        _loadingHealth = false;
+        _healthPermissionDenied = true;
+      });
+      return;
+    }
+    await _fetchHealthData();
+  }
+
+  Future<void> _connectHealth() async {
+    if (mounted) setState(() => _loadingHealth = true);
+    final result = await HealthService.connect();
+    if (!result.ok) {
+      if (!mounted) return;
+      setState(() {
+        _loadingHealth = false;
+        _healthPermissionDenied = true;
+        _healthNeedsInstall =
+            result.issue == HealthConnectIssue.needsHealthConnectApp;
+      });
+      final msg = result.userMessage;
+      if (msg != null && msg.isNotEmpty) {
+        ScaffoldMessenger.of(context)
+          ..hideCurrentSnackBar()
+          ..showSnackBar(
+            SnackBar(
+              content: Text(msg),
+              duration: const Duration(seconds: 7),
+            ),
+          );
+      }
+      return;
+    }
+    await _fetchHealthData();
+  }
+
+  Future<void> _fetchHealthData() async {
+    try {
+      final data = await HealthService.fetchData();
+      if (!mounted) return;
+      setState(() {
+        _health = data;
+        _loadingHealth = false;
+        _healthPermissionDenied = false;
+        _healthNeedsInstall = false;
+      });
+      _cachedHealth = data;
+      _healthCachedAt = DateTime.now();
+      if (!data.hasAnyMetrics && mounted) {
+        ScaffoldMessenger.of(context)
+          ..hideCurrentSnackBar()
+          ..showSnackBar(
+            const SnackBar(
+              content: Text(
+                'Permissions OK, but no data yet. In Health Connect open '
+                'Data and access → Huawei Health and allow sharing steps '
+                'and calories.',
+              ),
+              duration: Duration(seconds: 8),
+            ),
+          );
+      }
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _loadingHealth = false);
+    }
+  }
+
+  bool get _healthFullySynced =>
+      !_loadingHealth &&
+      !_healthPermissionDenied &&
+      (_health?.hasAnyMetrics ?? false);
+
+  Future<void> _refreshHealth() async {
+    if (_cachedHealth != null &&
         _healthCachedAt != null &&
         DateTime.now().difference(_healthCachedAt!) < _statsCacheTtl) {
       if (mounted) {
@@ -102,29 +180,10 @@ class _ClientProfileScreenState extends State<ClientProfileScreen>
       }
       return;
     }
-    if (mounted) setState(() => _loadingHealth = true);
-    final granted = await HealthService.requestPermissions();
-    if (!granted) {
-      if (!mounted) return;
-      setState(() {
-        _loadingHealth = false;
-        _healthPermissionDenied = true;
-      });
-      return;
-    }
-    try {
-      final data = await HealthService.fetchData();
-      if (!mounted) return;
-      setState(() {
-        _health = data;
-        _loadingHealth = false;
-        _healthPermissionDenied = false;
-      });
-      _cachedHealth = data;
-      _healthCachedAt = DateTime.now();
-    } catch (_) {
-      if (!mounted) return;
-      setState(() => _loadingHealth = false);
+    if (await HealthService.hasAccess()) {
+      await _fetchHealthData();
+    } else {
+      await _connectHealth();
     }
   }
 
@@ -143,7 +202,7 @@ class _ClientProfileScreenState extends State<ClientProfileScreen>
           onRefresh: () async {
             await Future.wait([
               _loadStats(force: true),
-              _loadHealth(force: true),
+              _refreshHealth(),
             ]);
           },
           child: SingleChildScrollView(
@@ -224,13 +283,10 @@ class _ClientProfileScreenState extends State<ClientProfileScreen>
         ),
         const SizedBox(height: 12),
         _buildHealthSourceBanner(),
-        const SizedBox(height: 10),
-        if (_healthPermissionDenied)
-          _buildPermissionBanner()
-        else if (_loadingHealth)
-          _buildHealthSkeletons()
-        else
+        if (_healthFullySynced) ...[
+          const SizedBox(height: 10),
           _buildHealthCards(),
+        ],
       ],
     );
   }
@@ -396,7 +452,8 @@ class _ClientProfileScreenState extends State<ClientProfileScreen>
   Widget _buildHealthSourceBanner() {
     final isIOS = Platform.isIOS;
     final name = isIOS ? 'Apple Health' : 'Health Connect';
-    final isConnected = !_healthPermissionDenied && !_loadingHealth;
+    final hasPermission = !_healthPermissionDenied && !_loadingHealth;
+    final isSynced = _healthFullySynced;
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
@@ -444,11 +501,17 @@ class _ClientProfileScreenState extends State<ClientProfileScreen>
                 ),
                 const SizedBox(height: 2),
                 Text(
-                  isConnected ? 'Connected' : 'Not connected',
+                  isSynced
+                      ? 'Connected'
+                      : hasPermission && !isSynced
+                      ? 'Waiting for data from Huawei Health'
+                      : (_healthNeedsInstall
+                          ? 'Install Health Connect app'
+                          : 'Not connected'),
                   style: TextStyle(
                     fontSize: 12,
                     fontWeight: FontWeight.w400,
-                    color: isConnected
+                    color: isSynced
                         ? AppColors.textSecondary
                         : AppColors.textTertiary,
                   ),
@@ -456,8 +519,16 @@ class _ClientProfileScreenState extends State<ClientProfileScreen>
               ],
             ),
           ),
-          // Synced pill
-          if (isConnected)
+          if (_loadingHealth)
+            const SizedBox(
+              width: 22,
+              height: 22,
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+                color: AppColors.primary500,
+              ),
+            )
+          else if (isSynced)
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
               decoration: BoxDecoration(
@@ -487,60 +558,55 @@ class _ClientProfileScreenState extends State<ClientProfileScreen>
                   ),
                 ],
               ),
-            ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildPermissionBanner() {
-    return GestureDetector(
-      onTap: () => _loadHealth(force: true),
-      child: Container(
-        width: double.infinity,
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: AppColors.backgroundPrimary,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(
-            color: AppColors.primary500.withValues(alpha: 0.3),
-          ),
-        ),
-        child: Row(
-          children: [
-            const Icon(Icons.favorite_outline, color: AppColors.primary500, size: 22),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Text(
-                'Allow Health access to see your activity',
+            )
+          else if (hasPermission)
+            FilledButton(
+              onPressed: () {
+                _cachedHealth = null;
+                _healthCachedAt = null;
+                _fetchHealthData();
+              },
+              style: FilledButton.styleFrom(
+                backgroundColor: AppColors.backgroundSecondary,
+                foregroundColor: AppColors.textPrimary,
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                minimumSize: Size.zero,
+                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(999),
+                ),
+              ),
+              child: const Text(
+                'Refresh',
                 style: TextStyle(
-                  fontSize: 14,
-                  color: AppColors.textSecondary,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            )
+          else
+            FilledButton(
+              onPressed: _connectHealth,
+              style: FilledButton.styleFrom(
+                backgroundColor: AppColors.primary500,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                minimumSize: Size.zero,
+                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(999),
+                ),
+              ),
+              child: Text(
+                _healthNeedsInstall ? 'Install' : 'Connect',
+                style: const TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
                 ),
               ),
             ),
-            const Icon(Icons.chevron_right, color: AppColors.textTertiary, size: 20),
-          ],
-        ),
+        ],
       ),
-    );
-  }
-
-  Widget _buildHealthSkeletons() {
-    return Row(
-      children: List.generate(3, (i) {
-        final isLast = i == 2;
-        return Expanded(
-          child: Container(
-            margin: EdgeInsets.only(right: isLast ? 0 : 8),
-            height: 96,
-            decoration: BoxDecoration(
-              color: AppColors.backgroundPrimary,
-              borderRadius: BorderRadius.circular(16),
-            ),
-          ),
-        );
-      }),
     );
   }
 

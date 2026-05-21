@@ -58,7 +58,8 @@ class ClientSearchScreenState extends State<ClientSearchScreen> {
   bool _isMonthExpanded = false;
   late DateTime _selectedDay;
   late final ValueNotifier<DateTime> _stripDayNotifier;
-  late final PageController _dayPagerController;
+  late final ScrollController _dayStripScrollController;
+  double? _browseStripViewportWidth;
   final ValueNotifier<DateTime> _stripPagerDayNotifier = ValueNotifier(
     DateTime.now(),
   );
@@ -98,10 +99,7 @@ class ClientSearchScreenState extends State<ClientSearchScreen> {
     _selectedDay = today;
     _stripDayNotifier = ValueNotifier<DateTime>(today);
     _stripPagerDayNotifier.value = today;
-    _dayPagerController = PageController(
-      initialPage: 0,
-      viewportFraction: 1 / 7,
-    );
+    _dayStripScrollController = ScrollController();
     _searchController.addListener(_onSearchChanged);
     _loadSavedLocationOnly();
   }
@@ -113,7 +111,7 @@ class ClientSearchScreenState extends State<ClientSearchScreen> {
     _searchController.dispose();
     _stripDayNotifier.dispose();
     _stripPagerDayNotifier.dispose();
-    _dayPagerController.dispose();
+    _dayStripScrollController.dispose();
     super.dispose();
   }
 
@@ -142,16 +140,35 @@ class ClientSearchScreenState extends State<ClientSearchScreen> {
     });
   }
 
-  void _goToToday() {
-    _clearStripScheduleDebounceTimer();
-    final today = _calendarDateOnly(DateTime.now());
-    if (_dayPagerController.hasClients) {
-      _dayPagerController.animateToPage(
-        0,
+  static const double _kBrowseDayPillGap = 7;
+
+  double _browsePillWidth(double viewportWidth) =>
+      viewportWidth / 7 - _kBrowseDayPillGap;
+
+  double _browseDayStride(double viewportWidth) => viewportWidth / 7;
+
+  void _scrollBrowseStripToIndex(
+    int index, {
+    bool animate = false,
+  }) {
+    final w = _browseStripViewportWidth;
+    if (w == null || !_dayStripScrollController.hasClients) return;
+    final offset = index * _browseDayStride(w);
+    if (animate) {
+      _dayStripScrollController.animateTo(
+        offset,
         duration: const Duration(milliseconds: 280),
         curve: Curves.easeOutCubic,
       );
+    } else {
+      _dayStripScrollController.jumpTo(offset);
     }
+  }
+
+  void _goToToday() {
+    _clearStripScheduleDebounceTimer();
+    final today = _calendarDateOnly(DateTime.now());
+    _scrollBrowseStripToIndex(0, animate: true);
     _applyExploreDay(today);
   }
 
@@ -169,13 +186,7 @@ class ClientSearchScreenState extends State<ClientSearchScreen> {
         .difference(_calendarDateOnly(DateTime.now()))
         .inDays;
     _clearStripScheduleDebounceTimer();
-    if (_dayPagerController.hasClients) {
-      _dayPagerController.animateToPage(
-        index,
-        duration: const Duration(milliseconds: 280),
-        curve: Curves.easeOutCubic,
-      );
-    }
+    _scrollBrowseStripToIndex(index, animate: true);
     _applyExploreDay(normalized);
   }
 
@@ -185,10 +196,22 @@ class ClientSearchScreenState extends State<ClientSearchScreen> {
         .difference(today)
         .inDays
         .clamp(0, _kExploreHorizonDays - 1);
-    if (_dayPagerController.hasClients) {
-      _dayPagerController.jumpToPage(index);
-    }
+    _scrollBrowseStripToIndex(index);
     _stripPagerDayNotifier.value = _selectedDay;
+  }
+
+  void _onBrowseDayStripScrolled() {
+    final w = _browseStripViewportWidth;
+    if (w == null || !_dayStripScrollController.hasClients) return;
+    final stride = _browseDayStride(w);
+    if (stride <= 0) return;
+    final index = (_dayStripScrollController.offset / stride)
+        .round()
+        .clamp(0, _kExploreHorizonDays - 1);
+    final day = _exploreDayAt(index);
+    final normalized = _calendarDateOnly(day);
+    if (_stripPagerDayNotifier.value == normalized) return;
+    _stripPagerDayNotifier.value = normalized;
   }
 
   List<DateTime?> _browseMonthCells(DateTime monthDate) {
@@ -2000,59 +2023,73 @@ class ClientSearchScreenState extends State<ClientSearchScreen> {
   Widget _buildDayStrip() {
     return LayoutBuilder(
       builder: (context, constraints) {
-        final slotWidth = constraints.maxWidth / 7 - 7;
-        final stripHeight = slotWidth * 3 / 2;
+        final viewportWidth = constraints.maxWidth;
+        _browseStripViewportWidth = viewportWidth;
+        final pillWidth = _browsePillWidth(viewportWidth);
+        final stripHeight = pillWidth * 3 / 2;
         return SizedBox(
           height: stripHeight,
           child: NotificationListener<ScrollNotification>(
             onNotification: (ScrollNotification n) {
               if (n.metrics.axis != Axis.horizontal) return false;
-              if (!_dayPagerController.hasClients) return false;
-              final page = _dayPagerController.page;
-              if (page == null) return false;
-              final index = page.round().clamp(0, _kExploreHorizonDays - 1);
-              final day = _exploreDayAt(index);
-              final normalized = _calendarDateOnly(day);
-              if (_stripPagerDayNotifier.value == normalized) return false;
-              _stripPagerDayNotifier.value = normalized;
-              return false;
-            },
-            child: PageView.builder(
-              controller: _dayPagerController,
-              physics: const SmoothDayPageScrollPhysics(),
-              clipBehavior: Clip.none,
-              padEnds: false,
-              itemCount: _kExploreHorizonDays,
-              onPageChanged: (index) {
+              _onBrowseDayStripScrolled();
+              if (n is ScrollEndNotification) {
+                final w = _browseStripViewportWidth;
+                if (w == null || !_dayStripScrollController.hasClients) {
+                  return false;
+                }
+                final stride = _browseDayStride(w);
+                final index = (_dayStripScrollController.offset / stride)
+                    .round()
+                    .clamp(0, _kExploreHorizonDays - 1);
+                final target = index * stride;
+                if ((_dayStripScrollController.offset - target).abs() > 0.5) {
+                  _dayStripScrollController.animateTo(
+                    target,
+                    duration: const Duration(milliseconds: 200),
+                    curve: Curves.easeOutCubic,
+                  );
+                }
                 final day = _exploreDayAt(index);
                 final normalized = _calendarDateOnly(day);
-                if (_stripPagerDayNotifier.value != normalized) {
-                  _stripPagerDayNotifier.value = normalized;
-                }
                 if (CalendarDayPill.isSameDay(day, _stripDayNotifier.value) &&
                     CalendarDayPill.isSameDay(day, _selectedDay)) {
-                  return;
+                  return false;
                 }
                 _debounceExploreDay(normalized);
-              },
+              }
+              return false;
+            },
+            child: ListView.separated(
+              controller: _dayStripScrollController,
+              scrollDirection: Axis.horizontal,
+              physics: const BouncingScrollPhysics(
+                parent: AlwaysScrollableScrollPhysics(),
+              ),
+              clipBehavior: Clip.none,
+              itemCount: _kExploreHorizonDays,
+              separatorBuilder: (context, index) => const SizedBox(
+                width: _kBrowseDayPillGap,
+              ),
               itemBuilder: (_, index) {
                 final day = _exploreDayAt(index);
-                return ValueListenableBuilder<DateTime>(
-                  valueListenable: _stripDayNotifier,
-                  builder: (context, stripDay, _) {
-                    final selected = CalendarDayPill.isSameDay(day, stripDay);
-                    return Padding(
-                      padding: const EdgeInsets.only(right: 7),
-                      child: BrowseDayPill(
+                return SizedBox(
+                  width: pillWidth,
+                  child: ValueListenableBuilder<DateTime>(
+                    valueListenable: _stripDayNotifier,
+                    builder: (context, stripDay, _) {
+                      final selected = CalendarDayPill.isSameDay(day, stripDay);
+                      return BrowseDayPill(
                         day: day,
                         selected: selected,
                         onTap: () {
                           _clearStripScheduleDebounceTimer();
+                          _scrollBrowseStripToIndex(index, animate: true);
                           _applyExploreDay(day);
                         },
-                      ),
-                    );
-                  },
+                      );
+                    },
+                  ),
                 );
               },
             ),
