@@ -2020,6 +2020,7 @@ class ClientSearchScreenState extends State<ClientSearchScreen> {
             child: PageView.builder(
               controller: _dayPagerController,
               physics: const SmoothDayPageScrollPhysics(),
+              clipBehavior: Clip.none,
               padEnds: false,
               itemCount: _kExploreHorizonDays,
               onPageChanged: (index) {

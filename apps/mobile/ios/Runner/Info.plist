@@ -122,5 +122,9 @@
 	<string>Your location is used to fill in the studio address on the map.</string>
 	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
 	<string>Your location is used to fill in the studio address on the map.</string>
+	<key>NSHealthShareUsageDescription</key>
+	<string>Henzo reads your steps, calories and workouts to display your activity summary on the Profile screen.</string>
+	<key>NSHealthUpdateUsageDescription</key>
+	<string>Henzo does not write any health data.</string>
 </dict>
 </plist>
