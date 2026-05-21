@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
 import '../constants/colors.dart';
+import '../l10n/locale_provider.dart';
 import '../widgets/shell/shell_nav_item.dart';
 import 'client/client_bookings_screen.dart';
 import 'client/client_profile_screen.dart';
@@ -44,6 +46,8 @@ class _ClientShellState extends State<ClientShell> {
 
   @override
   Widget build(BuildContext context) {
+    final locale = context.watch<LocaleProvider>();
+
     return ClientShellScope(
       goToExplore: () => goToExploreTab(),
       child: Scaffold(
@@ -70,14 +74,15 @@ class _ClientShellState extends State<ClientShell> {
               decoration: BoxDecoration(
                 color: AppColors.backgroundPrimary,
                 borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: const Color(0xFFE6E3E2)),
+                border: Border.all(color: const Color(0xFFE6E3E2), width: 1),
               ),
               child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Expanded(
                     child: ShellNavItem(
                       svgAsset: 'assets/icons/icon-house.svg',
-                      label: 'Home',
+                      label: locale.t('clientShell.home'),
                       isSelected: _currentIndex == 0,
                       onTap: () => setState(() => _currentIndex = 0),
                     ),
@@ -85,7 +90,7 @@ class _ClientShellState extends State<ClientShell> {
                   Expanded(
                     child: ShellNavItem(
                       svgAsset: 'assets/icons/icon-search.svg',
-                      label: 'Browse',
+                      label: locale.t('clientShell.browse'),
                       isSelected: _currentIndex == 1,
                       onTap: () => goToExploreTab(),
                     ),
@@ -93,7 +98,7 @@ class _ClientShellState extends State<ClientShell> {
                   Expanded(
                     child: ShellNavItem(
                       svgAsset: 'assets/icons/icon-schedule.svg',
-                      label: 'Bookings',
+                      label: locale.t('clientShell.activity'),
                       isSelected: _currentIndex == 2,
                       onTap: () => setState(() => _currentIndex = 2),
                     ),
@@ -101,7 +106,7 @@ class _ClientShellState extends State<ClientShell> {
                   Expanded(
                     child: ShellNavItem(
                       svgAsset: 'assets/icons/icon-profile-large.svg',
-                      label: 'Profile',
+                      label: locale.t('clientShell.profile'),
                       isSelected: _currentIndex == 3,
                       onTap: () => setState(() => _currentIndex = 3),
                     ),

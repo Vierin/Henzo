@@ -35,13 +35,26 @@ DefaultLocationSwapResult? swapSalonDefaultTrainingLocation({
   }
   if (picked == null || picked.isDefault) return null;
 
+  TrainingLocationItem? currentDefault;
+  for (final loc in locations) {
+    if (loc.id == 'default' || loc.isDefault) {
+      currentDefault = loc;
+      break;
+    }
+  }
+
   final oldAddress = salon.address?.trim() ?? '';
   final oldLat = salon.latitude;
   final oldLon = salon.longitude;
 
+  final currentDefaultName = currentDefault?.name.trim() ?? '';
+  final demotedName = currentDefaultName.isNotEmpty
+      ? currentDefaultName
+      : mainStudioName;
+
   final demoted = TrainingLocationItem(
     id: 'loc_${DateTime.now().millisecondsSinceEpoch}',
-    name: mainStudioName,
+    name: demotedName,
     address: oldAddress,
     latitude: oldLat,
     longitude: oldLon,

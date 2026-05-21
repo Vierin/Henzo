@@ -36,8 +36,8 @@ class TrainingCategoryColorChip extends StatelessWidget {
     final borderColor = selected
         ? AppColors.primary500
         : (isOther || category == null
-            ? AppColors.primary300
-            : Colors.transparent);
+              ? AppColors.primary300
+              : Colors.transparent);
 
     return Material(
       color: Colors.transparent,
@@ -50,13 +50,15 @@ class TrainingCategoryColorChip extends StatelessWidget {
             borderRadius: BorderRadius.circular(999),
             border: Border.all(color: borderColor, width: borderW),
           ),
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
           child: Text(
             label,
             style: TextStyle(
               color: fg,
               fontWeight: FontWeight.w600,
+              letterSpacing: -0.3,
               fontSize: 13,
+              height: 1.1,
             ),
           ),
         ),

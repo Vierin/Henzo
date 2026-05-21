@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:intl/intl.dart';
 
+import '../../../constants/colors.dart';
 import '../../../constants/layout.dart';
 
 class ClientHomeUpcomingCard extends StatelessWidget {
@@ -19,22 +21,14 @@ class ClientHomeUpcomingCard extends StatelessWidget {
   final String? trainerName;
   final VoidCallback? onTap;
 
-  String get _minutesLabel {
-    final diff = startsAt.toLocal().difference(DateTime.now());
-    if (diff.isNegative) return 'NOW';
-    final mins = diff.inMinutes;
-    if (mins < 60) return 'IN $mins MIN';
-    final h = diff.inHours;
-    if (h < 24) return 'IN $h H';
-    return DateFormat('MMM d').format(startsAt.toLocal()).toUpperCase();
-  }
+  static const _cardRadius = 18.0;
+  static const _dateBoxSize = 65.0;
+  static const _dateBoxRadius = 12.0;
 
   @override
   Widget build(BuildContext context) {
     final local = startsAt.toLocal();
-    final isToday = DateUtils.isSameDay(local, DateTime.now());
-    final dayLabel =
-        isToday ? 'TODAY' : DateFormat('EEE').format(local).toUpperCase();
+    const dayLabel = 'TODAY';
     final timeLabel = DateFormat('H:mm').format(local);
 
     return Padding(
@@ -42,93 +36,125 @@ class ClientHomeUpcomingCard extends StatelessWidget {
       child: Material(
         color: Colors.transparent,
         child: InkWell(
-          borderRadius: BorderRadius.circular(20),
+          borderRadius: BorderRadius.circular(_cardRadius),
           onTap: onTap,
           child: Ink(
             decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(20),
-              gradient: const LinearGradient(
-                colors: [Color(0xFFF07A63), Color(0xFFE85D4A)],
-                begin: Alignment.centerLeft,
-                end: Alignment.centerRight,
-              ),
+              color: AppColors.primary500,
+              borderRadius: BorderRadius.circular(_cardRadius),
             ),
-            padding: const EdgeInsets.all(14),
+            padding: const EdgeInsets.fromLTRB(14, 14, 14, 14),
             child: Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
               children: [
                 Container(
-                  width: 64,
-                  padding: const EdgeInsets.symmetric(vertical: 10),
+                  width: _dateBoxSize,
+                  height: _dateBoxSize,
                   decoration: BoxDecoration(
-                    color: Colors.black.withValues(alpha: 0.14),
-                    borderRadius: BorderRadius.circular(14),
+                    color: const Color(0xE6FFFFFF),
+                    borderRadius: BorderRadius.circular(_dateBoxRadius),
                   ),
                   child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       Text(
                         dayLabel,
                         style: const TextStyle(
                           fontSize: 11,
-                          fontWeight: FontWeight.w700,
-                          color: Colors.white70,
-                          letterSpacing: 0.4,
+                          color: AppColors.textSecondary,
+                          letterSpacing: -0.3,
+                          height: 1.1,
                         ),
                       ),
                       const SizedBox(height: 2),
                       Text(
                         timeLabel,
                         style: const TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.w800,
-                          color: Colors.white,
+                          fontSize: 20,
+                          color: AppColors.textPrimary,
+                          height: 1.1,
                         ),
                       ),
                     ],
                   ),
                 ),
-                const SizedBox(width: 12),
+                const SizedBox(width: 17),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        _minutesLabel,
-                        style: const TextStyle(
-                          fontSize: 11,
-                          fontWeight: FontWeight.w700,
-                          color: Colors.white70,
-                          letterSpacing: 0.3,
-                        ),
+                      Row(
+                        children: [
+                          SvgPicture.asset(
+                            'assets/icons/icon-pin-white.svg',
+                            width: 10,
+                            height: 14,
+                          ),
+                          const SizedBox(width: 4),
+                          Expanded(
+                            child: Text(
+                              studioName,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w400,
+                                color: Colors.white,
+                                height: 1.1,
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        '$className · $studioName',
+                        className,
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
                         style: const TextStyle(
-                          fontSize: 15,
-                          fontWeight: FontWeight.w700,
+                          fontSize: 24,
+                          fontWeight: FontWeight.w500,
                           color: Colors.white,
-                          height: 1.2,
+                          height: 1.15,
                         ),
                       ),
                       if (trainerName != null && trainerName!.isNotEmpty) ...[
-                        const SizedBox(height: 2),
-                        Text(
-                          'with $trainerName',
-                          style: const TextStyle(
-                            fontSize: 13,
-                            color: Colors.white70,
-                          ),
+                        const SizedBox(height: 4),
+                        Row(
+                          children: [
+                            SvgPicture.asset(
+                              'assets/icons/icon-profile.svg',
+                              width: 11,
+                              height: 13,
+                              colorFilter: const ColorFilter.mode(
+                                Colors.white,
+                                BlendMode.srcIn,
+                              ),
+                            ),
+                            const SizedBox(width: 4),
+                            Expanded(
+                              child: Text(
+                                trainerName!,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: const TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w400,
+                                  color: Colors.white,
+                                  height: 1.2,
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
                       ],
                     ],
                   ),
                 ),
-                const Icon(
-                  Icons.chevron_right_rounded,
-                  color: Colors.white,
-                  size: 28,
+                SvgPicture.asset(
+                  'assets/icons/icon-chevron-right.svg',
+                  width: 9,
+                  height: 14,
                 ),
               ],
             ),

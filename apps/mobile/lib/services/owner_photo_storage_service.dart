@@ -187,6 +187,27 @@ class OwnerPhotoStorageService {
     );
   }
 
+  /// Studio logo on owner profile (`owners/{auth.uid()}/logo.webp`).
+  static Future<({String? url, String? error})> uploadStudioLogo({
+    required XFile file,
+  }) async {
+    if (authenticatedOwnerId == null) {
+      return (url: null, error: 'Нет сессии Supabase — войдите снова');
+    }
+    final bytes = await convertXFileToWebp(
+      file,
+      maxEdge: avatarMaxEdge,
+    );
+    if (bytes == null) {
+      return (url: null, error: 'Фото больше 3 MB после сжатия');
+    }
+    return uploadWebpBytes(
+      bytes: bytes,
+      storagePath: ownerStoragePath('logo.webp'),
+      upsert: true,
+    );
+  }
+
   static String _randomSuffix() {
     final ms = DateTime.now().microsecondsSinceEpoch.toRadixString(36);
     return ms.substring(ms.length > 6 ? ms.length - 6 : 0);

@@ -73,6 +73,7 @@
 	"clientHome": {
 		"nowIn": "ĐANG Ở",
 		"setLocation": "Chọn vị trí",
+		"greetingHello": "Xin chào, ",
 		"greetingPrefix": "Tìm ",
 		"greetingEmphasis": "nhịp",
 		"searchHint": "Studio, lớp, huấn luyện viên...",
@@ -83,6 +84,25 @@
 		"noClassesToday": "Hôm nay chưa có lớp gần bạn.",
 		"favoritePromoTitle": "Lưu lớp yêu thích",
 		"favoritePromoSubtitle": "Lưu lớp và nhận nhắc nhở"
+	},
+	"clientShell": {
+		"home": "Trang chủ",
+		"browse": "Khám phá",
+		"activity": "Hoạt động",
+		"profile": "Hồ sơ"
+	},
+	"clientActivity": {
+		"title": "Hoạt động",
+		"upcoming": "Sắp tới",
+		"passes": "Gói tập",
+		"favorites": "Yêu thích"
+	},
+	"clientFavorites": {
+		"emptyTitle": "Hãy tìm địa điểm yêu thích của bạn",
+		"emptySubtitle": "Lưu studio vào yêu thích để đặt nhanh hơn.",
+		"explore": "Khám phá",
+		"removed": "Đã xóa khỏi yêu thích",
+		"removeError": "Không thể xóa"
 	},
 	"publicHome": {
 		"loginLink": "Đăng nhập",
@@ -563,6 +583,8 @@
 		"addProfilePhoto": "Thêm ảnh",
 		"changeProfilePhoto": "Đổi ảnh",
 		"name": "Tên",
+		"firstName": "Tên",
+		"lastName": "Họ",
 		"enterName": "Nhập tên",
 		"phone": "Điện thoại",
 		"enterPhone": "Nhập số điện thoại",
@@ -578,6 +600,19 @@
 		"deleteAccountConfirm": "Bạn có chắc muốn xóa tài khoản? Không thể hoàn tác. Mọi dữ liệu sẽ bị xóa vĩnh viễn.",
 		"passwordMin8": "Mật khẩu phải có ít nhất 8 ký tự",
 		"instagram": "Instagram",
+		"facebook": "Facebook",
+		"whatsApp": "WhatsApp",
+		"telegram": "Telegram",
+		"studioLogo": "Logo studio",
+		"studioLogoHint": "Ảnh vuông, tối đa 3MB",
+		"addStudioLogo": "Thêm logo",
+		"changeStudioLogo": "Đổi logo",
+		"studioPhotos": "Ảnh studio",
+		"studioPhotosHint": "Tối đa 5 ảnh, mỗi ảnh tối đa 3MB",
+		"socialLinks": "Mạng xã hội",
+		"addSocialLink": "Thêm liên kết",
+		"addSocialLinkSheetTitle": "THÊM LIÊN KẾT",
+		"mainPhoto": "Chính",
 		"salonDescriptionHint": "Nhập thông tin salon: tên, mô tả, địa chỉ, liên hệ, ảnh và giờ mở cửa.",
 		"deleteWarning": "Xóa tài khoản là vĩnh viễn. Mọi dữ liệu sẽ mất."
 	},

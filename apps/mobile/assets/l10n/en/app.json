@@ -73,6 +73,7 @@
 	"clientHome": {
 		"nowIn": "NOW IN",
 		"setLocation": "Set location",
+		"greetingHello": "Hello, ",
 		"greetingPrefix": "Find your ",
 		"greetingEmphasis": "flow",
 		"searchHint": "Studios, classes, teachers...",
@@ -83,6 +84,25 @@
 		"noClassesToday": "No classes scheduled nearby today.",
 		"favoritePromoTitle": "Favorite a class",
 		"favoritePromoSubtitle": "Save classes and get reminders"
+	},
+	"clientShell": {
+		"home": "Home",
+		"browse": "Browse",
+		"activity": "Activity",
+		"profile": "Profile"
+	},
+	"clientActivity": {
+		"title": "Activity",
+		"upcoming": "Upcoming",
+		"passes": "Passes",
+		"favorites": "Favorites"
+	},
+	"clientFavorites": {
+		"emptyTitle": "Time to find your favorite spot",
+		"emptySubtitle": "Save studios to favorites to book faster.",
+		"explore": "Explore",
+		"removed": "Removed from favorites",
+		"removeError": "Could not remove"
 	},
 	"publicHome": {
 		"loginLink": "Login",
@@ -562,6 +582,8 @@
 		"addProfilePhoto": "Add photo",
 		"changeProfilePhoto": "Change photo",
 		"name": "Name",
+		"firstName": "First name",
+		"lastName": "Last name",
 		"enterName": "Enter name",
 		"phone": "Phone",
 		"enterPhone": "Enter phone number",
@@ -576,7 +598,20 @@
 		"salonCreated": "Salon created",
 		"deleteAccountConfirm": "Are you sure you want to delete your account? This cannot be undone. All data will be permanently deleted.",
 		"passwordMin8": "Password must be at least 8 characters",
-		"instagram": "Instagram",
+        "instagram": "Instagram",
+		"facebook": "Facebook",
+		"whatsApp": "WhatsApp",
+		"telegram": "Telegram",
+		"studioLogo": "Studio logo",
+		"studioLogoHint": "Square image, maximum 3MB",
+		"addStudioLogo": "Add logo",
+		"changeStudioLogo": "Change logo",
+		"studioPhotos": "Studio photos",
+		"studioPhotosHint": "Add up to 5 photos, maximum 3MB per photo",
+		"socialLinks": "Social links",
+		"addSocialLink": "Add social link",
+		"addSocialLinkSheetTitle": "ADD SOCIAL LINK",
+		"mainPhoto": "Main",
 		"salonDescriptionHint": "Enter your salon details: name, description, address, contacts, photos and opening hours.",
 		"deleteWarning": "Account deletion is permanent. All data will be lost."
 	},

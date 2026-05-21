@@ -18,6 +18,7 @@ import {
 } from './studio-clients.service';
 import {
   countTrainingLocations,
+  resolveSessionLocationDisplayName,
   resolveTrainingLocationName,
 } from '../lib/training-locations';
 import { resolveTrainerIdForSession } from './trainer-display.util';
@@ -1120,14 +1121,11 @@ export class FitnessSessionsService {
       const locationCount = studio
         ? countTrainingLocations(studio.reminderSettings)
         : 1;
-      const locationName =
-        locationCount > 1
-          ? (resolveTrainingLocationName(
-              studio?.reminderSettings,
-              e.TrainingSession.locationId,
-              studioName,
-            ) ?? studioName)
-          : null;
+      const locationName = resolveSessionLocationDisplayName(
+        studio?.reminderSettings,
+        e.TrainingSession.locationId,
+        studioName,
+      );
 
       return {
         enrollmentId: e.id,

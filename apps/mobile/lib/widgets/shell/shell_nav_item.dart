@@ -35,39 +35,42 @@ class ShellNavItem extends StatelessWidget {
       child: InkWell(
         onTap: onTap,
         borderRadius: BorderRadius.circular(12),
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 170),
-          curve: Curves.easeOutCubic,
-          height: 58,
-          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
-          decoration: BoxDecoration(
-            color: isSelected ? AppColors.primary500 : Colors.transparent,
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              SvgPicture.asset(
-                svgAsset,
-                width: 20,
-                height: 20,
-                colorFilter: ColorFilter.mode(iconColor, BlendMode.srcIn),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                label,
-                style: TextStyle(
-                  fontSize: 11,
-                  fontWeight: FontWeight.w400,
-                  color: textColor,
-                  height: 1,
+        child: Padding(
+          padding: EdgeInsets.zero,
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 170),
+            curve: Curves.easeOutCubic,
+            height: 58,
+            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+            decoration: BoxDecoration(
+              color: isSelected ? AppColors.primary500 : Colors.transparent,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                SvgPicture.asset(
+                  svgAsset,
+                  width: 20,
+                  height: 20,
+                  colorFilter: ColorFilter.mode(iconColor, BlendMode.srcIn),
                 ),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                textAlign: TextAlign.center,
-              ),
-            ],
+                const SizedBox(height: 4),
+                Text(
+                  label,
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w400,
+                    color: textColor,
+                    height: 1,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  textAlign: TextAlign.center,
+                ),
+              ],
+            ),
           ),
         ),
       ),

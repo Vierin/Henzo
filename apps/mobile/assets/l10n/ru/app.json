@@ -73,6 +73,7 @@
 	"clientHome": {
 		"nowIn": "СЕЙЧАС В",
 		"setLocation": "Указать город",
+		"greetingHello": "Привет, ",
 		"greetingPrefix": "Найди свой ",
 		"greetingEmphasis": "ритм",
 		"searchHint": "Студии, занятия, тренеры...",
@@ -83,6 +84,25 @@
 		"noClassesToday": "На сегодня рядом нет занятий.",
 		"favoritePromoTitle": "Добавь в избранное",
 		"favoritePromoSubtitle": "Сохраняй занятия и получай напоминания"
+	},
+	"clientShell": {
+		"home": "Главная",
+		"browse": "Обзор",
+		"activity": "Активность",
+		"profile": "Профиль"
+	},
+	"clientActivity": {
+		"title": "Активность",
+		"upcoming": "Предстоящие",
+		"passes": "Абонементы",
+		"favorites": "Избранное"
+	},
+	"clientFavorites": {
+		"emptyTitle": "Пора найти ваше любимое место",
+		"emptySubtitle": "Соберите студии в избранное, чтобы бронировать быстрее.",
+		"explore": "Обзор",
+		"removed": "Удалено из избранного",
+		"removeError": "Не удалось удалить"
 	},
 	"publicHome": {
 		"loginLink": "Вход",
@@ -562,6 +582,8 @@
 		"addProfilePhoto": "Добавить фото",
 		"changeProfilePhoto": "Изменить фото",
 		"name": "Имя",
+		"firstName": "Имя",
+		"lastName": "Фамилия",
 		"enterName": "Введите имя",
 		"phone": "Телефон",
 		"security": "Безопасность",
@@ -576,6 +598,19 @@
 		"deleteAccountConfirm": "Вы уверены, что хотите удалить аккаунт? Это действие необратимо. Все данные будут удалены безвозвратно.",
 		"passwordMin8": "Пароль должен быть не менее 8 символов",
 		"instagram": "Instagram",
+		"facebook": "Facebook",
+		"whatsApp": "WhatsApp",
+		"telegram": "Telegram",
+		"studioLogo": "Логотип студии",
+		"studioLogoHint": "Квадратное изображение, максимум 3MB",
+		"addStudioLogo": "Добавить логотип",
+		"changeStudioLogo": "Изменить логотип",
+		"studioPhotos": "Фото студии",
+		"studioPhotosHint": "До 5 фото, максимум 3MB на фото",
+		"socialLinks": "Соцсети",
+		"addSocialLink": "Добавить соцсеть",
+		"addSocialLinkSheetTitle": "ДОБАВИТЬ СОЦСЕТЬ",
+		"mainPhoto": "Главное",
 		"salonDescriptionHint": "Укажите детали о вашем салоне, включая название, описание, адрес, контактную информацию, фотографии и часы работы.",
 		"deleteWarning": "После удаления аккаунта восстановление невозможно. Все данные будут удалены."
 	},

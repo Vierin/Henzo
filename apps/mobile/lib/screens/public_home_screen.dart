@@ -25,6 +25,7 @@ import '../services/mapbox_api_service.dart';
 import '../utils/formatters.dart';
 import '../utils/nearby_payload.dart';
 import '../services/client_favorites_mutations.dart';
+import '../widgets/app_search_prefix_icon.dart';
 import '../widgets/client/home/client_home_category_chip.dart';
 import '../services/dashboard_api_service.dart';
 import '../widgets/client/home/client_home_upcoming_card.dart';
@@ -56,6 +57,8 @@ class PublicHomeScreen extends StatefulWidget {
 }
 
 class _PublicHomeScreenState extends State<PublicHomeScreen> {
+  static const _clientHomeLocationBlue = Color(0xFF4D39A8);
+
   static const _cityKey = 'client_city';
   static const _latKey = 'client_lat';
   static const _lonKey = 'client_lon';
@@ -111,10 +114,7 @@ class _PublicHomeScreenState extends State<PublicHomeScreen> {
         if (item is! Map) continue;
         final data = Map<String, dynamic>.from(item);
         final preview = parsePublicStudioPreviewFromNearby(data);
-        final distanceKm = _distanceKmForStudio(
-          data,
-          preview.distanceKm,
-        );
+        final distanceKm = _distanceKmForStudio(data, preview.distanceKm);
         mapped.add(
           preview.distanceKm == distanceKm
               ? preview
@@ -468,39 +468,50 @@ class _PublicHomeScreenState extends State<PublicHomeScreen> {
             MaterialPageRoute(builder: (_) => const NotificationsScreen()),
           ),
           child: Container(
-            padding: EdgeInsets.symmetric(
-              horizontal: hasUnread ? 14 : 10,
-              vertical: 8,
-            ),
+            width: 38,
+            height: 38,
             decoration: BoxDecoration(
-              color: hasUnread
-                  ? AppColors.primary500
-                  : AppColors.backgroundPrimary,
-              borderRadius: BorderRadius.circular(999),
+              color: AppColors.backgroundPrimary,
+              shape: BoxShape.circle,
             ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
+            child: Stack(
+              alignment: Alignment.center,
               children: [
                 SvgPicture.asset(
                   'assets/icons/icon-bell.svg',
                   width: 18,
                   height: 22,
-                  colorFilter: ColorFilter.mode(
-                    hasUnread ? Colors.white : AppColors.textPrimary,
+                  colorFilter: const ColorFilter.mode(
+                    AppColors.primary500,
                     BlendMode.srcIn,
                   ),
                 ),
-                if (hasUnread) ...[
-                  const SizedBox(width: 6),
-                  Text(
-                    count > 99 ? '99+' : '$count',
-                    style: const TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w700,
-                      color: Colors.white,
+                if (hasUnread)
+                  Positioned(
+                    right: 10,
+                    top: 9,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 4,
+                        vertical: 1,
+                      ),
+                      constraints: const BoxConstraints(minWidth: 16),
+                      decoration: const BoxDecoration(
+                        color: AppColors.primary500,
+                        shape: BoxShape.circle,
+                      ),
+                      child: Text(
+                        count > 9 ? '9+' : '$count',
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(
+                          fontSize: 9,
+                          fontWeight: FontWeight.w800,
+                          color: Colors.white,
+                          height: 1.2,
+                        ),
+                      ),
                     ),
                   ),
-                ],
               ],
             ),
           ),
@@ -577,25 +588,35 @@ class _PublicHomeScreenState extends State<PublicHomeScreen> {
             children: [
               Expanded(
                 child: Text(
-                  title,
-                  style: BrandTypography.sectionTitle(context),
+                  title.toUpperCase(),
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w500,
+                    letterSpacing: 0.2,
+                    color: AppColors.textPrimary,
+                  ),
                 ),
               ),
               if (actionLabel != null && onAction != null)
-                TextButton(
-                  onPressed: onAction,
-                  style: TextButton.styleFrom(
-                    foregroundColor: AppColors.primary500,
-                    padding: EdgeInsets.zero,
-                    minimumSize: const Size(0, 32),
-                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                  ),
-                  child: Text(
-                    actionLabel,
-                    style: const TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w700,
-                    ),
+                GestureDetector(
+                  onTap: onAction,
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        actionLabel,
+                        style: const TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.primary500,
+                        ),
+                      ),
+                      const Icon(
+                        Icons.chevron_right_rounded,
+                        size: 20,
+                        color: AppColors.primary500,
+                      ),
+                    ],
                   ),
                 ),
             ],
@@ -616,7 +637,8 @@ class _PublicHomeScreenState extends State<PublicHomeScreen> {
     final auth = context.watch<AuthService>();
     final user = auth.user;
     final firstName = user?.name?.trim().split(RegExp(r'\s+')).first ?? 'there';
-    final locationLabel = _selectedCity ?? locale.t('clientHome.setLocation');
+    final locationLabel = (_selectedCity ?? locale.t('clientHome.setLocation'))
+        .toUpperCase();
     final studios = _filteredStudios;
 
     return Scaffold(
@@ -635,58 +657,48 @@ class _PublicHomeScreenState extends State<PublicHomeScreen> {
             slivers: [
               SliverToBoxAdapter(
                 child: Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+                  padding: const EdgeInsets.fromLTRB(16, 18, 16, 0),
                   child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Expanded(
-                        child: InkWell(
-                          borderRadius: BorderRadius.circular(10),
-                          onTap: _openManualLocationInput,
-                          child: Row(
-                            children: [
-                              const Icon(
-                                Icons.location_on_outlined,
-                                size: 20,
-                                color: AppColors.primary500,
+                      InkWell(
+                        borderRadius: BorderRadius.circular(10),
+                        onTap: _openManualLocationInput,
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            SvgPicture.asset(
+                              'assets/icons/icon-pin.svg',
+                              width: 12,
+                              height: 16,
+                            ),
+                            const SizedBox(width: 6),
+                            ConstrainedBox(
+                              constraints: BoxConstraints(
+                                maxWidth:
+                                    MediaQuery.sizeOf(context).width - 120,
                               ),
-                              const SizedBox(width: 4),
-                              Expanded(
-                                child: RichText(
-                                  maxLines: 2,
-                                  overflow: TextOverflow.ellipsis,
-                                  text: TextSpan(
-                                    style: const TextStyle(
-                                      fontSize: 14,
-                                      color: AppColors.textSecondary,
-                                      height: 1.25,
-                                    ),
-                                    children: [
-                                      TextSpan(
-                                        text:
-                                            '${locale.t('clientHome.nowIn')} ',
-                                      ),
-                                      TextSpan(
-                                        text: locationLabel,
-                                        style: const TextStyle(
-                                          fontWeight: FontWeight.w700,
-                                          fontSize: 14,
-                                          color: AppColors.textPrimary,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
+                              child: Text(
+                                locationLabel,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: const TextStyle(
+                                  fontSize: 14,
+                                  letterSpacing: 0.4,
+                                  color: AppColors.textPrimary,
                                 ),
                               ),
-                              const Icon(
-                                Icons.keyboard_arrow_down_rounded,
-                                size: 20,
-                                color: AppColors.textPrimary,
-                              ),
-                            ],
-                          ),
+                            ),
+                            const Icon(
+                              Icons.keyboard_arrow_down_rounded,
+                              size: 18,
+                              color: _clientHomeLocationBlue,
+                            ),
+                          ],
                         ),
                       ),
-                      const SizedBox(width: 8),
+                      const Spacer(),
                       _notificationBell(),
                     ],
                   ),
@@ -694,17 +706,21 @@ class _PublicHomeScreenState extends State<PublicHomeScreen> {
               ),
               SliverToBoxAdapter(
                 child: Padding(
-                  padding: screenPaddingH(top: 16, bottom: 12),
+                  padding: screenPaddingH(top: 0, bottom: 12),
                   child: RichText(
                     text: TextSpan(
-                      style: BrandTypography.greeting(context),
+                      style: const TextStyle(
+                        fontSize: 24,
+                        fontWeight: FontWeight.w500,
+                        height: 1.1,
+                        color: AppColors.textPrimary,
+                      ),
                       children: [
-                        TextSpan(text: locale.t('clientHome.greetingPrefix')),
+                        TextSpan(text: locale.t('clientHome.greetingHello')),
                         TextSpan(
-                          text: locale.t('clientHome.greetingEmphasis'),
-                          style: BrandTypography.greetingEmphasis(context),
+                          text: firstName,
+                          style: const TextStyle(fontWeight: FontWeight.w400),
                         ),
-                        TextSpan(text: ', $firstName.'),
                       ],
                     ),
                   ),
@@ -722,19 +738,47 @@ class _PublicHomeScreenState extends State<PublicHomeScreen> {
                           readOnly: true,
                           decoration: InputDecoration(
                             hintText: locale.t('clientHome.searchHint'),
-                            prefixIcon: const Icon(
-                              Icons.search,
-                              size: 20,
-                              color: AppColors.textSecondary,
+                            hintStyle: const TextStyle(
+                              color: AppColors.textTertiary,
+                              fontSize: 14,
+                            ),
+                            isDense: true,
+                            prefixIcon: const AppSearchPrefixIcon(
+                              leftMargin: 12,
+                            ),
+                            prefixIconConstraints:
+                                AppSearchPrefixIcon.prefixConstraints(
+                              leftMargin: 12,
+                              trailingGap: 4,
                             ),
                             filled: true,
                             fillColor: AppColors.backgroundPrimary,
+                            enabledBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide: BorderSide(
+                                color: AppColors.primary500.withValues(
+                                  alpha: 0.45,
+                                ),
+                              ),
+                            ),
+                            focusedBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide: const BorderSide(
+                                color: AppColors.primary500,
+                                width: 1.5,
+                              ),
+                            ),
                             border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(14),
-                              borderSide: BorderSide.none,
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide: BorderSide(
+                                color: AppColors.primary500.withValues(
+                                  alpha: 0.45,
+                                ),
+                              ),
                             ),
                             contentPadding: const EdgeInsets.symmetric(
                               vertical: 12,
+                              horizontal: 12,
                             ),
                           ),
                         ),
@@ -782,14 +826,13 @@ class _PublicHomeScreenState extends State<PublicHomeScreen> {
               SliverToBoxAdapter(
                 child: _sectionHeader(
                   title: locale.t('clientHome.topPicksTitle'),
-                  subtitle: locale.t('clientHome.topPicksSubtitle'),
                   actionLabel: locale.t('clientHome.seeAll'),
                   onAction: _openBrowse,
                 ),
               ),
               SliverToBoxAdapter(
                 child: SizedBox(
-                  height: 212,
+                  height: 186,
                   child: _isLoadingStudios
                       ? const Center(child: CircularProgressIndicator())
                       : studios.isEmpty
@@ -958,26 +1001,38 @@ class _PublicHomeScreenState extends State<PublicHomeScreen> {
       showLocationPin: sub.showLocationPin,
     );
 
-    return OwnerDailyScheduleSessionCard(
-      session: session,
-      subtitleLabel: rows.subtitleLabel,
-      showLocationPin: rows.showLocationPin,
-      showSubtitleLeadingIcon: rows.showSubtitleLeadingIcon,
-      trainerLine: rows.trainerLine,
-      onTap: () {
-        if (studioId.isEmpty || sessionId.isEmpty || startsHint == null) {
-          return;
-        }
-        Navigator.of(context).push(
-          MaterialPageRoute(
-            builder: (_) => PublicClassDetailScreen(
-              studioId: studioId,
-              sessionId: sessionId,
-              sessionStartsAtHint: startsHint,
-            ),
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(14),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.06),
+            blurRadius: 10,
+            offset: const Offset(0, 3),
           ),
-        );
-      },
+        ],
+      ),
+      child: OwnerDailyScheduleSessionCard(
+        session: session,
+        subtitleLabel: rows.subtitleLabel,
+        showLocationPin: rows.showLocationPin,
+        showSubtitleLeadingIcon: rows.showSubtitleLeadingIcon,
+        trainerLine: rows.trainerLine,
+        onTap: () {
+          if (studioId.isEmpty || sessionId.isEmpty || startsHint == null) {
+            return;
+          }
+          Navigator.of(context).push(
+            MaterialPageRoute(
+              builder: (_) => PublicClassDetailScreen(
+                studioId: studioId,
+                sessionId: sessionId,
+                sessionStartsAtHint: startsHint,
+              ),
+            ),
+          );
+        },
+      ),
     );
   }
 }

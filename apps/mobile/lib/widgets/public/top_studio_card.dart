@@ -25,13 +25,225 @@ class TopStudioCard extends StatelessWidget {
   String? get _distanceLabel {
     final km = studio.distanceKm;
     if (km == null) return null;
+    if (km < 1) return '${(km * 1000).round()} m';
     return '${km.toStringAsFixed(1)} km';
   }
 
   @override
   Widget build(BuildContext context) {
+    if (homeLayout) {
+      return _HomeStudioCard(
+        studio: studio,
+        isFavorite: isFavorite,
+        onToggleFavorite: onToggleFavorite,
+        onTap: onTap,
+        distanceLabel: _distanceLabel,
+      );
+    }
+
+    return _BrowseStudioCard(
+      studio: studio,
+      isFavorite: isFavorite,
+      isFavoriteLoading: isFavoriteLoading,
+      onToggleFavorite: onToggleFavorite,
+      onTap: onTap,
+      distanceLabel: _distanceLabel,
+    );
+  }
+}
+
+class _HomeStudioCard extends StatelessWidget {
+  const _HomeStudioCard({
+    required this.studio,
+    required this.isFavorite,
+    required this.onToggleFavorite,
+    required this.onTap,
+    required this.distanceLabel,
+  });
+
+  static const _cardWidth = 180.0;
+  static const _cardRadius = 18.0;
+  static const _imageHeight = 116.0;
+  static const _distanceColor = Color(0x663F3F3F);
+
+  final PublicStudioPreview studio;
+  final bool isFavorite;
+  final VoidCallback onToggleFavorite;
+  final VoidCallback onTap;
+  final String? distanceLabel;
+
+  @override
+  Widget build(BuildContext context) {
     return Container(
-      width: homeLayout ? 210 : 236,
+      width: _cardWidth,
+      margin: const EdgeInsets.only(right: 12),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(_cardRadius),
+          onTap: onTap,
+          child: Ink(
+            decoration: BoxDecoration(
+              color: AppColors.backgroundPrimary,
+              borderRadius: BorderRadius.circular(_cardRadius),
+            ),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(_cardRadius),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  SizedBox(
+                    width: _cardWidth,
+                    height: _imageHeight,
+                    child: Stack(
+                      fit: StackFit.expand,
+                      children: [
+                        if (studio.photoUrl != null &&
+                            studio.photoUrl!.isNotEmpty)
+                          CachedSalonNetworkImage(
+                            imageUrl: studio.photoUrl!,
+                            fit: BoxFit.cover,
+                          )
+                        else
+                          Container(
+                            color: AppColors.secondary100,
+                            alignment: Alignment.center,
+                            child: const Icon(
+                              Icons.fitness_center,
+                              size: 30,
+                              color: AppColors.primary500,
+                            ),
+                          ),
+                        Positioned(
+                          right: 9,
+                          top: 10,
+                          child: Material(
+                            color: Colors.transparent,
+                            child: InkWell(
+                              customBorder: const CircleBorder(),
+                              onTap: onToggleFavorite,
+                              child: Icon(
+                                isFavorite
+                                    ? Icons.favorite
+                                    : Icons.favorite_border,
+                                size: 20,
+                                color: isFavorite
+                                    ? const Color(0xFFFF5D7A)
+                                    : Colors.white,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(10, 8, 10, 10),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          studio.studioName,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                            color: AppColors.textPrimary,
+                            height: 1.1,
+                          ),
+                        ),
+                        if (studio.categories.isNotEmpty) ...[
+                          const SizedBox(height: 6),
+                          Text(
+                            studio.categories.take(3).join(' • '),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w400,
+                              color: AppColors.textSecondary,
+                              height: 1.1,
+                            ),
+                          ),
+                        ],
+                        const SizedBox(height: 6),
+                        Row(
+                          children: [
+                            if (studio.rating > 0) ...[
+                              const Icon(
+                                Icons.star_rounded,
+                                size: 12,
+                                color: Color(0xFFFFB800),
+                              ),
+                              const SizedBox(width: 2),
+                              Text(
+                                studio.rating.toStringAsFixed(1),
+                                style: const TextStyle(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w600,
+                                  color: AppColors.textPrimary,
+                                  height: 1.1,
+                                ),
+                              ),
+                              if (studio.reviewCount > 0)
+                                Text(
+                                  ' (${studio.reviewCount})',
+                                  style: const TextStyle(
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w400,
+                                    color: AppColors.textSecondary,
+                                    height: 1.1,
+                                  ),
+                                ),
+                            ],
+                            const Spacer(),
+                            if (distanceLabel != null)
+                              Text(
+                                distanceLabel!,
+                                style: const TextStyle(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w400,
+                                  color: _distanceColor,
+                                  height: 1.1,
+                                ),
+                              ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _BrowseStudioCard extends StatelessWidget {
+  const _BrowseStudioCard({
+    required this.studio,
+    required this.isFavorite,
+    required this.isFavoriteLoading,
+    required this.onToggleFavorite,
+    required this.onTap,
+    required this.distanceLabel,
+  });
+
+  final PublicStudioPreview studio;
+  final bool isFavorite;
+  final bool isFavoriteLoading;
+  final VoidCallback onToggleFavorite;
+  final VoidCallback onTap;
+  final String? distanceLabel;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 236,
       margin: const EdgeInsets.only(right: 12),
       child: Material(
         color: Colors.transparent,
@@ -51,7 +263,7 @@ class TopStudioCard extends StatelessWidget {
                 children: [
                   SizedBox(
                     width: double.infinity,
-                    height: homeLayout ? 120 : 118,
+                    height: 118,
                     child: Stack(
                       children: [
                         Positioned.fill(
@@ -72,7 +284,7 @@ class TopStudioCard extends StatelessWidget {
                                   ),
                                 ),
                         ),
-                        if (!homeLayout && studio.rating > 0)
+                        if (studio.rating > 0)
                           Positioned(
                             left: 8,
                             top: 8,
@@ -138,134 +350,77 @@ class TopStudioCard extends StatelessWidget {
                     ),
                   ),
                   Padding(
-                    padding: EdgeInsets.fromLTRB(
-                      homeLayout ? 10 : 12,
-                      homeLayout ? 6 : 8,
-                      homeLayout ? 10 : 12,
-                      0,
-                    ),
+                    padding: const EdgeInsets.fromLTRB(12, 8, 12, 0),
                     child: Text(
                       studio.studioName,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        fontSize: homeLayout ? 17 : 19,
+                      style: const TextStyle(
+                        fontSize: 19,
                         fontWeight: FontWeight.w600,
                         color: AppColors.textPrimary,
                       ),
                     ),
                   ),
                   if (studio.categories.isNotEmpty) ...[
-                    SizedBox(height: homeLayout ? 3 : 4),
+                    const SizedBox(height: 4),
                     Padding(
-                      padding: EdgeInsets.symmetric(
-                        horizontal: homeLayout ? 10 : 12,
-                      ),
+                      padding: const EdgeInsets.symmetric(horizontal: 12),
                       child: Text(
-                        homeLayout
-                            ? studio.categories.take(2).join(' · ')
-                            : studio.categories.take(3).join(' · '),
+                        studio.categories.take(3).join(' · '),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          fontSize: homeLayout ? 12 : 11,
-                          fontWeight: homeLayout
-                              ? FontWeight.w500
-                              : FontWeight.w600,
-                          color: homeLayout
-                              ? AppColors.textPrimary
-                              : AppColors.textSecondary,
+                        style: const TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.textSecondary,
                         ),
                       ),
                     ),
                   ],
-                  SizedBox(height: homeLayout ? 4 : 6),
+                  const SizedBox(height: 6),
                   Padding(
-                    padding: EdgeInsets.fromLTRB(
-                      homeLayout ? 10 : 12,
-                      0,
-                      homeLayout ? 10 : 12,
-                      homeLayout ? 8 : 10,
-                    ),
-                    child: homeLayout
-                        ? Row(
-                            children: [
-                              if (studio.rating > 0) ...[
-                                const Icon(
-                                  Icons.star_rounded,
-                                  size: 14,
-                                  color: Color(0xFFFFB800),
-                                ),
-                                const SizedBox(width: 2),
-                                Text(
-                                  studio.rating.toStringAsFixed(1),
-                                  style: const TextStyle(
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.w700,
-                                    color: AppColors.textPrimary,
-                                  ),
-                                ),
-                                if (studio.reviewCount > 0)
-                                  Text(
-                                    ' (${studio.reviewCount})',
-                                    style: const TextStyle(
-                                      fontSize: 12,
-                                      color: AppColors.textSecondary,
-                                    ),
-                                  ),
-                              ],
-                              const Spacer(),
-                              if (_distanceLabel != null)
-                                Text(
-                                  _distanceLabel!,
-                                  style: const TextStyle(
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.w600,
-                                    color: AppColors.textSecondary,
-                                  ),
-                                ),
-                            ],
-                          )
-                        : Row(
-                            crossAxisAlignment: CrossAxisAlignment.center,
-                            children: [
-                              if (studio.distanceKm != null) ...[
-                                const Icon(
-                                  Icons.near_me_outlined,
-                                  size: 13,
-                                  color: AppColors.textSecondary,
-                                ),
-                                const SizedBox(width: 3),
-                                Text(
-                                  '${studio.distanceKm!.toStringAsFixed(1)} km',
-                                  style: const TextStyle(
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.w500,
-                                    color: AppColors.textPrimary,
-                                  ),
-                                ),
-                                const Text(
-                                  '  •  ',
-                                  style: TextStyle(
-                                    fontSize: 12,
-                                    color: AppColors.textSecondary,
-                                  ),
-                                ),
-                              ],
-                              Expanded(
-                                child: Text(
-                                  studio.address,
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                  softWrap: false,
-                                  style: const TextStyle(
-                                    fontSize: 12,
-                                    color: AppColors.textSecondary,
-                                  ),
-                                ),
-                              ),
-                            ],
+                    padding: const EdgeInsets.fromLTRB(12, 0, 12, 10),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        if (studio.distanceKm != null) ...[
+                          const Icon(
+                            Icons.near_me_outlined,
+                            size: 13,
+                            color: AppColors.textSecondary,
                           ),
+                          const SizedBox(width: 3),
+                          Text(
+                            distanceLabel ?? '',
+                            style: const TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w500,
+                              color: AppColors.textPrimary,
+                            ),
+                          ),
+                          const Text(
+                            '  •  ',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: AppColors.textSecondary,
+                            ),
+                          ),
+                        ],
+                        Expanded(
+                          child: Text(
+                            studio.address,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            softWrap: false,
+                            style: const TextStyle(
+                              fontSize: 12,
+                              color: AppColors.textSecondary,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ],
               ),

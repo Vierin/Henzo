@@ -69,15 +69,53 @@ export function resolveStudioBrandNameForDiscovery(studio: {
   return name || fromSlug || 'Studio';
 }
 
+export function resolveDefaultLocationDisplayName(
+  reminderSettings: unknown,
+  fallback = 'Studio',
+): string {
+  if (reminderSettings && typeof reminderSettings === 'object') {
+    const custom = String(
+      (reminderSettings as Record<string, unknown>).defaultLocationName ?? '',
+    ).trim();
+    if (custom.length > 0) return custom;
+  }
+  return fallback.trim() || 'Studio';
+}
+
+export function resolveSessionLocationDisplayName(
+  reminderSettings: unknown,
+  locationId: string | null | undefined,
+  studioName: string,
+): string | null {
+  const locationCount = countTrainingLocations(reminderSettings);
+  if (locationCount <= 1) return null;
+  const defaultDisplayName = resolveDefaultLocationDisplayName(
+    reminderSettings,
+    studioName,
+  );
+  return (
+    resolveTrainingLocationName(
+      reminderSettings,
+      locationId,
+      defaultDisplayName,
+    ) ?? defaultDisplayName
+  );
+}
+
 export function resolveTrainingLocationName(
   reminderSettings: unknown,
   locationId: string | null | undefined,
   mainStudioName: string,
 ): string | null {
-  const id = locationId?.trim();
-  if (!id) return null;
+  const id = locationId?.trim() || 'default';
 
   if (id === 'default') {
+    if (reminderSettings && typeof reminderSettings === 'object') {
+      const custom = String(
+        (reminderSettings as Record<string, unknown>).defaultLocationName ?? '',
+      ).trim();
+      if (custom.length > 0) return custom;
+    }
     const main = mainStudioName.trim();
     return main.length > 0 ? main : null;
   }
