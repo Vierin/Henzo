@@ -110,8 +110,12 @@ describe('AuthService email flows', () => {
 
     prisma.user.findUnique.mockResolvedValue(null);
     prisma.pendingBusinessRegistration.findFirst.mockResolvedValue(null);
-    prisma.pendingBusinessRegistration.deleteMany.mockResolvedValue({ count: 0 });
-    prisma.pendingBusinessRegistration.create.mockResolvedValue({ id: 'pending-1' });
+    prisma.pendingBusinessRegistration.deleteMany.mockResolvedValue({
+      count: 0,
+    });
+    prisma.pendingBusinessRegistration.create.mockResolvedValue({
+      id: 'pending-1',
+    });
     prisma.user.create.mockResolvedValue({
       id: 'supabase-user-id',
       email: 'owner@example.com',
@@ -144,9 +148,9 @@ describe('AuthService email flows', () => {
         }),
       }),
     );
-    expect(emailService.sendBusinessRegistrationMagicLink).toHaveBeenCalledTimes(
-      1,
-    );
+    expect(
+      emailService.sendBusinessRegistrationMagicLink,
+    ).toHaveBeenCalledTimes(1);
   });
 
   it('rejects verification after max attempts', async () => {

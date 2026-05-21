@@ -11,6 +11,7 @@
     "lint": "turbo run lint",
     "lint:backend": "pnpm --filter backend run lint",
     "lint:backend:check": "pnpm --filter backend run lint:check",
+    "format:backend": "pnpm --filter backend run format",
     "format": "prettier --write \"**/*.{ts,tsx,md}\"",
     "check-types": "turbo run check-types"
   },

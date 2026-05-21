@@ -112,8 +112,7 @@ export function resolveTrainingLocationName(
   if (id === 'default') {
     if (reminderSettings && typeof reminderSettings === 'object') {
       const custom = String(
-        (reminderSettings as Record<string, unknown>).defaultLocationName ??
-          '',
+        (reminderSettings as Record<string, unknown>).defaultLocationName ?? '',
       ).trim();
       if (custom.length > 0) return custom;
     }
