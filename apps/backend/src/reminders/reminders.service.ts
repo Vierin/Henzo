@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { EmailService } from '../email/email.service';
 import { AnalyticsService } from '../analytics/analytics.service';
+import { AdminEventLogService } from '../admin/admin-event-log.service';
 import { InputJsonValue } from '@prisma/client/runtime/library';
 import { formatInTimeZone } from 'date-fns-tz';
 
@@ -58,6 +59,7 @@ export class RemindersService {
     private prisma: PrismaService,
     private emailService: EmailService,
     private analytics: AnalyticsService,
+    private readonly adminEventLog: AdminEventLogService,
   ) {}
 
   async sendBookingReminders() {
@@ -331,6 +333,15 @@ export class RemindersService {
       console.log(
         `📧 Reminder process completed: ${totalSent} sent, ${totalErrors} errors`,
       );
+
+      if (totalErrors > 0) {
+        await this.adminEventLog.log({
+          type: 'email_reminder_failed',
+          severity: 'warn',
+          message: `${totalErrors} booking reminder email(s) failed`,
+          metadata: { sent: totalSent, errors: totalErrors },
+        });
+      }
 
       return {
         total: totalSent + totalErrors,

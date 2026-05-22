@@ -11,6 +11,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { StripeCheckoutService } from './stripe-checkout.service';
 import { RevenueCatService } from './revenuecat.service';
 import { AnalyticsService } from '../analytics/analytics.service';
+import { AdminEventLogService } from '../admin/admin-event-log.service';
 
 /** ISO 4217 zero-decimal currencies (Stripe `unit_amount` is whole major units). */
 const ZERO_DECIMAL_CURRENCIES = new Set([
@@ -48,8 +49,23 @@ export class SubscriptionsService {
     private readonly prisma: PrismaService,
     private readonly checkout: StripeCheckoutService,
     private readonly revenueCat: RevenueCatService,
+    private readonly adminEventLog: AdminEventLogService,
     private readonly analytics: AnalyticsService,
   ) {}
+
+  private async logSubscriptionFailed(
+    userId: string,
+    reason: string,
+    metadata: Record<string, unknown>,
+  ): Promise<void> {
+    await this.adminEventLog.log({
+      type: 'subscription_failed',
+      severity: 'warn',
+      message: reason,
+      userId,
+      metadata,
+    });
+  }
 
   async syncRevenueCat(userId: string) {
     return this.revenueCat.syncOwnerFromRevenueCat(userId);
@@ -74,11 +90,13 @@ export class SubscriptionsService {
       await this.checkout.retrieveCheckoutSessionExpanded(sessionId);
 
     if (session.payment_status !== 'paid') {
-      this.analytics.track(userId, 'subscription_failed', {
+      const meta = {
         stripe_session_id: sessionId,
         reason: 'not_paid',
         payment_status: session.payment_status,
-      });
+      };
+      this.analytics.track(userId, 'subscription_failed', meta);
+      await this.logSubscriptionFailed(userId, 'Checkout session is not paid', meta);
       throw new BadRequestException('Checkout session is not paid');
     }
 
@@ -87,10 +105,16 @@ export class SubscriptionsService {
         session.metadata?.userId?.trim()) ??
       '';
     if (!refUserId || refUserId !== userId) {
-      this.analytics.track(userId, 'subscription_failed', {
+      const meta = {
         stripe_session_id: sessionId,
         reason: 'user_mismatch',
-      });
+      };
+      this.analytics.track(userId, 'subscription_failed', meta);
+      await this.logSubscriptionFailed(
+        userId,
+        'Checkout session belongs to another user',
+        meta,
+      );
       throw new ForbiddenException('Checkout session belongs to another user');
     }
 

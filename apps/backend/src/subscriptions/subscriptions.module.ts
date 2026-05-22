@@ -7,9 +7,10 @@ import { RevenueCatService } from './revenuecat.service';
 import { SubscriptionsService } from './subscriptions.service';
 import { AuthModule } from '../auth/auth.module';
 import { PrismaModule } from '../prisma/prisma.module';
+import { AdminModule } from '../admin/admin.module';
 
 @Module({
-  imports: [AuthModule, PrismaModule],
+  imports: [AuthModule, PrismaModule, AdminModule],
   controllers: [SubscriptionsController, RevenueCatWebhookController],
   providers: [
     StripePricingService,
