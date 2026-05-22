@@ -44,14 +44,18 @@ export function LandingPhoneShowcaseSection() {
 		}
 
 		const ctx = gsap.context(() => {
-			gsap.set([phone, phoneFrame], {
-				willChange: 'transform, opacity',
-				backfaceVisibility: 'hidden',
-				transformPerspective: 1000,
-			});
+			// Pin target must not use transform will-change (breaks fixed pin).
 			gsap.set(phone, {
 				x: 0,
 				xPercent: 0,
+				force3D: true,
+			});
+			gsap.set(phoneFrame, {
+				willChange: 'transform, opacity',
+				backfaceVisibility: 'hidden',
+				transformPerspective: 1000,
+				transformOrigin: 'center center',
+				force3D: true,
 			});
 
 			const makeCardLoop = (cardWrap: HTMLDivElement, delaySec: number) => {
@@ -138,24 +142,31 @@ export function LandingPhoneShowcaseSection() {
 			const mm = gsap.matchMedia();
 
 			mm.add('(min-width: 768px)', () => {
-				const phoneTl = gsap.timeline({
+				ScrollTrigger.create({
+					trigger: phone,
+					start: 'center center',
+					endTrigger: section,
+					end: 'bottom bottom',
+					pin: phone,
+					pinSpacing: false,
+					pinnedContainer: section,
+					pinType: 'transform',
+					anticipatePin: 2,
+					invalidateOnRefresh: true,
+				});
+
+				gsap.to(phoneFrame, {
+					scale: 0.9,
+					ease: 'none',
 					scrollTrigger: {
 						trigger: phone,
 						start: 'center center',
 						endTrigger: section,
 						end: 'bottom bottom',
-						pin: phone,
-						pinSpacing: false,
 						scrub: true,
-						anticipatePin: 1,
 						invalidateOnRefresh: true,
 						fastScrollEnd: true,
 					},
-				});
-
-				phoneTl.to(phoneFrame, {
-					scale: 0.9,
-					ease: 'none',
 				});
 			});
 
@@ -172,6 +183,8 @@ export function LandingPhoneShowcaseSection() {
 					end: 'bottom bottom',
 					pin: phone,
 					pinSpacing: false,
+					pinnedContainer: section,
+					pinType: 'transform',
 					anticipatePin: 1,
 					invalidateOnRefresh: true,
 				});
@@ -280,7 +293,7 @@ export function LandingPhoneShowcaseSection() {
 						iconAlt="Review icon"
 					/>
 				</div>
-				<div ref={phoneRef} className="will-change-transform">
+				<div ref={phoneRef}>
 					<div ref={phoneFrameRef} className="will-change-transform">
 						<StudioPhoneFrame />
 					</div>
