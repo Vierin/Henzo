@@ -171,7 +171,13 @@ export class MapboxService {
     limit: number = 5,
     types: string[] = ['address', 'poi'],
   ): Promise<
-    Array<{ id: string; address: string; city: string; lat: number; lon: number }>
+    Array<{
+      id: string;
+      address: string;
+      city: string;
+      lat: number;
+      lon: number;
+    }>
   > {
     try {
       if (!this.accessToken) {

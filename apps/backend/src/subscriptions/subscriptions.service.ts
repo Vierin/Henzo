@@ -97,7 +97,11 @@ export class SubscriptionsService {
         payment_status: session.payment_status,
       };
       this.analytics.track(userId, 'subscription_failed', meta);
-      await this.logSubscriptionFailed(userId, 'Checkout session is not paid', meta);
+      await this.logSubscriptionFailed(
+        userId,
+        'Checkout session is not paid',
+        meta,
+      );
       throw new BadRequestException('Checkout session is not paid');
     }
 

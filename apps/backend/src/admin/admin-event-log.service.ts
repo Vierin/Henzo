@@ -16,7 +16,7 @@ export class AdminEventLogService {
   constructor(private readonly prisma: PrismaService) {}
 
   async log(params: {
-    type: AdminEventType | string;
+    type: AdminEventType;
     severity?: 'info' | 'warn' | 'error';
     message?: string;
     metadata?: Prisma.InputJsonValue;
