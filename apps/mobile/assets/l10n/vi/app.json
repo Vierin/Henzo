@@ -115,6 +115,12 @@
 		"removed": "Đã xóa khỏi yêu thích",
 		"removeError": "Không thể xóa"
 	},
+	"clientClassDetail": {
+		"shareInvite": "{name} mời bạn tham gia \"{training}\"",
+		"shareInviteWithTrainer": "{name} mời bạn tham gia \"{training}\" với HLV {trainer}",
+		"shareJoinMe": "Tham gia cùng tôi:",
+		"shareSomeone": "Ai đó"
+	},
 	"publicHome": {
 		"loginLink": "Đăng nhập",
 		"heroTitle": "Tìm studio thể thao chỉ trong vài giây",

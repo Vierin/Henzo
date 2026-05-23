@@ -10,6 +10,7 @@ import { nanoid } from 'nanoid';
 import { AnalyticsService } from '../analytics/analytics.service';
 import {
   countTrainingLocations,
+  resolveBrowseStudioLocationName,
   resolveStudioBrandNameForDiscovery,
   resolveSessionLocationDisplayName,
 } from '../lib/training-locations';
@@ -2312,6 +2313,9 @@ export class StudiosService {
         name: studioName,
         studioName,
         address: Studio.address,
+        locationName: resolveBrowseStudioLocationName(
+          Studio.reminderSettings,
+        ),
         latitude: Studio.latitude ?? undefined,
         longitude: Studio.longitude ?? undefined,
         photos: Studio.photos,
@@ -2452,6 +2456,7 @@ export class StudiosService {
         name: studioName,
         studioName,
         address: s.address,
+        locationName: resolveBrowseStudioLocationName(s.reminderSettings),
         latitude: s.latitude ?? undefined,
         longitude: s.longitude ?? undefined,
         photos: s.photos,

@@ -73,7 +73,6 @@ class PushNotificationService {
         onDidReceiveNotificationResponse: _onNotificationTap,
       );
       _log('local notifications initialized');
-      WorkoutService.setPlugin(_localNotifications);
       if (defaultTargetPlatform == TargetPlatform.android) {
         final androidPlugin = _localNotifications
             .resolvePlatformSpecificImplementation<

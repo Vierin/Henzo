@@ -115,6 +115,12 @@
 		"removed": "Удалено из избранного",
 		"removeError": "Не удалось удалить"
 	},
+	"clientClassDetail": {
+		"shareInvite": "{name} приглашает вас на «{training}»",
+		"shareInviteWithTrainer": "{name} приглашает вас на «{training}» с тренером {trainer}",
+		"shareJoinMe": "Присоединяйтесь:",
+		"shareSomeone": "Кто-то"
+	},
 	"publicHome": {
 		"loginLink": "Вход",
 		"heroTitle": "Находите спортивные студии за секунды",

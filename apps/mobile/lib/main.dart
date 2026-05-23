@@ -12,6 +12,7 @@ import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'config/app_config.dart';
+import 'deep_links/class_session_deep_link.dart';
 import 'deep_links/client_invite_deep_link.dart';
 import 'deep_links/subscription_checkout_deep_link.dart';
 import 'firebase_options.dart';
@@ -252,9 +253,12 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
               final layered = _withKeyboardDismiss(context, child);
               return ClientInviteDeepLinkScope(
                 navigatorKey: henzoRootNavigatorKey,
-                child: SubscriptionCheckoutDeepLinkScope(
+                child: ClassSessionDeepLinkScope(
                   navigatorKey: henzoRootNavigatorKey,
-                  child: layered,
+                  child: SubscriptionCheckoutDeepLinkScope(
+                    navigatorKey: henzoRootNavigatorKey,
+                    child: layered,
+                  ),
                 ),
               );
             },
