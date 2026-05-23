@@ -874,13 +874,13 @@
 				CODE_SIGN_ENTITLEMENTS = HenzoWatch/HenzoWatch.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				DEVELOPMENT_TEAM = PR2HAF6344;
-				ONLY_ACTIVE_ARCH = YES;
 				ENABLE_BITCODE = NO;
 				INFOPLIST_FILE = HenzoWatch/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
+				ONLY_ACTIVE_ARCH = YES;
 				PRODUCT_BUNDLE_IDENTIFIER = com.henzo.vn.Henzo.watchkitapp;
 				PRODUCT_NAME = HenzoWatch;
 				SDKROOT = watchos;

@@ -19,7 +19,6 @@ import '../utils/show_api_error.dart';
 import '../widgets/auth/auth_form_styles.dart';
 import '../widgets/settings/branded_settings_app_bar.dart';
 
-const Color _fireAccent = Color(0xFFE65100);
 const Color _activeBadgeBg = Color(0xFFE8F5E9);
 const Color _activeBadgeFg = Color(0xFF2E7D32);
 
@@ -399,10 +398,10 @@ class _CurrentPlanCard extends StatelessWidget {
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Icon(
-                isPro ? Icons.workspace_premium : Icons.verified_outlined,
-                color: AppColors.primary500,
-                size: 24,
+              Image.asset(
+                'assets/icons/icon-rocket.png',
+                width: 24,
+                height: 24,
               ),
               const SizedBox(width: 12),
               Expanded(
@@ -486,10 +485,10 @@ class _ProStatusCard extends StatelessWidget {
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Icon(
-                Icons.rocket_launch_rounded,
-                color: AppColors.primary500,
-                size: 28,
+              Image.asset(
+                'assets/icons/icon-rocket.png',
+                width: 28,
+                height: 28,
               ),
               const SizedBox(width: 12),
               Expanded(
@@ -638,10 +637,10 @@ class _ProWhatsIncludedCard extends StatelessWidget {
                           child: Row(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Icon(
-                                Icons.local_fire_department_rounded,
-                                size: 20,
-                                color: _fireAccent,
+                              Image.asset(
+                                'assets/icons/icon-fire.png',
+                                width: 20,
+                                height: 20,
                               ),
                               const SizedBox(width: 6),
                               Expanded(
@@ -817,10 +816,10 @@ class _PlanCard extends StatelessWidget {
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Icon(
-                Icons.rocket_launch_rounded,
-                color: AppColors.primary500,
-                size: 28,
+              Image.asset(
+                'assets/icons/icon-rocket.png',
+                width: 28,
+                height: 28,
               ),
               const SizedBox(width: 12),
               Expanded(
@@ -890,10 +889,10 @@ class _PlanCard extends StatelessWidget {
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Icon(
-                    Icons.local_fire_department_rounded,
-                    size: 22,
-                    color: _fireAccent,
+                  Image.asset(
+                    'assets/icons/icon-fire.png',
+                    width: 22,
+                    height: 22,
                   ),
                   const SizedBox(width: 10),
                   Expanded(
