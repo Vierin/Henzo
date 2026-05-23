@@ -274,7 +274,7 @@
 				3B06AD1E1E4923F5004D2608 /* Thin Binary */,
 				CC827EFEE45A863F39546EE4 /* [CP] Embed Pods Frameworks */,
 				A04FD51DD9433C2979CFFA3A /* [CP] Copy Pods Resources */,
-				1F72293777197497F6CA5818 /* [firebase_crashlytics] Crashlytics Upload Symbols */,
+				36F6CBB534831BE1C047B433 /* [firebase_crashlytics] Crashlytics Upload Symbols */,
 			);
 			buildRules = (
 			);
@@ -356,9 +356,8 @@
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXShellScriptBuildPhase section */
-		1F72293777197497F6CA5818 /* [firebase_crashlytics] Crashlytics Upload Symbols */ = {
+		36F6CBB534831BE1C047B433 /* [firebase_crashlytics] Crashlytics Upload Symbols */ = {
 			isa = PBXShellScriptBuildPhase;
-			alwaysOutOfDate = 1;
 			buildActionMask = 2147483647;
 			files = (
 			);
@@ -366,7 +365,6 @@
 			);
 			inputPaths = (
 				"${DWARF_DSYM_FOLDER_PATH}/${DWARF_DSYM_FILE_NAME}/Contents/Resources/DWARF/${TARGET_NAME}",
-				"$(SRCROOT)/$(BUILT_PRODUCTS_DIR)/$(INFOPLIST_PATH)",
 				"${DWARF_DSYM_FOLDER_PATH}/${DWARF_DSYM_FILE_NAME}",
 				"$(TARGET_BUILD_DIR)/$(UNLOCALIZED_RESOURCES_FOLDER_PATH)/GoogleService-Info.plist",
 				"$(TARGET_BUILD_DIR)/$(EXECUTABLE_PATH)",
@@ -378,7 +376,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "\"$PODS_ROOT/FirebaseCrashlytics/run\"\n";
+			shellScript = "if [ \"${CONFIGURATION}\" = \"Debug\" ]; then\n  echo \"Crashlytics: skipping dSYM upload in Debug build.\"\n  exit 0\nfi\n\"${PODS_ROOT}/FirebaseCrashlytics/run\"\n";
 		};
 		3B06AD1E1E4923F5004D2608 /* Thin Binary */ = {
 			isa = PBXShellScriptBuildPhase;

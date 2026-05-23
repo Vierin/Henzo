@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
@@ -37,6 +38,8 @@ class _ClientProfileScreenState extends State<ClientProfileScreen>
 
   bool _sendingWorkout = false;
   String _selectedWorkout = 'Yoga';
+  int _countdown = 0;
+  Timer? _countdownTimer;
 
   @override
   void initState() {
@@ -47,6 +50,12 @@ class _ClientProfileScreenState extends State<ClientProfileScreen>
 
   @override
   bool get wantKeepAlive => true;
+
+  @override
+  void dispose() {
+    _countdownTimer?.cancel();
+    super.dispose();
+  }
 
   Future<void> _loadStats({bool force = false}) async {
     if (!force &&
@@ -240,29 +249,45 @@ class _ClientProfileScreenState extends State<ClientProfileScreen>
     'Strength', 'HIIT', 'Pilates', 'Walking',
   ];
 
+  static const _notificationDelay = 30;
+
   Future<void> _onSendWorkout() async {
-    setState(() => _sendingWorkout = true);
-    final result = await WorkoutService.scheduleWorkoutReminder(
+    setState(() {
+      _sendingWorkout = true;
+      _countdown = _notificationDelay;
+    });
+
+    final token = context.read<AuthService>().accessToken ?? '';
+    await WorkoutService.scheduleWorkoutReminder(
       workoutType: _selectedWorkout,
-      minutesBefore: 10,
+      accessToken: token,
+      delaySeconds: _notificationDelay,
     );
+
     if (!mounted) return;
     setState(() => _sendingWorkout = false);
 
-    final msg = switch (result.status) {
-      WorkoutSendStatus.sent => 'Тренировка отправлена на часы ✓',
-      WorkoutSendStatus.notificationOnly =>
-        'Уведомление отправлено — проверь часы',
-      WorkoutSendStatus.failed => 'Не удалось отправить',
-    };
-
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text(msg),
+        content: const Text('Заблокируй телефон — уведомление придёт через 30 сек'),
         behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        duration: const Duration(seconds: 5),
       ),
     );
+
+    _countdownTimer?.cancel();
+    _countdownTimer = Timer.periodic(const Duration(seconds: 1), (t) {
+      if (!mounted) {
+        t.cancel();
+        return;
+      }
+      setState(() => _countdown--);
+      if (_countdown <= 0) {
+        t.cancel();
+        setState(() => _countdown = 0);
+      }
+    });
   }
 
   Widget _buildStartWorkoutButton() {
@@ -370,7 +395,9 @@ class _ClientProfileScreenState extends State<ClientProfileScreen>
                   label: Text(
                     _sendingWorkout
                         ? 'Отправляем...'
-                        : 'Начать $_selectedWorkout через 10 мин',
+                        : _countdown > 0
+                            ? 'Уведомление через $_countdown сек...'
+                            : 'Начать $_selectedWorkout через 10 мин',
                     style: const TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.w600,
@@ -456,8 +483,8 @@ class _ClientProfileScreenState extends State<ClientProfileScreen>
               ],
             ),
           ),
-          // Synced pill
-          if (isConnected)
+          // Synced pill + refresh button
+          if (isConnected) ...[
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
               decoration: BoxDecoration(
@@ -488,6 +515,19 @@ class _ClientProfileScreenState extends State<ClientProfileScreen>
                 ],
               ),
             ),
+            const SizedBox(width: 6),
+            SizedBox(
+              width: 32,
+              height: 32,
+              child: IconButton(
+                padding: EdgeInsets.zero,
+                icon: const Icon(Icons.refresh_rounded, size: 20),
+                color: AppColors.textSecondary,
+                tooltip: 'Refresh',
+                onPressed: () => _loadHealth(force: true),
+              ),
+            ),
+          ],
         ],
       ),
     );

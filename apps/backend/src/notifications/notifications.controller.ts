@@ -52,6 +52,28 @@ export class NotificationsController {
     }
   }
 
+  /** Send a workout reminder push with WORKOUT_REMINDER APNs category (shows action button on Apple Watch). */
+  @Post('workout-reminder')
+  async sendWorkoutReminder(
+    @Body() data: { workoutType: string },
+    @Headers('authorization') authHeader: string,
+  ) {
+    try {
+      const currentUser = await this.authService.getCurrentUser(authHeader);
+      await this.notificationsService.sendWorkoutReminderPush(
+        currentUser.user.id,
+        data.workoutType || 'Workout',
+      );
+      return { success: true, message: 'Workout reminder sent' };
+    } catch (error) {
+      console.error('❌ Workout reminder failed:', error);
+      throw new HttpException(
+        error.message || 'Workout reminder failed',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+  }
+
   /** Send a test push to the current user's device(s). Use for debugging. */
   @Post('test-push')
   async sendTestPush(@Headers('authorization') authHeader: string) {

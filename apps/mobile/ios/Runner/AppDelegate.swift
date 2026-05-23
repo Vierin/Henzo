@@ -4,7 +4,7 @@ import FirebaseCore
 import WatchConnectivity
 
 @main
-@objc class AppDelegate: FlutterAppDelegate, FlutterImplicitEngineDelegate, WCSessionDelegate {
+@objc class AppDelegate: FlutterAppDelegate, WCSessionDelegate {
 
   // MARK: - Properties
 
@@ -18,13 +18,12 @@ import WatchConnectivity
   ) -> Bool {
     FirebaseApp.configure()
     setupWatchConnectivity()
-    return super.application(application, didFinishLaunchingWithOptions: launchOptions)
-  }
-
-  func didInitializeImplicitFlutterEngine(_ engineBridge: FlutterImplicitEngineBridge) {
-    GeneratedPluginRegistrant.register(with: engineBridge.pluginRegistry)
-    guard let controller = window?.rootViewController as? FlutterViewController else { return }
-    setupWatchChannel(messenger: controller.binaryMessenger)
+    GeneratedPluginRegistrant.register(with: self)
+    let result = super.application(application, didFinishLaunchingWithOptions: launchOptions)
+    if let controller = window?.rootViewController as? FlutterViewController {
+      setupWatchChannel(messenger: controller.binaryMessenger)
+    }
+    return result
   }
 
   // MARK: - Watch Connectivity setup

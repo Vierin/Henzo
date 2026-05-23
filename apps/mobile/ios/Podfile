@@ -45,6 +45,12 @@ post_install do |installer|
     geolocator_apple LocationServiceStreamHandler PermissionHandler
     health SwiftHealthPlugin
     image_picker_ios FLTImagePickerImageUtil FLTImagePickerPlugin
+    flutter_local_notifications FlutterLocalNotificationsPlugin
+    permission_handler_apple PhonePermissionStrategy
+    purchases_flutter PurchasesFlutterPlugin
+    share_plus FPPSharePlusPlugin
+    AppAuth OIDExternalUserAgentIOS OIDExternalUserAgentIOSCustomBrowser
+    FirebaseCrashlytics
   ].freeze
 
   installer.pods_project.targets.each do |target|
@@ -71,12 +77,16 @@ post_install do |installer|
     next if target.shell_script_build_phases.any? { |p| p.name == phase_name }
 
     phase = target.new_shell_script_build_phase(phase_name)
+    # Skip upload in Debug (JIT builds have empty dSYMs — nothing to upload).
     phase.shell_script = <<~SH
-      "$PODS_ROOT/FirebaseCrashlytics/run"
+      if [ "${CONFIGURATION}" = "Debug" ]; then
+        echo "Crashlytics: skipping dSYM upload in Debug build."
+        exit 0
+      fi
+      "${PODS_ROOT}/FirebaseCrashlytics/run"
     SH
     phase.input_paths = [
       '${DWARF_DSYM_FOLDER_PATH}/${DWARF_DSYM_FILE_NAME}/Contents/Resources/DWARF/${TARGET_NAME}',
-      '$(SRCROOT)/$(BUILT_PRODUCTS_DIR)/$(INFOPLIST_PATH)',
       '${DWARF_DSYM_FOLDER_PATH}/${DWARF_DSYM_FILE_NAME}',
       '$(TARGET_BUILD_DIR)/$(UNLOCALIZED_RESOURCES_FOLDER_PATH)/GoogleService-Info.plist',
       '$(TARGET_BUILD_DIR)/$(EXECUTABLE_PATH)',

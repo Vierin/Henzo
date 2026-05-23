@@ -257,6 +257,7 @@ export class FirebaseAdminService implements OnModuleInit {
       channelId?: string;
       priority?: 'high' | 'normal';
       actions?: Array<{ action: string; title: string }>;
+      apnsCategory?: string;
     },
   ): Promise<admin.messaging.BatchResponse> {
     if (!this.app) {
@@ -291,9 +292,10 @@ export class FirebaseAdminService implements OnModuleInit {
             sound: 'default',
             badge: 1,
             category:
-              options?.actions && options.actions.length > 0
+              options?.apnsCategory ??
+              (options?.actions && options.actions.length > 0
                 ? 'BOOKING_ACTIONS'
-                : undefined,
+                : undefined),
           },
         },
       },
