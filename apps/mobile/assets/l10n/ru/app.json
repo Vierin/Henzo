@@ -22,7 +22,8 @@
 		"changesSaved": "Изменения сохранены",
 		"saveFailed": "Не удалось сохранить",
 		"deleteFailed": "Не удалось удалить",
-		"setupSalonFirst": "Сначала настройте бизнес"
+		"setupSalonFirst": "Сначала настройте бизнес",
+		"verify": "Подтвердить"
 	},
 	"nav": {
 		"dashboard": "Дашборд",
@@ -68,7 +69,13 @@
 		"businessRegisterSuccess": "Проверьте email для подтверждения регистрации бизнеса.",
 		"businessRegisterError": "Не удалось запустить регистрацию бизнеса.",
 		"openWebsite": "Открыть сайт",
-		"signOut": "Выйти"
+		"signOut": "Выйти",
+		"verificationCodeTitle": "Код подтверждения",
+		"verificationCodeSubtitle": "Введите 6-значный код, который мы отправили на ваш email",
+		"resendCodeIn": "Отправить код снова через",
+		"didntReceiveCode": "Не получили код?",
+		"resend": "Отправить снова",
+		"enterOtpCode": "Введите 6-значный код"
 	},
 	"clientHome": {
 		"nowIn": "СЕЙЧАС В",
@@ -82,6 +89,10 @@
 		"popularTodayTitle": "Популярно сегодня",
 		"seeAll": "Все",
 		"noClassesToday": "На сегодня рядом нет занятий.",
+		"locationPickerTitle": "Выберите город",
+		"locationPickerHint": "Поиск города",
+		"locationPickerUseCity": "Использовать этот город",
+		"locationPickerEmpty": "Начните вводить название города",
 		"favoritePromoTitle": "Добавь в избранное",
 		"favoritePromoSubtitle": "Сохраняй занятия и получай напоминания"
 	},
@@ -297,6 +308,13 @@
 		"noBookings": "Нет записей",
 		"book": "Записаться"
 	},
+	"legal": {
+		"agreePrefix": "Продолжая, вы соглашаетесь с ",
+		"agreeAnd": " и ",
+		"agreeSuffix": ".",
+		"checkboxLabel": "Я принимаю Политику конфиденциальности и Условия использования",
+		"mustAgree": "Примите Политику конфиденциальности и Условия использования."
+	},
 	"subscription": {
 		"title": "Подписка",
 		"subscribe": "Оформить подписку",
@@ -324,7 +342,10 @@
 		"purchaseSuccess": "Подписка Pro активирована.",
 		"offeringsUnavailable": "Тарифы временно недоступны. Попробуйте позже.",
 		"storeNotConfigured": "Внутриигровые покупки не настроены для этой сборки.",
-		"rcEntitlementNotLinked": "Покупка в RevenueCat есть, но Pro не применился. Привяжи продукты к entitlement «pro» в дашборде RevenueCat."
+		"rcEntitlementNotLinked": "Покупка в RevenueCat есть, но Pro не применился. Привяжи продукты к entitlement «pro» в дашборде RevenueCat.",
+		"autoRenewDisclosure": "Оплата списывается с Apple ID или Google Play. Подписка продлевается автоматически, если не отменить её минимум за 24 часа до конца периода. Управление — в настройках магазина.",
+		"legalLinksPrefix": "См. ",
+		"legalLinksSuffix": "."
 	},
 	"profile": {
 		"title": "Профиль",
@@ -420,6 +441,7 @@
 		"filterAll": "Все",
 		"filterBookings": "Записи",
 		"filterReviews": "Отзывы",
+		"filterOthers": "Другое",
 		"filterEmpty": "Нет уведомлений в этом разделе",
 		"typeBooking": "ЗАПИСЬ",
 		"typeBookingCancelled": "ЗАПИСЬ ОТМЕНЕНА",
@@ -443,6 +465,8 @@
 		"privacyComingSoon": "Политика конфиденциальности в разработке",
 		"termsOfUse": "Условия использования",
 		"termsComingSoon": "Условия использования в разработке",
+		"analyticsOptIn": "Аналитика и отчёты о сбоях",
+		"analyticsOptInHint": "Помогает улучшать приложение. Без межприложного трекинга.",
 		"feedback": {
 			"sendFeedback": "Помощь и отзыв",
 			"sheetTitle": "Помощь и отзыв",

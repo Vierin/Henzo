@@ -16,15 +16,24 @@ import '../services/notifications_store.dart';
 import '../utils/color_hex.dart';
 import '../widgets/common/henzo_header_back_button.dart';
 import '../utils/show_api_error.dart';
+import 'public_class_detail_screen.dart';
 import 'owner_training_session_detail_screen.dart';
+
+enum NotificationsScreenAudience { owner, client }
+
+/// Push items shown in the client notifications panel (excludes owner-only).
+bool isClientRelevantNotification(AppNotification n) =>
+    !_isOwnerOnlyNotification(n);
 
 class NotificationsScreen extends StatefulWidget {
   const NotificationsScreen({
     super.key,
     this.initialFilter = NotificationFilter.all,
+    this.audience = NotificationsScreenAudience.owner,
   });
 
   final NotificationFilter initialFilter;
+  final NotificationsScreenAudience audience;
 
   @override
   State<NotificationsScreen> createState() => _NotificationsScreenState();
@@ -42,19 +51,41 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     });
   }
 
+  bool get _isClient =>
+      widget.audience == NotificationsScreenAudience.client;
+
+  List<AppNotification> _visibleItems(List<AppNotification> all) {
+    var list = all;
+    if (_isClient) {
+      list = list.where(isClientRelevantNotification).toList();
+    } else {
+      list = list.where((n) => !_isReminder(n)).toList();
+    }
+    return list;
+  }
+
   @override
   Widget build(BuildContext context) {
     final locale = context.watch<LocaleProvider>();
     final store = context.watch<NotificationsStore>();
-    final items = store.items.where((n) => !_isReminder(n)).toList();
+    final items = _visibleItems(store.items);
     final filteredItems = items.where(_matchesFilter).toList();
     final allCount = items.length;
     final bookingsCount = items
-        .where((n) => _isBookingFilterKind(_notificationKind(n)))
+        .where((n) => _isBookingFilterKind(_notificationKind(n, _isClient)))
         .length;
-    final reviewsCount = items
-        .where((n) => _notificationKind(n) == _NotificationKind.review)
-        .length;
+    final secondaryCount = _isClient
+        ? items
+            .where(
+              (n) =>
+                  !_isBookingFilterKind(_notificationKind(n, _isClient)),
+            )
+            .length
+        : items
+            .where(
+              (n) => _notificationKind(n, false) == _NotificationKind.review,
+            )
+            .length;
 
     return Scaffold(
       backgroundColor: AppColors.backgroundSecondary,
@@ -90,7 +121,8 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                   value: _filter,
                   allCount: allCount,
                   bookingsCount: bookingsCount,
-                  reviewsCount: reviewsCount,
+                  secondaryCount: secondaryCount,
+                  isClient: _isClient,
                   onChanged: (v) => setState(() => _filter = v),
                 ),
                 const SizedBox(height: 16),
@@ -120,6 +152,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                       _NotificationCard(
                         notification: filteredItems[i],
                         locale: locale,
+                        isClient: _isClient,
                       ),
                     ],
                   ],
@@ -136,11 +169,29 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
       case NotificationFilter.all:
         return true;
       case NotificationFilter.bookings:
-        return _isBookingFilterKind(_notificationKind(n));
+        return _isBookingFilterKind(_notificationKind(n, _isClient));
       case NotificationFilter.reviews:
-        return _notificationKind(n) == _NotificationKind.review;
+        if (_isClient) {
+          return !_isBookingFilterKind(_notificationKind(n, true));
+        }
+        return _notificationKind(n, false) == _NotificationKind.review;
     }
   }
+}
+
+bool _isOwnerOnlyNotification(AppNotification n) {
+  final type = (n.data['type'] ?? n.data['eventType'] ?? '').toUpperCase();
+  if (type == 'NEW_BOOKING' || type == 'NEW_CLASS_BOOKING') {
+    return true;
+  }
+  if (_notificationKind(n, false) == _NotificationKind.review) {
+    return true;
+  }
+  final clientName = n.data['clientName']?.trim();
+  if (clientName != null && clientName.isNotEmpty) {
+    return true;
+  }
+  return false;
 }
 
 enum NotificationFilter { all, bookings, reviews }
@@ -157,11 +208,15 @@ bool _isBookingFilterKind(_NotificationKind kind) =>
     kind == _NotificationKind.booking ||
     kind == _NotificationKind.bookingCancelled;
 
-_NotificationKind _notificationKind(AppNotification n) {
+_NotificationKind _notificationKind(AppNotification n, bool forClient) {
   final type = (n.data['type'] ?? n.data['eventType'] ?? '').toLowerCase();
   final text = '${n.title} ${n.body}'.toLowerCase();
 
-  if (type.contains('review') || text.contains('review')) {
+  if (forClient && _isReminder(n)) {
+    return _NotificationKind.booking;
+  }
+
+  if (!forClient && (type.contains('review') || text.contains('review'))) {
     return _NotificationKind.review;
   }
   if (type.contains('booking_cancelled') ||
@@ -302,14 +357,16 @@ class _FiltersRow extends StatelessWidget {
     required this.value,
     required this.allCount,
     required this.bookingsCount,
-    required this.reviewsCount,
+    required this.secondaryCount,
+    required this.isClient,
     required this.onChanged,
   });
 
   final NotificationFilter value;
   final int allCount;
   final int bookingsCount;
-  final int reviewsCount;
+  final int secondaryCount;
+  final bool isClient;
   final ValueChanged<NotificationFilter> onChanged;
 
   @override
@@ -337,8 +394,12 @@ class _FiltersRow extends StatelessWidget {
         const SizedBox(width: 8),
         Expanded(
           child: _FilterPill(
-            label: locale.t('notifications.filterReviews'),
-            count: reviewsCount,
+            label: locale.t(
+              isClient
+                  ? 'notifications.filterOthers'
+                  : 'notifications.filterReviews',
+            ),
+            count: secondaryCount,
             selected: value == NotificationFilter.reviews,
             onTap: () => onChanged(NotificationFilter.reviews),
           ),
@@ -424,14 +485,16 @@ class _NotificationCard extends StatelessWidget {
   const _NotificationCard({
     required this.notification,
     required this.locale,
+    required this.isClient,
   });
 
   final AppNotification notification;
   final LocaleProvider locale;
+  final bool isClient;
 
   @override
   Widget build(BuildContext context) {
-    final kind = _notificationKind(notification);
+    final kind = _notificationKind(notification, isClient);
     final theme = _NotificationTheme.forKind(kind);
     final timeStr = _relativeTime(notification.createdAt, locale);
     final session = _isBookingFilterKind(kind)
@@ -468,7 +531,8 @@ class _NotificationCard extends StatelessWidget {
           borderRadius: BorderRadius.circular(16),
           clipBehavior: Clip.antiAlias,
           child: InkWell(
-            onTap: () => _onNotificationTap(context, notification, kind),
+            onTap: () =>
+                _onNotificationTap(context, notification, kind, isClient),
             borderRadius: BorderRadius.circular(16),
             child: Padding(
               padding: const EdgeInsets.fromLTRB(14, 14, 12, 14),
@@ -516,7 +580,11 @@ class _NotificationCard extends StatelessWidget {
                               fontWeight: FontWeight.w400,
                               color: AppColors.textPrimary,
                             ),
-                            children: _messageSpans(notification, kind),
+                            children: _messageSpans(
+                              notification,
+                              kind,
+                              isClient,
+                            ),
                           ),
                         ),
                         if (session != null) ...[
@@ -572,38 +640,48 @@ class _NotificationCard extends StatelessWidget {
   List<InlineSpan> _messageSpans(
     AppNotification n,
     _NotificationKind kind,
+    bool isClient,
   ) {
     const bold = TextStyle(fontWeight: FontWeight.w700);
     const normal = TextStyle(fontWeight: FontWeight.w400);
 
-    final clientName = n.data['clientName']?.trim();
+    final leadName = isClient ? _clientLeadName(n) : n.data['clientName']?.trim();
     final serviceName = _serviceOrClassName(n);
     final body = n.body.trim();
 
-    if (clientName != null && clientName.isNotEmpty) {
-      if (body.startsWith(clientName)) {
+    if (leadName != null && leadName.isNotEmpty) {
+      if (body.startsWith(leadName)) {
         return [
-          TextSpan(text: clientName, style: bold),
-          TextSpan(text: body.substring(clientName.length), style: normal),
+          TextSpan(text: leadName, style: bold),
+          TextSpan(text: body.substring(leadName.length), style: normal),
+        ];
+      }
+      if (isClient) {
+        return [
+          TextSpan(text: leadName, style: bold),
+          TextSpan(
+            text: body.isNotEmpty ? ' $body' : '',
+            style: normal,
+          ),
         ];
       }
       return switch (kind) {
         _NotificationKind.bookingCancelled => [
-          TextSpan(text: clientName, style: bold),
+          TextSpan(text: leadName, style: bold),
           TextSpan(
             text: _cancelledMessageSuffix(n, serviceName),
             style: normal,
           ),
         ],
         _NotificationKind.booking => [
-          TextSpan(text: clientName, style: bold),
+          TextSpan(text: leadName, style: bold),
           TextSpan(
             text: _bookedMessageSuffix(n, serviceName),
             style: normal,
           ),
         ],
         _NotificationKind.review => [
-          TextSpan(text: clientName, style: bold),
+          TextSpan(text: leadName, style: bold),
           TextSpan(text: _reviewMessageSuffix(n), style: normal),
         ],
         _ => [_plainMessageSpan(n)],
@@ -611,6 +689,14 @@ class _NotificationCard extends StatelessWidget {
     }
 
     return [_plainMessageSpan(n)];
+  }
+
+  String? _clientLeadName(AppNotification n) {
+    final studio = n.data['studioName']?.trim();
+    if (studio != null && studio.isNotEmpty) return studio;
+    final training = _serviceOrClassName(n);
+    if (training != null && training.isNotEmpty) return training;
+    return null;
   }
 
   String? _serviceOrClassName(AppNotification n) {
@@ -685,9 +771,14 @@ class _NotificationCard extends StatelessWidget {
     BuildContext context,
     AppNotification notification,
     _NotificationKind kind,
+    bool isClient,
   ) async {
     context.read<NotificationsStore>().markRead(notification.id);
     if (!_isBookingFilterKind(kind)) return;
+    if (isClient) {
+      await _openClientBookingDetail(context, notification);
+      return;
+    }
     await _openBookingSessionDetail(context, notification);
   }
 
@@ -720,6 +811,36 @@ class _BookingSessionParts {
 
   final String time;
   final String date;
+}
+
+Future<void> _openClientBookingDetail(
+  BuildContext context,
+  AppNotification notification,
+) async {
+  final sessionId = notification.data['sessionId']?.trim() ?? '';
+  final studioId =
+      notification.data['studioId']?.trim() ??
+      notification.data['salonId']?.trim() ??
+      '';
+  if (sessionId.isEmpty || studioId.isEmpty) return;
+
+  final dateRaw =
+      notification.data['dateTime']?.trim() ??
+      notification.data['startsAt']?.trim();
+  final startsAt = dateRaw != null && dateRaw.isNotEmpty
+      ? DateTime.tryParse(dateRaw)?.toLocal()
+      : null;
+
+  if (!context.mounted) return;
+  await Navigator.of(context).push<void>(
+    MaterialPageRoute<void>(
+      builder: (_) => PublicClassDetailScreen(
+        studioId: studioId,
+        sessionId: sessionId,
+        sessionStartsAtHint: startsAt ?? DateTime.now(),
+      ),
+    ),
+  );
 }
 
 Future<void> _openBookingSessionDetail(

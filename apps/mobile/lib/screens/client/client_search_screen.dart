@@ -6,7 +6,6 @@ import 'package:flutter_svg/flutter_svg.dart';
 import '../../widgets/common/henzo_modal.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:provider/provider.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../constants/colors.dart';
 import '../../constants/layout.dart';
@@ -15,6 +14,7 @@ import '../../models/training_category_option.dart';
 import '../../services/api_client.dart';
 import '../../services/auth_service.dart';
 import '../../services/cache/client_nearby_cache.dart';
+import '../../services/client_location_store.dart';
 import '../../services/client_favorites_mutations.dart';
 import '../../services/client_favorites_store.dart';
 import '../../services/dashboard_api_service.dart';
@@ -50,9 +50,6 @@ class ClientSearchScreen extends StatefulWidget {
 class ClientSearchScreenState extends State<ClientSearchScreen> {
   static const _browseLocationBlue = Color(0xFF4D39A8);
 
-  static const _cityKey = 'client_city';
-  static const _latKey = 'client_lat';
-  static const _lonKey = 'client_lon';
   bool _loading = true;
   bool _showClasses = true;
   bool _isMonthExpanded = false;
@@ -66,9 +63,7 @@ class ClientSearchScreenState extends State<ClientSearchScreen> {
   Timer? _stripScheduleDebounce;
   final TextEditingController _searchController = TextEditingController();
   String _searchQuery = '';
-  String _locationLabel = 'Set location';
-  double? _selectedLat;
-  double? _selectedLon;
+  ClientLocationStore? _locationStore;
   String _distanceFilter = 'auto';
   String _sortBy = 'recommended';
   final Set<String> _timePeriods = <String>{};
@@ -101,11 +96,32 @@ class ClientSearchScreenState extends State<ClientSearchScreen> {
     _stripPagerDayNotifier.value = today;
     _dayStripScrollController = ScrollController();
     _searchController.addListener(_onSearchChanged);
-    _loadSavedLocationOnly();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final next = context.read<ClientLocationStore>();
+    if (_locationStore == next) return;
+    _locationStore?.removeListener(_onSharedLocationChanged);
+    _locationStore = next;
+    _locationStore!.addListener(_onSharedLocationChanged);
+  }
+
+  void _onSharedLocationChanged() {
+    if (!mounted) return;
+    setState(() {
+      _derivedInputsHash = 0;
+      _distanceKmMemo.clear();
+    });
+    if (_exploreLoadRequested) {
+      unawaited(_loadExplore());
+    }
   }
 
   @override
   void dispose() {
+    _locationStore?.removeListener(_onSharedLocationChanged);
     _clearStripScheduleDebounceTimer();
     _searchController.removeListener(_onSearchChanged);
     _searchController.dispose();
@@ -412,29 +428,23 @@ class ClientSearchScreenState extends State<ClientSearchScreen> {
   }
 
   Future<void> _openLocationPicker() async {
+    final loc = context.read<ClientLocationStore>();
     final picked = await Navigator.of(context).push<LocationPickerResult>(
       MaterialPageRoute(
         builder: (_) => LocationPickerScreen(
-          initialCity: _locationLabel == 'Set location' ? '' : _locationLabel,
+          initialCity: loc.displayLabel(''),
         ),
       ),
     );
     if (picked == null || picked.city.trim().isEmpty || !mounted) return;
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(_cityKey, picked.city.trim());
-    if (picked.lat != null && picked.lon != null) {
-      await prefs.setDouble(_latKey, picked.lat!);
-      await prefs.setDouble(_lonKey, picked.lon!);
-    }
-    ClientNearbyCache.clear();
+    await context.read<ClientLocationStore>().applyFromPicker(picked);
     setState(() {
-      _locationLabel = picked.city.trim();
-      _selectedLat = picked.lat;
-      _selectedLon = picked.lon;
       _derivedInputsHash = 0;
       _distanceKmMemo.clear();
     });
-    await _loadExplore();
+    if (_exploreLoadRequested) {
+      await _loadExplore();
+    }
   }
 
   /// First call is deferred until user opens the Explore tab (see [ensureExploreLoaded]).
@@ -457,21 +467,10 @@ class ClientSearchScreenState extends State<ClientSearchScreen> {
     _ensureDerivedLists();
   }
 
-  Future<void> _loadSavedLocationOnly() async {
-    final prefs = await SharedPreferences.getInstance();
-    final city = prefs.getString(_cityKey)?.trim();
-    final lat = prefs.getDouble(_latKey);
-    final lon = prefs.getDouble(_lonKey);
+  /// Home «See all» / shell: Classes vs Studios tab on Browse.
+  void applyBrowseListMode({required bool showClasses}) {
     if (!mounted) return;
-    setState(() {
-      _locationLabel = (city != null && city.isNotEmpty)
-          ? city
-          : 'Set location';
-      _selectedLat = lat;
-      _selectedLon = lon;
-      _distanceKmMemo.clear();
-      _derivedInputsHash = 0;
-    });
+    setState(() => _showClasses = showClasses);
   }
 
   int _currentRadiusKm() {
@@ -633,18 +632,19 @@ class ClientSearchScreenState extends State<ClientSearchScreen> {
 
   Future<void> _loadExplore() async {
     if (!mounted) return;
+    final loc = context.read<ClientLocationStore>();
     setState(() => _loading = true);
     try {
       final radiusKm = _currentRadiusKm();
       final nearbyQuery = StringBuffer(
         '/studios/nearby?limit=20&radius=$radiusKm',
       );
-      if (_selectedLat != null && _selectedLon != null) {
+      if (loc.lat != null && loc.lon != null) {
         nearbyQuery
           ..write('&lat=')
-          ..write(_selectedLat!.toStringAsFixed(6))
+          ..write(loc.lat!.toStringAsFixed(6))
           ..write('&lng=')
-          ..write(_selectedLon!.toStringAsFixed(6));
+          ..write(loc.lon!.toStringAsFixed(6));
       }
       final nearbyPath = nearbyQuery.toString();
       var nearbyRaw = ClientNearbyCache.get(nearbyPath);
@@ -811,14 +811,17 @@ class ClientSearchScreenState extends State<ClientSearchScreen> {
     return '$text km';
   }
 
-  double? _resolvedDistanceKm(ExploreStudioItem studio) {
+  double? _resolvedDistanceKm(
+    ExploreStudioItem studio,
+    ClientLocationStore loc,
+  ) {
     if (studio.distanceKm != null) return studio.distanceKm;
-    if (_selectedLat == null || _selectedLon == null) return null;
+    if (loc.lat == null || loc.lon == null) return null;
     if (studio.lat == null || studio.lng == null) return null;
     const d = Distance();
     final meters = d.as(
       LengthUnit.Meter,
-      LatLng(_selectedLat!, _selectedLon!),
+      LatLng(loc.lat!, loc.lon!),
       LatLng(studio.lat!, studio.lng!),
     );
     return meters / 1000.0;
@@ -841,9 +844,8 @@ class ClientSearchScreenState extends State<ClientSearchScreen> {
 
   int _dayKey(DateTime d) => d.year * 10000 + d.month * 100 + d.day;
 
-  void _syncDistanceMemoLocation() {
-    final k =
-        '${_selectedLat?.toStringAsFixed(5)}_${_selectedLon?.toStringAsFixed(5)}';
+  void _syncDistanceMemoLocation(ClientLocationStore loc) {
+    final k = '${loc.lat?.toStringAsFixed(5)}_${loc.lon?.toStringAsFixed(5)}';
     if (k != _distanceMemoLocationKey) {
       _distanceMemoLocationKey = k;
       _distanceKmMemo.clear();
@@ -892,12 +894,15 @@ class ClientSearchScreenState extends State<ClientSearchScreen> {
     _derivedTodayClassesByStudio = classesByStudio;
   }
 
-  double? _resolvedDistanceKmMemo(ExploreStudioItem studio) {
-    _syncDistanceMemoLocation();
+  double? _resolvedDistanceKmMemo(
+    ExploreStudioItem studio,
+    ClientLocationStore loc,
+  ) {
+    _syncDistanceMemoLocation(loc);
     if (_distanceKmMemo.containsKey(studio.id)) {
       return _distanceKmMemo[studio.id];
     }
-    final v = _resolvedDistanceKm(studio);
+    final v = _resolvedDistanceKm(studio, loc);
     _distanceKmMemo[studio.id] = v;
     return v;
   }
@@ -2084,7 +2089,6 @@ class ClientSearchScreenState extends State<ClientSearchScreen> {
                         selected: selected,
                         onTap: () {
                           _clearStripScheduleDebounceTimer();
-                          _scrollBrowseStripToIndex(index, animate: true);
                           _applyExploreDay(day);
                         },
                       );
@@ -2216,7 +2220,10 @@ class ClientSearchScreenState extends State<ClientSearchScreen> {
   Widget build(BuildContext context) {
     final locale = context.watch<LocaleProvider>();
     final localeCode = locale.localeCode;
-    final locationUpper = _locationLabel.toUpperCase();
+    final locationStore = context.watch<ClientLocationStore>();
+    final locationUpper = locationStore
+        .displayLabel(locale.t('clientHome.setLocation'))
+        .toUpperCase();
     final favStore = context.watch<ClientFavoritesStore>();
     _ensureDerivedLists();
 
@@ -2464,7 +2471,7 @@ class ClientSearchScreenState extends State<ClientSearchScreen> {
                                 studio: s,
                                 todayClasses: todayClasses,
                                 distanceLabel: _distanceLabel(
-                                  _resolvedDistanceKmMemo(s),
+                                  _resolvedDistanceKmMemo(s, locationStore),
                                 ),
                                 isFavorite: favStore.isFavorite(s.id),
                                 onTap: () {

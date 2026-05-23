@@ -66,7 +66,10 @@ export class StudioClientsService {
     });
   }
 
-  private async getOwnerStudioId(authHeader: string): Promise<string> {
+  /** Null when owner has not created a studio yet (setup flow). */
+  private async tryGetOwnerStudioId(
+    authHeader: string,
+  ): Promise<string | null> {
     const currentUser = await this.authService.getCurrentUser(authHeader);
     if (currentUser.user.role !== 'OWNER') {
       throw new HttpException('Forbidden', HttpStatus.FORBIDDEN);
@@ -75,10 +78,15 @@ export class StudioClientsService {
       where: { ownerId: currentUser.user.id },
       select: { id: true },
     });
-    if (!studio) {
+    return studio?.id ?? null;
+  }
+
+  private async getOwnerStudioId(authHeader: string): Promise<string> {
+    const studioId = await this.tryGetOwnerStudioId(authHeader);
+    if (!studioId) {
       throw new HttpException('Studio not found', HttpStatus.NOT_FOUND);
     }
-    return studio.id;
+    return studioId;
   }
 
   /**
@@ -181,7 +189,8 @@ export class StudioClientsService {
   }
 
   async searchStudioClients(authHeader: string, q: string) {
-    const studioId = await this.getOwnerStudioId(authHeader);
+    const studioId = await this.tryGetOwnerStudioId(authHeader);
+    if (!studioId) return [];
     const term = q.trim();
     if (term.length < 2) {
       return [];
@@ -229,7 +238,8 @@ export class StudioClientsService {
   }
 
   async listMergedStudioClients(authHeader: string) {
-    const studioId = await this.getOwnerStudioId(authHeader);
+    const studioId = await this.tryGetOwnerStudioId(authHeader);
+    if (!studioId) return [];
     const roster = await this.prisma.studioClient.findMany({
       where: { studioId },
       select: {

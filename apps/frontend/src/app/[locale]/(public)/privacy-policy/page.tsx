@@ -1,5 +1,12 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
+import { LegalLocaleBanner } from '@/components/legal/LegalLocaleBanner';
+import {
+	PrivacyHealthDataSection,
+	PrivacyMobileAppSection,
+	PrivacyScopeSection,
+	PrivacySubscriptionsSection,
+} from '@/components/legal/PrivacyMobileSections';
 import { buildStaticPageMetadata, resolveLocale } from '@/seo';
 
 export async function generateMetadata({
@@ -11,7 +18,13 @@ export async function generateMetadata({
 	return buildStaticPageMetadata('privacy', resolveLocale(raw));
 }
 
-export default function PrivacyPolicy() {
+export default async function PrivacyPolicy({
+	params,
+}: {
+	params: Promise<{ locale: string }>;
+}) {
+	const { locale } = await params;
+
 	return (
 		<div className="min-h-screen bg-white">
 			<main className="max-w-7xl mx-auto px-6 py-12" role="main">
@@ -22,12 +35,16 @@ export default function PrivacyPolicy() {
 							Privacy Policy
 						</h1>
 						<p className="text-gray-600 text-lg">
-							Last updated: January 15, 2025
+							Last updated: May 23, 2026
 						</p>
 					</header>
 
+					<LegalLocaleBanner locale={locale} />
+
 					{/* Content */}
 					<div className="space-y-8">
+						<PrivacyScopeSection />
+
 						{/* Introduction */}
 						<section>
 							<p className="text-gray-700 leading-relaxed text-base mb-4">
@@ -97,7 +114,7 @@ export default function PrivacyPolicy() {
 								</li>
 								<li>
 									<strong>Profile Information:</strong> Profile photos (if
-									uploaded), favorite salons, preferences
+									uploaded), saved studios, training preferences
 								</li>
 								<li>
 									<strong>Communication Data:</strong> Messages sent through our
@@ -134,6 +151,12 @@ export default function PrivacyPolicy() {
 									<strong>Log Data:</strong> Access times, error logs,
 									performance data
 								</li>
+								<li>
+									<strong>Mobile app data:</strong> Push notification token,
+									optional crash logs and analytics events (if enabled in app
+									Settings), subscription status, and optional health summaries
+									read on your device only (see Health and Fitness Data)
+								</li>
 							</ul>
 							<p className="text-gray-700 leading-relaxed text-base mb-4">
 								<strong className="font-semibold">
@@ -147,9 +170,9 @@ export default function PrivacyPolicy() {
 									photo from Google
 								</li>
 								<li>
-									<strong>Analytics Providers:</strong> Google Analytics
-									provides us with aggregated usage statistics and analytics
-									data
+									<strong>Analytics Providers:</strong> Google Analytics (web)
+									and, if you opt in, Google Firebase Analytics (mobile) provide
+									usage statistics
 								</li>
 							</ul>
 							<p className="text-gray-700 leading-relaxed text-base">
@@ -264,11 +287,39 @@ export default function PrivacyPolicy() {
 									located in the EU and processes email addresses and names.
 								</li>
 								<li>
-									<strong>Google Analytics</strong> (Analytics): We use Google
-									Analytics (ID: G-KBLFJ1533R) to analyze website usage and
-									improve our services. Google Analytics collects IP addresses
-									(anonymized), device information, and browsing behavior. This
-									requires your consent. Google is located in the US.
+									<strong>Google Analytics</strong> (Web analytics): We use
+									Google Analytics (ID: G-KBLFJ1533R) on our website. This
+									requires your consent via our cookie banner. Google is located
+									in the US.
+								</li>
+								<li>
+									<strong>Google Firebase</strong> (Mobile): Firebase Analytics,
+									Crashlytics, and Cloud Messaging support our mobile apps.
+									Collection is disabled by default until you enable
+									&quot;Analytics &amp; crash reports&quot; in app Settings.
+									See{' '}
+									<a
+										href="https://firebase.google.com/support/privacy"
+										target="_blank"
+										rel="noopener noreferrer"
+										className="text-[#ea4b4b] hover:text-[#d43d3d] font-medium underline"
+									>
+										Firebase Privacy
+									</a>
+									.
+								</li>
+								<li>
+									<strong>RevenueCat</strong> (Subscriptions): Manages in-app
+									subscription entitlements for studio owners. See{' '}
+									<a
+										href="https://www.revenuecat.com/privacy"
+										target="_blank"
+										rel="noopener noreferrer"
+										className="text-[#ea4b4b] hover:text-[#d43d3d] font-medium underline"
+									>
+										RevenueCat Privacy
+									</a>
+									.
 								</li>
 								<li>
 									<strong>Google OAuth</strong> (Authentication): If you choose
@@ -311,6 +362,10 @@ export default function PrivacyPolicy() {
 								information may be transferred to the acquiring entity.
 							</p>
 						</section>
+
+						<PrivacyMobileAppSection />
+						<PrivacyHealthDataSection />
+						<PrivacySubscriptionsSection />
 
 						{/* Data Security */}
 						<section>
@@ -420,16 +475,18 @@ export default function PrivacyPolicy() {
 								</strong>
 							</p>
 							<p className="text-gray-700 leading-relaxed text-base mb-4">
-								To exercise any of these rights, please contact us at{' '}
+								To exercise any of these rights, contact us at{' '}
 								<Link
 									href="mailto:hello@henzo.app"
 									className="text-[#ea4b4b] hover:text-[#d43d3d] font-medium underline"
 								>
 									hello@henzo.app
 								</Link>
-								with the subject line &quot;Data Protection Request&quot;. We
-								will respond to your request within 30 days (or as required by
-								applicable law).
+								with the subject line &quot;Data Protection Request&quot;, or
+								use in-app controls: delete your account in Account settings,
+								disable analytics in App settings, and revoke location, health,
+								or push permissions in your device settings. We will respond
+								within 30 days (or as required by applicable law).
 							</p>
 							<p className="text-gray-700 leading-relaxed text-base">
 								<strong className="font-semibold">
@@ -550,7 +607,8 @@ export default function PrivacyPolicy() {
 								</li>
 								<li>
 									<strong>Analytics Data:</strong> 26 months (Google Analytics
-									default retention period)
+									web default); Firebase mobile analytics per Google retention
+									when you have opted in
 								</li>
 								<li>
 									<strong>Support Communications:</strong> 3 years after the
@@ -581,8 +639,9 @@ export default function PrivacyPolicy() {
 							</p>
 							<ul className="list-disc list-inside text-gray-700 leading-relaxed text-base mb-4 space-y-2 ml-4">
 								<li>
-									<strong>United States:</strong> Google Analytics, Google
-									OAuth, and Vercel (hosting) process data in the US
+									<strong>United States:</strong> Google (Analytics, OAuth,
+									Firebase), RevenueCat, and Vercel (hosting) may process data
+									in the US
 								</li>
 								<li>
 									<strong>European Union:</strong> Brevo (email service)
@@ -632,28 +691,25 @@ export default function PrivacyPolicy() {
 								Children&apos;s Privacy
 							</h2>
 							<p className="text-gray-700 leading-relaxed text-base mb-4">
-								Our Service is available to users of all ages. However, we take
-								the privacy of children seriously. If you are under 13 years of
-								age, you may only use the Service with the express consent and
-								supervision of a parent or legal guardian.
+								Henzo is not directed at children under 16. You must be at
+								least 16 years old (or the age of digital consent in your
+								country, if higher) to create an account, unless applicable law
+								requires verifiable parental consent for younger users.
 							</p>
 							<p className="text-gray-700 leading-relaxed text-base mb-4">
-								If you are a parent or guardian and believe that your child
-								under 13 has provided us with personal information without your
-								consent, please contact us immediately at{' '}
+								If you are a parent or guardian and believe a child under 16 has
+								provided personal information without consent, contact us at{' '}
 								<Link
 									href="mailto:hello@henzo.app"
 									className="text-[#ea4b4b] hover:text-[#d43d3d] font-medium underline"
 								>
 									hello@henzo.app
 								</Link>
-								, and we will take steps to delete such information promptly.
+								and we will delete such information promptly.
 							</p>
 							<p className="text-gray-700 leading-relaxed text-base">
-								For users between 13 and 18 years of age, we recommend that you
-								obtain parental or guardian consent before using the Service,
-								especially when making bookings or providing personal
-								information.
+								Users aged 16–18 should obtain parental or guardian guidance
+								before making bookings or sharing personal data.
 							</p>
 						</section>
 
@@ -743,7 +799,7 @@ export default function PrivacyPolicy() {
 						{/* Footer */}
 						<footer className="mt-12 pt-8 border-t border-gray-200">
 							<p className="text-center text-gray-500 text-sm">
-								This Privacy Policy is effective as of January 15, 2025.
+								This Privacy Policy is effective as of May 23, 2026.
 							</p>
 						</footer>
 					</div>

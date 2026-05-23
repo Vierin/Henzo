@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 
+/// Opens Browse; [showClasses] false = Studios, true = Classes (default).
+typedef ClientGoToExploreCallback = void Function({bool showClasses});
+
 /// Lets nested client screens (e.g. Favorites empty state) trigger shell actions.
 class ClientShellScope extends InheritedWidget {
   const ClientShellScope({
@@ -8,7 +11,7 @@ class ClientShellScope extends InheritedWidget {
     required super.child,
   });
 
-  final VoidCallback goToExplore;
+  final ClientGoToExploreCallback goToExplore;
 
   static ClientShellScope? maybeOf(BuildContext context) {
     return context.findAncestorWidgetOfExactType<ClientShellScope>();

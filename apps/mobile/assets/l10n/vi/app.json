@@ -22,7 +22,8 @@
 		"changesSaved": "Đã lưu thay đổi",
 		"saveFailed": "Lưu thất bại",
 		"deleteFailed": "Xóa thất bại",
-		"setupSalonFirst": "Hãy thiết lập doanh nghiệp trước"
+		"setupSalonFirst": "Hãy thiết lập doanh nghiệp trước",
+		"verify": "Xác minh"
 	},
 	"nav": {
 		"dashboard": "Bảng điều khiển",
@@ -68,7 +69,13 @@
 		"businessRegisterSuccess": "Hãy kiểm tra email để xác nhận đăng ký business.",
 		"businessRegisterError": "Không thể bắt đầu đăng ký business.",
 		"openWebsite": "Mở trang web",
-		"signOut": "Đăng xuất"
+		"signOut": "Đăng xuất",
+		"verificationCodeTitle": "Mã xác minh",
+		"verificationCodeSubtitle": "Nhập mã 6 chữ số chúng tôi đã gửi đến email của bạn",
+		"resendCodeIn": "Gửi lại mã sau",
+		"didntReceiveCode": "Không nhận được mã?",
+		"resend": "Gửi lại",
+		"enterOtpCode": "Nhập mã 6 chữ số"
 	},
 	"clientHome": {
 		"nowIn": "ĐANG Ở",
@@ -82,6 +89,10 @@
 		"popularTodayTitle": "Phổ biến hôm nay",
 		"seeAll": "Xem tất cả",
 		"noClassesToday": "Hôm nay chưa có lớp gần bạn.",
+		"locationPickerTitle": "Chọn thành phố",
+		"locationPickerHint": "Tìm thành phố",
+		"locationPickerUseCity": "Dùng thành phố này",
+		"locationPickerEmpty": "Nhập tên thành phố",
 		"favoritePromoTitle": "Lưu lớp yêu thích",
 		"favoritePromoSubtitle": "Lưu lớp và nhận nhắc nhở"
 	},
@@ -297,6 +308,13 @@
 		"noBookings": "Không có đặt chỗ",
 		"book": "Đặt chỗ"
 	},
+	"legal": {
+		"agreePrefix": "Bằng việc tiếp tục, bạn đồng ý với ",
+		"agreeAnd": " và ",
+		"agreeSuffix": ".",
+		"checkboxLabel": "Tôi đồng ý với Chính sách bảo mật và Điều khoản sử dụng",
+		"mustAgree": "Vui lòng chấp nhận Chính sách bảo mật và Điều khoản sử dụng."
+	},
 	"subscription": {
 		"title": "Đăng ký",
 		"subscribe": "Đăng ký",
@@ -324,7 +342,10 @@
 		"purchaseSuccess": "Gói Pro đã được kích hoạt.",
 		"offeringsUnavailable": "Gói tạm thời không khả dụng. Thử lại sau.",
 		"storeNotConfigured": "Mua trong ứng dụng chưa được cấu hình cho bản build này.",
-		"rcEntitlementNotLinked": "Đã ghi nhận mua trên RevenueCat nhưng chưa kích hoạt Pro. Gắn sản phẩm với entitlement \"pro\" trong RevenueCat."
+		"rcEntitlementNotLinked": "Đã ghi nhận mua trên RevenueCat nhưng chưa kích hoạt Pro. Gắn sản phẩm với entitlement \"pro\" trong RevenueCat.",
+		"autoRenewDisclosure": "Thanh toán qua Apple ID hoặc Google Play. Gói tự gia hạn trừ khi hủy ít nhất 24 giờ trước khi kết thúc kỳ. Quản lý trong cài đặt cửa hàng.",
+		"legalLinksPrefix": "Xem ",
+		"legalLinksSuffix": "."
 	},
 	"profile": {
 		"title": "Hồ sơ",
@@ -420,6 +441,7 @@
 		"filterAll": "Tất cả",
 		"filterBookings": "Đặt lịch",
 		"filterReviews": "Đánh giá",
+		"filterOthers": "Khác",
 		"filterEmpty": "Không có thông báo trong mục này",
 		"typeBooking": "ĐẶT LỊCH",
 		"typeBookingCancelled": "ĐẶT LỊCH ĐÃ HỦY",
@@ -443,6 +465,8 @@
 		"privacyComingSoon": "Chính sách bảo mật đang phát triển",
 		"termsOfUse": "Điều khoản sử dụng",
 		"termsComingSoon": "Điều khoản đang phát triển",
+		"analyticsOptIn": "Phân tích & báo cáo lỗi",
+		"analyticsOptInHint": "Giúp cải thiện ứng dụng. Không theo dõi liên ứng dụng.",
 		"feedback": {
 			"sendFeedback": "Trợ giúp & phản hồi",
 			"sheetTitle": "Trợ giúp & phản hồi",

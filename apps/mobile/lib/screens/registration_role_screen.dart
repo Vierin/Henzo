@@ -5,6 +5,7 @@ import '../constants/colors.dart';
 import '../l10n/locale_provider.dart';
 import '../widgets/chaotic_underline.dart';
 import '../widgets/language_selector_modal.dart';
+import '../widgets/legal/legal_agreement_footer.dart';
 import 'business_registration_screen.dart';
 import 'client_registration_screen.dart';
 
@@ -90,7 +91,7 @@ class RegistrationRoleScreen extends StatelessWidget {
                 const Spacer(),
                 const Padding(
                   padding: EdgeInsets.only(bottom: 14),
-                  child: _LegalFooter(),
+                  child: LegalAgreementFooter(),
                 ),
               ],
             ),
@@ -154,38 +155,6 @@ class _UnderlinedSubheading extends StatelessWidget {
           color: AppColors.primary500,
         ),
       ],
-    );
-  }
-}
-
-class _LegalFooter extends StatelessWidget {
-  const _LegalFooter();
-
-  @override
-  Widget build(BuildContext context) {
-    const baseStyle = TextStyle(
-      fontSize: 12,
-      fontWeight: FontWeight.w400,
-      color: AppColors.textPrimary,
-      height: 1.2,
-    );
-    return Text.rich(
-      const TextSpan(
-        style: baseStyle,
-        children: [
-          TextSpan(text: 'By continuing, you agree to out '),
-          TextSpan(
-            text: 'Privacy Policy',
-            style: TextStyle(fontWeight: FontWeight.w600),
-          ),
-          TextSpan(text: '\nand '),
-          TextSpan(
-            text: 'Terms of Service.',
-            style: TextStyle(fontWeight: FontWeight.w600),
-          ),
-        ],
-      ),
-      textAlign: TextAlign.center,
     );
   }
 }

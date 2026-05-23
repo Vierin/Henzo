@@ -5,6 +5,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
+import type { InputJsonValue } from '@prisma/client/runtime/library';
 import type Stripe from 'stripe';
 
 import { PrismaService } from '../prisma/prisma.service';
@@ -56,7 +57,7 @@ export class SubscriptionsService {
   private async logSubscriptionFailed(
     userId: string,
     reason: string,
-    metadata: Record<string, unknown>,
+    metadata: InputJsonValue,
   ): Promise<void> {
     await this.adminEventLog.log({
       type: 'subscription_failed',

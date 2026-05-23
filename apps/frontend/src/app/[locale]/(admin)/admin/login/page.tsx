@@ -4,6 +4,7 @@ import { FormEvent, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import { fetchCurrentUserRole } from '@/lib/admin/api';
+import { isSupabaseConfigured, publicEnv } from '@/lib/public-env';
 
 export default function AdminLoginPage() {
 	const router = useRouter();
@@ -16,6 +17,15 @@ export default function AdminLoginPage() {
 		e.preventDefault();
 		setLoading(true);
 		setError(null);
+		if (!isSupabaseConfigured()) {
+			setError(
+				'Supabase env not loaded in the browser bundle. ' +
+					'Stop dev server, delete apps/frontend/.henzo-next-dev-cache, ' +
+					'run pnpm dev again.'
+			);
+			setLoading(false);
+			return;
+		}
 		try {
 			const { error: signError } = await supabase.auth.signInWithPassword({
 				email: email.trim(),
@@ -29,7 +39,17 @@ export default function AdminLoginPage() {
 			}
 			router.replace('/en/admin');
 		} catch (err) {
-			setError(err instanceof Error ? err.message : 'Login failed');
+			const msg =
+				err instanceof Error ? err.message : 'Login failed';
+			if (msg === 'Failed to fetch') {
+				setError(
+					`Network error (${publicEnv.supabaseUrl || 'no Supabase URL'}). ` +
+						'VPN/firewall may block supabase.co, or dev cache is stale — ' +
+						'delete .henzo-next-dev-cache and restart pnpm dev.'
+				);
+			} else {
+				setError(msg);
+			}
 		} finally {
 			setLoading(false);
 		}
@@ -43,6 +63,12 @@ export default function AdminLoginPage() {
 			>
 				<h1 className="text-2xl font-semibold text-[#3F3287]">Henzo Admin</h1>
 				<p className="mt-1 text-sm text-zinc-500">Sign in with your admin account</p>
+				{process.env.NODE_ENV === 'development' && !isSupabaseConfigured() ? (
+					<p className="mt-2 text-xs text-amber-700">
+						Dev: NEXT_PUBLIC_SUPABASE_* not in bundle — restart after .env
+						change and clear .henzo-next-dev-cache
+					</p>
+				) : null}
 				<label className="mt-6 block text-sm font-medium text-zinc-700">
 					Email
 					<input

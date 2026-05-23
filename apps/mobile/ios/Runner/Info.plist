@@ -116,12 +116,12 @@
 	</array>
 	<key>GIDServerClientID</key>
 	<string>601312951370-1fg9fqajecnjlspki91hendb4csikqd5.apps.googleusercontent.com</string>
-	<key>NSUserTrackingUsageDescription</key>
-	<string>We use anonymous analytics to understand how the app is used and improve your experience. No personal data is shared.</string>
 	<key>NSLocationWhenInUseUsageDescription</key>
-	<string>Your location is used to fill in the studio address on the map.</string>
+	<string>Henzo uses your location to find nearby fitness studios and to set your studio address on the map.</string>
 	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
-	<string>Your location is used to fill in the studio address on the map.</string>
+	<string>Henzo uses your location to find nearby fitness studios and to set your studio address on the map.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>Henzo needs access to your photo library so you can upload profile and studio photos.</string>
 	<key>NSHealthShareUsageDescription</key>
 	<string>Henzo reads your steps, calories and workouts to display your activity summary on the Profile screen.</string>
 	<key>NSHealthUpdateUsageDescription</key>

@@ -38,6 +38,18 @@ PublicStudioPreview parsePublicStudioPreviewFromNearby(
       .toString()
       .trim();
 
+  var reviewCount = (data['reviewCount'] as num?)?.toInt() ?? 0;
+  if (reviewCount == 0 && data['_count'] is Map) {
+    final count = Map<String, dynamic>.from(data['_count'] as Map);
+    reviewCount =
+        (count['Review'] as num?)?.toInt() ??
+        (count['reviews'] as num?)?.toInt() ??
+        reviewCount;
+  }
+  if (reviewCount == 0 && data['Review'] is List) {
+    reviewCount = (data['Review'] as List).length;
+  }
+
   return PublicStudioPreview(
     id: (data['id'] ?? '').toString(),
     studioName: studioName.isNotEmpty ? studioName : 'Studio',
@@ -46,6 +58,6 @@ PublicStudioPreview parsePublicStudioPreviewFromNearby(
     address: address.isNotEmpty ? address : '—',
     distanceKm: distanceKm,
     photoUrl: photoUrl,
-    reviewCount: (data['reviewCount'] as num?)?.toInt() ?? 0,
+    reviewCount: reviewCount,
   );
 }

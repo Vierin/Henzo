@@ -1,5 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
+import { LegalLocaleBanner } from '@/components/legal/LegalLocaleBanner';
+import { TermsSubscriptionSection } from '@/components/legal/TermsSubscriptionSection';
 import { buildStaticPageMetadata, resolveLocale } from '@/seo';
 
 export async function generateMetadata({
@@ -11,7 +13,13 @@ export async function generateMetadata({
 	return buildStaticPageMetadata('terms', resolveLocale(raw));
 }
 
-export default function TermsOfService() {
+export default async function TermsOfService({
+	params,
+}: {
+	params: Promise<{ locale: string }>;
+}) {
+	const { locale } = await params;
+
 	return (
 		<div className="min-h-screen bg-white">
 			<main className="max-w-4xl mx-auto px-6 py-12" role="main">
@@ -25,9 +33,11 @@ export default function TermsOfService() {
 							Terms of Service
 						</h1>
 						<p className="text-gray-600 text-lg">
-							Last updated: January 15, 2025
+							Last updated: May 23, 2026
 						</p>
 					</header>
+
+					<LegalLocaleBanner locale={locale} />
 
 					{/* Content */}
 					<div className="space-y-8">
@@ -57,26 +67,30 @@ export default function TermsOfService() {
 								2. Description of Service
 							</h2>
 							<p className="text-gray-700 leading-relaxed text-base mb-4">
-								Henzo operates as an online marketplace platform that connects
-								clients with beauty salons, barbershops, massage parlors, and
-								other related service providers (&quot;Service Providers&quot;
-								or &quot;Businesses&quot;) in Southeast Asia (SEA) region. We
-								provide a technology platform that facilitates the booking and
-								scheduling of appointments.
+								Henzo provides software for fitness studios and related
+								businesses (&quot;Studios&quot;) to manage training sessions,
+								staff, clients, and bookings, and for clients to discover
+								Studios and book training sessions through our website and
+								mobile applications.
+							</p>
+							<p className="text-gray-700 leading-relaxed text-base mb-4">
+								<strong className="font-semibold">User roles:</strong>{' '}
+								<strong>Studio Owners</strong> operate a Studio account;{' '}
+								<strong>Staff</strong> act on behalf of a Studio;{' '}
+								<strong>Clients</strong> book and attend sessions.
 							</p>
 							<p className="text-gray-700 leading-relaxed text-base mb-4">
 								<strong className="font-semibold">Important:</strong> Henzo is
-								NOT a service provider. We do not provide beauty, barbering, or
-								massage services. We are a technology platform that connects
-								users with independent service providers. The actual services
-								are provided by third-party businesses that are independent
-								contractors and not employees, agents, or partners of Henzo.
+								NOT a fitness trainer, medical provider, or Studio. We do not
+								provide training, coaching, or health advice. Training services
+								are provided by independent Studios that are not employees,
+								agents, or partners of Henzo.
 							</p>
 							<p className="text-gray-700 leading-relaxed text-base">
-								Henzo does not control, manage, or supervise the services
-								provided by Service Providers. We are not responsible for the
-								quality, safety, legality, or any other aspect of the services
-								provided by Service Providers.
+								Henzo does not control session quality, safety, or outcomes. To
+								the fullest extent permitted by law, Henzo is not liable for
+								injuries, losses, or disputes arising from training sessions or
+								Studio services.
 							</p>
 						</section>
 
@@ -86,24 +100,20 @@ export default function TermsOfService() {
 								3. Age Restrictions and Eligibility
 							</h2>
 							<p className="text-gray-700 leading-relaxed text-base mb-4">
-								Our Service is available to users of all ages. However, if you
-								are under the age of 18 (or the age of majority in your
-								jurisdiction), you represent that you have obtained parental or
-								guardian consent to use the Service and that your parent or
-								guardian agrees to be bound by these Terms on your behalf.
+								You must be at least 16 years old (or the minimum age required
+								in your country, if higher) to create an account and use the
+								Service, unless applicable law requires verifiable parental
+								consent for younger users.
 							</p>
 							<p className="text-gray-700 leading-relaxed text-base mb-4">
-								If you are under 13 years of age, you may only use the Service
-								with the express consent and supervision of a parent or legal
-								guardian. By using the Service, you represent and warrant that
-								you have the legal capacity to enter into these Terms or that
-								you have obtained the necessary consent from your parent or
-								guardian.
+								By using the Service, you represent that you meet this age
+								requirement and have the legal capacity to enter into these
+								Terms, or that a parent or guardian has accepted these Terms on
+								your behalf where permitted by law.
 							</p>
 							<p className="text-gray-700 leading-relaxed text-base">
-								Parents and guardians are responsible for supervising their
-								children&apos;s use of the Service and ensuring that their
-								children understand and comply with these Terms.
+								Parents and guardians are responsible for use of the Service by
+								minors they permit to use Henzo.
 							</p>
 						</section>
 
@@ -204,13 +214,15 @@ export default function TermsOfService() {
 							</p>
 						</section>
 
-						{/* Section 6 */}
+						<TermsSubscriptionSection />
+
+						{/* Section 7 */}
 						<section>
 							<h2 className="text-2xl font-bold text-gray-900 mb-4">
-								6. Service Provider Terms
+								7. Studio (Service Provider) Terms
 							</h2>
 							<p className="text-gray-700 leading-relaxed text-base mb-4">
-								If you are a Service Provider using our Platform:
+								If you operate a Studio on our Platform:
 							</p>
 							<ul className="list-disc list-inside text-gray-700 leading-relaxed text-base mb-4 space-y-2 ml-4">
 								<li>
@@ -249,7 +261,7 @@ export default function TermsOfService() {
 						{/* Section 7 */}
 						<section>
 							<h2 className="text-2xl font-bold text-gray-900 mb-4">
-								7. Reviews and Ratings
+								8. Reviews and Ratings
 							</h2>
 							<p className="text-gray-700 leading-relaxed text-base mb-4">
 								Users may post reviews and ratings about Service Providers. By
@@ -292,7 +304,7 @@ export default function TermsOfService() {
 						{/* Section 8 */}
 						<section>
 							<h2 className="text-2xl font-bold text-gray-900 mb-4">
-								8. Prohibited Activities
+								9. Prohibited Activities
 							</h2>
 							<p className="text-gray-700 leading-relaxed text-base mb-4">
 								You agree NOT to:
@@ -342,7 +354,7 @@ export default function TermsOfService() {
 						{/* Section 9 */}
 						<section>
 							<h2 className="text-2xl font-bold text-gray-900 mb-4">
-								9. Intellectual Property
+								10. Intellectual Property
 							</h2>
 							<p className="text-gray-700 leading-relaxed text-base mb-4">
 								<strong className="font-semibold">
@@ -360,7 +372,8 @@ export default function TermsOfService() {
 									User-Generated Content:
 								</strong>
 								By posting, uploading, or submitting any content (including
-								reviews, photos, comments) to the Platform, you grant Henzo a
+								reviews, studio photos, profile images, comments) to the
+								Platform, you grant Henzo a
 								worldwide, non-exclusive, royalty-free, perpetual, irrevocable,
 								transferable license to use, reproduce, modify, adapt, publish,
 								translate, distribute, and display such content in any media for
@@ -376,7 +389,7 @@ export default function TermsOfService() {
 						{/* Section 10 */}
 						<section>
 							<h2 className="text-2xl font-bold text-gray-900 mb-4">
-								10. Limitations of Liability
+								11. Limitations of Liability
 							</h2>
 							<p className="text-gray-700 leading-relaxed text-base mb-4">
 								<strong className="font-semibold">
@@ -434,7 +447,7 @@ export default function TermsOfService() {
 						{/* Section 11 */}
 						<section>
 							<h2 className="text-2xl font-bold text-gray-900 mb-4">
-								11. Indemnification
+								12. Indemnification
 							</h2>
 							<p className="text-gray-700 leading-relaxed text-base">
 								You agree to indemnify, defend, and hold harmless Henzo, its
@@ -452,7 +465,7 @@ export default function TermsOfService() {
 						{/* Section 12 */}
 						<section>
 							<h2 className="text-2xl font-bold text-gray-900 mb-4">
-								12. Account Termination
+								13. Account Termination
 							</h2>
 							<p className="text-gray-700 leading-relaxed text-base mb-4">
 								You may terminate your account at any time by contacting us or
@@ -482,7 +495,7 @@ export default function TermsOfService() {
 						{/* Section 13 */}
 						<section>
 							<h2 className="text-2xl font-bold text-gray-900 mb-4">
-								13. Data and Privacy
+								14. Data and Privacy
 							</h2>
 							<p className="text-gray-700 leading-relaxed text-base mb-4">
 								Your privacy is important to us. Our collection, use, and
@@ -521,7 +534,7 @@ export default function TermsOfService() {
 						{/* Section 14 */}
 						<section>
 							<h2 className="text-2xl font-bold text-gray-900 mb-4">
-								14. Force Majeure
+								15. Force Majeure
 							</h2>
 							<p className="text-gray-700 leading-relaxed text-base">
 								Henzo shall not be liable for any failure or delay in
@@ -536,7 +549,7 @@ export default function TermsOfService() {
 						{/* Section 15 */}
 						<section>
 							<h2 className="text-2xl font-bold text-gray-900 mb-4">
-								15. Dispute Resolution
+								16. Dispute Resolution
 							</h2>
 							<p className="text-gray-700 leading-relaxed text-base mb-4">
 								<strong className="font-semibold">Informal Resolution:</strong>
@@ -615,7 +628,7 @@ export default function TermsOfService() {
 						{/* Section 17 */}
 						<section>
 							<h2 className="text-2xl font-bold text-gray-900 mb-4">
-								17. Modifications to Terms
+								18. Modifications to Terms
 							</h2>
 							<p className="text-gray-700 leading-relaxed text-base mb-4">
 								Henzo reserves the right to modify these Terms at any time. We
@@ -641,7 +654,7 @@ export default function TermsOfService() {
 						{/* Section 18 */}
 						<section>
 							<h2 className="text-2xl font-bold text-gray-900 mb-4">
-								18. General Provisions
+								19. General Provisions
 							</h2>
 							<p className="text-gray-700 leading-relaxed text-base mb-4">
 								<strong className="font-semibold">Entire Agreement:</strong>
@@ -684,7 +697,7 @@ export default function TermsOfService() {
 					{/* Footer */}
 					<footer className="mt-12 pt-8 border-t border-gray-200">
 						<p className="text-center text-gray-500 text-sm">
-							These Terms of Service are effective as of January 15, 2025.
+							These Terms of Service are effective as of May 23, 2026.
 						</p>
 					</footer>
 				</article>
@@ -698,9 +711,9 @@ export default function TermsOfService() {
 							'@type': 'WebPage',
 							name: 'Terms of Service',
 							description:
-								'Henzo Terms of Service - Legal terms and conditions for using our beauty salon booking platform',
+								'Henzo Terms of Service - Legal terms for our fitness studio management and booking platform',
 							url: '/terms-of-service',
-							dateModified: '2025-01-15',
+							dateModified: '2026-05-23',
 							datePublished: '2025-01-15',
 							author: {
 								'@type': 'Organization',

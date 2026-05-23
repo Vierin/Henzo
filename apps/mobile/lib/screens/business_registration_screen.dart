@@ -6,6 +6,7 @@ import '../l10n/locale_provider.dart';
 import '../services/auth_service.dart';
 import '../utils/show_api_error.dart';
 import '../widgets/auth/auth_form_styles.dart';
+import '../widgets/legal/legal_agreement_footer.dart';
 
 class BusinessRegistrationScreen extends StatefulWidget {
   const BusinessRegistrationScreen({super.key});
@@ -26,6 +27,7 @@ class _BusinessRegistrationScreenState
   bool _obscureConfirmPassword = true;
   bool _isSubmitting = false;
   bool _isGoogleSubmitting = false;
+  bool _agreedToTerms = false;
 
   @override
   void dispose() {
@@ -38,6 +40,10 @@ class _BusinessRegistrationScreenState
 
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
+    if (!_agreedToTerms) {
+      showApiError(context, context.read<LocaleProvider>().t('legal.mustAgree'));
+      return;
+    }
 
     setState(() => _isSubmitting = true);
     final locale = context.read<LocaleProvider>();
@@ -67,17 +73,21 @@ class _BusinessRegistrationScreenState
   }
 
   Future<void> _registerWithGoogle() async {
+    if (!_agreedToTerms) {
+      showApiError(context, context.read<LocaleProvider>().t('legal.mustAgree'));
+      return;
+    }
     setState(() => _isGoogleSubmitting = true);
     final locale = context.read<LocaleProvider>();
     final auth = context.read<AuthService>();
-    final result = await auth.loginWithGoogle();
+    final result = await auth.loginWithGoogle(registerAsOwner: true);
 
     if (!mounted) return;
     setState(() => _isGoogleSubmitting = false);
 
     if (result.success) {
       showSuccess(context, locale.t('auth.signInSuccess'));
-      Navigator.of(context).pop();
+      Navigator.of(context).popUntil((route) => route.isFirst);
       return;
     }
 
@@ -242,7 +252,13 @@ class _BusinessRegistrationScreenState
                     return null;
                   },
                 ),
-                const SizedBox(height: 30),
+                const SizedBox(height: 16),
+                LegalAgreementCheckbox(
+                  value: _agreedToTerms,
+                  onChanged: (v) =>
+                      setState(() => _agreedToTerms = v ?? false),
+                ),
+                const SizedBox(height: 20),
                 SizedBox(
                   height: AuthFormStyles.buttonHeight,
                   child: FilledButton(

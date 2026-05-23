@@ -24,9 +24,12 @@ class _ClientShellState extends State<ClientShell> {
   final GlobalKey<ClientSearchScreenState> _exploreScreenKey =
       GlobalKey<ClientSearchScreenState>();
 
-  void goToExploreTab({int? categoryId}) {
+  void goToExploreTab({int? categoryId, bool showClasses = true}) {
     setState(() => _currentIndex = 1);
     _exploreScreenKey.currentState?.ensureExploreLoaded();
+    _exploreScreenKey.currentState?.applyBrowseListMode(
+      showClasses: showClasses,
+    );
     if (categoryId != null) {
       _exploreScreenKey.currentState?.selectCategory(categoryId);
     }
@@ -35,7 +38,8 @@ class _ClientShellState extends State<ClientShell> {
   List<Widget> get _screens => [
     PublicHomeScreen(
       onOpenMap: () => setState(() => _showMapScreen = true),
-      onOpenBrowse: () => goToExploreTab(),
+      onOpenBrowseStudios: () => goToExploreTab(showClasses: false),
+      onOpenBrowseClasses: () => goToExploreTab(showClasses: true),
       onCategorySelected: (id) => goToExploreTab(categoryId: id),
       onOpenBookings: () => setState(() => _currentIndex = 2),
     ),
@@ -49,7 +53,8 @@ class _ClientShellState extends State<ClientShell> {
     final locale = context.watch<LocaleProvider>();
 
     return ClientShellScope(
-      goToExplore: () => goToExploreTab(),
+      goToExplore: ({bool showClasses = true}) =>
+          goToExploreTab(showClasses: showClasses),
       child: Scaffold(
         backgroundColor: AppColors.backgroundSecondary,
         body: Stack(
@@ -92,7 +97,7 @@ class _ClientShellState extends State<ClientShell> {
                       svgAsset: 'assets/icons/icon-search.svg',
                       label: locale.t('clientShell.browse'),
                       isSelected: _currentIndex == 1,
-                      onTap: () => goToExploreTab(),
+                      onTap: () => goToExploreTab(showClasses: true),
                     ),
                   ),
                   Expanded(
