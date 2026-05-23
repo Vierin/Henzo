@@ -1,12 +1,15 @@
+import 'dart:async';
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+import 'package:provider/provider.dart';
 
 import '../constants/colors.dart';
+import '../l10n/locale_provider.dart';
 import '../services/api_client.dart';
+import '../services/client_location_store.dart';
 import '../services/cache/client_nearby_cache.dart';
 import '../utils/nearby_payload.dart';
 import '../widgets/map/henzo_map_layers.dart';
@@ -22,14 +25,8 @@ class ClientMapScreen extends StatefulWidget {
 }
 
 class _ClientMapScreenState extends State<ClientMapScreen> {
-  static const _cityKey = 'client_city';
-  static const _latKey = 'client_lat';
-  static const _lonKey = 'client_lon';
-
-  String _city = 'Set location';
-  double? _lat;
-  double? _lon;
   final MapController _mapController = MapController();
+  ClientLocationStore? _locationStore;
   final Distance _distance = const Distance();
   List<_NearbyStudio> _nearbyStudios = const [];
   bool _isLoadingNearby = true;
@@ -43,64 +40,64 @@ class _ClientMapScreenState extends State<ClientMapScreen> {
   @override
   void initState() {
     super.initState();
-    _loadLocation();
+    WidgetsBinding.instance.addPostFrameCallback((_) => _syncMapToLocation());
   }
 
-  Future<void> _loadLocation() async {
-    final prefs = await SharedPreferences.getInstance();
-    final city = prefs.getString(_cityKey)?.trim();
-    final lat = prefs.getDouble(_latKey);
-    final lon = prefs.getDouble(_lonKey);
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final next = context.read<ClientLocationStore>();
+    if (_locationStore == next) return;
+    _locationStore?.removeListener(_onSharedLocationChanged);
+    _locationStore = next;
+    _locationStore!.addListener(_onSharedLocationChanged);
+  }
+
+  @override
+  void dispose() {
+    _locationStore?.removeListener(_onSharedLocationChanged);
+    super.dispose();
+  }
+
+  void _onSharedLocationChanged() {
     if (!mounted) return;
-    setState(() {
-      _city = (city != null && city.isNotEmpty) ? city : 'Set location';
-      _lat = lat;
-      _lon = lon;
-    });
-    if (_lat != null && _lon != null) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (!mounted) return;
-        _mapController.move(LatLng(_lat!, _lon!), 14);
-      });
+    _syncMapToLocation();
+    unawaited(_loadNearbyStudios());
+  }
+
+  void _syncMapToLocation() {
+    if (!mounted) return;
+    final loc = context.read<ClientLocationStore>();
+    if (loc.lat != null && loc.lon != null) {
+      _mapController.move(LatLng(loc.lat!, loc.lon!), 14);
     }
-    await _loadNearbyStudios();
   }
 
   Future<void> _openLocationInput() async {
+    final loc = context.read<ClientLocationStore>();
     final picked = await Navigator.of(context).push<LocationPickerResult>(
       MaterialPageRoute(
         builder: (_) => LocationPickerScreen(
-          initialCity: _city == 'Set location' ? '' : _city,
+          initialCity: loc.displayLabel(''),
         ),
       ),
     );
     if (picked == null || picked.city.trim().isEmpty) return;
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(_cityKey, picked.city.trim());
-    if (picked.lat != null && picked.lon != null) {
-      await prefs.setDouble(_latKey, picked.lat!);
-      await prefs.setDouble(_lonKey, picked.lon!);
-    }
+    await context.read<ClientLocationStore>().applyFromPicker(picked);
     if (!mounted) return;
     setState(() {
-      _city = picked.city.trim();
-      if (picked.lat != null && picked.lon != null) {
-        _lat = picked.lat;
-        _lon = picked.lon;
-      }
       _showSearchThisArea = false;
       _pendingSearchLat = null;
       _pendingSearchLon = null;
     });
-    if (_lat != null && _lon != null) {
-      _mapController.move(LatLng(_lat!, _lon!), 14);
-    }
+    _syncMapToLocation();
     await _loadNearbyStudios();
   }
 
   Future<void> _loadNearbyStudios({double? searchLat, double? searchLon}) async {
-    final effectiveLat = searchLat ?? _lat;
-    final effectiveLon = searchLon ?? _lon;
+    final loc = context.read<ClientLocationStore>();
+    final effectiveLat = searchLat ?? loc.lat;
+    final effectiveLon = searchLon ?? loc.lon;
     if (!mounted) return;
     setState(() {
       _isLoadingNearby = true;
@@ -173,8 +170,9 @@ class _ClientMapScreenState extends State<ClientMapScreen> {
   void _handleMapPositionChanged(MapCamera camera, bool hasGesture) {
     if (!hasGesture) return;
     final center = camera.center;
-    final baseLat = _lastSearchLat ?? _lat;
-    final baseLon = _lastSearchLon ?? _lon;
+    final loc = context.read<ClientLocationStore>();
+    final baseLat = _lastSearchLat ?? loc.lat;
+    final baseLon = _lastSearchLon ?? loc.lon;
     if (baseLat == null || baseLon == null) return;
     final movedKm = _distance.as(
       LengthUnit.Kilometer,
@@ -208,10 +206,13 @@ class _ClientMapScreenState extends State<ClientMapScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final center = (_lat != null && _lon != null)
-        ? LatLng(_lat!, _lon!)
+    final loc = context.watch<ClientLocationStore>();
+    final locale = context.watch<LocaleProvider>();
+    final center = (loc.lat != null && loc.lon != null)
+        ? LatLng(loc.lat!, loc.lon!)
         : const LatLng(21.0285, 105.8542);
-    final hasCoords = _lat != null && _lon != null;
+    final hasCoords = loc.lat != null && loc.lon != null;
+    final cityLabel = loc.displayLabel(locale.t('clientHome.setLocation'));
     return Material(
       color: AppColors.backgroundPrimary,
       child: Stack(
@@ -248,7 +249,7 @@ class _ClientMapScreenState extends State<ClientMapScreen> {
                   MarkerLayer(
                     markers: [
                       Marker(
-                        point: LatLng(_lat!, _lon!),
+                        point: LatLng(loc.lat!, loc.lon!),
                         width: 26,
                         height: 26,
                         child: Container(
@@ -336,7 +337,7 @@ class _ClientMapScreenState extends State<ClientMapScreen> {
                                   const SizedBox(width: 6),
                                   Expanded(
                                     child: Text(
-                                      _city,
+                                      cityLabel,
                                       maxLines: 1,
                                       overflow: TextOverflow.ellipsis,
                                       style: const TextStyle(

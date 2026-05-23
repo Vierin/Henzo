@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import '../../constants/colors.dart';
 import '../../constants/layout.dart';
 import '../../l10n/locale_provider.dart';
+import '../../utils/owner_studio_setup_errors.dart';
 import '../../utils/show_api_error.dart';
 import '../../models/salon.dart';
 import '../../models/user_model.dart';
@@ -127,7 +128,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
           _todaySessions = [];
           _isLoading = false;
         });
-        showApiError(context, e);
+        if (!isOwnerStudioNotReadyError(e)) {
+          showApiError(context, e);
+        }
       }
     }
   }

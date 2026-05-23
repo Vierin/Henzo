@@ -204,6 +204,9 @@ export class StudiosController {
         await this.studiosService.getCurrentUserStudioOnboardingChecklist(
           currentUser.user.id,
         );
+      if (!checklist) {
+        return { success: true, data: null, needsSetup: true };
+      }
       return { success: true, data: checklist };
     } catch (error) {
       console.error(

@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:url_launcher/url_launcher.dart';
-
-import '../../config/app_config.dart';
+import '../../utils/legal_web_links.dart';
 import '../../constants/colors.dart';
 import '../../constants/layout.dart';
 import '../../l10n/locale_provider.dart';
@@ -20,20 +18,6 @@ class ClientProfileSettingsScreen extends StatelessWidget {
     await context.read<AuthService>().logout();
     if (!context.mounted) return;
     Navigator.of(context, rootNavigator: true).popUntil((route) => route.isFirst);
-  }
-
-  Future<void> _openWebPage(
-    BuildContext context,
-    LocaleProvider locale,
-    String path,
-  ) async {
-    final uri = Uri.parse('${AppConfig.webUrl}/${locale.languageTag}$path');
-    final opened = await launchUrl(uri, mode: LaunchMode.externalApplication);
-    if (!opened && context.mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(locale.t('errors.generic'))),
-      );
-    }
   }
 
   @override
@@ -85,14 +69,20 @@ class ClientProfileSettingsScreen extends StatelessWidget {
                     SettingsListTile(
                       icon: Icons.description_outlined,
                       title: locale.t('settings.termsOfUse'),
-                      onTap: () =>
-                          _openWebPage(context, locale, '/terms-of-service'),
+                      onTap: () => openLegalWebPage(
+                        context,
+                        locale,
+                        '/terms-of-service',
+                      ),
                     ),
                     SettingsListTile(
                       svgAsset: 'assets/icons/icon-settings.svg',
                       title: locale.t('settings.privacyPolicy'),
-                      onTap: () =>
-                          _openWebPage(context, locale, '/privacy-policy'),
+                      onTap: () => openLegalWebPage(
+                        context,
+                        locale,
+                        '/privacy-policy',
+                      ),
                     ),
                     SettingsListTile(
                       icon: Icons.chat_bubble_outline,

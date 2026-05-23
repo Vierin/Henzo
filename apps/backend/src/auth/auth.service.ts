@@ -203,6 +203,15 @@ export class AuthService {
     }
   }
 
+  /** Drop cached GET /auth/user so role changes from registerOwner are visible immediately. */
+  private invalidateGetCurrentUserCacheForAuthHeader(
+    authHeader: string | undefined,
+  ): void {
+    if (!authHeader?.startsWith('Bearer ')) return;
+    const cacheKey = authHeader.substring(7, 27);
+    this.getCurrentUserCache.delete(cacheKey);
+  }
+
   async registerOwner(
     data: {
       userId: string | null;
@@ -546,6 +555,8 @@ export class AuthService {
       throw new Error(
         `Owner registration failed: ${error.message || 'Unknown error'}`,
       );
+    } finally {
+      this.invalidateGetCurrentUserCacheForAuthHeader(options?.authHeader);
     }
   }
 

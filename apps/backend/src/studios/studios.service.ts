@@ -243,7 +243,7 @@ export class StudiosService {
       select: { id: true },
     });
     if (!studio) {
-      throw new Error('Studio not found');
+      return null;
     }
     return this.getStudioOnboardingChecklist(studio.id);
   }

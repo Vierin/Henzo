@@ -2,6 +2,7 @@ import {
   IsString,
   IsEmail,
   IsNotEmpty,
+  IsOptional,
   MaxLength,
   MinLength,
 } from 'class-validator';
@@ -22,4 +23,14 @@ export class ContactDto {
   @MinLength(10, { message: 'Message must be at least 10 characters long' })
   @MaxLength(1000, { message: 'Message must not exceed 1000 characters' })
   message: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(32)
+  platform?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(32)
+  appVersion?: string;
 }

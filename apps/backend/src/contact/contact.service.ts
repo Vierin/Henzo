@@ -1,10 +1,14 @@
 import { Injectable, ServiceUnavailableException } from '@nestjs/common';
 import { ContactDto } from './dto/contact.dto';
 import { EmailService } from '../email/email.service';
+import { PrismaService } from '../prisma/prisma.service';
 
 @Injectable()
 export class ContactService {
-  constructor(private readonly emailService: EmailService) {}
+  constructor(
+    private readonly emailService: EmailService,
+    private readonly prisma: PrismaService,
+  ) {}
 
   async sendMessage(contactDto: ContactDto) {
     const { name, email, message } = contactDto;
@@ -29,12 +33,26 @@ export class ContactService {
   }
 
   async sendAppFeedback(contactDto: ContactDto) {
-    const { name, email, message } = contactDto;
+    const { name, email, message, platform, appVersion } = contactDto;
     const sent = await this.notifyTelegram({ name, email, message });
     if (!sent) {
       throw new ServiceUnavailableException(
         'Feedback delivery is not configured. Please try again later.',
       );
+    }
+
+    try {
+      await this.prisma.appFeedback.create({
+        data: {
+          name,
+          email,
+          message,
+          platform: platform?.trim() || null,
+          appVersion: appVersion?.trim() || null,
+        },
+      });
+    } catch (error) {
+      console.error('AppFeedback persist error:', error);
     }
 
     return {

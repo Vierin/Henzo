@@ -17,6 +17,7 @@ import '../services/subscription_refresh_notifier.dart';
 import '../utils/formatters.dart';
 import '../utils/show_api_error.dart';
 import '../widgets/auth/auth_form_styles.dart';
+import '../widgets/legal/subscription_legal_disclosure.dart';
 import '../widgets/settings/branded_settings_app_bar.dart';
 
 const Color _fireAccent = Color(0xFFE65100);
@@ -910,6 +911,8 @@ class _PlanCard extends StatelessWidget {
               ),
             ),
           ),
+          const SizedBox(height: 12),
+          const SubscriptionLegalDisclosure(),
           const SizedBox(height: 16),
           SizedBox(
             width: double.infinity,

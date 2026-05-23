@@ -7,19 +7,24 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		0DEBF90837085C713B28F5A6 /* HenzoWatchApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = F92032C49A9CD59EA16E326B /* HenzoWatchApp.swift */; };
 		1498D2341E8E89220040F4C2 /* GeneratedPluginRegistrant.m in Sources */ = {isa = PBXBuildFile; fileRef = 1498D2331E8E89220040F4C2 /* GeneratedPluginRegistrant.m */; };
+		158A47CCE2DB6289015D60D0 /* WatchConnectivity.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 3E56517E6248ADB46287899B /* WatchConnectivity.framework */; };
 		1891C5EA9709C6453E901A46 /* Pods_RunnerTests.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 7B581F44D26E70B284320736 /* Pods_RunnerTests.framework */; };
 		19483F9B2FB9F9BD00E25E06 /* GoogleService-Info.plist in Resources */ = {isa = PBXBuildFile; fileRef = 19483F9A2FB9F9BD00E25E06 /* GoogleService-Info.plist */; };
 		19483F9C2FB9F9BD00E25E06 /* GoogleService-Info.plist in Resources */ = {isa = PBXBuildFile; fileRef = 19483F9A2FB9F9BD00E25E06 /* GoogleService-Info.plist */; };
-		1993BEBB2FBA0CAA007F1AD6 /* GoogleService-Info.plist in Resources */ = {isa = PBXBuildFile; fileRef = 1993BEBA2FBA0CAA007F1AD6 /* GoogleService-Info.plist */; };
-		1993BEBC2FBA0CAA007F1AD6 /* GoogleService-Info.plist in Resources */ = {isa = PBXBuildFile; fileRef = 1993BEBA2FBA0CAA007F1AD6 /* GoogleService-Info.plist */; };
 		331C808B294A63AB00263BE5 /* RunnerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 331C807B294A618700263BE5 /* RunnerTests.swift */; };
+		37EA4D60AADE0B5C9C97EB42 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC73C1753C3748D6FF4C6FE6 /* ContentView.swift */; };
 		3B3967161E833CAA004F5970 /* AppFrameworkInfo.plist in Resources */ = {isa = PBXBuildFile; fileRef = 3B3967151E833CAA004F5970 /* AppFrameworkInfo.plist */; };
 		5A51A19BC557DE3338534EDF /* Pods_Runner.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = B6C69CE5FE336490B3DC1EE5 /* Pods_Runner.framework */; };
 		74858FAF1ED2DC5600515810 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 74858FAE1ED2DC5600515810 /* AppDelegate.swift */; };
+		7CB3D0E5D57F960A80D9A24E /* HealthKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 512A13A2B97958BC42EFA3AC /* HealthKit.framework */; };
 		97C146FC1CF9000F007C117D /* Main.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 97C146FA1CF9000F007C117D /* Main.storyboard */; };
 		97C146FE1CF9000F007C117D /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 97C146FD1CF9000F007C117D /* Assets.xcassets */; };
 		97C147011CF9000F007C117D /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 97C146FF1CF9000F007C117D /* LaunchScreen.storyboard */; };
+		CBADB7512119322A5219058A /* PhoneConnectivityManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = AFA936FE054B4E45319E35A1 /* PhoneConnectivityManager.swift */; };
+		E3D25E7E4F9BC87F43E8F3C3 /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 7827D3677C1B89BDF45BF061 /* Foundation.framework */; };
+		E72B2CA65478E87A659CA749 /* WorkoutManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = CDDAA082291DD0479E40F0CB /* WorkoutManager.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -49,15 +54,18 @@
 		1498D2321E8E86230040F4C2 /* GeneratedPluginRegistrant.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = GeneratedPluginRegistrant.h; sourceTree = "<group>"; };
 		1498D2331E8E89220040F4C2 /* GeneratedPluginRegistrant.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = GeneratedPluginRegistrant.m; sourceTree = "<group>"; };
 		19483F9A2FB9F9BD00E25E06 /* GoogleService-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = "GoogleService-Info.plist"; sourceTree = "<group>"; };
-		1993BEBA2FBA0CAA007F1AD6 /* GoogleService-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = "GoogleService-Info.plist"; sourceTree = "<group>"; };
 		1F122C8CD1917C3F0A806D62 /* Pods-RunnerTests.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-RunnerTests.debug.xcconfig"; path = "Target Support Files/Pods-RunnerTests/Pods-RunnerTests.debug.xcconfig"; sourceTree = "<group>"; };
 		2F16E3C40EA8897534A1271B /* Pods-RunnerTests.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-RunnerTests.release.xcconfig"; path = "Target Support Files/Pods-RunnerTests/Pods-RunnerTests.release.xcconfig"; sourceTree = "<group>"; };
 		331C807B294A618700263BE5 /* RunnerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RunnerTests.swift; sourceTree = "<group>"; };
 		331C8081294A63A400263BE5 /* RunnerTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = RunnerTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		3B3967151E833CAA004F5970 /* AppFrameworkInfo.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; name = AppFrameworkInfo.plist; path = Flutter/AppFrameworkInfo.plist; sourceTree = "<group>"; };
+		3E56517E6248ADB46287899B /* WatchConnectivity.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; path = WatchConnectivity.framework; sourceTree = SDKROOT; };
+		4A306FE6C0EA6434EC391B23 /* HenzoWatch.entitlements */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.plist.entitlements; path = HenzoWatch.entitlements; sourceTree = "<group>"; };
+		512A13A2B97958BC42EFA3AC /* HealthKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; path = HealthKit.framework; sourceTree = SDKROOT; };
 		5FADA80348E803C8B16452FB /* Pods-Runner.profile.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Runner.profile.xcconfig"; path = "Target Support Files/Pods-Runner/Pods-Runner.profile.xcconfig"; sourceTree = "<group>"; };
 		74858FAD1ED2DC5600515810 /* Runner-Bridging-Header.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "Runner-Bridging-Header.h"; sourceTree = "<group>"; };
 		74858FAE1ED2DC5600515810 /* AppDelegate.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
+		7827D3677C1B89BDF45BF061 /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = Platforms/WatchOS.platform/Developer/SDKs/WatchOS11.0.sdk/System/Library/Frameworks/Foundation.framework; sourceTree = DEVELOPER_DIR; };
 		7AFA3C8E1D35360C0083082E /* Release.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; name = Release.xcconfig; path = Flutter/Release.xcconfig; sourceTree = "<group>"; };
 		7B581F44D26E70B284320736 /* Pods_RunnerTests.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_RunnerTests.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		9740EEB21CF90195004384FC /* Debug.xcconfig */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.xcconfig; name = Debug.xcconfig; path = Flutter/Debug.xcconfig; sourceTree = "<group>"; };
@@ -67,13 +75,29 @@
 		97C146FD1CF9000F007C117D /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		97C147001CF9000F007C117D /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/LaunchScreen.storyboard; sourceTree = "<group>"; };
 		97C147021CF9000F007C117D /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		A0E1F2C3D4B5A6F7E8D9C0B1 /* Runner.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = Runner.entitlements; sourceTree = "<group>"; };
+		AFA936FE054B4E45319E35A1 /* PhoneConnectivityManager.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = PhoneConnectivityManager.swift; sourceTree = "<group>"; };
 		B2F3FEF2B9686C74F5D2B540 /* Pods-Runner.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Runner.release.xcconfig"; path = "Target Support Files/Pods-Runner/Pods-Runner.release.xcconfig"; sourceTree = "<group>"; };
+		B60FFE192B652415DC07F5F7 /* HenzoWatch.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = HenzoWatch.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		B6C69CE5FE336490B3DC1EE5 /* Pods_Runner.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_Runner.framework; sourceTree = BUILT_PRODUCTS_DIR; };
+		CC73C1753C3748D6FF4C6FE6 /* ContentView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
+		CDDAA082291DD0479E40F0CB /* WorkoutManager.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = WorkoutManager.swift; sourceTree = "<group>"; };
 		DC85F8BB452CCC5303C0692A /* Pods-Runner.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Runner.debug.xcconfig"; path = "Target Support Files/Pods-Runner/Pods-Runner.debug.xcconfig"; sourceTree = "<group>"; };
 		E9A8566F40692FC13B17050C /* Pods-RunnerTests.profile.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-RunnerTests.profile.xcconfig"; path = "Target Support Files/Pods-RunnerTests/Pods-RunnerTests.profile.xcconfig"; sourceTree = "<group>"; };
+		F92032C49A9CD59EA16E326B /* HenzoWatchApp.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = HenzoWatchApp.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
+		5A096D891CF1D8FA125434E6 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				E3D25E7E4F9BC87F43E8F3C3 /* Foundation.framework in Frameworks */,
+				7CB3D0E5D57F960A80D9A24E /* HealthKit.framework in Frameworks */,
+				158A47CCE2DB6289015D60D0 /* WatchConnectivity.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		9633847DAF7F05A731E7ED15 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
@@ -93,6 +117,19 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		2F1C252C37BF433342039E10 /* HenzoWatch */ = {
+			isa = PBXGroup;
+			children = (
+				F92032C49A9CD59EA16E326B /* HenzoWatchApp.swift */,
+				CC73C1753C3748D6FF4C6FE6 /* ContentView.swift */,
+				CDDAA082291DD0479E40F0CB /* WorkoutManager.swift */,
+				AFA936FE054B4E45319E35A1 /* PhoneConnectivityManager.swift */,
+				4A306FE6C0EA6434EC391B23 /* HenzoWatch.entitlements */,
+			);
+			name = HenzoWatch;
+			path = HenzoWatch;
+			sourceTree = "<group>";
+		};
 		331C8082294A63A400263BE5 /* RunnerTests */ = {
 			isa = PBXGroup;
 			children = (
@@ -106,6 +143,9 @@
 			children = (
 				B6C69CE5FE336490B3DC1EE5 /* Pods_Runner.framework */,
 				7B581F44D26E70B284320736 /* Pods_RunnerTests.framework */,
+				8FEDD27949862BED160CA5F7 /* watchOS */,
+				512A13A2B97958BC42EFA3AC /* HealthKit.framework */,
+				3E56517E6248ADB46287899B /* WatchConnectivity.framework */,
 			);
 			name = Frameworks;
 			sourceTree = "<group>";
@@ -123,6 +163,14 @@
 			path = Pods;
 			sourceTree = "<group>";
 		};
+		8FEDD27949862BED160CA5F7 /* watchOS */ = {
+			isa = PBXGroup;
+			children = (
+				7827D3677C1B89BDF45BF061 /* Foundation.framework */,
+			);
+			name = watchOS;
+			sourceTree = "<group>";
+		};
 		9740EEB11CF90186004384FC /* Flutter */ = {
 			isa = PBXGroup;
 			children = (
@@ -138,13 +186,13 @@
 			isa = PBXGroup;
 			children = (
 				19483F9A2FB9F9BD00E25E06 /* GoogleService-Info.plist */,
-				1993BEBA2FBA0CAA007F1AD6 /* GoogleService-Info.plist */,
 				9740EEB11CF90186004384FC /* Flutter */,
 				97C146F01CF9000F007C117D /* Runner */,
 				97C146EF1CF9000F007C117D /* Products */,
 				331C8082294A63A400263BE5 /* RunnerTests */,
 				8BBE131AE4990938CB924168 /* Pods */,
 				78A2346700AD43DF3D8F5332 /* Frameworks */,
+				2F1C252C37BF433342039E10 /* HenzoWatch */,
 			);
 			sourceTree = "<group>";
 		};
@@ -153,6 +201,7 @@
 			children = (
 				97C146EE1CF9000F007C117D /* Runner.app */,
 				331C8081294A63A400263BE5 /* RunnerTests.xctest */,
+				B60FFE192B652415DC07F5F7 /* HenzoWatch.app */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -164,6 +213,7 @@
 				97C146FD1CF9000F007C117D /* Assets.xcassets */,
 				97C146FF1CF9000F007C117D /* LaunchScreen.storyboard */,
 				97C147021CF9000F007C117D /* Info.plist */,
+				A0E1F2C3D4B5A6F7E8D9C0B1 /* Runner.entitlements */,
 				1498D2321E8E86230040F4C2 /* GeneratedPluginRegistrant.h */,
 				1498D2331E8E89220040F4C2 /* GeneratedPluginRegistrant.m */,
 				74858FAE1ED2DC5600515810 /* AppDelegate.swift */,
@@ -193,6 +243,23 @@
 			productName = RunnerTests;
 			productReference = 331C8081294A63A400263BE5 /* RunnerTests.xctest */;
 			productType = "com.apple.product-type.bundle.unit-test";
+		};
+		45D37486D11E65F00E4025A1 /* HenzoWatch */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = B2B595ABCA92F2A6716B128B /* Build configuration list for PBXNativeTarget "HenzoWatch" */;
+			buildPhases = (
+				464A5EC42EE027033FC60D5D /* Sources */,
+				5A096D891CF1D8FA125434E6 /* Frameworks */,
+				C269E72E675FA56936450040 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = HenzoWatch;
+			productName = HenzoWatch;
+			productReference = B60FFE192B652415DC07F5F7 /* HenzoWatch.app */;
+			productType = "com.apple.product-type.application.watchapp2";
 		};
 		97C146ED1CF9000F007C117D /* Runner */ = {
 			isa = PBXNativeTarget;
@@ -253,6 +320,7 @@
 			targets = (
 				97C146ED1CF9000F007C117D /* Runner */,
 				331C8080294A63A400263BE5 /* RunnerTests */,
+				45D37486D11E65F00E4025A1 /* HenzoWatch */,
 			);
 		};
 /* End PBXProject section */
@@ -263,7 +331,6 @@
 			buildActionMask = 2147483647;
 			files = (
 				19483F9C2FB9F9BD00E25E06 /* GoogleService-Info.plist in Resources */,
-				1993BEBC2FBA0CAA007F1AD6 /* GoogleService-Info.plist in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -276,7 +343,13 @@
 				19483F9B2FB9F9BD00E25E06 /* GoogleService-Info.plist in Resources */,
 				97C146FE1CF9000F007C117D /* Assets.xcassets in Resources */,
 				97C146FC1CF9000F007C117D /* Main.storyboard in Resources */,
-				1993BEBB2FBA0CAA007F1AD6 /* GoogleService-Info.plist in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		C269E72E675FA56936450040 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -285,6 +358,7 @@
 /* Begin PBXShellScriptBuildPhase section */
 		1F72293777197497F6CA5818 /* [firebase_crashlytics] Crashlytics Upload Symbols */ = {
 			isa = PBXShellScriptBuildPhase;
+			alwaysOutOfDate = 1;
 			buildActionMask = 2147483647;
 			files = (
 			);
@@ -426,6 +500,17 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		464A5EC42EE027033FC60D5D /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				0DEBF90837085C713B28F5A6 /* HenzoWatchApp.swift in Sources */,
+				37EA4D60AADE0B5C9C97EB42 /* ContentView.swift in Sources */,
+				E72B2CA65478E87A659CA749 /* WorkoutManager.swift in Sources */,
+				CBADB7512119322A5219058A /* PhoneConnectivityManager.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		97C146EA1CF9000F007C117D /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -525,6 +610,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CLANG_ENABLE_MODULES = YES;
+				CODE_SIGN_ENTITLEMENTS = Runner/Runner.entitlements;
 				CURRENT_PROJECT_VERSION = "$(FLUTTER_BUILD_NUMBER)";
 				DEVELOPMENT_TEAM = PR2HAF6344;
 				ENABLE_BITCODE = NO;
@@ -538,6 +624,7 @@
 				SWIFT_OBJC_BRIDGING_HEADER = "Runner/Runner-Bridging-Header.h";
 				SWIFT_VERSION = 5.0;
 				VERSIONING_SYSTEM = "apple-generic";
+				WK_COMPANION_APP_BUNDLE_IDENTIFIER = com.henzo.vn.Henzo;
 			};
 			name = Profile;
 		};
@@ -588,6 +675,31 @@
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_VERSION = 5.0;
 				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Runner.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/Runner";
+			};
+			name = Profile;
+		};
+		3E3ADDF4EA14A9AFE536D23D /* Profile */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = HenzoWatch/HenzoWatch.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = PR2HAF6344;
+				ENABLE_BITCODE = NO;
+				INFOPLIST_FILE = HenzoWatch/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.henzo.vn.Henzo.watchkitapp;
+				PRODUCT_NAME = HenzoWatch;
+				SDKROOT = watchos;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 4;
+				VALIDATE_PRODUCT = YES;
+				WATCHOS_DEPLOYMENT_TARGET = 7.0;
+				WK_APP_BUNDLE_IDENTIFIER = com.henzo.vn.Henzo.watchkitapp;
+				WK_COMPANION_APP_BUNDLE_IDENTIFIER = com.henzo.vn.Henzo;
 			};
 			name = Profile;
 		};
@@ -712,6 +824,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CLANG_ENABLE_MODULES = YES;
+				CODE_SIGN_ENTITLEMENTS = Runner/Runner.entitlements;
 				CURRENT_PROJECT_VERSION = "$(FLUTTER_BUILD_NUMBER)";
 				DEVELOPMENT_TEAM = PR2HAF6344;
 				ENABLE_BITCODE = NO;
@@ -726,6 +839,7 @@
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 				SWIFT_VERSION = 5.0;
 				VERSIONING_SYSTEM = "apple-generic";
+				WK_COMPANION_APP_BUNDLE_IDENTIFIER = com.henzo.vn.Henzo;
 			};
 			name = Debug;
 		};
@@ -735,6 +849,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CLANG_ENABLE_MODULES = YES;
+				CODE_SIGN_ENTITLEMENTS = Runner/Runner.entitlements;
 				CURRENT_PROJECT_VERSION = "$(FLUTTER_BUILD_NUMBER)";
 				DEVELOPMENT_TEAM = PR2HAF6344;
 				ENABLE_BITCODE = NO;
@@ -748,6 +863,56 @@
 				SWIFT_OBJC_BRIDGING_HEADER = "Runner/Runner-Bridging-Header.h";
 				SWIFT_VERSION = 5.0;
 				VERSIONING_SYSTEM = "apple-generic";
+				WK_COMPANION_APP_BUNDLE_IDENTIFIER = com.henzo.vn.Henzo;
+			};
+			name = Release;
+		};
+		9C3272B72603A2794BB0D1B1 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = HenzoWatch/HenzoWatch.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = PR2HAF6344;
+				ENABLE_BITCODE = NO;
+				INFOPLIST_FILE = HenzoWatch/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.henzo.vn.Henzo.watchkitapp;
+				PRODUCT_NAME = HenzoWatch;
+				SDKROOT = watchos;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 4;
+				WATCHOS_DEPLOYMENT_TARGET = 7.0;
+				WK_APP_BUNDLE_IDENTIFIER = com.henzo.vn.Henzo.watchkitapp;
+				WK_COMPANION_APP_BUNDLE_IDENTIFIER = com.henzo.vn.Henzo;
+			};
+			name = Debug;
+		};
+		E932677FFCC9D79065BB7529 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = HenzoWatch/HenzoWatch.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = PR2HAF6344;
+				ENABLE_BITCODE = NO;
+				INFOPLIST_FILE = HenzoWatch/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.henzo.vn.Henzo.watchkitapp;
+				PRODUCT_NAME = HenzoWatch;
+				SDKROOT = watchos;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 4;
+				VALIDATE_PRODUCT = YES;
+				WATCHOS_DEPLOYMENT_TARGET = 7.0;
+				WK_APP_BUNDLE_IDENTIFIER = com.henzo.vn.Henzo.watchkitapp;
+				WK_COMPANION_APP_BUNDLE_IDENTIFIER = com.henzo.vn.Henzo;
 			};
 			name = Release;
 		};
@@ -780,6 +945,16 @@
 				97C147061CF9000F007C117D /* Debug */,
 				97C147071CF9000F007C117D /* Release */,
 				249021D4217E4FDB00AE95B9 /* Profile */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		B2B595ABCA92F2A6716B128B /* Build configuration list for PBXNativeTarget "HenzoWatch" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				E932677FFCC9D79065BB7529 /* Release */,
+				9C3272B72603A2794BB0D1B1 /* Debug */,
+				3E3ADDF4EA14A9AFE536D23D /* Profile */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;

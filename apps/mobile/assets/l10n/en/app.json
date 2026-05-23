@@ -22,7 +22,8 @@
 		"changesSaved": "Changes saved",
 		"saveFailed": "Failed to save",
 		"deleteFailed": "Failed to delete",
-		"setupSalonFirst": "Set up your business first"
+		"setupSalonFirst": "Set up your business first",
+		"verify": "Verify"
 	},
 	"nav": {
 		"dashboard": "Dashboard",
@@ -68,7 +69,13 @@
 		"businessRegisterSuccess": "Check your email to confirm business registration.",
 		"businessRegisterError": "Failed to start business registration.",
 		"openWebsite": "Open website",
-		"signOut": "Sign out"
+		"signOut": "Sign out",
+		"verificationCodeTitle": "Verification code",
+		"verificationCodeSubtitle": "Enter the 6-digit code we sent to your email",
+		"resendCodeIn": "Resend code in",
+		"didntReceiveCode": "Didn't receive the code?",
+		"resend": "Resend",
+		"enterOtpCode": "Enter 6-digit code"
 	},
 	"clientHome": {
 		"nowIn": "NOW IN",
@@ -82,6 +89,10 @@
 		"popularTodayTitle": "Popular today",
 		"seeAll": "See all",
 		"noClassesToday": "No classes scheduled nearby today.",
+		"locationPickerTitle": "Choose location",
+		"locationPickerHint": "Search city",
+		"locationPickerUseCity": "Use this city",
+		"locationPickerEmpty": "Start typing a city name",
 		"favoritePromoTitle": "Favorite a class",
 		"favoritePromoSubtitle": "Save classes and get reminders"
 	},
@@ -297,6 +308,13 @@
 		"noBookings": "No bookings",
 		"book": "Book"
 	},
+	"legal": {
+		"agreePrefix": "By continuing, you agree to our ",
+		"agreeAnd": " and ",
+		"agreeSuffix": ".",
+		"checkboxLabel": "I agree to the Privacy Policy and Terms of Use",
+		"mustAgree": "Please accept the Privacy Policy and Terms of Use to continue."
+	},
 	"subscription": {
 		"title": "Subscription",
 		"subscribe": "Subscribe",
@@ -324,7 +342,10 @@
 		"purchaseSuccess": "Pro subscription is active.",
 		"offeringsUnavailable": "Plans are temporarily unavailable. Try again later.",
 		"storeNotConfigured": "In-app purchases are not configured for this build.",
-		"rcEntitlementNotLinked": "Purchase recorded in RevenueCat but Pro was not applied. Link products to the \"pro\" entitlement in the RevenueCat dashboard."
+		"rcEntitlementNotLinked": "Purchase recorded in RevenueCat but Pro was not applied. Link products to the \"pro\" entitlement in the RevenueCat dashboard.",
+		"autoRenewDisclosure": "Payment will be charged to your Apple ID or Google Play account. Subscription renews automatically unless cancelled at least 24 hours before the end of the current period. Manage or cancel in your store account settings.",
+		"legalLinksPrefix": "See ",
+		"legalLinksSuffix": "."
 	},
 	"profile": {
 		"title": "Profile",
@@ -420,6 +441,7 @@
 		"filterAll": "All",
 		"filterBookings": "Bookings",
 		"filterReviews": "Reviews",
+		"filterOthers": "Others",
 		"filterEmpty": "No notifications in this section",
 		"typeBooking": "BOOKING",
 		"typeBookingCancelled": "BOOKING CANCELLED",
@@ -443,6 +465,8 @@
 		"privacyComingSoon": "Privacy policy coming soon",
 		"termsOfUse": "Terms of use",
 		"termsComingSoon": "Terms coming soon",
+		"analyticsOptIn": "Analytics & crash reports",
+		"analyticsOptInHint": "Helps us improve the app. No cross-app tracking.",
 		"feedback": {
 			"sendFeedback": "Help & Feedback",
 			"sheetTitle": "Help & Feedback",
