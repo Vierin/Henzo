@@ -281,16 +281,16 @@ export class AdminService {
       nodeEnv: this.config.get<string>('NODE_ENV') ?? 'development',
       ga4Enabled: Boolean(
         this.config.get<string>('GA4_MEASUREMENT_ID') &&
-        this.config.get<string>('GA4_API_SECRET'),
+          this.config.get<string>('GA4_API_SECRET'),
       ),
       sentryEnabled: Boolean(this.config.get<string>('SENTRY_DSN')),
       firebasePushEnabled: Boolean(
         this.config.get<string>('FIREBASE_SERVICE_ACCOUNT_JSON') ||
-        this.config.get<string>('GOOGLE_APPLICATION_CREDENTIALS'),
+          this.config.get<string>('GOOGLE_APPLICATION_CREDENTIALS'),
       ),
       telegramFeedbackEnabled: Boolean(
         this.config.get<string>('TELEGRAM_BOT_TOKEN') &&
-        this.config.get<string>('TELEGRAM_FEEDBACK_CHAT_ID'),
+          this.config.get<string>('TELEGRAM_FEEDBACK_CHAT_ID'),
       ),
       links: {
         crashlytics:
