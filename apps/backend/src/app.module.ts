@@ -22,6 +22,7 @@ import { resolveBackendEnvPath } from './config/resolve-backend-env-path';
 import { FitnessModule } from './fitness/fitness.module';
 import { SubscriptionsModule } from './subscriptions/subscriptions.module';
 import { AnalyticsModule } from './analytics/analytics.module';
+import { AdminModule } from './admin/admin.module';
 
 const backendEnvFile = resolveBackendEnvPath(__dirname);
 
@@ -50,6 +51,7 @@ const backendEnvFile = resolveBackendEnvPath(__dirname);
     FitnessModule,
     SubscriptionsModule,
     AnalyticsModule,
+    AdminModule,
   ],
   controllers: [AppController],
   providers: [AppService],

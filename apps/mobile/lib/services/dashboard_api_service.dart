@@ -1023,16 +1023,23 @@ class DashboardApiService {
   static Future<List<OwnerStudioClientRow>> getOwnerStudioClients(
     String accessToken,
   ) async {
-    final raw = await ApiClient.get(
-      '/fitness/owner/studio-clients',
-      accessToken,
-    );
-    if (raw is! List) return [];
-    return raw
-        .map((e) => OwnerStudioClientRow.fromJson(
-              Map<String, dynamic>.from(e as Map),
-            ))
-        .toList();
+    try {
+      final raw = await ApiClient.get(
+        '/fitness/owner/studio-clients',
+        accessToken,
+      );
+      if (raw is! List) return [];
+      return raw
+          .map((e) => OwnerStudioClientRow.fromJson(
+                Map<String, dynamic>.from(e as Map),
+              ))
+          .toList();
+    } on ApiException catch (e) {
+      if (e.message.toLowerCase().contains('studio not found')) {
+        return [];
+      }
+      rethrow;
+    }
   }
 
   static Future<List<OwnerStudioClientSearchHit>> searchOwnerStudioClients(

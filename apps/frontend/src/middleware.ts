@@ -92,7 +92,6 @@ export async function middleware(req: NextRequest) {
 		'/owner-help',
 		'/clients',
 		'/admin-panel',
-		'/admin',
 		'/profit',
 		'/promotion-coupons',
 		'/structure',

@@ -1,0 +1,58 @@
+type Column<T> = {
+	key: string;
+	header: string;
+	render: (row: T) => React.ReactNode;
+};
+
+type AdminTableProps<T> = {
+	columns: Column<T>[];
+	rows: T[];
+	emptyMessage?: string;
+};
+
+export function AdminTable<T extends { id?: string }>({
+	columns,
+	rows,
+	emptyMessage = 'No data',
+}: AdminTableProps<T>) {
+	if (rows.length === 0) {
+		return (
+			<p className="rounded-lg border border-dashed border-zinc-200 bg-white p-8 text-center text-sm text-zinc-500">
+				{emptyMessage}
+			</p>
+		);
+	}
+
+	return (
+		<div className="overflow-x-auto rounded-xl border border-zinc-200 bg-white">
+			<table className="min-w-full text-left text-sm">
+				<thead className="border-b border-zinc-100 bg-zinc-50">
+					<tr>
+						{columns.map((c) => (
+							<th
+								key={c.key}
+								className="px-4 py-3 font-medium text-zinc-600"
+							>
+								{c.header}
+							</th>
+						))}
+					</tr>
+				</thead>
+				<tbody>
+					{rows.map((row, i) => (
+						<tr
+							key={(row as { id?: string }).id ?? i}
+							className="border-b border-zinc-50 last:border-0"
+						>
+							{columns.map((c) => (
+								<td key={c.key} className="px-4 py-3 text-zinc-800">
+									{c.render(row)}
+								</td>
+							))}
+						</tr>
+					))}
+				</tbody>
+			</table>
+		</div>
+	);
+}

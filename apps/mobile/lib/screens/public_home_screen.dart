@@ -7,8 +7,6 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:provider/provider.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-
 import '../constants/brand_typography.dart';
 import '../constants/colors.dart';
 import '../constants/layout.dart';
@@ -20,6 +18,7 @@ import '../services/auth_service.dart';
 import '../services/notifications_store.dart';
 import '../services/cache/client_nearby_cache.dart';
 import '../services/client_favorites_store.dart';
+import '../services/client_location_store.dart';
 import '../services/client_schedule_store.dart';
 import '../services/mapbox_api_service.dart';
 import '../utils/formatters.dart';
@@ -42,13 +41,15 @@ class PublicHomeScreen extends StatefulWidget {
   const PublicHomeScreen({
     super.key,
     this.onOpenMap,
-    this.onOpenBrowse,
+    this.onOpenBrowseStudios,
+    this.onOpenBrowseClasses,
     this.onCategorySelected,
     this.onOpenBookings,
   });
 
   final VoidCallback? onOpenMap;
-  final VoidCallback? onOpenBrowse;
+  final VoidCallback? onOpenBrowseStudios;
+  final VoidCallback? onOpenBrowseClasses;
   final void Function(int categoryId)? onCategorySelected;
   final VoidCallback? onOpenBookings;
 
@@ -59,16 +60,11 @@ class PublicHomeScreen extends StatefulWidget {
 class _PublicHomeScreenState extends State<PublicHomeScreen> {
   static const _clientHomeLocationBlue = Color(0xFF4D39A8);
 
-  static const _cityKey = 'client_city';
-  static const _latKey = 'client_lat';
-  static const _lonKey = 'client_lon';
   final TextEditingController _searchController = TextEditingController();
   List<PublicStudioPreview> _allStudios = const [];
   bool _isLoadingStudios = true;
-  String? _selectedCity;
-  double? _selectedLat;
-  double? _selectedLon;
   bool _locationModalShown = false;
+  ClientLocationStore? _locationStore;
   final Set<String> _favoriteLoadingIds = <String>{};
   Map<String, dynamic>? _nextBooking;
   List<Map<String, dynamic>> _todayClasses = const [];
@@ -79,27 +75,54 @@ class _PublicHomeScreenState extends State<PublicHomeScreen> {
   @override
   void initState() {
     super.initState();
-    _loadSavedLocation();
     _loadTrainingCategories();
+    WidgetsBinding.instance.addPostFrameCallback((_) => _bootstrapHomeData());
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final next = context.read<ClientLocationStore>();
+    if (_locationStore == next) return;
+    _locationStore?.removeListener(_onSharedLocationChanged);
+    _locationStore = next;
+    _locationStore!.addListener(_onSharedLocationChanged);
   }
 
   @override
   void dispose() {
+    _locationStore?.removeListener(_onSharedLocationChanged);
     _searchController.dispose();
     super.dispose();
   }
 
+  void _onSharedLocationChanged() {
+    if (!mounted) return;
+    unawaited(_loadTopStudiosNearby());
+  }
+
+  Future<void> _bootstrapHomeData() async {
+    if (!mounted) return;
+    final loc = context.read<ClientLocationStore>();
+    await _loadTopStudiosNearby();
+    if (!loc.hasCity && !_locationModalShown) {
+      _locationModalShown = true;
+      _showLocationRequestModal();
+    }
+  }
+
   Future<void> _loadTopStudiosNearby() async {
     if (!mounted) return;
+    final loc = context.read<ClientLocationStore>();
     setState(() => _isLoadingStudios = true);
     try {
       final query = StringBuffer('/studios/nearby?limit=50');
-      if (_selectedLat != null && _selectedLon != null) {
+      if (loc.lat != null && loc.lon != null) {
         query
           ..write('&lat=')
-          ..write(_selectedLat!.toStringAsFixed(6))
+          ..write(loc.lat!.toStringAsFixed(6))
           ..write('&lng=')
-          ..write(_selectedLon!.toStringAsFixed(6))
+          ..write(loc.lon!.toStringAsFixed(6))
           ..write('&radius=50');
       }
       final path = query.toString();
@@ -114,7 +137,7 @@ class _PublicHomeScreenState extends State<PublicHomeScreen> {
         if (item is! Map) continue;
         final data = Map<String, dynamic>.from(item);
         final preview = parsePublicStudioPreviewFromNearby(data);
-        final distanceKm = _distanceKmForStudio(data, preview.distanceKm);
+        final distanceKm = _distanceKmForStudio(data, preview.distanceKm, loc);
         mapped.add(
           preview.distanceKm == distanceKm
               ? preview
@@ -150,9 +173,13 @@ class _PublicHomeScreenState extends State<PublicHomeScreen> {
 
   /// Same idea as Explore: use API `distance` when present; otherwise Haversine
   /// from saved client position + studio coordinates (e.g. featured fallback).
-  double? _distanceKmForStudio(Map<String, dynamic> data, double? apiDistance) {
+  double? _distanceKmForStudio(
+    Map<String, dynamic> data,
+    double? apiDistance,
+    ClientLocationStore loc,
+  ) {
     if (apiDistance != null) return apiDistance;
-    if (_selectedLat == null || _selectedLon == null) return null;
+    if (loc.lat == null || loc.lon == null) return null;
     final slat =
         (data['latitude'] as num?)?.toDouble() ??
         (data['lat'] as num?)?.toDouble();
@@ -164,32 +191,10 @@ class _PublicHomeScreenState extends State<PublicHomeScreen> {
     const d = Distance();
     final meters = d.as(
       LengthUnit.Meter,
-      LatLng(_selectedLat!, _selectedLon!),
+      LatLng(loc.lat!, loc.lon!),
       LatLng(slat, slng),
     );
     return meters / 1000.0;
-  }
-
-  Future<void> _loadSavedLocation() async {
-    final prefs = await SharedPreferences.getInstance();
-    final city = prefs.getString(_cityKey)?.trim();
-    final lat = prefs.getDouble(_latKey);
-    final lon = prefs.getDouble(_lonKey);
-    if (!mounted) return;
-    setState(() {
-      _selectedCity = (city != null && city.isNotEmpty) ? city : null;
-      _selectedLat = lat;
-      _selectedLon = lon;
-    });
-    await _loadTopStudiosNearby();
-    if ((_selectedCity == null || _selectedCity!.isEmpty) &&
-        !_locationModalShown) {
-      _locationModalShown = true;
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (!mounted) return;
-        _showLocationRequestModal();
-      });
-    }
   }
 
   Future<void> _persistLocation({
@@ -197,20 +202,11 @@ class _PublicHomeScreenState extends State<PublicHomeScreen> {
     double? lat,
     double? lon,
   }) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(_cityKey, city);
-    if (lat != null && lon != null) {
-      await prefs.setDouble(_latKey, lat);
-      await prefs.setDouble(_lonKey, lon);
-    }
-    ClientNearbyCache.clear();
-    if (!mounted) return;
-    setState(() {
-      _selectedCity = city;
-      _selectedLat = lat;
-      _selectedLon = lon;
-    });
-    await _loadTopStudiosNearby();
+    await context.read<ClientLocationStore>().apply(
+      city: city,
+      lat: lat,
+      lon: lon,
+    );
   }
 
   Future<void> _showLocationRequestModal() async {
@@ -336,7 +332,9 @@ class _PublicHomeScreenState extends State<PublicHomeScreen> {
   Future<void> _openManualLocationInput() async {
     final picked = await Navigator.of(context).push<LocationPickerResult>(
       MaterialPageRoute(
-        builder: (_) => LocationPickerScreen(initialCity: _selectedCity ?? ''),
+        builder: (_) => LocationPickerScreen(
+          initialCity: context.read<ClientLocationStore>().city ?? '',
+        ),
       ),
     );
     if (picked == null || picked.city.trim().isEmpty) return;
@@ -369,44 +367,123 @@ class _PublicHomeScreenState extends State<PublicHomeScreen> {
     } catch (_) {}
   }
 
+  static const int _kPopularTodayMaxCards = 6;
+  static const int _kPopularTodayStudioScan = 20;
+
+  bool _isUpcomingToday(DateTime startsAt) {
+    final now = DateTime.now();
+    return startsAt.year == now.year &&
+        startsAt.month == now.month &&
+        startsAt.day == now.day &&
+        !startsAt.isBefore(now);
+  }
+
+  bool _sessionHasAvailableSpots(Map<String, dynamic> map) {
+    final capacity = (map['capacity'] as num?)?.toInt();
+    final booked = (map['bookedCount'] as num?)?.toInt() ?? 0;
+    if (capacity == null || capacity <= 0) return true;
+    return booked < capacity;
+  }
+
+  List<PublicStudioPreview> _studiosNearestFirst() {
+    final copy = List<PublicStudioPreview>.from(_allStudios);
+    copy.sort((a, b) {
+      final ad = a.distanceKm ?? double.infinity;
+      final bd = b.distanceKm ?? double.infinity;
+      return ad.compareTo(bd);
+    });
+    return copy;
+  }
+
+  Future<List<Map<String, dynamic>>> _fetchPopularTodaySessionsForStudio(
+    PublicStudioPreview studio,
+    String fromQuery,
+    String toQuery,
+  ) async {
+    try {
+      final raw = await ApiClient.get(
+        '/studios/${studio.id}/schedule?from=$fromQuery&to=$toQuery&limit=24',
+        null,
+      );
+      if (raw is! List) return const [];
+      final out = <Map<String, dynamic>>[];
+      for (final row in raw) {
+        if (row is! Map) continue;
+        final map = Map<String, dynamic>.from(row);
+        final status = (map['status'] ?? 'ACTIVE').toString().toUpperCase();
+        if (status != 'ACTIVE') continue;
+
+        final startsAt = parseApiDateTime(map['startsAt']);
+        if (startsAt == null || !_isUpcomingToday(startsAt)) continue;
+        if (!_sessionHasAvailableSpots(map)) continue;
+
+        final apiStudio = map['studio'] is Map
+            ? Map<String, dynamic>.from(map['studio'] as Map)
+            : <String, dynamic>{};
+        map['studio'] = {
+          'id': studio.id,
+          'name': studio.studioName,
+          'locationCount': apiStudio['locationCount'] ?? 1,
+        };
+        map['_reviewCount'] = studio.reviewCount;
+        map['_distanceKm'] = studio.distanceKm;
+        out.add(map);
+      }
+      return out;
+    } catch (_) {
+      return const [];
+    }
+  }
+
   Future<void> _loadTodayClasses() async {
     if (_allStudios.isEmpty) {
-      if (mounted) setState(() => _todayClasses = const []);
+      if (mounted) {
+        setState(() {
+          _todayClasses = const [];
+          _loadingTodayClasses = false;
+        });
+      }
       return;
     }
     if (!mounted) return;
     setState(() => _loadingTodayClasses = true);
+
     final now = DateTime.now();
     final dayStart = DateTime(now.year, now.month, now.day);
     final dayEnd = dayStart.add(const Duration(days: 1));
     final fromQuery = Uri.encodeComponent(dayStart.toUtc().toIso8601String());
     final toQuery = Uri.encodeComponent(dayEnd.toUtc().toIso8601String());
-    final merged = <Map<String, dynamic>>[];
 
-    for (final studio in _allStudios.take(4)) {
-      try {
-        final raw = await ApiClient.get(
-          '/studios/${studio.id}/schedule?from=$fromQuery&to=$toQuery&limit=12',
-          null,
-        );
-        if (raw is! List) continue;
-        for (final row in raw) {
-          if (row is! Map) continue;
-          final map = Map<String, dynamic>.from(row);
-          final apiStudio = map['studio'] is Map
-              ? Map<String, dynamic>.from(map['studio'] as Map)
-              : <String, dynamic>{};
-          map['studio'] = {
-            'id': studio.id,
-            'name': studio.name,
-            'locationCount': apiStudio['locationCount'] ?? 1,
-          };
-          merged.add(map);
-        }
-      } catch (_) {}
+    final studios = _studiosNearestFirst().take(_kPopularTodayStudioScan);
+    final merged = <Map<String, dynamic>>[];
+    const concurrency = 4;
+    final studioList = studios.toList();
+    for (var i = 0; i < studioList.length; i += concurrency) {
+      final end = i + concurrency > studioList.length
+          ? studioList.length
+          : i + concurrency;
+      final batch = studioList.sublist(i, end);
+      final batchResults = await Future.wait(
+        batch.map(
+          (s) => _fetchPopularTodaySessionsForStudio(s, fromQuery, toQuery),
+        ),
+      );
+      for (final list in batchResults) {
+        merged.addAll(list);
+      }
     }
 
     merged.sort((a, b) {
+      final aReviews = (a['_reviewCount'] as num?)?.toInt() ?? 0;
+      final bReviews = (b['_reviewCount'] as num?)?.toInt() ?? 0;
+      final byReviews = bReviews.compareTo(aReviews);
+      if (byReviews != 0) return byReviews;
+
+      final ad = (a['_distanceKm'] as num?)?.toDouble() ?? double.infinity;
+      final bd = (b['_distanceKm'] as num?)?.toDouble() ?? double.infinity;
+      final byDistance = ad.compareTo(bd);
+      if (byDistance != 0) return byDistance;
+
       final aa =
           parseApiDateTime(a['startsAt']) ??
           DateTime.fromMillisecondsSinceEpoch(0);
@@ -418,7 +495,7 @@ class _PublicHomeScreenState extends State<PublicHomeScreen> {
 
     if (!mounted) return;
     setState(() {
-      _todayClasses = merged.take(6).toList();
+      _todayClasses = merged.take(_kPopularTodayMaxCards).toList();
       _loadingTodayClasses = false;
     });
   }
@@ -444,9 +521,14 @@ class _PublicHomeScreenState extends State<PublicHomeScreen> {
     }
   }
 
-  void _openBrowse() {
-    widget.onOpenBrowse?.call();
-    ClientShellScope.maybeOf(context)?.goToExplore();
+  void _openBrowseStudios() {
+    widget.onOpenBrowseStudios?.call();
+    ClientShellScope.maybeOf(context)?.goToExplore(showClasses: false);
+  }
+
+  void _openBrowseClasses() {
+    widget.onOpenBrowseClasses?.call();
+    ClientShellScope.maybeOf(context)?.goToExplore(showClasses: true);
   }
 
   void _openCategory(TrainingCategoryOption category) {
@@ -454,18 +536,25 @@ class _PublicHomeScreenState extends State<PublicHomeScreen> {
       widget.onCategorySelected!(category.id);
       return;
     }
-    _openBrowse();
+    _openBrowseClasses();
   }
 
   Widget _notificationBell() {
     return Consumer<NotificationsStore>(
       builder: (context, store, _) {
-        final count = store.unreadCount;
+        final count = store.items
+            .where(isClientRelevantNotification)
+            .where((n) => !n.read)
+            .length;
         final hasUnread = count > 0;
         return GestureDetector(
           behavior: HitTestBehavior.opaque,
           onTap: () => Navigator.of(context).push(
-            MaterialPageRoute(builder: (_) => const NotificationsScreen()),
+            MaterialPageRoute(
+              builder: (_) => const NotificationsScreen(
+                audience: NotificationsScreenAudience.client,
+              ),
+            ),
           ),
           child: Container(
             width: 38,
@@ -637,7 +726,9 @@ class _PublicHomeScreenState extends State<PublicHomeScreen> {
     final auth = context.watch<AuthService>();
     final user = auth.user;
     final firstName = user?.name?.trim().split(RegExp(r'\s+')).first ?? 'there';
-    final locationLabel = (_selectedCity ?? locale.t('clientHome.setLocation'))
+    final locationStore = context.watch<ClientLocationStore>();
+    final locationLabel = locationStore
+        .displayLabel(locale.t('clientHome.setLocation'))
         .toUpperCase();
     final studios = _filteredStudios;
 
@@ -734,7 +825,7 @@ class _PublicHomeScreenState extends State<PublicHomeScreen> {
                       Expanded(
                         child: TextField(
                           controller: _searchController,
-                          onTap: _openBrowse,
+                          onTap: _openBrowseClasses,
                           readOnly: true,
                           decoration: InputDecoration(
                             hintText: locale.t('clientHome.searchHint'),
@@ -827,7 +918,7 @@ class _PublicHomeScreenState extends State<PublicHomeScreen> {
                 child: _sectionHeader(
                   title: locale.t('clientHome.topPicksTitle'),
                   actionLabel: locale.t('clientHome.seeAll'),
-                  onAction: _openBrowse,
+                  onAction: _openBrowseStudios,
                 ),
               ),
               SliverToBoxAdapter(
@@ -878,7 +969,7 @@ class _PublicHomeScreenState extends State<PublicHomeScreen> {
                 child: _sectionHeader(
                   title: locale.t('clientHome.popularTodayTitle'),
                   actionLabel: locale.t('clientHome.seeAll'),
-                  onAction: _openBrowse,
+                  onAction: _openBrowseClasses,
                 ),
               ),
               if (_loadingTodayClasses)

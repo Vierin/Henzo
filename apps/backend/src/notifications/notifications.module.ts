@@ -5,9 +5,10 @@ import { NotificationsService } from './notifications.service';
 import { FirebaseAdminService } from './firebase-admin.service';
 import { PrismaModule } from '../prisma/prisma.module';
 import { AuthModule } from '../auth/auth.module';
+import { AdminModule } from '../admin/admin.module';
 
 @Module({
-  imports: [PrismaModule, AuthModule, ConfigModule],
+  imports: [PrismaModule, AuthModule, ConfigModule, AdminModule],
   controllers: [NotificationsController],
   providers: [NotificationsService, FirebaseAdminService],
   exports: [NotificationsService, FirebaseAdminService],

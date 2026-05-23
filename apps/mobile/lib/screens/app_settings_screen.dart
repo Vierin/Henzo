@@ -1,8 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:url_launcher/url_launcher.dart';
-
-import '../config/app_config.dart';
 import '../constants/colors.dart';
 import '../constants/layout.dart';
 import '../l10n/locale_provider.dart';
@@ -14,7 +11,9 @@ import '../services/auth_service.dart';
 import '../services/cache/salon_cache.dart';
 import '../services/cache/services_staff_cache.dart';
 import '../services/dashboard_api_service.dart';
+import '../services/analytics_service.dart';
 import '../services/push_notification_service.dart';
+import '../utils/legal_web_links.dart';
 import '../widgets/language_selector_modal.dart';
 import 'account_settings_screen.dart';
 import '../widgets/settings/feedback_sheet.dart';
@@ -49,14 +48,27 @@ class _AppSettingsScreenState extends State<AppSettingsScreen> {
   Salon? _salon;
   Subscription? _subscription;
   bool _subscriptionLoading = true;
+  bool _analyticsOptIn = false;
 
   @override
   void initState() {
     super.initState();
+    _analyticsOptIn = AnalyticsService.instance.isOptedIn;
     WidgetsBinding.instance.addPostFrameCallback((_) async {
+      await AnalyticsService.instance.load();
+      if (mounted) {
+        setState(
+          () => _analyticsOptIn = AnalyticsService.instance.isOptedIn,
+        );
+      }
       await _loadData();
       await _reopenAccountSettingsAfterPhotoInterrupt();
     });
+  }
+
+  Future<void> _setAnalyticsOptIn(bool enabled) async {
+    setState(() => _analyticsOptIn = enabled);
+    await AnalyticsService.instance.setOptIn(enabled);
   }
 
   Future<void> _reopenAccountSettingsAfterPhotoInterrupt() async {
@@ -147,20 +159,6 @@ class _AppSettingsScreenState extends State<AppSettingsScreen> {
       initialDays: _bookingPeriodDays,
     );
     if (changed == true && mounted) await _loadData();
-  }
-
-  Future<void> _openWebPage(
-    BuildContext context,
-    LocaleProvider locale,
-    String path,
-  ) async {
-    final uri = Uri.parse('${AppConfig.webUrl}/${locale.languageTag}$path');
-    final opened = await launchUrl(uri, mode: LaunchMode.externalApplication);
-    if (!opened && context.mounted) {
-      ScaffoldMessenger.maybeOf(
-        context,
-      )?.showSnackBar(SnackBar(content: Text(locale.t('errors.generic'))));
-    }
   }
 
   bool get _hasActiveProPlan {
@@ -362,16 +360,35 @@ class _AppSettingsScreenState extends State<AppSettingsScreen> {
                         ),
                       ),
                       SettingsListTile(
+                        icon: Icons.analytics_outlined,
+                        title: locale.t('settings.analyticsOptIn'),
+                        subtitle: locale.t('settings.analyticsOptInHint'),
+                        trailingWidget: Switch(
+                          value: _analyticsOptIn,
+                          onChanged: _setAnalyticsOptIn,
+                          activeThumbColor: AppColors.primary500,
+                        ),
+                        onTap: () => _setAnalyticsOptIn(!_analyticsOptIn),
+                      ),
+                      SettingsListTile(
                         svgAsset: 'assets/icons/icon-shield.svg',
                         title: locale.t('settings.privacyPolicy'),
                         onTap: () =>
-                            _openWebPage(context, locale, '/privacy-policy'),
+                            openLegalWebPage(
+                              context,
+                              locale,
+                              '/privacy-policy',
+                            ),
                       ),
                       SettingsListTile(
                         icon: Icons.description_outlined,
                         title: locale.t('settings.termsOfUse'),
                         onTap: () =>
-                            _openWebPage(context, locale, '/terms-of-service'),
+                            openLegalWebPage(
+                              context,
+                              locale,
+                              '/terms-of-service',
+                            ),
                       ),
                       SettingsListTile(
                         icon: Icons.chat_bubble_outline,

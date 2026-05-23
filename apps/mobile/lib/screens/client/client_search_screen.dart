@@ -6,7 +6,6 @@ import 'package:flutter_svg/flutter_svg.dart';
 import '../../widgets/common/henzo_modal.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:provider/provider.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../constants/colors.dart';
 import '../../constants/layout.dart';
@@ -15,6 +14,7 @@ import '../../models/training_category_option.dart';
 import '../../services/api_client.dart';
 import '../../services/auth_service.dart';
 import '../../services/cache/client_nearby_cache.dart';
+import '../../services/client_location_store.dart';
 import '../../services/client_favorites_mutations.dart';
 import '../../services/client_favorites_store.dart';
 import '../../services/dashboard_api_service.dart';
@@ -50,24 +50,20 @@ class ClientSearchScreen extends StatefulWidget {
 class ClientSearchScreenState extends State<ClientSearchScreen> {
   static const _browseLocationBlue = Color(0xFF4D39A8);
 
-  static const _cityKey = 'client_city';
-  static const _latKey = 'client_lat';
-  static const _lonKey = 'client_lon';
   bool _loading = true;
   bool _showClasses = true;
   bool _isMonthExpanded = false;
   late DateTime _selectedDay;
   late final ValueNotifier<DateTime> _stripDayNotifier;
-  late final PageController _dayPagerController;
+  late final ScrollController _dayStripScrollController;
+  double? _browseStripViewportWidth;
   final ValueNotifier<DateTime> _stripPagerDayNotifier = ValueNotifier(
     DateTime.now(),
   );
   Timer? _stripScheduleDebounce;
   final TextEditingController _searchController = TextEditingController();
   String _searchQuery = '';
-  String _locationLabel = 'Set location';
-  double? _selectedLat;
-  double? _selectedLon;
+  ClientLocationStore? _locationStore;
   String _distanceFilter = 'auto';
   String _sortBy = 'recommended';
   final Set<String> _timePeriods = <String>{};
@@ -98,22 +94,40 @@ class ClientSearchScreenState extends State<ClientSearchScreen> {
     _selectedDay = today;
     _stripDayNotifier = ValueNotifier<DateTime>(today);
     _stripPagerDayNotifier.value = today;
-    _dayPagerController = PageController(
-      initialPage: 0,
-      viewportFraction: 1 / 7,
-    );
+    _dayStripScrollController = ScrollController();
     _searchController.addListener(_onSearchChanged);
-    _loadSavedLocationOnly();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final next = context.read<ClientLocationStore>();
+    if (_locationStore == next) return;
+    _locationStore?.removeListener(_onSharedLocationChanged);
+    _locationStore = next;
+    _locationStore!.addListener(_onSharedLocationChanged);
+  }
+
+  void _onSharedLocationChanged() {
+    if (!mounted) return;
+    setState(() {
+      _derivedInputsHash = 0;
+      _distanceKmMemo.clear();
+    });
+    if (_exploreLoadRequested) {
+      unawaited(_loadExplore());
+    }
   }
 
   @override
   void dispose() {
+    _locationStore?.removeListener(_onSharedLocationChanged);
     _clearStripScheduleDebounceTimer();
     _searchController.removeListener(_onSearchChanged);
     _searchController.dispose();
     _stripDayNotifier.dispose();
     _stripPagerDayNotifier.dispose();
-    _dayPagerController.dispose();
+    _dayStripScrollController.dispose();
     super.dispose();
   }
 
@@ -142,16 +156,35 @@ class ClientSearchScreenState extends State<ClientSearchScreen> {
     });
   }
 
-  void _goToToday() {
-    _clearStripScheduleDebounceTimer();
-    final today = _calendarDateOnly(DateTime.now());
-    if (_dayPagerController.hasClients) {
-      _dayPagerController.animateToPage(
-        0,
+  static const double _kBrowseDayPillGap = 7;
+
+  double _browsePillWidth(double viewportWidth) =>
+      viewportWidth / 7 - _kBrowseDayPillGap;
+
+  double _browseDayStride(double viewportWidth) => viewportWidth / 7;
+
+  void _scrollBrowseStripToIndex(
+    int index, {
+    bool animate = false,
+  }) {
+    final w = _browseStripViewportWidth;
+    if (w == null || !_dayStripScrollController.hasClients) return;
+    final offset = index * _browseDayStride(w);
+    if (animate) {
+      _dayStripScrollController.animateTo(
+        offset,
         duration: const Duration(milliseconds: 280),
         curve: Curves.easeOutCubic,
       );
+    } else {
+      _dayStripScrollController.jumpTo(offset);
     }
+  }
+
+  void _goToToday() {
+    _clearStripScheduleDebounceTimer();
+    final today = _calendarDateOnly(DateTime.now());
+    _scrollBrowseStripToIndex(0, animate: true);
     _applyExploreDay(today);
   }
 
@@ -169,13 +202,7 @@ class ClientSearchScreenState extends State<ClientSearchScreen> {
         .difference(_calendarDateOnly(DateTime.now()))
         .inDays;
     _clearStripScheduleDebounceTimer();
-    if (_dayPagerController.hasClients) {
-      _dayPagerController.animateToPage(
-        index,
-        duration: const Duration(milliseconds: 280),
-        curve: Curves.easeOutCubic,
-      );
-    }
+    _scrollBrowseStripToIndex(index, animate: true);
     _applyExploreDay(normalized);
   }
 
@@ -185,10 +212,22 @@ class ClientSearchScreenState extends State<ClientSearchScreen> {
         .difference(today)
         .inDays
         .clamp(0, _kExploreHorizonDays - 1);
-    if (_dayPagerController.hasClients) {
-      _dayPagerController.jumpToPage(index);
-    }
+    _scrollBrowseStripToIndex(index);
     _stripPagerDayNotifier.value = _selectedDay;
+  }
+
+  void _onBrowseDayStripScrolled() {
+    final w = _browseStripViewportWidth;
+    if (w == null || !_dayStripScrollController.hasClients) return;
+    final stride = _browseDayStride(w);
+    if (stride <= 0) return;
+    final index = (_dayStripScrollController.offset / stride)
+        .round()
+        .clamp(0, _kExploreHorizonDays - 1);
+    final day = _exploreDayAt(index);
+    final normalized = _calendarDateOnly(day);
+    if (_stripPagerDayNotifier.value == normalized) return;
+    _stripPagerDayNotifier.value = normalized;
   }
 
   List<DateTime?> _browseMonthCells(DateTime monthDate) {
@@ -389,29 +428,23 @@ class ClientSearchScreenState extends State<ClientSearchScreen> {
   }
 
   Future<void> _openLocationPicker() async {
+    final loc = context.read<ClientLocationStore>();
     final picked = await Navigator.of(context).push<LocationPickerResult>(
       MaterialPageRoute(
         builder: (_) => LocationPickerScreen(
-          initialCity: _locationLabel == 'Set location' ? '' : _locationLabel,
+          initialCity: loc.displayLabel(''),
         ),
       ),
     );
     if (picked == null || picked.city.trim().isEmpty || !mounted) return;
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(_cityKey, picked.city.trim());
-    if (picked.lat != null && picked.lon != null) {
-      await prefs.setDouble(_latKey, picked.lat!);
-      await prefs.setDouble(_lonKey, picked.lon!);
-    }
-    ClientNearbyCache.clear();
+    await context.read<ClientLocationStore>().applyFromPicker(picked);
     setState(() {
-      _locationLabel = picked.city.trim();
-      _selectedLat = picked.lat;
-      _selectedLon = picked.lon;
       _derivedInputsHash = 0;
       _distanceKmMemo.clear();
     });
-    await _loadExplore();
+    if (_exploreLoadRequested) {
+      await _loadExplore();
+    }
   }
 
   /// First call is deferred until user opens the Explore tab (see [ensureExploreLoaded]).
@@ -434,21 +467,10 @@ class ClientSearchScreenState extends State<ClientSearchScreen> {
     _ensureDerivedLists();
   }
 
-  Future<void> _loadSavedLocationOnly() async {
-    final prefs = await SharedPreferences.getInstance();
-    final city = prefs.getString(_cityKey)?.trim();
-    final lat = prefs.getDouble(_latKey);
-    final lon = prefs.getDouble(_lonKey);
+  /// Home «See all» / shell: Classes vs Studios tab on Browse.
+  void applyBrowseListMode({required bool showClasses}) {
     if (!mounted) return;
-    setState(() {
-      _locationLabel = (city != null && city.isNotEmpty)
-          ? city
-          : 'Set location';
-      _selectedLat = lat;
-      _selectedLon = lon;
-      _distanceKmMemo.clear();
-      _derivedInputsHash = 0;
-    });
+    setState(() => _showClasses = showClasses);
   }
 
   int _currentRadiusKm() {
@@ -610,18 +632,19 @@ class ClientSearchScreenState extends State<ClientSearchScreen> {
 
   Future<void> _loadExplore() async {
     if (!mounted) return;
+    final loc = context.read<ClientLocationStore>();
     setState(() => _loading = true);
     try {
       final radiusKm = _currentRadiusKm();
       final nearbyQuery = StringBuffer(
         '/studios/nearby?limit=20&radius=$radiusKm',
       );
-      if (_selectedLat != null && _selectedLon != null) {
+      if (loc.lat != null && loc.lon != null) {
         nearbyQuery
           ..write('&lat=')
-          ..write(_selectedLat!.toStringAsFixed(6))
+          ..write(loc.lat!.toStringAsFixed(6))
           ..write('&lng=')
-          ..write(_selectedLon!.toStringAsFixed(6));
+          ..write(loc.lon!.toStringAsFixed(6));
       }
       final nearbyPath = nearbyQuery.toString();
       var nearbyRaw = ClientNearbyCache.get(nearbyPath);
@@ -788,14 +811,17 @@ class ClientSearchScreenState extends State<ClientSearchScreen> {
     return '$text km';
   }
 
-  double? _resolvedDistanceKm(ExploreStudioItem studio) {
+  double? _resolvedDistanceKm(
+    ExploreStudioItem studio,
+    ClientLocationStore loc,
+  ) {
     if (studio.distanceKm != null) return studio.distanceKm;
-    if (_selectedLat == null || _selectedLon == null) return null;
+    if (loc.lat == null || loc.lon == null) return null;
     if (studio.lat == null || studio.lng == null) return null;
     const d = Distance();
     final meters = d.as(
       LengthUnit.Meter,
-      LatLng(_selectedLat!, _selectedLon!),
+      LatLng(loc.lat!, loc.lon!),
       LatLng(studio.lat!, studio.lng!),
     );
     return meters / 1000.0;
@@ -818,9 +844,8 @@ class ClientSearchScreenState extends State<ClientSearchScreen> {
 
   int _dayKey(DateTime d) => d.year * 10000 + d.month * 100 + d.day;
 
-  void _syncDistanceMemoLocation() {
-    final k =
-        '${_selectedLat?.toStringAsFixed(5)}_${_selectedLon?.toStringAsFixed(5)}';
+  void _syncDistanceMemoLocation(ClientLocationStore loc) {
+    final k = '${loc.lat?.toStringAsFixed(5)}_${loc.lon?.toStringAsFixed(5)}';
     if (k != _distanceMemoLocationKey) {
       _distanceMemoLocationKey = k;
       _distanceKmMemo.clear();
@@ -869,12 +894,15 @@ class ClientSearchScreenState extends State<ClientSearchScreen> {
     _derivedTodayClassesByStudio = classesByStudio;
   }
 
-  double? _resolvedDistanceKmMemo(ExploreStudioItem studio) {
-    _syncDistanceMemoLocation();
+  double? _resolvedDistanceKmMemo(
+    ExploreStudioItem studio,
+    ClientLocationStore loc,
+  ) {
+    _syncDistanceMemoLocation(loc);
     if (_distanceKmMemo.containsKey(studio.id)) {
       return _distanceKmMemo[studio.id];
     }
-    final v = _resolvedDistanceKm(studio);
+    final v = _resolvedDistanceKm(studio, loc);
     _distanceKmMemo[studio.id] = v;
     return v;
   }
@@ -2000,59 +2028,72 @@ class ClientSearchScreenState extends State<ClientSearchScreen> {
   Widget _buildDayStrip() {
     return LayoutBuilder(
       builder: (context, constraints) {
-        final slotWidth = constraints.maxWidth / 7 - 7;
-        final stripHeight = slotWidth * 3 / 2;
+        final viewportWidth = constraints.maxWidth;
+        _browseStripViewportWidth = viewportWidth;
+        final pillWidth = _browsePillWidth(viewportWidth);
+        final stripHeight = pillWidth * 3 / 2;
         return SizedBox(
           height: stripHeight,
           child: NotificationListener<ScrollNotification>(
             onNotification: (ScrollNotification n) {
               if (n.metrics.axis != Axis.horizontal) return false;
-              if (!_dayPagerController.hasClients) return false;
-              final page = _dayPagerController.page;
-              if (page == null) return false;
-              final index = page.round().clamp(0, _kExploreHorizonDays - 1);
-              final day = _exploreDayAt(index);
-              final normalized = _calendarDateOnly(day);
-              if (_stripPagerDayNotifier.value == normalized) return false;
-              _stripPagerDayNotifier.value = normalized;
-              return false;
-            },
-            child: PageView.builder(
-              controller: _dayPagerController,
-              physics: const SmoothDayPageScrollPhysics(),
-              clipBehavior: Clip.none,
-              padEnds: false,
-              itemCount: _kExploreHorizonDays,
-              onPageChanged: (index) {
+              _onBrowseDayStripScrolled();
+              if (n is ScrollEndNotification) {
+                final w = _browseStripViewportWidth;
+                if (w == null || !_dayStripScrollController.hasClients) {
+                  return false;
+                }
+                final stride = _browseDayStride(w);
+                final index = (_dayStripScrollController.offset / stride)
+                    .round()
+                    .clamp(0, _kExploreHorizonDays - 1);
+                final target = index * stride;
+                if ((_dayStripScrollController.offset - target).abs() > 0.5) {
+                  _dayStripScrollController.animateTo(
+                    target,
+                    duration: const Duration(milliseconds: 200),
+                    curve: Curves.easeOutCubic,
+                  );
+                }
                 final day = _exploreDayAt(index);
                 final normalized = _calendarDateOnly(day);
-                if (_stripPagerDayNotifier.value != normalized) {
-                  _stripPagerDayNotifier.value = normalized;
-                }
                 if (CalendarDayPill.isSameDay(day, _stripDayNotifier.value) &&
                     CalendarDayPill.isSameDay(day, _selectedDay)) {
-                  return;
+                  return false;
                 }
                 _debounceExploreDay(normalized);
-              },
+              }
+              return false;
+            },
+            child: ListView.separated(
+              controller: _dayStripScrollController,
+              scrollDirection: Axis.horizontal,
+              physics: const BouncingScrollPhysics(
+                parent: AlwaysScrollableScrollPhysics(),
+              ),
+              clipBehavior: Clip.none,
+              itemCount: _kExploreHorizonDays,
+              separatorBuilder: (context, index) => const SizedBox(
+                width: _kBrowseDayPillGap,
+              ),
               itemBuilder: (_, index) {
                 final day = _exploreDayAt(index);
-                return ValueListenableBuilder<DateTime>(
-                  valueListenable: _stripDayNotifier,
-                  builder: (context, stripDay, _) {
-                    final selected = CalendarDayPill.isSameDay(day, stripDay);
-                    return Padding(
-                      padding: const EdgeInsets.only(right: 7),
-                      child: BrowseDayPill(
+                return SizedBox(
+                  width: pillWidth,
+                  child: ValueListenableBuilder<DateTime>(
+                    valueListenable: _stripDayNotifier,
+                    builder: (context, stripDay, _) {
+                      final selected = CalendarDayPill.isSameDay(day, stripDay);
+                      return BrowseDayPill(
                         day: day,
                         selected: selected,
                         onTap: () {
                           _clearStripScheduleDebounceTimer();
                           _applyExploreDay(day);
                         },
-                      ),
-                    );
-                  },
+                      );
+                    },
+                  ),
                 );
               },
             ),
@@ -2179,7 +2220,10 @@ class ClientSearchScreenState extends State<ClientSearchScreen> {
   Widget build(BuildContext context) {
     final locale = context.watch<LocaleProvider>();
     final localeCode = locale.localeCode;
-    final locationUpper = _locationLabel.toUpperCase();
+    final locationStore = context.watch<ClientLocationStore>();
+    final locationUpper = locationStore
+        .displayLabel(locale.t('clientHome.setLocation'))
+        .toUpperCase();
     final favStore = context.watch<ClientFavoritesStore>();
     _ensureDerivedLists();
 
@@ -2427,7 +2471,7 @@ class ClientSearchScreenState extends State<ClientSearchScreen> {
                                 studio: s,
                                 todayClasses: todayClasses,
                                 distanceLabel: _distanceLabel(
-                                  _resolvedDistanceKmMemo(s),
+                                  _resolvedDistanceKmMemo(s, locationStore),
                                 ),
                                 isFavorite: favStore.isFavorite(s.id),
                                 onTap: () {

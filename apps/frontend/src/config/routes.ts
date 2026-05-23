@@ -39,6 +39,7 @@ export const ownerRoutes = [
  * Admin routes - require ADMIN role
  */
 export const adminRoutes = [
+	'/admin',
 ] as const;
 
 /**

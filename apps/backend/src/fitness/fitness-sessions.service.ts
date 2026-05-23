@@ -1298,7 +1298,9 @@ export class FitnessSessionsService {
     }));
   }
 
-  private async getOwnerStudioId(authHeader: string): Promise<string> {
+  private async tryGetOwnerStudioId(
+    authHeader: string,
+  ): Promise<string | null> {
     const currentUser = await this.authService.getCurrentUser(authHeader);
     if (currentUser.user.role !== 'OWNER') {
       throw new Error('Forbidden');
@@ -1307,14 +1309,20 @@ export class FitnessSessionsService {
       where: { ownerId: currentUser.user.id },
       select: { id: true },
     });
-    if (!studio) {
+    return studio?.id ?? null;
+  }
+
+  private async getOwnerStudioId(authHeader: string): Promise<string> {
+    const studioId = await this.tryGetOwnerStudioId(authHeader);
+    if (!studioId) {
       throw new Error('Studio not found');
     }
-    return studio.id;
+    return studioId;
   }
 
   async getOwnerClientBlocklist(authHeader: string) {
-    const studioId = await this.getOwnerStudioId(authHeader);
+    const studioId = await this.tryGetOwnerStudioId(authHeader);
+    if (!studioId) return [];
     const rows = await this.prisma.studioClientBlock.findMany({
       where: { studioId },
       select: {

@@ -47,7 +47,9 @@ export default function ConditionalFooter() {
 	}
 
 	// Hide footer on admin and owner panel pages (they have their own footers in layout)
-	if (pathname.includes('/admin-panel') || 
+	if (
+		pathname.includes('/admin') ||
+		pathname.includes('/admin-panel') || 
 		pathname.includes('/salons-data') || 
 		pathname.includes('/bookings') ||
 		pathname.includes('/owner-dashboard') ||

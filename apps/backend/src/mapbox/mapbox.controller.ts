@@ -10,16 +10,24 @@ export class MapboxController {
     @Query('q') query: string,
     @Query('country') country?: string,
     @Query('limit') limit?: string,
+    @Query('types') types?: string,
   ) {
     if (!query || query.trim().length < 2) {
       return [];
     }
 
     const limitNum = limit ? parseInt(limit, 10) : 5;
+    const typeList = types
+      ? types
+          .split(',')
+          .map((t) => t.trim())
+          .filter(Boolean)
+      : ['address', 'poi'];
     const suggestions = await this.mapboxService.getAutocompleteSuggestions(
       query.trim(),
       country || 'VN',
       limitNum,
+      typeList,
     );
 
     return suggestions;

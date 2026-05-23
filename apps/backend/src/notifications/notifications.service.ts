@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common';
+import { AdminEventLogService } from '../admin/admin-event-log.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { FirebaseAdminService } from './firebase-admin.service';
 import {
@@ -11,6 +12,7 @@ export class NotificationsService {
   constructor(
     private prisma: PrismaService,
     private firebaseAdmin: FirebaseAdminService,
+    private readonly adminEventLog: AdminEventLogService,
   ) {}
 
   async savePushToken(
@@ -206,10 +208,22 @@ export class NotificationsService {
         `✅ Push notifications sent: ${response.successCount} successful, ${response.failureCount} failed`,
       );
       if (response.failureCount > 0) {
+        const errors: string[] = [];
         response.responses.forEach((resp, index) => {
           if (!resp.success) {
             console.error(`❌ Token ${index} failed:`, resp.error);
+            errors.push(resp.error?.message ?? 'unknown');
           }
+        });
+        await this.adminEventLog.log({
+          type: 'push_failed',
+          severity: 'warn',
+          message: `${response.failureCount} FCM delivery failure(s)`,
+          metadata: {
+            successCount: response.successCount,
+            failureCount: response.failureCount,
+            errors: errors.slice(0, 10),
+          },
         });
       }
     } catch (error) {

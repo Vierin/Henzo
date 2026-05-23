@@ -195,7 +195,59 @@ class AuthService extends ChangeNotifier {
     }
   }
 
-  Future<AuthUiResult> loginWithGoogle() async {
+  /// After Google OAuth, assign OWNER via POST /auth/register (business signup).
+  Future<({bool ok, String? errorRaw})> _registerOwnerAfterOAuth() async {
+    final session = _supabase.auth.currentSession;
+    final supaUser = _supabase.auth.currentUser;
+    if (session == null || supaUser == null) {
+      return (ok: false, errorRaw: 'No session after Google sign-in');
+    }
+    final email = (supaUser.email ?? _user?.email ?? '').trim();
+    if (email.isEmpty) {
+      return (ok: false, errorRaw: 'Google account has no email');
+    }
+    final meta = supaUser.userMetadata;
+    final name = (meta?['name'] ?? meta?['full_name'] ?? _user?.name)
+        ?.toString()
+        .trim();
+
+    try {
+      final url = Uri.parse('${AppConfig.apiUrl}/auth/register');
+      if (kDebugMode) debugPrint('[Auth] POST $url (OWNER)');
+      final response = await http.post(
+        url,
+        headers: {
+          'Content-Type': 'application/json',
+          'authorization': 'Bearer ${session.accessToken}',
+        },
+        body: json.encode({
+          'userId': supaUser.id,
+          'email': email,
+          'role': 'OWNER',
+          if (name != null && name.isNotEmpty) 'name': name,
+        }),
+      );
+      if (kDebugMode) {
+        debugPrint(
+          '[Auth] POST /auth/register status=${response.statusCode}',
+        );
+      }
+      if (response.statusCode >= 200 && response.statusCode < 300) {
+        return (ok: true, errorRaw: null);
+      }
+      String msg = 'HTTP ${response.statusCode}';
+      try {
+        final err = json.decode(response.body) as Map<String, dynamic>?;
+        if (err?['message'] != null) msg = err!['message'] as String;
+      } catch (_) {}
+      return (ok: false, errorRaw: msg);
+    } catch (e) {
+      return (ok: false, errorRaw: e.toString());
+    }
+  }
+
+  /// [registerAsOwner] — business path: upgrade role to OWNER after Google sign-in.
+  Future<AuthUiResult> loginWithGoogle({bool registerAsOwner = false}) async {
     final webClientId = AppConfig.googleWebClientId;
     if (webClientId.isEmpty) {
       AppConfig.logIfDevelopment(
@@ -276,7 +328,20 @@ class AuthService extends ChangeNotifier {
           errorRaw: null,
         );
       }
-      if (kDebugMode) debugPrint('[Auth] Session OK, fetching user from API');
+      if (kDebugMode) {
+        debugPrint('[Auth] Session OK, registerAsOwner=$registerAsOwner');
+      }
+
+      // Register as OWNER before /auth/user so lazy sync does not create CLIENT first.
+      if (registerAsOwner) {
+        final reg = await _registerOwnerAfterOAuth();
+        if (!reg.ok) {
+          return (success: false, errorL10nKey: null, errorRaw: reg.errorRaw);
+        }
+        try {
+          await _supabase.auth.refreshSession();
+        } catch (_) {}
+      }
 
       final fetch = await _fetchUser(session.accessToken);
       notifyListeners();
@@ -293,6 +358,15 @@ class AuthService extends ChangeNotifier {
           errorRaw: fetch.errorRaw,
         );
       }
+
+      if (registerAsOwner && !isStudioOperator) {
+        return (
+          success: false,
+          errorL10nKey: AuthErrorKeys.userNotFoundInSystem,
+          errorRaw: 'Owner role was not applied',
+        );
+      }
+
       return (success: true, errorL10nKey: null, errorRaw: null);
     } catch (e, st) {
       _user = null;

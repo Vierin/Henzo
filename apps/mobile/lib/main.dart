@@ -29,6 +29,7 @@ import 'services/cache/studio_public_detail_cache.dart';
 import 'services/cache/owner_sessions_cache.dart';
 import 'services/cache/salon_cache.dart';
 import 'services/cache/services_staff_cache.dart';
+import 'services/client_location_store.dart';
 import 'services/notifications_store.dart';
 import 'services/push_notification_service.dart';
 import 'services/revenuecat_service.dart';
@@ -73,6 +74,8 @@ Future<void> main() async {
       }());
       final notificationsStore = NotificationsStore();
       await notificationsStore.load();
+      final clientLocationStore = ClientLocationStore();
+      await clientLocationStore.load();
       var firebaseReady = false;
       try {
         await Firebase.initializeApp(
@@ -107,7 +110,12 @@ Future<void> main() async {
         anonKey: AppConfig.supabaseAnonKey,
       );
       await RevenueCatService.configure();
-      runApp(MyApp(notificationsStore: notificationsStore));
+      runApp(
+        MyApp(
+          notificationsStore: notificationsStore,
+          clientLocationStore: clientLocationStore,
+        ),
+      );
     },
     (error, stack) {
       if (Firebase.apps.isNotEmpty) {
@@ -122,9 +130,14 @@ final GlobalKey<NavigatorState> henzoRootNavigatorKey =
     GlobalKey<NavigatorState>();
 
 class MyApp extends StatefulWidget {
-  const MyApp({super.key, this.notificationsStore});
+  const MyApp({
+    super.key,
+    this.notificationsStore,
+    this.clientLocationStore,
+  });
 
   final NotificationsStore? notificationsStore;
+  final ClientLocationStore? clientLocationStore;
 
   @override
   State<MyApp> createState() => _MyAppState();
@@ -202,6 +215,10 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
         ChangeNotifierProvider(create: (_) => SubscriptionRefreshNotifier()),
         if (widget.notificationsStore != null)
           ChangeNotifierProvider.value(value: widget.notificationsStore!),
+        if (widget.clientLocationStore != null)
+          ChangeNotifierProvider.value(
+            value: widget.clientLocationStore!,
+          ),
       ],
       child: _L10nHotReload(
         child: Consumer<LocaleProvider>(

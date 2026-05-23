@@ -113,17 +113,16 @@ export class ApiClient {
 					// Redirect to login page if we're in browser
 					if (typeof window !== 'undefined') {
 						const currentPath = window.location.pathname;
-						// Don't redirect if already on login/register pages
+						const isAdminPath = currentPath.includes('/admin');
 						if (
 							!currentPath.includes('/login') &&
 							!currentPath.includes('/register')
 						) {
 							const locale =
 								extractLocaleFromPath(currentPath) ?? ('en' as Locale);
-							window.location.href = withLocale(
-								'/login?session=expired',
-								locale
-							);
+							window.location.href = isAdminPath
+								? withLocale('/admin/login?session=expired', locale)
+								: withLocale('/login?session=expired', locale);
 						}
 					}
 				} catch (logoutError) {

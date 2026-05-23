@@ -9,6 +9,7 @@ import '../../models/salon.dart';
 import '../../models/training_location_item.dart';
 import '../../services/auth_service.dart';
 import '../../services/cache/salon_cache.dart';
+import '../../utils/owner_studio_setup_errors.dart';
 import '../../services/cache/owner_sessions_cache.dart';
 import '../../services/dashboard_api_service.dart';
 import '../../utils/show_api_error.dart';
@@ -223,7 +224,9 @@ class CalendarScreenState extends State<CalendarScreen> {
     } catch (e) {
       if (mounted) {
         setState(() => _isLoading = false);
-        showApiError(context, e);
+        if (!isOwnerStudioNotReadyError(e)) {
+          showApiError(context, e);
+        }
       }
     }
   }

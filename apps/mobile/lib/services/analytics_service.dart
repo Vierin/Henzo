@@ -12,15 +12,15 @@ class AnalyticsService {
 
   static const _optInKey = 'analytics.optIn';
 
-  bool _optedIn = true;
+  bool _optedIn = false;
   bool _loaded = false;
 
-  /// Прочитать сохранённый opt-in на старте. Дефолт — true (включено).
+  /// Прочитать сохранённый opt-in на старте. Дефолт — false (GDPR / stores).
   Future<void> load() async {
     if (_loaded) return;
     try {
       final prefs = await SharedPreferences.getInstance();
-      _optedIn = prefs.getBool(_optInKey) ?? true;
+      _optedIn = prefs.getBool(_optInKey) ?? false;
     } catch (_) {}
     _loaded = true;
     await _applyCollection();

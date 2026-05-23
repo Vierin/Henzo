@@ -56,13 +56,17 @@ class SettingsListTile extends StatelessWidget {
     this.svgAsset,
     required this.title,
     required this.onTap,
+    this.subtitle,
     this.trailingText = '',
+    this.trailingWidget,
   }) : assert(icon != null || svgAsset != null, 'Provide icon or svgAsset');
 
   final IconData? icon;
   final String? svgAsset;
   final String title;
+  final String? subtitle;
   final String trailingText;
+  final Widget? trailingWidget;
   final VoidCallback onTap;
 
   @override
@@ -80,17 +84,35 @@ class SettingsListTile extends StatelessWidget {
               _SettingsIconBadge(icon: icon, svgAsset: svgAsset),
               const SizedBox(width: 12),
               Expanded(
-                child: Text(
-                  title,
-                  style: const TextStyle(
-                    color: AppColors.textPrimary,
-                    fontSize: 15,
-                    fontWeight: FontWeight.w600,
-                    letterSpacing: -0.2,
-                  ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: const TextStyle(
+                        color: AppColors.textPrimary,
+                        fontSize: 15,
+                        fontWeight: FontWeight.w600,
+                        letterSpacing: -0.2,
+                      ),
+                    ),
+                    if (subtitle != null && subtitle!.isNotEmpty) ...[
+                      const SizedBox(height: 2),
+                      Text(
+                        subtitle!,
+                        style: const TextStyle(
+                          color: AppColors.textSecondary,
+                          fontSize: 12,
+                          height: 1.25,
+                        ),
+                      ),
+                    ],
+                  ],
                 ),
               ),
-              if (trailingText.isNotEmpty) ...[
+              if (trailingWidget != null) ...[
+                trailingWidget!,
+              ] else if (trailingText.isNotEmpty) ...[
                 ConstrainedBox(
                   constraints: BoxConstraints(
                     maxWidth: MediaQuery.sizeOf(context).width * 0.32,
@@ -109,11 +131,12 @@ class SettingsListTile extends StatelessWidget {
                 ),
                 const SizedBox(width: 6),
               ],
-              const Icon(
-                Icons.chevron_right,
-                size: 20,
-                color: AppColors.textSecondary,
-              ),
+              if (trailingWidget == null)
+                const Icon(
+                  Icons.chevron_right,
+                  size: 20,
+                  color: AppColors.textSecondary,
+                ),
             ],
           ),
         ),

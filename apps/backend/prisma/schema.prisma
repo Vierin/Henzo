@@ -373,3 +373,29 @@ enum StudioClientSource {
   ENROLLMENT
   INVITE
 }
+
+model AdminEventLog {
+  id        String   @id @default(cuid())
+  type      String
+  severity  String   @default("warn")
+  message   String?
+  metadata  Json?
+  studioId  String?
+  userId    String?
+  createdAt DateTime @default(now())
+
+  @@index([type, createdAt])
+  @@index([createdAt])
+}
+
+model AppFeedback {
+  id         String   @id @default(cuid())
+  name       String
+  email      String
+  message    String
+  platform   String?
+  appVersion String?
+  createdAt  DateTime @default(now())
+
+  @@index([createdAt])
+}

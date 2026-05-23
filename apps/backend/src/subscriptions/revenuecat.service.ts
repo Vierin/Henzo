@@ -7,6 +7,7 @@ import {
 import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../prisma/prisma.service';
 import { AnalyticsService } from '../analytics/analytics.service';
+import { AdminEventLogService } from '../admin/admin-event-log.service';
 
 type RcEntitlement = {
   expires_date: string | null;
@@ -32,6 +33,7 @@ export class RevenueCatService {
     private readonly config: ConfigService,
     private readonly prisma: PrismaService,
     private readonly analytics: AnalyticsService,
+    private readonly adminEventLog: AdminEventLogService,
   ) {}
 
   private get secretKey(): string | undefined {
@@ -199,9 +201,15 @@ export class RevenueCatService {
     try {
       await this.syncOwnerFromRevenueCat(appUserId);
     } catch (e) {
-      this.logger.warn(
-        `RevenueCat sync failed for ${appUserId}: ${e instanceof Error ? e.message : e}`,
-      );
+      const msg = e instanceof Error ? e.message : String(e);
+      this.logger.warn(`RevenueCat sync failed for ${appUserId}: ${msg}`);
+      await this.adminEventLog.log({
+        type: 'revenuecat_webhook_error',
+        severity: 'error',
+        message: msg,
+        userId: appUserId,
+        metadata: { eventType: type },
+      });
     }
     return { ok: true };
   }

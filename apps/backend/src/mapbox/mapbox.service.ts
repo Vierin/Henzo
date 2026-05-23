@@ -169,7 +169,16 @@ export class MapboxService {
     query: string,
     country?: string,
     limit: number = 5,
-  ): Promise<Array<{ id: string; address: string; lat: number; lon: number }>> {
+    types: string[] = ['address', 'poi'],
+  ): Promise<
+    Array<{
+      id: string;
+      address: string;
+      city: string;
+      lat: number;
+      lon: number;
+    }>
+  > {
     try {
       if (!this.accessToken) {
         throw new Error('MAPBOX_ACCESS_TOKEN is not configured');
@@ -184,7 +193,7 @@ export class MapboxService {
           query,
           limit,
           countries: [countryCode],
-          types: ['address', 'poi'], // Limit to addresses and points of interest
+          types,
         })
         .send();
 
@@ -192,6 +201,7 @@ export class MapboxService {
         return response.body.features.map((feature) => ({
           id: feature.id,
           address: feature.place_name || '',
+          city: (feature.text || feature.place_name || '').trim(),
           lat: feature.center[1],
           lon: feature.center[0],
         }));
