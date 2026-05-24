@@ -19,7 +19,7 @@ import { buildPublicTrainerPayload } from '../fitness/trainer-display.util';
 @Injectable()
 export class StudiosService {
   private static readonly MAX_STUDIO_PHOTOS = 5;
-  private static readonly DEFAULT_BOOKING_PERIOD_DAYS = 30;
+  private static readonly DEFAULT_BOOKING_PERIOD_DAYS = 28;
   private static readonly MAX_BOOKING_PERIOD_DAYS = 60;
 
   constructor(
@@ -189,6 +189,12 @@ export class StudiosService {
     const hasTraining = (studio._count?.Training ?? 0) > 0;
     const hasLogo = this.hasLogoUrl(studio.logoUrl);
     const hasPhoto = this.hasAtLeastOnePhoto(studio.photos);
+    const bookingPeriodDays = this.getBookingPeriodDays(
+      studio.reminderSettings,
+    );
+    const bookingWindowConfigured =
+      bookingPeriodDays != null &&
+      bookingPeriodDays !== StudiosService.DEFAULT_BOOKING_PERIOD_DAYS;
     const contactsConfigured = this.hasContactInfo(studio);
 
     const missingRequiredSteps: string[] = [];
@@ -215,6 +221,10 @@ export class StudiosService {
         hasLogo: {
           required: false,
           completed: hasLogo,
+        },
+        bookingWindowConfigured: {
+          required: false,
+          completed: bookingWindowConfigured,
         },
         contactsConfigured: {
           required: false,
