@@ -1,261 +1,181 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../constants/colors.dart';
 import '../../l10n/locale_provider.dart';
 
-class OwnerChecklistCard extends StatefulWidget {
+/// Owner onboarding card: 3 required steps, then 3 optional (design mock).
+class OwnerChecklistCard extends StatelessWidget {
   const OwnerChecklistCard({
     super.key,
-    this.showSalonSetupStep = false,
-    this.salonSetupCompleted = true,
+    required this.studioDetailsCompleted,
     required this.hasTraining,
     required this.hasPhoto,
     required this.hasLogo,
     required this.contactsConfigured,
+    required this.hasDescription,
     required this.canPublish,
     required this.isStudioActive,
     required this.isPublishing,
-    this.onSalonSetupTap,
+    required this.onStudioDetailsTap,
     required this.onCreateTrainingTap,
     required this.onAddPhotoTap,
     required this.onAddLogoTap,
     required this.onContactsTap,
+    required this.onAddDescriptionTap,
+    required this.onPreviewPublicPageTap,
     required this.onPublishTap,
-    this.missingRequiredSteps = const <String>[],
-    this.initiallyExpanded = false,
+    required this.showOptionalPhase,
+    this.showPreviewButton = true,
   });
 
-  final bool showSalonSetupStep;
-  final bool salonSetupCompleted;
+  final bool studioDetailsCompleted;
   final bool hasTraining;
   final bool hasPhoto;
   final bool hasLogo;
   final bool contactsConfigured;
+  final bool hasDescription;
   final bool canPublish;
   final bool isStudioActive;
   final bool isPublishing;
-  final List<String> missingRequiredSteps;
-  final bool initiallyExpanded;
-  final VoidCallback? onSalonSetupTap;
+  final bool showPreviewButton;
+  final VoidCallback onStudioDetailsTap;
   final VoidCallback onCreateTrainingTap;
   final VoidCallback onAddPhotoTap;
   final VoidCallback onAddLogoTap;
   final VoidCallback onContactsTap;
+  final VoidCallback onAddDescriptionTap;
+  final VoidCallback onPreviewPublicPageTap;
   final VoidCallback onPublishTap;
+  final bool showOptionalPhase;
 
-  @override
-  State<OwnerChecklistCard> createState() => _OwnerChecklistCardState();
-}
+  static const _iconPurple = Color(0xFF3D2E6F);
+  static const _optionalHeaderBg = Color(0xFFFFF9F5);
+  static const _starBadgeBg = Color(0xFFFFF0D1);
+  static const _starColor = Color(0xFFFF9900);
+  static const _mandatoryStepWeight = 25;
+  static const _optionalStepWeight = 10;
 
-class _OwnerChecklistCardState extends State<OwnerChecklistCard> {
-  late bool _checklistExpanded;
+  int get _mandatoryDoneCount => <bool>[
+    studioDetailsCompleted,
+    hasTraining,
+    hasPhoto,
+  ].where((d) => d).length;
 
-  @override
-  void initState() {
-    super.initState();
-    _checklistExpanded = widget.initiallyExpanded;
+  int get _optionalDoneCount => <bool>[
+    hasLogo,
+    contactsConfigured,
+    hasDescription,
+  ].where((d) => d).length;
+
+  int get _mandatoryLeft => 3 - _mandatoryDoneCount;
+
+  int get _optionalLeft => 3 - _optionalDoneCount;
+
+  /// Mandatory steps 25% each (75%), optional 10% each (30%), total 100%.
+  int get _percent {
+    final mandatoryPart = _mandatoryDoneCount * _mandatoryStepWeight;
+    if (!showOptionalPhase) return mandatoryPart;
+    return mandatoryPart + _optionalDoneCount * _optionalStepWeight;
   }
 
-  int get _totalSteps => 4 + (widget.showSalonSetupStep ? 1 : 0);
+  int get _stepsLeft => showOptionalPhase ? _optionalLeft : _mandatoryLeft;
 
   @override
   Widget build(BuildContext context) {
     final t = context.watch<LocaleProvider>();
     String tr(String k) => t.t('dashboard.$k');
 
-    final completedCount = <bool>[
-      if (widget.showSalonSetupStep) widget.salonSetupCompleted,
-      widget.hasTraining,
-      widget.hasPhoto,
-      widget.hasLogo,
-      widget.contactsConfigured,
-    ].where((done) => done).length;
-
-    final progressLine =
-        '$completedCount/$_totalSteps ${tr('onboardingStepsCompleted')}';
-
-    final studioReady =
-        !widget.showSalonSetupStep || widget.salonSetupCompleted;
-
-    final missingText = widget.missingRequiredSteps.isEmpty
-        ? null
-        : tr('onboardingMissingRequired').replaceAll(
-            '{items}',
-            widget.missingRequiredSteps.join(', '),
-          );
-
     return Container(
       width: double.infinity,
-      margin: const EdgeInsets.symmetric(horizontal: 10),
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.fromLTRB(13, 16, 13, 16),
       decoration: BoxDecoration(
         color: AppColors.backgroundPrimary,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.borderPrimary),
+        borderRadius: BorderRadius.circular(18),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Material(
-            color: Colors.transparent,
-            child: InkWell(
-              borderRadius: BorderRadius.circular(10),
-              onTap: () =>
-                  setState(() => _checklistExpanded = !_checklistExpanded),
-              child: Padding(
-                padding: const EdgeInsets.symmetric(vertical: 2),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            tr('onboardingTitle'),
-                            style: const TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.w700,
-                              color: AppColors.textPrimary,
-                            ),
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            progressLine,
-                            style: const TextStyle(
-                              fontSize: 13,
-                              color: AppColors.textSecondary,
-                            ),
-                          ),
-                        ],
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: showOptionalPhase
+                    ? _OptionalPhaseHeader(tr: tr)
+                    : _MandatoryPhaseHeader(
+                        tr: tr,
+                        percent: _percent,
+                        stepsLeft: _stepsLeft,
                       ),
-                    ),
-                    const SizedBox(width: 8),
-                    Icon(
-                      _checklistExpanded
-                          ? Icons.expand_less_rounded
-                          : Icons.expand_more_rounded,
-                      size: 28,
-                      color: AppColors.textSecondary,
-                    ),
-                  ],
-                ),
               ),
-            ),
+              const SizedBox(width: 12),
+              _OnboardingProgressRing(
+                percent: _percent,
+                completedLabel: tr('onboardingCompletedLabel'),
+              ),
+            ],
           ),
-          if (missingText != null) ...[
-            const SizedBox(height: 10),
-            Text(
-              missingText,
-              style: const TextStyle(
-                color: AppColors.warning600,
-                fontWeight: FontWeight.w600,
-                fontSize: 12,
-              ),
-            ),
-          ],
-          if (_checklistExpanded) ...[
-            const SizedBox(height: 12),
-            Text(
-              tr('onboardingRequiredCaption'),
-              style: const TextStyle(
-                fontSize: 11,
-                fontWeight: FontWeight.w700,
-                letterSpacing: 0.4,
-                color: AppColors.textSecondary,
-              ),
-            ),
-            const SizedBox(height: 6),
-            if (widget.showSalonSetupStep)
-              _ChecklistRow(
-                label: tr('onboardingSetupBusiness'),
-                done: widget.salonSetupCompleted,
-                onTap: widget.salonSetupCompleted
-                    ? null
-                    : widget.onSalonSetupTap,
-              ),
-            _ChecklistRow(
-              label: tr('onboardingCreateTraining'),
-              done: widget.hasTraining,
-              onTap: !studioReady || widget.hasTraining
-                  ? null
-                  : widget.onCreateTrainingTap,
-            ),
-            _ChecklistRow(
-              label: tr('onboardingAddPhoto'),
-              done: widget.hasPhoto,
-              onTap: !studioReady || widget.hasPhoto ? null : widget.onAddPhotoTap,
-            ),
-            Padding(
-              padding: const EdgeInsets.only(top: 10, bottom: 6),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Expanded(
-                        child: Container(
-                          height: 1,
-                          color: AppColors.borderSecondary,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 10),
-                  Text(
-                    tr('onboardingOptionalTitle'),
-                    style: const TextStyle(
-                      fontSize: 11,
-                      fontWeight: FontWeight.w700,
-                      letterSpacing: 0.4,
-                      color: AppColors.textSecondary,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            _ChecklistRow(
-              label: tr('onboardingAddLogo'),
-              done: widget.hasLogo,
-              onTap: !studioReady || widget.hasLogo ? null : widget.onAddLogoTap,
-            ),
-            _ChecklistRow(
-              label: tr('onboardingContacts'),
-              done: widget.contactsConfigured,
-              onTap: !studioReady || widget.contactsConfigured
-                  ? null
-                  : widget.onContactsTap,
-            ),
-          ],
-          if (!widget.isStudioActive) ...[
+          if (showPreviewButton || (!isStudioActive && canPublish)) ...[
             const SizedBox(height: 14),
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                onPressed: widget.canPublish && !widget.isPublishing
-                    ? widget.onPublishTap
-                    : null,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.primary500,
-                  disabledBackgroundColor: AppColors.borderPrimary,
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(vertical: 12),
-                ),
-                child: widget.isPublishing
-                    ? const SizedBox(
-                        height: 16,
-                        width: 16,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          valueColor: AlwaysStoppedAnimation<Color>(
-                            Colors.white,
-                          ),
-                        ),
-                      )
-                    : Text(tr('onboardingActivate')),
-              ),
+            _OnboardingActionButtons(
+              previewLabel: tr('onboardingPreviewPublicPage'),
+              activateLabel: tr('onboardingActivate'),
+              showPreview: showPreviewButton,
+              showActivate: !isStudioActive && canPublish,
+              isPublishing: isPublishing,
+              onPreviewTap: onPreviewPublicPageTap,
+              onActivateTap: onPublishTap,
             ),
+          ],
+          if (_stepsLeft > 0) ...[
+            const SizedBox(height: 20),
+            if (!showOptionalPhase) ...[
+              if (!studioDetailsCompleted)
+                _OnboardingTaskRow(
+                  icon: Icons.storefront_outlined,
+                  title: tr('onboardingStudioDetailsTitle'),
+                  subtitle: tr('onboardingStudioDetailsSubtitle'),
+                  onTap: onStudioDetailsTap,
+                ),
+              if (!hasTraining)
+                _OnboardingTaskRow(
+                  icon: Icons.calendar_today_outlined,
+                  title: tr('onboardingCreateClassTitle'),
+                  subtitle: tr('onboardingCreateClassSubtitle'),
+                  onTap: onCreateTrainingTap,
+                ),
+              if (!hasPhoto)
+                _OnboardingTaskRow(
+                  icon: Icons.photo_outlined,
+                  title: tr('onboardingPhotoTitle'),
+                  subtitle: tr('onboardingPhotoSubtitle'),
+                  onTap: onAddPhotoTap,
+                ),
+            ] else ...[
+              if (!hasLogo)
+                _OnboardingTaskRow(
+                  icon: Icons.image_outlined,
+                  title: tr('onboardingAddLogo'),
+                  subtitle: tr('onboardingLogoSubtitle'),
+                  onTap: onAddLogoTap,
+                ),
+              if (!contactsConfigured)
+                _OnboardingTaskRow(
+                  icon: Icons.contact_phone_outlined,
+                  title: tr('onboardingContacts'),
+                  subtitle: tr('onboardingContactsSubtitle'),
+                  onTap: onContactsTap,
+                ),
+              if (!hasDescription)
+                _OnboardingTaskRow(
+                  icon: Icons.description_outlined,
+                  title: tr('onboardingAddStudioDescriptionTitle'),
+                  subtitle: tr('onboardingAddStudioDescriptionSubtitle'),
+                  onTap: onAddDescriptionTap,
+                ),
+            ],
           ],
         ],
       ),
@@ -263,42 +183,433 @@ class _OwnerChecklistCardState extends State<OwnerChecklistCard> {
   }
 }
 
-class _ChecklistRow extends StatelessWidget {
-  const _ChecklistRow({
-    required this.label,
-    required this.done,
-    this.onTap,
+class _MandatoryPhaseHeader extends StatelessWidget {
+  const _MandatoryPhaseHeader({
+    required this.tr,
+    required this.percent,
+    required this.stepsLeft,
   });
 
-  final String label;
-  final bool done;
-  final VoidCallback? onTap;
+  final String Function(String) tr;
+  final int percent;
+  final int stepsLeft;
 
   @override
   Widget build(BuildContext context) {
-    final icon = done ? Icons.check_circle : Icons.radio_button_unchecked;
-    final color = done ? AppColors.success600 : AppColors.textSecondary;
-    final disabled = onTap == null;
-    return ListTile(
-      dense: true,
-      contentPadding: EdgeInsets.zero,
-      minVerticalPadding: 0,
-      leading: Icon(icon, size: 20, color: color),
-      title: Text(
-        label,
-        style: TextStyle(
-          fontSize: 14,
-          fontWeight: done ? FontWeight.w600 : FontWeight.w500,
-          color: disabled ? AppColors.textSecondary : AppColors.textPrimary,
+    final stepsText = stepsLeft == 1
+        ? tr('onboardingOneStepLeft')
+        : tr('onboardingStepsLeft').replaceAll('{count}', '$stepsLeft');
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          tr('onboardingTagline'),
+          style: const TextStyle(
+            fontSize: 11,
+            fontWeight: FontWeight.w700,
+            letterSpacing: 0.6,
+            color: AppColors.textSecondary,
+          ),
+        ),
+        const SizedBox(height: 8),
+        Text(
+          tr('onboardingStudioReadyPrefix').trim(),
+          style: const TextStyle(
+            fontSize: 24,
+            fontWeight: FontWeight.w400,
+            height: 1.2,
+            color: AppColors.textPrimary,
+          ),
+        ),
+        RichText(
+          text: TextSpan(
+            style: const TextStyle(
+              fontSize: 24,
+              fontWeight: FontWeight.w400,
+              height: 1.2,
+              color: AppColors.textPrimary,
+            ),
+            children: [
+              TextSpan(
+                text: '$percent%',
+                style: const TextStyle(fontWeight: FontWeight.w600),
+              ),
+              TextSpan(text: tr('onboardingStudioReadySuffix')),
+            ],
+          ),
+        ),
+        const SizedBox(height: 6),
+        Text(
+          stepsText,
+          style: const TextStyle(
+            fontSize: 12,
+            height: 1.2,
+            color: AppColors.textSecondary,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _OnboardingActionButtons extends StatelessWidget {
+  const _OnboardingActionButtons({
+    required this.previewLabel,
+    required this.activateLabel,
+    required this.showPreview,
+    required this.showActivate,
+    required this.isPublishing,
+    required this.onPreviewTap,
+    required this.onActivateTap,
+  });
+
+  final String previewLabel;
+  final String activateLabel;
+  final bool showPreview;
+  final bool showActivate;
+  final bool isPublishing;
+  final VoidCallback onPreviewTap;
+  final VoidCallback onActivateTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        if (showPreview)
+          Expanded(
+            child: _PreviewPublicPageButton(
+              label: previewLabel,
+              onTap: onPreviewTap,
+            ),
+          ),
+        if (showPreview && showActivate) const SizedBox(width: 8),
+        if (showActivate)
+          Expanded(
+            child: _ActivateStudioButton(
+              label: activateLabel,
+              isPublishing: isPublishing,
+              onTap: onActivateTap,
+            ),
+          ),
+      ],
+    );
+  }
+}
+
+class _OptionalPhaseHeader extends StatelessWidget {
+  const _OptionalPhaseHeader({required this.tr});
+
+  final String Function(String) tr;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.fromLTRB(0, 12, 0, 8),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  tr('onboardingOptionalHeadline'),
+                  style: const TextStyle(
+                    fontSize: 17,
+                    fontWeight: FontWeight.w700,
+                    height: 1.2,
+                    color: AppColors.textPrimary,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  tr('onboardingOptionalSubhead'),
+                  style: const TextStyle(
+                    fontSize: 13,
+                    height: 1.35,
+                    color: AppColors.textPrimary,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _PreviewPublicPageButton extends StatelessWidget {
+  const _PreviewPublicPageButton({required this.label, required this.onTap});
+
+  final String label;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: AppColors.primary500,
+      borderRadius: BorderRadius.circular(999),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(999),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Flexible(
+                child: Text(
+                  label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.white,
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
-      trailing: disabled
-          ? const SizedBox.shrink()
-          : const Icon(
-              Icons.chevron_right_rounded,
-              color: AppColors.textSecondary,
+    );
+  }
+}
+
+class _ActivateStudioButton extends StatelessWidget {
+  const _ActivateStudioButton({
+    required this.label,
+    required this.isPublishing,
+    required this.onTap,
+  });
+
+  final String label;
+  final bool isPublishing;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: isPublishing ? null : onTap,
+        borderRadius: BorderRadius.circular(999),
+        child: Ink(
+          decoration: BoxDecoration(
+            color: AppColors.backgroundPrimary,
+            borderRadius: BorderRadius.circular(999),
+            border: Border.all(color: AppColors.primary500, width: 1.5),
+          ),
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              if (isPublishing)
+                const SizedBox(
+                  width: 18,
+                  height: 18,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    color: AppColors.primary500,
+                  ),
+                )
+              else
+                Flexible(
+                  child: Text(
+                    label,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.primary500,
+                    ),
+                  ),
+                ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _OnboardingProgressRing extends StatelessWidget {
+  const _OnboardingProgressRing({
+    required this.percent,
+    required this.completedLabel,
+  });
+
+  final int percent;
+  final String completedLabel;
+
+  @override
+  Widget build(BuildContext context) {
+    const size = 106.0;
+    const stroke = 8.0;
+    const rocketSize = 34.0;
+    final progress = (percent.clamp(0, 100)) / 100.0;
+
+    return SizedBox(
+      width: size,
+      height: size,
+      child: Stack(
+        clipBehavior: Clip.none,
+        children: [
+          CustomPaint(
+            size: const Size(size, size),
+            painter: _RingPainter(progress: progress, stroke: stroke),
+          ),
+          Positioned.fill(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(
+                  '$percent%',
+                  style: const TextStyle(
+                    fontSize: 24,
+                    fontWeight: FontWeight.w500,
+                    color: AppColors.textPrimary,
+                    height: 1,
+                  ),
+                ),
+                Text(
+                  completedLabel,
+                  style: const TextStyle(
+                    fontSize: 11,
+                    color: AppColors.textSecondary,
+                  ),
+                ),
+              ],
             ),
-      onTap: onTap,
+          ),
+          Positioned(
+            right: -4,
+            bottom: -6,
+            child: Image.asset(
+              'assets/icons/icon-rocket.png',
+              width: rocketSize,
+              height: rocketSize,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _RingPainter extends CustomPainter {
+  _RingPainter({required this.progress, this.stroke = 8.0});
+
+  final double progress;
+  final double stroke;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final center = Offset(size.width / 2, size.height / 2);
+    final radius = size.width / 2 - stroke / 2;
+
+    final track = Paint()
+      ..color = AppColors.primary50
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = stroke
+      ..strokeCap = StrokeCap.round;
+
+    final arc = Paint()
+      ..color = AppColors.primary500
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = stroke
+      ..strokeCap = StrokeCap.round;
+
+    canvas.drawCircle(center, radius, track);
+    if (progress > 0) {
+      canvas.drawArc(
+        Rect.fromCircle(center: center, radius: radius),
+        -math.pi / 2,
+        2 * math.pi * progress,
+        false,
+        arc,
+      );
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant _RingPainter oldDelegate) =>
+      oldDelegate.progress != progress || oldDelegate.stroke != stroke;
+}
+
+class _OnboardingTaskRow extends StatelessWidget {
+  const _OnboardingTaskRow({
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+    required this.onTap,
+  });
+
+  final IconData icon;
+  final String title;
+  final String subtitle;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(12),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 4),
+            child: Row(
+              children: [
+                Container(
+                  width: 40,
+                  height: 40,
+                  decoration: const BoxDecoration(
+                    color: OwnerChecklistCard._iconPurple,
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(icon, color: Colors.white, size: 20),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        title,
+                        style: const TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.textPrimary,
+                        ),
+                      ),
+                      Text(
+                        subtitle,
+                        style: const TextStyle(
+                          fontSize: 13,
+                          color: AppColors.textSecondary,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const Icon(
+                  Icons.chevron_right_rounded,
+                  color: OwnerChecklistCard._iconPurple,
+                  size: 28,
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
     );
   }
 }

@@ -320,6 +320,11 @@ class _AddressPickerModalState extends State<AddressPickerModal> {
     });
   }
 
+  void _clearLocationName() {
+    _nameController.clear();
+    setState(() {});
+  }
+
   void _clearAddressSearch() {
     _searchController.clear();
     setState(() {
@@ -645,6 +650,16 @@ class _AddressPickerModalState extends State<AddressPickerModal> {
                   onChanged: (_) => setState(() {}),
                   decoration: _fieldDecoration(
                     hint: t('addressPicker.locationNameHint'),
+                    suffixIcon: _hasLocationName
+                        ? IconButton(
+                            onPressed: _clearLocationName,
+                            icon: const Icon(
+                              Icons.close,
+                              size: 20,
+                              color: AppColors.textSecondary,
+                            ),
+                          )
+                        : null,
                   ),
                 ),
                 const SizedBox(height: 16),

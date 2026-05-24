@@ -395,12 +395,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
     setState(() => _salonSaving = true);
     try {
       final socialPayload = studioSocialLinksToPayload(_socialLinks);
+      final phone = _salonPhoneController.text.trim();
+      final email = _salonEmailController.text.trim();
       final payload = <String, dynamic>{
         'name': name,
         'description': _salonDescriptionController.text.trim(),
         'address': _salonAddressController.text.trim(),
-        'phone': _salonPhoneController.text.trim(),
-        'email': _salonEmailController.text.trim(),
+        if (phone.isNotEmpty) 'phone': phone,
+        if (email.isNotEmpty) 'email': email,
         'website': socialPayload.website ?? '',
         'instagram': socialPayload.instagram ?? '',
         'photos': _studioPhotos,

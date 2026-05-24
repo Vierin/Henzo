@@ -32,17 +32,16 @@ class ClassBookingConfirmationScreen extends StatelessWidget {
         : <String, dynamic>{};
     final startsAt = parseApiDateTime(session['startsAt']) ?? DateTime.now();
     final durationMin = (training['duration'] as num?)?.toInt() ?? 60;
-    final endsAt = parseApiDateTime(session['endsAt']) ??
+    final endsAt =
+        parseApiDateTime(session['endsAt']) ??
         startsAt.add(Duration(minutes: durationMin));
     final trainerName = (trainer['name'] ?? '').toString().trim();
     final ownerName = (owner['name'] ?? '').toString().trim();
     final locName = (session['locationName'] ?? '').toString().trim();
     final studioName = (studio?['name'] ?? 'Studio').toString();
     final studioAddress = (studio?['address'] ?? '').toString().trim();
-    final accent =
-        parseHexColor(cat['chip_bg_hex']?.toString()) ??
-        parseHexColor(training['displayColor']?.toString()) ??
-        AppColors.primary500;
+    final accent = _resolveCategoryAccent(training, cat);
+    final accentIcon = _resolveCategoryIconColor(cat, accent);
     return ClassBookingConfirmationScreen(
       classTitle: (training['name'] ?? 'Class').toString(),
       trainerName: trainerName.isNotEmpty ? trainerName : ownerName,
@@ -53,6 +52,7 @@ class ClassBookingConfirmationScreen extends StatelessWidget {
       durationMin: durationMin,
       price: (training['price'] as num?)?.toDouble(),
       accent: accent,
+      accentIcon: accentIcon,
       latitude: (studio?['latitude'] as num?)?.toDouble(),
       longitude: (studio?['longitude'] as num?)?.toDouble(),
     );
@@ -67,6 +67,7 @@ class ClassBookingConfirmationScreen extends StatelessWidget {
     required this.endsAt,
     required this.durationMin,
     required this.accent,
+    required this.accentIcon,
     this.studioAddress,
     this.price,
     this.latitude,
@@ -81,6 +82,7 @@ class ClassBookingConfirmationScreen extends StatelessWidget {
   final DateTime endsAt;
   final int durationMin;
   final Color accent;
+  final Color accentIcon;
   final double? price;
   final double? latitude;
   final double? longitude;
@@ -119,6 +121,28 @@ class ClassBookingConfirmationScreen extends StatelessWidget {
   String get _gridDate => DateFormat('EEE, MMM d').format(startsAt);
 
   String get _gridTime => '${formatTime24(startsAt)} · ($durationMin min)';
+
+  static Color _resolveCategoryAccent(
+    Map<String, dynamic> training,
+    Map<String, dynamic> category,
+  ) {
+    return parseHexColor(category['chip_bg_hex']?.toString()) ??
+        parseHexColor(category['chipBgHex']?.toString()) ??
+        parseHexColor(training['categoryChipBgHex']?.toString()) ??
+        parseHexColor(training['displayColor']?.toString()) ??
+        AppColors.neutral500;
+  }
+
+  static Color _resolveCategoryIconColor(
+    Map<String, dynamic> category,
+    Color accent,
+  ) {
+    return parseHexColor(category['chip_fg_hex']?.toString()) ??
+        parseHexColor(category['chipFgHex']?.toString()) ??
+        (accent.computeLuminance() > 0.55
+            ? AppColors.textPrimary
+            : AppColors.textInverse);
+  }
 
   String get _costLabel {
     if (price != null && price! > 0) {
@@ -183,15 +207,16 @@ class ClassBookingConfirmationScreen extends StatelessWidget {
         '&query=$latitude,$longitude',
       );
     } else {
-      final q = (studioAddress?.trim().isNotEmpty == true
-              ? studioAddress!.trim()
-              : locationTitle.trim())
-          .trim();
+      final q =
+          (studioAddress?.trim().isNotEmpty == true
+                  ? studioAddress!.trim()
+                  : locationTitle.trim())
+              .trim();
       if (q.isEmpty) {
         if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('No address available')),
-          );
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(const SnackBar(content: Text('No address available')));
         }
         return;
       }
@@ -202,9 +227,9 @@ class ClassBookingConfirmationScreen extends StatelessWidget {
     }
     if (!await canLaunchUrl(uri)) {
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Could not open maps')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('Could not open maps')));
       }
       return;
     }
@@ -215,9 +240,9 @@ class ClassBookingConfirmationScreen extends StatelessWidget {
     final address = studioAddress?.trim();
     if (address == null || address.isEmpty) return;
     Clipboard.setData(ClipboardData(text: address));
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Address copied')),
-    );
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(const SnackBar(content: Text('Address copied')));
   }
 
   @override
@@ -248,12 +273,28 @@ class ClassBookingConfirmationScreen extends StatelessWidget {
                           ),
                           icon: const Icon(Icons.close_rounded, size: 22),
                         ),
-                        IconButton(
+                        FilledButton.icon(
                           onPressed: _shareBooking,
-                          style: IconButton.styleFrom(
-                            foregroundColor: AppColors.textTertiary,
+                          icon: const Icon(Icons.ios_share_rounded, size: 18),
+                          label: const Text(
+                            'Share',
+                            style: TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w600,
+                            ),
                           ),
-                          icon: const Icon(Icons.ios_share_rounded, size: 22),
+                          style: FilledButton.styleFrom(
+                            backgroundColor: AppColors.primary500,
+                            foregroundColor: AppColors.textInverse,
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 14,
+                              vertical: 8,
+                            ),
+                            minimumSize: const Size(0, 40),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(20),
+                            ),
+                          ),
                         ),
                       ],
                     ),
@@ -277,6 +318,30 @@ class ClassBookingConfirmationScreen extends StatelessWidget {
                   ),
                   child: Column(
                     children: [
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 14,
+                          vertical: 10,
+                        ),
+                        decoration: BoxDecoration(
+                          color: AppColors.backgroundPrimary,
+                          borderRadius: BorderRadius.circular(18),
+                          boxShadow: const [
+                            BoxShadow(
+                              color: Color(0x0F000000),
+                              blurRadius: 12,
+                              offset: Offset(0, 4),
+                            ),
+                          ],
+                        ),
+                        child: Image.asset(
+                          'assets/icons/icon-rocket.png',
+                          width: 32,
+                          height: 32,
+                          fit: BoxFit.contain,
+                        ),
+                      ),
+                      const SizedBox(height: 12),
                       Text(
                         'You\'re in!',
                         style: textTheme.headlineMedium?.copyWith(
@@ -298,6 +363,7 @@ class ClassBookingConfirmationScreen extends StatelessWidget {
                       const SizedBox(height: 28),
                       _BookingTicketCard(
                         accent: accent,
+                        accentIcon: accentIcon,
                         classTitle: classTitle,
                         gridDate: _gridDate,
                         gridTime: _gridTime,
@@ -319,7 +385,7 @@ class ClassBookingConfirmationScreen extends StatelessWidget {
                           onPressed: _shareBooking,
                           style: AuthFormStyles.primaryButtonStyle(),
                           child: const Text(
-                            'Invite your friend',
+                            'Invite friends',
                             style: TextStyle(
                               fontSize: 16,
                               fontWeight: FontWeight.w600,
@@ -342,6 +408,7 @@ class ClassBookingConfirmationScreen extends StatelessWidget {
 class _BookingTicketCard extends StatelessWidget {
   const _BookingTicketCard({
     required this.accent,
+    required this.accentIcon,
     required this.classTitle,
     required this.gridDate,
     required this.gridTime,
@@ -355,6 +422,7 @@ class _BookingTicketCard extends StatelessWidget {
   });
 
   final Color accent;
+  final Color accentIcon;
   final String classTitle;
   final String gridDate;
   final String gridTime;
@@ -408,6 +476,7 @@ class _BookingTicketCard extends StatelessWidget {
                     Expanded(
                       child: _AccentMetaCell(
                         accent: accent,
+                        iconColor: accentIcon,
                         svgAsset: 'assets/icons/icon-calendar.svg',
                         label: gridDate,
                       ),
@@ -416,6 +485,7 @@ class _BookingTicketCard extends StatelessWidget {
                     Expanded(
                       child: _AccentMetaCell(
                         accent: accent,
+                        iconColor: accentIcon,
                         icon: Icons.schedule_rounded,
                         label: gridTime,
                       ),
@@ -429,6 +499,7 @@ class _BookingTicketCard extends StatelessWidget {
                     Expanded(
                       child: _AccentMetaCell(
                         accent: accent,
+                        iconColor: accentIcon,
                         svgAsset: 'assets/icons/icon-profile-large.svg',
                         svgSize: 14,
                         label: trainerName.isNotEmpty ? trainerName : '—',
@@ -438,6 +509,7 @@ class _BookingTicketCard extends StatelessWidget {
                     Expanded(
                       child: _AccentMetaCell(
                         accent: accent,
+                        iconColor: accentIcon,
                         svgAsset: 'assets/icons/icon-card.svg',
                         label: costLabel,
                       ),
@@ -447,6 +519,7 @@ class _BookingTicketCard extends StatelessWidget {
                 const SizedBox(height: 16),
                 _LocationRow(
                   accent: accent,
+                  iconColor: accentIcon,
                   title: locationTitle,
                   address: studioAddress,
                   onCopyAddress: onCopyAddress,
@@ -502,18 +575,13 @@ class _TicketActionButton extends StatelessWidget {
       icon: Icon(icon, size: 18),
       label: Text(
         label,
-        style: const TextStyle(
-          fontWeight: FontWeight.w600,
-          fontSize: 13,
-        ),
+        style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
       ),
       style: FilledButton.styleFrom(
         backgroundColor: AppColors.primary500,
         foregroundColor: AppColors.textInverse,
         padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 8),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(15),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
       ),
     );
   }
@@ -522,6 +590,7 @@ class _TicketActionButton extends StatelessWidget {
 class _AccentMetaCell extends StatelessWidget {
   const _AccentMetaCell({
     required this.accent,
+    required this.iconColor,
     required this.label,
     this.icon,
     this.svgAsset,
@@ -529,6 +598,7 @@ class _AccentMetaCell extends StatelessWidget {
   }) : assert(icon != null || svgAsset != null);
 
   final Color accent;
+  final Color iconColor;
   final String label;
   final IconData? icon;
   final String? svgAsset;
@@ -551,12 +621,9 @@ class _AccentMetaCell extends StatelessWidget {
                   height: svgSize,
                   fit: BoxFit.contain,
                   excludeFromSemantics: true,
-                  colorFilter: const ColorFilter.mode(
-                    AppColors.textPrimary,
-                    BlendMode.srcIn,
-                  ),
+                  colorFilter: ColorFilter.mode(iconColor, BlendMode.srcIn),
                 )
-              : Icon(icon, size: 16, color: AppColors.textPrimary),
+              : Icon(icon, size: 16, color: iconColor),
         ),
         const SizedBox(width: 8),
         Expanded(
@@ -564,7 +631,7 @@ class _AccentMetaCell extends StatelessWidget {
             label,
             style: const TextStyle(
               fontSize: 13,
-              fontWeight: FontWeight.w500,
+              fontWeight: FontWeight.w600,
               color: AppColors.textPrimary,
               height: 1.3,
             ),
@@ -578,12 +645,14 @@ class _AccentMetaCell extends StatelessWidget {
 class _LocationRow extends StatelessWidget {
   const _LocationRow({
     required this.accent,
+    required this.iconColor,
     required this.title,
     required this.address,
     this.onCopyAddress,
   });
 
   final Color accent;
+  final Color iconColor;
   final String title;
   final String? address;
   final VoidCallback? onCopyAddress;
@@ -598,10 +667,13 @@ class _LocationRow extends StatelessWidget {
           height: 30,
           decoration: BoxDecoration(color: accent, shape: BoxShape.circle),
           alignment: Alignment.center,
-          child: const Icon(
-            Icons.place_outlined,
-            size: 16,
-            color: AppColors.textPrimary,
+          child: SvgPicture.asset(
+            'assets/icons/icon-pin.svg',
+            width: 14,
+            height: 14,
+            fit: BoxFit.contain,
+            excludeFromSemantics: true,
+            colorFilter: ColorFilter.mode(iconColor, BlendMode.srcIn),
           ),
         ),
         const SizedBox(width: 8),

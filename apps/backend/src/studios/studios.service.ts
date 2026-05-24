@@ -125,6 +125,70 @@ export class StudiosService {
     );
   }
 
+  private shouldRetranslateStudioDescription(
+    newDescription: string,
+    existing: {
+      description?: string | null;
+      descriptionEn?: string | null;
+      descriptionVi?: string | null;
+      descriptionRu?: string | null;
+    },
+  ): boolean {
+    const trimmed = newDescription.trim();
+    if (!trimmed) return false;
+
+    if (trimmed !== (existing.description ?? '').trim()) {
+      return true;
+    }
+
+    return (
+      !(existing.descriptionEn ?? '').trim() ||
+      !(existing.descriptionVi ?? '').trim() ||
+      !(existing.descriptionRu ?? '').trim()
+    );
+  }
+
+  private scheduleStudioDescriptionTranslations(
+    studioId: string,
+    description: string,
+  ): void {
+    const trimmed = description.trim();
+    if (!trimmed) return;
+
+    void this.persistStudioDescriptionTranslations(studioId, trimmed).catch(
+      (error) => {
+        console.error(
+          `⚠️ Background description translation failed for studio ${studioId}:`,
+          error,
+        );
+      },
+    );
+  }
+
+  private async persistStudioDescriptionTranslations(
+    studioId: string,
+    description: string,
+  ): Promise<void> {
+    console.log(`🌐 Background: translating studio ${studioId} description...`);
+    const translations =
+      await this.translationService.generateDescriptionTranslations(
+        description,
+      );
+
+    const studioRepo = this.prisma.studio ?? this.prisma.Studio;
+    if (!studioRepo) return;
+
+    await studioRepo.update({
+      where: { id: studioId },
+      data: {
+        descriptionEn: translations.descriptionEn || null,
+        descriptionVi: translations.descriptionVi || null,
+        descriptionRu: translations.descriptionRu || null,
+      },
+    });
+    console.log(`✅ Background translations saved for studio ${studioId}`);
+  }
+
   private getBookingPeriodDays(reminderSettings: unknown): number | null {
     if (!reminderSettings || typeof reminderSettings !== 'object') return null;
     const raw = (reminderSettings as Record<string, unknown>)[
@@ -169,6 +233,7 @@ export class StudiosService {
         status: true,
         logoUrl: true,
         photos: true,
+        description: true,
         phone: true,
         email: true,
         website: true,
@@ -189,12 +254,9 @@ export class StudiosService {
     const hasTraining = (studio._count?.Training ?? 0) > 0;
     const hasLogo = this.hasLogoUrl(studio.logoUrl);
     const hasPhoto = this.hasAtLeastOnePhoto(studio.photos);
-    const bookingPeriodDays = this.getBookingPeriodDays(
-      studio.reminderSettings,
-    );
-    const bookingWindowConfigured =
-      bookingPeriodDays != null &&
-      bookingPeriodDays !== StudiosService.DEFAULT_BOOKING_PERIOD_DAYS;
+    const hasDescription =
+      typeof studio.description === 'string' &&
+      studio.description.trim().length > 0;
     const contactsConfigured = this.hasContactInfo(studio);
 
     const missingRequiredSteps: string[] = [];
@@ -222,9 +284,9 @@ export class StudiosService {
           required: false,
           completed: hasLogo,
         },
-        bookingWindowConfigured: {
+        hasDescription: {
           required: false,
-          completed: bookingWindowConfigured,
+          completed: hasDescription,
         },
         contactsConfigured: {
           required: false,
@@ -1113,39 +1175,6 @@ export class StudiosService {
         }
       }
 
-      // Generate translations for description if provided
-      let descriptionTranslations: {
-        descriptionEn?: string;
-        descriptionVi?: string;
-        descriptionRu?: string;
-      } = {};
-
-      if (createStudioDto.description && createStudioDto.description.trim()) {
-        try {
-          console.log('🌐 Generating translations for Studio description...');
-          const translations =
-            await this.translationService.generateDescriptionTranslations(
-              createStudioDto.description.trim(),
-            );
-          descriptionTranslations = {
-            descriptionEn: translations.descriptionEn || undefined,
-            descriptionVi: translations.descriptionVi || undefined,
-            descriptionRu: translations.descriptionRu || undefined,
-          };
-          console.log('✅ Translations generated:', {
-            en: descriptionTranslations.descriptionEn?.substring(0, 50),
-            vi: descriptionTranslations.descriptionVi?.substring(0, 50),
-            ru: descriptionTranslations.descriptionRu?.substring(0, 50),
-          });
-        } catch (error) {
-          console.error(
-            '⚠️ Failed to generate description translations:',
-            error,
-          );
-          // Continue without translations, will use original description
-        }
-      }
-
       // Create Studio and subscription in a transaction
       const result = await this.prisma.$transaction(async (tx) => {
         const studioRepo = (tx as any).studio ?? (tx as any).Studio;
@@ -1165,7 +1194,6 @@ export class StudiosService {
             logoUrl: normalizedLogoUrl,
             photos: normalizedPhotos,
             reminderSettings,
-            ...descriptionTranslations,
             latitude,
             longitude,
             ownerId: userId,
@@ -1295,6 +1323,13 @@ export class StudiosService {
       console.log(
         `✅ Created Studio "${result.name}" with default FREEMIUM subscription`,
       );
+      const createdDescription = createStudioDto.description?.trim();
+      if (createdDescription) {
+        this.scheduleStudioDescriptionTranslations(
+          (result as any).id,
+          createdDescription,
+        );
+      }
       this.analytics.track(userId, 'studio_created', {
         studio_id: (result as any).id,
       });
@@ -1320,6 +1355,7 @@ export class StudiosService {
         id: true,
         name: true,
         address: true,
+        description: true,
         descriptionEn: true,
         descriptionVi: true,
         descriptionRu: true,
@@ -1388,48 +1424,19 @@ export class StudiosService {
       }
     }
 
-    // Generate translations for description only if it changed
-    let descriptionTranslations: {
-      descriptionEn?: string;
-      descriptionVi?: string;
-      descriptionRu?: string;
-    } = {};
+    let scheduleDescriptionTranslation = false;
+    let descriptionForTranslation: string | undefined;
+    let clearDescriptionTranslations = false;
 
-    if (updateStudioDto.description && updateStudioDto.description.trim()) {
-      const newDescription = updateStudioDto.description.trim();
-
-      // Check if description actually changed by comparing with existing translations
-      const descriptionChanged =
-        newDescription !== existingStudio.descriptionEn?.trim() &&
-        newDescription !== existingStudio.descriptionVi?.trim() &&
-        newDescription !== existingStudio.descriptionRu?.trim();
-
-      if (descriptionChanged) {
-        try {
-          console.log(
-            '🌐 Generating translations for updated Studio description...',
-          );
-          const translations =
-            await this.translationService.generateDescriptionTranslations(
-              newDescription,
-            );
-          descriptionTranslations = {
-            descriptionEn: translations.descriptionEn || undefined,
-            descriptionVi: translations.descriptionVi || undefined,
-            descriptionRu: translations.descriptionRu || undefined,
-          };
-          console.log('✅ Translations generated for update');
-        } catch (error) {
-          console.error(
-            '⚠️ Failed to generate description translations:',
-            error,
-          );
-          // Continue without translations
-        }
-      } else {
-        console.log(
-          'ℹ️ Description unchanged, skipping translation generation',
-        );
+    if (updateStudioDto.description !== undefined) {
+      const trimmed = updateStudioDto.description.trim();
+      if (!trimmed) {
+        clearDescriptionTranslations = true;
+      } else if (
+        this.shouldRetranslateStudioDescription(trimmed, existingStudio)
+      ) {
+        scheduleDescriptionTranslation = true;
+        descriptionForTranslation = trimmed;
       }
     }
 
@@ -1437,7 +1444,13 @@ export class StudiosService {
       where: { id: existingStudio.id },
       data: {
         ...StudioData,
-        ...descriptionTranslations,
+        ...(clearDescriptionTranslations
+          ? {
+              descriptionEn: null,
+              descriptionVi: null,
+              descriptionRu: null,
+            }
+          : {}),
         ...(latitude !== undefined && { latitude }),
         ...(longitude !== undefined && { longitude }),
         ...(slug && { slug }), // Update slug if generated
@@ -1470,6 +1483,13 @@ export class StudiosService {
     (updatedStudio as any).categories = serviceCategoryIds;
     (updatedStudio as any).Service = (updatedStudio as any).Training || [];
     (updatedStudio as any).Staff = (updatedStudio as any).Trainer || [];
+
+    if (scheduleDescriptionTranslation && descriptionForTranslation) {
+      this.scheduleStudioDescriptionTranslations(
+        existingStudio.id,
+        descriptionForTranslation,
+      );
+    }
 
     return updatedStudio; // Возвращаем салон напрямую
   }

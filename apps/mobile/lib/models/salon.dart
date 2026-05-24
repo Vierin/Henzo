@@ -1,3 +1,5 @@
+import 'studio_status.dart';
+
 class Salon {
   final String id;
   final String? name;
@@ -12,6 +14,7 @@ class Salon {
   final Map<String, dynamic>? workingHours;
   final Map<String, dynamic>? reminderSettings;
   final String? slug;
+  final StudioStatus status;
   final bool? autoConfirmBookings;
   final double? latitude;
   final double? longitude;
@@ -31,6 +34,7 @@ class Salon {
     this.workingHours,
     this.reminderSettings,
     this.slug,
+    this.status = StudioStatus.draft,
     this.autoConfirmBookings,
     this.latitude,
     this.longitude,
@@ -78,6 +82,7 @@ class Salon {
       workingHours: wh,
       reminderSettings: rs,
       slug: json['slug'] as String?,
+      status: StudioStatus.parse(json['status']?.toString()),
       autoConfirmBookings: json['autoConfirmBookings'] as bool?,
       latitude: lat,
       longitude: lon,
@@ -100,6 +105,7 @@ class Salon {
       'workingHours': workingHours,
       'reminderSettings': reminderSettings,
       'slug': slug,
+      'status': status.name.toUpperCase(),
       'autoConfirmBookings': autoConfirmBookings,
       'latitude': latitude,
       'longitude': longitude,

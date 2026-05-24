@@ -11,8 +11,10 @@ import '../services/api_client.dart';
 import '../services/auth_service.dart';
 import '../services/cache/studio_public_detail_cache.dart';
 import '../services/client_favorites_store.dart';
+import '../l10n/locale_provider.dart';
 import '../utils/color_hex.dart';
 import '../utils/formatters.dart';
+import '../utils/studio_description.dart';
 import '../widgets/map/henzo_map_layers.dart';
 import '../widgets/public/cached_salon_network_image.dart';
 import 'public_studio_schedule_screen.dart';
@@ -187,11 +189,12 @@ class _DetailContent extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final locale = context.watch<LocaleProvider>().localeCode;
     final photos = studio['photos'];
     final photoUrl = photos is List && photos.isNotEmpty ? photos.first?.toString() : null;
     final name = (studio['name'] ?? 'Studio').toString();
     final address = (studio['address'] ?? '').toString();
-    final description = (studio['description'] ?? '').toString();
+    final description = resolveStudioDescription(studio, locale);
     final phone = (studio['phone'] ?? '').toString();
     final email = (studio['email'] ?? '').toString();
     final website = (studio['website'] ?? '').toString();
