@@ -35,9 +35,10 @@ config/firebase-service-account.json
 !.vscode/launch.json
 !.vscode/extensions.json
 
-# Environment variables
+# Environment variables (secrets — never commit)
 .env
 .env.local
+.env.staging
 .env.production
 .env.production*
 .env.*.local

@@ -38,7 +38,7 @@ class AppSettingsScreen extends StatefulWidget {
 }
 
 class _AppSettingsScreenState extends State<AppSettingsScreen> {
-  static const int _defaultBookingPeriodDays = 28;
+  static const int _defaultBookingPeriodDays = 30;
 
   int _servicesCount = 0;
   int _staffCount = 0;

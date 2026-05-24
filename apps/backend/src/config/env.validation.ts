@@ -73,6 +73,12 @@ export class EnvironmentVariables {
   @IsOptional()
   NODE_ENV?: string;
 
+  /** local | staging | production — informational; file picked by resolve-backend-env-path */
+  @IsString()
+  @IsIn(['local', 'staging', 'production'])
+  @IsOptional()
+  HENZO_ENV?: string;
+
   // Frontend
   @IsString()
   @IsOptional()

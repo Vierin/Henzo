@@ -62,6 +62,12 @@
 		"businessRegisterTitle": "Регистрация бизнеса",
 		"businessRegisterSubtitle": "Создайте бизнес-аккаунт, чтобы управлять записями в Henzo.",
 		"businessName": "Название бизнеса",
+		"firstName": "Имя",
+		"surname": "Фамилия",
+		"fullName": "Полное имя",
+		"enterFirstName": "Введите имя",
+		"enterFullName": "Введите полное имя",
+		"clientRegisterTitle": "Регистрация клиента",
 		"enterBusinessName": "Введите название бизнеса",
 		"confirmPassword": "Подтвердите пароль",
 		"passwordsDontMatch": "Пароли не совпадают",
@@ -75,7 +81,19 @@
 		"resendCodeIn": "Отправить код снова через",
 		"didntReceiveCode": "Не получили код?",
 		"resend": "Отправить снова",
-		"enterOtpCode": "Введите 6-значный код"
+		"enterOtpCode": "Введите 6-значный код",
+		"roleTitle": "Кто вы?",
+		"roleSubtitleBefore": "Выберите роль и давайте",
+		"roleSubtitleHighlight": "начнём",
+		"roleHereTo": "Я здесь, чтобы",
+		"roleTrain": "тренироваться",
+		"roleManage": "управлять",
+		"roleClientFeature1": "Записываться на занятия",
+		"roleClientFeature2": "Отслеживать прогресс",
+		"roleClientFeature3": "Достигать целей",
+		"roleOwnerFeature1": "Управлять клиентами",
+		"roleOwnerFeature2": "Планировать занятия",
+		"roleOwnerFeature3": "Развивать бизнес"
 	},
 	"clientHome": {
 		"nowIn": "СЕЙЧАС В",
@@ -115,6 +133,12 @@
 		"removed": "Удалено из избранного",
 		"removeError": "Не удалось удалить"
 	},
+	"clientClassDetail": {
+		"shareInvite": "{name} приглашает вас на «{training}»",
+		"shareInviteWithTrainer": "{name} приглашает вас на «{training}» с тренером {trainer}",
+		"shareJoinMe": "Присоединяйтесь:",
+		"shareSomeone": "Кто-то"
+	},
 	"publicHome": {
 		"loginLink": "Вход",
 		"heroTitle": "Находите спортивные студии за секунды",
@@ -132,6 +156,7 @@
 		"network": "Нет связи с сервером. Проверьте EXPO_PUBLIC_API_URL и что бэкенд запущен.",
 		"responseNoUser": "Некорректный ответ сервера (нет данных пользователя).",
 		"userNotFoundInSystem": "Не удалось загрузить профиль.",
+		"accountNotFoundForEmail": "Не существует аккаунта с такой почтой.",
 		"noSession": "Нет активной сессии.",
 		"googleWebClientMissing": "Не настроен Google Web Client ID.",
 		"googleIosClientMissing": "Не настроен Google OAuth для iOS: в Google Cloud создай клиент типа iOS с bundle com.henzo.vn.Henzo, укажи Client ID в EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID в assets/.env и добавь CFBundleURLTypes с reversed scheme в ios/Runner/Info.plist (см. README google_sign_in_ios).",
@@ -164,6 +189,7 @@
 		"onboardingRequiredCaption": "Обязательно для запуска",
 		"onboardingOptionalTitle": "По желанию",
 		"onboardingOptionalHint": "Не обязательно для активации — можно добавить позже.",
+		"onboardingSetupBusiness": "Настроить бизнес",
 		"onboardingCreateTraining": "Создать первую тренировку",
 		"onboardingAddPhoto": "Добавить хотя бы одно фото студии",
 		"onboardingAddLogo": "Добавить логотип студии",

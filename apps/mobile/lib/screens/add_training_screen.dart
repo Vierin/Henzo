@@ -59,6 +59,7 @@ class _AddTrainingScreenState extends State<AddTrainingScreen> {
   final _durationFocusNode = FocusNode();
   final _durationController = TextEditingController(text: '60');
   final _priceController = TextEditingController();
+  final _descriptionController = TextEditingController();
   final _capacityController = TextEditingController(text: '10');
 
   bool _loading = true;
@@ -103,6 +104,7 @@ class _AddTrainingScreenState extends State<AddTrainingScreen> {
     _durationFocusNode.dispose();
     _durationController.dispose();
     _priceController.dispose();
+    _descriptionController.dispose();
     _capacityController.dispose();
     super.dispose();
   }
@@ -554,6 +556,10 @@ class _AddTrainingScreenState extends State<AddTrainingScreen> {
       if (cid != null && _categories.any((c) => c.id == cid)) {
         _selectedCategoryId = cid;
         _step1CategoryError = false;
+      }
+      final desc = found.description?.trim();
+      if (desc != null && desc.isNotEmpty) {
+        _descriptionController.text = desc;
       }
     });
   }
@@ -1465,6 +1471,7 @@ class _AddTrainingScreenState extends State<AddTrainingScreen> {
         duration: duration,
         price: price,
         trainingCategoryId: _selectedCategoryId,
+        description: _descriptionController.text.trim(),
       );
       if (!mounted) return;
       if (created != null) {
@@ -1868,13 +1875,27 @@ class _AddTrainingScreenState extends State<AddTrainingScreen> {
                           controller: _priceController,
                           style: _stepFieldInputStyle,
                           keyboardType: TextInputType.number,
-                          textInputAction: TextInputAction.done,
+                          textInputAction: TextInputAction.next,
                           inputFormatters: [_VndThousandsFormatter()],
                           onChanged: (_) =>
                               setState(() => _step1PriceError = false),
                           decoration: _regInputDecoration(
                             invalid: _step1PriceError,
                             hintText: 'Введите цену',
+                          ),
+                        ),
+                        const SizedBox(height: 22),
+                        _stepFormLabel('Описание'),
+                        TextField(
+                          controller: _descriptionController,
+                          style: _stepFieldInputStyle,
+                          keyboardType: TextInputType.multiline,
+                          textInputAction: TextInputAction.newline,
+                          minLines: 3,
+                          maxLines: 5,
+                          decoration: _regInputDecoration(
+                            invalid: false,
+                            hintText: 'Описание тренировки (необязательно)',
                           ),
                         ),
                         const SizedBox(height: 22),

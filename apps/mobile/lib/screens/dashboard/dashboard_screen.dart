@@ -18,14 +18,12 @@ import '../../services/notifications_store.dart';
 import '../../services/subscription_refresh_notifier.dart';
 import '../../utils/color_hex.dart';
 import '../../widgets/dashboard/owner_checklist_card.dart';
-import '../../widgets/dashboard/dashboard_setup_card.dart';
 import '../../models/training_location_item.dart';
 import '../../widgets/dashboard/owner_daily_schedule_block.dart';
 import '../../navigation/owner_session_navigation.dart';
 import '../owner_training_session_detail_screen.dart';
 import '../main_shell.dart';
 import '../settings_screen.dart';
-import '../../widgets/settings/owner_booking_period_sheet.dart';
 import '../notifications_screen.dart';
 import '../salon_setup_screen.dart';
 
@@ -39,12 +37,12 @@ class DashboardScreen extends StatefulWidget {
 class _DashboardScreenState extends State<DashboardScreen> {
   // Custom palette matching the design mock.
   static const _statGreen = Color(0xFFC2F600); // lime-yellow stat card
+  static const _statClassesEmpty = Color(0xFFF15942);
   static const _statPink = Color(0xFFFAD0C5); // salmon stat card
 
   Salon? _salon;
   StudioOnboardingChecklist? _checklist;
   List<OwnerTrainingSession> _todaySessions = [];
-  bool _isLoading = false;
   bool _isPublishing = false;
   SubscriptionRefreshNotifier? _subRefresh;
 
@@ -71,15 +69,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   Future<void> _loadData() async {
     if (!mounted) return;
-    setState(() => _isLoading = true);
     final auth = context.read<AuthService>();
     final token = auth.accessToken;
     if (token == null || token.isEmpty) {
       if (mounted) {
-        setState(() {
-          _salon = null;
-          _isLoading = false;
-        });
+        setState(() => _salon = null);
       }
       return;
     }
@@ -118,7 +112,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
           _salon = salon;
           _checklist = checklist;
           _todaySessions = sessions;
-          _isLoading = false;
         });
       }
     } catch (e) {
@@ -126,7 +119,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
         setState(() {
           _checklist = null;
           _todaySessions = [];
-          _isLoading = false;
         });
         if (!isOwnerStudioNotReadyError(e)) {
           showApiError(context, e);
@@ -151,21 +143,29 @@ class _DashboardScreenState extends State<DashboardScreen> {
     }
   }
 
+  Future<void> _openSalonSetup() async {
+    await Navigator.push<void>(
+      context,
+      MaterialPageRoute(
+        builder: (_) => SalonSetupScreen(
+          onSaved: () {
+            Navigator.pop(context);
+            context.read<SalonCache>().invalidate();
+            context.read<OwnerSessionsCache>().invalidate();
+            _loadData();
+          },
+        ),
+      ),
+    );
+    if (mounted) await _loadData();
+  }
+
   Future<void> _openStudioProfileSettings() async {
     await Navigator.push<void>(
       context,
       MaterialPageRoute(builder: (_) => const SettingsScreen()),
     );
     if (mounted) await _loadData();
-  }
-
-  Future<void> _openOnlineBookingSettings() async {
-    final token = context.read<AuthService>().accessToken;
-    if (token == null || token.isEmpty) return;
-    final salon = await context.read<SalonCache>().getSalon(token);
-    if (!mounted || salon == null) return;
-    final changed = await showOwnerBookingPeriodSheet(context, salon: salon);
-    if (changed == true && mounted) await _loadData();
   }
 
   String _humanizeChecklistStep(String key) {
@@ -478,15 +478,22 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   Widget _statsRow() {
+    final classesToday = _todaySessions.length;
+    final classesBg =
+        classesToday > 0 ? _statGreen : _statClassesEmpty;
+    final classesText =
+        classesToday > 0 ? AppColors.textPrimary : Colors.white;
+
     return Padding(
       padding: const EdgeInsets.fromLTRB(10, 0, 10, 20),
       child: Row(
         children: [
           Expanded(
             child: _statCard(
-              value: '${_todaySessions.length}',
+              value: '$classesToday',
               label: 'Classes today',
-              background: _statGreen,
+              background: classesBg,
+              textColor: classesText,
             ),
           ),
           const SizedBox(width: 10),
@@ -731,14 +738,17 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   Widget _checklistBlock() {
-    if (_checklist == null) return const SizedBox.shrink();
-    final c = _checklist!;
-    final allDone =
+    final needsSalonSetup = _salon == null;
+    final c = _checklist;
+    if (!needsSalonSetup && c == null) return const SizedBox.shrink();
+
+    final allDone = !needsSalonSetup &&
+        c != null &&
         c.hasTraining.completed &&
         c.hasPhoto.completed &&
-        c.bookingWindowConfigured.completed &&
         c.contactsConfigured.completed;
     if (allDone) return const SizedBox.shrink();
+
     return Padding(
       padding: const EdgeInsets.fromLTRB(
         kScreenPaddingHorizontal,
@@ -747,21 +757,23 @@ class _DashboardScreenState extends State<DashboardScreen> {
         16,
       ),
       child: OwnerChecklistCard(
-        hasTraining: c.hasTraining.completed,
-        hasPhoto: c.hasPhoto.completed,
-        hasLogo: c.hasLogo.completed,
-        bookingWindowConfigured: c.bookingWindowConfigured.completed,
-        contactsConfigured: c.contactsConfigured.completed,
-        canPublish: c.canPublish,
-        isStudioActive: c.status.toUpperCase() == 'ACTIVE',
+        showSalonSetupStep: needsSalonSetup,
+        salonSetupCompleted: !needsSalonSetup,
+        initiallyExpanded: needsSalonSetup,
+        hasTraining: c?.hasTraining.completed ?? false,
+        hasPhoto: c?.hasPhoto.completed ?? false,
+        hasLogo: c?.hasLogo.completed ?? false,
+        contactsConfigured: c?.contactsConfigured.completed ?? false,
+        canPublish: c?.canPublish ?? false,
+        isStudioActive: c?.status.toUpperCase() == 'ACTIVE',
         isPublishing: _isPublishing,
-        missingRequiredSteps: c.missingRequiredSteps
-            .map(_humanizeChecklistStep)
-            .toList(),
+        missingRequiredSteps:
+            c?.missingRequiredSteps.map(_humanizeChecklistStep).toList() ??
+            const <String>[],
+        onSalonSetupTap: _openSalonSetup,
         onCreateTrainingTap: _openTrainingSetup,
         onAddPhotoTap: _openStudioProfileSettings,
         onAddLogoTap: _openStudioProfileSettings,
-        onBookingWindowTap: _openOnlineBookingSettings,
         onContactsTap: _openStudioProfileSettings,
         onPublishTap: _publishStudio,
       ),
@@ -787,48 +799,22 @@ class _DashboardScreenState extends State<DashboardScreen> {
               children: [
                 _header(loc),
                 _greeting(authUser),
-                if (_isLoading && _salon == null)
-                  const Padding(
-                    padding: EdgeInsets.symmetric(vertical: 40),
-                    child: Center(
-                      child: CircularProgressIndicator(
-                        color: AppColors.primary500,
-                      ),
-                    ),
-                  )
-                else if (_salon == null)
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 12),
-                    child: DashboardSetupCard(
-                      onSetupTap: () => Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => SalonSetupScreen(
-                            onSaved: () {
-                              Navigator.pop(context);
-                              context.read<OwnerSessionsCache>().invalidate();
-                              _loadData();
-                            },
-                          ),
-                        ),
-                      ),
-                    ),
-                  )
-                else ...[
-                  _statsRow(),
-                  if (featured != null) _featuredCard(featured),
-                  OwnerDailyScheduleBlock(
-                    sessions: _todaySessions,
-                    emptyMessage: 'No trainings scheduled for today',
-                    onSeeAll: () => context
-                        .findAncestorStateOfType<MainShellState>()
-                        ?.openScheduleTabForToday(),
-                    onSessionTap: _openSessionDetail,
-                    ownerTrainerFallback: _ownerTrainerFallback(),
-                    studioLocations: _studioLocations(context),
-                  ),
-                  _checklistBlock(),
-                ],
+                _statsRow(),
+                if (featured != null) _featuredCard(featured),
+                _checklistBlock(),
+                OwnerDailyScheduleBlock(
+                  sessions: _todaySessions,
+                  emptyMessage: 'No trainings scheduled for today',
+                  emptySubtitle: 'Enjoy your day!',
+                  onSeeAll: _salon == null
+                      ? null
+                      : () => context
+                            .findAncestorStateOfType<MainShellState>()
+                            ?.openScheduleTabForToday(),
+                  onSessionTap: _openSessionDetail,
+                  ownerTrainerFallback: _ownerTrainerFallback(),
+                  studioLocations: _studioLocations(context),
+                ),
                 const SizedBox(height: 16),
               ],
             ),

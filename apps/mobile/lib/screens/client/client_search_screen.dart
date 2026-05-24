@@ -697,6 +697,9 @@ class ClientSearchScreenState extends State<ClientSearchScreen> {
             id: id,
             name: (map['name'] ?? 'Studio').toString(),
             address: (map['address'] ?? '').toString(),
+            locationName: (map['locationName'] ?? '').toString().trim().isEmpty
+                ? null
+                : (map['locationName'] ?? '').toString().trim(),
             distanceKm: (map['distance'] as num?)?.toDouble(),
             rating: avgRating,
             reviewCount: reviewCount,
@@ -2470,6 +2473,7 @@ class ClientSearchScreenState extends State<ClientSearchScreen> {
                               return BrowseStudioListCard(
                                 studio: s,
                                 todayClasses: todayClasses,
+                                trainingCategories: _trainingCategories,
                                 distanceLabel: _distanceLabel(
                                   _resolvedDistanceKmMemo(s, locationStore),
                                 ),

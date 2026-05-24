@@ -6,13 +6,13 @@ import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
-import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'config/app_config.dart';
-import 'deep_links/client_invite_deep_link.dart';
+import 'config/load_app_env.dart';
+import 'deep_links/class_session_deep_link.dart';
 import 'deep_links/subscription_checkout_deep_link.dart';
 import 'firebase_options.dart';
 import 'l10n/locale_provider.dart';
@@ -47,24 +47,18 @@ Future<void> main() async {
         initializeDateFormatting('ru'),
         initializeDateFormatting('vi'),
       ]);
-      var loadedEnv = 'assets/.env';
-      try {
-        await dotenv.load(fileName: 'assets/.env');
-      } catch (e) {
-        loadedEnv = 'assets/.env.example';
-        await dotenv.load(fileName: 'assets/.env.example');
-        assert(() {
-          // ignore: avoid_print
-          print(
-            '[Env] Failed to load assets/.env, fallback to .env.example: $e',
-          );
-          return true;
-        }());
-      }
+      final loadedEnv = await loadAppEnv();
       assert(() {
         // ignore: avoid_print
-        print('[Env] Loaded env file: $loadedEnv');
-        if (AppConfig.supabaseUrl.contains('your-project.supabase.co')) {
+        print(
+          '[Env] Loaded $loadedEnv '
+          '(mode=${kDebugMode ? 'debug' : 'release'}, '
+          'henzo=${AppConfig.henzoEnv}, '
+          'supabase=${AppConfig.supabaseUrl})',
+        );
+        if (AppConfig.supabaseUrl.contains('your-project.supabase.co') ||
+            AppConfig.supabaseUrl.contains('STAGING_REF') ||
+            AppConfig.supabaseUrl.contains('YOUR_PROD_REF')) {
           // ignore: avoid_print
           print(
             '[Env] Invalid EXPO_PUBLIC_SUPABASE_URL: placeholder value is active',
@@ -250,7 +244,7 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
             themeMode: ThemeMode.light,
             builder: (context, child) {
               final layered = _withKeyboardDismiss(context, child);
-              return ClientInviteDeepLinkScope(
+              return ClassSessionDeepLinkScope(
                 navigatorKey: henzoRootNavigatorKey,
                 child: SubscriptionCheckoutDeepLinkScope(
                   navigatorKey: henzoRootNavigatorKey,

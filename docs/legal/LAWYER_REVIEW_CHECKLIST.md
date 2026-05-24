@@ -3,8 +3,8 @@
 Engineering draft is in:
 
 - [DATA_MAP.md](./DATA_MAP.md)
-- [apps/frontend/src/app/[locale]/(public)/privacy-policy/page.tsx](../../apps/frontend/src/app/[locale]/(public)/privacy-policy/page.tsx)
-- [apps/frontend/src/app/[locale]/(public)/terms-of-service/page.tsx](../../apps/frontend/src/app/[locale]/(public)/terms-of-service/page.tsx)
+- [apps/frontend/src/app/[locale]/(public)/privacy-policy/page.tsx](<../../apps/frontend/src/app/[locale]/(public)/privacy-policy/page.tsx>)
+- [apps/frontend/src/app/[locale]/(public)/terms-of-service/page.tsx](<../../apps/frontend/src/app/[locale]/(public)/terms-of-service/page.tsx>)
 
 **Status:** Draft for counsel — not final legal advice.
 
@@ -29,7 +29,7 @@ Engineering draft is in:
 
 ## Sign-off
 
-| Role | Name | Date |
-|------|------|------|
-| Counsel | | |
-| Product owner | | |
+| Role          | Name | Date |
+| ------------- | ---- | ---- |
+| Counsel       |      |      |
+| Product owner |      |      |

@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
@@ -32,22 +33,30 @@ class _ClientProfileScreenState extends State<ClientProfileScreen>
   bool _loadingStats = true;
 
   HealthData? _health;
-  bool _loadingHealth = true;
-  bool _healthPermissionDenied = false;
+  bool _loadingHealth = false;
+  bool _healthPermissionDenied = true;
   bool _healthNeedsInstall = false;
 
   bool _sendingWorkout = false;
   String _selectedWorkout = 'Yoga';
+  int _countdown = 0;
+  Timer? _countdownTimer;
 
   @override
   void initState() {
     super.initState();
     _loadStats();
-    _probeHealth();
+    _restoreHealthIfAlreadyAuthorized();
   }
 
   @override
   bool get wantKeepAlive => true;
+
+  @override
+  void dispose() {
+    _countdownTimer?.cancel();
+    super.dispose();
+  }
 
   Future<void> _loadStats({bool force = false}) async {
     if (!force &&
@@ -90,17 +99,20 @@ class _ClientProfileScreenState extends State<ClientProfileScreen>
     }
   }
 
-  Future<void> _probeHealth() async {
-    if (mounted) setState(() => _loadingHealth = true);
-    final hasAccess = await HealthService.hasAccess();
-    if (!hasAccess) {
+  /// Reads health data only when permissions were granted earlier (no prompts).
+  Future<void> _restoreHealthIfAlreadyAuthorized() async {
+    if (_cachedHealth != null &&
+        _healthCachedAt != null &&
+        DateTime.now().difference(_healthCachedAt!) < _statsCacheTtl) {
       if (!mounted) return;
       setState(() {
-        _loadingHealth = false;
-        _healthPermissionDenied = true;
+        _health = _cachedHealth;
+        _healthPermissionDenied = false;
       });
       return;
     }
+    if (!await HealthService.hasAccess()) return;
+    if (mounted) setState(() => _loadingHealth = true);
     await _fetchHealthData();
   }
 
@@ -182,8 +194,6 @@ class _ClientProfileScreenState extends State<ClientProfileScreen>
     }
     if (await HealthService.hasAccess()) {
       await _fetchHealthData();
-    } else {
-      await _connectHealth();
     }
   }
 
@@ -296,29 +306,45 @@ class _ClientProfileScreenState extends State<ClientProfileScreen>
     'Strength', 'HIIT', 'Pilates', 'Walking',
   ];
 
+  static const _notificationDelay = 30;
+
   Future<void> _onSendWorkout() async {
-    setState(() => _sendingWorkout = true);
-    final result = await WorkoutService.scheduleWorkoutReminder(
+    setState(() {
+      _sendingWorkout = true;
+      _countdown = _notificationDelay;
+    });
+
+    final token = context.read<AuthService>().accessToken ?? '';
+    await WorkoutService.scheduleWorkoutReminder(
       workoutType: _selectedWorkout,
-      minutesBefore: 10,
+      accessToken: token,
+      delaySeconds: _notificationDelay,
     );
+
     if (!mounted) return;
     setState(() => _sendingWorkout = false);
 
-    final msg = switch (result.status) {
-      WorkoutSendStatus.sent => 'Тренировка отправлена на часы',
-      WorkoutSendStatus.notificationOnly =>
-        'Уведомление отправлено (часы не подключены)',
-      WorkoutSendStatus.failed => 'Не удалось отправить',
-    };
-
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text(msg),
+        content: const Text('Заблокируй телефон — уведомление придёт через 30 сек'),
         behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        duration: const Duration(seconds: 5),
       ),
     );
+
+    _countdownTimer?.cancel();
+    _countdownTimer = Timer.periodic(const Duration(seconds: 1), (t) {
+      if (!mounted) {
+        t.cancel();
+        return;
+      }
+      setState(() => _countdown--);
+      if (_countdown <= 0) {
+        t.cancel();
+        setState(() => _countdown = 0);
+      }
+    });
   }
 
   Widget _buildStartWorkoutButton() {
@@ -426,7 +452,9 @@ class _ClientProfileScreenState extends State<ClientProfileScreen>
                   label: Text(
                     _sendingWorkout
                         ? 'Отправляем...'
-                        : 'Начать $_selectedWorkout через 10 мин',
+                        : _countdown > 0
+                            ? 'Уведомление через $_countdown сек...'
+                            : 'Начать $_selectedWorkout через 10 мин',
                     style: const TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.w600,
@@ -528,7 +556,7 @@ class _ClientProfileScreenState extends State<ClientProfileScreen>
                 color: AppColors.primary500,
               ),
             )
-          else if (isSynced)
+          else if (isSynced) ...[
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
               decoration: BoxDecoration(
@@ -558,8 +586,24 @@ class _ClientProfileScreenState extends State<ClientProfileScreen>
                   ),
                 ],
               ),
-            )
-          else if (hasPermission)
+            ),
+            const SizedBox(width: 6),
+            SizedBox(
+              width: 32,
+              height: 32,
+              child: IconButton(
+                padding: EdgeInsets.zero,
+                icon: const Icon(Icons.refresh_rounded, size: 20),
+                color: AppColors.textSecondary,
+                tooltip: 'Refresh',
+                onPressed: () {
+                  _cachedHealth = null;
+                  _healthCachedAt = null;
+                  _fetchHealthData();
+                },
+              ),
+            ),
+          ] else if (hasPermission)
             FilledButton(
               onPressed: () {
                 _cachedHealth = null;

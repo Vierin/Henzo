@@ -3,6 +3,7 @@ class ExploreStudioItem {
     required this.id,
     required this.name,
     required this.address,
+    this.locationName,
     required this.distanceKm,
     required this.rating,
     required this.reviewCount,
@@ -16,6 +17,7 @@ class ExploreStudioItem {
   final String id;
   final String name;
   final String address;
+  final String? locationName;
   final double? distanceKm;
   final double rating;
   final int reviewCount;

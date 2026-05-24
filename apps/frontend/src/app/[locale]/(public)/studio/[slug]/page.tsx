@@ -7,47 +7,47 @@ import StudioPublicClient from './StudioPublicClient';
 import type { PublicStudioPayload } from './types';
 
 export async function generateMetadata({
-	params,
+  params,
 }: {
-	params: Promise<{ locale: string; slug: string }>;
+  params: Promise<{ locale: string; slug: string }>;
 }): Promise<Metadata> {
-	const { locale: raw, slug } = await params;
-	const locale = resolveLocale(raw);
-	const data = await serverApiGet<PublicStudioPayload>(
-		`/studios/public/by-slug/${encodeURIComponent(slug)}`,
-		{ revalidate: 120 }
-	);
-	if (!data) {
-		return { title: 'Studio' };
-	}
-	const title = data.name || 'Studio';
-	const desc =
-		(data.descriptionEn || data.description || '').trim().slice(0, 160) ||
-		`${title} · Henzo`;
-	const og = data.photos?.[0];
-	return buildDynamicPageMetadata(locale, {
-		pathAfterLocale: `/studio/${slug}`,
-		title,
-		description: desc,
-		...(og ? { images: [og] } : {}),
-	});
+  const { locale: raw, slug } = await params;
+  const locale = resolveLocale(raw);
+  const data = await serverApiGet<PublicStudioPayload>(
+    `/studios/public/by-slug/${encodeURIComponent(slug)}`,
+    { revalidate: 120 },
+  );
+  if (!data) {
+    return { title: 'Studio' };
+  }
+  const title = data.name || 'Studio';
+  const desc =
+    (data.descriptionEn || data.description || '').trim().slice(0, 160) ||
+    `${title} · Henzo`;
+  const og = data.photos?.[0];
+  return buildDynamicPageMetadata(locale, {
+    pathAfterLocale: `/studio/${slug}`,
+    title,
+    description: desc,
+    ...(og ? { images: [og] } : {}),
+  });
 }
 
 export default async function StudioPublicPage({
-	params,
+  params,
 }: {
-	params: Promise<{ locale: string; slug: string }>;
+  params: Promise<{ locale: string; slug: string }>;
 }) {
-	const { locale: raw, slug } = await params;
-	if (!isLocale(raw)) notFound();
-	const locale = raw as Locale;
+  const { locale: raw, slug } = await params;
+  if (!isLocale(raw)) notFound();
+  const locale = raw as Locale;
 
-	const studio = await serverApiGet<PublicStudioPayload>(
-		`/studios/public/by-slug/${encodeURIComponent(slug)}`,
-		{ revalidate: 120 }
-	);
+  const studio = await serverApiGet<PublicStudioPayload>(
+    `/studios/public/by-slug/${encodeURIComponent(slug)}`,
+    { revalidate: 120 },
+  );
 
-	if (!studio) notFound();
+  if (!studio) notFound();
 
-	return <StudioPublicClient locale={locale} studio={studio} />;
+  return <StudioPublicClient locale={locale} studio={studio} />;
 }

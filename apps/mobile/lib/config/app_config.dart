@@ -3,7 +3,7 @@ import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 
-/// Конфигурация приложения из переменных окружения (assets/.env).
+/// Конфигурация из env: debug → `assets/.env.local`, release → `assets/.env`.
 /// Ключи соответствуют именам в .env: EXPO_PUBLIC_*.
 abstract final class AppConfig {
   static String get supabaseUrl =>
@@ -50,6 +50,10 @@ abstract final class AppConfig {
     final v = (dotenv.env['EXPO_PUBLIC_APP_ENV'] ?? '').trim().toLowerCase();
     return v == 'development' || v == 'dev';
   }
+
+  /// `local` | `staging` | `production` — см. assets/.env.local.example
+  static String get henzoEnv =>
+      (dotenv.env['EXPO_PUBLIC_HENZO_ENV'] ?? '').trim().toLowerCase();
 
   static bool get isProduction => !isDevelopment;
 

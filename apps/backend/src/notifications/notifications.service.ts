@@ -232,6 +232,33 @@ export class NotificationsService {
     }
   }
 
+  async sendWorkoutReminderPush(
+    userId: string,
+    workoutType: string,
+  ): Promise<void> {
+    const tokens = await this.getPushTokensByUserId(userId);
+    if (tokens.length === 0) throw new Error('No push tokens for this user.');
+    if (!this.firebaseAdmin.isInitialized()) {
+      throw new Error('Firebase Admin not initialized.');
+    }
+    console.log(
+      `📤 Sending workout reminder push: user=${userId} type=${workoutType}`,
+    );
+    await this.firebaseAdmin.sendMulticast(
+      tokens.map((t) => t.token),
+      {
+        title: `Тренировка "${workoutType}"`,
+        body: 'Нажми «Начать» чтобы запустить тренировку на часах',
+      },
+      { type: 'WORKOUT_REMINDER', workoutType },
+      {
+        channelId: 'henzo_workout',
+        priority: 'high',
+        apnsCategory: 'WORKOUT_REMINDER',
+      },
+    );
+  }
+
   async sendBookingNotification(
     salonId: string,
     bookingId: string,

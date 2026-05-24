@@ -3,17 +3,13 @@ import {
   Controller,
   Delete,
   Get,
-  Header,
   Headers,
-  HttpException,
   Param,
   Patch,
   Post,
   Put,
   Query,
-  Res,
 } from '@nestjs/common';
-import type { Response } from 'express';
 import { StudiosService } from '../studios/studios.service';
 import { AuthService } from '../auth/auth.service';
 import { FitnessSessionsService } from './fitness-sessions.service';
@@ -21,7 +17,6 @@ import { StudioAnalyticsService } from './studio-analytics.service';
 import { StudioClientsService } from './studio-clients.service';
 import { CreateRecurringTrainingSessionsDto } from './dto/create-recurring-training-sessions.dto';
 import { UpdateOwnerTrainingSessionDto } from './dto/update-owner-training-session.dto';
-import { ConfirmClientInvitationDto } from './dto/confirm-client-invitation.dto';
 import { CreateOwnerStudioClientDto } from './dto/create-owner-studio-client.dto';
 import { AddOwnerSessionEnrollmentDto } from './dto/add-owner-session-enrollment.dto';
 
@@ -57,67 +52,6 @@ export class FitnessController {
       authHeader,
       body,
     );
-  }
-
-  @Get('public/client-invitations/landing')
-  @Header('Content-Type', 'text/html; charset=utf-8')
-  async clientInvitationLanding(
-    @Query('token') token: string | undefined,
-    @Res() res: Response,
-  ): Promise<void> {
-    const t = token?.trim() ?? '';
-    if (!t) {
-      res.status(400).send('<html><body>Missing token.</body></html>');
-      return;
-    }
-    const ctx = await this.studioClientsService.getInvitationLandingContext(t);
-    if (!ctx.valid) {
-      const msg =
-        ctx.reason === 'expired'
-          ? 'This invitation has expired.'
-          : ctx.reason === 'used'
-            ? 'This invitation was already used.'
-            : 'Invalid invitation link.';
-      res.status(400).send(`<html><body><p>${msg}</p></body></html>`);
-      return;
-    }
-    const title = ctx.trainingName
-      ? `${ctx.trainingName} — ${ctx.salonName}`
-      : ctx.salonName;
-    const starts = ctx.startsAt != null ? `<p>Starts: ${ctx.startsAt}</p>` : '';
-    const apiPath = '/fitness/public/client-invitations/confirm';
-    res
-      .status(200)
-      .send(
-        `<!DOCTYPE html><html><head><meta charset="utf-8"/><title>Henzo</title></head>` +
-          `<body><h2>${title}</h2>${starts}` +
-          `<p>Email: ${ctx.email}</p>` +
-          `<form method="post" action="${apiPath}">` +
-          `<input type="hidden" name="token" value="${encodeURIComponent(t)}"/>` +
-          `<button type="submit">Confirm</button></form>` +
-          `<p style="color:#666;font-size:12px;">Henzo</p></body></html>`,
-      );
-  }
-
-  @Post('public/client-invitations/confirm')
-  async confirmClientInvitation(
-    @Body() body: ConfirmClientInvitationDto,
-    @Res() res: Response,
-  ): Promise<void> {
-    const raw = body?.token?.trim();
-    if (!raw) {
-      res.status(400).json({ success: false, message: 'token required' });
-      return;
-    }
-    try {
-      const out = await this.studioClientsService.confirmInvitationByToken(raw);
-      res.status(200).json(out);
-    } catch (e: unknown) {
-      const status = e instanceof HttpException ? e.getStatus() : 400;
-      const msg =
-        e instanceof HttpException ? e.message : 'Failed to confirm invitation';
-      res.status(status).json({ success: false, message: msg });
-    }
   }
 
   // ---- Studios  ----

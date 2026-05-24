@@ -1172,7 +1172,6 @@ class StudioOnboardingChecklist {
     required this.hasTraining,
     required this.hasPhoto,
     required this.hasLogo,
-    required this.bookingWindowConfigured,
     required this.contactsConfigured,
   });
 
@@ -1184,7 +1183,6 @@ class StudioOnboardingChecklist {
   final StudioOnboardingStep hasTraining;
   final StudioOnboardingStep hasPhoto;
   final StudioOnboardingStep hasLogo;
-  final StudioOnboardingStep bookingWindowConfigured;
   final StudioOnboardingStep contactsConfigured;
 
   factory StudioOnboardingChecklist.fromJson(Map<String, dynamic> json) {
@@ -1219,7 +1217,6 @@ class StudioOnboardingChecklist {
       hasTraining: parseStep('hasTraining', true),
       hasPhoto: parseStep('hasPhoto', true),
       hasLogo: parseStep('hasLogo', false),
-      bookingWindowConfigured: parseStep('bookingWindowConfigured', false),
       contactsConfigured: parseStep('contactsConfigured', false),
     );
   }

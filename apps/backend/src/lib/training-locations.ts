@@ -135,3 +135,18 @@ export function resolveTrainingLocationName(
   }
   return null;
 }
+
+/** Label for browse / discovery cards (branch name, not street address). */
+export function resolveBrowseStudioLocationName(
+  reminderSettings: unknown,
+): string {
+  if (reminderSettings && typeof reminderSettings === 'object') {
+    const custom = String(
+      (reminderSettings as Record<string, unknown>).defaultLocationName ?? '',
+    ).trim();
+    if (custom.length > 0) return custom;
+  }
+  const extras = listExtraTrainingLocationNames(reminderSettings);
+  if (extras.length > 0) return extras[0]!;
+  return '';
+}

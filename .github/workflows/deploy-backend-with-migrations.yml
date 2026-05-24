@@ -1,3 +1,5 @@
+# Deprecated: staging/production deploy workflows run migrations via
+# deploy-compose-service.sh. Keep for manual emergency deploys only.
 name: Deploy Backend with Migrations
 
 on:

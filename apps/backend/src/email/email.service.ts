@@ -108,30 +108,4 @@ export class EmailService {
       return false;
     }
   }
-
-  async sendBusinessRegistrationMagicLink(
-    email: string,
-    name: string,
-    registerUrl: string,
-    locale?: 'en' | 'ru' | 'vi',
-  ) {
-    try {
-      const result = await this.transactional.sendBusinessRegistrationMagicLink(
-        email,
-        name,
-        registerUrl,
-        locale,
-      );
-      console.log(
-        '✅ Business registration magic link sent successfully via Brevo',
-      );
-      return result;
-    } catch (error) {
-      console.error(
-        '❌ Error sending business registration magic link:',
-        error,
-      );
-      throw error;
-    }
-  }
 }

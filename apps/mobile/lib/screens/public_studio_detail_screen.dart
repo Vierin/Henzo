@@ -172,7 +172,7 @@ class _DetailContent extends StatelessWidget {
   final VoidCallback onToggleFavorite;
 
   int _extractBookingPeriodDays(Map<String, dynamic> studio) {
-    const defaultDays = 14;
+    const defaultDays = 30;
     const minDays = 1;
     const maxDays = 60;
     final reminderSettings = studio['reminderSettings'];

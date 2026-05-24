@@ -18,21 +18,21 @@ https://henzo.app/en/privacy-policy
 
 ## Apple App Privacy (nutrition labels)
 
-| Data type | Collected | Linked to user | Used for tracking | Purposes |
-|-----------|-----------|----------------|-------------------|----------|
-| Email address | Yes | Yes | No | App functionality, account |
-| Name | Yes | Yes | No | App functionality |
-| Phone number | Yes (optional) | Yes | No | App functionality |
-| User ID | Yes | Yes | No | App functionality, analytics (if opted in) |
-| Precise location | Yes (optional) | Yes | No | App functionality (nearby studios, address) |
-| Coarse location | Yes (optional) | Yes | No | App functionality |
-| Photos | Yes (optional) | Yes | No | App functionality (profile/studio) |
-| Health & fitness | Yes (optional) | No* | No | App functionality — *read on device; not linked in backend |
-| Purchase history | Yes | Yes | No | App functionality (subscription) |
-| Product interaction | Yes (if analytics on) | Yes | No | Analytics |
-| Crash data | Yes (if analytics on) | Yes | No | App functionality / analytics |
-| Other diagnostic data | Yes (if analytics on) | Yes | No | App functionality |
-| Device ID | No IDFA / no ATT | — | **Tracking: No** | — |
+| Data type             | Collected             | Linked to user | Used for tracking | Purposes                                                    |
+| --------------------- | --------------------- | -------------- | ----------------- | ----------------------------------------------------------- |
+| Email address         | Yes                   | Yes            | No                | App functionality, account                                  |
+| Name                  | Yes                   | Yes            | No                | App functionality                                           |
+| Phone number          | Yes (optional)        | Yes            | No                | App functionality                                           |
+| User ID               | Yes                   | Yes            | No                | App functionality, analytics (if opted in)                  |
+| Precise location      | Yes (optional)        | Yes            | No                | App functionality (nearby studios, address)                 |
+| Coarse location       | Yes (optional)        | Yes            | No                | App functionality                                           |
+| Photos                | Yes (optional)        | Yes            | No                | App functionality (profile/studio)                          |
+| Health & fitness      | Yes (optional)        | No\*           | No                | App functionality — \*read on device; not linked in backend |
+| Purchase history      | Yes                   | Yes            | No                | App functionality (subscription)                            |
+| Product interaction   | Yes (if analytics on) | Yes            | No                | Analytics                                                   |
+| Crash data            | Yes (if analytics on) | Yes            | No                | App functionality / analytics                               |
+| Other diagnostic data | Yes (if analytics on) | Yes            | No                | App functionality                                           |
+| Device ID             | No IDFA / no ATT      | —              | **Tracking: No**  | —                                                           |
 
 **Tracking:** No (no cross-app tracking; no ATT prompt).
 
@@ -42,15 +42,15 @@ https://henzo.app/en/privacy-policy
 
 ## Google Play Data safety
 
-| Question | Answer |
-|----------|--------|
-| Does your app collect or share user data? | Yes |
-| Is all data encrypted in transit? | Yes (HTTPS/TLS) |
-| Can users request account deletion? | Yes — in app (Account settings → Delete account) + described in Privacy Policy |
-| Data types | See Apple table above |
-| Health apps | Yes — reads Health Connect data for optional activity summary; data not uploaded to developer servers |
-| Financial info | No direct collection — payments via Google Play Billing |
-| Analytics | Collected only when user enables “Analytics & crash reports” in Settings |
+| Question                                  | Answer                                                                                                |
+| ----------------------------------------- | ----------------------------------------------------------------------------------------------------- |
+| Does your app collect or share user data? | Yes                                                                                                   |
+| Is all data encrypted in transit?         | Yes (HTTPS/TLS)                                                                                       |
+| Can users request account deletion?       | Yes — in app (Account settings → Delete account) + described in Privacy Policy                        |
+| Data types                                | See Apple table above                                                                                 |
+| Health apps                               | Yes — reads Health Connect data for optional activity summary; data not uploaded to developer servers |
+| Financial info                            | No direct collection — payments via Google Play Billing                                               |
+| Analytics                                 | Collected only when user enables “Analytics & crash reports” in Settings                              |
 
 ---
 

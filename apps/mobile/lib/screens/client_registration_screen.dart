@@ -6,9 +6,11 @@ import 'package:provider/provider.dart';
 import '../constants/colors.dart';
 import '../l10n/locale_provider.dart';
 import '../services/auth_service.dart';
+import '../utils/auth_ui_result.dart';
 import '../utils/show_api_error.dart';
 import '../widgets/auth/auth_form_styles.dart';
 import '../widgets/legal/legal_agreement_footer.dart';
+import '../widgets/settings/branded_settings_app_bar.dart';
 
 class ClientRegistrationScreen extends StatefulWidget {
   const ClientRegistrationScreen({super.key});
@@ -20,14 +22,12 @@ class ClientRegistrationScreen extends StatefulWidget {
 
 class _ClientRegistrationScreenState extends State<ClientRegistrationScreen> {
   final _formKey = GlobalKey<FormState>();
-  final _nameController = TextEditingController();
+  final _fullNameController = TextEditingController();
   final _emailController = TextEditingController();
   final _phoneController = TextEditingController();
   final _passwordController = TextEditingController();
-  final _confirmPasswordController = TextEditingController();
   final _otpController = TextEditingController();
   bool _obscurePassword = true;
-  bool _obscureConfirmPassword = true;
   bool _isSubmitting = false;
   bool _isGoogleLoading = false;
   bool _isVerificationStep = false;
@@ -41,11 +41,10 @@ class _ClientRegistrationScreenState extends State<ClientRegistrationScreen> {
   @override
   void dispose() {
     _resendTimer?.cancel();
-    _nameController.dispose();
+    _fullNameController.dispose();
     _emailController.dispose();
     _phoneController.dispose();
     _passwordController.dispose();
-    _confirmPasswordController.dispose();
     _otpController.dispose();
     _otpFocusNode.dispose();
     super.dispose();
@@ -63,7 +62,7 @@ class _ClientRegistrationScreenState extends State<ClientRegistrationScreen> {
     final result = await auth.requestClientRegistration(
       email: _emailController.text,
       password: _passwordController.text,
-      name: _nameController.text,
+      name: _fullNameController.text.trim(),
       phone: _phoneController.text,
     );
     if (!mounted) return;
@@ -140,7 +139,7 @@ class _ClientRegistrationScreenState extends State<ClientRegistrationScreen> {
     final result = await auth.requestClientRegistration(
       email: _emailController.text,
       password: _passwordController.text,
-      name: _nameController.text,
+      name: _fullNameController.text.trim(),
       phone: _phoneController.text,
     );
     if (!mounted) return;
@@ -165,7 +164,7 @@ class _ClientRegistrationScreenState extends State<ClientRegistrationScreen> {
     setState(() => _isGoogleLoading = true);
     final auth = context.read<AuthService>();
     final locale = context.read<LocaleProvider>();
-    final result = await auth.loginWithGoogle();
+    final result = await auth.loginWithGoogle(syncIfMissing: true);
     if (!mounted) return;
     setState(() => _isGoogleLoading = false);
     if (result.success) {
@@ -173,12 +172,7 @@ class _ClientRegistrationScreenState extends State<ClientRegistrationScreen> {
       Navigator.of(context).popUntil((route) => route.isFirst);
       return;
     }
-    showApiError(
-      context,
-      result.errorRaw?.isNotEmpty == true
-          ? result.errorRaw!
-          : locale.t('auth.signInError'),
-    );
+    showApiError(context, resolveAuthUiMessage(locale, result));
   }
 
   Widget _buildGoogleIcon() {
@@ -201,13 +195,25 @@ class _ClientRegistrationScreenState extends State<ClientRegistrationScreen> {
     final textTheme = Theme.of(context).textTheme;
     return Scaffold(
       backgroundColor: AppColors.backgroundSecondary,
-      body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
-          child: _isVerificationStep
-              ? _buildVerificationStep(locale, textTheme)
-              : _buildFormStep(locale, textTheme),
-        ),
+      appBar: buildBrandedSettingsAppBar(
+        context,
+        title: _isVerificationStep
+            ? locale.t('auth.verificationCodeTitle')
+            : locale.t('auth.clientRegisterTitle'),
+        onBack: _isVerificationStep
+            ? () {
+                setState(() {
+                  _isVerificationStep = false;
+                  _otpController.clear();
+                });
+              }
+            : null,
+      ),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
+        child: _isVerificationStep
+            ? _buildVerificationStep(locale, textTheme)
+            : _buildFormStep(locale, textTheme),
       ),
     );
   }
@@ -218,57 +224,22 @@ class _ClientRegistrationScreenState extends State<ClientRegistrationScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          const SizedBox(height: 8),
-          Row(
-            children: [
-              IconButton(
-                onPressed: () => Navigator.of(context).pop(),
-                icon: const Icon(
-                  Icons.arrow_back,
-                  color: AppColors.textPrimary,
-                  size: 22,
-                ),
-                padding: EdgeInsets.zero,
-                constraints: const BoxConstraints(
-                  minWidth: 30,
-                  minHeight: 30,
-                ),
-                splashRadius: 22,
-              ),
-              const Text(
-                'Client registration',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w400,
-                  color: AppColors.textPrimary,
-                  height: 1.05,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          const Padding(
-            padding: EdgeInsets.only(left: 44),
-            child: Text(
-              'Create your client account to book classes \nand manage visits in Henzo',
-              style: TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w400,
-                color: AppColors.textPrimary,
-                height: 1.2,
-              ),
-            ),
-          ),
-          const SizedBox(height: 44),
+          const SizedBox(height: 24),
           TextFormField(
-            controller: _nameController,
+            controller: _fullNameController,
             textInputAction: TextInputAction.next,
             textCapitalization: TextCapitalization.words,
             decoration: AuthFormStyles.fieldDecoration(
-              hintText: 'Name',
+              hintText: locale.t('auth.fullName'),
               prefixIcon: Icons.person_outline_rounded,
             ),
             style: AuthFormStyles.fieldTextStyle,
+            validator: (v) {
+              if (v == null || v.trim().isEmpty) {
+                return locale.t('auth.enterFullName');
+              }
+              return null;
+            },
           ),
           const SizedBox(height: AuthFormStyles.fieldGap),
           TextFormField(
@@ -303,7 +274,8 @@ class _ClientRegistrationScreenState extends State<ClientRegistrationScreen> {
           TextFormField(
             controller: _passwordController,
             obscureText: _obscurePassword,
-            textInputAction: TextInputAction.next,
+            textInputAction: TextInputAction.done,
+            onFieldSubmitted: (_) => _submit(),
             decoration: AuthFormStyles.fieldDecoration(
               hintText: locale.t('auth.password'),
               prefixIcon: Icons.lock_rounded,
@@ -324,39 +296,6 @@ class _ClientRegistrationScreenState extends State<ClientRegistrationScreen> {
             validator: (v) {
               if (v == null || v.isEmpty) return locale.t('auth.enterPassword');
               if (v.length < 6) return locale.t('auth.passwordMin');
-              return null;
-            },
-          ),
-          const SizedBox(height: AuthFormStyles.fieldGap),
-          TextFormField(
-            controller: _confirmPasswordController,
-            obscureText: _obscureConfirmPassword,
-            textInputAction: TextInputAction.done,
-            onFieldSubmitted: (_) => _submit(),
-            decoration: AuthFormStyles.fieldDecoration(
-              hintText: locale.t('auth.confirmPassword'),
-              prefixIcon: Icons.lock_rounded,
-              suffixIcon: IconButton(
-                padding: const EdgeInsets.only(right: 12),
-                onPressed: () {
-                  setState(
-                    () => _obscureConfirmPassword = !_obscureConfirmPassword,
-                  );
-                },
-                icon: Icon(
-                  _obscureConfirmPassword
-                      ? Icons.visibility_outlined
-                      : Icons.visibility_off_outlined,
-                  color: AuthFormStyles.hintMuted,
-                ),
-              ),
-            ),
-            style: AuthFormStyles.fieldTextStyle,
-            validator: (v) {
-              if (v == null || v.isEmpty) return locale.t('auth.enterPassword');
-              if (v != _passwordController.text) {
-                return locale.t('auth.passwordsDontMatch');
-              }
               return null;
             },
           ),
@@ -455,53 +394,7 @@ class _ClientRegistrationScreenState extends State<ClientRegistrationScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        const SizedBox(height: 8),
-        Row(
-          children: [
-            IconButton(
-              onPressed: () {
-                setState(() {
-                  _isVerificationStep = false;
-                  _otpController.clear();
-                });
-              },
-              icon: const Icon(
-                Icons.arrow_back,
-                color: AppColors.textPrimary,
-                size: 22,
-              ),
-              padding: EdgeInsets.zero,
-              constraints: const BoxConstraints(
-                minWidth: 30,
-                minHeight: 30,
-              ),
-              splashRadius: 22,
-            ),
-            Text(
-              locale.t('auth.verificationCodeTitle'),
-              style: const TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w400,
-                color: AppColors.textPrimary,
-                height: 1.05,
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 8),
-        Padding(
-          padding: const EdgeInsets.only(left: 44),
-          child: Text(
-            locale.t('auth.verificationCodeSubtitle'),
-            style: const TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.w400,
-              color: AppColors.textPrimary,
-              height: 1.2,
-            ),
-          ),
-        ),
-        const SizedBox(height: 28),
+        const SizedBox(height: 24),
         GestureDetector(
           onTap: () => _otpFocusNode.requestFocus(),
           child: Container(

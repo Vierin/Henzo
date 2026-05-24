@@ -4,8 +4,8 @@ import 'package:provider/provider.dart';
 import '../constants/colors.dart';
 import '../l10n/locale_provider.dart';
 import '../widgets/chaotic_underline.dart';
+import '../widgets/common/henzo_header_back_button.dart';
 import '../widgets/language_selector_modal.dart';
-import '../widgets/legal/legal_agreement_footer.dart';
 import 'business_registration_screen.dart';
 import 'client_registration_screen.dart';
 
@@ -25,49 +25,62 @@ class RegistrationRoleScreen extends StatelessWidget {
       body: SafeArea(
         child: Consumer<LocaleProvider>(
           builder: (context, locale, _) => Padding(
-            padding: const EdgeInsets.fromLTRB(12, 8, 12, 12),
+            padding: const EdgeInsets.fromLTRB(12, 8, 12, 0),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                Align(
-                  alignment: Alignment.centerRight,
-                  child: InkWell(
-                    onTap: () => showLanguageSelectorModal(context, locale),
-                    borderRadius: BorderRadius.circular(8),
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 6,
-                        vertical: 6,
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          const Icon(
-                            Icons.language,
-                            size: 16,
-                            color: AppColors.textPrimary,
-                          ),
-                          const SizedBox(width: 4),
-                          Text(
-                            _languageLabels[locale.localeCode] ??
-                                locale.localeCode.toUpperCase(),
-                            style: const TextStyle(
-                              fontSize: 14,
-                              fontWeight: FontWeight.w400,
+                Row(
+                  children: [
+                    HenzoHeaderBackButton(
+                      onPressed: () => Navigator.of(context).maybePop(),
+                    ),
+                    const Spacer(),
+                    InkWell(
+                      onTap: () => showLanguageSelectorModal(context, locale),
+                      borderRadius: BorderRadius.circular(8),
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 6,
+                          vertical: 6,
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(
+                              Icons.language,
+                              size: 16,
                               color: AppColors.textPrimary,
                             ),
-                          ),
-                        ],
+                            const SizedBox(width: 4),
+                            Text(
+                              _languageLabels[locale.localeCode] ??
+                                  locale.localeCode.toUpperCase(),
+                              style: const TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w400,
+                                color: AppColors.textPrimary,
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                     ),
-                  ),
+                  ],
                 ),
-                const SizedBox(height: 68),
-                const _ScreenHeading(),
-                const SizedBox(height: 34),
+                const SizedBox(height: 28),
+                _ScreenHeading(locale: locale),
+                const SizedBox(height: 28),
                 _RoleCard(
-                  title: 'Client',
+                  locale: locale,
+                  roleWord: locale.t('auth.roleTrain'),
+                  features: [
+                    locale.t('auth.roleClientFeature1'),
+                    locale.t('auth.roleClientFeature2'),
+                    locale.t('auth.roleClientFeature3'),
+                  ],
                   imageAssetPath: 'assets/public/client.webp',
+                  accentColor: AppColors.primary500,
+                  underlineWidth: 56,
                   onTap: () {
                     Navigator.of(context).push(
                       MaterialPageRoute(
@@ -76,10 +89,19 @@ class RegistrationRoleScreen extends StatelessWidget {
                     );
                   },
                 ),
-                const SizedBox(height: 20),
+                const SizedBox(height: 16),
                 _RoleCard(
-                  title: 'Business',
-                  imageAssetPath: 'assets/public/business.webp',
+                  locale: locale,
+                  roleWord: locale.t('auth.roleManage'),
+                  features: [
+                    locale.t('auth.roleOwnerFeature1'),
+                    locale.t('auth.roleOwnerFeature2'),
+                    locale.t('auth.roleOwnerFeature3'),
+                  ],
+                  imageAssetPath: 'assets/public/manager.webp',
+                  accentColor: const Color(0xFFC2F600),
+                  accentForegroundColor: AppColors.textPrimary,
+                  underlineWidth: 88,
                   onTap: () {
                     Navigator.of(context).push(
                       MaterialPageRoute(
@@ -87,11 +109,6 @@ class RegistrationRoleScreen extends StatelessWidget {
                       ),
                     );
                   },
-                ),
-                const Spacer(),
-                const Padding(
-                  padding: EdgeInsets.only(bottom: 14),
-                  child: LegalAgreementFooter(),
                 ),
               ],
             ),
@@ -103,56 +120,64 @@ class RegistrationRoleScreen extends StatelessWidget {
 }
 
 class _ScreenHeading extends StatelessWidget {
-  const _ScreenHeading();
+  const _ScreenHeading({required this.locale});
+
+  final LocaleProvider locale;
 
   @override
   Widget build(BuildContext context) {
-    return const Column(
+    return Column(
       children: [
         Text(
-          'Choose',
+          locale.t('auth.roleTitle'),
           textAlign: TextAlign.center,
-          style: TextStyle(
-            fontSize: 40,
-            fontWeight: FontWeight.w400,
+          style: const TextStyle(
+            fontSize: 32,
+            fontWeight: FontWeight.w600,
             color: AppColors.textPrimary,
-            height: 0.95,
+            letterSpacing: -0.3,
+            height: 1.05,
           ),
         ),
-        SizedBox(height: 2),
-        _UnderlinedSubheading(text: 'your path'),
-      ],
-    );
-  }
-}
-
-class _UnderlinedSubheading extends StatelessWidget {
-  const _UnderlinedSubheading({required this.text});
-
-  final String text;
-
-  @override
-  Widget build(BuildContext context) {
-    const titleStyle = TextStyle(
-      fontSize: 24,
-      fontWeight: FontWeight.w600,
-      color: AppColors.textPrimary,
-      height: 1,
-    );
-
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Text(
-          text,
-          textAlign: TextAlign.center,
-          style: titleStyle,
-        ),
-        const SizedBox(height: 2),
-        const ChaoticUnderline(
-          width: 128,
-          height: 8,
-          color: AppColors.primary500,
+        const SizedBox(height: 10),
+        Wrap(
+          alignment: WrapAlignment.center,
+          crossAxisAlignment: WrapCrossAlignment.start,
+          children: [
+            Text(
+              locale.t('auth.roleSubtitleBefore'),
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w400,
+                color: AppColors.textPrimary,
+                height: 1.2,
+              ),
+            ),
+            Transform.translate(
+              offset: const Offset(-3, 0),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    locale.t('auth.roleSubtitleHighlight'),
+                    style: const TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.textPrimary,
+                      height: 1.2,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  const ChaoticUnderline(
+                    width: 88,
+                    height: 6,
+                    color: AppColors.primary500,
+                  ),
+                ],
+              ),
+            ),
+          ],
         ),
       ],
     );
@@ -161,82 +186,172 @@ class _UnderlinedSubheading extends StatelessWidget {
 
 class _RoleCard extends StatelessWidget {
   const _RoleCard({
-    required this.title,
+    required this.locale,
+    required this.roleWord,
+    required this.features,
     required this.imageAssetPath,
+    required this.accentColor,
+    required this.underlineWidth,
     required this.onTap,
+    this.accentForegroundColor = Colors.white,
   });
 
-  final String title;
+  final LocaleProvider locale;
+  final String roleWord;
+  final List<String> features;
   final String imageAssetPath;
+  final Color accentColor;
+  final Color accentForegroundColor;
+  final double underlineWidth;
   final VoidCallback onTap;
+
+  static const double _cardHeight = 196;
+  static const double _photoHeight = 194;
 
   @override
   Widget build(BuildContext context) {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final imageWidth = constraints.maxWidth * 0.5;
-        return Material(
-          color: Colors.white,
-          elevation: 0,
-          borderRadius: BorderRadius.circular(22),
-          child: InkWell(
-            onTap: onTap,
-            borderRadius: BorderRadius.circular(22),
-            child: Container(
-              height: 140,
-              padding: const EdgeInsets.fromLTRB(22, 0, 0, 0),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(22),
-              ),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: Align(
-                      alignment: Alignment.centerLeft,
-                      child: Text(
-                        title,
-                        style: const TextStyle(
-                          fontSize: 24,
-                          fontWeight: FontWeight.w600,
-                          color: AppColors.textPrimary,
-                          height: 1,
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(12),
+        child: Ink(
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Stack(
+            clipBehavior: Clip.none,
+            children: [
+              ClipRRect(
+                borderRadius: BorderRadius.circular(12),
+                child: SizedBox(
+                  height: _cardHeight,
+                  width: double.infinity,
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(20, 18, 0, 18),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          locale.t('auth.roleHereTo'),
+                          style: const TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w400,
+                            color: AppColors.textSecondary,
+                            height: 1.2,
+                          ),
                         ),
-                      ),
+                        const SizedBox(height: 2),
+                        Text(
+                          roleWord,
+                          style: const TextStyle(
+                            fontSize: 28,
+                            fontWeight: FontWeight.w600,
+                            color: AppColors.textPrimary,
+                            height: 1,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        ChaoticUnderline(
+                          width: underlineWidth,
+                          height: 7,
+                          color: accentColor,
+                        ),
+                        const SizedBox(height: 12),
+                        for (var i = 0; i < features.length; i++) ...[
+                          _FeatureRow(
+                            label: features[i],
+                            accentColor: accentColor,
+                            iconColor: accentForegroundColor,
+                          ),
+                          if (i < features.length - 1)
+                            const SizedBox(height: 6),
+                        ],
+                      ],
                     ),
                   ),
-                  SizedBox(
-                    width: imageWidth,
-                    child: _CardPhoto(imageAssetPath: imageAssetPath),
-                  ),
-                ],
+                ),
               ),
-            ),
+              Positioned(
+                right: 0,
+                bottom: 0,
+                top: -(_photoHeight - _cardHeight),
+                width: 158,
+                child: Image.asset(
+                  imageAssetPath,
+                  fit: BoxFit.contain,
+                  alignment: Alignment.bottomCenter,
+                  errorBuilder: (_, _, _) => const SizedBox.shrink(),
+                ),
+              ),
+              Positioned(
+                right: 12,
+                bottom: 12,
+                child: _ActionCircle(
+                  color: accentColor,
+                  iconColor: accentForegroundColor,
+                ),
+              ),
+            ],
           ),
-        );
-      },
+        ),
+      ),
     );
   }
 }
 
-class _CardPhoto extends StatelessWidget {
-  const _CardPhoto({required this.imageAssetPath});
+class _FeatureRow extends StatelessWidget {
+  const _FeatureRow({
+    required this.label,
+    required this.accentColor,
+    this.iconColor = Colors.white,
+  });
 
-  final String imageAssetPath;
+  final String label;
+  final Color accentColor;
+  final Color iconColor;
 
   @override
   Widget build(BuildContext context) {
-    return ClipRRect(
-      borderRadius: const BorderRadius.only(
-        topRight: Radius.circular(22),
-        bottomRight: Radius.circular(22),
-        topLeft: Radius.circular(30),
-        bottomLeft: Radius.circular(30),
-      ),
-      child: Stack(
-        fit: StackFit.expand,
-        children: [Image.asset(imageAssetPath, fit: BoxFit.cover)],
-      ),
+    return Row(
+      children: [
+        Container(
+          width: 18,
+          height: 18,
+          decoration: BoxDecoration(color: accentColor, shape: BoxShape.circle),
+          child: Icon(Icons.check, size: 12, color: iconColor),
+        ),
+        const SizedBox(width: 8),
+        Expanded(
+          child: Text(
+            label,
+            style: const TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.w400,
+              color: AppColors.textPrimary,
+              height: 1.2,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _ActionCircle extends StatelessWidget {
+  const _ActionCircle({required this.color, this.iconColor = Colors.white});
+
+  final Color color;
+  final Color iconColor;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 36,
+      height: 36,
+      decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+      child: Icon(Icons.arrow_forward_ios_rounded, size: 16, color: iconColor),
     );
   }
 }

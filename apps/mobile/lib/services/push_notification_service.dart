@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart'
     show debugPrint, kDebugMode, defaultTargetPlatform, kIsWeb, TargetPlatform;
@@ -5,6 +7,7 @@ import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:permission_handler/permission_handler.dart';
 
 import 'api_client.dart';
+import 'workout_service.dart';
 
 /// Handles FCM token registration with backend and in-app message handling.
 class PushNotificationService {
@@ -20,6 +23,7 @@ class PushNotificationService {
   static final FirebaseMessaging _messaging = FirebaseMessaging.instance;
   static final FlutterLocalNotificationsPlugin _localNotifications =
       FlutterLocalNotificationsPlugin();
+
 
   static const AndroidNotificationChannel _channel = AndroidNotificationChannel(
     'henzo_default',
@@ -50,6 +54,18 @@ class PushNotificationService {
           requestAlertPermission: true,
           requestBadgePermission: true,
           requestSoundPermission: true,
+          notificationCategories: [
+            DarwinNotificationCategory(
+              'WORKOUT_REMINDER',
+              actions: [
+                DarwinNotificationAction.plain(
+                  'START_WORKOUT',
+                  'Начать',
+                  options: {DarwinNotificationActionOption.foreground},
+                ),
+              ],
+            ),
+          ],
         ),
       );
       await _localNotifications.initialize(
@@ -64,6 +80,17 @@ class PushNotificationService {
             >();
         await androidPlugin?.createNotificationChannel(_channel);
         _log('Android channel henzo_default created');
+      }
+
+      // On iOS, present notifications natively (via APNs) even when the app is
+      // in the foreground — this is what allows Apple Watch to mirror them.
+      if (Platform.isIOS) {
+        await _messaging.setForegroundNotificationPresentationOptions(
+          alert: true,
+          badge: true,
+          sound: true,
+        );
+        _log('iOS foreground notification presentation options set');
       }
 
       FirebaseMessaging.onMessage.listen(_onForegroundMessage);
@@ -115,7 +142,17 @@ class PushNotificationService {
   }
 
   static void _onNotificationTap(NotificationResponse response) {
-    _log('notification tap: ${response.payload}');
+    _log('notification tap: actionId=${response.actionId} payload=${response.payload}');
+    if (response.actionId == 'START_WORKOUT') {
+      _handleStartWorkoutAction(response.payload);
+    }
+  }
+
+  static void _handleStartWorkoutAction(String? payload) {
+    if (payload == null || !payload.startsWith('workout:')) return;
+    final workoutType = payload.substring('workout:'.length);
+    _log('START_WORKOUT action: sending $workoutType to Watch');
+    WorkoutService.sendToWatch(workoutType: workoutType);
   }
 
   /// Register FCM token with backend. Call after login and when language changes.
@@ -174,13 +211,20 @@ class PushNotificationService {
       return;
     }
     _notifyReceived(title, body, _dataToStringMap(message.data));
-    _log('onMessage: showing local notification');
-    _showLocalNotification(
-      id: message.hashCode & 0x7FFFFFFF,
-      title: title,
-      body: body,
-      payload: message.data.isEmpty ? null : message.data.toString(),
-    );
+    // On iOS, setForegroundNotificationPresentationOptions already presents the
+    // notification natively (and mirrors it to Apple Watch), so we only need the
+    // local notification on Android.
+    if (!Platform.isIOS) {
+      _log('onMessage: showing local notification (Android)');
+      _showLocalNotification(
+        id: message.hashCode & 0x7FFFFFFF,
+        title: title,
+        body: body,
+        payload: message.data.isEmpty ? null : message.data.toString(),
+      );
+    } else {
+      _log('onMessage: iOS — system notification shown by FCM, skipping local');
+    }
   }
 
   static Future<void> _showLocalNotification({

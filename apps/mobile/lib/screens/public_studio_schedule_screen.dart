@@ -47,7 +47,7 @@ class PublicStudioScheduleScreen extends StatefulWidget {
 
 class _PublicStudioScheduleScreenState
     extends State<PublicStudioScheduleScreen> {
-  static const int _defaultBookingPeriodDays = 28;
+  static const int _defaultBookingPeriodDays = 30;
 
   static const int _minBookingPeriodDays = 1;
 

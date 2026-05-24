@@ -1,7 +1,11 @@
-# Скопируйте это в .env.production и заполните реальными значениями
+# Production on DigitalOcean — copy to `.env.production` on the server.
+# Uses the EXISTING production Supabase project only.
+# See also: ../.env.production.example and docs/ENVIRONMENTS.md
+
+HENZO_ENV=production
 
 # ============================================
-# DATABASE (Supabase)
+# DATABASE (Supabase PRODUCTION)
 # ============================================
 # Получите из: Supabase Dashboard -> Settings -> Database -> Connection String
 # Используйте "Connection pooling" для DATABASE_URL (порт 6543)

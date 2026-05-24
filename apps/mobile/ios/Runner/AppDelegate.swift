@@ -4,7 +4,7 @@ import FirebaseCore
 import WatchConnectivity
 
 @main
-@objc class AppDelegate: FlutterAppDelegate, FlutterImplicitEngineDelegate, WCSessionDelegate {
+@objc class AppDelegate: FlutterAppDelegate, WCSessionDelegate {
 
   // MARK: - Properties
 
@@ -18,13 +18,12 @@ import WatchConnectivity
   ) -> Bool {
     FirebaseApp.configure()
     setupWatchConnectivity()
-    return super.application(application, didFinishLaunchingWithOptions: launchOptions)
-  }
-
-  func didInitializeImplicitFlutterEngine(_ engineBridge: FlutterImplicitEngineBridge) {
-    GeneratedPluginRegistrant.register(with: engineBridge.pluginRegistry)
-    guard let controller = window?.rootViewController as? FlutterViewController else { return }
-    setupWatchChannel(messenger: controller.binaryMessenger)
+    GeneratedPluginRegistrant.register(with: self)
+    let result = super.application(application, didFinishLaunchingWithOptions: launchOptions)
+    if let controller = window?.rootViewController as? FlutterViewController {
+      setupWatchChannel(messenger: controller.binaryMessenger)
+    }
+    return result
   }
 
   // MARK: - Watch Connectivity setup
@@ -68,34 +67,30 @@ import WatchConnectivity
       return
     }
 
-    guard session.isWatchAppInstalled else {
-      result("not_installed")
-      return
-    }
+    let payload: [String: Any] = [
+      "action": "startWorkout",
+      "workoutType": workoutType,
+      "minutesBefore": minutesBefore,
+    ]
 
-    guard session.isReachable else {
-      // Watch not reachable right now — use transferUserInfo (queued delivery)
-      session.transferUserInfo([
-        "action": "startWorkout",
-        "workoutType": workoutType,
-        "minutesBefore": minutesBefore,
-      ])
-      result("queued")
-      return
+    if session.isReachable {
+      // Watch app is running in foreground — send immediately
+      session.sendMessage(
+        payload,
+        replyHandler: { _ in result("sent") },
+        errorHandler: { _ in
+          // sendMessage failed — fall back to transferUserInfo
+          session.transferUserInfo(payload)
+          result("queued")
+        }
+      )
+    } else {
+      // Watch not reachable (screen off / app not running) — queue for delivery
+      // transferUserInfo works even if the watch app is not yet installed;
+      // the message will be delivered once the app is installed and launched.
+      session.transferUserInfo(payload)
+      result("sent")
     }
-
-    // Watch is reachable — send immediately
-    session.sendMessage(
-      [
-        "action": "startWorkout",
-        "workoutType": workoutType,
-        "minutesBefore": minutesBefore,
-      ],
-      replyHandler: { _ in result("sent") },
-      errorHandler: { error in
-        result(FlutterError(code: "SEND_FAILED", message: error.localizedDescription, details: nil))
-      }
-    )
   }
 
   // MARK: - WCSessionDelegate

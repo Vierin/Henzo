@@ -7,29 +7,29 @@ import { loadModules, type TranslationModule } from './modules';
 
 // Base modules that are always loaded
 const BASE_MODULES: TranslationModule[] = [
-	'core/common',
-	'core/meta',
-	'core/navigation',
-	'core/weekdays',
-	'core/months',
-	'ui/header',
-	'ui/footer',
-	'ui/cookieBanner',
-	'shared/forms',
-	'shared/emptyStates',
-	'public/booking', // Always load booking module as BookingModal can be used on any page
+  'core/common',
+  'core/meta',
+  'core/navigation',
+  'core/weekdays',
+  'core/months',
+  'ui/header',
+  'ui/footer',
+  'ui/cookieBanner',
+  'shared/forms',
+  'shared/emptyStates',
+  'public/booking', // Always load booking module as BookingModal can be used on any page
 ];
 
 // Type for the merged dictionary
 type Dictionary = {
-	[key: string]: any;
+  [key: string]: any;
 };
 
 function getInitialDictionary(): Dictionary {
-	if (typeof window === 'undefined') return {};
-	const initial = (window as Window & { __INITIAL_DICTIONARY__?: Dictionary })
-		.__INITIAL_DICTIONARY__;
-	return initial && typeof initial === 'object' ? initial : {};
+  if (typeof window === 'undefined') return {};
+  const initial = (window as Window & { __INITIAL_DICTIONARY__?: Dictionary })
+    .__INITIAL_DICTIONARY__;
+  return initial && typeof initial === 'object' ? initial : {};
 }
 
 /**
@@ -37,69 +37,69 @@ function getInitialDictionary(): Dictionary {
  * @param modules - Optional array of modules to load. If not provided, loads base modules only.
  */
 export function useTranslations(modules?: TranslationModule[]) {
-	const pathname = usePathname();
-	const [dictionary, setDictionary] = useState<Dictionary>(() => ({}));
-	const [isLoading, setIsLoading] = useState(true);
+  const pathname = usePathname();
+  const [dictionary, setDictionary] = useState<Dictionary>(() => ({}));
+  const [isLoading, setIsLoading] = useState(true);
 
-	// Sync from server-injected dictionary before paint to avoid flashing keys
-	useLayoutEffect(() => {
-		const initial = getInitialDictionary();
-		if (Object.keys(initial).length > 0) {
-			setDictionary(initial);
-			setIsLoading(false);
-		}
-	}, []);
+  // Sync from server-injected dictionary before paint to avoid flashing keys
+  useLayoutEffect(() => {
+    const initial = getInitialDictionary();
+    if (Object.keys(initial).length > 0) {
+      setDictionary(initial);
+      setIsLoading(false);
+    }
+  }, []);
 
-	const locale = useMemo(() => {
-		return extractLocaleFromPath(pathname) ?? 'en';
-	}, [pathname]);
+  const locale = useMemo(() => {
+    return extractLocaleFromPath(pathname) ?? 'en';
+  }, [pathname]);
 
-	const modulesToLoad = useMemo(() => {
-		return modules ? [...BASE_MODULES, ...modules] : BASE_MODULES;
-	}, [modules]);
+  const modulesToLoad = useMemo(() => {
+    return modules ? [...BASE_MODULES, ...modules] : BASE_MODULES;
+  }, [modules]);
 
-	useEffect(() => {
-		let cancelled = false;
-		const hasInitial = Object.keys(getInitialDictionary()).length > 0;
+  useEffect(() => {
+    let cancelled = false;
+    const hasInitial = Object.keys(getInitialDictionary()).length > 0;
 
-		async function loadDictionary() {
-			if (!hasInitial) setIsLoading(true);
-			try {
-				const loaded = await loadModules(locale, modulesToLoad);
-				if (!cancelled) {
-					setDictionary(loaded);
-					setIsLoading(false);
-				}
-			} catch (error) {
-				console.error('Failed to load translations:', error);
-				if (!cancelled) {
-					if (!hasInitial) setDictionary({});
-					setIsLoading(false);
-				}
-			}
-		}
+    async function loadDictionary() {
+      if (!hasInitial) setIsLoading(true);
+      try {
+        const loaded = await loadModules(locale, modulesToLoad);
+        if (!cancelled) {
+          setDictionary(loaded);
+          setIsLoading(false);
+        }
+      } catch (error) {
+        console.error('Failed to load translations:', error);
+        if (!cancelled) {
+          if (!hasInitial) setDictionary({});
+          setIsLoading(false);
+        }
+      }
+    }
 
-		loadDictionary();
+    loadDictionary();
 
-		return () => {
-			cancelled = true;
-		};
-	}, [locale, modulesToLoad]);
+    return () => {
+      cancelled = true;
+    };
+  }, [locale, modulesToLoad]);
 
-	return useMemo(() => {
-		if (isLoading) {
-			// Return a proxy that returns the key if translation is not loaded yet
-			return new Proxy(
-				{},
-				{
-					get: (_target, prop: string) => {
-						return prop;
-					},
-				}
-			) as Dictionary;
-		}
-		return dictionary;
-	}, [dictionary, isLoading]);
+  return useMemo(() => {
+    if (isLoading) {
+      // Return a proxy that returns the key if translation is not loaded yet
+      return new Proxy(
+        {},
+        {
+          get: (_target, prop: string) => {
+            return prop;
+          },
+        },
+      ) as Dictionary;
+    }
+    return dictionary;
+  }, [dictionary, isLoading]);
 }
 
 /**
@@ -107,43 +107,43 @@ export function useTranslations(modules?: TranslationModule[]) {
  * Useful for code-splitting translations per page/component
  */
 export function useModuleTranslations(
-	modules: TranslationModule[],
-	locale?: Locale
+  modules: TranslationModule[],
+  locale?: Locale,
 ) {
-	const pathname = usePathname();
-	const [dictionary, setDictionary] = useState<Dictionary>({});
-	const [isLoading, setIsLoading] = useState(true);
+  const pathname = usePathname();
+  const [dictionary, setDictionary] = useState<Dictionary>({});
+  const [isLoading, setIsLoading] = useState(true);
 
-	const currentLocale = useMemo(() => {
-		return locale ?? extractLocaleFromPath(pathname) ?? 'en';
-	}, [locale, pathname]);
+  const currentLocale = useMemo(() => {
+    return locale ?? extractLocaleFromPath(pathname) ?? 'en';
+  }, [locale, pathname]);
 
-	useEffect(() => {
-		let cancelled = false;
+  useEffect(() => {
+    let cancelled = false;
 
-		async function loadDictionary() {
-			setIsLoading(true);
-			try {
-				const loaded = await loadModules(currentLocale, modules);
-				if (!cancelled) {
-					setDictionary(loaded);
-					setIsLoading(false);
-				}
-			} catch (error) {
-				console.error('Failed to load module translations:', error);
-				if (!cancelled) {
-					setDictionary({});
-					setIsLoading(false);
-				}
-			}
-		}
+    async function loadDictionary() {
+      setIsLoading(true);
+      try {
+        const loaded = await loadModules(currentLocale, modules);
+        if (!cancelled) {
+          setDictionary(loaded);
+          setIsLoading(false);
+        }
+      } catch (error) {
+        console.error('Failed to load module translations:', error);
+        if (!cancelled) {
+          setDictionary({});
+          setIsLoading(false);
+        }
+      }
+    }
 
-		loadDictionary();
+    loadDictionary();
 
-		return () => {
-			cancelled = true;
-		};
-	}, [currentLocale, modules.join(',')]);
+    return () => {
+      cancelled = true;
+    };
+  }, [currentLocale, modules.join(',')]);
 
-	return { dictionary, isLoading };
+  return { dictionary, isLoading };
 }

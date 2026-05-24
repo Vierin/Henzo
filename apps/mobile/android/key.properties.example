@@ -1,0 +1,5 @@
+# Copy to android/key.properties (gitignored). Used for release / Play upload signing.
+storePassword=CHANGE_ME
+keyPassword=CHANGE_ME
+keyAlias=upload
+storeFile=app/upload-keystore.jks

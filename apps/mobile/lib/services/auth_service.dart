@@ -115,11 +115,44 @@ class AuthService extends ChangeNotifier {
     });
   }
 
-  Future<({bool ok, String? errorL10nKey, String? errorRaw})> _fetchUser(
-    String accessToken,
-  ) async {
+  String? _fetchErrorL10nKey(String msg) {
+    if (msg.contains('ACCOUNT_NOT_FOUND') ||
+        msg.contains('User not found in database')) {
+      return AuthErrorKeys.accountNotFoundForEmail;
+    }
+    return null;
+  }
+
+  AuthUiResult _loginFetchFailure(
+    ({bool ok, String? errorL10nKey, String? errorRaw}) fetch,
+  ) {
+    final l10nKey =
+        fetch.errorL10nKey ??
+        _fetchErrorL10nKey(fetch.errorRaw ?? '') ??
+        AuthErrorKeys.accountNotFoundForEmail;
+    return (
+      success: false,
+      errorL10nKey: l10nKey,
+      errorRaw: null,
+    );
+  }
+
+  Future<void> _signOutAfterFailedLogin() async {
     try {
-      final url = Uri.parse('${AppConfig.apiUrl}/auth/user');
+      await _supabase.auth.signOut();
+    } catch (_) {}
+    _user = null;
+    _isAuthenticated = false;
+  }
+
+  Future<({bool ok, String? errorL10nKey, String? errorRaw})> _fetchUser(
+    String accessToken, {
+    bool syncIfMissing = false,
+  }) async {
+    try {
+      final url = Uri.parse('${AppConfig.apiUrl}/auth/user').replace(
+        queryParameters: syncIfMissing ? {'syncIfMissing': 'true'} : null,
+      );
       if (kDebugMode) debugPrint('[Auth] GET $url');
       final response = await http.get(
         url,
@@ -176,7 +209,11 @@ class AuthService extends ChangeNotifier {
         }
       } catch (_) {}
       if (kDebugMode) debugPrint('[Auth] /auth/user failed: $msg');
-      return (ok: false, errorL10nKey: null, errorRaw: msg);
+      return (
+        ok: false,
+        errorL10nKey: _fetchErrorL10nKey(msg),
+        errorRaw: msg,
+      );
     } catch (e, st) {
       if (kDebugMode) {
         debugPrint('[Auth] Fetch user error: $e');
@@ -247,7 +284,11 @@ class AuthService extends ChangeNotifier {
   }
 
   /// [registerAsOwner] — business path: upgrade role to OWNER after Google sign-in.
-  Future<AuthUiResult> loginWithGoogle({bool registerAsOwner = false}) async {
+  /// [syncIfMissing] — registration path: create DB user if missing (default login: false).
+  Future<AuthUiResult> loginWithGoogle({
+    bool registerAsOwner = false,
+    bool syncIfMissing = false,
+  }) async {
     final webClientId = AppConfig.googleWebClientId;
     if (webClientId.isEmpty) {
       AppConfig.logIfDevelopment(
@@ -343,20 +384,20 @@ class AuthService extends ChangeNotifier {
         } catch (_) {}
       }
 
-      final fetch = await _fetchUser(session.accessToken);
+      final fetch = await _fetchUser(
+        session.accessToken,
+        syncIfMissing: registerAsOwner || syncIfMissing,
+      );
       notifyListeners();
 
       if (!fetch.ok || !_isAuthenticated || _user == null) {
+        await _signOutAfterFailedLogin();
+        notifyListeners();
         AppConfig.logIfDevelopment(
           'login.google',
           'GET /auth/user after Google failed: l10n=${fetch.errorL10nKey} raw=${fetch.errorRaw}',
         );
-        return (
-          success: false,
-          errorL10nKey:
-              fetch.errorL10nKey ?? AuthErrorKeys.userNotFoundInSystem,
-          errorRaw: fetch.errorRaw,
-        );
+        return _loginFetchFailure(fetch);
       }
 
       if (registerAsOwner && !isStudioOperator) {
@@ -423,17 +464,14 @@ class AuthService extends ChangeNotifier {
       notifyListeners();
 
       if (!fetch.ok || !_isAuthenticated || _user == null) {
+        await _signOutAfterFailedLogin();
+        notifyListeners();
         AppConfig.logIfDevelopment(
           'login.password',
           'GET /auth/user after password sign-in failed (email=$emailForLog): '
               'l10n=${fetch.errorL10nKey} raw=${fetch.errorRaw}',
         );
-        return (
-          success: false,
-          errorL10nKey:
-              fetch.errorL10nKey ?? AuthErrorKeys.userNotFoundInSystem,
-          errorRaw: fetch.errorRaw,
-        );
+        return _loginFetchFailure(fetch);
       }
       return (success: true, errorL10nKey: null, errorRaw: null);
     } catch (e, st) {
@@ -474,26 +512,78 @@ class AuthService extends ChangeNotifier {
     String? name,
     required String email,
     required String password,
-    String? locale,
   }) async {
     try {
       final url = Uri.parse(
-        '${AppConfig.apiUrl}/auth/send-business-magic-link',
+        '${AppConfig.apiUrl}/auth/register-owner/request-code',
       );
       final response = await http.post(
         url,
         headers: {'Content-Type': 'application/json'},
         body: json.encode({
-          'name': (name != null && name.trim().isNotEmpty)
-              ? name.trim()
-              : email.trim(),
           'email': email.trim(),
           'password': password,
-          if (locale != null && locale.isNotEmpty) 'locale': locale,
+          if (name != null && name.trim().isNotEmpty) 'name': name.trim(),
         }),
       );
 
       if (response.statusCode >= 200 && response.statusCode < 300) {
+        return (success: true, errorL10nKey: null, errorRaw: null);
+      }
+
+      String msg = 'HTTP ${response.statusCode}';
+      try {
+        final err = json.decode(response.body) as Map<String, dynamic>?;
+        if (err != null && err['message'] != null) {
+          msg = err['message'] as String;
+        }
+      } catch (_) {}
+      return (success: false, errorL10nKey: null, errorRaw: msg);
+    } catch (e) {
+      return (
+        success: false,
+        errorL10nKey: AuthErrorKeys.network,
+        errorRaw: e.toString(),
+      );
+    }
+  }
+
+  Future<AuthUiResult> verifyBusinessRegistrationCode({
+    required String email,
+    required String code,
+  }) async {
+    try {
+      final url = Uri.parse(
+        '${AppConfig.apiUrl}/auth/register-owner/verify-code',
+      );
+      final response = await http.post(
+        url,
+        headers: {'Content-Type': 'application/json'},
+        body: json.encode({'email': email.trim(), 'code': code.trim()}),
+      );
+      if (response.statusCode >= 200 && response.statusCode < 300) {
+        final payload = json.decode(response.body) as Map<String, dynamic>?;
+        final session = payload?['session'];
+        final accessToken = session is Map<String, dynamic>
+            ? (session['access_token'] as String?)
+            : null;
+        if (accessToken == null || accessToken.isEmpty) {
+          return (
+            success: false,
+            errorL10nKey: AuthErrorKeys.noSession,
+            errorRaw: 'Session is missing after OTP verification',
+          );
+        }
+        final fetch = await _fetchUser(accessToken);
+        notifyListeners();
+        if (!fetch.ok || !_isAuthenticated || _user == null) {
+          return (
+            success: false,
+            errorL10nKey:
+                fetch.errorL10nKey ?? AuthErrorKeys.userNotFoundInSystem,
+            errorRaw: fetch.errorRaw,
+          );
+        }
         return (success: true, errorL10nKey: null, errorRaw: null);
       }
 

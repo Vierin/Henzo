@@ -62,6 +62,12 @@
 		"businessRegisterTitle": "Business registration",
 		"businessRegisterSubtitle": "Create your business account to manage bookings in Henzo.",
 		"businessName": "Business name",
+		"firstName": "First name",
+		"surname": "Surname",
+		"fullName": "Full name",
+		"enterFirstName": "Enter first name",
+		"enterFullName": "Enter full name",
+		"clientRegisterTitle": "Client registration",
 		"enterBusinessName": "Enter business name",
 		"confirmPassword": "Confirm password",
 		"passwordsDontMatch": "Passwords do not match",
@@ -75,7 +81,19 @@
 		"resendCodeIn": "Resend code in",
 		"didntReceiveCode": "Didn't receive the code?",
 		"resend": "Resend",
-		"enterOtpCode": "Enter 6-digit code"
+		"enterOtpCode": "Enter 6-digit code",
+		"roleTitle": "Who are you?",
+		"roleSubtitleBefore": "Choose your role and let's",
+		"roleSubtitleHighlight": "get moving",
+		"roleHereTo": "I'm here to",
+		"roleTrain": "train",
+		"roleManage": "manage",
+		"roleClientFeature1": "Book classes",
+		"roleClientFeature2": "Track progress",
+		"roleClientFeature3": "Reach your goals",
+		"roleOwnerFeature1": "Manage clients",
+		"roleOwnerFeature2": "Schedule classes",
+		"roleOwnerFeature3": "Grow your business"
 	},
 	"clientHome": {
 		"nowIn": "NOW IN",
@@ -115,6 +133,12 @@
 		"removed": "Removed from favorites",
 		"removeError": "Could not remove"
 	},
+	"clientClassDetail": {
+		"shareInvite": "{name} invites you to \"{training}\"",
+		"shareInviteWithTrainer": "{name} invites you to \"{training}\" with {trainer}",
+		"shareJoinMe": "Join me:",
+		"shareSomeone": "Someone"
+	},
 	"publicHome": {
 		"loginLink": "Login",
 		"heroTitle": "Find sports studios in seconds",
@@ -132,6 +156,7 @@
 		"network": "No connection to server. Check EXPO_PUBLIC_API_URL and that the backend is running.",
 		"responseNoUser": "Invalid server response (missing user).",
 		"userNotFoundInSystem": "Your profile could not be loaded.",
+		"accountNotFoundForEmail": "No account exists with this email.",
 		"noSession": "No active session.",
 		"googleWebClientMissing": "Google Web Client ID is not configured.",
 		"googleIosClientMissing": "Google iOS OAuth client is missing. In Google Cloud Console create an OAuth client type \"iOS\" with bundle ID com.henzo.vn.Henzo, paste its Client ID into EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID in assets/.env, add CFBundleURLTypes + reversed scheme to ios/Runner/Info.plist (google_sign_in_ios README).",
@@ -164,6 +189,7 @@
 		"onboardingRequiredCaption": "Required to go live",
 		"onboardingOptionalTitle": "Optional",
 		"onboardingOptionalHint": "Not required to activate — you can add these later.",
+		"onboardingSetupBusiness": "Set up your business",
 		"onboardingCreateTraining": "Create first training",
 		"onboardingAddPhoto": "Add at least 1 studio photo",
 		"onboardingAddLogo": "Add studio logo",

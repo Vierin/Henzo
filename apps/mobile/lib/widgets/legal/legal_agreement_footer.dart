@@ -73,22 +73,20 @@ class LegalAgreementCheckbox extends StatelessWidget {
     final locale = context.watch<LocaleProvider>();
 
     return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
+      crossAxisAlignment: CrossAxisAlignment.center,
       children: [
-        SizedBox(
-          width: 24,
-          height: 24,
-          child: Checkbox(
-            value: value,
-            onChanged: onChanged,
-            activeColor: AppColors.primary500,
-            materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-          ),
+        Checkbox(
+          value: value,
+          onChanged: onChanged,
+          activeColor: AppColors.primary500,
+          materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+          visualDensity: VisualDensity.compact,
         ),
-        const SizedBox(width: 8),
+        const SizedBox(width: 4),
         Expanded(
           child: GestureDetector(
             onTap: () => onChanged(!value),
+            behavior: HitTestBehavior.opaque,
             child: Text(
               locale.t('legal.checkboxLabel'),
               style: const TextStyle(

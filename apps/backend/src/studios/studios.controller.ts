@@ -26,7 +26,7 @@ import { generateStudioSlug } from '../utils/slug';
 @Controller('studios')
 export class StudiosController {
   private getBookingPeriodDays(reminderSettings: unknown): number {
-    const fallback = 14;
+    const fallback = 30;
     if (!reminderSettings || typeof reminderSettings !== 'object') {
       return fallback;
     }
