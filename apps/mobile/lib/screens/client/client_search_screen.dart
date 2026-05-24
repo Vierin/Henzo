@@ -19,7 +19,9 @@ import '../../services/client_favorites_mutations.dart';
 import '../../services/client_favorites_store.dart';
 import '../../services/dashboard_api_service.dart';
 import '../../utils/formatters.dart';
+import '../../utils/load_error_message.dart';
 import '../../utils/nearby_payload.dart';
+import '../../widgets/common/load_error_view.dart';
 import '../../widgets/dashboard/owner_daily_schedule_session_card.dart';
 import '../../widgets/schedule/calendar_day_pill.dart';
 import '../location_picker_screen.dart';
@@ -51,6 +53,7 @@ class ClientSearchScreenState extends State<ClientSearchScreen> {
   static const _browseLocationBlue = Color(0xFF4D39A8);
 
   bool _loading = true;
+  String? _loadError;
   bool _showClasses = true;
   bool _isMonthExpanded = false;
   late DateTime _selectedDay;
@@ -633,7 +636,10 @@ class ClientSearchScreenState extends State<ClientSearchScreen> {
   Future<void> _loadExplore() async {
     if (!mounted) return;
     final loc = context.read<ClientLocationStore>();
-    setState(() => _loading = true);
+    setState(() {
+      _loading = true;
+      _loadError = null;
+    });
     try {
       final radiusKm = _currentRadiusKm();
       final nearbyQuery = StringBuffer(
@@ -752,12 +758,17 @@ class ClientSearchScreenState extends State<ClientSearchScreen> {
         _studios = studios;
         _classes = classes;
         _loading = false;
+        _loadError = null;
         _derivedInputsHash = 0;
         _distanceKmMemo.clear();
       });
-    } catch (_) {
+    } catch (e) {
       if (!mounted) return;
-      setState(() => _loading = false);
+      final locale = context.read<LocaleProvider>();
+      setState(() {
+        _loading = false;
+        _loadError = loadErrorMessage(locale, e);
+      });
     }
   }
 
@@ -2235,6 +2246,11 @@ class ClientSearchScreenState extends State<ClientSearchScreen> {
       body: SafeArea(
         child: _loading
             ? const Center(child: CircularProgressIndicator())
+            : _loadError != null
+            ? LoadErrorView(
+                message: _loadError!,
+                onRetry: _loadExplore,
+              )
             : Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [

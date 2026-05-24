@@ -24,8 +24,16 @@ import '../../widgets/settings/settings_form_tokens.dart';
 import '../../widgets/settings/settings_typography.dart';
 import '../../widgets/settings/studio_social_link.dart';
 
+/// Scroll + optional focus when opening studio profile from onboarding.
+enum StudioProfileFocusTarget {
+  description,
+  contacts,
+}
+
 class SettingsScreen extends StatefulWidget {
-  const SettingsScreen({super.key});
+  const SettingsScreen({super.key, this.initialFocusTarget});
+
+  final StudioProfileFocusTarget? initialFocusTarget;
 
   @override
   State<SettingsScreen> createState() => _SettingsScreenState();
@@ -35,11 +43,17 @@ class _SettingsScreenState extends State<SettingsScreen> {
   static const int _maxStudioPhotos = 5;
 
   final _salonFormKey = GlobalKey<FormState>();
+  final _scrollController = ScrollController();
+  final _descriptionFieldKey = GlobalKey();
+  final _contactsSectionKey = GlobalKey();
+  final _descriptionFocusNode = FocusNode();
+  final _phoneFocusNode = FocusNode();
   final _salonNameController = TextEditingController();
   final _salonDescriptionController = TextEditingController();
   final _salonAddressController = TextEditingController();
   final _salonPhoneController = TextEditingController();
   final _salonEmailController = TextEditingController();
+  bool _initialFocusApplied = false;
 
   Salon? _salon;
   bool _salonLoading = true;
@@ -91,10 +105,48 @@ class _SettingsScreenState extends State<SettingsScreen> {
         _salonLoading = false;
       });
       _fillSalonFromData();
+      _scheduleInitialFocus();
     } catch (_) {
       if (!mounted) return;
       setState(() => _salonLoading = false);
+      _scheduleInitialFocus();
     }
+  }
+
+  void _scheduleInitialFocus() {
+    if (_initialFocusApplied || widget.initialFocusTarget == null) return;
+    WidgetsBinding.instance.addPostFrameCallback((_) => _applyInitialFocus());
+  }
+
+  Future<void> _applyInitialFocus() async {
+    if (!mounted || _initialFocusApplied || widget.initialFocusTarget == null) {
+      return;
+    }
+    if (_salonLoading) return;
+    _initialFocusApplied = true;
+
+    final GlobalKey targetKey;
+    final FocusNode focusNode;
+    switch (widget.initialFocusTarget!) {
+      case StudioProfileFocusTarget.description:
+        targetKey = _descriptionFieldKey;
+        focusNode = _descriptionFocusNode;
+      case StudioProfileFocusTarget.contacts:
+        targetKey = _contactsSectionKey;
+        focusNode = _phoneFocusNode;
+    }
+
+    final targetContext = targetKey.currentContext;
+    if (targetContext != null) {
+      await Scrollable.ensureVisible(
+        targetContext,
+        duration: const Duration(milliseconds: 320),
+        curve: Curves.easeInOut,
+        alignment: 0.28,
+      );
+    }
+    if (!mounted) return;
+    focusNode.requestFocus();
   }
 
   void _fillSalonFromData() {
@@ -144,6 +196,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
     ]) {
       controller.removeListener(_onFormChanged);
     }
+    _scrollController.dispose();
+    _descriptionFocusNode.dispose();
+    _phoneFocusNode.dispose();
     _salonNameController.dispose();
     _salonDescriptionController.dispose();
     _salonAddressController.dispose();
@@ -689,6 +744,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               behavior: HitTestBehavior.translucent,
               onTap: () => FocusManager.instance.primaryFocus?.unfocus(),
               child: ListView(
+                controller: _scrollController,
                 padding: const EdgeInsets.fromLTRB(
                   kScreenPaddingHorizontal,
                   8,
@@ -846,6 +902,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                     ),
                                     const SizedBox(height: 16),
                                     TextFormField(
+                                      key: _descriptionFieldKey,
+                                      focusNode: _descriptionFocusNode,
                                       controller: _salonDescriptionController,
                                       decoration: _inputDecoration(
                                         hint: locale.t(
@@ -992,6 +1050,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                               ),
                               const SizedBox(height: 24),
                               _ProfileSection(
+                                key: _contactsSectionKey,
                                 title: locale.t('profileForm.contactInfo'),
                                 carded: false,
                                 child: Column(
@@ -999,6 +1058,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                       CrossAxisAlignment.stretch,
                                   children: [
                                     TextFormField(
+                                      focusNode: _phoneFocusNode,
                                       controller: _salonPhoneController,
                                       decoration: _inputDecoration(
                                         hint: locale.t(
@@ -1474,6 +1534,7 @@ class _ProfileSectionTitle extends StatelessWidget {
 
 class _ProfileSection extends StatelessWidget {
   const _ProfileSection({
+    super.key,
     required this.title,
     required this.child,
     this.carded = true,

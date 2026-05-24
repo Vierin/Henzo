@@ -12,6 +12,8 @@
 		"update": "Обновить",
 		"done": "Готово",
 		"retry": "Повторить",
+		"loadFailed": "Не удалось загрузить данные. Попробуйте ещё раз.",
+		"loadFailedTitle": "Не удалось загрузить",
 		"clear": "Очистить",
 		"search": "Поиск",
 		"email": "Email",
@@ -124,7 +126,13 @@
 		"title": "Активность",
 		"upcoming": "Предстоящие",
 		"passes": "Абонементы",
-		"favorites": "Избранное"
+		"favorites": "Избранное",
+		"scheduleLoadFailedTitle": "Не удалось загрузить расписание",
+		"passesLoadFailedTitle": "Не удалось загрузить абонементы",
+		"scheduleEmptyTitle": "Пока нет запланированных занятий",
+		"scheduleEmptySubtitle": "Здесь появятся ваши предстоящие записи.",
+		"passesEmptyTitle": "Пока нет занятий",
+		"passesEmptySubtitle": "Здесь появятся карточки ваших занятий."
 	},
 	"clientFavorites": {
 		"emptyTitle": "Пора найти ваше любимое место",
@@ -137,7 +145,14 @@
 		"shareInvite": "{name} приглашает вас на «{training}»",
 		"shareInviteWithTrainer": "{name} приглашает вас на «{training}» с тренером {trainer}",
 		"shareJoinMe": "Присоединяйтесь:",
-		"shareSomeone": "Кто-то"
+		"shareSomeone": "Кто-то",
+		"bookingFailed": "Не удалось завершить бронирование",
+		"alreadyBooked": "Вы уже записаны на это занятие",
+		"signInToBook": "Войдите, чтобы записаться на занятие"
+	},
+	"clientMap": {
+		"nearbyStudios": "Студии рядом",
+		"noStudiosNearby": "Рядом студий не найдено"
 	},
 	"publicHome": {
 		"loginLink": "Вход",

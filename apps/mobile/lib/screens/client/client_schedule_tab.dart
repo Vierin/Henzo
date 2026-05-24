@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../constants/layout.dart';
+import '../../l10n/locale_provider.dart';
 import '../../services/api_client.dart';
+import '../../utils/load_error_message.dart';
 import '../../services/auth_service.dart';
 import '../../services/client_schedule_store.dart';
 import '../../utils/client_schedule_owner_session.dart';
@@ -69,10 +71,11 @@ class ClientScheduleTabState extends State<ClientScheduleTab>
       });
     } catch (e) {
       if (!mounted) return;
+      final locale = context.read<LocaleProvider>();
       setState(() {
         _items = const [];
         _loading = false;
-        _error = e.toString();
+        _error = loadErrorMessage(locale, e);
       });
     }
   }
@@ -128,6 +131,7 @@ class ClientScheduleTabState extends State<ClientScheduleTab>
   @override
   Widget build(BuildContext context) {
     super.build(context);
+    final locale = context.watch<LocaleProvider>();
     if (_loading) {
       return const Center(child: CircularProgressIndicator());
     }
@@ -136,8 +140,9 @@ class ClientScheduleTabState extends State<ClientScheduleTab>
         padding: const EdgeInsets.all(16),
         children: [
           ClientPlaceholderCard(
-            title: 'Failed to load schedule',
+            title: locale.t('clientActivity.scheduleLoadFailedTitle'),
             subtitle: _error!,
+            onRetry: () => _load(force: true),
           ),
         ],
       );
@@ -145,10 +150,10 @@ class ClientScheduleTabState extends State<ClientScheduleTab>
     if (_items.isEmpty) {
       return ListView(
         padding: const EdgeInsets.all(kScreenPaddingHorizontal),
-        children: const [
+        children: [
           ClientPlaceholderCard(
-            title: 'No classes scheduled yet',
-            subtitle: 'Your upcoming bookings will appear here.',
+            title: locale.t('clientActivity.scheduleEmptyTitle'),
+            subtitle: locale.t('clientActivity.scheduleEmptySubtitle'),
           ),
         ],
       );

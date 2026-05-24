@@ -12,6 +12,8 @@
 		"update": "Cập nhật",
 		"done": "Xong",
 		"retry": "Thử lại",
+		"loadFailed": "Không tải được dữ liệu. Vui lòng thử lại.",
+		"loadFailedTitle": "Không tải được",
 		"clear": "Xóa bộ lọc",
 		"search": "Tìm kiếm",
 		"email": "Email",
@@ -124,7 +126,13 @@
 		"title": "Hoạt động",
 		"upcoming": "Sắp tới",
 		"passes": "Gói tập",
-		"favorites": "Yêu thích"
+		"favorites": "Yêu thích",
+		"scheduleLoadFailedTitle": "Không tải được lịch",
+		"passesLoadFailedTitle": "Không tải được gói tập",
+		"scheduleEmptyTitle": "Chưa có lớp nào được đặt",
+		"scheduleEmptySubtitle": "Các buổi đặt sắp tới sẽ hiển thị tại đây.",
+		"passesEmptyTitle": "Chưa có lớp nào",
+		"passesEmptySubtitle": "Thẻ lớp của bạn sẽ hiển thị tại đây."
 	},
 	"clientFavorites": {
 		"emptyTitle": "Hãy tìm địa điểm yêu thích của bạn",
@@ -137,7 +145,14 @@
 		"shareInvite": "{name} mời bạn tham gia \"{training}\"",
 		"shareInviteWithTrainer": "{name} mời bạn tham gia \"{training}\" với HLV {trainer}",
 		"shareJoinMe": "Tham gia cùng tôi:",
-		"shareSomeone": "Ai đó"
+		"shareSomeone": "Ai đó",
+		"bookingFailed": "Không thể hoàn tất đặt chỗ",
+		"alreadyBooked": "Bạn đã đặt lớp này rồi",
+		"signInToBook": "Vui lòng đăng nhập để đặt lớp"
+	},
+	"clientMap": {
+		"nearbyStudios": "Studio gần bạn",
+		"noStudiosNearby": "Không tìm thấy studio gần đây"
 	},
 	"publicHome": {
 		"loginLink": "Đăng nhập",

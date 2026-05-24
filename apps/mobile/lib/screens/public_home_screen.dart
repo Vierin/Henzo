@@ -22,7 +22,9 @@ import '../services/client_location_store.dart';
 import '../services/client_schedule_store.dart';
 import '../services/mapbox_api_service.dart';
 import '../utils/formatters.dart';
+import '../utils/load_error_message.dart';
 import '../utils/nearby_payload.dart';
+import '../widgets/common/load_error_view.dart';
 import '../services/client_favorites_mutations.dart';
 import '../widgets/app_search_prefix_icon.dart';
 import '../widgets/client/home/client_home_category_chip.dart';
@@ -63,6 +65,7 @@ class _PublicHomeScreenState extends State<PublicHomeScreen> {
   final TextEditingController _searchController = TextEditingController();
   List<PublicStudioPreview> _allStudios = const [];
   bool _isLoadingStudios = true;
+  String? _studiosLoadError;
   bool _locationModalShown = false;
   ClientLocationStore? _locationStore;
   final Set<String> _favoriteLoadingIds = <String>{};
@@ -114,7 +117,10 @@ class _PublicHomeScreenState extends State<PublicHomeScreen> {
   Future<void> _loadTopStudiosNearby() async {
     if (!mounted) return;
     final loc = context.read<ClientLocationStore>();
-    setState(() => _isLoadingStudios = true);
+    setState(() {
+      _isLoadingStudios = true;
+      _studiosLoadError = null;
+    });
     try {
       final query = StringBuffer('/studios/nearby?limit=50');
       if (loc.lat != null && loc.lon != null) {
@@ -157,16 +163,18 @@ class _PublicHomeScreenState extends State<PublicHomeScreen> {
       setState(() {
         _allStudios = mapped;
         _isLoadingStudios = false;
+        _studiosLoadError = null;
       });
       final token = context.read<AuthService>().accessToken;
       unawaited(context.read<ClientFavoritesStore>().sync(token, force: false));
       unawaited(_loadClientSchedule(token));
       unawaited(_loadTodayClasses());
-    } catch (_) {
+    } catch (e) {
       if (!mounted) return;
+      final locale = context.read<LocaleProvider>();
       setState(() {
-        _allStudios = const [];
         _isLoadingStudios = false;
+        _studiosLoadError = loadErrorMessage(locale, e);
       });
     }
   }
@@ -926,6 +934,12 @@ class _PublicHomeScreenState extends State<PublicHomeScreen> {
                   height: 186,
                   child: _isLoadingStudios
                       ? const Center(child: CircularProgressIndicator())
+                      : _studiosLoadError != null
+                      ? LoadErrorView(
+                          compact: true,
+                          message: _studiosLoadError!,
+                          onRetry: _loadTopStudiosNearby,
+                        )
                       : studios.isEmpty
                       ? Padding(
                           padding: screenPaddingH(),

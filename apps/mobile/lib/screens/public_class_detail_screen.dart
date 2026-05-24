@@ -13,6 +13,8 @@ import '../services/auth_service.dart';
 import '../utils/class_session_link.dart';
 import '../utils/color_hex.dart';
 import '../utils/formatters.dart';
+import '../utils/load_error_message.dart';
+import '../widgets/common/load_error_view.dart';
 import '../services/client_schedule_store.dart';
 import '../widgets/common/henzo_header_back_button.dart';
 import '../widgets/public/cached_salon_network_image.dart';
@@ -132,9 +134,10 @@ class _PublicClassDetailScreenState extends State<PublicClassDetailScreen> {
       });
     } catch (e) {
       if (!mounted) return;
+      final locale = context.read<LocaleProvider>();
       setState(() {
         _loading = false;
-        _error = e.toString();
+        _error = loadErrorMessage(locale, e);
       });
     }
   }
@@ -174,9 +177,10 @@ class _PublicClassDetailScreenState extends State<PublicClassDetailScreen> {
 
   Future<void> _book() async {
     final token = context.read<AuthService>().accessToken;
+    final locale = context.read<LocaleProvider>();
     if (token == null || token.isEmpty) {
       ScaffoldMessenger.maybeOf(context)?.showSnackBar(
-        const SnackBar(content: Text('Please sign in to book a class')),
+        SnackBar(content: Text(locale.t('clientClassDetail.signInToBook'))),
       );
       return;
     }
@@ -202,21 +206,17 @@ class _PublicClassDetailScreenState extends State<PublicClassDetailScreen> {
       );
     } catch (e) {
       if (!mounted) return;
-      final msg = e.toString();
-      final alreadyBooked =
-          msg.contains('409') || msg.toLowerCase().contains('already booked');
-      if (alreadyBooked) {
+      final locale = context.read<LocaleProvider>();
+      if (isBookingAlreadyBookedError(e)) {
         setState(() => _isBookedByMe = true);
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('You are already booked for this class'),
-          ),
+          SnackBar(content: Text(locale.t('clientClassDetail.alreadyBooked'))),
         );
         return;
       }
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Booking failed: $e')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(bookingErrorMessage(locale, e))),
+      );
     } finally {
       if (mounted) setState(() => _booking = false);
     }
@@ -239,7 +239,10 @@ class _PublicClassDetailScreenState extends State<PublicClassDetailScreen> {
         child: _loading
             ? const Center(child: CircularProgressIndicator())
             : session == null
-            ? _ErrorBody(message: _error ?? 'Class not found.', onRetry: _load)
+            ? LoadErrorView(
+                message: _error ?? 'Class not found.',
+                onRetry: _load,
+              )
             : _ClassDetailBody(
                 studio: _studio,
                 session: session,
@@ -440,34 +443,6 @@ Future<void> _openDirections({
     return;
   }
   await launchUrl(uri, mode: LaunchMode.externalApplication);
-}
-
-class _ErrorBody extends StatelessWidget {
-  const _ErrorBody({required this.message, required this.onRetry});
-
-  final String message;
-  final VoidCallback onRetry;
-
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(kScreenPaddingHorizontal),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              message,
-              textAlign: TextAlign.center,
-              style: const TextStyle(color: AppColors.textSecondary),
-            ),
-            const SizedBox(height: 12),
-            FilledButton(onPressed: onRetry, child: const Text('Retry')),
-          ],
-        ),
-      ),
-    );
-  }
 }
 
 class _ClassDetailBody extends StatelessWidget {

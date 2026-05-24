@@ -12,6 +12,8 @@
 		"update": "Update",
 		"done": "Done",
 		"retry": "Retry",
+		"loadFailed": "Could not load data. Please try again.",
+		"loadFailedTitle": "Could not load",
 		"clear": "Clear",
 		"search": "Search",
 		"email": "Email",
@@ -124,7 +126,13 @@
 		"title": "Activity",
 		"upcoming": "Upcoming",
 		"passes": "Passes",
-		"favorites": "Favorites"
+		"favorites": "Favorites",
+		"scheduleLoadFailedTitle": "Failed to load schedule",
+		"passesLoadFailedTitle": "Failed to load passes",
+		"scheduleEmptyTitle": "No classes scheduled yet",
+		"scheduleEmptySubtitle": "Your upcoming bookings will appear here.",
+		"passesEmptyTitle": "No classes yet",
+		"passesEmptySubtitle": "Your class cards will appear here."
 	},
 	"clientFavorites": {
 		"emptyTitle": "Time to find your favorite spot",
@@ -137,7 +145,14 @@
 		"shareInvite": "{name} invites you to \"{training}\"",
 		"shareInviteWithTrainer": "{name} invites you to \"{training}\" with {trainer}",
 		"shareJoinMe": "Join me:",
-		"shareSomeone": "Someone"
+		"shareSomeone": "Someone",
+		"bookingFailed": "Could not complete booking",
+		"alreadyBooked": "You are already booked for this class",
+		"signInToBook": "Please sign in to book a class"
+	},
+	"clientMap": {
+		"nearbyStudios": "Nearby studios",
+		"noStudiosNearby": "No studios found nearby"
 	},
 	"publicHome": {
 		"loginLink": "Login",

@@ -6,7 +6,9 @@ import '../../models/booking.dart';
 import '../../services/auth_service.dart';
 import '../../services/cache/bookings_cache.dart';
 import '../../services/dashboard_api_service.dart';
-import '../../utils/show_api_error.dart';
+import '../../l10n/locale_provider.dart';
+import '../../utils/load_error_message.dart';
+import '../../widgets/common/load_error_view.dart';
 import '../../widgets/dashboard/booking_detail_modal.dart';
 
 enum _BookingFilter { all, new_, pending, completed }
@@ -21,6 +23,7 @@ class AllBookingsScreen extends StatefulWidget {
 class _AllBookingsScreenState extends State<AllBookingsScreen> {
   List<Booking> _bookings = [];
   bool _loading = true;
+  String? _loadError;
   _BookingFilter _filter = _BookingFilter.all;
 
   @override
@@ -35,19 +38,26 @@ class _AllBookingsScreenState extends State<AllBookingsScreen> {
       if (mounted) setState(() => _loading = false);
       return;
     }
-    setState(() => _loading = true);
+    setState(() {
+      _loading = true;
+      _loadError = null;
+    });
     try {
       final list = await context.read<BookingsCache>().getBookings(token);
       if (mounted) {
         setState(() {
           _bookings = list..sort((a, b) => b.dateTime.compareTo(a.dateTime));
           _loading = false;
+          _loadError = null;
         });
       }
     } catch (e) {
       if (mounted) {
-        setState(() => _loading = false);
-        showApiError(context, e);
+        final locale = context.read<LocaleProvider>();
+        setState(() {
+          _loading = false;
+          _loadError = loadErrorMessage(locale, e);
+        });
       }
     }
   }
@@ -157,6 +167,11 @@ class _AllBookingsScreenState extends State<AllBookingsScreen> {
                     child: CircularProgressIndicator(
                       color: AppColors.primary500,
                     ),
+                  )
+                : _loadError != null
+                ? LoadErrorView(
+                    message: _loadError!,
+                    onRetry: _loadData,
                   )
                 : RefreshIndicator(
                     onRefresh: _loadData,

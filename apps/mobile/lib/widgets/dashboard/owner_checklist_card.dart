@@ -56,7 +56,8 @@ class OwnerChecklistCard extends StatelessWidget {
   static const _starBadgeBg = Color(0xFFFFF0D1);
   static const _starColor = Color(0xFFFF9900);
   static const _mandatoryStepWeight = 25;
-  static const _optionalStepWeight = 10;
+  static const _optionalTotalWeight = 25;
+  static const _optionalStepCount = 3;
 
   int get _mandatoryDoneCount => <bool>[
     studioDetailsCompleted,
@@ -74,11 +75,15 @@ class OwnerChecklistCard extends StatelessWidget {
 
   int get _optionalLeft => 3 - _optionalDoneCount;
 
-  /// Mandatory steps 25% each (75%), optional 10% each (30%), total 100%.
+  /// Mandatory 25% × 3 (75%), optional 25% total across 3 steps → 100%.
   int get _percent {
     final mandatoryPart = _mandatoryDoneCount * _mandatoryStepWeight;
     if (!showOptionalPhase) return mandatoryPart;
-    return mandatoryPart + _optionalDoneCount * _optionalStepWeight;
+    final optionalPart = _optionalDoneCount == _optionalStepCount
+        ? _optionalTotalWeight
+        : (_optionalDoneCount * _optionalTotalWeight / _optionalStepCount)
+              .round();
+    return mandatoryPart + optionalPart;
   }
 
   int get _stepsLeft => showOptionalPhase ? _optionalLeft : _mandatoryLeft;

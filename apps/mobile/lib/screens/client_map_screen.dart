@@ -11,7 +11,9 @@ import '../l10n/locale_provider.dart';
 import '../services/api_client.dart';
 import '../services/client_location_store.dart';
 import '../services/cache/client_nearby_cache.dart';
+import '../utils/load_error_message.dart';
 import '../utils/nearby_payload.dart';
+import '../widgets/common/load_error_view.dart';
 import '../widgets/map/henzo_map_layers.dart';
 import 'location_picker_screen.dart';
 
@@ -30,6 +32,7 @@ class _ClientMapScreenState extends State<ClientMapScreen> {
   final Distance _distance = const Distance();
   List<_NearbyStudio> _nearbyStudios = const [];
   bool _isLoadingNearby = true;
+  String? _nearbyLoadError;
   bool _showSearchThisArea = false;
   double? _lastSearchLat;
   double? _lastSearchLon;
@@ -101,6 +104,7 @@ class _ClientMapScreenState extends State<ClientMapScreen> {
     if (!mounted) return;
     setState(() {
       _isLoadingNearby = true;
+      _nearbyLoadError = null;
       _showSearchThisArea = false;
     });
     try {
@@ -151,16 +155,18 @@ class _ClientMapScreenState extends State<ClientMapScreen> {
       setState(() {
         _nearbyStudios = mapped;
         _isLoadingNearby = false;
+        _nearbyLoadError = null;
         _lastSearchLat = effectiveLat;
         _lastSearchLon = effectiveLon;
         _pendingSearchLat = null;
         _pendingSearchLon = null;
       });
-    } catch (_) {
+    } catch (e) {
       if (!mounted) return;
+      final locale = context.read<LocaleProvider>();
       setState(() {
-        _nearbyStudios = const [];
         _isLoadingNearby = false;
+        _nearbyLoadError = loadErrorMessage(locale, e);
         _lastSearchLat = effectiveLat;
         _lastSearchLon = effectiveLon;
       });
@@ -421,13 +427,13 @@ class _ClientMapScreenState extends State<ClientMapScreen> {
                         ),
                       ),
                       const SizedBox(height: 10),
-                      const Padding(
-                        padding: EdgeInsets.symmetric(horizontal: 14),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 14),
                         child: Row(
                           children: [
                             Text(
-                              'Nearby studios',
-                              style: TextStyle(
+                              locale.t('clientMap.nearbyStudios'),
+                              style: const TextStyle(
                                 fontSize: 16,
                                 fontWeight: FontWeight.w800,
                                 color: AppColors.textPrimary,
@@ -440,11 +446,22 @@ class _ClientMapScreenState extends State<ClientMapScreen> {
                       Expanded(
                         child: _isLoadingNearby
                             ? const Center(child: CircularProgressIndicator())
+                            : _nearbyLoadError != null
+                                ? LoadErrorView(
+                                    compact: true,
+                                    message: _nearbyLoadError!,
+                                    onRetry: () => _loadNearbyStudios(
+                                      searchLat: _lastSearchLat,
+                                      searchLon: _lastSearchLon,
+                                    ),
+                                  )
                             : _nearbyStudios.isEmpty
-                                ? const Center(
+                                ? Center(
                                     child: Text(
-                                      'No studios found nearby',
-                                      style: TextStyle(color: AppColors.textSecondary),
+                                      locale.t('clientMap.noStudiosNearby'),
+                                      style: const TextStyle(
+                                        color: AppColors.textSecondary,
+                                      ),
                                     ),
                                   )
                                 : ListView.separated(

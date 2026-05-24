@@ -6,7 +6,9 @@ import '../../constants/colors.dart';
 import '../../constants/layout.dart';
 import '../../l10n/locale_provider.dart';
 import '../../utils/owner_studio_setup_errors.dart';
+import '../../utils/load_error_message.dart';
 import '../../utils/show_api_error.dart';
+import '../../widgets/common/load_error_view.dart';
 import '../../models/salon.dart';
 import '../../models/studio_status.dart';
 import '../../models/user_model.dart';
@@ -45,6 +47,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   Salon? _salon;
   StudioOnboardingChecklist? _checklist;
   List<OwnerTrainingSession> _todaySessions = [];
+  String? _sessionsLoadError;
   bool _isPublishing = false;
   SubscriptionRefreshNotifier? _subRefresh;
 
@@ -86,6 +89,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
       final from = DateTime(now.year, now.month, now.day);
       final to = from.add(const Duration(days: 1));
       List<OwnerTrainingSession> sessions = [];
+      String? sessionsLoadError;
       StudioOnboardingChecklist? checklist;
       try {
         final fromUtc = from.toUtc();
@@ -96,8 +100,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
           toUtc: toUtc,
         );
         sessions.sort((a, b) => a.startsAt.compareTo(b.startsAt));
-      } catch (_) {
+      } catch (e) {
         sessions = [];
+        if (mounted) {
+          sessionsLoadError = loadErrorMessage(
+            context.read<LocaleProvider>(),
+            e,
+          );
+        }
       }
       if (salon != null) {
         try {
@@ -114,6 +124,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
           _salon = salon;
           _checklist = checklist;
           _todaySessions = sessions;
+          _sessionsLoadError = sessionsLoadError;
         });
       }
     } catch (e) {
@@ -121,6 +132,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
         setState(() {
           _checklist = null;
           _todaySessions = [];
+          _sessionsLoadError = loadErrorMessage(
+            context.read<LocaleProvider>(),
+            e,
+          );
         });
         if (!isOwnerStudioNotReadyError(e)) {
           showApiError(context, e);
@@ -158,10 +173,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
     }
   }
 
-  Future<void> _openStudioProfileSettings() async {
+  Future<void> _openStudioProfileSettings({
+    StudioProfileFocusTarget? focusTarget,
+  }) async {
     await Navigator.push<void>(
       context,
-      MaterialPageRoute(builder: (_) => const SettingsScreen()),
+      MaterialPageRoute(
+        builder: (_) => SettingsScreen(initialFocusTarget: focusTarget),
+      ),
     );
     if (mounted) await _loadData();
   }
@@ -795,8 +814,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
         onCreateTrainingTap: _openTrainingSetup,
         onAddPhotoTap: _openStudioProfileSettings,
         onAddLogoTap: _openStudioProfileSettings,
-        onContactsTap: _openStudioProfileSettings,
-        onAddDescriptionTap: _openStudioProfileSettings,
+        onContactsTap: () => _openStudioProfileSettings(
+          focusTarget: StudioProfileFocusTarget.contacts,
+        ),
+        onAddDescriptionTap: () => _openStudioProfileSettings(
+          focusTarget: StudioProfileFocusTarget.description,
+        ),
         onPreviewPublicPageTap: _previewPublicPage,
         onPublishTap: _publishStudio,
       ),
@@ -825,19 +848,34 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 _statsRow(),
                 if (featured != null) _featuredCard(featured),
                 _checklistBlock(),
-                OwnerDailyScheduleBlock(
-                  sessions: _todaySessions,
-                  emptyMessage: 'No trainings scheduled for today',
-                  emptySubtitle: 'Enjoy your day!',
-                  onSeeAll: _salon == null
-                      ? null
-                      : () => context
-                            .findAncestorStateOfType<MainShellState>()
-                            ?.openScheduleTabForToday(),
-                  onSessionTap: _openSessionDetail,
-                  ownerTrainerFallback: _ownerTrainerFallback(),
-                  studioLocations: _studioLocations(context),
-                ),
+                if (_sessionsLoadError != null)
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(
+                      kScreenPaddingHorizontal,
+                      0,
+                      kScreenPaddingHorizontal,
+                      12,
+                    ),
+                    child: LoadErrorView(
+                      compact: true,
+                      message: _sessionsLoadError!,
+                      onRetry: _handleRefresh,
+                    ),
+                  )
+                else
+                  OwnerDailyScheduleBlock(
+                    sessions: _todaySessions,
+                    emptyMessage: 'No trainings scheduled for today',
+                    emptySubtitle: 'Enjoy your day!',
+                    onSeeAll: _salon == null
+                        ? null
+                        : () => context
+                              .findAncestorStateOfType<MainShellState>()
+                              ?.openScheduleTabForToday(),
+                    onSessionTap: _openSessionDetail,
+                    ownerTrainerFallback: _ownerTrainerFallback(),
+                    studioLocations: _studioLocations(context),
+                  ),
                 const SizedBox(height: 16),
               ],
             ),
