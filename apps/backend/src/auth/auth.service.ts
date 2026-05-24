@@ -297,7 +297,7 @@ export class AuthService {
       }
 
       let emailConfirmed = false;
-      let userId = data.userId;
+      const userId = data.userId;
 
       if (userId) {
         await this.assertRegistrationJwtMatchesUser(
