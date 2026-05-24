@@ -9,13 +9,11 @@ import {
   Headers,
   Query,
   Param,
-  Res,
   HttpException,
   HttpStatus,
   Logger,
 } from '@nestjs/common';
 import { Throttle } from '@nestjs/throttler';
-import { Response } from 'express';
 import { AuthService } from './auth.service';
 import { RegisterClientDto } from './dto/register-client.dto';
 import { UpdateProfileDto } from './dto/update-profile.dto';
@@ -28,34 +26,39 @@ export class AuthController {
 
   constructor(private readonly authService: AuthService) {}
 
-  @Post('send-business-magic-link')
-  async sendBusinessMagicLink(
-    @Body()
-    data: {
-      email: string;
-      name: string;
-      password: string;
-      locale?: string;
-    },
+  @Post('register-owner/request-code')
+  async requestOwnerRegistrationCode(
+    @Body() data: { email: string; password: string; name?: string },
   ) {
     try {
-      this.logger.log(
-        `Send business magic link (hasPassword=${!!data.password})`,
-      );
-      const result = await this.authService.sendBusinessMagicLink(
-        data.email,
-        data.name,
-        data.password,
-        data.locale,
-      );
-      this.logger.log('Business magic link sent');
-      return result;
+      this.logger.log('Owner registration OTP request');
+      return await this.authService.requestOwnerRegistrationCode(data);
     } catch (error) {
       this.logger.warn(
-        `Send business magic link failed: ${error instanceof Error ? error.message : String(error)}`,
+        `Owner registration OTP request failed: ${error instanceof Error ? error.message : String(error)}`,
       );
       throw new HttpException(
-        error instanceof Error ? error.message : 'Failed to send magic link',
+        error instanceof Error
+          ? error.message
+          : 'Failed to send verification code',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+  }
+
+  @Post('register-owner/verify-code')
+  async verifyOwnerRegistrationCode(
+    @Body() data: { email: string; code: string },
+  ) {
+    try {
+      this.logger.log('Owner registration OTP verify');
+      return await this.authService.verifyOwnerRegistrationCode(data);
+    } catch (error) {
+      this.logger.warn(
+        `Owner registration OTP verify failed: ${error instanceof Error ? error.message : String(error)}`,
+      );
+      throw new HttpException(
+        error instanceof Error ? error.message : 'Failed to verify code',
         HttpStatus.BAD_REQUEST,
       );
     }
@@ -70,7 +73,6 @@ export class AuthController {
       password?: string;
       name?: string;
       role?: string;
-      magicLinkToken?: string;
     },
     @Headers('authorization') authHeader?: string,
   ) {
@@ -158,18 +160,26 @@ export class AuthController {
   }
 
   @Get('user')
-  async getUser(@Headers('authorization') authHeader: string) {
+  async getUser(
+    @Headers('authorization') authHeader: string,
+    @Query('syncIfMissing') syncIfMissing?: string,
+  ) {
     try {
       this.logger.log(
         `Get user authHeader=${authHeader ? 'present' : 'missing'}`,
       );
-      const result = await this.authService.getCurrentUser(authHeader);
+      const result = await this.authService.getCurrentUser(authHeader, {
+        syncIfMissing: syncIfMissing === 'true' || syncIfMissing === '1',
+      });
       this.logger.log(`Get user ok id=${result.user.id.slice(0, 8)}…`);
       return result;
     } catch (error) {
       this.logger.warn(
         `Get user failed: ${error instanceof Error ? error.message : String(error)}`,
       );
+      if (error instanceof Error && error.message === 'ACCOUNT_NOT_FOUND') {
+        throw new HttpException('ACCOUNT_NOT_FOUND', HttpStatus.NOT_FOUND);
+      }
       throw new HttpException(
         error.message || 'Failed to get user data',
         HttpStatus.UNAUTHORIZED,
@@ -448,128 +458,6 @@ export class AuthController {
       throw new HttpException(
         error.message || 'Failed to remove studio from favorites',
         HttpStatus.BAD_REQUEST,
-      );
-    }
-  }
-
-  @Get('verify-business-magic-link')
-  async verifyBusinessMagicLink(
-    @Query('token') token: string,
-    @Query('locale') locale?: string,
-  ) {
-    try {
-      if (!token) {
-        throw new HttpException('Token is required', HttpStatus.BAD_REQUEST);
-      }
-      const result = await this.authService.verifyBusinessMagicLink(
-        token,
-        locale,
-      );
-      return result;
-    } catch (error) {
-      this.logger.warn(
-        `Verify business magic link failed: ${error instanceof Error ? error.message : String(error)}`,
-      );
-      throw new HttpException(
-        error.message || 'Failed to verify magic link',
-        HttpStatus.BAD_REQUEST,
-      );
-    }
-  }
-
-  @Get('business-magic-link/:token')
-  async redirectBusinessMagicLink(
-    @Res() res: Response,
-    @Param('token') token: string,
-    @Query('locale') locale?: string,
-    @Headers('accept-language') acceptLanguage?: string,
-  ) {
-    try {
-      if (!token) {
-        const frontendUrl =
-          process.env.FRONTEND_URL ||
-          (process.env.NODE_ENV === 'production'
-            ? 'https://henzo.app'
-            : 'http://localhost:3000');
-        return res.redirect(
-          `${frontendUrl}/en/business/register?error=invalid_link`,
-        );
-      }
-
-      // Определяем locale: из query параметра, из Accept-Language заголовка, или дефолтный 'en'
-      let detectedLocale = locale;
-      if (!detectedLocale && acceptLanguage) {
-        const lang = acceptLanguage.split(',')[0]?.split('-')[0]?.toLowerCase();
-        if (lang === 'ru' || lang === 'en' || lang === 'vi') {
-          detectedLocale = lang;
-        }
-      }
-      if (
-        !detectedLocale ||
-        (detectedLocale !== 'ru' &&
-          detectedLocale !== 'en' &&
-          detectedLocale !== 'vi')
-      ) {
-        detectedLocale = 'en';
-      }
-
-      this.logger.log(`Business magic link redirect locale=${detectedLocale}`);
-
-      const result = await this.authService.verifyBusinessMagicLink(
-        token,
-        detectedLocale,
-      );
-
-      if (result.success && result.magicLinkUrl) {
-        this.logger.log('Redirecting to Supabase magic link');
-        return res.redirect(result.magicLinkUrl);
-      }
-
-      // Если нет magicLinkUrl, редиректим на страницу регистрации с ошибкой
-      const frontendUrl =
-        process.env.FRONTEND_URL ||
-        (process.env.NODE_ENV === 'production'
-          ? 'https://henzo.app'
-          : 'http://localhost:3000');
-      return res.redirect(
-        `${frontendUrl}/${detectedLocale}/business/register?error=verification_failed`,
-      );
-    } catch (error) {
-      this.logger.warn(
-        `Redirect business magic link failed: ${error instanceof Error ? error.message : String(error)}`,
-      );
-      const frontendUrl =
-        process.env.FRONTEND_URL ||
-        (process.env.NODE_ENV === 'production'
-          ? 'https://henzo.app'
-          : 'http://localhost:3000');
-
-      // Определяем locale для ошибки
-      let detectedLocale = locale;
-      if (!detectedLocale && acceptLanguage) {
-        const lang = acceptLanguage.split(',')[0]?.split('-')[0]?.toLowerCase();
-        if (lang === 'ru' || lang === 'en' || lang === 'vi') {
-          detectedLocale = lang;
-        }
-      }
-      if (
-        !detectedLocale ||
-        (detectedLocale !== 'ru' &&
-          detectedLocale !== 'en' &&
-          detectedLocale !== 'vi')
-      ) {
-        detectedLocale = 'en';
-      }
-
-      let errorParam = 'verification_failed';
-      if (error.message?.includes('expired')) {
-        errorParam = 'link_expired';
-      } else if (error.message?.includes('Invalid')) {
-        errorParam = 'invalid_link';
-      }
-
-      return res.redirect(
-        `${frontendUrl}/${detectedLocale}/business/register?error=${errorParam}`,
       );
     }
   }

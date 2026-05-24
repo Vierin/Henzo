@@ -49,7 +49,8 @@ export class AppController {
       message: 'Routes are working',
       availableEndpoints: [
         '/health',
-        '/auth/send-business-magic-link',
+        '/auth/register-owner/request-code',
+        '/auth/register-owner/verify-code',
         '/auth/register',
       ],
     };

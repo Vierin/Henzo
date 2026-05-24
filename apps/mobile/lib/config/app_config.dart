@@ -51,6 +51,10 @@ abstract final class AppConfig {
     return v == 'development' || v == 'dev';
   }
 
+  /// `local` | `staging` | `production` — см. assets/.env.local.example
+  static String get henzoEnv =>
+      (dotenv.env['EXPO_PUBLIC_HENZO_ENV'] ?? '').trim().toLowerCase();
+
   static bool get isProduction => !isDevelopment;
 
   static String _firstEnv(List<String> keys) {

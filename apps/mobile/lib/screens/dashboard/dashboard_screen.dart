@@ -820,6 +820,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   OwnerDailyScheduleBlock(
                     sessions: _todaySessions,
                     emptyMessage: 'No trainings scheduled for today',
+                    emptySubtitle: 'Enjoy your day!',
                     onSeeAll: () => context
                         .findAncestorStateOfType<MainShellState>()
                         ?.openScheduleTabForToday(),

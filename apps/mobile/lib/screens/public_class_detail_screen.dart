@@ -190,11 +190,6 @@ class _PublicClassDetailScreenState extends State<PublicClassDetailScreen> {
       );
       if (!mounted) return;
       ClientScheduleStore.invalidate();
-      var spotNumber = (_session?['bookedCount'] as num?)?.toInt() ?? 0;
-      if (raw is Map && raw['booking'] is Map) {
-        final b = Map<String, dynamic>.from(raw['booking'] as Map);
-        spotNumber = (b['bookedCount'] as num?)?.toInt() ?? spotNumber;
-      }
       final session = _session;
       if (session == null) return;
       await Navigator.of(context).pushReplacement(
@@ -202,7 +197,6 @@ class _PublicClassDetailScreenState extends State<PublicClassDetailScreen> {
           builder: (_) => ClassBookingConfirmationScreen.fromMaps(
             session: session,
             studio: _studio,
-            spotNumber: spotNumber > 0 ? spotNumber : null,
           ),
         ),
       );

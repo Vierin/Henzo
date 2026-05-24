@@ -273,19 +273,6 @@ model ClientInvitation {
   @@index([expiresAt])
 }
 
-model PendingBusinessRegistration {
-  id        String   @id @default(cuid())
-  token     String   @unique
-  email     String
-  name      String?
-  userId    String
-  expiresAt DateTime
-  createdAt DateTime @default(now())
-
-  @@index([email, expiresAt])
-  @@index([userId])
-}
-
 model ClientRegistrationOtp {
   id        String   @id @default(cuid())
   email     String   @unique

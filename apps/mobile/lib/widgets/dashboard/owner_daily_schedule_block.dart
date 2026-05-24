@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 
 import '../../constants/colors.dart';
 import '../../constants/layout.dart';
@@ -15,6 +16,7 @@ class OwnerDailyScheduleBlock extends StatelessWidget {
     required this.sessions,
     required this.emptyMessage,
     required this.onSessionTap,
+    this.emptySubtitle,
     this.onSeeAll,
     this.ownerTrainerFallback,
     this.studioLocations = const [],
@@ -22,6 +24,7 @@ class OwnerDailyScheduleBlock extends StatelessWidget {
 
   final List<OwnerTrainingSession> sessions;
   final String emptyMessage;
+  final String? emptySubtitle;
   final VoidCallback? onSeeAll;
   final void Function(OwnerTrainingSession s) onSessionTap;
   final String? ownerTrainerFallback;
@@ -46,20 +49,14 @@ class OwnerDailyScheduleBlock extends StatelessWidget {
           if (sessions.isEmpty)
             Container(
               width: double.infinity,
-              padding: const EdgeInsets.symmetric(vertical: 28, horizontal: 16),
+              padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
               decoration: BoxDecoration(
                 color: AppColors.backgroundPrimary,
                 borderRadius: BorderRadius.circular(14),
               ),
-              alignment: Alignment.center,
-              child: Text(
-                emptyMessage,
-                textAlign: TextAlign.center,
-                style: const TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w400,
-                  color: AppColors.textSecondary,
-                ),
+              child: _ScheduleEmptyState(
+                title: emptyMessage,
+                subtitle: emptySubtitle,
               ),
             )
           else
@@ -90,6 +87,75 @@ class OwnerDailyScheduleBlock extends StatelessWidget {
             ),
         ],
       ),
+    );
+  }
+}
+
+class _ScheduleEmptyState extends StatelessWidget {
+  const _ScheduleEmptyState({
+    required this.title,
+    this.subtitle,
+  });
+
+  final String title;
+  final String? subtitle;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        Container(
+          width: 52,
+          height: 52,
+          decoration: const BoxDecoration(
+            color: AppColors.primary100,
+            shape: BoxShape.circle,
+          ),
+          alignment: Alignment.center,
+          child: SvgPicture.asset(
+            'assets/icons/icon-calendar-check.svg',
+            width: 24,
+            height: 24,
+            fit: BoxFit.contain,
+            excludeFromSemantics: true,
+            colorFilter: const ColorFilter.mode(
+              AppColors.primary500,
+              BlendMode.srcIn,
+            ),
+          ),
+        ),
+        const SizedBox(width: 14),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                title,
+                style: const TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: -0.2,
+                  color: AppColors.textPrimary,
+                  height: 1.25,
+                ),
+              ),
+              if (subtitle != null && subtitle!.isNotEmpty) ...[
+                const SizedBox(height: 4),
+                Text(
+                  subtitle!,
+                  style: const TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w400,
+                    color: AppColors.textSecondary,
+                    height: 1.3,
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ),
+      ],
     );
   }
 }

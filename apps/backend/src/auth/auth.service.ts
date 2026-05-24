@@ -10,8 +10,9 @@ import { UpdateProfileDto } from './dto/update-profile.dto';
 import { EmailService } from '../email/email.service';
 import { ConfigService } from '@nestjs/config';
 import { JwtVerifierService } from './jwt-verifier.service';
-import { nanoid } from 'nanoid';
 import * as crypto from 'crypto';
+
+type RegistrationOtpKind = 'client' | 'owner';
 
 @Injectable()
 export class AuthService {
@@ -35,14 +36,6 @@ export class AuthService {
     private jwtVerifier: JwtVerifierService,
   ) {}
 
-  private getFrontendUrl() {
-    return (
-      this.configService.get<string>('FRONTEND_URL') ||
-      process.env.FRONTEND_URL ||
-      'https://henzo.app'
-    );
-  }
-
   private generateOtpCode() {
     return Math.floor(100000 + Math.random() * 900000).toString();
   }
@@ -55,13 +48,24 @@ export class AuthService {
     return email.toLowerCase().trim();
   }
 
-  private async sendClientRegistrationOtpEmail(email: string, code: string) {
+  private async sendRegistrationOtpEmail(
+    email: string,
+    code: string,
+    kind: RegistrationOtpKind,
+  ) {
+    const isOwner = kind === 'owner';
     await this.emailService.sendEmail({
       to: email,
-      subject: 'Your Henzo verification code',
+      subject: isOwner
+        ? 'Your Henzo business verification code'
+        : 'Your Henzo verification code',
       html: `
         <div style="font-family:Arial,sans-serif;line-height:1.5;color:#111">
-          <h2 style="margin-bottom:8px">Confirm your Henzo account</h2>
+          <h2 style="margin-bottom:8px">${
+            isOwner
+              ? 'Confirm your Henzo business account'
+              : 'Confirm your Henzo account'
+          }</h2>
           <p style="margin:0 0 12px">Use this code in the app to finish registration:</p>
           <div style="font-size:32px;font-weight:700;letter-spacing:6px;margin:12px 0">${code}</div>
           <p style="margin:12px 0 0;color:#666">Code expires in 10 minutes.</p>
@@ -69,6 +73,71 @@ export class AuthService {
       `,
       fromName: 'Henzo',
     });
+  }
+
+  private async upsertRegistrationOtp(
+    email: string,
+    kind: RegistrationOtpKind,
+    payload: Record<string, unknown>,
+  ) {
+    const code = this.generateOtpCode();
+    await this.prisma.clientRegistrationOtp.upsert({
+      where: { email },
+      update: {
+        codeHash: this.hashOtpCode(code),
+        expiresAt: new Date(Date.now() + this.CLIENT_OTP_TTL_MS),
+        attempts: 0,
+        payload: { ...payload, kind },
+      },
+      create: {
+        email,
+        codeHash: this.hashOtpCode(code),
+        expiresAt: new Date(Date.now() + this.CLIENT_OTP_TTL_MS),
+        attempts: 0,
+        payload: { ...payload, kind },
+      },
+    });
+    await this.sendRegistrationOtpEmail(email, code, kind);
+    return { success: true };
+  }
+
+  private otpPayloadKind(payload: unknown): RegistrationOtpKind {
+    const kind = (payload as { kind?: string } | null)?.kind;
+    return kind === 'owner' ? 'owner' : 'client';
+  }
+
+  private async consumeRegistrationOtp(
+    email: string,
+    code: string,
+    expectedKind: RegistrationOtpKind,
+  ) {
+    const otp = await this.prisma.clientRegistrationOtp.findUnique({
+      where: { email },
+    });
+    if (!otp) {
+      throw new BadRequestException('Verification code not requested');
+    }
+    if (this.otpPayloadKind(otp.payload) !== expectedKind) {
+      throw new BadRequestException('Verification code not requested');
+    }
+    if (Date.now() > new Date(otp.expiresAt).getTime()) {
+      await this.prisma.clientRegistrationOtp.delete({ where: { email } });
+      throw new BadRequestException('Verification code expired');
+    }
+    if (otp.attempts >= this.CLIENT_OTP_MAX_ATTEMPTS) {
+      await this.prisma.clientRegistrationOtp.delete({ where: { email } });
+      throw new BadRequestException('Too many attempts');
+    }
+    if (this.hashOtpCode((code || '').trim()) !== otp.codeHash) {
+      await this.prisma.clientRegistrationOtp.update({
+        where: { email },
+        data: { attempts: { increment: 1 } },
+      });
+      throw new BadRequestException('Invalid verification code');
+    }
+
+    await this.prisma.clientRegistrationOtp.delete({ where: { email } });
+    return otp.payload as Record<string, unknown>;
   }
 
   async requestClientRegistrationCode(data: {
@@ -89,68 +158,68 @@ export class AuthService {
       throw new BadRequestException('User with this email already exists');
     }
 
-    const code = this.generateOtpCode();
-    await this.prisma.clientRegistrationOtp.upsert({
-      where: { email },
-      update: {
-        codeHash: this.hashOtpCode(code),
-        expiresAt: new Date(Date.now() + this.CLIENT_OTP_TTL_MS),
-        attempts: 0,
-        payload: {
-          email,
-          password: data.password,
-          name: data.name,
-          phone: data.phone,
-        },
-      },
-      create: {
-        email,
-        codeHash: this.hashOtpCode(code),
-        expiresAt: new Date(Date.now() + this.CLIENT_OTP_TTL_MS),
-        attempts: 0,
-        payload: {
-          email,
-          password: data.password,
-          name: data.name,
-          phone: data.phone,
-        },
-      },
+    return this.upsertRegistrationOtp(email, 'client', {
+      email,
+      password: data.password,
+      name: data.name,
+      phone: data.phone,
     });
-    await this.sendClientRegistrationOtpEmail(email, code);
-    return { success: true };
+  }
+
+  async requestOwnerRegistrationCode(data: {
+    email: string;
+    password: string;
+    name?: string;
+  }) {
+    const email = this.normalizeEmail(data.email);
+    if (!email || !data.password || data.password.length < 6) {
+      throw new BadRequestException('Invalid registration payload');
+    }
+
+    const existingUser = await this.prisma.user.findUnique({
+      where: { email },
+    });
+    if (existingUser) {
+      if (existingUser.role === 'OWNER') {
+        throw new BadRequestException(
+          'A business account with this email already exists. Please login instead.',
+        );
+      }
+      throw new BadRequestException(
+        'An account with this email already exists. Please login instead.',
+      );
+    }
+
+    return this.upsertRegistrationOtp(email, 'owner', {
+      email,
+      password: data.password,
+      name: data.name,
+    });
   }
 
   async verifyClientRegistrationCode(data: { email: string; code: string }) {
     const email = this.normalizeEmail(data.email);
-    const otp = await this.prisma.clientRegistrationOtp.findUnique({
-      where: { email },
-    });
-    if (!otp) {
-      throw new BadRequestException('Verification code not requested');
-    }
-    if (Date.now() > new Date(otp.expiresAt).getTime()) {
-      await this.prisma.clientRegistrationOtp.delete({ where: { email } });
-      throw new BadRequestException('Verification code expired');
-    }
-    if (otp.attempts >= this.CLIENT_OTP_MAX_ATTEMPTS) {
-      await this.prisma.clientRegistrationOtp.delete({ where: { email } });
-      throw new BadRequestException('Too many attempts');
-    }
-    if (this.hashOtpCode((data.code || '').trim()) !== otp.codeHash) {
-      await this.prisma.clientRegistrationOtp.update({
-        where: { email },
-        data: { attempts: { increment: 1 } },
-      });
-      throw new BadRequestException('Invalid verification code');
-    }
+    const payload = await this.consumeRegistrationOtp(
+      email,
+      data.code,
+      'client',
+    );
+    return this.registerClient(payload as any);
+  }
 
-    await this.prisma.clientRegistrationOtp.delete({ where: { email } });
-    return this.registerClient(otp.payload as any);
+  async verifyOwnerRegistrationCode(data: { email: string; code: string }) {
+    const email = this.normalizeEmail(data.email);
+    const payload = await this.consumeRegistrationOtp(
+      email,
+      data.code,
+      'owner',
+    );
+    return this.registerOwnerFromOtp(payload as any);
   }
 
   /**
    * Owner registration must prove Supabase identity when userId is sent:
-   * JWT sub === userId and email matches (magic-link-only path creates user server-side without this).
+   * JWT sub === userId and email matches.
    */
   private async assertRegistrationJwtMatchesUser(
     authHeader: string | undefined,
@@ -219,7 +288,6 @@ export class AuthService {
       password?: string;
       name?: string;
       role?: string;
-      magicLinkToken?: string;
     },
     options?: { authHeader?: string },
   ) {
@@ -228,84 +296,10 @@ export class AuthService {
         throw new BadRequestException('Invalid role for business registration');
       }
 
-      // Проверяем magic link token
       let emailConfirmed = false;
-      if (data.magicLinkToken) {
-        const pendingReg =
-          await this.prisma.pendingBusinessRegistration.findFirst({
-            where: {
-              token: data.magicLinkToken,
-              email: data.email.toLowerCase().trim(),
-              expiresAt: {
-                gt: new Date(),
-              },
-            },
-          });
-
-        if (!pendingReg) {
-          throw new BadRequestException('Invalid or expired magic link');
-        }
-
-        emailConfirmed = true;
-        // Удаляем использованный токен
-        await this.prisma.pendingBusinessRegistration.delete({
-          where: { id: pendingReg.id },
-        });
-      }
-
       let userId = data.userId;
-      // emailConfirmed уже установлен выше если есть magicLinkToken
 
-      // Если регистрация из magic link и userId null, создаем пользователя через Admin API
-      if (emailConfirmed && !userId && data.password) {
-        try {
-          console.log(
-            '✅ Creating user with confirmed email via Admin API for magic link registration',
-          );
-
-          // Создаем пользователя через Admin API с уже подтвержденным email
-          // Роль устанавливаем в app_metadata (включается в JWT токен)
-          const { data: adminUser, error: adminError } =
-            await supabase.auth.admin.createUser({
-              email: data.email,
-              password: data.password,
-              email_confirm: true, // Сразу подтверждаем email
-              user_metadata: {
-                name: data.name,
-              },
-              app_metadata: {
-                role: 'OWNER', // Роль в app_metadata включается в JWT
-              },
-            });
-
-          if (adminError) {
-            console.error(
-              '❌ Failed to create user via Admin API:',
-              adminError,
-            );
-
-            // Проверяем тип ошибки для более понятных сообщений
-            if (adminError.message?.includes('already been registered')) {
-              throw new BadRequestException(
-                'A user with this email address has already been registered. Please try logging in instead.',
-              );
-            }
-
-            throw new BadRequestException(
-              adminError.message || 'Failed to create user account',
-            );
-          }
-
-          if (adminUser.user) {
-            console.log('✅ User created with confirmed email:', data.email);
-            userId = adminUser.user.id;
-            emailConfirmed = true;
-          }
-        } catch (error) {
-          console.error('❌ Error creating user via Admin API:', error);
-          throw error;
-        }
-      } else if (userId) {
+      if (userId) {
         await this.assertRegistrationJwtMatchesUser(
           options?.authHeader,
           userId,
@@ -899,6 +893,87 @@ export class AuthService {
     }
   }
 
+  private async registerOwnerFromOtp(data: {
+    email: string;
+    password: string;
+    name?: string;
+  }) {
+    const email = this.normalizeEmail(data.email);
+    const existingUser = await this.prisma.user.findUnique({
+      where: { email },
+    });
+    if (existingUser) {
+      if (existingUser.role === 'OWNER') {
+        throw new BadRequestException(
+          'A business account with this email already exists. Please login instead.',
+        );
+      }
+      throw new BadRequestException(
+        'An account with this email already exists. Please login instead.',
+      );
+    }
+
+    const { data: authData, error: authError } =
+      await supabase.auth.admin.createUser({
+        email,
+        password: data.password,
+        email_confirm: true,
+        user_metadata: {
+          name: data.name,
+        },
+        app_metadata: {
+          role: 'OWNER',
+        },
+      });
+
+    if (authError) {
+      throw new BadRequestException(authError.message || 'Failed to create user');
+    }
+    if (!authData.user) {
+      throw new BadRequestException('Failed to create user');
+    }
+
+    const user = await this.prisma.user.create({
+      data: {
+        id: authData.user.id,
+        email,
+        name: data.name,
+        role: 'OWNER',
+      },
+    });
+
+    try {
+      await supabase.auth.admin.updateUserById(authData.user.id, {
+        app_metadata: { role: 'OWNER' },
+      });
+    } catch (error) {
+      console.error('⚠️ Failed to sync owner role to app_metadata:', error);
+    }
+
+    const { data: signInData, error: signInError } =
+      await supabase.auth.signInWithPassword({
+        email,
+        password: data.password,
+      });
+    if (signInError) {
+      throw new BadRequestException(
+        signInError.message || 'Failed to create session',
+      );
+    }
+
+    return {
+      user: {
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        phone: user.phone,
+        role: user.role,
+      },
+      session: signInData.session,
+      emailConfirmed: true,
+    };
+  }
+
   async loginClient(data: { email: string; password: string }) {
     try {
       const { data: authData, error: authError } =
@@ -944,7 +1019,10 @@ export class AuthService {
     }
   }
 
-  async getCurrentUser(authHeader: string) {
+  async getCurrentUser(
+    authHeader: string,
+    options: { syncIfMissing?: boolean } = {},
+  ) {
     try {
       console.log(
         '🔐 Getting current user, authHeader:',
@@ -1112,10 +1190,16 @@ export class AuthService {
         }
       }
 
-      // Если пользователь не найден в базе данных, но существует в Supabase Auth,
-      // создаем его автоматически с ролью из метаданных или CLIENT по умолчанию
-      // Используем upsert для избежания race conditions
       if (!dbUser) {
+        if (!options.syncIfMissing) {
+          console.log(
+            '❌ User not found in database (login without registration):',
+            user.email,
+          );
+          throw new Error('ACCOUNT_NOT_FOUND');
+        }
+
+        // Registration / explicit sync: create user from Supabase Auth identity.
         console.log('⚠️ User not found in database, creating automatically...');
         try {
           // Проверяем роль в app_metadata Supabase (устанавливается при регистрации)
@@ -1311,6 +1395,9 @@ export class AuthService {
 
       return result;
     } catch (error: any) {
+      if (error?.message === 'ACCOUNT_NOT_FOUND') {
+        throw error;
+      }
       console.error('❌ Error in getCurrentUser:', {
         message: error.message,
         code: error.code,
@@ -1792,407 +1879,4 @@ export class AuthService {
     }
   }
 
-  async sendBusinessMagicLink(
-    email: string,
-    name: string,
-    password: string,
-    locale?: string,
-  ) {
-    try {
-      const normalizedEmail = email.toLowerCase().trim();
-      console.log('🔍 Checking for existing user with email:', normalizedEmail);
-
-      // Проверяем, не существует ли уже бизнес-аккаунт (OWNER) с этим email в нашей БД
-      const existingUser = await this.prisma.user.findUnique({
-        where: { email: normalizedEmail },
-      });
-
-      if (existingUser) {
-        console.log('❌ User found in database:', {
-          email: existingUser.email,
-          role: existingUser.role,
-          id: existingUser.id,
-        });
-
-        // Если пользователь существует и это OWNER, не отправляем magic link
-        if (existingUser.role === 'OWNER') {
-          throw new BadRequestException(
-            'A business account with this email already exists. Please login instead.',
-          );
-        }
-        // Если пользователь существует, но это CLIENT, тоже не отправляем
-        // (чтобы избежать конфликтов и путаницы)
-        throw new BadRequestException(
-          'An account with this email already exists. Please login instead.',
-        );
-      }
-
-      // Также проверяем в Supabase Auth (пользователь может существовать там, но не в нашей БД)
-      console.log(
-        '🔍 Checking Supabase Auth for user with email:',
-        normalizedEmail,
-      );
-
-      let existingSupabaseUser: any = null;
-      let page = 1;
-      const perPage = 1000;
-      let hasMore = true;
-      let foundError = false;
-
-      // Используем пагинацию для поиска пользователя в Supabase
-      while (hasMore && !foundError) {
-        const {
-          data: { users },
-          error: listError,
-        } = await supabase.auth.admin.listUsers({
-          page,
-          perPage,
-        });
-
-        if (listError) {
-          console.error(
-            '⚠️ Error listing users from Supabase (page ' + page + '):',
-            listError.message,
-          );
-          foundError = true;
-          // Не прерываем выполнение, но логируем ошибку
-          // Продолжаем, чтобы проверить хотя бы первую страницу
-          break;
-        }
-
-        if (!users || users.length === 0) {
-          hasMore = false;
-          break;
-        }
-
-        // Ищем пользователя с нужным email на текущей странице
-        const foundUser = users.find(
-          (user: any) => user.email?.toLowerCase().trim() === normalizedEmail,
-        );
-
-        if (foundUser) {
-          existingSupabaseUser = foundUser;
-          hasMore = false; // Нашли, можно прекращать поиск
-          break;
-        }
-
-        // Если получили меньше пользователей, чем запросили, значит это последняя страница
-        if (users.length < perPage) {
-          hasMore = false;
-        } else {
-          page++;
-        }
-      }
-
-      if (existingSupabaseUser) {
-        console.log('❌ User found in Supabase Auth:', {
-          email: existingSupabaseUser.email,
-          id: existingSupabaseUser.id,
-          role:
-            existingSupabaseUser.user_metadata?.role ||
-            existingSupabaseUser.app_metadata?.role,
-          emailConfirmed: !!existingSupabaseUser.email_confirmed_at,
-        });
-
-        // Проверяем роль в метаданных Supabase
-        const userRole =
-          existingSupabaseUser.user_metadata?.role ||
-          existingSupabaseUser.app_metadata?.role;
-
-        // Если это OWNER или ADMIN, не отправляем
-        if (userRole === 'OWNER' || userRole === 'ADMIN') {
-          throw new BadRequestException(
-            'A business account with this email already exists. Please login instead.',
-          );
-        }
-
-        // Если пользователь существует в Supabase, но не в нашей БД,
-        // это может быть незавершенная регистрация - тоже не отправляем
-        throw new BadRequestException(
-          'An account with this email already exists. Please login instead.',
-        );
-      }
-
-      console.log('✅ No existing user found, proceeding with magic link');
-
-      // Проверяем, нет ли активных pending registrations для этого email
-      const activePendingReg =
-        await this.prisma.pendingBusinessRegistration.findFirst({
-          where: {
-            email: normalizedEmail,
-            expiresAt: {
-              gt: new Date(), // Только не истекшие
-            },
-          },
-        });
-
-      if (activePendingReg) {
-        console.log(
-          '⚠️ Active pending registration found for email:',
-          normalizedEmail,
-        );
-        // Можно либо удалить старую и создать новую, либо вернуть ошибку
-        // Возвращаем ошибку, чтобы не спамить email
-        throw new BadRequestException(
-          'A registration link has already been sent to this email. Please check your inbox or wait before requesting again.',
-        );
-      }
-
-      // Удаляем только истекшие pending registrations для этого email
-      const deletedCount =
-        await this.prisma.pendingBusinessRegistration.deleteMany({
-          where: {
-            email: normalizedEmail,
-            expiresAt: {
-              lt: new Date(),
-            },
-          },
-        });
-
-      if (deletedCount.count > 0) {
-        console.log(
-          `🗑️ Deleted ${deletedCount.count} expired pending registration(s) for email:`,
-          normalizedEmail,
-        );
-      }
-
-      // Создаем аккаунт сразу с неподтвержденным email
-      console.log('📝 Creating business account with unconfirmed email...');
-      const { data: authData, error: authError } =
-        await supabase.auth.admin.createUser({
-          email: normalizedEmail,
-          password: password,
-          email_confirm: false, // Email будет подтвержден при клике на magic link
-          user_metadata: {
-            name,
-          },
-          app_metadata: {
-            role: 'OWNER',
-          },
-        });
-
-      if (authError) {
-        console.error('❌ Failed to create user in Supabase:', authError);
-        throw new BadRequestException(
-          authError.message || 'Failed to create account',
-        );
-      }
-
-      if (!authData.user) {
-        throw new BadRequestException('Failed to create user account');
-      }
-
-      console.log('✅ User created in Supabase:', authData.user.id);
-
-      // Создаем запись пользователя в нашей БД
-      const user = await this.prisma.user.create({
-        data: {
-          id: authData.user.id,
-          email: normalizedEmail,
-          name,
-          role: 'OWNER',
-        },
-      });
-
-      console.log('✅ User created in database:', user.id);
-
-      // Генерируем токен для magic link
-      const token = nanoid(32);
-      const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
-
-      // Сохраняем pending registration (без пароля, так как аккаунт уже создан)
-      // Используем userId вместо пароля для связи
-      const pendingReg = await this.prisma.pendingBusinessRegistration.create({
-        data: {
-          token,
-          email: normalizedEmail,
-          name,
-          userId: authData.user.id,
-          expiresAt,
-        },
-      });
-
-      console.log('✅ Pending registration created:', {
-        id: pendingReg.id,
-        token: token.substring(0, 10) + '...',
-        email: normalizedEmail,
-        userId: authData.user.id,
-        expiresAt,
-      });
-
-      // Генерируем URL для прямого редиректа на Supabase magic link
-      // Новый endpoint проверяет токен и сразу редиректит на Supabase, минуя промежуточные страницы
-      const backendUrl =
-        this.configService.get<string>('BACKEND_URL') ||
-        process.env.BACKEND_URL ||
-        (process.env.NODE_ENV === 'production'
-          ? 'https://api.henzo.app'
-          : 'http://localhost:3001');
-      const safeLocale =
-        locale === 'ru' || locale === 'en' || locale === 'vi' ? locale : 'en';
-      const magicLinkUrl = `${backendUrl}/auth/business-magic-link/${token}?locale=${encodeURIComponent(safeLocale)}`;
-
-      console.log(
-        '📧 Sending business registration magic link email to:',
-        normalizedEmail,
-      );
-      console.log('🔗 Magic link URL:', magicLinkUrl);
-
-      // Отправляем email
-      await this.emailService.sendBusinessRegistrationMagicLink(
-        email,
-        name,
-        magicLinkUrl,
-        safeLocale,
-      );
-
-      console.log('✅ Business magic link sent:', { email });
-      return { success: true, token: pendingReg.id };
-    } catch (error) {
-      console.error('❌ Error sending business magic link:', error);
-      throw error;
-    }
-  }
-
-  async verifyBusinessMagicLink(token: string, locale?: string) {
-    try {
-      console.log('🔍 Verifying business magic link with token:', token);
-
-      // Находим pending registration
-      const pendingReg =
-        await this.prisma.pendingBusinessRegistration.findFirst({
-          where: {
-            token,
-            expiresAt: {
-              gt: new Date(),
-            },
-          },
-        });
-
-      if (!pendingReg) {
-        console.log('❌ Pending registration not found for token:', token);
-        // Проверяем, может токен истек или уже использован
-        const expiredReg =
-          await this.prisma.pendingBusinessRegistration.findFirst({
-            where: { token },
-          });
-        if (expiredReg) {
-          console.log('⚠️ Token found but expired or already used:', {
-            token,
-            expiresAt: expiredReg.expiresAt,
-            now: new Date(),
-            isExpired: expiredReg.expiresAt < new Date(),
-          });
-          throw new BadRequestException(
-            'Magic link has expired. Please request a new one.',
-          );
-        }
-
-        // Проверяем все токены для отладки
-        const allPendingRegs =
-          await this.prisma.pendingBusinessRegistration.findMany({
-            take: 5,
-            orderBy: { createdAt: 'desc' },
-          });
-        console.log(
-          '📋 Recent pending registrations:',
-          allPendingRegs.map((r) => ({
-            token: r.token.substring(0, 10) + '...',
-            email: r.email,
-            expiresAt: r.expiresAt,
-          })),
-        );
-
-        throw new BadRequestException('Invalid or expired magic link');
-      }
-
-      console.log('✅ Pending registration found:', {
-        id: pendingReg.id,
-        email: pendingReg.email,
-        expiresAt: pendingReg.expiresAt,
-      });
-
-      const userId = pendingReg.userId;
-
-      if (!userId) {
-        throw new BadRequestException('Invalid magic link data');
-      }
-
-      // Подтверждаем email в Supabase
-      const { error: updateError } = await supabase.auth.admin.updateUserById(
-        userId,
-        {
-          email_confirm: true,
-        },
-      );
-
-      if (updateError) {
-        console.error('❌ Failed to confirm email:', updateError);
-        throw new BadRequestException('Failed to confirm email');
-      }
-
-      console.log('✅ Email confirmed for user:', userId);
-
-      // Получаем пользователя из нашей БД
-      const user = await this.prisma.user.findUnique({
-        where: { id: userId },
-      });
-
-      if (!user) {
-        throw new BadRequestException('User not found');
-      }
-
-      // Генерируем magic link с redirectTo на URL С ЛОКАЛЬЮ.
-      // Важно: фронт middleware редиректит все пути без /{locale}/, и hash (#access_token=...)
-      // при серверном редиректе теряется. Поэтому redirectTo должен содержать locale.
-      const frontendUrl = this.getFrontendUrl();
-
-      const safeLocale =
-        locale === 'ru' || locale === 'en' || locale === 'vi' ? locale : 'vi';
-
-      // Отправляем на /{locale}/auth/callback?type=business — там уже есть логика
-      // установки сессии из hash и последующего редиректа.
-      const redirectTo = `${frontendUrl}/${safeLocale}/auth/callback?type=business`;
-
-      const { data: linkData, error: linkError } =
-        await supabase.auth.admin.generateLink({
-          type: 'magiclink',
-          email: user.email,
-          options: {
-            redirectTo,
-          },
-        });
-
-      if (linkError) {
-        console.error('❌ Failed to generate login link:', linkError);
-        // НЕ удаляем токен при ошибке, чтобы пользователь мог попробовать еще раз
-        throw new BadRequestException(
-          'Failed to generate authentication link. Please try again.',
-        );
-      }
-
-      // Удаляем использованный токен только после успешной генерации magic link
-      await this.prisma.pendingBusinessRegistration.delete({
-        where: { id: pendingReg.id },
-      });
-
-      // Возвращаем magic link URL для редиректа
-      // Фронтенд будет редиректить на этот URL, который затем вернет пользователя
-      // на наш callback endpoint с токенами в hash
-      return {
-        success: true,
-        user: {
-          id: user.id,
-          email: user.email,
-          name: user.name,
-          role: user.role,
-        },
-        emailConfirmed: true,
-        magicLinkUrl: linkData.properties?.action_link,
-      };
-    } catch (error) {
-      console.error('❌ Error verifying business magic link:', error);
-      throw error;
-    }
-  }
 }

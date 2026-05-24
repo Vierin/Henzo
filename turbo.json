@@ -14,6 +14,9 @@
     "EMAIL_FROM_NAME",
     "PORT",
     "NODE_ENV",
+    "HENZO_ENV",
+    "HENZO_LOG_ENV",
+    "BACKEND_URL",
     "FRONTEND_URL",
     "MAPBOX_ACCESS_TOKEN",
     "HENZO_NEXT_DIST_DIR",
@@ -44,6 +47,8 @@
         "$TURBO_DEFAULT$",
         ".env",
         ".env.local",
+        ".env.staging",
+        ".env.production",
         ".env.development",
         ".env.development.local"
       ]

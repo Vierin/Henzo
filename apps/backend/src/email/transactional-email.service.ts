@@ -1,14 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { BrevoEmailDeliveryService } from './brevo-email-delivery.service';
-import {
-  BUSINESS_REGISTRATION_STRINGS,
-  resolveClientEmailLocale,
-} from './copy';
-import {
-  renderBusinessRegistrationMagicLinkHtml,
-  renderContactMessageHtml,
-} from './templates/transactional-email-templates';
+import { renderContactMessageHtml } from './templates/transactional-email-templates';
 
 @Injectable()
 export class TransactionalEmailService {
@@ -46,34 +39,4 @@ export class TransactionalEmailService {
     });
   }
 
-  async sendBusinessRegistrationMagicLink(
-    email: string,
-    name: string,
-    registerUrl: string,
-    locale?: 'en' | 'ru' | 'vi',
-  ) {
-    console.log('📧 Sending business registration magic link to:', email);
-
-    const loc = resolveClientEmailLocale(locale);
-    const L =
-      BUSINESS_REGISTRATION_STRINGS[loc] || BUSINESS_REGISTRATION_STRINGS.en;
-    const htmlContent = renderBusinessRegistrationMagicLinkHtml(
-      name,
-      registerUrl,
-      L,
-    );
-
-    return this.delivery.send({
-      to: [{ email, name }],
-      sender: {
-        email:
-          this.configService.get<string>('EMAIL_FROM') || 'noreply@henzo.app',
-        name:
-          this.configService.get<string>('EMAIL_FROM_NAME') ||
-          'Henzo Business Platform',
-      },
-      subject: L.subject,
-      htmlContent,
-    });
-  }
 }

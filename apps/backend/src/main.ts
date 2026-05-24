@@ -7,7 +7,7 @@ import { NestExpressApplication } from '@nestjs/platform-express';
 import { AppModule } from './app.module';
 import * as compression from 'compression';
 import helmet from 'helmet';
-import { resolveBackendEnvPath } from './config/resolve-backend-env-path';
+import { resolveBackendEnvPath, describeBackendEnvFile } from './config/resolve-backend-env-path';
 import { AllExceptionsFilter } from './lib/all-exceptions.filter';
 
 // Load environment variables early.
@@ -23,6 +23,8 @@ try {
 
 async function bootstrap() {
   try {
+    const envPath = resolveBackendEnvPath(__dirname);
+    console.log(`🌍 Env: ${describeBackendEnvFile(envPath)}`);
     console.log('🚀 Starting backend server...');
 
     const app = await NestFactory.create<NestExpressApplication>(AppModule, {
