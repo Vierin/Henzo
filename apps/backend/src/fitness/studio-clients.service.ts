@@ -1,13 +1,10 @@
 import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
 import {
   SessionEnrollmentStatus,
   StudioClientSource,
   UserRole,
 } from '@prisma/client';
-import { createHash, randomBytes } from 'node:crypto';
 import { AuthService } from '../auth/auth.service';
-import { EmailService } from '../email/email.service';
 import { PrismaService } from '../prisma/prisma.service';
 
 const HENZO_LOCAL = '@henzo.local';
@@ -25,17 +22,11 @@ export function isDeliverableClientEmail(
   return !email.endsWith(HENZO_LOCAL);
 }
 
-function sha256Hex(value: string): string {
-  return createHash('sha256').update(value, 'utf8').digest('hex');
-}
-
 @Injectable()
 export class StudioClientsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly authService: AuthService,
-    private readonly emailService: EmailService,
-    private readonly configService: ConfigService,
   ) {}
 
   async ensureStudioClient(
@@ -320,243 +311,5 @@ export class StudioClientsService {
         visitsCount,
       };
     });
-  }
-
-  async createSessionInvite(
-    authHeader: string,
-    body: {
-      email: string;
-      sessionId: string;
-      expiresInDays?: number;
-    },
-  ): Promise<{ success: true; invitationId: string }> {
-    const studioId = await this.getOwnerStudioId(authHeader);
-    const currentUser = await this.authService.getCurrentUser(authHeader);
-    const email = normalizeEmail(body.email);
-    if (!email || !isDeliverableClientEmail(email)) {
-      throw new HttpException(
-        'valid email is required for invite',
-        HttpStatus.BAD_REQUEST,
-      );
-    }
-    const session = await this.prisma.trainingSession.findFirst({
-      where: { id: body.sessionId, studioId },
-      select: { id: true },
-    });
-    if (!session) {
-      throw new HttpException('Session not found', HttpStatus.NOT_FOUND);
-    }
-    const days = Math.min(Math.max(1, body.expiresInDays ?? 7), 30);
-    const expiresAt = new Date();
-    expiresAt.setDate(expiresAt.getDate() + days);
-    const rawToken = randomBytes(32).toString('hex');
-    const tokenHash = sha256Hex(rawToken);
-    const inv = await this.prisma.clientInvitation.create({
-      data: {
-        studioId,
-        email,
-        tokenHash,
-        expiresAt,
-        sessionId: session.id,
-        createdByUserId: currentUser.user.id,
-      },
-      select: { id: true },
-    });
-    await this.sendInvitationEmail({
-      email,
-      rawToken,
-      invitationId: inv.id,
-    });
-    return { success: true, invitationId: inv.id };
-  }
-
-  private inviteLandingUrl(rawToken: string): string {
-    const apiBase =
-      this.configService.get<string>('PUBLIC_API_BASE_URL')?.trim() ||
-      this.configService.get<string>('API_PUBLIC_URL')?.trim() ||
-      '';
-    if (apiBase) {
-      const base = apiBase.replace(/\/$/, '');
-      return `${base}/fitness/public/client-invitations/landing?token=${encodeURIComponent(rawToken)}`;
-    }
-    const front =
-      this.configService.get<string>('FRONTEND_URL')?.trim() ||
-      'https://henzo.app';
-    return `${front.replace(/\/$/, '')}/client-invite?token=${encodeURIComponent(rawToken)}`;
-  }
-
-  private async sendInvitationEmail(input: {
-    email: string;
-    rawToken: string;
-    invitationId: string;
-  }): Promise<void> {
-    const url = this.inviteLandingUrl(input.rawToken);
-    const subject = 'Henzo — invitation to your class';
-    const appLink = `henzo://client-invite?token=${encodeURIComponent(input.rawToken)}`;
-    const htmlBody = [
-      '<p>You have been invited to a class on Henzo.</p>',
-      `<p><a href="${url}">Open invitation (web)</a></p>`,
-      `<p>If you have the Henzo app: <code>${appLink}</code></p>`,
-      `<p style="color:#666;font-size:12px;">Web link:<br/>${url}</p>`,
-    ].join('');
-    try {
-      await this.emailService.sendEmail({
-        to: input.email,
-        subject,
-        html: htmlBody,
-      });
-    } catch (e) {
-      console.error('Failed to send client invitation email:', e);
-      throw new HttpException(
-        'Failed to send invitation email',
-        HttpStatus.BAD_GATEWAY,
-      );
-    }
-  }
-
-  async confirmInvitationByToken(rawToken: string) {
-    const tokenHash = sha256Hex(rawToken.trim());
-    const inv = await this.prisma.clientInvitation.findUnique({
-      where: { tokenHash },
-      include: {
-        TrainingSession: {
-          select: {
-            id: true,
-            studioId: true,
-            capacity: true,
-            bookedCount: true,
-            status: true,
-          },
-        },
-      },
-    });
-    if (!inv) {
-      throw new HttpException('Invalid token', HttpStatus.NOT_FOUND);
-    }
-    if (inv.consumedAt) {
-      return {
-        success: true,
-        alreadyUsed: true,
-        email: inv.email,
-      };
-    }
-    if (inv.expiresAt < new Date()) {
-      throw new HttpException('Invitation expired', HttpStatus.GONE);
-    }
-
-    const user = await this.findOrCreateClientUser({
-      name: null,
-      email: inv.email,
-      phone: null,
-    });
-
-    await this.ensureStudioClient(
-      inv.studioId,
-      user.id,
-      StudioClientSource.INVITE,
-    );
-
-    let enrolled = false;
-    if (inv.sessionId && inv.TrainingSession) {
-      const session = inv.TrainingSession;
-      if (session.status !== 'CANCELLED') {
-        const existing = await this.prisma.sessionEnrollment.findFirst({
-          where: { sessionId: session.id, userId: user.id },
-          select: { id: true, status: true },
-        });
-        if (
-          !existing &&
-          (session.bookedCount ?? 0) >= (session.capacity ?? 1)
-        ) {
-          throw new HttpException('No spots left', HttpStatus.BAD_REQUEST);
-        }
-        if (existing?.status === SessionEnrollmentStatus.ACTIVE) {
-          enrolled = true;
-        } else {
-          await this.prisma.$transaction(async (tx) => {
-            if (existing) {
-              await tx.sessionEnrollment.update({
-                where: { id: existing.id },
-                data: {
-                  status: SessionEnrollmentStatus.ACTIVE,
-                  cancelledAt: null,
-                },
-              });
-              if (existing.status === SessionEnrollmentStatus.CANCELLED) {
-                await tx.trainingSession.update({
-                  where: { id: session.id },
-                  data: { bookedCount: { increment: 1 } },
-                });
-              }
-            } else {
-              await tx.sessionEnrollment.create({
-                data: {
-                  sessionId: session.id,
-                  userId: user.id,
-                  status: SessionEnrollmentStatus.ACTIVE,
-                },
-              });
-              await tx.trainingSession.update({
-                where: { id: session.id },
-                data: { bookedCount: { increment: 1 } },
-              });
-            }
-          });
-          enrolled = true;
-        }
-      }
-    }
-
-    await this.prisma.clientInvitation.update({
-      where: { id: inv.id },
-      data: { consumedAt: new Date() },
-    });
-
-    return {
-      success: true,
-      email: inv.email,
-      userId: user.id,
-      enrolled,
-    };
-  }
-
-  async getInvitationLandingContext(rawToken: string) {
-    try {
-      const tokenHash = sha256Hex(rawToken.trim());
-      const inv = await this.prisma.clientInvitation.findUnique({
-        where: { tokenHash },
-        select: {
-          email: true,
-          expiresAt: true,
-          consumedAt: true,
-          sessionId: true,
-          Studio: { select: { name: true } },
-          TrainingSession: {
-            select: {
-              startsAt: true,
-              Training: { select: { name: true } },
-            },
-          },
-        },
-      });
-      if (!inv) {
-        return { valid: false as const, reason: 'invalid' as const };
-      }
-      if (inv.consumedAt) {
-        return { valid: false as const, reason: 'used' as const };
-      }
-      if (inv.expiresAt < new Date()) {
-        return { valid: false as const, reason: 'expired' as const };
-      }
-      return {
-        valid: true as const,
-        salonName: inv.Studio.name,
-        trainingName: inv.TrainingSession?.Training?.name ?? null,
-        startsAt: inv.TrainingSession?.startsAt?.toISOString() ?? null,
-        email: inv.email,
-      };
-    } catch {
-      return { valid: false as const, reason: 'invalid' as const };
-    }
   }
 }

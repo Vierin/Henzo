@@ -13,7 +13,7 @@ import '../common/sheet_action_button_style.dart';
 import 'settings_form_tokens.dart';
 
 /// 4 weeks — default booking window for new studios.
-const int kDefaultBookingPeriodDays = 28;
+const int kDefaultBookingPeriodDays = 30;
 const int kMinBookingPeriodDays = 1;
 const int kMaxBookingPeriodDays = 60;
 

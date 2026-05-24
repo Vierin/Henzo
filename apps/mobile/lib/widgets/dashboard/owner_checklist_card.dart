@@ -7,36 +7,40 @@ import '../../l10n/locale_provider.dart';
 class OwnerChecklistCard extends StatefulWidget {
   const OwnerChecklistCard({
     super.key,
+    this.showSalonSetupStep = false,
+    this.salonSetupCompleted = true,
     required this.hasTraining,
     required this.hasPhoto,
     required this.hasLogo,
-    required this.bookingWindowConfigured,
     required this.contactsConfigured,
     required this.canPublish,
     required this.isStudioActive,
     required this.isPublishing,
+    this.onSalonSetupTap,
     required this.onCreateTrainingTap,
     required this.onAddPhotoTap,
     required this.onAddLogoTap,
-    required this.onBookingWindowTap,
     required this.onContactsTap,
     required this.onPublishTap,
     this.missingRequiredSteps = const <String>[],
+    this.initiallyExpanded = false,
   });
 
+  final bool showSalonSetupStep;
+  final bool salonSetupCompleted;
   final bool hasTraining;
   final bool hasPhoto;
   final bool hasLogo;
-  final bool bookingWindowConfigured;
   final bool contactsConfigured;
   final bool canPublish;
   final bool isStudioActive;
   final bool isPublishing;
   final List<String> missingRequiredSteps;
+  final bool initiallyExpanded;
+  final VoidCallback? onSalonSetupTap;
   final VoidCallback onCreateTrainingTap;
   final VoidCallback onAddPhotoTap;
   final VoidCallback onAddLogoTap;
-  final VoidCallback onBookingWindowTap;
   final VoidCallback onContactsTap;
   final VoidCallback onPublishTap;
 
@@ -45,9 +49,15 @@ class OwnerChecklistCard extends StatefulWidget {
 }
 
 class _OwnerChecklistCardState extends State<OwnerChecklistCard> {
-  static const int _kTotalSteps = 5;
-  /// Collapsed by default to save vertical space; header stays visible.
-  bool _checklistExpanded = false;
+  late bool _checklistExpanded;
+
+  @override
+  void initState() {
+    super.initState();
+    _checklistExpanded = widget.initiallyExpanded;
+  }
+
+  int get _totalSteps => 4 + (widget.showSalonSetupStep ? 1 : 0);
 
   @override
   Widget build(BuildContext context) {
@@ -55,15 +65,18 @@ class _OwnerChecklistCardState extends State<OwnerChecklistCard> {
     String tr(String k) => t.t('dashboard.$k');
 
     final completedCount = <bool>[
+      if (widget.showSalonSetupStep) widget.salonSetupCompleted,
       widget.hasTraining,
       widget.hasPhoto,
       widget.hasLogo,
-      widget.bookingWindowConfigured,
       widget.contactsConfigured,
     ].where((done) => done).length;
 
     final progressLine =
-        '$completedCount/$_kTotalSteps ${tr('onboardingStepsCompleted')}';
+        '$completedCount/$_totalSteps ${tr('onboardingStepsCompleted')}';
+
+    final studioReady =
+        !widget.showSalonSetupStep || widget.salonSetupCompleted;
 
     final missingText = widget.missingRequiredSteps.isEmpty
         ? null
@@ -154,15 +167,25 @@ class _OwnerChecklistCardState extends State<OwnerChecklistCard> {
               ),
             ),
             const SizedBox(height: 6),
+            if (widget.showSalonSetupStep)
+              _ChecklistRow(
+                label: tr('onboardingSetupBusiness'),
+                done: widget.salonSetupCompleted,
+                onTap: widget.salonSetupCompleted
+                    ? null
+                    : widget.onSalonSetupTap,
+              ),
             _ChecklistRow(
               label: tr('onboardingCreateTraining'),
               done: widget.hasTraining,
-              onTap: widget.hasTraining ? null : widget.onCreateTrainingTap,
+              onTap: !studioReady || widget.hasTraining
+                  ? null
+                  : widget.onCreateTrainingTap,
             ),
             _ChecklistRow(
               label: tr('onboardingAddPhoto'),
               done: widget.hasPhoto,
-              onTap: widget.hasPhoto ? null : widget.onAddPhotoTap,
+              onTap: !studioReady || widget.hasPhoto ? null : widget.onAddPhotoTap,
             ),
             Padding(
               padding: const EdgeInsets.only(top: 10, bottom: 6),
@@ -195,19 +218,14 @@ class _OwnerChecklistCardState extends State<OwnerChecklistCard> {
             _ChecklistRow(
               label: tr('onboardingAddLogo'),
               done: widget.hasLogo,
-              onTap: widget.hasLogo ? null : widget.onAddLogoTap,
-            ),
-            _ChecklistRow(
-              label: tr('onboardingBookingWindow'),
-              done: widget.bookingWindowConfigured,
-              onTap: widget.bookingWindowConfigured
-                  ? null
-                  : widget.onBookingWindowTap,
+              onTap: !studioReady || widget.hasLogo ? null : widget.onAddLogoTap,
             ),
             _ChecklistRow(
               label: tr('onboardingContacts'),
               done: widget.contactsConfigured,
-              onTap: widget.contactsConfigured ? null : widget.onContactsTap,
+              onTap: !studioReady || widget.contactsConfigured
+                  ? null
+                  : widget.onContactsTap,
             ),
           ],
           if (!widget.isStudioActive) ...[

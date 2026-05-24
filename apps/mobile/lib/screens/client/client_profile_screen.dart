@@ -33,8 +33,8 @@ class _ClientProfileScreenState extends State<ClientProfileScreen>
   bool _loadingStats = true;
 
   HealthData? _health;
-  bool _loadingHealth = true;
-  bool _healthPermissionDenied = false;
+  bool _loadingHealth = false;
+  bool _healthPermissionDenied = true;
   bool _healthNeedsInstall = false;
 
   bool _sendingWorkout = false;
@@ -46,7 +46,7 @@ class _ClientProfileScreenState extends State<ClientProfileScreen>
   void initState() {
     super.initState();
     _loadStats();
-    _probeHealth();
+    _restoreHealthIfAlreadyAuthorized();
   }
 
   @override
@@ -99,17 +99,20 @@ class _ClientProfileScreenState extends State<ClientProfileScreen>
     }
   }
 
-  Future<void> _probeHealth() async {
-    if (mounted) setState(() => _loadingHealth = true);
-    final hasAccess = await HealthService.hasAccess();
-    if (!hasAccess) {
+  /// Reads health data only when permissions were granted earlier (no prompts).
+  Future<void> _restoreHealthIfAlreadyAuthorized() async {
+    if (_cachedHealth != null &&
+        _healthCachedAt != null &&
+        DateTime.now().difference(_healthCachedAt!) < _statsCacheTtl) {
       if (!mounted) return;
       setState(() {
-        _loadingHealth = false;
-        _healthPermissionDenied = true;
+        _health = _cachedHealth;
+        _healthPermissionDenied = false;
       });
       return;
     }
+    if (!await HealthService.hasAccess()) return;
+    if (mounted) setState(() => _loadingHealth = true);
     await _fetchHealthData();
   }
 
@@ -191,8 +194,6 @@ class _ClientProfileScreenState extends State<ClientProfileScreen>
     }
     if (await HealthService.hasAccess()) {
       await _fetchHealthData();
-    } else {
-      await _connectHealth();
     }
   }
 

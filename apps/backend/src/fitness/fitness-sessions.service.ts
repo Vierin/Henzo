@@ -132,7 +132,7 @@ export class FitnessSessionsService {
   }
 
   private extractBookingPeriodDays(reminderSettings: unknown): number {
-    const fallback = 28;
+    const fallback = 30;
     if (!reminderSettings || typeof reminderSettings !== 'object')
       return fallback;
     const raw = (reminderSettings as Record<string, unknown>)[

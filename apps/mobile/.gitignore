@@ -1,6 +1,7 @@
 # Environment (secrets)
 .env
 assets/.env
+assets/.env.local
 
 # Miscellaneous
 *.class
