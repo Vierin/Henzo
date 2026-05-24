@@ -19,6 +19,20 @@ String formatVnd(num value) {
   return out.toString();
 }
 
+/// Compact price for browse cards: `200K VND`; empty when free/unknown.
+String formatCompactVndLabel(double? price) {
+  if (price == null || price <= 0) return '';
+  final r = price.round();
+  if (r >= 1000) {
+    final k = r / 1000;
+    if (r % 1000 == 0) {
+      return '${k.round()}K VND';
+    }
+    return '${k.toStringAsFixed(1).replaceAll('.', ',')}K VND';
+  }
+  return '${formatVnd(r)} VND';
+}
+
 /// Booking cards: `12.06.26`
 String formatBookingCardDate(DateTime dt) {
   final local = dt.toLocal();
