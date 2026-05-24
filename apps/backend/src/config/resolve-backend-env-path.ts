@@ -28,9 +28,7 @@ function resolveBackendRoot(entryDirname: string): string {
     return cwd;
   }
   const inDist = entryDirname.includes(`${sep}dist${sep}`);
-  return inDist
-    ? join(entryDirname, '..', '..')
-    : join(entryDirname, '..');
+  return inDist ? join(entryDirname, '..', '..') : join(entryDirname, '..');
 }
 
 /**
@@ -53,10 +51,7 @@ export function resolveBackendEnvPath(
     candidates.push(join(backendRoot, `.env.${explicit}`));
   }
 
-  candidates.push(
-    join(backendRoot, '.env.local'),
-    join(backendRoot, '.env'),
-  );
+  candidates.push(join(backendRoot, '.env.local'), join(backendRoot, '.env'));
 
   return candidates.find((p) => existsSync(p));
 }

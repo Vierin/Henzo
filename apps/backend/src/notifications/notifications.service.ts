@@ -241,7 +241,9 @@ export class NotificationsService {
     if (!this.firebaseAdmin.isInitialized()) {
       throw new Error('Firebase Admin not initialized.');
     }
-    console.log(`📤 Sending workout reminder push: user=${userId} type=${workoutType}`);
+    console.log(
+      `📤 Sending workout reminder push: user=${userId} type=${workoutType}`,
+    );
     await this.firebaseAdmin.sendMulticast(
       tokens.map((t) => t.token),
       {
@@ -249,7 +251,11 @@ export class NotificationsService {
         body: 'Нажми «Начать» чтобы запустить тренировку на часах',
       },
       { type: 'WORKOUT_REMINDER', workoutType },
-      { channelId: 'henzo_workout', priority: 'high', apnsCategory: 'WORKOUT_REMINDER' },
+      {
+        channelId: 'henzo_workout',
+        priority: 'high',
+        apnsCategory: 'WORKOUT_REMINDER',
+      },
     );
   }
 

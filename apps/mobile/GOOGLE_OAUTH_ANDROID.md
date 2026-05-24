@@ -1,47 +1,62 @@
-# Google OAuth — Android (odcisk SHA-1 i nazwa pakietu)
+# Google OAuth — Android (SHA-1 и package name)
 
-## Jeśli nadal ApiException: 10 — checklist
+Package name: **`com.henzo.app`**
 
-1. **Ten sam projekt** — Android OAuth client musi być w **tym samym** Google Cloud projekcie, w którym jest Web Client ID (ten z `.env`). Sprawdź w Credentials: Web client i Android client na jednej liście.
-2. **SHA-1 z debug** — przy `flutter run` używany jest **debug** keystore. W Credentials musi być SHA-1 z **debug**, nie z release.
-3. **Package name 1:1** — dokładnie `com.example.mobile` (bez spacji, bez wielkiej litery w `example`).
-4. **Poczekaj 2–5 minut** — po utworzeniu/zmianie OAuth client Google może potrzebować chwili. Spróbuj ponownie wejść przez Google.
-5. **Jeden Android client** — dla tego samego package name + SHA-1 wystarczy jeden Android client. Nie twórz kilku „na próbę”.
+## Checklist при ApiException: 10
+
+1. **Тот же GCP-проект** — Android OAuth client в том же проекте, что Web Client ID из `assets/.env`.
+2. **SHA-1** — для `flutter run` нужен SHA-1 **debug**; для Play Internal / release AAB — SHA-1 **upload/release** keystore (см. `docs/STORE_RELEASE.md`).
+3. **Package name 1:1** — ровно `com.henzo.app`.
+4. Подожди 2–5 минут после создания/изменения client в Console.
+5. Один Android client на пару package + SHA-1.
 
 ---
 
-## Dla tworzenia OAuth Client ID (typ: Android)
+## Package name
 
-### 1. **Nazwa pakietu (Package name)**
 ```
-com.example.mobile
+com.henzo.app
 ```
 
-### 2. **Odcisk SHA-1 (tylko debug)**
+## SHA-1 (debug)
 
-**Sposób A — keytool (Windows, bez Gradle):**
+**keytool (Windows):**
+
 ```powershell
 keytool -list -v -keystore %USERPROFILE%\.android\debug.keystore -alias androiddebugkey -storepass android -keypass android
 ```
-W wyniku skopiuj linię **SHA1:** (np. `AA:BB:CC:DD:...`).
 
-**Sposób B — Gradle:**
+**Или henzo-debug.keystore** (если есть `android/app/henzo-debug.keystore`):
+
 ```powershell
-cd D:\_PROJECTS\_Henzo\apps\mobile\android
+keytool -list -v -keystore apps\mobile\android\app\henzo-debug.keystore -alias henzo-debug -storepass henzo-debug -keypass henzo-debug
+```
+
+**Gradle:**
+
+```powershell
+cd apps\mobile\android
 .\gradlew signingReport
 ```
-Znajdź **Variant: debug** → **SHA-1**.
+
+## SHA-1 (release / Play upload)
+
+После `android/key.properties` и `app/upload-keystore.jks`:
+
+```powershell
+keytool -list -v -keystore apps\mobile\android\app\upload-keystore.jks -alias upload
+```
+
+Добавь этот SHA-1 в Firebase (Android app `com.henzo.app`) и в Google Cloud → OAuth Android client.
 
 ---
 
-## W Google Cloud Console
+## Google Cloud Console
 
-1. [Google Cloud Console](https://console.cloud.google.com/) → **APIs & Services** → **Credentials**.
-2. Upewnij się, że wybrany jest **ten sam projekt**, w którym masz Web Client ID (używany w Supabase i `.env`).
-3. **Create Credentials** → **OAuth client ID**.
-4. **Application type:** **Android**.
-5. **Package name:** `com.example.mobile` (wklej, nie wpisuj z pamięci).
-6. **SHA-1 certificate fingerprint:** wklej SHA-1 z keytool / signingReport (debug).
-7. **Create**.
+1. [Credentials](https://console.cloud.google.com/apis/credentials) → тот же проект, что Web Client ID.
+2. **Create Credentials** → **OAuth client ID** → **Android**.
+3. Package: `com.henzo.app`.
+4. SHA-1: debug и/или release (можно два client или обновить fingerprint).
+5. Web Client ID в `.env` не менять (`EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID`).
 
-Web Client ID nie zmieniaj — ten sam co w Supabase i w `.env` (`EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID`).
+После смены package выполни `dart run flutterfire configure` и зарегистрируй Android app в Firebase с `com.henzo.app`.

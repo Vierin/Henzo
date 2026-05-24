@@ -2303,9 +2303,7 @@ export class StudiosService {
         name: studioName,
         studioName,
         address: Studio.address,
-        locationName: resolveBrowseStudioLocationName(
-          Studio.reminderSettings,
-        ),
+        locationName: resolveBrowseStudioLocationName(Studio.reminderSettings),
         latitude: Studio.latitude ?? undefined,
         longitude: Studio.longitude ?? undefined,
         photos: Studio.photos,

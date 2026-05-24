@@ -12,49 +12,49 @@
 
 ## Applications in scope
 
-| Surface | Package / ID | Notes |
-|---------|----------------|-------|
-| iOS app | `com.henzo.app` (verify in Xcode) | HealthKit read-only, IAP via RevenueCat |
-| Android app | `com.henzo.app` (verify in build.gradle) | Health Connect, IAP, FCM |
-| Web | henzo.app | Next.js, cookie banner, Google Analytics (web) |
+| Surface     | Package / ID                             | Notes                                          |
+| ----------- | ---------------------------------------- | ---------------------------------------------- |
+| iOS app     | `com.henzo.app` (verify in Xcode)        | HealthKit read-only, IAP via RevenueCat        |
+| Android app | `com.henzo.app` (verify in build.gradle) | Health Connect, IAP, FCM                       |
+| Web         | henzo.app                                | Next.js, cookie banner, Google Analytics (web) |
 
 ---
 
 ## Data categories
 
-| Category | Fields | Source | Stored / processed by | Legal basis (draft) | Retention |
-|----------|--------|--------|----------------------|---------------------|-----------|
-| Account | email, password (hashed), name, phone, role | User registration / profile | Supabase Auth + Henzo API DB | Contract | Active account + 3y after deletion (tax/legal per Privacy) |
-| OAuth | email, name, avatar URL | Google Sign-In | Supabase | Contract | Same as account |
-| Studio (owner) | business name, address, lat/lon, photos, schedule, services | Owner onboarding | API + Supabase Storage `studio-photos` | Contract | Same as account |
-| Client booking | session times, enrollments, notes | In-app actions | API DB | Contract | Per booking/studio policies |
-| Location | city, coarse/precise lat-lon (if permitted) | Client explore, map picker | Device SharedPreferences + API | Consent (permission) + contract | Until account delete / user clears |
-| Push | FCM token, platform, app language | After login | Henzo API `POST /notifications/push-token` | Consent (OS) + contract | Until logout/delete |
-| Analytics | events (`app_opened`, `paywall_opened`), userId, role, locale | Mobile app (opt-in toggle in Settings) | Google Firebase Analytics | Consent | Per Firebase (~14 months default) |
-| Crash diagnostics | stack traces, userId (if opted in) | Automatic on crash | Firebase Crashlytics | Consent (linked to analytics toggle) | Per Firebase |
-| IAP / subscription | product IDs, entitlement status, store receipts metadata | Purchase / restore | Apple/Google → RevenueCat → Henzo API sync | Contract | Active subscription + legal retention |
-| Health & fitness | steps, active/total calories, workouts | User grants HealthKit / Health Connect | **On device only** — not sent to Henzo API | Consent (OS health permission) | Not stored on Henzo servers |
-| Photos | profile/studio images | Gallery picker | Supabase Storage | Contract | Until user deletes / account deletion |
-| Feedback | name, email, message, userId, role, platform | Contact form in app | API → Telegram notification | Contract / legitimate interest | Support retention |
-| Web analytics | IP (anonymized), pages, device | Website | Google Analytics G-KBLFJ1533R | Consent (cookie banner) | 26 months (GA default) |
-| Email | address, name | Transactional / marketing | Brevo | Contract / consent | Per Brevo + Privacy |
-| Infrastructure logs | IP, user-agent, timestamps | All HTTP | Hosting (Vercel), Supabase | Legitimate interest | Short rolling logs |
+| Category            | Fields                                                        | Source                                 | Stored / processed by                      | Legal basis (draft)                  | Retention                                                  |
+| ------------------- | ------------------------------------------------------------- | -------------------------------------- | ------------------------------------------ | ------------------------------------ | ---------------------------------------------------------- |
+| Account             | email, password (hashed), name, phone, role                   | User registration / profile            | Supabase Auth + Henzo API DB               | Contract                             | Active account + 3y after deletion (tax/legal per Privacy) |
+| OAuth               | email, name, avatar URL                                       | Google Sign-In                         | Supabase                                   | Contract                             | Same as account                                            |
+| Studio (owner)      | business name, address, lat/lon, photos, schedule, services   | Owner onboarding                       | API + Supabase Storage `studio-photos`     | Contract                             | Same as account                                            |
+| Client booking      | session times, enrollments, notes                             | In-app actions                         | API DB                                     | Contract                             | Per booking/studio policies                                |
+| Location            | city, coarse/precise lat-lon (if permitted)                   | Client explore, map picker             | Device SharedPreferences + API             | Consent (permission) + contract      | Until account delete / user clears                         |
+| Push                | FCM token, platform, app language                             | After login                            | Henzo API `POST /notifications/push-token` | Consent (OS) + contract              | Until logout/delete                                        |
+| Analytics           | events (`app_opened`, `paywall_opened`), userId, role, locale | Mobile app (opt-in toggle in Settings) | Google Firebase Analytics                  | Consent                              | Per Firebase (~14 months default)                          |
+| Crash diagnostics   | stack traces, userId (if opted in)                            | Automatic on crash                     | Firebase Crashlytics                       | Consent (linked to analytics toggle) | Per Firebase                                               |
+| IAP / subscription  | product IDs, entitlement status, store receipts metadata      | Purchase / restore                     | Apple/Google → RevenueCat → Henzo API sync | Contract                             | Active subscription + legal retention                      |
+| Health & fitness    | steps, active/total calories, workouts                        | User grants HealthKit / Health Connect | **On device only** — not sent to Henzo API | Consent (OS health permission)       | Not stored on Henzo servers                                |
+| Photos              | profile/studio images                                         | Gallery picker                         | Supabase Storage                           | Contract                             | Until user deletes / account deletion                      |
+| Feedback            | name, email, message, userId, role, platform                  | Contact form in app                    | API → Telegram notification                | Contract / legitimate interest       | Support retention                                          |
+| Web analytics       | IP (anonymized), pages, device                                | Website                                | Google Analytics G-KBLFJ1533R              | Consent (cookie banner)              | 26 months (GA default)                                     |
+| Email               | address, name                                                 | Transactional / marketing              | Brevo                                      | Contract / consent                   | Per Brevo + Privacy                                        |
+| Infrastructure logs | IP, user-agent, timestamps                                    | All HTTP                               | Hosting (Vercel), Supabase                 | Legitimate interest                  | Short rolling logs                                         |
 
 ---
 
 ## Processors & subprocessors
 
-| Vendor | Purpose | Data shared | Region (typical) |
-|--------|---------|-------------|------------------|
-| Supabase | Auth, DB, file storage | Account, studio, photos | EU/US (project region — confirm in dashboard) |
-| Google Firebase | Analytics, Crashlytics, FCM | Usage, crashes, push token | US |
-| Google OAuth | Sign-in | Email, name, profile photo | US |
-| RevenueCat | Subscription management | App user ID, purchase events | US |
-| Apple App Store / Google Play | Payment processing | Payment handled by store; Henzo receives entitlement status only | Per user store region |
-| Brevo | Email delivery | Email, name, booking content | EU |
-| Vercel | Web hosting | Server logs | US/EU |
-| CARTO / OpenStreetMap | Map tiles | No PII (map display) | EU/US |
-| Telegram | Feedback routing | Feedback message content | Confirm hosting with ops |
+| Vendor                        | Purpose                     | Data shared                                                      | Region (typical)                              |
+| ----------------------------- | --------------------------- | ---------------------------------------------------------------- | --------------------------------------------- |
+| Supabase                      | Auth, DB, file storage      | Account, studio, photos                                          | EU/US (project region — confirm in dashboard) |
+| Google Firebase               | Analytics, Crashlytics, FCM | Usage, crashes, push token                                       | US                                            |
+| Google OAuth                  | Sign-in                     | Email, name, profile photo                                       | US                                            |
+| RevenueCat                    | Subscription management     | App user ID, purchase events                                     | US                                            |
+| Apple App Store / Google Play | Payment processing          | Payment handled by store; Henzo receives entitlement status only | Per user store region                         |
+| Brevo                         | Email delivery              | Email, name, booking content                                     | EU                                            |
+| Vercel                        | Web hosting                 | Server logs                                                      | US/EU                                         |
+| CARTO / OpenStreetMap         | Map tiles                   | No PII (map display)                                             | EU/US                                         |
+| Telegram                      | Feedback routing            | Feedback message content                                         | Confirm hosting with ops                      |
 
 ---
 

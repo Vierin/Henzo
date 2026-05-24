@@ -297,7 +297,7 @@ export class AuthService {
       }
 
       let emailConfirmed = false;
-      let userId = data.userId;
+      const userId = data.userId;
 
       if (userId) {
         await this.assertRegistrationJwtMatchesUser(
@@ -927,7 +927,9 @@ export class AuthService {
       });
 
     if (authError) {
-      throw new BadRequestException(authError.message || 'Failed to create user');
+      throw new BadRequestException(
+        authError.message || 'Failed to create user',
+      );
     }
     if (!authData.user) {
       throw new BadRequestException('Failed to create user');
@@ -1878,5 +1880,4 @@ export class AuthService {
       );
     }
   }
-
 }

@@ -5,6 +5,7 @@
 ### Вариант 1: Используя скрипт remote-setup.sh
 
 Скрипт автоматически:
+
 - ✅ Подключится к серверу
 - ✅ Установит все зависимости
 - ✅ Скопирует .env файл
@@ -18,6 +19,7 @@ bash deploy/remote-setup.sh
 ```
 
 Если используете SSH ключ:
+
 ```bash
 bash deploy/remote-setup.sh ~/.ssh/id_rsa
 ```
@@ -112,4 +114,3 @@ docker-compose logs nginx
 1. Проверьте `DATABASE_URL` в `.env.production`
 2. Убедитесь, что IP добавлен в Supabase whitelist
 3. Проверьте логи: `docker-compose logs backend | grep -i database`
-

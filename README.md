@@ -94,8 +94,10 @@ Project uses branch-based flow:
 
 1. Merge `staging` into `main`.
 2. Trigger GitHub Actions manually (or push to `main` and approve environment):
-   - `Deploy Backend to DigitalOcean` with input `confirm=DEPLOY` (promotes already tested staging image digest)
+   - `Deploy Backend to DigitalOcean` with input `confirm=DEPLOY` (promotes staging image digest, runs Prisma migrations on production, then health check)
    - `Deploy Frontend to Vercel` with input `environment=production` from branch `main`
+
+Before your first commit on a machine, run `pnpm install` once so Husky installs the pre-commit hook (`prettier` via lint-staged). CI also runs `pnpm format:check` before lint.
 
 ### Branch protection / required checks
 

@@ -53,26 +53,32 @@ jobs:
             [ -n "${{ secrets.GHCR_TOKEN }}" ] || { echo "❌ GHCR_TOKEN secret is missing"; exit 1; }
             echo "${{ secrets.GHCR_TOKEN }}" | docker login ${{ env.REGISTRY }} -u "$GHCR_USER" --password-stdin
 
-            cd /var/www/henzo/apps/backend
-            # Promote verified staging image to production by digest (no rebuild).
+            APP_DIR="/var/www/henzo"
+            BACKEND_DIR="$APP_DIR/apps/backend"
+
+            [ -d "$APP_DIR/.git" ] || { echo "Git repo not found at $APP_DIR (.git missing)"; exit 1; }
+            [ -f "$BACKEND_DIR/docker-compose.yml" ] || { echo "docker-compose.yml not found at $BACKEND_DIR"; exit 1; }
+            [ -f "$BACKEND_DIR/deploy/deploy-compose-service.sh" ] || { echo "deploy script not found"; exit 1; }
+
+            git -C "$APP_DIR" fetch origin
+            git -C "$APP_DIR" checkout main
+            git -C "$APP_DIR" pull --ff-only origin main
+
+            cd "$BACKEND_DIR"
+            docker compose -f docker-compose.yml config --services \
+              | tr -d '\r' \
+              | grep -Fxq "backend" \
+              || { echo "Service backend not found in docker-compose.yml"; exit 1; }
+
             docker pull ${{ env.IMAGE_BASE }}:staging
-            DIGEST_REF=$(docker image inspect --format='{{index .RepoDigests 0}}' ${{ env.IMAGE_BASE }}:staging)
-            if [ -z "$DIGEST_REF" ]; then
+            IMAGE_REF=$(docker image inspect --format='{{index .RepoDigests 0}}' ${{ env.IMAGE_BASE }}:staging)
+            if [ -z "$IMAGE_REF" ]; then
               echo "❌ Failed to resolve digest from staging image"
               exit 1
             fi
-            export BACKEND_IMAGE=${DIGEST_REF}
-            echo "🔄 Pulling image..."
-            docker compose pull backend
-            echo "🔄 Restarting backend..."
-            docker compose up -d --no-deps backend
-            docker compose up -d --no-deps nginx
-            echo "⏳ Waiting for startup..."
-            sleep 10
-            echo "🔍 Health check..."
-            curl -f http://localhost/health || exit 1
-            echo "✅ Deployment complete!"
-            docker compose ps
+
+            bash deploy/deploy-compose-service.sh --env=production --image="$IMAGE_REF" --migrate=true
+            echo "✅ Production deployment complete!"
 
       - name: Notify success
         if: success()

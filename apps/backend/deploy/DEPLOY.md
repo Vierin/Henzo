@@ -36,11 +36,7 @@ bash deploy/deploy-compose-service.sh --env=production --image=ghcr.io/<org>/<re
 
 1. `staging` workflow builds and pushes backend image.
 2. Staging deploy uses exact image digest.
-3. After QA signoff, promote to prod:
-   - resolve digest of staging image;
-   - deploy `backend` with that digest;
-   - run `prisma migrate status` and `prisma migrate deploy`;
-   - run health check.
+3. After QA signoff, merge `staging` → `main` and run **Deploy Backend to DigitalOcean** (or push to `main` with environment approval). The workflow promotes the staging image digest and runs `prisma migrate status` + `prisma migrate deploy` on production automatically via `deploy-compose-service.sh --migrate=true`.
 
 ## Rollback
 

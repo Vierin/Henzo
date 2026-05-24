@@ -7,25 +7,25 @@ import { ValuesSection } from './components/ValuesSection';
 import { CTASection } from './components/CTASection';
 
 export async function generateMetadata({
-	params,
+  params,
 }: {
-	params: Promise<{ locale: string }>;
+  params: Promise<{ locale: string }>;
 }): Promise<Metadata> {
-	const { locale: raw } = await params;
-	return buildStaticPageMetadata('about', resolveLocale(raw));
+  const { locale: raw } = await params;
+  return buildStaticPageMetadata('about', resolveLocale(raw));
 }
 
 export default function AboutPage() {
-	return (
-		<>
-			<div className="min-h-screen flex flex-col bg-[#F8F5F2]">
-				<main className="flex-1 bg-white">
-					<AboutHeroSection />
-					<OurStorySection />
-					<ValuesSection />
-					<CTASection />
-				</main>
-			</div>
-		</>
-	);
+  return (
+    <>
+      <div className="min-h-screen flex flex-col bg-[#F8F5F2]">
+        <main className="flex-1 bg-white">
+          <AboutHeroSection />
+          <OurStorySection />
+          <ValuesSection />
+          <CTASection />
+        </main>
+      </div>
+    </>
+  );
 }

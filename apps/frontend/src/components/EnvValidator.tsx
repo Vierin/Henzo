@@ -8,16 +8,9 @@ import { initEnvValidation } from '@/config/env.validation';
  * Should be included early in the app tree
  */
 export function EnvValidator() {
-	useEffect(() => {
-		initEnvValidation();
-	}, []);
+  useEffect(() => {
+    initEnvValidation();
+  }, []);
 
-	return null;
+  return null;
 }
-
-
-
-
-
-
-

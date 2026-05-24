@@ -19,6 +19,7 @@
 ### 2. SSH доступ к серверу
 
 Убедитесь, что у вас есть:
+
 - IP сервера: `165.22.101.13`
 - SSH ключ или пароль для root
 
@@ -53,6 +54,7 @@ bash full-setup.sh
 ```
 
 Скрипт автоматически:
+
 - ✅ Обновит систему
 - ✅ Установит Docker и Docker Compose
 - ✅ Настроит firewall
@@ -182,7 +184,7 @@ docker-compose exec backend curl http://localhost:3001/health
 ## Поддержка
 
 Если возникли проблемы:
+
 1. Проверьте логи: `docker-compose logs -f`
 2. Проверьте статус: `docker-compose ps`
 3. Проверьте health: `curl http://localhost/health`
-
