@@ -172,7 +172,7 @@ class BrowseStudioListCard extends StatelessWidget {
                             ],
                           ),
                           if (_locationLabel != null) ...[
-                            const SizedBox(height: 6),
+                            const SizedBox(height: 8),
                             Row(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
@@ -180,22 +180,20 @@ class BrowseStudioListCard extends StatelessWidget {
                                   padding: const EdgeInsets.only(top: 1),
                                   child: SvgPicture.asset(
                                     'assets/icons/icon-pin.svg',
-                                    width: 8,
-                                    height: 11,
+                                    width: 11,
+                                    height: 15,
                                   ),
                                 ),
                                 const SizedBox(width: 4),
                                 Expanded(
                                   child: Text(
                                     _locationLabel!,
-                                    maxLines: 2,
+                                    maxLines: 1,
                                     overflow: TextOverflow.ellipsis,
                                     style: const TextStyle(
-                                      fontSize: 11,
+                                      fontSize: 14,
                                       fontWeight: FontWeight.w400,
-                                      letterSpacing: -0.3,
                                       color: AppColors.textPrimary,
-                                      height: 1.2,
                                     ),
                                   ),
                                 ),

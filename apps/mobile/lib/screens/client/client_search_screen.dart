@@ -2361,9 +2361,9 @@ class ClientSearchScreenState extends State<ClientSearchScreen>
     final locale = context.watch<LocaleProvider>();
     final localeCode = locale.localeCode;
     final locationStore = context.watch<ClientLocationStore>();
-    final locationUpper = locationStore
-        .displayLabel(locale.t('clientHome.setLocation'))
-        .toUpperCase();
+    final locationLabel = locationStore.displayLabel(
+      locale.t('clientHome.setLocation'),
+    );
     final favStore = context.watch<ClientFavoritesStore>();
     _ensureDerivedLists();
 
@@ -2395,14 +2395,17 @@ class ClientSearchScreenState extends State<ClientSearchScreen>
                             height: 16,
                           ),
                           const SizedBox(width: 6),
-                          Flexible(
+                          ConstrainedBox(
+                            constraints: BoxConstraints(
+                              maxWidth:
+                                  MediaQuery.sizeOf(context).width - 120,
+                            ),
                             child: Text(
-                              locationUpper,
+                              locationLabel,
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                               style: const TextStyle(
-                                fontSize: 12,
-                                fontWeight: FontWeight.w800,
+                                fontSize: 14,
                                 letterSpacing: 0.4,
                                 color: AppColors.textPrimary,
                               ),

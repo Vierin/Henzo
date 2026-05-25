@@ -22,6 +22,14 @@ String formatVnd(num value) {
 }
 
 /// Compact price for browse cards: `200K VND`; empty when free/unknown.
+/// Studio review cards: `12.05.2023`
+String formatReviewDateLabel(DateTime? createdAt) {
+  if (createdAt == null) return '';
+  final local = createdAt.toLocal();
+  String two(int v) => v.toString().padLeft(2, '0');
+  return '${two(local.day)}.${two(local.month)}.${local.year}';
+}
+
 /// Review cards: `2 days ago`, `3 h ago`, or short date when older.
 String formatRelativeReviewDateLabel(
   DateTime? createdAt, {

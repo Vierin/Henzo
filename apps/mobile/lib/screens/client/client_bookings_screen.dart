@@ -62,13 +62,16 @@ class _ClientBookingsScreenState extends State<ClientBookingsScreen>
             child: Padding(
               padding: const EdgeInsets.fromLTRB(
                 kScreenPaddingHorizontal,
-                14,
+                12,
                 kScreenPaddingHorizontal,
                 20,
               ),
               child: Text(
                 locale.t('clientActivity.title'),
-                style: BrandTypography.greeting(context),
+                style: BrandTypography.greeting(context).copyWith(
+                  fontSize: 28,
+                  fontWeight: FontWeight.w700,
+                ),
               ),
             ),
           ),

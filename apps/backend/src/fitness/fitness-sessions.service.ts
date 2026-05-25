@@ -1177,6 +1177,7 @@ export class FitnessSessionsService {
 
   async getClientProfileStats(authHeader: string): Promise<{
     classesVisited: number;
+    hoursTrained: number;
     upcomingClasses: number;
     activePasses: number;
   }> {
@@ -1186,19 +1187,23 @@ export class FitnessSessionsService {
     await this.completePastTrainingSessions();
 
     const now = new Date();
-    const [classesVisited, upcomingClasses] = await Promise.all([
-      this.prisma.sessionEnrollment.count({
-        where: {
-          userId,
-          status: SessionEnrollmentStatus.ACTIVE,
+    const completedWhere = {
+      userId,
+      status: SessionEnrollmentStatus.ACTIVE,
+      TrainingSession: {
+        endsAt: { lt: now },
+        status: {
+          in: [TrainingSessionStatus.COMPLETED, TrainingSessionStatus.ACTIVE],
+        },
+      },
+    };
+
+    const [completedEnrollments, upcomingClasses] = await Promise.all([
+      this.prisma.sessionEnrollment.findMany({
+        where: completedWhere,
+        select: {
           TrainingSession: {
-            endsAt: { lt: now },
-            status: {
-              in: [
-                TrainingSessionStatus.COMPLETED,
-                TrainingSessionStatus.ACTIVE,
-              ],
-            },
+            select: { startsAt: true, endsAt: true },
           },
         },
       }),
@@ -1214,8 +1219,19 @@ export class FitnessSessionsService {
       }),
     ]);
 
+    let totalMinutes = 0;
+    for (const enrollment of completedEnrollments) {
+      const session = enrollment.TrainingSession;
+      if (!session?.startsAt || !session?.endsAt) continue;
+      const diffMs = session.endsAt.getTime() - session.startsAt.getTime();
+      if (diffMs > 0) {
+        totalMinutes += Math.round(diffMs / 60_000);
+      }
+    }
+
     return {
-      classesVisited,
+      classesVisited: completedEnrollments.length,
+      hoursTrained: Math.floor(totalMinutes / 60),
       upcomingClasses,
       activePasses: 0,
     };

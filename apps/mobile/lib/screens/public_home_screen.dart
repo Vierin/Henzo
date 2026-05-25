@@ -31,6 +31,7 @@ import '../services/dashboard_api_service.dart';
 import '../widgets/client/home/client_home_upcoming_card.dart';
 import '../utils/owner_session_card_subtitle.dart';
 import '../widgets/dashboard/owner_daily_schedule_session_card.dart';
+import '../widgets/client/client_section_header.dart';
 import '../widgets/public/top_studio_card.dart';
 import 'client/client_shell_scope.dart';
 import 'location_picker_screen.dart';
@@ -654,52 +655,12 @@ class _PublicHomeScreenState extends State<PublicHomeScreen> {
     VoidCallback? onAction,
   }) {
     return Padding(
-      padding: screenPaddingH(top: 20, bottom: 10),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Expanded(
-                child: Text(
-                  title.toUpperCase(),
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w500,
-                    letterSpacing: 0.2,
-                    color: AppColors.textPrimary,
-                  ),
-                ),
-              ),
-              if (actionLabel != null && onAction != null)
-                GestureDetector(
-                  onTap: onAction,
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
-                        actionLabel,
-                        style: const TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w600,
-                          color: AppColors.primary500,
-                        ),
-                      ),
-                      const Icon(
-                        Icons.chevron_right_rounded,
-                        size: 20,
-                        color: AppColors.primary500,
-                      ),
-                    ],
-                  ),
-                ),
-            ],
-          ),
-          if (subtitle != null) ...[
-            const SizedBox(height: 2),
-            Text(subtitle, style: BrandTypography.sectionSubtitle(context)),
-          ],
-        ],
+      padding: screenPaddingH(top: 20, bottom: 0),
+      child: ClientSectionHeader(
+        title: title,
+        subtitle: subtitle,
+        actionLabel: actionLabel,
+        onAction: onAction,
       ),
     );
   }

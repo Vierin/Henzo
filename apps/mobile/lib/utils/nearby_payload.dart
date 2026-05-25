@@ -23,11 +23,33 @@ PublicStudioPreview parsePublicStudioPreviewFromNearby(
   final parsedCategories = categories is List
       ? categories
             .where((c) => c != null)
-            .map((c) => c.toString().trim())
+            .map((c) {
+              if (c is Map) {
+                final m = Map<String, dynamic>.from(c);
+                for (final key in [
+                  'nameEn',
+                  'name_en',
+                  'nameRu',
+                  'name_ru',
+                  'nameVn',
+                  'name_vn',
+                  'name',
+                  'label',
+                ]) {
+                  final v = m[key]?.toString().trim() ?? '';
+                  if (v.isNotEmpty) return v;
+                }
+                return '';
+              }
+              return c.toString().trim();
+            })
             .where((c) => c.isNotEmpty)
             .toList()
       : <String>[];
-  final rating = (data['avgRating'] as num?)?.toDouble() ?? 0;
+  final rating =
+      (data['avgRating'] as num?)?.toDouble() ??
+      (data['averageRating'] as num?)?.toDouble() ??
+      0;
   final address = (data['address'] ?? '').toString();
   final distanceKm = (data['distance'] as num?)?.toDouble();
   final photos = data['photos'];
@@ -38,7 +60,10 @@ PublicStudioPreview parsePublicStudioPreviewFromNearby(
       .toString()
       .trim();
 
-  var reviewCount = (data['reviewCount'] as num?)?.toInt() ?? 0;
+  var reviewCount =
+      (data['reviewCount'] as num?)?.toInt() ??
+      (data['review_count'] as num?)?.toInt() ??
+      0;
   if (reviewCount == 0 && data['_count'] is Map) {
     final count = Map<String, dynamic>.from(data['_count'] as Map);
     reviewCount =

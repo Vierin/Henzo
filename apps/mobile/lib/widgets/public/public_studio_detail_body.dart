@@ -1,21 +1,20 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_svg/flutter_svg.dart';
-import 'package:latlong2/latlong.dart';
 import 'package:provider/provider.dart';
 import 'package:share_plus/share_plus.dart';
-
 import '../../constants/colors.dart';
 import '../../constants/layout.dart';
 import '../../l10n/locale_provider.dart';
 import '../../models/training_category_option.dart';
 import '../../services/api_client.dart';
 import '../../services/client_favorites_store.dart';
-import '../../services/client_location_store.dart';
-import '../../utils/formatters.dart';
 import '../../utils/studio_description.dart';
+import '../../utils/studio_public_contacts.dart';
 import '../../widgets/common/henzo_header_back_button.dart';
 import '../../widgets/public/cached_salon_network_image.dart';
+import '../../widgets/public/studio_contact_row.dart';
+import '../../widgets/public/studio_review_card.dart';
 import '../../screens/client_studio_reviews_screen.dart';
 import '../../screens/public_studio_schedule_screen.dart';
 
@@ -46,21 +45,11 @@ class _PublicStudioDetailBodyState extends State<PublicStudioDetailBody> {
   ];
 
   List<TrainingCategoryOption> _allCategories = [];
-  final PageController _reviewPageController = PageController();
-  int _reviewPageIndex = 0;
 
   @override
   void initState() {
     super.initState();
     _loadCategories();
-    _reviewPageController.addListener(_onReviewPage);
-  }
-
-  void _onReviewPage() {
-    final i = _reviewPageController.page?.round() ?? 0;
-    if (i != _reviewPageIndex && mounted) {
-      setState(() => _reviewPageIndex = i);
-    }
   }
 
   Future<void> _loadCategories() async {
@@ -82,13 +71,6 @@ class _PublicStudioDetailBodyState extends State<PublicStudioDetailBody> {
         () => _allCategories = TrainingCategoryOption.withOtherLast(list),
       );
     } catch (_) {}
-  }
-
-  @override
-  void dispose() {
-    _reviewPageController.removeListener(_onReviewPage);
-    _reviewPageController.dispose();
-    super.dispose();
   }
 
   List<String> _studioPhotoUrls() {
@@ -189,25 +171,16 @@ class _PublicStudioDetailBodyState extends State<PublicStudioDetailBody> {
     await Share.share('Check out $name on Henzo');
   }
 
-  double? _distanceKmFromClient(ClientLocationStore loc) {
-    if (loc.lat == null || loc.lon == null) return null;
-    final lat = (widget.studio['latitude'] as num?)?.toDouble();
-    final lon = (widget.studio['longitude'] as num?)?.toDouble();
-    if (lat == null || lon == null) return null;
-    const d = Distance();
-    final meters = d.as(
-      LengthUnit.Meter,
-      LatLng(loc.lat!, loc.lon!),
-      LatLng(lat, lon),
-    );
-    return meters / 1000.0;
-  }
-
-  void _copyAddress(BuildContext context, String address) {
+  void _copyAddress(BuildContext context, String address, String copiedMsg) {
     Clipboard.setData(ClipboardData(text: address));
     ScaffoldMessenger.of(
       context,
-    ).showSnackBar(const SnackBar(content: Text('Address copied')));
+    ).showSnackBar(SnackBar(content: Text(copiedMsg)));
+  }
+
+  String _compactRatingLabel(double avgRating, int count) {
+    final rating = avgRating.toStringAsFixed(1).replaceAll('.', ',');
+    return '$rating ($count)';
   }
 
   void _openSchedule() {
@@ -241,27 +214,27 @@ class _PublicStudioDetailBodyState extends State<PublicStudioDetailBody> {
     final locale = context.watch<LocaleProvider>();
     final localeCode = locale.localeCode;
     final t = (String k) => locale.t('clientStudioDetail.$k');
-    final seeAll = locale.t('clientHome.seeAll');
+    final reviewsSeeMore = t('reviewsSeeMore');
     final reviewsEmpty = locale.t('dashboard.reviewsEmpty');
+    final descriptionLabel = locale.t(
+      'clientClassDetail.descriptionSectionLabel',
+    );
 
     final studio = widget.studio;
     final photoUrls = _studioPhotoUrls();
     final name = (studio['name'] ?? 'Studio').toString();
-    final address = (studio['address'] ?? '').toString();
+    final address = (studio['address'] ?? '').toString().trim();
     final description = resolveStudioDescription(studio, localeCode);
     final reviews = _parsedReviews();
     final avgRating = _averageRating(reviews);
-    final ratingLabel = avgRating > 0
-        ? t('reviewsRating')
-              .replaceAll('{rating}', avgRating.toStringAsFixed(1))
-              .replaceAll('{count}', '${reviews.length}')
+    final reviewCount = reviews.length;
+    final compactRating = avgRating > 0
+        ? _compactRatingLabel(avgRating, reviewCount)
         : null;
     final categoryIds = _studioCategoryIds();
+    final contacts = studioPublicContactsFromMap(studio);
     final topInset = MediaQuery.paddingOf(context).top;
-    final locStore = context.watch<ClientLocationStore>();
-    final distanceLabel = formatDistanceKmLabel(
-      _distanceKmFromClient(locStore),
-    );
+    final addressCopiedMsg = t('addressCopied');
 
     return Scaffold(
       backgroundColor: AppColors.backgroundSecondary,
@@ -280,11 +253,13 @@ class _PublicStudioDetailBodyState extends State<PublicStudioDetailBody> {
                 sliver: SliverList(
                   delegate: SliverChildListDelegate([
                     Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+                      crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
                         Expanded(
                           child: Text(
                             name,
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
                             style: const TextStyle(
                               fontSize: 22,
                               fontWeight: FontWeight.w800,
@@ -294,147 +269,110 @@ class _PublicStudioDetailBodyState extends State<PublicStudioDetailBody> {
                             ),
                           ),
                         ),
-                        const SizedBox(width: 8),
-                        Consumer<ClientFavoritesStore>(
-                          builder: (context, fav, _) {
-                            final sid = (studio['id'] ?? '').toString();
-                            final isFavorite = fav.isFavorite(sid);
-                            return Material(
-                              color: Colors.transparent,
-                              child: InkWell(
-                                customBorder: const CircleBorder(),
-                                onTap: widget.isFavoriteLoading
-                                    ? null
-                                    : widget.onToggleFavorite,
-                                child: Padding(
-                                  padding: const EdgeInsets.all(4),
-                                  child: widget.isFavoriteLoading
-                                      ? const SizedBox(
-                                          width: 22,
-                                          height: 22,
-                                          child: CircularProgressIndicator(
-                                            strokeWidth: 2,
-                                          ),
-                                        )
-                                      : Icon(
-                                          isFavorite
-                                              ? Icons.favorite
-                                              : Icons.favorite_border,
-                                          size: 26,
-                                          color: const Color(0xFFFF5D7A),
-                                        ),
-                                ),
+                        if (compactRating != null) ...[
+                          const SizedBox(width: 10),
+                          Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Icon(
+                                Icons.star_rounded,
+                                size: 16,
+                                color: Color(0xFFFFB800),
                               ),
-                            );
-                          },
-                        ),
-                      ],
-                    ),
-                    if (address.isNotEmpty ||
-                        ratingLabel != null ||
-                        distanceLabel != null) ...[
-                      const SizedBox(height: 2),
-                      if (address.isNotEmpty || distanceLabel != null)
-                        Row(
-                          crossAxisAlignment: CrossAxisAlignment.center,
-                          children: [
-                            SvgPicture.asset(
-                              'assets/icons/icon-pin.svg',
-                              width: 12,
-                              height: 16,
-                            ),
-                            const SizedBox(width: 4),
-                            Expanded(
-                              child: Text(
-                                distanceLabel != null
-                                    ? '$name · $distanceLabel'
-                                    : name,
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
+                              const SizedBox(width: 4),
+                              Text(
+                                compactRating,
                                 style: const TextStyle(
                                   fontSize: 13,
                                   fontWeight: FontWeight.w500,
                                   color: AppColors.textSecondary,
                                 ),
                               ),
+                            ],
+                          ),
+                        ],
+                      ],
+                    ),
+                    if (address.isNotEmpty) ...[
+                      const SizedBox(height: 12),
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Padding(
+                            padding: const EdgeInsets.only(top: 2),
+                            child: SvgPicture.asset(
+                              'assets/icons/icon-pin.svg',
+                              width: 14,
+                              height: 18,
                             ),
-                          ],
-                        ),
-                      if (ratingLabel != null) ...[
-                        const SizedBox(height: 6),
-                        Row(
-                          children: [
-                            const Icon(
-                              Icons.star_rounded,
-                              size: 16,
-                              color: Color(0xFFFFB800),
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: LayoutBuilder(
+                              builder: (context, constraints) {
+                                final addressWidth = constraints.maxWidth * 0.8;
+                                return Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      name,
+                                      style: const TextStyle(
+                                        fontSize: 15,
+                                        fontWeight: FontWeight.w700,
+                                        color: AppColors.textPrimary,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 4),
+                                    SizedBox(
+                                      width: addressWidth,
+                                      child: Text(
+                                        address,
+                                        style: const TextStyle(
+                                          fontSize: 13,
+                                          height: 1.35,
+                                          color: AppColors.textSecondary,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                );
+                              },
                             ),
-                            const SizedBox(width: 2),
-                            Text(
-                              ratingLabel,
-                              style: const TextStyle(
-                                fontSize: 13,
-                                fontWeight: FontWeight.w600,
-                                color: AppColors.textPrimary,
+                          ),
+                          InkWell(
+                            onTap: () => _copyAddress(
+                              context,
+                              address,
+                              addressCopiedMsg,
+                            ),
+                            borderRadius: BorderRadius.circular(6),
+                            child: Padding(
+                              padding: const EdgeInsets.only(
+                                left: 8,
+                                top: 2,
+                                right: 4,
+                              ),
+                              child: SvgPicture.asset(
+                                'assets/icons/icon-copy.svg',
+                                width: 18,
+                                height: 18,
+                                fit: BoxFit.contain,
+                                excludeFromSemantics: true,
+                                colorFilter: const ColorFilter.mode(
+                                  AppColors.textPrimary,
+                                  BlendMode.srcIn,
+                                ),
                               ),
                             ),
-                          ],
-                        ),
-                      ],
-                    ],
-                    if (description.isNotEmpty) ...[
-                      const SizedBox(height: 14),
-                      _StudioDescriptionSection(
-                        description: description,
-                        readMoreLabel: t('readMore'),
-                        readLessLabel: t('readLess'),
+                          ),
+                        ],
                       ),
                     ],
-                    if (categoryIds.isNotEmpty) ...[
-                      const SizedBox(height: 14),
-                      SizedBox(
-                        height: 32,
-                        child: ListView.separated(
-                          scrollDirection: Axis.horizontal,
-                          itemCount: categoryIds.length,
-                          separatorBuilder: (_, __) => const SizedBox(width: 8),
-                          itemBuilder: (_, index) {
-                            final id = categoryIds[index];
-                            final opt = _categoryById(id);
-                            if (opt != null) {
-                              final bg = opt.backgroundColor();
-                              return _CategoryChip(
-                                label: opt.label(localeCode),
-                                bg: bg,
-                                fg: opt.foregroundColorOn(bg),
-                                outlined: opt.isOtherCategory,
-                              );
-                            }
-                            final services = studio['services'] as List?;
-                            Map<String, dynamic>? catMap;
-                            if (services != null) {
-                              for (final s in services) {
-                                if (s is! Map) continue;
-                                final tc = s['trainingCategory'];
-                                if (tc is Map &&
-                                    (tc['id'] as num?)?.toInt() == id) {
-                                  catMap = Map<String, dynamic>.from(tc);
-                                  break;
-                                }
-                              }
-                            }
-                            final palette =
-                                _categoryChipPalette[index %
-                                    _categoryChipPalette.length];
-                            return _CategoryChip(
-                              label: catMap != null
-                                  ? _categoryLabel(catMap, localeCode)
-                                  : 'Category',
-                              bg: palette.$1,
-                              fg: palette.$2,
-                            );
-                          },
-                        ),
+                    if (contacts.isNotEmpty) ...[
+                      const SizedBox(height: 16),
+                      StudioContactRow(
+                        contacts: contacts,
+                        onContactTap: launchStudioPublicContact,
                       ),
                     ],
                     const SizedBox(height: 16),
@@ -505,174 +443,104 @@ class _PublicStudioDetailBodyState extends State<PublicStudioDetailBody> {
                         ),
                       ),
                     ),
-                    if (address.isNotEmpty) ...[
-                      const SizedBox(height: 16),
-                      Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Container(
-                            width: 30,
-                            height: 30,
-                            decoration: const BoxDecoration(
-                              color: Color(0xFFFFEB3B),
-                              shape: BoxShape.circle,
-                            ),
-                            child: Center(
-                              child: SvgPicture.asset(
-                                'assets/icons/icon-pin-simple.svg',
-                                width: 10,
-                                height: 14,
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: 16),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  name,
-                                  style: const TextStyle(
-                                    fontSize: 15,
-                                    fontWeight: FontWeight.w700,
-                                    color: AppColors.textPrimary,
-                                  ),
-                                ),
-                                const SizedBox(height: 4),
-                                Text(
-                                  address,
-                                  style: const TextStyle(
-                                    fontSize: 13,
-                                    height: 1.3,
-                                    color: AppColors.textSecondary,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                          InkWell(
-                            onTap: () => _copyAddress(context, address),
-                            borderRadius: BorderRadius.circular(6),
-                            child: Padding(
-                              padding: const EdgeInsets.only(
-                                left: 8,
-                                top: 2,
-                                right: 8,
-                              ),
-                              child: SvgPicture.asset(
-                                'assets/icons/icon-copy.svg',
-                                width: 18,
-                                height: 18,
-                                fit: BoxFit.contain,
-                                excludeFromSemantics: true,
-                                colorFilter: const ColorFilter.mode(
-                                  AppColors.textTertiary,
-                                  BlendMode.srcIn,
-                                ),
-                              ),
-                            ),
-                          ),
-                        ],
+                    if (description.isNotEmpty) ...[
+                      const SizedBox(height: 24),
+                      Text(
+                        descriptionLabel,
+                        style: const TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                          letterSpacing: 0.4,
+                          color: AppColors.textPrimary,
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(13),
+                        decoration: BoxDecoration(
+                          color: AppColors.backgroundPrimary,
+                          borderRadius: BorderRadius.circular(14),
+                        ),
+                        child: _StudioDescriptionSection(
+                          description: description,
+                          readMoreLabel: t('readMore'),
+                          readLessLabel: t('readLess'),
+                        ),
                       ),
                     ],
-                    const SizedBox(height: 20),
-                    Container(
-                      padding: const EdgeInsets.fromLTRB(14, 14, 14, 16),
-                      decoration: BoxDecoration(
-                        color: AppColors.backgroundPrimary,
-                        borderRadius: BorderRadius.circular(16),
+                    if (categoryIds.isNotEmpty) ...[
+                      const SizedBox(height: 20),
+                      SizedBox(
+                        height: 32,
+                        child: ListView.separated(
+                          scrollDirection: Axis.horizontal,
+                          itemCount: categoryIds.length,
+                          separatorBuilder: (_, __) => const SizedBox(width: 8),
+                          itemBuilder: (_, index) {
+                            final id = categoryIds[index];
+                            final opt = _categoryById(id);
+                            if (opt != null) {
+                              final bg = opt.backgroundColor();
+                              return _CategoryChip(
+                                label: opt.label(localeCode),
+                                bg: bg,
+                                fg: opt.foregroundColorOn(bg),
+                                outlined: opt.isOtherCategory,
+                              );
+                            }
+                            final services = studio['services'] as List?;
+                            Map<String, dynamic>? catMap;
+                            if (services != null) {
+                              for (final s in services) {
+                                if (s is! Map) continue;
+                                final tc = s['trainingCategory'];
+                                if (tc is Map &&
+                                    (tc['id'] as num?)?.toInt() == id) {
+                                  catMap = Map<String, dynamic>.from(tc);
+                                  break;
+                                }
+                              }
+                            }
+                            final palette =
+                                _categoryChipPalette[index %
+                                    _categoryChipPalette.length];
+                            return _CategoryChip(
+                              label: catMap != null
+                                  ? _categoryLabel(catMap, localeCode)
+                                  : 'Category',
+                              bg: palette.$1,
+                              fg: palette.$2,
+                            );
+                          },
+                        ),
                       ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: [
-                          Row(
-                            children: [
-                              Expanded(
-                                child: Text(
-                                  t('reviewsTitle'),
-                                  style: const TextStyle(
-                                    fontSize: 17,
-                                    fontWeight: FontWeight.w800,
-                                    color: AppColors.textPrimary,
-                                  ),
-                                ),
-                              ),
-                              if (reviews.isNotEmpty)
-                                InkWell(
-                                  onTap: () =>
-                                      _openAllReviews(reviews, avgRating),
-                                  child: Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      Text(
-                                        seeAll,
-                                        style: const TextStyle(
-                                          fontSize: 14,
-                                          fontWeight: FontWeight.w600,
-                                          color: AppColors.primary500,
-                                        ),
-                                      ),
-                                      const Icon(
-                                        Icons.chevron_right_rounded,
-                                        size: 20,
-                                        color: AppColors.primary500,
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                            ],
-                          ),
-                          const SizedBox(height: 12),
-                          if (reviews.isEmpty)
-                            Text(
-                              reviewsEmpty,
-                              style: const TextStyle(
-                                fontSize: 14,
-                                color: AppColors.textSecondary,
-                              ),
-                            )
-                          else ...[
-                            SizedBox(
-                              height: 108,
-                              child: PageView.builder(
-                                controller: _reviewPageController,
-                                itemCount: reviews.length,
-                                itemBuilder: (_, index) {
-                                  return _ReviewCarouselCard(
-                                    review: reviews[index],
-                                    daysAgoTemplate: t('reviewsDaysAgo'),
-                                    hoursAgoTemplate: t('reviewsHoursAgo'),
-                                    justNowLabel: t('reviewsJustNow'),
-                                  );
-                                },
-                              ),
-                            ),
-                            if (reviews.length > 1) ...[
-                              const SizedBox(height: 10),
-                              Row(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: List.generate(reviews.length, (i) {
-                                  final active = i == _reviewPageIndex;
-                                  return Container(
-                                    width: active ? 8 : 6,
-                                    height: active ? 8 : 6,
-                                    margin: const EdgeInsets.symmetric(
-                                      horizontal: 3,
-                                    ),
-                                    decoration: BoxDecoration(
-                                      shape: BoxShape.circle,
-                                      color: active
-                                          ? AppColors.primary500
-                                          : AppColors.neutral300,
-                                    ),
-                                  );
-                                }),
-                              ),
-                            ],
-                          ],
-                        ],
-                      ),
+                    ],
+                    const SizedBox(height: 44),
+                    StudioReviewsSectionHeader(
+                      title: t('reviewsTitle'),
+                      seeMoreLabel: reviewsSeeMore,
+                      avgRating: avgRating,
+                      reviewCount: reviewCount,
+                      onSeeMore: reviews.isNotEmpty
+                          ? () => _openAllReviews(reviews, avgRating)
+                          : null,
                     ),
+                    const SizedBox(height: 10),
+                    if (reviews.isEmpty)
+                      Text(
+                        reviewsEmpty,
+                        style: const TextStyle(
+                          fontSize: 14,
+                          color: AppColors.textSecondary,
+                        ),
+                      )
+                    else
+                      StudioReviewCard(
+                        review: reviews.first,
+                        readMoreLabel: t('readMore'),
+                        readLessLabel: t('readLess'),
+                      ),
                   ]),
                 ),
               ),
@@ -688,48 +556,93 @@ class _PublicStudioDetailBodyState extends State<PublicStudioDetailBody> {
           Positioned(
             top: topInset + 8,
             right: 12,
-            child: Material(
-              color: AppColors.backgroundPrimary,
-              borderRadius: BorderRadius.circular(18),
-              child: InkWell(
-                onTap: () => _shareStudio(name),
-                borderRadius: BorderRadius.circular(18),
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 7,
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      SvgPicture.asset(
-                        'assets/icons/icon-share.svg',
-                        width: 15,
-                        height: 11,
-                        fit: BoxFit.contain,
-                        excludeFromSemantics: true,
-                        colorFilter: const ColorFilter.mode(
-                          AppColors.textPrimary,
-                          BlendMode.srcIn,
-                        ),
-                      ),
-                      const SizedBox(width: 4),
-                      Text(
-                        t('share'),
-                        style: const TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w600,
-                          letterSpacing: -0.2,
-                          color: AppColors.textPrimary,
-                        ),
-                      ),
-                    ],
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Consumer<ClientFavoritesStore>(
+                  builder: (context, fav, _) {
+                    final sid = (studio['id'] ?? '').toString();
+                    final isFavorite = fav.isFavorite(sid);
+                    return _HeroOverlayButton(
+                      color: AppColors.primary500,
+                      onTap: widget.isFavoriteLoading
+                          ? null
+                          : widget.onToggleFavorite,
+                      child: widget.isFavoriteLoading
+                          ? const SizedBox(
+                              width: 18,
+                              height: 18,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: Colors.white,
+                              ),
+                            )
+                          : isFavorite
+                          ? const Icon(
+                              Icons.favorite,
+                              size: 18,
+                              color: Colors.white,
+                            )
+                          : SvgPicture.asset(
+                              'assets/icons/icon-heart.svg',
+                              width: 18,
+                              height: 18,
+                              colorFilter: const ColorFilter.mode(
+                                Colors.white,
+                                BlendMode.srcIn,
+                              ),
+                            ),
+                    );
+                  },
+                ),
+                const SizedBox(width: 8),
+                _HeroOverlayButton(
+                  onTap: () => _shareStudio(name),
+                  child: SvgPicture.asset(
+                    'assets/icons/icon-share.svg',
+                    width: 16,
+                    height: 12,
+                    fit: BoxFit.contain,
+                    excludeFromSemantics: true,
+                    colorFilter: const ColorFilter.mode(
+                      AppColors.textPrimary,
+                      BlendMode.srcIn,
+                    ),
                   ),
                 ),
-              ),
+              ],
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _HeroOverlayButton extends StatelessWidget {
+  const _HeroOverlayButton({
+    required this.child,
+    this.onTap,
+    this.color = AppColors.backgroundPrimary,
+  });
+
+  final Widget child;
+  final VoidCallback? onTap;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: HenzoHeaderBackButton.size,
+      height: HenzoHeaderBackButton.size,
+      child: Material(
+        color: color,
+        shape: const CircleBorder(),
+        child: InkWell(
+          onTap: onTap,
+          customBorder: const CircleBorder(),
+          child: Center(child: child),
+        ),
       ),
     );
   }
@@ -866,7 +779,7 @@ class _StudioDescriptionSectionState extends State<_StudioDescriptionSection> {
   static const _textStyle = TextStyle(
     fontSize: 14,
     height: 1.4,
-    color: AppColors.textSecondary,
+    color: AppColors.textPrimary,
   );
 
   bool _expanded = false;
@@ -959,121 +872,6 @@ class _CategoryChip extends StatelessWidget {
         label,
         style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: fg),
       ),
-    );
-  }
-}
-
-class _ReviewCarouselCard extends StatelessWidget {
-  const _ReviewCarouselCard({
-    required this.review,
-    required this.daysAgoTemplate,
-    required this.hoursAgoTemplate,
-    required this.justNowLabel,
-  });
-
-  final Map<String, dynamic> review;
-  final String daysAgoTemplate;
-  final String hoursAgoTemplate;
-  final String justNowLabel;
-
-  @override
-  Widget build(BuildContext context) {
-    final rating = (review['rating'] as num?)?.toDouble() ?? 0;
-    final comment = (review['comment'] ?? '').toString().trim();
-    final user = review['user'];
-    final name = user is Map ? (user['name'] ?? '').toString().trim() : '';
-    final displayName = name.isNotEmpty ? name : '—';
-    final created = DateTime.tryParse((review['createdAt'] ?? '').toString());
-    final when = formatRelativeReviewDateLabel(
-      created,
-      daysAgoTemplate: daysAgoTemplate,
-      hoursAgoTemplate: hoursAgoTemplate,
-      justNowLabel: justNowLabel,
-    );
-    final initial = displayName == '—'
-        ? '?'
-        : displayName.characters.first.toUpperCase();
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            CircleAvatar(
-              radius: 20,
-              backgroundColor: AppColors.secondary200,
-              child: Text(
-                initial,
-                style: const TextStyle(
-                  fontWeight: FontWeight.w700,
-                  color: AppColors.textPrimary,
-                ),
-              ),
-            ),
-            const SizedBox(width: 10),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Expanded(
-                        child: Text(
-                          displayName,
-                          style: const TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w700,
-                            color: AppColors.textPrimary,
-                          ),
-                        ),
-                      ),
-                      if (when.isNotEmpty)
-                        Text(
-                          when,
-                          style: const TextStyle(
-                            fontSize: 12,
-                            color: AppColors.textTertiary,
-                          ),
-                        ),
-                    ],
-                  ),
-                  Row(
-                    children: [
-                      const Icon(
-                        Icons.star_rounded,
-                        size: 14,
-                        color: Color(0xFFFFB800),
-                      ),
-                      const SizedBox(width: 2),
-                      Text(
-                        rating.toStringAsFixed(1),
-                        style: const TextStyle(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w600,
-                          color: AppColors.textPrimary,
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-        if (comment.isNotEmpty) ...[
-          const SizedBox(height: 8),
-          Text(
-            comment,
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-            style: const TextStyle(
-              fontSize: 14,
-              height: 1.35,
-              color: AppColors.textSecondary,
-            ),
-          ),
-        ],
-      ],
     );
   }
 }
