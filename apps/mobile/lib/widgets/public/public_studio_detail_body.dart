@@ -215,7 +215,6 @@ class _PublicStudioDetailBodyState extends State<PublicStudioDetailBody> {
     final localeCode = locale.localeCode;
     final t = (String k) => locale.t('clientStudioDetail.$k');
     final reviewsSeeMore = t('reviewsSeeMore');
-    final reviewsEmpty = locale.t('dashboard.reviewsEmpty');
     final descriptionLabel = locale.t(
       'clientClassDetail.descriptionSectionLabel',
     );
@@ -516,31 +515,22 @@ class _PublicStudioDetailBodyState extends State<PublicStudioDetailBody> {
                         ),
                       ),
                     ],
-                    const SizedBox(height: 44),
-                    StudioReviewsSectionHeader(
-                      title: t('reviewsTitle'),
-                      seeMoreLabel: reviewsSeeMore,
-                      avgRating: avgRating,
-                      reviewCount: reviewCount,
-                      onSeeMore: reviews.isNotEmpty
-                          ? () => _openAllReviews(reviews, avgRating)
-                          : null,
-                    ),
-                    const SizedBox(height: 10),
-                    if (reviews.isEmpty)
-                      Text(
-                        reviewsEmpty,
-                        style: const TextStyle(
-                          fontSize: 14,
-                          color: AppColors.textSecondary,
-                        ),
-                      )
-                    else
+                    if (reviews.isNotEmpty) ...[
+                      const SizedBox(height: 24),
+                      StudioReviewsSectionHeader(
+                        title: t('reviewsTitle'),
+                        seeMoreLabel: reviewsSeeMore,
+                        avgRating: avgRating,
+                        reviewCount: reviewCount,
+                        onSeeMore: () => _openAllReviews(reviews, avgRating),
+                      ),
+                      const SizedBox(height: 10),
                       StudioReviewCard(
                         review: reviews.first,
                         readMoreLabel: t('readMore'),
                         readLessLabel: t('readLess'),
                       ),
+                    ],
                   ]),
                 ),
               ),

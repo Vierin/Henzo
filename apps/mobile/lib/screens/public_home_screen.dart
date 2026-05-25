@@ -622,6 +622,10 @@ class _PublicHomeScreenState extends State<PublicHomeScreen> {
               if (studio.photoUrl != null && studio.photoUrl!.isNotEmpty)
                 'photos': [studio.photoUrl],
               'avgRating': studio.rating,
+              if (studio.categories.isNotEmpty) ...{
+                'categories': studio.categories,
+                'categoryNames': studio.categories,
+              },
             },
           );
     if (!mounted) return;

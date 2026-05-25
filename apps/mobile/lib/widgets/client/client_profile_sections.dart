@@ -36,10 +36,9 @@ class ClientProfileHeader extends StatelessWidget {
         Expanded(
           child: Text(
             title,
-            style: BrandTypography.greeting(context).copyWith(
-              fontSize: 28,
-              fontWeight: FontWeight.w700,
-            ),
+            style: BrandTypography.greeting(
+              context,
+            ).copyWith(fontSize: 28, fontWeight: FontWeight.w700),
           ),
         ),
         Material(
@@ -90,10 +89,9 @@ class ClientProfileUserRow extends StatelessWidget {
         CircleAvatar(
           radius: 32,
           backgroundColor: AppColors.brandAccent.withValues(alpha: 0.2),
-          backgroundImage:
-              avatarUrl != null && avatarUrl!.isNotEmpty
-                  ? NetworkImage(avatarUrl!)
-                  : null,
+          backgroundImage: avatarUrl != null && avatarUrl!.isNotEmpty
+              ? NetworkImage(avatarUrl!)
+              : null,
           child: avatarUrl == null || avatarUrl!.isEmpty
               ? Text(
                   initial,
@@ -224,11 +222,7 @@ class ClientProfileStatItem {
     required IconData icon,
     required String value,
     required String label,
-  }) => ClientProfileStatItem._(
-    icon: icon,
-    value: value,
-    label: label,
-  );
+  }) => ClientProfileStatItem._(icon: icon, value: value, label: label);
 
   factory ClientProfileStatItem.svg({
     required String asset,
@@ -292,10 +286,7 @@ class _StatCell extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          SizedBox(
-            height: 20,
-            child: Center(child: iconWidget),
-          ),
+          SizedBox(height: 20, child: Center(child: iconWidget)),
           const SizedBox(height: 8),
           Text(
             item.value,
@@ -368,16 +359,16 @@ class ClientProfileHealthSection extends StatelessWidget {
       children: [
         ClientSectionHeader(title: title, bottomPadding: 12),
         Container(
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.fromLTRB(12, 12, 12, 8),
           decoration: BoxDecoration(
             color: AppColors.backgroundPrimary,
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadius.circular(14),
           ),
           child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               Row(
-                crossAxisAlignment: CrossAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Container(
                     width: 44,
@@ -410,8 +401,8 @@ class ClientProfileHealthSection extends StatelessWidget {
                         Text(
                           connectSubtitle,
                           style: const TextStyle(
-                            fontSize: 12,
-                            height: 1.35,
+                            fontSize: 11,
+                            height: 1.3,
                             color: AppColors.textSecondary,
                           ),
                         ),
@@ -424,7 +415,6 @@ class ClientProfileHealthSection extends StatelessWidget {
                     isFullySynced: isFullySynced,
                     needsInstall: needsInstall,
                     connectLabel: connectLabel,
-                    secureLabel: secureLabel,
                     onConnect: onConnect,
                     onRefresh: onRefresh,
                   ),
@@ -470,6 +460,32 @@ class ClientProfileHealthSection extends StatelessWidget {
                   ),
                 ),
               ],
+              const SizedBox(height: 12),
+              SizedBox(
+                width: double.infinity,
+                child: Wrap(
+                  alignment: WrapAlignment.center,
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  spacing: 6,
+                  runSpacing: 4,
+                  children: [
+                    const Icon(
+                      Icons.lock_outline_rounded,
+                      size: 12,
+                      color: AppColors.textTertiary,
+                    ),
+                    Text(
+                      secureLabel,
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(
+                        fontSize: 11,
+                        height: 1.3,
+                        color: AppColors.textTertiary,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
             ],
           ),
         ),
@@ -494,7 +510,6 @@ class _HealthConnectActionColumn extends StatelessWidget {
     required this.isFullySynced,
     required this.needsInstall,
     required this.connectLabel,
-    required this.secureLabel,
     required this.onConnect,
     required this.onRefresh,
   });
@@ -503,7 +518,6 @@ class _HealthConnectActionColumn extends StatelessWidget {
   final bool isFullySynced;
   final bool needsInstall;
   final String connectLabel;
-  final String secureLabel;
   final VoidCallback onConnect;
   final VoidCallback onRefresh;
 
@@ -513,43 +527,8 @@ class _HealthConnectActionColumn extends StatelessWidget {
   Widget build(BuildContext context) {
     return SizedBox(
       width: _columnWidth,
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          SizedBox(
-            height: 36,
-            child: Center(child: _actionControl()),
-          ),
-          const SizedBox(height: 8),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Padding(
-                padding: EdgeInsets.only(top: 1),
-                child: Icon(
-                  Icons.lock_outline_rounded,
-                  size: 12,
-                  color: AppColors.textTertiary,
-                ),
-              ),
-              const SizedBox(width: 4),
-              Expanded(
-                child: Text(
-                  secureLabel,
-                  textAlign: TextAlign.center,
-                  style: const TextStyle(
-                    fontSize: 10,
-                    height: 1.25,
-                    color: AppColors.textTertiary,
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
+      height: 36,
+      child: Center(child: _actionControl()),
     );
   }
 
@@ -576,10 +555,7 @@ class _HealthConnectActionColumn extends StatelessWidget {
         ),
         child: Text(
           needsInstall ? 'Install' : connectLabel,
-          style: const TextStyle(
-            fontSize: 13,
-            fontWeight: FontWeight.w600,
-          ),
+          style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
         ),
       );
     }
@@ -654,99 +630,6 @@ class _HealthMetric extends StatelessWidget {
             ),
           ],
         ),
-      ),
-    );
-  }
-}
-
-class ClientProfileNotificationsBanner extends StatelessWidget {
-  const ClientProfileNotificationsBanner({
-    super.key,
-    required this.title,
-    required this.subtitle,
-    required this.actionLabel,
-    required this.onTap,
-  });
-
-  final String title;
-  final String subtitle;
-  final String actionLabel;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: AppColors.backgroundPrimary,
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            width: 44,
-            height: 44,
-            decoration: BoxDecoration(
-              color: AppColors.primary50,
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: const Icon(
-              Icons.notifications_outlined,
-              color: AppColors.primary500,
-              size: 22,
-            ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: const TextStyle(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w600,
-                    color: AppColors.textPrimary,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  subtitle,
-                  style: const TextStyle(
-                    fontSize: 12,
-                    height: 1.35,
-                    color: AppColors.textSecondary,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          InkWell(
-            onTap: onTap,
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Flexible(
-                  child: Text(
-                    actionLabel,
-                    textAlign: TextAlign.right,
-                    style: const TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
-                      color: AppColors.primary500,
-                    ),
-                  ),
-                ),
-                const Icon(
-                  Icons.chevron_right_rounded,
-                  size: 18,
-                  color: AppColors.primary500,
-                ),
-              ],
-            ),
-          ),
-        ],
       ),
     );
   }

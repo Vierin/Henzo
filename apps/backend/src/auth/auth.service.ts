@@ -1772,7 +1772,15 @@ export class AuthService {
               name: true,
               price: true,
               duration: true,
-              // Убираем description при необходимости — не нужны для списка
+              trainingCategoryId: true,
+              trainingCategory: {
+                select: {
+                  id: true,
+                  name_en: true,
+                  name_vn: true,
+                  name_ru: true,
+                },
+              },
             },
           },
           Review: {
@@ -1787,6 +1795,7 @@ export class AuthService {
 
       const studioIds = studios.map((s: { id: string }) => s.id);
       const categoriesByStudio = new Map<string, string[]>();
+      const categoryIdsByStudio = new Map<string, number[]>();
 
       if (studioIds.length > 0) {
         const categoryData = await this.prisma.training.findMany({
@@ -1829,6 +1838,10 @@ export class AuthService {
             sid,
             pairs.map((p) => p.label),
           );
+          categoryIdsByStudio.set(
+            sid,
+            pairs.map((p) => p.id),
+          );
         }
       }
 
@@ -1846,6 +1859,7 @@ export class AuthService {
           avgRating,
           reviewCount: studio.Review.length,
           categories: categoriesByStudio.get(studio.id) ?? [],
+          trainingCategoryIds: categoryIdsByStudio.get(studio.id) ?? [],
         };
       });
 

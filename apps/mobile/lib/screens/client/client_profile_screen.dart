@@ -7,6 +7,7 @@ import '../../constants/colors.dart';
 import '../../constants/layout.dart';
 import '../../l10n/locale_provider.dart';
 import '../../models/public_studio_preview.dart';
+import '../../models/training_category_option.dart';
 import '../../services/api_client.dart';
 import '../../services/auth_service.dart';
 import '../../services/client_favorites_mutations.dart';
@@ -47,22 +48,36 @@ class _ClientProfileScreenState extends State<ClientProfileScreen>
   bool _healthPermissionDenied = true;
   bool _healthNeedsInstall = false;
 
+  List<TrainingCategoryOption> _trainingCategories = [];
+
   @override
   void initState() {
     super.initState();
     _loadStats();
+    _loadTrainingCategories();
     _restoreHealthIfAlreadyAuthorized();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
       context.read<ClientFavoritesStore>().sync(
             context.read<AuthService>().accessToken,
-            force: false,
+            force: true,
           );
     });
   }
 
   @override
   bool get wantKeepAlive => true;
+
+  Future<void> _loadTrainingCategories() async {
+    try {
+      final raw = await ApiClient.get('/trainings/categories', null);
+      if (!mounted) return;
+      setState(
+        () => _trainingCategories =
+            TrainingCategoryOption.listFromApiResponse(raw),
+      );
+    } catch (_) {}
+  }
 
   Future<void> _loadStats({bool force = false}) async {
     if (!force &&
@@ -240,8 +255,15 @@ class _ClientProfileScreenState extends State<ClientProfileScreen>
     }
   }
 
-  PublicStudioPreview _studioPreview(Map<String, dynamic> studio) {
-    return parsePublicStudioPreviewFromNearby(studio);
+  PublicStudioPreview _studioPreview(
+    Map<String, dynamic> studio,
+    String localeCode,
+  ) {
+    return parsePublicStudioPreviewFromNearby(
+      studio,
+      localeCode: localeCode,
+      categoryOptions: _trainingCategories,
+    );
   }
 
   @override
@@ -367,7 +389,10 @@ class _ClientProfileScreenState extends State<ClientProfileScreen>
                       scrollDirection: Axis.horizontal,
                       itemCount: favorites.length,
                       itemBuilder: (_, index) {
-                        final studio = _studioPreview(favorites[index]);
+                        final studio = _studioPreview(
+                          favorites[index],
+                          locale.localeCode,
+                        );
                         return TopStudioCard(
                           homeLayout: true,
                           studio: studio,
@@ -389,19 +414,6 @@ class _ClientProfileScreenState extends State<ClientProfileScreen>
                       },
                     ),
                   ),
-                const SizedBox(height: 16),
-                ClientProfileNotificationsBanner(
-                  title: t('notificationsTitle'),
-                  subtitle: t('notificationsSubtitle'),
-                  actionLabel: t('manageNotifications'),
-                  onTap: () {
-                    Navigator.of(context).push(
-                      MaterialPageRoute<void>(
-                        builder: (_) => const ClientProfileSettingsScreen(),
-                      ),
-                    );
-                  },
-                ),
               ],
             ),
           ),

@@ -604,6 +604,8 @@ class ClientSearchScreenState extends State<ClientSearchScreen>
               'address': studio.address,
               if (imageUrl != null && imageUrl.isNotEmpty) 'photos': [imageUrl],
               'avgRating': studio.rating,
+              if (studio.categoryNames.isNotEmpty)
+                'categoryNames': studio.categoryNames,
             },
           );
     if (!mounted) return;
