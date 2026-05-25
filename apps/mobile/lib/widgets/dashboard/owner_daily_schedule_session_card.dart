@@ -265,7 +265,7 @@ class OwnerDailyScheduleSessionCard extends StatelessWidget {
                       Row(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          if (showLocationPin) ...[
+                          if (showSubtitleLeadingIcon) ...[
                             _scheduleLocationPin(),
                             const SizedBox(width: 4),
                           ],

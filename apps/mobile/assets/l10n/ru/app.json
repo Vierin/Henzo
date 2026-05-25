@@ -141,7 +141,20 @@
 		"removed": "Удалено из избранного",
 		"removeError": "Не удалось удалить"
 	},
+	"clientStudioDetail": {
+		"share": "Поделиться",
+		"readMore": "Показать ещё",
+		"readLess": "Свернуть",
+		"viewSchedule": "Расписание",
+		"viewScheduleSubtitle": "Все занятия и слоты",
+		"reviewsTitle": "Отзывы",
+		"reviewsRating": "{rating} ({count} отзывов)",
+		"reviewsDaysAgo": "{count} дн. назад",
+		"reviewsHoursAgo": "{count} ч. назад",
+		"reviewsJustNow": "Только что"
+	},
 	"clientClassDetail": {
+		"descriptionSectionLabel": "ОПИСАНИЕ",
 		"shareInvite": "{name} приглашает вас на «{training}»",
 		"shareInviteWithTrainer": "{name} приглашает вас на «{training}» с тренером {trainer}",
 		"shareJoinMe": "Присоединяйтесь:",

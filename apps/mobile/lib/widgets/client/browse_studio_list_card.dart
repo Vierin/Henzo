@@ -25,7 +25,7 @@ class BrowseStudioListCard extends StatelessWidget {
 
   static const _cardRadius = 12.0;
   static const _imageWidth = 121.0;
-  static const _cardMinHeight = 130.0;
+  static const _cardMinHeight = 145.0;
   static const _todaySlotHeight = 44.0;
   static const _distanceColor = Color(0x993F3F3F);
   static const _locationPurple = Color(0xFF4D39A8);
@@ -80,13 +80,6 @@ class BrowseStudioListCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: AppColors.backgroundPrimary,
         borderRadius: BorderRadius.circular(_cardRadius),
-        boxShadow: const [
-          BoxShadow(
-            color: Color(0x0F000000),
-            blurRadius: 12,
-            offset: Offset(0, 2),
-          ),
-        ],
       ),
       child: Material(
         color: Colors.transparent,
@@ -141,7 +134,7 @@ class BrowseStudioListCard extends StatelessWidget {
                   ),
                   Expanded(
                     child: Padding(
-                      padding: const EdgeInsets.fromLTRB(8, 10, 8, 6),
+                      padding: const EdgeInsets.fromLTRB(8, 10, 8, 4),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
@@ -187,8 +180,8 @@ class BrowseStudioListCard extends StatelessWidget {
                                   padding: const EdgeInsets.only(top: 1),
                                   child: SvgPicture.asset(
                                     'assets/icons/icon-pin.svg',
-                                    width: 10,
-                                    height: 14,
+                                    width: 8,
+                                    height: 11,
                                   ),
                                 ),
                                 const SizedBox(width: 4),
@@ -198,10 +191,10 @@ class BrowseStudioListCard extends StatelessWidget {
                                     maxLines: 2,
                                     overflow: TextOverflow.ellipsis,
                                     style: const TextStyle(
-                                      fontSize: 12,
+                                      fontSize: 11,
                                       fontWeight: FontWeight.w400,
                                       letterSpacing: -0.3,
-                                      color: AppColors.textSecondary,
+                                      color: AppColors.textPrimary,
                                       height: 1.2,
                                     ),
                                   ),
@@ -251,26 +244,25 @@ class BrowseStudioListCard extends StatelessWidget {
                                         : () => onClassTap!(firstClass),
                                   )
                                 : const Align(
-                                    alignment: Alignment.centerLeft,
+                                    alignment: Alignment.center,
                                     child: Text(
                                       'No classes today',
                                       style: TextStyle(
                                         fontSize: 12,
-                                        color: AppColors.textSecondary,
+                                        color: AppColors.textPrimary,
                                       ),
                                     ),
                                   ),
                           ),
                           if (firstClass != null) ...[
-                            const SizedBox(height: 8),
+                            const SizedBox(height: 4),
                             Center(
                               child: InkWell(
                                 onTap: onTap,
-                                borderRadius: BorderRadius.circular(8),
                                 child: Padding(
                                   padding: const EdgeInsets.symmetric(
                                     horizontal: 8,
-                                    vertical: 4,
+                                    vertical: 6,
                                   ),
                                   child: Row(
                                     mainAxisSize: MainAxisSize.min,
@@ -278,16 +270,15 @@ class BrowseStudioListCard extends StatelessWidget {
                                       Text(
                                         seeAllLabel,
                                         style: const TextStyle(
-                                          fontSize: 13,
-                                          fontWeight: FontWeight.w600,
+                                          fontSize: 11,
+                                          fontWeight: FontWeight.w500,
                                           letterSpacing: -0.3,
                                           color: AppColors.primary500,
                                         ),
                                       ),
-                                      const SizedBox(width: 2),
                                       const Icon(
                                         Icons.keyboard_arrow_down_rounded,
-                                        size: 18,
+                                        size: 16,
                                         color: AppColors.primary500,
                                       ),
                                     ],
@@ -469,12 +460,12 @@ class _TodayClassRow extends StatelessWidget {
 
     return Material(
       color: BrowseStudioListCard._classSlotBg,
-      borderRadius: BorderRadius.circular(12),
+      borderRadius: BorderRadius.circular(7),
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(7),
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 8),
+          padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 7),
           child: Row(
             children: [
               Text(

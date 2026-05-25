@@ -141,7 +141,20 @@
 		"removed": "Đã xóa khỏi yêu thích",
 		"removeError": "Không thể xóa"
 	},
+	"clientStudioDetail": {
+		"share": "Chia sẻ",
+		"readMore": "Xem thêm",
+		"readLess": "Thu gọn",
+		"viewSchedule": "Xem lịch",
+		"viewScheduleSubtitle": "Tất cả lớp và khung giờ",
+		"reviewsTitle": "Đánh giá",
+		"reviewsRating": "{rating} ({count} đánh giá)",
+		"reviewsDaysAgo": "{count} ngày trước",
+		"reviewsHoursAgo": "{count} giờ trước",
+		"reviewsJustNow": "Vừa xong"
+	},
 	"clientClassDetail": {
+		"descriptionSectionLabel": "MÔ TẢ",
 		"shareInvite": "{name} mời bạn tham gia \"{training}\"",
 		"shareInviteWithTrainer": "{name} mời bạn tham gia \"{training}\" với HLV {trainer}",
 		"shareJoinMe": "Tham gia cùng tôi:",

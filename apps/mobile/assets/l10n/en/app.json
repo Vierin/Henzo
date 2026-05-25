@@ -141,7 +141,20 @@
 		"removed": "Removed from favorites",
 		"removeError": "Could not remove"
 	},
+	"clientStudioDetail": {
+		"share": "Share",
+		"readMore": "Show more",
+		"readLess": "Read less",
+		"viewSchedule": "View schedule",
+		"viewScheduleSubtitle": "See all classes and slots",
+		"reviewsTitle": "Reviews",
+		"reviewsRating": "{rating} ({count} reviews)",
+		"reviewsDaysAgo": "{count} days ago",
+		"reviewsHoursAgo": "{count} h ago",
+		"reviewsJustNow": "Just now"
+	},
 	"clientClassDetail": {
+		"descriptionSectionLabel": "DESCRIPTION",
 		"shareInvite": "{name} invites you to \"{training}\"",
 		"shareInviteWithTrainer": "{name} invites you to \"{training}\" with {trainer}",
 		"shareJoinMe": "Join me:",

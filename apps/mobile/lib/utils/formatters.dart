@@ -20,6 +20,36 @@ String formatVnd(num value) {
 }
 
 /// Compact price for browse cards: `200K VND`; empty when free/unknown.
+/// Review cards: `2 days ago`, `3 h ago`, or short date when older.
+String formatRelativeReviewDateLabel(
+  DateTime? createdAt, {
+  required String daysAgoTemplate,
+  required String hoursAgoTemplate,
+  required String justNowLabel,
+}) {
+  if (createdAt == null) return '';
+  final local = createdAt.toLocal();
+  final diff = DateTime.now().difference(local);
+  if (diff.inDays >= 7) {
+    String two(int v) => v.toString().padLeft(2, '0');
+    return '${two(local.day)}.${two(local.month)}.${local.year}';
+  }
+  if (diff.inDays >= 1) {
+    return daysAgoTemplate.replaceAll('{count}', '${diff.inDays}');
+  }
+  if (diff.inHours >= 1) {
+    return hoursAgoTemplate.replaceAll('{count}', '${diff.inHours}');
+  }
+  return justNowLabel;
+}
+
+/// Client UI: `1,8 km` or `450 m`.
+String? formatDistanceKmLabel(double? km) {
+  if (km == null) return null;
+  if (km < 1) return '${(km * 1000).round()} m';
+  return '${km.toStringAsFixed(1).replaceAll('.', ',')} km';
+}
+
 String formatCompactVndLabel(double? price) {
   if (price == null || price <= 0) return '';
   final r = price.round();

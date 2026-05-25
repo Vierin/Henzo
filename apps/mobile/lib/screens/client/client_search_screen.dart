@@ -35,7 +35,6 @@ import '../../widgets/client/client_explore_filter_chip.dart';
 import '../../widgets/training/training_category_color_chip.dart';
 
 const int _kExploreHorizonDays = 31;
-const Duration _kExploreStripDebounce = Duration(milliseconds: 1400);
 
 /// Default ?Activities by start time? on Browse: 05:00?22:00.
 const RangeValues _kExploreDefaultTimeRange = RangeValues(300, 1320);
@@ -63,7 +62,6 @@ class ClientSearchScreenState extends State<ClientSearchScreen> {
   final ValueNotifier<DateTime> _stripPagerDayNotifier = ValueNotifier(
     DateTime.now(),
   );
-  Timer? _stripScheduleDebounce;
   final TextEditingController _searchController = TextEditingController();
   String _searchQuery = '';
   ClientLocationStore? _locationStore;
@@ -125,18 +123,12 @@ class ClientSearchScreenState extends State<ClientSearchScreen> {
   @override
   void dispose() {
     _locationStore?.removeListener(_onSharedLocationChanged);
-    _clearStripScheduleDebounceTimer();
     _searchController.removeListener(_onSearchChanged);
     _searchController.dispose();
     _stripDayNotifier.dispose();
     _stripPagerDayNotifier.dispose();
     _dayStripScrollController.dispose();
     super.dispose();
-  }
-
-  void _clearStripScheduleDebounceTimer() {
-    _stripScheduleDebounce?.cancel();
-    _stripScheduleDebounce = null;
   }
 
   void _applyExploreDay(DateTime day) {
@@ -147,15 +139,6 @@ class ClientSearchScreenState extends State<ClientSearchScreen> {
     setState(() {
       _selectedDay = normalized;
       _derivedInputsHash = 0;
-    });
-  }
-
-  void _debounceExploreDay(DateTime day) {
-    _clearStripScheduleDebounceTimer();
-    _stripScheduleDebounce = Timer(_kExploreStripDebounce, () {
-      if (!mounted) return;
-      _applyExploreDay(day);
-      _stripScheduleDebounce = null;
     });
   }
 
@@ -185,7 +168,6 @@ class ClientSearchScreenState extends State<ClientSearchScreen> {
   }
 
   void _goToToday() {
-    _clearStripScheduleDebounceTimer();
     final today = _calendarDateOnly(DateTime.now());
     _scrollBrowseStripToIndex(0, animate: true);
     _applyExploreDay(today);
@@ -204,7 +186,6 @@ class ClientSearchScreenState extends State<ClientSearchScreen> {
     final index = normalized
         .difference(_calendarDateOnly(DateTime.now()))
         .inDays;
-    _clearStripScheduleDebounceTimer();
     _scrollBrowseStripToIndex(index, animate: true);
     _applyExploreDay(normalized);
   }
@@ -2069,13 +2050,6 @@ class ClientSearchScreenState extends State<ClientSearchScreen> {
                     curve: Curves.easeOutCubic,
                   );
                 }
-                final day = _exploreDayAt(index);
-                final normalized = _calendarDateOnly(day);
-                if (CalendarDayPill.isSameDay(day, _stripDayNotifier.value) &&
-                    CalendarDayPill.isSameDay(day, _selectedDay)) {
-                  return false;
-                }
-                _debounceExploreDay(normalized);
               }
               return false;
             },
@@ -2101,10 +2075,7 @@ class ClientSearchScreenState extends State<ClientSearchScreen> {
                       return BrowseDayPill(
                         day: day,
                         selected: selected,
-                        onTap: () {
-                          _clearStripScheduleDebounceTimer();
-                          _applyExploreDay(day);
-                        },
+                        onTap: () => _applyExploreDay(day),
                       );
                     },
                   ),
@@ -2141,42 +2112,50 @@ class ClientSearchScreenState extends State<ClientSearchScreen> {
   }
 
   Widget _browseExpandButton() {
-    return OutlinedButton(
-      onPressed: () {
-        final wasExpanded = _isMonthExpanded;
-        if (!wasExpanded) {
-          _clearStripScheduleDebounceTimer();
-        }
-        setState(() => _isMonthExpanded = !_isMonthExpanded);
-        if (wasExpanded) {
-          WidgetsBinding.instance.addPostFrameCallback((_) {
-            if (!mounted) return;
-            _syncBrowseStripPagerToSelectedDay();
-          });
-        }
-      },
-      style: OutlinedButton.styleFrom(
-        backgroundColor: AppColors.backgroundPrimary,
-        foregroundColor: AppColors.textPrimary,
-        side: BorderSide.none,
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(22)),
-        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          const Icon(
-            Icons.calendar_month_outlined,
-            size: 18,
-            color: AppColors.textPrimary,
+    return Material(
+      color: AppColors.backgroundPrimary,
+      borderRadius: BorderRadius.circular(999),
+      child: InkWell(
+        onTap: () {
+          final wasExpanded = _isMonthExpanded;
+          setState(() => _isMonthExpanded = !_isMonthExpanded);
+          if (wasExpanded) {
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              if (!mounted) return;
+              _syncBrowseStripPagerToSelectedDay();
+            });
+          }
+        },
+        borderRadius: BorderRadius.circular(999),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              SvgPicture.asset(
+                'assets/icons/icon-calendar.svg',
+                width: 13,
+                height: 12,
+                fit: BoxFit.contain,
+                excludeFromSemantics: true,
+                colorFilter: const ColorFilter.mode(
+                  AppColors.textPrimary,
+                  BlendMode.srcIn,
+                ),
+              ),
+              const SizedBox(width: 6),
+              Text(
+                _isMonthExpanded ? 'Collapse' : 'Expand',
+                style: const TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.textPrimary,
+                  height: 1.1,
+                ),
+              ),
+            ],
           ),
-          const SizedBox(width: 6),
-          Text(
-            _isMonthExpanded ? 'Collapse' : 'Expand',
-            style: const TextStyle(fontWeight: FontWeight.w500, fontSize: 14),
-          ),
-        ],
+        ),
       ),
     );
   }
@@ -2448,10 +2427,9 @@ class ClientSearchScreenState extends State<ClientSearchScreen> {
                             itemBuilder: (_, index) {
                               final c = _derivedDayClasses[index];
                               final session = _ownerSessionFromExplore(c);
-                              final multi = c.studioLocationCount > 1;
                               final loc = (c.locationName ?? '').trim();
-                              final showPin = multi && loc.isNotEmpty;
-                              final subtitle = showPin ? loc : c.studioName;
+                              final subtitle =
+                                  loc.isNotEmpty ? loc : c.studioName;
                               final trainerLine = scheduleTrainerLineOrNull(
                                 session,
                                 null,
@@ -2459,9 +2437,10 @@ class ClientSearchScreenState extends State<ClientSearchScreen> {
                               return OwnerDailyScheduleSessionCard(
                                 session: session,
                                 subtitleLabel: subtitle,
-                                showLocationPin: showPin,
+                                showLocationPin: loc.isNotEmpty,
                                 trainerLine: trainerLine,
-                                showSubtitleLeadingIcon: showPin,
+                                showSubtitleLeadingIcon:
+                                    subtitle.isNotEmpty,
                                 dimPastSessions: false,
                                 trailingPriceLabel: c.price != null
                                     ? formatVnd(c.price!)

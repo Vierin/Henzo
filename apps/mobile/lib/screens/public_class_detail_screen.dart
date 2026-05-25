@@ -22,10 +22,6 @@ import '../widgets/session_capacity_card.dart';
 import 'client/class_booking_confirmation_screen.dart';
 import 'public_studio_detail_screen.dart';
 
-const List<BoxShadow> _kClassDetailCardShadow = <BoxShadow>[
-  BoxShadow(color: Color(0x0A000000), blurRadius: 16, offset: Offset(0, 4)),
-];
-
 /// Icon circle (30) + gap (10) — aligns controls with address text.
 const double _kClassDetailMetaTextInset = 40;
 
@@ -214,9 +210,9 @@ class _PublicClassDetailScreenState extends State<PublicClassDetailScreen> {
         );
         return;
       }
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(bookingErrorMessage(locale, e))),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(bookingErrorMessage(locale, e))));
     } finally {
       if (mounted) setState(() => _booking = false);
     }
@@ -476,7 +472,9 @@ class _ClassDetailBody extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final localeCode = context.watch<LocaleProvider>().localeCode;
+    final locale = context.watch<LocaleProvider>();
+    final localeCode = locale.localeCode;
+    final tr = locale.t;
     final training = session['training'] is Map
         ? Map<String, dynamic>.from(session['training'] as Map)
         : <String, dynamic>{};
@@ -536,7 +534,7 @@ class _ClassDetailBody extends StatelessWidget {
     return Column(
       children: [
         Padding(
-          padding: const EdgeInsets.fromLTRB(8, 4, 12, 8),
+          padding: const EdgeInsets.fromLTRB(8, 4, 12, 16),
           child: Row(
             children: [
               HenzoHeaderBackButton(
@@ -547,7 +545,7 @@ class _ClassDetailBody extends StatelessWidget {
                   'Class',
                   textAlign: TextAlign.center,
                   style: TextStyle(
-                    fontSize: 18,
+                    fontSize: 14,
                     fontWeight: FontWeight.w600,
                     color: AppColors.textPrimary,
                   ),
@@ -577,7 +575,7 @@ class _ClassDetailBody extends StatelessWidget {
                   minimumSize: Size.zero,
                   tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(18),
                   ),
                   textStyle: const TextStyle(
                     fontSize: 14,
@@ -632,7 +630,7 @@ class _ClassDetailBody extends StatelessWidget {
                         );
                       },
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: 15),
               SessionCapacityCard(
                 accent: accent,
                 enrolled: booked,
@@ -640,6 +638,16 @@ class _ClassDetailBody extends StatelessWidget {
                 waitlistCount: waitlist,
               ),
               if (trainingDescription.isNotEmpty) ...[
+                const SizedBox(height: 28),
+                Text(
+                  tr('clientClassDetail.descriptionSectionLabel'),
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                    letterSpacing: -0.3,
+                    color: AppColors.textPrimary,
+                  ),
+                ),
                 const SizedBox(height: 12),
                 _TrainingDescriptionCard(body: trainingDescription),
               ],
@@ -686,7 +694,6 @@ class _StudioHeroBanner extends StatelessWidget {
       color: accent,
       borderRadius: BorderRadius.circular(14),
       elevation: 0,
-      shadowColor: Colors.transparent,
       child: InkWell(
         onTap: onTap,
         borderRadius: BorderRadius.circular(14),
@@ -778,9 +785,9 @@ class _StudioHeroBanner extends StatelessWidget {
                 ),
                 alignment: Alignment.center,
                 child: SvgPicture.asset(
-                  'assets/icons/icon-chevron-right.svg',
-                  width: 8,
-                  height: 14,
+                  'assets/icons/icon-arrow-wide.svg',
+                  width: 15,
+                  height: 8,
                   fit: BoxFit.contain,
                   excludeFromSemantics: true,
                   colorFilter: const ColorFilter.mode(
@@ -833,7 +840,6 @@ class _ClassInfoCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: AppColors.backgroundPrimary,
         borderRadius: BorderRadius.circular(14),
-        boxShadow: _kClassDetailCardShadow,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1171,8 +1177,7 @@ class _TrainingDescriptionCard extends StatelessWidget {
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: AppColors.backgroundPrimary,
-        borderRadius: BorderRadius.circular(18),
-        boxShadow: _kClassDetailCardShadow,
+        borderRadius: BorderRadius.circular(14),
       ),
       child: Text(
         body,
@@ -1228,7 +1233,7 @@ class _BookBar extends StatelessWidget {
           foregroundColor: Colors.white,
           padding: const EdgeInsets.symmetric(vertical: 16),
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadius.circular(14),
           ),
         ),
         child: booking
