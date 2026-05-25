@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import '../../widgets/common/henzo_modal.dart';
-import 'package:latlong2/latlong.dart';
 import 'package:provider/provider.dart';
 
 import '../../constants/colors.dart';
@@ -829,26 +828,19 @@ class ClientSearchScreenState extends State<ClientSearchScreen>
     return '${formatMinutesSliderLabel(_timeRange.start)} - ${formatMinutesSliderLabel(_timeRange.end)}';
   }
 
-  String _distanceLabel(double? km) {
-    if (km == null) return '';
-    final text = km.toStringAsFixed(2).replaceAll('.', ',');
-    return '$text km';
-  }
+  String _distanceLabel(double? km) => formatBrowseStudioDistanceLabel(km);
 
   double? _resolvedDistanceKm(
     ExploreStudioItem studio,
     ClientLocationStore loc,
   ) {
-    if (studio.distanceKm != null) return studio.distanceKm;
-    if (loc.lat == null || loc.lon == null) return null;
-    if (studio.lat == null || studio.lng == null) return null;
-    const d = Distance();
-    final meters = d.as(
-      LengthUnit.Meter,
-      LatLng(loc.lat!, loc.lon!),
-      LatLng(studio.lat!, studio.lng!),
+    return resolveStudioDistanceKm(
+      apiDistanceKm: studio.distanceKm,
+      clientLat: loc.lat,
+      clientLon: loc.lon,
+      studioLat: studio.lat,
+      studioLng: studio.lng,
     );
-    return meters / 1000.0;
   }
 
   int _computeDerivedInputsHash() {

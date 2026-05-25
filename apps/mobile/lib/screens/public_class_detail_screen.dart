@@ -10,6 +10,7 @@ import '../constants/layout.dart';
 import '../l10n/locale_provider.dart';
 import '../services/api_client.dart';
 import '../services/auth_service.dart';
+import '../services/client_location_store.dart';
 import '../utils/class_session_link.dart';
 import '../utils/color_hex.dart';
 import '../utils/formatters.dart';
@@ -393,12 +394,6 @@ int _resolveStudioReviewCount(Map<String, dynamic>? studio) {
   return count;
 }
 
-String? _formatDistanceLabel(double? km) {
-  if (km == null) return null;
-  if (km < 1) return '${(km * 1000).round()} m';
-  return '${km.toStringAsFixed(1)} km';
-}
-
 Future<void> _openDirections({
   required BuildContext context,
   required Map<String, dynamic>? studio,
@@ -529,7 +524,26 @@ class _ClassDetailBody extends StatelessWidget {
     final dateLabel = startsAt != null ? _formatClassHeaderDate(startsAt) : '';
 
     final locationTitle = locName.isNotEmpty ? locName : studioName;
-    final distanceLabel = _formatDistanceLabel(distanceKm);
+    final locStore = context.watch<ClientLocationStore>();
+    final apiDistanceKm =
+        distanceKm ?? (studio?['distance'] as num?)?.toDouble();
+    final studioLat =
+        (studio?['latitude'] as num?)?.toDouble() ??
+        (studio?['lat'] as num?)?.toDouble();
+    final studioLng =
+        (studio?['longitude'] as num?)?.toDouble() ??
+        (studio?['lng'] as num?)?.toDouble() ??
+        (studio?['lon'] as num?)?.toDouble();
+    final resolvedKm = resolveStudioDistanceKm(
+      apiDistanceKm: apiDistanceKm,
+      clientLat: locStore.lat,
+      clientLon: locStore.lon,
+      studioLat: studioLat,
+      studioLng: studioLng,
+    );
+    final distanceText = formatBrowseStudioDistanceLabel(resolvedKm);
+    final distanceLabel =
+        distanceText.isEmpty ? null : distanceText;
 
     return Column(
       children: [
@@ -702,19 +716,19 @@ class _StudioHeroBanner extends StatelessWidget {
           child: Row(
             children: [
               Expanded(
-                child: Column(
+                child: Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Row(
-                      crossAxisAlignment: CrossAxisAlignment.center,
-                      children: [
-                        _StudioAvatarBadge(
-                          logoUrl: logoUrl,
-                          initials: initials,
-                        ),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: Text(
+                    _StudioAvatarBadge(
+                      logoUrl: logoUrl,
+                      initials: initials,
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
                             studioName,
                             maxLines: 2,
                             overflow: TextOverflow.ellipsis,
@@ -724,54 +738,54 @@ class _StudioHeroBanner extends StatelessWidget {
                               color: AppColors.textPrimary,
                             ),
                           ),
-                        ),
-                      ],
-                    ),
-                    if (avgRating > 0 ||
-                        reviewCount > 0 ||
-                        distanceLabel != null) ...[
-                      const SizedBox(height: 6),
-                      Row(
-                        children: [
-                          if (avgRating > 0) ...[
-                            const Icon(
-                              Icons.star_rounded,
-                              size: 16,
-                              color: AppColors.textPrimary,
-                            ),
-                            const SizedBox(width: 4),
-                            Text(
-                              avgRating.toStringAsFixed(1),
-                              style: const TextStyle(
-                                fontSize: 13,
-                                fontWeight: FontWeight.w600,
-                                color: AppColors.textPrimary,
-                              ),
-                            ),
-                          ],
-                          if (reviewCount > 0) ...[
-                            const SizedBox(width: 8),
-                            Text(
-                              '$reviewCount reviews',
-                              style: const TextStyle(
-                                fontSize: 13,
-                                color: AppColors.textSecondary,
-                              ),
-                            ),
-                          ],
                           if (distanceLabel != null) ...[
-                            const SizedBox(width: 8),
+                            const SizedBox(height: 4),
                             Text(
                               distanceLabel!,
                               style: const TextStyle(
-                                fontSize: 13,
-                                color: AppColors.textSecondary,
+                                fontSize: 11,
+                                fontWeight: FontWeight.w400,
+                                color: Color(0x663F3F3F),
+                                height: 1.1,
                               ),
+                            ),
+                          ],
+                          if (avgRating > 0 || reviewCount > 0) ...[
+                            const SizedBox(height: 6),
+                            Row(
+                              children: [
+                                if (avgRating > 0) ...[
+                                  const Icon(
+                                    Icons.star_rounded,
+                                    size: 16,
+                                    color: AppColors.textPrimary,
+                                  ),
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    avgRating.toStringAsFixed(1),
+                                    style: const TextStyle(
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.w600,
+                                      color: AppColors.textPrimary,
+                                    ),
+                                  ),
+                                ],
+                                if (reviewCount > 0) ...[
+                                  const SizedBox(width: 8),
+                                  Text(
+                                    '$reviewCount reviews',
+                                    style: const TextStyle(
+                                      fontSize: 13,
+                                      color: AppColors.textSecondary,
+                                    ),
+                                  ),
+                                ],
+                              ],
                             ),
                           ],
                         ],
                       ),
-                    ],
+                    ),
                   ],
                 ),
               ),

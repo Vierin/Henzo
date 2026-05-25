@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_svg/flutter_svg.dart';
@@ -120,8 +122,6 @@ class ClassBookingConfirmationScreen extends StatelessWidget {
 
   String get _gridDate => DateFormat('EEE, MMM d').format(startsAt);
 
-  String get _gridTime => '${formatTime24(startsAt)} · ($durationMin min)';
-
   static Color _resolveCategoryAccent(
     Map<String, dynamic> training,
     Map<String, dynamic> category,
@@ -144,12 +144,12 @@ class ClassBookingConfirmationScreen extends StatelessWidget {
             : AppColors.textInverse);
   }
 
-  String get _costLabel {
-    if (price != null && price! > 0) {
-      return '${formatVnd(price!)} VND';
-    }
+  String get _costPrimary {
+    if (price != null && price! > 0) return formatVnd(price!);
     return 'Free';
   }
+
+  String? get _costMuted => price != null && price! > 0 ? ' VND' : null;
 
   String _shareMessage() {
     final buf = StringBuffer()
@@ -247,10 +247,11 @@ class ClassBookingConfirmationScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final textTheme = GoogleFonts.interTextTheme(Theme.of(context).textTheme);
+    final wixTextTheme = Theme.of(context).textTheme;
+    final ticketTextTheme = GoogleFonts.interTextTheme(wixTextTheme);
 
     return Theme(
-      data: Theme.of(context).copyWith(textTheme: textTheme),
+      data: Theme.of(context).copyWith(textTheme: ticketTextTheme),
       child: Scaffold(
         backgroundColor: AppColors.backgroundBrand,
         body: SafeArea(
@@ -275,24 +276,33 @@ class ClassBookingConfirmationScreen extends StatelessWidget {
                         ),
                         FilledButton.icon(
                           onPressed: _shareBooking,
-                          icon: const Icon(Icons.ios_share_rounded, size: 18),
-                          label: const Text(
-                            'Share',
-                            style: TextStyle(
-                              fontSize: 14,
-                              fontWeight: FontWeight.w600,
+                          icon: SvgPicture.asset(
+                            'assets/icons/icon-share.svg',
+                            width: 16,
+                            height: 12,
+                            fit: BoxFit.contain,
+                            excludeFromSemantics: true,
+                            colorFilter: const ColorFilter.mode(
+                              Colors.white,
+                              BlendMode.srcIn,
                             ),
                           ),
+                          label: const Text('Share'),
                           style: FilledButton.styleFrom(
                             backgroundColor: AppColors.primary500,
-                            foregroundColor: AppColors.textInverse,
+                            foregroundColor: Colors.white,
                             padding: const EdgeInsets.symmetric(
-                              horizontal: 14,
+                              horizontal: 12,
                               vertical: 8,
                             ),
-                            minimumSize: const Size(0, 40),
+                            minimumSize: Size.zero,
+                            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                             shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(20),
+                              borderRadius: BorderRadius.circular(18),
+                            ),
+                            textStyle: const TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w600,
                             ),
                           ),
                         ),
@@ -300,7 +310,7 @@ class ClassBookingConfirmationScreen extends StatelessWidget {
                     ),
                     Text(
                       'Confirmed',
-                      style: textTheme.titleSmall?.copyWith(
+                      style: ticketTextTheme.titleSmall?.copyWith(
                         color: AppColors.textPrimary,
                         fontWeight: FontWeight.w600,
                       ),
@@ -318,46 +328,19 @@ class ClassBookingConfirmationScreen extends StatelessWidget {
                   ),
                   child: Column(
                     children: [
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 14,
-                          vertical: 10,
-                        ),
-                        decoration: BoxDecoration(
-                          color: AppColors.backgroundPrimary,
-                          borderRadius: BorderRadius.circular(18),
-                          boxShadow: const [
-                            BoxShadow(
-                              color: Color(0x0F000000),
-                              blurRadius: 12,
-                              offset: Offset(0, 4),
-                            ),
-                          ],
-                        ),
-                        child: Image.asset(
-                          'assets/icons/icon-rocket.png',
-                          width: 32,
-                          height: 32,
-                          fit: BoxFit.contain,
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-                      Text(
-                        'You\'re in!',
-                        style: textTheme.headlineMedium?.copyWith(
-                          fontWeight: FontWeight.w800,
+                      _BookingConfirmationHero(
+                        titleStyle: wixTextTheme.headlineMedium?.copyWith(
+                          fontWeight: FontWeight.w600,
+                          fontSize: 39,
                           color: AppColors.textPrimary,
                           letterSpacing: -0.5,
                         ),
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        _headerDateLine,
-                        textAlign: TextAlign.center,
-                        style: textTheme.labelLarge?.copyWith(
-                          color: AppColors.textSecondary,
-                          fontWeight: FontWeight.w600,
-                          letterSpacing: 0.6,
+                        dateLine: _headerDateLine,
+                        dateStyle: wixTextTheme.labelLarge?.copyWith(
+                          color: AppColors.textPrimary,
+                          fontSize: 14,
+                          fontWeight: FontWeight.w500,
+                          letterSpacing: -0.2,
                         ),
                       ),
                       const SizedBox(height: 28),
@@ -366,9 +349,11 @@ class ClassBookingConfirmationScreen extends StatelessWidget {
                         accentIcon: accentIcon,
                         classTitle: classTitle,
                         gridDate: _gridDate,
-                        gridTime: _gridTime,
+                        gridTimePrimary: formatTime24(startsAt),
+                        gridTimeMuted: ' · ($durationMin min)',
                         trainerName: trainerName,
-                        costLabel: _costLabel,
+                        costPrimary: _costPrimary,
+                        costMuted: _costMuted,
                         locationTitle: locationTitle,
                         studioAddress: studioAddress,
                         onCopyAddress: studioAddress?.trim().isNotEmpty == true
@@ -405,15 +390,106 @@ class ClassBookingConfirmationScreen extends StatelessWidget {
   }
 }
 
+/// Hero: centered title + rocket/cloud above the “in!” (mockup).
+class _BookingConfirmationHero extends StatelessWidget {
+  const _BookingConfirmationHero({
+    required this.titleStyle,
+    required this.dateLine,
+    required this.dateStyle,
+  });
+
+  final TextStyle? titleStyle;
+  final String dateLine;
+  final TextStyle? dateStyle;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: double.infinity,
+      child: Stack(
+        clipBehavior: Clip.none,
+        alignment: Alignment.topCenter,
+        children: [
+          Padding(
+            padding: const EdgeInsets.only(top: 52),
+            child: Column(
+              children: [
+                Text(
+                  'You\'re in!',
+                  textAlign: TextAlign.center,
+                  style: titleStyle,
+                ),
+                const SizedBox(height: 8),
+                Text(dateLine, textAlign: TextAlign.center, style: dateStyle),
+              ],
+            ),
+          ),
+          Positioned(
+            top: 0,
+            left: 0,
+            right: 0,
+            child: Center(
+              child: Padding(
+                padding: const EdgeInsets.only(left: 155),
+                child: const _RocketOnCloudBadge(),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _RocketOnCloudBadge extends StatelessWidget {
+  const _RocketOnCloudBadge();
+
+  static const _cloudWidth = 96.0;
+  static const _rocketSize = 32.0;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: _cloudWidth,
+      height: 64,
+      child: Stack(
+        clipBehavior: Clip.none,
+        alignment: Alignment.bottomCenter,
+        children: [
+          Image.asset(
+            'assets/cloud.webp',
+            width: _cloudWidth,
+            fit: BoxFit.contain,
+          ),
+          Positioned(
+            top: 6,
+            child: Transform.rotate(
+              angle: 0,
+              child: Image.asset(
+                'assets/icons/icon-rocket.png',
+                width: _rocketSize,
+                height: _rocketSize,
+                fit: BoxFit.contain,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class _BookingTicketCard extends StatelessWidget {
   const _BookingTicketCard({
     required this.accent,
     required this.accentIcon,
     required this.classTitle,
     required this.gridDate,
-    required this.gridTime,
+    required this.gridTimePrimary,
+    required this.gridTimeMuted,
     required this.trainerName,
-    required this.costLabel,
+    required this.costPrimary,
+    this.costMuted,
     required this.locationTitle,
     required this.studioAddress,
     required this.onAddToCalendar,
@@ -425,9 +501,11 @@ class _BookingTicketCard extends StatelessWidget {
   final Color accentIcon;
   final String classTitle;
   final String gridDate;
-  final String gridTime;
+  final String gridTimePrimary;
+  final String gridTimeMuted;
   final String trainerName;
-  final String costLabel;
+  final String costPrimary;
+  final String? costMuted;
   final String locationTitle;
   final String? studioAddress;
   final VoidCallback onAddToCalendar;
@@ -453,21 +531,21 @@ class _BookingTicketCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Padding(
-            padding: const EdgeInsets.fromLTRB(20, 22, 20, 18),
+            padding: const EdgeInsets.fromLTRB(12, 22, 12, 15),
             child: Text(
               classTitle,
               style: const TextStyle(
                 fontSize: 24,
-                fontWeight: FontWeight.w700,
+                fontWeight: FontWeight.w500,
                 color: AppColors.textPrimary,
-                height: 1.15,
+                height: 1.1,
                 letterSpacing: -0.3,
               ),
             ),
           ),
-          const _TicketPerforation(),
+          const _TicketDashedDivider(),
           Padding(
-            padding: const EdgeInsets.fromLTRB(16, 14, 16, 0),
+            padding: const EdgeInsets.fromLTRB(12, 17, 12, 7),
             child: Column(
               children: [
                 Row(
@@ -487,14 +565,16 @@ class _BookingTicketCard extends StatelessWidget {
                         accent: accent,
                         iconColor: accentIcon,
                         icon: Icons.schedule_rounded,
-                        label: gridTime,
+                        svgSize: 16,
+                        label: gridTimePrimary,
+                        mutedSuffix: gridTimeMuted,
                       ),
                     ),
                   ],
                 ),
                 const SizedBox(height: 14),
                 Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+                  crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
                     Expanded(
                       child: _AccentMetaCell(
@@ -510,33 +590,39 @@ class _BookingTicketCard extends StatelessWidget {
                       child: _AccentMetaCell(
                         accent: accent,
                         iconColor: accentIcon,
+                        svgSize: 12,
                         svgAsset: 'assets/icons/icon-card.svg',
-                        label: costLabel,
+                        label: costPrimary,
+                        mutedSuffix: costMuted,
                       ),
                     ),
                   ],
                 ),
-                const SizedBox(height: 16),
-                _LocationRow(
-                  accent: accent,
-                  iconColor: accentIcon,
-                  title: locationTitle,
-                  address: studioAddress,
-                  onCopyAddress: onCopyAddress,
-                ),
               ],
             ),
           ),
-          const SizedBox(height: 18),
-          const _TicketPerforation(),
+          const _TicketSideNotches(),
           Padding(
-            padding: const EdgeInsets.fromLTRB(16, 14, 16, 22),
+            padding: const EdgeInsets.fromLTRB(12, 7, 12, 17),
+            child: _LocationRow(
+              accent: accent,
+              iconColor: accentIcon,
+              title: locationTitle,
+              address: studioAddress,
+              onCopyAddress: onCopyAddress,
+            ),
+          ),
+          const _TicketDashedDivider(),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(12, 17, 12, 17),
             child: Row(
               children: [
                 Expanded(
                   child: _TicketActionButton(
                     onPressed: onAddToCalendar,
-                    icon: Icons.calendar_month_outlined,
+                    svgAsset: 'assets/icons/icon-calendar.svg',
+                    iconWidth: 13,
+                    iconHeight: 12,
                     label: 'Add to calendar',
                   ),
                 ),
@@ -544,7 +630,9 @@ class _BookingTicketCard extends StatelessWidget {
                 Expanded(
                   child: _TicketActionButton(
                     onPressed: onDirections,
-                    icon: Icons.place_outlined,
+                    svgAsset: 'assets/icons/icon-pin-simple.svg',
+                    iconWidth: 10,
+                    iconHeight: 14,
                     label: 'Get directions',
                   ),
                 ),
@@ -560,28 +648,56 @@ class _BookingTicketCard extends StatelessWidget {
 class _TicketActionButton extends StatelessWidget {
   const _TicketActionButton({
     required this.onPressed,
-    required this.icon,
+    required this.svgAsset,
     required this.label,
+    required this.iconWidth,
+    required this.iconHeight,
   });
 
   final VoidCallback onPressed;
-  final IconData icon;
+  final String svgAsset;
   final String label;
+  final double iconWidth;
+  final double iconHeight;
 
   @override
   Widget build(BuildContext context) {
-    return FilledButton.icon(
+    return FilledButton(
       onPressed: onPressed,
-      icon: Icon(icon, size: 18),
-      label: Text(
-        label,
-        style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
-      ),
       style: FilledButton.styleFrom(
         backgroundColor: AppColors.primary500,
         foregroundColor: AppColors.textInverse,
-        padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 8),
+        padding: const EdgeInsets.symmetric(vertical: 7, horizontal: 10),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          SvgPicture.asset(
+            svgAsset,
+            width: iconWidth,
+            height: iconHeight,
+            fit: BoxFit.contain,
+            excludeFromSemantics: true,
+            colorFilter: const ColorFilter.mode(
+              AppColors.textInverse,
+              BlendMode.srcIn,
+            ),
+          ),
+          const SizedBox(width: 6),
+          Flexible(
+            child: Text(
+              label,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(
+                fontWeight: FontWeight.w600,
+                fontSize: 14,
+                color: AppColors.textInverse,
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -592,14 +708,30 @@ class _AccentMetaCell extends StatelessWidget {
     required this.accent,
     required this.iconColor,
     required this.label,
+    this.mutedSuffix,
     this.icon,
     this.svgAsset,
-    this.svgSize = 18,
+    this.svgSize = 14,
   }) : assert(icon != null || svgAsset != null);
+
+  static TextStyle _labelPrimary(BuildContext context) => GoogleFonts.inter(
+    fontSize: 13,
+    fontWeight: FontWeight.w500,
+    color: AppColors.textPrimary,
+    height: 1.3,
+  );
+
+  static TextStyle _labelMuted(BuildContext context) => GoogleFonts.inter(
+    fontSize: 13,
+    fontWeight: FontWeight.w400,
+    color: AppColors.textPrimary.withValues(alpha: 0.4),
+    height: 1.3,
+  );
 
   final Color accent;
   final Color iconColor;
   final String label;
+  final String? mutedSuffix;
   final IconData? icon;
   final String? svgAsset;
   final double svgSize;
@@ -607,7 +739,7 @@ class _AccentMetaCell extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
+      crossAxisAlignment: CrossAxisAlignment.center,
       children: [
         Container(
           width: 30,
@@ -627,15 +759,18 @@ class _AccentMetaCell extends StatelessWidget {
         ),
         const SizedBox(width: 8),
         Expanded(
-          child: Text(
-            label,
-            style: const TextStyle(
-              fontSize: 13,
-              fontWeight: FontWeight.w600,
-              color: AppColors.textPrimary,
-              height: 1.3,
-            ),
-          ),
+          child: mutedSuffix == null
+              ? Text(label, style: _labelPrimary(context))
+              : Text.rich(
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  TextSpan(
+                    children: [
+                      TextSpan(text: label, style: _labelPrimary(context)),
+                      TextSpan(text: mutedSuffix, style: _labelMuted(context)),
+                    ],
+                  ),
+                ),
         ),
       ],
     );
@@ -668,8 +803,8 @@ class _LocationRow extends StatelessWidget {
           decoration: BoxDecoration(color: accent, shape: BoxShape.circle),
           alignment: Alignment.center,
           child: SvgPicture.asset(
-            'assets/icons/icon-pin.svg',
-            width: 14,
+            'assets/icons/icon-pin-simple.svg',
+            width: 10,
             height: 14,
             fit: BoxFit.contain,
             excludeFromSemantics: true,
@@ -685,13 +820,13 @@ class _LocationRow extends StatelessWidget {
                 title,
                 style: const TextStyle(
                   fontSize: 14,
-                  fontWeight: FontWeight.w600,
+                  fontWeight: FontWeight.w500,
                   color: AppColors.textPrimary,
                   height: 1.25,
                 ),
               ),
               if (address != null && address!.isNotEmpty) ...[
-                const SizedBox(height: 4),
+                const SizedBox(height: 2),
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -700,7 +835,7 @@ class _LocationRow extends StatelessWidget {
                         address!,
                         style: const TextStyle(
                           fontSize: 13,
-                          height: 1.35,
+                          height: 1.3,
                           color: AppColors.textSecondary,
                         ),
                       ),
@@ -735,42 +870,67 @@ class _LocationRow extends StatelessWidget {
   }
 }
 
-class _TicketPerforation extends StatelessWidget {
-  const _TicketPerforation();
+/// Ticket tear line color (mockup).
+const _kTicketDashColor = Color(0xFFF4DCBA);
+
+class _TicketDashedDivider extends StatelessWidget {
+  const _TicketDashedDivider();
+
+  @override
+  Widget build(BuildContext context) {
+    return const SizedBox(
+      height: 12,
+      child: Center(
+        child: Padding(
+          padding: EdgeInsets.symmetric(horizontal: 0),
+          child: CustomPaint(
+            size: Size(double.infinity, 1),
+            painter: _DashedDividerPainter(color: _kTicketDashColor),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Side semicircle cutouts only — between meta grid and location block.
+class _TicketSideNotches extends StatelessWidget {
+  const _TicketSideNotches();
+
+  static const _notchDiameter = 24.0;
 
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      height: 28,
+      height: _notchDiameter,
       child: Stack(
         alignment: Alignment.center,
         clipBehavior: Clip.none,
         children: [
-          Positioned(
-            left: 0,
-            right: 0,
-            top: 13,
-            child: CustomPaint(
-              size: const Size(double.infinity, 1),
-              painter: _DashedDividerPainter(color: AppColors.borderPrimary),
-            ),
+          const Positioned(
+            left: -_notchDiameter / 2,
+            top: 0,
+            child: _TicketSideNotch(),
           ),
-          const Positioned(left: -14, top: 2, child: _TicketNotch()),
-          const Positioned(right: -14, top: 2, child: _TicketNotch()),
+          const Positioned(
+            right: -_notchDiameter / 2,
+            top: 0,
+            child: _TicketSideNotch(),
+          ),
         ],
       ),
     );
   }
 }
 
-class _TicketNotch extends StatelessWidget {
-  const _TicketNotch();
+class _TicketSideNotch extends StatelessWidget {
+  const _TicketSideNotch();
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      width: 28,
-      height: 28,
+      width: _TicketSideNotches._notchDiameter,
+      height: _TicketSideNotches._notchDiameter,
       decoration: const BoxDecoration(
         color: AppColors.backgroundBrand,
         shape: BoxShape.circle,
@@ -780,9 +940,10 @@ class _TicketNotch extends StatelessWidget {
 }
 
 class _DashedDividerPainter extends CustomPainter {
-  _DashedDividerPainter({required this.color});
+  const _DashedDividerPainter({required this.color, this.lineInset = 20});
 
   final Color color;
+  final double lineInset;
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -791,14 +952,16 @@ class _DashedDividerPainter extends CustomPainter {
       ..strokeWidth = 1.2;
     const dash = 6.0;
     const gap = 5.0;
-    var x = 20.0;
+    var x = lineInset;
     final y = size.height / 2;
-    while (x < size.width - 20) {
+    final end = size.width - lineInset;
+    while (x < end) {
       canvas.drawLine(Offset(x, y), Offset(x + dash, y), paint);
       x += dash + gap;
     }
   }
 
   @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+  bool shouldRepaint(covariant _DashedDividerPainter oldDelegate) =>
+      oldDelegate.color != color || oldDelegate.lineInset != lineInset;
 }

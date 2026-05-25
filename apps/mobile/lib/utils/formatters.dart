@@ -1,3 +1,5 @@
+import 'package:latlong2/latlong.dart';
+
 /// Shared formatting helpers for client UI (VND, time).
 
 /// API timestamps are UTC ISO strings; convert once for display and filters.
@@ -48,6 +50,33 @@ String? formatDistanceKmLabel(double? km) {
   if (km == null) return null;
   if (km < 1) return '${(km * 1000).round()} m';
   return '${km.toStringAsFixed(1).replaceAll('.', ',')} km';
+}
+
+/// Browse studio cards: API `distance` when present, else Haversine from client.
+double? resolveStudioDistanceKm({
+  double? apiDistanceKm,
+  double? clientLat,
+  double? clientLon,
+  double? studioLat,
+  double? studioLng,
+}) {
+  if (apiDistanceKm != null) return apiDistanceKm;
+  if (clientLat == null || clientLon == null) return null;
+  if (studioLat == null || studioLng == null) return null;
+  const d = Distance();
+  final meters = d.as(
+    LengthUnit.Meter,
+    LatLng(clientLat, clientLon),
+    LatLng(studioLat, studioLng),
+  );
+  return meters / 1000.0;
+}
+
+/// Browse studio list: `1,23 km` (always km, 2 decimals, comma separator).
+String formatBrowseStudioDistanceLabel(double? km) {
+  if (km == null) return '';
+  final text = km.toStringAsFixed(2).replaceAll('.', ',');
+  return '$text km';
 }
 
 String formatCompactVndLabel(double? price) {

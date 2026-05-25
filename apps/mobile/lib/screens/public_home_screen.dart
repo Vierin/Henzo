@@ -5,7 +5,6 @@ import '../widgets/common/henzo_modal.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:geolocator/geolocator.dart';
-import 'package:latlong2/latlong.dart';
 import 'package:provider/provider.dart';
 import '../constants/brand_typography.dart';
 import '../constants/colors.dart';
@@ -142,22 +141,7 @@ class _PublicHomeScreenState extends State<PublicHomeScreen> {
       for (final item in list) {
         if (item is! Map) continue;
         final data = Map<String, dynamic>.from(item);
-        final preview = parsePublicStudioPreviewFromNearby(data);
-        final distanceKm = _distanceKmForStudio(data, preview.distanceKm, loc);
-        mapped.add(
-          preview.distanceKm == distanceKm
-              ? preview
-              : PublicStudioPreview(
-                  id: preview.id,
-                  studioName: preview.studioName,
-                  categories: preview.categories,
-                  rating: preview.rating,
-                  address: preview.address,
-                  distanceKm: distanceKm,
-                  photoUrl: preview.photoUrl,
-                  reviewCount: preview.reviewCount,
-                ),
-        );
+        mapped.add(parsePublicStudioPreviewFromNearby(data));
       }
       if (!mounted) return;
       setState(() {
@@ -177,32 +161,6 @@ class _PublicHomeScreenState extends State<PublicHomeScreen> {
         _studiosLoadError = loadErrorMessage(locale, e);
       });
     }
-  }
-
-  /// Same idea as Explore: use API `distance` when present; otherwise Haversine
-  /// from saved client position + studio coordinates (e.g. featured fallback).
-  double? _distanceKmForStudio(
-    Map<String, dynamic> data,
-    double? apiDistance,
-    ClientLocationStore loc,
-  ) {
-    if (apiDistance != null) return apiDistance;
-    if (loc.lat == null || loc.lon == null) return null;
-    final slat =
-        (data['latitude'] as num?)?.toDouble() ??
-        (data['lat'] as num?)?.toDouble();
-    final slng =
-        (data['longitude'] as num?)?.toDouble() ??
-        (data['lng'] as num?)?.toDouble() ??
-        (data['lon'] as num?)?.toDouble();
-    if (slat == null || slng == null) return null;
-    const d = Distance();
-    final meters = d.as(
-      LengthUnit.Meter,
-      LatLng(loc.lat!, loc.lon!),
-      LatLng(slat, slng),
-    );
-    return meters / 1000.0;
   }
 
   Future<void> _persistLocation({

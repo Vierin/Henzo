@@ -689,6 +689,8 @@
 		"passwordMin8": "Password must be at least 8 characters",
         "instagram": "Instagram",
 		"facebook": "Facebook",
+		"youtube": "YouTube",
+		"tiktok": "TikTok",
 		"whatsApp": "WhatsApp",
 		"telegram": "Telegram",
 		"studioLogo": "Studio logo",

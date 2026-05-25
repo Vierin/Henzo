@@ -6,6 +6,8 @@ class PublicStudioPreview {
     required this.rating,
     required this.address,
     this.distanceKm,
+    this.lat,
+    this.lng,
     this.photoUrl,
     this.reviewCount = 0,
   });
@@ -18,6 +20,8 @@ class PublicStudioPreview {
   final double rating;
   final String address;
   final double? distanceKm;
+  final double? lat;
+  final double? lng;
   final String? photoUrl;
   final int reviewCount;
 

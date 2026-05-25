@@ -50,6 +50,14 @@ PublicStudioPreview parsePublicStudioPreviewFromNearby(
     reviewCount = (data['Review'] as List).length;
   }
 
+  final lat =
+      (data['lat'] as num?)?.toDouble() ??
+      (data['latitude'] as num?)?.toDouble();
+  final lng =
+      (data['lng'] as num?)?.toDouble() ??
+      (data['lon'] as num?)?.toDouble() ??
+      (data['longitude'] as num?)?.toDouble();
+
   return PublicStudioPreview(
     id: (data['id'] ?? '').toString(),
     studioName: studioName.isNotEmpty ? studioName : 'Studio',
@@ -57,6 +65,8 @@ PublicStudioPreview parsePublicStudioPreviewFromNearby(
     rating: rating,
     address: address.isNotEmpty ? address : '—',
     distanceKm: distanceKm,
+    lat: lat,
+    lng: lng,
     photoUrl: photoUrl,
     reviewCount: reviewCount,
   );
