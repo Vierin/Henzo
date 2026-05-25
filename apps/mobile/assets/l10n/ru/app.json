@@ -179,7 +179,8 @@
 		"reviewsRating": "{rating} ({count} отзывов)",
 		"reviewsDaysAgo": "{count} дн. назад",
 		"reviewsHoursAgo": "{count} ч. назад",
-		"reviewsJustNow": "Только что"
+		"reviewsJustNow": "Только что",
+		"reviewsOnCount": "на {count} отзывов"
 	},
 	"clientClassDetail": {
 		"descriptionSectionLabel": "ОПИСАНИЕ",

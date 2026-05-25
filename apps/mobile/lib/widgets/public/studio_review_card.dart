@@ -10,11 +10,13 @@ class StudioReviewCard extends StatefulWidget {
     required this.review,
     required this.readMoreLabel,
     required this.readLessLabel,
+    this.dateLabel,
   });
 
   final Map<String, dynamic> review;
   final String readMoreLabel;
   final String readLessLabel;
+  final String? dateLabel;
 
   @override
   State<StudioReviewCard> createState() => _StudioReviewCardState();
@@ -37,7 +39,8 @@ class _StudioReviewCardState extends State<StudioReviewCard> {
             .trim()
         : null;
     final created = DateTime.tryParse((review['createdAt'] ?? '').toString());
-    final dateLabel = formatReviewDateLabel(created);
+    final resolvedDateLabel =
+        widget.dateLabel ?? formatReviewDateLabel(created);
     final initial = displayName == '—'
         ? '?'
         : displayName.characters.first.toUpperCase();
@@ -98,10 +101,10 @@ class _StudioReviewCardState extends State<StudioReviewCard> {
                         ],
                       ),
                     ),
-                    if (dateLabel.isNotEmpty) ...[
+                    if (resolvedDateLabel.isNotEmpty) ...[
                       const SizedBox(width: 8),
                       Text(
-                        dateLabel,
+                        resolvedDateLabel,
                         style: const TextStyle(
                           fontSize: 12,
                           fontWeight: FontWeight.w400,

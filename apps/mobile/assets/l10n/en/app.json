@@ -179,7 +179,8 @@
 		"reviewsRating": "{rating} ({count} reviews)",
 		"reviewsDaysAgo": "{count} days ago",
 		"reviewsHoursAgo": "{count} h ago",
-		"reviewsJustNow": "Just now"
+		"reviewsJustNow": "Just now",
+		"reviewsOnCount": "on {count} reviews"
 	},
 	"clientClassDetail": {
 		"descriptionSectionLabel": "DESCRIPTION",

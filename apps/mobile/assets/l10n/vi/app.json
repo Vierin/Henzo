@@ -179,7 +179,8 @@
 		"reviewsRating": "{rating} ({count} đánh giá)",
 		"reviewsDaysAgo": "{count} ngày trước",
 		"reviewsHoursAgo": "{count} giờ trước",
-		"reviewsJustNow": "Vừa xong"
+		"reviewsJustNow": "Vừa xong",
+		"reviewsOnCount": "trên {count} đánh giá"
 	},
 	"clientClassDetail": {
 		"descriptionSectionLabel": "MÔ TẢ",
