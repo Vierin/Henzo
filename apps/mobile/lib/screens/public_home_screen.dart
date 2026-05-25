@@ -363,6 +363,25 @@ class _PublicHomeScreenState extends State<PublicHomeScreen> {
     }).toList();
   }
 
+  /// Next client booking for the home "TODAY" hero (today only, not started yet).
+  Map<String, dynamic>? _pickTodayHomeBooking(
+    List<Map<String, dynamic>> upcoming,
+  ) {
+    for (final item in upcoming) {
+      final startsAt = parseApiDateTime(item['startsAt']);
+      if (startsAt != null && _isUpcomingToday(startsAt)) return item;
+    }
+    return null;
+  }
+
+  Map<String, dynamic>? get _todayHomeBookingCard {
+    final booking = _nextBooking;
+    if (booking == null) return null;
+    final startsAt = parseApiDateTime(booking['startsAt']);
+    if (startsAt == null || !_isUpcomingToday(startsAt)) return null;
+    return booking;
+  }
+
   Future<void> _loadClientSchedule(String? token) async {
     if (token == null || token.isEmpty) return;
     try {
@@ -370,7 +389,7 @@ class _PublicHomeScreenState extends State<PublicHomeScreen> {
       final upcoming = ClientScheduleStore.upcomingItems(all);
       if (!mounted) return;
       setState(() {
-        _nextBooking = upcoming.isNotEmpty ? upcoming.first : null;
+        _nextBooking = _pickTodayHomeBooking(upcoming);
       });
     } catch (_) {}
   }
@@ -915,11 +934,11 @@ class _PublicHomeScreenState extends State<PublicHomeScreen> {
                         ),
                 ),
               ),
-              if (_nextBooking != null)
+              if (_todayHomeBookingCard != null)
                 SliverToBoxAdapter(
                   child: Padding(
                     padding: const EdgeInsets.only(top: 16),
-                    child: _buildUpcomingCard(_nextBooking!),
+                    child: _buildUpcomingCard(_todayHomeBookingCard!),
                   ),
                 ),
               SliverToBoxAdapter(

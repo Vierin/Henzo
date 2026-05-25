@@ -127,6 +127,7 @@
 		"upcoming": "Предстоящие",
 		"passes": "Абонементы",
 		"favorites": "Избранное",
+		"cancel": "Отменить",
 		"scheduleLoadFailedTitle": "Не удалось загрузить расписание",
 		"passesLoadFailedTitle": "Не удалось загрузить абонементы",
 		"scheduleEmptyTitle": "Пока нет запланированных занятий",

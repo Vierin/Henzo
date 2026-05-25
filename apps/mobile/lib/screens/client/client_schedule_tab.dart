@@ -189,7 +189,7 @@ class ClientScheduleTabState extends State<ClientScheduleTab>
             trainerLine: presentation.trainerLine,
             showDateAboveTime: true,
             dimPastSessions: false,
-            cancelActionLabel: 'Cancel booking',
+            cancelActionLabel: locale.t('clientActivity.cancel'),
             cancelActionLoading: isCanceling,
             onCancelBooking: canCancel && !isCanceling
                 ? () => _cancelBooking(item)

@@ -127,6 +127,7 @@
 		"upcoming": "Upcoming",
 		"passes": "Passes",
 		"favorites": "Favorites",
+		"cancel": "Cancel",
 		"scheduleLoadFailedTitle": "Failed to load schedule",
 		"passesLoadFailedTitle": "Failed to load passes",
 		"scheduleEmptyTitle": "No classes scheduled yet",

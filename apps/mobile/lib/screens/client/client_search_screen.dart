@@ -48,12 +48,20 @@ class ClientSearchScreen extends StatefulWidget {
   State<ClientSearchScreen> createState() => ClientSearchScreenState();
 }
 
-class ClientSearchScreenState extends State<ClientSearchScreen> {
+class ClientSearchScreenState extends State<ClientSearchScreen>
+    with SingleTickerProviderStateMixin {
   static const _browseLocationBlue = Color(0xFF4D39A8);
+
+  static const double _browseModeOuterRadius = 14;
+  static const double _browseModeInnerRadius = 12;
+  static const double _browseModeInset = 3;
+  static const double _browseModeInnerHeight = 38;
+  static const Duration _browseModeAnimDuration = Duration(milliseconds: 280);
 
   bool _loading = true;
   String? _loadError;
-  bool _showClasses = true;
+  final ValueNotifier<bool> _browseShowClasses = ValueNotifier<bool>(true);
+  late final AnimationController _browseModeController;
   bool _isMonthExpanded = false;
   late DateTime _selectedDay;
   late final ValueNotifier<DateTime> _stripDayNotifier;
@@ -97,6 +105,11 @@ class ClientSearchScreenState extends State<ClientSearchScreen> {
     _stripPagerDayNotifier.value = today;
     _dayStripScrollController = ScrollController();
     _searchController.addListener(_onSearchChanged);
+    _browseModeController = AnimationController(
+      vsync: this,
+      value: 0,
+      duration: _browseModeAnimDuration,
+    );
   }
 
   @override
@@ -128,7 +141,23 @@ class ClientSearchScreenState extends State<ClientSearchScreen> {
     _stripDayNotifier.dispose();
     _stripPagerDayNotifier.dispose();
     _dayStripScrollController.dispose();
+    _browseShowClasses.dispose();
+    _browseModeController.dispose();
     super.dispose();
+  }
+
+  void _setBrowseShowClasses(bool showClasses) {
+    if (_browseShowClasses.value == showClasses &&
+        !_browseModeController.isAnimating) {
+      return;
+    }
+    _browseShowClasses.value = showClasses;
+    _browseModeController.stop();
+    _browseModeController.animateTo(
+      showClasses ? 0 : 1,
+      duration: _browseModeAnimDuration,
+      curve: Curves.easeOutCubic,
+    );
   }
 
   void _applyExploreDay(DateTime day) {
@@ -454,7 +483,7 @@ class ClientSearchScreenState extends State<ClientSearchScreen> {
   /// Home «See all» / shell: Classes vs Studios tab on Browse.
   void applyBrowseListMode({required bool showClasses}) {
     if (!mounted) return;
-    setState(() => _showClasses = showClasses);
+    _setBrowseShowClasses(showClasses);
   }
 
   int _currentRadiusKm() {
@@ -2160,25 +2189,151 @@ class ClientSearchScreenState extends State<ClientSearchScreen> {
     );
   }
 
+  Widget _buildBrowseClassesList(ClientLocationStore locationStore) {
+    return ListView.separated(
+      key: const PageStorageKey<String>('browse-classes'),
+      padding: const EdgeInsets.fromLTRB(12, 4, 12, 8),
+      itemCount: _derivedDayClasses.length,
+      separatorBuilder: (_, __) => const SizedBox(height: 8),
+      itemBuilder: (_, index) {
+        final c = _derivedDayClasses[index];
+        final session = _ownerSessionFromExplore(c);
+        final loc = (c.locationName ?? '').trim();
+        final subtitle = loc.isNotEmpty ? loc : c.studioName;
+        final trainerLine = scheduleTrainerLineOrNull(session, null);
+        return OwnerDailyScheduleSessionCard(
+          session: session,
+          subtitleLabel: subtitle,
+          showLocationPin: loc.isNotEmpty,
+          trainerLine: trainerLine,
+          showSubtitleLeadingIcon: subtitle.isNotEmpty,
+          dimPastSessions: false,
+          trailingPriceLabel:
+              c.price != null ? formatVnd(c.price!) : null,
+          trailingPriceColor: AppColors.textPrimary,
+          bookActionLabel: 'Book',
+          onBookAgain: () => _openExploreClassDetail(c),
+          onTap: () => _openExploreClassDetail(c),
+        );
+      },
+    );
+  }
+
+  Widget _buildBrowseStudiosList(
+    ClientLocationStore locationStore,
+    ClientFavoritesStore favStore,
+  ) {
+    return ListView.separated(
+      key: const PageStorageKey<String>('browse-studios'),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      itemCount: _derivedVisibleStudios.length,
+      separatorBuilder: (_, __) => const SizedBox(height: 8),
+      itemBuilder: (_, index) {
+        final s = _derivedVisibleStudios[index];
+        final todayClasses =
+            _derivedTodayClassesByStudio[s.id] ?? const [];
+        return BrowseStudioListCard(
+          studio: s,
+          todayClasses: todayClasses,
+          trainingCategories: _trainingCategories,
+          distanceLabel: _distanceLabel(
+            _resolvedDistanceKmMemo(s, locationStore),
+          ),
+          isFavorite: favStore.isFavorite(s.id),
+          onTap: () {
+            Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (_) => PublicStudioDetailScreen(studioId: s.id),
+              ),
+            );
+          },
+          onToggleFavorite: () => _toggleBrowseStudioFavorite(s),
+          onClassTap: _openExploreClassDetail,
+        );
+      },
+    );
+  }
+
+  Widget _buildBrowseModeToggler() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 12),
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          color: AppColors.backgroundPrimary,
+          borderRadius: BorderRadius.circular(_browseModeOuterRadius),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(_browseModeInset),
+          child: AnimatedBuilder(
+            animation: _browseModeController,
+            builder: (context, _) {
+              final fraction = _browseModeController.value.clamp(0.0, 1.0);
+              final classesBlend = (1 - fraction).clamp(0.0, 1.0);
+              final studiosBlend = fraction;
+              return LayoutBuilder(
+                builder: (context, constraints) {
+                  final tabWidth = constraints.maxWidth / 2;
+                  return SizedBox(
+                    height: _browseModeInnerHeight,
+                    child: Stack(
+                      clipBehavior: Clip.none,
+                      children: [
+                        Transform.translate(
+                          offset: Offset(fraction * tabWidth, 0),
+                          child: Container(
+                            width: tabWidth,
+                            height: _browseModeInnerHeight,
+                            decoration: BoxDecoration(
+                              color: AppColors.primary500,
+                              borderRadius: BorderRadius.circular(
+                                _browseModeInnerRadius,
+                              ),
+                            ),
+                          ),
+                        ),
+                        Row(
+                          children: [
+                            _browseModeTab(
+                              label: 'Classes',
+                              iconAsset: 'assets/icons/icon-clients.svg',
+                              count: _derivedDayClassesCount,
+                              emphasis: classesBlend,
+                              onTap: () => _setBrowseShowClasses(true),
+                            ),
+                            _browseModeTab(
+                              label: 'Studios',
+                              iconAsset: 'assets/icons/icon-studio.svg',
+                              count: _derivedVisibleStudiosCount,
+                              emphasis: studiosBlend,
+                              onTap: () => _setBrowseShowClasses(false),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  );
+                },
+              );
+            },
+          ),
+        ),
+      ),
+    );
+  }
+
   Widget _browseModeTab({
     required String label,
     required String iconAsset,
     required int count,
-    required bool selected,
+    required double emphasis,
     required VoidCallback onTap,
   }) {
-    final fg = selected ? Colors.white : AppColors.textPrimary;
+    final fg = Color.lerp(AppColors.textPrimary, Colors.white, emphasis)!;
     return Expanded(
       child: GestureDetector(
         onTap: onTap,
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 180),
-          margin: const EdgeInsets.all(3),
+        child: Padding(
           padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 8),
-          decoration: BoxDecoration(
-            color: selected ? AppColors.primary500 : Colors.transparent,
-            borderRadius: BorderRadius.circular(12),
-          ),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
@@ -2358,33 +2513,7 @@ class ClientSearchScreenState extends State<ClientSearchScreen> {
                     ),
                   ),
                   const SizedBox(height: 10),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 12),
-                    child: Container(
-                      decoration: BoxDecoration(
-                        color: AppColors.backgroundPrimary,
-                        borderRadius: BorderRadius.circular(14),
-                      ),
-                      child: Row(
-                        children: [
-                          _browseModeTab(
-                            label: 'Classes',
-                            iconAsset: 'assets/icons/icon-clients.svg',
-                            count: _derivedDayClassesCount,
-                            selected: _showClasses,
-                            onTap: () => setState(() => _showClasses = true),
-                          ),
-                          _browseModeTab(
-                            label: 'Studios',
-                            iconAsset: 'assets/icons/icon-studio.svg',
-                            count: _derivedVisibleStudiosCount,
-                            selected: !_showClasses,
-                            onTap: () => setState(() => _showClasses = false),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
+                  _buildBrowseModeToggler(),
                   const SizedBox(height: 10),
                   SizedBox(
                     height: 40,
@@ -2418,76 +2547,19 @@ class ClientSearchScreenState extends State<ClientSearchScreen> {
                   ),
                   const SizedBox(height: 14),
                   Expanded(
-                    child: _showClasses
-                        ? ListView.separated(
-                            padding: const EdgeInsets.fromLTRB(12, 4, 12, 8),
-                            itemCount: _derivedDayClasses.length,
-                            separatorBuilder: (_, __) =>
-                                const SizedBox(height: 8),
-                            itemBuilder: (_, index) {
-                              final c = _derivedDayClasses[index];
-                              final session = _ownerSessionFromExplore(c);
-                              final loc = (c.locationName ?? '').trim();
-                              final subtitle =
-                                  loc.isNotEmpty ? loc : c.studioName;
-                              final trainerLine = scheduleTrainerLineOrNull(
-                                session,
-                                null,
-                              );
-                              return OwnerDailyScheduleSessionCard(
-                                session: session,
-                                subtitleLabel: subtitle,
-                                showLocationPin: loc.isNotEmpty,
-                                trainerLine: trainerLine,
-                                showSubtitleLeadingIcon:
-                                    subtitle.isNotEmpty,
-                                dimPastSessions: false,
-                                trailingPriceLabel: c.price != null
-                                    ? formatVnd(c.price!)
-                                    : null,
-                                trailingPriceColor: AppColors.textPrimary,
-                                bookActionLabel: 'Book',
-                                onBookAgain: () => _openExploreClassDetail(c),
-                                onTap: () => _openExploreClassDetail(c),
-                              );
-                            },
-                          )
-                        : ListView.separated(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 12,
-                              vertical: 6,
-                            ),
-                            itemCount: _derivedVisibleStudios.length,
-                            separatorBuilder: (_, __) =>
-                                const SizedBox(height: 8),
-                            itemBuilder: (_, index) {
-                              final s = _derivedVisibleStudios[index];
-                              final todayClasses =
-                                  _derivedTodayClassesByStudio[s.id] ??
-                                  const [];
-                              return BrowseStudioListCard(
-                                studio: s,
-                                todayClasses: todayClasses,
-                                trainingCategories: _trainingCategories,
-                                distanceLabel: _distanceLabel(
-                                  _resolvedDistanceKmMemo(s, locationStore),
-                                ),
-                                isFavorite: favStore.isFavorite(s.id),
-                                onTap: () {
-                                  Navigator.of(context).push(
-                                    MaterialPageRoute(
-                                      builder: (_) => PublicStudioDetailScreen(
-                                        studioId: s.id,
-                                      ),
-                                    ),
-                                  );
-                                },
-                                onToggleFavorite: () =>
-                                    _toggleBrowseStudioFavorite(s),
-                                onClassTap: _openExploreClassDetail,
-                              );
-                            },
-                          ),
+                    child: ValueListenableBuilder<bool>(
+                      valueListenable: _browseShowClasses,
+                      builder: (context, showClasses, _) {
+                        return IndexedStack(
+                          index: showClasses ? 0 : 1,
+                          sizing: StackFit.expand,
+                          children: [
+                            _buildBrowseClassesList(locationStore),
+                            _buildBrowseStudiosList(locationStore, favStore),
+                          ],
+                        );
+                      },
+                    ),
                   ),
                 ],
               ),
