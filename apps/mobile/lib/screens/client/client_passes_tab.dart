@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../constants/layout.dart';
+import '../../l10n/locale_provider.dart';
 import '../../services/auth_service.dart';
+import '../../utils/load_error_message.dart';
 import '../../services/client_schedule_store.dart';
 import '../../utils/client_schedule_owner_session.dart';
 import '../../widgets/client/client_leave_review_sheet.dart';
@@ -77,10 +79,11 @@ class _ClientPassesHistoryListState extends State<ClientPassesHistoryList>
       });
     } catch (e) {
       if (!mounted) return;
+      final locale = context.read<LocaleProvider>();
       setState(() {
         _items = const [];
         _loading = false;
-        _error = e.toString();
+        _error = loadErrorMessage(locale, e);
       });
     }
   }
@@ -123,6 +126,7 @@ class _ClientPassesHistoryListState extends State<ClientPassesHistoryList>
   @override
   Widget build(BuildContext context) {
     super.build(context);
+    final locale = context.watch<LocaleProvider>();
     if (_loading) {
       return const Center(child: CircularProgressIndicator());
     }
@@ -131,8 +135,9 @@ class _ClientPassesHistoryListState extends State<ClientPassesHistoryList>
         padding: const EdgeInsets.all(kScreenPaddingHorizontal),
         children: [
           ClientPlaceholderCard(
-            title: 'Failed to load passes',
+            title: locale.t('clientActivity.passesLoadFailedTitle'),
             subtitle: _error!,
+            onRetry: () => _load(force: true),
           ),
         ],
       );
@@ -140,10 +145,10 @@ class _ClientPassesHistoryListState extends State<ClientPassesHistoryList>
     if (_items.isEmpty) {
       return ListView(
         padding: const EdgeInsets.all(kScreenPaddingHorizontal),
-        children: const [
+        children: [
           ClientPlaceholderCard(
-            title: 'No classes yet',
-            subtitle: 'Your class cards will appear here.',
+            title: locale.t('clientActivity.passesEmptyTitle'),
+            subtitle: locale.t('clientActivity.passesEmptySubtitle'),
           ),
         ],
       );

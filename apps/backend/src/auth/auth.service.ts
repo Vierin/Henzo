@@ -1772,7 +1772,15 @@ export class AuthService {
               name: true,
               price: true,
               duration: true,
-              // Убираем description при необходимости — не нужны для списка
+              trainingCategoryId: true,
+              trainingCategory: {
+                select: {
+                  id: true,
+                  name_en: true,
+                  name_vn: true,
+                  name_ru: true,
+                },
+              },
             },
           },
           Review: {
@@ -1785,6 +1793,58 @@ export class AuthService {
         },
       });
 
+      const studioIds = studios.map((s: { id: string }) => s.id);
+      const categoriesByStudio = new Map<string, string[]>();
+      const categoryIdsByStudio = new Map<string, number[]>();
+
+      if (studioIds.length > 0) {
+        const categoryData = await this.prisma.training.findMany({
+          where: {
+            studioId: { in: studioIds },
+            trainingCategoryId: { not: null },
+          },
+          select: {
+            studioId: true,
+            trainingCategoryId: true,
+            trainingCategory: {
+              select: {
+                name_en: true,
+                name_vn: true,
+                name_ru: true,
+              },
+            },
+          },
+          distinct: ['studioId', 'trainingCategoryId'],
+        });
+
+        type Pair = { id: number; label: string };
+        const pairMap = new Map<string, Pair[]>();
+        for (const item of categoryData) {
+          if (!item.trainingCategoryId || !item.trainingCategory) continue;
+          const tc = item.trainingCategory;
+          const label =
+            tc.name_en?.trim() ||
+            tc.name_ru?.trim() ||
+            tc.name_vn?.trim() ||
+            '';
+          if (!label) continue;
+          const list = pairMap.get(item.studioId) ?? [];
+          list.push({ id: item.trainingCategoryId, label });
+          pairMap.set(item.studioId, list);
+        }
+        for (const [sid, pairs] of pairMap) {
+          pairs.sort((a, b) => a.id - b.id);
+          categoriesByStudio.set(
+            sid,
+            pairs.map((p) => p.label),
+          );
+          categoryIdsByStudio.set(
+            sid,
+            pairs.map((p) => p.id),
+          );
+        }
+      }
+
       // Calculate average rating for each studio
       const studiosWithRating = studios.map((studio) => {
         const avgRating =
@@ -1796,7 +1856,10 @@ export class AuthService {
         return {
           ...studio,
           averageRating: avgRating,
+          avgRating,
           reviewCount: studio.Review.length,
+          categories: categoriesByStudio.get(studio.id) ?? [],
+          trainingCategoryIds: categoryIdsByStudio.get(studio.id) ?? [],
         };
       });
 

@@ -5,7 +5,6 @@ import '../widgets/common/henzo_modal.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:geolocator/geolocator.dart';
-import 'package:latlong2/latlong.dart';
 import 'package:provider/provider.dart';
 import '../constants/brand_typography.dart';
 import '../constants/colors.dart';
@@ -22,7 +21,9 @@ import '../services/client_location_store.dart';
 import '../services/client_schedule_store.dart';
 import '../services/mapbox_api_service.dart';
 import '../utils/formatters.dart';
+import '../utils/load_error_message.dart';
 import '../utils/nearby_payload.dart';
+import '../widgets/common/load_error_view.dart';
 import '../services/client_favorites_mutations.dart';
 import '../widgets/app_search_prefix_icon.dart';
 import '../widgets/client/home/client_home_category_chip.dart';
@@ -30,6 +31,7 @@ import '../services/dashboard_api_service.dart';
 import '../widgets/client/home/client_home_upcoming_card.dart';
 import '../utils/owner_session_card_subtitle.dart';
 import '../widgets/dashboard/owner_daily_schedule_session_card.dart';
+import '../widgets/client/client_section_header.dart';
 import '../widgets/public/top_studio_card.dart';
 import 'client/client_shell_scope.dart';
 import 'location_picker_screen.dart';
@@ -63,6 +65,7 @@ class _PublicHomeScreenState extends State<PublicHomeScreen> {
   final TextEditingController _searchController = TextEditingController();
   List<PublicStudioPreview> _allStudios = const [];
   bool _isLoadingStudios = true;
+  String? _studiosLoadError;
   bool _locationModalShown = false;
   ClientLocationStore? _locationStore;
   final Set<String> _favoriteLoadingIds = <String>{};
@@ -114,7 +117,10 @@ class _PublicHomeScreenState extends State<PublicHomeScreen> {
   Future<void> _loadTopStudiosNearby() async {
     if (!mounted) return;
     final loc = context.read<ClientLocationStore>();
-    setState(() => _isLoadingStudios = true);
+    setState(() {
+      _isLoadingStudios = true;
+      _studiosLoadError = null;
+    });
     try {
       final query = StringBuffer('/studios/nearby?limit=50');
       if (loc.lat != null && loc.lon != null) {
@@ -136,65 +142,26 @@ class _PublicHomeScreenState extends State<PublicHomeScreen> {
       for (final item in list) {
         if (item is! Map) continue;
         final data = Map<String, dynamic>.from(item);
-        final preview = parsePublicStudioPreviewFromNearby(data);
-        final distanceKm = _distanceKmForStudio(data, preview.distanceKm, loc);
-        mapped.add(
-          preview.distanceKm == distanceKm
-              ? preview
-              : PublicStudioPreview(
-                  id: preview.id,
-                  studioName: preview.studioName,
-                  categories: preview.categories,
-                  rating: preview.rating,
-                  address: preview.address,
-                  distanceKm: distanceKm,
-                  photoUrl: preview.photoUrl,
-                  reviewCount: preview.reviewCount,
-                ),
-        );
+        mapped.add(parsePublicStudioPreviewFromNearby(data));
       }
       if (!mounted) return;
       setState(() {
         _allStudios = mapped;
         _isLoadingStudios = false;
+        _studiosLoadError = null;
       });
       final token = context.read<AuthService>().accessToken;
       unawaited(context.read<ClientFavoritesStore>().sync(token, force: false));
       unawaited(_loadClientSchedule(token));
       unawaited(_loadTodayClasses());
-    } catch (_) {
+    } catch (e) {
       if (!mounted) return;
+      final locale = context.read<LocaleProvider>();
       setState(() {
-        _allStudios = const [];
         _isLoadingStudios = false;
+        _studiosLoadError = loadErrorMessage(locale, e);
       });
     }
-  }
-
-  /// Same idea as Explore: use API `distance` when present; otherwise Haversine
-  /// from saved client position + studio coordinates (e.g. featured fallback).
-  double? _distanceKmForStudio(
-    Map<String, dynamic> data,
-    double? apiDistance,
-    ClientLocationStore loc,
-  ) {
-    if (apiDistance != null) return apiDistance;
-    if (loc.lat == null || loc.lon == null) return null;
-    final slat =
-        (data['latitude'] as num?)?.toDouble() ??
-        (data['lat'] as num?)?.toDouble();
-    final slng =
-        (data['longitude'] as num?)?.toDouble() ??
-        (data['lng'] as num?)?.toDouble() ??
-        (data['lon'] as num?)?.toDouble();
-    if (slat == null || slng == null) return null;
-    const d = Distance();
-    final meters = d.as(
-      LengthUnit.Meter,
-      LatLng(loc.lat!, loc.lon!),
-      LatLng(slat, slng),
-    );
-    return meters / 1000.0;
   }
 
   Future<void> _persistLocation({
@@ -355,6 +322,25 @@ class _PublicHomeScreenState extends State<PublicHomeScreen> {
     }).toList();
   }
 
+  /// Next client booking for the home "TODAY" hero (today only, not started yet).
+  Map<String, dynamic>? _pickTodayHomeBooking(
+    List<Map<String, dynamic>> upcoming,
+  ) {
+    for (final item in upcoming) {
+      final startsAt = parseApiDateTime(item['startsAt']);
+      if (startsAt != null && _isUpcomingToday(startsAt)) return item;
+    }
+    return null;
+  }
+
+  Map<String, dynamic>? get _todayHomeBookingCard {
+    final booking = _nextBooking;
+    if (booking == null) return null;
+    final startsAt = parseApiDateTime(booking['startsAt']);
+    if (startsAt == null || !_isUpcomingToday(startsAt)) return null;
+    return booking;
+  }
+
   Future<void> _loadClientSchedule(String? token) async {
     if (token == null || token.isEmpty) return;
     try {
@@ -362,7 +348,7 @@ class _PublicHomeScreenState extends State<PublicHomeScreen> {
       final upcoming = ClientScheduleStore.upcomingItems(all);
       if (!mounted) return;
       setState(() {
-        _nextBooking = upcoming.isNotEmpty ? upcoming.first : null;
+        _nextBooking = _pickTodayHomeBooking(upcoming);
       });
     } catch (_) {}
   }
@@ -636,6 +622,10 @@ class _PublicHomeScreenState extends State<PublicHomeScreen> {
               if (studio.photoUrl != null && studio.photoUrl!.isNotEmpty)
                 'photos': [studio.photoUrl],
               'avgRating': studio.rating,
+              if (studio.categories.isNotEmpty) ...{
+                'categories': studio.categories,
+                'categoryNames': studio.categories,
+              },
             },
           );
     if (!mounted) return;
@@ -669,52 +659,12 @@ class _PublicHomeScreenState extends State<PublicHomeScreen> {
     VoidCallback? onAction,
   }) {
     return Padding(
-      padding: screenPaddingH(top: 20, bottom: 10),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Expanded(
-                child: Text(
-                  title.toUpperCase(),
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w500,
-                    letterSpacing: 0.2,
-                    color: AppColors.textPrimary,
-                  ),
-                ),
-              ),
-              if (actionLabel != null && onAction != null)
-                GestureDetector(
-                  onTap: onAction,
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
-                        actionLabel,
-                        style: const TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w600,
-                          color: AppColors.primary500,
-                        ),
-                      ),
-                      const Icon(
-                        Icons.chevron_right_rounded,
-                        size: 20,
-                        color: AppColors.primary500,
-                      ),
-                    ],
-                  ),
-                ),
-            ],
-          ),
-          if (subtitle != null) ...[
-            const SizedBox(height: 2),
-            Text(subtitle, style: BrandTypography.sectionSubtitle(context)),
-          ],
-        ],
+      padding: screenPaddingH(top: 20, bottom: 0),
+      child: ClientSectionHeader(
+        title: title,
+        subtitle: subtitle,
+        actionLabel: actionLabel,
+        onAction: onAction,
       ),
     );
   }
@@ -907,11 +857,11 @@ class _PublicHomeScreenState extends State<PublicHomeScreen> {
                         ),
                 ),
               ),
-              if (_nextBooking != null)
+              if (_todayHomeBookingCard != null)
                 SliverToBoxAdapter(
                   child: Padding(
                     padding: const EdgeInsets.only(top: 16),
-                    child: _buildUpcomingCard(_nextBooking!),
+                    child: _buildUpcomingCard(_todayHomeBookingCard!),
                   ),
                 ),
               SliverToBoxAdapter(
@@ -926,6 +876,12 @@ class _PublicHomeScreenState extends State<PublicHomeScreen> {
                   height: 186,
                   child: _isLoadingStudios
                       ? const Center(child: CircularProgressIndicator())
+                      : _studiosLoadError != null
+                      ? LoadErrorView(
+                          compact: true,
+                          message: _studiosLoadError!,
+                          onRetry: _loadTopStudiosNearby,
+                        )
                       : studios.isEmpty
                       ? Padding(
                           padding: screenPaddingH(),

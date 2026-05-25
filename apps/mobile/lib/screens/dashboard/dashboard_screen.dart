@@ -6,8 +6,11 @@ import '../../constants/colors.dart';
 import '../../constants/layout.dart';
 import '../../l10n/locale_provider.dart';
 import '../../utils/owner_studio_setup_errors.dart';
+import '../../utils/load_error_message.dart';
 import '../../utils/show_api_error.dart';
+import '../../widgets/common/load_error_view.dart';
 import '../../models/salon.dart';
+import '../../models/studio_status.dart';
 import '../../models/user_model.dart';
 import '../../services/auth_service.dart';
 import '../../services/api_client.dart';
@@ -25,7 +28,8 @@ import '../owner_training_session_detail_screen.dart';
 import '../main_shell.dart';
 import '../settings_screen.dart';
 import '../notifications_screen.dart';
-import '../salon_setup_screen.dart';
+import '../public_studio_detail_screen.dart';
+import '../studio_details_screen.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -43,6 +47,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   Salon? _salon;
   StudioOnboardingChecklist? _checklist;
   List<OwnerTrainingSession> _todaySessions = [];
+  String? _sessionsLoadError;
   bool _isPublishing = false;
   SubscriptionRefreshNotifier? _subRefresh;
 
@@ -84,6 +89,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
       final from = DateTime(now.year, now.month, now.day);
       final to = from.add(const Duration(days: 1));
       List<OwnerTrainingSession> sessions = [];
+      String? sessionsLoadError;
       StudioOnboardingChecklist? checklist;
       try {
         final fromUtc = from.toUtc();
@@ -94,8 +100,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
           toUtc: toUtc,
         );
         sessions.sort((a, b) => a.startsAt.compareTo(b.startsAt));
-      } catch (_) {
+      } catch (e) {
         sessions = [];
+        if (mounted) {
+          sessionsLoadError = loadErrorMessage(
+            context.read<LocaleProvider>(),
+            e,
+          );
+        }
       }
       if (salon != null) {
         try {
@@ -112,6 +124,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
           _salon = salon;
           _checklist = checklist;
           _todaySessions = sessions;
+          _sessionsLoadError = sessionsLoadError;
         });
       }
     } catch (e) {
@@ -119,6 +132,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
         setState(() {
           _checklist = null;
           _todaySessions = [];
+          _sessionsLoadError = loadErrorMessage(
+            context.read<LocaleProvider>(),
+            e,
+          );
         });
         if (!isOwnerStudioNotReadyError(e)) {
           showApiError(context, e);
@@ -130,6 +147,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   Future<void> _handleRefresh() async {
     if (!mounted) return;
     context.read<OwnerSessionsCache>().invalidate();
+    context.read<SalonCache>().invalidate();
     await _loadData();
   }
 
@@ -143,42 +161,62 @@ class _DashboardScreenState extends State<DashboardScreen> {
     }
   }
 
-  Future<void> _openSalonSetup() async {
+  Future<void> _openStudioDetails() async {
+    final saved = await Navigator.push<bool>(
+      context,
+      MaterialPageRoute(builder: (_) => const StudioDetailsScreen()),
+    );
+    if (saved == true && mounted) {
+      context.read<SalonCache>().invalidate();
+      context.read<OwnerSessionsCache>().invalidate();
+      await _loadData();
+    }
+  }
+
+  Future<void> _openStudioProfileSettings({
+    StudioProfileFocusTarget? focusTarget,
+  }) async {
     await Navigator.push<void>(
       context,
       MaterialPageRoute(
-        builder: (_) => SalonSetupScreen(
-          onSaved: () {
-            Navigator.pop(context);
-            context.read<SalonCache>().invalidate();
-            context.read<OwnerSessionsCache>().invalidate();
-            _loadData();
-          },
-        ),
+        builder: (_) => SettingsScreen(initialFocusTarget: focusTarget),
       ),
     );
     if (mounted) await _loadData();
   }
 
-  Future<void> _openStudioProfileSettings() async {
-    await Navigator.push<void>(
-      context,
-      MaterialPageRoute(builder: (_) => const SettingsScreen()),
+  Future<void> _previewPublicPage() async {
+    final salon = _salon;
+    if (salon == null) return;
+    await Navigator.of(context).push<void>(
+      MaterialPageRoute<void>(
+        builder: (_) => PublicStudioDetailScreen(studioId: salon.id),
+      ),
     );
-    if (mounted) await _loadData();
   }
 
-  String _humanizeChecklistStep(String key) {
-    switch (key) {
-      case 'hasTraining':
-        return 'create first training';
-      case 'hasPhoto':
-        return 'add studio photo';
-      case 'hasLogo':
-        return 'add studio logo';
-      default:
-        return key;
-    }
+  bool _salonHasDescription(
+    Salon? salon,
+    StudioOnboardingChecklist? checklist,
+  ) {
+    final fromSalon = salon?.description?.trim();
+    if (fromSalon != null && fromSalon.isNotEmpty) return true;
+    return checklist?.hasDescription.completed ?? false;
+  }
+
+  bool _studioDetailsCompleted(Salon? salon) {
+    if (salon == null) return false;
+    final name = salon.name?.trim();
+    final address = salon.address?.trim();
+    return name != null &&
+        name.isNotEmpty &&
+        address != null &&
+        address.isNotEmpty;
+  }
+
+  StudioStatus _studioStatus(Salon? salon, StudioOnboardingChecklist? c) {
+    if (salon != null) return salon.status;
+    return StudioStatus.parse(c?.status);
   }
 
   Future<void> _publishStudio() async {
@@ -190,6 +228,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     try {
       await DashboardApiService.publishStudio(token, salon.id);
       if (!mounted) return;
+      context.read<SalonCache>().invalidate();
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(const SnackBar(content: Text('Studio is now active')));
@@ -738,16 +777,19 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   Widget _checklistBlock() {
-    final needsSalonSetup = _salon == null;
+    final salon = _salon;
     final c = _checklist;
-    if (!needsSalonSetup && c == null) return const SizedBox.shrink();
+    final status = _studioStatus(salon, c);
 
-    final allDone = !needsSalonSetup &&
-        c != null &&
-        c.hasTraining.completed &&
-        c.hasPhoto.completed &&
-        c.contactsConfigured.completed;
-    if (allDone) return const SizedBox.shrink();
+    if (!status.showsOnboarding) return const SizedBox.shrink();
+
+    final studioDetails = _studioDetailsCompleted(salon);
+    final hasTraining = c?.hasTraining.completed ?? false;
+    final hasPhoto = c?.hasPhoto.completed ?? false;
+    final hasLogo = c?.hasLogo.completed ?? false;
+    final contacts = c?.contactsConfigured.completed ?? false;
+    final hasDescription = _salonHasDescription(salon, c);
+    final showOptionalPhase = status == StudioStatus.ready;
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(
@@ -757,24 +799,28 @@ class _DashboardScreenState extends State<DashboardScreen> {
         16,
       ),
       child: OwnerChecklistCard(
-        showSalonSetupStep: needsSalonSetup,
-        salonSetupCompleted: !needsSalonSetup,
-        initiallyExpanded: needsSalonSetup,
-        hasTraining: c?.hasTraining.completed ?? false,
-        hasPhoto: c?.hasPhoto.completed ?? false,
-        hasLogo: c?.hasLogo.completed ?? false,
-        contactsConfigured: c?.contactsConfigured.completed ?? false,
+        studioDetailsCompleted: studioDetails,
+        hasTraining: hasTraining,
+        hasPhoto: hasPhoto,
+        hasLogo: hasLogo,
+        contactsConfigured: contacts,
+        hasDescription: hasDescription,
         canPublish: c?.canPublish ?? false,
-        isStudioActive: c?.status.toUpperCase() == 'ACTIVE',
+        isStudioActive: status.isActive,
         isPublishing: _isPublishing,
-        missingRequiredSteps:
-            c?.missingRequiredSteps.map(_humanizeChecklistStep).toList() ??
-            const <String>[],
-        onSalonSetupTap: _openSalonSetup,
+        showOptionalPhase: showOptionalPhase,
+        showPreviewButton: salon != null,
+        onStudioDetailsTap: _openStudioDetails,
         onCreateTrainingTap: _openTrainingSetup,
         onAddPhotoTap: _openStudioProfileSettings,
         onAddLogoTap: _openStudioProfileSettings,
-        onContactsTap: _openStudioProfileSettings,
+        onContactsTap: () => _openStudioProfileSettings(
+          focusTarget: StudioProfileFocusTarget.contacts,
+        ),
+        onAddDescriptionTap: () => _openStudioProfileSettings(
+          focusTarget: StudioProfileFocusTarget.description,
+        ),
+        onPreviewPublicPageTap: _previewPublicPage,
         onPublishTap: _publishStudio,
       ),
     );
@@ -802,19 +848,34 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 _statsRow(),
                 if (featured != null) _featuredCard(featured),
                 _checklistBlock(),
-                OwnerDailyScheduleBlock(
-                  sessions: _todaySessions,
-                  emptyMessage: 'No trainings scheduled for today',
-                  emptySubtitle: 'Enjoy your day!',
-                  onSeeAll: _salon == null
-                      ? null
-                      : () => context
-                            .findAncestorStateOfType<MainShellState>()
-                            ?.openScheduleTabForToday(),
-                  onSessionTap: _openSessionDetail,
-                  ownerTrainerFallback: _ownerTrainerFallback(),
-                  studioLocations: _studioLocations(context),
-                ),
+                if (_sessionsLoadError != null)
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(
+                      kScreenPaddingHorizontal,
+                      0,
+                      kScreenPaddingHorizontal,
+                      12,
+                    ),
+                    child: LoadErrorView(
+                      compact: true,
+                      message: _sessionsLoadError!,
+                      onRetry: _handleRefresh,
+                    ),
+                  )
+                else
+                  OwnerDailyScheduleBlock(
+                    sessions: _todaySessions,
+                    emptyMessage: 'No trainings scheduled for today',
+                    emptySubtitle: 'Enjoy your day!',
+                    onSeeAll: _salon == null
+                        ? null
+                        : () => context
+                              .findAncestorStateOfType<MainShellState>()
+                              ?.openScheduleTabForToday(),
+                    onSessionTap: _openSessionDetail,
+                    ownerTrainerFallback: _ownerTrainerFallback(),
+                    studioLocations: _studioLocations(context),
+                  ),
                 const SizedBox(height: 16),
               ],
             ),

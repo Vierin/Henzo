@@ -22,11 +22,7 @@ String ownerDailyScheduleTrainerLabel(
 Widget _scheduleLocationPin() {
   return Padding(
     padding: const EdgeInsets.only(top: 1),
-    child: SvgPicture.asset(
-      'assets/icons/icon-pin.svg',
-      width: 11,
-      height: 15,
-    ),
+    child: SvgPicture.asset('assets/icons/icon-pin.svg', width: 11, height: 15),
   );
 }
 
@@ -179,9 +175,8 @@ class OwnerDailyScheduleSessionCard extends StatelessWidget {
     final hasReviewAction = onLeaveReview != null || leaveReviewLoading;
     final hasCancelAction = onCancelBooking != null || cancelActionLoading;
     final showPriceAboveBook = priceText.isNotEmpty && hasBookAction;
-    final trailingInset = (hasBookAction ||
-            hasReviewAction ||
-            hasCancelAction) &&
+    final trailingInset =
+        (hasBookAction || hasReviewAction || hasCancelAction) &&
             !showPriceAboveBook
         ? 8.0
         : 14.0;
@@ -215,7 +210,7 @@ class OwnerDailyScheduleSessionCard extends StatelessWidget {
                           color: AppColors.textTertiary,
                         ),
                       ),
-                      const SizedBox(height: 4),
+                      const SizedBox(height: 8),
                     ],
                     Text(
                       startLabel,
@@ -265,7 +260,7 @@ class OwnerDailyScheduleSessionCard extends StatelessWidget {
                       Row(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          if (showLocationPin) ...[
+                          if (showSubtitleLeadingIcon) ...[
                             _scheduleLocationPin(),
                             const SizedBox(width: 4),
                           ],
@@ -368,7 +363,7 @@ class OwnerDailyScheduleSessionCard extends StatelessWidget {
                           foregroundColor: AppColors.error500,
                           side: const BorderSide(color: AppColors.error500),
                           padding: const EdgeInsets.symmetric(
-                            horizontal: 10,
+                            horizontal: 15,
                             vertical: 8,
                           ),
                           minimumSize: Size.zero,
@@ -387,9 +382,9 @@ class OwnerDailyScheduleSessionCard extends StatelessWidget {
                                 cancelActionLabel,
                                 textAlign: TextAlign.center,
                                 style: const TextStyle(
-                                  fontSize: 12,
+                                  fontSize: 13,
                                   fontWeight: FontWeight.w700,
-                                  height: 1.15,
+                                  height: 1.1,
                                 ),
                               ),
                       ),

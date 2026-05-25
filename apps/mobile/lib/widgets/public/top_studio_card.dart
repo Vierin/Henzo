@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
 import '../../constants/colors.dart';
 import '../../models/public_studio_preview.dart';
+import '../../services/client_location_store.dart';
+import '../../utils/formatters.dart';
 import 'cached_salon_network_image.dart';
 
 class TopStudioCard extends StatelessWidget {
@@ -22,22 +25,29 @@ class TopStudioCard extends StatelessWidget {
   final VoidCallback onTap;
   final bool homeLayout;
 
-  String? get _distanceLabel {
-    final km = studio.distanceKm;
-    if (km == null) return null;
-    if (km < 1) return '${(km * 1000).round()} m';
-    return '${km.toStringAsFixed(1)} km';
+  String? _distanceLabel(BuildContext context) {
+    final loc = context.watch<ClientLocationStore>();
+    final km = resolveStudioDistanceKm(
+      apiDistanceKm: studio.distanceKm,
+      clientLat: loc.lat,
+      clientLon: loc.lon,
+      studioLat: studio.lat,
+      studioLng: studio.lng,
+    );
+    final label = formatBrowseStudioDistanceLabel(km);
+    return label.isEmpty ? null : label;
   }
 
   @override
   Widget build(BuildContext context) {
+    final distanceLabel = _distanceLabel(context);
     if (homeLayout) {
       return _HomeStudioCard(
         studio: studio,
         isFavorite: isFavorite,
         onToggleFavorite: onToggleFavorite,
         onTap: onTap,
-        distanceLabel: _distanceLabel,
+        distanceLabel: distanceLabel,
       );
     }
 
@@ -47,7 +57,7 @@ class TopStudioCard extends StatelessWidget {
       isFavoriteLoading: isFavoriteLoading,
       onToggleFavorite: onToggleFavorite,
       onTap: onTap,
-      distanceLabel: _distanceLabel,
+      distanceLabel: distanceLabel,
     );
   }
 }

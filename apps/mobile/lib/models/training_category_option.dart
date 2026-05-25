@@ -61,12 +61,32 @@ class TrainingCategoryOption {
   factory TrainingCategoryOption.fromJson(Map<String, dynamic> json) {
     return TrainingCategoryOption(
       id: (json['id'] as num).toInt(),
-      nameEn: (json['name_en'] ?? '').toString(),
-      nameRu: (json['name_ru'] ?? '').toString(),
-      nameVn: (json['name_vn'] ?? '').toString(),
-      chipBgHex: (json['chip_bg_hex'] ?? '#6B7280').toString(),
-      chipFgHex: json['chip_fg_hex']?.toString(),
+      nameEn: (json['name_en'] ?? json['nameEn'] ?? '').toString(),
+      nameRu: (json['name_ru'] ?? json['nameRu'] ?? '').toString(),
+      nameVn: (json['name_vn'] ?? json['nameVn'] ?? '').toString(),
+      chipBgHex: (json['chip_bg_hex'] ?? json['chipBgHex'] ?? '#6B7280')
+          .toString(),
+      chipFgHex: json['chip_fg_hex']?.toString() ?? json['chipFgHex']?.toString(),
     );
+  }
+
+  /// Parses GET /trainings/categories (list or `{ data: [...] }`).
+  static List<TrainingCategoryOption> listFromApiResponse(dynamic raw) {
+    final items = raw is List
+        ? raw
+        : (raw is Map && raw['data'] is List
+              ? raw['data'] as List
+              : <dynamic>[]);
+    final out = <TrainingCategoryOption>[];
+    for (final item in items) {
+      if (item is! Map) continue;
+      try {
+        out.add(
+          TrainingCategoryOption.fromJson(Map<String, dynamic>.from(item)),
+        );
+      } catch (_) {}
+    }
+    return withOtherLast(out);
   }
 
   static Color _parseHex(String? raw, Color fallback) {

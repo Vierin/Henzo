@@ -61,7 +61,8 @@ Future<Salon?> persistTrainingLocationDefaultSwap(
     if (salon.description != null) 'description': salon.description,
     'address': address,
     if (salon.phone != null) 'phone': salon.phone,
-    if (salon.email != null) 'email': salon.email,
+    if (salon.email != null && salon.email!.trim().isNotEmpty)
+      'email': salon.email,
     if (salon.website != null) 'website': salon.website,
     if (salon.instagram != null) 'instagram': salon.instagram,
     if (salon.photos != null) 'photos': salon.photos,
@@ -93,7 +94,8 @@ Future<Salon?> _updateSalonReminderSettings(
     if (salon.description != null) 'description': salon.description,
     if (salon.address != null) 'address': salon.address,
     if (salon.phone != null) 'phone': salon.phone,
-    if (salon.email != null) 'email': salon.email,
+    if (salon.email != null && salon.email!.trim().isNotEmpty)
+      'email': salon.email,
     if (salon.website != null) 'website': salon.website,
     if (salon.instagram != null) 'instagram': salon.instagram,
     if (salon.photos != null) 'photos': salon.photos,

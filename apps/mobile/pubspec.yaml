@@ -92,6 +92,7 @@ flutter:
     - assets/.env.production.example
     - assets/icon.png
     - assets/logo.png
+    - assets/cloud.webp
     - assets/icons/
     - assets/public/
     - assets/l10n/en/app.json

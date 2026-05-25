@@ -1,3 +1,5 @@
+import 'package:latlong2/latlong.dart';
+
 /// Shared formatting helpers for client UI (VND, time).
 
 /// API timestamps are UTC ISO strings; convert once for display and filters.
@@ -17,6 +19,85 @@ String formatVnd(num value) {
     if (left > 0 && left % 3 == 0) out.write('.');
   }
   return out.toString();
+}
+
+/// Compact price for browse cards: `200K VND`; empty when free/unknown.
+/// Studio review cards: `12.05.2023`
+String formatReviewDateLabel(DateTime? createdAt) {
+  if (createdAt == null) return '';
+  final local = createdAt.toLocal();
+  String two(int v) => v.toString().padLeft(2, '0');
+  return '${two(local.day)}.${two(local.month)}.${local.year}';
+}
+
+/// Review cards: `2 days ago`, `3 h ago`, or short date when older.
+String formatRelativeReviewDateLabel(
+  DateTime? createdAt, {
+  required String daysAgoTemplate,
+  required String hoursAgoTemplate,
+  required String justNowLabel,
+}) {
+  if (createdAt == null) return '';
+  final local = createdAt.toLocal();
+  final diff = DateTime.now().difference(local);
+  if (diff.inDays >= 7) {
+    String two(int v) => v.toString().padLeft(2, '0');
+    return '${two(local.day)}.${two(local.month)}.${local.year}';
+  }
+  if (diff.inDays >= 1) {
+    return daysAgoTemplate.replaceAll('{count}', '${diff.inDays}');
+  }
+  if (diff.inHours >= 1) {
+    return hoursAgoTemplate.replaceAll('{count}', '${diff.inHours}');
+  }
+  return justNowLabel;
+}
+
+/// Client UI: `1,8 km` or `450 m`.
+String? formatDistanceKmLabel(double? km) {
+  if (km == null) return null;
+  if (km < 1) return '${(km * 1000).round()} m';
+  return '${km.toStringAsFixed(1).replaceAll('.', ',')} km';
+}
+
+/// Browse studio cards: API `distance` when present, else Haversine from client.
+double? resolveStudioDistanceKm({
+  double? apiDistanceKm,
+  double? clientLat,
+  double? clientLon,
+  double? studioLat,
+  double? studioLng,
+}) {
+  if (apiDistanceKm != null) return apiDistanceKm;
+  if (clientLat == null || clientLon == null) return null;
+  if (studioLat == null || studioLng == null) return null;
+  const d = Distance();
+  final meters = d.as(
+    LengthUnit.Meter,
+    LatLng(clientLat, clientLon),
+    LatLng(studioLat, studioLng),
+  );
+  return meters / 1000.0;
+}
+
+/// Browse studio list: `1,23 km` (always km, 2 decimals, comma separator).
+String formatBrowseStudioDistanceLabel(double? km) {
+  if (km == null) return '';
+  final text = km.toStringAsFixed(2).replaceAll('.', ',');
+  return '$text km';
+}
+
+String formatCompactVndLabel(double? price) {
+  if (price == null || price <= 0) return '';
+  final r = price.round();
+  if (r >= 1000) {
+    final k = r / 1000;
+    if (r % 1000 == 0) {
+      return '${k.round()}K VND';
+    }
+    return '${k.toStringAsFixed(1).replaceAll('.', ',')}K VND';
+  }
+  return '${formatVnd(r)} VND';
 }
 
 /// Booking cards: `12.06.26`

@@ -34,10 +34,6 @@ DateTime _dayForPage(int page) {
 
 DateTime _calendarDateOnly(DateTime d) => DateTime(d.year, d.month, d.day);
 
-/// После остановки свайпа по ленте дней — ждём столько же, затем обновляем
-/// активный пилл, заголовок месяца и Daily schedule.
-const Duration _kStripScheduleDebounce = Duration(milliseconds: 1400);
-
 class CalendarScreen extends StatefulWidget {
   const CalendarScreen({super.key});
 
@@ -59,11 +55,6 @@ class CalendarScreenState extends State<CalendarScreen> {
   final ValueNotifier<DateTime> _stripPagerDayNotifier = ValueNotifier(
     _calendarDateOnly(DateTime.now()),
   );
-  Timer? _stripScheduleDebounce;
-
-  /// Пока доезжаем к дню по тапу — игнорируем onPageChanged, иначе промежуточные
-  /// страницы перезапустят debounce и отложат подсветку.
-  bool _suppressStripSchedulePageChanged = false;
   late PageController _dayPagerController;
 
   @override
@@ -128,16 +119,9 @@ class CalendarScreenState extends State<CalendarScreen> {
     _loadData();
   }
 
-  void _clearStripScheduleDebounceTimer() {
-    _stripScheduleDebounce?.cancel();
-    _stripScheduleDebounce = null;
-  }
-
   @override
   void dispose() {
     _sessionsCache?.removeListener(_onOwnerSessionsCacheChanged);
-    _clearStripScheduleDebounceTimer();
-    _suppressStripSchedulePageChanged = false;
     _dayPagerController.removeListener(_onStripPagerScrolled);
     _stripDayNotifier.dispose();
     _scheduleDayNotifier.dispose();
@@ -162,16 +146,6 @@ class CalendarScreenState extends State<CalendarScreen> {
     if (page == null) return;
     final day = _dayForPage(page.round());
     _stripPagerDayNotifier.value = DateTime(day.year, day.month, day.day);
-  }
-
-  /// Один таймер на подсветку пилла + расписание (только после свайпа ленты).
-  void _debounceStripAndScheduleDay(DateTime day) {
-    _clearStripScheduleDebounceTimer();
-    _stripScheduleDebounce = Timer(_kStripScheduleDebounce, () {
-      _stripDayNotifier.value = day;
-      _scheduleDayNotifier.value = day;
-      _stripScheduleDebounce = null;
-    });
   }
 
   Future<void> _onPullRefresh() async {
@@ -310,7 +284,6 @@ class CalendarScreenState extends State<CalendarScreen> {
   /// [afterBuild]: вызвать после кадра, если [PageView] ещё не в дереве (сворачивание месяца).
   void _jumpToDay(DateTime day, {bool afterBuild = false}) {
     final normalized = DateTime(day.year, day.month, day.day);
-    _clearStripScheduleDebounceTimer();
     _stripDayNotifier.value = normalized;
     _scheduleDayNotifier.value = normalized;
     _stripPagerDayNotifier.value = normalized;
@@ -323,18 +296,9 @@ class CalendarScreenState extends State<CalendarScreen> {
         });
         return;
       }
-      _suppressStripSchedulePageChanged = true;
       _dayPagerController.jumpToPage(_pageForDay(normalized));
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (!mounted) return;
-        _clearStripScheduleDebounceTimer();
-        _syncStripPagerDayFromController();
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          if (mounted) {
-            _suppressStripSchedulePageChanged = false;
-            _clearStripScheduleDebounceTimer();
-          }
-        });
+        if (mounted) _syncStripPagerDayFromController();
       });
     }
 
@@ -478,19 +442,6 @@ class CalendarScreenState extends State<CalendarScreen> {
         child: PageView.builder(
           controller: _dayPagerController,
           physics: const SmoothDayPageScrollPhysics(),
-          onPageChanged: (page) {
-            final day = _dayForPage(page);
-            final normalized = DateTime(day.year, day.month, day.day);
-            if (_stripPagerDayNotifier.value != normalized) {
-              _stripPagerDayNotifier.value = normalized;
-            }
-            if (_suppressStripSchedulePageChanged) return;
-            if (_isSameDay(day, _stripDayNotifier.value) &&
-                _isSameDay(day, _scheduleDayNotifier.value)) {
-              return;
-            }
-            _debounceStripAndScheduleDay(day);
-          },
           itemBuilder: (context, index) {
             final day = _dayForPage(index);
             final sessionsCount = _sessionCountByDay[_dayKey(day)] ?? 0;
@@ -507,26 +458,7 @@ class CalendarScreenState extends State<CalendarScreen> {
                     selected: selected,
                     sessionsCount: sessionsCount,
                     isToday: isToday,
-                    onTap: () {
-                      _clearStripScheduleDebounceTimer();
-                      final normalized = DateTime(day.year, day.month, day.day);
-                      _stripDayNotifier.value = normalized;
-                      _scheduleDayNotifier.value = normalized;
-                      _stripPagerDayNotifier.value = normalized;
-                      _suppressStripSchedulePageChanged = true;
-                      _dayPagerController
-                          .animateToPage(
-                            index,
-                            duration: const Duration(milliseconds: 300),
-                            curve: Curves.easeOutCubic,
-                          )
-                          .whenComplete(() {
-                            if (mounted) {
-                              _suppressStripSchedulePageChanged = false;
-                              _syncStripPagerDayFromController();
-                            }
-                          });
-                    },
+                    onTap: () => _jumpToDay(day),
                   ),
                 );
               },
@@ -561,9 +493,6 @@ class CalendarScreenState extends State<CalendarScreen> {
     return OutlinedButton(
       onPressed: () {
         final wasExpanded = _isMonthExpanded;
-        if (!wasExpanded) {
-          _clearStripScheduleDebounceTimer();
-        }
         setState(() => _isMonthExpanded = !_isMonthExpanded);
         if (wasExpanded) {
           WidgetsBinding.instance.addPostFrameCallback((_) {

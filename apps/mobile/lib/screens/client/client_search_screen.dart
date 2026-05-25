@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import '../../widgets/common/henzo_modal.dart';
-import 'package:latlong2/latlong.dart';
 import 'package:provider/provider.dart';
 
 import '../../constants/colors.dart';
@@ -19,7 +18,9 @@ import '../../services/client_favorites_mutations.dart';
 import '../../services/client_favorites_store.dart';
 import '../../services/dashboard_api_service.dart';
 import '../../utils/formatters.dart';
+import '../../utils/load_error_message.dart';
 import '../../utils/nearby_payload.dart';
+import '../../widgets/common/load_error_view.dart';
 import '../../widgets/dashboard/owner_daily_schedule_session_card.dart';
 import '../../widgets/schedule/calendar_day_pill.dart';
 import '../location_picker_screen.dart';
@@ -33,7 +34,6 @@ import '../../widgets/client/client_explore_filter_chip.dart';
 import '../../widgets/training/training_category_color_chip.dart';
 
 const int _kExploreHorizonDays = 31;
-const Duration _kExploreStripDebounce = Duration(milliseconds: 1400);
 
 /// Default ?Activities by start time? on Browse: 05:00?22:00.
 const RangeValues _kExploreDefaultTimeRange = RangeValues(300, 1320);
@@ -47,11 +47,20 @@ class ClientSearchScreen extends StatefulWidget {
   State<ClientSearchScreen> createState() => ClientSearchScreenState();
 }
 
-class ClientSearchScreenState extends State<ClientSearchScreen> {
+class ClientSearchScreenState extends State<ClientSearchScreen>
+    with SingleTickerProviderStateMixin {
   static const _browseLocationBlue = Color(0xFF4D39A8);
 
+  static const double _browseModeOuterRadius = 14;
+  static const double _browseModeInnerRadius = 12;
+  static const double _browseModeInset = 3;
+  static const double _browseModeInnerHeight = 38;
+  static const Duration _browseModeAnimDuration = Duration(milliseconds: 280);
+
   bool _loading = true;
-  bool _showClasses = true;
+  String? _loadError;
+  final ValueNotifier<bool> _browseShowClasses = ValueNotifier<bool>(true);
+  late final AnimationController _browseModeController;
   bool _isMonthExpanded = false;
   late DateTime _selectedDay;
   late final ValueNotifier<DateTime> _stripDayNotifier;
@@ -60,7 +69,6 @@ class ClientSearchScreenState extends State<ClientSearchScreen> {
   final ValueNotifier<DateTime> _stripPagerDayNotifier = ValueNotifier(
     DateTime.now(),
   );
-  Timer? _stripScheduleDebounce;
   final TextEditingController _searchController = TextEditingController();
   String _searchQuery = '';
   ClientLocationStore? _locationStore;
@@ -96,6 +104,11 @@ class ClientSearchScreenState extends State<ClientSearchScreen> {
     _stripPagerDayNotifier.value = today;
     _dayStripScrollController = ScrollController();
     _searchController.addListener(_onSearchChanged);
+    _browseModeController = AnimationController(
+      vsync: this,
+      value: 0,
+      duration: _browseModeAnimDuration,
+    );
   }
 
   @override
@@ -122,18 +135,28 @@ class ClientSearchScreenState extends State<ClientSearchScreen> {
   @override
   void dispose() {
     _locationStore?.removeListener(_onSharedLocationChanged);
-    _clearStripScheduleDebounceTimer();
     _searchController.removeListener(_onSearchChanged);
     _searchController.dispose();
     _stripDayNotifier.dispose();
     _stripPagerDayNotifier.dispose();
     _dayStripScrollController.dispose();
+    _browseShowClasses.dispose();
+    _browseModeController.dispose();
     super.dispose();
   }
 
-  void _clearStripScheduleDebounceTimer() {
-    _stripScheduleDebounce?.cancel();
-    _stripScheduleDebounce = null;
+  void _setBrowseShowClasses(bool showClasses) {
+    if (_browseShowClasses.value == showClasses &&
+        !_browseModeController.isAnimating) {
+      return;
+    }
+    _browseShowClasses.value = showClasses;
+    _browseModeController.stop();
+    _browseModeController.animateTo(
+      showClasses ? 0 : 1,
+      duration: _browseModeAnimDuration,
+      curve: Curves.easeOutCubic,
+    );
   }
 
   void _applyExploreDay(DateTime day) {
@@ -144,15 +167,6 @@ class ClientSearchScreenState extends State<ClientSearchScreen> {
     setState(() {
       _selectedDay = normalized;
       _derivedInputsHash = 0;
-    });
-  }
-
-  void _debounceExploreDay(DateTime day) {
-    _clearStripScheduleDebounceTimer();
-    _stripScheduleDebounce = Timer(_kExploreStripDebounce, () {
-      if (!mounted) return;
-      _applyExploreDay(day);
-      _stripScheduleDebounce = null;
     });
   }
 
@@ -182,7 +196,6 @@ class ClientSearchScreenState extends State<ClientSearchScreen> {
   }
 
   void _goToToday() {
-    _clearStripScheduleDebounceTimer();
     final today = _calendarDateOnly(DateTime.now());
     _scrollBrowseStripToIndex(0, animate: true);
     _applyExploreDay(today);
@@ -201,7 +214,6 @@ class ClientSearchScreenState extends State<ClientSearchScreen> {
     final index = normalized
         .difference(_calendarDateOnly(DateTime.now()))
         .inDays;
-    _clearStripScheduleDebounceTimer();
     _scrollBrowseStripToIndex(index, animate: true);
     _applyExploreDay(normalized);
   }
@@ -470,7 +482,7 @@ class ClientSearchScreenState extends State<ClientSearchScreen> {
   /// Home «See all» / shell: Classes vs Studios tab on Browse.
   void applyBrowseListMode({required bool showClasses}) {
     if (!mounted) return;
-    setState(() => _showClasses = showClasses);
+    _setBrowseShowClasses(showClasses);
   }
 
   int _currentRadiusKm() {
@@ -592,6 +604,8 @@ class ClientSearchScreenState extends State<ClientSearchScreen> {
               'address': studio.address,
               if (imageUrl != null && imageUrl.isNotEmpty) 'photos': [imageUrl],
               'avgRating': studio.rating,
+              if (studio.categoryNames.isNotEmpty)
+                'categoryNames': studio.categoryNames,
             },
           );
     if (!mounted) return;
@@ -633,7 +647,10 @@ class ClientSearchScreenState extends State<ClientSearchScreen> {
   Future<void> _loadExplore() async {
     if (!mounted) return;
     final loc = context.read<ClientLocationStore>();
-    setState(() => _loading = true);
+    setState(() {
+      _loading = true;
+      _loadError = null;
+    });
     try {
       final radiusKm = _currentRadiusKm();
       final nearbyQuery = StringBuffer(
@@ -752,12 +769,17 @@ class ClientSearchScreenState extends State<ClientSearchScreen> {
         _studios = studios;
         _classes = classes;
         _loading = false;
+        _loadError = null;
         _derivedInputsHash = 0;
         _distanceKmMemo.clear();
       });
-    } catch (_) {
+    } catch (e) {
       if (!mounted) return;
-      setState(() => _loading = false);
+      final locale = context.read<LocaleProvider>();
+      setState(() {
+        _loading = false;
+        _loadError = loadErrorMessage(locale, e);
+      });
     }
   }
 
@@ -808,26 +830,19 @@ class ClientSearchScreenState extends State<ClientSearchScreen> {
     return '${formatMinutesSliderLabel(_timeRange.start)} - ${formatMinutesSliderLabel(_timeRange.end)}';
   }
 
-  String _distanceLabel(double? km) {
-    if (km == null) return '';
-    final text = km.toStringAsFixed(2).replaceAll('.', ',');
-    return '$text km';
-  }
+  String _distanceLabel(double? km) => formatBrowseStudioDistanceLabel(km);
 
   double? _resolvedDistanceKm(
     ExploreStudioItem studio,
     ClientLocationStore loc,
   ) {
-    if (studio.distanceKm != null) return studio.distanceKm;
-    if (loc.lat == null || loc.lon == null) return null;
-    if (studio.lat == null || studio.lng == null) return null;
-    const d = Distance();
-    final meters = d.as(
-      LengthUnit.Meter,
-      LatLng(loc.lat!, loc.lon!),
-      LatLng(studio.lat!, studio.lng!),
+    return resolveStudioDistanceKm(
+      apiDistanceKm: studio.distanceKm,
+      clientLat: loc.lat,
+      clientLon: loc.lon,
+      studioLat: studio.lat,
+      studioLng: studio.lng,
     );
-    return meters / 1000.0;
   }
 
   int _computeDerivedInputsHash() {
@@ -2058,13 +2073,6 @@ class ClientSearchScreenState extends State<ClientSearchScreen> {
                     curve: Curves.easeOutCubic,
                   );
                 }
-                final day = _exploreDayAt(index);
-                final normalized = _calendarDateOnly(day);
-                if (CalendarDayPill.isSameDay(day, _stripDayNotifier.value) &&
-                    CalendarDayPill.isSameDay(day, _selectedDay)) {
-                  return false;
-                }
-                _debounceExploreDay(normalized);
               }
               return false;
             },
@@ -2090,10 +2098,7 @@ class ClientSearchScreenState extends State<ClientSearchScreen> {
                       return BrowseDayPill(
                         day: day,
                         selected: selected,
-                        onTap: () {
-                          _clearStripScheduleDebounceTimer();
-                          _applyExploreDay(day);
-                        },
+                        onTap: () => _applyExploreDay(day),
                       );
                     },
                   ),
@@ -2130,42 +2135,182 @@ class ClientSearchScreenState extends State<ClientSearchScreen> {
   }
 
   Widget _browseExpandButton() {
-    return OutlinedButton(
-      onPressed: () {
-        final wasExpanded = _isMonthExpanded;
-        if (!wasExpanded) {
-          _clearStripScheduleDebounceTimer();
-        }
-        setState(() => _isMonthExpanded = !_isMonthExpanded);
-        if (wasExpanded) {
-          WidgetsBinding.instance.addPostFrameCallback((_) {
-            if (!mounted) return;
-            _syncBrowseStripPagerToSelectedDay();
-          });
-        }
-      },
-      style: OutlinedButton.styleFrom(
-        backgroundColor: AppColors.backgroundPrimary,
-        foregroundColor: AppColors.textPrimary,
-        side: BorderSide.none,
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(22)),
-        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+    return Material(
+      color: AppColors.backgroundPrimary,
+      borderRadius: BorderRadius.circular(999),
+      child: InkWell(
+        onTap: () {
+          final wasExpanded = _isMonthExpanded;
+          setState(() => _isMonthExpanded = !_isMonthExpanded);
+          if (wasExpanded) {
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              if (!mounted) return;
+              _syncBrowseStripPagerToSelectedDay();
+            });
+          }
+        },
+        borderRadius: BorderRadius.circular(999),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              SvgPicture.asset(
+                'assets/icons/icon-calendar.svg',
+                width: 13,
+                height: 12,
+                fit: BoxFit.contain,
+                excludeFromSemantics: true,
+                colorFilter: const ColorFilter.mode(
+                  AppColors.textPrimary,
+                  BlendMode.srcIn,
+                ),
+              ),
+              const SizedBox(width: 6),
+              Text(
+                _isMonthExpanded ? 'Collapse' : 'Expand',
+                style: const TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.textPrimary,
+                  height: 1.1,
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          const Icon(
-            Icons.calendar_month_outlined,
-            size: 18,
-            color: AppColors.textPrimary,
+    );
+  }
+
+  Widget _buildBrowseClassesList(ClientLocationStore locationStore) {
+    return ListView.separated(
+      key: const PageStorageKey<String>('browse-classes'),
+      padding: const EdgeInsets.fromLTRB(12, 4, 12, 8),
+      itemCount: _derivedDayClasses.length,
+      separatorBuilder: (_, __) => const SizedBox(height: 8),
+      itemBuilder: (_, index) {
+        final c = _derivedDayClasses[index];
+        final session = _ownerSessionFromExplore(c);
+        final loc = (c.locationName ?? '').trim();
+        final subtitle = loc.isNotEmpty ? loc : c.studioName;
+        final trainerLine = scheduleTrainerLineOrNull(session, null);
+        return OwnerDailyScheduleSessionCard(
+          session: session,
+          subtitleLabel: subtitle,
+          showLocationPin: loc.isNotEmpty,
+          trainerLine: trainerLine,
+          showSubtitleLeadingIcon: subtitle.isNotEmpty,
+          dimPastSessions: false,
+          trailingPriceLabel:
+              c.price != null ? formatVnd(c.price!) : null,
+          trailingPriceColor: AppColors.textPrimary,
+          bookActionLabel: 'Book',
+          onBookAgain: () => _openExploreClassDetail(c),
+          onTap: () => _openExploreClassDetail(c),
+        );
+      },
+    );
+  }
+
+  Widget _buildBrowseStudiosList(
+    ClientLocationStore locationStore,
+    ClientFavoritesStore favStore,
+  ) {
+    return ListView.separated(
+      key: const PageStorageKey<String>('browse-studios'),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      itemCount: _derivedVisibleStudios.length,
+      separatorBuilder: (_, __) => const SizedBox(height: 8),
+      itemBuilder: (_, index) {
+        final s = _derivedVisibleStudios[index];
+        final todayClasses =
+            _derivedTodayClassesByStudio[s.id] ?? const [];
+        return BrowseStudioListCard(
+          studio: s,
+          todayClasses: todayClasses,
+          trainingCategories: _trainingCategories,
+          distanceLabel: _distanceLabel(
+            _resolvedDistanceKmMemo(s, locationStore),
           ),
-          const SizedBox(width: 6),
-          Text(
-            _isMonthExpanded ? 'Collapse' : 'Expand',
-            style: const TextStyle(fontWeight: FontWeight.w500, fontSize: 14),
+          isFavorite: favStore.isFavorite(s.id),
+          onTap: () {
+            Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (_) => PublicStudioDetailScreen(studioId: s.id),
+              ),
+            );
+          },
+          onToggleFavorite: () => _toggleBrowseStudioFavorite(s),
+          onClassTap: _openExploreClassDetail,
+        );
+      },
+    );
+  }
+
+  Widget _buildBrowseModeToggler() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 12),
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          color: AppColors.backgroundPrimary,
+          borderRadius: BorderRadius.circular(_browseModeOuterRadius),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(_browseModeInset),
+          child: AnimatedBuilder(
+            animation: _browseModeController,
+            builder: (context, _) {
+              final fraction = _browseModeController.value.clamp(0.0, 1.0);
+              final classesBlend = (1 - fraction).clamp(0.0, 1.0);
+              final studiosBlend = fraction;
+              return LayoutBuilder(
+                builder: (context, constraints) {
+                  final tabWidth = constraints.maxWidth / 2;
+                  return SizedBox(
+                    height: _browseModeInnerHeight,
+                    child: Stack(
+                      clipBehavior: Clip.none,
+                      children: [
+                        Transform.translate(
+                          offset: Offset(fraction * tabWidth, 0),
+                          child: Container(
+                            width: tabWidth,
+                            height: _browseModeInnerHeight,
+                            decoration: BoxDecoration(
+                              color: AppColors.primary500,
+                              borderRadius: BorderRadius.circular(
+                                _browseModeInnerRadius,
+                              ),
+                            ),
+                          ),
+                        ),
+                        Row(
+                          children: [
+                            _browseModeTab(
+                              label: 'Classes',
+                              iconAsset: 'assets/icons/icon-clients.svg',
+                              count: _derivedDayClassesCount,
+                              emphasis: classesBlend,
+                              onTap: () => _setBrowseShowClasses(true),
+                            ),
+                            _browseModeTab(
+                              label: 'Studios',
+                              iconAsset: 'assets/icons/icon-studio.svg',
+                              count: _derivedVisibleStudiosCount,
+                              emphasis: studiosBlend,
+                              onTap: () => _setBrowseShowClasses(false),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  );
+                },
+              );
+            },
           ),
-        ],
+        ),
       ),
     );
   }
@@ -2174,21 +2319,15 @@ class ClientSearchScreenState extends State<ClientSearchScreen> {
     required String label,
     required String iconAsset,
     required int count,
-    required bool selected,
+    required double emphasis,
     required VoidCallback onTap,
   }) {
-    final fg = selected ? Colors.white : AppColors.textPrimary;
+    final fg = Color.lerp(AppColors.textPrimary, Colors.white, emphasis)!;
     return Expanded(
       child: GestureDetector(
         onTap: onTap,
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 180),
-          margin: const EdgeInsets.all(3),
+        child: Padding(
           padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 8),
-          decoration: BoxDecoration(
-            color: selected ? AppColors.primary500 : Colors.transparent,
-            borderRadius: BorderRadius.circular(12),
-          ),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
@@ -2224,9 +2363,9 @@ class ClientSearchScreenState extends State<ClientSearchScreen> {
     final locale = context.watch<LocaleProvider>();
     final localeCode = locale.localeCode;
     final locationStore = context.watch<ClientLocationStore>();
-    final locationUpper = locationStore
-        .displayLabel(locale.t('clientHome.setLocation'))
-        .toUpperCase();
+    final locationLabel = locationStore.displayLabel(
+      locale.t('clientHome.setLocation'),
+    );
     final favStore = context.watch<ClientFavoritesStore>();
     _ensureDerivedLists();
 
@@ -2235,6 +2374,11 @@ class ClientSearchScreenState extends State<ClientSearchScreen> {
       body: SafeArea(
         child: _loading
             ? const Center(child: CircularProgressIndicator())
+            : _loadError != null
+            ? LoadErrorView(
+                message: _loadError!,
+                onRetry: _loadExplore,
+              )
             : Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
@@ -2253,14 +2397,17 @@ class ClientSearchScreenState extends State<ClientSearchScreen> {
                             height: 16,
                           ),
                           const SizedBox(width: 6),
-                          Flexible(
+                          ConstrainedBox(
+                            constraints: BoxConstraints(
+                              maxWidth:
+                                  MediaQuery.sizeOf(context).width - 120,
+                            ),
                             child: Text(
-                              locationUpper,
+                              locationLabel,
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                               style: const TextStyle(
-                                fontSize: 12,
-                                fontWeight: FontWeight.w800,
+                                fontSize: 14,
                                 letterSpacing: 0.4,
                                 color: AppColors.textPrimary,
                               ),
@@ -2363,33 +2510,7 @@ class ClientSearchScreenState extends State<ClientSearchScreen> {
                     ),
                   ),
                   const SizedBox(height: 10),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 12),
-                    child: Container(
-                      decoration: BoxDecoration(
-                        color: AppColors.backgroundPrimary,
-                        borderRadius: BorderRadius.circular(14),
-                      ),
-                      child: Row(
-                        children: [
-                          _browseModeTab(
-                            label: 'Classes',
-                            iconAsset: 'assets/icons/icon-clients.svg',
-                            count: _derivedDayClassesCount,
-                            selected: _showClasses,
-                            onTap: () => setState(() => _showClasses = true),
-                          ),
-                          _browseModeTab(
-                            label: 'Studios',
-                            iconAsset: 'assets/icons/icon-studio.svg',
-                            count: _derivedVisibleStudiosCount,
-                            selected: !_showClasses,
-                            onTap: () => setState(() => _showClasses = false),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
+                  _buildBrowseModeToggler(),
                   const SizedBox(height: 10),
                   SizedBox(
                     height: 40,
@@ -2423,76 +2544,19 @@ class ClientSearchScreenState extends State<ClientSearchScreen> {
                   ),
                   const SizedBox(height: 14),
                   Expanded(
-                    child: _showClasses
-                        ? ListView.separated(
-                            padding: const EdgeInsets.fromLTRB(12, 4, 12, 8),
-                            itemCount: _derivedDayClasses.length,
-                            separatorBuilder: (_, __) =>
-                                const SizedBox(height: 8),
-                            itemBuilder: (_, index) {
-                              final c = _derivedDayClasses[index];
-                              final session = _ownerSessionFromExplore(c);
-                              final multi = c.studioLocationCount > 1;
-                              final loc = (c.locationName ?? '').trim();
-                              final showPin = multi && loc.isNotEmpty;
-                              final subtitle = showPin ? loc : c.studioName;
-                              final trainerLine = scheduleTrainerLineOrNull(
-                                session,
-                                null,
-                              );
-                              return OwnerDailyScheduleSessionCard(
-                                session: session,
-                                subtitleLabel: subtitle,
-                                showLocationPin: showPin,
-                                trainerLine: trainerLine,
-                                showSubtitleLeadingIcon: showPin,
-                                dimPastSessions: false,
-                                trailingPriceLabel: c.price != null
-                                    ? formatVnd(c.price!)
-                                    : null,
-                                trailingPriceColor: AppColors.textPrimary,
-                                bookActionLabel: 'Book',
-                                onBookAgain: () => _openExploreClassDetail(c),
-                                onTap: () => _openExploreClassDetail(c),
-                              );
-                            },
-                          )
-                        : ListView.separated(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 12,
-                              vertical: 6,
-                            ),
-                            itemCount: _derivedVisibleStudios.length,
-                            separatorBuilder: (_, __) =>
-                                const SizedBox(height: 8),
-                            itemBuilder: (_, index) {
-                              final s = _derivedVisibleStudios[index];
-                              final todayClasses =
-                                  _derivedTodayClassesByStudio[s.id] ??
-                                  const [];
-                              return BrowseStudioListCard(
-                                studio: s,
-                                todayClasses: todayClasses,
-                                trainingCategories: _trainingCategories,
-                                distanceLabel: _distanceLabel(
-                                  _resolvedDistanceKmMemo(s, locationStore),
-                                ),
-                                isFavorite: favStore.isFavorite(s.id),
-                                onTap: () {
-                                  Navigator.of(context).push(
-                                    MaterialPageRoute(
-                                      builder: (_) => PublicStudioDetailScreen(
-                                        studioId: s.id,
-                                      ),
-                                    ),
-                                  );
-                                },
-                                onToggleFavorite: () =>
-                                    _toggleBrowseStudioFavorite(s),
-                                onClassTap: _openExploreClassDetail,
-                              );
-                            },
-                          ),
+                    child: ValueListenableBuilder<bool>(
+                      valueListenable: _browseShowClasses,
+                      builder: (context, showClasses, _) {
+                        return IndexedStack(
+                          index: showClasses ? 0 : 1,
+                          sizing: StackFit.expand,
+                          children: [
+                            _buildBrowseClassesList(locationStore),
+                            _buildBrowseStudiosList(locationStore, favStore),
+                          ],
+                        );
+                      },
+                    ),
                   ),
                 ],
               ),

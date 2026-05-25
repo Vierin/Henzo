@@ -12,9 +12,11 @@ import 'settings_form_tokens.dart';
 enum StudioSocialPlatform {
   instagram,
   facebook,
+  youtube,
+  tiktok,
   whatsApp,
-  website,
-  telegram;
+  telegram,
+  website;
 
   static StudioSocialPlatform? fromId(String? raw) {
     if (raw == null || raw.isEmpty) return null;
@@ -24,12 +26,24 @@ enum StudioSocialPlatform {
     return null;
   }
 
-  /// Placeholder icon — replace asset paths when brand icons are ready.
-  String get iconAsset => 'assets/icons/icon-share.svg';
+  String get iconAsset => switch (this) {
+        StudioSocialPlatform.instagram =>
+          'assets/icons/icon-instagram.png',
+        StudioSocialPlatform.facebook => 'assets/icons/icon-facebook.png',
+        StudioSocialPlatform.youtube => 'assets/icons/icon-youtube.png',
+        StudioSocialPlatform.tiktok => 'assets/icons/icon-tiktok.png',
+        StudioSocialPlatform.whatsApp => 'assets/icons/icon-whatsap.png',
+        StudioSocialPlatform.telegram => 'assets/icons/icon-telegram.png',
+        StudioSocialPlatform.website => 'assets/icons/icon-web.png',
+      };
+
+  bool get isRasterIcon => iconAsset.endsWith('.png');
 
   String label(LocaleProvider locale) => switch (this) {
         StudioSocialPlatform.instagram => locale.t('profileForm.instagram'),
         StudioSocialPlatform.facebook => locale.t('profileForm.facebook'),
+        StudioSocialPlatform.youtube => locale.t('profileForm.youtube'),
+        StudioSocialPlatform.tiktok => locale.t('profileForm.tiktok'),
         StudioSocialPlatform.whatsApp => locale.t('profileForm.whatsApp'),
         StudioSocialPlatform.website => locale.t('profileForm.website'),
         StudioSocialPlatform.telegram => locale.t('profileForm.telegram'),
@@ -38,10 +52,14 @@ enum StudioSocialPlatform {
   String valueHint(LocaleProvider locale) => switch (this) {
         StudioSocialPlatform.instagram => '@username',
         StudioSocialPlatform.facebook => 'https://facebook.com/...',
+        StudioSocialPlatform.youtube => 'https://youtube.com/@...',
+        StudioSocialPlatform.tiktok => 'https://tiktok.com/@...',
         StudioSocialPlatform.whatsApp => '+84...',
         StudioSocialPlatform.website => 'https://...',
         StudioSocialPlatform.telegram => '@username',
       };
+
+  bool get usesPhoneKeyboard => this == StudioSocialPlatform.whatsApp;
 }
 
 class StudioSocialLink {
@@ -114,6 +132,8 @@ List<StudioSocialLink> studioSocialLinksFromSalon(Salon salon) {
       case StudioSocialPlatform.facebook:
       case StudioSocialPlatform.website:
         website = value;
+      case StudioSocialPlatform.youtube:
+      case StudioSocialPlatform.tiktok:
       case StudioSocialPlatform.whatsApp:
       case StudioSocialPlatform.telegram:
         extras.add({
@@ -291,7 +311,7 @@ Future<String?> showStudioSocialLinkEditSheet(
                     decoration: settingsInputDecoration(
                       hintText: platform.valueHint(locale),
                     ),
-                    keyboardType: platform == StudioSocialPlatform.whatsApp
+                    keyboardType: platform.usesPhoneKeyboard
                         ? TextInputType.phone
                         : TextInputType.url,
                   ),
@@ -357,11 +377,18 @@ class _SocialPlatformIcon extends StatelessWidget {
         border: Border.all(color: AppColors.borderPrimary),
       ),
       child: Center(
-        child: SvgPicture.asset(
-          platform.iconAsset,
-          width: 20,
-          height: 20,
-        ),
+        child: platform.isRasterIcon
+            ? Image.asset(
+                platform.iconAsset,
+                width: 24,
+                height: 24,
+                fit: BoxFit.contain,
+              )
+            : SvgPicture.asset(
+                platform.iconAsset,
+                width: 20,
+                height: 20,
+              ),
       ),
     );
   }

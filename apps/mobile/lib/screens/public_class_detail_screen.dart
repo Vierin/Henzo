@@ -10,19 +10,18 @@ import '../constants/layout.dart';
 import '../l10n/locale_provider.dart';
 import '../services/api_client.dart';
 import '../services/auth_service.dart';
+import '../services/client_location_store.dart';
 import '../utils/class_session_link.dart';
 import '../utils/color_hex.dart';
 import '../utils/formatters.dart';
+import '../utils/load_error_message.dart';
+import '../widgets/common/load_error_view.dart';
 import '../services/client_schedule_store.dart';
 import '../widgets/common/henzo_header_back_button.dart';
 import '../widgets/public/cached_salon_network_image.dart';
 import '../widgets/session_capacity_card.dart';
 import 'client/class_booking_confirmation_screen.dart';
 import 'public_studio_detail_screen.dart';
-
-const List<BoxShadow> _kClassDetailCardShadow = <BoxShadow>[
-  BoxShadow(color: Color(0x0A000000), blurRadius: 16, offset: Offset(0, 4)),
-];
 
 /// Icon circle (30) + gap (10) — aligns controls with address text.
 const double _kClassDetailMetaTextInset = 40;
@@ -132,9 +131,10 @@ class _PublicClassDetailScreenState extends State<PublicClassDetailScreen> {
       });
     } catch (e) {
       if (!mounted) return;
+      final locale = context.read<LocaleProvider>();
       setState(() {
         _loading = false;
-        _error = e.toString();
+        _error = loadErrorMessage(locale, e);
       });
     }
   }
@@ -174,9 +174,10 @@ class _PublicClassDetailScreenState extends State<PublicClassDetailScreen> {
 
   Future<void> _book() async {
     final token = context.read<AuthService>().accessToken;
+    final locale = context.read<LocaleProvider>();
     if (token == null || token.isEmpty) {
       ScaffoldMessenger.maybeOf(context)?.showSnackBar(
-        const SnackBar(content: Text('Please sign in to book a class')),
+        SnackBar(content: Text(locale.t('clientClassDetail.signInToBook'))),
       );
       return;
     }
@@ -202,21 +203,17 @@ class _PublicClassDetailScreenState extends State<PublicClassDetailScreen> {
       );
     } catch (e) {
       if (!mounted) return;
-      final msg = e.toString();
-      final alreadyBooked =
-          msg.contains('409') || msg.toLowerCase().contains('already booked');
-      if (alreadyBooked) {
+      final locale = context.read<LocaleProvider>();
+      if (isBookingAlreadyBookedError(e)) {
         setState(() => _isBookedByMe = true);
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('You are already booked for this class'),
-          ),
+          SnackBar(content: Text(locale.t('clientClassDetail.alreadyBooked'))),
         );
         return;
       }
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(SnackBar(content: Text('Booking failed: $e')));
+      ).showSnackBar(SnackBar(content: Text(bookingErrorMessage(locale, e))));
     } finally {
       if (mounted) setState(() => _booking = false);
     }
@@ -239,7 +236,10 @@ class _PublicClassDetailScreenState extends State<PublicClassDetailScreen> {
         child: _loading
             ? const Center(child: CircularProgressIndicator())
             : session == null
-            ? _ErrorBody(message: _error ?? 'Class not found.', onRetry: _load)
+            ? LoadErrorView(
+                message: _error ?? 'Class not found.',
+                onRetry: _load,
+              )
             : _ClassDetailBody(
                 studio: _studio,
                 session: session,
@@ -394,12 +394,6 @@ int _resolveStudioReviewCount(Map<String, dynamic>? studio) {
   return count;
 }
 
-String? _formatDistanceLabel(double? km) {
-  if (km == null) return null;
-  if (km < 1) return '${(km * 1000).round()} m';
-  return '${km.toStringAsFixed(1)} km';
-}
-
 Future<void> _openDirections({
   required BuildContext context,
   required Map<String, dynamic>? studio,
@@ -442,34 +436,6 @@ Future<void> _openDirections({
   await launchUrl(uri, mode: LaunchMode.externalApplication);
 }
 
-class _ErrorBody extends StatelessWidget {
-  const _ErrorBody({required this.message, required this.onRetry});
-
-  final String message;
-  final VoidCallback onRetry;
-
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(kScreenPaddingHorizontal),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              message,
-              textAlign: TextAlign.center,
-              style: const TextStyle(color: AppColors.textSecondary),
-            ),
-            const SizedBox(height: 12),
-            FilledButton(onPressed: onRetry, child: const Text('Retry')),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
 class _ClassDetailBody extends StatelessWidget {
   const _ClassDetailBody({
     required this.studio,
@@ -501,7 +467,9 @@ class _ClassDetailBody extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final localeCode = context.watch<LocaleProvider>().localeCode;
+    final locale = context.watch<LocaleProvider>();
+    final localeCode = locale.localeCode;
+    final tr = locale.t;
     final training = session['training'] is Map
         ? Map<String, dynamic>.from(session['training'] as Map)
         : <String, dynamic>{};
@@ -556,12 +524,31 @@ class _ClassDetailBody extends StatelessWidget {
     final dateLabel = startsAt != null ? _formatClassHeaderDate(startsAt) : '';
 
     final locationTitle = locName.isNotEmpty ? locName : studioName;
-    final distanceLabel = _formatDistanceLabel(distanceKm);
+    final locStore = context.watch<ClientLocationStore>();
+    final apiDistanceKm =
+        distanceKm ?? (studio?['distance'] as num?)?.toDouble();
+    final studioLat =
+        (studio?['latitude'] as num?)?.toDouble() ??
+        (studio?['lat'] as num?)?.toDouble();
+    final studioLng =
+        (studio?['longitude'] as num?)?.toDouble() ??
+        (studio?['lng'] as num?)?.toDouble() ??
+        (studio?['lon'] as num?)?.toDouble();
+    final resolvedKm = resolveStudioDistanceKm(
+      apiDistanceKm: apiDistanceKm,
+      clientLat: locStore.lat,
+      clientLon: locStore.lon,
+      studioLat: studioLat,
+      studioLng: studioLng,
+    );
+    final distanceText = formatBrowseStudioDistanceLabel(resolvedKm);
+    final distanceLabel =
+        distanceText.isEmpty ? null : distanceText;
 
     return Column(
       children: [
         Padding(
-          padding: const EdgeInsets.fromLTRB(8, 4, 12, 8),
+          padding: const EdgeInsets.fromLTRB(8, 4, 12, 16),
           child: Row(
             children: [
               HenzoHeaderBackButton(
@@ -572,7 +559,7 @@ class _ClassDetailBody extends StatelessWidget {
                   'Class',
                   textAlign: TextAlign.center,
                   style: TextStyle(
-                    fontSize: 18,
+                    fontSize: 14,
                     fontWeight: FontWeight.w600,
                     color: AppColors.textPrimary,
                   ),
@@ -602,7 +589,7 @@ class _ClassDetailBody extends StatelessWidget {
                   minimumSize: Size.zero,
                   tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(18),
                   ),
                   textStyle: const TextStyle(
                     fontSize: 14,
@@ -657,7 +644,7 @@ class _ClassDetailBody extends StatelessWidget {
                         );
                       },
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: 15),
               SessionCapacityCard(
                 accent: accent,
                 enrolled: booked,
@@ -665,6 +652,16 @@ class _ClassDetailBody extends StatelessWidget {
                 waitlistCount: waitlist,
               ),
               if (trainingDescription.isNotEmpty) ...[
+                const SizedBox(height: 28),
+                Text(
+                  tr('clientClassDetail.descriptionSectionLabel'),
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                    letterSpacing: -0.3,
+                    color: AppColors.textPrimary,
+                  ),
+                ),
                 const SizedBox(height: 12),
                 _TrainingDescriptionCard(body: trainingDescription),
               ],
@@ -711,7 +708,6 @@ class _StudioHeroBanner extends StatelessWidget {
       color: accent,
       borderRadius: BorderRadius.circular(14),
       elevation: 0,
-      shadowColor: Colors.transparent,
       child: InkWell(
         onTap: onTap,
         borderRadius: BorderRadius.circular(14),
@@ -720,19 +716,19 @@ class _StudioHeroBanner extends StatelessWidget {
           child: Row(
             children: [
               Expanded(
-                child: Column(
+                child: Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Row(
-                      crossAxisAlignment: CrossAxisAlignment.center,
-                      children: [
-                        _StudioAvatarBadge(
-                          logoUrl: logoUrl,
-                          initials: initials,
-                        ),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: Text(
+                    _StudioAvatarBadge(
+                      logoUrl: logoUrl,
+                      initials: initials,
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
                             studioName,
                             maxLines: 2,
                             overflow: TextOverflow.ellipsis,
@@ -742,54 +738,54 @@ class _StudioHeroBanner extends StatelessWidget {
                               color: AppColors.textPrimary,
                             ),
                           ),
-                        ),
-                      ],
-                    ),
-                    if (avgRating > 0 ||
-                        reviewCount > 0 ||
-                        distanceLabel != null) ...[
-                      const SizedBox(height: 6),
-                      Row(
-                        children: [
-                          if (avgRating > 0) ...[
-                            const Icon(
-                              Icons.star_rounded,
-                              size: 16,
-                              color: AppColors.textPrimary,
-                            ),
-                            const SizedBox(width: 4),
-                            Text(
-                              avgRating.toStringAsFixed(1),
-                              style: const TextStyle(
-                                fontSize: 13,
-                                fontWeight: FontWeight.w600,
-                                color: AppColors.textPrimary,
-                              ),
-                            ),
-                          ],
-                          if (reviewCount > 0) ...[
-                            const SizedBox(width: 8),
-                            Text(
-                              '$reviewCount reviews',
-                              style: const TextStyle(
-                                fontSize: 13,
-                                color: AppColors.textSecondary,
-                              ),
-                            ),
-                          ],
                           if (distanceLabel != null) ...[
-                            const SizedBox(width: 8),
+                            const SizedBox(height: 4),
                             Text(
                               distanceLabel!,
                               style: const TextStyle(
-                                fontSize: 13,
-                                color: AppColors.textSecondary,
+                                fontSize: 11,
+                                fontWeight: FontWeight.w400,
+                                color: Color(0x663F3F3F),
+                                height: 1.1,
                               ),
+                            ),
+                          ],
+                          if (avgRating > 0 || reviewCount > 0) ...[
+                            const SizedBox(height: 6),
+                            Row(
+                              children: [
+                                if (avgRating > 0) ...[
+                                  const Icon(
+                                    Icons.star_rounded,
+                                    size: 16,
+                                    color: AppColors.textPrimary,
+                                  ),
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    avgRating.toStringAsFixed(1),
+                                    style: const TextStyle(
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.w600,
+                                      color: AppColors.textPrimary,
+                                    ),
+                                  ),
+                                ],
+                                if (reviewCount > 0) ...[
+                                  const SizedBox(width: 8),
+                                  Text(
+                                    '$reviewCount reviews',
+                                    style: const TextStyle(
+                                      fontSize: 13,
+                                      color: AppColors.textSecondary,
+                                    ),
+                                  ),
+                                ],
+                              ],
                             ),
                           ],
                         ],
                       ),
-                    ],
+                    ),
                   ],
                 ),
               ),
@@ -803,9 +799,9 @@ class _StudioHeroBanner extends StatelessWidget {
                 ),
                 alignment: Alignment.center,
                 child: SvgPicture.asset(
-                  'assets/icons/icon-chevron-right.svg',
-                  width: 8,
-                  height: 14,
+                  'assets/icons/icon-arrow-wide.svg',
+                  width: 15,
+                  height: 8,
                   fit: BoxFit.contain,
                   excludeFromSemantics: true,
                   colorFilter: const ColorFilter.mode(
@@ -858,7 +854,6 @@ class _ClassInfoCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: AppColors.backgroundPrimary,
         borderRadius: BorderRadius.circular(14),
-        boxShadow: _kClassDetailCardShadow,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1196,8 +1191,7 @@ class _TrainingDescriptionCard extends StatelessWidget {
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: AppColors.backgroundPrimary,
-        borderRadius: BorderRadius.circular(18),
-        boxShadow: _kClassDetailCardShadow,
+        borderRadius: BorderRadius.circular(14),
       ),
       child: Text(
         body,
@@ -1253,7 +1247,7 @@ class _BookBar extends StatelessWidget {
           foregroundColor: Colors.white,
           padding: const EdgeInsets.symmetric(vertical: 16),
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadius.circular(14),
           ),
         ),
         child: booking

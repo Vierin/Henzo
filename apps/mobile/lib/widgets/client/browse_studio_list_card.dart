@@ -24,7 +24,9 @@ class BrowseStudioListCard extends StatelessWidget {
   });
 
   static const _cardRadius = 12.0;
-  static const _imageWidth = 112.0;
+  static const _imageWidth = 121.0;
+  static const _cardMinHeight = 145.0;
+  static const _todaySlotHeight = 44.0;
   static const _distanceColor = Color(0x993F3F3F);
   static const _locationPurple = Color(0xFF4D39A8);
   static const _classSlotBg = Color(0xFFF8F3EB);
@@ -78,13 +80,6 @@ class BrowseStudioListCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: AppColors.backgroundPrimary,
         borderRadius: BorderRadius.circular(_cardRadius),
-        boxShadow: const [
-          BoxShadow(
-            color: Color(0x0F000000),
-            blurRadius: 12,
-            offset: Offset(0, 2),
-          ),
-        ],
       ),
       child: Material(
         color: Colors.transparent,
@@ -92,206 +87,210 @@ class BrowseStudioListCard extends StatelessWidget {
         clipBehavior: Clip.antiAlias,
         child: InkWell(
           onTap: onTap,
-          child: IntrinsicHeight(
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                SizedBox(
-                  width: _imageWidth,
-                  child: Stack(
-                    fit: StackFit.expand,
-                    children: [
-                      if (_imageUrl != null)
-                        CachedSalonNetworkImage(
-                          imageUrl: _imageUrl!,
-                          fit: BoxFit.cover,
-                        )
-                      else
-                        const ColoredBox(
-                          color: AppColors.secondary100,
-                          child: Icon(
-                            Icons.fitness_center,
-                            size: 32,
-                            color: AppColors.primary500,
-                          ),
-                        ),
-                      Positioned(
-                        left: 8,
-                        bottom: 8,
-                        child: _FavoriteButton(
-                          isFavorite: isFavorite,
-                          onTap: onToggleFavorite,
-                        ),
-                      ),
-                      if (studio.rating > 0)
-                        Positioned(
-                          right: 6,
-                          bottom: 8,
-                          child: _ImageRatingBadge(
-                            rating: studio.rating,
-                            reviewCount: studio.reviewCount,
-                          ),
-                        ),
-                    ],
-                  ),
-                ),
-                Expanded(
-                  child: Padding(
-                    padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(minHeight: _cardMinHeight),
+            child: IntrinsicHeight(
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  SizedBox(
+                    width: _imageWidth,
+                    child: Stack(
+                      fit: StackFit.expand,
                       children: [
-                        Row(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Expanded(
-                              child: Text(
-                                studio.name,
-                                maxLines: 2,
-                                overflow: TextOverflow.ellipsis,
-                                style: const TextStyle(
-                                  fontSize: 15,
-                                  fontWeight: FontWeight.w700,
-                                  letterSpacing: -0.3,
-                                  color: AppColors.textPrimary,
-                                  height: 1.15,
-                                ),
-                              ),
+                        if (_imageUrl != null)
+                          CachedSalonNetworkImage(
+                            imageUrl: _imageUrl!,
+                            fit: BoxFit.cover,
+                          )
+                        else
+                          const ColoredBox(
+                            color: AppColors.secondary100,
+                            child: Icon(
+                              Icons.fitness_center,
+                              size: 32,
+                              color: AppColors.primary500,
                             ),
-                            if (distanceLabel != null &&
-                                distanceLabel!.isNotEmpty) ...[
-                              const SizedBox(width: 8),
-                              Text(
-                                distanceLabel!,
-                                style: const TextStyle(
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w400,
-                                  letterSpacing: -0.3,
-                                  color: _distanceColor,
-                                  height: 1.1,
-                                ),
-                              ),
-                            ],
-                          ],
+                          ),
+                        Positioned(
+                          left: 8,
+                          bottom: 8,
+                          child: _FavoriteButton(
+                            isFavorite: isFavorite,
+                            onTap: onToggleFavorite,
+                          ),
                         ),
-                        if (_locationLabel != null) ...[
-                          const SizedBox(height: 6),
+                        if (studio.rating > 0)
+                          Positioned(
+                            right: 6,
+                            bottom: 8,
+                            child: _ImageRatingBadge(
+                              rating: studio.rating,
+                              reviewCount: studio.reviewCount,
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
+                  Expanded(
+                    child: Padding(
+                      padding: const EdgeInsets.fromLTRB(8, 10, 8, 4),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
                           Row(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Padding(
-                                padding: const EdgeInsets.only(top: 1),
-                                child: SvgPicture.asset(
-                                  'assets/icons/icon-pin.svg',
-                                  width: 10,
-                                  height: 14,
-                                ),
-                              ),
-                              const SizedBox(width: 4),
                               Expanded(
                                 child: Text(
-                                  _locationLabel!,
+                                  studio.name,
                                   maxLines: 2,
                                   overflow: TextOverflow.ellipsis,
+                                  style: const TextStyle(
+                                    fontSize: 15,
+                                    fontWeight: FontWeight.w700,
+                                    letterSpacing: -0.3,
+                                    color: AppColors.textPrimary,
+                                    height: 1.15,
+                                  ),
+                                ),
+                              ),
+                              if (distanceLabel != null &&
+                                  distanceLabel!.isNotEmpty) ...[
+                                const SizedBox(width: 8),
+                                Text(
+                                  distanceLabel!,
                                   style: const TextStyle(
                                     fontSize: 12,
                                     fontWeight: FontWeight.w400,
                                     letterSpacing: -0.3,
-                                    color: AppColors.textSecondary,
-                                    height: 1.2,
+                                    color: _distanceColor,
+                                    height: 1.1,
+                                  ),
+                                ),
+                              ],
+                            ],
+                          ),
+                          if (_locationLabel != null) ...[
+                            const SizedBox(height: 8),
+                            Row(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Padding(
+                                  padding: const EdgeInsets.only(top: 1),
+                                  child: SvgPicture.asset(
+                                    'assets/icons/icon-pin.svg',
+                                    width: 11,
+                                    height: 15,
+                                  ),
+                                ),
+                                const SizedBox(width: 4),
+                                Expanded(
+                                  child: Text(
+                                    _locationLabel!,
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: const TextStyle(
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w400,
+                                      color: AppColors.textPrimary,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                          if (visibleCategoryIds.isNotEmpty ||
+                              moreCategories > 0 ||
+                              fallbackNames.isNotEmpty) ...[
+                            const SizedBox(height: 8),
+                            Wrap(
+                              spacing: 6,
+                              runSpacing: 6,
+                              children: [
+                                if (visibleCategoryIds.isNotEmpty)
+                                  for (final id in visibleCategoryIds)
+                                    _CategoryPill(
+                                      label:
+                                          _categoryById(
+                                            id,
+                                          )?.label(localeCode) ??
+                                          _fallbackCategoryName(id),
+                                      category: _categoryById(id),
+                                    )
+                                else
+                                  for (final name in fallbackNames)
+                                    _CategoryPill(label: name, category: null),
+                                if (moreCategories > 0)
+                                  _MoreCategoriesPill(count: moreCategories)
+                                else if (visibleCategoryIds.isEmpty &&
+                                    studio.categoryNames.length > 3)
+                                  _MoreCategoriesPill(
+                                    count: studio.categoryNames.length - 3,
+                                  ),
+                              ],
+                            ),
+                          ],
+                          const SizedBox(height: 10),
+                          SizedBox(
+                            height: _todaySlotHeight,
+                            child: firstClass != null
+                                ? _TodayClassRow(
+                                    item: firstClass,
+                                    onTap: onClassTap == null
+                                        ? null
+                                        : () => onClassTap!(firstClass),
+                                  )
+                                : const Align(
+                                    alignment: Alignment.center,
+                                    child: Text(
+                                      'No classes today',
+                                      style: TextStyle(
+                                        fontSize: 12,
+                                        color: AppColors.textPrimary,
+                                      ),
+                                    ),
+                                  ),
+                          ),
+                          if (firstClass != null) ...[
+                            const SizedBox(height: 4),
+                            Center(
+                              child: InkWell(
+                                onTap: onTap,
+                                child: Padding(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 8,
+                                    vertical: 6,
+                                  ),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Text(
+                                        seeAllLabel,
+                                        style: const TextStyle(
+                                          fontSize: 11,
+                                          fontWeight: FontWeight.w500,
+                                          letterSpacing: -0.3,
+                                          color: AppColors.primary500,
+                                        ),
+                                      ),
+                                      const Icon(
+                                        Icons.keyboard_arrow_down_rounded,
+                                        size: 16,
+                                        color: AppColors.primary500,
+                                      ),
+                                    ],
                                   ),
                                 ),
                               ),
-                            ],
-                          ),
-                        ],
-                        if (visibleCategoryIds.isNotEmpty ||
-                            moreCategories > 0 ||
-                            fallbackNames.isNotEmpty) ...[
-                          const SizedBox(height: 8),
-                          Wrap(
-                            spacing: 6,
-                            runSpacing: 6,
-                            children: [
-                              if (visibleCategoryIds.isNotEmpty)
-                                for (final id in visibleCategoryIds)
-                                  _CategoryPill(
-                                    label:
-                                        _categoryById(id)?.label(localeCode) ??
-                                        _fallbackCategoryName(id),
-                                    category: _categoryById(id),
-                                  )
-                              else
-                                for (final name in fallbackNames)
-                                  _CategoryPill(label: name, category: null),
-                              if (moreCategories > 0)
-                                _MoreCategoriesPill(count: moreCategories)
-                              else if (visibleCategoryIds.isEmpty &&
-                                  studio.categoryNames.length > 3)
-                                _MoreCategoriesPill(
-                                  count: studio.categoryNames.length - 3,
-                                ),
-                            ],
-                          ),
-                        ],
-                        if (firstClass != null) ...[
-                          const SizedBox(height: 10),
-                          _TodayClassRow(
-                            item: firstClass,
-                            onTap: onClassTap == null
-                                ? null
-                                : () => onClassTap!(firstClass),
-                          ),
-                        ] else ...[
-                          const SizedBox(height: 10),
-                          const Text(
-                            'No classes today',
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: AppColors.textSecondary,
                             ),
-                          ),
+                          ],
                         ],
-                        if (todayClasses.length > 1) ...[
-                          const SizedBox(height: 8),
-                          Center(
-                            child: InkWell(
-                              onTap: onTap,
-                              borderRadius: BorderRadius.circular(8),
-                              child: Padding(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 8,
-                                  vertical: 4,
-                                ),
-                                child: Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    Text(
-                                      seeAllLabel,
-                                      style: const TextStyle(
-                                        fontSize: 13,
-                                        fontWeight: FontWeight.w600,
-                                        letterSpacing: -0.3,
-                                        color: AppColors.primary500,
-                                      ),
-                                    ),
-                                    const SizedBox(width: 2),
-                                    const Icon(
-                                      Icons.keyboard_arrow_down_rounded,
-                                      size: 18,
-                                      color: AppColors.primary500,
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ),
-                          ),
-                        ],
-                      ],
+                      ),
                     ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         ),
@@ -453,51 +452,38 @@ class _TodayClassRow extends StatelessWidget {
   final ExploreClassItem item;
   final VoidCallback? onTap;
 
-  static String _priceLabel(double? price) {
-    if (price == null || price <= 0) return '';
-    final r = price.round();
-    if (r >= 1000) {
-      final k = r / 1000;
-      if (r % 1000 == 0) {
-        return '${k.round()}K VND';
-      }
-      return '${k.toStringAsFixed(1).replaceAll('.', ',')}K VND';
-    }
-    return '${formatVnd(r)} VND';
-  }
-
   @override
   Widget build(BuildContext context) {
-    final price = _priceLabel(item.price);
+    final price = formatCompactVndLabel(item.price);
 
     return Material(
       color: BrowseStudioListCard._classSlotBg,
-      borderRadius: BorderRadius.circular(12),
+      borderRadius: BorderRadius.circular(7),
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(7),
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+          padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 7),
           child: Row(
             children: [
               Text(
                 formatTime24(item.startsAt),
                 style: const TextStyle(
-                  fontSize: 14,
+                  fontSize: 12,
                   fontWeight: FontWeight.w700,
                   letterSpacing: -0.3,
                   color: AppColors.primary500,
                   height: 1.1,
                 ),
               ),
-              const SizedBox(width: 8),
+              const SizedBox(width: 5),
               Expanded(
                 child: Text(
                   item.className,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: const TextStyle(
-                    fontSize: 13,
+                    fontSize: 12,
                     fontWeight: FontWeight.w500,
                     letterSpacing: -0.3,
                     color: AppColors.textPrimary,
@@ -510,7 +496,7 @@ class _TodayClassRow extends StatelessWidget {
                 Text(
                   price,
                   style: const TextStyle(
-                    fontSize: 13,
+                    fontSize: 11,
                     fontWeight: FontWeight.w600,
                     letterSpacing: -0.3,
                     color: AppColors.textPrimary,

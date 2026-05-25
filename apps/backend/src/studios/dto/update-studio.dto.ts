@@ -9,6 +9,7 @@ import {
   IsBoolean,
   Min,
   Max,
+  ValidateIf,
 } from 'class-validator';
 import { InputJsonValue } from '@prisma/client/runtime/library';
 
@@ -42,6 +43,7 @@ export class UpdateStudioDto {
   phone?: string;
 
   @IsOptional()
+  @ValidateIf((_, value) => value !== '' && value != null)
   @IsEmail()
   email?: string;
 

@@ -1,16 +1,20 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
 import '../../constants/colors.dart';
+import '../../l10n/locale_provider.dart';
 
 class ClientPlaceholderCard extends StatelessWidget {
   const ClientPlaceholderCard({
     super.key,
     required this.title,
     required this.subtitle,
+    this.onRetry,
   });
 
   final String title;
   final String subtitle;
+  final VoidCallback? onRetry;
 
   @override
   Widget build(BuildContext context) {
@@ -40,6 +44,16 @@ class ClientPlaceholderCard extends StatelessWidget {
               color: AppColors.textSecondary,
             ),
           ),
+          if (onRetry != null) ...[
+            const SizedBox(height: 12),
+            Align(
+              alignment: Alignment.centerLeft,
+              child: TextButton(
+                onPressed: onRetry,
+                child: Text(context.watch<LocaleProvider>().t('common.retry')),
+              ),
+            ),
+          ],
         ],
       ),
     );

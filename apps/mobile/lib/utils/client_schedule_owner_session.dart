@@ -86,8 +86,8 @@ ClientScheduleCardPresentation presentationForClientScheduleItem(
 
   return ClientScheduleCardPresentation(
     subtitleLabel: studioName.isNotEmpty ? studioName : 'Studio',
-    showLocationPin: false,
-    showSubtitleLeadingIcon: false,
+    showLocationPin: true,
+    showSubtitleLeadingIcon: true,
     trainerLine: trainerLine,
   );
 }
