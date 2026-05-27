@@ -14,13 +14,11 @@ import '../../utils/owner_navigation_restore.dart';
 import 'dashboard/dashboard_screen.dart';
 import 'calendar_screen.dart';
 import 'app_settings_screen.dart';
-import 'profile_screen.dart';
 import 'add_training_screen.dart';
 import 'services_screen.dart';
 import 'staff_screen.dart';
 import 'clients_screen.dart';
 import 'all_bookings_screen.dart';
-import 'analytics_screen.dart';
 import 'owner_edit_training_session_screen.dart';
 
 class MainShell extends StatefulWidget {
@@ -196,12 +194,6 @@ class MainShellState extends State<MainShell> {
             return MaterialPageRoute<void>(
               builder: (_) => _ClientsTabOpener(args: settings.arguments),
             );
-          case '/analytics':
-            return MaterialPageRoute<void>(
-              builder: (_) => const AnalyticsScreen(),
-            );
-          case '/profile':
-            return MaterialPageRoute(builder: (_) => const ProfileScreen());
           case '/all-bookings':
             return MaterialPageRoute(builder: (_) => const AllBookingsScreen());
           default:

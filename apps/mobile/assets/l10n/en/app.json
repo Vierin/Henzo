@@ -25,7 +25,8 @@
 		"saveFailed": "Failed to save",
 		"deleteFailed": "Failed to delete",
 		"setupSalonFirst": "Set up your business first",
-		"verify": "Verify"
+		"verify": "Verify",
+		"apply": "Apply"
 	},
 	"nav": {
 		"dashboard": "Dashboard",
@@ -47,6 +48,7 @@
 		"password": "Password",
 		"signIn": "Sign in",
 		"continueWithGoogle": "Continue with Google",
+		"continueWithApple": "Continue with Apple",
 		"signInSuccess": "Signed in",
 		"signInError": "Sign in failed",
 		"enterEmail": "Enter email",
@@ -210,7 +212,7 @@
 		"ownerCtaButton": "Join as studio owner"
 	},
 	"errors": {
-		"network": "No connection to server. Check EXPO_PUBLIC_API_URL and that the backend is running.",
+		"network": "No connection to the server. Check your internet connection and try again.",
 		"responseNoUser": "Invalid server response (missing user).",
 		"userNotFoundInSystem": "Your profile could not be loaded.",
 		"accountNotFoundForEmail": "No account exists with this email.",
@@ -221,6 +223,9 @@
 		"googleNoIdToken": "No ID token from Google.",
 		"googleNoSessionAfterSignIn": "No session after Google sign-in.",
 		"googleDeveloperSHA1": "Google sign-in error (10): add your app SHA-1 in Google Cloud Console for the Android OAuth client. Run gradlew signingReport in the android folder.",
+		"appleSignInCancelled": "Sign in was cancelled.",
+		"appleNoIdToken": "No ID token from Apple.",
+		"appleNoSessionAfterSignIn": "No session after Apple sign-in.",
 		"passwordUpdateFailed": "Could not update password.",
 		"profileUpdateFailed": "Could not update profile.",
 		"deleteAccountFailed": "Could not delete account.",
@@ -274,7 +279,15 @@
 		"reviewsSubtitle": "{rating} average · {count} reviews",
 		"reviewsEmpty": "No reviews yet",
 		"reviewsLoadError": "Could not load reviews.",
-		"reviewsRetry": "Try again"
+		"reviewsRetry": "Try again",
+		"helloGreeting": "Hello,",
+		"classesToday": "Classes today",
+		"bookingsToday": "Bookings",
+		"waitlist": "Waitlist",
+		"bookedLabel": "booked",
+		"showMore": "Show more",
+		"noTrainingsToday": "No trainings scheduled for today",
+		"enjoyYourDay": "Enjoy your day!"
 	},
 	"ownerSession": {
 		"detailTitle": "Class",
@@ -593,7 +606,8 @@
 			"bookingPeriodTitle": "Booking period",
 			"bookingPeriodHint": "Choose a period from 1 to 60 days",
 			"bookingPeriodDaysLabel": "Days",
-			"bookingPeriodSaved": "Booking settings saved"
+			"bookingPeriodSaved": "Booking settings saved",
+			"bookingLink": "Booking link & QR"
 		}
 	},
 	"calendar": {

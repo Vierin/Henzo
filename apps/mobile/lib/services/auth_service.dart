@@ -1,10 +1,13 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io' show Platform;
+import 'dart:math';
 import 'package:flutter/foundation.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:http/http.dart' as http;
+import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:crypto/crypto.dart';
 
 import '../config/app_config.dart';
 import '../l10n/auth_error_keys.dart';
@@ -355,60 +358,12 @@ class AuthService extends ChangeNotifier {
         accessToken: accessToken,
       );
 
-      final session = _supabase.auth.currentSession;
-      if (session == null) {
-        if (kDebugMode) debugPrint('[Auth] No session after signInWithIdToken');
-        AppConfig.logIfDevelopment(
-          'login.google',
-          'No Supabase session after signInWithIdToken',
-        );
-        notifyListeners();
-        return (
-          success: false,
-          errorL10nKey: AuthErrorKeys.googleNoSessionAfterSignIn,
-          errorRaw: null,
-        );
-      }
-      if (kDebugMode) {
-        debugPrint('[Auth] Session OK, registerAsOwner=$registerAsOwner');
-      }
-
-      // Register as OWNER before /auth/user so lazy sync does not create CLIENT first.
-      if (registerAsOwner) {
-        final reg = await _registerOwnerAfterOAuth();
-        if (!reg.ok) {
-          return (success: false, errorL10nKey: null, errorRaw: reg.errorRaw);
-        }
-        try {
-          await _supabase.auth.refreshSession();
-        } catch (_) {}
-      }
-
-      final fetch = await _fetchUser(
-        session.accessToken,
-        syncIfMissing: registerAsOwner || syncIfMissing,
+      return _finalizeOAuthSignIn(
+        logTag: 'login.google',
+        registerAsOwner: registerAsOwner,
+        syncIfMissing: syncIfMissing,
+        noSessionL10nKey: AuthErrorKeys.googleNoSessionAfterSignIn,
       );
-      notifyListeners();
-
-      if (!fetch.ok || !_isAuthenticated || _user == null) {
-        await _signOutAfterFailedLogin();
-        notifyListeners();
-        AppConfig.logIfDevelopment(
-          'login.google',
-          'GET /auth/user after Google failed: l10n=${fetch.errorL10nKey} raw=${fetch.errorRaw}',
-        );
-        return _loginFetchFailure(fetch);
-      }
-
-      if (registerAsOwner && !isStudioOperator) {
-        return (
-          success: false,
-          errorL10nKey: AuthErrorKeys.userNotFoundInSystem,
-          errorRaw: 'Owner role was not applied',
-        );
-      }
-
-      return (success: true, errorL10nKey: null, errorRaw: null);
     } catch (e, st) {
       _user = null;
       _isAuthenticated = false;
@@ -437,6 +392,169 @@ class AuthService extends ChangeNotifier {
       }
       return (success: false, errorL10nKey: null, errorRaw: msg);
     }
+  }
+
+  /// [registerAsOwner] — business path: upgrade role to OWNER after Apple sign-in.
+  /// [syncIfMissing] — registration path: create DB user if missing.
+  Future<AuthUiResult> loginWithApple({
+    bool registerAsOwner = false,
+    bool syncIfMissing = false,
+  }) async {
+    if (!Platform.isIOS) {
+      return (
+        success: false,
+        errorL10nKey: null,
+        errorRaw: 'Sign in with Apple is only available on iOS',
+      );
+    }
+    if (kDebugMode) debugPrint('[Auth] loginWithApple: start');
+    try {
+      final rawNonce = _generateNonce();
+      final hashedNonce = _sha256Nonce(rawNonce);
+      final credential = await SignInWithApple.getAppleIDCredential(
+        scopes: [
+          AppleIDAuthorizationScopes.email,
+          AppleIDAuthorizationScopes.fullName,
+        ],
+        nonce: hashedNonce,
+      );
+      final idToken = credential.identityToken;
+      if (idToken == null) {
+        AppConfig.logIfDevelopment(
+          'login.apple',
+          'Apple did not return identityToken',
+        );
+        return (
+          success: false,
+          errorL10nKey: AuthErrorKeys.appleNoIdToken,
+          errorRaw: null,
+        );
+      }
+      if (kDebugMode) {
+        debugPrint('[Auth] Got Apple idToken, calling Supabase signInWithIdToken');
+      }
+      await _supabase.auth.signInWithIdToken(
+        provider: OAuthProvider.apple,
+        idToken: idToken,
+        nonce: rawNonce,
+      );
+      return _finalizeOAuthSignIn(
+        logTag: 'login.apple',
+        registerAsOwner: registerAsOwner,
+        syncIfMissing: syncIfMissing,
+        noSessionL10nKey: AuthErrorKeys.appleNoSessionAfterSignIn,
+      );
+    } on SignInWithAppleAuthorizationException catch (e) {
+      _user = null;
+      _isAuthenticated = false;
+      notifyListeners();
+      if (e.code == AuthorizationErrorCode.canceled) {
+        AppConfig.logIfDevelopment(
+          'login.apple',
+          'User cancelled Apple sign-in',
+        );
+        return (
+          success: false,
+          errorL10nKey: AuthErrorKeys.appleSignInCancelled,
+          errorRaw: null,
+        );
+      }
+      AppConfig.logIfDevelopment(
+        'login.apple',
+        'Apple authorization error: ${e.code}',
+        e,
+      );
+      return (success: false, errorL10nKey: null, errorRaw: e.message);
+    } catch (e, st) {
+      _user = null;
+      _isAuthenticated = false;
+      notifyListeners();
+      final msg = e is AuthException ? e.message : e.toString();
+      AppConfig.logIfDevelopment(
+        'login.apple',
+        'Exception during Apple sign-in',
+        e,
+        st,
+      );
+      if (kDebugMode) debugPrint('[Auth] loginWithApple exception: $e');
+      return (success: false, errorL10nKey: null, errorRaw: msg);
+    }
+  }
+
+  Future<AuthUiResult> _finalizeOAuthSignIn({
+    required String logTag,
+    bool registerAsOwner = false,
+    bool syncIfMissing = false,
+    required String noSessionL10nKey,
+  }) async {
+    final session = _supabase.auth.currentSession;
+    if (session == null) {
+      if (kDebugMode) debugPrint('[Auth] No session after signInWithIdToken');
+      AppConfig.logIfDevelopment(
+        logTag,
+        'No Supabase session after signInWithIdToken',
+      );
+      notifyListeners();
+      return (
+        success: false,
+        errorL10nKey: noSessionL10nKey,
+        errorRaw: null,
+      );
+    }
+    if (kDebugMode) {
+      debugPrint('[Auth] Session OK, registerAsOwner=$registerAsOwner');
+    }
+
+    if (registerAsOwner) {
+      final reg = await _registerOwnerAfterOAuth();
+      if (!reg.ok) {
+        return (success: false, errorL10nKey: null, errorRaw: reg.errorRaw);
+      }
+      try {
+        await _supabase.auth.refreshSession();
+      } catch (_) {}
+    }
+
+    final fetch = await _fetchUser(
+      session.accessToken,
+      syncIfMissing: registerAsOwner || syncIfMissing,
+    );
+    notifyListeners();
+
+    if (!fetch.ok || !_isAuthenticated || _user == null) {
+      await _signOutAfterFailedLogin();
+      notifyListeners();
+      AppConfig.logIfDevelopment(
+        logTag,
+        'GET /auth/user after OAuth failed: l10n=${fetch.errorL10nKey} raw=${fetch.errorRaw}',
+      );
+      return _loginFetchFailure(fetch);
+    }
+
+    if (registerAsOwner && !isStudioOperator) {
+      return (
+        success: false,
+        errorL10nKey: AuthErrorKeys.userNotFoundInSystem,
+        errorRaw: 'Owner role was not applied',
+      );
+    }
+
+    return (success: true, errorL10nKey: null, errorRaw: null);
+  }
+
+  String _generateNonce([int length = 32]) {
+    const charset =
+        '0123456789ABCDEFGHIJKLMNOPQRSTUVXYZabcdefghijklmnopqrstuvwxyz-._';
+    final random = Random.secure();
+    return List.generate(
+      length,
+      (_) => charset[random.nextInt(charset.length)],
+    ).join();
+  }
+
+  String _sha256Nonce(String input) {
+    final bytes = utf8.encode(input);
+    return sha256.convert(bytes).toString();
   }
 
   Future<AuthUiResult> login(String email, String password) async {
@@ -862,19 +980,6 @@ class AuthService extends ChangeNotifier {
         errorL10nKey: AuthErrorKeys.network,
         errorRaw: e.toString(),
       );
-    }
-  }
-
-  String _extractNonceFromJwt(String token) {
-    try {
-      final parts = token.split('.');
-      if (parts.length != 3) return '';
-      final payload = base64Url.normalize(parts[1]);
-      final decoded = jsonDecode(utf8.decode(base64Url.decode(payload)))
-          as Map<String, dynamic>;
-      return decoded['nonce'] as String? ?? '';
-    } catch (_) {
-      return '';
     }
   }
 }

@@ -62,6 +62,7 @@ class AnalyticsService {
   }
 
   Future<void> setUser(String? userId, {String? role, String? locale}) async {
+    if (!_optedIn) return;
     try {
       await FirebaseAnalytics.instance.setUserId(id: userId);
       if (userId != null && userId.isNotEmpty) {

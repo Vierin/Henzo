@@ -5,6 +5,8 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 ///
 /// Debug: `assets/.env.local` → `assets/.env` → `assets/.env.local.example`
 /// Release/profile: `assets/.env` → `assets/.env.production.example`
+String? loadedAppEnvFile;
+
 Future<String> loadAppEnv() async {
   final candidates = kDebugMode
       ? <String>[
@@ -21,6 +23,7 @@ Future<String> loadAppEnv() async {
   for (final fileName in candidates) {
     try {
       await dotenv.load(fileName: fileName);
+      loadedAppEnvFile = fileName;
       return fileName;
     } catch (e) {
       lastError = e;

@@ -21,6 +21,8 @@ import '../widgets/settings/owner_booking_period_sheet.dart';
 import '../widgets/settings/settings_header_back_button.dart';
 import '../widgets/settings/settings_list_widgets.dart';
 import '../widgets/settings/settings_typography.dart';
+import 'booking_link_screen.dart';
+import 'dashboard/owner_studio_reviews_screen.dart';
 import 'settings_screen.dart';
 import 'services_screen.dart';
 import 'staff_screen.dart';
@@ -330,6 +332,34 @@ class _AppSettingsScreenState extends State<AppSettingsScreen> {
                             builder: (_) => const StaffScreen(),
                           ),
                         ),
+                      ),
+                      SettingsListTile(
+                        icon: Icons.link_outlined,
+                        title: locale.t('settings.owner.bookingLink'),
+                        onTap: () {
+                          final salon = _salon;
+                          if (salon == null) return;
+                          Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (_) => BookingLinkScreen(salon: salon),
+                            ),
+                          );
+                        },
+                      ),
+                      SettingsListTile(
+                        icon: Icons.star_outline,
+                        title: locale.t('dashboard.reviewsTitle'),
+                        onTap: () {
+                          final studioId = _salon?.id ?? '';
+                          if (studioId.isEmpty) return;
+                          Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (_) => OwnerStudioReviewsScreen(
+                                studioId: studioId,
+                              ),
+                            ),
+                          );
+                        },
                       ),
                     ],
                   ),

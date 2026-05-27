@@ -26,7 +26,7 @@ flutter build ipa --release --build-name=1.0.0 --build-number=2
 |------|--------|
 | 1 | `copy android\key.properties.example android\key.properties` and set passwords |
 | 2 | `.\android\scripts\create-upload-keystore.ps1` (once) — upload SHA-1: `70:A5:A9:76:D4:97:F8:00:6E:B7:5B:1C:0F:44:12:71:E6:13:47:94` |
-| 3 | `assets/.env` from `assets/.env.production.example` (production API, not LAN) |
+| 3 | `assets/.env` from `assets/.env.production.example` (production API, not LAN). Release builds **fail at startup** if `.example` or placeholder keys are loaded (`lib/config/release_env.dart`). |
 | 4 | Firebase: add Android app `com.henzo.app` → `dart run flutterfire configure` |
 | 5 | Google OAuth Android client: package `com.henzo.app` + debug & release SHA-1 ([GOOGLE_OAUTH_ANDROID.md](../GOOGLE_OAUTH_ANDROID.md)) |
 | 6 | RevenueCat: Android app package `com.henzo.app` |
@@ -68,7 +68,7 @@ Release builds use **HTTPS only** (`usesCleartextTraffic=false`). Debug allows H
 - [ ] Google Sign-In (iOS + Android)
 - [ ] Browse class / book flow
 - [ ] Push notification (FCM token registers)
-- [ ] Deep links: `henzo://class/...`, `henzo://subscription-checkout`
+- [ ] Deep link: `henzo://class/...`
 - [ ] API reachable from mobile data (not dev LAN)
 
 ## Windows note

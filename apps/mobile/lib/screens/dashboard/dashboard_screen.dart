@@ -431,16 +431,16 @@ class _DashboardScreenState extends State<DashboardScreen> {
     return '';
   }
 
-  Widget _greeting(UserModel? user) {
+  Widget _greeting(LocaleProvider loc, UserModel? user) {
     final name = _greetingUserLine(user);
     return Padding(
       padding: const EdgeInsets.fromLTRB(12, 8, 12, 20),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'Hello,',
-            style: TextStyle(
+          Text(
+            loc.t('dashboard.helloGreeting'),
+            style: const TextStyle(
               fontSize: 28,
               fontWeight: FontWeight.w400,
               height: 1.1,
@@ -516,7 +516,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
-  Widget _statsRow() {
+  Widget _statsRow(LocaleProvider loc) {
     final classesToday = _todaySessions.length;
     final classesBg =
         classesToday > 0 ? _statGreen : _statClassesEmpty;
@@ -530,7 +530,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
           Expanded(
             child: _statCard(
               value: '$classesToday',
-              label: 'Classes today',
+              label: loc.t('dashboard.classesToday'),
               background: classesBg,
               textColor: classesText,
             ),
@@ -539,7 +539,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
           Expanded(
             child: _statCard(
               value: '$_todayBookings',
-              label: 'Bookings',
+              label: loc.t('dashboard.bookingsToday'),
               background: _statPink,
             ),
           ),
@@ -547,7 +547,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
           Expanded(
             child: _statCard(
               value: '$_todayWaitlist',
-              label: 'Waitlist',
+              label: loc.t('dashboard.waitlist'),
               background: AppColors.backgroundPrimary,
               bordered: true,
             ),
@@ -557,7 +557,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
-  Widget _featuredCard(OwnerTrainingSession s) {
+  Widget _featuredCard(LocaleProvider loc, OwnerTrainingSession s) {
     final cap = s.capacity;
     final enrolled = s.enrolledCount;
     final progress = cap > 0 ? (enrolled / cap).clamp(0.0, 1.0) : 0.0;
@@ -718,7 +718,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                   ),
                                 ),
                                 Text(
-                                  'booked',
+                                  loc.t('dashboard.bookedLabel'),
                                   style: TextStyle(
                                     fontSize: 14,
                                     fontWeight: FontWeight.w400,
@@ -742,19 +742,19 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                 color: Colors.white,
                                 borderRadius: BorderRadius.circular(999),
                               ),
-                              child: const Row(
+                              child: Row(
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
                                   Text(
-                                    'Show more',
-                                    style: TextStyle(
+                                    loc.t('dashboard.showMore'),
+                                    style: const TextStyle(
                                       fontSize: 14,
                                       fontWeight: FontWeight.w600,
                                       color: AppColors.textPrimary,
                                     ),
                                   ),
-                                  SizedBox(width: 2),
-                                  Icon(
+                                  const SizedBox(width: 2),
+                                  const Icon(
                                     Icons.chevron_right,
                                     size: 20,
                                     color: AppColors.textPrimary,
@@ -844,9 +844,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 _header(loc),
-                _greeting(authUser),
-                _statsRow(),
-                if (featured != null) _featuredCard(featured),
+                _greeting(loc, authUser),
+                _statsRow(loc),
+                if (featured != null) _featuredCard(loc, featured),
                 _checklistBlock(),
                 if (_sessionsLoadError != null)
                   Padding(
@@ -865,8 +865,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 else
                   OwnerDailyScheduleBlock(
                     sessions: _todaySessions,
-                    emptyMessage: 'No trainings scheduled for today',
-                    emptySubtitle: 'Enjoy your day!',
+                    emptyMessage: loc.t('dashboard.noTrainingsToday'),
+                    emptySubtitle: loc.t('dashboard.enjoyYourDay'),
                     onSeeAll: _salon == null
                         ? null
                         : () => context

@@ -12,8 +12,8 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'config/app_config.dart';
 import 'config/load_app_env.dart';
+import 'config/release_env.dart';
 import 'deep_links/class_session_deep_link.dart';
-import 'deep_links/subscription_checkout_deep_link.dart';
 import 'firebase_options.dart';
 import 'l10n/locale_provider.dart';
 import 'screens/main_shell.dart';
@@ -48,6 +48,7 @@ Future<void> main() async {
         initializeDateFormatting('vi'),
       ]);
       final loadedEnv = await loadAppEnv();
+      assertValidReleaseConfiguration();
       assert(() {
         // ignore: avoid_print
         print(
@@ -119,7 +120,7 @@ Future<void> main() async {
   );
 }
 
-/// Корневой [Navigator] для deep links после Stripe (например `henzo://subscription-checkout`).
+/// Корневой [Navigator] для deep links (например `henzo://class`).
 final GlobalKey<NavigatorState> henzoRootNavigatorKey =
     GlobalKey<NavigatorState>();
 
@@ -246,10 +247,7 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
               final layered = _withKeyboardDismiss(context, child);
               return ClassSessionDeepLinkScope(
                 navigatorKey: henzoRootNavigatorKey,
-                child: SubscriptionCheckoutDeepLinkScope(
-                  navigatorKey: henzoRootNavigatorKey,
-                  child: layered,
-                ),
+                child: layered,
               );
             },
             locale: Locale(locale.languageTag),

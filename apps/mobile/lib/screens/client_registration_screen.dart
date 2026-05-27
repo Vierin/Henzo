@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io' show Platform;
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -8,6 +9,7 @@ import '../l10n/locale_provider.dart';
 import '../services/auth_service.dart';
 import '../utils/auth_ui_result.dart';
 import '../utils/show_api_error.dart';
+import '../widgets/auth/apple_sign_in_button.dart';
 import '../widgets/auth/auth_form_styles.dart';
 import '../widgets/legal/legal_agreement_footer.dart';
 import '../widgets/settings/branded_settings_app_bar.dart';
@@ -30,7 +32,10 @@ class _ClientRegistrationScreenState extends State<ClientRegistrationScreen> {
   bool _obscurePassword = true;
   bool _isSubmitting = false;
   bool _isGoogleLoading = false;
+  bool _isAppleLoading = false;
   bool _isVerificationStep = false;
+
+  bool get _isOAuthBusy => _isGoogleLoading || _isAppleLoading;
   bool _isVerifyingCode = false;
   bool _isResendingCode = false;
   int _resendSecondsLeft = 0;
@@ -175,6 +180,25 @@ class _ClientRegistrationScreenState extends State<ClientRegistrationScreen> {
     showApiError(context, resolveAuthUiMessage(locale, result));
   }
 
+  Future<void> _submitApple() async {
+    if (!_agreedToTerms) {
+      showApiError(context, context.read<LocaleProvider>().t('legal.mustAgree'));
+      return;
+    }
+    setState(() => _isAppleLoading = true);
+    final auth = context.read<AuthService>();
+    final locale = context.read<LocaleProvider>();
+    final result = await auth.loginWithApple(syncIfMissing: true);
+    if (!mounted) return;
+    setState(() => _isAppleLoading = false);
+    if (result.success) {
+      showSuccess(context, locale.t('auth.signInSuccess'));
+      Navigator.of(context).popUntil((route) => route.isFirst);
+      return;
+    }
+    showApiError(context, resolveAuthUiMessage(locale, result));
+  }
+
   Widget _buildGoogleIcon() {
     return Image.asset(
       'assets/public/icon-google.png',
@@ -309,7 +333,7 @@ class _ClientRegistrationScreenState extends State<ClientRegistrationScreen> {
             height: AuthFormStyles.buttonHeight,
             child: FilledButton(
               onPressed:
-                  (_isSubmitting || _isGoogleLoading) ? null : _submit,
+                  (_isSubmitting || _isOAuthBusy) ? null : _submit,
               style: AuthFormStyles.primaryButtonStyle(),
               child: _isSubmitting
                   ? const SizedBox(
@@ -363,7 +387,7 @@ class _ClientRegistrationScreenState extends State<ClientRegistrationScreen> {
             height: AuthFormStyles.buttonHeight,
             child: OutlinedButton.icon(
               onPressed:
-                  (_isSubmitting || _isGoogleLoading) ? null : _submitGoogle,
+                  (_isSubmitting || _isOAuthBusy) ? null : _submitGoogle,
               icon: _isGoogleLoading
                   ? const SizedBox(
                       width: 20,
@@ -384,6 +408,16 @@ class _ClientRegistrationScreenState extends State<ClientRegistrationScreen> {
               style: AuthFormStyles.googleButtonStyle(),
             ),
           ),
+          if (Platform.isIOS) ...[
+            const SizedBox(height: 8),
+            AppleSignInButton(
+              isLoading: _isAppleLoading,
+              onPressed: (_isSubmitting || _isOAuthBusy) ? null : _submitApple,
+              label: _isAppleLoading
+                  ? locale.t('common.loading')
+                  : locale.t('auth.continueWithApple'),
+            ),
+          ],
         ],
       ),
     );

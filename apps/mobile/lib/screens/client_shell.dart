@@ -3,6 +3,8 @@ import 'package:provider/provider.dart';
 
 import '../constants/colors.dart';
 import '../l10n/locale_provider.dart';
+import '../services/auth_service.dart';
+import '../services/push_notification_service.dart';
 import '../widgets/shell/shell_nav_item.dart';
 import 'client/client_bookings_screen.dart';
 import 'client/client_profile_screen.dart';
@@ -23,6 +25,25 @@ class _ClientShellState extends State<ClientShell> {
   bool _showMapScreen = false;
   final GlobalKey<ClientSearchScreenState> _exploreScreenKey =
       GlobalKey<ClientSearchScreenState>();
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) => _registerPushToken());
+  }
+
+  Future<void> _registerPushToken() async {
+    if (!mounted) return;
+    final token = context.read<AuthService>().accessToken;
+    if (token == null || token.isEmpty) return;
+    final locale = context.read<LocaleProvider>();
+    await PushNotificationService.requestNotificationPermission();
+    if (!mounted) return;
+    PushNotificationService.registerToken(
+      accessToken: token,
+      language: locale.localeCode,
+    );
+  }
 
   void goToExploreTab({int? categoryId, bool showClasses = true}) {
     setState(() => _currentIndex = 1);

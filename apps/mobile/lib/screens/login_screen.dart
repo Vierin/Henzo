@@ -1,3 +1,5 @@
+import 'dart:io' show Platform;
+
 import 'package:flutter/material.dart';
 import '../widgets/common/henzo_modal.dart';
 import 'package:provider/provider.dart';
@@ -8,6 +10,7 @@ import '../screens/registration_role_screen.dart';
 import '../services/auth_service.dart';
 import '../utils/auth_ui_result.dart';
 import '../utils/show_api_error.dart';
+import '../widgets/auth/apple_sign_in_button.dart';
 import '../widgets/auth/auth_form_styles.dart';
 import '../widgets/language_selector_modal.dart';
 
@@ -25,6 +28,9 @@ class _LoginScreenState extends State<LoginScreen> {
   bool _obscurePassword = true;
   bool _isSubmitting = false;
   bool _isGoogleLoading = false;
+  bool _isAppleLoading = false;
+
+  bool get _isOAuthBusy => _isGoogleLoading || _isAppleLoading;
 
   @override
   void dispose() {
@@ -69,6 +75,29 @@ class _LoginScreenState extends State<LoginScreen> {
     if (!mounted) return;
 
     setState(() => _isGoogleLoading = false);
+
+    final locale = context.read<LocaleProvider>();
+    if (result.success) {
+      showSuccess(context, locale.t('auth.signInSuccess'));
+    } else {
+      final msg = resolveAuthUiMessage(locale, result);
+      if (msg.isNotEmpty) {
+        showApiError(context, msg);
+      } else {
+        showApiError(context, locale.t('auth.signInError'));
+      }
+    }
+  }
+
+  Future<void> _submitApple() async {
+    setState(() => _isAppleLoading = true);
+
+    final auth = context.read<AuthService>();
+    final result = await auth.loginWithApple();
+
+    if (!mounted) return;
+
+    setState(() => _isAppleLoading = false);
 
     final locale = context.read<LocaleProvider>();
     if (result.success) {
@@ -273,7 +302,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   Align(
                     alignment: Alignment.centerRight,
                     child: TextButton(
-                      onPressed: (_isSubmitting || _isGoogleLoading)
+                      onPressed: (_isSubmitting || _isOAuthBusy)
                           ? null
                           : _showForgotPassword,
                       style: TextButton.styleFrom(
@@ -319,7 +348,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   const SizedBox(height: 8),
                   TextButton(
                     onPressed:
-                        (_isSubmitting || _isGoogleLoading) ? null : _openRegister,
+                        (_isSubmitting || _isOAuthBusy) ? null : _openRegister,
                     style: TextButton.styleFrom(
                       tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                       minimumSize: Size.zero,
@@ -365,7 +394,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   SizedBox(
                     height: AuthFormStyles.buttonHeight,
                     child: OutlinedButton.icon(
-                      onPressed: (_isSubmitting || _isGoogleLoading)
+                      onPressed: (_isSubmitting || _isOAuthBusy)
                           ? null
                           : _submitGoogle,
                       icon: _isGoogleLoading
@@ -388,6 +417,18 @@ class _LoginScreenState extends State<LoginScreen> {
                       style: AuthFormStyles.googleButtonStyle(),
                     ),
                   ),
+                  if (Platform.isIOS) ...[
+                    const SizedBox(height: 8),
+                    AppleSignInButton(
+                      isLoading: _isAppleLoading,
+                      onPressed: (_isSubmitting || _isOAuthBusy)
+                          ? null
+                          : _submitApple,
+                      label: _isAppleLoading
+                          ? locale.t('common.loading')
+                          : locale.t('auth.continueWithApple'),
+                    ),
+                  ],
                   const SizedBox(height: 8),
                 ],
               ),

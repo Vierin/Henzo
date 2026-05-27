@@ -1078,7 +1078,7 @@ class ClientSearchScreenState extends State<ClientSearchScreen>
                             style: FilledButton.styleFrom(
                               backgroundColor: AppColors.primary500,
                             ),
-                            child: const Text('Apply'),
+                            child: Text(context.watch<LocaleProvider>().t('common.apply')),
                           ),
                         ),
                       ],
@@ -1286,7 +1286,7 @@ class ClientSearchScreenState extends State<ClientSearchScreen>
                           style: FilledButton.styleFrom(
                             backgroundColor: AppColors.primary500,
                           ),
-                          child: const Text('Apply'),
+                          child: Text(context.watch<LocaleProvider>().t('common.apply')),
                         ),
                       ),
                     ],
@@ -1477,7 +1477,7 @@ class ClientSearchScreenState extends State<ClientSearchScreen>
                           style: FilledButton.styleFrom(
                             backgroundColor: AppColors.primary500,
                           ),
-                          child: const Text('Apply'),
+                          child: Text(context.watch<LocaleProvider>().t('common.apply')),
                         ),
                       ),
                     ],
@@ -1643,7 +1643,7 @@ class ClientSearchScreenState extends State<ClientSearchScreen>
                           style: FilledButton.styleFrom(
                             backgroundColor: AppColors.primary500,
                           ),
-                          child: const Text('Apply'),
+                          child: Text(context.watch<LocaleProvider>().t('common.apply')),
                         ),
                       ),
                     ],
@@ -1996,7 +1996,7 @@ class ClientSearchScreenState extends State<ClientSearchScreen>
                             style: FilledButton.styleFrom(
                               backgroundColor: AppColors.primary500,
                             ),
-                            child: const Text('Apply'),
+                            child: Text(context.watch<LocaleProvider>().t('common.apply')),
                           ),
                         ),
                       ],

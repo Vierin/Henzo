@@ -6,7 +6,7 @@ class Subscription {
   final String status; // ACTIVE, INACTIVE, CANCELLED, EXPIRED
   final String startDate;
   final double? amount;
-  /// ISO 8601 end of current billing period (Stripe), if known.
+  /// ISO 8601 end of current billing period, if known.
   final String? currentPeriodEnd;
 
   Subscription({

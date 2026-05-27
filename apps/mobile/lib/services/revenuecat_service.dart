@@ -116,9 +116,11 @@ class RevenueCatService {
         return true;
       }
     }
-    // Test Store: product bought but not linked to entitlement in RC dashboard.
-    if (info.entitlements.active.isNotEmpty) return true;
-    if (info.activeSubscriptions.isNotEmpty) return true;
+    // Test Store only: product bought but not linked to entitlement in RC dashboard.
+    if (kDebugMode) {
+      if (info.entitlements.active.isNotEmpty) return true;
+      if (info.activeSubscriptions.isNotEmpty) return true;
+    }
     return false;
   }
 

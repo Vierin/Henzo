@@ -25,7 +25,8 @@
 		"saveFailed": "Не удалось сохранить",
 		"deleteFailed": "Не удалось удалить",
 		"setupSalonFirst": "Сначала настройте бизнес",
-		"verify": "Подтвердить"
+		"verify": "Подтвердить",
+		"apply": "Применить"
 	},
 	"nav": {
 		"dashboard": "Дашборд",
@@ -47,6 +48,7 @@
 		"password": "Пароль",
 		"signIn": "Войти",
 		"continueWithGoogle": "Продолжить с Google",
+		"continueWithApple": "Продолжить с Apple",
 		"signInSuccess": "Вход выполнен",
 		"signInError": "Ошибка входа",
 		"enterEmail": "Введите email",
@@ -210,7 +212,7 @@
 		"ownerCtaButton": "Присоединиться как владелец"
 	},
 	"errors": {
-		"network": "Нет связи с сервером. Проверьте EXPO_PUBLIC_API_URL и что бэкенд запущен.",
+		"network": "Нет связи с сервером. Проверьте интернет и попробуйте снова.",
 		"responseNoUser": "Некорректный ответ сервера (нет данных пользователя).",
 		"userNotFoundInSystem": "Не удалось загрузить профиль.",
 		"accountNotFoundForEmail": "Не существует аккаунта с такой почтой.",
@@ -221,6 +223,9 @@
 		"googleNoIdToken": "Нет ID токена от Google.",
 		"googleNoSessionAfterSignIn": "Нет сессии после входа через Google.",
 		"googleDeveloperSHA1": "Ошибка Google (10): добавьте SHA-1 приложения в Google Cloud для Android OAuth. В папке android выполните gradlew signingReport.",
+		"appleSignInCancelled": "Вход отменён.",
+		"appleNoIdToken": "Нет ID токена от Apple.",
+		"appleNoSessionAfterSignIn": "Нет сессии после входа через Apple.",
 		"passwordUpdateFailed": "Не удалось обновить пароль.",
 		"profileUpdateFailed": "Не удалось обновить профиль.",
 		"deleteAccountFailed": "Не удалось удалить аккаунт.",
@@ -274,7 +279,15 @@
 		"reviewsSubtitle": "в среднем {rating} · {count} отзывов",
 		"reviewsEmpty": "Пока нет отзывов",
 		"reviewsLoadError": "Не удалось загрузить отзывы.",
-		"reviewsRetry": "Повторить"
+		"reviewsRetry": "Повторить",
+		"helloGreeting": "Привет,",
+		"classesToday": "Занятий сегодня",
+		"bookingsToday": "Записи",
+		"waitlist": "Лист ожидания",
+		"bookedLabel": "записано",
+		"showMore": "Подробнее",
+		"noTrainingsToday": "На сегодня занятий нет",
+		"enjoyYourDay": "Хорошего дня!"
 	},
 	"ownerSession": {
 		"detailTitle": "Занятие",
@@ -593,7 +606,8 @@
 			"bookingPeriodTitle": "Период бронирования",
 			"bookingPeriodHint": "Выберите период от 1 до 60 дней",
 			"bookingPeriodDaysLabel": "Дней",
-			"bookingPeriodSaved": "Настройки бронирования сохранены"
+			"bookingPeriodSaved": "Настройки бронирования сохранены",
+			"bookingLink": "Ссылка для записи и QR"
 		}
 	},
 	"calendar": {

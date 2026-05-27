@@ -25,7 +25,8 @@
 		"saveFailed": "Lưu thất bại",
 		"deleteFailed": "Xóa thất bại",
 		"setupSalonFirst": "Hãy thiết lập doanh nghiệp trước",
-		"verify": "Xác minh"
+		"verify": "Xác minh",
+		"apply": "Áp dụng"
 	},
 	"nav": {
 		"dashboard": "Bảng điều khiển",
@@ -47,6 +48,7 @@
 		"password": "Mật khẩu",
 		"signIn": "Đăng nhập",
 		"continueWithGoogle": "Tiếp tục với Google",
+		"continueWithApple": "Tiếp tục với Apple",
 		"signInSuccess": "Đã đăng nhập",
 		"signInError": "Đăng nhập thất bại",
 		"enterEmail": "Nhập email",
@@ -210,7 +212,7 @@
 		"ownerCtaButton": "Tham gia với vai trò chủ studio"
 	},
 	"errors": {
-		"network": "Không kết nối được máy chủ. Kiểm tra EXPO_PUBLIC_API_URL và backend.",
+		"network": "Không kết nối được máy chủ. Kiểm tra internet và thử lại.",
 		"responseNoUser": "Phản hồi máy chủ không hợp lệ (thiếu người dùng).",
 		"userNotFoundInSystem": "Không tải được hồ sơ.",
 		"accountNotFoundForEmail": "Không có tài khoản với email này.",
@@ -221,6 +223,9 @@
 		"googleNoIdToken": "Không có ID token từ Google.",
 		"googleNoSessionAfterSignIn": "Không có phiên sau khi đăng nhập Google.",
 		"googleDeveloperSHA1": "Lỗi Google (10): thêm SHA-1 ứng dụng trong Google Cloud cho OAuth Android. Chạy gradlew signingReport trong thư mục android.",
+		"appleSignInCancelled": "Đăng nhập đã bị hủy.",
+		"appleNoIdToken": "Không có ID token từ Apple.",
+		"appleNoSessionAfterSignIn": "Không có phiên sau khi đăng nhập Apple.",
 		"passwordUpdateFailed": "Không thể cập nhật mật khẩu.",
 		"profileUpdateFailed": "Không thể cập nhật hồ sơ.",
 		"deleteAccountFailed": "Không thể xóa tài khoản.",
@@ -274,7 +279,15 @@
 		"reviewsSubtitle": "trung bình {rating} · {count} đánh giá",
 		"reviewsEmpty": "Chưa có đánh giá",
 		"reviewsLoadError": "Không tải được đánh giá.",
-		"reviewsRetry": "Thử lại"
+		"reviewsRetry": "Thử lại",
+		"helloGreeting": "Xin chào,",
+		"classesToday": "Lớp hôm nay",
+		"bookingsToday": "Đặt chỗ",
+		"waitlist": "Danh sách chờ",
+		"bookedLabel": "đã đặt",
+		"showMore": "Xem thêm",
+		"noTrainingsToday": "Không có lớp nào hôm nay",
+		"enjoyYourDay": "Chúc bạn một ngày tốt lành!"
 	},
 	"ownerSession": {
 		"detailTitle": "Buổi tập",
@@ -593,7 +606,8 @@
 			"bookingPeriodTitle": "Thời hạn đặt chỗ",
 			"bookingPeriodHint": "Chọn từ 1 đến 60 ngày",
 			"bookingPeriodDaysLabel": "Ngày",
-			"bookingPeriodSaved": "Đã lưu cài đặt đặt chỗ"
+			"bookingPeriodSaved": "Đã lưu cài đặt đặt chỗ",
+			"bookingLink": "Liên kết đặt chỗ & QR"
 		}
 	},
 	"calendar": {

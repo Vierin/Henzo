@@ -121,7 +121,13 @@ class _ClientProfileScreenState extends State<ClientProfileScreen>
       _statsCachedAt = DateTime.now();
     } catch (_) {
       if (!mounted) return;
-      setState(() => _loadingStats = false);
+      setState(() {
+        if (_cachedClassesVisited != null) {
+          _classesVisited = _cachedClassesVisited!;
+          _hoursTrained = _cachedHoursTrained ?? 0;
+        }
+        _loadingStats = false;
+      });
     }
   }
 
