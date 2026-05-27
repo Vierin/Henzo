@@ -59,6 +59,9 @@ post_install do |installer|
       # Xcode 26+ ругается на pods с таргетом < 12
       t = config.build_settings['IPHONEOS_DEPLOYMENT_TARGET']
       config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '15.0' if t.nil? || t.to_f < 15.0
+      config.build_settings['DEBUG_INFORMATION_FORMAT'] = 'dwarf-with-dsym'
+      config.build_settings['COPY_PHASE_STRIP'] = 'NO'
+      config.build_settings['STRIP_INSTALLED_PRODUCT'] = 'NO'
 
       if NOISY_PODS.include?(target.name)
         config.build_settings['GCC_WARN_INHIBIT_ALL_WARNINGS'] = 'YES'
@@ -72,6 +75,23 @@ post_install do |installer|
   runner_project = Xcodeproj::Project.open(File.expand_path('Runner.xcodeproj', __dir__))
   runner_project.targets.each do |target|
     next unless target.name == 'Runner'
+
+    dsym_phase_name = 'Generate Missing Framework dSYMs'
+    unless target.shell_script_build_phases.any? { |p| p.name == dsym_phase_name }
+      dsym_phase = target.new_shell_script_build_phase(dsym_phase_name)
+      dsym_phase.shell_script = <<~SH
+        if [ "${CONFIGURATION}" = "Debug" ]; then exit 0; fi
+        find "${DWARF_DSYM_FOLDER_PATH}" -maxdepth 0 2>/dev/null || mkdir -p "${DWARF_DSYM_FOLDER_PATH}"
+        find "${TARGET_BUILD_DIR}" -name "*.framework" -type d | while read fw; do
+          name=$(basename "$fw" .framework)
+          dsym="${DWARF_DSYM_FOLDER_PATH}/${name}.framework.dSYM"
+          if [ ! -d "$dsym" ]; then
+            echo "Generating dSYM for ${name}.framework"
+            dsymutil "${fw}/${name}" -o "$dsym" 2>/dev/null || true
+          fi
+        done
+      SH
+    end
 
     phase_name = '[firebase_crashlytics] Crashlytics Upload Symbols'
     next if target.shell_script_build_phases.any? { |p| p.name == phase_name }

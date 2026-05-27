@@ -88,9 +88,6 @@ dev_dependencies:
 flutter:
   assets:
     - assets/.env
-    - assets/.env.local
-    - assets/.env.local.example
-    - assets/.env.production.example
     - assets/icon.png
     - assets/logo.png
     - assets/cloud.webp

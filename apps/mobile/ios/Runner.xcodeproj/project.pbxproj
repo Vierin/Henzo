@@ -126,7 +126,6 @@
 				AFA936FE054B4E45319E35A1 /* PhoneConnectivityManager.swift */,
 				4A306FE6C0EA6434EC391B23 /* HenzoWatch.entitlements */,
 			);
-			name = HenzoWatch;
 			path = HenzoWatch;
 			sourceTree = "<group>";
 		};
@@ -275,6 +274,7 @@
 				CC827EFEE45A863F39546EE4 /* [CP] Embed Pods Frameworks */,
 				A04FD51DD9433C2979CFFA3A /* [CP] Copy Pods Resources */,
 				36F6CBB534831BE1C047B433 /* [firebase_crashlytics] Crashlytics Upload Symbols */,
+				C199D275C1EA0FA1EFB7E606 /* Generate Missing Framework dSYMs */,
 			);
 			buildRules = (
 			);
@@ -470,6 +470,24 @@
 			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-Runner/Pods-Runner-resources.sh\"\n";
 			showEnvVarsInLog = 0;
 		};
+		C199D275C1EA0FA1EFB7E606 /* Generate Missing Framework dSYMs */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+			);
+			name = "Generate Missing Framework dSYMs";
+			outputFileListPaths = (
+			);
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "if [ \"${CONFIGURATION}\" = \"Debug\" ]; then exit 0; fi\nfind \"${DWARF_DSYM_FOLDER_PATH}\" -maxdepth 0 2>/dev/null || mkdir -p \"${DWARF_DSYM_FOLDER_PATH}\"\nfind \"${TARGET_BUILD_DIR}\" -name \"*.framework\" -type d | while read fw; do\n  name=$(basename \"$fw\" .framework)\n  dsym=\"${DWARF_DSYM_FOLDER_PATH}/${name}.framework.dSYM\"\n  if [ ! -d \"$dsym\" ]; then\n    echo \"Generating dSYM for ${name}.framework\"\n    dsymutil \"${fw}/${name}\" -o \"$dsym\" 2>/dev/null || true\n  fi\ndone\n";
+		};
 		CC827EFEE45A863F39546EE4 /* [CP] Embed Pods Frameworks */ = {
 			isa = PBXShellScriptBuildPhase;
 			buildActionMask = 2147483647;
@@ -613,10 +631,13 @@
 				DEVELOPMENT_TEAM = PR2HAF6344;
 				ENABLE_BITCODE = NO;
 				INFOPLIST_FILE = Runner/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = Henzo;
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.healthcare-fitness";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
+				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.henzo.vn.Henzo;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_OBJC_BRIDGING_HEADER = "Runner/Runner-Bridging-Header.h";
@@ -827,10 +848,13 @@
 				DEVELOPMENT_TEAM = PR2HAF6344;
 				ENABLE_BITCODE = NO;
 				INFOPLIST_FILE = Runner/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = Henzo;
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.healthcare-fitness";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
+				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.henzo.vn.Henzo;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_OBJC_BRIDGING_HEADER = "Runner/Runner-Bridging-Header.h";
@@ -852,10 +876,13 @@
 				DEVELOPMENT_TEAM = PR2HAF6344;
 				ENABLE_BITCODE = NO;
 				INFOPLIST_FILE = Runner/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = Henzo;
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.healthcare-fitness";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
+				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.henzo.vn.Henzo;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_OBJC_BRIDGING_HEADER = "Runner/Runner-Bridging-Header.h";
