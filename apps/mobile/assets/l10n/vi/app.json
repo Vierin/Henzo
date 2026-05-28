@@ -571,8 +571,6 @@
 		"privacyComingSoon": "Chính sách bảo mật đang phát triển",
 		"termsOfUse": "Điều khoản sử dụng",
 		"termsComingSoon": "Điều khoản đang phát triển",
-		"analyticsOptIn": "Phân tích & báo cáo lỗi",
-		"analyticsOptInHint": "Giúp cải thiện ứng dụng. Không theo dõi liên ứng dụng.",
 		"feedback": {
 			"sendFeedback": "Trợ giúp & phản hồi",
 			"sheetTitle": "Trợ giúp & phản hồi",
@@ -607,7 +605,7 @@
 			"bookingPeriodHint": "Chọn từ 1 đến 60 ngày",
 			"bookingPeriodDaysLabel": "Ngày",
 			"bookingPeriodSaved": "Đã lưu cài đặt đặt chỗ",
-			"bookingLink": "Liên kết đặt chỗ & QR"
+			"bookingLink": "Xem trước salon"
 		}
 	},
 	"calendar": {

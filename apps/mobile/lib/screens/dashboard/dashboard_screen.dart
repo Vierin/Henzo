@@ -49,6 +49,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   List<OwnerTrainingSession> _todaySessions = [];
   String? _sessionsLoadError;
   bool _isPublishing = false;
+  bool _dataLoaded = false;
   SubscriptionRefreshNotifier? _subRefresh;
 
   @override
@@ -125,6 +126,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
           _checklist = checklist;
           _todaySessions = sessions;
           _sessionsLoadError = sessionsLoadError;
+          _dataLoaded = true;
         });
       }
     } catch (e) {
@@ -136,6 +138,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
             context.read<LocaleProvider>(),
             e,
           );
+          _dataLoaded = true;
         });
         if (!isOwnerStudioNotReadyError(e)) {
           showApiError(context, e);
@@ -777,6 +780,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   Widget _checklistBlock() {
+    if (!_dataLoaded) return const SizedBox.shrink();
+
     final salon = _salon;
     final c = _checklist;
     final status = _studioStatus(salon, c);

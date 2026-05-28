@@ -102,42 +102,65 @@ class _ClientShellState extends State<ClientShell> {
                 borderRadius: BorderRadius.circular(16),
                 border: Border.all(color: const Color(0xFFE6E3E2), width: 1),
               ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Expanded(
-                    child: ShellNavItem(
-                      svgAsset: 'assets/icons/icon-house.svg',
-                      label: locale.t('clientShell.home'),
-                      isSelected: _currentIndex == 0,
-                      onTap: () => setState(() => _currentIndex = 0),
-                    ),
-                  ),
-                  Expanded(
-                    child: ShellNavItem(
-                      svgAsset: 'assets/icons/icon-search.svg',
-                      label: locale.t('clientShell.browse'),
-                      isSelected: _currentIndex == 1,
-                      onTap: () => goToExploreTab(showClasses: true),
-                    ),
-                  ),
-                  Expanded(
-                    child: ShellNavItem(
-                      svgAsset: 'assets/icons/icon-schedule.svg',
-                      label: locale.t('clientShell.activity'),
-                      isSelected: _currentIndex == 2,
-                      onTap: () => setState(() => _currentIndex = 2),
-                    ),
-                  ),
-                  Expanded(
-                    child: ShellNavItem(
-                      svgAsset: 'assets/icons/icon-profile-large.svg',
-                      label: locale.t('clientShell.profile'),
-                      isSelected: _currentIndex == 3,
-                      onTap: () => setState(() => _currentIndex = 3),
-                    ),
-                  ),
-                ],
+              child: LayoutBuilder(
+                builder: (context, constraints) {
+                  final itemWidth = constraints.maxWidth / 4;
+                  return Stack(
+                    children: [
+                      AnimatedPositioned(
+                        duration: const Duration(milliseconds: 300),
+                        curve: Curves.easeInOutCubic,
+                        left: _currentIndex * itemWidth,
+                        top: 0,
+                        bottom: 0,
+                        width: itemWidth,
+                        child: Container(
+                          margin: const EdgeInsets.all(2),
+                          decoration: BoxDecoration(
+                            color: AppColors.primary500,
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                      ),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: ShellNavItem(
+                              svgAsset: 'assets/icons/icon-house.svg',
+                              label: locale.t('clientShell.home'),
+                              isSelected: _currentIndex == 0,
+                              onTap: () => setState(() => _currentIndex = 0),
+                            ),
+                          ),
+                          Expanded(
+                            child: ShellNavItem(
+                              svgAsset: 'assets/icons/icon-search.svg',
+                              label: locale.t('clientShell.browse'),
+                              isSelected: _currentIndex == 1,
+                              onTap: () => goToExploreTab(showClasses: true),
+                            ),
+                          ),
+                          Expanded(
+                            child: ShellNavItem(
+                              svgAsset: 'assets/icons/icon-schedule.svg',
+                              label: locale.t('clientShell.activity'),
+                              isSelected: _currentIndex == 2,
+                              onTap: () => setState(() => _currentIndex = 2),
+                            ),
+                          ),
+                          Expanded(
+                            child: ShellNavItem(
+                              svgAsset: 'assets/icons/icon-profile-large.svg',
+                              label: locale.t('clientShell.profile'),
+                              isSelected: _currentIndex == 3,
+                              onTap: () => setState(() => _currentIndex = 3),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  );
+                },
               ),
             ),
           ),

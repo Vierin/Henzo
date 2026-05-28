@@ -571,8 +571,6 @@
 		"privacyComingSoon": "Privacy policy coming soon",
 		"termsOfUse": "Terms of use",
 		"termsComingSoon": "Terms coming soon",
-		"analyticsOptIn": "Analytics & crash reports",
-		"analyticsOptInHint": "Helps us improve the app. No cross-app tracking.",
 		"feedback": {
 			"sendFeedback": "Help & Feedback",
 			"sheetTitle": "Help & Feedback",
@@ -607,7 +605,7 @@
 			"bookingPeriodHint": "Choose a period from 1 to 60 days",
 			"bookingPeriodDaysLabel": "Days",
 			"bookingPeriodSaved": "Booking settings saved",
-			"bookingLink": "Booking link & QR"
+			"bookingLink": "Salon preview"
 		}
 	},
 	"calendar": {

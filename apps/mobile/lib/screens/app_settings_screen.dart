@@ -11,7 +11,6 @@ import '../services/auth_service.dart';
 import '../services/cache/salon_cache.dart';
 import '../services/cache/services_staff_cache.dart';
 import '../services/dashboard_api_service.dart';
-import '../services/analytics_service.dart';
 import '../services/push_notification_service.dart';
 import '../utils/legal_web_links.dart';
 import '../widgets/language_selector_modal.dart';
@@ -21,8 +20,8 @@ import '../widgets/settings/owner_booking_period_sheet.dart';
 import '../widgets/settings/settings_header_back_button.dart';
 import '../widgets/settings/settings_list_widgets.dart';
 import '../widgets/settings/settings_typography.dart';
-import 'booking_link_screen.dart';
 import 'dashboard/owner_studio_reviews_screen.dart';
+import 'public_studio_detail_screen.dart';
 import 'settings_screen.dart';
 import 'services_screen.dart';
 import 'staff_screen.dart';
@@ -50,27 +49,13 @@ class _AppSettingsScreenState extends State<AppSettingsScreen> {
   Salon? _salon;
   Subscription? _subscription;
   bool _subscriptionLoading = true;
-  bool _analyticsOptIn = false;
-
   @override
   void initState() {
     super.initState();
-    _analyticsOptIn = AnalyticsService.instance.isOptedIn;
     WidgetsBinding.instance.addPostFrameCallback((_) async {
-      await AnalyticsService.instance.load();
-      if (mounted) {
-        setState(
-          () => _analyticsOptIn = AnalyticsService.instance.isOptedIn,
-        );
-      }
       await _loadData();
       await _reopenAccountSettingsAfterPhotoInterrupt();
     });
-  }
-
-  Future<void> _setAnalyticsOptIn(bool enabled) async {
-    setState(() => _analyticsOptIn = enabled);
-    await AnalyticsService.instance.setOptIn(enabled);
   }
 
   Future<void> _reopenAccountSettingsAfterPhotoInterrupt() async {
@@ -334,14 +319,14 @@ class _AppSettingsScreenState extends State<AppSettingsScreen> {
                         ),
                       ),
                       SettingsListTile(
-                        icon: Icons.link_outlined,
+                        icon: Icons.visibility_outlined,
                         title: locale.t('settings.owner.bookingLink'),
                         onTap: () {
                           final salon = _salon;
                           if (salon == null) return;
                           Navigator.of(context).push(
                             MaterialPageRoute(
-                              builder: (_) => BookingLinkScreen(salon: salon),
+                              builder: (_) => PublicStudioDetailScreen(studioId: salon.id),
                             ),
                           );
                         },
@@ -388,17 +373,6 @@ class _AppSettingsScreenState extends State<AppSettingsScreen> {
                             }
                           },
                         ),
-                      ),
-                      SettingsListTile(
-                        icon: Icons.analytics_outlined,
-                        title: locale.t('settings.analyticsOptIn'),
-                        subtitle: locale.t('settings.analyticsOptInHint'),
-                        trailingWidget: Switch(
-                          value: _analyticsOptIn,
-                          onChanged: _setAnalyticsOptIn,
-                          activeThumbColor: AppColors.primary500,
-                        ),
-                        onTap: () => _setAnalyticsOptIn(!_analyticsOptIn),
                       ),
                       SettingsListTile(
                         svgAsset: 'assets/icons/icon-shield.svg',

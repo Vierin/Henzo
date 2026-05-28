@@ -571,8 +571,6 @@
 		"privacyComingSoon": "Политика конфиденциальности в разработке",
 		"termsOfUse": "Условия использования",
 		"termsComingSoon": "Условия использования в разработке",
-		"analyticsOptIn": "Аналитика и отчёты о сбоях",
-		"analyticsOptInHint": "Помогает улучшать приложение. Без межприложного трекинга.",
 		"feedback": {
 			"sendFeedback": "Помощь и отзыв",
 			"sheetTitle": "Помощь и отзыв",
@@ -607,7 +605,7 @@
 			"bookingPeriodHint": "Выберите период от 1 до 60 дней",
 			"bookingPeriodDaysLabel": "Дней",
 			"bookingPeriodSaved": "Настройки бронирования сохранены",
-			"bookingLink": "Ссылка для записи и QR"
+			"bookingLink": "Предпросмотр салона"
 		}
 	},
 	"calendar": {
