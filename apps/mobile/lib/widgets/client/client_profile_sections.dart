@@ -4,7 +4,6 @@ import 'package:flutter_svg/flutter_svg.dart';
 import '../../constants/brand_typography.dart';
 import '../../constants/colors.dart';
 import '../../services/health_service.dart';
-import 'client_section_header.dart';
 
 String formatProfileCount(int value) {
   final digits = value.toString();
@@ -13,7 +12,7 @@ String formatProfileCount(int value) {
   for (var i = 0; i < digits.length; i++) {
     buf.write(digits[i]);
     final left = digits.length - i - 1;
-    if (left > 0 && left % 3 == 0) buf.write(' ');
+    if (left > 0 && left % 3 == 0) buf.write(',');
   }
   return buf.toString();
 }
@@ -42,16 +41,17 @@ class ClientProfileHeader extends StatelessWidget {
           ),
         ),
         Material(
-          color: Colors.transparent,
+          color: AppColors.backgroundPrimary,
+          shape: const CircleBorder(),
           child: InkWell(
             onTap: onSettings,
             customBorder: const CircleBorder(),
             child: Padding(
-              padding: const EdgeInsets.all(6),
+              padding: const EdgeInsets.all(10),
               child: SvgPicture.asset(
                 'assets/icons/icon-gear.svg',
-                width: 22,
-                height: 22,
+                width: 20,
+                height: 20,
                 colorFilter: const ColorFilter.mode(
                   AppColors.textPrimary,
                   BlendMode.srcIn,
@@ -83,117 +83,84 @@ class ClientProfileUserRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final initial = name.isNotEmpty ? name.characters.first.toUpperCase() : '?';
 
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        CircleAvatar(
-          radius: 32,
-          backgroundColor: AppColors.brandAccent.withValues(alpha: 0.2),
-          backgroundImage: avatarUrl != null && avatarUrl!.isNotEmpty
-              ? NetworkImage(avatarUrl!)
-              : null,
-          child: avatarUrl == null || avatarUrl!.isEmpty
-              ? Text(
-                  initial,
-                  style: const TextStyle(
-                    fontSize: 22,
-                    fontWeight: FontWeight.w600,
-                    color: AppColors.textPrimary,
-                  ),
-                )
-              : null,
-        ),
-        const SizedBox(width: 14),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                name,
-                style: const TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w700,
-                  color: AppColors.textPrimary,
-                ),
-              ),
-              if (email.isNotEmpty) ...[
-                const SizedBox(height: 2),
-                Text(
-                  email,
-                  style: const TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w400,
-                    color: AppColors.textSecondary,
-                  ),
-                ),
-              ],
-              if (location != null && location!.isNotEmpty) ...[
-                const SizedBox(height: 6),
-                Row(
-                  children: [
-                    SvgPicture.asset(
-                      'assets/icons/icon-pin-simple.svg',
-                      width: 8,
-                      height: 11,
-                      colorFilter: const ColorFilter.mode(
-                        AppColors.textTertiary,
-                        BlendMode.srcIn,
-                      ),
-                    ),
-                    const SizedBox(width: 4),
-                    Expanded(
-                      child: Text(
-                        location!,
-                        style: const TextStyle(
-                          fontSize: 13,
-                          color: AppColors.textTertiary,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-class ClientProfileStatsCard extends StatelessWidget {
-  const ClientProfileStatsCard({super.key, required this.items});
-
-  final List<ClientProfileStatItem> items;
-
-  @override
-  Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(vertical: 16),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: AppColors.backgroundPrimary,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(18),
       ),
-      child: IntrinsicHeight(
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            for (var i = 0; i < items.length; i++) ...[
-              if (i > 0)
-                const VerticalDivider(
-                  width: 1,
-                  thickness: 1,
-                  color: AppColors.borderPrimary,
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          CircleAvatar(
+            radius: 32,
+            backgroundColor: AppColors.brandAccent.withValues(alpha: 0.15),
+            backgroundImage: avatarUrl != null && avatarUrl!.isNotEmpty
+                ? NetworkImage(avatarUrl!)
+                : null,
+            child: avatarUrl == null || avatarUrl!.isEmpty
+                ? Text(
+                    initial,
+                    style: const TextStyle(
+                      fontSize: 22,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.textPrimary,
+                    ),
+                  )
+                : null,
+          ),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  name,
+                  style: const TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.textPrimary,
+                  ),
                 ),
-              Expanded(
-                child: Align(
-                  alignment: Alignment.topCenter,
-                  child: _StatCell(item: items[i]),
-                ),
-              ),
-            ],
-          ],
-        ),
+                if (location != null && location!.isNotEmpty) ...[
+                  const SizedBox(height: 4),
+                  Row(
+                    children: [
+                      SvgPicture.asset(
+                        'assets/icons/icon-pin-simple.svg',
+                        width: 8,
+                        height: 11,
+                        colorFilter: const ColorFilter.mode(
+                          AppColors.textTertiary,
+                          BlendMode.srcIn,
+                        ),
+                      ),
+                      const SizedBox(width: 4),
+                      Expanded(
+                        child: Text(
+                          location!,
+                          style: const TextStyle(
+                            fontSize: 13,
+                            color: AppColors.textTertiary,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ] else if (email.isNotEmpty) ...[
+                  const SizedBox(height: 2),
+                  Text(
+                    email,
+                    style: const TextStyle(
+                      fontSize: 13,
+                      color: AppColors.textSecondary,
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -208,6 +175,8 @@ class ClientProfileStatItem {
     required this.label,
     this.isSvg = false,
     this.isAsset = false,
+    this.background = AppColors.backgroundPrimary,
+    this.textColor = AppColors.textPrimary,
   });
 
   final IconData? icon;
@@ -217,38 +186,77 @@ class ClientProfileStatItem {
   final String label;
   final bool isSvg;
   final bool isAsset;
+  final Color background;
+  final Color textColor;
 
   factory ClientProfileStatItem.icon({
     required IconData icon,
     required String value,
     required String label,
-  }) => ClientProfileStatItem._(icon: icon, value: value, label: label);
+    Color background = AppColors.backgroundPrimary,
+    Color textColor = AppColors.textPrimary,
+  }) => ClientProfileStatItem._(
+    icon: icon,
+    value: value,
+    label: label,
+    background: background,
+    textColor: textColor,
+  );
 
   factory ClientProfileStatItem.svg({
     required String asset,
     required String value,
     required String label,
+    Color background = AppColors.backgroundPrimary,
+    Color textColor = AppColors.textPrimary,
   }) => ClientProfileStatItem._(
     svgAsset: asset,
     value: value,
     label: label,
     isSvg: true,
+    background: background,
+    textColor: textColor,
   );
 
   factory ClientProfileStatItem.image({
     required String asset,
     required String value,
     required String label,
+    Color background = AppColors.backgroundPrimary,
+    Color textColor = AppColors.textPrimary,
   }) => ClientProfileStatItem._(
     imageAsset: asset,
     value: value,
     label: label,
     isAsset: true,
+    background: background,
+    textColor: textColor,
   );
 }
 
-class _StatCell extends StatelessWidget {
-  const _StatCell({required this.item});
+/// 3 separate square stat cards styled like the owner dashboard.
+class ClientProfileStatsCard extends StatelessWidget {
+  const ClientProfileStatsCard({super.key, required this.items});
+
+  final List<ClientProfileStatItem> items;
+
+  @override
+  Widget build(BuildContext context) {
+    final display = items.take(3).toList();
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        for (var i = 0; i < display.length; i++) ...[
+          if (i > 0) const SizedBox(width: 10),
+          Expanded(child: _StatSquareCard(item: display[i])),
+        ],
+      ],
+    );
+  }
+}
+
+class _StatSquareCard extends StatelessWidget {
+  const _StatSquareCard({required this.item});
 
   final ClientProfileStatItem item;
 
@@ -258,59 +266,72 @@ class _StatCell extends StatelessWidget {
     if (item.isAsset && item.imageAsset != null) {
       iconWidget = Image.asset(
         item.imageAsset!,
-        width: 20,
-        height: 20,
+        width: 14,
+        height: 14,
         fit: BoxFit.contain,
       );
     } else if (item.isSvg && item.svgAsset != null) {
       iconWidget = SvgPicture.asset(
         item.svgAsset!,
-        width: 18,
-        height: 18,
-        colorFilter: const ColorFilter.mode(
-          AppColors.primary500,
-          BlendMode.srcIn,
-        ),
+        width: 14,
+        height: 14,
+        colorFilter: ColorFilter.mode(item.textColor, BlendMode.srcIn),
       );
     } else {
       iconWidget = Icon(
         item.icon ?? Icons.circle,
-        size: 20,
-        color: AppColors.primary500,
+        size: 14,
+        color: item.textColor,
       );
     }
 
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 4),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
-          SizedBox(height: 20, child: Center(child: iconWidget)),
-          const SizedBox(height: 8),
-          Text(
-            item.value,
-            textAlign: TextAlign.center,
-            style: const TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.w700,
-              color: AppColors.textPrimary,
-              height: 1.1,
+    return AspectRatio(
+      aspectRatio: 1,
+      child: Container(
+        padding: const EdgeInsets.fromLTRB(12, 16, 12, 10),
+        decoration: BoxDecoration(
+          color: item.background,
+          borderRadius: BorderRadius.circular(18),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            FittedBox(
+              fit: BoxFit.scaleDown,
+              alignment: Alignment.centerLeft,
+              child: Text(
+                item.value,
+                style: TextStyle(
+                  fontSize: 30,
+                  fontWeight: FontWeight.w500,
+                  height: 0.9,
+                  color: item.textColor,
+                ),
+              ),
             ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            item.label,
-            textAlign: TextAlign.center,
-            maxLines: 2,
-            style: const TextStyle(
-              fontSize: 11,
-              fontWeight: FontWeight.w400,
-              color: AppColors.textTertiary,
-              height: 1.2,
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                iconWidget,
+                const SizedBox(width: 4),
+                Expanded(
+                  child: Text(
+                    item.label,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w400,
+                      height: 1.1,
+                      color: item.textColor,
+                    ),
+                  ),
+                ),
+              ],
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -354,142 +375,180 @@ class ClientProfileHealthSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        ClientSectionHeader(title: title, bottomPadding: 12),
-        Container(
-          padding: const EdgeInsets.fromLTRB(12, 12, 12, 8),
-          decoration: BoxDecoration(
-            color: AppColors.backgroundPrimary,
-            borderRadius: BorderRadius.circular(14),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.center,
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppColors.primary500,
+        borderRadius: BorderRadius.circular(18),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Container(
-                    width: 44,
-                    height: 44,
-                    decoration: BoxDecoration(
-                      color: AppColors.primary50,
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: const Icon(
-                      Icons.favorite_rounded,
-                      color: AppColors.primary500,
-                      size: 22,
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          connectTitle,
-                          style: const TextStyle(
-                            fontSize: 15,
-                            fontWeight: FontWeight.w600,
-                            color: AppColors.textPrimary,
-                            height: 1.2,
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          connectSubtitle,
-                          style: const TextStyle(
-                            fontSize: 11,
-                            height: 1.3,
-                            color: AppColors.textSecondary,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  _HealthConnectActionColumn(
-                    isLoading: isLoading,
-                    isFullySynced: isFullySynced,
-                    needsInstall: needsInstall,
-                    connectLabel: connectLabel,
-                    onConnect: onConnect,
-                    onRefresh: onRefresh,
-                  ),
-                ],
+              Container(
+                width: 44,
+                height: 44,
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Icon(
+                  Icons.favorite_rounded,
+                  color: AppColors.primary500,
+                  size: 22,
+                ),
               ),
-              if (isFullySynced && health != null) ...[
-                const SizedBox(height: 16),
-                const Divider(height: 1, color: AppColors.borderPrimary),
-                const SizedBox(height: 16),
-                IntrinsicHeight(
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      _HealthMetric(
-                        icon: Icons.directions_walk_outlined,
-                        value: _formatSteps(health!.steps),
-                        label: stepsLabel,
-                        tint: const Color(0xFF4A90D9),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      connectTitle,
+                      style: const TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.white,
+                        height: 1.2,
                       ),
-                      const VerticalDivider(
-                        width: 1,
-                        thickness: 1,
-                        color: AppColors.borderPrimary,
-                      ),
-                      _HealthMetric(
-                        icon: Icons.local_fire_department_outlined,
-                        value: formatProfileCount(health!.calories),
-                        label: caloriesLabel,
-                        tint: AppColors.primary500,
-                      ),
-                      const VerticalDivider(
-                        width: 1,
-                        thickness: 1,
-                        color: AppColors.borderPrimary,
-                      ),
-                      _HealthMetric(
-                        icon: Icons.fitness_center_outlined,
-                        value: '${health!.workouts}',
-                        label: workoutsLabel,
-                        tint: const Color(0xFF34A853),
+                    ),
+                    if (!isFullySynced) ...[
+                      const SizedBox(height: 4),
+                      Text(
+                        connectSubtitle,
+                        style: const TextStyle(
+                          fontSize: 11,
+                          height: 1.3,
+                          color: Colors.white70,
+                        ),
                       ),
                     ],
-                  ),
-                ),
-              ],
-              const SizedBox(height: 12),
-              SizedBox(
-                width: double.infinity,
-                child: Wrap(
-                  alignment: WrapAlignment.center,
-                  crossAxisAlignment: WrapCrossAlignment.center,
-                  spacing: 6,
-                  runSpacing: 4,
-                  children: [
-                    const Icon(
-                      Icons.lock_outline_rounded,
-                      size: 12,
-                      color: AppColors.textTertiary,
-                    ),
-                    Text(
-                      secureLabel,
-                      textAlign: TextAlign.center,
-                      style: const TextStyle(
-                        fontSize: 11,
-                        height: 1.3,
-                        color: AppColors.textTertiary,
-                      ),
-                    ),
                   ],
                 ),
               ),
+              const SizedBox(width: 10),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  _buildAction(),
+                  const SizedBox(height: 6),
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(
+                        Icons.lock_outline_rounded,
+                        size: 10,
+                        color: Colors.white60,
+                      ),
+                      const SizedBox(width: 3),
+                      Text(
+                        secureLabel,
+                        style: const TextStyle(
+                          fontSize: 9,
+                          color: Colors.white60,
+                          height: 1.2,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
             ],
           ),
+          if (isFullySynced && health != null) ...[
+            const SizedBox(height: 16),
+            const Divider(height: 1, color: Colors.white24),
+            const SizedBox(height: 16),
+            IntrinsicHeight(
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  _HealthMetric(
+                    icon: Icons.directions_walk_outlined,
+                    value: _formatSteps(health!.steps),
+                    label: stepsLabel,
+                  ),
+                  const VerticalDivider(
+                    width: 1,
+                    thickness: 1,
+                    color: Colors.white24,
+                  ),
+                  _HealthMetric(
+                    icon: Icons.local_fire_department_outlined,
+                    value: formatProfileCount(health!.calories),
+                    label: caloriesLabel,
+                  ),
+                  const VerticalDivider(
+                    width: 1,
+                    thickness: 1,
+                    color: Colors.white24,
+                  ),
+                  _HealthMetric(
+                    icon: Icons.fitness_center_outlined,
+                    value: '${health!.workouts}',
+                    label: workoutsLabel,
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildAction() {
+    if (isLoading) {
+      return const SizedBox(
+        width: 22,
+        height: 22,
+        child: CircularProgressIndicator(
+          strokeWidth: 2,
+          color: Colors.white,
         ),
-      ],
+      );
+    }
+    if (!isFullySynced) {
+      return OutlinedButton(
+        onPressed: onConnect,
+        style: OutlinedButton.styleFrom(
+          backgroundColor: Colors.white,
+          foregroundColor: AppColors.textPrimary,
+          side: BorderSide.none,
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+          minimumSize: Size.zero,
+          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(999),
+          ),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              needsInstall ? 'Install' : connectLabel,
+              style: const TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            const Icon(Icons.chevron_right_rounded, size: 16),
+          ],
+        ),
+      );
+    }
+    return IconButton(
+      onPressed: onRefresh,
+      padding: EdgeInsets.zero,
+      constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+      icon: const Icon(
+        Icons.refresh_rounded,
+        size: 20,
+        color: Colors.white70,
+      ),
     );
   }
 
@@ -504,83 +563,16 @@ class ClientProfileHealthSection extends StatelessWidget {
   }
 }
 
-class _HealthConnectActionColumn extends StatelessWidget {
-  const _HealthConnectActionColumn({
-    required this.isLoading,
-    required this.isFullySynced,
-    required this.needsInstall,
-    required this.connectLabel,
-    required this.onConnect,
-    required this.onRefresh,
-  });
-
-  final bool isLoading;
-  final bool isFullySynced;
-  final bool needsInstall;
-  final String connectLabel;
-  final VoidCallback onConnect;
-  final VoidCallback onRefresh;
-
-  static const double _columnWidth = 100;
-
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      width: _columnWidth,
-      height: 36,
-      child: Center(child: _actionControl()),
-    );
-  }
-
-  Widget _actionControl() {
-    if (isLoading) {
-      return const SizedBox(
-        width: 22,
-        height: 22,
-        child: CircularProgressIndicator(strokeWidth: 2),
-      );
-    }
-    if (!isFullySynced) {
-      return FilledButton(
-        onPressed: onConnect,
-        style: FilledButton.styleFrom(
-          backgroundColor: AppColors.primary500,
-          foregroundColor: Colors.white,
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-          minimumSize: Size.zero,
-          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(999),
-          ),
-        ),
-        child: Text(
-          needsInstall ? 'Install' : connectLabel,
-          style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
-        ),
-      );
-    }
-    return IconButton(
-      onPressed: onRefresh,
-      padding: EdgeInsets.zero,
-      constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
-      icon: const Icon(Icons.refresh_rounded, size: 20),
-      color: AppColors.textSecondary,
-    );
-  }
-}
-
 class _HealthMetric extends StatelessWidget {
   const _HealthMetric({
     required this.icon,
     required this.value,
     required this.label,
-    required this.tint,
   });
 
   final IconData icon;
   final String value;
   final String label;
-  final Color tint;
 
   @override
   Widget build(BuildContext context) {
@@ -592,26 +584,26 @@ class _HealthMetric extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             Container(
-              width: 40,
-              height: 40,
+              width: 36,
+              height: 36,
               decoration: BoxDecoration(
-                color: tint.withValues(alpha: 0.12),
+                color: Colors.white.withValues(alpha: 0.2),
                 shape: BoxShape.circle,
               ),
-              child: Icon(icon, size: 20, color: tint),
+              child: Icon(icon, size: 18, color: Colors.white),
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: 6),
             Text(
               value,
               textAlign: TextAlign.center,
               style: const TextStyle(
-                fontSize: 16,
+                fontSize: 15,
                 fontWeight: FontWeight.w700,
-                color: AppColors.textPrimary,
+                color: Colors.white,
                 height: 1.1,
               ),
             ),
-            const SizedBox(height: 4),
+            const SizedBox(height: 3),
             SizedBox(
               height: 28,
               child: Align(
@@ -622,7 +614,7 @@ class _HealthMetric extends StatelessWidget {
                   maxLines: 2,
                   style: const TextStyle(
                     fontSize: 10,
-                    color: AppColors.textTertiary,
+                    color: Colors.white70,
                     height: 1.2,
                   ),
                 ),

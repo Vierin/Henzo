@@ -33,6 +33,7 @@ class _ClientProfileScreenState extends State<ClientProfileScreen>
   static const Duration _statsCacheTtl = Duration(minutes: 2);
   static int? _cachedClassesVisited;
   static int? _cachedHoursTrained;
+  static int? _cachedActivePasses;
   static DateTime? _statsCachedAt;
 
   static HealthData? _cachedHealth;
@@ -40,6 +41,7 @@ class _ClientProfileScreenState extends State<ClientProfileScreen>
 
   int _classesVisited = 0;
   int _hoursTrained = 0;
+  int _activePasses = 0;
   bool _loadingStats = true;
   final Set<String> _favoriteLoadingIds = {};
 
@@ -89,6 +91,7 @@ class _ClientProfileScreenState extends State<ClientProfileScreen>
         setState(() {
           _classesVisited = _cachedClassesVisited!;
           _hoursTrained = _cachedHoursTrained!;
+          _activePasses = _cachedActivePasses ?? 0;
           _loadingStats = false;
         });
       }
@@ -114,10 +117,12 @@ class _ClientProfileScreenState extends State<ClientProfileScreen>
       setState(() {
         _classesVisited = (map['classesVisited'] as num?)?.toInt() ?? 0;
         _hoursTrained = (map['hoursTrained'] as num?)?.toInt() ?? 0;
+        _activePasses = (map['activePasses'] as num?)?.toInt() ?? 0;
         _loadingStats = false;
       });
       _cachedClassesVisited = _classesVisited;
       _cachedHoursTrained = _hoursTrained;
+      _cachedActivePasses = _activePasses;
       _statsCachedAt = DateTime.now();
     } catch (_) {
       if (!mounted) return;
@@ -125,6 +130,7 @@ class _ClientProfileScreenState extends State<ClientProfileScreen>
         if (_cachedClassesVisited != null) {
           _classesVisited = _cachedClassesVisited!;
           _hoursTrained = _cachedHoursTrained ?? 0;
+          _activePasses = _cachedActivePasses ?? 0;
         }
         _loadingStats = false;
       });
@@ -291,26 +297,27 @@ class _ClientProfileScreenState extends State<ClientProfileScreen>
 
     final calories = _healthFullySynced ? (_health?.calories ?? 0) : 0;
 
+    const statGreen = Color(0xFFC2F600);
+    const statPink = Color(0xFFFAD0C5);
+
     final stats = [
       ClientProfileStatItem.svg(
         asset: 'assets/icons/icon-calendar.svg',
         value: _loadingStats ? '—' : formatProfileCount(_classesVisited),
         label: t('classesBooked'),
+        background: statGreen,
       ),
-      ClientProfileStatItem.svg(
-        asset: 'assets/icons/icon-heart.svg',
-        value: formatProfileCount(favorites.length),
-        label: t('favorites'),
+      ClientProfileStatItem.icon(
+        icon: Icons.card_membership_outlined,
+        value: _loadingStats ? '—' : formatProfileCount(_activePasses),
+        label: t('activePasses'),
+        background: statPink,
       ),
       ClientProfileStatItem.svg(
         asset: 'assets/icons/icon-flame.svg',
         value: formatProfileCount(calories),
         label: t('caloriesBurned'),
-      ),
-      ClientProfileStatItem.icon(
-        icon: Icons.schedule_rounded,
-        value: _loadingStats ? '—' : formatProfileCount(_hoursTrained),
-        label: t('hoursTrained'),
+        background: AppColors.backgroundPrimary,
       ),
     ];
 
@@ -356,7 +363,7 @@ class _ClientProfileScreenState extends State<ClientProfileScreen>
                 ClientProfileStatsCard(items: stats),
                 const SizedBox(height: 24),
                 ClientProfileHealthSection(
-                  title: t('health'),
+                  title: '',
                   connectTitle: t('connectHealthTitle'),
                   connectSubtitle: healthSubtitle,
                   connectLabel: t('connect'),
@@ -379,6 +386,8 @@ class _ClientProfileScreenState extends State<ClientProfileScreen>
                 const SizedBox(height: 24),
                 ClientSectionHeader(
                   title: locale.t('clientActivity.favorites'),
+                  actionLabel: favorites.isNotEmpty ? t('seeAll') : null,
+                  onAction: favorites.isNotEmpty ? () {} : null,
                 ),
                 if (favorites.isEmpty)
                   Text(
