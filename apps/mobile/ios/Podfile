@@ -72,7 +72,7 @@ post_install do |installer|
 
   # Crashlytics: добавить Run Script Phase в Runner для upload dSYMs.
   # Идемпотентно: если фаза уже есть — не дублируем.
-  runner_project = Xcodeproj::Project.open(File.expand_path('Runner.xcodeproj', __dir__))
+  runner_project = Xcodeproj::Project.open(File.expand_path(File.join(File.dirname(__FILE__), 'Runner.xcodeproj')))
   runner_project.targets.each do |target|
     next unless target.name == 'Runner'
 
