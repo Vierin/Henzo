@@ -1,6 +1,5 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { LegalLocaleBanner } from '@/components/legal/LegalLocaleBanner';
 import { TermsSubscriptionSection } from '@/components/legal/TermsSubscriptionSection';
 import { buildStaticPageMetadata, resolveLocale } from '@/seo';
 
@@ -13,13 +12,7 @@ export async function generateMetadata({
   return buildStaticPageMetadata('terms', resolveLocale(raw));
 }
 
-export default async function TermsOfService({
-  params,
-}: {
-  params: Promise<{ locale: string }>;
-}) {
-  const { locale } = await params;
-
+export default async function TermsOfService() {
   return (
     <div className="min-h-screen bg-white">
       <main className="max-w-4xl mx-auto px-6 py-12" role="main">
@@ -34,8 +27,6 @@ export default async function TermsOfService({
             </h1>
             <p className="text-gray-600 text-lg">Last updated: May 23, 2026</p>
           </header>
-
-          <LegalLocaleBanner locale={locale} />
 
           {/* Content */}
           <div className="space-y-8">

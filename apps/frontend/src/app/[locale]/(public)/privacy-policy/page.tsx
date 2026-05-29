@@ -1,6 +1,5 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { LegalLocaleBanner } from '@/components/legal/LegalLocaleBanner';
 import {
   PrivacyHealthDataSection,
   PrivacyMobileAppSection,
@@ -36,8 +35,6 @@ export default async function PrivacyPolicy({
             </h1>
             <p className="text-gray-600 text-lg">Last updated: May 23, 2026</p>
           </header>
-
-          <LegalLocaleBanner locale={locale} />
 
           {/* Content */}
           <div className="space-y-8">
