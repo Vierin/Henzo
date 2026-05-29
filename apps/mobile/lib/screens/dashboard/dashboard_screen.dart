@@ -47,6 +47,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   Salon? _salon;
   StudioOnboardingChecklist? _checklist;
   List<OwnerTrainingSession> _todaySessions = [];
+  List<OwnerTrainingSession> _upcomingSessions = [];
   String? _sessionsLoadError;
   bool _isPublishing = false;
   bool _dataLoaded = false;
@@ -88,7 +89,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
       final salon = await context.read<SalonCache>().getSalon(token);
       final now = DateTime.now();
       final from = DateTime(now.year, now.month, now.day);
-      final to = from.add(const Duration(days: 1));
+      final to = from.add(const Duration(days: 8));
       List<OwnerTrainingSession> sessions = [];
       String? sessionsLoadError;
       StudioOnboardingChecklist? checklist;
@@ -110,6 +111,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
           );
         }
       }
+      final todayOnly = sessions.where((s) {
+        final local = s.startsAt.toLocal();
+        return local.year == from.year &&
+            local.month == from.month &&
+            local.day == from.day;
+      }).toList();
       if (salon != null) {
         try {
           checklist =
@@ -124,7 +131,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
         setState(() {
           _salon = salon;
           _checklist = checklist;
-          _todaySessions = sessions;
+          _todaySessions = todayOnly;
+          _upcomingSessions = sessions;
           _sessionsLoadError = sessionsLoadError;
           _dataLoaded = true;
         });
@@ -134,6 +142,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
         setState(() {
           _checklist = null;
           _todaySessions = [];
+          _upcomingSessions = [];
           _sessionsLoadError = loadErrorMessage(
             context.read<LocaleProvider>(),
             e,
@@ -286,12 +295,25 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   OwnerTrainingSession? get _featuredSession {
-    if (_todaySessions.isEmpty) return null;
+    if (_upcomingSessions.isEmpty) return null;
     final now = DateTime.now();
-    for (final s in _todaySessions) {
+    for (final s in _upcomingSessions) {
       if (s.endsAt.isAfter(now)) return s;
     }
-    return _todaySessions.last;
+    return null;
+  }
+
+  bool _isSessionToday(OwnerTrainingSession s) {
+    final local = s.startsAt.toLocal();
+    final now = DateTime.now();
+    return local.year == now.year &&
+        local.month == now.month &&
+        local.day == now.day;
+  }
+
+  String _formatNextDate(OwnerTrainingSession s, String localeCode) {
+    final local = s.startsAt.toLocal();
+    return DateFormat('E, d MMM', localeCode).format(local).toUpperCase();
   }
 
   String _formatDateHeader(String localeCode) {
@@ -560,7 +582,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
-  Widget _featuredCard(LocaleProvider loc, OwnerTrainingSession s) {
+  Widget _featuredCard(LocaleProvider loc, OwnerTrainingSession s, {required bool isToday}) {
     final cap = s.capacity;
     final enrolled = s.enrolledCount;
     final progress = cap > 0 ? (enrolled / cap).clamp(0.0, 1.0) : 0.0;
@@ -614,7 +636,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
                           ),
                           const SizedBox(width: 6),
                           Text(
-                            'TODAY',
+                            isToday
+                                ? 'TODAY'
+                                : 'NEXT · ${_formatNextDate(s, loc.localeCode)}',
                             style: TextStyle(
                               fontSize: 14,
                               fontWeight: FontWeight.w700,
@@ -851,7 +875,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 _header(loc),
                 _greeting(loc, authUser),
                 _statsRow(loc),
-                if (featured != null) _featuredCard(loc, featured),
+                if (featured != null)
+                  _featuredCard(loc, featured, isToday: _isSessionToday(featured)),
                 _checklistBlock(),
                 if (_sessionsLoadError != null)
                   Padding(

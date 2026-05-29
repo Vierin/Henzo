@@ -113,7 +113,7 @@
 		"noClassesToday": "На сегодня рядом нет занятий.",
 		"locationPickerTitle": "Выберите город",
 		"locationPickerHint": "Поиск города",
-		"locationPickerUseCity": "Использовать этот город",
+		"locationPickerUseCity": "Использовать текущее местоположение",
 		"locationPickerEmpty": "Начните вводить название города",
 		"favoritePromoTitle": "Добавь в избранное",
 		"favoritePromoSubtitle": "Сохраняй занятия и получай напоминания"

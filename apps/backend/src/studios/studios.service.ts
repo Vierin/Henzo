@@ -1542,6 +1542,7 @@ export class StudiosService {
           descriptionVi: true,
           descriptionRu: true,
           slug: true,
+          reminderSettings: true,
           _count: {
             select: {
               Review: true,
@@ -1616,6 +1617,7 @@ export class StudiosService {
         name: Studio.name,
         description: Studio.description,
         address: Studio.address,
+        locationName: resolveBrowseStudioLocationName(Studio.reminderSettings),
         phone: Studio.phone,
         website: Studio.website,
         instagram: Studio.instagram,

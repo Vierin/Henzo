@@ -184,6 +184,7 @@ class _PublicHomeScreenState extends State<PublicHomeScreen> {
       backgroundColor: AppColors.backgroundPrimary,
       builder: (ctx) {
         return SafeArea(
+          top: false,
           child: Padding(
             padding: screenPaddingH(top: 10, bottom: 20),
             child: Column(

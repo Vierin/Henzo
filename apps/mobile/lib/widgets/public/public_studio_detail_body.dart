@@ -223,6 +223,7 @@ class _PublicStudioDetailBodyState extends State<PublicStudioDetailBody> {
     final photoUrls = _studioPhotoUrls();
     final name = (studio['name'] ?? 'Studio').toString();
     final address = (studio['address'] ?? '').toString().trim();
+    final locationName = (studio['locationName'] ?? '').toString().trim();
     final description = resolveStudioDescription(studio, localeCode);
     final reviews = _parsedReviews();
     final avgRating = _averageRating(reviews);
@@ -313,15 +314,17 @@ class _PublicStudioDetailBodyState extends State<PublicStudioDetailBody> {
                                 return Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
-                                    Text(
-                                      name,
-                                      style: const TextStyle(
-                                        fontSize: 15,
-                                        fontWeight: FontWeight.w700,
-                                        color: AppColors.textPrimary,
+                                    if (locationName.isNotEmpty) ...[
+                                      Text(
+                                        locationName,
+                                        style: const TextStyle(
+                                          fontSize: 15,
+                                          fontWeight: FontWeight.w700,
+                                          color: AppColors.textPrimary,
+                                        ),
                                       ),
-                                    ),
-                                    const SizedBox(height: 4),
+                                      const SizedBox(height: 4),
+                                    ],
                                     SizedBox(
                                       width: addressWidth,
                                       child: Text(
@@ -585,7 +588,7 @@ class _PublicStudioDetailBodyState extends State<PublicStudioDetailBody> {
                     );
                   },
                 ),
-                const SizedBox(width: 8),
+                const SizedBox(width: 14),
                 _HeroOverlayButton(
                   onTap: () => _shareStudio(name),
                   child: SvgPicture.asset(

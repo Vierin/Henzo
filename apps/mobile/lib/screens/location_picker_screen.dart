@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:geolocator/geolocator.dart';
 import 'package:provider/provider.dart';
 
 import '../constants/colors.dart';
@@ -108,6 +109,65 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
   }
 
   void _submitManual() => _pickCity(_controller.text);
+
+  bool _isLocating = false;
+
+  Future<void> _useCurrentLocation() async {
+    final locale = context.read<LocaleProvider>();
+    setState(() => _isLocating = true);
+    try {
+      final serviceEnabled = await Geolocator.isLocationServiceEnabled();
+      if (!serviceEnabled) {
+        if (!mounted) return;
+        setState(() => _isLocating = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(locale.t('addressPicker.locationServiceDisabled'))),
+        );
+        return;
+      }
+      var permission = await Geolocator.checkPermission();
+      if (permission == LocationPermission.denied) {
+        permission = await Geolocator.requestPermission();
+      }
+      if (permission == LocationPermission.denied ||
+          permission == LocationPermission.deniedForever) {
+        if (!mounted) return;
+        setState(() => _isLocating = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(locale.t('addressPicker.locationPermissionDenied'))),
+        );
+        return;
+      }
+      final pos = await Geolocator.getCurrentPosition(
+        locationSettings: const LocationSettings(accuracy: LocationAccuracy.high),
+      );
+      final reverse = await MapboxApiService.reverseGeocode(pos.latitude, pos.longitude);
+      if (!mounted) return;
+      _pickCity(
+        _extractCityFromAddress(reverse?.address) ?? '',
+        lat: pos.latitude,
+        lon: pos.longitude,
+      );
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _isLocating = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(locale.t('addressPicker.locationDetectFailed'))),
+      );
+    }
+  }
+
+  String? _extractCityFromAddress(String? address) {
+    if (address == null || address.trim().isEmpty) return null;
+    final parts = address
+        .split(',')
+        .map((e) => e.trim())
+        .where((e) => e.isNotEmpty)
+        .toList();
+    if (parts.isEmpty) return null;
+    if (parts.length >= 2) return parts[parts.length - 2];
+    return parts.first;
+  }
 
   InputDecoration _searchDecoration(LocaleProvider locale) {
     Widget? suffix;
@@ -217,7 +277,7 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
               color: AppColors.backgroundPrimary,
               borderRadius: BorderRadius.circular(12),
               child: InkWell(
-                onTap: _hasSearchText ? _submitManual : null,
+                onTap: _isLocating ? null : _useCurrentLocation,
                 borderRadius: BorderRadius.circular(12),
                 child: Padding(
                   padding: const EdgeInsets.symmetric(
@@ -226,17 +286,25 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
                   ),
                   child: Row(
                     children: [
-                      SvgPicture.asset(
-                        'assets/icons/icon-pin-simple.svg',
-                        width: 14,
-                        height: 18,
-                        colorFilter: ColorFilter.mode(
-                          _hasSearchText
-                              ? AppColors.primary500
-                              : AppColors.textTertiary,
-                          BlendMode.srcIn,
+                      if (_isLocating)
+                        const SizedBox(
+                          width: 14,
+                          height: 14,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: AppColors.primary500,
+                          ),
+                        )
+                      else
+                        SvgPicture.asset(
+                          'assets/icons/icon-pin-simple.svg',
+                          width: 14,
+                          height: 18,
+                          colorFilter: const ColorFilter.mode(
+                            AppColors.primary500,
+                            BlendMode.srcIn,
+                          ),
                         ),
-                      ),
                       const SizedBox(width: 10),
                       Expanded(
                         child: Text(
@@ -244,9 +312,9 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
                           style: TextStyle(
                             fontSize: 14,
                             fontWeight: FontWeight.w600,
-                            color: _hasSearchText
-                                ? AppColors.primary500
-                                : AppColors.textTertiary,
+                            color: _isLocating
+                                ? AppColors.textTertiary
+                                : AppColors.primary500,
                           ),
                         ),
                       ),
