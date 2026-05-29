@@ -51,7 +51,7 @@ class OwnerChecklistCard extends StatelessWidget {
   final VoidCallback onPublishTap;
   final bool showOptionalPhase;
 
-  static const _iconPurple = Color(0xFF3D2E6F);
+  static const _iconPurple = Color(0xFF4D39A8);
   static const _optionalHeaderBg = Color(0xFFFFF9F5);
   static const _starBadgeBg = Color(0xFFFFF0D1);
   static const _starColor = Color(0xFFFF9900);

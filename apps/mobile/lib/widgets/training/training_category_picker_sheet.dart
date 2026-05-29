@@ -42,6 +42,7 @@ Future<TrainingCategoryPickResult?> showTrainingCategoryPickerSheet({
         sheetCtx,
       ).pop(const TrainingCategoryPickResult.cancelled());
       return SafeArea(
+        top: false,
         child: Padding(
           padding: EdgeInsets.fromLTRB(
             16,

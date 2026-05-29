@@ -701,7 +701,7 @@ class _AddressPickerModalState extends State<AddressPickerModal> {
                               )
                             else
                               SvgPicture.asset(
-                                'assets/icons/icon-pin.svg',
+                                'assets/icons/icon-pin-simple.svg',
                                 width: 11,
                                 height: 15,
                                 colorFilter: const ColorFilter.mode(

@@ -155,6 +155,7 @@ class _DirectoryAddSheetState extends State<_DirectoryAddSheet> {
     final tr = context.read<LocaleProvider>().t;
     final bottom = MediaQuery.of(context).viewInsets.bottom;
     return SafeArea(
+      top: false,
       child: Padding(
         padding: EdgeInsets.fromLTRB(16, 8, 16, 16 + bottom),
         child: _SheetChrome(
@@ -469,6 +470,7 @@ class _EnrollParticipantSheetState extends State<_EnrollParticipantSheet> {
     final maxH = MediaQuery.sizeOf(context).height * 0.88;
 
     return SafeArea(
+      top: false,
       child: Padding(
         padding: EdgeInsets.fromLTRB(16, 8, 16, 16 + bottom),
         child: ConstrainedBox(

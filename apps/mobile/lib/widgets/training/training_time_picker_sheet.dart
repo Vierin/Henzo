@@ -24,6 +24,7 @@ Future<TimeOfDay?> showTrainingTimePickerSheet(
     ),
     builder: (ctx) {
       return SafeArea(
+        top: false,
         child: SizedBox(
           height: 320,
           child: Column(

@@ -129,6 +129,7 @@ class _ClientLeaveReviewSheetBodyState extends State<_ClientLeaveReviewSheetBody
     final commentLen = _commentController.text.length;
 
     return SafeArea(
+      top: false,
       child: Padding(
         padding: const EdgeInsets.fromLTRB(20, 10, 20, 20),
         child: Column(

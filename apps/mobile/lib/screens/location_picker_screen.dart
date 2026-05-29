@@ -227,7 +227,7 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
                   child: Row(
                     children: [
                       SvgPicture.asset(
-                        'assets/icons/icon-pin.svg',
+                        'assets/icons/icon-pin-simple.svg',
                         width: 14,
                         height: 18,
                         colorFilter: ColorFilter.mode(
@@ -294,7 +294,7 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
                               child: Row(
                                 children: [
                                   SvgPicture.asset(
-                                    'assets/icons/icon-pin.svg',
+                                    'assets/icons/icon-pin-simple.svg',
                                     width: 12,
                                     height: 16,
                                     colorFilter: const ColorFilter.mode(
