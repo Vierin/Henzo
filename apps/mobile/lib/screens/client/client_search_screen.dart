@@ -825,6 +825,12 @@ class ClientSearchScreenState extends State<ClientSearchScreen>
     return false;
   }
 
+  bool get _hasActiveFilters =>
+      _selectedCategoryId != null ||
+      _hasActiveTimeFilter ||
+      _distanceFilter != 'auto' ||
+      _sortBy != 'recommended';
+
   String get _timeChipLabel {
     if (!_hasActiveTimeFilter) return 'Time';
     return '${formatMinutesSliderLabel(_timeRange.start)} - ${formatMinutesSliderLabel(_timeRange.end)}';
@@ -2481,6 +2487,14 @@ class ClientSearchScreenState extends State<ClientSearchScreen>
                               leftMargin: 12,
                               trailingGap: 4,
                             ),
+                        suffixIcon: _FilterIconButton(
+                          isActive: _hasActiveFilters,
+                          onTap: _openAllFiltersSheet,
+                        ),
+                        suffixIconConstraints: const BoxConstraints(
+                          minWidth: 44,
+                          minHeight: 44,
+                        ),
                         filled: true,
                         fillColor: AppColors.backgroundPrimary,
                         enabledBorder: OutlineInputBorder(
@@ -2560,6 +2574,46 @@ class ClientSearchScreenState extends State<ClientSearchScreen>
                   ),
                 ],
               ),
+      ),
+    );
+  }
+}
+
+class _FilterIconButton extends StatelessWidget {
+  const _FilterIconButton({required this.isActive, required this.onTap});
+
+  final bool isActive;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Padding(
+        padding: const EdgeInsets.only(right: 10),
+        child: Stack(
+          alignment: Alignment.center,
+          children: [
+            Icon(
+              Icons.tune_rounded,
+              size: 22,
+              color: isActive ? AppColors.primary500 : AppColors.textSecondary,
+            ),
+            if (isActive)
+              Positioned(
+                top: 8,
+                right: 0,
+                child: Container(
+                  width: 7,
+                  height: 7,
+                  decoration: const BoxDecoration(
+                    color: AppColors.primary500,
+                    shape: BoxShape.circle,
+                  ),
+                ),
+              ),
+          ],
+        ),
       ),
     );
   }
