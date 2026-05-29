@@ -188,6 +188,8 @@ class _AppSettingsScreenState extends State<AppSettingsScreen> {
         final user = context.watch<AuthService>().user;
         final ownerName = (user?.name?.trim().isNotEmpty ?? false)
             ? user!.name!.trim()
+            : (user?.email?.trim().isNotEmpty ?? false)
+            ? user!.email.trim()
             : locale.t('settings.owner.ownerRole');
         final initials = ownerName
             .split(' ')

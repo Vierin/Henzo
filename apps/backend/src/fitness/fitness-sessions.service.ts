@@ -1,3 +1,4 @@
+import { fromZonedTime } from 'date-fns-tz';
 import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
 import {
   Prisma,
@@ -235,8 +236,17 @@ export class FitnessSessionsService {
         const time = slotTimeByDay.get(weekday);
         if (!time) return null;
         const { hour, minute } = this.parseHm(time);
-        const startsAt = new Date(d);
-        startsAt.setHours(hour, minute, 0, 0);
+        const tz = dto.timezone || 'Asia/Ho_Chi_Minh';
+        const localDate = new Date(
+          d.getFullYear(),
+          d.getMonth(),
+          d.getDate(),
+          hour,
+          minute,
+          0,
+          0,
+        );
+        const startsAt = fromZonedTime(localDate, tz);
         const endsAt = new Date(startsAt);
         endsAt.setMinutes(endsAt.getMinutes() + training.duration);
         return { startsAt, endsAt };

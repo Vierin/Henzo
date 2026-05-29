@@ -95,6 +95,7 @@ class OwnerDailyScheduleSessionCard extends StatelessWidget {
     this.onBookAgain,
     this.bookActionLabel = 'Book again',
     this.bookActionLoading = false,
+    this.isBooked = false,
     this.onLeaveReview,
     this.leaveReviewLabel = 'Leave review',
     this.leaveReviewLoading = false,
@@ -120,6 +121,7 @@ class OwnerDailyScheduleSessionCard extends StatelessWidget {
   final VoidCallback? onBookAgain;
   final String bookActionLabel;
   final bool bookActionLoading;
+  final bool isBooked;
 
   final VoidCallback? onLeaveReview;
   final String leaveReviewLabel;
@@ -171,7 +173,7 @@ class OwnerDailyScheduleSessionCard extends StatelessWidget {
     final trainerRowText = trainerLine?.trim() ?? '';
     final priceText = trailingPriceLabel?.trim() ?? '';
     final priceColor = trailingPriceColor ?? accent;
-    final hasBookAction = onBookAgain != null || bookActionLoading;
+    final hasBookAction = isBooked || onBookAgain != null || bookActionLoading;
     final hasReviewAction = onLeaveReview != null || leaveReviewLoading;
     final hasCancelAction = onCancelBooking != null || cancelActionLoading;
     final showPriceAboveBook = priceText.isNotEmpty && hasBookAction;
@@ -328,6 +330,7 @@ class OwnerDailyScheduleSessionCard extends StatelessWidget {
                           reviewLabel: leaveReviewLabel,
                           reviewLoading: leaveReviewLoading,
                           onReview: onLeaveReview,
+                          isBooked: isBooked,
                         ),
                       ],
                     )
@@ -353,6 +356,7 @@ class OwnerDailyScheduleSessionCard extends StatelessWidget {
                         reviewLabel: leaveReviewLabel,
                         reviewLoading: leaveReviewLoading,
                         onReview: onLeaveReview,
+                        isBooked: isBooked,
                       ),
                     )
                   : hasCancelAction
@@ -444,6 +448,7 @@ class _ScheduleTrailingActions extends StatelessWidget {
     required this.reviewLabel,
     required this.reviewLoading,
     required this.onReview,
+    this.isBooked = false,
   });
 
   final String bookLabel;
@@ -452,20 +457,23 @@ class _ScheduleTrailingActions extends StatelessWidget {
   final String reviewLabel;
   final bool reviewLoading;
   final VoidCallback? onReview;
+  final bool isBooked;
 
   @override
   Widget build(BuildContext context) {
-    final showBook = onBook != null || bookLoading;
+    final showBook = isBooked || onBook != null || bookLoading;
     final showReview = onReview != null || reviewLoading;
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
         if (showBook)
-          _ScheduleBookButton(
-            label: bookLabel,
-            loading: bookLoading,
-            onPressed: onBook,
-          ),
+          isBooked
+              ? _BookedBadge()
+              : _ScheduleBookButton(
+                  label: bookLabel,
+                  loading: bookLoading,
+                  onPressed: onBook,
+                ),
         if (showReview) ...[
           if (showBook) const SizedBox(height: 6),
           _ScheduleReviewButton(
@@ -475,6 +483,36 @@ class _ScheduleTrailingActions extends StatelessWidget {
           ),
         ],
       ],
+    );
+  }
+}
+
+class _BookedBadge extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        color: const Color(0xFFE8F5E9),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: const Color(0xFF81C784)),
+      ),
+      child: const Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(Icons.check_rounded, size: 14, color: Color(0xFF388E3C)),
+          SizedBox(width: 4),
+          Text(
+            'Booked',
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w700,
+              color: Color(0xFF388E3C),
+              height: 1.1,
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

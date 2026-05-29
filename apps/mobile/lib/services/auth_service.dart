@@ -236,7 +236,9 @@ class AuthService extends ChangeNotifier {
   }
 
   /// After Google OAuth, assign OWNER via POST /auth/register (business signup).
-  Future<({bool ok, String? errorRaw})> _registerOwnerAfterOAuth() async {
+  Future<({bool ok, String? errorRaw})> _registerOwnerAfterOAuth({
+    String? overrideName,
+  }) async {
     final session = _supabase.auth.currentSession;
     final supaUser = _supabase.auth.currentUser;
     if (session == null || supaUser == null) {
@@ -247,9 +249,14 @@ class AuthService extends ChangeNotifier {
       return (ok: false, errorRaw: 'Google account has no email');
     }
     final meta = supaUser.userMetadata;
-    final name = (meta?['name'] ?? meta?['full_name'] ?? _user?.name)
-        ?.toString()
-        .trim();
+    final metaName =
+        (meta?['name'] ?? meta?['full_name'] ?? _user?.name)
+            ?.toString()
+            .trim();
+    final name =
+        (overrideName != null && overrideName.isNotEmpty)
+            ? overrideName
+            : metaName;
 
     try {
       final url = Uri.parse('${AppConfig.apiUrl}/auth/register');
@@ -438,11 +445,17 @@ class AuthService extends ChangeNotifier {
         idToken: idToken,
         nonce: rawNonce,
       );
+      final givenName = credential.givenName?.trim() ?? '';
+      final familyName = credential.familyName?.trim() ?? '';
+      final appleFullName = [givenName, familyName]
+          .where((s) => s.isNotEmpty)
+          .join(' ');
       return _finalizeOAuthSignIn(
         logTag: 'login.apple',
         registerAsOwner: registerAsOwner,
         syncIfMissing: syncIfMissing,
         noSessionL10nKey: AuthErrorKeys.appleNoSessionAfterSignIn,
+        appleFullName: appleFullName.isNotEmpty ? appleFullName : null,
       );
     } on SignInWithAppleAuthorizationException catch (e) {
       _user = null;
@@ -486,6 +499,7 @@ class AuthService extends ChangeNotifier {
     bool registerAsOwner = false,
     bool syncIfMissing = false,
     required String noSessionL10nKey,
+    String? appleFullName,
   }) async {
     final session = _supabase.auth.currentSession;
     if (session == null) {
@@ -506,7 +520,7 @@ class AuthService extends ChangeNotifier {
     }
 
     if (registerAsOwner) {
-      final reg = await _registerOwnerAfterOAuth();
+      final reg = await _registerOwnerAfterOAuth(overrideName: appleFullName);
       if (!reg.ok) {
         return (success: false, errorL10nKey: null, errorRaw: reg.errorRaw);
       }

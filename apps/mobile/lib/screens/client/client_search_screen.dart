@@ -2371,7 +2371,7 @@ class ClientSearchScreenState extends State<ClientSearchScreen>
     final locationStore = context.watch<ClientLocationStore>();
     final locationLabel = locationStore.displayLabel(
       locale.t('clientHome.setLocation'),
-    );
+    ).toUpperCase();
     final favStore = context.watch<ClientFavoritesStore>();
     _ensureDerivedLists();
 

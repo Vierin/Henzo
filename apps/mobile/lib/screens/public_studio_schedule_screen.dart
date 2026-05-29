@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:provider/provider.dart';
 
 import '../constants/colors.dart';
 
@@ -7,6 +8,8 @@ import '../constants/layout.dart';
 
 import '../services/api_client.dart';
 
+import '../services/auth_service.dart';
+import '../services/client_schedule_store.dart';
 import '../services/dashboard_api_service.dart';
 
 import '../utils/formatters.dart';
@@ -75,6 +78,8 @@ class _PublicStudioScheduleScreenState
   String? _loadError;
 
   bool _isMonthExpanded = false;
+
+  Set<String> _bookedSessionIds = {};
 
   @override
   void initState() {
@@ -249,6 +254,7 @@ class _PublicStudioScheduleScreenState
         final index = scheduleDay.difference(_minBookableDay).inDays;
         _dayStripScrollController.jumpTo(index * w / 7);
       });
+      _loadBookedSessionIds();
     } catch (e) {
       if (!mounted) return;
 
@@ -258,6 +264,22 @@ class _PublicStudioScheduleScreenState
         _loadError = e.toString();
       });
     }
+  }
+
+  Future<void> _loadBookedSessionIds() async {
+    if (!mounted) return;
+    final token = context.read<AuthService>().accessToken;
+    if (token == null || token.isEmpty) return;
+    try {
+      final items = await ClientScheduleStore.loadFullSchedule(token);
+      if (!mounted) return;
+      final ids = <String>{};
+      for (final item in items) {
+        final sid = item['sessionId']?.toString();
+        if (sid != null && sid.isNotEmpty) ids.add(sid);
+      }
+      setState(() => _bookedSessionIds = ids);
+    } catch (_) {}
   }
 
   int _dayKey(DateTime d) => d.year * 10000 + d.month * 100 + d.day;
@@ -829,6 +851,11 @@ class _PublicStudioScheduleScreenState
                               null,
                             );
                             final price = session.trainingPrice;
+                            final rawSessionId =
+                                (raw['id'] ?? raw['sessionId'] ?? '')
+                                    .toString();
+                            final alreadyBooked =
+                                _bookedSessionIds.contains(rawSessionId);
                             return OwnerDailyScheduleSessionCard(
                               session: session,
                               subtitleLabel: subtitle,
@@ -842,7 +869,10 @@ class _PublicStudioScheduleScreenState
                                   : null,
                               trailingPriceColor: AppColors.textPrimary,
                               bookActionLabel: 'Book',
-                              onBookAgain: () => _openClassDetail(raw),
+                              onBookAgain: alreadyBooked
+                                  ? null
+                                  : () => _openClassDetail(raw),
+                              isBooked: alreadyBooked,
                               onTap: () => _openClassDetail(raw),
                             );
                           },
