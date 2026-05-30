@@ -2192,7 +2192,7 @@ class ClientSearchScreenState extends State<ClientSearchScreen>
   Widget _buildBrowseClassesList(ClientLocationStore locationStore) {
     return ListView.separated(
       key: const PageStorageKey<String>('browse-classes'),
-      padding: const EdgeInsets.fromLTRB(12, 4, 12, 8),
+      padding: const EdgeInsets.fromLTRB(12, 4, 12, 56),
       itemCount: _derivedDayClasses.length,
       separatorBuilder: (_, __) => const SizedBox(height: 8),
       itemBuilder: (_, index) {
@@ -2224,8 +2224,8 @@ class ClientSearchScreenState extends State<ClientSearchScreen>
     ClientFavoritesStore favStore,
   ) {
     return ListView.separated(
-      key: const PageStorageKey<String>('browse-studios'),
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      key: const PageStorageKey<String>('browse-studios-v2'),
+      padding: const EdgeInsets.fromLTRB(12, 6, 12, 56),
       itemCount: _derivedVisibleStudios.length,
       separatorBuilder: (_, __) => const SizedBox(height: 8),
       itemBuilder: (_, index) {

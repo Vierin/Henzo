@@ -74,6 +74,7 @@ class _HomeStudioCard extends StatelessWidget {
   static const _cardWidth = 180.0;
   static const _cardRadius = 18.0;
   static const _imageHeight = 116.0;
+  static const _contentHeight = 54.0;
   static const _distanceColor = Color(0x663F3F3F);
 
   final PublicStudioPreview studio;
@@ -149,78 +150,82 @@ class _HomeStudioCard extends StatelessWidget {
                   ),
                   Padding(
                     padding: const EdgeInsets.fromLTRB(10, 8, 10, 10),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          studio.studioName,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w600,
-                            color: AppColors.textPrimary,
-                            height: 1.1,
-                          ),
-                        ),
-                        if (studio.categories.isNotEmpty) ...[
-                          const SizedBox(height: 6),
+                    child: SizedBox(
+                      height: _contentHeight,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
                           Text(
-                            studio.categories.take(3).join(' • '),
+                            studio.studioName,
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                             style: const TextStyle(
-                              fontSize: 12,
-                              fontWeight: FontWeight.w400,
-                              color: AppColors.textSecondary,
-                              height: 1.1,
+                              fontSize: 14,
+                              fontWeight: FontWeight.w600,
+                              color: AppColors.textPrimary,
+                              height: 1.2,
                             ),
                           ),
-                        ],
-                        const SizedBox(height: 6),
-                        Row(
-                          children: [
-                            if (studio.rating > 0) ...[
-                              const Icon(
-                                Icons.star_rounded,
-                                size: 12,
-                                color: Color(0xFFFFB800),
+                          if (studio.categories.isNotEmpty) ...[
+                            const SizedBox(height: 6),
+                            Text(
+                              studio.categories.take(3).join(' • '),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w400,
+                                color: AppColors.textSecondary,
+                                height: 1.1,
                               ),
-                              const SizedBox(width: 2),
-                              Text(
-                                studio.rating.toStringAsFixed(1),
-                                style: const TextStyle(
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.w600,
-                                  color: AppColors.textPrimary,
-                                  height: 1.1,
+                            ),
+                          ],
+                          const Spacer(),
+                          Row(
+                            crossAxisAlignment: CrossAxisAlignment.end,
+                            children: [
+                              if (studio.rating > 0) ...[
+                                const Icon(
+                                  Icons.star_rounded,
+                                  size: 12,
+                                  color: Color(0xFFFFB800),
                                 ),
-                              ),
-                              if (studio.reviewCount > 0)
+                                const SizedBox(width: 2),
                                 Text(
-                                  ' (${studio.reviewCount})',
+                                  studio.rating.toStringAsFixed(1),
+                                  style: const TextStyle(
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w600,
+                                    color: AppColors.textPrimary,
+                                    height: 1.1,
+                                  ),
+                                ),
+                                if (studio.reviewCount > 0)
+                                  Text(
+                                    ' (${studio.reviewCount})',
+                                    style: const TextStyle(
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.w400,
+                                      color: AppColors.textSecondary,
+                                      height: 1.1,
+                                    ),
+                                  ),
+                              ],
+                              const Spacer(),
+                              if (distanceLabel != null)
+                                Text(
+                                  distanceLabel!,
                                   style: const TextStyle(
                                     fontSize: 11,
                                     fontWeight: FontWeight.w400,
-                                    color: AppColors.textSecondary,
+                                    color: _distanceColor,
                                     height: 1.1,
                                   ),
                                 ),
                             ],
-                            const Spacer(),
-                            if (distanceLabel != null)
-                              Text(
-                                distanceLabel!,
-                                style: const TextStyle(
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.w400,
-                                  color: _distanceColor,
-                                  height: 1.1,
-                                ),
-                              ),
-                          ],
-                        ),
-                      ],
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                 ],
@@ -367,6 +372,7 @@ class _BrowseStudioCard extends StatelessWidget {
                       overflow: TextOverflow.ellipsis,
                       style: const TextStyle(
                         fontSize: 19,
+                        height: 1.1,
                         fontWeight: FontWeight.w600,
                         color: AppColors.textPrimary,
                       ),

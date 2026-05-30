@@ -5,7 +5,6 @@ import 'package:provider/provider.dart';
 import '../constants/colors.dart';
 import '../l10n/app_locales.dart';
 import '../l10n/locale_provider.dart';
-import 'auth/auth_form_styles.dart';
 
 /// Shared language picker: bottom sheet with flags, radios, and Cancel.
 /// Optional [onLocaleSelected] (e.g. to re-register push token after change).
@@ -177,7 +176,7 @@ class _LanguageRow extends StatelessWidget {
   }
 }
 
-/// Same accent radio as [AddTrainingScreen] step 2.
+/// Brand purple selection dot (#4D39A8).
 class _LanguageRadioDot extends StatelessWidget {
   const _LanguageRadioDot({required this.selected});
 
@@ -185,7 +184,7 @@ class _LanguageRadioDot extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const accent = AuthFormStyles.accentIcon;
+    const accent = Color(0xFF4D39A8);
     return Container(
       width: 22,
       height: 22,

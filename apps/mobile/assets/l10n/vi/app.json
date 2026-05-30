@@ -110,6 +110,7 @@
 		"topPicksSubtitle": "Trong 3 km · đánh giá cao",
 		"popularTodayTitle": "Phổ biến hôm nay",
 		"seeAll": "Xem tất cả",
+		"classesSectionTitle": "Lớp học",
 		"noClassesToday": "Hôm nay chưa có lớp gần bạn.",
 		"locationPickerTitle": "Chọn thành phố",
 		"locationPickerHint": "Tìm thành phố",
@@ -122,7 +123,8 @@
 		"home": "Trang chủ",
 		"browse": "Khám phá",
 		"activity": "Hoạt động",
-		"profile": "Hồ sơ"
+		"profile": "Hồ sơ",
+		"map": "Bản đồ"
 	},
 	"clientActivity": {
 		"title": "Hoạt động",

@@ -61,9 +61,9 @@ class _ClientProfileScreenState extends State<ClientProfileScreen>
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
       context.read<ClientFavoritesStore>().sync(
-            context.read<AuthService>().accessToken,
-            force: true,
-          );
+        context.read<AuthService>().accessToken,
+        force: true,
+      );
     });
   }
 
@@ -75,8 +75,9 @@ class _ClientProfileScreenState extends State<ClientProfileScreen>
       final raw = await ApiClient.get('/trainings/categories', null);
       if (!mounted) return;
       setState(
-        () => _trainingCategories =
-            TrainingCategoryOption.listFromApiResponse(raw),
+        () => _trainingCategories = TrainingCategoryOption.listFromApiResponse(
+          raw,
+        ),
       );
     } catch (_) {}
   }
@@ -205,9 +206,9 @@ class _ClientProfileScreenState extends State<ClientProfileScreen>
       _loadStats(force: true),
       _refreshHealth(),
       context.read<ClientFavoritesStore>().sync(
-            context.read<AuthService>().accessToken,
-            force: true,
-          ),
+        context.read<AuthService>().accessToken,
+        force: true,
+      ),
     ]);
   }
 
@@ -306,18 +307,24 @@ class _ClientProfileScreenState extends State<ClientProfileScreen>
         value: _loadingStats ? '—' : formatProfileCount(_classesVisited),
         label: t('classesBooked'),
         background: statGreen,
+        iconPaddingTop: 1,
       ),
-      ClientProfileStatItem.icon(
-        icon: Icons.card_membership_outlined,
+      ClientProfileStatItem.svg(
+        asset: 'assets/icons/icon-ticket.svg',
         value: _loadingStats ? '—' : formatProfileCount(_activePasses),
         label: t('activePasses'),
         background: statPink,
+        iconSize: 11,
+        iconPaddingTop: 3,
       ),
       ClientProfileStatItem.svg(
         asset: 'assets/icons/icon-flame.svg',
         value: formatProfileCount(calories),
         label: t('caloriesBurned'),
         background: AppColors.backgroundPrimary,
+        iconSize: 17,
+        iconColor: AppColors.brandAccent,
+        iconPaddingTop: 0,
       ),
     ];
 

@@ -5,6 +5,7 @@ import '../constants/colors.dart';
 import '../l10n/locale_provider.dart';
 import '../services/auth_service.dart';
 import '../services/push_notification_service.dart';
+import '../widgets/client/browse_map_button.dart';
 import '../widgets/shell/shell_nav_item.dart';
 import 'client/client_bookings_screen.dart';
 import 'client/client_profile_screen.dart';
@@ -85,6 +86,18 @@ class _ClientShellState extends State<ClientShell> {
               Positioned.fill(
                 child: ClientMapScreen(
                   onBack: () => setState(() => _showMapScreen = false),
+                ),
+              ),
+            if (_currentIndex == 1)
+              Positioned(
+                left: 0,
+                right: 0,
+                bottom: 12,
+                child: Center(
+                  child: BrowseMapButton(
+                    label: locale.t('clientShell.map'),
+                    onTap: () => showClientMapBottomSheet(context),
+                  ),
                 ),
               ),
           ],

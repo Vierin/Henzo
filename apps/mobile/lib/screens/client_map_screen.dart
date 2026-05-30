@@ -13,14 +13,44 @@ import '../services/client_location_store.dart';
 import '../services/cache/client_nearby_cache.dart';
 import '../utils/load_error_message.dart';
 import '../utils/nearby_payload.dart';
+import '../widgets/common/henzo_modal.dart';
 import '../widgets/common/load_error_view.dart';
 import '../widgets/map/henzo_map_layers.dart';
 import 'location_picker_screen.dart';
 
+/// Full-screen map sheet (Browse «Map» button).
+Future<void> showClientMapBottomSheet(BuildContext context) {
+  return showHenzoModalBottomSheet<void>(
+    context: context,
+    isScrollControlled: true,
+    backgroundColor: Colors.transparent,
+    builder: (sheetCtx) {
+      final media = MediaQuery.of(sheetCtx);
+      final sheetHeight = media.size.height - media.padding.top - 6;
+      return SizedBox(
+        height: sheetHeight,
+        width: double.infinity,
+        child: ClipRRect(
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+          child: ClientMapScreen(
+            onBack: () => Navigator.of(sheetCtx).pop(),
+            showAsSheet: true,
+          ),
+        ),
+      );
+    },
+  );
+}
+
 class ClientMapScreen extends StatefulWidget {
-  const ClientMapScreen({super.key, required this.onBack});
+  const ClientMapScreen({
+    super.key,
+    required this.onBack,
+    this.showAsSheet = false,
+  });
 
   final VoidCallback onBack;
+  final bool showAsSheet;
 
   @override
   State<ClientMapScreen> createState() => _ClientMapScreenState();
@@ -43,7 +73,10 @@ class _ClientMapScreenState extends State<ClientMapScreen> {
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) => _syncMapToLocation());
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _syncMapToLocation();
+      unawaited(_loadNearbyStudios());
+    });
   }
 
   @override
@@ -286,8 +319,30 @@ class _ClientMapScreenState extends State<ClientMapScreen> {
               ),
             ),
           ),
+          if (widget.showAsSheet)
+            Positioned(
+              top: 0,
+              left: 0,
+              right: 0,
+              child: SafeArea(
+                bottom: false,
+                child: Padding(
+                  padding: const EdgeInsets.only(top: 8),
+                  child: Center(
+                    child: Container(
+                      width: 40,
+                      height: 4,
+                      decoration: BoxDecoration(
+                        color: Colors.black.withValues(alpha: 0.15),
+                        borderRadius: BorderRadius.circular(999),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
           Positioned(
-            top: 10,
+            top: widget.showAsSheet ? 22 : 10,
             left: 12,
             right: 12,
             child: SafeArea(
@@ -304,9 +359,14 @@ class _ClientMapScreenState extends State<ClientMapScreen> {
                         child: InkWell(
                           borderRadius: BorderRadius.circular(999),
                           onTap: widget.onBack,
-                          child: const Padding(
-                            padding: EdgeInsets.all(10),
-                            child: Icon(Icons.arrow_back, color: AppColors.textPrimary),
+                          child: Padding(
+                            padding: const EdgeInsets.all(10),
+                            child: Icon(
+                              widget.showAsSheet
+                                  ? Icons.close_rounded
+                                  : Icons.arrow_back,
+                              color: AppColors.textPrimary,
+                            ),
                           ),
                         ),
                       ),
@@ -397,7 +457,7 @@ class _ClientMapScreenState extends State<ClientMapScreen> {
               ),
             ),
           Positioned.fill(
-            top: 84,
+            top: widget.showAsSheet ? 96 : 84,
             child: DraggableScrollableSheet(
               minChildSize: 0.16,
               initialChildSize: 0.22,

@@ -177,6 +177,9 @@ class ClientProfileStatItem {
     this.isAsset = false,
     this.background = AppColors.backgroundPrimary,
     this.textColor = AppColors.textPrimary,
+    this.iconSize,
+    this.iconColor,
+    this.iconPaddingTop,
   });
 
   final IconData? icon;
@@ -188,6 +191,9 @@ class ClientProfileStatItem {
   final bool isAsset;
   final Color background;
   final Color textColor;
+  final double? iconSize;
+  final Color? iconColor;
+  final double? iconPaddingTop;
 
   factory ClientProfileStatItem.icon({
     required IconData icon,
@@ -195,12 +201,18 @@ class ClientProfileStatItem {
     required String label,
     Color background = AppColors.backgroundPrimary,
     Color textColor = AppColors.textPrimary,
+    double? iconSize,
+    Color? iconColor,
+    double? iconPaddingTop,
   }) => ClientProfileStatItem._(
     icon: icon,
     value: value,
     label: label,
     background: background,
     textColor: textColor,
+    iconSize: iconSize,
+    iconColor: iconColor,
+    iconPaddingTop: iconPaddingTop,
   );
 
   factory ClientProfileStatItem.svg({
@@ -209,6 +221,9 @@ class ClientProfileStatItem {
     required String label,
     Color background = AppColors.backgroundPrimary,
     Color textColor = AppColors.textPrimary,
+    double? iconSize,
+    Color? iconColor,
+    double? iconPaddingTop,
   }) => ClientProfileStatItem._(
     svgAsset: asset,
     value: value,
@@ -216,6 +231,9 @@ class ClientProfileStatItem {
     isSvg: true,
     background: background,
     textColor: textColor,
+    iconSize: iconSize,
+    iconColor: iconColor,
+    iconPaddingTop: iconPaddingTop,
   );
 
   factory ClientProfileStatItem.image({
@@ -224,6 +242,9 @@ class ClientProfileStatItem {
     required String label,
     Color background = AppColors.backgroundPrimary,
     Color textColor = AppColors.textPrimary,
+    double? iconSize,
+    Color? iconColor,
+    double? iconPaddingTop,
   }) => ClientProfileStatItem._(
     imageAsset: asset,
     value: value,
@@ -231,6 +252,9 @@ class ClientProfileStatItem {
     isAsset: true,
     background: background,
     textColor: textColor,
+    iconSize: iconSize,
+    iconColor: iconColor,
+    iconPaddingTop: iconPaddingTop,
   );
 }
 
@@ -262,26 +286,29 @@ class _StatSquareCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final iconSize = item.iconSize ?? 14;
+    final resolvedIconColor = item.iconColor ?? item.textColor;
+
     Widget iconWidget;
     if (item.isAsset && item.imageAsset != null) {
       iconWidget = Image.asset(
         item.imageAsset!,
-        width: 14,
-        height: 14,
+        width: iconSize,
+        height: iconSize,
         fit: BoxFit.contain,
       );
     } else if (item.isSvg && item.svgAsset != null) {
       iconWidget = SvgPicture.asset(
         item.svgAsset!,
-        width: 14,
-        height: 14,
-        colorFilter: ColorFilter.mode(item.textColor, BlendMode.srcIn),
+        width: iconSize,
+        height: iconSize,
+        colorFilter: ColorFilter.mode(resolvedIconColor, BlendMode.srcIn),
       );
     } else {
       iconWidget = Icon(
         item.icon ?? Icons.circle,
-        size: 14,
-        color: item.textColor,
+        size: iconSize,
+        color: resolvedIconColor,
       );
     }
 
@@ -311,9 +338,12 @@ class _StatSquareCard extends StatelessWidget {
               ),
             ),
             Row(
-              crossAxisAlignment: CrossAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                iconWidget,
+                Padding(
+                  padding: EdgeInsets.only(top: item.iconPaddingTop ?? 0),
+                  child: iconWidget,
+                ),
                 const SizedBox(width: 4),
                 Expanded(
                   child: Text(
@@ -321,7 +351,7 @@ class _StatSquareCard extends StatelessWidget {
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(
-                      fontSize: 13,
+                      fontSize: 14,
                       fontWeight: FontWeight.w400,
                       height: 1.1,
                       color: item.textColor,
@@ -505,10 +535,7 @@ class ClientProfileHealthSection extends StatelessWidget {
       return const SizedBox(
         width: 22,
         height: 22,
-        child: CircularProgressIndicator(
-          strokeWidth: 2,
-          color: Colors.white,
-        ),
+        child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
       );
     }
     if (!isFullySynced) {
@@ -530,10 +557,7 @@ class ClientProfileHealthSection extends StatelessWidget {
           children: [
             Text(
               needsInstall ? 'Install' : connectLabel,
-              style: const TextStyle(
-                fontSize: 13,
-                fontWeight: FontWeight.w600,
-              ),
+              style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
             ),
             const Icon(Icons.chevron_right_rounded, size: 16),
           ],
@@ -544,11 +568,7 @@ class ClientProfileHealthSection extends StatelessWidget {
       onPressed: onRefresh,
       padding: EdgeInsets.zero,
       constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
-      icon: const Icon(
-        Icons.refresh_rounded,
-        size: 20,
-        color: Colors.white70,
-      ),
+      icon: const Icon(Icons.refresh_rounded, size: 20, color: Colors.white70),
     );
   }
 

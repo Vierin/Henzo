@@ -110,6 +110,7 @@
 		"topPicksSubtitle": "В радиусе 3 км · высокий рейтинг",
 		"popularTodayTitle": "Популярно сегодня",
 		"seeAll": "Все",
+		"classesSectionTitle": "Занятия",
 		"noClassesToday": "На сегодня рядом нет занятий.",
 		"locationPickerTitle": "Выберите город",
 		"locationPickerHint": "Поиск города",
@@ -122,7 +123,8 @@
 		"home": "Главная",
 		"browse": "Обзор",
 		"activity": "Активность",
-		"profile": "Профиль"
+		"profile": "Профиль",
+		"map": "Карта"
 	},
 	"clientActivity": {
 		"title": "Активность",

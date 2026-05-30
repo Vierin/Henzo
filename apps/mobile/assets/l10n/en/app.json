@@ -110,6 +110,7 @@
 		"topPicksSubtitle": "Within 3 km · highest rated",
 		"popularTodayTitle": "Popular today",
 		"seeAll": "See all",
+		"classesSectionTitle": "Classes",
 		"noClassesToday": "No classes scheduled nearby today.",
 		"locationPickerTitle": "Choose location",
 		"locationPickerHint": "Search city",
@@ -122,7 +123,8 @@
 		"home": "Home",
 		"browse": "Browse",
 		"activity": "Activity",
-		"profile": "Profile"
+		"profile": "Profile",
+		"map": "Map"
 	},
 	"clientActivity": {
 		"title": "Activity",
