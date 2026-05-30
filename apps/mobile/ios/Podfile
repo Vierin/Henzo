@@ -83,10 +83,12 @@ post_install do |installer|
     # arm64 slice. xcrun vtool rewrites the Mach-O build version to plain iOS.
     # Remove legacy phase names so the updated script replaces them
     target.shell_script_build_phases.select { |p|
-      p.name == 'Strip Simulator Platform Flags' || p.name == 'Strip Simulator Platform Flags v2'
+      ['Strip Simulator Platform Flags',
+       'Strip Simulator Platform Flags v2',
+       'Strip Simulator Platform Flags v3'].include?(p.name)
     }.each(&:remove_from_project)
 
-    strip_phase_name = 'Strip Simulator Platform Flags v3'
+    strip_phase_name = 'Strip Simulator Platform Flags v4'
     unless target.shell_script_build_phases.any? { |p| p.name == strip_phase_name }
       strip_phase = target.new_shell_script_build_phase(strip_phase_name)
       strip_phase.shell_script = <<~'SH'
@@ -94,31 +96,28 @@ post_install do |installer|
         FRAMEWORKS="${BUILT_PRODUCTS_DIR}/${FRAMEWORKS_FOLDER_PATH}"
         [ -d "${FRAMEWORKS}" ] || exit 0
 
+        # vtool set and remove are separate command categories — must be two passes.
         fix_binary() {
           local binary="$1"
-          xcrun vtool -show-build "${binary}" 2>/dev/null | grep -qiE "IOSSIMULATOR|iossimulator" || return 0
-          echo "[strip] Fixing simulator platform flag: $(basename "${binary}")"
-          local tmp
-          tmp=$(mktemp)
-          # Xcode 14+ supports -remove-build-version: removes iossimulator and sets ios in one pass
-          if xcrun vtool \
-              -remove-build-version iossimulator \
-              -set-build-version ios "${IPHONEOS_DEPLOYMENT_TARGET}" "${IPHONEOS_DEPLOYMENT_TARGET}" \
-              -output "${tmp}" "${binary}" 2>/dev/null; then
-            mv "${tmp}" "${binary}"
-            return 0
+          local build_info
+          build_info=$(xcrun vtool -show-build "${binary}" 2>/dev/null) || return 0
+          echo "${build_info}" | grep -qiE "IOSSIMULATOR" || return 0
+          echo "[strip] Fixing: $(basename "${binary}")"
+          local tmp1 tmp2
+          tmp1=$(mktemp)
+          tmp2=$(mktemp)
+          # Pass 1: remove iossimulator build version
+          if xcrun vtool -remove-build-version iossimulator -output "${tmp1}" "${binary}" 2>/dev/null; then
+            # Pass 2: set ios build version (add if missing)
+            if xcrun vtool -set-build-version ios "${IPHONEOS_DEPLOYMENT_TARGET}" "${IPHONEOS_DEPLOYMENT_TARGET}" \
+                -output "${tmp2}" "${tmp1}" 2>/dev/null; then
+              mv "${tmp2}" "${binary}"
+            elif xcrun vtool -set-build-version ios "${IPHONEOS_DEPLOYMENT_TARGET}" "${IPHONEOS_DEPLOYMENT_TARGET}" \
+                -replace -output "${tmp2}" "${tmp1}" 2>/dev/null; then
+              mv "${tmp2}" "${binary}"
+            fi
           fi
-          rm -f "${tmp}"
-          # Fallback: thin to arm64-only slice, then replace build version
-          local thin
-          thin=$(mktemp)
-          lipo -extract arm64 "${binary}" -output "${thin}" 2>/dev/null || cp "${binary}" "${thin}"
-          if xcrun vtool \
-              -set-build-version ios "${IPHONEOS_DEPLOYMENT_TARGET}" "${IPHONEOS_DEPLOYMENT_TARGET}" \
-              -replace -output "${tmp}" "${thin}" 2>/dev/null; then
-            mv "${tmp}" "${binary}"
-          fi
-          rm -f "${thin}" "${tmp}"
+          rm -f "${tmp1}" "${tmp2}"
         }
 
         # 1. Fix .framework binaries (error 4ad/409)
